@@ -1,4 +1,4 @@
-"""Button platform for Choremander integration."""
+"""Button platform for TaskMate integration."""
 from __future__ import annotations
 
 import logging
@@ -11,7 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .coordinator import ChoremanderCoordinator
+from .coordinator import TaskMateCoordinator
 from .models import Child, Chore, Reward
 
 _LOGGER = logging.getLogger(__name__)
@@ -22,8 +22,8 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Choremander buttons."""
-    coordinator: ChoremanderCoordinator = hass.data[DOMAIN][entry.entry_id]
+    """Set up TaskMate buttons."""
+    coordinator: TaskMateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     entities: list[ButtonEntity] = []
 
@@ -59,12 +59,12 @@ async def async_setup_entry(
     coordinator.async_add_listener(async_update_entities)
 
 
-class ChoremandorBaseButton(CoordinatorEntity, ButtonEntity):
-    """Base class for Choremander buttons."""
+class TaskMateBaseButton(CoordinatorEntity, ButtonEntity):
+    """Base class for TaskMate buttons."""
 
     def __init__(
         self,
-        coordinator: ChoremandorCoordinator,
+        coordinator: TaskMateCoordinator,
         entry: ConfigEntry,
     ) -> None:
         """Initialize the button."""
@@ -76,18 +76,18 @@ class ChoremandorBaseButton(CoordinatorEntity, ButtonEntity):
         """Return device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Choremander",
-            manufacturer="Choremander",
+            name="TaskMate",
+            manufacturer="TaskMate",
             model="Family Chore Manager",
         )
 
 
-class CompleteChoreButton(ChoremandorBaseButton):
+class CompleteChoreButton(TaskMateBaseButton):
     """Button to mark a chore as completed."""
 
     def __init__(
         self,
-        coordinator: ChoremandorCoordinator,
+        coordinator: TaskMateCoordinator,
         entry: ConfigEntry,
         child: Child,
         chore: Chore,
@@ -131,12 +131,12 @@ class CompleteChoreButton(ChoremandorBaseButton):
             _LOGGER.error("Failed to complete chore: %s", err)
 
 
-class ClaimRewardButton(ChoremandorBaseButton):
+class ClaimRewardButton(TaskMateBaseButton):
     """Button to claim a reward."""
 
     def __init__(
         self,
-        coordinator: ChoremandorCoordinator,
+        coordinator: TaskMateCoordinator,
         entry: ConfigEntry,
         child: Child,
         reward: Reward,
@@ -204,12 +204,12 @@ class ClaimRewardButton(ChoremandorBaseButton):
             _LOGGER.error("Failed to claim reward: %s", err)
 
 
-class ApproveChoreButton(ChoremandorBaseButton):
+class ApproveChoreButton(TaskMateBaseButton):
     """Button to approve a chore completion."""
 
     def __init__(
         self,
-        coordinator: ChoremandorCoordinator,
+        coordinator: TaskMateCoordinator,
         entry: ConfigEntry,
         completion_id: str,
         child_name: str,
@@ -227,12 +227,12 @@ class ApproveChoreButton(ChoremandorBaseButton):
         await self.coordinator.async_approve_chore(self.completion_id)
 
 
-class RejectChoreButton(ChoremandorBaseButton):
+class RejectChoreButton(TaskMateBaseButton):
     """Button to reject a chore completion."""
 
     def __init__(
         self,
-        coordinator: ChoremandorCoordinator,
+        coordinator: TaskMateCoordinator,
         entry: ConfigEntry,
         completion_id: str,
         child_name: str,
