@@ -5,7 +5,9 @@
 <h1 align="center">TaskMate</h1>
 <p align="center">
   <strong>Turn chores into a game your kids actually want to play.</strong><br>
-  A Home Assistant integration for family chore management with smart rewards.
+  A Home Assistant integration for family chore management with smart rewards.<br>
+  Original integration created by <a href="https://github.com/vinnybad/choremander">vinnybad</a>.<br>
+  I decided to fork the original integration to make it more feature rich and fix some of the bugs.
 </p>
 
 ---
@@ -18,7 +20,6 @@
 - [Dashboard Cards](#dashboard-cards)
 - [Smart Reward Pricing](#smart-reward-pricing)
 - [Tips](#tips)
-- [Development](#development)
 
 ---
 
