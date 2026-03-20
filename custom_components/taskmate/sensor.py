@@ -244,6 +244,7 @@ class ChoremandorOverallStatsSensor(TaskMateBaseSensor):
             "streak_reset_mode": data.get("settings", {}).get("streak_reset_mode", "reset"),
             "weekend_multiplier": float(data.get("settings", {}).get("weekend_multiplier", "2.0") or "2.0"),
             "streak_milestones_enabled": data.get("settings", {}).get("streak_milestones_enabled", "true") == "true",
+            "streak_milestones": data.get("settings", {}).get("streak_milestones", "3:5, 7:10, 14:20, 30:50, 60:100, 100:200"),
             "perfect_week_enabled": data.get("settings", {}).get("perfect_week_enabled", "true") == "true",
             "perfect_week_bonus": int(data.get("settings", {}).get("perfect_week_bonus", "50") or "50"),
             "total_children": len(children),

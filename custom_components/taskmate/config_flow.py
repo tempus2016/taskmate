@@ -730,6 +730,23 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 "streak_milestones_enabled",
                 "true" if user_input.get("streak_milestones_enabled", True) else "false",
             )
+            milestone_input = user_input.get(
+                "streak_milestones", self.coordinator.DEFAULT_STREAK_MILESTONES
+            ).strip()
+            try:
+                from .coordinator import TaskMateCoordinator
+                TaskMateCoordinator.parse_milestone_setting(milestone_input)
+            except ValueError as err:
+                return self.async_show_form(
+                    step_id="settings",
+                    errors={"streak_milestones": "invalid_milestone_format"},
+                    description_placeholders={"error": str(err)},
+                    data_schema=vol.Schema({}),
+                )
+            await self.coordinator.async_set_setting(
+                "streak_milestones",
+                milestone_input,
+            )
             await self.coordinator.async_set_setting(
                 "perfect_week_enabled",
                 "true" if user_input.get("perfect_week_enabled", True) else "false",
@@ -750,6 +767,9 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         except (ValueError, TypeError):
             current_weekend_multiplier = 2.0
         current_streak_milestones = self.coordinator.storage.get_setting("streak_milestones_enabled", "true") == "true"
+        current_milestone_config = self.coordinator.storage.get_setting(
+            "streak_milestones", self.coordinator.DEFAULT_STREAK_MILESTONES
+        )
         current_perfect_week = self.coordinator.storage.get_setting("perfect_week_enabled", "true") == "true"
         try:
             current_perfect_week_bonus = float(self.coordinator.storage.get_setting("perfect_week_bonus", "50"))
@@ -806,6 +826,12 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         "streak_milestones_enabled",
                         default=current_streak_milestones,
                     ): selector.BooleanSelector(),
+                    vol.Optional(
+                        "streak_milestones",
+                        default=current_milestone_config,
+                    ): selector.TextSelector(
+                        selector.TextSelectorConfig(multiline=False)
+                    ),
                     vol.Required(
                         "perfect_week_enabled",
                         default=current_perfect_week,

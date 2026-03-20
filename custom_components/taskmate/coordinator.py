@@ -742,9 +742,38 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         await self.async_refresh()
 
     # ── Bonus points constants ────────────────────────────────────────────────
-    STREAK_MILESTONES: dict[int, int] = {
-        3: 5, 7: 10, 14: 20, 30: 50, 60: 100, 100: 200
-    }
+    DEFAULT_STREAK_MILESTONES = "3:5, 7:10, 14:20, 30:50, 60:100, 100:200"
+
+    @staticmethod
+    def parse_milestone_setting(value: str) -> dict[int, int]:
+        """Parse 'days:points, days:points' string into {days: points} dict."""
+        if not value or not value.strip():
+            return {}
+        result = {}
+        for part in value.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            if ":" not in part:
+                raise ValueError(
+                    f"Invalid format '{part}' — use 'days:points' pairs, e.g. '7:10, 14:20'"
+                )
+            days_str, points_str = part.split(":", 1)
+            try:
+                days = int(days_str.strip())
+                points = int(points_str.strip())
+            except ValueError:
+                raise ValueError(
+                    f"Invalid numbers in '{part}' — days and points must be whole numbers"
+                )
+            if days < 1:
+                raise ValueError(f"Days must be at least 1, got {days}")
+            if points < 1:
+                raise ValueError(f"Points must be at least 1, got {points}")
+            if days in result:
+                raise ValueError(f"Duplicate milestone for {days} days")
+            result[days] = points
+        return result
 
     async def _award_points(
         self,
@@ -827,13 +856,22 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         # ── Streak milestone bonus ──────────────────────────────────────────
         milestones_enabled = self.storage.get_setting("streak_milestones_enabled", "true") == "true"
         if milestones_enabled and child.current_streak > 0:
+            # Parse custom milestone config
+            milestone_setting = self.storage.get_setting(
+                "streak_milestones", self.DEFAULT_STREAK_MILESTONES
+            )
+            try:
+                milestones = self.parse_milestone_setting(milestone_setting)
+            except ValueError:
+                milestones = self.parse_milestone_setting(self.DEFAULT_STREAK_MILESTONES)
+
             # Clear milestones on reset so kids can re-earn them
             if streak_reset_occurred:
                 child.streak_milestones_achieved = []
 
             achieved = set(child.streak_milestones_achieved or [])
             milestone_bonus = 0
-            for days, bonus_pts in self.STREAK_MILESTONES.items():
+            for days, bonus_pts in milestones.items():
                 if child.current_streak >= days and days not in achieved:
                     milestone_bonus += bonus_pts
                     achieved.add(days)
