@@ -1,4 +1,4 @@
-"""Binary sensor platform for Choremander integration."""
+"""Binary sensor platform for TaskMate integration."""
 from __future__ import annotations
 
 from homeassistant.components.binary_sensor import (
@@ -12,7 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .coordinator import ChoremanderCoordinator
+from .coordinator import TaskMateCoordinator
 
 
 async def async_setup_entry(
@@ -20,8 +20,8 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Choremander binary sensors."""
-    coordinator: ChoremanderCoordinator = hass.data[DOMAIN][entry.entry_id]
+    """Set up TaskMate binary sensors."""
+    coordinator: TaskMateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     entities: list[BinarySensorEntity] = [
         HasPendingApprovalsBinarySensor(coordinator, entry),
@@ -30,12 +30,12 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class ChoremandorBaseBinarySensor(CoordinatorEntity, BinarySensorEntity):
-    """Base class for Choremander binary sensors."""
+class TaskMateBaseBinarySensor(CoordinatorEntity, BinarySensorEntity):
+    """Base class for TaskMate binary sensors."""
 
     def __init__(
         self,
-        coordinator: ChoremandorCoordinator,
+        coordinator: TaskMateCoordinator,
         entry: ConfigEntry,
     ) -> None:
         """Initialize the binary sensor."""
@@ -47,18 +47,18 @@ class ChoremandorBaseBinarySensor(CoordinatorEntity, BinarySensorEntity):
         """Return device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Choremander",
-            manufacturer="Choremander",
+            name="TaskMate",
+            manufacturer="TaskMate",
             model="Family Chore Manager",
         )
 
 
-class HasPendingApprovalsBinarySensor(ChoremandorBaseBinarySensor):
+class HasPendingApprovalsBinarySensor(TaskMateBaseBinarySensor):
     """Binary sensor indicating if there are pending approvals."""
 
     def __init__(
         self,
-        coordinator: ChoremandorCoordinator,
+        coordinator: TaskMateCoordinator,
         entry: ConfigEntry,
     ) -> None:
         """Initialize the binary sensor."""
