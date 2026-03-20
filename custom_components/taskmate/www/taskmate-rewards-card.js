@@ -843,9 +843,6 @@ class TaskMateRewardsCard extends LitElement {
             : ""}
         </div>
         <div class="reward-right-col">
-          <div class="reward-icon-container">
-            <ha-icon icon="${rewardIcon}"></ha-icon>
-          </div>
           ${!hasPendingClaim && childId ? html`
             <button
               class="claim-btn ${!canAfford ? 'cant-afford' : ''}"
@@ -853,9 +850,13 @@ class TaskMateRewardsCard extends LitElement {
               @click="${(e) => { e.stopPropagation(); this._handleClaim(reward, relevantChild); }}"
               title="${canAfford ? 'Claim reward' : 'Not enough points'}"
             >
-              <ha-icon icon="${isLoading ? 'mdi:loading' : 'mdi:gift'}"></ha-icon>
+              <ha-icon icon="${isLoading ? 'mdi:loading' : rewardIcon}"></ha-icon>
             </button>
-          ` : ''}
+          ` : html`
+            <div class="reward-icon-container">
+              <ha-icon icon="${rewardIcon}"></ha-icon>
+            </div>
+          `}
         </div>
       </div>
     `;
