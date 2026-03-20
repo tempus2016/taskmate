@@ -59,12 +59,84 @@ class TaskMateCoordinator(DataUpdateCoordinator):
     def _async_midnight_streak_check(self, now: datetime) -> None:
         """Scheduled callback at midnight to check and reset streaks if needed."""
         self.hass.async_create_task(self._async_check_streaks())
+        # Check for perfect week bonus every Monday at midnight
+        if now.weekday() == 0:
+            self.hass.async_create_task(self._async_check_perfect_week())
 
     @callback
     def _async_scheduled_prune(self, now: datetime) -> None:
         """Scheduled callback to prune old completion history."""
         days = int(self.storage.get_setting("history_days", "90"))
         self.hass.async_create_task(self.async_prune_history(days))
+
+    async def _async_check_perfect_week(self) -> None:
+        """Award perfect week bonus to children who completed at least one chore every day last week."""
+        perfect_week_enabled = self.storage.get_setting("perfect_week_enabled", "true") == "true"
+        if not perfect_week_enabled:
+            return
+
+        try:
+            perfect_week_bonus = int(self.storage.get_setting("perfect_week_bonus", "50"))
+        except (ValueError, TypeError):
+            perfect_week_bonus = 50
+
+        today = dt_util.now().date()
+        # Should only run on Monday — last week is Mon(today-7) to Sun(today-1)
+        if today.weekday() != 0:
+            _LOGGER.debug("Perfect week check skipped (not Monday)")
+            return
+
+        last_monday = today - timedelta(days=7)
+        last_week_dates = {(last_monday + timedelta(days=i)).isoformat() for i in range(7)}
+        week_key = last_monday.isoformat()
+
+        all_completions = self.storage.get_completions()
+        children = self.storage.get_children()
+        changed = False
+
+        for child in children:
+            awarded_weeks = list(getattr(child, 'awarded_perfect_weeks', None) or [])
+
+            # Skip if already awarded for this week
+            if week_key in awarded_weeks:
+                continue
+
+            # Get all days this child had at least one approved completion last week
+            completed_days = set()
+            for comp in all_completions:
+                if comp.child_id != child.id or not comp.approved:
+                    continue
+                try:
+                    comp_local = dt_util.as_local(comp.completed_at)
+                    comp_date_str = comp_local.date().isoformat()
+                    if comp_date_str in last_week_dates:
+                        completed_days.add(comp_date_str)
+                except Exception:
+                    continue
+
+            if completed_days == last_week_dates:
+                # Perfect week!
+                child.awarded_perfect_weeks = awarded_weeks + [week_key]
+                child.points += perfect_week_bonus
+                child.total_points_earned += perfect_week_bonus
+                self.storage.update_child(child)
+
+                transaction = PointsTransaction(
+                    child_id=child.id,
+                    points=perfect_week_bonus,
+                    reason=f"Perfect week bonus! ({last_monday.strftime('%d %b')} – {(today - timedelta(days=1)).strftime('%d %b')})",
+                    created_at=dt_util.now(),
+                )
+                self.storage.add_points_transaction(transaction)
+                changed = True
+                _LOGGER.info(
+                    "Perfect week bonus (%d pts) awarded to %s for week of %s",
+                    perfect_week_bonus, child.name, week_key,
+                )
+
+        if changed:
+            await self.storage.async_save()
+            await self.async_refresh()
 
     async def _async_check_streaks(self) -> None:
         """Check all children's streaks and reset/pause if they missed yesterday.
@@ -533,7 +605,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                     completion.approved = True
                     completion.approved_at = dt_util.now()
                     completion.points_awarded = chore.points
-                    await self._award_points(child, chore.points)
+                    # Use completion date for weekend multiplier, not approval date
+                    comp_date = dt_util.as_local(completion.completed_at).date()
+                    await self._award_points(child, chore.points, completion_date=comp_date)
                     self.storage.update_completion(completion)
                     await self.storage.async_save()
                     await self.async_refresh()
@@ -667,52 +741,119 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         await self.storage.async_save()
         await self.async_refresh()
 
-    async def _award_points(self, child: Child, points: int) -> None:
-        """Award points to a child and update streak."""
-        child.points += points
-        child.total_points_earned += points
-        child.total_chores_completed += 1
+    # ── Bonus points constants ────────────────────────────────────────────────
+    STREAK_MILESTONES: dict[int, int] = {
+        3: 5, 7: 10, 14: 20, 30: 50, 60: 100, 100: 200
+    }
 
-        # Update streak tracking
-        today_str = dt_util.now().date().isoformat()
+    async def _award_points(
+        self,
+        child: Child,
+        points: int,
+        completion_date: date | None = None,
+    ) -> None:
+        """Award points to a child, update streak, and apply bonus systems."""
+        now = dt_util.now()
+        today = now.date()
+        effective_date = completion_date or today
+        today_str = today.isoformat()
         last_date_str = getattr(child, 'last_completion_date', None)
 
+        # ── Weekend multiplier ──────────────────────────────────────────────
+        # Applied to base chore points only, based on completion date
+        try:
+            multiplier = float(self.storage.get_setting("weekend_multiplier", "2.0"))
+        except (ValueError, TypeError):
+            multiplier = 2.0
+
+        weekend_bonus = 0
+        if effective_date.weekday() in (5, 6) and multiplier > 1.0:
+            weekend_bonus = round(points * (multiplier - 1.0))
+
+        total_points = points + weekend_bonus
+        child.points += total_points
+        child.total_points_earned += total_points
+        child.total_chores_completed += 1
+
+        if weekend_bonus > 0:
+            _LOGGER.info(
+                "Weekend multiplier (%.1fx) applied for %s: +%d bonus on top of %d",
+                multiplier, child.name, weekend_bonus, points,
+            )
+            # Log weekend bonus as a separate transaction for activity history
+            transaction = PointsTransaction(
+                child_id=child.id,
+                points=weekend_bonus,
+                reason=f"Weekend bonus (×{multiplier:.0f})",
+                created_at=now,
+            )
+            self.storage.add_points_transaction(transaction)
+
+        # ── Streak tracking ─────────────────────────────────────────────────
         streak_mode = self.storage.get_setting("streak_reset_mode", "reset")
         streak_paused = getattr(child, "streak_paused", False)
+        streak_before = child.current_streak or 0
+        streak_reset_occurred = False
 
         if last_date_str is None:
-            # First ever completion — start streak at 1
             child.current_streak = 1
             child.streak_paused = False
         elif last_date_str == today_str:
-            # Already completed something today — streak unchanged
-            pass
+            pass  # Already completed today — streak unchanged
         else:
             try:
                 last_date = date.fromisoformat(last_date_str)
-                yesterday = dt_util.now().date() - timedelta(days=1)
+                yesterday = today - timedelta(days=1)
                 if last_date == yesterday:
-                    # Consecutive day — extend streak
-                    child.current_streak = (child.current_streak or 0) + 1
+                    child.current_streak = streak_before + 1
                     child.streak_paused = False
                 elif streak_mode == "pause" or streak_paused:
-                    # Pause mode — resume streak from where it was (don't increment)
                     child.streak_paused = False
                     _LOGGER.debug("Streak resumed for %s at %d", child.name, child.current_streak)
                 else:
-                    # Reset mode — gap means start over
                     child.current_streak = 1
                     child.streak_paused = False
+                    streak_reset_occurred = True
             except (ValueError, TypeError):
                 child.current_streak = 1
                 child.streak_paused = False
+                streak_reset_occurred = True
 
-        # Update last completion date
         child.last_completion_date = today_str
 
-        # Update best streak
         if child.current_streak > (child.best_streak or 0):
             child.best_streak = child.current_streak
+
+        # ── Streak milestone bonus ──────────────────────────────────────────
+        milestones_enabled = self.storage.get_setting("streak_milestones_enabled", "true") == "true"
+        if milestones_enabled and child.current_streak > 0:
+            # Clear milestones on reset so kids can re-earn them
+            if streak_reset_occurred:
+                child.streak_milestones_achieved = []
+
+            achieved = set(child.streak_milestones_achieved or [])
+            milestone_bonus = 0
+            for days, bonus_pts in self.STREAK_MILESTONES.items():
+                if child.current_streak >= days and days not in achieved:
+                    milestone_bonus += bonus_pts
+                    achieved.add(days)
+                    _LOGGER.info(
+                        "Streak milestone %d days reached for %s: +%d bonus",
+                        days, child.name, bonus_pts,
+                    )
+
+            child.streak_milestones_achieved = sorted(achieved)
+
+            if milestone_bonus > 0:
+                child.points += milestone_bonus
+                child.total_points_earned += milestone_bonus
+                transaction = PointsTransaction(
+                    child_id=child.id,
+                    points=milestone_bonus,
+                    reason=f"Streak milestone bonus ({child.current_streak} day streak!)",
+                    created_at=now,
+                )
+                self.storage.add_points_transaction(transaction)
 
         self.storage.update_child(child)
 

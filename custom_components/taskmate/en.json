@@ -181,7 +181,7 @@
         },
         "data_description": {
           "streak_reset_mode": "What happens to a streak when a day is missed",
-          "history_days": "How many days of chore completion history to retain (30-365)",
+          "history_days": "How many days of chore completion history to retain (30\u2013365)",
           "weekend_multiplier": "Points multiplier on Saturdays and Sundays (1.0 = disabled, 2.0 = double points)",
           "streak_milestones_enabled": "Award bonus points when children hit streak milestones (3, 7, 14, 30, 60, 100 days)",
           "perfect_week_enabled": "Award bonus points when a child completes at least one chore every day for a full week",

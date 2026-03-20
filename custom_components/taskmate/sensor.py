@@ -37,7 +37,7 @@ async def async_setup_entry(
     tracked_child_ids: set[str] = set()
 
     # Add overall stats sensor
-    entities.append(TaskMateOverallStatsSensor(coordinator, entry))
+    entities.append(ChoremandorOverallStatsSensor(coordinator, entry))
 
     # Add sensors for each child
     for child in coordinator.data.get("children", []):
@@ -91,7 +91,7 @@ class TaskMateBaseSensor(CoordinatorEntity, SensorEntity):
         )
 
 
-class TaskMateOverallStatsSensor(TaskMateBaseSensor):
+class ChoremandorOverallStatsSensor(TaskMateBaseSensor):
     """Sensor for overall TaskMate statistics."""
 
     def __init__(
@@ -242,6 +242,10 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
         return {
             "today_day_of_week": today_dow,
             "streak_reset_mode": data.get("settings", {}).get("streak_reset_mode", "reset"),
+            "weekend_multiplier": float(data.get("settings", {}).get("weekend_multiplier", "2.0") or "2.0"),
+            "streak_milestones_enabled": data.get("settings", {}).get("streak_milestones_enabled", "true") == "true",
+            "perfect_week_enabled": data.get("settings", {}).get("perfect_week_enabled", "true") == "true",
+            "perfect_week_bonus": int(data.get("settings", {}).get("perfect_week_bonus", "50") or "50"),
             "total_children": len(children),
             "total_chores": len(chores),
             "total_rewards": len(rewards),
@@ -263,6 +267,8 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
                 "avatar": getattr(c, 'avatar', 'mdi:account-circle') or 'mdi:account-circle',
                 "last_completion_date": getattr(c, 'last_completion_date', None),
                 "streak_paused": getattr(c, 'streak_paused', False),
+                "streak_milestones_achieved": getattr(c, 'streak_milestones_achieved', None) or [],
+                "awarded_perfect_weeks": getattr(c, 'awarded_perfect_weeks', None) or [],
             } for c in children],
             "chores": chores_list,
             "rewards": rewards_list,
