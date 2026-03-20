@@ -144,15 +144,22 @@ lovelace:
 | [Approvals Card](#approvals-card) | Parents | Approve or reject completed chores |
 | [Points Card](#points-card) | Parents | Manually add/remove points |
 | [Reorder Card](#reorder-card) | Parents | Organize chore display order per child |
+| [Parent Dashboard](#parent-dashboard-card) | Parents | Unified approvals, overview, claims, and quick points |
+| [Overview Card](#overview-card) | Parents | At-a-glance all children progress |
+| [Approvals Card](#approvals-card) | Parents | Approve/reject chores and reward claims |
+| [Activity Card](#activity-card) | Parents | Full activity history feed |
+| [Streak Card](#streak-card) | Kids/Parents | Streak tracking with achievements |
+| [Weekly Card](#weekly-card) | Parents | Week view with bar chart |
+| [Points Graph Card](#points-graph-card) | Parents | Line graph of points over time |
+| [Reward Progress Card](#reward-progress-card) | Kids | Full-screen motivational reward display |
+| [Leaderboard Card](#leaderboard-card) | Kids/Parents | Competitive ranking by points, streak, or weekly |
 
 > **Tip:** Create separate dashboards - one for kids (Child + Rewards) and one for parents (Approvals + Points).
 
 ---
 
-### Cards for Kids
 
-#### Child Card
-# Child Card
+## Child Card
 
 Kid-friendly interface with big colorful buttons and celebration sounds. This is the primary way children interact with their chores.
 
@@ -174,7 +181,7 @@ title: My Chores        # Optional
 ```
 
 
-#### Rewards Card
+## Rewards Card
 
 Shows all available rewards with progress bars. Displays dynamic pricing indicators and jackpot status.
 
@@ -190,11 +197,7 @@ child_id: 6ddfca70  # Optional: filter to specific child
 ```
 
 
----
-
-### Cards for Parents
-
-#### Approvals Card
+## Approvals Card
 
 Review and approve (or reject) completed chores that require parent approval. Shows pending items grouped by time of day.
 
@@ -213,7 +216,7 @@ entity: sensor.pending_approvals
 ```
 
 
-#### Points Card
+## Points Card
 
 Manually add bonus points (great job today!) or remove points (consequences). Useful for situations outside the normal chore flow.
 
@@ -228,7 +231,7 @@ entity: sensor.taskmate_overview
 ```
 
 
-#### Reorder Card
+## Reorder Card
 
 Drag-and-drop interface to organize the order chores appear for each child. Customize the experience per kid.
 
@@ -248,26 +251,6 @@ child_id: a8c8376a
 
 > **Note:** All cards require the `sensor.taskmate_overview` entity. Child-specific cards also need a child selection.
 
----
-
-## New Cards (v1.0.0)
-
-Eight new cards are available in addition to the originals:
-
-| Card | For | Description |
-|------|-----|-------------|
-| [Parent Dashboard](#parent-dashboard-card) | Parents | Unified approvals, overview, claims, and quick points |
-| [Overview Card](#overview-card) | Parents | At-a-glance all children progress |
-| [Approvals Card](#approvals-card) | Parents | Approve/reject chores and reward claims |
-| [Activity Card](#activity-card) | Parents | Full activity history feed |
-| [Streak Card](#streak-card) | Kids/Parents | Streak tracking with achievements |
-| [Weekly Card](#weekly-card) | Parents | Week view with bar chart |
-| [Points Graph Card](#points-graph-card) | Parents | Line graph of points over time |
-| [Reward Progress Card](#reward-progress-card) | Kids | Full-screen motivational reward display |
-| [Leaderboard Card](#leaderboard-card) | Kids/Parents | Competitive ranking by points, streak, or weekly |
-
-
----
 
 ## Parent Dashboard Card
 Unified parent control centre with four tabs — Overview (all children's today progress), Approvals (inline approve/reject chore completions), Claims (approve/reject reward claims), and Points (quick +/- buttons per child).
