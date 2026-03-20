@@ -208,7 +208,7 @@ Review and approve (or reject) completed chores that require parent approval. Sh
 
 ```yaml
 type: custom:taskmate-approvals-card
-entity: sensor.taskmate_overview
+entity: sensor.pending_approvals
 ```
 </details>
 
