@@ -37,7 +37,7 @@ async def async_setup_entry(
     tracked_child_ids: set[str] = set()
 
     # Add overall stats sensor
-    entities.append(ChoremandorOverallStatsSensor(coordinator, entry))
+    entities.append(TaskMateOverallStatsSensor(coordinator, entry))
 
     # Add sensors for each child
     for child in coordinator.data.get("children", []):
@@ -91,7 +91,7 @@ class TaskMateBaseSensor(CoordinatorEntity, SensorEntity):
         )
 
 
-class ChoremandorOverallStatsSensor(TaskMateBaseSensor):
+class TaskMateOverallStatsSensor(TaskMateBaseSensor):
     """Sensor for overall TaskMate statistics."""
 
     def __init__(
