@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.svg" alt="TaskMate" width="180">
+  <img src="/logo.svg" alt="TaskMate" width="180">
 </p>
 
 <h1 align="center">TaskMate</h1>
