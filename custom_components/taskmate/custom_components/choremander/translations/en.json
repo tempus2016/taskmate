@@ -1,0 +1,278 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Welcome to Choremander!",
+        "description": "Set up your family chore management system. You can customize the points currency that children will earn.",
+        "data": {
+          "points_name": "Points Currency Name (e.g., Stars, Coins, Bucks)",
+          "points_icon": "Points Icon"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Name is required"
+    },
+    "abort": {
+      "already_configured": "Choremander is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Choremander Settings",
+        "menu_options": {
+          "manage_children": "Manage Children",
+          "manage_chores": "Manage Chores",
+          "manage_rewards": "Manage Rewards",
+          "settings": "Settings"
+        }
+      },
+      "manage_children": {
+        "title": "Manage Children",
+        "description": "Add, edit, or remove children",
+        "menu_options": {
+          "add_child": "Add New Child",
+          "init": "Back to Main Menu"
+        }
+      },
+      "add_child": {
+        "title": "Add New Child",
+        "description": "Enter the child's information",
+        "data": {
+          "name": "Child's Name",
+          "avatar": "Avatar"
+        }
+      },
+      "edit_child": {
+        "title": "Edit Child: {child_name}",
+        "description": "Update or delete this child",
+        "data": {
+          "name": "Child's Name",
+          "avatar": "Avatar",
+          "action": "Action"
+        }
+      },
+      "manage_chores": {
+        "title": "Manage Chores",
+        "description": "Add, edit, or remove chores",
+        "menu_options": {
+          "add_chore": "Add Single Chore",
+          "add_chores_bulk": "Add Multiple Chores",
+          "init": "Back to Main Menu"
+        }
+      },
+      "add_chore": {
+        "title": "Add New Chore",
+        "description": "Create a new chore for your children",
+        "data": {
+          "name": "Chore Name",
+          "description": "Description (optional)",
+          "points": "Points Reward",
+          "time_category": "Time of Day",
+          "due_days": "Due Days (optional)",
+          "assigned_to": "Assigned To (leave empty for all children)",
+          "requires_approval": "Requires Parent Approval",
+          "daily_limit": "Daily Completion Limit",
+          "completion_percentage_per_month": "Completion % Per Month"
+        },
+        "data_description": {
+          "daily_limit": "How many times per day this chore can be completed",
+          "completion_percentage_per_month": "Expected completion rate (100 = daily, 50 = every other day)"
+        }
+      },
+      "add_chores_bulk": {
+        "title": "Add Multiple Chores",
+        "description": "Create multiple chores at once with the same settings. Enter chore names one per line or comma-separated.",
+        "data": {
+          "chore_names": "Chore Names (one per line or comma-separated)",
+          "points": "Points Reward (for all)",
+          "time_category": "Time of Day (for all)",
+          "due_days": "Due Days (optional)",
+          "assigned_to": "Assigned To (leave empty for all children)",
+          "requires_approval": "Requires Parent Approval",
+          "daily_limit": "Daily Completion Limit",
+          "completion_percentage_per_month": "Completion % Per Month"
+        },
+        "data_description": {
+          "daily_limit": "How many times per day this chore can be completed",
+          "completion_percentage_per_month": "Expected completion rate (100 = daily, 50 = every other day)"
+        }
+      },
+      "edit_chore": {
+        "title": "Edit Chore: {chore_name}",
+        "description": "Update or delete this chore",
+        "data": {
+          "name": "Chore Name",
+          "description": "Description",
+          "points": "Points Reward",
+          "time_category": "Time of Day",
+          "due_days": "Due Days",
+          "assigned_to": "Assigned To",
+          "requires_approval": "Requires Parent Approval",
+          "daily_limit": "Daily Completion Limit",
+          "completion_percentage_per_month": "Completion % Per Month",
+          "action": "Action"
+        },
+        "data_description": {
+          "daily_limit": "How many times per day this chore can be completed",
+          "completion_percentage_per_month": "Expected completion rate (100 = daily, 50 = every other day)"
+        }
+      },
+      "manage_rewards": {
+        "title": "Manage Rewards",
+        "description": "Add, edit, or remove rewards",
+        "menu_options": {
+          "add_reward": "Add New Reward",
+          "init": "Back to Main Menu"
+        }
+      },
+      "add_reward": {
+        "title": "Add New Reward",
+        "description": "Create a reward that children can earn",
+        "data": {
+          "name": "Reward Name",
+          "description": "Description (optional)",
+          "cost": "Points Cost",
+          "icon": "Icon",
+          "assigned_to": "Assigned To (leave empty for all children)",
+          "is_jackpot": "Is Jackpot",
+          "days_to_goal": "Days to Goal",
+          "override_point_value": "Override Point Value"
+        },
+        "data_description": {
+          "is_jackpot": "Pool stars from all assigned children together",
+          "days_to_goal": "Number of days to reach this reward",
+          "override_point_value": "Use manual cost instead of dynamic calculation"
+        }
+      },
+      "edit_reward": {
+        "title": "Edit Reward: {reward_name}",
+        "description": "Update or delete this reward",
+        "data": {
+          "name": "Reward Name",
+          "description": "Description",
+          "cost": "Points Cost",
+          "icon": "Icon",
+          "assigned_to": "Assigned To",
+          "is_jackpot": "Is Jackpot",
+          "days_to_goal": "Days to Goal",
+          "override_point_value": "Override Point Value",
+          "action": "Action"
+        },
+        "data_description": {
+          "is_jackpot": "Pool stars from all assigned children together",
+          "days_to_goal": "Number of days to reach this reward",
+          "override_point_value": "Use manual cost instead of dynamic calculation"
+        }
+      },
+      "settings": {
+        "title": "Settings",
+        "description": "Configure your Choremander settings",
+        "data": {
+          "points_name": "Points Currency Name",
+          "points_icon": "Points Icon"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Name is required"
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "Complete Chore",
+      "description": "Mark a chore as completed by a child",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the chore to complete"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child completing the chore"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Approve Chore",
+      "description": "Approve a completed chore and award points",
+      "fields": {
+        "completion_id": {
+          "name": "Completion ID",
+          "description": "The ID of the chore completion to approve"
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Reject Chore",
+      "description": "Reject a completed chore",
+      "fields": {
+        "completion_id": {
+          "name": "Completion ID",
+          "description": "The ID of the chore completion to reject"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "Claim Reward",
+      "description": "Child claims a reward using their points",
+      "fields": {
+        "reward_id": {
+          "name": "Reward ID",
+          "description": "The ID of the reward to claim"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child claiming the reward"
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Approve Reward",
+      "description": "Approve a reward claim",
+      "fields": {
+        "claim_id": {
+          "name": "Claim ID",
+          "description": "The ID of the reward claim to approve"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Add Points",
+      "description": "Add bonus points to a child",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child to add points to"
+        },
+        "points": {
+          "name": "Points",
+          "description": "The number of points to add"
+        },
+        "reason": {
+          "name": "Reason",
+          "description": "Optional reason for the bonus"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Remove Points",
+      "description": "Remove points from a child (penalty)",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child to remove points from"
+        },
+        "points": {
+          "name": "Points",
+          "description": "The number of points to remove"
+        },
+        "reason": {
+          "name": "Reason",
+          "description": "Optional reason for the penalty"
+        }
+      }
+    }
+  }
+}

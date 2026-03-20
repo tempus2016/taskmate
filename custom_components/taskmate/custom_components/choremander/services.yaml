@@ -1,0 +1,118 @@
+complete_chore:
+  name: Complete Chore
+  description: Mark a chore as completed by a child
+  fields:
+    chore_id:
+      name: Chore ID
+      description: The ID of the chore to complete
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child completing the chore
+      required: true
+      selector:
+        text:
+
+approve_chore:
+  name: Approve Chore
+  description: Approve a completed chore and award points
+  fields:
+    completion_id:
+      name: Completion ID
+      description: The ID of the chore completion to approve
+      required: true
+      selector:
+        text:
+
+reject_chore:
+  name: Reject Chore
+  description: Reject a completed chore
+  fields:
+    completion_id:
+      name: Completion ID
+      description: The ID of the chore completion to reject
+      required: true
+      selector:
+        text:
+
+claim_reward:
+  name: Claim Reward
+  description: Child claims a reward using their points
+  fields:
+    reward_id:
+      name: Reward ID
+      description: The ID of the reward to claim
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child claiming the reward
+      required: true
+      selector:
+        text:
+
+approve_reward:
+  name: Approve Reward
+  description: Approve a reward claim
+  fields:
+    claim_id:
+      name: Claim ID
+      description: The ID of the reward claim to approve
+      required: true
+      selector:
+        text:
+
+add_points:
+  name: Add Points
+  description: Add bonus points to a child
+  fields:
+    child_id:
+      name: Child ID
+      description: The ID of the child to add points to
+      required: true
+      selector:
+        text:
+    points:
+      name: Points
+      description: The number of points to add
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 10000
+          mode: box
+    reason:
+      name: Reason
+      description: Optional reason for the bonus
+      required: false
+      selector:
+        text:
+
+remove_points:
+  name: Remove Points
+  description: Remove points from a child (penalty)
+  fields:
+    child_id:
+      name: Child ID
+      description: The ID of the child to remove points from
+      required: true
+      selector:
+        text:
+    points:
+      name: Points
+      description: The number of points to remove
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 10000
+          mode: box
+    reason:
+      name: Reason
+      description: Optional reason for the penalty
+      required: false
+      selector:
+        text:

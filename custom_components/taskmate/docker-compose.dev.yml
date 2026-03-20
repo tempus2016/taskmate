@@ -1,0 +1,13 @@
+services:
+  homeassistant:
+    container_name: choremander-dev
+    image: ghcr.io/home-assistant/home-assistant:stable
+    volumes:
+      - ./dev/config:/config
+      - ./custom_components/choremander:/config/custom_components/choremander:ro
+      - ./custom_components/choremander/www:/config/www/choremander:ro
+    ports:
+      - "8123:8123"
+    environment:
+      - TZ=America/Los_Angeles
+    restart: "no"

@@ -1,0 +1,16 @@
+homeassistant:
+  name: Choremander Dev
+  latitude: 37.7749
+  longitude: -122.4194
+  elevation: 0
+  unit_system: imperial
+  time_zone: America/Los_Angeles
+  currency: USD
+  country: US
+
+default_config:
+
+logger:
+  default: info
+  logs:
+    custom_components.choremander: debug
