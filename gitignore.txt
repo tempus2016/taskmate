@@ -1,0 +1,27 @@
+*.swp
+
+# Dev environment - generated files
+dev/config/.storage/auth
+dev/config/.storage/auth_provider.homeassistant
+dev/config/.storage/core.restore_state
+dev/config/custom_components/
+dev/config/home-assistant_v2.db
+dev/config/home-assistant_v2.db-shm
+dev/config/home-assistant_v2.db-wal
+dev/config/home-assistant.log
+dev/config/home-assistant.log.*
+dev/config/.storage/http
+dev/config/.ha_run.lock
+dev/config/.HA_VERSION
+dev/config/tts/
+dev/config/blueprints/
+dev/config/.cloud/
+
+# Keep the static storage files
+!dev/config/.storage/onboarding
+!dev/config/.storage/core.config
+!dev/config/.storage/core.config_entries
+!dev/config/.storage/lovelace_resources
+!dev/config/.storage/lovelace_dashboards
+!dev/config/.storage/lovelace.test_dashboard
+!dev/config/.storage/choremander.*
