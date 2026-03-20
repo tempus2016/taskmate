@@ -249,7 +249,7 @@ child_id: a8c8376a
 
 ---
 
-## New Cards (v1.0.5)
+## New Cards (v1.0.0)
 
 Eight new cards are available in addition to the originals:
 
