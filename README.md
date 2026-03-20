@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="/logo.svg" alt="TaskMate" width="180">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/logo.svg" alt="TaskMate" width="180">
 </p>
 
 <h1 align="center">TaskMate</h1>
@@ -48,7 +48,7 @@ Not all chores are equal. Some are easy (brush teeth), others take effort (homew
 - **Jackpot rewards** - Pool stars from all kids toward big family goals (vacation, museum trip, etc.)
 
 <p align="center">
-  <img src="images/rewardsCard.png" alt="Rewards Card" width="350">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/rewardsCard.png" alt="Rewards Card" width="350">
 </p>
 
 ---
@@ -69,7 +69,7 @@ Not all chores are equal. Some are easy (brush teeth), others take effort (homew
 3. Click **Configure** on the integration to manage everything:
 
 <p align="center">
-  <img src="images/settings.png" alt="Settings Menu" width="500">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/settings.png" alt="Settings Menu" width="500">
 </p>
 
 ---
@@ -79,7 +79,7 @@ Not all chores are equal. Some are easy (brush teeth), others take effort (homew
 ### Chores
 
 <p align="center">
-  <img src="images/editChore.png" alt="Edit Chore" width="400">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/editChore.png" alt="Edit Chore" width="400">
 </p>
 
 | Feature | Description |
@@ -156,7 +156,7 @@ lovelace:
 Kid-friendly interface with big colorful buttons and celebration sounds. This is the primary way children interact with their chores.
 
 <p align="center">
-  <img src="images/kidCard.png" alt="Kid Card" width="300">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/kidCard.png" alt="Kid Card" width="300">
 </p>
 
 **Visual Editor:** Add `custom:taskmate-child-card`, then configure the entity (`sensor.taskmate_overview`), select a child, and optionally filter by time of day.
@@ -198,7 +198,7 @@ child_id: 6ddfca70  # Optional: filter to specific child
 Review and approve (or reject) completed chores that require parent approval. Shows pending items grouped by time of day.
 
 <p align="center">
-  <img src="images/pendingApprovals.png" alt="Pending Approvals" width="400">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/pendingApprovals.png" alt="Pending Approvals" width="400">
 </p>
 
 **Visual Editor:** Add `custom:taskmate-approvals-card` and configure the entity.
