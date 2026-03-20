@@ -79,7 +79,7 @@ Not all chores are equal. Some are easy (brush teeth), others take effort (homew
 ### Chores
 
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/editChore.png" alt="Edit Chore" width="400">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/editChore.png" alt="Edit Chore" width="500">
 </p>
 
 | Feature | Description |
@@ -152,6 +152,7 @@ lovelace:
 ### Cards for Kids
 
 #### Child Card
+# Child Card
 
 Kid-friendly interface with big colorful buttons and celebration sounds. This is the primary way children interact with their chores.
 
@@ -161,7 +162,7 @@ Kid-friendly interface with big colorful buttons and celebration sounds. This is
 
 **Visual Editor:** Add `custom:taskmate-child-card`, then configure the entity (`sensor.taskmate_overview`), select a child, and optionally filter by time of day.
 
-<details>
+
 <summary>YAML Example</summary>
 
 ```yaml
@@ -171,7 +172,7 @@ child_id: a8c8376a
 time_category: morning  # Optional: morning, afternoon, evening, night, anytime
 title: My Chores        # Optional
 ```
-</details>
+
 
 #### Rewards Card
 
@@ -179,7 +180,7 @@ Shows all available rewards with progress bars. Displays dynamic pricing indicat
 
 **Visual Editor:** Add `custom:taskmate-rewards-card`, configure the entity, and optionally filter to a specific child.
 
-<details>
+
 <summary>YAML Example</summary>
 
 ```yaml
@@ -187,7 +188,7 @@ type: custom:taskmate-rewards-card
 entity: sensor.taskmate_overview
 child_id: 6ddfca70  # Optional: filter to specific child
 ```
-</details>
+
 
 ---
 
@@ -198,19 +199,19 @@ child_id: 6ddfca70  # Optional: filter to specific child
 Review and approve (or reject) completed chores that require parent approval. Shows pending items grouped by time of day.
 
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/pendingApprovals.png" alt="Pending Approvals" width="400">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/pendingApprovals.png" alt="Pending Approvals" width="500">
 </p>
 
 **Visual Editor:** Add `custom:taskmate-approvals-card` and configure the entity.
 
-<details>
+
 <summary>YAML Example</summary>
 
 ```yaml
 type: custom:taskmate-approvals-card
 entity: sensor.pending_approvals
 ```
-</details>
+
 
 #### Points Card
 
@@ -218,14 +219,14 @@ Manually add bonus points (great job today!) or remove points (consequences). Us
 
 **Visual Editor:** Add `custom:taskmate-points-card` and configure the entity.
 
-<details>
+
 <summary>YAML Example</summary>
 
 ```yaml
 type: custom:taskmate-points-card
 entity: sensor.taskmate_overview
 ```
-</details>
+
 
 #### Reorder Card
 
@@ -233,7 +234,7 @@ Drag-and-drop interface to organize the order chores appear for each child. Cust
 
 **Visual Editor:** Add `custom:taskmate-reorder-card`, configure the entity, and select a child.
 
-<details>
+
 <summary>YAML Example</summary>
 
 ```yaml
@@ -241,7 +242,7 @@ type: custom:taskmate-reorder-card
 entity: sensor.taskmate_overview
 child_id: a8c8376a
 ```
-</details>
+
 
 ---
 
@@ -267,6 +268,73 @@ Eight new cards are available in addition to the originals:
 
 
 ---
+
+## Parent Dashboard Card
+Unified parent control centre with four tabs — Overview (all children's today progress), Approvals (inline approve/reject chore completions), Claims (approve/reject reward claims), and Points (quick +/- buttons per child).
+Visual Editor: Add custom:taskmate-parent-dashboard-card and configure the entity.
+
+<p align="center">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/parent-dashboard.png" alt="Parent Dashboard" width="500">
+</p>
+
+<summary>YAML Example</summary>
+
+```yaml
+type: custom:taskmate-parent-dashboard-card
+entity: sensor.taskmate_overview
+title: Parent Dashboard       # Optional
+quick_points_amount: 5        # Optional: points added/removed per button press
+show_claims: true             # Optional: show the Claims tab
+```
+
+##  Overview Card
+At-a-glance summary of all children showing today's chore progress bars, current points, and a pulsing pending approvals badge.
+Visual Editor: Add custom:taskmate-overview-card and configure the entity.
+
+ <p align="center">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/overview.png" alt="Overview" width="500">
+</p>
+
+<summary>YAML Example</summary>
+  
+```yaml
+type: custom:taskmate-overview-card
+entity: sensor.taskmate_overview
+```
+
+##  Activity Card
+Scrollable timeline of all activity including chore completions, manual point adjustments, and reward claim events. Groups by Today / Yesterday / date.
+Visual Editor: Add custom:taskmate-activity-card and configure the entity.
+
+ <p align="center">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/activity.png" alt="Activity" width="500">
+</p>
+
+<summary>YAML Example</summary>
+
+```yaml
+type: custom:taskmate-activity-card
+entity: sensor.taskmate_overview
+child_id: a8c8376a   # Optional: filter to specific child
+max_items: 30        # Optional: number of items to show
+```
+
+## Streak Card
+Per-child streak display with dot history, current and best streak, and achievement badges for hitting milestones (3, 7, 14, 30 days and more).
+Visual Editor: Add custom:taskmate-streak-card and configure the entity.
+
+ <p align="center">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/streak.png" alt="Streak" width="500">
+</p>
+
+<summary>YAML Example</summary>
+
+```yaml
+type: custom:taskmate-streak-card
+entity: sensor.taskmate_overview
+child_id: a8c8376a   # Optional: filter to specific child
+```
+
 
 ## Smart Reward Pricing
 
