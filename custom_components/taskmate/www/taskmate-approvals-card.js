@@ -1,0 +1,3 @@
+There is no redeem button at all. The _renderRewardRow method renders the cost badge, reward details, progress bar, child badges, and the reward icon container — but there's no button, click handler, or service call anywhere in the card.
+The approvals card has _handleApprove / _handleReject / _callService methods, but the rewards card has none of those equivalents. The reward row is purely display-only.
+You need to add a redeem button. Here's what to add — in _renderRewardRow, replace the closing of the reward-row div (around line 766) with a redeem button:
