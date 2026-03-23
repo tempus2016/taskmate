@@ -70,7 +70,7 @@ Not all chores are equal. Some are easy (brush teeth), others take effort (homew
 3. Click **Configure** on the integration to manage everything:
 
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/settings.png" alt="Settings Menu" width="500">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/settingsPage.png" alt="Settings Menu" width="500">
 </p>
 
 ---
@@ -80,7 +80,7 @@ Not all chores are equal. Some are easy (brush teeth), others take effort (homew
 ### Chores
 
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/editChore.png" alt="Edit Chore" width="500">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/editChores.png" alt="Edit Chore" width="500">
 </p>
 
 | Feature | Description |
