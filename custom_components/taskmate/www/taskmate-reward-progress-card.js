@@ -1,200 +1,243 @@
 /**
- * TaskMate Reward Progress Card
- * Full-screen motivational display showing a single reward's progress.
- * Designed for wall tablets as a persistent motivation display.
+ * TaskMate Rewards Card
+ * A Lovelace card for displaying available rewards.
+ * Shows rewards in a vertical list with star cost, name, description, and progress gauges.
+ * Supports regular rewards, Jackpot rewards, and Dynamic rewards (goal-based pricing).
  *
- * Version: 1.0.0
+ * Version: 0.0.7
+ * Last Updated: 2026-01-07
  */
 
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
+
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
-class TaskMateRewardProgressCard extends LitElement {
+class TaskMateRewardsCard extends LitElement {
   static get properties() {
-    return { hass: { type: Object }, config: { type: Object } };
+    return {
+      hass: { type: Object },
+      config: { type: Object },
+      _loading: { type: Object },
+    };
+  }
+
+  constructor() {
+    super();
+    this._loading = {};
   }
 
   static get styles() {
     return css`
-      :host { display: block; }
+      :host {
+        display: block;
+        --reward-purple: #9b59b6;
+        --reward-purple-light: #a569bd;
+        --reward-gold: #f1c40f;
+        --reward-gold-dark: #d4a80a;
+        --text-primary: var(--primary-text-color, #212121);
+        --text-secondary: var(--secondary-text-color, #757575);
+        --card-bg: var(--card-background-color, #fff);
+        --divider: var(--divider-color, #e0e0e0);
+      }
 
-      ha-card { overflow: hidden; }
+      ha-card {
+        overflow: hidden;
+      }
 
       .card-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 14px 18px;
-        background: linear-gradient(135deg, #2c3e50 0%, #3d5166 100%);
+        padding: 16px 20px;
+        background: linear-gradient(135deg, var(--reward-purple) 0%, var(--reward-purple-light) 100%);
         color: white;
+      }
+
+      .header-content {
+        display: flex;
+        align-items: center;
         gap: 12px;
       }
 
-      .header-content { display: flex; align-items: center; gap: 10px; min-width: 0; }
-      .header-icon { --mdc-icon-size: 26px; opacity: 0.9; flex-shrink: 0; }
-      .header-title {
-        font-size: 1.1rem; font-weight: 600;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      .header-icon {
+        --mdc-icon-size: 32px;
+        opacity: 0.95;
       }
 
-      .card-content { padding: 20px 18px; }
+      .header-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+      }
 
-      /* Reward hero section */
-      .reward-hero {
+      .reward-count {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .card-content {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      /* Individual reward row */
+      .reward-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 16px;
+        background: var(--card-bg);
+        border: 1px solid var(--divider);
+        border-radius: 12px;
+        transition: box-shadow 0.2s ease, transform 0.15s ease;
+      }
+
+      .reward-row:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+      }
+
+      /* Cost badge - prominently displayed */
+      .cost-badge {
         display: flex;
         flex-direction: column;
         align-items: center;
-        text-align: center;
-        padding: 12px 0 20px;
-        gap: 10px;
-      }
-
-      .reward-icon-wrap {
-        width: 90px;
-        height: 90px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
-        display: flex;
-        align-items: center;
         justify-content: center;
-        box-shadow: 0 6px 24px rgba(155,89,182,0.35);
-        animation: hero-float 3s ease-in-out infinite;
+        min-width: 70px;
+        padding: 12px 8px;
+        background: linear-gradient(135deg, var(--reward-gold) 0%, var(--reward-gold-dark) 100%);
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(241, 196, 15, 0.3);
+        flex-shrink: 0;
       }
 
-      @keyframes hero-float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-6px); }
+      .cost-badge ha-icon {
+        --mdc-icon-size: 24px;
+        color: white;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+        margin-bottom: 4px;
       }
 
-      .reward-icon-wrap ha-icon { --mdc-icon-size: 52px; color: white; }
+      .cost-value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        line-height: 1;
+      }
+
+      .cost-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.9);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 2px;
+      }
+
+      /* Reward details */
+      .reward-details {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1;
+        min-width: 0;
+        padding-top: 4px;
+      }
 
       .reward-name {
-        font-size: 1.6rem;
-        font-weight: 700;
-        color: var(--primary-text-color);
-        line-height: 1.2;
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        line-height: 1.3;
       }
 
       .reward-description {
         font-size: 0.9rem;
-        color: var(--secondary-text-color);
-        max-width: 280px;
+        color: var(--text-secondary);
+        line-height: 1.4;
       }
 
-      /* Children progress blocks */
-      .children-section {
+      /* Child assignment indicator */
+      .assigned-children {
         display: flex;
-        flex-direction: column;
-        gap: 16px;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 4px;
       }
 
-      .child-progress-block {
-        background: var(--secondary-background-color, #f8f8f8);
-        border-radius: 16px;
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      .child-progress-header {
-        display: flex;
+      .child-badge {
+        display: inline-flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-      }
-
-      .child-progress-left {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-width: 0;
-      }
-
-      .child-avatar {
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .child-avatar ha-icon { --mdc-icon-size: 24px; color: white; }
-
-      .child-progress-name {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--primary-text-color);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .child-points-label {
-        font-size: 0.8rem;
-        color: var(--secondary-text-color);
-      }
-
-      .child-progress-cost {
-        text-align: right;
-        flex-shrink: 0;
-      }
-
-      .cost-label {
+        padding: 2px 8px;
+        background: rgba(155, 89, 182, 0.15);
+        border-radius: 12px;
         font-size: 0.75rem;
-        color: var(--secondary-text-color);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
+        color: var(--reward-purple);
+        font-weight: 500;
       }
 
-      .cost-value {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: #9b59b6;
-        display: flex;
-        align-items: center;
-        gap: 3px;
-        justify-content: flex-end;
+      .child-badge.all-children {
+        background: rgba(46, 204, 113, 0.15);
+        color: #27ae60;
       }
 
-      .cost-value ha-icon { --mdc-icon-size: 16px; color: #f1c40f; }
-
-      /* Big animated progress bar */
-      .big-progress-wrap {
+      /* Progress bar styles */
+      .progress-section {
         display: flex;
         flex-direction: column;
         gap: 6px;
+        margin-top: 8px;
+        width: 100%;
       }
 
-      .big-progress-bar {
-        height: 22px;
-        background: var(--divider-color, #e0e0e0);
-        border-radius: 11px;
+      .progress-bar-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .progress-bar {
+        flex: 1;
+        height: 14px;
+        background: rgba(0, 0, 0, 0.08);
+        border-radius: 7px;
         overflow: hidden;
         position: relative;
+        border: 2px solid rgba(52, 152, 219, 0.4);
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
       }
 
-      .big-progress-fill {
+      .progress-fill {
         height: 100%;
-        border-radius: 11px;
-        transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        border-radius: 7px;
+        background: linear-gradient(90deg, #3498db 0%, #2ecc71 100%);
+        transition: width 0.4s ease;
         position: relative;
         overflow: hidden;
       }
 
-      .big-progress-fill::after {
+      .progress-fill::after {
         content: '';
         position: absolute;
-        top: 0; left: -100%;
-        width: 60%;
+        top: 0;
+        left: -100%;
+        width: 50%;
         height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.4),
+          transparent
+        );
         animation: shimmer 2s infinite;
       }
 
@@ -203,430 +246,935 @@ class TaskMateRewardProgressCard extends LitElement {
         100% { left: 200%; }
       }
 
-      .big-progress-fill.affordable {
-        background: linear-gradient(90deg, #27ae60, #2ecc71);
-      }
-
-      .big-progress-fill.close {
-        background: linear-gradient(90deg, #e67e22, #f39c12);
-      }
-
-      .big-progress-fill.far {
-        background: linear-gradient(90deg, #9b59b6, #a569bd);
-      }
-
-      .big-progress-fill.complete {
-        background: linear-gradient(90deg, #27ae60, #1abc9c);
-      }
-
-      .progress-stat-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.82rem;
-      }
-
-      .progress-have {
-        font-weight: 600;
-        color: var(--primary-text-color);
-      }
-
-      .progress-need {
-        color: var(--secondary-text-color);
-      }
-
-      .progress-pct {
-        font-weight: 700;
-        font-size: 0.95rem;
-      }
-
-      .progress-pct.affordable { color: #27ae60; }
-      .progress-pct.close { color: #e67e22; }
-      .progress-pct.far { color: #9b59b6; }
-
-      /* Can afford badge */
-      .can-afford-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        background: rgba(46,204,113,0.15);
-        color: #27ae60;
-        border-radius: 20px;
-        padding: 5px 12px;
+      .progress-text {
         font-size: 0.85rem;
-        font-weight: 700;
-        animation: pulse-green 2s ease-in-out infinite;
-        align-self: center;
+        font-weight: 600;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        min-width: 70px;
+        text-align: right;
       }
 
-      .can-afford-badge ha-icon { --mdc-icon-size: 16px; }
-
-      @keyframes pulse-green {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(46,204,113,0.3); }
-        50% { box-shadow: 0 0 0 6px rgba(46,204,113,0); }
+      /* Jackpot reward styles */
+      .reward-row.jackpot {
+        border: 2px solid var(--reward-gold);
+        background: linear-gradient(135deg, rgba(241, 196, 15, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+        position: relative;
+        overflow: hidden;
       }
 
-      /* Jackpot section */
-      .jackpot-badge {
+      .reward-row.jackpot::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          45deg,
+          transparent 40%,
+          rgba(241, 196, 15, 0.1) 50%,
+          transparent 60%
+        );
+        animation: jackpot-shine 40s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      /* Shine 3 times (each ~2.5s = 7.5s total), then wait ~32.5s before repeating */
+      @keyframes jackpot-shine {
+        0% { transform: translateX(-100%); }
+        2.5% { transform: translateX(100%); }
+        5% { transform: translateX(-100%); }
+        7.5% { transform: translateX(100%); }
+        10% { transform: translateX(-100%); }
+        12.5% { transform: translateX(100%); }
+        15%, 100% { transform: translateX(-100%); opacity: 0; }
+      }
+
+      .jackpot-label {
         display: inline-flex;
         align-items: center;
-        gap: 5px;
-        background: linear-gradient(135deg, #f39c12, #f1c40f);
-        color: white;
-        border-radius: 20px;
-        padding: 4px 12px;
-        font-size: 0.8rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        align-self: flex-start;
-      }
-
-      .jackpot-badge ha-icon { --mdc-icon-size: 14px; }
-
-      .jackpot-pool {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        background: rgba(241,196,15,0.08);
-        border: 1px solid rgba(241,196,15,0.25);
+        gap: 4px;
+        padding: 3px 10px;
+        background: linear-gradient(135deg, var(--reward-gold) 0%, #e67e22 100%);
         border-radius: 12px;
-        padding: 12px;
-      }
-
-      .jackpot-pool-title {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: var(--secondary-text-color);
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: white;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+        box-shadow: 0 2px 6px rgba(241, 196, 15, 0.4);
       }
 
-      .jackpot-contributors {
+      .jackpot-label span {
+        font-size: 0.8rem;
+      }
+
+      /* Multi-child progress bar for jackpot */
+      .jackpot-progress-bar {
+        flex: 1;
+        height: 18px;
+        background: rgba(0, 0, 0, 0.08);
+        border-radius: 9px;
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        border: 2px solid rgba(241, 196, 15, 0.5);
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .jackpot-segment {
+        height: 100%;
+        transition: width 0.4s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .jackpot-segment::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.4),
+          transparent
+        );
+        animation: jackpot-segment-shimmer 40s infinite;
+      }
+
+      /* Shimmer 3 times then wait ~30s before repeating */
+      @keyframes jackpot-segment-shimmer {
+        0% { left: -100%; }
+        2.5% { left: 200%; }
+        5% { left: -100%; }
+        7.5% { left: 200%; }
+        10% { left: -100%; }
+        12.5% { left: 200%; }
+        15%, 100% { left: -100%; opacity: 0; }
+      }
+
+      .jackpot-segment:first-child {
+        border-radius: 9px 0 0 9px;
+      }
+
+      .jackpot-segment:last-child {
+        border-radius: 0 9px 9px 0;
+      }
+
+      .jackpot-segment:only-child {
+        border-radius: 9px;
+      }
+
+      /* Fun kid-friendly colors for segments */
+      .jackpot-segment.color-0 { background: linear-gradient(180deg, #ff6b9d 0%, #e91e63 100%); }
+      .jackpot-segment.color-1 { background: linear-gradient(180deg, #64b5f6 0%, #2196f3 100%); }
+      .jackpot-segment.color-2 { background: linear-gradient(180deg, #81c784 0%, #4caf50 100%); }
+      .jackpot-segment.color-3 { background: linear-gradient(180deg, #ffb74d 0%, #ff9800 100%); }
+      .jackpot-segment.color-4 { background: linear-gradient(180deg, #ba68c8 0%, #9c27b0 100%); }
+      .jackpot-segment.color-5 { background: linear-gradient(180deg, #4dd0e1 0%, #00bcd4 100%); }
+
+      .jackpot-breakdown {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 6px;
+        margin-top: 4px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
       }
 
-      .jackpot-contributor {
+      .jackpot-child-contribution {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 8px;
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 10px;
+        font-weight: 500;
+      }
+
+      .jackpot-child-contribution .color-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .jackpot-child-contribution ha-icon {
+        --mdc-icon-size: 13px;
+        vertical-align: middle;
+        position: relative;
+        top: -1px;
+      }
+
+      .jackpot-child-contribution .color-dot.color-0 { background: #e91e63; }
+      .jackpot-child-contribution .color-dot.color-1 { background: #2196f3; }
+      .jackpot-child-contribution .color-dot.color-2 { background: #4caf50; }
+      .jackpot-child-contribution .color-dot.color-3 { background: #ff9800; }
+      .jackpot-child-contribution .color-dot.color-4 { background: #9c27b0; }
+      .jackpot-child-contribution .color-dot.color-5 { background: #00bcd4; }
+
+      .jackpot-total {
+        font-weight: 700;
+        color: var(--reward-gold-dark);
+        padding: 2px 8px;
+        background: rgba(241, 196, 15, 0.15);
+        border-radius: 10px;
+      }
+
+      /* Cost badge for jackpot - special styling */
+      .reward-row.jackpot .cost-badge {
+        background: linear-gradient(135deg, var(--reward-gold) 0%, #e67e22 100%);
+        box-shadow: 0 3px 10px rgba(241, 196, 15, 0.4);
+      }
+
+      /* Dynamic reward styles */
+      .reward-row.dynamic {
+        border: 1px dashed rgba(52, 152, 219, 0.5);
+      }
+
+      .cost-badge.dynamic-cost {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        position: relative;
+      }
+
+      .dynamic-indicator {
+        font-size: 0.9rem;
+        margin-top: 2px;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+      }
+
+      /* Reward icon + claim button wrapper */
+      .reward-right-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .reward-icon-container {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--reward-purple) 0%, var(--reward-purple-light) 100%);
         display: flex;
         align-items: center;
-        gap: 6px;
-        background: var(--card-background-color, #fff);
-        border-radius: 20px;
-        padding: 4px 10px 4px 6px;
-        font-size: 0.82rem;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .reward-icon-container ha-icon {
+        --mdc-icon-size: 24px;
+        color: white;
+      }
+
+      /* Pending approval state */
+      .reward-row.pending-approval {
+        opacity: 0.6;
+        border-left: 3px solid #e67e22;
+      }
+
+      .pending-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(230,126,34,0.12);
+        color: #e67e22;
+        border-radius: 8px;
+        padding: 3px 8px;
+        font-size: 0.75rem;
         font-weight: 600;
-        color: var(--primary-text-color);
+        margin-top: 4px;
       }
 
-      .jackpot-contributor .mini-avatar {
-        width: 22px; height: 22px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #f39c12, #f1c40f);
+      .pending-label ha-icon { --mdc-icon-size: 12px; }
+
+      /* Claim button */
+      .claim-btn {
+        width: 42px; height: 42px;
+        border-radius: 50%; border: none; cursor: pointer;
+        background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        color: white;
         display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 3px 10px rgba(155,89,182,0.35);
+        transition: transform 0.15s, box-shadow 0.15s;
+        flex-shrink: 0;
       }
 
-      .jackpot-contributor .mini-avatar ha-icon { --mdc-icon-size: 13px; color: white; }
+      .claim-btn:hover { transform: scale(1.08); box-shadow: 0 4px 14px rgba(155,89,182,0.45); }
+      .claim-btn:active { transform: scale(0.96); }
+      .claim-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+      .claim-btn ha-icon { --mdc-icon-size: 22px; }
 
-      /* Error / empty */
-      .error-state, .empty-state {
-        display: flex; flex-direction: column; align-items: center;
-        justify-content: center; padding: 40px 20px;
-        color: var(--secondary-text-color); text-align: center;
+      .claim-btn.cant-afford {
+        background: linear-gradient(135deg, #bdc3c7, #95a5a6);
+        box-shadow: none;
+        cursor: not-allowed;
       }
-      .error-state { color: var(--error-color, #f44336); }
-      .error-state ha-icon, .empty-state ha-icon { --mdc-icon-size: 48px; margin-bottom: 12px; opacity: 0.5; }
 
-      /* Responsive */
-      @media (max-width: 480px) {
-        .card-content { padding: 14px 12px; }
-        .reward-icon-wrap { width: 70px; height: 70px; }
-        .reward-icon-wrap ha-icon { --mdc-icon-size: 40px; }
-        .reward-name { font-size: 1.3rem; }
-        .big-progress-bar { height: 18px; border-radius: 9px; }
-        .child-progress-block { padding: 12px; }
+      /* Empty state */
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
+        color: var(--text-secondary);
+        text-align: center;
+      }
+
+      .empty-state ha-icon {
+        --mdc-icon-size: 56px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+        color: var(--reward-purple);
+      }
+
+      .empty-state .message {
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 4px;
+        color: var(--text-primary);
+      }
+
+      .empty-state .submessage {
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+
+      /* Error state */
+      .error-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        color: var(--error-color, #f44336);
+        text-align: center;
+      }
+
+      .error-state ha-icon {
+        --mdc-icon-size: 48px;
+        margin-bottom: 16px;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 400px) {
+        .card-header {
+          padding: 14px 16px;
+        }
+
+        .header-title {
+          font-size: 1.15rem;
+        }
+
+        .card-content {
+          padding: 12px;
+          gap: 10px;
+        }
+
+        .reward-row {
+          padding: 12px;
+          gap: 12px;
+        }
+
+        .cost-badge {
+          min-width: 60px;
+          padding: 10px 6px;
+        }
+
+        .cost-badge ha-icon {
+          --mdc-icon-size: 20px;
+        }
+
+        .cost-value {
+          font-size: 1.2rem;
+        }
+
+        .reward-name {
+          font-size: 1.05rem;
+        }
+
+        .reward-description {
+          font-size: 0.85rem;
+        }
+
+        .reward-icon-container {
+          width: 38px;
+          height: 38px;
+        }
+
+        .reward-icon-container ha-icon {
+          --mdc-icon-size: 20px;
+        }
       }
     `;
   }
 
   setConfig(config) {
-    if (!config.entity) throw new Error("Please define an entity");
+    if (!config.entity) {
+      throw new Error("Please define an entity (taskmate overview sensor)");
+    }
     this.config = {
-      title: "Reward Goal",
-      reward_id: null,
-      child_id: null,
+      title: "Rewards",
+      child_id: null, // Optional: filter rewards for a specific child
+      show_child_badges: true, // Show which children can claim each reward
       ...config,
     };
   }
 
-  getCardSize() { return 5; }
-  static getConfigElement() { return document.createElement("taskmate-reward-progress-card-editor"); }
+  getCardSize() {
+    return 3;
+  }
+
+  static getConfigElement() {
+    return document.createElement("taskmate-rewards-card-editor");
+  }
+
   static getStubConfig() {
-    return { entity: "sensor.taskmate_overview", title: "Reward Goal" };
+    return {
+      entity: "sensor.taskmate_overview",
+      title: "Rewards",
+      child_id: null,
+      show_child_badges: true,
+    };
   }
 
   render() {
-    if (!this.hass || !this.config) return html``;
+    if (!this.hass || !this.config) {
+      return html``;
+    }
 
     const entity = this.hass.states[this.config.entity];
-    if (!entity) return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>Entity not found: ${this.config.entity}</div></div></ha-card>`;
-    if (entity.state === "unavailable" || entity.state === "unknown") return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>TaskMate unavailable</div></div></ha-card>`;
 
-    const rewards = entity.attributes.rewards || [];
+    if (!entity) {
+      return html`
+        <ha-card>
+          <div class="error-state">
+            <ha-icon icon="mdi:alert-circle"></ha-icon>
+            <div>Entity not found: ${this.config.entity}</div>
+          </div>
+        </ha-card>
+      `;
+    }
+
+    const allRewards = entity.attributes.rewards || [];
     const children = entity.attributes.children || [];
     const pointsIcon = entity.attributes.points_icon || "mdi:star";
-    const pointsName = entity.attributes.points_name || "Points";
+    const pointsName = entity.attributes.points_name || "Stars";
 
-    // Pick reward
-    let reward = this.config.reward_id
-      ? rewards.find(r => r.id === this.config.reward_id)
-      : rewards[0];
+    // Filter rewards based on child_id if configured
+    let rewards = allRewards;
+    if (this.config.child_id) {
+      rewards = allRewards.filter((reward) => {
+        const assignedTo = reward.assigned_to || [];
+        // Show reward if assigned_to is empty (available to all) OR contains the child_id
+        return assignedTo.length === 0 || assignedTo.includes(this.config.child_id);
+      });
+    }
 
-    if (!reward) return html`<ha-card><div class="empty-state"><ha-icon icon="mdi:gift-outline"></ha-icon><div>No rewards found</div></div></ha-card>`;
+    // Sort rewards: jackpot first, then by calculated cost ascending within each group
+    const sortedRewards = [...rewards].sort((a, b) => {
+      // Jackpot rewards come first
+      if (a.is_jackpot && !b.is_jackpot) return -1;
+      if (!a.is_jackpot && b.is_jackpot) return 1;
+      // Within same type, sort by calculated cost ascending
+      const aCost = this._getDisplayCost(a, children);
+      const bCost = this._getDisplayCost(b, children);
+      return aCost - bCost;
+    });
 
-    // Which children to show
-    let showChildren = children;
-    if (this.config.child_id) showChildren = children.filter(c => c.id === this.config.child_id);
-    if (reward.assigned_to?.length) showChildren = showChildren.filter(c => reward.assigned_to.includes(c.id));
-    if (!showChildren.length) showChildren = children;
-
-    const isJackpot = reward.is_jackpot;
+    // Create a map of child IDs to names for badge display
+    const childMap = {};
+    children.forEach((child) => {
+      childMap[child.id] = child.name;
+    });
 
     return html`
       <ha-card>
         <div class="card-header">
           <div class="header-content">
-            <ha-icon class="header-icon" icon="mdi:trophy-outline"></ha-icon>
+            <ha-icon class="header-icon" icon="mdi:gift-outline"></ha-icon>
             <span class="header-title">${this.config.title}</span>
           </div>
+          ${rewards.length > 0
+            ? html`<span class="reward-count">${rewards.length} ${rewards.length === 1 ? "reward" : "rewards"}</span>`
+            : ""}
         </div>
-        <div class="card-content">
-          <div class="reward-hero">
-            <div class="reward-icon-wrap">
-              <ha-icon icon="${reward.icon || 'mdi:gift'}"></ha-icon>
-            </div>
-            <div class="reward-name">${reward.name}</div>
-            ${reward.description ? html`<div class="reward-description">${reward.description}</div>` : ''}
-            ${isJackpot ? html`
-              <div class="jackpot-badge">
-                <ha-icon icon="mdi:star-shooting"></ha-icon>
-                Jackpot Reward
-              </div>
-            ` : ''}
-          </div>
 
-          ${isJackpot
-            ? this._renderJackpot(reward, showChildren, pointsIcon, pointsName)
-            : html`
-              <div class="children-section">
-                ${showChildren.map(child => this._renderChildProgress(child, reward, pointsIcon, pointsName))}
-              </div>
-            `}
+        <div class="card-content">
+          ${sortedRewards.length === 0
+            ? this._renderEmptyState()
+            : sortedRewards.map((reward) => this._renderRewardRow(reward, pointsIcon, pointsName, childMap, children))}
         </div>
       </ha-card>
     `;
   }
 
-  _renderChildProgress(child, reward, pointsIcon, pointsName) {
-    const cost = reward.calculated_costs?.[child.id] ?? reward.cost;
-    const have = child.points || 0;
-    const pct = Math.min(100, Math.round((have / cost) * 100));
-    const canAfford = have >= cost;
-    const close = pct >= 70;
-    const cls = canAfford ? "complete" : close ? "close" : "far";
-    const pctCls = canAfford ? "affordable" : close ? "close" : "far";
-
+  _renderEmptyState() {
     return html`
-      <div class="child-progress-block">
-        <div class="child-progress-header">
-          <div class="child-progress-left">
-            <div class="child-avatar">
-              <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
-            </div>
-            <div>
-              <div class="child-progress-name">${child.name}</div>
-              <div class="child-points-label">${have} ${pointsName}</div>
-            </div>
-          </div>
-          <div class="child-progress-cost">
-            <div class="cost-label">Goal</div>
-            <div class="cost-value">
-              <ha-icon icon="${pointsIcon}"></ha-icon>
-              ${cost}
-            </div>
-          </div>
-        </div>
-
-        <div class="big-progress-wrap">
-          <div class="big-progress-bar">
-            <div class="big-progress-fill ${cls}" style="width: ${pct}%"></div>
-          </div>
-          <div class="progress-stat-row">
-            <span class="progress-have">${have} / ${cost} ${pointsName}</span>
-            ${canAfford
-              ? html`<span class="progress-need">🎉 Ready to claim!</span>`
-              : html`<span class="progress-need">${cost - have} more needed</span>`}
-            <span class="progress-pct ${pctCls}">${pct}%</span>
-          </div>
-        </div>
-
-        ${canAfford ? html`
-          <div class="can-afford-badge">
-            <ha-icon icon="mdi:check-circle"></ha-icon>
-            Ready to claim!
-          </div>
-        ` : ''}
+      <div class="empty-state">
+        <ha-icon icon="mdi:gift-off-outline"></ha-icon>
+        <div class="message">No Rewards Available</div>
+        <div class="submessage">Add rewards in TaskMate settings</div>
       </div>
     `;
   }
 
-  _renderJackpot(reward, children, pointsIcon, pointsName) {
-    const cost = reward.calculated_costs
-      ? Object.values(reward.calculated_costs)[0] ?? reward.cost
-      : reward.cost;
+  _renderRewardRow(reward, pointsIcon, pointsName, childMap, children) {
+    const rewardIcon = reward.icon || "mdi:gift";
+    const hasDescription = reward.description && reward.description.trim().length > 0;
+    const assignedTo = reward.assigned_to || [];
+    const showChildBadges = this.config.show_child_badges !== false;
+    const isJackpot = reward.is_jackpot || false;
+    // Dynamic pricing is the default (override_point_value = false means dynamic)
+    const isDynamicPricing = !reward.override_point_value;
+    // Use per-child calculated cost
+    const displayCost = this._getDisplayCost(reward, children);
 
-    const totalHave = children.reduce((s, c) => s + (c.points || 0), 0);
-    const pct = Math.min(100, Math.round((totalHave / cost) * 100));
-    const canAfford = totalHave >= cost;
-    const close = pct >= 70;
-    const cls = canAfford ? "complete" : close ? "close" : "far";
-    const pctCls = canAfford ? "affordable" : close ? "close" : "far";
+    // Get relevant children for this reward
+    const relevantChildren = assignedTo.length === 0
+      ? children
+      : children.filter(c => assignedTo.includes(c.id));
+
+    // Calculate progress
+    let currentStars = 0;
+    let childContributions = [];
+
+    if (isJackpot) {
+      // Jackpot: calculate weighted contributions based on each child's expected share
+      const childDailyPoints = reward.child_daily_points || {};
+      const daysToGoal = reward.days_to_goal || 30;
+      const totalDailyPoints = Object.values(childDailyPoints).reduce((sum, dp) => sum + dp, 0);
+
+      relevantChildren.forEach((child, index) => {
+        const points = child.points || 0;
+        const dailyPoints = childDailyPoints[child.id] || 0;
+        const expectedContribution = dailyPoints * daysToGoal;
+
+        // Calculate weighted progress (0-100% of their expected share)
+        let weightedProgress = 0;
+        if (expectedContribution > 0) {
+          weightedProgress = Math.min((points / expectedContribution) * 100, 100);
+        }
+
+        // Their "share" of the total goal (what % of the jackpot they're responsible for)
+        let shareOfGoal = 0;
+        if (totalDailyPoints > 0) {
+          shareOfGoal = (dailyPoints / totalDailyPoints) * 100;
+        }
+
+        currentStars += points;
+        childContributions.push({
+          name: child.name,
+          points: points,
+          colorIndex: index % 6,
+          expectedContribution: Math.round(expectedContribution),
+          weightedProgress: weightedProgress,
+          shareOfGoal: shareOfGoal,
+          dailyPoints: dailyPoints
+        });
+      });
+    } else {
+      // Regular reward: show progress for filtered child or first assigned child
+      if (this.config.child_id) {
+        const filteredChild = children.find(c => c.id === this.config.child_id);
+        currentStars = filteredChild ? (filteredChild.points || 0) : 0;
+      } else if (relevantChildren.length > 0) {
+        currentStars = relevantChildren[0].points || 0;
+      }
+    }
+
+    const percentage = Math.min((currentStars / displayCost) * 100, 100);
+
+    // Check if this reward has a pending claim
+    const entity = this.hass?.states?.[this.config?.entity];
+    const pendingClaims = entity?.attributes?.pending_reward_claims || [];
+    const childId = this.config?.child_id;
+    const hasPendingClaim = pendingClaims.some(c =>
+      c.reward_id === reward.id && (!childId || c.child_id === childId)
+    );
+
+    // Can the current child afford it? Account for points committed to other pending claims
+    const relevantChild = childId
+      ? children.find(c => c.id === childId)
+      : relevantChildren[0];
+    const committedPoints = relevantChild?.committed_points || 0;
+    const availablePoints = (relevantChild?.points || 0) - committedPoints;
+    const canAfford = relevantChild && availablePoints >= displayCost;
+    const isLoading = this._loading[reward.id];
 
     return html`
-      <div class="children-section">
-        <div class="child-progress-block">
-          <div class="jackpot-pool">
-            <div class="jackpot-pool-title">Combined Points Pool</div>
-            <div class="jackpot-contributors">
-              ${children.map(child => html`
-                <div class="jackpot-contributor">
-                  <div class="mini-avatar">
-                    <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
-                  </div>
-                  <span>${child.name}: ${child.points}</span>
-                </div>
-              `)}
-            </div>
-          </div>
+      <div class="reward-row ${isJackpot ? 'jackpot' : ''} ${isDynamicPricing ? 'dynamic' : ''} ${hasPendingClaim ? 'pending-approval' : ''}">
+        <div class="cost-badge ${isDynamicPricing ? 'dynamic-cost' : ''}">
+          <ha-icon icon="${pointsIcon}"></ha-icon>
+          <span class="cost-value">${displayCost}</span>
+          <span class="cost-label">${pointsName}</span>
+          ${isDynamicPricing ? html`<span class="dynamic-indicator" title="Goal-based reward (${reward.days_to_goal || 30} days)">&#127919;</span>` : ''}
+        </div>
+        <div class="reward-details">
+          ${isJackpot ? html`<div class="jackpot-label"><span>&#127920;</span> JACKPOT</div>` : ''}
+          <div class="reward-name">${reward.name}</div>
+          ${hasDescription
+            ? html`<div class="reward-description">${reward.description}</div>`
+            : ""}
 
-          <div class="child-progress-header" style="margin-top:4px">
-            <div>
-              <div class="child-progress-name">Total Pool</div>
-              <div class="child-points-label">${totalHave} ${pointsName} combined</div>
-            </div>
-            <div class="child-progress-cost">
-              <div class="cost-label">Goal</div>
-              <div class="cost-value">
-                <ha-icon icon="${pointsIcon}"></ha-icon>
-                ${cost}
-              </div>
-            </div>
-          </div>
+          ${isJackpot
+            ? this._renderJackpotProgress(reward, childContributions, currentStars, pointsIcon, displayCost)
+            : this._renderRegularProgress(currentStars, displayCost, percentage, pointsIcon)}
 
-          <div class="big-progress-wrap">
-            <div class="big-progress-bar">
-              <div class="big-progress-fill ${cls}" style="width: ${pct}%"></div>
-            </div>
-            <div class="progress-stat-row">
-              <span class="progress-have">${totalHave} / ${cost} ${pointsName}</span>
-              ${canAfford
-                ? html`<span class="progress-need">🎉 Ready!</span>`
-                : html`<span class="progress-need">${cost - totalHave} more needed</span>`}
-              <span class="progress-pct ${pctCls}">${pct}%</span>
-            </div>
-          </div>
-
-          ${canAfford ? html`
-            <div class="can-afford-badge">
-              <ha-icon icon="mdi:check-circle"></ha-icon>
-              Ready to claim!
+          ${hasPendingClaim ? html`
+            <div class="pending-label">
+              <ha-icon icon="mdi:clock-outline"></ha-icon>
+              Awaiting parent approval
             </div>
           ` : ''}
+
+          ${showChildBadges && !isJackpot
+            ? html`
+                <div class="assigned-children">
+                  ${assignedTo.length === 0
+                    ? html`<span class="child-badge all-children">All Children</span>`
+                    : assignedTo.map(
+                        (childId) =>
+                          html`<span class="child-badge">${childMap[childId] || childId}</span>`
+                      )}
+                </div>
+              `
+            : ""}
+        </div>
+        <div class="reward-right-col">
+          ${!hasPendingClaim && childId ? html`
+            <button
+              class="claim-btn ${!canAfford ? 'cant-afford' : ''}"
+              ?disabled="${!canAfford || isLoading}"
+              @click="${(e) => { e.stopPropagation(); this._handleClaim(reward, relevantChild); }}"
+              title="${canAfford ? 'Claim reward' : 'Not enough points'}"
+            >
+              <ha-icon icon="${isLoading ? 'mdi:loading' : rewardIcon}"></ha-icon>
+            </button>
+          ` : html`
+            <div class="reward-icon-container">
+              <ha-icon icon="${rewardIcon}"></ha-icon>
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  async _handleClaim(reward, child) {
+    if (!child || !reward) return;
+    this._loading = { ...this._loading, [reward.id]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "claim_reward", {
+        reward_id: reward.id,
+        child_id: child.id,
+      });
+    } catch (e) {
+      console.error("Failed to claim reward:", e);
+    } finally {
+      this._loading = { ...this._loading, [reward.id]: false };
+      this.requestUpdate();
+    }
+  }
+
+  _renderRegularProgress(currentStars, cost, percentage, pointsIcon) {
+    return html`
+      <div class="progress-section">
+        <div class="progress-bar-container">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${percentage}%"></div>
+          </div>
+          <span class="progress-text">${currentStars}/${cost} <ha-icon icon="${pointsIcon}" style="--mdc-icon-size: 14px;"></ha-icon></span>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Get the display cost for a reward based on child context.
+   * For non-jackpot rewards, each child has their own calculated cost.
+   * For jackpot rewards, all children share the same cost.
+   */
+  _getDisplayCost(reward, children) {
+    const calculatedCosts = reward.calculated_costs || {};
+
+    // If override_point_value is true, use manual cost
+    if (reward.override_point_value) {
+      return reward.cost;
+    }
+
+    // If filtering by a specific child, get that child's cost
+    if (this.config.child_id && calculatedCosts[this.config.child_id]) {
+      return calculatedCosts[this.config.child_id];
+    }
+
+    // For jackpot rewards, all children have the same cost - return first value
+    if (reward.is_jackpot) {
+      const costs = Object.values(calculatedCosts);
+      if (costs.length > 0) {
+        return costs[0];
+      }
+    }
+
+    // For non-jackpot without specific child filter, get the first relevant child's cost
+    const assignedTo = reward.assigned_to || [];
+    if (assignedTo.length === 0) {
+      // Available to all children - get first child's cost
+      if (children.length > 0 && calculatedCosts[children[0].id]) {
+        return calculatedCosts[children[0].id];
+      }
+    } else {
+      // Get first assigned child's cost
+      for (const childId of assignedTo) {
+        if (calculatedCosts[childId]) {
+          return calculatedCosts[childId];
+        }
+      }
+    }
+
+    // Fallback to manual cost
+    return reward.cost;
+  }
+
+  _renderJackpotProgress(reward, childContributions, totalStars, pointsIcon, displayCost) {
+    const cost = displayCost || reward.cost;
+
+    // For weighted display: each child's segment shows their progress toward their expected share
+    // The meter shows how much of their "responsibility" each child has fulfilled
+    const hasWeightedData = childContributions.some(c => c.expectedContribution > 0);
+
+    // Calculate weighted segments - each segment width = (child's share of goal) * (their progress %)
+    // This way, if a child has 50% share and is at 100% progress, they fill 50% of the bar
+    const segments = childContributions.map((contrib) => {
+      let width = 0;
+      if (hasWeightedData && contrib.shareOfGoal > 0) {
+        // Weighted: segment width = share of goal * progress percentage
+        // e.g., 40% share at 50% progress = 20% of bar filled
+        width = (contrib.shareOfGoal / 100) * (contrib.weightedProgress / 100) * 100;
+      } else {
+        // Fallback: raw contribution relative to cost
+        width = Math.min((contrib.points / cost) * 100, 100);
+      }
+      return {
+        ...contrib,
+        width: width
+      };
+    });
+
+    // Calculate total percentage for display
+    const totalPercentage = Math.min((totalStars / cost) * 100, 100);
+
+    return html`
+      <div class="progress-section">
+        <div class="progress-bar-container">
+          <div class="jackpot-progress-bar">
+            ${segments.map((seg) => html`
+              <div class="jackpot-segment color-${seg.colorIndex}"
+                   style="width: ${seg.width}%"></div>
+            `)}
+          </div>
+          <span class="progress-text">${totalStars}/${cost} <ha-icon icon="${pointsIcon}" style="--mdc-icon-size: 14px;"></ha-icon></span>
+        </div>
+        <div class="jackpot-breakdown">
+          ${childContributions.map((contrib) => html`
+            <span class="jackpot-child-contribution">
+              <span class="color-dot color-${contrib.colorIndex}"></span>
+              <strong>${contrib.name}</strong>:
+              ${contrib.points}
+              <ha-icon icon="${pointsIcon}" style="--mdc-icon-size: 12px;"></ha-icon>
+              ${hasWeightedData && contrib.expectedContribution > 0 ? html`
+                <span class="jackpot-pct">(${Math.round(contrib.weightedProgress)}%)</span>
+              ` : ''}
+            </span>
+          `)}
         </div>
       </div>
     `;
   }
 }
 
-class TaskMateRewardProgressCardEditor extends LitElement {
+// Card Editor for visual configuration in Lovelace UI
+class TaskMateRewardsCardEditor extends LitElement {
   static get properties() {
-    return { hass: { type: Object }, config: { type: Object } };
+    return {
+      hass: { type: Object },
+      config: { type: Object },
+    };
   }
 
   static get styles() {
     return css`
-      :host { display: block; padding: 4px 0; }
-      ha-textfield { width: 100%; margin-bottom: 8px; }
-      .field-row { margin-bottom: 16px; }
-      .field-label { display: block; font-size: 12px; font-weight: 500; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; padding: 0 4px; }
-      .field-select { display: block; width: 100%; padding: 10px 12px; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; background: var(--card-background-color, #fff); color: var(--primary-text-color); font-size: 14px; box-sizing: border-box; cursor: pointer; appearance: auto; }
-      .field-select:focus { outline: none; border-color: var(--primary-color); border-width: 2px; }
-      .field-helper { display: block; font-size: 11px; color: var(--secondary-text-color); margin-top: 5px; padding: 0 4px; }
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 500;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 1em;
+        box-sizing: border-box;
+      }
+
+      .form-group input[type="text"]:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+      }
+
+      .form-group select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 1em;
+        box-sizing: border-box;
+      }
+
+      .form-group label input[type="checkbox"] {
+        margin-right: 8px;
+      }
+
+      .form-group small {
+        display: block;
+        margin-top: 4px;
+        color: var(--secondary-text-color);
+        font-size: 0.85em;
+      }
     `;
   }
 
-  setConfig(config) { this.config = config; }
+  setConfig(config) {
+    this.config = config;
+  }
 
   render() {
-    if (!this.hass || !this.config) return html``;
+    if (!this.hass || !this.config) {
+      return html``;
+    }
+
+    // Get children from the entity for the dropdown
     const entity = this.config.entity ? this.hass.states[this.config.entity] : null;
-    const rewards = entity?.attributes?.rewards || [];
     const children = entity?.attributes?.children || [];
 
     return html`
-      <ha-textfield
-        label="Overview Entity"
-        .value="${this.config.entity || ''}"
-        @change="${e => this._update('entity', e.target.value)}"
-        helper="The TaskMate overview sensor"
-        helperPersistent
-        placeholder="sensor.taskmate_overview"
-      ></ha-textfield>
-
-      <ha-textfield
-        label="Card Title"
-        .value="${this.config.title || ''}"
-        @change="${e => this._update('title', e.target.value)}"
-        placeholder="Reward Goal"
-      ></ha-textfield>
-
-      <div class="field-row">
-        <label class="field-label">Reward to display</label>
-        <select class="field-select" @change="${e => this._update('reward_id', e.target.value || null)}">
-          <option value="" ?selected="${!this.config.reward_id}">First available reward</option>
-          ${rewards.map(r => html`<option value="${r.id}" ?selected="${this.config.reward_id === r.id}">${r.name}</option>`)}
-        </select>
-        <span class="field-helper">Which reward to show progress for</span>
+      <div class="form-group">
+        <label>Entity</label>
+        <input
+          type="text"
+          .value="${this.config.entity || ""}"
+          @input="${this._entityChanged}"
+          placeholder="sensor.taskmate_overview"
+        />
+        <small>The TaskMate overview sensor entity</small>
       </div>
 
-      <div class="field-row">
-        <label class="field-label">Filter by Child (optional)</label>
-        <select class="field-select" @change="${e => this._update('child_id', e.target.value || null)}">
-          <option value="" ?selected="${!this.config.child_id}">All assigned children</option>
-          ${children.map(c => html`<option value="${c.id}" ?selected="${this.config.child_id === c.id}">${c.name}</option>`)}
+      <div class="form-group">
+        <label>Title</label>
+        <input
+          type="text"
+          .value="${this.config.title || ""}"
+          @input="${this._titleChanged}"
+          placeholder="Rewards"
+        />
+        <small>Card title displayed in the header (default: "Rewards")</small>
+      </div>
+
+      <div class="form-group">
+        <label>Filter by Child</label>
+        <select @change="${this._childIdChanged}">
+          <option value="" ?selected="${!this.config.child_id}">All Children</option>
+          ${children.map(
+            (child) => html`
+              <option value="${child.id}" ?selected="${this.config.child_id === child.id}">
+                ${child.name}
+              </option>
+            `
+          )}
         </select>
-        <span class="field-helper">Show only this child's progress</span>
+        <small>Only show rewards available to this child (leave empty for all rewards)</small>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input
+            type="checkbox"
+            ?checked="${this.config.show_child_badges !== false}"
+            @change="${this._showChildBadgesChanged}"
+          />
+          Show child assignment badges
+        </label>
+        <small>Display which children can claim each reward</small>
       </div>
     `;
   }
 
-  _update(key, value) {
-    const cfg = { ...this.config, [key]: value };
-    if (!value) delete cfg[key];
-    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: cfg }, bubbles: true, composed: true }));
+  _entityChanged(e) {
+    this._updateConfig("entity", e.target.value);
+  }
+
+  _titleChanged(e) {
+    this._updateConfig("title", e.target.value);
+  }
+
+  _childIdChanged(e) {
+    const value = e.detail?.value ?? e.target?.value;
+    this._updateConfig("child_id", value || null);
+  }
+
+  _showChildBadgesChanged(e) {
+    this._updateConfig("show_child_badges", e.target.checked);
+  }
+
+  _updateConfig(key, value) {
+    const newConfig = { ...this.config, [key]: value };
+    if (value === undefined || value === "" || value === null) {
+      delete newConfig[key];
+    }
+    const event = new CustomEvent("config-changed", {
+      detail: { config: newConfig },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
   }
 }
 
-customElements.define("taskmate-reward-progress-card", TaskMateRewardProgressCard);
-customElements.define("taskmate-reward-progress-card-editor", TaskMateRewardProgressCardEditor);
+// Register the cards
+customElements.define("taskmate-rewards-card", TaskMateRewardsCard);
+customElements.define("taskmate-rewards-card-editor", TaskMateRewardsCardEditor);
 
+// Register with Home Assistant
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "taskmate-reward-progress-card",
-  name: "TaskMate Reward Progress",
-  description: "Full-screen motivational reward progress display",
+  type: "taskmate-rewards-card",
+  name: "TaskMate Rewards Card",
+  description: "A card displaying available rewards with star costs",
   preview: true,
 });
 
-console.info("%c TASKMATE-REWARD-PROGRESS-CARD %c v1.0.0 ", "background:#2c3e50;color:white;font-weight:bold;border-radius:4px 0 0 4px;", "background:#9b59b6;color:white;font-weight:bold;border-radius:0 4px 4px 0;");
+console.info(
+  "%c TASKMATE-REWARDS-CARD %c v0.0.7 ",
+  "background: #9b59b6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;",
+  "background: #f1c40f; color: #333; font-weight: bold; border-radius: 0 4px 4px 0;"
+);
