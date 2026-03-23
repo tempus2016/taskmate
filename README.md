@@ -189,28 +189,28 @@ Children earn a bonus when they complete at least one chore every day Monday–S
 ---
 
 ## Notifications
- 
+
 TaskMate can notify parents when a chore requiring approval has been completed.
- 
+
 ### How It Works
- 
+
 When a child completes a chore that has **Requires Approval** turned on:
- 
+
 1. A **persistent notification** is always created in HA — visible in the notification bell in the sidebar
 2. If a **Notification Service** is configured in Settings, a push notification is also sent
- 
+
 ### Configuring Push Notifications
- 
+
 Go to **Settings → Integrations → TaskMate → Configure → Settings → Notification Service** and enter your notify service:
- 
+
 ```
 notify.mobile_app_your_phone
 ```
- 
+
 Leave empty to use persistent notifications only.
- 
-> **Tip:** Use `binary_sensor.taskmate_has_pending_approvals` in your own automations for more customised notification logic — see <a href="https://github.com/tempus2016/taskmate/wiki">Automation Examples</a>.
- 
+
+> **Tip:** Use `binary_sensor.taskmate_has_pending_approvals` in your own automations for more customised notification logic — see [Automations](#automations--examples).
+
 ---
 
 ## Dashboard Cards
@@ -265,7 +265,7 @@ header_color: "#9b59b6"
 Shows all available rewards with progress bars and claim buttons. After claiming, the button shows "Awaiting parent approval" until approved. Jackpot rewards show a colour-coded contribution bar per child.
 
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/rewardCard.png" alt="Settings Menu" width="500">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/rewardCard.png" alt="Rewards Card" width="500">
 </p>
 
 ```yaml
@@ -301,13 +301,18 @@ header_color: "#27ae60"
 Manually award bonus points or deduct points for consequences — useful for situations outside the normal chore flow.
 
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/managePoints.png" alt="Settings Menu" width="500">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/managePoints.png" alt="Manage Points" width="500">
 </p>
+
+Each child row shows two rows of quick-tap buttons — one for adding, one for removing. Tap a button to apply instantly with no dialog. The `⋯` button opens a dialog for a custom amount with an optional reason.
 
 ```yaml
 type: custom:taskmate-points-card
 entity: sensor.taskmate_overview
 title: Manage Points
+quick_add_amounts: [1, 5, 10]      # configurable add buttons
+quick_remove_amounts: [1, 5, 10]   # configurable remove buttons
+show_dialog: true                  # show ⋯ for custom amount + reason
 header_color: "#2980b9"
 ```
 
@@ -315,11 +320,11 @@ header_color: "#2980b9"
 
 ### Reorder Card
 
-Drag-and-drop interface to set the order chores appear for each child. Saves per-child.
+Drag-and-drop interface to set the order chores appear for each child.
 
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/reorderCard.png" alt="Settings Menu" width="500">
-</p>
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/reorderCard.png" alt="Reorder Card" width="500">
+</p> Saves per-child.
 
 ```yaml
 type: custom:taskmate-reorder-card
@@ -357,7 +362,7 @@ header_color: "#c0392b"
 
 ### Overview Card
 
-At-a-glance view of every child — today's chore progress bars, current points, and a pulsing red badge when approvals are pending.
+At-a-glance view of every child — today's chore progress bars, current points, and a pulsing red badge when approvals are pending. Progress counts only chores due today — chores with `due_days` set are excluded from the total on days they are not scheduled.
 
 <p align="center">
   <img src="https://github.com/tempus2016/taskmate/blob/main/images/overview.png" alt="Overview" width="500">
@@ -410,11 +415,11 @@ header_color: "#e74c3c"
 
 ### Weekly Card
 
-Monday–Sunday bar chart with headline stats (chores completed, points earned, days active). Counts only approved completions.
+Monday–Sunday bar chart
 
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/weeklyCard.png" alt="Settings Menu" width="500">
-</p>
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/weeklyCard.png" alt="Weekly Card" width="500">
+</p> with headline stats (chores completed, points earned, days active). Counts only approved completions.
 
 ```yaml
 type: custom:taskmate-weekly-card
@@ -427,11 +432,11 @@ header_color: "#27ae60"
 
 ### Points Graph Card
 
-Canvas-based line graph of points over time. Supports multiple children with colour-coded lines and a hover/touch tooltip.
+Canvas-based line graph
 
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/pointsGraph.png" alt="Settings Menu" width="500">
-</p>
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/pointsGraph.png" alt="Points Graph" width="500">
+</p> of points over time. Supports multiple children with colour-coded lines and a hover/touch tooltip.
 
 ```yaml
 type: custom:taskmate-graph-card
@@ -445,11 +450,11 @@ header_color: "#d35400"
 
 ### Reward Progress Card
 
-Full-screen motivational display for a single reward — animated progress bar, floating reward icon, and a pulsing "Ready to claim!" badge. Designed for wall-mounted tablets.
+Full-screen motivational display
 
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/rewardProgressCard.png" alt="Settings Menu" width="500">
-</p>
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/rewardProgressCard.png" alt="Reward Progress" width="500">
+</p> for a single reward — animated progress bar, floating reward icon, and a pulsing "Ready to claim!" badge. Designed for wall-mounted tablets.
 
 ```yaml
 type: custom:taskmate-reward-progress-card
@@ -464,11 +469,11 @@ header_color: "#7d3c98"
 
 ### Leaderboard Card
 
-Competitive ranking of all children. Top 3 get gold/silver/bronze styling. For single-child households, automatically shows a personal bests display instead.
+Competitive ranking
 
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/leaderboardCard.png" alt="Settings Menu" width="500">
-</p>
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/leaderboardCard.png" alt="Leaderboard" width="500">
+</p> of all children. Top 3 get gold/silver/bronze styling. For single-child households, automatically shows a personal bests display instead.
 
 ```yaml
 type: custom:taskmate-leaderboard-card
@@ -597,7 +602,7 @@ Alternatively, IDs are visible in the URL when editing a child or reward in the 
 - If Streak Reset Mode is set to `reset`, missing a single day resets the streak to 0
 
 **Resources keep disappearing after restart**
-- Update to v1.1.2 or later — earlier versions had a bug where the resource manager deleted entries it didn't recognise
+- Update to v1.1.6 or later — a fix in v1.1.6 resolves a deeper root cause where resources were being wiped on startup by Lovelace's own storage load
 
 ---
 
