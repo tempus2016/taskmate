@@ -245,7 +245,8 @@ class TaskMateStreakCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="card-header" style="background: ${this.config.header_color || '#e74c3c'} !important;">
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#e74c3c'}; }</style>
+        <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:fire"></ha-icon>
             <span class="header-title">${this.config.title}</span>

@@ -275,7 +275,8 @@ class TaskMateGraphCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="card-header" style="background: ${this.config.header_color || '#d35400'} !important;">
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#d35400'}; }</style>
+        <div class="card-header">
           <div class="header-left">
             <ha-icon class="header-icon" icon="mdi:chart-line"></ha-icon>
             <span class="header-title">${this.config.title}</span>

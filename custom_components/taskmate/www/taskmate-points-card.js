@@ -569,7 +569,8 @@ class TaskMatePointsCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="card-header" style="background: ${this.config.header_color || '#2980b9'} !important;">
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#2980b9'}; }</style>
+        <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="${pointsIcon}"></ha-icon>
             <span class="header-title">${this.config.title}</span>

@@ -387,7 +387,8 @@ class TaskMateParentDashboardCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="card-header" style="background: ${this.config.header_color || '#c0392b'} !important;">
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#c0392b'}; }</style>
+        <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:shield-account"></ha-icon>
             <span class="header-title">${this.config.title}</span>

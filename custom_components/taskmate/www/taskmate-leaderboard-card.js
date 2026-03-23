@@ -264,7 +264,8 @@ class TaskMateLeaderboardCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="card-header" style="background: ${this.config.header_color || '#b7950b'} !important;">
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#b7950b'}; }</style>
+        <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:trophy"></ha-icon>
             <span class="header-title">${this.config.title}</span>
@@ -362,6 +363,7 @@ class TaskMateLeaderboardCard extends LitElement {
 
     return html`
       <ha-card>
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#b7950b'}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:trophy"></ha-icon>

@@ -270,7 +270,7 @@ class TaskMateActivityCard extends LitElement {
     if (events.length === 0) {
       return html`
         <ha-card>
-          <div class="card-header" style="background: ${this.config.header_color || '#2471a3'} !important;">
+          <div class="card-header">
             <div class="header-content">
               <ha-icon class="header-icon" icon="mdi:timeline-clock"></ha-icon>
               <span class="header-title">${this.config.title}</span>
@@ -290,6 +290,7 @@ class TaskMateActivityCard extends LitElement {
 
     return html`
       <ha-card>
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#2471a3'}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:timeline-clock"></ha-icon>

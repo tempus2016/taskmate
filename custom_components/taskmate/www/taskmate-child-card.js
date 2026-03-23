@@ -1170,7 +1170,8 @@ class TaskMateChildCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="card-header" style="background: ${this.config.header_color || '#9b59b6'} !important;">
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#9b59b6'}; }</style>
+        <div class="card-header">
           <div class="header-left">
             <div class="avatar-container">
               <ha-icon icon="${avatar}"></ha-icon>

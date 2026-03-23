@@ -699,7 +699,8 @@ class TaskMateRewardsCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="card-header" style="background: ${this.config.header_color || '#e67e22'} !important;">
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#e67e22'}; }</style>
+        <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:gift-outline"></ha-icon>
             <span class="header-title">${this.config.title}</span>

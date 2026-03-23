@@ -593,7 +593,7 @@ class TaskMateReorderCard extends LitElement {
     if (childChores.length === 0) {
       return html`
         <ha-card>
-          <div class="card-header" style="background: ${this.config.header_color || '#16a085'} !important;">
+          <div class="card-header">
             <div class="header-left">
               <ha-icon class="header-icon" icon="mdi:sort"></ha-icon>
               <span class="card-title">${this.config.title}</span>
@@ -614,6 +614,7 @@ class TaskMateReorderCard extends LitElement {
 
     return html`
       <ha-card>
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#16a085'}; }</style>
         <div class="card-header">
           <div class="header-left">
             <ha-icon class="header-icon" icon="mdi:sort"></ha-icon>

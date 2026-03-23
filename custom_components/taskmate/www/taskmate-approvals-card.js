@@ -344,7 +344,8 @@ class TaskMateApprovalsCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="card-header" style="background: ${this.config.header_color || '#27ae60'} !important;">
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#27ae60'}; }</style>
+        <div class="card-header">
           <div class="header-left">
             <ha-icon class="header-icon" icon="mdi:check-circle-outline"></ha-icon>
             <span class="card-title">${this.config.title}</span>
