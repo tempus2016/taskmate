@@ -540,6 +540,45 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         return self.storage.get_reward(reward_id)
 
     # Chore completion operations
+    async def _async_notify_pending_approval(self, child_name: str, chore_name: str, points: int) -> None:
+        """Fire a persistent notification and optional notify service when approval is needed."""
+        points_name = self.storage.get_points_name()
+        message = f"{child_name} completed '{chore_name}' (+{points} {points_name}) and is waiting for your approval."
+
+        # Always fire a persistent notification
+        self.hass.async_create_task(
+            self.hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": "TaskMate — Approval Needed",
+                    "message": message,
+                    "notification_id": f"taskmate_approval_{child_name}_{chore_name}".replace(" ", "_").lower(),
+                },
+                blocking=False,
+            )
+        )
+
+        # Fire optional notify service if configured
+        notify_service = self.storage.get_setting("notify_service", "")
+        if notify_service:
+            # notify_service should be in format "notify.mobile_app_xxx"
+            domain, service = notify_service.split(".", 1) if "." in notify_service else ("notify", notify_service)
+            try:
+                self.hass.async_create_task(
+                    self.hass.services.async_call(
+                        domain,
+                        service,
+                        {
+                            "title": "TaskMate ✅",
+                            "message": message,
+                        },
+                        blocking=False,
+                    )
+                )
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning("TaskMate: failed to send notification via %s: %s", notify_service, err)
+
     async def async_complete_chore(self, chore_id: str, child_id: str) -> ChoreCompletion:
         """Mark a chore as completed by a child."""
         chore = self.get_chore(chore_id)
@@ -590,6 +629,11 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         self.storage.add_completion(completion)
         await self.storage.async_save()
+
+        # Fire approval notification if chore requires parent sign-off
+        if chore.requires_approval:
+            await self._async_notify_pending_approval(child.name, chore.name, chore.points)
+
         await self.async_refresh()
         return completion
 

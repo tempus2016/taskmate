@@ -755,6 +755,10 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 "perfect_week_bonus",
                 str(int(float(user_input.get("perfect_week_bonus", 50)))),
             )
+            await self.coordinator.async_set_setting(
+                "notify_service",
+                user_input.get("notify_service", "").strip(),
+            )
             return await self.async_step_init()
 
         current_streak_mode = self.coordinator.storage.get_setting("streak_reset_mode", "reset")
@@ -775,6 +779,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             current_perfect_week_bonus = float(self.coordinator.storage.get_setting("perfect_week_bonus", "50"))
         except (ValueError, TypeError):
             current_perfect_week_bonus = 50.0
+        current_notify_service = self.coordinator.storage.get_setting("notify_service", "")
 
         return self.async_show_form(
             step_id="settings",
@@ -846,6 +851,12 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                             step=5,
                             mode=selector.NumberSelectorMode.BOX,
                         )
+                    ),
+                    vol.Optional(
+                        "notify_service",
+                        default=current_notify_service,
+                    ): selector.TextSelector(
+                        selector.TextSelectorConfig(multiline=False)
                     ),
                 }
             ),
