@@ -774,8 +774,13 @@ window.customCards.push({
   preview: true,
 });
 
+// Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM
+const _tmVersion = new URLSearchParams(
+  Array.from(document.querySelectorAll('script[src*="/taskmate-approvals-card.js"]'))
+    .map(s => s.src.split("?")[1]).find(Boolean) || ""
+).get("v") || "?";
 console.info(
-  "%c TASKMATE-APPROVALS-CARD %c Loaded ",
-  "background: #4CAF50; color: white; font-weight: bold;",
-  "background: #ddd; color: #333;"
+  "%c TASKMATE APPROVALS CARD %c v" + _tmVersion + " ",
+  "background:#27ae60;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
+  "background:#2c3e50;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
 );

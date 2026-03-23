@@ -40,6 +40,10 @@ class TaskMateReorderCard extends LitElement {
 
       ha-card { overflow: hidden; }
 
+      ha-card {
+        padding: 16px;
+      }
+
       .card-header {
         display: flex;
         align-items: center;
@@ -984,8 +988,13 @@ window.customCards.push({
   preview: true,
 });
 
+// Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM
+const _tmVersion = new URLSearchParams(
+  Array.from(document.querySelectorAll('script[src*="/taskmate-reorder-card.js"]'))
+    .map(s => s.src.split("?")[1]).find(Boolean) || ""
+).get("v") || "?";
 console.info(
-  "%c TASKMATE-REORDER-CARD %c Loaded ",
-  "background: #3498db; color: white; font-weight: bold; border-radius: 4px 0 0 4px;",
-  "background: #2ecc71; color: white; font-weight: bold; border-radius: 0 4px 4px 0;"
+  "%c TASKMATE REORDER CARD %c v" + _tmVersion + " ",
+  "background:#16a085;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
+  "background:#2c3e50;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
 );
