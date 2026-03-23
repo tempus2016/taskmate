@@ -38,6 +38,8 @@ class TaskMateReorderCard extends LitElement {
         display: block;
       }
 
+      ha-card { overflow: hidden; }
+
       ha-card {
         padding: 16px;
       }
@@ -46,49 +48,66 @@ class TaskMateReorderCard extends LitElement {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding-bottom: 16px;
-        border-bottom: 1px solid var(--divider-color);
-        margin-bottom: 16px;
+        padding: 14px 18px;
+        background: linear-gradient(135deg, #2c3e50 0%, #3d5166 100%);
+        color: white;
+        gap: 12px;
       }
 
       .header-left {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .header-icon {
+        --mdc-icon-size: 22px;
+        opacity: 0.9;
+        flex-shrink: 0;
+        color: white;
       }
 
       .card-title {
-        font-size: 1.3em;
-        font-weight: 500;
-        color: var(--primary-text-color);
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .child-name {
-        font-size: 1em;
-        color: var(--secondary-text-color);
-        padding: 4px 12px;
-        background: var(--secondary-background-color);
-        border-radius: 16px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: rgba(255,255,255,0.85);
+        padding: 3px 10px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
       }
 
       .save-button {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
-        border: none;
+        background: rgba(255,255,255,0.15);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
         border-radius: 8px;
-        padding: 8px 20px;
-        font-size: 0.95em;
-        font-weight: 500;
+        padding: 7px 14px;
+        font-size: 0.85rem;
+        font-weight: 600;
         cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         transition: background 0.2s ease, transform 0.15s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
       }
 
       .save-button:hover:not(:disabled) {
-        background: var(--primary-color);
-        filter: brightness(1.1);
+        background: rgba(255,255,255,0.25);
         transform: scale(1.02);
       }
 
@@ -106,8 +125,8 @@ class TaskMateReorderCard extends LitElement {
       }
 
       @keyframes pulse-save {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(var(--rgb-primary-color), 0.4); }
-        50% { box-shadow: 0 0 0 8px rgba(var(--rgb-primary-color), 0); }
+        0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.3); }
+        50% { box-shadow: 0 0 0 6px rgba(255,255,255,0); }
       }
 
       .save-button ha-icon {
@@ -335,6 +354,10 @@ class TaskMateReorderCard extends LitElement {
       }
 
       /* Status indicator */
+      .card-body {
+        padding: 16px;
+      }
+
       .status-bar {
         display: flex;
         align-items: center;
@@ -571,6 +594,7 @@ class TaskMateReorderCard extends LitElement {
         <ha-card>
           <div class="card-header">
             <div class="header-left">
+              <ha-icon class="header-icon" icon="mdi:sort"></ha-icon>
               <span class="card-title">${this.config.title}</span>
               <span class="child-name">${child.name}</span>
             </div>
@@ -591,6 +615,7 @@ class TaskMateReorderCard extends LitElement {
       <ha-card>
         <div class="card-header">
           <div class="header-left">
+            <ha-icon class="header-icon" icon="mdi:sort"></ha-icon>
             <span class="card-title">${this.config.title}</span>
             <span class="child-name">${child.name}</span>
           </div>
@@ -604,6 +629,7 @@ class TaskMateReorderCard extends LitElement {
           </button>
         </div>
 
+        <div class="card-body">
         ${this._hasChanges
           ? html`
               <div class="status-bar">
