@@ -1956,21 +1956,21 @@ class TaskMateChildCardEditor extends LitElement {
         />
         <span class="check-label">Show debug panel</span>
       </label>
+        <span class="field-helper">Card header background colour</span>
+      </div>
       <div class="field-row">
         <label class="field-label">Header Colour</label>
         <div style="display:flex;align-items:center;gap:10px;">
           <input
             type="color"
-            .value="${this.config.header_color ||  + default_colour + }"
-            @input="${e => this._updateConfig('header_color', e.target.value)}"
+            .value=${this.config.header_color || '#9b59b6'}
+            @input=${e => this._updateConfig('header_color', e.target.value)}
             style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
           />
-          <span style="font-size:13px;color:var(--secondary-text-color);">
-            ${this.config.header_color ||  + default_colour + }
-          </span>
+          <span style="font-size:13px;color:var(--secondary-text-color);">${this.config.header_color || '#9b59b6'}</span>
           <button
             style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
-            @click="${() => this._updateConfig('header_color',  + default_colour + )}"
+            @click=${() => this._updateConfig('header_color', '#9b59b6')}
           >Reset</button>
         </div>
         <span class="field-helper">Card header background colour</span>
