@@ -372,16 +372,31 @@ class TaskMateOverviewCard extends LitElement {
     // Avatar now included directly in children array from the overview sensor
     const avatar = child.avatar || "mdi:account-circle";
 
-    // Chores assigned to this child
+    // Get today's day of week from sensor (e.g. "monday")
+    const entity = this.hass?.states?.[this.config?.entity];
+    const todayDow = entity?.attributes?.today_day_of_week ||
+      new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+
+    // Chores assigned to this child AND due today
     const childChores = chores.filter(c => {
+      // Assignment check
       const at = Array.isArray(c.assigned_to) ? c.assigned_to.map(String) : [];
-      return at.length === 0 || at.includes(String(child.id));
+      const assigned = at.length === 0 || at.includes(String(child.id));
+      if (!assigned) return false;
+
+      // Due days check — if due_days is set, only count if today is in the list
+      const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
+      if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
+
+      return true;
     });
 
     // All completions today for this child
     const childCompletions = completions.filter(c => c.child_id === child.id);
     // Only approved completions count toward progress
-    const childApprovedCompletions = childCompletions.filter(c => c.approved);
+    // Also only count completions for chores that are due today
+    const childChoreIds = new Set(childChores.map(c => c.id));
+    const childApprovedCompletions = childCompletions.filter(c => c.approved && childChoreIds.has(c.chore_id));
     const completedCount = childApprovedCompletions.length;
     const totalChores = childChores.length;
     const percentage = totalChores > 0 ? Math.min((completedCount / totalChores) * 100, 100) : 0;
