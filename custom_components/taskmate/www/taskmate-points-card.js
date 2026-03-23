@@ -201,6 +201,73 @@ class TaskMatePointsCard extends LitElement {
         cursor: not-allowed;
       }
 
+      /* Quick point buttons */
+      .quick-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+
+      .quick-buttons-row {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      .quick-btn {
+        border: none;
+        border-radius: 8px;
+        padding: 5px 9px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+        white-space: nowrap;
+        min-width: 36px;
+        text-align: center;
+        line-height: 1.4;
+      }
+
+      .quick-btn:hover {
+        transform: scale(1.08);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      }
+
+      .quick-btn:active { transform: scale(0.95); }
+
+      .quick-btn.add {
+        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+        color: white;
+      }
+
+      .quick-btn.remove {
+        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+        color: white;
+      }
+
+      .quick-btn.custom {
+        background: var(--secondary-background-color, #f5f5f5);
+        color: var(--primary-text-color);
+        border: 1px solid var(--divider-color, #e0e0e0);
+        font-size: 0.72rem;
+      }
+
+      .quick-btn.custom:hover {
+        background: var(--divider-color, #e0e0e0);
+      }
+
+      .quick-row-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--secondary-text-color);
+        text-align: right;
+        margin-bottom: 1px;
+      }
+
       /* Dialog overlay */
       .dialog-overlay {
         position: fixed;
@@ -625,23 +692,41 @@ class TaskMatePointsCard extends LitElement {
             </div>
           </div>
         </div>
-        <div class="action-buttons">
-          <button
-            class="action-button remove"
-            @click="${() => this._openDialog(child, "remove", pointsIcon, pointsName)}"
-            title="Remove ${pointsName}"
-            ?disabled="${isLoading}"
-          >
-            <ha-icon icon="mdi:minus"></ha-icon>
-          </button>
-          <button
-            class="action-button add"
-            @click="${() => this._openDialog(child, "add", pointsIcon, pointsName)}"
-            title="Add ${pointsName}"
-            ?disabled="${isLoading}"
-          >
-            <ha-icon icon="mdi:plus"></ha-icon>
-          </button>
+        <div class="quick-buttons">
+          ${(() => {
+            const addAmounts = Array.isArray(this.config.quick_add_amounts)
+              ? this.config.quick_add_amounts : [1, 5, 10];
+            const removeAmounts = Array.isArray(this.config.quick_remove_amounts)
+              ? this.config.quick_remove_amounts : [1, 5, 10];
+            return html`
+              <div class="quick-row-label">+ ${pointsName}</div>
+              <div class="quick-buttons-row">
+                ${addAmounts.map(amt => html`
+                  <button class="quick-btn add" ?disabled="${isLoading}"
+                    @click="${(e) => { e.stopPropagation(); this._quickAdjust(child, 'add', amt); }}"
+                    title="Add ${amt} ${pointsName}">+${amt}</button>
+                `)}
+                ${this.config.show_dialog !== false ? html`
+                  <button class="quick-btn custom" ?disabled="${isLoading}"
+                    @click="${() => this._openDialog(child, 'add', pointsIcon, pointsName)}"
+                    title="Custom amount">⋯</button>
+                ` : ''}
+              </div>
+              <div class="quick-row-label">− ${pointsName}</div>
+              <div class="quick-buttons-row">
+                ${removeAmounts.map(amt => html`
+                  <button class="quick-btn remove" ?disabled="${isLoading}"
+                    @click="${(e) => { e.stopPropagation(); this._quickAdjust(child, 'remove', amt); }}"
+                    title="Remove ${amt} ${pointsName}">−${amt}</button>
+                `)}
+                ${this.config.show_dialog !== false ? html`
+                  <button class="quick-btn custom" ?disabled="${isLoading}"
+                    @click="${() => this._openDialog(child, 'remove', pointsIcon, pointsName)}"
+                    title="Custom amount">⋯</button>
+                ` : ''}
+              </div>
+            `;
+          })()}
         </div>
       </div>
     `;
@@ -727,6 +812,32 @@ class TaskMatePointsCard extends LitElement {
         ${message}
       </div>
     `;
+  }
+
+  async _quickAdjust(child, action, amount) {
+    const key = `quick_${child.id}_${action}_${amount}`;
+    if (this._loading[key]) return;
+
+    this._loading = { ...this._loading, [key]: true };
+    this.requestUpdate();
+
+    const entity = this.hass.states[this.config.entity];
+    const pointsName = entity?.attributes?.points_name || 'points';
+    const service = action === 'add' ? 'add_points' : 'remove_points';
+
+    try {
+      await this.hass.callService('taskmate', service, {
+        child_id: child.id,
+        points: amount,
+      });
+      const sign = action === 'add' ? '+' : '−';
+      this._showNotification(`${sign}${amount} ${pointsName} for ${child.name}`, 'success');
+    } catch (error) {
+      this._showNotification(`Failed: ${error.message}`, 'error');
+    } finally {
+      this._loading = { ...this._loading, [key]: false };
+      this.requestUpdate();
+    }
   }
 
   _openDialog(child, action, pointsIcon, pointsName) {
@@ -830,34 +941,98 @@ class TaskMatePointsCardEditor extends LitElement {
 
   static get styles() {
     return css`
-      :host { display: block; }
-      ha-textfield { width: 100%; margin-bottom: 16px; }
+      :host { display: block; padding: 4px 0; }
+      ha-textfield { width: 100%; margin-bottom: 8px; }
+      .field-row { margin-bottom: 16px; }
+      .field-label { display: block; font-size: 12px; font-weight: 500; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; padding: 0 4px; }
+      .field-helper { display: block; font-size: 11px; color: var(--secondary-text-color); margin-top: 5px; padding: 0 4px; line-height: 1.4; }
+      .section-divider { height: 1px; background: var(--divider-color, #e0e0e0); margin: 16px 0; }
+      .check-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; background: var(--card-background-color, #fff); cursor: pointer; user-select: none; margin-bottom: 4px; }
+      .check-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; accent-color: var(--primary-color, #3498db); margin: 0; }
+      .check-label { font-size: 14px; color: var(--primary-text-color); flex: 1; }
+      .amounts-preview { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+      .preview-btn { padding: 3px 9px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; border: none; }
+      .preview-btn.add { background: #43a047; color: white; }
+      .preview-btn.remove { background: #e53935; color: white; }
     `;
   }
 
   setConfig(config) { this.config = config; }
 
+  _parseAmounts(str, defaults) {
+    if (!str) return defaults;
+    return str.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+  }
+
+  _amountsToString(arr) {
+    return Array.isArray(arr) ? arr.join(', ') : '';
+  }
+
   render() {
     if (!this.hass || !this.config) return html``;
+
+    const addAmounts = this.config.quick_add_amounts || [1, 5, 10];
+    const removeAmounts = this.config.quick_remove_amounts || [1, 5, 10];
+
     return html`
       <ha-textfield
         label="Entity"
-        .value="${this.config.entity || ""}"
-        @change="${this._entityChanged}"
+        .value="${this.config.entity || ''}"
+        @change="${e => this._updateConfig('entity', e.target.value)}"
         helper="The TaskMate overview sensor entity"
         helperPersistent
         placeholder="sensor.taskmate_overview"
       ></ha-textfield>
+
       <ha-textfield
         label="Title"
-        .value="${this.config.title || ""}"
-        @change="${this._titleChanged}"
-        helper="Card title displayed in the header"
-        helperPersistent
+        .value="${this.config.title || ''}"
+        @change="${e => this._updateConfig('title', e.target.value)}"
         placeholder="Manage Points"
       ></ha-textfield>
-        <span class="field-helper">Card header background colour</span>
+
+      <div class="section-divider"></div>
+
+      <div class="field-row">
+        <label class="field-label">Add Points Buttons</label>
+        <ha-textfield
+          .value="${this._amountsToString(addAmounts)}"
+          @change="${e => this._updateConfig('quick_add_amounts', this._parseAmounts(e.target.value, [1,5,10]))}"
+          helper="Comma-separated amounts e.g. 1, 2, 5, 10, 25"
+          helperPersistent
+          placeholder="1, 5, 10"
+          style="width:100%;"
+        ></ha-textfield>
+        <div class="amounts-preview">
+          ${addAmounts.map(a => html`<span class="preview-btn add">+${a}</span>`)}
+        </div>
       </div>
+
+      <div class="field-row">
+        <label class="field-label">Remove Points Buttons</label>
+        <ha-textfield
+          .value="${this._amountsToString(removeAmounts)}"
+          @change="${e => this._updateConfig('quick_remove_amounts', this._parseAmounts(e.target.value, [1,5,10]))}"
+          helper="Comma-separated amounts e.g. 1, 2, 5, 10, 25"
+          helperPersistent
+          placeholder="1, 5, 10"
+          style="width:100%;"
+        ></ha-textfield>
+        <div class="amounts-preview">
+          ${removeAmounts.map(a => html`<span class="preview-btn remove">−${a}</span>`)}
+        </div>
+      </div>
+
+      <label class="check-row">
+        <input type="checkbox"
+          ?checked="${this.config.show_dialog !== false}"
+          @change="${e => this._updateConfig('show_dialog', e.target.checked)}"
+        />
+        <span class="check-label">Show ⋯ button for custom amount with reason</span>
+      </label>
+
+      <div class="section-divider"></div>
+
       <div class="field-row">
         <label class="field-label">Header Colour</label>
         <div style="display:flex;align-items:center;gap:10px;">
@@ -878,13 +1053,10 @@ class TaskMatePointsCardEditor extends LitElement {
     `;
   }
 
-  _entityChanged(e) { this._updateConfig("entity", e.target.value); }
-  _titleChanged(e) { this._updateConfig("title", e.target.value); }
-
   _updateConfig(key, value) {
     const newConfig = { ...this.config, [key]: value };
-    if (value === undefined || value === "") delete newConfig[key];
-    this.dispatchEvent(new CustomEvent("config-changed", {
+    if (value === undefined || value === '') delete newConfig[key];
+    this.dispatchEvent(new CustomEvent('config-changed', {
       detail: { config: newConfig }, bubbles: true, composed: true,
     }));
   }
