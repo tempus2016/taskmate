@@ -462,38 +462,35 @@ class TaskMateChildCard extends LitElement {
         white-space: nowrap;
       }
 
-      /* Points pill — right side of header */
+      /* Points pill — right side of header, compact like overview card */
       .points-display {
         display: flex;
-        flex-direction: column;
         align-items: center;
+        gap: 6px;
         background: rgba(255,255,255,0.15);
         border: 1px solid rgba(255,255,255,0.25);
-        padding: 8px 14px;
-        border-radius: 14px;
+        padding: 6px 12px;
+        border-radius: 20px;
         flex-shrink: 0;
-        min-width: 72px;
+        white-space: nowrap;
       }
 
       .stars-row {
         display: flex;
         align-items: center;
         gap: 6px;
-        margin-bottom: 4px;
-        width: 100%;
-        justify-content: center;
       }
 
       .stars-section {
         display: flex;
-        flex-direction: column;
         align-items: center;
+        gap: 4px;
         min-width: 0;
         flex-shrink: 1;
       }
 
       .stars-value {
-        font-size: 1.4rem;
+        font-size: 1.1rem;
         font-weight: 800;
         line-height: 1;
         display: flex;
@@ -507,25 +504,13 @@ class TaskMateChildCard extends LitElement {
 
       .stars-value.waiting-stars {
         color: rgba(255,255,255,0.75);
-        font-size: 1rem;
+        font-size: 0.9rem;
       }
 
-      .stars-value ha-icon { --mdc-icon-size: 18px; flex-shrink: 0; }
+      .stars-value ha-icon { --mdc-icon-size: 16px; flex-shrink: 0; }
 
-      .stars-value.my-stars ha-icon {
-        color: var(--fun-yellow);
-        animation: spin-star 4s linear infinite;
-      }
-
+      .stars-value.my-stars ha-icon { color: var(--fun-yellow); }
       .stars-value.waiting-stars ha-icon { color: var(--fun-orange); }
-
-      @keyframes spin-star {
-        0% { transform: rotate(0deg) scale(1); }
-        25% { transform: rotate(90deg) scale(1.1); }
-        50% { transform: rotate(180deg) scale(1); }
-        75% { transform: rotate(270deg) scale(1.1); }
-        100% { transform: rotate(360deg) scale(1); }
-      }
 
       .stars-label {
         font-size: 0.6rem;
@@ -534,16 +519,14 @@ class TaskMateChildCard extends LitElement {
         letter-spacing: 0.5px;
         white-space: nowrap;
         color: rgba(255,255,255,0.7);
+        display: none;
       }
-
-      .stars-label.my-stars { color: rgba(255,255,255,0.7); }
-      .stars-label.waiting-stars { color: rgba(255,255,255,0.5); }
 
       .stars-divider {
         width: 1px;
-        height: 28px;
-        background: rgba(255,255,255,0.25);
-        margin: 0 6px;
+        height: 18px;
+        background: rgba(255,255,255,0.35);
+        margin: 0 4px;
         flex-shrink: 0;
       }
 
