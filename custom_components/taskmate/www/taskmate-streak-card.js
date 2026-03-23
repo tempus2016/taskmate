@@ -41,7 +41,7 @@ class TaskMateStreakCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: linear-gradient(135deg, var(--str-orange) 0%, var(--str-fire) 100%);
+        background: var(--taskmate-header-bg, #e74c3c);
         color: white;
       }
 
@@ -207,7 +207,8 @@ class TaskMateStreakCard extends LitElement {
       title: "Streaks & Achievements",
       child_id: null,
       streak_days_shown: 14,
-      ...config,
+            header_color: '#e74c3c',
+    ...config,
     };
   }
 
@@ -244,7 +245,7 @@ class TaskMateStreakCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="card-header">
+        <div class="card-header" style="background: ${this.config.header_color || '#e74c3c'} !important;">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:fire"></ha-icon>
             <span class="header-title">${this.config.title}</span>
@@ -458,6 +459,25 @@ class TaskMateStreakCardEditor extends LitElement {
         helper="How many days of dots to show (default: 14)"
         helperPersistent
       ></ha-textfield>
+      <div class="field-row">
+        <label class="field-label">Header Colour</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input
+            type="color"
+            .value="${this.config.header_color ||  + default_colour + }"
+            @input="${e => this._updateConfig('header_color', e.target.value)}"
+            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
+          />
+          <span style="font-size:13px;color:var(--secondary-text-color);">
+            ${this.config.header_color ||  + default_colour + }
+          </span>
+          <button
+            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
+            @click="${() => this._updateConfig('header_color',  + default_colour + )}"
+          >Reset</button>
+        </div>
+        <span class="field-helper">Card header background colour</span>
+      </div>
     `;
   }
 

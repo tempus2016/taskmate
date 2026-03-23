@@ -51,8 +51,8 @@ class TaskMateRewardsCard extends LitElement {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 16px 20px;
-        background: linear-gradient(135deg, var(--reward-purple) 0%, var(--reward-purple-light) 100%);
+        padding: 14px 18px;
+        background: var(--taskmate-header-bg, #e67e22);
         color: white;
       }
 
@@ -404,6 +404,13 @@ class TaskMateRewardsCard extends LitElement {
         flex-shrink: 0;
       }
 
+      .jackpot-child-contribution ha-icon {
+        --mdc-icon-size: 13px;
+        vertical-align: middle;
+        position: relative;
+        top: -1px;
+      }
+
       .jackpot-child-contribution .color-dot.color-0 { background: #e91e63; }
       .jackpot-child-contribution .color-dot.color-1 { background: #2196f3; }
       .jackpot-child-contribution .color-dot.color-2 { background: #4caf50; }
@@ -560,7 +567,7 @@ class TaskMateRewardsCard extends LitElement {
       /* Responsive adjustments */
       @media (max-width: 400px) {
         .card-header {
-          padding: 14px 16px;
+          padding: 14px 18px;
         }
 
         .header-title {
@@ -618,7 +625,8 @@ class TaskMateRewardsCard extends LitElement {
       title: "Rewards",
       child_id: null, // Optional: filter rewards for a specific child
       show_child_badges: true, // Show which children can claim each reward
-      ...config,
+            header_color: '#e67e22',
+    ...config,
     };
   }
 
@@ -691,7 +699,7 @@ class TaskMateRewardsCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="card-header">
+        <div class="card-header" style="background: ${this.config.header_color || '#e67e22'} !important;">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:gift-outline"></ha-icon>
             <span class="header-title">${this.config.title}</span>
@@ -1118,6 +1126,25 @@ class TaskMateRewardsCardEditor extends LitElement {
           Show child assignment badges
         </label>
         <small>Display which children can claim each reward</small>
+      </div>
+      <div class="field-row">
+        <label class="field-label">Header Colour</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input
+            type="color"
+            .value="${this.config.header_color ||  + default_colour + }"
+            @input="${e => this._updateConfig('header_color', e.target.value)}"
+            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
+          />
+          <span style="font-size:13px;color:var(--secondary-text-color);">
+            ${this.config.header_color ||  + default_colour + }
+          </span>
+          <button
+            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
+            @click="${() => this._updateConfig('header_color',  + default_colour + )}"
+          >Reset</button>
+        </div>
+        <span class="field-helper">Card header background colour</span>
       </div>
     `;
   }

@@ -49,8 +49,8 @@ class TaskMatePointsCard extends LitElement {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 16px;
-        background: linear-gradient(135deg, var(--card-primary-color) 0%, #7986cb 100%);
+        padding: 14px 18px;
+        background: var(--taskmate-header-bg, #2980b9);
         color: white;
       }
 
@@ -514,7 +514,8 @@ class TaskMatePointsCard extends LitElement {
     }
     this.config = {
       title: "Manage Points",
-      ...config,
+            header_color: '#2980b9',
+    ...config,
     };
   }
 
@@ -568,7 +569,7 @@ class TaskMatePointsCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="card-header">
+        <div class="card-header" style="background: ${this.config.header_color || '#2980b9'} !important;">
           <div class="header-content">
             <ha-icon class="header-icon" icon="${pointsIcon}"></ha-icon>
             <span class="header-title">${this.config.title}</span>
@@ -854,6 +855,25 @@ class TaskMatePointsCardEditor extends LitElement {
         helperPersistent
         placeholder="Manage Points"
       ></ha-textfield>
+      <div class="field-row">
+        <label class="field-label">Header Colour</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input
+            type="color"
+            .value="${this.config.header_color ||  + default_colour + }"
+            @input="${e => this._updateConfig('header_color', e.target.value)}"
+            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
+          />
+          <span style="font-size:13px;color:var(--secondary-text-color);">
+            ${this.config.header_color ||  + default_colour + }
+          </span>
+          <button
+            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
+            @click="${() => this._updateConfig('header_color',  + default_colour + )}"
+          >Reset</button>
+        </div>
+        <span class="field-helper">Card header background colour</span>
+      </div>
     `;
   }
 

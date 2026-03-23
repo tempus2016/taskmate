@@ -40,12 +40,16 @@ class TaskMateReorderCard extends LitElement {
 
       ha-card { overflow: hidden; }
 
+      ha-card {
+        padding: 16px;
+      }
+
       .card-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: linear-gradient(135deg, #2c3e50 0%, #3d5166 100%);
+        background: var(--taskmate-header-bg, #16a085);
         color: white;
         gap: 12px;
       }
@@ -416,7 +420,8 @@ class TaskMateReorderCard extends LitElement {
     }
     this.config = {
       title: "Reorder Chores",
-      ...config,
+            header_color: '#16a085',
+    ...config,
     };
   }
 
@@ -588,7 +593,7 @@ class TaskMateReorderCard extends LitElement {
     if (childChores.length === 0) {
       return html`
         <ha-card>
-          <div class="card-header">
+          <div class="card-header" style="background: ${this.config.header_color || '#16a085'} !important;">
             <div class="header-left">
               <ha-icon class="header-icon" icon="mdi:sort"></ha-icon>
               <span class="card-title">${this.config.title}</span>
@@ -934,6 +939,25 @@ class TaskMateReorderCardEditor extends LitElement {
         @change="${this._titleChanged}"
         placeholder="Reorder Chores"
       ></ha-textfield>
+      <div class="field-row">
+        <label class="field-label">Header Colour</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input
+            type="color"
+            .value="${this.config.header_color ||  + default_colour + }"
+            @input="${e => this._updateConfig('header_color', e.target.value)}"
+            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
+          />
+          <span style="font-size:13px;color:var(--secondary-text-color);">
+            ${this.config.header_color ||  + default_colour + }
+          </span>
+          <button
+            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
+            @click="${() => this._updateConfig('header_color',  + default_colour + )}"
+          >Reset</button>
+        </div>
+        <span class="field-helper">Card header background colour</span>
+      </div>
     `;
   }
 
