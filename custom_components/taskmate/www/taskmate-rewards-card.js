@@ -21,12 +21,14 @@ class TaskMateRewardsCard extends LitElement {
       hass: { type: Object },
       config: { type: Object },
       _loading: { type: Object },
+      _selectedChildId: { type: String },
     };
   }
 
   constructor() {
     super();
     this._loading = {};
+    this._selectedChildId = null;
   }
 
   static get styles() {
@@ -450,6 +452,34 @@ class TaskMateRewardsCard extends LitElement {
       }
 
       /* Reward icon + claim button wrapper */
+      /* Child picker shown when no child_id configured */
+      .child-picker-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        background: var(--secondary-background-color, #f5f5f5);
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      }
+
+      .child-picker-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--secondary-text-color);
+        white-space: nowrap;
+      }
+
+      .child-picker-select {
+        flex: 1;
+        padding: 5px 8px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        border-radius: 6px;
+        background: var(--card-background-color, #fff);
+        color: var(--primary-text-color);
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+
       .reward-right-col {
         display: flex;
         flex-direction: column;
@@ -798,7 +828,7 @@ class TaskMateRewardsCard extends LitElement {
     // Check if this reward has a pending claim
     const entity = this.hass?.states?.[this.config?.entity];
     const pendingClaims = entity?.attributes?.pending_reward_claims || [];
-    const childId = this.config?.child_id;
+    const childId = this.config?.child_id || this._selectedChildId;
     const hasPendingClaim = pendingClaims.some(c =>
       c.reward_id === reward.id && (!childId || c.child_id === childId)
     );

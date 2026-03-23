@@ -378,7 +378,7 @@ class TaskMateActivityCard extends LitElement {
     // Chore completions and rewards
     const status = item.approved ? "approved" : item.rejected ? "rejected" : "pending";
     const iconMap = {
-      chore: { icon: "mdi:checkbox-marked-circle", cls: status === "approved" ? "approved" : status === "rejected" ? "rejected" : "chore" },
+      chore: { icon: "mdi:checkbox-marked-circle", cls: status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending" },
       reward: { icon: "mdi:gift", cls: "reward" },
     };
     const { icon, cls } = iconMap[type] || iconMap.chore;
@@ -407,7 +407,7 @@ class TaskMateActivityCard extends LitElement {
               </span>
             ` : ''}
             ${type === 'chore' ? html`
-              <span class="activity-status ${status}">${status}</span>
+              <span class="activity-status ${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
             ` : ''}
           </div>
         </div>
