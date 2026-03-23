@@ -2010,7 +2010,6 @@ class TaskMateChildCardEditor extends LitElement {
       <label class="check-row">
         <input type="checkbox"
           ?checked="${this.config.show_countdown !== false}"
-          
           @change="${e => this._updateConfig('show_countdown', e.target.checked)}"
         />
         <span class="check-label">Show reset countdown beside "Today's Chores"</span>
@@ -2018,8 +2017,15 @@ class TaskMateChildCardEditor extends LitElement {
 
       <label class="check-row">
         <input type="checkbox"
+          ?checked="${this.config.show_description === true}"
+          @change="${e => this._updateConfig('show_description', e.target.checked)}"
+        />
+        <span class="check-label">Show chore description</span>
+      </label>
+
+      <label class="check-row">
+        <input type="checkbox"
           ?checked="${this.config.debug === true}"
-          
           @change="${this._debugChanged}"
         />
         <span class="check-label">Show debug panel</span>
