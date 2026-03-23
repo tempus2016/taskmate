@@ -30,33 +30,52 @@ class TaskMateApprovalsCard extends LitElement {
         display: block;
       }
 
-      ha-card {
-        padding: 16px;
-      }
+      ha-card { overflow: hidden; }
 
       .card-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding-bottom: 12px;
-        border-bottom: 1px solid var(--divider-color);
-        margin-bottom: 16px;
+        padding: 14px 18px;
+        background: var(--taskmate-header-bg, #27ae60);
+        color: white;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .header-icon {
+        --mdc-icon-size: 22px;
+        color: white;
+        opacity: 0.9;
+        flex-shrink: 0;
       }
 
       .card-title {
-        font-size: 1.2em;
-        font-weight: 500;
-        color: var(--primary-text-color);
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .pending-count {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
+        background: #e74c3c;
+        color: white;
         border-radius: 12px;
-        padding: 2px 10px;
-        font-size: 0.9em;
-        font-weight: 500;
+        padding: 3px 10px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        flex-shrink: 0;
       }
+
+      .card-content { padding: 16px; }
 
       .day-group {
         margin-bottom: 20px;
@@ -280,6 +299,7 @@ class TaskMateApprovalsCard extends LitElement {
     }
     this.config = {
       title: "Pending Approvals",
+      header_color: '#27ae60',
       ...config,
     };
   }
@@ -324,16 +344,19 @@ class TaskMateApprovalsCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="card-header">
-          <span class="card-title">${this.config.title}</span>
-          ${totalPending > 0
-            ? html`<span class="pending-count">${totalPending}</span>`
-            : ""}
+        <div class="card-header" style="background: ${this.config.header_color || '#27ae60'} !important;">
+          <div class="header-left">
+            <ha-icon class="header-icon" icon="mdi:check-circle-outline"></ha-icon>
+            <span class="card-title">${this.config.title}</span>
+          </div>
+          ${totalPending > 0 ? html`<span class="pending-count">${totalPending}</span>` : ""}
         </div>
 
-        ${totalPending === 0
-          ? this._renderEmptyState()
-          : this._renderApprovals(groupedByDay)}
+        <div class="card-content">
+          ${totalPending === 0
+            ? this._renderEmptyState()
+            : this._renderApprovals(groupedByDay)}
+        </div>
       </ha-card>
     `;
   }
@@ -682,6 +705,23 @@ class TaskMateApprovalsCardEditor extends LitElement {
           placeholder="Leave empty to show all children"
         />
         <small>Filter approvals to a specific child</small>
+      </div>
+      <div class="form-group">
+        <label>Header Colour</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input
+            type="color"
+            .value="${this.config.header_color || ''#27ae60''}"
+            @input="${e => this._updateConfig('header_color', e.target.value)}"
+            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
+          />
+          <span style="font-size:13px;color:var(--secondary-text-color);">${this.config.header_color || '#27ae60'}</span>
+          <button
+            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
+            @click="${() => this._updateConfig('header_color', '#27ae60')}"
+          >Reset</button>
+        </div>
+        <small>Card header background colour</small>
       </div>
     `;
   }
