@@ -549,12 +549,12 @@ class TaskMateChildCard extends LitElement {
 
       /* Chores container */
       .chores-container {
-        padding: 24px;
+        padding: 16px;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 10px;
         background: var(--card-background-color, #fff);
-        min-height: 200px;
+        min-height: 100px;
       }
 
       .section-title {
@@ -575,25 +575,25 @@ class TaskMateChildCard extends LitElement {
       /* Individual chore card - optimized for tablet touch, ENTIRE ROW IS CLICKABLE */
       .chore-card {
         background: var(--card-background-color, #fff);
-        border-radius: 24px;
-        padding: 20px 24px;
+        border-radius: 20px;
+        padding: 16px 18px;
         display: flex;
+        flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        border: 4px solid transparent;
+        flex-wrap: nowrap;
+        gap: 12px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        border: 3px solid transparent;
         transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
         position: relative;
         overflow: hidden;
-        min-height: 80px;
-        /* Prevent text selection on touch */
+        min-height: 68px;
         -webkit-user-select: none;
         user-select: none;
-        /* Smooth touch feedback */
         -webkit-tap-highlight-color: transparent;
-        /* Make entire row clickable */
         cursor: pointer;
+        box-sizing: border-box;
       }
 
       .chore-card:nth-child(odd) {
@@ -647,8 +647,10 @@ class TaskMateChildCard extends LitElement {
       .chore-info {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 12px;
         flex: 1;
+        min-width: 0;
+        overflow: hidden;
       }
 
       /* Chore number wrapper (icon removed) */
@@ -661,14 +663,14 @@ class TaskMateChildCard extends LitElement {
 
       /* Fun chore number badge */
       .chore-number-badge {
-        width: 42px;
-        height: 42px;
-        min-width: 42px;
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.5rem;
+        font-size: 1.3rem;
         font-weight: 800;
         color: white;
         text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
@@ -676,6 +678,7 @@ class TaskMateChildCard extends LitElement {
         transform: rotate(-5deg);
         transition: transform 0.2s ease;
         font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
+        flex-shrink: 0;
       }
 
       .chore-card:hover .chore-number-badge {
@@ -700,10 +703,10 @@ class TaskMateChildCard extends LitElement {
 
       /* Checkbox for chore completion */
       .chore-checkbox {
-        width: 44px;
-        height: 44px;
-        min-width: 44px;
-        border-radius: 12px;
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        border-radius: 10px;
         border: 3px solid var(--divider-color, #bdc3c7);
         background: var(--card-background-color, #fff);
         display: flex;
@@ -712,10 +715,11 @@ class TaskMateChildCard extends LitElement {
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         transition: all 0.2s ease;
         flex-shrink: 0;
+        align-self: center;
       }
 
       .chore-checkbox ha-icon {
-        --mdc-icon-size: 28px;
+        --mdc-icon-size: 24px;
         color: transparent;
         transition: all 0.2s ease;
       }
@@ -746,23 +750,37 @@ class TaskMateChildCard extends LitElement {
       }
 
       .chore-name {
-        font-size: 1.5rem;
-        font-weight: bold;
+        font-size: 1.2rem;
+        font-weight: 700;
         color: var(--primary-text-color);
         line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .chore-description {
+        font-size: 0.82rem;
+        color: var(--secondary-text-color);
+        line-height: 1.3;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        margin-top: 1px;
       }
 
       .chore-points {
         display: flex;
         align-items: center;
-        gap: 8px;
-        font-size: 1.2rem;
+        gap: 6px;
+        font-size: 1rem;
         color: var(--fun-orange);
         font-weight: 600;
+        margin-top: 2px;
       }
 
       .chore-points ha-icon {
-        --mdc-icon-size: 24px;
+        --mdc-icon-size: 18px;
         color: var(--fun-yellow);
       }
 
@@ -1572,6 +1590,9 @@ class TaskMateChildCard extends LitElement {
           </div>
           <div class="chore-details">
             <div class="chore-name">${chore.name}</div>
+            ${this.config.show_description && chore.description ? html`
+              <div class="chore-description">${chore.description}</div>
+            ` : ''}
             <div class="chore-points">
               <ha-icon icon="${pointsIcon}"></ha-icon>
               +${chore.points}
