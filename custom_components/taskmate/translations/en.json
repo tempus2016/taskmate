@@ -178,7 +178,8 @@
           "streak_milestones_enabled": "Streak Milestone Bonuses",
           "perfect_week_enabled": "Perfect Week Bonus",
           "perfect_week_bonus": "Perfect Week Bonus Points",
-          "streak_milestones": "Streak Milestone Configuration"
+          "streak_milestones": "Streak Milestone Configuration",
+          "notify_service": "Notification Service (optional)"
         },
         "data_description": {
           "streak_reset_mode": "What happens to a streak when a day is missed",
@@ -187,7 +188,8 @@
           "streak_milestones_enabled": "Award bonus points when children hit streak milestones (3, 7, 14, 30, 60, 100 days)",
           "perfect_week_enabled": "Award bonus points when a child completes at least one chore every day for a full week",
           "perfect_week_bonus": "Bonus points awarded for a perfect week",
-          "streak_milestones": "Custom milestones as 'days:points' pairs, comma-separated. Example: 3:5, 7:10, 14:20, 30:50, 60:100, 100:200"
+          "streak_milestones": "Custom milestones as 'days:points' pairs, comma-separated. Example: 3:5, 7:10, 14:20, 30:50, 60:100, 100:200",
+          "notify_service": "HA notification service to alert parents when a chore requires approval. Format: notify.mobile_app_your_phone \u2014 leave empty to use persistent notifications only"
         }
       }
     },
