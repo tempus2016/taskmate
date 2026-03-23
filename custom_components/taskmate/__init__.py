@@ -61,16 +61,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register frontend static paths
     await async_register_frontend(hass)
 
-    # Register Lovelace resources only on first install, not on every restart
-    # A new entry has no prior data stored — use that to detect first install
-    is_first_install = not entry.data.get("resources_registered", False)
-    await async_register_cards(hass, first_install=is_first_install)
-
-    # Mark resources as registered so future restarts skip auto-registration
-    if is_first_install:
-        new_data = dict(entry.data)
-        new_data["resources_registered"] = True
-        hass.config_entries.async_update_entry(entry, data=new_data)
+    # Register and version-update Lovelace resources on every startup.
+    # Only TaskMate's own resources (/taskmate/*) are ever touched.
+    await async_register_cards(hass)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
