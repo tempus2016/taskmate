@@ -188,6 +188,31 @@ Children earn a bonus when they complete at least one chore every day Monday–S
 
 ---
 
+## Notifications
+ 
+TaskMate can notify parents when a chore requiring approval has been completed.
+ 
+### How It Works
+ 
+When a child completes a chore that has **Requires Approval** turned on:
+ 
+1. A **persistent notification** is always created in HA — visible in the notification bell in the sidebar
+2. If a **Notification Service** is configured in Settings, a push notification is also sent
+ 
+### Configuring Push Notifications
+ 
+Go to **Settings → Integrations → TaskMate → Configure → Settings → Notification Service** and enter your notify service:
+ 
+```
+notify.mobile_app_your_phone
+```
+ 
+Leave empty to use persistent notifications only.
+ 
+> **Tip:** Use `binary_sensor.taskmate_has_pending_approvals` in your own automations for more customised notification logic — see <a href="https://github.com/tempus2016/taskmate/wiki">Automation Examples</a>.
+ 
+---
+
 ## Dashboard Cards
 
 > **Header colours:** Every card has a configurable `header_color` option in the visual editor, with its own vibrant default. Change it to match your dashboard theme or differentiate kid vs parent cards.
