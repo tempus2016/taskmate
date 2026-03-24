@@ -329,6 +329,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
     # Reward operations
 
+    def get_reward(self, reward_id: str) -> Reward | None:
+        """Get a reward by ID."""
+        return self.storage.get_reward(reward_id)
 
     # ── Chore completion operations ───────────────────────────────────────────
 
