@@ -74,11 +74,11 @@
           "assigned_to": "Assigned To (leave empty for all children)",
           "requires_approval": "Requires Parent Approval",
           "daily_limit": "Daily Completion Limit",
-          "completion_percentage_per_month": "Completion % Per Month"
+          "schedule_mode": "Scheduling Mode"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
-          "completion_percentage_per_month": "Expected completion rate (100 = daily, 50 = every other day)"
+          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a recurring interval"
         }
       },
       "add_chores_bulk": {
@@ -92,11 +92,11 @@
           "assigned_to": "Assigned To (leave empty for all children)",
           "requires_approval": "Requires Parent Approval",
           "daily_limit": "Daily Completion Limit",
-          "completion_percentage_per_month": "Completion % Per Month"
+          "schedule_mode": "Scheduling Mode"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
-          "completion_percentage_per_month": "Expected completion rate (100 = daily, 50 = every other day)"
+          "schedule_mode": "Choose how this chore is scheduled"
         }
       },
       "edit_chore": {
@@ -111,12 +111,12 @@
           "assigned_to": "Assigned To",
           "requires_approval": "Requires Parent Approval",
           "daily_limit": "Daily Completion Limit",
-          "completion_percentage_per_month": "Completion % Per Month",
-          "action": "Action"
+          "action": "Action",
+          "schedule_mode": "Scheduling Mode"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
-          "completion_percentage_per_month": "Expected completion rate (100 = daily, 50 = every other day)"
+          "schedule_mode": "Choose how this chore is scheduled"
         }
       },
       "manage_rewards": {
@@ -133,17 +133,14 @@
         "data": {
           "name": "Reward Name",
           "description": "Description (optional)",
-          "cost": "Points Cost",
+          "cost": "Points Cost (fixed)",
           "icon": "Icon",
           "assigned_to": "Assigned To (leave empty for all children)",
-          "is_jackpot": "Is Jackpot",
-          "days_to_goal": "Days to Goal",
-          "override_point_value": "Override Point Value"
+          "is_jackpot": "Is Jackpot"
         },
         "data_description": {
-          "is_jackpot": "Pool stars from all assigned children together",
-          "days_to_goal": "Number of days to reach this reward",
-          "override_point_value": "Use manual cost instead of dynamic calculation"
+          "is_jackpot": "Pool points from all assigned children toward one shared reward",
+          "cost": "Number of points required to claim this reward"
         }
       },
       "edit_reward": {
@@ -152,18 +149,15 @@
         "data": {
           "name": "Reward Name",
           "description": "Description",
-          "cost": "Points Cost",
+          "cost": "Points Cost (fixed)",
           "icon": "Icon",
           "assigned_to": "Assigned To",
           "is_jackpot": "Is Jackpot",
-          "days_to_goal": "Days to Goal",
-          "override_point_value": "Override Point Value",
           "action": "Action"
         },
         "data_description": {
-          "is_jackpot": "Pool stars from all assigned children together",
-          "days_to_goal": "Number of days to reach this reward",
-          "override_point_value": "Use manual cost instead of dynamic calculation"
+          "is_jackpot": "Pool points from all assigned children toward one shared reward",
+          "cost": "Number of points required to claim this reward"
         }
       },
       "settings": {
@@ -183,19 +177,71 @@
         },
         "data_description": {
           "streak_reset_mode": "What happens to a streak when a day is missed",
-          "history_days": "How many days of chore completion history to retain (30\u2013365)",
+          "history_days": "How many days of chore completion history to retain (30–365)",
           "weekend_multiplier": "Points multiplier on Saturdays and Sundays (1.0 = disabled, 2.0 = double points)",
           "streak_milestones_enabled": "Award bonus points when children hit streak milestones (3, 7, 14, 30, 60, 100 days)",
           "perfect_week_enabled": "Award bonus points when a child completes at least one chore every day for a full week",
           "perfect_week_bonus": "Bonus points awarded for a perfect week",
           "streak_milestones": "Custom milestones as 'days:points' pairs, comma-separated. Example: 3:5, 7:10, 14:20, 30:50, 60:100, 100:200",
-          "notify_service": "HA notification service to alert parents when a chore requires approval. Format: notify.mobile_app_your_phone \u2014 leave empty to use persistent notifications only"
+          "notify_service": "HA notification service to alert parents when a chore requires approval. Format: notify.mobile_app_your_phone — leave empty to use persistent notifications only"
+        }
+      },
+      "chore_schedule_specific": {
+        "title": "Chore Schedule — Specific Days",
+        "description": "Choose which days of the week this chore should appear",
+        "data": {
+          "due_days": "Due Days (leave empty for every day)"
+        },
+        "data_description": {
+          "due_days": "Chore will appear on selected days only. Leave empty to show every day."
+        }
+      },
+      "edit_chore_schedule_specific": {
+        "title": "Edit Chore Schedule — Specific Days",
+        "description": "Choose which days of the week this chore should appear",
+        "data": {
+          "due_days": "Due Days (leave empty for every day)"
+        },
+        "data_description": {
+          "due_days": "Chore will appear on selected days only. Leave empty to show every day."
+        }
+      },
+      "chore_schedule_recurring": {
+        "title": "Chore Schedule — Recurring",
+        "description": "Set the recurrence interval for this chore",
+        "data": {
+          "recurrence": "Recurrence",
+          "recurrence_day": "Day of Week (optional)",
+          "recurrence_start": "Start Date (optional, YYYY-MM-DD)",
+          "first_occurrence_mode": "First Occurrence"
+        },
+        "data_description": {
+          "recurrence": "How often this chore can be completed",
+          "recurrence_day": "For weekly/every 2 weeks — pin to a specific day. Leave empty for any day.",
+          "recurrence_start": "For every 2 days — anchor date for the rhythm. Leave empty to use creation date.",
+          "first_occurrence_mode": "Whether the chore is available immediately or waits for its first scheduled occurrence"
+        }
+      },
+      "edit_chore_schedule_recurring": {
+        "title": "Edit Chore Schedule — Recurring",
+        "description": "Set the recurrence interval for this chore",
+        "data": {
+          "recurrence": "Recurrence",
+          "recurrence_day": "Day of Week (optional)",
+          "recurrence_start": "Start Date (optional, YYYY-MM-DD)",
+          "first_occurrence_mode": "First Occurrence"
+        },
+        "data_description": {
+          "recurrence": "How often this chore can be completed",
+          "recurrence_day": "For weekly/every 2 weeks — pin to a specific day. Leave empty for any day.",
+          "recurrence_start": "For every 2 days — anchor date for the rhythm. Leave empty to use creation date.",
+          "first_occurrence_mode": "Whether the chore is available immediately or waits for its first scheduled occurrence"
         }
       }
     },
     "error": {
       "name_required": "Name is required",
-      "invalid_milestone_format": "Invalid milestone format \u2014 use days:points pairs, e.g. 3:5, 7:10, 14:20"
+      "invalid_milestone_format": "Invalid milestone format — use days:points pairs, e.g. 3:5, 7:10, 14:20"
     }
   },
   "services": {
