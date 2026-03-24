@@ -418,7 +418,9 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Optional("recurrence_start"): selector.DateSelector(),
+                vol.Optional("recurrence_start"): selector.DateSelector(
+                    selector.DateSelectorConfig()
+                ),
                 vol.Required("first_occurrence_mode", default="available_immediately"): selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=first_occurrence_options,
