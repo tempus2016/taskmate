@@ -313,6 +313,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             step_id="add_chore",
             data_schema=vol.Schema(schema_dict),
             errors=errors,
+            last_step=False,
         )
 
     async def async_step_chore_schedule_specific(
@@ -417,9 +418,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Optional("recurrence_start", default=""): selector.TextSelector(
-                    selector.TextSelectorConfig()
-                ),
+                vol.Optional("recurrence_start"): selector.DateSelector(),
                 vol.Required("first_occurrence_mode", default="available_immediately"): selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=first_occurrence_options,
@@ -746,9 +745,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Optional("recurrence_start", default=getattr(chore, 'recurrence_start', '')): selector.TextSelector(
-                    selector.TextSelectorConfig()
-                ),
+                vol.Optional("recurrence_start", default=getattr(chore, 'recurrence_start', None) or None): selector.DateSelector(),
                 vol.Required("first_occurrence_mode", default=getattr(chore, 'first_occurrence_mode', 'available_immediately')): selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=first_occurrence_options,
