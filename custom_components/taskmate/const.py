@@ -47,6 +47,31 @@ DAYS_OF_WEEK: Final = [
     "sunday",
 ]
 
+# Recurrence options for chores (Mode B)
+RECURRENCE_OPTIONS: Final = [
+    "every_2_days",
+    "weekly",
+    "every_2_weeks",
+    "monthly",
+    "every_3_months",
+    "every_6_months",
+]
+
+RECURRENCE_LABELS: Final = {
+    "every_2_days": "Every 2 days",
+    "weekly": "Weekly",
+    "every_2_weeks": "Every 2 weeks",
+    "monthly": "Monthly",
+    "every_3_months": "Every 3 months",
+    "every_6_months": "Every 6 months",
+}
+
+# Schedule modes
+SCHEDULE_MODES: Final = ["specific_days", "recurring"]
+
+# First occurrence modes
+FIRST_OCCURRENCE_MODES: Final = ["available_immediately", "wait_for_first_occurrence"]
+
 # Time categories for chores
 TIME_CATEGORIES: Final = [
     "morning",
