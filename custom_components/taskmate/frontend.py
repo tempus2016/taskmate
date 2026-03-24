@@ -32,6 +32,7 @@ CARDS: Final = [
     "taskmate-reward-progress-card.js",
     "taskmate-leaderboard-card.js",
     "taskmate-parent-dashboard-card.js",
+    "taskmate-penalties-card.js",
 ]
 
 # JS modules to load globally (for config flow sound preview)

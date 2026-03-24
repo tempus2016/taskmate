@@ -283,6 +283,39 @@ class TaskMateStorage:
             c for c in self._data.get("reward_claims", []) if c.get("id") != claim_id
         ]
 
+    # Penalties management
+    def get_penalties(self) -> list:
+        """Get all penalties."""
+        from .models import Penalty
+        return [Penalty.from_dict(p) for p in self._data.get("penalties", [])]
+
+    def get_penalty(self, penalty_id: str):
+        """Get a penalty by ID."""
+        from .models import Penalty
+        for p in self._data.get("penalties", []):
+            if p.get("id") == penalty_id:
+                return Penalty.from_dict(p)
+        return None
+
+    def add_penalty(self, penalty) -> None:
+        """Add a new penalty."""
+        self._data.setdefault("penalties", []).append(penalty.to_dict())
+
+    def update_penalty(self, penalty) -> None:
+        """Update an existing penalty."""
+        penalties = self._data.get("penalties", [])
+        for i, p in enumerate(penalties):
+            if p.get("id") == penalty.id:
+                penalties[i] = penalty.to_dict()
+                return
+        penalties.append(penalty.to_dict())
+
+    def remove_penalty(self, penalty_id: str) -> None:
+        """Remove a penalty."""
+        self._data["penalties"] = [
+            p for p in self._data.get("penalties", []) if p.get("id") != penalty_id
+        ]
+
     # Points transactions management
     def get_points_transactions(self) -> list[PointsTransaction]:
         """Get all points transactions."""
