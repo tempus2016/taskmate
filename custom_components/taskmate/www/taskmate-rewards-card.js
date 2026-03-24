@@ -765,9 +765,7 @@ class TaskMateRewardsCard extends LitElement {
     const assignedTo = reward.assigned_to || [];
     const showChildBadges = this.config.show_child_badges !== false;
     const isJackpot = reward.is_jackpot || false;
-    // Dynamic pricing is the default (override_point_value = false means dynamic)
-    const isDynamicPricing = !reward.override_point_value;
-    // Use per-child calculated cost
+    // All costs are static — just use reward.cost
     const displayCost = this._getDisplayCost(reward, children);
 
     // Get relevant children for this reward
@@ -780,37 +778,24 @@ class TaskMateRewardsCard extends LitElement {
     let childContributions = [];
 
     if (isJackpot) {
-      // Jackpot: calculate weighted contributions based on each child's expected share
-      const childDailyPoints = reward.child_daily_points || {};
-      const daysToGoal = reward.days_to_goal || 30;
-      const totalDailyPoints = Object.values(childDailyPoints).reduce((sum, dp) => sum + dp, 0);
+      // Jackpot: equal share per assigned child (no dynamic weighting)
+      const sharePerChild = relevantChildren.length > 0
+        ? Math.round(displayCost / relevantChildren.length)
+        : displayCost;
 
       relevantChildren.forEach((child, index) => {
         const points = child.points || 0;
-        const dailyPoints = childDailyPoints[child.id] || 0;
-        const expectedContribution = dailyPoints * daysToGoal;
-
-        // Calculate weighted progress (0-100% of their expected share)
-        let weightedProgress = 0;
-        if (expectedContribution > 0) {
-          weightedProgress = Math.min((points / expectedContribution) * 100, 100);
-        }
-
-        // Their "share" of the total goal (what % of the jackpot they're responsible for)
-        let shareOfGoal = 0;
-        if (totalDailyPoints > 0) {
-          shareOfGoal = (dailyPoints / totalDailyPoints) * 100;
-        }
+        const shareOfGoal = relevantChildren.length > 0 ? (100 / relevantChildren.length) : 100;
+        const weightedProgress = Math.min((points / sharePerChild) * 100, 100);
 
         currentStars += points;
         childContributions.push({
           name: child.name,
           points: points,
           colorIndex: index % 6,
-          expectedContribution: Math.round(expectedContribution),
+          expectedContribution: sharePerChild,
           weightedProgress: weightedProgress,
           shareOfGoal: shareOfGoal,
-          dailyPoints: dailyPoints
         });
       });
     } else {
@@ -843,12 +828,11 @@ class TaskMateRewardsCard extends LitElement {
     const isLoading = this._loading[reward.id];
 
     return html`
-      <div class="reward-row ${isJackpot ? 'jackpot' : ''} ${isDynamicPricing ? 'dynamic' : ''} ${hasPendingClaim ? 'pending-approval' : ''}">
-        <div class="cost-badge ${isDynamicPricing ? 'dynamic-cost' : ''}">
+      <div class="reward-row ${isJackpot ? 'jackpot' : ''} ${hasPendingClaim ? 'pending-approval' : ''}">
+        <div class="cost-badge">
           <ha-icon icon="${pointsIcon}"></ha-icon>
           <span class="cost-value">${displayCost}</span>
           <span class="cost-label">${pointsName}</span>
-          ${isDynamicPricing ? html`<span class="dynamic-indicator" title="Goal-based reward (${reward.days_to_goal || 30} days)">&#127919;</span>` : ''}
         </div>
         <div class="reward-details">
           ${isJackpot ? html`<div class="jackpot-label"><span>&#127920;</span> JACKPOT</div>` : ''}
@@ -937,43 +921,14 @@ class TaskMateRewardsCard extends LitElement {
    * For jackpot rewards, all children share the same cost.
    */
   _getDisplayCost(reward, children) {
+    // All reward costs are static — just return reward.cost
+    // calculated_costs is still provided by the sensor for jackpot display purposes
     const calculatedCosts = reward.calculated_costs || {};
 
-    // If override_point_value is true, use manual cost
-    if (reward.override_point_value) {
-      return reward.cost;
-    }
-
-    // If filtering by a specific child, get that child's cost
     if (this.config.child_id && calculatedCosts[this.config.child_id]) {
       return calculatedCosts[this.config.child_id];
     }
 
-    // For jackpot rewards, all children have the same cost - return first value
-    if (reward.is_jackpot) {
-      const costs = Object.values(calculatedCosts);
-      if (costs.length > 0) {
-        return costs[0];
-      }
-    }
-
-    // For non-jackpot without specific child filter, get the first relevant child's cost
-    const assignedTo = reward.assigned_to || [];
-    if (assignedTo.length === 0) {
-      // Available to all children - get first child's cost
-      if (children.length > 0 && calculatedCosts[children[0].id]) {
-        return calculatedCosts[children[0].id];
-      }
-    } else {
-      // Get first assigned child's cost
-      for (const childId of assignedTo) {
-        if (calculatedCosts[childId]) {
-          return calculatedCosts[childId];
-        }
-      }
-    }
-
-    // Fallback to manual cost
     return reward.cost;
   }
 

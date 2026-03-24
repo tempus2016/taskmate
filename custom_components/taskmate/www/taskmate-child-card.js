@@ -779,6 +779,53 @@ class TaskMateChildCard extends LitElement {
         pointer-events: none;
       }
 
+      /* Recurring chore not yet available — dimmed/greyed */
+      .chore-card.recurrence-unavailable {
+        opacity: 0.45;
+        filter: grayscale(0.6);
+        pointer-events: none;
+      }
+
+      .recurrence-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--secondary-text-color);
+        background: rgba(0,0,0,0.06);
+        border-radius: 8px;
+        padding: 1px 6px;
+        margin-top: 3px;
+      }
+
+      .recurrence-label ha-icon { --mdc-icon-size: 12px; }
+
+
+      /* Recurring chore not yet available — dimmed/greyed */
+      .chore-card.recurrence-unavailable {
+        opacity: 0.45;
+        filter: grayscale(0.6);
+        pointer-events: none;
+      }
+
+      .recurrence-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--secondary-text-color);
+        background: rgba(0,0,0,0.06);
+        border-radius: 8px;
+        padding: 1px 6px;
+        margin-top: 3px;
+      }
+
+      .recurrence-label ha-icon {
+        --mdc-icon-size: 12px;
+      }
+
       /* Chore card in completed state - faded green styling */
       .chore-card.completed {
         opacity: 0.75;
@@ -1506,7 +1553,7 @@ class TaskMateChildCard extends LitElement {
 
     return html`
       <div
-        class="chore-card ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""}"
+        class="chore-card ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence ? "recurrence-unavailable" : ""}"
         @click="${handleRowClick}"
         title="${notDueToday ? 'Not scheduled for today' : isCompletedForToday ? 'Click to undo' : 'Click to complete'}"
       >
@@ -1518,6 +1565,12 @@ class TaskMateChildCard extends LitElement {
             <div class="chore-name">${chore.name}</div>
             ${this.config.show_description && chore.description ? html`
               <div class="chore-description">${chore.description}</div>
+            ` : ''}
+            ${chore._isRecurring && !chore._isAvailableForChild ? html`
+              <div class="recurrence-label">
+                <ha-icon icon="mdi:clock-outline"></ha-icon>
+                ${chore.recurrence ? chore.recurrence.replace(/_/g, ' ') : 'Recurring'}
+              </div>
             ` : ''}
             <div class="chore-points">
               <ha-icon icon="${pointsIcon}"></ha-icon>
@@ -1929,6 +1982,16 @@ class TaskMateChildCardEditor extends LitElement {
           <option value="show" ?selected="${this.config.due_days_mode === 'show'}">Show — show normally regardless</option>
         </select>
         <span class="field-helper">Applies to chores with due_days set when today isn't scheduled</span>
+      </div>
+
+      <div class="field-row">
+        <label class="field-label">Recurring Chores — When Completed</label>
+        <select class="field-select" @change="${e => this._updateConfig('recurrence_done_mode', e.target.value)}">
+          <option value="dim" ?selected="${(this.config.recurrence_done_mode || 'dim') === 'dim'}">Dim — show greyed out, non-interactive</option>
+          <option value="hide" ?selected="${this.config.recurrence_done_mode === 'hide'}">Hide — don't show until available again</option>
+          <option value="show" ?selected="${this.config.recurrence_done_mode === 'show'}">Show — show normally regardless</option>
+        </select>
+        <span class="field-helper">What to show when a recurring chore has been completed and the window hasn't reset yet</span>
       </div>
 
       <div class="section-divider"></div>

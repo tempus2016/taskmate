@@ -377,24 +377,31 @@ class TaskMateOverviewCard extends LitElement {
     const todayDow = entity?.attributes?.today_day_of_week ||
       new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
 
-    // Chores assigned to this child AND due today
+    // Chores assigned to this child, due today, and available (recurrence window open)
     const childChores = chores.filter(c => {
       // Assignment check
       const at = Array.isArray(c.assigned_to) ? c.assigned_to.map(String) : [];
       const assigned = at.length === 0 || at.includes(String(child.id));
       if (!assigned) return false;
 
-      // Due days check — if due_days is set, only count if today is in the list
-      const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
-      if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
+      // Mode A: due days check
+      if (c.schedule_mode !== 'recurring') {
+        const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
+        if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
+      }
+
+      // Mode B: recurrence availability check
+      if (c.schedule_mode === 'recurring') {
+        const isAvailable = c.is_available && c.is_available[child.id];
+        if (isAvailable === false) return false;
+      }
 
       return true;
     });
 
     // All completions today for this child
     const childCompletions = completions.filter(c => c.child_id === child.id);
-    // Only approved completions count toward progress
-    // Also only count completions for chores that are due today
+    // Only approved completions count, and only for chores relevant today
     const childChoreIds = new Set(childChores.map(c => c.id));
     const childApprovedCompletions = childCompletions.filter(c => c.approved && childChoreIds.has(c.chore_id));
     const completedCount = childApprovedCompletions.length;

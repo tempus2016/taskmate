@@ -437,8 +437,16 @@ class TaskMateParentDashboardCard extends LitElement {
           const at = c.assigned_to || [];
           const assigned = at.length === 0 || at.includes(child.id);
           if (!assigned) return false;
-          const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
-          if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
+          // Mode A: due days check
+          if (c.schedule_mode !== 'recurring') {
+            const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
+            if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
+          }
+          // Mode B: recurrence availability check
+          if (c.schedule_mode === 'recurring') {
+            const isAvailable = c.is_available && c.is_available[child.id];
+            if (isAvailable === false) return false;
+          }
           return true;
         });
         const childChoreIds = new Set(childChores.map(c => c.id));
