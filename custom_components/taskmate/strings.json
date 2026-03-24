@@ -78,7 +78,7 @@
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
-          "schedule_mode": "Specific Days — choose which days of the week the chore appears. Recurring — set a repeating interval (weekly, fortnightly, monthly etc)"
+          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page."
         }
       },
       "add_chores_bulk": {
@@ -116,7 +116,7 @@
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
-          "schedule_mode": "Choose how this chore is scheduled"
+          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page."
         }
       },
       "manage_rewards": {
@@ -218,7 +218,7 @@
         "data_description": {
           "recurrence": "How often the chore can be completed",
           "recurrence_day": "For Weekly and Every 2 Weeks — pin the chore to a specific day. Leave empty to allow completion on any day.",
-          "recurrence_start": "For Every 2 Days — pick an anchor date for the rhythm. Leave empty to use today as the start.",
+          "recurrence_start": "For Every 2 Days — enter an anchor date in YYYY-MM-DD format to set the rhythm. Leave empty to use today as the start.",
           "first_occurrence_mode": "Available Immediately — child can complete it straight away. Wait for First Occurrence — chore is locked until the first scheduled day arrives."
         }
       },
@@ -234,7 +234,7 @@
         "data_description": {
           "recurrence": "How often the chore can be completed",
           "recurrence_day": "For Weekly and Every 2 Weeks — pin the chore to a specific day. Leave empty to allow completion on any day.",
-          "recurrence_start": "For Every 2 Days — pick an anchor date for the rhythm. Leave empty to use today as the start.",
+          "recurrence_start": "For Every 2 Days — enter an anchor date in YYYY-MM-DD format to set the rhythm. Leave empty to use today as the start.",
           "first_occurrence_mode": "Available Immediately — child can complete it straight away. Wait for First Occurrence — chore is locked until the first scheduled day arrives."
         }
       }
