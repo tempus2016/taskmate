@@ -552,7 +552,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             action = user_input.get("action", "save")
             if action == "delete":
-                await self.coordinator.async_delete_chore(chore_id)
+                await self.coordinator.async_remove_chore(chore_id)
                 return await self.async_step_manage_chores()
 
             name = user_input.get("name", "").strip()
