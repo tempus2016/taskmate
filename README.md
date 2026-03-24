@@ -27,6 +27,7 @@
 - [Chores & Rewards](#chores--rewards)
 - [Chore Scheduling](#chore-scheduling)
 - [Bonus Points System](#bonus-points-system)
+- [Penalties](#penalties)
 - [Dashboard Cards](#dashboard-cards)
 - [Services](#services)
 - [Completion Sounds](#completion-sounds)
@@ -243,6 +244,48 @@ Leave empty to use persistent notifications only.
  
 ---
  
+## Penalties
+
+Deduct points from a child for unwanted behaviour — the flip side of the reward system.
+
+### How It Works
+
+1. Create named penalties (e.g. "Not going to bed = 10 points") via the **Penalties Card** or the `taskmate.add_penalty` service
+2. Open the Penalties Card, select the child, and tap **Apply** on the relevant penalty
+3. Points are deducted immediately and logged in the activity feed as `Penalty: <name>`
+
+### Penalties Card
+
+```yaml
+type: custom:taskmate-penalties-card
+entity: sensor.taskmate_overview
+title: Penalties          # optional
+```
+
+- Select the child using the tabs at the top (hidden if only one child)
+- Tap **Apply** to deduct points instantly — the tile flashes and a toast confirms the action
+- Tap the **pencil icon** to enter edit mode: add new penalties, edit name/points/icon/description, or delete
+
+### Managing Penalties via Services
+
+```yaml
+# Create a penalty
+service: taskmate.add_penalty
+data:
+  name: "Not going to bed"
+  points: 10
+  description: "Refused bedtime after two warnings"   # optional
+  icon: mdi:bed-clock                                 # optional, any MDI icon
+
+# Apply a penalty to a child
+service: taskmate.apply_penalty
+data:
+  penalty_id: abc12345    # see Finding IDs
+  child_id: a8c8376a
+```
+
+---
+
 ## Dashboard Cards
  
 > **Header colours:** Every card has a configurable `header_color` option in the visual editor, with its own vibrant default. Change it to match your dashboard theme or differentiate kid vs parent cards.
@@ -264,6 +307,7 @@ Leave empty to use persistent notifications only.
 | [Points Graph Card](#points-graph-card) | Parents | Points over time, multi-child line graph |
 | [Reward Progress Card](#reward-progress-card) | Kids | Full-screen motivational reward display |
 | [Leaderboard Card](#leaderboard-card) | Both | Competitive ranking by points, streak, or weekly |
+| [Penalties Card](#penalties-card) | Parents | Apply point-deduction penalties |
  
 ---
  
@@ -513,9 +557,22 @@ show_streak: true
 show_weekly: true
 header_color: "#b7950b"
 ```
- 
+
 ---
- 
+
+### Penalties Card
+
+Parent-facing card for applying point-deduction penalties. Select the child using tabs, then tap **Apply** next to the relevant penalty. Tap the pencil icon to add, edit, or delete penalty definitions.
+
+```yaml
+type: custom:taskmate-penalties-card
+entity: sensor.taskmate_overview
+title: Penalties
+header_color: "#e74c3c"
+```
+
+---
+
 ## Services
  
 TaskMate exposes services you can call from automations, scripts, or Developer Tools.
@@ -531,6 +588,12 @@ TaskMate exposes services you can call from automations, scripts, or Developer T
 | `taskmate.add_points` | `child_id`, `points`, `reason` | Manually add points to a child |
 | `taskmate.remove_points` | `child_id`, `points`, `reason` | Manually remove points from a child |
 | `taskmate.set_chore_order` | `child_id`, `chore_order` | Set the chore display order for a child |
+| `taskmate.add_penalty` | `name`, `points`, `description`\*, `icon`\* | Create a new penalty definition |
+| `taskmate.update_penalty` | `penalty_id`, `name`\*, `points`\*, `description`\*, `icon`\* | Update an existing penalty |
+| `taskmate.remove_penalty` | `penalty_id` | Delete a penalty definition |
+| `taskmate.apply_penalty` | `penalty_id`, `child_id` | Apply a penalty — deducts points immediately |
+
+\* optional
  
 **Example — award bonus points from an automation:**
  
