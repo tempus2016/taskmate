@@ -43,6 +43,12 @@ def _make_coord(*, children=None, rewards=None, claims=None):
     storage.async_save = AsyncMock()
     storage._data = {"reward_claims": [c.to_dict() for c in _claims]}
 
+    def _remove_reward_claim(claim_id):
+        storage._data["reward_claims"] = [
+            c for c in storage._data["reward_claims"] if c.get("id") != claim_id
+        ]
+    storage.remove_reward_claim = MagicMock(side_effect=_remove_reward_claim)
+
     coord.storage = storage
     coord.async_refresh = AsyncMock()
     return coord

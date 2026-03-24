@@ -277,6 +277,12 @@ class TaskMateStorage:
                 claims[i] = claim.to_dict()
                 return
 
+    def remove_reward_claim(self, claim_id: str) -> None:
+        """Remove a reward claim."""
+        self._data["reward_claims"] = [
+            c for c in self._data.get("reward_claims", []) if c.get("id") != claim_id
+        ]
+
     # Points transactions management
     def get_points_transactions(self) -> list[PointsTransaction]:
         """Get all points transactions."""
