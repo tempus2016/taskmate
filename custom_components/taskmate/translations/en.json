@@ -208,7 +208,7 @@
       },
       "chore_schedule_recurring": {
         "title": "Step 2 — Recurring Schedule",
-        "description": "Set how often this chore can be completed. Once completed, it will not be available again until the window resets.",
+        "description": "Set how often this chore can be completed. Once completed, it will not be available again until the window resets.\n\nNote: Day of Week only applies to Weekly and Every 2 Weeks. Start Date only applies to Every 2 Days. Any values entered for inapplicable options will be ignored.",
         "data": {
           "recurrence": "Recurrence",
           "recurrence_day": "Day of Week (optional)",
@@ -217,14 +217,14 @@
         },
         "data_description": {
           "recurrence": "How often the chore can be completed",
-          "recurrence_day": "For Weekly and Every 2 Weeks — pin the chore to a specific day. Leave empty to allow completion on any day.",
-          "recurrence_start": "For Every 2 Days — enter an anchor date in YYYY-MM-DD format to set the rhythm. Leave empty to use today as the start.",
+          "recurrence_day": "Weekly / Every 2 Weeks only — pin to a specific day. Ignored for all other recurrence types.",
+          "recurrence_start": "Every 2 Days only — anchor date in YYYY-MM-DD format. Ignored for all other recurrence types. Leave empty to use today.",
           "first_occurrence_mode": "Available Immediately — child can complete it straight away. Wait for First Occurrence — chore is locked until the first scheduled day arrives."
         }
       },
       "edit_chore_schedule_recurring": {
         "title": "Step 2 — Recurring Schedule",
-        "description": "Set how often this chore can be completed. Once completed, it will not be available again until the window resets.",
+        "description": "Set how often this chore can be completed. Once completed, it will not be available again until the window resets.\n\nNote: Day of Week only applies to Weekly and Every 2 Weeks. Start Date only applies to Every 2 Days. Any values entered for inapplicable options will be ignored.",
         "data": {
           "recurrence": "Recurrence",
           "recurrence_day": "Day of Week (optional)",
@@ -233,8 +233,8 @@
         },
         "data_description": {
           "recurrence": "How often the chore can be completed",
-          "recurrence_day": "For Weekly and Every 2 Weeks — pin the chore to a specific day. Leave empty to allow completion on any day.",
-          "recurrence_start": "For Every 2 Days — enter an anchor date in YYYY-MM-DD format to set the rhythm. Leave empty to use today as the start.",
+          "recurrence_day": "Weekly / Every 2 Weeks only — pin to a specific day. Ignored for all other recurrence types.",
+          "recurrence_start": "Every 2 Days only — anchor date in YYYY-MM-DD format. Ignored for all other recurrence types. Leave empty to use today.",
           "first_occurrence_mode": "Available Immediately — child can complete it straight away. Wait for First Occurrence — chore is locked until the first scheduled day arrives."
         }
       }
