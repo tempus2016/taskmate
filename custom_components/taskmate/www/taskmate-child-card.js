@@ -1541,9 +1541,12 @@ class TaskMateChildCard extends LitElement {
 
     // Click handler for the entire row
     const notDueToday = chore._hasDueDays && !chore._isDueToday && this.config.due_days_mode === 'dim';
+    const recurrenceDoneMode = this.config.recurrence_done_mode || 'dim';
+    const notAvailableRecurrence = chore._isRecurring && !chore._isAvailableForChild && recurrenceDoneMode === 'dim';
     const handleRowClick = () => {
       if (isLoading) return;
       if (notDueToday) return;  // Dim mode — not interactive
+      if (notAvailableRecurrence) return;  // Recurrence window not open — not interactive
       if (isCompletedForToday) {
         this._handleUndo(chore, child, childCompletionsToday);
       } else {
