@@ -39,8 +39,13 @@ class TaskMateStorage:
                 "points_transactions": [],
                 "points_name": "Stars",
                 "points_icon": "mdi:star",
+                "last_completed": {},
             }
         self._data = data
+
+        # Ensure last_completed store exists (migration for existing installs)
+        if "last_completed" not in self._data:
+            self._data["last_completed"] = {}
 
         # Run data migrations
         await self._migrate_assigned_to_child_ids()
@@ -286,6 +291,48 @@ class TaskMateStorage:
         # Keep only the last 200 transactions to avoid unbounded storage growth
         if len(self._data["points_transactions"]) > 200:
             self._data["points_transactions"] = self._data["points_transactions"][-200:]
+
+    # Last completed store — never pruned, used for recurrence window checks
+    def get_last_completed(self, chore_id: str, child_id: str) -> dict:
+        """Get last_completed record for a chore/child pair.
+        
+        Returns dict with 'current' and 'previous' ISO datetime strings,
+        or empty dict if never completed.
+        """
+        return self._data.get("last_completed", {}).get(chore_id, {}).get(child_id, {})
+
+    def set_last_completed(self, chore_id: str, child_id: str, completed_at_iso: str) -> None:
+        """Record a new completion — shifts current to previous."""
+        if "last_completed" not in self._data:
+            self._data["last_completed"] = {}
+        if chore_id not in self._data["last_completed"]:
+            self._data["last_completed"][chore_id] = {}
+
+        existing = self._data["last_completed"][chore_id].get(child_id, {})
+        current = existing.get("current")
+
+        self._data["last_completed"][chore_id][child_id] = {
+            "current": completed_at_iso,
+            "previous": current,  # may be None
+        }
+
+    def undo_last_completed(self, chore_id: str, child_id: str) -> None:
+        """Undo the most recent completion — restores previous as current."""
+        record = self._data.get("last_completed", {}).get(chore_id, {}).get(child_id)
+        if not record:
+            return
+
+        previous = record.get("previous")
+        if previous:
+            self._data["last_completed"][chore_id][child_id] = {
+                "current": previous,
+                "previous": None,
+            }
+        else:
+            # No previous — remove the record entirely
+            del self._data["last_completed"][chore_id][child_id]
+            if not self._data["last_completed"][chore_id]:
+                del self._data["last_completed"][chore_id]
 
     # Generic settings
     def get_setting(self, key: str, default: str = "") -> str:

@@ -117,29 +117,48 @@ class Chore:
     name: str
     points: int = 10
     description: str = ""
-    due_days: list[str] = field(default_factory=list)
     assigned_to: list[str] = field(default_factory=list)  # List of child IDs
     requires_approval: bool = True
     time_category: str = "anytime"  # morning, afternoon, evening, night, anytime
     daily_limit: int = 1
     completion_sound: str = "coin"  # Sound to play on completion
-    completion_percentage_per_month: int = 100  # Expected completion rate (100 = every day)
+    # Scheduling
+    # schedule_mode: "specific_days" = show on selected days of week (Mode A)
+    #                "recurring"     = rolling window recurrence (Mode B)
+    schedule_mode: str = "specific_days"
+    due_days: list[str] = field(default_factory=list)  # Mode A: days to show chore
+    # Mode B fields
+    recurrence: str = "weekly"  # every_2_days | weekly | every_2_weeks | monthly | every_3_months | every_6_months
+    recurrence_day: str = ""    # optional: which day of week for weekly/every_2_weeks
+    recurrence_start: str = ""  # optional: ISO date anchor for every_2_days
+    first_occurrence_mode: str = "available_immediately"  # available_immediately | wait_for_first_occurrence
     id: str = field(default_factory=generate_id)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Chore:
         """Create a Chore from a dictionary."""
+        # Migration: if old data has due_days set but no schedule_mode,
+        # treat as specific_days. Otherwise default to specific_days.
+        schedule_mode = data.get("schedule_mode", "specific_days")
+        # If old data has due_days but schedule_mode wasn't stored, preserve as specific_days
+        if "schedule_mode" not in data and data.get("due_days"):
+            schedule_mode = "specific_days"
+
         return cls(
             name=data.get("name", ""),
             points=data.get("points", 10),
             description=data.get("description", ""),
-            due_days=data.get("due_days", []),
             assigned_to=data.get("assigned_to", []),
             requires_approval=data.get("requires_approval", True),
             time_category=data.get("time_category", "anytime"),
             daily_limit=data.get("daily_limit", 1),
             completion_sound=data.get("completion_sound", "coin"),
-            completion_percentage_per_month=data.get("completion_percentage_per_month", 100),
+            schedule_mode=schedule_mode,
+            due_days=data.get("due_days", []),
+            recurrence=data.get("recurrence", "weekly"),
+            recurrence_day=data.get("recurrence_day", ""),
+            recurrence_start=data.get("recurrence_start", ""),
+            first_occurrence_mode=data.get("first_occurrence_mode", "available_immediately"),
             id=data.get("id", generate_id()),
         )
 
@@ -149,13 +168,17 @@ class Chore:
             "name": self.name,
             "points": self.points,
             "description": self.description,
-            "due_days": self.due_days,
             "assigned_to": self.assigned_to,
             "requires_approval": self.requires_approval,
             "time_category": self.time_category,
             "daily_limit": self.daily_limit,
             "completion_sound": self.completion_sound,
-            "completion_percentage_per_month": self.completion_percentage_per_month,
+            "schedule_mode": self.schedule_mode,
+            "due_days": self.due_days,
+            "recurrence": self.recurrence,
+            "recurrence_day": self.recurrence_day,
+            "recurrence_start": self.recurrence_start,
+            "first_occurrence_mode": self.first_occurrence_mode,
             "id": self.id,
         }
 
@@ -170,19 +193,11 @@ class Reward:
     icon: str = "mdi:gift"
     assigned_to: list[str] = field(default_factory=list)  # List of child IDs, empty means all children
     is_jackpot: bool = False  # If True, pool stars from all assigned children together
-    override_point_value: bool = False  # If False (default), calculate cost dynamically; if True, use manual cost
-    days_to_goal: int = 30  # Number of days to reach the reward goal
     id: str = field(default_factory=generate_id)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Reward:
         """Create a Reward from a dictionary."""
-        # Handle migration from old is_dynamic field
-        override_point_value = data.get("override_point_value", None)
-        if override_point_value is None:
-            # Migrate from is_dynamic: if is_dynamic was True, override is False; if is_dynamic was False, override is True
-            old_is_dynamic = data.get("is_dynamic", False)
-            override_point_value = not old_is_dynamic
         return cls(
             name=data.get("name", ""),
             cost=data.get("cost", 50),
@@ -190,8 +205,6 @@ class Reward:
             icon=data.get("icon", "mdi:gift"),
             assigned_to=data.get("assigned_to", []),
             is_jackpot=data.get("is_jackpot", False),
-            override_point_value=override_point_value,
-            days_to_goal=data.get("days_to_goal", 30),
             id=data.get("id", generate_id()),
         )
 
@@ -204,8 +217,6 @@ class Reward:
             "icon": self.icon,
             "assigned_to": self.assigned_to,
             "is_jackpot": self.is_jackpot,
-            "override_point_value": self.override_point_value,
-            "days_to_goal": self.days_to_goal,
             "id": self.id,
         }
 

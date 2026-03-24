@@ -168,18 +168,25 @@ class ChoremandorOverallStatsSensor(TaskMateBaseSensor):
         for rc in pending_reward_claim_objs:
             reward = next((r for r in rewards if r.id == rc.reward_id), None)
             if reward:
-                try:
-                    costs = self.coordinator.calculate_dynamic_reward_costs(reward)
-                    cost = costs.get(rc.child_id, reward.cost)
-                except Exception:
-                    cost = reward.cost
+                # All reward costs are static
+                cost = reward.cost
                 committed_points_by_child[rc.child_id] = committed_points_by_child.get(rc.child_id, 0) + cost
 
-        # Build chores list with explicit assigned_to handling
+        # Build chores list with recurrence fields and availability per child
         chores_list = []
         for c in chores:
             # Ensure assigned_to is always a list
             assigned_to = c.assigned_to if isinstance(c.assigned_to, list) else []
+
+            # Build last_completed_at and is_available per child
+            last_completed_at = {}
+            is_available = {}
+            for child in children:
+                record = self.coordinator.storage.get_last_completed(c.id, child.id)
+                if record.get('current'):
+                    last_completed_at[child.id] = record['current']
+                is_available[child.id] = self.coordinator.is_chore_available_for_child(c, child.id)
+
             chores_list.append({
                 "id": c.id,
                 "name": c.name,
@@ -189,52 +196,33 @@ class ChoremandorOverallStatsSensor(TaskMateBaseSensor):
                 "daily_limit": getattr(c, 'daily_limit', 1),
                 "assigned_to": assigned_to,
                 "completion_sound": getattr(c, 'completion_sound', 'coin'),
-                "completion_percentage_per_month": getattr(c, 'completion_percentage_per_month', 100),
                 "due_days": getattr(c, 'due_days', []) or [],
                 "requires_approval": getattr(c, 'requires_approval', True),
+                "schedule_mode": getattr(c, 'schedule_mode', 'specific_days'),
+                "recurrence": getattr(c, 'recurrence', 'weekly'),
+                "recurrence_day": getattr(c, 'recurrence_day', ''),
+                "recurrence_start": getattr(c, 'recurrence_start', ''),
+                "first_occurrence_mode": getattr(c, 'first_occurrence_mode', 'available_immediately'),
+                "last_completed_at": last_completed_at,
+                "is_available": is_available,
             })
 
-        # Build rewards list with per-child dynamic cost calculation
+        # Build rewards list — all costs are static (fixed by parent)
         rewards_list = []
         for r in rewards:
-            # Get reward fields with defaults
-            override_point_value = getattr(r, 'override_point_value', False)
-            days_to_goal = getattr(r, 'days_to_goal', 30)
-
-            # Calculate the cost per child - use dynamic calculation if available
-            try:
-                if hasattr(self.coordinator, 'calculate_dynamic_reward_costs'):
-                    calculated_costs = self.coordinator.calculate_dynamic_reward_costs(r)
-                else:
-                    # Fallback: use static cost for all assigned children
-                    assigned = r.assigned_to if isinstance(r.assigned_to, list) and r.assigned_to else [c.id for c in children]
-                    calculated_costs = {child_id: r.cost for child_id in assigned}
-            except Exception as e:
-                # If calculation fails, use static cost
-                _LOGGER.error("SENSOR: Error calculating costs for %s: %s", r.name, e)
-                assigned = r.assigned_to if isinstance(r.assigned_to, list) and r.assigned_to else [c.id for c in children]
-                calculated_costs = {child_id: r.cost for child_id in assigned}
-
-            # For jackpot rewards, get each child's daily expected points for weighted meter
-            child_daily_points = {}
-            if getattr(r, 'is_jackpot', False) and hasattr(self.coordinator, 'get_child_daily_points'):
-                try:
-                    child_daily_points = self.coordinator.get_child_daily_points(r)
-                except Exception as e:
-                    _LOGGER.error("SENSOR: Error getting daily points for %s: %s", r.name, e)
+            assigned = r.assigned_to if isinstance(r.assigned_to, list) and r.assigned_to else [c.id for c in children]
+            # Static cost for all children
+            calculated_costs = {child_id: r.cost for child_id in assigned}
 
             rewards_list.append({
                 "id": r.id,
                 "name": r.name,
-                "cost": r.cost,  # Manual/override cost
+                "cost": r.cost,
                 "description": getattr(r, 'description', ''),
                 "icon": r.icon,
                 "assigned_to": r.assigned_to if isinstance(r.assigned_to, list) else [],
                 "is_jackpot": getattr(r, 'is_jackpot', False),
-                "override_point_value": override_point_value,
-                "days_to_goal": days_to_goal,
-                "calculated_costs": calculated_costs,  # Dict of child_id -> cost
-                "child_daily_points": child_daily_points,  # Dict of child_id -> daily expected points (for weighted jackpot meter)
+                "calculated_costs": calculated_costs,
             })
 
         # Day of week for due_days filtering in frontend (lowercase, e.g. "monday")
@@ -330,11 +318,7 @@ class ChoremandorOverallStatsSensor(TaskMateBaseSensor):
             reward = reward_lookup.get(rc.reward_id)
             if not child or not reward:
                 continue
-            try:
-                costs = self.coordinator.calculate_dynamic_reward_costs(reward)
-                cost = costs.get(rc.child_id, reward.cost)
-            except Exception:
-                cost = reward.cost
+            cost = reward.cost
             event_type = "reward_approved" if rc.approved else "reward_claimed"
             timestamp = rc.approved_at if rc.approved and rc.approved_at else rc.claimed_at
             events.append({
@@ -363,11 +347,7 @@ class ChoremandorOverallStatsSensor(TaskMateBaseSensor):
             child = child_lookup.get(rc.child_id)
             if not reward or not child:
                 continue
-            try:
-                costs = self.coordinator.calculate_dynamic_reward_costs(reward)
-                cost = costs.get(rc.child_id, reward.cost)
-            except Exception:
-                cost = reward.cost
+            cost = reward.cost
             result.append({
                 "claim_id": rc.id,
                 "reward_id": rc.reward_id,

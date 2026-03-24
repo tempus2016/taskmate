@@ -154,11 +154,6 @@ class ClaimRewardButton(TaskMateBaseButton):
         reward = self.coordinator.get_reward(self.reward_id)
         return reward.icon if reward else "mdi:gift"
 
-    def _get_effective_cost(self, reward: Reward) -> int:
-        """Get the effective cost for this child (dynamic or override)."""
-        costs = self.coordinator.calculate_dynamic_reward_costs(reward)
-        return costs.get(self.child_id, reward.cost)
-
     @property
     def available(self) -> bool:
         """Return if button is available."""
@@ -168,8 +163,7 @@ class ClaimRewardButton(TaskMateBaseButton):
         if not child or not reward:
             return False
 
-        effective_cost = self._get_effective_cost(reward)
-        return child.points >= effective_cost
+        return child.points >= reward.cost
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -180,20 +174,17 @@ class ClaimRewardButton(TaskMateBaseButton):
         if not child or not reward:
             return {}
 
-        effective_cost = self._get_effective_cost(reward)
-        can_afford = child.points >= effective_cost
+        can_afford = child.points >= reward.cost
 
         return {
             "child_id": child.id,
             "child_name": child.name,
             "reward_id": reward.id,
             "reward_name": reward.name,
-            "cost": effective_cost,
-            "override_cost": reward.cost,
-            "is_dynamic": not getattr(reward, 'override_point_value', False),
+            "cost": reward.cost,
             "child_points": child.points,
             "can_afford": can_afford,
-            "points_needed": max(0, effective_cost - child.points),
+            "points_needed": max(0, reward.cost - child.points),
         }
 
     async def async_press(self) -> None:

@@ -19,7 +19,11 @@ from .const import (
     DEFAULT_POINTS_ICON,
     DEFAULT_POINTS_NAME,
     DOMAIN,
+    FIRST_OCCURRENCE_MODES,
+    RECURRENCE_LABELS,
+    RECURRENCE_OPTIONS,
     REWARD_ICON_OPTIONS,
+    SCHEDULE_MODES,
     TIME_CATEGORIES,
     TIME_CATEGORY_ICONS,
 )
@@ -82,6 +86,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         self._selected_child_id: str | None = None
         self._selected_chore_id: str | None = None
         self._selected_reward_id: str | None = None
+        self._chore_step1_data: dict | None = None  # Holds step 1 data while user completes step 2
 
     @property
     def coordinator(self):
@@ -233,7 +238,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
     async def async_step_add_chore(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Add a new chore."""
+        """Add a new chore — Step 1: core fields + schedule mode selection."""
         errors: dict[str, str] = {}
         children = self.coordinator.storage.get_children()
 
@@ -242,33 +247,25 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             if not name:
                 errors["name"] = "name_required"
             else:
-                await self.coordinator.async_add_chore(
-                    name=name,
-                    points=int(user_input.get("points", 10)),
-                    description=user_input.get("description", ""),
-                    due_days=user_input.get("due_days", []),
-                    assigned_to=user_input.get("assigned_to", []),
-                    requires_approval=user_input.get("requires_approval", True),
-                    time_category=user_input.get("time_category", "anytime"),
-                    daily_limit=int(user_input.get("daily_limit", 1)),
-                    completion_percentage_per_month=int(user_input.get("completion_percentage_per_month", 100)),
-                    completion_sound=user_input.get("completion_sound", DEFAULT_COMPLETION_SOUND),
-                )
-                return await self.async_step_manage_chores()
+                # Store step 1 data and proceed to scheduling step
+                self._chore_step1_data = user_input
+                schedule_mode = user_input.get("schedule_mode", "specific_days")
+                if schedule_mode == "specific_days":
+                    return await self.async_step_chore_schedule_specific()
+                else:
+                    return await self.async_step_chore_schedule_recurring()
 
         child_options = [
             selector.SelectOptionDict(value=c.id, label=c.name)
             for c in children
         ]
-
-        day_options = [
-            selector.SelectOptionDict(value=day, label=day.title())
-            for day in DAYS_OF_WEEK
-        ]
-
         time_options = [
             selector.SelectOptionDict(value=tc, label=tc.title())
             for tc in TIME_CATEGORIES
+        ]
+        schedule_mode_options = [
+            selector.SelectOptionDict(value="specific_days", label="Specific days of the week"),
+            selector.SelectOptionDict(value="recurring", label="Recurring (every N days/weeks/months)"),
         ]
 
         schema_dict = {
@@ -283,19 +280,15 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Optional("due_days", default=[]): selector.SelectSelector(
+            vol.Required("schedule_mode", default="specific_days"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
-                    options=day_options,
-                    mode=selector.SelectSelectorMode.DROPDOWN,
-                    multiple=True,
+                    options=schedule_mode_options,
+                    mode=selector.SelectSelectorMode.LIST,
                 )
             ),
             vol.Required("requires_approval", default=True): bool,
             vol.Required("daily_limit", default=1): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=10, mode=selector.NumberSelectorMode.BOX)
-            ),
-            vol.Required("completion_percentage_per_month", default=100): selector.NumberSelector(
-                selector.NumberSelectorConfig(min=0, max=100, mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Optional("completion_sound", default=DEFAULT_COMPLETION_SOUND): selector.SelectSelector(
                 selector.SelectSelectorConfig(
@@ -307,7 +300,6 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 )
             ),
         }
-
         if child_options:
             schema_dict[vol.Optional("assigned_to", default=[])] = selector.SelectSelector(
                 selector.SelectSelectorConfig(
@@ -322,6 +314,121 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema(schema_dict),
             errors=errors,
         )
+
+    async def async_step_chore_schedule_specific(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Add chore — Step 2a: specific days scheduling."""
+        if user_input is not None:
+            s1 = self._chore_step1_data or {}
+            await self.coordinator.async_add_chore(
+                name=s1.get("name", "").strip(),
+                points=int(s1.get("points", 10)),
+                description=s1.get("description", ""),
+                assigned_to=s1.get("assigned_to", []),
+                requires_approval=s1.get("requires_approval", True),
+                time_category=s1.get("time_category", "anytime"),
+                daily_limit=int(s1.get("daily_limit", 1)),
+                completion_sound=s1.get("completion_sound", DEFAULT_COMPLETION_SOUND),
+                schedule_mode="specific_days",
+                due_days=user_input.get("due_days", []),
+            )
+            self._chore_step1_data = None
+            return await self.async_step_manage_chores()
+
+        day_options = [
+            selector.SelectOptionDict(value=day, label=day.title())
+            for day in DAYS_OF_WEEK
+        ]
+        return self.async_show_form(
+            step_id="chore_schedule_specific",
+            data_schema=vol.Schema({
+                vol.Optional("due_days", default=[]): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=day_options,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                        multiple=True,
+                    )
+                ),
+            }),
+        )
+
+    async def async_step_chore_schedule_recurring(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Add chore — Step 2b: recurring schedule."""
+        if user_input is not None:
+            s1 = self._chore_step1_data or {}
+            recurrence = user_input.get("recurrence", "weekly")
+            # Only store recurrence_day if relevant recurrence type
+            recurrence_day = ""
+            if recurrence in ("weekly", "every_2_weeks"):
+                recurrence_day = user_input.get("recurrence_day", "")
+            # Only store recurrence_start if every_2_days
+            recurrence_start = ""
+            if recurrence == "every_2_days":
+                recurrence_start = user_input.get("recurrence_start", "")
+            # Only store first_occurrence_mode if an anchor applies
+            first_occurrence_mode = user_input.get("first_occurrence_mode", "available_immediately")
+
+            await self.coordinator.async_add_chore(
+                name=s1.get("name", "").strip(),
+                points=int(s1.get("points", 10)),
+                description=s1.get("description", ""),
+                assigned_to=s1.get("assigned_to", []),
+                requires_approval=s1.get("requires_approval", True),
+                time_category=s1.get("time_category", "anytime"),
+                daily_limit=int(s1.get("daily_limit", 1)),
+                completion_sound=s1.get("completion_sound", DEFAULT_COMPLETION_SOUND),
+                schedule_mode="recurring",
+                recurrence=recurrence,
+                recurrence_day=recurrence_day,
+                recurrence_start=recurrence_start,
+                first_occurrence_mode=first_occurrence_mode,
+            )
+            self._chore_step1_data = None
+            return await self.async_step_manage_chores()
+
+        recurrence_options = [
+            selector.SelectOptionDict(value=k, label=v)
+            for k, v in RECURRENCE_LABELS.items()
+        ]
+        day_options = [
+            selector.SelectOptionDict(value=day, label=day.title())
+            for day in DAYS_OF_WEEK
+        ]
+        first_occurrence_options = [
+            selector.SelectOptionDict(value="available_immediately", label="Available immediately"),
+            selector.SelectOptionDict(value="wait_for_first_occurrence", label="Wait for first scheduled occurrence"),
+        ]
+
+        return self.async_show_form(
+            step_id="chore_schedule_recurring",
+            data_schema=vol.Schema({
+                vol.Required("recurrence", default="weekly"): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=recurrence_options,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+                vol.Optional("recurrence_day", default=""): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[selector.SelectOptionDict(value="", label="Any day")] + day_options,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+                vol.Optional("recurrence_start", default=""): selector.TextSelector(
+                    selector.TextSelectorConfig()
+                ),
+                vol.Required("first_occurrence_mode", default="available_immediately"): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=first_occurrence_options,
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
+            }),
+        )
+
 
     async def async_step_add_chores_bulk(
         self, user_input: dict[str, Any] | None = None
@@ -353,7 +460,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         requires_approval=user_input.get("requires_approval", True),
                         time_category=user_input.get("time_category", "anytime"),
                         daily_limit=int(user_input.get("daily_limit", 1)),
-                        completion_percentage_per_month=int(user_input.get("completion_percentage_per_month", 100)),
+                        schedule_mode="specific_days",
                         completion_sound=user_input.get("completion_sound", DEFAULT_COMPLETION_SOUND),
                     )
                     return await self.async_step_manage_chores()
@@ -399,9 +506,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             vol.Required("daily_limit", default=1): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=10, mode=selector.NumberSelectorMode.BOX)
             ),
-            vol.Required("completion_percentage_per_month", default=100): selector.NumberSelector(
-                selector.NumberSelectorConfig(min=0, max=100, mode=selector.NumberSelectorMode.BOX)
-            ),
+
             vol.Optional("completion_sound", default=DEFAULT_COMPLETION_SOUND): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=[
@@ -434,51 +539,55 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
     async def async_step_edit_chore(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Edit a chore."""
-        chore = self.coordinator.get_chore(self._selected_chore_id)
+        """Edit an existing chore — Step 1: core fields + schedule mode."""
+        errors: dict[str, str] = {}
+        chore_id = self._selected_chore_id
+        chore = self.coordinator.get_chore(chore_id)
         if not chore:
             return await self.async_step_manage_chores()
 
-        errors: dict[str, str] = {}
         children = self.coordinator.storage.get_children()
 
         if user_input is not None:
-            action = user_input.get("action")
+            action = user_input.get("action", "save")
             if action == "delete":
-                await self.coordinator.async_remove_chore(chore.id)
+                await self.coordinator.async_delete_chore(chore_id)
                 return await self.async_step_manage_chores()
-            elif action == "save":
-                chore.name = user_input.get("name", chore.name)
-                chore.description = user_input.get("description", chore.description)
-                chore.points = int(user_input.get("points", chore.points))
-                chore.due_days = user_input.get("due_days", chore.due_days)
-                chore.assigned_to = user_input.get("assigned_to", chore.assigned_to)
-                chore.requires_approval = user_input.get("requires_approval", chore.requires_approval)
-                chore.time_category = user_input.get("time_category", chore.time_category)
-                chore.daily_limit = int(user_input.get("daily_limit", chore.daily_limit))
-                chore.completion_percentage_per_month = int(user_input.get("completion_percentage_per_month", getattr(chore, 'completion_percentage_per_month', 100)))
-                chore.completion_sound = user_input.get("completion_sound", chore.completion_sound)
-                await self.coordinator.async_update_chore(chore)
-                return await self.async_step_manage_chores()
+
+            name = user_input.get("name", "").strip()
+            if not name:
+                errors["name"] = "name_required"
+            else:
+                self._chore_step1_data = {**user_input, "_editing": True, "_chore_id": chore_id}
+                schedule_mode = user_input.get("schedule_mode", "specific_days")
+                if schedule_mode == "specific_days":
+                    return await self.async_step_edit_chore_schedule_specific()
+                else:
+                    return await self.async_step_edit_chore_schedule_recurring()
 
         child_options = [
             selector.SelectOptionDict(value=c.id, label=c.name)
             for c in children
         ]
-
-        day_options = [
-            selector.SelectOptionDict(value=day, label=day.title())
-            for day in DAYS_OF_WEEK
-        ]
-
         time_options = [
             selector.SelectOptionDict(value=tc, label=tc.title())
             for tc in TIME_CATEGORIES
         ]
+        schedule_mode_options = [
+            selector.SelectOptionDict(value="specific_days", label="Specific days of the week"),
+            selector.SelectOptionDict(value="recurring", label="Recurring (every N days/weeks/months)"),
+        ]
+        action_options = [
+            selector.SelectOptionDict(value="save", label="Save Changes"),
+            selector.SelectOptionDict(value="delete", label="Delete This Chore"),
+        ]
+
+        current_assigned = chore.assigned_to if isinstance(chore.assigned_to, list) else []
+        current_schedule_mode = getattr(chore, 'schedule_mode', 'specific_days')
 
         schema_dict = {
             vol.Required("name", default=chore.name): str,
-            vol.Optional("description", default=chore.description): str,
+            vol.Optional("description", default=chore.description or ""): str,
             vol.Required("points", default=chore.points): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=1000, mode=selector.NumberSelectorMode.BOX)
             ),
@@ -488,19 +597,15 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Optional("due_days", default=chore.due_days): selector.SelectSelector(
+            vol.Required("schedule_mode", default=current_schedule_mode): selector.SelectSelector(
                 selector.SelectSelectorConfig(
-                    options=day_options,
-                    mode=selector.SelectSelectorMode.DROPDOWN,
-                    multiple=True,
+                    options=schedule_mode_options,
+                    mode=selector.SelectSelectorMode.LIST,
                 )
             ),
             vol.Required("requires_approval", default=chore.requires_approval): bool,
             vol.Required("daily_limit", default=chore.daily_limit): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=10, mode=selector.NumberSelectorMode.BOX)
-            ),
-            vol.Required("completion_percentage_per_month", default=getattr(chore, 'completion_percentage_per_month', 100)): selector.NumberSelector(
-                selector.NumberSelectorConfig(min=0, max=100, mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Optional("completion_sound", default=getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND)): selector.SelectSelector(
                 selector.SelectSelectorConfig(
@@ -513,17 +618,13 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Required("action", default="save"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
-                    options=[
-                        selector.SelectOptionDict(value="save", label="Save Changes"),
-                        selector.SelectOptionDict(value="delete", label="Delete Chore"),
-                    ],
+                    options=action_options,
                     mode=selector.SelectSelectorMode.LIST,
                 )
             ),
         }
-
         if child_options:
-            schema_dict[vol.Optional("assigned_to", default=chore.assigned_to)] = selector.SelectSelector(
+            schema_dict[vol.Optional("assigned_to", default=current_assigned)] = selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=child_options,
                     mode=selector.SelectSelectorMode.DROPDOWN,
@@ -538,7 +639,126 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             description_placeholders={"chore_name": chore.name},
         )
 
-    # ==================== REWARDS MANAGEMENT ====================
+    async def async_step_edit_chore_schedule_specific(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Edit chore — Step 2a: specific days."""
+        s1 = self._chore_step1_data or {}
+        chore_id = s1.get("_chore_id") or self._selected_chore_id
+        chore = self.coordinator.get_chore(chore_id)
+        if not chore:
+            return await self.async_step_manage_chores()
+
+        if user_input is not None:
+            chore.name = s1.get("name", chore.name).strip()
+            chore.points = int(s1.get("points", chore.points))
+            chore.description = s1.get("description", chore.description)
+            chore.assigned_to = s1.get("assigned_to", chore.assigned_to)
+            chore.requires_approval = s1.get("requires_approval", chore.requires_approval)
+            chore.time_category = s1.get("time_category", chore.time_category)
+            chore.daily_limit = int(s1.get("daily_limit", chore.daily_limit))
+            chore.completion_sound = s1.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
+            chore.schedule_mode = "specific_days"
+            chore.due_days = user_input.get("due_days", [])
+            # Clear recurring fields
+            chore.recurrence = "weekly"
+            chore.recurrence_day = ""
+            chore.recurrence_start = ""
+            chore.first_occurrence_mode = "available_immediately"
+            await self.coordinator.async_update_chore(chore)
+            self._chore_step1_data = None
+            return await self.async_step_manage_chores()
+
+        day_options = [
+            selector.SelectOptionDict(value=day, label=day.title())
+            for day in DAYS_OF_WEEK
+        ]
+        return self.async_show_form(
+            step_id="edit_chore_schedule_specific",
+            data_schema=vol.Schema({
+                vol.Optional("due_days", default=chore.due_days or []): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=day_options,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                        multiple=True,
+                    )
+                ),
+            }),
+            description_placeholders={"chore_name": chore.name},
+        )
+
+    async def async_step_edit_chore_schedule_recurring(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Edit chore — Step 2b: recurring schedule."""
+        s1 = self._chore_step1_data or {}
+        chore_id = s1.get("_chore_id") or self._selected_chore_id
+        chore = self.coordinator.get_chore(chore_id)
+        if not chore:
+            return await self.async_step_manage_chores()
+
+        if user_input is not None:
+            chore.name = s1.get("name", chore.name).strip()
+            chore.points = int(s1.get("points", chore.points))
+            chore.description = s1.get("description", chore.description)
+            chore.assigned_to = s1.get("assigned_to", chore.assigned_to)
+            chore.requires_approval = s1.get("requires_approval", chore.requires_approval)
+            chore.time_category = s1.get("time_category", chore.time_category)
+            chore.daily_limit = int(s1.get("daily_limit", chore.daily_limit))
+            chore.completion_sound = s1.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
+            chore.schedule_mode = "recurring"
+            chore.due_days = []
+            recurrence = user_input.get("recurrence", "weekly")
+            chore.recurrence = recurrence
+            chore.recurrence_day = user_input.get("recurrence_day", "") if recurrence in ("weekly", "every_2_weeks") else ""
+            chore.recurrence_start = user_input.get("recurrence_start", "") if recurrence == "every_2_days" else ""
+            chore.first_occurrence_mode = user_input.get("first_occurrence_mode", "available_immediately")
+            await self.coordinator.async_update_chore(chore)
+            self._chore_step1_data = None
+            return await self.async_step_manage_chores()
+
+        recurrence_options = [
+            selector.SelectOptionDict(value=k, label=v)
+            for k, v in RECURRENCE_LABELS.items()
+        ]
+        day_options = [
+            selector.SelectOptionDict(value=day, label=day.title())
+            for day in DAYS_OF_WEEK
+        ]
+        first_occurrence_options = [
+            selector.SelectOptionDict(value="available_immediately", label="Available immediately"),
+            selector.SelectOptionDict(value="wait_for_first_occurrence", label="Wait for first scheduled occurrence"),
+        ]
+        current_recurrence = getattr(chore, 'recurrence', 'weekly')
+
+        return self.async_show_form(
+            step_id="edit_chore_schedule_recurring",
+            data_schema=vol.Schema({
+                vol.Required("recurrence", default=current_recurrence): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=recurrence_options,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+                vol.Optional("recurrence_day", default=getattr(chore, 'recurrence_day', '')): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[selector.SelectOptionDict(value="", label="Any day")] + day_options,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+                vol.Optional("recurrence_start", default=getattr(chore, 'recurrence_start', '')): selector.TextSelector(
+                    selector.TextSelectorConfig()
+                ),
+                vol.Required("first_occurrence_mode", default=getattr(chore, 'first_occurrence_mode', 'available_immediately')): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=first_occurrence_options,
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
+            }),
+            description_placeholders={"chore_name": chore.name},
+        )
+
 
     async def async_step_manage_rewards(
         self, user_input: dict[str, Any] | None = None
@@ -576,8 +796,6 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     icon=user_input.get("icon", "mdi:gift"),
                     assigned_to=user_input.get("assigned_to", []),
                     is_jackpot=user_input.get("is_jackpot", False),
-                    override_point_value=user_input.get("override_point_value", False),
-                    days_to_goal=int(user_input.get("days_to_goal", 30)),
                 )
                 return await self.async_step_manage_rewards()
 
@@ -599,11 +817,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 )
             ),
             vol.Optional("is_jackpot", default=False): selector.BooleanSelector(),
-            vol.Required("days_to_goal", default=30): selector.NumberSelector(
-                selector.NumberSelectorConfig(min=1, max=365, mode=selector.NumberSelectorMode.BOX)
-            ),
-            vol.Optional("override_point_value", default=False): selector.BooleanSelector(),
-            vol.Optional("cost", default=50): selector.NumberSelector(
+            vol.Required("cost", default=50): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=10000, mode=selector.NumberSelectorMode.BOX)
             ),
         }
@@ -646,8 +860,6 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 reward.icon = user_input.get("icon", reward.icon)
                 reward.assigned_to = user_input.get("assigned_to", reward.assigned_to)
                 reward.is_jackpot = user_input.get("is_jackpot", reward.is_jackpot)
-                reward.override_point_value = user_input.get("override_point_value", getattr(reward, 'override_point_value', False))
-                reward.days_to_goal = int(user_input.get("days_to_goal", getattr(reward, 'days_to_goal', 30)))
                 await self.coordinator.async_update_reward(reward)
                 return await self.async_step_manage_rewards()
 
@@ -669,10 +881,6 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 )
             ),
             vol.Optional("is_jackpot", default=getattr(reward, 'is_jackpot', False)): selector.BooleanSelector(),
-            vol.Required("days_to_goal", default=getattr(reward, 'days_to_goal', 30)): selector.NumberSelector(
-                selector.NumberSelectorConfig(min=1, max=365, mode=selector.NumberSelectorMode.BOX)
-            ),
-            vol.Optional("override_point_value", default=getattr(reward, 'override_point_value', False)): selector.BooleanSelector(),
             vol.Optional("cost", default=reward.cost): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=10000, mode=selector.NumberSelectorMode.BOX)
             ),
