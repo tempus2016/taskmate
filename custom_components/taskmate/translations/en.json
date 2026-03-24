@@ -78,7 +78,7 @@
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
-          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a recurring interval"
+          "schedule_mode": "Specific Days — choose which days of the week the chore appears. Recurring — set a repeating interval (weekly, fortnightly, monthly etc)"
         }
       },
       "add_chores_bulk": {
@@ -187,55 +187,55 @@
         }
       },
       "chore_schedule_specific": {
-        "title": "Chore Schedule — Specific Days",
-        "description": "Choose which days of the week this chore should appear",
+        "title": "Step 2 — Specific Days",
+        "description": "Choose which days of the week this chore should appear on the child card. Leave empty to show every day.",
         "data": {
-          "due_days": "Due Days (leave empty for every day)"
+          "due_days": "Due Days"
         },
         "data_description": {
-          "due_days": "Chore will appear on selected days only. Leave empty to show every day."
+          "due_days": "Select one or more days. Leave empty to show the chore every day. Use Due Days Mode on the child card to hide or dim chores on non-scheduled days."
         }
       },
       "edit_chore_schedule_specific": {
-        "title": "Edit Chore Schedule — Specific Days",
-        "description": "Choose which days of the week this chore should appear",
+        "title": "Step 2 — Specific Days",
+        "description": "Choose which days of the week this chore should appear on the child card. Leave empty to show every day.",
         "data": {
-          "due_days": "Due Days (leave empty for every day)"
+          "due_days": "Due Days"
         },
         "data_description": {
-          "due_days": "Chore will appear on selected days only. Leave empty to show every day."
+          "due_days": "Select one or more days. Leave empty to show the chore every day. Use Due Days Mode on the child card to hide or dim chores on non-scheduled days."
         }
       },
       "chore_schedule_recurring": {
-        "title": "Chore Schedule — Recurring",
-        "description": "Set the recurrence interval for this chore",
+        "title": "Step 2 — Recurring Schedule",
+        "description": "Set how often this chore can be completed. Once completed, it will not be available again until the window resets.",
         "data": {
           "recurrence": "Recurrence",
           "recurrence_day": "Day of Week (optional)",
-          "recurrence_start": "Start Date (optional, YYYY-MM-DD)",
-          "first_occurrence_mode": "First Occurrence"
+          "recurrence_start": "Start Date (optional)",
+          "first_occurrence_mode": "When is it first available?"
         },
         "data_description": {
-          "recurrence": "How often this chore can be completed",
-          "recurrence_day": "For weekly/every 2 weeks — pin to a specific day. Leave empty for any day.",
-          "recurrence_start": "For every 2 days — anchor date for the rhythm. Leave empty to use creation date.",
-          "first_occurrence_mode": "Whether the chore is available immediately or waits for its first scheduled occurrence"
+          "recurrence": "How often the chore can be completed",
+          "recurrence_day": "For Weekly and Every 2 Weeks — pin the chore to a specific day. Leave empty to allow completion on any day.",
+          "recurrence_start": "For Every 2 Days — pick an anchor date for the rhythm. Leave empty to use today as the start.",
+          "first_occurrence_mode": "Available Immediately — child can complete it straight away. Wait for First Occurrence — chore is locked until the first scheduled day arrives."
         }
       },
       "edit_chore_schedule_recurring": {
-        "title": "Edit Chore Schedule — Recurring",
-        "description": "Set the recurrence interval for this chore",
+        "title": "Step 2 — Recurring Schedule",
+        "description": "Set how often this chore can be completed. Once completed, it will not be available again until the window resets.",
         "data": {
           "recurrence": "Recurrence",
           "recurrence_day": "Day of Week (optional)",
-          "recurrence_start": "Start Date (optional, YYYY-MM-DD)",
-          "first_occurrence_mode": "First Occurrence"
+          "recurrence_start": "Start Date (optional)",
+          "first_occurrence_mode": "When is it first available?"
         },
         "data_description": {
-          "recurrence": "How often this chore can be completed",
-          "recurrence_day": "For weekly/every 2 weeks — pin to a specific day. Leave empty for any day.",
-          "recurrence_start": "For every 2 days — anchor date for the rhythm. Leave empty to use creation date.",
-          "first_occurrence_mode": "Whether the chore is available immediately or waits for its first scheduled occurrence"
+          "recurrence": "How often the chore can be completed",
+          "recurrence_day": "For Weekly and Every 2 Weeks — pin the chore to a specific day. Leave empty to allow completion on any day.",
+          "recurrence_start": "For Every 2 Days — pick an anchor date for the rhythm. Leave empty to use today as the start.",
+          "first_occurrence_mode": "Available Immediately — child can complete it straight away. Wait for First Occurrence — chore is locked until the first scheduled day arrives."
         }
       }
     },
