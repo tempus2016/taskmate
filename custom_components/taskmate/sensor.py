@@ -300,6 +300,14 @@ class ChoremandorOverallStatsSensor(TaskMateBaseSensor):
                 rewards,
                 child_lookup,
             ),
+            "penalties": [{
+                "id": p.id,
+                "name": p.name,
+                "points": p.points,
+                "description": p.description,
+                "icon": p.icon,
+                "assigned_to": p.assigned_to or [],
+            } for p in data.get("penalties", [])],
         }
 
     @property

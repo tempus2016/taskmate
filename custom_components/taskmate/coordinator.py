@@ -205,6 +205,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             "points_name": self.storage.get_points_name(),
             "points_icon": self.storage.get_points_icon(),
             "settings": self.storage._data.get("settings", {}),
+            "penalties": self.storage.get_penalties(),
         }
 
     # Child operations
@@ -679,6 +680,51 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         self.storage.remove_reward_claim(claim_id)
         await self.storage.async_save()
         await self.async_refresh()
+
+    # Penalty operations
+    async def async_add_penalty(
+        self,
+        name: str,
+        points: int,
+        description: str = "",
+        icon: str = "mdi:alert-circle-outline",
+        assigned_to: list | None = None,
+    ):
+        """Create a new penalty definition."""
+        from .models import Penalty
+        penalty = Penalty(
+            name=name,
+            points=points,
+            description=description,
+            icon=icon,
+            assigned_to=assigned_to or [],
+        )
+        self.storage.add_penalty(penalty)
+        await self.storage.async_save()
+        await self.async_refresh()
+        return penalty
+
+    async def async_update_penalty(self, penalty) -> None:
+        """Update an existing penalty definition."""
+        self.storage.update_penalty(penalty)
+        await self.storage.async_save()
+        await self.async_refresh()
+
+    async def async_remove_penalty(self, penalty_id: str) -> None:
+        """Delete a penalty definition."""
+        self.storage.remove_penalty(penalty_id)
+        await self.storage.async_save()
+        await self.async_refresh()
+
+    async def async_apply_penalty(self, penalty_id: str, child_id: str) -> None:
+        """Apply a penalty — deducts the penalty's points from the child."""
+        penalty = self.storage.get_penalty(penalty_id)
+        if not penalty:
+            raise ValueError(f"Penalty {penalty_id} not found")
+        child = self.get_child(child_id)
+        if not child:
+            raise ValueError(f"Child {child_id} not found")
+        await self.async_remove_points(child_id, penalty.points, reason=f"Penalty: {penalty.name}")
 
     # Points operations
     async def async_add_points(self, child_id: str, points: int, reason: str = "") -> None:
