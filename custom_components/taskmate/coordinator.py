@@ -390,7 +390,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         try:
             last_dt = date.fromisoformat(current_iso[:10])
-        except ValueError:
+        except (ValueError, TypeError):
             return True
 
         # every_2_days with anchor — check alignment
@@ -676,10 +676,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
     async def async_reject_reward(self, claim_id: str) -> None:
         """Reject a reward claim — no refund needed as points were never deducted."""
-        self.storage._data["reward_claims"] = [
-            c for c in self.storage._data.get("reward_claims", [])
-            if c.get("id") != claim_id
-        ]
+        self.storage.remove_reward_claim(claim_id)
         await self.storage.async_save()
         await self.async_refresh()
 

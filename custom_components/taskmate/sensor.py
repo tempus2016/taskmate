@@ -23,6 +23,22 @@ from .models import Child, Chore, Reward
 _LOGGER = logging.getLogger(__name__)
 
 
+def _safe_float(value, default: float) -> float:
+    """Convert value to float, returning default on failure."""
+    try:
+        return float(value) if value is not None else default
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_int(value, default: int) -> int:
+    """Convert value to int, returning default on failure."""
+    try:
+        return int(value) if value is not None else default
+    except (ValueError, TypeError):
+        return default
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -147,7 +163,7 @@ class ChoremandorOverallStatsSensor(TaskMateBaseSensor):
                     "completion_id": comp.id,
                     "chore_id": comp.chore_id,
                     "child_id": comp.child_id,
-                    "child_name": child_lookup.get(comp.child_id, None) and child_lookup[comp.child_id].name or "",
+                    "child_name": child_lookup[comp.child_id].name if comp.child_id in child_lookup else "",
                     "chore_name": matched_chore.name if matched_chore else "",
                     "points": matched_chore.points if matched_chore else 0,
                     "approved": comp.approved,
@@ -231,11 +247,11 @@ class ChoremandorOverallStatsSensor(TaskMateBaseSensor):
         return {
             "today_day_of_week": today_dow,
             "streak_reset_mode": data.get("settings", {}).get("streak_reset_mode", "reset"),
-            "weekend_multiplier": float(data.get("settings", {}).get("weekend_multiplier", "2.0") or "2.0"),
+            "weekend_multiplier": _safe_float(data.get("settings", {}).get("weekend_multiplier"), 2.0),
             "streak_milestones_enabled": data.get("settings", {}).get("streak_milestones_enabled", "true") == "true",
             "streak_milestones": data.get("settings", {}).get("streak_milestones", "3:5, 7:10, 14:20, 30:50, 60:100, 100:200"),
             "perfect_week_enabled": data.get("settings", {}).get("perfect_week_enabled", "true") == "true",
-            "perfect_week_bonus": int(data.get("settings", {}).get("perfect_week_bonus", "50") or "50"),
+            "perfect_week_bonus": _safe_int(data.get("settings", {}).get("perfect_week_bonus"), 50),
             "total_children": len(children),
             "total_chores": len(chores),
             "total_rewards": len(rewards),
