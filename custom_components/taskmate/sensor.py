@@ -183,6 +183,7 @@ class ChoremandorOverallStatsSensor(TaskMateBaseSensor):
             chores_list.append({
                 "id": c.id,
                 "name": c.name,
+                "description": getattr(c, 'description', '') or '',
                 "points": c.points,
                 "time_category": c.time_category,
                 "daily_limit": getattr(c, 'daily_limit', 1),
