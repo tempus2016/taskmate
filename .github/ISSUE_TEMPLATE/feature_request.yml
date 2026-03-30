@@ -1,0 +1,148 @@
+name: Feature Request
+description: Suggest a new feature or improvement for TaskMate
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+assignees:
+  - tempus2016
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please fill in as much detail as you can — the more context you give, the easier it is to understand and implement.
+        
+        Before submitting, please search [existing issues](https://github.com/tempus2016/taskmate/issues) to check if this has already been requested.
+
+  # ── Feature Summary ───────────────────────────────────────────────────────────
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: A short, clear summary of what you're requesting.
+      placeholder: |
+        e.g. Add the ability to set a chore as "optional" so it shows on the child card but doesn't count against the streak if missed.
+    validations:
+      required: true
+
+  # ── Problem / Motivation ─────────────────────────────────────────────────────
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: |
+        Describe the problem or gap you're experiencing. Good feature requests start with a real problem, not just a solution.
+      placeholder: |
+        e.g. Some chores in our house are optional extras (tidying the playroom, helping with cooking) but right now if I add them, missing them breaks the streak. I want to reward the kids for doing them without penalising them for not doing them.
+    validations:
+      required: true
+
+  # ── Proposed Solution ─────────────────────────────────────────────────────────
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: |
+        How do you imagine this working? Describe the feature as you'd like to see it implemented. Include UI details, config options, behaviour — whatever helps paint the picture.
+      placeholder: |
+        e.g. Add an "Optional" toggle on the chore edit form. Optional chores would:
+        - Show on the child card with a different visual style (e.g. dashed border)
+        - Award points when completed
+        - NOT count toward streak calculation when missed
+        - Have a small "bonus" label so kids know they're extra credit
+    validations:
+      required: true
+
+  # ── Area ─────────────────────────────────────────────────────────────────────
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this relate to?
+      description: Select all that apply.
+      multiple: true
+      options:
+        - Child Card
+        - Rewards Card
+        - Approvals Card
+        - Points Card
+        - Reorder Card
+        - Parent Dashboard Card
+        - Overview Card
+        - Activity Card
+        - Streak Card
+        - Weekly Card
+        - Points Graph Card
+        - Reward Progress Card
+        - Leaderboard Card
+        - Chore management (config flow)
+        - Reward management (config flow)
+        - Children management (config flow)
+        - Settings / configuration
+        - Bonus points system
+        - Streaks / milestones
+        - Notifications / alerts
+        - Services / automations
+        - Sensors / entity attributes
+        - Installation / HACS
+        - New card (not listed above)
+        - Other / not sure
+    validations:
+      required: true
+
+  # ── Alternatives ─────────────────────────────────────────────────────────────
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: |
+        Have you found any workarounds? Are there other ways this could be solved?
+      placeholder: |
+        e.g. I tried creating a separate reward for the optional chores but that doesn't quite work because...
+
+  # ── Priority ──────────────────────────────────────────────────────────────────
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: How important is this to you?
+      options:
+        - Nice to have — would improve the experience
+        - Important — a gap that affects my daily use
+        - Critical — a blocker for me using TaskMate properly
+    validations:
+      required: true
+
+  # ── Use Case ──────────────────────────────────────────────────────────────────
+
+  - type: input
+    id: children_count
+    attributes:
+      label: How many children are you using TaskMate with?
+      placeholder: e.g. 2
+    validations:
+      required: false
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Additional Context
+      description: |
+        Anything else that helps explain your situation — ages of children, how you currently use TaskMate, screenshots of what you'd like to see, mockups, etc.
+        
+        You can drag and drop images directly into this box.
+
+  # ── Checklist ─────────────────────────────────────────────────────────────────
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before Submitting
+      options:
+        - label: I have searched [existing issues](https://github.com/tempus2016/taskmate/issues) and this has not already been requested
+          required: true
+        - label: I have checked the [wiki](https://github.com/tempus2016/taskmate/wiki) and this feature doesn't already exist
+          required: true
