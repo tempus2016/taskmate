@@ -1,0 +1,19 @@
+{
+  "domain": "taskmate",
+  "name": "TaskMate",
+  "codeowners": [
+    "@vinnybad"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http",
+    "lovelace",
+    "frontend"
+  ],
+  "documentation": "https://github.com/vinnybad/taskmate",
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/vinnybad/taskmate/issues",
+  "requirements": [],
+  "version": "1.0.5"
+}
