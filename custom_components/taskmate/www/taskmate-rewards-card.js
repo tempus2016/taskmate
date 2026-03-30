@@ -979,14 +979,16 @@ class TaskMateRewardsCard extends LitElement {
         </div>
         <div class="jackpot-breakdown">
           ${childContributions.map((contrib) => html`
-            <span class="jackpot-child-contribution" title="${hasWeightedData ? `Expected: ${contrib.expectedContribution}, Progress: ${Math.round(contrib.weightedProgress)}%` : ''}">
+            <span class="jackpot-child-contribution">
               <span class="color-dot color-${contrib.colorIndex}"></span>
-              ${contrib.name}: ${hasWeightedData ? html`${Math.round(contrib.weightedProgress)}%` : html`${contrib.points} <ha-icon icon="${pointsIcon}" style="--mdc-icon-size: 12px;"></ha-icon>`}
+              <strong>${contrib.name}</strong>:
+              ${contrib.points}
+              <ha-icon icon="${pointsIcon}" style="--mdc-icon-size: 12px;"></ha-icon>
+              ${hasWeightedData && contrib.expectedContribution > 0 ? html`
+                <span class="jackpot-pct">(${Math.round(contrib.weightedProgress)}%)</span>
+              ` : ''}
             </span>
           `)}
-          ${childContributions.length > 1 ? html`
-            <span class="jackpot-total">${totalStars}/${cost} total</span>
-          ` : ''}
         </div>
       </div>
     `;
