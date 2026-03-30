@@ -347,23 +347,6 @@ class TaskMateRewardProgressCard extends LitElement {
         .big-progress-bar { height: 18px; border-radius: 9px; }
         .child-progress-block { padding: 12px; }
       }
-      <div class="field-row">
-        <label class="field-label">Header Colour</label>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input
-            type="color"
-            .value=${this.config.header_color || '#7d3c98'}
-            @input=${e => this._updateConfig('header_color', e.target.value)}
-            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
-          />
-          <span style="font-size:13px;color:var(--secondary-text-color);">${this.config.header_color || '#7d3c98'}</span>
-          <button
-            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
-            @click=${() => this._updateConfig('header_color', '#7d3c98')}
-          >Reset</button>
-        </div>
-        <span class="field-helper">Card header background colour</span>
-      </div>
     `;
   }
 
@@ -627,6 +610,24 @@ class TaskMateRewardProgressCardEditor extends LitElement {
         </select>
         <span class="field-helper">Show only this child's progress</span>
       </div>
+        <span class="field-helper">Card header background colour</span>
+      </div>
+    
+      <div class="field-row">
+        <label class="field-label">Header Colour</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input
+            type="color"
+            .value=${this.config.header_color || '#7d3c98'}
+            @input=${e => this._update('header_color', e.target.value)}
+            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
+          />
+          <span style="font-size:13px;color:var(--secondary-text-color);">${this.config.header_color || '#7d3c98'}</span>
+          <button
+            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
+            @click=${() => this._update('header_color', '#7d3c98')}
+          >Reset</button>
+        </div>
         <span class="field-helper">Card header background colour</span>
       </div>
     `;
