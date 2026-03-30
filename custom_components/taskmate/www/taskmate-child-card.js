@@ -990,122 +990,63 @@ class TaskMateChildCard extends LitElement {
         margin-bottom: 16px;
       }
 
-      /* Tablet-first responsive design */
-      /* Portrait tablets and phones */
-      @media (max-width: 600px) {
-        .card-header {
-          flex-direction: column;
-          gap: 16px;
-          text-align: center;
-          padding: 24px 20px;
-        }
+      /* ── Responsive — header and chore cards always stay horizontal ── */
 
-        .child-info {
-          flex-direction: column;
-        }
-
-        .chores-container {
-          padding: 24px 16px;
-          gap: 20px;
-        }
-
-        .chore-card {
-          padding: 16px 18px;
-          flex-wrap: wrap;
-        }
-
-        .chore-info {
-          flex: 1 1 100%;
-          margin-bottom: 12px;
-        }
-
-        .chore-number-wrapper {
-          gap: 10px;
-        }
-
-        .chore-number-badge {
-          width: 36px;
-          height: 36px;
-          min-width: 36px;
-          font-size: 1.3rem;
-        }
-
-        .chore-checkbox {
-          width: 40px;
-          height: 40px;
-          min-width: 40px;
-        }
-
-        .chore-checkbox ha-icon {
-          --mdc-icon-size: 24px;
-        }
-
-        .chore-name {
-          font-size: 1.3rem;
-        }
+      /* Small phones ≤380px */
+      @media (max-width: 380px) {
+        .card-header { padding: 10px 12px; gap: 8px; }
+        .avatar-container { width: 36px; height: 36px; min-width: 36px; }
+        .avatar-container ha-icon { --mdc-icon-size: 22px; }
+        .chores-container { padding: 10px; gap: 8px; }
+        .section-title { font-size: 1rem; margin-bottom: 4px; }
+        .chore-card { padding: 10px 12px; gap: 8px; min-height: 54px; flex-wrap: nowrap; }
+        .chore-info { flex: 1; min-width: 0; overflow: hidden; }
+        .chore-number-badge { width: 30px; height: 30px; min-width: 30px; font-size: 1rem; }
+        .chore-name { font-size: 0.95rem; }
+        .chore-points { font-size: 0.82rem; }
+        .chore-checkbox { width: 34px; height: 34px; min-width: 34px; border-radius: 8px; }
+        .chore-checkbox ha-icon { --mdc-icon-size: 20px; }
       }
 
-      /* Landscape tablets - ensure side-by-side layout */
-      @media (min-width: 601px) and (max-height: 600px) {
-        .chore-card {
-          padding: 16px 20px;
-        }
-
-        .chore-checkbox {
-          width: 42px;
-          height: 42px;
-          min-width: 42px;
-        }
+      /* Standard phones 381–600px */
+      @media (min-width: 381px) and (max-width: 600px) {
+        .card-header { padding: 12px 14px; gap: 10px; }
+        .avatar-container { width: 40px; height: 40px; min-width: 40px; }
+        .avatar-container ha-icon { --mdc-icon-size: 26px; }
+        .chores-container { padding: 12px; gap: 9px; }
+        .section-title { font-size: 1.05rem; margin-bottom: 6px; }
+        .chore-card { padding: 12px 14px; gap: 10px; min-height: 58px; flex-wrap: nowrap; }
+        .chore-info { flex: 1; min-width: 0; overflow: hidden; }
+        .chore-number-badge { width: 34px; height: 34px; min-width: 34px; font-size: 1.1rem; }
+        .chore-name { font-size: 1rem; }
+        .chore-checkbox { width: 36px; height: 36px; min-width: 36px; }
+        .chore-checkbox ha-icon { --mdc-icon-size: 22px; }
       }
 
-      /* Large tablets (iPad Pro, etc.) */
+      /* Landscape phones */
+      @media (max-width: 900px) and (max-height: 500px) {
+        .card-header { padding: 8px 14px; }
+        .chores-container { padding: 8px; gap: 6px; }
+        .chore-card { padding: 8px 12px; min-height: 48px; flex-wrap: nowrap; }
+        .chore-name { font-size: 0.95rem; }
+      }
+
+      /* Tablets 601–1023px */
+      @media (min-width: 601px) and (max-width: 1023px) {
+        .chore-card { padding: 14px 16px; flex-wrap: nowrap; }
+        .chore-name { font-size: 1.1rem; }
+      }
+
+      /* Desktop ≥1024px — keep compact, never inflate */
       @media (min-width: 1024px) {
-        .card-header {
-          padding: 24px 32px;
-        }
-
-        .chores-container {
-          padding: 28px;
-          gap: 20px;
-        }
-
-        .section-title {
-          font-size: 2rem;
-        }
-
-        .chore-card {
-          padding: 24px 28px;
-        }
-
-        .chore-number-wrapper {
-          gap: 14px;
-        }
-
-        .chore-number-badge {
-          width: 48px;
-          height: 48px;
-          min-width: 48px;
-          font-size: 1.7rem;
-        }
-
-        .chore-checkbox {
-          width: 50px;
-          height: 50px;
-          min-width: 50px;
-          border-radius: 14px;
-        }
-
-        .chore-checkbox ha-icon {
-          --mdc-icon-size: 32px;
-        }
-
-        .chore-name {
-          font-size: 1.7rem;
-        }
-
-        .chore-points {
-          font-size: 1.4rem;
-        }
+        .chores-container { padding: 16px; gap: 10px; }
+        .section-title { font-size: 1.2rem; }
+        .chore-card { padding: 14px 18px; min-height: 62px; flex-wrap: nowrap; }
+        .chore-number-badge { width: 36px; height: 36px; min-width: 36px; font-size: 1.15rem; }
+        .chore-name { font-size: 1.05rem; }
+        .chore-points { font-size: 0.92rem; }
+        .chore-checkbox { width: 38px; height: 38px; min-width: 38px; border-radius: 9px; }
+        .chore-checkbox ha-icon { --mdc-icon-size: 22px; }
       }
     `;
   }
