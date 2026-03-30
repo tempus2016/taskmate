@@ -722,6 +722,22 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 "history_days",
                 str(int(float(user_input.get("history_days", 90)))),
             )
+            await self.coordinator.async_set_setting(
+                "weekend_multiplier",
+                str(float(user_input.get("weekend_multiplier", 2.0))),
+            )
+            await self.coordinator.async_set_setting(
+                "streak_milestones_enabled",
+                "true" if user_input.get("streak_milestones_enabled", True) else "false",
+            )
+            await self.coordinator.async_set_setting(
+                "perfect_week_enabled",
+                "true" if user_input.get("perfect_week_enabled", True) else "false",
+            )
+            await self.coordinator.async_set_setting(
+                "perfect_week_bonus",
+                str(int(float(user_input.get("perfect_week_bonus", 50)))),
+            )
             return await self.async_step_init()
 
         current_streak_mode = self.coordinator.storage.get_setting("streak_reset_mode", "reset")
@@ -729,6 +745,16 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             current_history_days = float(self.coordinator.storage.get_setting("history_days", "90"))
         except (ValueError, TypeError):
             current_history_days = 90.0
+        try:
+            current_weekend_multiplier = float(self.coordinator.storage.get_setting("weekend_multiplier", "2.0"))
+        except (ValueError, TypeError):
+            current_weekend_multiplier = 2.0
+        current_streak_milestones = self.coordinator.storage.get_setting("streak_milestones_enabled", "true") == "true"
+        current_perfect_week = self.coordinator.storage.get_setting("perfect_week_enabled", "true") == "true"
+        try:
+            current_perfect_week_bonus = float(self.coordinator.storage.get_setting("perfect_week_bonus", "50"))
+        except (ValueError, TypeError):
+            current_perfect_week_bonus = 50.0
 
         return self.async_show_form(
             step_id="settings",
@@ -762,6 +788,36 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                             min=30,
                             max=365,
                             step=1,
+                            mode=selector.NumberSelectorMode.BOX,
+                        )
+                    ),
+                    vol.Required(
+                        "weekend_multiplier",
+                        default=current_weekend_multiplier,
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=1.0,
+                            max=5.0,
+                            step=0.5,
+                            mode=selector.NumberSelectorMode.BOX,
+                        )
+                    ),
+                    vol.Required(
+                        "streak_milestones_enabled",
+                        default=current_streak_milestones,
+                    ): selector.BooleanSelector(),
+                    vol.Required(
+                        "perfect_week_enabled",
+                        default=current_perfect_week,
+                    ): selector.BooleanSelector(),
+                    vol.Required(
+                        "perfect_week_bonus",
+                        default=current_perfect_week_bonus,
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=10,
+                            max=500,
+                            step=5,
                             mode=selector.NumberSelectorMode.BOX,
                         )
                     ),

@@ -66,6 +66,8 @@ class Child:
     chore_order: list[str] = field(default_factory=list)  # Custom chore ordering for this child
     last_completion_date: str | None = None  # ISO date string of last chore completion (for streak tracking)
     streak_paused: bool = False  # True if streak is paused due to missed day (pause mode)
+    streak_milestones_achieved: list = None  # List of milestone day counts already awarded (None = use [])
+    awarded_perfect_weeks: list = None  # List of Monday ISO dates for awarded perfect weeks (None = use [])
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -83,6 +85,8 @@ class Child:
             chore_order=data.get("chore_order", []),
             last_completion_date=data.get("last_completion_date", None),
             streak_paused=data.get("streak_paused", False),
+            streak_milestones_achieved=data.get("streak_milestones_achieved", []),
+            awarded_perfect_weeks=data.get("awarded_perfect_weeks", []),
             id=data.get("id", generate_id()),
         )
 
@@ -100,6 +104,8 @@ class Child:
             "chore_order": self.chore_order,
             "last_completion_date": self.last_completion_date,
             "streak_paused": self.streak_paused,
+            "streak_milestones_achieved": self.streak_milestones_achieved or [],
+            "awarded_perfect_weeks": self.awarded_perfect_weeks or [],
             "id": self.id,
         }
 
