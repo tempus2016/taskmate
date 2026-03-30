@@ -200,6 +200,10 @@ SERVICE_REMOVE_POINTS: Final = "remove_points"
 SERVICE_RESET_DAILY: Final = "reset_daily"
 SERVICE_SET_CHORE_ORDER: Final = "set_chore_order"
 SERVICE_PREVIEW_SOUND: Final = "preview_sound"
+SERVICE_ADD_PENALTY: Final = "add_penalty"
+SERVICE_UPDATE_PENALTY: Final = "update_penalty"
+SERVICE_REMOVE_PENALTY: Final = "remove_penalty"
+SERVICE_APPLY_PENALTY: Final = "apply_penalty"
 
 # Events
 EVENT_PREVIEW_SOUND: Final = "taskmate_preview_sound"
@@ -212,6 +216,12 @@ ATTR_POINTS: Final = "points"
 ATTR_REASON: Final = "reason"
 ATTR_CHORE_ORDER: Final = "chore_order"
 ATTR_SOUND: Final = "sound"
+ATTR_PENALTY_ID: Final = "penalty_id"
+ATTR_PENALTY_NAME: Final = "name"
+ATTR_PENALTY_POINTS: Final = "points"
+ATTR_PENALTY_DESCRIPTION: Final = "description"
+ATTR_PENALTY_ICON: Final = "icon"
+ATTR_PENALTY_ASSIGNED_TO: Final = "assigned_to"
 
 # States
 STATE_PENDING: Final = "pending"

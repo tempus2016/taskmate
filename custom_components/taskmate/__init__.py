@@ -14,13 +14,21 @@ from .const import (
     ATTR_CHILD_ID,
     ATTR_CHORE_ID,
     ATTR_CHORE_ORDER,
+    ATTR_PENALTY_ASSIGNED_TO,
+    ATTR_PENALTY_DESCRIPTION,
+    ATTR_PENALTY_ICON,
+    ATTR_PENALTY_ID,
+    ATTR_PENALTY_NAME,
+    ATTR_PENALTY_POINTS,
     ATTR_POINTS,
     ATTR_REASON,
     ATTR_REWARD_ID,
     ATTR_SOUND,
     DOMAIN,
     EVENT_PREVIEW_SOUND,
+    SERVICE_ADD_PENALTY,
     SERVICE_ADD_POINTS,
+    SERVICE_APPLY_PENALTY,
     SERVICE_APPROVE_CHORE,
     SERVICE_APPROVE_REWARD,
     SERVICE_CLAIM_REWARD,
@@ -28,8 +36,10 @@ from .const import (
     SERVICE_COMPLETE_CHORE,
     SERVICE_PREVIEW_SOUND,
     SERVICE_REJECT_CHORE,
+    SERVICE_REMOVE_PENALTY,
     SERVICE_REMOVE_POINTS,
     SERVICE_SET_CHORE_ORDER,
+    SERVICE_UPDATE_PENALTY,
 )
 from .coordinator import TaskMateCoordinator
 from .frontend import async_register_cards, async_register_frontend
@@ -199,6 +209,58 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         chore_order = call.data[ATTR_CHORE_ORDER]
         await coordinator.async_set_chore_order(child_id, chore_order)
 
+    async def handle_add_penalty(call: ServiceCall) -> None:
+        """Handle the add_penalty service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_add_penalty(
+            name=call.data[ATTR_PENALTY_NAME],
+            points=call.data[ATTR_PENALTY_POINTS],
+            description=call.data.get(ATTR_PENALTY_DESCRIPTION, ""),
+            icon=call.data.get(ATTR_PENALTY_ICON, "mdi:alert-circle-outline"),
+            assigned_to=call.data.get(ATTR_PENALTY_ASSIGNED_TO, []),
+        )
+
+    async def handle_update_penalty(call: ServiceCall) -> None:
+        """Handle the update_penalty service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        from .models import Penalty
+        penalty_id = call.data[ATTR_PENALTY_ID]
+        existing = coordinator.storage.get_penalty(penalty_id)
+        if not existing:
+            _LOGGER.error("Penalty %s not found", penalty_id)
+            return
+        existing.name = call.data.get(ATTR_PENALTY_NAME, existing.name)
+        existing.points = call.data.get(ATTR_PENALTY_POINTS, existing.points)
+        existing.description = call.data.get(ATTR_PENALTY_DESCRIPTION, existing.description)
+        existing.icon = call.data.get(ATTR_PENALTY_ICON, existing.icon)
+        existing.assigned_to = call.data.get(ATTR_PENALTY_ASSIGNED_TO, existing.assigned_to)
+        await coordinator.async_update_penalty(existing)
+
+    async def handle_remove_penalty(call: ServiceCall) -> None:
+        """Handle the remove_penalty service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_remove_penalty(call.data[ATTR_PENALTY_ID])
+
+    async def handle_apply_penalty(call: ServiceCall) -> None:
+        """Handle the apply_penalty service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_apply_penalty(
+            penalty_id=call.data[ATTR_PENALTY_ID],
+            child_id=call.data[ATTR_CHILD_ID],
+        )
+
     # Register all services
     hass.services.async_register(
         DOMAIN,
@@ -318,6 +380,51 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     )
 
 
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ADD_PENALTY,
+        handle_add_penalty,
+        schema=vol.Schema({
+            vol.Required(ATTR_PENALTY_NAME): cv.string,
+            vol.Required(ATTR_PENALTY_POINTS): cv.positive_int,
+            vol.Optional(ATTR_PENALTY_DESCRIPTION, default=""): cv.string,
+            vol.Optional(ATTR_PENALTY_ICON, default="mdi:alert-circle-outline"): cv.string,
+            vol.Optional(ATTR_PENALTY_ASSIGNED_TO, default=[]): vol.All(cv.ensure_list, [cv.string]),
+        }),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_UPDATE_PENALTY,
+        handle_update_penalty,
+        schema=vol.Schema({
+            vol.Required(ATTR_PENALTY_ID): cv.string,
+            vol.Optional(ATTR_PENALTY_NAME): cv.string,
+            vol.Optional(ATTR_PENALTY_POINTS): cv.positive_int,
+            vol.Optional(ATTR_PENALTY_DESCRIPTION): cv.string,
+            vol.Optional(ATTR_PENALTY_ICON): cv.string,
+            vol.Optional(ATTR_PENALTY_ASSIGNED_TO): vol.All(cv.ensure_list, [cv.string]),
+        }),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_REMOVE_PENALTY,
+        handle_remove_penalty,
+        schema=vol.Schema({vol.Required(ATTR_PENALTY_ID): cv.string}),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_APPLY_PENALTY,
+        handle_apply_penalty,
+        schema=vol.Schema({
+            vol.Required(ATTR_PENALTY_ID): cv.string,
+            vol.Required(ATTR_CHILD_ID): cv.string,
+        }),
+    )
+
+
 def _async_unregister_services(hass: HomeAssistant) -> None:
     """Unregister TaskMate services."""
     services = [
@@ -331,6 +438,10 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_REMOVE_POINTS,
         SERVICE_SET_CHORE_ORDER,
         SERVICE_PREVIEW_SOUND,
+        SERVICE_ADD_PENALTY,
+        SERVICE_UPDATE_PENALTY,
+        SERVICE_REMOVE_PENALTY,
+        SERVICE_APPLY_PENALTY,
     ]
     for service in services:
         hass.services.async_remove(DOMAIN, service)
