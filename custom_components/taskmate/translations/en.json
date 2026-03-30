@@ -173,11 +173,19 @@
           "points_name": "Points Currency Name",
           "points_icon": "Points Icon",
           "streak_reset_mode": "Streak Reset Mode",
-          "history_days": "History Days to Keep"
+          "history_days": "History Days to Keep",
+          "weekend_multiplier": "Weekend Points Multiplier",
+          "streak_milestones_enabled": "Streak Milestone Bonuses",
+          "perfect_week_enabled": "Perfect Week Bonus",
+          "perfect_week_bonus": "Perfect Week Bonus Points"
         },
         "data_description": {
           "streak_reset_mode": "What happens to a streak when a day is missed",
-          "history_days": "How many days of chore completion history to retain (30\u2013365)"
+          "history_days": "How many days of chore completion history to retain (30\u2013365)",
+          "weekend_multiplier": "Points multiplier on Saturdays and Sundays (1.0 = disabled, 2.0 = double points)",
+          "streak_milestones_enabled": "Award bonus points when children hit streak milestones (3, 7, 14, 30, 60, 100 days)",
+          "perfect_week_enabled": "Award bonus points when a child completes at least one chore every day for a full week",
+          "perfect_week_bonus": "Bonus points awarded for a perfect week"
         }
       }
     },
