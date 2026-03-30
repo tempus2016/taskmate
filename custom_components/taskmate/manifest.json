@@ -2,7 +2,7 @@
   "domain": "taskmate",
   "name": "TaskMate",
   "codeowners": [
-    "@vinnybad"
+    "@tempus2016"
   ],
   "config_flow": true,
   "dependencies": [
@@ -10,10 +10,10 @@
     "lovelace",
     "frontend"
   ],
-  "documentation": "https://github.com/vinnybad/taskmate",
+  "documentation": "https://github.com/tempus2016/taskmate",
   "integration_type": "service",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/vinnybad/taskmate/issues",
+  "issue_tracker": "https://github.com/tempus2016/taskmate/issues",
   "requirements": [],
-  "version": "1.0.3"
+  "version": "1.1.0"
 }
