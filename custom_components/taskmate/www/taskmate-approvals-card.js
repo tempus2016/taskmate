@@ -707,22 +707,24 @@ class TaskMateApprovalsCardEditor extends LitElement {
         />
         <small>Filter approvals to a specific child</small>
       </div>
-      <div class="form-group">
-        <label>Header Colour</label>
+        <small>Card header background colour</small>
+      </div>
+      <div class="field-row">
+        <label class="field-label">Header Colour</label>
         <div style="display:flex;align-items:center;gap:10px;">
           <input
             type="color"
-            .value="${this.config.header_color || ''#27ae60''}"
-            @input="${e => this._updateConfig('header_color', e.target.value)}"
+            .value=${this.config.header_color || '#27ae60'}
+            @input=${e => this._updateConfig('header_color', e.target.value)}
             style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
           />
           <span style="font-size:13px;color:var(--secondary-text-color);">${this.config.header_color || '#27ae60'}</span>
           <button
             style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
-            @click="${() => this._updateConfig('header_color', '#27ae60')}"
+            @click=${() => this._updateConfig('header_color', '#27ae60')}
           >Reset</button>
         </div>
-        <small>Card header background colour</small>
+        <span class="field-helper">Card header background colour</span>
       </div>
     `;
   }

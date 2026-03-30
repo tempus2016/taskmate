@@ -339,6 +339,23 @@ class TaskMateParentDashboardCard extends LitElement {
         .tab-content { padding: 10px; gap: 8px; }
         .approval-item, .claim-item, .quick-points-row, .child-tile { padding: 10px 12px; }
       }
+      <div class="field-row">
+        <label class="field-label">Header Colour</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input
+            type="color"
+            .value=${this.config.header_color || '#c0392b'}
+            @input=${e => this._updateConfig('header_color', e.target.value)}
+            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
+          />
+          <span style="font-size:13px;color:var(--secondary-text-color);">${this.config.header_color || '#c0392b'}</span>
+          <button
+            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
+            @click=${() => this._updateConfig('header_color', '#c0392b')}
+          >Reset</button>
+        </div>
+        <span class="field-helper">Card header background colour</span>
+      </div>
     `;
   }
 
@@ -711,23 +728,6 @@ class TaskMateParentDashboardCardEditor extends LitElement {
         />
         <span class="check-label">Show Reward Claims tab</span>
       </label>
-      <div class="field-row">
-        <label class="field-label">Header Colour</label>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input
-            type="color"
-            .value="${this.config.header_color ||  + default_colour + }"
-            @input="${e => this._updateConfig('header_color', e.target.value)}"
-            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
-          />
-          <span style="font-size:13px;color:var(--secondary-text-color);">
-            ${this.config.header_color ||  + default_colour + }
-          </span>
-          <button
-            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
-            @click="${() => this._updateConfig('header_color',  + default_colour + )}"
-          >Reset</button>
-        </div>
         <span class="field-helper">Card header background colour</span>
       </div>
     `;
