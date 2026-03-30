@@ -331,7 +331,47 @@ class TaskMateStorage:
         if len(self._data["points_transactions"]) > 200:
             self._data["points_transactions"] = self._data["points_transactions"][-200:]
 
-    # Last completed store — never pruned, used for recurrence window checks
+    def replace_completions(self, completions: list[ChoreCompletion]) -> None:
+        """Replace all completions with the given list."""
+        self._data["completions"] = [c.to_dict() for c in completions]
+
+    def remove_completions_for_child(self, child_id: str) -> None:
+        """Remove all completions for a given child."""
+        self._data["completions"] = [
+            c for c in self._data.get("completions", []) if c.get("child_id") != child_id
+        ]
+
+    def remove_completions_for_chore(self, chore_id: str) -> None:
+        """Remove all completions for a given chore."""
+        self._data["completions"] = [
+            c for c in self._data.get("completions", []) if c.get("chore_id") != chore_id
+        ]
+
+    def remove_reward_claims_for_child(self, child_id: str) -> None:
+        """Remove all reward claims for a given child."""
+        self._data["reward_claims"] = [
+            c for c in self._data.get("reward_claims", []) if c.get("child_id") != child_id
+        ]
+
+    def remove_transactions_for_child(self, child_id: str) -> None:
+        """Remove all points transactions for a given child."""
+        self._data["points_transactions"] = [
+            t for t in self._data.get("points_transactions", []) if t.get("child_id") != child_id
+        ]
+
+    def remove_last_completed_for_child(self, child_id: str) -> None:
+        """Remove all last_completed records for a given child."""
+        lc = self._data.get("last_completed", {})
+        for chore_id in list(lc.keys()):
+            lc[chore_id].pop(child_id, None)
+            if not lc[chore_id]:
+                del lc[chore_id]
+
+    def remove_last_completed_for_chore(self, chore_id: str) -> None:
+        """Remove last_completed records for a given chore."""
+        self._data.get("last_completed", {}).pop(chore_id, None)
+
+    # Last completed store — used for recurrence window checks
     def get_last_completed(self, chore_id: str, child_id: str) -> dict:
         """Get last_completed record for a chore/child pair.
         

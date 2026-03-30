@@ -224,8 +224,17 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         await self.async_refresh()
 
     async def async_remove_child(self, child_id: str) -> None:
-        """Remove a child."""
+        """Remove a child and all associated data."""
         self.storage.remove_child(child_id)
+        self.storage.remove_completions_for_child(child_id)
+        self.storage.remove_reward_claims_for_child(child_id)
+        self.storage.remove_transactions_for_child(child_id)
+        self.storage.remove_last_completed_for_child(child_id)
+        # Remove child from chore assigned_to lists
+        for chore in self.storage.get_chores():
+            if child_id in chore.assigned_to:
+                chore.assigned_to.remove(child_id)
+                self.storage.update_chore(chore)
         await self.storage.async_save()
         await self.async_refresh()
 
@@ -319,8 +328,15 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         await self.async_refresh()
 
     async def async_remove_chore(self, chore_id: str) -> None:
-        """Remove a chore."""
+        """Remove a chore and all associated data."""
         self.storage.remove_chore(chore_id)
+        self.storage.remove_completions_for_chore(chore_id)
+        self.storage.remove_last_completed_for_chore(chore_id)
+        # Remove chore from children's chore_order lists
+        for child in self.storage.get_children():
+            if chore_id in child.chore_order:
+                child.chore_order.remove(chore_id)
+                self.storage.update_child(child)
         await self.storage.async_save()
         await self.async_refresh()
 
@@ -603,20 +619,25 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 notify_service.split(".", 1) if "." in notify_service
                 else ("notify", notify_service)
             )
-            try:
-                self.hass.async_create_task(
-                    self.hass.services.async_call(
+            # Only allow notify domain to prevent arbitrary service invocation
+            if domain != "notify":
+                _LOGGER.warning(
+                    "TaskMate: notify_service must use the 'notify' domain, got '%s'",
+                    domain,
+                )
+            else:
+                try:
+                    await self.hass.services.async_call(
                         domain,
                         service,
                         {"title": "TaskMate ✅", "message": message},
                         blocking=False,
                     )
-                )
-            except Exception as err:  # noqa: BLE001
-                _LOGGER.warning(
-                    "TaskMate: failed to send notification via %s: %s",
-                    notify_service, err
-                )
+                except Exception as err:  # noqa: BLE001
+                    _LOGGER.warning(
+                        "TaskMate: failed to send notification via %s: %s",
+                        notify_service, err
+                    )
 
     async def async_claim_reward(self, reward_id: str, child_id: str) -> RewardClaim:
         """Child claims a reward — creates a pending claim awaiting parent approval."""
@@ -631,11 +652,18 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         # Cost is always static
         effective_cost = reward.cost
 
-        if child.points < effective_cost:
-            raise ValueError(f"Not enough points. Need {effective_cost}, have {child.points}")
+        # Calculate points already committed by pending (unapproved) claims
+        pending_claims = self.storage.get_pending_reward_claims()
+        committed = sum(
+            self.get_reward(c.reward_id).cost
+            for c in pending_claims
+            if c.child_id == child_id and self.get_reward(c.reward_id)
+        )
+        available_points = child.points - committed
 
-        # Points are NOT deducted here — they are deducted on parent approval
-        # This mirrors the chore approval flow
+        if available_points < effective_cost:
+            raise ValueError(f"Not enough points. Need {effective_cost}, have {available_points} available")
+
         claim = RewardClaim(
             reward_id=reward_id,
             child_id=child_id,
@@ -652,6 +680,10 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         claims = self.storage.get_reward_claims()
         for claim in claims:
             if claim.id == claim_id:
+                if claim.approved:
+                    _LOGGER.warning("Reward claim %s already approved, ignoring", claim_id)
+                    return
+
                 reward = self.get_reward(claim.reward_id)
                 child = self.get_child(claim.child_id)
                 if not reward or not child:
@@ -932,7 +964,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         ]
 
         if len(to_keep) < before:
-            self.storage._data["completions"] = [c.to_dict() for c in to_keep]
+            self.storage.replace_completions(to_keep)
             await self.storage.async_save()
             await self.async_refresh()
             _LOGGER.info(

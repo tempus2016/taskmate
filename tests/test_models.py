@@ -131,13 +131,13 @@ class TestChild:
         assert child.streak_milestones_achieved == []
         assert child.awarded_perfect_weeks == []
 
-    def test_none_streak_milestones_serialises_to_empty_list(self):
-        child = Child(name="Dana", streak_milestones_achieved=None)
+    def test_default_streak_milestones_serialises_to_empty_list(self):
+        child = Child(name="Dana")
         data = child.to_dict()
         assert data["streak_milestones_achieved"] == []
 
-    def test_none_awarded_perfect_weeks_serialises_to_empty_list(self):
-        child = Child(name="Eve", awarded_perfect_weeks=None)
+    def test_default_awarded_perfect_weeks_serialises_to_empty_list(self):
+        child = Child(name="Eve")
         data = child.to_dict()
         assert data["awarded_perfect_weeks"] == []
 

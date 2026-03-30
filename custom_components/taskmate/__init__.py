@@ -59,11 +59,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = TaskMateCoordinator(hass, entry.entry_id)
     await coordinator.async_initialize()
 
-    # Store initial settings from config entry
-    if entry.data.get("points_name"):
-        coordinator.storage.set_points_name(entry.data["points_name"])
-    if entry.data.get("points_icon"):
-        coordinator.storage.set_points_icon(entry.data["points_icon"])
+    # Store initial settings from config entry only on first setup
+    # (when storage doesn't have them yet), not on every restart
+    if not coordinator.storage.get_points_name() or coordinator.storage.get_points_name() == "Stars":
+        if entry.data.get("points_name"):
+            coordinator.storage.set_points_name(entry.data["points_name"])
+    if not coordinator.storage.get_points_icon() or coordinator.storage.get_points_icon() == "mdi:star":
+        if entry.data.get("points_icon"):
+            coordinator.storage.set_points_icon(entry.data["points_icon"])
     await coordinator.storage.async_save()
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
@@ -229,7 +232,6 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         if not coordinator:
             _LOGGER.error("No TaskMate coordinator available")
             return
-        from .models import Penalty
         penalty_id = call.data[ATTR_PENALTY_ID]
         existing = coordinator.storage.get_penalty(penalty_id)
         if not existing:

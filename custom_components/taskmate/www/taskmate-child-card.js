@@ -1,3 +1,4 @@
+
 /**
  * TaskMate Child Card
  * A FUN, kid-friendly Lovelace card for completing chores!
@@ -786,6 +787,13 @@ class TaskMateChildCard extends LitElement {
         pointer-events: none;
       }
 
+      /* Time period elapsed without completion — dimmed/greyed */
+      .chore-card.time-elapsed {
+        opacity: 0.45;
+        filter: grayscale(0.6);
+        pointer-events: none;
+      }
+
       .recurrence-label {
         display: inline-flex;
         align-items: center;
@@ -1111,6 +1119,7 @@ class TaskMateChildCard extends LitElement {
       default_sound: "coin",
       undo_sound: "undo",
       due_days_mode: "hide",         // "hide" = hide chores not due today, "dim" = show greyed out
+      elapsed_time_mode: "dim",      // "dim" | "hide" | "show" — chores whose time period has passed without completion
       show_countdown: true,          // Show midnight reset countdown below section title
       show_due_days_only: true,      // Whether to apply due_days filtering at all
             header_color: '#9b59b6',
@@ -1307,6 +1316,7 @@ class TaskMateChildCard extends LitElement {
 
     const dueDaysMode = this.config.due_days_mode || 'hide';
     const showDueDaysOnly = this.config.show_due_days_only !== false;
+    const elapsedTimeMode = this.config.elapsed_time_mode || 'dim';
 
     // First, filter chores for this child and time category
     const filteredChores = chores.filter(chore => {
@@ -1336,6 +1346,15 @@ class TaskMateChildCard extends LitElement {
       // Store due status on chore object for rendering
       chore._isDueToday = isDueToday;
       chore._hasDueDays = hasDueDays;
+
+      // Mark whether this chore's time period has elapsed
+      chore._isTimeElapsed = this._isTimePeriodElapsed(chore.time_category);
+
+      // If elapsed_time_mode is "hide", exclude elapsed-and-incomplete chores at filter stage.
+      // Completed chores are handled at render time so we can't check here — use a sentinel.
+      if (elapsedTimeMode === 'hide' && chore._isTimeElapsed) {
+        return false;
+      }
 
       return matchesTime && isAssignedToChild;
     });
@@ -1408,6 +1427,34 @@ class TaskMateChildCard extends LitElement {
   _getTimezone() {
     // Get timezone from Home Assistant config, fallback to browser timezone
     return this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+
+  // Returns the current time period name based on HA-timezone-aware hour.
+  // morning: 0–11, afternoon: 12–16, evening: 17–20, night: 21–23
+  _getCurrentTimePeriod() {
+    if (this.config.debug_time_period) return this.config.debug_time_period;
+    const tz = this._getTimezone();
+    const hourStr = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour: 'numeric',
+      hour12: false,
+    }).format(new Date());
+    const hour = parseInt(hourStr, 10);
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    if (hour < 21) return 'evening';
+    return 'night';
+  }
+
+  // Returns true when the chore's time_category period has passed without completion.
+  // "anytime" chores never elapse. Already-completed chores are handled at the call site.
+  _isTimePeriodElapsed(choreTimeCategory) {
+    if (!choreTimeCategory || choreTimeCategory === 'anytime') return false;
+    const order = { morning: 0, afternoon: 1, evening: 2, night: 3 };
+    const choreIndex = order[choreTimeCategory];
+    if (choreIndex === undefined) return false;
+    const currentIndex = order[this._getCurrentTimePeriod()];
+    return currentIndex > choreIndex;
   }
 
   _getDatePartsInTimezone(date) {
@@ -1543,10 +1590,14 @@ class TaskMateChildCard extends LitElement {
     const notDueToday = chore._hasDueDays && !chore._isDueToday && this.config.due_days_mode === 'dim';
     const recurrenceDoneMode = this.config.recurrence_done_mode || 'dim';
     const notAvailableRecurrence = chore._isRecurring && !chore._isAvailableForChild && recurrenceDoneMode === 'dim';
+    // Elapsed: only dim incomplete chores — completed ones keep their green "done" style
+    const elapsedTimeMode = this.config.elapsed_time_mode || 'dim';
+    const timeElapsed = chore._isTimeElapsed && !isCompletedForToday && elapsedTimeMode === 'dim';
     const handleRowClick = () => {
       if (isLoading) return;
       if (notDueToday) return;  // Dim mode — not interactive
       if (notAvailableRecurrence) return;  // Recurrence window not open — not interactive
+      if (timeElapsed) return;  // Time period passed — not interactive
       if (isCompletedForToday) {
         this._handleUndo(chore, child, childCompletionsToday);
       } else {
@@ -1556,9 +1607,9 @@ class TaskMateChildCard extends LitElement {
 
     return html`
       <div
-        class="chore-card ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence ? "recurrence-unavailable" : ""}"
+        class="chore-card ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence ? "recurrence-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""}"
         @click="${handleRowClick}"
-        title="${notDueToday ? 'Not scheduled for today' : isCompletedForToday ? 'Click to undo' : 'Click to complete'}"
+        title="${notDueToday ? 'Not scheduled for today' : timeElapsed ? 'Time has passed for this chore' : isCompletedForToday ? 'Click to undo' : 'Click to complete'}"
       >
         <div class="chore-info">
           <div class="chore-number-wrapper">
@@ -1995,6 +2046,16 @@ class TaskMateChildCardEditor extends LitElement {
           <option value="show" ?selected="${this.config.recurrence_done_mode === 'show'}">Show — show normally regardless</option>
         </select>
         <span class="field-helper">What to show when a recurring chore has been completed and the window hasn't reset yet</span>
+      </div>
+
+      <div class="field-row">
+        <label class="field-label">Missed Time-of-Day Chores</label>
+        <select class="field-select" @change="${e => this._updateConfig('elapsed_time_mode', e.target.value)}">
+          <option value="dim" ?selected="${(this.config.elapsed_time_mode || 'dim') === 'dim'}">Dim — show greyed out, non-interactive</option>
+          <option value="hide" ?selected="${this.config.elapsed_time_mode === 'hide'}">Hide — don't show</option>
+          <option value="show" ?selected="${this.config.elapsed_time_mode === 'show'}">Show — show normally regardless</option>
+        </select>
+        <span class="field-helper">What to show when a morning/afternoon/evening/night chore wasn't completed and that time has passed</span>
       </div>
 
       <div class="section-divider"></div>

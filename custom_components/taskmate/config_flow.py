@@ -919,26 +919,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Configure settings."""
         if user_input is not None:
-            await self.coordinator.async_set_points_settings(
-                name=user_input.get("points_name", DEFAULT_POINTS_NAME),
-                icon=user_input.get("points_icon", DEFAULT_POINTS_ICON),
-            )
-            await self.coordinator.async_set_setting(
-                "streak_reset_mode",
-                user_input.get("streak_reset_mode", "reset"),
-            )
-            await self.coordinator.async_set_setting(
-                "history_days",
-                str(int(float(user_input.get("history_days", 90)))),
-            )
-            await self.coordinator.async_set_setting(
-                "weekend_multiplier",
-                str(float(user_input.get("weekend_multiplier", 2.0))),
-            )
-            await self.coordinator.async_set_setting(
-                "streak_milestones_enabled",
-                "true" if user_input.get("streak_milestones_enabled", True) else "false",
-            )
+            # Validate milestone format before saving anything
             milestone_input = user_input.get(
                 "streak_milestones", self.coordinator.DEFAULT_STREAK_MILESTONES
             ).strip()
@@ -952,22 +933,49 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     description_placeholders={"error": str(err)},
                     data_schema=vol.Schema({}),
                 )
-            await self.coordinator.async_set_setting(
+
+            # Batch all settings updates without saving between each one
+            self.coordinator.storage.set_points_name(
+                user_input.get("points_name", DEFAULT_POINTS_NAME),
+            )
+            self.coordinator.storage.set_points_icon(
+                user_input.get("points_icon", DEFAULT_POINTS_ICON),
+            )
+            self.coordinator.storage.set_setting(
+                "streak_reset_mode",
+                user_input.get("streak_reset_mode", "reset"),
+            )
+            self.coordinator.storage.set_setting(
+                "history_days",
+                str(int(float(user_input.get("history_days", 90)))),
+            )
+            self.coordinator.storage.set_setting(
+                "weekend_multiplier",
+                str(float(user_input.get("weekend_multiplier", 2.0))),
+            )
+            self.coordinator.storage.set_setting(
+                "streak_milestones_enabled",
+                "true" if user_input.get("streak_milestones_enabled", True) else "false",
+            )
+            self.coordinator.storage.set_setting(
                 "streak_milestones",
                 milestone_input,
             )
-            await self.coordinator.async_set_setting(
+            self.coordinator.storage.set_setting(
                 "perfect_week_enabled",
                 "true" if user_input.get("perfect_week_enabled", True) else "false",
             )
-            await self.coordinator.async_set_setting(
+            self.coordinator.storage.set_setting(
                 "perfect_week_bonus",
                 str(int(float(user_input.get("perfect_week_bonus", 50)))),
             )
-            await self.coordinator.async_set_setting(
+            self.coordinator.storage.set_setting(
                 "notify_service",
                 user_input.get("notify_service", "").strip(),
             )
+            # Single save and refresh for all settings
+            await self.coordinator.storage.async_save()
+            await self.coordinator.async_refresh()
             return await self.async_step_init()
 
         current_streak_mode = self.coordinator.storage.get_setting("streak_reset_mode", "reset")
@@ -1077,14 +1085,17 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         """Handle dynamic step routing for edit_child_*, edit_chore_*, etc."""
         if name.startswith("async_step_edit_child_"):
             child_id = name.replace("async_step_edit_child_", "")
-            self._selected_child_id = child_id
-            return self.async_step_edit_child
+            if self.coordinator.storage.get_child(child_id):
+                self._selected_child_id = child_id
+                return self.async_step_edit_child
         elif name.startswith("async_step_edit_chore_"):
             chore_id = name.replace("async_step_edit_chore_", "")
-            self._selected_chore_id = chore_id
-            return self.async_step_edit_chore
+            if self.coordinator.storage.get_chore(chore_id):
+                self._selected_chore_id = chore_id
+                return self.async_step_edit_chore
         elif name.startswith("async_step_edit_reward_"):
             reward_id = name.replace("async_step_edit_reward_", "")
-            self._selected_reward_id = reward_id
-            return self.async_step_edit_reward
+            if self.coordinator.storage.get_reward(reward_id):
+                self._selected_reward_id = reward_id
+                return self.async_step_edit_reward
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")

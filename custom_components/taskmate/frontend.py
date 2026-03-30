@@ -126,10 +126,9 @@ async def async_register_cards(hass: HomeAssistant) -> None:
         # Browser Mod uses: resources.async_load() + resources.loaded flag
         # WebRTC uses:      resources.async_get_info()
         # We use both as a belt-and-braces approach.
-        if hasattr(resources, "loaded") and not resources.loaded:
+        if hasattr(resources, "async_load"):
             await resources.async_load()
-            resources.loaded = True
-        elif hasattr(resources, "async_get_info"):
+        if hasattr(resources, "async_get_info"):
             await resources.async_get_info()
 
         # Build a map of base_url (without ?v=...) -> full resource item

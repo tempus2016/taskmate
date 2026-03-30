@@ -74,9 +74,14 @@ def _make_coord(
     storage.update_child = MagicMock()
     storage.add_points_transaction = MagicMock()
     storage.async_save = AsyncMock()
-    # Provide a real _data dict so that async_prune_history (which writes to
-    # storage._data["completions"] directly) can be tested without MagicMock absorbing writes.
+    # Provide a real _data dict for testing
     storage._data = {"completions": [c.to_dict() for c in _completions]}
+    # Wire up replace_completions to update _data like the real implementation
+    storage.replace_completions = MagicMock(
+        side_effect=lambda comps: storage._data.__setitem__(
+            "completions", [c.to_dict() for c in comps]
+        )
+    )
 
     coord.storage = storage
     coord.async_refresh = AsyncMock()

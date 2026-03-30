@@ -9,7 +9,7 @@ import uuid
 
 def generate_id() -> str:
     """Generate a unique ID."""
-    return str(uuid.uuid4())[:8]
+    return str(uuid.uuid4()).replace("-", "")[:16]
 
 
 def parse_datetime(value: str | datetime | None) -> datetime | None:
@@ -66,8 +66,8 @@ class Child:
     chore_order: list[str] = field(default_factory=list)  # Custom chore ordering for this child
     last_completion_date: str | None = None  # ISO date string of last chore completion (for streak tracking)
     streak_paused: bool = False  # True if streak is paused due to missed day (pause mode)
-    streak_milestones_achieved: list = None  # List of milestone day counts already awarded (None = use [])
-    awarded_perfect_weeks: list = None  # List of Monday ISO dates for awarded perfect weeks (None = use [])
+    streak_milestones_achieved: list[int] = field(default_factory=list)
+    awarded_perfect_weeks: list[str] = field(default_factory=list)
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -104,8 +104,8 @@ class Child:
             "chore_order": self.chore_order,
             "last_completion_date": self.last_completion_date,
             "streak_paused": self.streak_paused,
-            "streak_milestones_achieved": self.streak_milestones_achieved or [],
-            "awarded_perfect_weeks": self.awarded_perfect_weeks or [],
+            "streak_milestones_achieved": self.streak_milestones_achieved,
+            "awarded_perfect_weeks": self.awarded_perfect_weeks,
             "id": self.id,
         }
 
@@ -308,7 +308,7 @@ class Penalty:
     points: int  # Points to deduct (always positive; deduction is applied on use)
     description: str = ""
     icon: str = "mdi:alert-circle-outline"
-    assigned_to: list = None  # Child IDs who can receive this penalty (empty = all)
+    assigned_to: list[str] = field(default_factory=list)  # Child IDs who can receive this penalty (empty = all)
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -331,7 +331,7 @@ class Penalty:
             "points": self.points,
             "description": self.description,
             "icon": self.icon,
-            "assigned_to": self.assigned_to or [],
+            "assigned_to": self.assigned_to,
         }
 
 
