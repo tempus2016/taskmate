@@ -254,14 +254,6 @@ Deduct points from a child for unwanted behaviour — the flip side of the rewar
 2. Open the Penalties Card, select the child, and tap **Apply** on the relevant penalty
 3. Points are deducted immediately and logged in the activity feed as `Penalty: <name>`
 
-### Penalties Card
-
-```yaml
-type: custom:taskmate-penalties-card
-entity: sensor.taskmate_overview
-title: Penalties          # optional
-```
-
 - Select the child using the tabs at the top (hidden if only one child)
 - Tap **Apply** to deduct points instantly — the tile flashes and a toast confirms the action
 - Tap the **pencil icon** to enter edit mode: add new penalties, edit name/points/icon/description, or delete
@@ -563,6 +555,10 @@ header_color: "#b7950b"
 ### Penalties Card
 
 Parent-facing card for applying point-deduction penalties. Select the child using tabs, then tap **Apply** next to the relevant penalty. Tap the pencil icon to add, edit, or delete penalty definitions.
+
+<p align="center">
+  <img src="https://github.com/tempus2016/taskmate/blob/main/images/penalties.png" alt="Settings Menu" width="500">
+</p>
 
 ```yaml
 type: custom:taskmate-penalties-card
