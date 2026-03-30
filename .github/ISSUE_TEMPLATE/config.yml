@@ -1,0 +1,6 @@
+# .github/ISSUE_TEMPLATE/config.yml
+blank_issues_enabled: false
+contact_links:
+  - name: Troubleshooting Wiki
+    url: https://github.com/tempus2016/taskmate/wiki/Troubleshooting
+    about: Check here first before opening an issue
