@@ -87,17 +87,14 @@ async def async_register_frontend(hass: HomeAssistant) -> None:
 
 
 async def async_register_cards(hass: HomeAssistant, first_install: bool = False) -> None:
-    """Register Lovelace resources — only on first install, never on restart.
+    """Register and update TaskMate Lovelace resources.
 
-    On subsequent startups this is a no-op. Resources are managed manually
-    after the initial install to prevent corrupting other integrations' entries.
+    On first install: adds all card resources.
+    On every restart: updates the version query string on existing TaskMate
+    resources so browsers fetch fresh JS after an upgrade. Only touches URLs
+    that start with the TaskMate URL base — never modifies other integrations.
     """
     version = await _async_get_version(hass)
-
-    if not first_install:
-        # On restart, just log the URLs in case manual action is needed
-        _LOGGER.debug("TaskMate card resources should already be registered.")
-        return
 
     lovelace_data = hass.data.get("lovelace")
     if lovelace_data is None:
@@ -108,7 +105,7 @@ async def async_register_cards(hass: HomeAssistant, first_install: bool = False)
     if mode == "yaml":
         _LOGGER.info("Lovelace YAML mode — add these resources to configuration.yaml:")
         for card in CARDS:
-            _LOGGER.info("  - url: %s/%s  (type: module)", URL_BASE, card)
+            _LOGGER.info("  - url: %s/%s?v=%s  (type: module)", URL_BASE, card, version)
         return
 
     try:
@@ -117,21 +114,48 @@ async def async_register_cards(hass: HomeAssistant, first_install: bool = False)
             _LOGGER.warning("Lovelace resources not available.")
             return
 
-        # Build existing TaskMate URLs
-        existing = set()
+        # Build a map of base_url -> resource item for existing TaskMate entries only
+        # Never touch entries from other integrations
+        existing: dict[str, dict] = {}
         for item in resources.async_items():
-            url = item.get("url", "").split("?")[0]
-            if url.startswith(URL_BASE + "/"):
-                existing.add(url)
+            url = item.get("url", "")
+            base_url = url.split("?")[0]
+            if base_url.startswith(URL_BASE + "/"):
+                existing[base_url] = item
 
-        # Add only missing cards
+        expected_cards = {f"{URL_BASE}/{card}" for card in CARDS}
+
         for card in CARDS:
             card_url = f"{URL_BASE}/{card}"
+            versioned_url = f"{card_url}?v={version}"
+
             if card_url not in existing:
+                # New card — add it
                 await resources.async_create_item(
-                    {"url": f"{card_url}?v={version}", "res_type": "module"}
+                    {"url": versioned_url, "res_type": "module"}
                 )
-                _LOGGER.info("Registered Lovelace resource: %s", card_url)
+                _LOGGER.info("Registered new Lovelace resource: %s", versioned_url)
+            else:
+                # Existing card — update version if it has changed
+                item = existing[card_url]
+                if item.get("url") != versioned_url:
+                    await resources.async_update_item(
+                        item["id"],
+                        {"url": versioned_url, "res_type": "module"},
+                    )
+                    _LOGGER.info(
+                        "Updated Lovelace resource: %s -> %s",
+                        item.get("url"), versioned_url,
+                    )
+                else:
+                    _LOGGER.debug("Resource already at correct version: %s", versioned_url)
+
+        # Remove TaskMate resources that are no longer in the CARDS list
+        # (handles card renames or removals between versions)
+        for base_url, item in existing.items():
+            if base_url not in expected_cards:
+                await resources.async_delete_item(item["id"])
+                _LOGGER.info("Removed stale TaskMate resource: %s", base_url)
 
     except Exception as err:  # noqa: BLE001
-        _LOGGER.warning("Could not register resources: %s", err)
+        _LOGGER.warning("Could not manage Lovelace resources: %s", err)
