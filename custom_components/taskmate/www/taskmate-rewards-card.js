@@ -442,7 +442,15 @@ class TaskMateRewardsCard extends LitElement {
         filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
       }
 
-      /* Reward icon (if available) */
+      /* Reward icon + claim button wrapper */
+      .reward-right-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
       .reward-icon-container {
         width: 44px;
         height: 44px;
@@ -834,8 +842,10 @@ class TaskMateRewardsCard extends LitElement {
               `
             : ""}
         </div>
-        <div class="reward-icon-container" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-          <ha-icon icon="${rewardIcon}"></ha-icon>
+        <div class="reward-right-col">
+          <div class="reward-icon-container">
+            <ha-icon icon="${rewardIcon}"></ha-icon>
+          </div>
           ${!hasPendingClaim && childId ? html`
             <button
               class="claim-btn ${!canAfford ? 'cant-afford' : ''}"
