@@ -134,6 +134,22 @@ lovelace:
       type: module
     - url: /taskmate/taskmate-reorder-card.js
       type: module
+    - url: /taskmate/taskmate-overview-card.js
+      type: module
+    - url: /taskmate/taskmate-activity-card.js
+      type: module
+    - url: /taskmate/taskmate-streak-card.js
+      type: module
+    - url: /taskmate/taskmate-weekly-card.js
+      type: module
+    - url: /taskmate/taskmate-graph-card.js
+      type: module
+    - url: /taskmate/taskmate-reward-progress-card.js
+      type: module
+    - url: /taskmate/taskmate-leaderboard-card.js
+      type: module
+    - url: /taskmate/taskmate-parent-dashboard-card.js
+      type: module
 ```
 
 ### Card Index
