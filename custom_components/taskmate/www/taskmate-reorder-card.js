@@ -40,10 +40,6 @@ class TaskMateReorderCard extends LitElement {
 
       ha-card { overflow: hidden; }
 
-      ha-card {
-        padding: 16px;
-      }
-
       .card-header {
         display: flex;
         align-items: center;
