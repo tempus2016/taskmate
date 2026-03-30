@@ -55,7 +55,7 @@ class TaskMateActivityCard extends LitElement {
       }
 
       .feed-container {
-        max-height: 480px;
+        max-height: 350px;
         overflow-y: auto;
         padding: 12px 14px;
         display: flex;
