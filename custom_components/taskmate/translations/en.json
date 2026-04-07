@@ -1,0 +1,537 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Welcome to TaskMate!",
+        "description": "Set up your family chore management system. You can customize the points currency that children will earn.",
+        "data": {
+          "points_name": "Points Currency Name (e.g., Stars, Coins, Bucks)",
+          "points_icon": "Points Icon"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Name is required"
+    },
+    "abort": {
+      "already_configured": "TaskMate is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "TaskMate Settings",
+        "menu_options": {
+          "manage_children": "Manage Children",
+          "manage_chores": "Manage Chores",
+          "manage_rewards": "Manage Rewards",
+          "settings": "Settings"
+        }
+      },
+      "manage_children": {
+        "title": "Manage Children",
+        "description": "Add, edit, or remove children",
+        "menu_options": {
+          "add_child": "Add New Child",
+          "init": "Back to Main Menu"
+        }
+      },
+      "add_child": {
+        "title": "Add New Child",
+        "description": "Enter the child's information",
+        "data": {
+          "name": "Child's Name",
+          "avatar": "Avatar"
+        }
+      },
+      "edit_child": {
+        "title": "Edit Child: {child_name}",
+        "description": "Update or delete this child",
+        "data": {
+          "name": "Child's Name",
+          "avatar": "Avatar",
+          "action": "Action"
+        }
+      },
+      "manage_chores": {
+        "title": "Manage Chores",
+        "description": "Add, edit, or remove chores",
+        "menu_options": {
+          "add_chore": "Add Single Chore",
+          "add_chores_bulk": "Add Multiple Chores",
+          "init": "Back to Main Menu"
+        }
+      },
+      "add_chore": {
+        "title": "Add New Chore",
+        "description": "Create a new chore for your children",
+        "data": {
+          "name": "Chore Name",
+          "description": "Description (optional)",
+          "points": "Points Reward",
+          "time_category": "Time of Day",
+          "due_days": "Due Days (optional)",
+          "assigned_to": "Assigned To (leave empty for all children)",
+          "requires_approval": "Requires Parent Approval",
+          "daily_limit": "Daily Completion Limit",
+          "schedule_mode": "Scheduling Mode"
+        },
+        "data_description": {
+          "daily_limit": "How many times per day this chore can be completed",
+          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page."
+        }
+      },
+      "add_chores_bulk": {
+        "title": "Add Multiple Chores",
+        "description": "Create multiple chores at once with the same settings. Enter chore names one per line or comma-separated.",
+        "data": {
+          "chore_names": "Chore Names (one per line or comma-separated)",
+          "points": "Points Reward (for all)",
+          "time_category": "Time of Day (for all)",
+          "due_days": "Due Days (optional)",
+          "assigned_to": "Assigned To (leave empty for all children)",
+          "requires_approval": "Requires Parent Approval",
+          "daily_limit": "Daily Completion Limit",
+          "schedule_mode": "Scheduling Mode"
+        },
+        "data_description": {
+          "daily_limit": "How many times per day this chore can be completed",
+          "schedule_mode": "Choose how this chore is scheduled"
+        }
+      },
+      "edit_chore": {
+        "title": "Edit Chore: {chore_name}",
+        "description": "Update or delete this chore",
+        "data": {
+          "name": "Chore Name",
+          "description": "Description",
+          "points": "Points Reward",
+          "time_category": "Time of Day",
+          "due_days": "Due Days",
+          "assigned_to": "Assigned To",
+          "requires_approval": "Requires Parent Approval",
+          "daily_limit": "Daily Completion Limit",
+          "action": "Action",
+          "schedule_mode": "Scheduling Mode"
+        },
+        "data_description": {
+          "daily_limit": "How many times per day this chore can be completed",
+          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page."
+        }
+      },
+      "manage_rewards": {
+        "title": "Manage Rewards",
+        "description": "Add, edit, or remove rewards",
+        "menu_options": {
+          "add_reward": "Add New Reward",
+          "init": "Back to Main Menu"
+        }
+      },
+      "add_reward": {
+        "title": "Add New Reward",
+        "description": "Create a reward that children can earn",
+        "data": {
+          "name": "Reward Name",
+          "description": "Description (optional)",
+          "cost": "Points Cost (fixed)",
+          "icon": "Icon",
+          "assigned_to": "Assigned To (leave empty for all children)",
+          "is_jackpot": "Is Jackpot"
+        },
+        "data_description": {
+          "is_jackpot": "Pool points from all assigned children toward one shared reward",
+          "cost": "Number of points required to claim this reward"
+        }
+      },
+      "edit_reward": {
+        "title": "Edit Reward: {reward_name}",
+        "description": "Update or delete this reward",
+        "data": {
+          "name": "Reward Name",
+          "description": "Description",
+          "cost": "Points Cost (fixed)",
+          "icon": "Icon",
+          "assigned_to": "Assigned To",
+          "is_jackpot": "Is Jackpot",
+          "action": "Action"
+        },
+        "data_description": {
+          "is_jackpot": "Pool points from all assigned children toward one shared reward",
+          "cost": "Number of points required to claim this reward"
+        }
+      },
+      "settings": {
+        "title": "Settings",
+        "description": "Configure your TaskMate settings",
+        "data": {
+          "points_name": "Points Currency Name",
+          "points_icon": "Points Icon",
+          "streak_reset_mode": "Streak Reset Mode",
+          "history_days": "History Days to Keep",
+          "weekend_multiplier": "Weekend Points Multiplier",
+          "streak_milestones_enabled": "Streak Milestone Bonuses",
+          "perfect_week_enabled": "Perfect Week Bonus",
+          "perfect_week_bonus": "Perfect Week Bonus Points",
+          "streak_milestones": "Streak Milestone Configuration",
+          "notify_service": "Notification Service (optional)"
+        },
+        "data_description": {
+          "streak_reset_mode": "What happens to a streak when a day is missed",
+          "history_days": "How many days of chore completion history to retain (30-365)",
+          "weekend_multiplier": "Points multiplier on Saturdays and Sundays (1.0 = disabled, 2.0 = double points)",
+          "streak_milestones_enabled": "Award bonus points when children hit streak milestones (3, 7, 14, 30, 60, 100 days)",
+          "perfect_week_enabled": "Award bonus points when a child completes at least one chore every day for a full week",
+          "perfect_week_bonus": "Bonus points awarded for a perfect week",
+          "streak_milestones": "Custom milestones as 'days:points' pairs, comma-separated. Example: 3:5, 7:10, 14:20, 30:50, 60:100, 100:200",
+          "notify_service": "HA notification service to alert parents when a chore requires approval. Format: notify.mobile_app_your_phone — leave empty to use persistent notifications only"
+        }
+      },
+      "chore_schedule_specific": {
+        "title": "Step 2 — Specific Days",
+        "description": "Choose which days of the week this chore should appear on the child card. Leave empty to show every day.",
+        "data": {
+          "due_days": "Due Days"
+        },
+        "data_description": {
+          "due_days": "Select one or more days. Leave empty to show the chore every day. Use Due Days Mode on the child card to hide or dim chores on non-scheduled days."
+        }
+      },
+      "edit_chore_schedule_specific": {
+        "title": "Step 2 — Specific Days",
+        "description": "Choose which days of the week this chore should appear on the child card. Leave empty to show every day.",
+        "data": {
+          "due_days": "Due Days"
+        },
+        "data_description": {
+          "due_days": "Select one or more days. Leave empty to show the chore every day. Use Due Days Mode on the child card to hide or dim chores on non-scheduled days."
+        }
+      },
+      "chore_schedule_recurring": {
+        "title": "Step 2 — Recurring Schedule",
+        "description": "Set how often this chore can be completed. Once completed, it will not be available again until the window resets.\n\nNote: Day of Week only applies to Weekly and Every 2 Weeks. Start Date only applies to Every 2 Days. Any values entered for inapplicable options will be ignored.",
+        "data": {
+          "recurrence": "Recurrence",
+          "recurrence_day": "Day of Week (optional)",
+          "recurrence_start": "Start Date (optional)",
+          "first_occurrence_mode": "When is it first available?"
+        },
+        "data_description": {
+          "recurrence": "How often the chore can be completed",
+          "recurrence_day": "Weekly / Every 2 Weeks only — pin to a specific day. Ignored for all other recurrence types.",
+          "recurrence_start": "Every 2 Days only — anchor date in YYYY-MM-DD format. Ignored for all other recurrence types. Leave empty to use today.",
+          "first_occurrence_mode": "Available Immediately — child can complete it straight away. Wait for First Occurrence — chore is locked until the first scheduled day arrives."
+        }
+      },
+      "edit_chore_schedule_recurring": {
+        "title": "Step 2 — Recurring Schedule",
+        "description": "Set how often this chore can be completed. Once completed, it will not be available again until the window resets.\n\nNote: Day of Week only applies to Weekly and Every 2 Weeks. Start Date only applies to Every 2 Days. Any values entered for inapplicable options will be ignored.",
+        "data": {
+          "recurrence": "Recurrence",
+          "recurrence_day": "Day of Week (optional)",
+          "recurrence_start": "Start Date (optional)",
+          "first_occurrence_mode": "When is it first available?"
+        },
+        "data_description": {
+          "recurrence": "How often the chore can be completed",
+          "recurrence_day": "Weekly / Every 2 Weeks only — pin to a specific day. Ignored for all other recurrence types.",
+          "recurrence_start": "Every 2 Days only — anchor date in YYYY-MM-DD format. Ignored for all other recurrence types. Leave empty to use today.",
+          "first_occurrence_mode": "Available Immediately — child can complete it straight away. Wait for First Occurrence — chore is locked until the first scheduled day arrives."
+        }
+      }
+    },
+    "error": {
+      "name_required": "Name is required",
+      "invalid_milestone_format": "Invalid milestone format — use days:points pairs, e.g. 3:5, 7:10, 14:20"
+    }
+  },
+  "selector": {
+    "child_action": {
+      "options": {
+        "save": "Save Changes",
+        "delete": "Delete Child"
+      }
+    },
+    "chore_action": {
+      "options": {
+        "save": "Save Changes",
+        "delete": "Delete This Chore"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "Save Changes",
+        "delete": "Delete Reward"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "Morning",
+        "afternoon": "Afternoon",
+        "evening": "Evening",
+        "night": "Night",
+        "anytime": "Anytime"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "Specific days of the week",
+        "recurring": "Recurring (every N days/weeks/months)"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "Every 2 days",
+        "weekly": "Weekly",
+        "every_2_weeks": "Every 2 weeks",
+        "monthly": "Monthly",
+        "every_3_months": "Every 3 months",
+        "every_6_months": "Every 6 months"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday",
+        "any_day": "Any day"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "Available immediately",
+        "wait_for_first_occurrence": "Wait for first scheduled occurrence"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "Reset — streak goes to 0 on missed day",
+        "pause": "Pause — streak preserved until next completion"
+      }
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "Complete Chore",
+      "description": "Mark a chore as completed by a child",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the chore to complete"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child completing the chore"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Approve Chore",
+      "description": "Approve a completed chore and award points",
+      "fields": {
+        "completion_id": {
+          "name": "Completion ID",
+          "description": "The ID of the chore completion to approve"
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Reject Chore",
+      "description": "Reject a completed chore",
+      "fields": {
+        "completion_id": {
+          "name": "Completion ID",
+          "description": "The ID of the chore completion to reject"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "Claim Reward",
+      "description": "Child claims a reward using their points",
+      "fields": {
+        "reward_id": {
+          "name": "Reward ID",
+          "description": "The ID of the reward to claim"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child claiming the reward"
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Approve Reward",
+      "description": "Approve a reward claim",
+      "fields": {
+        "claim_id": {
+          "name": "Claim ID",
+          "description": "The ID of the reward claim to approve"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Add Points",
+      "description": "Add bonus points to a child",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child to add points to"
+        },
+        "points": {
+          "name": "Points",
+          "description": "The number of points to add"
+        },
+        "reason": {
+          "name": "Reason",
+          "description": "Optional reason for the bonus"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Remove Points",
+      "description": "Remove points from a child (penalty)",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child to remove points from"
+        },
+        "points": {
+          "name": "Points",
+          "description": "The number of points to remove"
+        },
+        "reason": {
+          "name": "Reason",
+          "description": "Optional reason for the penalty"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "Reject Reward",
+      "description": "Reject a reward claim",
+      "fields": {
+        "claim_id": {
+          "name": "Claim ID",
+          "description": "The ID of the reward claim to reject"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "Preview Sound",
+      "description": "Preview a completion sound effect in the browser",
+      "fields": {
+        "sound": {
+          "name": "Sound",
+          "description": "The sound to preview"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "Set Chore Order",
+      "description": "Set the display order of chores for a child",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child to set chore order for"
+        },
+        "chore_order": {
+          "name": "Chore Order",
+          "description": "Ordered list of chore IDs"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "Add Penalty",
+      "description": "Create a new penalty definition",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "The name of the penalty"
+        },
+        "points": {
+          "name": "Points",
+          "description": "The number of points to deduct when applied"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Optional description of the penalty"
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "MDI icon for the penalty"
+        },
+        "assigned_to": {
+          "name": "Assigned To",
+          "description": "List of child IDs this penalty applies to"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "Update Penalty",
+      "description": "Update an existing penalty definition",
+      "fields": {
+        "penalty_id": {
+          "name": "Penalty ID",
+          "description": "The ID of the penalty to update"
+        },
+        "name": {
+          "name": "Name",
+          "description": "New name for the penalty"
+        },
+        "points": {
+          "name": "Points",
+          "description": "New points value"
+        },
+        "description": {
+          "name": "Description",
+          "description": "New description"
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "New icon"
+        },
+        "assigned_to": {
+          "name": "Assigned To",
+          "description": "New list of child IDs"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "Remove Penalty",
+      "description": "Remove a penalty definition",
+      "fields": {
+        "penalty_id": {
+          "name": "Penalty ID",
+          "description": "The ID of the penalty to remove"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "Apply Penalty",
+      "description": "Apply a penalty to a child, deducting points",
+      "fields": {
+        "penalty_id": {
+          "name": "Penalty ID",
+          "description": "The ID of the penalty to apply"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child to apply the penalty to"
+        }
+      }
+    }
+  }
+}
