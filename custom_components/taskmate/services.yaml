@@ -1,0 +1,286 @@
+complete_chore:
+  name: Complete Chore
+  description: Mark a chore as completed by a child
+  fields:
+    chore_id:
+      name: Chore ID
+      description: The ID of the chore to complete
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child completing the chore
+      required: true
+      selector:
+        text:
+
+approve_chore:
+  name: Approve Chore
+  description: Approve a completed chore and award points
+  fields:
+    completion_id:
+      name: Completion ID
+      description: The ID of the chore completion to approve
+      required: true
+      selector:
+        text:
+
+reject_chore:
+  name: Reject Chore
+  description: Reject a completed chore
+  fields:
+    completion_id:
+      name: Completion ID
+      description: The ID of the chore completion to reject
+      required: true
+      selector:
+        text:
+
+claim_reward:
+  name: Claim Reward
+  description: Child claims a reward using their points
+  fields:
+    reward_id:
+      name: Reward ID
+      description: The ID of the reward to claim
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child claiming the reward
+      required: true
+      selector:
+        text:
+
+approve_reward:
+  name: Approve Reward
+  description: Approve a reward claim
+  fields:
+    claim_id:
+      name: Claim ID
+      description: The ID of the reward claim to approve
+      required: true
+      selector:
+        text:
+
+add_points:
+  name: Add Points
+  description: Add bonus points to a child
+  fields:
+    child_id:
+      name: Child ID
+      description: The ID of the child to add points to
+      required: true
+      selector:
+        text:
+    points:
+      name: Points
+      description: The number of points to add
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 10000
+          mode: box
+    reason:
+      name: Reason
+      description: Optional reason for the bonus
+      required: false
+      selector:
+        text:
+
+remove_points:
+  name: Remove Points
+  description: Remove points from a child (penalty)
+  fields:
+    child_id:
+      name: Child ID
+      description: The ID of the child to remove points from
+      required: true
+      selector:
+        text:
+    points:
+      name: Points
+      description: The number of points to remove
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 10000
+          mode: box
+    reason:
+      name: Reason
+      description: Optional reason for the penalty
+      required: false
+      selector:
+        text:
+
+reject_reward:
+  name: Reject Reward
+  description: Reject a reward claim (no points deducted as approval was pending)
+  fields:
+    claim_id:
+      name: Claim ID
+      description: The ID of the reward claim to reject
+      required: true
+      selector:
+        text:
+
+preview_sound:
+  name: Preview Sound
+  description: Preview a completion sound effect in the browser
+  fields:
+    sound:
+      name: Sound
+      description: The sound to preview
+      required: true
+      selector:
+        select:
+          options:
+            - "none"
+            - "coin"
+            - "levelup"
+            - "fanfare"
+            - "chime"
+            - "powerup"
+            - "undo"
+            - "fart1"
+            - "fart2"
+            - "fart3"
+            - "fart4"
+            - "fart5"
+            - "fart6"
+            - "fart7"
+            - "fart8"
+            - "fart9"
+            - "fart10"
+            - "fart_random"
+
+set_chore_order:
+  name: Set Chore Order
+  description: Set the display order of chores for a child
+  fields:
+    child_id:
+      name: Child ID
+      description: The ID of the child to set chore order for
+      required: true
+      selector:
+        text:
+    chore_order:
+      name: Chore Order
+      description: Ordered list of chore IDs
+      required: true
+      selector:
+        object:
+
+add_penalty:
+  name: Add Penalty
+  description: Create a new penalty definition
+  fields:
+    name:
+      name: Name
+      description: The name of the penalty
+      required: true
+      selector:
+        text:
+    points:
+      name: Points
+      description: The number of points to deduct when applied
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 10000
+          mode: box
+    description:
+      name: Description
+      description: Optional description of the penalty
+      required: false
+      selector:
+        text:
+    icon:
+      name: Icon
+      description: MDI icon for the penalty
+      required: false
+      selector:
+        icon:
+    assigned_to:
+      name: Assigned To
+      description: List of child IDs this penalty applies to (empty for all)
+      required: false
+      selector:
+        object:
+
+update_penalty:
+  name: Update Penalty
+  description: Update an existing penalty definition
+  fields:
+    penalty_id:
+      name: Penalty ID
+      description: The ID of the penalty to update
+      required: true
+      selector:
+        text:
+    name:
+      name: Name
+      description: New name for the penalty
+      required: false
+      selector:
+        text:
+    points:
+      name: Points
+      description: New points value for the penalty
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 10000
+          mode: box
+    description:
+      name: Description
+      description: New description for the penalty
+      required: false
+      selector:
+        text:
+    icon:
+      name: Icon
+      description: New icon for the penalty
+      required: false
+      selector:
+        icon:
+    assigned_to:
+      name: Assigned To
+      description: New list of child IDs this penalty applies to
+      required: false
+      selector:
+        object:
+
+remove_penalty:
+  name: Remove Penalty
+  description: Remove a penalty definition
+  fields:
+    penalty_id:
+      name: Penalty ID
+      description: The ID of the penalty to remove
+      required: true
+      selector:
+        text:
+
+apply_penalty:
+  name: Apply Penalty
+  description: Apply a penalty to a child, deducting points
+  fields:
+    penalty_id:
+      name: Penalty ID
+      description: The ID of the penalty to apply
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child to apply the penalty to
+      required: true
+      selector:
+        text:
