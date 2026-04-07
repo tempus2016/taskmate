@@ -1,0 +1,537 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Velkomen til TaskMate!",
+        "description": "Set opp familieoppgåvesystemet ditt. Du kan tilpasse poengvalutaen borna skal tene.",
+        "data": {
+          "points_name": "Poengvalutanamn (t.d. Stjerner, Myntar, Kroner)",
+          "points_icon": "Poengikon"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Namn er påkravd"
+    },
+    "abort": {
+      "already_configured": "TaskMate er allereie konfigurert"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "TaskMate-innstillingar",
+        "menu_options": {
+          "manage_children": "Administrer born",
+          "manage_chores": "Administrer oppgåver",
+          "manage_rewards": "Administrer løningar",
+          "settings": "Innstillingar"
+        }
+      },
+      "manage_children": {
+        "title": "Administrer born",
+        "description": "Legg til, rediger eller fjern born",
+        "menu_options": {
+          "add_child": "Legg til nytt born",
+          "init": "Attende til hovudmenyen"
+        }
+      },
+      "add_child": {
+        "title": "Legg til nytt born",
+        "description": "Skriv inn informasjon om bornet",
+        "data": {
+          "name": "Namnet til bornet",
+          "avatar": "Avatar"
+        }
+      },
+      "edit_child": {
+        "title": "Rediger born: {child_name}",
+        "description": "Oppdater eller slett dette bornet",
+        "data": {
+          "name": "Namnet til bornet",
+          "avatar": "Avatar",
+          "action": "Handling"
+        }
+      },
+      "manage_chores": {
+        "title": "Administrer oppgåver",
+        "description": "Legg til, rediger eller fjern oppgåver",
+        "menu_options": {
+          "add_chore": "Legg til enkeltoppgåve",
+          "add_chores_bulk": "Legg til fleire oppgåver",
+          "init": "Attende til hovudmenyen"
+        }
+      },
+      "add_chore": {
+        "title": "Legg til ny oppgåve",
+        "description": "Opprett ei ny oppgåve for borna dine",
+        "data": {
+          "name": "Oppgåvenamn",
+          "description": "Omtale (valfritt)",
+          "points": "Poengløning",
+          "time_category": "Tid på dagen",
+          "due_days": "Forfallsdagar (valfritt)",
+          "assigned_to": "Tildelt til (lat stå tom for alle born)",
+          "requires_approval": "Krev foreldregodkjenning",
+          "daily_limit": "Dagleg fullføringsgrense",
+          "schedule_mode": "Planleggingsmodus"
+        },
+        "data_description": {
+          "daily_limit": "Kor mange gonger per dag denne oppgåva kan fullførast",
+          "schedule_mode": "Vel korleis denne oppgåva vert planlagd — bestemte vekedagar eller gjentakande intervall. Planleggingsalternativa vert konfigurerte på neste side."
+        }
+      },
+      "add_chores_bulk": {
+        "title": "Legg til fleire oppgåver",
+        "description": "Opprett fleire oppgåver samstundes med same innstillingar. Skriv oppgåvenamn éi per linje eller kommaseparert.",
+        "data": {
+          "chore_names": "Oppgåvenamn (éi per linje eller kommaseparert)",
+          "points": "Poengløning (for alle)",
+          "time_category": "Tid på dagen (for alle)",
+          "due_days": "Forfallsdagar (valfritt)",
+          "assigned_to": "Tildelt til (lat stå tom for alle born)",
+          "requires_approval": "Krev foreldregodkjenning",
+          "daily_limit": "Dagleg fullføringsgrense",
+          "schedule_mode": "Planleggingsmodus"
+        },
+        "data_description": {
+          "daily_limit": "Kor mange gonger per dag denne oppgåva kan fullførast",
+          "schedule_mode": "Vel korleis denne oppgåva vert planlagd"
+        }
+      },
+      "edit_chore": {
+        "title": "Rediger oppgåve: {chore_name}",
+        "description": "Oppdater eller slett denne oppgåva",
+        "data": {
+          "name": "Oppgåvenamn",
+          "description": "Omtale",
+          "points": "Poengløning",
+          "time_category": "Tid på dagen",
+          "due_days": "Forfallsdagar",
+          "assigned_to": "Tildelt til",
+          "requires_approval": "Krev foreldregodkjenning",
+          "daily_limit": "Dagleg fullføringsgrense",
+          "action": "Handling",
+          "schedule_mode": "Planleggingsmodus"
+        },
+        "data_description": {
+          "daily_limit": "Kor mange gonger per dag denne oppgåva kan fullførast",
+          "schedule_mode": "Vel korleis denne oppgåva vert planlagd — bestemte vekedagar eller gjentakande intervall. Planleggingsalternativa vert konfigurerte på neste side."
+        }
+      },
+      "manage_rewards": {
+        "title": "Administrer løningar",
+        "description": "Legg til, rediger eller fjern løningar",
+        "menu_options": {
+          "add_reward": "Legg til ny løning",
+          "init": "Attende til hovudmenyen"
+        }
+      },
+      "add_reward": {
+        "title": "Legg til ny løning",
+        "description": "Opprett ei løning borna kan tene",
+        "data": {
+          "name": "Løningsnamn",
+          "description": "Omtale (valfritt)",
+          "cost": "Poengkostnad (fast)",
+          "icon": "Ikon",
+          "assigned_to": "Tildelt til (lat stå tom for alle born)",
+          "is_jackpot": "Er jackpot"
+        },
+        "data_description": {
+          "is_jackpot": "Slå saman poeng frå alle tildelte born mot éi felles løning",
+          "cost": "Tal poeng som krevst for å hente denne løninga"
+        }
+      },
+      "edit_reward": {
+        "title": "Rediger løning: {reward_name}",
+        "description": "Oppdater eller slett denne løninga",
+        "data": {
+          "name": "Løningsnamn",
+          "description": "Omtale",
+          "cost": "Poengkostnad (fast)",
+          "icon": "Ikon",
+          "assigned_to": "Tildelt til",
+          "is_jackpot": "Er jackpot",
+          "action": "Handling"
+        },
+        "data_description": {
+          "is_jackpot": "Slå saman poeng frå alle tildelte born mot éi felles løning",
+          "cost": "Tal poeng som krevst for å hente denne løninga"
+        }
+      },
+      "settings": {
+        "title": "Innstillingar",
+        "description": "Konfigurer TaskMate-innstillingane dine",
+        "data": {
+          "points_name": "Poengvalutanamn",
+          "points_icon": "Poengikon",
+          "streak_reset_mode": "Rekke-nullstillingsmodus",
+          "history_days": "Historikkdagar å behalde",
+          "weekend_multiplier": "Helgepoengmultiplikator",
+          "streak_milestones_enabled": "Rekke-milepælbonusar",
+          "perfect_week_enabled": "Perfekt veke-bonus",
+          "perfect_week_bonus": "Perfekt veke-bonuspoeng",
+          "streak_milestones": "Rekke-milepælkonfigurasjon",
+          "notify_service": "Varslingsteneste (valfritt)"
+        },
+        "data_description": {
+          "streak_reset_mode": "Kva som skjer med ei rekke når ein dag vert hoppa over",
+          "history_days": "Kor mange dagars oppgåvefullføringshistorikk som skal behaldast (30-365)",
+          "weekend_multiplier": "Poengmultiplikator på laurdagar og sundagar (1.0 = deaktivert, 2.0 = doble poeng)",
+          "streak_milestones_enabled": "Gje bonuspoeng når born når rekkemilepælar (3, 7, 14, 30, 60, 100 dagar)",
+          "perfect_week_enabled": "Gje bonuspoeng når eit born fullfører minst éi oppgåve kvar dag i ei heil veke",
+          "perfect_week_bonus": "Bonuspoeng tildelt for ei perfekt veke",
+          "streak_milestones": "Eigendefinerte milepælar som 'dagar:poeng'-par, kommaseparert. Døme: 3:5, 7:10, 14:20, 30:50, 60:100, 100:200",
+          "notify_service": "HA-varslingsteneste for å varsle foreldre når ei oppgåve krev godkjenning. Format: notify.mobile_app_din_telefon — lat stå tom for berre vedvarande varsel"
+        }
+      },
+      "chore_schedule_specific": {
+        "title": "Trinn 2 — Bestemte dagar",
+        "description": "Vel kva vekedagar denne oppgåva skal visast på bornekortet. Lat stå tom for å vise kvar dag.",
+        "data": {
+          "due_days": "Forfallsdagar"
+        },
+        "data_description": {
+          "due_days": "Vel éin eller fleire dagar. Lat stå tom for å vise oppgåva kvar dag. Bruk forfallsdagsmodus på bornekortet for å gøyme eller dimme oppgåver på ikkje-planlagde dagar."
+        }
+      },
+      "edit_chore_schedule_specific": {
+        "title": "Trinn 2 — Bestemte dagar",
+        "description": "Vel kva vekedagar denne oppgåva skal visast på bornekortet. Lat stå tom for å vise kvar dag.",
+        "data": {
+          "due_days": "Forfallsdagar"
+        },
+        "data_description": {
+          "due_days": "Vel éin eller fleire dagar. Lat stå tom for å vise oppgåva kvar dag. Bruk forfallsdagsmodus på bornekortet for å gøyme eller dimme oppgåver på ikkje-planlagde dagar."
+        }
+      },
+      "chore_schedule_recurring": {
+        "title": "Trinn 2 — Gjentakande plan",
+        "description": "Vel kor ofte denne oppgåva kan fullførast. Når ho er fullført, vil ho ikkje vere tilgjengeleg att før vindauget nullstillast.\n\nMerk: Vekedag gjeld berre for Vekeleg og Annakvar veke. Startdato gjeld berre for Annakvar dag. Verdiar oppgjevne for ikkje-gjeldande alternativ vert ignorerte.",
+        "data": {
+          "recurrence": "Gjentaking",
+          "recurrence_day": "Vekedag (valfritt)",
+          "recurrence_start": "Startdato (valfritt)",
+          "first_occurrence_mode": "Når er ho fyrst tilgjengeleg?"
+        },
+        "data_description": {
+          "recurrence": "Kor ofte oppgåva kan fullførast",
+          "recurrence_day": "Berre vekeleg / annakvar veke — fest til ein bestemt dag. Vert ignorert for alle andre gjentakingstypar.",
+          "recurrence_start": "Berre annakvar dag — ankerdato i ÅÅÅÅ-MM-DD-format. Vert ignorert for alle andre gjentakingstypar. Lat stå tom for å bruke i dag.",
+          "first_occurrence_mode": "Tilgjengeleg med ein gong — bornet kan fullføre ho med det same. Vent på fyrste førekomst — oppgåva er låst til fyrste planlagde dag."
+        }
+      },
+      "edit_chore_schedule_recurring": {
+        "title": "Trinn 2 — Gjentakande plan",
+        "description": "Vel kor ofte denne oppgåva kan fullførast. Når ho er fullført, vil ho ikkje vere tilgjengeleg att før vindauget nullstillast.\n\nMerk: Vekedag gjeld berre for Vekeleg og Annakvar veke. Startdato gjeld berre for Annakvar dag. Verdiar oppgjevne for ikkje-gjeldande alternativ vert ignorerte.",
+        "data": {
+          "recurrence": "Gjentaking",
+          "recurrence_day": "Vekedag (valfritt)",
+          "recurrence_start": "Startdato (valfritt)",
+          "first_occurrence_mode": "Når er ho fyrst tilgjengeleg?"
+        },
+        "data_description": {
+          "recurrence": "Kor ofte oppgåva kan fullførast",
+          "recurrence_day": "Berre vekeleg / annakvar veke — fest til ein bestemt dag. Vert ignorert for alle andre gjentakingstypar.",
+          "recurrence_start": "Berre annakvar dag — ankerdato i ÅÅÅÅ-MM-DD-format. Vert ignorert for alle andre gjentakingstypar. Lat stå tom for å bruke i dag.",
+          "first_occurrence_mode": "Tilgjengeleg med ein gong — bornet kan fullføre ho med det same. Vent på fyrste førekomst — oppgåva er låst til fyrste planlagde dag."
+        }
+      }
+    },
+    "error": {
+      "name_required": "Namn er påkravd",
+      "invalid_milestone_format": "Ugyldig milepælformat — bruk dagar:poeng-par, t.d. 3:5, 7:10, 14:20"
+    }
+  },
+  "selector": {
+    "child_action": {
+      "options": {
+        "save": "Lagre endringar",
+        "delete": "Slett born"
+      }
+    },
+    "chore_action": {
+      "options": {
+        "save": "Lagre endringar",
+        "delete": "Slett denne oppgåva"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "Lagre endringar",
+        "delete": "Slett løning"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "Morgon",
+        "afternoon": "Ettermiddag",
+        "evening": "Kveld",
+        "night": "Natt",
+        "anytime": "Når som helst"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "Bestemte vekedagar",
+        "recurring": "Gjentakande (kvar N dag/veke/månad)"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "Måndag",
+        "tuesday": "Tysdag",
+        "wednesday": "Onsdag",
+        "thursday": "Torsdag",
+        "friday": "Fredag",
+        "saturday": "Laurdag",
+        "sunday": "Sundag"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "Annakvar dag",
+        "weekly": "Vekeleg",
+        "every_2_weeks": "Annakvar veke",
+        "monthly": "Månadleg",
+        "every_3_months": "Kvar 3. månad",
+        "every_6_months": "Kvar 6. månad"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "Måndag",
+        "tuesday": "Tysdag",
+        "wednesday": "Onsdag",
+        "thursday": "Torsdag",
+        "friday": "Fredag",
+        "saturday": "Laurdag",
+        "sunday": "Sundag",
+        "any_day": "Kva dag som helst"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "Tilgjengeleg med ein gong",
+        "wait_for_first_occurrence": "Vent på fyrste planlagde førekomst"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "Nullstill — rekka går til 0 ved tapt dag",
+        "pause": "Pause — rekka vert bevart til neste fullføring"
+      }
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "Fullfør oppgåve",
+      "description": "Merk ei oppgåve som fullført av eit born",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgåve-ID",
+          "description": "ID-en til oppgåva som skal fullførast"
+        },
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som fullfører oppgåva"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Godkjenn oppgåve",
+      "description": "Godkjenn ei fullført oppgåve og tildel poeng",
+      "fields": {
+        "completion_id": {
+          "name": "Fullførings-ID",
+          "description": "ID-en til oppgåvefullføringa som skal godkjennast"
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Avvis oppgåve",
+      "description": "Avvis ei fullført oppgåve",
+      "fields": {
+        "completion_id": {
+          "name": "Fullførings-ID",
+          "description": "ID-en til oppgåvefullføringa som skal avvisast"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "Hent løning",
+      "description": "Bornet hentar ei løning med poenga sine",
+      "fields": {
+        "reward_id": {
+          "name": "Lønings-ID",
+          "description": "ID-en til løninga som skal hentast"
+        },
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som hentar løninga"
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Godkjenn løning",
+      "description": "Godkjenn eit løningskrav",
+      "fields": {
+        "claim_id": {
+          "name": "Krav-ID",
+          "description": "ID-en til løningskravet som skal godkjennast"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Legg til poeng",
+      "description": "Legg til bonuspoeng til eit born",
+      "fields": {
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som skal få poeng"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Tal poeng å leggje til"
+        },
+        "reason": {
+          "name": "Grunn",
+          "description": "Valfri grunn for bonusen"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Fjern poeng",
+      "description": "Fjern poeng frå eit born (straff)",
+      "fields": {
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som skal miste poeng"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Tal poeng å fjerne"
+        },
+        "reason": {
+          "name": "Grunn",
+          "description": "Valfri grunn for straffen"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "Avvis løning",
+      "description": "Avvis eit løningskrav",
+      "fields": {
+        "claim_id": {
+          "name": "Krav-ID",
+          "description": "ID-en til løningskravet som skal avvisast"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "Førehandsvise lyd",
+      "description": "Førehandsvise ein fullføringslydeffekt i nettlesaren",
+      "fields": {
+        "sound": {
+          "name": "Lyd",
+          "description": "Lyden som skal førehandsvisast"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "Set oppgåverekkjefølgje",
+      "description": "Set visingsrekkjefølgja for oppgåver for eit born",
+      "fields": {
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet å sette oppgåverekkjefølgje for"
+        },
+        "chore_order": {
+          "name": "Oppgåverekkjefølgje",
+          "description": "Ordna liste over oppgåve-ID-ar"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "Legg til straff",
+      "description": "Opprett ein ny straffedefinisjon",
+      "fields": {
+        "name": {
+          "name": "Namn",
+          "description": "Namnet på straffen"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Tal poeng å trekkje når ho vert brukt"
+        },
+        "description": {
+          "name": "Omtale",
+          "description": "Valfri omtale av straffen"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "MDI-ikon for straffen"
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Liste over born-ID-ar denne straffen gjeld for"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "Oppdater straff",
+      "description": "Oppdater ein eksisterande straffedefinisjon",
+      "fields": {
+        "penalty_id": {
+          "name": "Straffe-ID",
+          "description": "ID-en til straffen som skal oppdaterast"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Nytt namn for straffen"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Ny poengverdi"
+        },
+        "description": {
+          "name": "Omtale",
+          "description": "Ny omtale"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Nytt ikon"
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Ny liste over born-ID-ar"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "Fjern straff",
+      "description": "Fjern ein straffedefinisjon",
+      "fields": {
+        "penalty_id": {
+          "name": "Straffe-ID",
+          "description": "ID-en til straffen som skal fjernast"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "Bruk straff",
+      "description": "Bruk ein straff på eit born og trekk poeng",
+      "fields": {
+        "penalty_id": {
+          "name": "Straffe-ID",
+          "description": "ID-en til straffen som skal brukast"
+        },
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet straffen skal brukast på"
+        }
+      }
+    }
+  }
+}

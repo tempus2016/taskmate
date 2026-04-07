@@ -1,0 +1,537 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Bienvenue sur TaskMate !",
+        "description": "Configurez votre système de gestion des tâches familiales. Vous pouvez personnaliser le nom de la monnaie de points que les enfants gagneront.",
+        "data": {
+          "points_name": "Nom de la monnaie de points (ex: Étoiles, Pièces, Jetons)",
+          "points_icon": "Icône des points"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Le nom est obligatoire"
+    },
+    "abort": {
+      "already_configured": "TaskMate est déjà configuré"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Paramètres TaskMate",
+        "menu_options": {
+          "manage_children": "Gérer les enfants",
+          "manage_chores": "Gérer les corvées",
+          "manage_rewards": "Gérer les récompenses",
+          "settings": "Paramètres"
+        }
+      },
+      "manage_children": {
+        "title": "Gérer les enfants",
+        "description": "Ajouter, modifier ou supprimer des enfants",
+        "menu_options": {
+          "add_child": "Ajouter un nouvel enfant",
+          "init": "Retour au menu principal"
+        }
+      },
+      "add_child": {
+        "title": "Ajouter un nouvel enfant",
+        "description": "Saisissez les informations de l'enfant",
+        "data": {
+          "name": "Nom de l'enfant",
+          "avatar": "Avatar"
+        }
+      },
+      "edit_child": {
+        "title": "Modifier l'enfant : {child_name}",
+        "description": "Mettre à jour ou supprimer cet enfant",
+        "data": {
+          "name": "Nom de l'enfant",
+          "avatar": "Avatar",
+          "action": "Action"
+        }
+      },
+      "manage_chores": {
+        "title": "Gérer les corvées",
+        "description": "Ajouter, modifier ou supprimer des corvées",
+        "menu_options": {
+          "add_chore": "Ajouter une corvée unique",
+          "add_chores_bulk": "Ajouter plusieurs corvées",
+          "init": "Retour au menu principal"
+        }
+      },
+      "add_chore": {
+        "title": "Ajouter une nouvelle corvée",
+        "description": "Créer une nouvelle corvée pour vos enfants",
+        "data": {
+          "name": "Nom de la corvée",
+          "description": "Description (optionnel)",
+          "points": "Récompense en points",
+          "time_category": "Moment de la journée",
+          "due_days": "Jours d'échéance (optionnel)",
+          "assigned_to": "Assigné à (laisser vide pour tous les enfants)",
+          "requires_approval": "Nécessite l'approbation d'un parent",
+          "daily_limit": "Limite d'exécution quotidienne",
+          "schedule_mode": "Mode de planification"
+        },
+        "data_description": {
+          "daily_limit": "Nombre de fois par jour que cette corvée peut être effectuée",
+          "schedule_mode": "Choisissez comment cette corvée est planifiée — jours spécifiques de la semaine ou intervalle récurrent. Les options de planification seront configurées sur la page suivante."
+        }
+      },
+      "add_chores_bulk": {
+        "title": "Ajouter plusieurs corvées",
+        "description": "Créez plusieurs corvées à la fois avec les mêmes paramètres. Saisissez les noms des corvées (un par ligne ou séparés par des virgules).",
+        "data": {
+          "chore_names": "Noms des corvées (un par ligne ou par virgule)",
+          "points": "Points de récompense (pour toutes)",
+          "time_category": "Moment de la journée (pour toutes)",
+          "due_days": "Jours d'échéance (optionnel)",
+          "assigned_to": "Assigné à (laisser vide pour tous les enfants)",
+          "requires_approval": "Nécessite l'approbation d'un parent",
+          "daily_limit": "Limite d'exécution quotidienne",
+          "schedule_mode": "Mode de planification"
+        },
+        "data_description": {
+          "daily_limit": "Nombre de fois par jour que cette corvée peut être effectuée",
+          "schedule_mode": "Choisissez comment cette corvée est planifiée"
+        }
+      },
+      "edit_chore": {
+        "title": "Modifier la corvée : {chore_name}",
+        "description": "Mettre à jour ou supprimer cette corvée",
+        "data": {
+          "name": "Nom de la corvée",
+          "description": "Description",
+          "points": "Récompense en points",
+          "time_category": "Moment de la journée",
+          "due_days": "Jours d'échéance",
+          "assigned_to": "Assigné à",
+          "requires_approval": "Nécessite l'approbation d'un parent",
+          "daily_limit": "Limite d'exécution quotidienne",
+          "action": "Action",
+          "schedule_mode": "Mode de planification"
+        },
+        "data_description": {
+          "daily_limit": "Nombre de fois par jour que cette corvée peut être effectuée",
+          "schedule_mode": "Choisissez comment cette corvée est planifiée — jours spécifiques de la semaine ou intervalle récurrent."
+        }
+      },
+      "manage_rewards": {
+        "title": "Gérer les récompenses",
+        "description": "Ajouter, modifier ou supprimer des récompenses",
+        "menu_options": {
+          "add_reward": "Ajouter une nouvelle récompense",
+          "init": "Retour au menu principal"
+        }
+      },
+      "add_reward": {
+        "title": "Ajouter une nouvelle récompense",
+        "description": "Créer une récompense que les enfants peuvent obtenir",
+        "data": {
+          "name": "Nom de la récompense",
+          "description": "Description (optionnel)",
+          "cost": "Coût en points (fixe)",
+          "icon": "Icône",
+          "assigned_to": "Assignée à (laisser vide pour tous les enfants)",
+          "is_jackpot": "Est un Jackpot"
+        },
+        "data_description": {
+          "is_jackpot": "Cumuler les points de tous les enfants assignés pour une récompense partagée",
+          "cost": "Nombre de points requis pour réclamer cette récompense"
+        }
+      },
+      "edit_reward": {
+        "title": "Modifier la récompense : {reward_name}",
+        "description": "Mettre à jour ou supprimer cette récompense",
+        "data": {
+          "name": "Nom de la récompense",
+          "description": "Description",
+          "cost": "Coût en points (fixe)",
+          "icon": "Icône",
+          "assigned_to": "Assignée à",
+          "is_jackpot": "Est un Jackpot",
+          "action": "Action"
+        },
+        "data_description": {
+          "is_jackpot": "Cumuler les points de tous les enfants assignés pour une récompense partagée",
+          "cost": "Nombre de points requis pour réclamer cette récompense"
+        }
+      },
+      "settings": {
+        "title": "Paramètres",
+        "description": "Configurez vos paramètres TaskMate",
+        "data": {
+          "points_name": "Nom de la monnaie de points",
+          "points_icon": "Icône des points",
+          "streak_reset_mode": "Mode de réinitialisation des séries (Séries)",
+          "history_days": "Nombre de jours d'historique à conserver",
+          "weekend_multiplier": "Multiplicateur de points le week-end",
+          "streak_milestones_enabled": "Bonus de paliers de série",
+          "perfect_week_enabled": "Bonus de semaine parfaite",
+          "perfect_week_bonus": "Points bonus semaine parfaite",
+          "streak_milestones": "Configuration des paliers de série",
+          "notify_service": "Service de notification (optionnel)"
+        },
+        "data_description": {
+          "streak_reset_mode": "Ce qui arrive à une série lorsqu'un jour est manqué",
+          "history_days": "Combien de jours d'historique d'exécution conserver (30-365)",
+          "weekend_multiplier": "Multiplicateur de points les samedis et dimanches (1.0 = désactivé, 2.0 = points doubles)",
+          "streak_milestones_enabled": "Accorder des points bonus lorsque les enfants atteignent des paliers (3, 7, 14, 30, 60, 100 jours)",
+          "perfect_week_enabled": "Accorder des points bonus lorsqu'un enfant termine au moins une corvée chaque jour pendant une semaine complète",
+          "perfect_week_bonus": "Points bonus accordés pour une semaine parfaite",
+          "streak_milestones": "Paliers personnalisés sous forme de paires 'jours:points', séparées par des virgules. Exemple : 3:5, 7:10, 14:20",
+          "notify_service": "Service de notification HA pour alerter les parents lorsqu'une corvée nécessite une approbation. Format : notify.mobile_app_votre_telephone"
+        }
+      },
+      "chore_schedule_specific": {
+        "title": "Étape 2 — Jours spécifiques",
+        "description": "Choisissez les jours de la semaine où cette corvée doit apparaître. Laissez vide pour l'afficher tous les jours.",
+        "data": {
+          "due_days": "Jours d'échéance"
+        },
+        "data_description": {
+          "due_days": "Sélectionnez un ou plusieurs jours. Laissez vide pour afficher la corvée tous les jours."
+        }
+      },
+      "edit_chore_schedule_specific": {
+        "title": "Étape 2 — Jours spécifiques",
+        "description": "Choisissez les jours de la semaine où cette corvée doit apparaître. Laissez vide pour l'afficher tous les jours.",
+        "data": {
+          "due_days": "Jours d'échéance"
+        },
+        "data_description": {
+          "due_days": "Sélectionnez un ou plusieurs jours. Laissez vide pour afficher la corvée tous les jours."
+        }
+      },
+      "chore_schedule_recurring": {
+        "title": "Étape 2 — Calendrier récurrent",
+        "description": "Définissez la fréquence à laquelle cette corvée peut être effectuée. Une fois terminée, elle ne sera plus disponible jusqu'à la réinitialisation de la période.\n\nNote : 'Jour de la semaine' s'applique uniquement à Hebdomadaire et Toutes les 2 semaines. 'Date de début' s'applique uniquement à Tous les 2 jours.",
+        "data": {
+          "recurrence": "Récurrence",
+          "recurrence_day": "Jour de la semaine (optionnel)",
+          "recurrence_start": "Date de début (optionnel)",
+          "first_occurrence_mode": "Quand est-elle disponible pour la première fois ?"
+        },
+        "data_description": {
+          "recurrence": "Fréquence à laquelle la corvée peut être effectuée",
+          "recurrence_day": "Hebdomadaire / Toutes les 2 semaines uniquement — fixer à un jour précis.",
+          "recurrence_start": "Tous les 2 jours uniquement — date de référence au format AAAA-MM-JJ.",
+          "first_occurrence_mode": "Disponible immédiatement — l'enfant peut la faire tout de suite. Attendre la première occurrence — la corvée est verrouillée jusqu'au premier jour prévu."
+        }
+      },
+      "edit_chore_schedule_recurring": {
+        "title": "Étape 2 — Calendrier récurrent",
+        "description": "Définissez la fréquence à laquelle cette corvée peut être effectuée.",
+        "data": {
+          "recurrence": "Récurrence",
+          "recurrence_day": "Jour de la semaine (optionnel)",
+          "recurrence_start": "Date de début (optionnel)",
+          "first_occurrence_mode": "Première disponibilité"
+        },
+        "data_description": {
+          "recurrence": "Fréquence à laquelle la corvée peut être effectuée",
+          "recurrence_day": "Jour fixe pour Hebdomadaire / Toutes les 2 semaines.",
+          "recurrence_start": "Date d'ancrage pour Tous les 2 jours.",
+          "first_occurrence_mode": "Déterminer si la corvée est active immédiatement ou au prochain cycle."
+        }
+      }
+    },
+    "error": {
+      "name_required": "Le nom est requis",
+      "invalid_milestone_format": "Format de palier invalide — utilisez des paires jours:points, ex: 3:5, 7:10"
+    }
+  },
+  "selector": {
+    "child_action": {
+      "options": {
+        "save": "Enregistrer les modifications",
+        "delete": "Supprimer l'enfant"
+      }
+    },
+    "chore_action": {
+      "options": {
+        "save": "Enregistrer les modifications",
+        "delete": "Supprimer cette corvée"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "Enregistrer les modifications",
+        "delete": "Supprimer la récompense"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "Matin",
+        "afternoon": "Après-midi",
+        "evening": "Soirée",
+        "night": "Nuit",
+        "anytime": "N'importe quand"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "Jours spécifiques de la semaine",
+        "recurring": "Récurrent (tous les N jours/semaines/mois)"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "Tous les 2 jours",
+        "weekly": "Hebdomadaire",
+        "every_2_weeks": "Toutes les 2 semaines",
+        "monthly": "Mensuel",
+        "every_3_months": "Tous les 3 mois",
+        "every_6_months": "Tous les 6 mois"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche",
+        "any_day": "N'importe quel jour"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "Disponible immédiatement",
+        "wait_for_first_occurrence": "Attendre la première occurrence prévue"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "Réinitialiser — la série retombe à 0 en cas d'oubli",
+        "pause": "Pause — la série est préservée jusqu'à la prochaine exécution"
+      }
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "Terminer une corvée",
+      "description": "Marquer une corvée comme terminée par un enfant",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la corvée",
+          "description": "L'identifiant de la corvée à terminer"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant effectuant la corvée"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Approuver une corvée",
+      "description": "Approuver une corvée terminée et attribuer les points",
+      "fields": {
+        "completion_id": {
+          "name": "ID de complétion",
+          "description": "L'identifiant de l'exécution à approuver"
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Rejeter une corvée",
+      "description": "Rejeter une corvée terminée",
+      "fields": {
+        "completion_id": {
+          "name": "ID de complétion",
+          "description": "L'identifiant de l'exécution à rejeter"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "Réclamer une récompense",
+      "description": "L'enfant réclame une récompense en utilisant ses points",
+      "fields": {
+        "reward_id": {
+          "name": "ID de la récompense",
+          "description": "L'identifiant de la récompense à réclamer"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant réclamant la récompense"
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Approuver une récompense",
+      "description": "Approuver une demande de récompense",
+      "fields": {
+        "claim_id": {
+          "name": "ID de la demande",
+          "description": "L'identifiant de la demande de récompense à approuver"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Ajouter des points",
+      "description": "Ajouter des points bonus à un enfant",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant à qui ajouter des points"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Le nombre de points à ajouter"
+        },
+        "reason": {
+          "name": "Raison",
+          "description": "Raison optionnelle pour le bonus"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Retirer des points",
+      "description": "Retirer des points à un enfant (pénalité)",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant à qui retirer des points"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Le nombre de points à retirer"
+        },
+        "reason": {
+          "name": "Raison",
+          "description": "Raison optionnelle pour la pénalité"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "Rejeter une récompense",
+      "description": "Rejeter une demande de récompense",
+      "fields": {
+        "claim_id": {
+          "name": "ID de la demande",
+          "description": "L'identifiant de la demande à rejeter"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "Aperçu du son",
+      "description": "Tester un effet sonore de complétion dans le navigateur",
+      "fields": {
+        "sound": {
+          "name": "Son",
+          "description": "Le son à tester"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "Définir l'ordre des corvées",
+      "description": "Définir l'ordre d'affichage des corvées pour un enfant",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant"
+        },
+        "chore_order": {
+          "name": "Ordre des corvées",
+          "description": "Liste ordonnée des IDs de corvées"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "Ajouter une pénalité",
+      "description": "Créer une nouvelle définition de pénalité",
+      "fields": {
+        "name": {
+          "name": "Nom",
+          "description": "Le nom de la pénalité"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Le nombre de points à déduire"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Description optionnelle"
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Icône MDI pour la pénalité"
+        },
+        "assigned_to": {
+          "name": "Assignée à",
+          "description": "Liste des IDs d'enfants concernés"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "Mettre à jour la pénalité",
+      "description": "Modifier une définition de pénalité existante",
+      "fields": {
+        "penalty_id": {
+          "name": "ID de pénalité",
+          "description": "L'identifiant de la pénalité à modifier"
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Nouveau nom"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Nouvelle valeur de points"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Nouvelle description"
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Nouvelle icône"
+        },
+        "assigned_to": {
+          "name": "Assignée à",
+          "description": "Nouvelle liste d'identifiants d'enfants"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "Supprimer la pénalité",
+      "description": "Supprimer une définition de pénalité",
+      "fields": {
+        "penalty_id": {
+          "name": "ID de pénalité",
+          "description": "L'identifiant de la pénalité à supprimer"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "Appliquer une pénalité",
+      "description": "Appliquer une pénalité à un enfant, déduisant ses points",
+      "fields": {
+        "penalty_id": {
+          "name": "ID de pénalité",
+          "description": "L'identifiant de la pénalité à appliquer"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant à pénaliser"
+        }
+      }
+    }
+  }
+}
