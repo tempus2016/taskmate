@@ -667,13 +667,24 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             if not name:
                 errors["name"] = "name_required"
             else:
+                # Save Step 1 data immediately to the chore object
+                chore.name = name
+                chore.points = int(user_input.get("points", chore.points))
+                chore.description = user_input.get("description", chore.description)
+                chore.assigned_to = user_input.get("assigned_to", chore.assigned_to)
+                chore.requires_approval = user_input.get("requires_approval", chore.requires_approval)
+                chore.time_category = user_input.get("time_category", chore.time_category)
+                chore.daily_limit = int(user_input.get("daily_limit", chore.daily_limit))
+                chore.completion_sound = user_input.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
+                chore.visibility_entity = user_input.get("visibility_entity", "")
+                chore.visibility_state = user_input.get("visibility_state", "on")
+                chore.visibility_operator = user_input.get("visibility_operator", "equals")
                 _LOGGER.debug(
-                    "Edit chore step 1 - visibility fields: entity=%s, operator=%s, state=%s",
-                    user_input.get("visibility_entity"),
-                    user_input.get("visibility_operator"),
-                    user_input.get("visibility_state"),
+                    "Edit chore step 1 - saved visibility fields: entity=%s, operator=%s, state=%s",
+                    chore.visibility_entity,
+                    chore.visibility_operator,
+                    chore.visibility_state,
                 )
-                self._chore_step1_data = {**user_input, "_editing": True, "_chore_id": chore_id}
                 schedule_mode = user_input.get("schedule_mode", "specific_days")
                 if schedule_mode == "specific_days":
                     return await self.async_step_edit_chore_schedule_specific()
@@ -782,23 +793,14 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             return await self.async_step_manage_chores()
 
         if user_input is not None:
-            chore.name = s1.get("name", chore.name).strip()
-            chore.points = int(s1.get("points", chore.points))
-            chore.description = s1.get("description", chore.description)
-            chore.assigned_to = s1.get("assigned_to", chore.assigned_to)
-            chore.requires_approval = s1.get("requires_approval", chore.requires_approval)
-            chore.time_category = s1.get("time_category", chore.time_category)
-            chore.daily_limit = int(s1.get("daily_limit", chore.daily_limit))
-            chore.completion_sound = s1.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
-            chore.visibility_entity = s1.get("visibility_entity", "")
-            chore.visibility_state = s1.get("visibility_state", "on")
-            chore.visibility_operator = s1.get("visibility_operator", "equals")
-            _LOGGER.debug(
-                "Saving specific_days chore %s - visibility: entity=%s, operator=%s, state=%s",
-                chore.name, chore.visibility_entity, chore.visibility_operator, chore.visibility_state
-            )
+            # Step 1 data already saved in async_step_edit_chore
+            # Just update schedule-specific fields here
             chore.schedule_mode = "specific_days"
             chore.due_days = user_input.get("due_days", [])
+            _LOGGER.debug(
+                "Saving specific_days chore %s - due_days=%s, visibility: entity=%s",
+                chore.name, chore.due_days, chore.visibility_entity
+            )
             # Clear recurring fields
             chore.recurrence = "weekly"
             chore.recurrence_day = ""
@@ -834,17 +836,8 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             return await self.async_step_manage_chores()
 
         if user_input is not None:
-            chore.name = s1.get("name", chore.name).strip()
-            chore.points = int(s1.get("points", chore.points))
-            chore.description = s1.get("description", chore.description)
-            chore.assigned_to = s1.get("assigned_to", chore.assigned_to)
-            chore.requires_approval = s1.get("requires_approval", chore.requires_approval)
-            chore.time_category = s1.get("time_category", chore.time_category)
-            chore.daily_limit = int(s1.get("daily_limit", chore.daily_limit))
-            chore.completion_sound = s1.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
-            chore.visibility_entity = s1.get("visibility_entity", "")
-            chore.visibility_state = s1.get("visibility_state", "on")
-            chore.visibility_operator = s1.get("visibility_operator", "equals")
+            # Step 1 data already saved in async_step_edit_chore
+            # Just update schedule-recurring fields here
             chore.schedule_mode = "recurring"
             chore.due_days = []
             recurrence = user_input.get("recurrence", "weekly")
