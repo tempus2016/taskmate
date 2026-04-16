@@ -791,7 +791,7 @@ class TaskMateRewardsCard extends LitElement {
       relevantChildren.forEach((child, index) => {
         const points = child.points || 0;
         const shareOfGoal = relevantChildren.length > 0 ? (100 / relevantChildren.length) : 100;
-        const weightedProgress = Math.min((points / sharePerChild) * 100, 100);
+        const weightedProgress = sharePerChild > 0 ? Math.min((points / sharePerChild) * 100, 100) : 0;
 
         currentStars += points;
         childContributions.push({
@@ -813,7 +813,7 @@ class TaskMateRewardsCard extends LitElement {
       }
     }
 
-    const percentage = Math.min((currentStars / displayCost) * 100, 100);
+    const percentage = displayCost > 0 ? Math.min((currentStars / displayCost) * 100, 100) : 0;
 
     // Check if this reward has a pending claim
     const entity = this.hass?.states?.[this.config?.entity];
@@ -954,7 +954,7 @@ class TaskMateRewardsCard extends LitElement {
         width = (contrib.shareOfGoal / 100) * (contrib.weightedProgress / 100) * 100;
       } else {
         // Fallback: raw contribution relative to cost
-        width = Math.min((contrib.points / cost) * 100, 100);
+        width = cost > 0 ? Math.min((contrib.points / cost) * 100, 100) : 0;
       }
       return {
         ...contrib,
@@ -963,7 +963,7 @@ class TaskMateRewardsCard extends LitElement {
     });
 
     // Calculate total percentage for display
-    const totalPercentage = Math.min((totalStars / cost) * 100, 100);
+    const totalPercentage = cost > 0 ? Math.min((totalStars / cost) * 100, 100) : 0;
 
     return html`
       <div class="progress-section">
