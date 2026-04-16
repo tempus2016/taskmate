@@ -40,10 +40,7 @@ const RANK_MEDAL = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
 /* ─── Utility helpers ──────────────────────────────────────────────────── */
 
 function getChildren(state) {
-  try {
-    const d = JSON.parse(state.attributes.data || "{}");
-    return d.children || [];
-  } catch { return []; }
+  return state.attributes.children || [];
 }
 
 function weeklyPoints(child) {
