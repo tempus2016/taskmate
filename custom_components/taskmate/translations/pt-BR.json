@@ -1,0 +1,457 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Bem-vindo ao TaskMate!",
+        "description": "Configure o seu sistema de gestão de tarefas familiar. Pode personalizar a moeda de pontos que as crianças vão ganhar.",
+        "data": {
+          "points_name": "Nome da moeda de pontos (ex: Estrelas, Moedas, Pontos)",
+          "points_icon": "Ícone dos pontos"
+        }
+      }
+    },
+    "error": {
+      "name_required": "O nome é obrigatório"
+    },
+    "abort": {
+      "already_configured": "O TaskMate já está configurado"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Definições do TaskMate",
+        "menu_options": {
+          "manage_children": "Gerir crianças",
+          "manage_chores": "Gerir tarefas",
+          "manage_rewards": "Gerir recompensas",
+          "settings": "Definições"
+        }
+      },
+      "manage_children": {
+        "title": "Gerir crianças",
+        "description": "Adicionar, editar ou remover crianças",
+        "menu_options": {
+          "add_child": "Adicionar nova criança",
+          "init": "Voltar ao menu principal"
+        }
+      },
+      "add_child": {
+        "title": "Adicionar nova criança",
+        "description": "Introduza as informações da criança",
+        "data": {
+          "name": "Nome da criança",
+          "avatar": "Avatar"
+        }
+      },
+      "edit_child": {
+        "title": "Editar criança: {child_name}",
+        "description": "Atualizar ou eliminar esta criança",
+        "data": {
+          "name": "Nome da criança",
+          "avatar": "Avatar",
+          "action": "Ação"
+        }
+      },
+      "manage_chores": {
+        "title": "Gerir tarefas",
+        "description": "Adicionar, editar ou remover tarefas",
+        "menu_options": {
+          "add_chore": "Adicionar tarefa individual",
+          "add_chores_bulk": "Adicionar várias tarefas",
+          "init": "Voltar ao menu principal"
+        }
+      },
+      "add_chore": {
+        "title": "Adicionar nova tarefa",
+        "description": "Criar uma nova tarefa para os seus filhos",
+        "data": {
+          "name": "Nome da tarefa",
+          "description": "Descrição (opcional)",
+          "points": "Recompensa em pontos",
+          "time_category": "Período do dia",
+          "due_days": "Dias de vencimento (opcional)",
+          "assigned_to": "Atribuída a (deixe vazio para todas as crianças)",
+          "requires_approval": "Requer aprovação dos pais",
+          "daily_limit": "Limite diário de conclusão",
+          "schedule_mode": "Modo de agendamento"
+        },
+        "data_description": {
+          "daily_limit": "Quantas vezes por dia esta tarefa pode ser concluída",
+          "schedule_mode": "Escolha como esta tarefa é agendada — dias específicos da semana ou intervalo recorrente. As opções de agendamento serão configuradas na página seguinte."
+        }
+      },
+      "add_chores_bulk": {
+        "title": "Adicionar várias tarefas",
+        "description": "Criar várias tarefas de uma vez com as mesmas definições. Introduza os nomes das tarefas, um por linha ou separados por vírgulas.",
+        "data": {
+          "chore_names": "Nomes das tarefas (um por linha ou separados por vírgulas)",
+          "points": "Recompensa em pontos (para todas)",
+          "time_category": "Período do dia (para todas)",
+          "due_days": "Dias de vencimento (opcional)",
+          "assigned_to": "Atribuída a (deixe vazio para todas as crianças)",
+          "requires_approval": "Requer aprovação dos pais",
+          "daily_limit": "Limite diário de conclusão",
+          "schedule_mode": "Modo de agendamento"
+        },
+        "data_description": {
+          "daily_limit": "Quantas vezes por dia esta tarefa pode ser concluída",
+          "schedule_mode": "Escolha como esta tarefa é agendada"
+        }
+      },
+      "edit_chore": {
+        "title": "Editar tarefa: {chore_name}",
+        "description": "Atualizar ou eliminar esta tarefa",
+        "data": {
+          "name": "Nome da tarefa",
+          "description": "Descrição",
+          "points": "Recompensa em pontos",
+          "time_category": "Período do dia",
+          "due_days": "Dias de vencimento",
+          "assigned_to": "Atribuída a",
+          "requires_approval": "Requer aprovação dos pais",
+          "daily_limit": "Limite diário de conclusão",
+          "action": "Ação",
+          "schedule_mode": "Modo de agendamento"
+        },
+        "data_description": {
+          "daily_limit": "Quantas vezes por dia esta tarefa pode ser concluída",
+          "schedule_mode": "Escolha como esta tarefa é agendada — dias específicos da semana ou intervalo recorrente. As opções de agendamento serão configuradas na página seguinte."
+        }
+      },
+      "manage_rewards": {
+        "title": "Gerir recompensas",
+        "description": "Adicionar, editar ou remover recompensas",
+        "menu_options": {
+          "add_reward": "Adicionar nova recompensa",
+          "init": "Voltar ao menu principal"
+        }
+      },
+      "add_reward": {
+        "title": "Adicionar nova recompensa",
+        "description": "Criar uma recompensa que as crianças podem ganhar",
+        "data": {
+          "name": "Nome da recompensa",
+          "description": "Descrição (opcional)",
+          "cost": "Custo em pontos (fixo)",
+          "icon": "Ícone",
+          "assigned_to": "Atribuída a (deixe vazio para todas as crianças)",
+          "is_jackpot": "É jackpot"
+        },
+        "data_description": {
+          "is_jackpot": "Juntar pontos de todas as crianças atribuídas para uma recompensa partilhada",
+          "cost": "Número de pontos necessários para reclamar esta recompensa"
+        }
+      },
+      "edit_reward": {
+        "title": "Editar recompensa: {reward_name}",
+        "description": "Atualizar ou eliminar esta recompensa",
+        "data": {
+          "name": "Nome da recompensa",
+          "description": "Descrição",
+          "cost": "Custo em pontos (fixo)",
+          "icon": "Ícone",
+          "assigned_to": "Atribuída a",
+          "is_jackpot": "É jackpot",
+          "action": "Ação"
+        },
+        "data_description": {
+          "is_jackpot": "Juntar pontos de todas as crianças atribuídas para uma recompensa partilhada",
+          "cost": "Número de pontos necessários para reclamar esta recompensa"
+        }
+      },
+      "settings": {
+        "title": "Definições",
+        "description": "Configurar as definições do TaskMate",
+        "data": {
+          "points_name": "Nome da moeda de pontos",
+          "points_icon": "Ícone dos pontos",
+          "streak_reset_mode": "Modo de reinício de sequência",
+          "history_days": "Dias de histórico a manter",
+          "weekend_multiplier": "Multiplicador de pontos ao fim de semana",
+          "streak_milestones_enabled": "Bónus de marcos de sequência",
+          "perfect_week_enabled": "Bónus de semana perfeita",
+          "perfect_week_bonus": "Pontos de bónus de semana perfeita",
+          "streak_milestones": "Configuração de marcos de sequência",
+          "notify_service": "Serviço de notificação (opcional)"
+        },
+        "data_description": {
+          "streak_reset_mode": "O que acontece a uma sequência quando um dia é falhado",
+          "history_days": "Quantos dias de histórico de conclusão de tarefas manter (30-365)",
+          "weekend_multiplier": "Multiplicador de pontos aos sábados e domingos (1.0 = desativado, 2.0 = pontos duplos)",
+          "streak_milestones_enabled": "Atribuir pontos de bónus quando as crianças atingem marcos de sequência (3, 7, 14, 30, 60, 100 dias)",
+          "perfect_week_enabled": "Atribuir pontos de bónus quando uma criança completa pelo menos uma tarefa todos os dias durante uma semana inteira",
+          "perfect_week_bonus": "Pontos de bónus atribuídos por uma semana perfeita",
+          "streak_milestones": "Marcos personalizados como pares 'dias:pontos', separados por vírgulas. Exemplo: 3:5, 7:10, 14:20, 30:50, 60:100, 100:200",
+          "notify_service": "Serviço de notificação do HA para alertar os pais quando uma tarefa requer aprovação. Formato: notify.mobile_app_seu_telefone — deixe vazio para usar apenas notificações persistentes"
+        }
+      },
+      "chore_schedule_specific": {
+        "title": "Passo 2 — Dias específicos",
+        "description": "Escolha em que dias da semana esta tarefa deve aparecer no cartão da criança. Deixe vazio para mostrar todos os dias.",
+        "data": {
+          "due_days": "Dias de vencimento"
+        },
+        "data_description": {
+          "due_days": "Selecione um ou mais dias. Deixe vazio para mostrar a tarefa todos os dias. Use o modo de dias de vencimento no cartão da criança para ocultar ou escurecer tarefas em dias não agendados."
+        }
+      },
+      "edit_chore_schedule_specific": {
+        "title": "Passo 2 — Dias específicos",
+        "description": "Escolha em que dias da semana esta tarefa deve aparecer no cartão da criança. Deixe vazio para mostrar todos os dias.",
+        "data": {
+          "due_days": "Dias de vencimento"
+        },
+        "data_description": {
+          "due_days": "Selecione um ou mais dias. Deixe vazio para mostrar a tarefa todos os dias. Use o modo de dias de vencimento no cartão da criança para ocultar ou escurecer tarefas em dias não agendados."
+        }
+      },
+      "chore_schedule_recurring": {
+        "title": "Passo 2 — Agendamento recorrente",
+        "description": "Defina com que frequência esta tarefa pode ser concluída. Uma vez concluída, não estará disponível novamente até o período reiniciar.\n\nNota: Dia da semana aplica-se apenas a Semanal e A cada 2 semanas. Data de início aplica-se apenas a A cada 2 dias. Valores introduzidos para opções não aplicáveis serão ignorados.",
+        "data": {
+          "recurrence": "Recorrência",
+          "recurrence_day": "Dia da semana (opcional)",
+          "recurrence_start": "Data de início (opcional)",
+          "first_occurrence_mode": "Quando fica disponível pela primeira vez?"
+        },
+        "data_description": {
+          "recurrence": "Com que frequência a tarefa pode ser concluída",
+          "recurrence_day": "Apenas semanal / a cada 2 semanas — fixar num dia específico. Ignorado para todos os outros tipos de recorrência.",
+          "recurrence_start": "Apenas a cada 2 dias — data âncora no formato AAAA-MM-DD. Ignorado para todos os outros tipos de recorrência. Deixe vazio para usar hoje.",
+          "first_occurrence_mode": "Disponível imediatamente — a criança pode completar de imediato. Aguardar primeira ocorrência — a tarefa fica bloqueada até o primeiro dia agendado."
+        }
+      },
+      "edit_chore_schedule_recurring": {
+        "title": "Passo 2 — Agendamento recorrente",
+        "description": "Defina com que frequência esta tarefa pode ser concluída. Uma vez concluída, não estará disponível novamente até o período reiniciar.\n\nNota: Dia da semana aplica-se apenas a Semanal e A cada 2 semanas. Data de início aplica-se apenas a A cada 2 dias. Valores introduzidos para opções não aplicáveis serão ignorados.",
+        "data": {
+          "recurrence": "Recorrência",
+          "recurrence_day": "Dia da semana (opcional)",
+          "recurrence_start": "Data de início (opcional)",
+          "first_occurrence_mode": "Quando fica disponível pela primeira vez?"
+        },
+        "data_description": {
+          "recurrence": "Com que frequência a tarefa pode ser concluída",
+          "recurrence_day": "Apenas semanal / a cada 2 semanas — fixar num dia específico. Ignorado para todos os outros tipos de recorrência.",
+          "recurrence_start": "Apenas a cada 2 dias — data âncora no formato AAAA-MM-DD. Ignorado para todos os outros tipos de recorrência. Deixe vazio para usar hoje.",
+          "first_occurrence_mode": "Disponível imediatamente — a criança pode completar de imediato. Aguardar primeira ocorrência — a tarefa fica bloqueada até o primeiro dia agendado."
+        }
+      }
+    },
+    "error": {
+      "name_required": "O nome é obrigatório",
+      "invalid_milestone_format": "Formato de marco inválido — use pares dias:pontos, ex: 3:5, 7:10, 14:20"
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "Concluir tarefa",
+      "description": "Marcar uma tarefa como concluída por uma criança",
+      "fields": {
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "O ID da tarefa a concluir"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que conclui a tarefa"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Aprovar tarefa",
+      "description": "Aprovar uma tarefa concluída e atribuir pontos",
+      "fields": {
+        "completion_id": {
+          "name": "ID de conclusão",
+          "description": "O ID da conclusão da tarefa a aprovar"
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Rejeitar tarefa",
+      "description": "Rejeitar uma tarefa concluída",
+      "fields": {
+        "completion_id": {
+          "name": "ID de conclusão",
+          "description": "O ID da conclusão da tarefa a rejeitar"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "Reclamar recompensa",
+      "description": "A criança reclama uma recompensa usando os seus pontos",
+      "fields": {
+        "reward_id": {
+          "name": "ID da recompensa",
+          "description": "O ID da recompensa a reclamar"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que reclama a recompensa"
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Aprovar recompensa",
+      "description": "Aprovar um pedido de recompensa",
+      "fields": {
+        "claim_id": {
+          "name": "ID do pedido",
+          "description": "O ID do pedido de recompensa a aprovar"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Adicionar pontos",
+      "description": "Adicionar pontos de bónus a uma criança",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança a quem adicionar pontos"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "O número de pontos a adicionar"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo opcional para o bónus"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Remover pontos",
+      "description": "Remover pontos de uma criança (penalização)",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança a quem remover pontos"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "O número de pontos a remover"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo opcional para a penalização"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "Rejeitar recompensa",
+      "description": "Rejeitar um pedido de recompensa",
+      "fields": {
+        "claim_id": {
+          "name": "ID do pedido",
+          "description": "O ID do pedido de recompensa a rejeitar"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "Pré-visualizar som",
+      "description": "Pré-visualizar um efeito sonoro de conclusão no navegador",
+      "fields": {
+        "sound": {
+          "name": "Som",
+          "description": "O som a pré-visualizar"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "Definir ordem das tarefas",
+      "description": "Definir a ordem de apresentação das tarefas para uma criança",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança para definir a ordem das tarefas"
+        },
+        "chore_order": {
+          "name": "Ordem das tarefas",
+          "description": "Lista ordenada de IDs de tarefas"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "Adicionar penalização",
+      "description": "Criar uma nova definição de penalização",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "O nome da penalização"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "O número de pontos a deduzir quando aplicada"
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Descrição opcional da penalização"
+        },
+        "icon": {
+          "name": "Ícone",
+          "description": "Ícone MDI para a penalização"
+        },
+        "assigned_to": {
+          "name": "Atribuída a",
+          "description": "Lista de IDs de crianças a quem esta penalização se aplica"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "Atualizar penalização",
+      "description": "Atualizar uma definição de penalização existente",
+      "fields": {
+        "penalty_id": {
+          "name": "ID da penalização",
+          "description": "O ID da penalização a atualizar"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Novo nome para a penalização"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "Novo valor de pontos"
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Nova descrição"
+        },
+        "icon": {
+          "name": "Ícone",
+          "description": "Novo ícone"
+        },
+        "assigned_to": {
+          "name": "Atribuída a",
+          "description": "Nova lista de IDs de crianças"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "Remover penalização",
+      "description": "Remover uma definição de penalização",
+      "fields": {
+        "penalty_id": {
+          "name": "ID da penalização",
+          "description": "O ID da penalização a remover"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "Aplicar penalização",
+      "description": "Aplicar uma penalização a uma criança, deduzindo pontos",
+      "fields": {
+        "penalty_id": {
+          "name": "ID da penalização",
+          "description": "O ID da penalização a aplicar"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança a quem aplicar a penalização"
+        }
+      }
+    }
+  }
+}

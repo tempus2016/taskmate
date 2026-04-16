@@ -1,0 +1,137 @@
+name: Announce Release in Discussions
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    permissions:
+      discussions: write
+
+    steps:
+      - name: Create Discussion Announcement
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const release = context.payload.release;
+            const tag = release.tag_name;
+            const name = release.name || tag;
+            const body = release.body || '_No release notes provided._';
+            const isPrerelease = release.prerelease;
+            const url = release.html_url;
+
+            // Build the discussion body
+            const discussionBody = [
+              `## ${isPrerelease ? '🧪 Pre-release' : '🚀 New Release'}: ${name}`,
+              ``,
+              `> **[View full release and download on GitHub](${url})**`,
+              ``,
+              `---`,
+              ``,
+              body,
+              ``,
+              `---`,
+              ``,
+              `### Upgrading`,
+              ``,
+              isPrerelease
+                ? `This is a pre-release — it may contain bugs. Install manually or via HACS custom repository if you want to test early.`
+                : `Update via **HACS** or by downloading the [latest release](${url}) and copying to \`/config/custom_components/taskmate/\`.`,
+              ``,
+              `After updating, **restart Home Assistant**. Lovelace resources will update automatically on restart.`,
+              ``,
+              `---`,
+              ``,
+              `💬 **Questions or issues with this release?** Reply below or [open an issue](https://github.com/${context.repo.owner}/${context.repo.repo}/issues/new/choose).`,
+            ].join('\n');
+
+            // Get the Announcements category ID
+            // We need to query for the category dynamically
+            const categoriesQuery = `
+              query($owner: String!, $repo: String!) {
+                repository(owner: $owner, name: $repo) {
+                  discussionCategories(first: 20) {
+                    nodes {
+                      id
+                      name
+                    }
+                  }
+                }
+              }
+            `;
+
+            const categoriesResult = await github.graphql(categoriesQuery, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const categories = categoriesResult.repository.discussionCategories.nodes;
+            console.log('Available categories:', categories.map(c => c.name));
+
+            // Find Announcements category (fall back to General if not found)
+            const announcements = categories.find(c => c.name === 'Announcements');
+            const general = categories.find(c => c.name === 'General');
+            const category = announcements || general;
+
+            if (!category) {
+              core.setFailed('Could not find Announcements or General discussion category. Please create one in your repository.');
+              return;
+            }
+
+            console.log(`Using category: ${category.name} (${category.id})`);
+
+            // Get the repository ID
+            const repoQuery = `
+              query($owner: String!, $repo: String!) {
+                repository(owner: $owner, name: $repo) {
+                  id
+                }
+              }
+            `;
+
+            const repoResult = await github.graphql(repoQuery, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const repositoryId = repoResult.repository.id;
+
+            // Create the discussion
+            const createMutation = `
+              mutation($repoId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
+                createDiscussion(input: {
+                  repositoryId: $repoId,
+                  categoryId: $categoryId,
+                  title: $title,
+                  body: $body
+                }) {
+                  discussion {
+                    id
+                    url
+                  }
+                }
+              }
+            `;
+
+            const discussionTitle = isPrerelease
+              ? `🧪 Pre-release: ${name}`
+              : `🚀 Release: ${name}`;
+
+            const result = await github.graphql(createMutation, {
+              repoId: repositoryId,
+              categoryId: category.id,
+              title: discussionTitle,
+              body: discussionBody,
+            });
+
+            const discussionUrl = result.createDiscussion.discussion.url;
+            console.log(`Discussion created: ${discussionUrl}`);
+
+            // Add a summary to the workflow run
+            await core.summary
+              .addHeading('Release Announcement Created')
+              .addLink(discussionTitle, discussionUrl)
+              .write();
