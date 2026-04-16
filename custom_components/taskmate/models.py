@@ -15,21 +15,22 @@ def generate_id() -> str:
 def parse_datetime(value: str | datetime | None) -> datetime | None:
     """Parse a datetime value, ensuring timezone awareness.
 
-    If the datetime is naive (no timezone info), assume it's in the local
-    timezone of the HA instance. All stored datetimes should have timezone info.
+    If the datetime is naive (no timezone info), assume UTC for backward
+    compatibility. All newly stored datetimes include timezone info via
+    format_datetime(), so naive values only appear in legacy data.
     """
     if value is None:
         return None
     if isinstance(value, datetime):
-        # If already a datetime, ensure it has timezone info
         if value.tzinfo is None:
-            # Naive datetime - assume UTC for backward compatibility
             return value.replace(tzinfo=timezone.utc)
         return value
     if isinstance(value, str):
-        dt = datetime.fromisoformat(value)
+        try:
+            dt = datetime.fromisoformat(value)
+        except (ValueError, TypeError):
+            return None
         if dt.tzinfo is None:
-            # Naive datetime string - assume UTC for backward compatibility
             return dt.replace(tzinfo=timezone.utc)
         return dt
     return None
