@@ -351,6 +351,7 @@
     },
     "visibility_operator": {
       "options": {
+        "none": "No filter — Always show chore",
         "equals": "Equals — Show when entity state matches exactly",
         "not_equals": "Not Equal — Show when entity state does not match",
         "gte": "Greater than or equal (≥) — Show when numeric value is ≥ target",

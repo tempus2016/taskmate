@@ -665,8 +665,13 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 chore.daily_limit = int(user_input.get("daily_limit", chore.daily_limit))
                 chore.completion_sound = user_input.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
                 chore.visibility_entity = user_input.get("visibility_entity") or ""
-                chore.visibility_state = user_input.get("visibility_state") or "on"
-                chore.visibility_operator = user_input.get("visibility_operator") or "equals"
+                chore.visibility_operator = user_input.get("visibility_operator", "none")
+                chore.visibility_state = user_input.get("visibility_state", "")
+                # Clear operator/state when entity is blank or operator is "none"
+                if not chore.visibility_entity or chore.visibility_operator == "none":
+                    chore.visibility_entity = ""
+                    chore.visibility_operator = ""
+                    chore.visibility_state = ""
                 self._edited_chore = chore
                 _LOGGER.debug(
                     "Edit chore step 1 - saved visibility fields: entity=%s, operator=%s, state=%s",
@@ -726,9 +731,10 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             vol.Optional("visibility_entity", default=getattr(chore, 'visibility_entity', "")): selector.EntitySelector(
                 selector.EntitySelectorConfig()
             ),
-            vol.Required("visibility_operator", default=getattr(chore, 'visibility_operator', "equals")): selector.SelectSelector(
+            vol.Required("visibility_operator", default=getattr(chore, 'visibility_operator', "none") if not getattr(chore, 'visibility_entity', '') else getattr(chore, 'visibility_operator', 'equals')): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=[
+                        selector.SelectOptionDict(value="none", label="No filter (always show)"),
                         selector.SelectOptionDict(value="equals", label="Equals (exact match)"),
                         selector.SelectOptionDict(value="gte", label="Greater than or equal (>=)"),
                         selector.SelectOptionDict(value="lte", label="Less than or equal (<=)"),
@@ -739,7 +745,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Optional("visibility_state", default=getattr(chore, 'visibility_state', "on")): str,
+            vol.Optional("visibility_state", default=getattr(chore, 'visibility_state', '') if getattr(chore, 'visibility_entity', '') else ""): str,
             vol.Required("action", default="save"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=(
