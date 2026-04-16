@@ -86,6 +86,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         self._selected_chore_id: str | None = None
         self._selected_reward_id: str | None = None
         self._chore_step1_data: dict | None = None  # Holds step 1 data while user completes step 2
+        self._edited_chore = None  # Holds the chore object during edit flow across steps
         self._translations: dict | None = None
 
     @property
@@ -734,6 +735,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             chore.first_occurrence_mode = "available_immediately"
             await self.coordinator.async_update_chore(chore)
             self._chore_step1_data = None
+            self._edited_chore = None
             return await self.async_step_manage_chores()
 
         return self.async_show_form(
@@ -781,6 +783,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             chore.first_occurrence_mode = user_input.get("first_occurrence_mode", "available_immediately")
             await self.coordinator.async_update_chore(chore)
             self._chore_step1_data = None
+            self._edited_chore = None
             return await self.async_step_manage_chores()
 
         current_recurrence = getattr(chore, 'recurrence', 'weekly')
