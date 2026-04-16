@@ -374,11 +374,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Optional("visibility_entity", default=""): selector.EntitySelector(
-                selector.EntitySelectorConfig(
-                    domain=["binary_sensor", "input_boolean", "switch"],
-                )
-            ),
+            vol.Optional("visibility_entity", default=""): str,
         }
         if child_options:
             schema_dict[vol.Optional("assigned_to", default=[])] = selector.SelectSelector(
@@ -581,11 +577,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Optional("visibility_entity", default=""): selector.EntitySelector(
-                selector.EntitySelectorConfig(
-                    domain=["binary_sensor", "input_boolean", "switch"],
-                )
-            ),
+            vol.Optional("visibility_entity", default=""): str,
         }
 
         if child_options:
@@ -694,11 +686,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Optional("visibility_entity", default=getattr(chore, 'visibility_entity', "")): selector.EntitySelector(
-                selector.EntitySelectorConfig(
-                    domain=["binary_sensor", "input_boolean", "switch", "sensor", "number"],
-                )
-            ),
+            vol.Optional("visibility_entity", default=getattr(chore, 'visibility_entity', "")): str,
             vol.Optional("visibility_operator", default=getattr(chore, 'visibility_operator', "equals")): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=[
