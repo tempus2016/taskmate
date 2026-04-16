@@ -780,3 +780,168 @@ class TestChoreAvailability:
         )
         now = _date(2024, 3, 20)
         assert self._run(coord, chore, "kid1", now) is True
+
+
+# ---------------------------------------------------------------------------
+# One-Shot Chore Tests
+# ---------------------------------------------------------------------------
+
+class TestOneShotChores:
+    """Tests for one-shot (non-recurring) chore functionality."""
+
+    def _run(self, coord, chore, child_id, now_dt):
+        import custom_components.taskmate.coordinator as _mod
+        with patch.object(_mod.dt_util, "now", return_value=now_dt):
+            return coord.is_chore_available_for_child(chore, child_id)
+
+    def _make_one_shot_chore(self, created_date: str = "2024-03-20", **kwargs) -> Chore:
+        return Chore(
+            name="One-shot chore",
+            schedule_mode="one_shot",
+            daily_limit=1,
+            created_date=created_date,
+            **kwargs,
+        )
+
+    def test_one_shot_available_on_creation_day(self):
+        coord = _make_coord()
+        coord.storage.get_last_completed = MagicMock(return_value={})
+        chore = self._make_one_shot_chore(created_date="2024-03-20")
+        now = _date(2024, 3, 20)  # Same day as created_date
+        assert self._run(coord, chore, "kid1", now) is True
+
+    def test_one_shot_not_available_next_day(self):
+        coord = _make_coord()
+        coord.storage.get_last_completed = MagicMock(return_value={})
+        chore = self._make_one_shot_chore(created_date="2024-03-20")
+        now = _date(2024, 3, 21)  # Day after created_date
+        assert self._run(coord, chore, "kid1", now) is False
+
+    def test_one_shot_disabled_for_child_not_available(self):
+        coord = _make_coord()
+        coord.storage.get_last_completed = MagicMock(return_value={})
+        chore = self._make_one_shot_chore(disabled_for=["kid1"])
+        now = _date(2024, 3, 20)
+        assert self._run(coord, chore, "kid1", now) is False
+
+    def test_one_shot_disabled_for_other_child_still_available(self):
+        coord = _make_coord()
+        coord.storage.get_last_completed = MagicMock(return_value={})
+        chore = self._make_one_shot_chore(disabled_for=["kid1"])
+        now = _date(2024, 3, 20)
+        assert self._run(coord, chore, "kid2", now) is True
+
+    def test_one_shot_globally_disabled_not_available(self):
+        coord = _make_coord()
+        coord.storage.get_last_completed = MagicMock(return_value={})
+        chore = self._make_one_shot_chore(enabled=False)
+        now = _date(2024, 3, 20)
+        assert self._run(coord, chore, "kid1", now) is False
+
+    def test_one_shot_no_created_date_always_available(self):
+        """If created_date is empty, one-shot chore is available (backwards compat)."""
+        coord = _make_coord()
+        coord.storage.get_last_completed = MagicMock(return_value={})
+        chore = self._make_one_shot_chore(created_date="")
+        now = _date(2024, 3, 20)
+        assert self._run(coord, chore, "kid1", now) is True
+
+    def test_check_one_shot_fully_disabled_all_assigned(self):
+        """When all assigned children are in disabled_for, chore becomes globally disabled."""
+        kid1 = _make_child()
+        kid1._id = "kid1"
+        kid1.id = "kid1"
+        kid2 = _make_child()
+        kid2._id = "kid2"
+        kid2.id = "kid2"
+        coord = _make_coord(children=[kid1, kid2])
+        chore = self._make_one_shot_chore(
+            assigned_to=["kid1", "kid2"],
+            disabled_for=["kid1", "kid2"],
+        )
+        coord._check_one_shot_fully_disabled(chore)
+        assert chore.enabled is False
+
+    def test_check_one_shot_partially_disabled(self):
+        """When only some assigned children are in disabled_for, chore stays enabled."""
+        kid1 = _make_child()
+        kid1.id = "kid1"
+        kid2 = _make_child()
+        kid2.id = "kid2"
+        coord = _make_coord(children=[kid1, kid2])
+        chore = self._make_one_shot_chore(
+            assigned_to=["kid1", "kid2"],
+            disabled_for=["kid1"],
+        )
+        coord._check_one_shot_fully_disabled(chore)
+        assert chore.enabled is True
+
+    def test_check_one_shot_fully_disabled_all_children(self):
+        """When assigned_to is empty (all children), check against all system children."""
+        kid1 = _make_child()
+        kid1.id = "kid1"
+        kid2 = _make_child()
+        kid2.id = "kid2"
+        coord = _make_coord(children=[kid1, kid2])
+        chore = self._make_one_shot_chore(
+            assigned_to=[],
+            disabled_for=["kid1", "kid2"],
+        )
+        coord._check_one_shot_fully_disabled(chore)
+        assert chore.enabled is False
+
+    def test_midnight_expiry(self):
+        """Midnight callback should disable one-shot chores from previous days."""
+        import custom_components.taskmate.coordinator as _mod
+
+        chore = self._make_one_shot_chore(created_date="2024-03-19")  # Yesterday
+        coord = _make_coord()
+        coord.storage.get_chores = MagicMock(return_value=[chore])
+        coord.storage.update_chore = MagicMock()
+        coord.async_refresh = AsyncMock()
+
+        now = _date(2024, 3, 20)  # Today
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            asyncio.get_event_loop().run_until_complete(
+                coord._async_expire_one_shot_chores()
+            )
+
+        assert chore.enabled is False
+        coord.storage.update_chore.assert_called_once_with(chore)
+
+    def test_midnight_expiry_skips_current_day(self):
+        """Midnight callback should NOT disable one-shot chores created today."""
+        import custom_components.taskmate.coordinator as _mod
+
+        chore = self._make_one_shot_chore(created_date="2024-03-20")  # Today
+        coord = _make_coord()
+        coord.storage.get_chores = MagicMock(return_value=[chore])
+        coord.storage.update_chore = MagicMock()
+        coord.async_refresh = AsyncMock()
+
+        now = _date(2024, 3, 20)
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            asyncio.get_event_loop().run_until_complete(
+                coord._async_expire_one_shot_chores()
+            )
+
+        assert chore.enabled is True
+        coord.storage.update_chore.assert_not_called()
+
+    def test_midnight_expiry_skips_already_disabled(self):
+        """Midnight callback should skip already-disabled one-shot chores."""
+        import custom_components.taskmate.coordinator as _mod
+
+        chore = self._make_one_shot_chore(created_date="2024-03-18", enabled=False)
+        coord = _make_coord()
+        coord.storage.get_chores = MagicMock(return_value=[chore])
+        coord.storage.update_chore = MagicMock()
+        coord.async_refresh = AsyncMock()
+
+        now = _date(2024, 3, 20)
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            asyncio.get_event_loop().run_until_complete(
+                coord._async_expire_one_shot_chores()
+            )
+
+        coord.storage.update_chore.assert_not_called()

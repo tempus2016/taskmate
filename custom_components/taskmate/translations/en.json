@@ -278,6 +278,7 @@
     "chore_action": {
       "options": {
         "save": "Save Changes",
+        "re_enable": "Re-enable Chore",
         "delete": "Delete This Chore"
       }
     },
@@ -299,7 +300,8 @@
     "schedule_mode": {
       "options": {
         "specific_days": "Specific days of the week",
-        "recurring": "Recurring (every N days/weeks/months)"
+        "recurring": "Recurring (every N days/weeks/months)",
+        "one_shot": "One-time task (single day)"
       }
     },
     "due_days_option": {

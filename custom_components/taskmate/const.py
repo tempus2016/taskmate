@@ -67,7 +67,7 @@ RECURRENCE_LABELS: Final = {
 }
 
 # Schedule modes
-SCHEDULE_MODES: Final = ["specific_days", "recurring"]
+SCHEDULE_MODES: Final = ["specific_days", "recurring", "one_shot"]
 
 # First occurrence modes
 FIRST_OCCURRENCE_MODES: Final = ["available_immediately", "wait_for_first_occurrence"]
