@@ -625,6 +625,22 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             },
         )
 
+    @staticmethod
+    def _get_chore_action_options(chore) -> list[str]:
+        """Build the action options list for the chore edit form."""
+        is_one_shot = getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot'
+        is_disabled = not getattr(chore, 'enabled', True) or getattr(chore, 'disabled_for', [])
+
+        if is_one_shot:
+            if is_disabled:
+                return ["save", "re_enable", "delete"]
+            else:
+                return ["save", "disable", "delete"]
+        elif is_disabled:
+            return ["save", "re_enable", "delete"]
+        else:
+            return ["save", "delete"]
+
     async def async_step_edit_chore(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
@@ -648,6 +664,10 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 if getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
                     from homeassistant.util import dt as dt_util
                     chore.created_date = dt_util.as_local(dt_util.now()).date().isoformat()
+                await self.coordinator.async_update_chore(chore)
+                return await self.async_step_manage_chores()
+            if action == "disable":
+                chore.enabled = False
                 await self.coordinator.async_update_chore(chore)
                 return await self.async_step_manage_chores()
 
@@ -742,11 +762,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             vol.Optional("visibility_state", default=getattr(chore, 'visibility_state', "on")): str,
             vol.Required("action", default="save"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
-                    options=(
-                        ["save", "re_enable", "delete"]
-                        if (not getattr(chore, 'enabled', True) or getattr(chore, 'disabled_for', []))
-                        else ["save", "delete"]
-                    ),
+                    options=self._get_chore_action_options(chore),
                     translation_key="chore_action",
                     mode=selector.SelectSelectorMode.LIST,
                 )
