@@ -439,11 +439,20 @@ class TaskMateParentDashboardCard extends LitElement {
     return html`
       ${children.map(child => {
         const childChores = chores.filter(c => {
+          // Skip disabled chores (one-shot completed or expired)
+          if (c.enabled === false) return false;
+          if ((c.disabled_for || []).includes(child.id)) return false;
+
           const at = c.assigned_to || [];
           const assigned = at.length === 0 || at.includes(child.id);
           if (!assigned) return false;
+          // One-shot: use is_available check (same as recurring)
+          if (c.schedule_mode === 'one_shot') {
+            const isAvailable = c.is_available && c.is_available[child.id];
+            if (isAvailable === false) return false;
+          }
           // Mode A: due days check
-          if (c.schedule_mode !== 'recurring') {
+          if (c.schedule_mode === 'specific_days') {
             const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
             if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
           }

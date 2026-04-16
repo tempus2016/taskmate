@@ -1325,6 +1325,11 @@ class TaskMateChildCard extends LitElement {
 
     // First, filter chores for this child and time category
     const filteredChores = chores.filter(chore => {
+      // Check if chore is disabled (one-shot chores that are completed or expired)
+      if (chore.enabled === false) return false;
+      const disabledFor = chore.disabled_for || [];
+      if (disabledFor.includes(childId)) return false;
+
       // Check time category
       const matchesTime =
         this.config.time_category === "all" ||
