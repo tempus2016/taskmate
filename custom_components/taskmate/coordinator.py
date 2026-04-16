@@ -260,6 +260,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         recurrence_day: str = "",
         recurrence_start: str = "",
         first_occurrence_mode: str = "available_immediately",
+        visibility_entity: str = "",
     ) -> Chore:
         """Add a new chore."""
         chore = Chore(
@@ -277,6 +278,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             recurrence_day=recurrence_day,
             recurrence_start=recurrence_start,
             first_occurrence_mode=first_occurrence_mode,
+            visibility_entity=visibility_entity,
         )
         self.storage.add_chore(chore)
         await self.storage.async_save()
@@ -295,6 +297,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         daily_limit: int = 1,
         schedule_mode: str = "specific_days",
         completion_sound: str = "coin",
+        visibility_entity: str = "",
             ) -> list[Chore]:
         """Add multiple chores at once with shared settings."""
         chores = []
@@ -313,6 +316,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 daily_limit=daily_limit,
                 schedule_mode=schedule_mode,
                 completion_sound=completion_sound,
+                visibility_entity=visibility_entity,
                             )
             self.storage.add_chore(chore)
             chores.append(chore)
@@ -353,15 +357,40 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
     # ── Chore completion operations ───────────────────────────────────────────
 
+    def _is_visibility_entity_active(self, visibility_entity: str) -> bool:
+        """Check if a visibility entity is active (state is 'on').
+
+        Returns True if entity is not set, entity doesn't exist, or entity is 'on'.
+        Returns False only if entity is explicitly 'off'.
+        """
+        if not visibility_entity:
+            return True
+
+        # Get entity state from Home Assistant
+        state = self.hass.states.get(visibility_entity)
+        if state is None:
+            # Entity doesn't exist, treat as visible
+            _LOGGER.debug(f"Visibility entity '{visibility_entity}' not found, defaulting to visible")
+            return True
+
+        # For binary_sensor, input_boolean, switch, etc., check if state is 'on'
+        return state.state == 'on'
+
     def is_chore_available_for_child(self, chore, child_id: str) -> bool:
         """Check if a recurring chore is available for a child to complete.
 
-        Mode A (specific_days): always returns True — day filtering is handled
-        by the child card, not the coordinator.
+        Mode A (specific_days): day filtering is handled by the child card.
 
         Mode B (recurring): checks rolling window from last completion date
         (midnight-rounded). Window lengths in days per recurrence type.
+
+        Both modes also check visibility_entity if configured.
         """
+        # Check visibility entity first — if not visible, chore is not available
+        visibility_entity = getattr(chore, 'visibility_entity', '')
+        if not self._is_visibility_entity_active(visibility_entity):
+            return False
+
         schedule_mode = getattr(chore, 'schedule_mode', 'specific_days')
         if schedule_mode != 'recurring':
             return True

@@ -672,3 +672,47 @@ class TestChoreAvailability:
         chore = self._make_recurring_chore(recurrence="every_2_days")
         now = _date(2024, 3, 20)  # only 1 day since last — not available yet
         assert self._run(coord, chore, "kid1", now) is False
+
+    def test_visibility_entity_on_chore_available(self):
+        coord = _make_coord()
+        chore = Chore(
+            name="Visibility chore",
+            schedule_mode="specific_days",
+            visibility_entity="binary_sensor.dishwasher_running"
+        )
+        coord.storage.get_last_completed = MagicMock(return_value={})
+        # Mock entity state as 'on'
+        coord.hass.states.get = MagicMock(
+            return_value=MagicMock(state='on')
+        )
+        now = _date(2024, 3, 20)
+        assert self._run(coord, chore, "kid1", now) is True
+
+    def test_visibility_entity_off_chore_not_available(self):
+        coord = _make_coord()
+        chore = Chore(
+            name="Visibility chore",
+            schedule_mode="specific_days",
+            visibility_entity="binary_sensor.dishwasher_running"
+        )
+        coord.storage.get_last_completed = MagicMock(return_value={})
+        # Mock entity state as 'off'
+        coord.hass.states.get = MagicMock(
+            return_value=MagicMock(state='off')
+        )
+        now = _date(2024, 3, 20)
+        assert self._run(coord, chore, "kid1", now) is False
+
+    def test_visibility_entity_missing_chore_available(self):
+        coord = _make_coord()
+        chore = Chore(
+            name="Visibility chore",
+            schedule_mode="specific_days",
+            visibility_entity="binary_sensor.nonexistent"
+        )
+        coord.storage.get_last_completed = MagicMock(return_value={})
+        # Mock entity doesn't exist (get returns None)
+        coord.hass.states.get = MagicMock(return_value=None)
+        now = _date(2024, 3, 20)
+        # Should be available (defaults to visible if entity doesn't exist)
+        assert self._run(coord, chore, "kid1", now) is True

@@ -373,6 +373,11 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
+            vol.Optional("visibility_entity", default=""): selector.EntitySelector(
+                selector.EntitySelectorConfig(
+                    domain=["binary_sensor", "input_boolean", "switch", "sensor"],
+                )
+            ),
         }
         if child_options:
             schema_dict[vol.Optional("assigned_to", default=[])] = selector.SelectSelector(
@@ -407,6 +412,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 completion_sound=s1.get("completion_sound", DEFAULT_COMPLETION_SOUND),
                 schedule_mode="specific_days",
                 due_days=user_input.get("due_days", []),
+                visibility_entity=s1.get("visibility_entity", ""),
             )
             self._chore_step1_data = None
             return await self.async_step_manage_chores()
@@ -459,6 +465,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 recurrence_day=recurrence_day,
                 recurrence_start=recurrence_start,
                 first_occurrence_mode=first_occurrence_mode,
+                visibility_entity=s1.get("visibility_entity", ""),
             )
             self._chore_step1_data = None
             return await self.async_step_manage_chores()
@@ -526,6 +533,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         daily_limit=int(user_input.get("daily_limit", 1)),
                         schedule_mode="specific_days",
                         completion_sound=user_input.get("completion_sound", DEFAULT_COMPLETION_SOUND),
+                        visibility_entity=user_input.get("visibility_entity", ""),
                     )
                     return await self.async_step_manage_chores()
 
@@ -570,6 +578,11 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         for sound in COMPLETION_SOUND_OPTIONS
                     ],
                     mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Optional("visibility_entity", default=""): selector.EntitySelector(
+                selector.EntitySelectorConfig(
+                    domain=["binary_sensor", "input_boolean", "switch", "sensor"],
                 )
             ),
         }
@@ -663,6 +676,11 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
+            vol.Optional("visibility_entity", default=getattr(chore, 'visibility_entity', "")): selector.EntitySelector(
+                selector.EntitySelectorConfig(
+                    domain=["binary_sensor", "input_boolean", "switch", "sensor"],
+                )
+            ),
             vol.Required("action", default="save"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=["save", "delete"],
@@ -706,6 +724,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             chore.time_category = s1.get("time_category", chore.time_category)
             chore.daily_limit = int(s1.get("daily_limit", chore.daily_limit))
             chore.completion_sound = s1.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
+            chore.visibility_entity = s1.get("visibility_entity", "")
             chore.schedule_mode = "specific_days"
             chore.due_days = user_input.get("due_days", [])
             # Clear recurring fields
@@ -751,6 +770,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             chore.time_category = s1.get("time_category", chore.time_category)
             chore.daily_limit = int(s1.get("daily_limit", chore.daily_limit))
             chore.completion_sound = s1.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
+            chore.visibility_entity = s1.get("visibility_entity", "")
             chore.schedule_mode = "recurring"
             chore.due_days = []
             recurrence = user_input.get("recurrence", "weekly")
