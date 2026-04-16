@@ -279,6 +279,7 @@
       "options": {
         "save": "Lagre endringar",
         "re_enable": "Reaktiver oppgåve",
+        "disable": "Deaktiver oppgåve",
         "delete": "Slett denne oppgåva"
       }
     },

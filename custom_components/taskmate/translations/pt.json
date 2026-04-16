@@ -279,6 +279,7 @@
       "options": {
         "save": "Guardar alterações",
         "re_enable": "Reativar tarefa",
+        "disable": "Desativar tarefa",
         "delete": "Eliminar esta tarefa"
       }
     },

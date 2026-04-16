@@ -279,6 +279,7 @@
       "options": {
         "save": "Save Changes",
         "re_enable": "Re-enable Chore",
+        "disable": "Disable Chore",
         "delete": "Delete This Chore"
       }
     },
