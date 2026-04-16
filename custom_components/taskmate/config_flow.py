@@ -827,6 +827,8 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             chore.daily_limit = int(s1.get("daily_limit", chore.daily_limit))
             chore.completion_sound = s1.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
             chore.visibility_entity = s1.get("visibility_entity", "")
+            chore.visibility_state = s1.get("visibility_state", "on")
+            chore.visibility_operator = s1.get("visibility_operator", "equals")
             chore.schedule_mode = "recurring"
             chore.due_days = []
             recurrence = user_input.get("recurrence", "weekly")
