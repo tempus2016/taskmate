@@ -679,10 +679,13 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 chore.visibility_entity = user_input.get("visibility_entity", "")
                 chore.visibility_state = user_input.get("visibility_state", "on")
                 chore.visibility_operator = user_input.get("visibility_operator", "equals")
+                # Save the chore object itself so Step 2 can reuse it with the Step 1 changes
+                self._edited_chore = chore
                 _LOGGER.debug(
-                    "Edit chore step 1 - saved visibility fields: entity=%s, operator=%s, state=%s",
+                    "Edit chore step 1 - saved visibility fields: entity=%s, operator=%s (type=%s), state=%s",
                     chore.visibility_entity,
                     chore.visibility_operator,
+                    type(chore.visibility_operator),
                     chore.visibility_state,
                 )
                 schedule_mode = user_input.get("schedule_mode", "specific_days")
@@ -690,6 +693,13 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     return await self.async_step_edit_chore_schedule_specific()
                 else:
                     return await self.async_step_edit_chore_schedule_recurring()
+
+        _LOGGER.debug(
+            "Loading chore for edit - current visibility: entity=%s, operator=%s, state=%s",
+            getattr(chore, 'visibility_entity', ''),
+            getattr(chore, 'visibility_operator', 'equals'),
+            getattr(chore, 'visibility_state', 'on'),
+        )
 
         child_options = [
             selector.SelectOptionDict(value=c.id, label=c.name)
@@ -780,17 +790,20 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Edit chore — Step 2a: specific days."""
-        s1 = self._chore_step1_data or {}
-        _LOGGER.debug(
-            "Step 2 specific_days - step1_data visibility: entity=%s, operator=%s, state=%s",
-            s1.get("visibility_entity"),
-            s1.get("visibility_operator"),
-            s1.get("visibility_state"),
-        )
-        chore_id = s1.get("_chore_id") or self._selected_chore_id
-        chore = self.coordinator.get_chore(chore_id)
+        # Use the chore object from Step 1 if available, otherwise reload it
+        chore = self._edited_chore
+        if not chore:
+            chore_id = self._selected_chore_id
+            chore = self.coordinator.get_chore(chore_id)
         if not chore:
             return await self.async_step_manage_chores()
+
+        _LOGGER.debug(
+            "Step 2 specific_days - chore visibility: entity=%s, operator=%s, state=%s",
+            getattr(chore, 'visibility_entity', ''),
+            getattr(chore, 'visibility_operator', 'equals'),
+            getattr(chore, 'visibility_state', 'on'),
+        )
 
         if user_input is not None:
             # Step 1 data already saved in async_step_edit_chore
@@ -829,9 +842,11 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Edit chore — Step 2b: recurring schedule."""
-        s1 = self._chore_step1_data or {}
-        chore_id = s1.get("_chore_id") or self._selected_chore_id
-        chore = self.coordinator.get_chore(chore_id)
+        # Use the chore object from Step 1 if available, otherwise reload it
+        chore = self._edited_chore
+        if not chore:
+            chore_id = self._selected_chore_id
+            chore = self.coordinator.get_chore(chore_id)
         if not chore:
             return await self.async_step_manage_chores()
 
