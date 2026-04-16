@@ -59,6 +59,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
     def _async_midnight_streak_check(self, now: datetime) -> None:
         """Scheduled callback at midnight to check and reset streaks if needed."""
         self.hass.async_create_task(self._async_check_streaks())
+        self.hass.async_create_task(self._async_expire_one_shot_chores())
         # Check for perfect week bonus every Monday at midnight
         if now.weekday() == 0:
             self.hass.async_create_task(self._async_check_perfect_week())
@@ -263,8 +264,15 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         visibility_entity: str = "",
         visibility_state: str = "on",
         visibility_operator: str = "equals",
+        created_date: str = "",
     ) -> Chore:
         """Add a new chore."""
+        # One-shot chores: force daily_limit=1, set created_date to today
+        if schedule_mode == "one_shot":
+            daily_limit = 1
+            if not created_date:
+                created_date = dt_util.as_local(dt_util.now()).date().isoformat()
+
         chore = Chore(
             name=name,
             points=points,
@@ -283,6 +291,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             visibility_entity=visibility_entity,
             visibility_state=visibility_state,
             visibility_operator=visibility_operator,
+            created_date=created_date,
         )
         self.storage.add_chore(chore)
         await self.storage.async_save()
@@ -455,6 +464,15 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         Both modes also check visibility_entity if configured.
         """
+        # Check if chore is globally disabled (soft-disabled one-shot chores)
+        if not getattr(chore, 'enabled', True):
+            return False
+
+        # Check per-child disabling (one-shot chores completed by this child)
+        disabled_for = getattr(chore, 'disabled_for', [])
+        if child_id in disabled_for:
+            return False
+
         # Check visibility entity first — if not visible, chore is not available
         visibility_entity = getattr(chore, 'visibility_entity', '')
         visibility_state = getattr(chore, 'visibility_state', 'on')
@@ -463,6 +481,19 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             return False
 
         schedule_mode = getattr(chore, 'schedule_mode', 'specific_days')
+
+        # One-shot chores: only available on the day they were created
+        if schedule_mode == 'one_shot':
+            created_date = getattr(chore, 'created_date', '')
+            if created_date:
+                today = dt_util.as_local(dt_util.now()).date()
+                try:
+                    if date.fromisoformat(created_date) != today:
+                        return False
+                except ValueError:
+                    pass
+            return True
+
         if schedule_mode != 'recurring':
             return True
 
@@ -559,6 +590,13 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                     f"Recurrence: {recurrence.replace('_', ' ')}."
                 )
 
+        # Check availability for one-shot chores
+        if getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
+            if not self.is_chore_available_for_child(chore, child_id):
+                raise ValueError(
+                    f"Chore '{chore.name}' is not available (one-shot chore already completed or expired)."
+                )
+
         # Check daily limit
         all_completions = self.storage.get_completions()
         todays_completions_count = 0
@@ -597,6 +635,13 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         # Update last_completed store (window starts at completion time, midnight-rounded)
         self.storage.set_last_completed(chore_id, child_id, now.isoformat())
 
+        # One-shot: if auto-approved (no approval needed), disable for this child immediately
+        if getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot' and not chore.requires_approval:
+            if child_id not in chore.disabled_for:
+                chore.disabled_for.append(child_id)
+            self._check_one_shot_fully_disabled(chore)
+            self.storage.update_chore(chore)
+
         await self.storage.async_save()
 
         # Fire approval notification if chore requires parent sign-off
@@ -621,6 +666,14 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                     completion.approved_at = dt_util.now()
                     completion.points_awarded = total_awarded
                     self.storage.update_completion(completion)
+
+                    # One-shot: disable for this child on approval
+                    if getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
+                        if completion.child_id not in chore.disabled_for:
+                            chore.disabled_for.append(completion.child_id)
+                        self._check_one_shot_fully_disabled(chore)
+                        self.storage.update_chore(chore)
+
                     await self.storage.async_save()
                     await self.async_refresh()
                 else:
@@ -658,9 +711,57 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 target_completion.chore_id, target_completion.child_id
             )
 
+            # One-shot: re-enable for this child on rejection
+            chore = self.get_chore(target_completion.chore_id)
+            if chore and getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
+                if target_completion.child_id in chore.disabled_for:
+                    chore.disabled_for.remove(target_completion.child_id)
+                chore.enabled = True
+                self.storage.update_chore(chore)
+
         self.storage.remove_completion(completion_id)
         await self.storage.async_save()
         await self.async_refresh()
+
+    def _check_one_shot_fully_disabled(self, chore) -> None:
+        """Check if a one-shot chore should be fully disabled (all children done)."""
+        if chore.assigned_to:
+            target_children = set(chore.assigned_to)
+        else:
+            # assigned_to=[] means all children
+            target_children = {c.id for c in self.storage.get_children()}
+
+        if target_children and target_children.issubset(set(chore.disabled_for)):
+            chore.enabled = False
+
+    async def _async_expire_one_shot_chores(self) -> None:
+        """Soft-disable one-shot chores whose created_date is before today."""
+        today = dt_util.as_local(dt_util.now()).date()
+        changed = False
+
+        for chore in self.storage.get_chores():
+            if getattr(chore, 'schedule_mode', 'specific_days') != 'one_shot':
+                continue
+            if not getattr(chore, 'enabled', True):
+                continue
+            created_date = getattr(chore, 'created_date', '')
+            if not created_date:
+                continue
+            try:
+                if date.fromisoformat(created_date) < today:
+                    chore.enabled = False
+                    self.storage.update_chore(chore)
+                    changed = True
+                    _LOGGER.info(
+                        "One-shot chore '%s' expired (created %s, today %s)",
+                        chore.name, created_date, today.isoformat(),
+                    )
+            except ValueError:
+                continue
+
+        if changed:
+            await self.storage.async_save()
+            await self.async_refresh()
 
     # ── Reward operations ─────────────────────────────────────────────────────
 

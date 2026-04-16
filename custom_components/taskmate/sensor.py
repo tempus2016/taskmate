@@ -234,6 +234,9 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
                 "visibility_entity": getattr(c, 'visibility_entity', ''),
                 "visibility_operator": getattr(c, 'visibility_operator', 'equals'),
                 "visibility_state": getattr(c, 'visibility_state', 'on'),
+                "enabled": getattr(c, 'enabled', True),
+                "disabled_for": getattr(c, 'disabled_for', []),
+                "created_date": getattr(c, 'created_date', ''),
                 "last_completed_at": last_completed_at,
                 "is_available": is_available,
             })
