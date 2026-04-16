@@ -361,7 +361,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         """Check if a visibility entity is active (state is 'on').
 
         Returns True if entity is not set, entity doesn't exist, or entity is 'on'.
-        Returns False only if entity is explicitly 'off'.
+        Returns False for any other state ('off', 'unavailable', 'unknown', etc.).
         """
         if not visibility_entity:
             return True
@@ -370,7 +370,10 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         state = self.hass.states.get(visibility_entity)
         if state is None:
             # Entity doesn't exist, treat as visible
-            _LOGGER.debug(f"Visibility entity '{visibility_entity}' not found, defaulting to visible")
+            _LOGGER.debug(
+                "Visibility entity '%s' not found, defaulting to visible",
+                visibility_entity,
+            )
             return True
 
         # For binary_sensor, input_boolean, switch, etc., check if state is 'on'
