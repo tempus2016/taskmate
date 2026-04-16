@@ -679,9 +679,12 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             vis_entity = user_input.get("visibility_entity") or ""
             vis_operator = user_input.get("visibility_operator", "none")
             vis_state = user_input.get("visibility_state", "")
+
+            # If operator is "none", treat as no visibility filter regardless of entity
+            if not vis_operator or vis_operator == "none":
+                vis_entity = ""
+
             if vis_entity:
-                if not vis_operator or vis_operator == "none":
-                    errors["visibility_operator"] = "operator_required"
                 if not vis_state.strip():
                     errors["visibility_state"] = "state_required"
 
@@ -701,8 +704,8 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     chore.visibility_state = vis_state
                 else:
                     chore.visibility_entity = ""
-                    chore.visibility_operator = ""
-                    chore.visibility_state = ""
+                    chore.visibility_operator = "equals"
+                    chore.visibility_state = "on"
                 self._edited_chore = chore
                 _LOGGER.debug(
                     "Edit chore step 1 - saved visibility fields: entity=%s, operator=%s, state=%s",
