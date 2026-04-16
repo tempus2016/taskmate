@@ -278,6 +278,7 @@
     "chore_action": {
       "options": {
         "save": "Guardar alterações",
+        "re_enable": "Reativar tarefa",
         "delete": "Eliminar esta tarefa"
       }
     },
@@ -299,7 +300,8 @@
     "schedule_mode": {
       "options": {
         "specific_days": "Dias específicos da semana",
-        "recurring": "Recorrente (a cada N dias/semanas/meses)"
+        "recurring": "Recorrente (a cada N dias/semanas/meses)",
+        "one_shot": "Tarefa única (um dia)"
       }
     },
     "due_days_option": {
