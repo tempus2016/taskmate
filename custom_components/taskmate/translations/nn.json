@@ -278,6 +278,7 @@
     "chore_action": {
       "options": {
         "save": "Lagre endringar",
+        "re_enable": "Reaktiver oppgåve",
         "delete": "Slett denne oppgåva"
       }
     },
@@ -299,7 +300,8 @@
     "schedule_mode": {
       "options": {
         "specific_days": "Bestemte vekedagar",
-        "recurring": "Gjentakande (kvar N dag/veke/månad)"
+        "recurring": "Gjentakande (kvar N dag/veke/månad)",
+        "one_shot": "Eingongsoppgåve (éin dag)"
       }
     },
     "due_days_option": {

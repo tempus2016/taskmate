@@ -308,7 +308,8 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
 
         for chore in chores:
             time_label = f" [{chore.time_category}]" if chore.time_category != "anytime" else ""
-            menu_options[f"edit_chore_{chore.id}"] = f"{chore.name} ({chore.points} pts){time_label}"
+            disabled_label = " (disabled)" if (not getattr(chore, 'enabled', True) or getattr(chore, 'disabled_for', [])) else ""
+            menu_options[f"edit_chore_{chore.id}"] = f"{chore.name} ({chore.points} pts){time_label}{disabled_label}"
 
         menu_options["init"] = _m("init", "Back to Main Menu")
 
@@ -334,6 +335,8 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 schedule_mode = user_input.get("schedule_mode", "specific_days")
                 if schedule_mode == "specific_days":
                     return await self.async_step_chore_schedule_specific()
+                elif schedule_mode == "one_shot":
+                    return await self.async_step_chore_schedule_one_shot()
                 else:
                     return await self.async_step_chore_schedule_recurring()
 
@@ -356,7 +359,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Required("schedule_mode", default="specific_days"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
-                    options=["specific_days", "recurring"],
+                    options=["specific_days", "recurring", "one_shot"],
                     translation_key="schedule_mode",
                     mode=selector.SelectSelectorMode.LIST,
                 )
@@ -427,6 +430,26 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 ),
             }),
         )
+
+    async def async_step_chore_schedule_one_shot(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Add chore — one-shot (no schedule config needed)."""
+        s1 = self._chore_step1_data or {}
+        await self.coordinator.async_add_chore(
+            name=s1.get("name", "").strip(),
+            points=int(s1.get("points", 10)),
+            description=s1.get("description", ""),
+            assigned_to=s1.get("assigned_to", []),
+            requires_approval=s1.get("requires_approval", True),
+            time_category=s1.get("time_category", "anytime"),
+            daily_limit=1,
+            completion_sound=s1.get("completion_sound", DEFAULT_COMPLETION_SOUND),
+            schedule_mode="one_shot",
+            visibility_entity=s1.get("visibility_entity", ""),
+        )
+        self._chore_step1_data = None
+        return await self.async_step_manage_chores()
 
     async def async_step_chore_schedule_recurring(
         self, user_input: dict[str, Any] | None = None
@@ -615,6 +638,14 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             if action == "delete":
                 await self.coordinator.async_remove_chore(chore_id)
                 return await self.async_step_manage_chores()
+            if action == "re_enable":
+                chore.enabled = True
+                chore.disabled_for = []
+                if getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
+                    from homeassistant.util import dt as dt_util
+                    chore.created_date = dt_util.as_local(dt_util.now()).date().isoformat()
+                await self.coordinator.async_update_chore(chore)
+                return await self.async_step_manage_chores()
 
             name = user_input.get("name", "").strip()
             if not name:
@@ -641,6 +672,8 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 schedule_mode = user_input.get("schedule_mode", "specific_days")
                 if schedule_mode == "specific_days":
                     return await self.async_step_edit_chore_schedule_specific()
+                elif schedule_mode == "one_shot":
+                    return await self.async_step_edit_chore_schedule_one_shot()
                 else:
                     return await self.async_step_edit_chore_schedule_recurring()
 
@@ -668,7 +701,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Required("schedule_mode", default=current_schedule_mode): selector.SelectSelector(
                 selector.SelectSelectorConfig(
-                    options=["specific_days", "recurring"],
+                    options=["specific_days", "recurring", "one_shot"],
                     translation_key="schedule_mode",
                     mode=selector.SelectSelectorMode.LIST,
                 )
@@ -703,7 +736,11 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             vol.Optional("visibility_state", default=getattr(chore, 'visibility_state', "on")): str,
             vol.Required("action", default="save"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
-                    options=["save", "delete"],
+                    options=(
+                        ["save", "re_enable", "delete"]
+                        if (not getattr(chore, 'enabled', True) or getattr(chore, 'disabled_for', []))
+                        else ["save", "delete"]
+                    ),
                     translation_key="chore_action",
                     mode=selector.SelectSelectorMode.LIST,
                 )
@@ -770,6 +807,32 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             }),
             description_placeholders={"chore_name": chore.name},
         )
+
+    async def async_step_edit_chore_schedule_one_shot(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Edit chore — one-shot schedule (save immediately)."""
+        chore = self._edited_chore
+        if not chore:
+            chore_id = self._selected_chore_id
+            chore = self.coordinator.get_chore(chore_id)
+        if not chore:
+            return await self.async_step_manage_chores()
+
+        chore.schedule_mode = "one_shot"
+        chore.daily_limit = 1
+        chore.due_days = []
+        chore.recurrence = "weekly"
+        chore.recurrence_day = ""
+        chore.recurrence_start = ""
+        chore.first_occurrence_mode = "available_immediately"
+        if not chore.created_date:
+            from homeassistant.util import dt as dt_util
+            chore.created_date = dt_util.as_local(dt_util.now()).date().isoformat()
+        await self.coordinator.async_update_chore(chore)
+        self._chore_step1_data = None
+        self._edited_chore = None
+        return await self.async_step_manage_chores()
 
     async def async_step_edit_chore_schedule_recurring(
         self, user_input: dict[str, Any] | None = None
