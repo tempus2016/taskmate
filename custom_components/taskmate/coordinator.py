@@ -261,6 +261,8 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         recurrence_start: str = "",
         first_occurrence_mode: str = "available_immediately",
         visibility_entity: str = "",
+        visibility_state: str = "on",
+        visibility_operator: str = "equals",
     ) -> Chore:
         """Add a new chore."""
         chore = Chore(
@@ -279,6 +281,8 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             recurrence_start=recurrence_start,
             first_occurrence_mode=first_occurrence_mode,
             visibility_entity=visibility_entity,
+            visibility_state=visibility_state,
+            visibility_operator=visibility_operator,
         )
         self.storage.add_chore(chore)
         await self.storage.async_save()
@@ -298,6 +302,8 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         schedule_mode: str = "specific_days",
         completion_sound: str = "coin",
         visibility_entity: str = "",
+        visibility_state: str = "on",
+        visibility_operator: str = "equals",
             ) -> list[Chore]:
         """Add multiple chores at once with shared settings."""
         chores = []
@@ -317,6 +323,8 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 schedule_mode=schedule_mode,
                 completion_sound=completion_sound,
                 visibility_entity=visibility_entity,
+                visibility_state=visibility_state,
+                visibility_operator=visibility_operator,
                             )
             self.storage.add_chore(chore)
             chores.append(chore)
@@ -357,18 +365,25 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
     # ── Chore completion operations ───────────────────────────────────────────
 
-    def _is_visibility_entity_active(self, visibility_entity: str) -> bool:
-        """Check if a visibility entity is active (state is 'on').
+    def _is_visibility_entity_active(
+        self, visibility_entity: str, visibility_state: str, visibility_operator: str = "equals"
+    ) -> bool:
+        """Check if a visibility entity matches the desired state.
 
-        Returns True if entity is not set, entity doesn't exist, or entity is 'on'.
-        Returns False for any other state ('off', 'unavailable', 'unknown', etc.).
+        Args:
+            visibility_entity: Entity ID to check (e.g. 'binary_sensor.dishwasher')
+            visibility_state: State value to compare (e.g. 'on', '123', '10', '>=10', '<20')
+            visibility_operator: Comparison operator: equals, gte, lte, gt, lt, not_equals
+
+        Returns True if entity matches visibility_state with the specified operator.
+        Defaults to visible if entity doesn't exist.
         """
         if not visibility_entity:
             return True
 
         # Get entity state from Home Assistant
-        state = self.hass.states.get(visibility_entity)
-        if state is None:
+        state_obj = self.hass.states.get(visibility_entity)
+        if state_obj is None:
             # Entity doesn't exist, treat as visible
             _LOGGER.debug(
                 "Visibility entity '%s' not found, defaulting to visible",
@@ -376,8 +391,59 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             )
             return True
 
-        # For binary_sensor, input_boolean, switch, etc., check if state is 'on'
-        return state.state == 'on'
+        entity_state = state_obj.state
+
+        # Parse operator from visibility_state if embedded (e.g. ">=10", "<20")
+        parsed_operator = visibility_operator
+        parsed_state = visibility_state
+
+        if visibility_state.startswith(">="):
+            parsed_operator = "gte"
+            parsed_state = visibility_state[2:]
+        elif visibility_state.startswith("<="):
+            parsed_operator = "lte"
+            parsed_state = visibility_state[2:]
+        elif visibility_state.startswith(">"):
+            parsed_operator = "gt"
+            parsed_state = visibility_state[1:]
+        elif visibility_state.startswith("<"):
+            parsed_operator = "lt"
+            parsed_state = visibility_state[1:]
+        elif visibility_state.startswith("!="):
+            parsed_operator = "not_equals"
+            parsed_state = visibility_state[2:]
+
+        # Try numeric comparison if operator is not "equals"
+        if parsed_operator != "equals":
+            try:
+                threshold = float(parsed_state)
+                entity_value = float(entity_state)
+
+                if parsed_operator == "gte":
+                    return entity_value >= threshold
+                elif parsed_operator == "lte":
+                    return entity_value <= threshold
+                elif parsed_operator == "gt":
+                    return entity_value > threshold
+                elif parsed_operator == "lt":
+                    return entity_value < threshold
+                elif parsed_operator == "not_equals":
+                    return entity_value != threshold
+            except (ValueError, TypeError):
+                # If conversion fails, fall through to string matching
+                pass
+
+        # Check state (case-insensitive exact match)
+        if entity_state.lower() == parsed_state.lower():
+            return True
+
+        # Check attributes for a matching value
+        if hasattr(state_obj, 'attributes') and state_obj.attributes:
+            for attr_value in state_obj.attributes.values():
+                if str(attr_value).lower() == parsed_state.lower():
+                    return True
+
+        return False
 
     def is_chore_available_for_child(self, chore, child_id: str) -> bool:
         """Check if a recurring chore is available for a child to complete.
@@ -391,7 +457,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         """
         # Check visibility entity first — if not visible, chore is not available
         visibility_entity = getattr(chore, 'visibility_entity', '')
-        if not self._is_visibility_entity_active(visibility_entity):
+        visibility_state = getattr(chore, 'visibility_state', 'on')
+        visibility_operator = getattr(chore, 'visibility_operator', 'equals')
+        if not self._is_visibility_entity_active(visibility_entity, visibility_state, visibility_operator):
             return False
 
         schedule_mode = getattr(chore, 'schedule_mode', 'specific_days')
