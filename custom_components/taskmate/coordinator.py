@@ -372,7 +372,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         Args:
             visibility_entity: Entity ID to check (e.g. 'binary_sensor.dishwasher')
-            visibility_state: State value to compare (e.g. 'on', '123', '10')
+            visibility_state: State value to compare (e.g. 'on', '123', '10', '>=10', '<20')
             visibility_operator: Comparison operator: equals, gte, lte, gt, lt, not_equals
 
         Returns True if entity matches visibility_state with the specified operator.
@@ -393,34 +393,54 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         entity_state = state_obj.state
 
+        # Parse operator from visibility_state if embedded (e.g. ">=10", "<20")
+        parsed_operator = visibility_operator
+        parsed_state = visibility_state
+
+        if visibility_state.startswith(">="):
+            parsed_operator = "gte"
+            parsed_state = visibility_state[2:]
+        elif visibility_state.startswith("<="):
+            parsed_operator = "lte"
+            parsed_state = visibility_state[2:]
+        elif visibility_state.startswith(">"):
+            parsed_operator = "gt"
+            parsed_state = visibility_state[1:]
+        elif visibility_state.startswith("<"):
+            parsed_operator = "lt"
+            parsed_state = visibility_state[1:]
+        elif visibility_state.startswith("!="):
+            parsed_operator = "not_equals"
+            parsed_state = visibility_state[2:]
+
         # Try numeric comparison if operator is not "equals"
-        if visibility_operator != "equals":
+        if parsed_operator != "equals":
             try:
-                threshold = float(visibility_state)
+                threshold = float(parsed_state)
                 entity_value = float(entity_state)
 
-                if visibility_operator == "gte":
+                if parsed_operator == "gte":
                     return entity_value >= threshold
-                elif visibility_operator == "lte":
+                elif parsed_operator == "lte":
                     return entity_value <= threshold
-                elif visibility_operator == "gt":
+                elif parsed_operator == "gt":
                     return entity_value > threshold
-                elif visibility_operator == "lt":
+                elif parsed_operator == "lt":
                     return entity_value < threshold
-                elif visibility_operator == "not_equals":
+                elif parsed_operator == "not_equals":
                     return entity_value != threshold
             except (ValueError, TypeError):
                 # If conversion fails, fall through to string matching
                 pass
 
         # Check state (case-insensitive exact match)
-        if entity_state.lower() == visibility_state.lower():
+        if entity_state.lower() == parsed_state.lower():
             return True
 
         # Check attributes for a matching value
         if hasattr(state_obj, 'attributes') and state_obj.attributes:
             for attr_value in state_obj.attributes.values():
-                if str(attr_value).lower() == visibility_state.lower():
+                if str(attr_value).lower() == parsed_state.lower():
                     return True
 
         return False
