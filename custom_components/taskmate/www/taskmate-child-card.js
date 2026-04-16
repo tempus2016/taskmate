@@ -1806,6 +1806,7 @@ class TaskMateChildCard extends LitElement {
     this._loading = { ...this._loading, [chore.id]: true };
     this.requestUpdate();
 
+    let cleanupTimeout;
     try {
       await this.hass.callService("taskmate", "complete_chore", {
         chore_id: chore.id,
@@ -1829,7 +1830,7 @@ class TaskMateChildCard extends LitElement {
       }, 2500);
 
       // Clean up optimistic completion after 30 seconds (by then HA state should be updated)
-      setTimeout(() => {
+      cleanupTimeout = setTimeout(() => {
         const newOptimistic = { ...this._optimisticCompletions };
         delete newOptimistic[key];
         this._optimisticCompletions = newOptimistic;
@@ -1838,6 +1839,11 @@ class TaskMateChildCard extends LitElement {
 
     } catch (error) {
       console.error("Failed to complete chore:", error);
+
+      // Cancel the 30-second cleanup timer since we're handling cleanup now
+      if (cleanupTimeout) {
+        clearTimeout(cleanupTimeout);
+      }
 
       // Remove the optimistic completion since the service call failed
       const newOptimistic = { ...this._optimisticCompletions };

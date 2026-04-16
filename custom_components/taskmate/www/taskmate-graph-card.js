@@ -373,6 +373,7 @@ class TaskMateGraphCard extends LitElement {
     canvas.height = H * DPR;
 
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     ctx.scale(DPR, DPR);
 
     const PAD = { top: 16, right: 16, bottom: 28, left: 36 };
