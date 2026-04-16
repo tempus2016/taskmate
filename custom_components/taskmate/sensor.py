@@ -231,6 +231,9 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
                 "recurrence_day": getattr(c, 'recurrence_day', ''),
                 "recurrence_start": getattr(c, 'recurrence_start', ''),
                 "first_occurrence_mode": getattr(c, 'first_occurrence_mode', 'available_immediately'),
+                "visibility_entity": getattr(c, 'visibility_entity', ''),
+                "visibility_operator": getattr(c, 'visibility_operator', 'equals'),
+                "visibility_state": getattr(c, 'visibility_state', 'on'),
                 "last_completed_at": last_completed_at,
                 "is_available": is_available,
             })
