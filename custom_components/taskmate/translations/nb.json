@@ -74,11 +74,19 @@
           "assigned_to": "Tildelt til (la stå tom for alle barn)",
           "requires_approval": "Krever foreldregodkjenning",
           "daily_limit": "Daglig fullføringsgrense",
-          "schedule_mode": "Planleggingsmodus"
+          "schedule_mode": "Planleggingsmodus",
+          "completion_sound": "Lyd når oppgaven fullføres",
+          "visibility_entity": "Home Assistant-enhet for synlighet",
+          "visibility_operator": "Synlighetsoperatør",
+          "visibility_state": "Synlighetstilstand"
         },
         "data_description": {
           "daily_limit": "Hvor mange ganger per dag denne oppgaven kan fullføres",
-          "schedule_mode": "Velg hvordan denne oppgaven planlegges — bestemte ukedager eller gjentakende intervall. Planleggingsalternativene konfigureres på neste side."
+          "schedule_mode": "Velg hvordan denne oppgaven planlegges — bestemte ukedager eller gjentakende intervall. Planleggingsalternativene konfigureres på neste side.",
+          "completion_sound": "Lyd som skal spilles når denne oppgaven fullføres",
+          "visibility_entity": "Home Assistant-enhets-ID som styrer når denne oppgaven vises. La stå tom for alltid å vise oppgaven. Eksempler: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. Oppgaven vises kun på barnets kort når synlighetsbetingelsen er oppfylt.",
+          "visibility_operator": "Hvordan sammenlignes enhetens nåværende tilstand med målverdien:\n• Lik — tilstanden stemmer nøyaktig (f.eks. 'on', 'home', 'running')\n• Ikke lik — tilstanden stemmer ikke\n• Større enn eller lik (≥) — for numeriske verdier (f.eks. 80 for batteri ≥ 80%)\n• Mindre enn eller lik (≤) — for numeriske verdier (f.eks. 30 for fuktighet ≤ 30%)\n• Større enn (>) — for numeriske verdier\n• Mindre enn (<) — for numeriske verdier",
+          "visibility_state": "Verdien som skal sammenlignes. For 'Lik' eller 'Ikke lik': hvilken som helst tekstverdi (f.eks. 'on', 'off', 'home', 'away'). For numeriske operatorer (≥, ≤, >, <): skriv inn et tall (f.eks. 25, 50,5, 100). Eksempel: Enhet 'sensor.temperature', Operatør '≥', Verdi '20' viser oppgaven når temperaturen er 20°C eller høyere."
         }
       },
       "add_chores_bulk": {
@@ -92,11 +100,19 @@
           "assigned_to": "Tildelt til (la stå tom for alle barn)",
           "requires_approval": "Krever foreldregodkjenning",
           "daily_limit": "Daglig fullføringsgrense",
-          "schedule_mode": "Planleggingsmodus"
+          "schedule_mode": "Planleggingsmodus",
+          "completion_sound": "Lyd når oppgaven fullføres",
+          "visibility_entity": "Home Assistant-enhet for synlighet",
+          "visibility_operator": "Synlighetsoperatør",
+          "visibility_state": "Synlighetstilstand"
         },
         "data_description": {
           "daily_limit": "Hvor mange ganger per dag denne oppgaven kan fullføres",
-          "schedule_mode": "Velg hvordan denne oppgaven planlegges"
+          "schedule_mode": "Velg hvordan denne oppgaven planlegges",
+          "completion_sound": "Lyd som skal spilles når denne oppgaven fullføres",
+          "visibility_entity": "Home Assistant-enhets-ID som styrer når denne oppgaven vises. La stå tom for alltid å vise oppgaven. Eksempler: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. Oppgaven vises kun på barnets kort når synlighetsbetingelsen er oppfylt.",
+          "visibility_operator": "Hvordan sammenlignes enhetens nåværende tilstand med målverdien:\n• Lik — tilstanden stemmer nøyaktig (f.eks. 'on', 'home', 'running')\n• Ikke lik — tilstanden stemmer ikke\n• Større enn eller lik (≥) — for numeriske verdier (f.eks. 80 for batteri ≥ 80%)\n• Mindre enn eller lik (≤) — for numeriske verdier (f.eks. 30 for fuktighet ≤ 30%)\n• Større enn (>) — for numeriske verdier\n• Mindre enn (<) — for numeriske verdier",
+          "visibility_state": "Verdien som skal sammenlignes. For 'Lik' eller 'Ikke lik': hvilken som helst tekstverdi (f.eks. 'on', 'off', 'home', 'away'). For numeriske operatorer (≥, ≤, >, <): skriv inn et tall (f.eks. 25, 50,5, 100). Eksempel: Enhet 'sensor.temperature', Operatør '≥', Verdi '20' viser oppgaven når temperaturen er 20°C eller høyere."
         }
       },
       "edit_chore": {
@@ -112,11 +128,19 @@
           "requires_approval": "Krever foreldregodkjenning",
           "daily_limit": "Daglig fullføringsgrense",
           "action": "Handling",
-          "schedule_mode": "Planleggingsmodus"
+          "schedule_mode": "Planleggingsmodus",
+          "completion_sound": "Lyd når oppgaven fullføres",
+          "visibility_entity": "Home Assistant-enhet for synlighet",
+          "visibility_operator": "Synlighetsoperatør",
+          "visibility_state": "Synlighetstilstand"
         },
         "data_description": {
           "daily_limit": "Hvor mange ganger per dag denne oppgaven kan fullføres",
-          "schedule_mode": "Velg hvordan denne oppgaven planlegges — bestemte ukedager eller gjentakende intervall. Planleggingsalternativene konfigureres på neste side."
+          "schedule_mode": "Velg hvordan denne oppgaven planlegges — bestemte ukedager eller gjentakende intervall. Planleggingsalternativene konfigureres på neste side.",
+          "completion_sound": "Lyd som skal spilles når denne oppgaven fullføres",
+          "visibility_entity": "Home Assistant-enhets-ID som styrer når denne oppgaven vises. La stå tom for alltid å vise oppgaven. Eksempler: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. Oppgaven vises kun på barnets kort når synlighetsbetingelsen er oppfylt.",
+          "visibility_operator": "Hvordan sammenlignes enhetens nåværende tilstand med målverdien:\n• Lik — tilstanden stemmer nøyaktig (f.eks. 'on', 'home', 'running')\n• Ikke lik — tilstanden stemmer ikke\n• Større enn eller lik (≥) — for numeriske verdier (f.eks. 80 for batteri ≥ 80%)\n• Mindre enn eller lik (≤) — for numeriske verdier (f.eks. 30 for fuktighet ≤ 30%)\n• Større enn (>) — for numeriske verdier\n• Mindre enn (<) — for numeriske verdier",
+          "visibility_state": "Verdien som skal sammenlignes. For 'Lik' eller 'Ikke lik': hvilken som helst tekstverdi (f.eks. 'on', 'off', 'home', 'away'). For numeriske operatorer (≥, ≤, >, <): skriv inn et tall (f.eks. 25, 50,5, 100). Eksempel: Enhet 'sensor.temperature', Operatør '≥', Verdi '20' viser oppgaven når temperaturen er 20°C eller høyere."
         }
       },
       "manage_rewards": {
@@ -321,6 +345,16 @@
       "options": {
         "reset": "Nullstill — rekken går til 0 ved tapt dag",
         "pause": "Pause — rekken bevares til neste fullføring"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "equals": "Lik — Vis når enhetstilstanden stemmer nøyaktig",
+        "not_equals": "Ikke lik — Vis når enhetstilstanden ikke stemmer",
+        "gte": "Større enn eller lik (≥) — Vis når numerisk verdi er ≥ målverdien",
+        "lte": "Mindre enn eller lik (≤) — Vis når numerisk verdi er ≤ målverdien",
+        "gt": "Større enn (>) — Vis når numerisk verdi er > målverdien",
+        "lt": "Mindre enn (<) — Vis når numerisk verdi er < målverdien"
       }
     }
   },

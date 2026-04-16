@@ -74,11 +74,19 @@
           "assigned_to": "Atribuída a (deixe vazio para todas as crianças)",
           "requires_approval": "Requer aprovação dos pais",
           "daily_limit": "Limite diário de conclusão",
-          "schedule_mode": "Modo de agendamento"
+          "schedule_mode": "Modo de agendamento",
+          "completion_sound": "Som quando a tarefa é concluída",
+          "visibility_entity": "Entidade Home Assistant para visibilidade",
+          "visibility_operator": "Operador de visibilidade",
+          "visibility_state": "Estado de visibilidade"
         },
         "data_description": {
           "daily_limit": "Quantas vezes por dia esta tarefa pode ser concluída",
-          "schedule_mode": "Escolha como esta tarefa é agendada — dias específicos da semana ou intervalo recorrente. As opções de agendamento serão configuradas na página seguinte."
+          "schedule_mode": "Escolha como esta tarefa é agendada — dias específicos da semana ou intervalo recorrente. As opções de agendamento serão configuradas na página seguinte.",
+          "completion_sound": "Som a reproduzir quando esta tarefa é concluída",
+          "visibility_entity": "ID da entidade Home Assistant que controla quando esta tarefa é apresentada. Deixe vazio para mostrar sempre a tarefa. Exemplos: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. A tarefa só aparece no cartão da criança quando a condição de visibilidade é atendida.",
+          "visibility_operator": "Como comparar o estado atual da entidade com seu valor alvo:\n• Igual — estado corresponde exatamente (p. ex., 'on', 'home', 'running')\n• Não igual — estado não corresponde\n• Maior ou igual (≥) — para valores numéricos (p. ex., 80 para bateria ≥ 80%)\n• Menor ou igual (≤) — para valores numéricos (p. ex., 30 para umidade ≤ 30%)\n• Maior que (>) — para valores numéricos\n• Menor que (<) — para valores numéricos",
+          "visibility_state": "O valor a comparar. Para 'Igual' ou 'Não igual': qualquer valor de texto (p. ex., 'on', 'off', 'home', 'away'). Para operadores numéricos (≥, ≤, >, <): introduza um número (p. ex., 25, 50.5, 100). Exemplo: Entidade 'sensor.temperature', Operador '≥', Valor '20' mostra a tarefa quando a temperatura é 20°C ou superior."
         }
       },
       "add_chores_bulk": {
@@ -92,11 +100,19 @@
           "assigned_to": "Atribuída a (deixe vazio para todas as crianças)",
           "requires_approval": "Requer aprovação dos pais",
           "daily_limit": "Limite diário de conclusão",
-          "schedule_mode": "Modo de agendamento"
+          "schedule_mode": "Modo de agendamento",
+          "completion_sound": "Som quando a tarefa é concluída",
+          "visibility_entity": "Entidade Home Assistant para visibilidade",
+          "visibility_operator": "Operador de visibilidade",
+          "visibility_state": "Estado de visibilidade"
         },
         "data_description": {
           "daily_limit": "Quantas vezes por dia esta tarefa pode ser concluída",
-          "schedule_mode": "Escolha como esta tarefa é agendada"
+          "schedule_mode": "Escolha como esta tarefa é agendada",
+          "completion_sound": "Som a reproduzir quando esta tarefa é concluída",
+          "visibility_entity": "ID da entidade Home Assistant que controla quando esta tarefa é apresentada. Deixe vazio para mostrar sempre a tarefa. Exemplos: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. A tarefa só aparece no cartão da criança quando a condição de visibilidade é atendida.",
+          "visibility_operator": "Como comparar o estado atual da entidade com seu valor alvo:\n• Igual — estado corresponde exatamente (p. ex., 'on', 'home', 'running')\n• Não igual — estado não corresponde\n• Maior ou igual (≥) — para valores numéricos (p. ex., 80 para bateria ≥ 80%)\n• Menor ou igual (≤) — para valores numéricos (p. ex., 30 para umidade ≤ 30%)\n• Maior que (>) — para valores numéricos\n• Menor que (<) — para valores numéricos",
+          "visibility_state": "O valor a comparar. Para 'Igual' ou 'Não igual': qualquer valor de texto (p. ex., 'on', 'off', 'home', 'away'). Para operadores numéricos (≥, ≤, >, <): introduza um número (p. ex., 25, 50.5, 100). Exemplo: Entidade 'sensor.temperature', Operador '≥', Valor '20' mostra a tarefa quando a temperatura é 20°C ou superior."
         }
       },
       "edit_chore": {
@@ -112,11 +128,19 @@
           "requires_approval": "Requer aprovação dos pais",
           "daily_limit": "Limite diário de conclusão",
           "action": "Ação",
-          "schedule_mode": "Modo de agendamento"
+          "schedule_mode": "Modo de agendamento",
+          "completion_sound": "Som quando a tarefa é concluída",
+          "visibility_entity": "Entidade Home Assistant para visibilidade",
+          "visibility_operator": "Operador de visibilidade",
+          "visibility_state": "Estado de visibilidade"
         },
         "data_description": {
           "daily_limit": "Quantas vezes por dia esta tarefa pode ser concluída",
-          "schedule_mode": "Escolha como esta tarefa é agendada — dias específicos da semana ou intervalo recorrente. As opções de agendamento serão configuradas na página seguinte."
+          "schedule_mode": "Escolha como esta tarefa é agendada — dias específicos da semana ou intervalo recorrente. As opções de agendamento serão configuradas na página seguinte.",
+          "completion_sound": "Som a reproduzir quando esta tarefa é concluída",
+          "visibility_entity": "ID da entidade Home Assistant que controla quando esta tarefa é apresentada. Deixe vazio para mostrar sempre a tarefa. Exemplos: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. A tarefa só aparece no cartão da criança quando a condição de visibilidade é atendida.",
+          "visibility_operator": "Como comparar o estado atual da entidade com seu valor alvo:\n• Igual — estado corresponde exatamente (p. ex., 'on', 'home', 'running')\n• Não igual — estado não corresponde\n• Maior ou igual (≥) — para valores numéricos (p. ex., 80 para bateria ≥ 80%)\n• Menor ou igual (≤) — para valores numéricos (p. ex., 30 para umidade ≤ 30%)\n• Maior que (>) — para valores numéricos\n• Menor que (<) — para valores numéricos",
+          "visibility_state": "O valor a comparar. Para 'Igual' ou 'Não igual': qualquer valor de texto (p. ex., 'on', 'off', 'home', 'away'). Para operadores numéricos (≥, ≤, >, <): introduza um número (p. ex., 25, 50.5, 100). Exemplo: Entidade 'sensor.temperature', Operador '≥', Valor '20' mostra a tarefa quando a temperatura é 20°C ou superior."
         }
       },
       "manage_rewards": {
@@ -321,6 +345,16 @@
       "options": {
         "reset": "Reiniciar — sequência volta a 0 num dia falhado",
         "pause": "Pausar — sequência preservada até próxima conclusão"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "equals": "Igual — Mostrar quando o estado da entidade corresponde exatamente",
+        "not_equals": "Não igual — Mostrar quando o estado da entidade não corresponde",
+        "gte": "Maior ou igual (≥) — Mostrar quando valor numérico é ≥ alvo",
+        "lte": "Menor ou igual (≤) — Mostrar quando valor numérico é ≤ alvo",
+        "gt": "Maior que (>) — Mostrar quando valor numérico é > alvo",
+        "lt": "Menor que (<) — Mostrar quando valor numérico é < alvo"
       }
     }
   },
