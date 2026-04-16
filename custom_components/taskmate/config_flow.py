@@ -654,7 +654,18 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             name = user_input.get("name", "").strip()
             if not name:
                 errors["name"] = "name_required"
-            else:
+
+            # Validate visibility: if entity is set, operator and state are required
+            vis_entity = user_input.get("visibility_entity") or ""
+            vis_operator = user_input.get("visibility_operator", "none")
+            vis_state = user_input.get("visibility_state", "")
+            if vis_entity:
+                if not vis_operator or vis_operator == "none":
+                    errors["visibility_operator"] = "operator_required"
+                if not vis_state.strip():
+                    errors["visibility_state"] = "state_required"
+
+            if not errors:
                 # Update the chore object with all Step 1 fields
                 chore.name = name
                 chore.points = int(user_input.get("points", chore.points))
@@ -664,11 +675,11 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 chore.time_category = user_input.get("time_category", chore.time_category)
                 chore.daily_limit = int(user_input.get("daily_limit", chore.daily_limit))
                 chore.completion_sound = user_input.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
-                chore.visibility_entity = user_input.get("visibility_entity") or ""
-                chore.visibility_operator = user_input.get("visibility_operator", "none")
-                chore.visibility_state = user_input.get("visibility_state", "")
-                # Clear operator/state when entity is blank or operator is "none"
-                if not chore.visibility_entity or chore.visibility_operator == "none":
+                if vis_entity:
+                    chore.visibility_entity = vis_entity
+                    chore.visibility_operator = vis_operator
+                    chore.visibility_state = vis_state
+                else:
                     chore.visibility_entity = ""
                     chore.visibility_operator = ""
                     chore.visibility_state = ""
