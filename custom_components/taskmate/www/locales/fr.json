@@ -425,5 +425,17 @@
   "points_display.editor.stats_to_show": "Stats à afficher",
   "points_display.editor.show_weekly": "Points de cette semaine",
   "points_display.editor.show_streak": "Série",
-  "points_display.editor.show_rank": "Médailles de rang"
+  "points_display.editor.show_rank": "Médailles de rang",
+
+  "visibility.label_entity": "Entité de visibilité",
+  "visibility.label_operator": "Opérateur de visibilité",
+  "visibility.label_state": "État de visibilité",
+  "visibility.operator_equals": "Égal à",
+  "visibility.operator_not_equals": "Non égal à",
+  "visibility.operator_gte": "Supérieur ou égal à (≥)",
+  "visibility.operator_lte": "Inférieur ou égal à (≤)",
+  "visibility.operator_gt": "Supérieur à (>)",
+  "visibility.operator_lt": "Inférieur à (<)",
+  "visibility.description_hidden": "Masqué par la condition de visibilité",
+  "visibility.description_shown": "Affiché par la condition de visibilité"
 }
