@@ -770,6 +770,12 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Edit chore — Step 2a: specific days."""
         s1 = self._chore_step1_data or {}
+        _LOGGER.debug(
+            "Step 2 specific_days - step1_data visibility: entity=%s, operator=%s, state=%s",
+            s1.get("visibility_entity"),
+            s1.get("visibility_operator"),
+            s1.get("visibility_state"),
+        )
         chore_id = s1.get("_chore_id") or self._selected_chore_id
         chore = self.coordinator.get_chore(chore_id)
         if not chore:
