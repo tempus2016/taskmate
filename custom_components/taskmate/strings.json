@@ -77,14 +77,16 @@
           "schedule_mode": "Scheduling Mode",
           "completion_sound": "Completion Sound",
           "visibility_entity": "Show when entity is (optional)",
-          "visibility_state": "Desired state value"
+          "visibility_operator": "How to compare",
+          "visibility_state": "Value to compare"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
           "completion_sound": "Sound to play when this chore is completed",
           "visibility_entity": "Entity that controls when this chore is visible (e.g. binary_sensor.dishwasher, sensor.temperature, number.threshold)",
-          "visibility_state": "The state/attribute value or numeric comparison that shows the chore. Examples: 'on' (exact match), '>=10' (power >= 10W), '>5' (temperature > 5°C), '==123' (exact number). Exact matches are case-insensitive."
+          "visibility_operator": "Select how to compare the entity value with the desired value",
+          "visibility_state": "The value to compare. For exact match, any value (e.g. 'on', 'running'). For numeric operators, must be a number (e.g. '10', '50.5')."
         }
       },
       "add_chores_bulk": {
@@ -101,7 +103,8 @@
           "schedule_mode": "Scheduling Mode",
           "completion_sound": "Completion Sound",
           "visibility_entity": "Show when entity is (optional)",
-          "visibility_state": "Desired state value"
+          "visibility_operator": "How to compare",
+          "visibility_state": "Value to compare"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
@@ -126,14 +129,16 @@
           "schedule_mode": "Scheduling Mode",
           "completion_sound": "Completion Sound",
           "visibility_entity": "Show when entity is (optional)",
-          "visibility_state": "Desired state value"
+          "visibility_operator": "How to compare",
+          "visibility_state": "Value to compare"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
           "completion_sound": "Sound to play when this chore is completed",
           "visibility_entity": "Entity that controls when this chore is visible (e.g. binary_sensor.dishwasher, sensor.temperature, number.threshold)",
-          "visibility_state": "The state/attribute value or numeric comparison that shows the chore. Examples: 'on' (exact match), '>=10' (power >= 10W), '>5' (temperature > 5°C), '==123' (exact number). Exact matches are case-insensitive."
+          "visibility_operator": "Select how to compare the entity value with the desired value",
+          "visibility_state": "The value to compare. For exact match, any value (e.g. 'on', 'running'). For numeric operators, must be a number (e.g. '10', '50.5')."
         }
       },
       "manage_rewards": {

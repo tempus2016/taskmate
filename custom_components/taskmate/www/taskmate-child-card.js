@@ -1339,36 +1339,32 @@ class TaskMateChildCard extends LitElement {
       const isAssignedToChild = isAssignedToAll || assignedToStrings.includes(childId);
 
       // Check visibility_entity — if set, chore is only visible if entity matches visibility_state
-      // Supports exact match ("on"), numeric comparisons (">=10"), and attributes
+      // Supports exact match, numeric comparisons, and attributes
       const visibilityEntity = chore.visibility_entity || '';
       const visibilityState = chore.visibility_state || 'on';
+      const visibilityOperator = chore.visibility_operator || 'equals';
       let visibilityOK = true;
       if (visibilityEntity) {
         const entityState = this.hass?.states?.[visibilityEntity];
         if (entityState) {
           const state = entityState.state;
-
-          // Check for numeric comparison operators
           let matched = false;
-          const numericOps = ['>=', '<=', '==', '!=', '>', '<'];
-          for (const op of numericOps) {
-            if (visibilityState.startsWith(op)) {
-              try {
-                const threshold = parseFloat(visibilityState.slice(op.length).trim());
-                const value = parseFloat(state);
-                if (!isNaN(value) && !isNaN(threshold)) {
-                  if (op === '>=') matched = value >= threshold;
-                  else if (op === '<=') matched = value <= threshold;
-                  else if (op === '==') matched = value === threshold;
-                  else if (op === '!=') matched = value !== threshold;
-                  else if (op === '>') matched = value > threshold;
-                  else if (op === '<') matched = value < threshold;
-                  visibilityOK = matched;
-                  break;
-                }
-              } catch (e) {
-                // Fall through to string matching
+
+          // Check numeric comparisons if operator is not "equals"
+          if (visibilityOperator !== 'equals') {
+            try {
+              const threshold = parseFloat(visibilityState);
+              const value = parseFloat(state);
+              if (!isNaN(value) && !isNaN(threshold)) {
+                if (visibilityOperator === 'gte') matched = value >= threshold;
+                else if (visibilityOperator === 'lte') matched = value <= threshold;
+                else if (visibilityOperator === 'gt') matched = value > threshold;
+                else if (visibilityOperator === 'lt') matched = value < threshold;
+                else if (visibilityOperator === 'not_equals') matched = value !== threshold;
+                visibilityOK = matched;
               }
+            } catch (e) {
+              // Fall through to string matching
             }
           }
 

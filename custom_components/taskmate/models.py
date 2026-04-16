@@ -135,6 +135,7 @@ class Chore:
     # Dynamic visibility
     visibility_entity: str = ""  # optional: entity_id to check for visibility
     visibility_state: str = "on"  # state/value that makes chore visible (e.g. "on", "true", "123")
+    visibility_operator: str = "equals"  # equals, gte, lte, gt, lt, not_equals
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -164,6 +165,7 @@ class Chore:
             first_occurrence_mode=data.get("first_occurrence_mode", "available_immediately"),
             visibility_entity=data.get("visibility_entity", ""),
             visibility_state=data.get("visibility_state", "on"),
+            visibility_operator=data.get("visibility_operator", "equals"),
             id=data.get("id", generate_id()),
         )
 
@@ -186,6 +188,7 @@ class Chore:
             "first_occurrence_mode": self.first_occurrence_mode,
             "visibility_entity": self.visibility_entity,
             "visibility_state": self.visibility_state,
+            "visibility_operator": self.visibility_operator,
             "id": self.id,
         }
 

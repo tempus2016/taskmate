@@ -378,6 +378,38 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     domain=["binary_sensor", "input_boolean", "switch", "sensor", "number"],
                 )
             ),
+            vol.Optional("visibility_operator", default="equals"): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[
+                        selector.SelectOptionDict(value="equals", label="Equals (exact match)"),
+                        selector.SelectOptionDict(value="gte", label="Greater than or equal (>=)"),
+                        selector.SelectOptionDict(value="lte", label="Less than or equal (<=)"),
+                        selector.SelectOptionDict(value="gt", label="Greater than (>)"),
+                        selector.SelectOptionDict(value="lt", label="Less than (<)"),
+                        selector.SelectOptionDict(value="not_equals", label="Not equal (!=)"),
+                    ],
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Optional("visibility_state", default="on"): str,
+            vol.Optional("visibility_entity", default=""): selector.EntitySelector(
+                selector.EntitySelectorConfig(
+                    domain=["binary_sensor", "input_boolean", "switch", "sensor", "number"],
+                )
+            ),
+            vol.Optional("visibility_operator", default="equals"): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[
+                        selector.SelectOptionDict(value="equals", label="Equals (exact match)"),
+                        selector.SelectOptionDict(value="gte", label="Greater than or equal (>=)"),
+                        selector.SelectOptionDict(value="lte", label="Less than or equal (<=)"),
+                        selector.SelectOptionDict(value="gt", label="Greater than (>)"),
+                        selector.SelectOptionDict(value="lt", label="Less than (<)"),
+                        selector.SelectOptionDict(value="not_equals", label="Not equal (!=)"),
+                    ],
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
             vol.Optional("visibility_state", default="on"): str,
         }
         if child_options:
@@ -415,6 +447,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 due_days=user_input.get("due_days", []),
                 visibility_entity=s1.get("visibility_entity", ""),
                 visibility_state=s1.get("visibility_state", "on"),
+                visibility_operator=s1.get("visibility_operator", "equals"),
             )
             self._chore_step1_data = None
             return await self.async_step_manage_chores()
@@ -469,6 +502,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 first_occurrence_mode=first_occurrence_mode,
                 visibility_entity=s1.get("visibility_entity", ""),
                 visibility_state=s1.get("visibility_state", "on"),
+                visibility_operator=s1.get("visibility_operator", "equals"),
             )
             self._chore_step1_data = None
             return await self.async_step_manage_chores()
@@ -538,6 +572,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         completion_sound=user_input.get("completion_sound", DEFAULT_COMPLETION_SOUND),
                         visibility_entity=user_input.get("visibility_entity", ""),
                         visibility_state=user_input.get("visibility_state", "on"),
+                        visibility_operator=user_input.get("visibility_operator", "equals"),
                     )
                     return await self.async_step_manage_chores()
 
@@ -686,6 +721,19 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     domain=["binary_sensor", "input_boolean", "switch", "sensor", "number"],
                 )
             ),
+            vol.Optional("visibility_operator", default=getattr(chore, 'visibility_operator', "equals")): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[
+                        selector.SelectOptionDict(value="equals", label="Equals (exact match)"),
+                        selector.SelectOptionDict(value="gte", label="Greater than or equal (>=)"),
+                        selector.SelectOptionDict(value="lte", label="Less than or equal (<=)"),
+                        selector.SelectOptionDict(value="gt", label="Greater than (>)"),
+                        selector.SelectOptionDict(value="lt", label="Less than (<)"),
+                        selector.SelectOptionDict(value="not_equals", label="Not equal (!=)"),
+                    ],
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
             vol.Optional("visibility_state", default=getattr(chore, 'visibility_state', "on")): str,
             vol.Required("action", default="save"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
@@ -732,6 +780,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             chore.completion_sound = s1.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
             chore.visibility_entity = s1.get("visibility_entity", "")
             chore.visibility_state = s1.get("visibility_state", "on")
+            chore.visibility_operator = s1.get("visibility_operator", "equals")
             chore.schedule_mode = "specific_days"
             chore.due_days = user_input.get("due_days", [])
             # Clear recurring fields
