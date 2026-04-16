@@ -278,6 +278,7 @@
     "chore_action": {
       "options": {
         "save": "Enregistrer les modifications",
+        "re_enable": "Réactiver la corvée",
         "delete": "Supprimer cette corvée"
       }
     },
@@ -299,7 +300,8 @@
     "schedule_mode": {
       "options": {
         "specific_days": "Jours spécifiques de la semaine",
-        "recurring": "Récurrent (tous les N jours/semaines/mois)"
+        "recurring": "Récurrent (tous les N jours/semaines/mois)",
+        "one_shot": "Tâche unique (un seul jour)"
       }
     },
     "due_days_option": {
