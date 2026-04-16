@@ -1338,13 +1338,56 @@ class TaskMateChildCard extends LitElement {
       const isAssignedToAll = assignedToStrings.length === 0;
       const isAssignedToChild = isAssignedToAll || assignedToStrings.includes(childId);
 
-      // Check visibility_entity — if set, chore is only visible if entity is 'on'
-      // If entity doesn't exist yet, default to visible (matches backend behaviour)
+      // Check visibility_entity — if set, chore is only visible if entity matches visibility_state
+      // Supports exact match, numeric comparisons, and attributes
       const visibilityEntity = chore.visibility_entity || '';
+      const visibilityState = chore.visibility_state || 'on';
+      const visibilityOperator = chore.visibility_operator || 'equals';
       let visibilityOK = true;
       if (visibilityEntity) {
         const entityState = this.hass?.states?.[visibilityEntity];
-        visibilityOK = entityState ? entityState.state === 'on' : true;
+        if (entityState) {
+          const state = entityState.state;
+          let matched = false;
+
+          // Check numeric comparisons if operator is not "equals"
+          if (visibilityOperator !== 'equals') {
+            try {
+              const threshold = parseFloat(visibilityState);
+              const value = parseFloat(state);
+              if (!isNaN(value) && !isNaN(threshold)) {
+                if (visibilityOperator === 'gte') matched = value >= threshold;
+                else if (visibilityOperator === 'lte') matched = value <= threshold;
+                else if (visibilityOperator === 'gt') matched = value > threshold;
+                else if (visibilityOperator === 'lt') matched = value < threshold;
+                else if (visibilityOperator === 'not_equals') matched = value !== threshold;
+                visibilityOK = matched;
+              }
+            } catch (e) {
+              // Fall through to string matching
+            }
+          }
+
+          if (!matched) {
+            // Check state (case-insensitive exact match)
+            if (state.toLowerCase() === visibilityState.toLowerCase()) {
+              visibilityOK = true;
+            } else {
+              // Check attributes for a matching value
+              visibilityOK = false;
+              if (entityState.attributes) {
+                for (const attrValue of Object.values(entityState.attributes)) {
+                  if (String(attrValue).toLowerCase() === visibilityState.toLowerCase()) {
+                    visibilityOK = true;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        } else {
+          visibilityOK = true; // Entity doesn't exist, default to visible
+        }
       }
       chore._visibilityEntity = visibilityEntity;
       chore._visibilityOK = visibilityOK;
