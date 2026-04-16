@@ -265,7 +265,9 @@
     },
     "error": {
       "name_required": "Name is required",
-      "invalid_milestone_format": "Invalid milestone format — use days:points pairs, e.g. 3:5, 7:10, 14:20"
+      "invalid_milestone_format": "Invalid milestone format — use days:points pairs, e.g. 3:5, 7:10, 14:20",
+      "operator_required": "Operator is required when an entity is set",
+      "state_required": "Value is required when an entity is set"
     }
   },
   "selector": {
@@ -351,6 +353,7 @@
     },
     "visibility_operator": {
       "options": {
+        "none": "No filter — Always show chore",
         "equals": "Equals — Show when entity state matches exactly",
         "not_equals": "Not Equal — Show when entity state does not match",
         "gte": "Greater than or equal (≥) — Show when numeric value is ≥ target",

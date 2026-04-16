@@ -387,8 +387,14 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         Returns True if entity matches visibility_state with the specified operator.
         Defaults to visible if entity doesn't exist.
         """
-        if not visibility_entity:
+        if not visibility_entity or visibility_operator == "none":
             return True
+
+        # Default empty operator/state to sensible values
+        if not visibility_operator:
+            visibility_operator = "equals"
+        if not visibility_state:
+            visibility_state = "on"
 
         # Get entity state from Home Assistant
         state_obj = self.hass.states.get(visibility_entity)
