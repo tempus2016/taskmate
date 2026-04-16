@@ -628,6 +628,23 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             if not name:
                 errors["name"] = "name_required"
             else:
+                # Update the chore object with all Step 1 fields
+                chore.name = name
+                chore.points = int(user_input.get("points", chore.points))
+                chore.description = user_input.get("description", chore.description)
+                chore.assigned_to = user_input.get("assigned_to", chore.assigned_to)
+                chore.requires_approval = user_input.get("requires_approval", chore.requires_approval)
+                chore.time_category = user_input.get("time_category", chore.time_category)
+                chore.daily_limit = int(user_input.get("daily_limit", chore.daily_limit))
+                chore.completion_sound = user_input.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
+                chore.visibility_entity = user_input.get("visibility_entity", "")
+                chore.visibility_state = user_input.get("visibility_state", "on")
+                chore.visibility_operator = user_input.get("visibility_operator", "equals")
+                self._edited_chore = chore
+                _LOGGER.debug(
+                    "Edit chore step 1 - saved visibility fields: entity=%s, operator=%s, state=%s",
+                    chore.visibility_entity, chore.visibility_operator, chore.visibility_state
+                )
                 self._chore_step1_data = {**user_input, "_editing": True, "_chore_id": chore_id}
                 schedule_mode = user_input.get("schedule_mode", "specific_days")
                 if schedule_mode == "specific_days":
@@ -679,9 +696,23 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Optional("visibility_entity", default=getattr(chore, 'visibility_entity', "")): selector.EntitySelector(
                 selector.EntitySelectorConfig(
-                    domain=["binary_sensor", "input_boolean", "switch"],
+                    domain=["binary_sensor", "input_boolean", "switch", "sensor", "number"],
                 )
             ),
+            vol.Optional("visibility_operator", default=getattr(chore, 'visibility_operator', "equals")): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[
+                        selector.SelectOptionDict(value="equals", label="Equals (exact match)"),
+                        selector.SelectOptionDict(value="gte", label="Greater than or equal (>=)"),
+                        selector.SelectOptionDict(value="lte", label="Less than or equal (<=)"),
+                        selector.SelectOptionDict(value="gt", label="Greater than (>)"),
+                        selector.SelectOptionDict(value="lt", label="Less than (<)"),
+                        selector.SelectOptionDict(value="not_equals", label="Not equal (!=)"),
+                    ],
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Optional("visibility_state", default=getattr(chore, 'visibility_state', "on")): str,
             vol.Required("action", default="save"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=["save", "delete"],
