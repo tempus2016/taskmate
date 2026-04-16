@@ -279,6 +279,7 @@
       "options": {
         "save": "Lagre endringer",
         "re_enable": "Reaktiver oppgave",
+        "disable": "Deaktiver oppgave",
         "delete": "Slett denne oppgaven"
       }
     },
