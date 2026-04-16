@@ -279,6 +279,7 @@
       "options": {
         "save": "Enregistrer les modifications",
         "re_enable": "Réactiver la corvée",
+        "disable": "Désactiver la corvée",
         "delete": "Supprimer cette corvée"
       }
     },
