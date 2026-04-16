@@ -137,6 +137,10 @@ class Chore:
     visibility_entity: str = ""  # optional: entity_id to check for visibility
     visibility_state: str = "on"  # state/value that makes chore visible (e.g. "on", "true", "123")
     visibility_operator: str = "equals"  # equals, gte, lte, gt, lt, not_equals
+    # One-shot chore fields
+    enabled: bool = True  # False = soft-disabled (completed or expired)
+    disabled_for: list[str] = field(default_factory=list)  # Child IDs this chore is disabled for
+    created_date: str = ""  # ISO date for one-shot expiry, e.g. "2026-04-16"
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -167,6 +171,9 @@ class Chore:
             visibility_entity=data.get("visibility_entity", ""),
             visibility_state=data.get("visibility_state", "on"),
             visibility_operator=data.get("visibility_operator", "equals"),
+            enabled=data.get("enabled", True),
+            disabled_for=list(data.get("disabled_for", [])),
+            created_date=data.get("created_date", ""),
             id=data.get("id", generate_id()),
         )
 
@@ -190,6 +197,9 @@ class Chore:
             "visibility_entity": self.visibility_entity,
             "visibility_state": self.visibility_state,
             "visibility_operator": self.visibility_operator,
+            "enabled": self.enabled,
+            "disabled_for": self.disabled_for,
+            "created_date": self.created_date,
             "id": self.id,
         }
 
