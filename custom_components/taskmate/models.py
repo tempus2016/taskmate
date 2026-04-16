@@ -133,7 +133,9 @@ class Chore:
     recurrence_start: str = ""  # optional: ISO date anchor for every_2_days
     first_occurrence_mode: str = "available_immediately"  # available_immediately | wait_for_first_occurrence
     # Dynamic visibility
-    visibility_entity: str = ""  # optional: entity_id (binary_sensor, input_boolean, etc) for dynamic visibility
+    visibility_entity: str = ""  # optional: entity_id to check for visibility
+    visibility_state: str = "on"  # state/value that makes chore visible (e.g. "on", "true", "123")
+    visibility_operator: str = "equals"  # equals, gte, lte, gt, lt, not_equals
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -162,6 +164,8 @@ class Chore:
             recurrence_start=data.get("recurrence_start", ""),
             first_occurrence_mode=data.get("first_occurrence_mode", "available_immediately"),
             visibility_entity=data.get("visibility_entity", ""),
+            visibility_state=data.get("visibility_state", "on"),
+            visibility_operator=data.get("visibility_operator", "equals"),
             id=data.get("id", generate_id()),
         )
 
@@ -183,6 +187,8 @@ class Chore:
             "recurrence_start": self.recurrence_start,
             "first_occurrence_mode": self.first_occurrence_mode,
             "visibility_entity": self.visibility_entity,
+            "visibility_state": self.visibility_state,
+            "visibility_operator": self.visibility_operator,
             "id": self.id,
         }
 
