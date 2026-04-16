@@ -1339,12 +1339,12 @@ class TaskMateChildCard extends LitElement {
       const isAssignedToChild = isAssignedToAll || assignedToStrings.includes(childId);
 
       // Check visibility_entity — if set, chore is only visible if entity is 'on'
+      // If entity doesn't exist yet, default to visible (matches backend behaviour)
       const visibilityEntity = chore.visibility_entity || '';
       let visibilityOK = true;
       if (visibilityEntity) {
         const entityState = this.hass?.states?.[visibilityEntity];
-        // Chore is only visible if entity state is 'on'
-        visibilityOK = entityState?.state === 'on';
+        visibilityOK = entityState ? entityState.state === 'on' : true;
       }
       chore._visibilityEntity = visibilityEntity;
       chore._visibilityOK = visibilityOK;

@@ -82,7 +82,7 @@
           "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
           "completion_sound": "Sound to play when this chore is completed",
-          "visibility_entity": "Entity that controls when this chore is visible (e.g., binary_sensor.dishwasher_running). Chore only appears when entity is 'on'."
+          "visibility_entity": "A binary_sensor, input_boolean, or switch that controls when this chore is visible. Chore only appears when entity state is 'on'."
         }
       },
       "add_chores_bulk": {
@@ -104,7 +104,7 @@
           "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled",
           "completion_sound": "Sound to play when chores are completed",
-          "visibility_entity": "Entity that controls when chores are visible (e.g., binary_sensor.dishwasher_running). Chores only appear when entity is 'on'."
+          "visibility_entity": "A binary_sensor, input_boolean, or switch that controls when chores are visible. Chores only appear when entity state is 'on'."
         }
       },
       "edit_chore": {
@@ -128,7 +128,7 @@
           "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
           "completion_sound": "Sound to play when this chore is completed",
-          "visibility_entity": "Entity that controls when this chore is visible (e.g., binary_sensor.dishwasher_running). Chore only appears when entity is 'on'."
+          "visibility_entity": "A binary_sensor, input_boolean, or switch that controls when this chore is visible. Chore only appears when entity state is 'on'."
         }
       },
       "manage_rewards": {
