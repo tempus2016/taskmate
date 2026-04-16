@@ -425,5 +425,17 @@
   "points_display.editor.stats_to_show": "Statistikk å vise",
   "points_display.editor.show_weekly": "Denne veka sine poeng",
   "points_display.editor.show_streak": "Rekke",
-  "points_display.editor.show_rank": "Rangmedaljar"
+  "points_display.editor.show_rank": "Rangmedaljar",
+
+  "visibility.label_entity": "Synlegheitsentitet",
+  "visibility.label_operator": "Synleghetsoperator",
+  "visibility.label_state": "Synlegheitstilstand",
+  "visibility.operator_equals": "Lik",
+  "visibility.operator_not_equals": "Ikkje lik",
+  "visibility.operator_gte": "Større eller lik (≥)",
+  "visibility.operator_lte": "Mindre eller lik (≤)",
+  "visibility.operator_gt": "Større enn (>)",
+  "visibility.operator_lt": "Mindre enn (<)",
+  "visibility.description_hidden": "Skjult av synlegheitskondisjon",
+  "visibility.description_shown": "Vist av synlegheitskondisjon"
 }
