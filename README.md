@@ -26,6 +26,7 @@
 - [Setup](#setup)
 - [Chores & Rewards](#chores--rewards)
 - [Chore Scheduling](#chore-scheduling)
+- [Dynamic Chore Visibility](#dynamic-chore-visibility)
 - [Bonus Points System](#bonus-points-system)
 - [Penalties](#penalties)
 - [Dashboard Cards](#dashboard-cards)
@@ -115,6 +116,9 @@ Lovelace resources are registered automatically on startup — no manual setup n
 | **Daily Limit** | How many times per day this chore can be completed |
 | **Requires Approval** | If on, completion is pending until a parent approves — points held until approved |
 | **Completion Sound** | Sound played when ticked off — overrides the card default |
+| **Visibility Entity** | *(Optional)* Home Assistant entity ID that controls when this chore appears on the child card. Leave empty to always show the chore. Examples: `binary_sensor.dishwasher`, `sensor.soil_moisture`, `input_boolean.guest_mode`. See [Dynamic Chore Visibility](#dynamic-chore-visibility) for details. |
+| **Visibility Operator** | How to compare the entity's current state with your target value. Options: `Equals`, `Not Equal`, `≥`, `≤`, `>`, `<`. See [Dynamic Chore Visibility](#dynamic-chore-visibility) for guidance. |
+| **Visibility State** | The value to compare against. For text operators (Equals, Not Equal), enter any state value like `on`, `home`, or `away`. For numeric operators, enter a number like `30` or `50.5`. |
  
 ### Reward Types
  
@@ -161,6 +165,58 @@ The chore has a rolling recurrence window. Once completed, it cannot be done aga
 - **First Occurrence** — Available Immediately (default) or Wait for First Scheduled Occurrence
  
 **Child card behaviour:** Use `recurrence_done_mode` on the child card to control what happens when a recurring chore has been completed and is waiting to reset — `dim` (default), `hide`, or `show`.
+ 
+---
+ 
+## Dynamic Chore Visibility
+ 
+Show or hide chores based on the state of a Home Assistant entity. Chores only appear on the child card when the visibility condition is met.
+ 
+### How It Works
+ 
+When you create or edit a chore, set the **Visibility Entity** (e.g., `binary_sensor.dishwasher`), **Visibility Operator** (e.g., `Equals`), and **Visibility State** (e.g., `running`). The chore appears on the child card only when the entity's current state matches your condition.
+ 
+**Examples:**
+- **Dishwasher chores** — Set entity to `binary_sensor.dishwasher` with operator `Equals` and state `on`. Chores only appear when the dishwasher is running.
+- **Soil moisture** — Set entity to `sensor.soil_moisture` with operator `≤` and state `30`. Chores only appear when moisture is 30% or lower.
+- **Guest mode** — Set entity to `input_boolean.guest_mode` with operator `Not Equal` and state `on`. Chores only appear when guests are not over.
+- **Temperature threshold** — Set entity to `sensor.temperature` with operator `>=` and state `25`. Chores only appear when it's warm enough.
+ 
+### Visibility Operators
+ 
+| Operator | Use When | Example |
+|----------|----------|---------|
+| **Equals** | Entity state matches exactly (case-insensitive) | Entity: `binary_sensor.dishwasher`, State: `on` — show when entity is "on" |
+| **Not Equal** | Entity state does not match | Entity: `input_boolean.guest_mode`, State: `on` — show when guests are NOT over |
+| **≥** (Greater or Equal) | Numeric entity value is at or above threshold | Entity: `sensor.battery_percent`, State: `80` — show when battery ≥ 80% |
+| **≤** (Less or Equal) | Numeric entity value is at or below threshold | Entity: `sensor.soil_moisture`, State: `30` — show when moisture ≤ 30% |
+| **>** (Greater Than) | Numeric entity value is above threshold | Entity: `sensor.temperature`, State: `25` — show when temperature > 25°C |
+| **<** (Less Than) | Numeric entity value is below threshold | Entity: `sensor.snow_depth`, State: `10` — show when snow < 10 cm |
+ 
+### Key Points
+ 
+- **Optional** — Leave Visibility Entity empty to always show the chore
+- **Entity types** — Works with any entity: `binary_sensor`, `sensor`, `input_boolean`, `switch`, `number`, etc.
+- **Update frequency** — Visibility is checked every 30 seconds (coordinator refresh interval)
+- **Safe fallback** — If the entity becomes unavailable, the chore defaults to **visible**
+- **Frontend only** — Visibility only hides chores from the child card. Parent services like `taskmate.complete_chore` will still work on hidden chores
+- **Numeric handling** — Numeric operators automatically convert entity state to a number. If conversion fails, the operators fall back to string matching.
+ 
+### Common Use Cases
+ 
+**Chores that only appear when equipment is in use:**
+- Dishwasher loading chores when `binary_sensor.dishwasher` is `on`
+- Laundry folding when `binary_sensor.dryer` is `on`
+ 
+**Seasonal or conditional chores:**
+- Snow shovelling when `sensor.snow_depth` > 5 cm
+- Watering plants when `sensor.soil_moisture` ≤ 40%
+- Yard work when `binary_sensor.guest_mode` is `off`
+ 
+**Time-based or system state:**
+- Tasks only when home alone (entity not set to `away`)
+- Tasks only during school days (custom `input_boolean.school_day`)
+- Tasks only when a family member is home (entity is `home`)
  
 ---
  

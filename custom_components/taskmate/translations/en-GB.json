@@ -74,11 +74,19 @@
           "assigned_to": "Assigned To (leave empty for all children)",
           "requires_approval": "Requires Parent Approval",
           "daily_limit": "Daily Completion Limit",
-          "schedule_mode": "Scheduling Mode"
+          "schedule_mode": "Scheduling Mode",
+          "completion_sound": "Sound to play when this chore is completed",
+          "visibility_entity": "Home Assistant entity ID that controls when this chore appears",
+          "visibility_operator": "How to compare the entity state",
+          "visibility_state": "The value to compare against"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
-          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page."
+          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
+          "completion_sound": "Sound to play when this chore is completed",
+          "visibility_entity": "Home Assistant entity ID that controls when this chore appears. Leave blank to always show the chore. Examples: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. The chore only appears on the child card when the visibility condition is met.",
+          "visibility_operator": "How to compare the entity's current state with your target value:\n• Equals — state exactly matches (e.g., 'on', 'home', 'running')\n• Not Equal — state does not match\n• Greater than or equal (≥) — for numeric values (e.g., 80 for battery ≥ 80%)\n• Less than or equal (≤) — for numeric values (e.g., 30 for moisture ≤ 30%)\n• Greater than (>) — for numeric values\n• Less than (<) — for numeric values",
+          "visibility_state": "The value to compare against. For 'Equals' or 'Not Equal': any text value (e.g., 'on', 'off', 'home', 'away'). For numeric operators (≥, ≤, >, <): enter a number (e.g., 25, 50.5, 100). Example: Entity 'sensor.temperature', Operator '≥', Value '20' shows chore when temperature is 20°C or higher."
         }
       },
       "add_chores_bulk": {
@@ -92,11 +100,19 @@
           "assigned_to": "Assigned To (leave empty for all children)",
           "requires_approval": "Requires Parent Approval",
           "daily_limit": "Daily Completion Limit",
-          "schedule_mode": "Scheduling Mode"
+          "schedule_mode": "Scheduling Mode",
+          "completion_sound": "Sound to play when this chore is completed",
+          "visibility_entity": "Home Assistant entity ID that controls when this chore appears",
+          "visibility_operator": "How to compare the entity state",
+          "visibility_state": "The value to compare against"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
-          "schedule_mode": "Choose how this chore is scheduled"
+          "schedule_mode": "Choose how this chore is scheduled",
+          "completion_sound": "Sound to play when this chore is completed",
+          "visibility_entity": "Home Assistant entity ID that controls when this chore appears. Leave blank to always show the chore. Examples: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. The chore only appears on the child card when the visibility condition is met.",
+          "visibility_operator": "How to compare the entity's current state with your target value:\n• Equals — state exactly matches (e.g., 'on', 'home', 'running')\n• Not Equal — state does not match\n• Greater than or equal (≥) — for numeric values (e.g., 80 for battery ≥ 80%)\n• Less than or equal (≤) — for numeric values (e.g., 30 for moisture ≤ 30%)\n• Greater than (>) — for numeric values\n• Less than (<) — for numeric values",
+          "visibility_state": "The value to compare against. For 'Equals' or 'Not Equal': any text value (e.g., 'on', 'off', 'home', 'away'). For numeric operators (≥, ≤, >, <): enter a number (e.g., 25, 50.5, 100). Example: Entity 'sensor.temperature', Operator '≥', Value '20' shows chore when temperature is 20°C or higher."
         }
       },
       "edit_chore": {
@@ -112,11 +128,19 @@
           "requires_approval": "Requires Parent Approval",
           "daily_limit": "Daily Completion Limit",
           "action": "Action",
-          "schedule_mode": "Scheduling Mode"
+          "schedule_mode": "Scheduling Mode",
+          "completion_sound": "Sound to play when this chore is completed",
+          "visibility_entity": "Home Assistant entity ID that controls when this chore appears",
+          "visibility_operator": "How to compare the entity state",
+          "visibility_state": "The value to compare against"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
-          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page."
+          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
+          "completion_sound": "Sound to play when this chore is completed",
+          "visibility_entity": "Home Assistant entity ID that controls when this chore appears. Leave blank to always show the chore. Examples: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. The chore only appears on the child card when the visibility condition is met.",
+          "visibility_operator": "How to compare the entity's current state with your target value:\n• Equals — state exactly matches (e.g., 'on', 'home', 'running')\n• Not Equal — state does not match\n• Greater than or equal (≥) — for numeric values (e.g., 80 for battery ≥ 80%)\n• Less than or equal (≤) — for numeric values (e.g., 30 for moisture ≤ 30%)\n• Greater than (>) — for numeric values\n• Less than (<) — for numeric values",
+          "visibility_state": "The value to compare against. For 'Equals' or 'Not Equal': any text value (e.g., 'on', 'off', 'home', 'away'). For numeric operators (≥, ≤, >, <): enter a number (e.g., 25, 50.5, 100). Example: Entity 'sensor.temperature', Operator '≥', Value '20' shows chore when temperature is 20°C or higher."
         }
       },
       "manage_rewards": {
@@ -321,6 +345,16 @@
       "options": {
         "reset": "Reset — streak goes to 0 on missed day",
         "pause": "Pause — streak preserved until next completion"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "equals": "Equals — Show when entity state matches exactly",
+        "not_equals": "Not Equal — Show when entity state does not match",
+        "gte": "Greater than or equal (≥) — Show when numeric value is ≥ target",
+        "lte": "Less than or equal (≤) — Show when numeric value is ≤ target",
+        "gt": "Greater than (>) — Show when numeric value is > target",
+        "lt": "Less than (<) — Show when numeric value is < target"
       }
     }
   },
