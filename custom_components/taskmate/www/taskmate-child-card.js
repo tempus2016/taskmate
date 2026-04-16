@@ -1369,12 +1369,19 @@ class TaskMateChildCard extends LitElement {
           }
 
           if (!matched) {
-            // Check state (case-insensitive exact match)
-            if (state.toLowerCase() === visibilityState.toLowerCase()) {
-              visibilityOK = true;
+            // Check state (case-insensitive matching)
+            const stateMatches = state.toLowerCase() === visibilityState.toLowerCase();
+
+            // For not_equals, we want the opposite of equality
+            if (visibilityOperator === 'not_equals') {
+              visibilityOK = !stateMatches;
             } else {
-              // Check attributes for a matching value
-              visibilityOK = false;
+              // For equals and other operators, match is success
+              visibilityOK = stateMatches;
+            }
+
+            if (!visibilityOK && visibilityOperator !== 'not_equals') {
+              // Check attributes for a matching value (only for equals operator)
               if (entityState.attributes) {
                 for (const attrValue of Object.values(entityState.attributes)) {
                   if (String(attrValue).toLowerCase() === visibilityState.toLowerCase()) {
