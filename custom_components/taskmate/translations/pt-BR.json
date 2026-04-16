@@ -74,11 +74,19 @@
           "assigned_to": "Atribuída a (deixe vazio para todas as crianças)",
           "requires_approval": "Requer aprovação dos pais",
           "daily_limit": "Limite diário de conclusão",
-          "schedule_mode": "Modo de agendamento"
+          "schedule_mode": "Modo de agendamento",
+          "completion_sound": "Som de conclusão",
+          "visibility_entity": "Mostrar quando a entidade for (opcional)",
+          "visibility_operator": "Como comparar",
+          "visibility_state": "Valor a comparar"
         },
         "data_description": {
           "daily_limit": "Quantas vezes por dia esta tarefa pode ser concluída",
-          "schedule_mode": "Escolha como esta tarefa é agendada — dias específicos da semana ou intervalo recorrente. As opções de agendamento serão configuradas na página seguinte."
+          "schedule_mode": "Escolha como esta tarefa é agendada — dias específicos da semana ou intervalo recorrente. As opções de agendamento serão configuradas na página seguinte.",
+          "completion_sound": "Som a tocar quando esta tarefa é concluída",
+          "visibility_entity": "ID da entidade Home Assistant que controla quando esta tarefa aparece. Deixe em branco para sempre mostrar a tarefa. Exemplos: binary_sensor.lava_louça, sensor.humidade_solo, input_boolean.modo_visitantes, switch.sala_lavagem. A tarefa só aparece no cartão da criança quando a condição de visibilidade é atendida.",
+          "visibility_operator": "Como comparar o estado atual da entidade com seu valor-alvo:\n• Igual — o estado corresponde exatamente (ex.: 'on', 'home', 'running')\n• Não igual — o estado não corresponde\n• Maior ou igual (≥) — para valores numéricos (ex.: 80 para bateria ≥ 80%)\n• Menor ou igual (≤) — para valores numéricos (ex.: 30 para umidade ≤ 30%)\n• Maior que (>) — para valores numéricos\n• Menor que (<) — para valores numéricos",
+          "visibility_state": "O valor a comparar. Para 'Igual' ou 'Não igual': qualquer valor de texto (ex.: 'on', 'off', 'home', 'away'). Para operadores numéricos (≥, ≤, >, <): digite um número (ex.: 25, 50.5, 100). Exemplo: Entidade 'sensor.temperature', Operador '>=', Valor '20' mostra a tarefa quando a temperatura é 20°C ou mais alta."
         }
       },
       "add_chores_bulk": {
@@ -92,11 +100,19 @@
           "assigned_to": "Atribuída a (deixe vazio para todas as crianças)",
           "requires_approval": "Requer aprovação dos pais",
           "daily_limit": "Limite diário de conclusão",
-          "schedule_mode": "Modo de agendamento"
+          "schedule_mode": "Modo de agendamento",
+          "completion_sound": "Som de conclusão",
+          "visibility_entity": "Mostrar quando a entidade for (opcional)",
+          "visibility_operator": "Como comparar",
+          "visibility_state": "Valor a comparar"
         },
         "data_description": {
           "daily_limit": "Quantas vezes por dia esta tarefa pode ser concluída",
-          "schedule_mode": "Escolha como esta tarefa é agendada"
+          "schedule_mode": "Escolha como esta tarefa é agendada",
+          "completion_sound": "Som a tocar quando as tarefas são concluídas",
+          "visibility_entity": "ID da entidade Home Assistant que controla quando estas tarefas aparecem. Deixe em branco para sempre mostrá-las. Exemplos: binary_sensor.lava_louça, sensor.humidade_solo, input_boolean.modo_visitantes. As tarefas só aparecem no cartão da criança quando a condição é atendida.",
+          "visibility_operator": "Como comparar o estado atual da entidade com seu valor-alvo:\n• Igual — o estado corresponde exatamente (ex.: 'on', 'home')\n• Não igual — o estado não corresponde\n• Maior ou igual (≥) — para valores numéricos\n• Menor ou igual (≤) — para valores numéricos\n• Maior que (>) — para valores numéricos\n• Menor que (<) — para valores numéricos",
+          "visibility_state": "O valor a comparar. Para operadores de texto: qualquer valor (ex.: 'on', 'running'). Para operadores numéricos: um número (ex.: '25', '50.5')."
         }
       },
       "edit_chore": {
@@ -112,11 +128,19 @@
           "requires_approval": "Requer aprovação dos pais",
           "daily_limit": "Limite diário de conclusão",
           "action": "Ação",
-          "schedule_mode": "Modo de agendamento"
+          "schedule_mode": "Modo de agendamento",
+          "completion_sound": "Som de conclusão",
+          "visibility_entity": "Mostrar quando a entidade for (opcional)",
+          "visibility_operator": "Como comparar",
+          "visibility_state": "Valor a comparar"
         },
         "data_description": {
           "daily_limit": "Quantas vezes por dia esta tarefa pode ser concluída",
-          "schedule_mode": "Escolha como esta tarefa é agendada — dias específicos da semana ou intervalo recorrente. As opções de agendamento serão configuradas na página seguinte."
+          "schedule_mode": "Escolha como esta tarefa é agendada — dias específicos da semana ou intervalo recorrente. As opções de agendamento serão configuradas na página seguinte.",
+          "completion_sound": "Som a tocar quando esta tarefa é concluída",
+          "visibility_entity": "ID da entidade Home Assistant que controla quando esta tarefa aparece. Deixe em branco para sempre mostrar a tarefa. Exemplos: binary_sensor.lava_louça, sensor.humidade_solo, input_boolean.modo_visitantes, switch.sala_lavagem. A tarefa só aparece no cartão da criança quando a condição de visibilidade é atendida.",
+          "visibility_operator": "Como comparar o estado atual da entidade com seu valor-alvo:\n• Igual — o estado corresponde exatamente (ex.: 'on', 'home', 'running')\n• Não igual — o estado não corresponde\n• Maior ou igual (≥) — para valores numéricos (ex.: 80 para bateria ≥ 80%)\n• Menor ou igual (≤) — para valores numéricos (ex.: 30 para umidade ≤ 30%)\n• Maior que (>) — para valores numéricos\n• Menor que (<) — para valores numéricos",
+          "visibility_state": "O valor a comparar. Para 'Igual' ou 'Não igual': qualquer valor de texto (ex.: 'on', 'off', 'home', 'away'). Para operadores numéricos (≥, ≤, >, <): digite um número (ex.: 25, 50.5, 100). Exemplo: Entidade 'sensor.temperature', Operador '>=', Valor '20' mostra a tarefa quando a temperatura é 20°C ou mais alta."
         }
       },
       "manage_rewards": {
@@ -242,6 +266,96 @@
     "error": {
       "name_required": "O nome é obrigatório",
       "invalid_milestone_format": "Formato de marco inválido — use pares dias:pontos, ex: 3:5, 7:10, 14:20"
+    }
+  },
+  "selector": {
+    "child_action": {
+      "options": {
+        "save": "Guardar alterações",
+        "delete": "Eliminar criança"
+      }
+    },
+    "chore_action": {
+      "options": {
+        "save": "Guardar alterações",
+        "delete": "Eliminar esta tarefa"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "Guardar alterações",
+        "delete": "Eliminar recompensa"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "Manhã",
+        "afternoon": "Tarde",
+        "evening": "Fim da tarde",
+        "night": "Noite",
+        "anytime": "Qualquer hora"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "Dias específicos da semana",
+        "recurring": "Recorrente (a cada N dias/semanas/meses)"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "Segunda-feira",
+        "tuesday": "Terça-feira",
+        "wednesday": "Quarta-feira",
+        "thursday": "Quinta-feira",
+        "friday": "Sexta-feira",
+        "saturday": "Sábado",
+        "sunday": "Domingo"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "A cada 2 dias",
+        "weekly": "Semanal",
+        "every_2_weeks": "A cada 2 semanas",
+        "monthly": "Mensal",
+        "every_3_months": "A cada 3 meses",
+        "every_6_months": "A cada 6 meses"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "Segunda-feira",
+        "tuesday": "Terça-feira",
+        "wednesday": "Quarta-feira",
+        "thursday": "Quinta-feira",
+        "friday": "Sexta-feira",
+        "saturday": "Sábado",
+        "sunday": "Domingo",
+        "any_day": "Qualquer dia"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "Disponível imediatamente",
+        "wait_for_first_occurrence": "Aguardar primeira ocorrência agendada"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "Reiniciar — sequência volta a 0 num dia falhado",
+        "pause": "Pausar — sequência preservada até próxima conclusão"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "equals": "Igual — Mostrar quando o estado da entidade corresponde exatamente",
+        "not_equals": "Não igual — Mostrar quando o estado da entidade não corresponde",
+        "gte": "Maior ou igual (≥) — Mostrar quando valor numérico é ≥ alvo",
+        "lte": "Menor ou igual (≤) — Mostrar quando valor numérico é ≤ alvo",
+        "gt": "Maior que (>) — Mostrar quando valor numérico é > alvo",
+        "lt": "Menor que (<) — Mostrar quando valor numérico é < alvo"
+      }
     }
   },
   "services": {
