@@ -565,11 +565,15 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         for comp in all_completions:
             if comp.chore_id == chore_id and comp.child_id == child_id:
                 comp_dt = comp.completed_at
-                if hasattr(comp_dt, 'astimezone'):
+                if isinstance(comp_dt, str):
+                    try:
+                        comp_dt = datetime.fromisoformat(comp_dt)
+                    except (ValueError, TypeError):
+                        continue
+                if isinstance(comp_dt, datetime):
                     comp_dt = dt_util.as_local(comp_dt)
-                comp_date = comp_dt.date() if hasattr(comp_dt, 'date') else comp_dt
-                if comp_date == today:
-                    todays_completions_count += 1
+                    if comp_dt.date() == today:
+                        todays_completions_count += 1
 
         daily_limit = getattr(chore, 'daily_limit', 1)
         if todays_completions_count >= daily_limit:

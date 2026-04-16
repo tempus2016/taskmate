@@ -776,8 +776,9 @@ class TaskMateReorderCard extends LitElement {
     e.preventDefault(); // prevent scroll while dragging
     if (!this._touchState) return;
     const touch = e.touches[0];
-    const el = this.shadowRoot.elementFromPoint(touch.clientX, touch.clientY);
-    const item = el?.closest?.(".chore-item");
+    const el = this.shadowRoot?.elementFromPoint(touch.clientX, touch.clientY);
+    if (!el) return;
+    const item = el.closest(".chore-item");
     this.shadowRoot.querySelectorAll(".chore-item").forEach(i => i.classList.remove("drag-over"));
     if (item) item.classList.add("drag-over");
   }
@@ -785,9 +786,9 @@ class TaskMateReorderCard extends LitElement {
   _onTouchEnd(e, category) {
     if (!this._touchState) return;
     const touch = e.changedTouches[0];
-    const el = this.shadowRoot.elementFromPoint(touch.clientX, touch.clientY);
-    const item = el?.closest?.(".chore-item");
-    this.shadowRoot.querySelectorAll(".chore-item").forEach(i => i.classList.remove("drag-over"));
+    const el = this.shadowRoot?.elementFromPoint(touch.clientX, touch.clientY);
+    this.shadowRoot?.querySelectorAll(".chore-item").forEach(i => i.classList.remove("drag-over"));
+    const item = el ? el.closest(".chore-item") : null;
     if (item) {
       const toIndex = parseInt(item.dataset.index);
       const { index: fromIndex } = this._touchState;
