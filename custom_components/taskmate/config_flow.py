@@ -375,7 +375,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Optional("visibility_entity", default=""): selector.EntitySelector(
                 selector.EntitySelectorConfig(
-                    domain=["binary_sensor", "input_boolean", "switch", "sensor"],
+                    domain=["binary_sensor", "input_boolean", "switch"],
                 )
             ),
         }
@@ -582,7 +582,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Optional("visibility_entity", default=""): selector.EntitySelector(
                 selector.EntitySelectorConfig(
-                    domain=["binary_sensor", "input_boolean", "switch", "sensor"],
+                    domain=["binary_sensor", "input_boolean", "switch"],
                 )
             ),
         }
@@ -678,7 +678,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Optional("visibility_entity", default=getattr(chore, 'visibility_entity', "")): selector.EntitySelector(
                 selector.EntitySelectorConfig(
-                    domain=["binary_sensor", "input_boolean", "switch", "sensor"],
+                    domain=["binary_sensor", "input_boolean", "switch"],
                 )
             ),
             vol.Required("action", default="save"): selector.SelectSelector(
