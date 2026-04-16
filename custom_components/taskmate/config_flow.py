@@ -667,6 +667,12 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             if not name:
                 errors["name"] = "name_required"
             else:
+                _LOGGER.debug(
+                    "Edit chore step 1 - visibility fields: entity=%s, operator=%s, state=%s",
+                    user_input.get("visibility_entity"),
+                    user_input.get("visibility_operator"),
+                    user_input.get("visibility_state"),
+                )
                 self._chore_step1_data = {**user_input, "_editing": True, "_chore_id": chore_id}
                 schedule_mode = user_input.get("schedule_mode", "specific_days")
                 if schedule_mode == "specific_days":
@@ -781,6 +787,10 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             chore.visibility_entity = s1.get("visibility_entity", "")
             chore.visibility_state = s1.get("visibility_state", "on")
             chore.visibility_operator = s1.get("visibility_operator", "equals")
+            _LOGGER.debug(
+                "Saving specific_days chore %s - visibility: entity=%s, operator=%s, state=%s",
+                chore.name, chore.visibility_entity, chore.visibility_operator, chore.visibility_state
+            )
             chore.schedule_mode = "specific_days"
             chore.due_days = user_input.get("due_days", [])
             # Clear recurring fields
