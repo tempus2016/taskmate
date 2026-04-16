@@ -1339,24 +1339,52 @@ class TaskMateChildCard extends LitElement {
       const isAssignedToChild = isAssignedToAll || assignedToStrings.includes(childId);
 
       // Check visibility_entity — if set, chore is only visible if entity matches visibility_state
-      // If entity doesn't exist yet, default to visible (matches backend behaviour)
+      // Supports exact match ("on"), numeric comparisons (">=10"), and attributes
       const visibilityEntity = chore.visibility_entity || '';
-      const visibilityState = (chore.visibility_state || 'on').toLowerCase();
+      const visibilityState = chore.visibility_state || 'on';
       let visibilityOK = true;
       if (visibilityEntity) {
         const entityState = this.hass?.states?.[visibilityEntity];
         if (entityState) {
-          // Check state (case-insensitive)
-          if (entityState.state.toLowerCase() === visibilityState) {
-            visibilityOK = true;
-          } else {
-            // Check attributes for a matching value
-            visibilityOK = false;
-            if (entityState.attributes) {
-              for (const attrValue of Object.values(entityState.attributes)) {
-                if (String(attrValue).toLowerCase() === visibilityState) {
-                  visibilityOK = true;
+          const state = entityState.state;
+
+          // Check for numeric comparison operators
+          let matched = false;
+          const numericOps = ['>=', '<=', '==', '!=', '>', '<'];
+          for (const op of numericOps) {
+            if (visibilityState.startsWith(op)) {
+              try {
+                const threshold = parseFloat(visibilityState.slice(op.length).trim());
+                const value = parseFloat(state);
+                if (!isNaN(value) && !isNaN(threshold)) {
+                  if (op === '>=') matched = value >= threshold;
+                  else if (op === '<=') matched = value <= threshold;
+                  else if (op === '==') matched = value === threshold;
+                  else if (op === '!=') matched = value !== threshold;
+                  else if (op === '>') matched = value > threshold;
+                  else if (op === '<') matched = value < threshold;
+                  visibilityOK = matched;
                   break;
+                }
+              } catch (e) {
+                // Fall through to string matching
+              }
+            }
+          }
+
+          if (!matched) {
+            // Check state (case-insensitive exact match)
+            if (state.toLowerCase() === visibilityState.toLowerCase()) {
+              visibilityOK = true;
+            } else {
+              // Check attributes for a matching value
+              visibilityOK = false;
+              if (entityState.attributes) {
+                for (const attrValue of Object.values(entityState.attributes)) {
+                  if (String(attrValue).toLowerCase() === visibilityState.toLowerCase()) {
+                    visibilityOK = true;
+                    break;
+                  }
                 }
               }
             }

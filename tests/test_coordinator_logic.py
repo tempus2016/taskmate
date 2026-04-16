@@ -735,3 +735,48 @@ class TestChoreAvailability:
         now = _date(2024, 3, 20)
         # Should be available (defaults to visible if entity doesn't exist)
         assert self._run(coord, chore, "kid1", now) is True
+
+    def test_visibility_entity_numeric_gte(self):
+        coord = _make_coord()
+        chore = Chore(
+            name="Power chore",
+            schedule_mode="specific_days",
+            visibility_entity="sensor.power",
+            visibility_state=">=10"
+        )
+        coord.storage.get_last_completed = MagicMock(return_value={})
+        coord.hass.states.get = MagicMock(
+            return_value=MagicMock(state='15')  # 15 >= 10
+        )
+        now = _date(2024, 3, 20)
+        assert self._run(coord, chore, "kid1", now) is True
+
+    def test_visibility_entity_numeric_gte_false(self):
+        coord = _make_coord()
+        chore = Chore(
+            name="Power chore",
+            schedule_mode="specific_days",
+            visibility_entity="sensor.power",
+            visibility_state=">=10"
+        )
+        coord.storage.get_last_completed = MagicMock(return_value={})
+        coord.hass.states.get = MagicMock(
+            return_value=MagicMock(state='0')  # 0 >= 10 is False
+        )
+        now = _date(2024, 3, 20)
+        assert self._run(coord, chore, "kid1", now) is False
+
+    def test_visibility_entity_numeric_lt(self):
+        coord = _make_coord()
+        chore = Chore(
+            name="Temperature chore",
+            schedule_mode="specific_days",
+            visibility_entity="sensor.temperature",
+            visibility_state="<20"
+        )
+        coord.storage.get_last_completed = MagicMock(return_value={})
+        coord.hass.states.get = MagicMock(
+            return_value=MagicMock(state='15')  # 15 < 20
+        )
+        now = _date(2024, 3, 20)
+        assert self._run(coord, chore, "kid1", now) is True

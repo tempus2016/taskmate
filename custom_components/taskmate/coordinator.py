@@ -364,17 +364,18 @@ class TaskMateCoordinator(DataUpdateCoordinator):
     def _is_visibility_entity_active(self, visibility_entity: str, visibility_state: str) -> bool:
         """Check if a visibility entity matches the desired state.
 
+        Supports:
+        - Exact match: "on", "123", "true" (case-insensitive)
+        - Numeric comparisons: ">10", ">=50", "<100", "<=25", "==5"
+        - Attribute matching
+
         Args:
             visibility_entity: Entity ID to check (e.g. 'binary_sensor.dishwasher')
-            visibility_state: Desired state value (e.g. 'on', '123', 'true')
+            visibility_state: Desired state value (e.g. 'on', '123', '>=10')
 
-        Returns True if:
-        - No visibility_entity is set
-        - Entity doesn't exist (defaults to visible)
-        - Entity state matches visibility_state (case-insensitive)
-        - Entity attribute matches visibility_state (if entity has attributes)
-
-        Returns False if entity state/attribute doesn't match visibility_state.
+        Returns True if entity matches visibility_state (case-insensitive).
+        Returns False if entity state doesn't match.
+        Defaults to visible if entity doesn't exist.
         """
         if not visibility_entity:
             return True
@@ -389,8 +390,33 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             )
             return True
 
-        # Check state (case-insensitive)
-        if state_obj.state.lower() == visibility_state.lower():
+        entity_state = state_obj.state
+
+        # Check for numeric comparison operators
+        for op in ['>=', '<=', '==', '!=', '>', '<']:
+            if visibility_state.startswith(op):
+                try:
+                    threshold = float(visibility_state[len(op):].strip())
+                    entity_value = float(entity_state)
+
+                    if op == '>=':
+                        return entity_value >= threshold
+                    elif op == '<=':
+                        return entity_value <= threshold
+                    elif op == '==':
+                        return entity_value == threshold
+                    elif op == '!=':
+                        return entity_value != threshold
+                    elif op == '>':
+                        return entity_value > threshold
+                    elif op == '<':
+                        return entity_value < threshold
+                except (ValueError, TypeError):
+                    # If conversion fails, fall through to string matching
+                    pass
+
+        # Check state (case-insensitive exact match)
+        if entity_state.lower() == visibility_state.lower():
             return True
 
         # Check attributes for a matching value

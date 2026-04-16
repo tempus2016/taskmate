@@ -84,7 +84,7 @@
           "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
           "completion_sound": "Sound to play when this chore is completed",
           "visibility_entity": "Entity that controls when this chore is visible (e.g. binary_sensor.dishwasher, sensor.temperature, number.threshold)",
-          "visibility_state": "The state or attribute value that makes the chore visible. Examples: 'on', 'off', 'true', '123', 'running'. Comparison is case-insensitive."
+          "visibility_state": "The state/attribute value or numeric comparison that shows the chore. Examples: 'on' (exact match), '>=10' (power >= 10W), '>5' (temperature > 5°C), '==123' (exact number). Exact matches are case-insensitive."
         }
       },
       "add_chores_bulk": {
@@ -133,7 +133,7 @@
           "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
           "completion_sound": "Sound to play when this chore is completed",
           "visibility_entity": "Entity that controls when this chore is visible (e.g. binary_sensor.dishwasher, sensor.temperature, number.threshold)",
-          "visibility_state": "The state or attribute value that makes the chore visible. Examples: 'on', 'off', 'true', '123', 'running'. Comparison is case-insensitive."
+          "visibility_state": "The state/attribute value or numeric comparison that shows the chore. Examples: 'on' (exact match), '>=10' (power >= 10W), '>5' (temperature > 5°C), '==123' (exact number). Exact matches are case-insensitive."
         }
       },
       "manage_rewards": {
