@@ -74,11 +74,15 @@
           "assigned_to": "Assigned To (leave empty for all children)",
           "requires_approval": "Requires Parent Approval",
           "daily_limit": "Daily Completion Limit",
-          "schedule_mode": "Scheduling Mode"
+          "schedule_mode": "Scheduling Mode",
+          "completion_sound": "Completion Sound",
+          "visibility_entity": "Visibility Entity (optional)"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
-          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page."
+          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
+          "completion_sound": "Sound to play when this chore is completed",
+          "visibility_entity": "Entity that controls when this chore is visible (e.g., binary_sensor.dishwasher_running). Chore only appears when entity is 'on'."
         }
       },
       "add_chores_bulk": {
@@ -92,11 +96,15 @@
           "assigned_to": "Assigned To (leave empty for all children)",
           "requires_approval": "Requires Parent Approval",
           "daily_limit": "Daily Completion Limit",
-          "schedule_mode": "Scheduling Mode"
+          "schedule_mode": "Scheduling Mode",
+          "completion_sound": "Completion Sound",
+          "visibility_entity": "Visibility Entity (optional)"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
-          "schedule_mode": "Choose how this chore is scheduled"
+          "schedule_mode": "Choose how this chore is scheduled",
+          "completion_sound": "Sound to play when chores are completed",
+          "visibility_entity": "Entity that controls when chores are visible (e.g., binary_sensor.dishwasher_running). Chores only appear when entity is 'on'."
         }
       },
       "edit_chore": {
@@ -112,11 +120,15 @@
           "requires_approval": "Requires Parent Approval",
           "daily_limit": "Daily Completion Limit",
           "action": "Action",
-          "schedule_mode": "Scheduling Mode"
+          "schedule_mode": "Scheduling Mode",
+          "completion_sound": "Completion Sound",
+          "visibility_entity": "Visibility Entity (optional)"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
-          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page."
+          "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
+          "completion_sound": "Sound to play when this chore is completed",
+          "visibility_entity": "Entity that controls when this chore is visible (e.g., binary_sensor.dishwasher_running). Chore only appears when entity is 'on'."
         }
       },
       "manage_rewards": {
