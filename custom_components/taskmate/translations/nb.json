@@ -278,6 +278,7 @@
     "chore_action": {
       "options": {
         "save": "Lagre endringer",
+        "re_enable": "Reaktiver oppgave",
         "delete": "Slett denne oppgaven"
       }
     },
@@ -299,7 +300,8 @@
     "schedule_mode": {
       "options": {
         "specific_days": "Bestemte ukedager",
-        "recurring": "Gjentakende (hver N dag/uke/måned)"
+        "recurring": "Gjentakende (hver N dag/uke/måned)",
+        "one_shot": "Engangsoppgave (én dag)"
       }
     },
     "due_days_option": {

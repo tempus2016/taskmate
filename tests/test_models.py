@@ -338,3 +338,61 @@ class TestPointsTransaction:
         )
         restored = PointsTransaction.from_dict(tx.to_dict())
         assert restored.points == -10
+
+
+# ---------------------------------------------------------------------------
+# Chore one-shot fields
+# ---------------------------------------------------------------------------
+
+class TestChoreOneShotFields:
+    def test_new_fields_defaults(self):
+        chore = Chore(name="Test")
+        assert chore.enabled is True
+        assert chore.disabled_for == []
+        assert chore.created_date == ""
+
+    def test_one_shot_roundtrip(self):
+        chore = Chore(
+            name="Wash car",
+            schedule_mode="one_shot",
+            daily_limit=1,
+            enabled=True,
+            disabled_for=["kid1"],
+            created_date="2024-03-20",
+        )
+        d = chore.to_dict()
+        assert d["enabled"] is True
+        assert d["disabled_for"] == ["kid1"]
+        assert d["created_date"] == "2024-03-20"
+        assert d["schedule_mode"] == "one_shot"
+
+        restored = Chore.from_dict(d)
+        assert restored.enabled is True
+        assert restored.disabled_for == ["kid1"]
+        assert restored.created_date == "2024-03-20"
+        assert restored.schedule_mode == "one_shot"
+
+    def test_legacy_chore_missing_new_fields(self):
+        """Old chore dicts without enabled/disabled_for/created_date should load with defaults."""
+        legacy = {
+            "name": "Old chore",
+            "points": 5,
+            "schedule_mode": "specific_days",
+            "id": "legacy123",
+        }
+        chore = Chore.from_dict(legacy)
+        assert chore.enabled is True
+        assert chore.disabled_for == []
+        assert chore.created_date == ""
+
+    def test_disabled_chore_roundtrip(self):
+        chore = Chore(
+            name="Expired task",
+            schedule_mode="one_shot",
+            enabled=False,
+            disabled_for=["kid1", "kid2"],
+            created_date="2024-03-19",
+        )
+        restored = Chore.from_dict(chore.to_dict())
+        assert restored.enabled is False
+        assert restored.disabled_for == ["kid1", "kid2"]
