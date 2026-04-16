@@ -76,13 +76,15 @@
           "daily_limit": "Daily Completion Limit",
           "schedule_mode": "Scheduling Mode",
           "completion_sound": "Completion Sound",
-          "visibility_entity": "Visibility Entity (optional)"
+          "visibility_entity": "Show when entity is (optional)",
+          "visibility_state": "Desired state value"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
           "completion_sound": "Sound to play when this chore is completed",
-          "visibility_entity": "A binary_sensor, input_boolean, or switch that controls when this chore is visible. Chore only appears when entity state is 'on'."
+          "visibility_entity": "Entity that controls when this chore is visible (e.g. binary_sensor.dishwasher, sensor.temperature, number.threshold)",
+          "visibility_state": "The state or attribute value that makes the chore visible. Examples: 'on', 'off', 'true', '123', 'running'. Comparison is case-insensitive."
         }
       },
       "add_chores_bulk": {
@@ -98,7 +100,8 @@
           "daily_limit": "Daily Completion Limit",
           "schedule_mode": "Scheduling Mode",
           "completion_sound": "Completion Sound",
-          "visibility_entity": "Visibility Entity (optional)"
+          "visibility_entity": "Show when entity is (optional)",
+          "visibility_state": "Desired state value"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
@@ -122,13 +125,15 @@
           "action": "Action",
           "schedule_mode": "Scheduling Mode",
           "completion_sound": "Completion Sound",
-          "visibility_entity": "Visibility Entity (optional)"
+          "visibility_entity": "Show when entity is (optional)",
+          "visibility_state": "Desired state value"
         },
         "data_description": {
           "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
           "completion_sound": "Sound to play when this chore is completed",
-          "visibility_entity": "A binary_sensor, input_boolean, or switch that controls when this chore is visible. Chore only appears when entity state is 'on'."
+          "visibility_entity": "Entity that controls when this chore is visible (e.g. binary_sensor.dishwasher, sensor.temperature, number.threshold)",
+          "visibility_state": "The state or attribute value that makes the chore visible. Examples: 'on', 'off', 'true', '123', 'running'. Comparison is case-insensitive."
         }
       },
       "manage_rewards": {

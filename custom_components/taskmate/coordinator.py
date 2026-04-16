@@ -261,6 +261,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         recurrence_start: str = "",
         first_occurrence_mode: str = "available_immediately",
         visibility_entity: str = "",
+        visibility_state: str = "on",
     ) -> Chore:
         """Add a new chore."""
         chore = Chore(
@@ -279,6 +280,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             recurrence_start=recurrence_start,
             first_occurrence_mode=first_occurrence_mode,
             visibility_entity=visibility_entity,
+            visibility_state=visibility_state,
         )
         self.storage.add_chore(chore)
         await self.storage.async_save()
@@ -298,6 +300,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         schedule_mode: str = "specific_days",
         completion_sound: str = "coin",
         visibility_entity: str = "",
+        visibility_state: str = "on",
             ) -> list[Chore]:
         """Add multiple chores at once with shared settings."""
         chores = []
@@ -317,6 +320,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 schedule_mode=schedule_mode,
                 completion_sound=completion_sound,
                 visibility_entity=visibility_entity,
+                visibility_state=visibility_state,
                             )
             self.storage.add_chore(chore)
             chores.append(chore)
@@ -357,18 +361,27 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
     # ── Chore completion operations ───────────────────────────────────────────
 
-    def _is_visibility_entity_active(self, visibility_entity: str) -> bool:
-        """Check if a visibility entity is active (state is 'on').
+    def _is_visibility_entity_active(self, visibility_entity: str, visibility_state: str) -> bool:
+        """Check if a visibility entity matches the desired state.
 
-        Returns True if entity is not set, entity doesn't exist, or entity is 'on'.
-        Returns False for any other state ('off', 'unavailable', 'unknown', etc.).
+        Args:
+            visibility_entity: Entity ID to check (e.g. 'binary_sensor.dishwasher')
+            visibility_state: Desired state value (e.g. 'on', '123', 'true')
+
+        Returns True if:
+        - No visibility_entity is set
+        - Entity doesn't exist (defaults to visible)
+        - Entity state matches visibility_state (case-insensitive)
+        - Entity attribute matches visibility_state (if entity has attributes)
+
+        Returns False if entity state/attribute doesn't match visibility_state.
         """
         if not visibility_entity:
             return True
 
         # Get entity state from Home Assistant
-        state = self.hass.states.get(visibility_entity)
-        if state is None:
+        state_obj = self.hass.states.get(visibility_entity)
+        if state_obj is None:
             # Entity doesn't exist, treat as visible
             _LOGGER.debug(
                 "Visibility entity '%s' not found, defaulting to visible",
@@ -376,8 +389,17 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             )
             return True
 
-        # For binary_sensor, input_boolean, switch, etc., check if state is 'on'
-        return state.state == 'on'
+        # Check state (case-insensitive)
+        if state_obj.state.lower() == visibility_state.lower():
+            return True
+
+        # Check attributes for a matching value
+        if hasattr(state_obj, 'attributes') and state_obj.attributes:
+            for attr_value in state_obj.attributes.values():
+                if str(attr_value).lower() == visibility_state.lower():
+                    return True
+
+        return False
 
     def is_chore_available_for_child(self, chore, child_id: str) -> bool:
         """Check if a recurring chore is available for a child to complete.
@@ -391,7 +413,8 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         """
         # Check visibility entity first — if not visible, chore is not available
         visibility_entity = getattr(chore, 'visibility_entity', '')
-        if not self._is_visibility_entity_active(visibility_entity):
+        visibility_state = getattr(chore, 'visibility_state', 'on')
+        if not self._is_visibility_entity_active(visibility_entity, visibility_state):
             return False
 
         schedule_mode = getattr(chore, 'schedule_mode', 'specific_days')

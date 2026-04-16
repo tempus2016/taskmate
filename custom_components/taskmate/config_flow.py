@@ -375,9 +375,10 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Optional("visibility_entity", default=""): selector.EntitySelector(
                 selector.EntitySelectorConfig(
-                    domain=["binary_sensor", "input_boolean", "switch"],
+                    domain=["binary_sensor", "input_boolean", "switch", "sensor", "number"],
                 )
             ),
+            vol.Optional("visibility_state", default="on"): str,
         }
         if child_options:
             schema_dict[vol.Optional("assigned_to", default=[])] = selector.SelectSelector(
@@ -413,6 +414,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 schedule_mode="specific_days",
                 due_days=user_input.get("due_days", []),
                 visibility_entity=s1.get("visibility_entity", ""),
+                visibility_state=s1.get("visibility_state", "on"),
             )
             self._chore_step1_data = None
             return await self.async_step_manage_chores()
@@ -466,6 +468,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 recurrence_start=recurrence_start,
                 first_occurrence_mode=first_occurrence_mode,
                 visibility_entity=s1.get("visibility_entity", ""),
+                visibility_state=s1.get("visibility_state", "on"),
             )
             self._chore_step1_data = None
             return await self.async_step_manage_chores()
@@ -534,6 +537,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         schedule_mode="specific_days",
                         completion_sound=user_input.get("completion_sound", DEFAULT_COMPLETION_SOUND),
                         visibility_entity=user_input.get("visibility_entity", ""),
+                        visibility_state=user_input.get("visibility_state", "on"),
                     )
                     return await self.async_step_manage_chores()
 
@@ -582,9 +586,10 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Optional("visibility_entity", default=""): selector.EntitySelector(
                 selector.EntitySelectorConfig(
-                    domain=["binary_sensor", "input_boolean", "switch"],
+                    domain=["binary_sensor", "input_boolean", "switch", "sensor", "number"],
                 )
             ),
+            vol.Optional("visibility_state", default="on"): str,
         }
 
         if child_options:
@@ -678,9 +683,10 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Optional("visibility_entity", default=getattr(chore, 'visibility_entity', "")): selector.EntitySelector(
                 selector.EntitySelectorConfig(
-                    domain=["binary_sensor", "input_boolean", "switch"],
+                    domain=["binary_sensor", "input_boolean", "switch", "sensor", "number"],
                 )
             ),
+            vol.Optional("visibility_state", default=getattr(chore, 'visibility_state', "on")): str,
             vol.Required("action", default="save"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=["save", "delete"],
@@ -725,6 +731,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             chore.daily_limit = int(s1.get("daily_limit", chore.daily_limit))
             chore.completion_sound = s1.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
             chore.visibility_entity = s1.get("visibility_entity", "")
+            chore.visibility_state = s1.get("visibility_state", "on")
             chore.schedule_mode = "specific_days"
             chore.due_days = user_input.get("due_days", [])
             # Clear recurring fields
