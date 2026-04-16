@@ -74,11 +74,19 @@
           "assigned_to": "Assigné à (laisser vide pour tous les enfants)",
           "requires_approval": "Nécessite l'approbation d'un parent",
           "daily_limit": "Limite d'exécution quotidienne",
-          "schedule_mode": "Mode de planification"
+          "schedule_mode": "Mode de planification",
+          "completion_sound": "Son de complétion",
+          "visibility_entity": "Afficher quand l'entité est (optionnel)",
+          "visibility_operator": "Comment comparer",
+          "visibility_state": "Valeur à comparer"
         },
         "data_description": {
           "daily_limit": "Nombre de fois par jour que cette corvée peut être effectuée",
-          "schedule_mode": "Choisissez comment cette corvée est planifiée — jours spécifiques de la semaine ou intervalle récurrent. Les options de planification seront configurées sur la page suivante."
+          "schedule_mode": "Choisissez comment cette corvée est planifiée — jours spécifiques de la semaine ou intervalle récurrent. Les options de planification seront configurées sur la page suivante.",
+          "completion_sound": "Son à jouer quand cette corvée est complétée",
+          "visibility_entity": "ID d'entité Home Assistant qui contrôle quand cette corvée apparaît. Laissez vide pour toujours afficher la corvée. Exemples : binary_sensor.lave_vaisselle, sensor.humidite_sol, input_boolean.mode_invite, switch.salle_blanchisserie. La corvée n'apparaît sur la carte enfant que quand la condition de visibilité est satisfaite.",
+          "visibility_operator": "Comment comparer l'état actuel de l'entité avec votre valeur cible :\n• Égale — l'état correspond exactement (ex. : 'on', 'home', 'running')\n• Non égale — l'état ne correspond pas\n• Supérieur ou égal (≥) — pour valeurs numériques (ex. : 80 pour batterie ≥ 80%)\n• Inférieur ou égal (≤) — pour valeurs numériques (ex. : 30 pour humidité ≤ 30%)\n• Supérieur (>) — pour valeurs numériques\n• Inférieur (<) — pour valeurs numériques",
+          "visibility_state": "La valeur à comparer. Pour 'Égale' ou 'Non égale' : tout texte (ex. : 'on', 'off', 'home', 'away'). Pour opérateurs numériques (≥, ≤, >, <) : entrez un nombre (ex. : 25, 50.5, 100). Exemple : Entité 'sensor.temperature', Opérateur '>=', Valeur '20' affiche la corvée quand la température est 20°C ou plus."
         }
       },
       "add_chores_bulk": {
@@ -92,11 +100,19 @@
           "assigned_to": "Assigné à (laisser vide pour tous les enfants)",
           "requires_approval": "Nécessite l'approbation d'un parent",
           "daily_limit": "Limite d'exécution quotidienne",
-          "schedule_mode": "Mode de planification"
+          "schedule_mode": "Mode de planification",
+          "completion_sound": "Son de complétion",
+          "visibility_entity": "Afficher quand l'entité est (optionnel)",
+          "visibility_operator": "Comment comparer",
+          "visibility_state": "Valeur à comparer"
         },
         "data_description": {
           "daily_limit": "Nombre de fois par jour que cette corvée peut être effectuée",
-          "schedule_mode": "Choisissez comment cette corvée est planifiée"
+          "schedule_mode": "Choisissez comment cette corvée est planifiée",
+          "completion_sound": "Son à jouer quand les corvées sont complétées",
+          "visibility_entity": "ID d'entité Home Assistant qui contrôle quand ces corvées apparaissent. Laissez vide pour toujours les afficher. Exemples : binary_sensor.lave_vaisselle, sensor.humidite_sol, input_boolean.mode_invite. Les corvées n'apparaissent sur la carte enfant que quand la condition est satisfaite.",
+          "visibility_operator": "Comment comparer l'état actuel de l'entité avec votre valeur cible :\n• Égale — l'état correspond exactement (ex. : 'on', 'home')\n• Non égale — l'état ne correspond pas\n• Supérieur ou égal (≥) — pour valeurs numériques\n• Inférieur ou égal (≤) — pour valeurs numériques\n• Supérieur (>) — pour valeurs numériques\n• Inférieur (<) — pour valeurs numériques",
+          "visibility_state": "La valeur à comparer. Pour opérateurs texte : tout texte (ex. : 'on', 'running'). Pour opérateurs numériques : un nombre (ex. : '25', '50.5')."
         }
       },
       "edit_chore": {
@@ -112,11 +128,19 @@
           "requires_approval": "Nécessite l'approbation d'un parent",
           "daily_limit": "Limite d'exécution quotidienne",
           "action": "Action",
-          "schedule_mode": "Mode de planification"
+          "schedule_mode": "Mode de planification",
+          "completion_sound": "Son de complétion",
+          "visibility_entity": "Afficher quand l'entité est (optionnel)",
+          "visibility_operator": "Comment comparer",
+          "visibility_state": "Valeur à comparer"
         },
         "data_description": {
           "daily_limit": "Nombre de fois par jour que cette corvée peut être effectuée",
-          "schedule_mode": "Choisissez comment cette corvée est planifiée — jours spécifiques de la semaine ou intervalle récurrent."
+          "schedule_mode": "Choisissez comment cette corvée est planifiée — jours spécifiques de la semaine ou intervalle récurrent.",
+          "completion_sound": "Son à jouer quand cette corvée est complétée",
+          "visibility_entity": "ID d'entité Home Assistant qui contrôle quand cette corvée apparaît. Laissez vide pour toujours afficher la corvée. Exemples : binary_sensor.lave_vaisselle, sensor.humidite_sol, input_boolean.mode_invite, switch.salle_blanchisserie. La corvée n'apparaît sur la carte enfant que quand la condition de visibilité est satisfaite.",
+          "visibility_operator": "Comment comparer l'état actuel de l'entité avec votre valeur cible :\n• Égale — l'état correspond exactement (ex. : 'on', 'home', 'running')\n• Non égale — l'état ne correspond pas\n• Supérieur ou égal (≥) — pour valeurs numériques (ex. : 80 pour batterie ≥ 80%)\n• Inférieur ou égal (≤) — pour valeurs numériques (ex. : 30 pour humidité ≤ 30%)\n• Supérieur (>) — pour valeurs numériques\n• Inférieur (<) — pour valeurs numériques",
+          "visibility_state": "La valeur à comparer. Pour 'Égale' ou 'Non égale' : tout texte (ex. : 'on', 'off', 'home', 'away'). Pour opérateurs numériques (≥, ≤, >, <) : entrez un nombre (ex. : 25, 50.5, 100). Exemple : Entité 'sensor.temperature', Opérateur '>=', Valeur '20' affiche la corvée quand la température est 20°C ou plus."
         }
       },
       "manage_rewards": {
@@ -321,6 +345,16 @@
       "options": {
         "reset": "Réinitialiser — la série retombe à 0 en cas d'oubli",
         "pause": "Pause — la série est préservée jusqu'à la prochaine exécution"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "equals": "Égale — Afficher quand l'état correspond exactement",
+        "not_equals": "Non égale — Afficher quand l'état ne correspond pas",
+        "gte": "Supérieur ou égal (≥) — Afficher quand la valeur est ≥ cible",
+        "lte": "Inférieur ou égal (≤) — Afficher quand la valeur est ≤ cible",
+        "gt": "Supérieur (>) — Afficher quand la valeur est > cible",
+        "lt": "Inférieur (<) — Afficher quand la valeur est < cible"
       }
     }
   },
