@@ -1338,6 +1338,17 @@ class TaskMateChildCard extends LitElement {
       const isAssignedToAll = assignedToStrings.length === 0;
       const isAssignedToChild = isAssignedToAll || assignedToStrings.includes(childId);
 
+      // Check visibility_entity — if set, chore is only visible if entity is 'on'
+      const visibilityEntity = chore.visibility_entity || '';
+      let visibilityOK = true;
+      if (visibilityEntity) {
+        const entityState = this.hass?.states?.[visibilityEntity];
+        // Chore is only visible if entity state is 'on'
+        visibilityOK = entityState?.state === 'on';
+      }
+      chore._visibilityEntity = visibilityEntity;
+      chore._visibilityOK = visibilityOK;
+
       // Check due_days — if chore has due_days set and today isn't one of them
       const dueDays = chore.due_days || [];
       const hasDueDays = dueDays.length > 0;
@@ -1361,7 +1372,8 @@ class TaskMateChildCard extends LitElement {
         return false;
       }
 
-      return matchesTime && isAssignedToChild;
+      // Only return chore if visibility entity allows it
+      return matchesTime && isAssignedToChild && visibilityOK;
     });
 
     // Debug: Log the filtered results
