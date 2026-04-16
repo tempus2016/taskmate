@@ -1,0 +1,801 @@
+/**
+ * TaskMate Approvals Card
+ * A custom Lovelace card for managing pending chore approvals
+ */
+
+const LitElement = customElements.get("hui-masonry-view")
+  ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
+  : Object.getPrototypeOf(customElements.get("hui-view"));
+
+const html = LitElement.prototype.html;
+const css = LitElement.prototype.css;
+
+class TaskMateApprovalsCard extends LitElement {
+  static get properties() {
+    return {
+      hass: { type: Object },
+      config: { type: Object },
+      _loading: { type: Object },
+    };
+  }
+
+  constructor() {
+    super();
+    this._loading = {};
+  }
+
+  _t(key, params) {
+    const fn = window.__taskmate_localize;
+    return fn ? fn(this.hass, key, params) : key;
+  }
+
+  static get styles() {
+    return css`
+      :host {
+        display: block;
+      }
+
+      ha-card { overflow: hidden; }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        background: var(--taskmate-header-bg, #27ae60);
+        color: white;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .header-icon {
+        --mdc-icon-size: 22px;
+        color: white;
+        opacity: 0.9;
+        flex-shrink: 0;
+      }
+
+      .card-title {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .pending-count {
+        background: #e74c3c;
+        color: white;
+        border-radius: 12px;
+        padding: 3px 10px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .card-content { padding: 16px; }
+
+      .day-group {
+        margin-bottom: 20px;
+      }
+
+      .day-header {
+        font-size: 0.95em;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        background: var(--secondary-background-color);
+        border-radius: 8px;
+      }
+
+      .time-group {
+        margin-left: 8px;
+        margin-bottom: 12px;
+      }
+
+      .time-header {
+        font-size: 0.85em;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .time-header ha-icon {
+        --mdi-icon-size: 16px;
+      }
+
+      .approval-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: var(--card-background-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        transition: box-shadow 0.2s ease;
+      }
+
+      .approval-item:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .approval-item.loading {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
+      .item-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .chore-name {
+        font-weight: 500;
+        color: var(--primary-text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .item-details {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.85em;
+        color: var(--secondary-text-color);
+      }
+
+      .child-name {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .points-badge {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--accent-color, #ffc107);
+        color: var(--text-primary-color, #000);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 500;
+      }
+
+      .points-badge ha-icon {
+        --mdi-icon-size: 14px;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 8px;
+      }
+
+      .action-buttons.left {
+        margin-right: 12px;
+      }
+
+      .action-buttons.right {
+        margin-left: 12px;
+      }
+
+      .action-button {
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .action-button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .action-button:active {
+        transform: scale(0.95);
+      }
+
+      .action-button.approve {
+        background: #4caf50;
+        color: white;
+      }
+
+      .action-button.reject {
+        background: #f44336;
+        color: white;
+      }
+
+      .action-button ha-icon {
+        --mdi-icon-size: 20px;
+      }
+
+      .action-button.loading {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        color: var(--secondary-text-color);
+        text-align: center;
+      }
+
+      .empty-state ha-icon {
+        --mdi-icon-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+      }
+
+      .empty-state .message {
+        font-size: 1.1em;
+        margin-bottom: 4px;
+      }
+
+      .empty-state .submessage {
+        font-size: 0.9em;
+        opacity: 0.8;
+      }
+
+      .error-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        color: var(--error-color);
+        text-align: center;
+      }
+
+      .error-state ha-icon {
+        --mdi-icon-size: 48px;
+        margin-bottom: 16px;
+      }
+
+      .loading-spinner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--divider-color);
+        border-top-color: var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+    `;
+  }
+
+  setConfig(config) {
+    if (!config.entity) {
+      throw new Error("Please define an entity (pending_approvals sensor)");
+    }
+    this.config = {
+      title: "",
+      header_color: '#27ae60',
+      ...config,
+    };
+  }
+
+  getCardSize() {
+    return 3;
+  }
+
+  static getConfigElement() {
+    return document.createElement("taskmate-approvals-card-editor");
+  }
+
+  static getStubConfig() {
+    return {
+      entity: "sensor.pending_approvals",
+      title: "Pending Approvals",
+    };
+  }
+
+  render() {
+    if (!this.hass || !this.config) {
+      return html``;
+    }
+
+    const entity = this.hass.states[this.config.entity];
+
+    if (!entity) {
+      return html`
+        <ha-card>
+          <div class="error-state">
+            <ha-icon icon="mdi:alert-circle"></ha-icon>
+            <div>${this._t('common.entity_not_found', { entity: this.config.entity })}</div>
+          </div>
+        </ha-card>
+      `;
+    }
+
+    // Support both the pending_approvals sensor (chore_completions)
+    // and the overview sensor (todays_completions filtered to unapproved)
+    let completions = entity.attributes.chore_completions;
+    if (!completions) {
+      completions = (entity.attributes.todays_completions || []).filter(c => !c.approved);
+    }
+    const filteredCompletions = this._filterByChild(completions);
+    const groupedByDay = this._groupByDay(filteredCompletions);
+    const totalPending = filteredCompletions.length;
+
+    return html`
+      <ha-card>
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#27ae60'}; }</style>
+        <div class="card-header">
+          <div class="header-left">
+            <ha-icon class="header-icon" icon="mdi:check-circle-outline"></ha-icon>
+            <span class="card-title">${this.config.title || this._t('approvals.default_title')}</span>
+          </div>
+          ${totalPending > 0 ? html`<span class="pending-count">${totalPending}</span>` : ""}
+        </div>
+
+        <div class="card-content">
+          ${totalPending === 0
+            ? this._renderEmptyState()
+            : this._renderApprovals(groupedByDay)}
+        </div>
+      </ha-card>
+    `;
+  }
+
+  _filterByChild(completions) {
+    if (!this.config.child_id) {
+      return completions;
+    }
+    return completions.filter(
+      (c) => c.child_id === this.config.child_id
+    );
+  }
+
+  _groupByDay(completions) {
+    const groups = {};
+
+    completions.forEach((completion) => {
+      const date = new Date(completion.completed_at);
+      const dayKey = this._getDayKey(date);
+
+      if (!groups[dayKey]) {
+        groups[dayKey] = {
+          label: this._getDayLabel(date),
+          date: date,
+          timeCategories: {},
+        };
+      }
+
+      const timeCategory = completion.time_category || "anytime";
+      if (!groups[dayKey].timeCategories[timeCategory]) {
+        groups[dayKey].timeCategories[timeCategory] = [];
+      }
+      groups[dayKey].timeCategories[timeCategory].push(completion);
+    });
+
+    // Sort groups by date (most recent first)
+    const sortedGroups = Object.entries(groups).sort(
+      ([, a], [, b]) => b.date - a.date
+    );
+
+    return sortedGroups;
+  }
+
+  _getTimezone() {
+    // Get timezone from Home Assistant config, fallback to browser timezone
+    return this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+
+  _getLocale() {
+    // Get locale from Home Assistant, fallback to browser locale
+    return this.hass?.locale?.language || this.hass?.language || navigator.language || "en";
+  }
+
+  _formatDateInTimezone(date, options = {}) {
+    const timezone = this._getTimezone();
+    const locale = this._getLocale();
+    return date.toLocaleDateString(locale, { ...options, timeZone: timezone });
+  }
+
+  _getDatePartsInTimezone(date) {
+    const timezone = this._getTimezone();
+    // Get year, month, day in the HA timezone
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    // en-CA formats as YYYY-MM-DD
+    const dateStr = formatter.format(date);
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return { year, month, day };
+  }
+
+  _getDayKey(date) {
+    // Use HA timezone to determine the day key
+    const { year, month, day } = this._getDatePartsInTimezone(date);
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+
+  _getDayLabel(date) {
+    const timezone = this._getTimezone();
+
+    // Get today's date parts in HA timezone
+    const now = new Date();
+    const todayParts = this._getDatePartsInTimezone(now);
+    const dateParts = this._getDatePartsInTimezone(date);
+
+    // Calculate yesterday in HA timezone
+    const yesterdayDate = new Date(now);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterdayParts = this._getDatePartsInTimezone(yesterdayDate);
+
+    // Compare date parts
+    const isToday =
+      dateParts.year === todayParts.year &&
+      dateParts.month === todayParts.month &&
+      dateParts.day === todayParts.day;
+
+    const isYesterday =
+      dateParts.year === yesterdayParts.year &&
+      dateParts.month === yesterdayParts.month &&
+      dateParts.day === yesterdayParts.day;
+
+    if (isToday) {
+      return this._t('common.today');
+    } else if (isYesterday) {
+      return this._t('common.yesterday');
+    } else {
+      return this._formatDateInTimezone(date, {
+        month: "short",
+        day: "numeric",
+      });
+    }
+  }
+
+  _getTimeCategoryIcon(category) {
+    const icons = {
+      morning: "mdi:weather-sunset-up",
+      afternoon: "mdi:weather-sunny",
+      evening: "mdi:weather-sunset-down",
+      night: "mdi:weather-night",
+      anytime: "mdi:clock-outline",
+    };
+    return icons[category] || icons.anytime;
+  }
+
+  _getTimeCategoryLabel(category) {
+    const keyMap = {
+      morning: 'common.morning',
+      afternoon: 'common.afternoon',
+      evening: 'common.evening',
+      night: 'common.night',
+      anytime: 'common.anytime',
+    };
+    return keyMap[category] ? this._t(keyMap[category]) : category;
+  }
+
+  _getTimeCategoryOrder(category) {
+    const order = {
+      morning: 0,
+      afternoon: 1,
+      evening: 2,
+      night: 3,
+      anytime: 4,
+    };
+    return order[category] !== undefined ? order[category] : 5;
+  }
+
+  _renderEmptyState() {
+    return html`
+      <div class="empty-state">
+        <ha-icon icon="mdi:check-circle-outline"></ha-icon>
+        <div class="message">${this._t('approvals.all_caught_up')}</div>
+        <div class="submessage">${this._t('approvals.no_pending_approvals')}</div>
+      </div>
+    `;
+  }
+
+  _renderApprovals(groupedByDay) {
+    return html`
+      ${groupedByDay.map(
+        ([dayKey, dayGroup]) => html`
+          <div class="day-group">
+            <div class="day-header">${dayGroup.label}</div>
+            ${this._renderTimeCategories(dayGroup.timeCategories)}
+          </div>
+        `
+      )}
+    `;
+  }
+
+  _renderTimeCategories(timeCategories) {
+    const sortedCategories = Object.entries(timeCategories).sort(
+      ([a], [b]) => this._getTimeCategoryOrder(a) - this._getTimeCategoryOrder(b)
+    );
+
+    return html`
+      ${sortedCategories.map(
+        ([category, completions]) => html`
+          <div class="time-group">
+            <div class="time-header">
+              <ha-icon icon="${this._getTimeCategoryIcon(category)}"></ha-icon>
+              ${this._getTimeCategoryLabel(category)}
+            </div>
+            ${completions.map((completion) => this._renderApprovalItem(completion))}
+          </div>
+        `
+      )}
+    `;
+  }
+
+  _renderApprovalItem(completion) {
+    const isLoading = this._loading[completion.completion_id];
+
+    return html`
+      <div class="approval-item ${isLoading ? "loading" : ""}">
+        <div class="action-buttons left">
+          <button
+            class="action-button reject ${isLoading ? "loading" : ""}"
+            @click="${() => this._handleReject(completion)}"
+            title="${this._t('approvals.reject')}"
+            ?disabled="${isLoading}"
+          >
+            <ha-icon icon="mdi:close"></ha-icon>
+          </button>
+        </div>
+        <div class="item-info">
+          <span class="chore-name">${completion.chore_name}</span>
+          <div class="item-details">
+            <span class="child-name">
+              <ha-icon icon="mdi:account"></ha-icon>
+              ${completion.child_name}
+            </span>
+            <span class="points-badge">
+              <ha-icon icon="mdi:star"></ha-icon>
+              ${completion.points}
+            </span>
+          </div>
+        </div>
+        <div class="action-buttons right">
+          <button
+            class="action-button approve ${isLoading ? "loading" : ""}"
+            @click="${() => this._handleApprove(completion)}"
+            title="${this._t('approvals.approve')}"
+            ?disabled="${isLoading}"
+          >
+            <ha-icon icon="mdi:check"></ha-icon>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  async _handleApprove(completion) {
+    await this._callService("approve_chore", completion.completion_id);
+  }
+
+  async _handleReject(completion) {
+    await this._callService("reject_chore", completion.completion_id);
+  }
+
+  async _callService(service, completionId) {
+    this._loading = { ...this._loading, [completionId]: true };
+    this.requestUpdate();
+
+    try {
+      await this.hass.callService("taskmate", service, {
+        completion_id: completionId,
+      });
+    } catch (error) {
+      console.error(`Failed to call ${service}:`, error);
+      // Show error toast if available
+      if (this.hass.callService) {
+        this.hass.callService("persistent_notification", "create", {
+          title: this._t('approvals.error_title'),
+          message: this._t('approvals.error_failed_service', { service: service.replace("_", " "), message: error.message }),
+          notification_id: `taskmate_error_${completionId}`,
+        });
+      }
+    } finally {
+      this._loading = { ...this._loading, [completionId]: false };
+      this.requestUpdate();
+    }
+  }
+}
+
+// Card Editor
+class TaskMateApprovalsCardEditor extends LitElement {
+  static get properties() {
+    return {
+      hass: { type: Object },
+      config: { type: Object },
+    };
+  }
+
+  _t(key, params) {
+    const fn = window.__taskmate_localize;
+    return fn ? fn(this.hass, key, params) : key;
+  }
+
+  static get styles() {
+    return css`
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 500;
+      }
+
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 1em;
+      }
+
+      .form-group small {
+        display: block;
+        margin-top: 4px;
+        color: var(--secondary-text-color);
+        font-size: 0.85em;
+      }
+    `;
+  }
+
+  setConfig(config) {
+    this.config = config;
+  }
+
+  render() {
+    if (!this.hass || !this.config) {
+      return html``;
+    }
+
+    return html`
+      <div class="form-group">
+        <label>${this._t('common.entity')}</label>
+        <input
+          type="text"
+          .value="${this.config.entity || ""}"
+          @input="${this._entityChanged}"
+          placeholder="sensor.pending_approvals"
+        />
+        <small>${this._t('approvals.editor.entity_helper')}</small>
+      </div>
+
+      <div class="form-group">
+        <label>${this._t('common.title')}</label>
+        <input
+          type="text"
+          .value="${this.config.title || ""}"
+          @input="${this._titleChanged}"
+          placeholder="${this._t('approvals.default_title')}"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>${this._t('approvals.editor.child_id')}</label>
+        <input
+          type="text"
+          .value="${this.config.child_id || ""}"
+          @input="${this._childIdChanged}"
+          placeholder="${this._t('approvals.editor.child_id_placeholder')}"
+        />
+        <small>${this._t('approvals.editor.child_id_helper')}</small>
+      </div>
+        <small>${this._t('common.editor.header_colour_helper')}</small>
+      </div>
+      <div class="field-row">
+        <label class="field-label">${this._t('common.editor.header_colour')}</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input
+            type="color"
+            .value=${this.config.header_color || '#27ae60'}
+            @input=${e => this._updateConfig('header_color', e.target.value)}
+            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
+          />
+          <span style="font-size:13px;color:var(--secondary-text-color);">${this.config.header_color || '#27ae60'}</span>
+          <button
+            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
+            @click=${() => this._updateConfig('header_color', '#27ae60')}
+          >${this._t('common.reset')}</button>
+        </div>
+        <span class="field-helper">${this._t('common.editor.header_colour_helper')}</span>
+      </div>
+    `;
+  }
+
+  _entityChanged(e) {
+    this._updateConfig("entity", e.target.value);
+  }
+
+  _titleChanged(e) {
+    this._updateConfig("title", e.target.value);
+  }
+
+  _childIdChanged(e) {
+    this._updateConfig("child_id", e.target.value || undefined);
+  }
+
+  _updateConfig(key, value) {
+    const newConfig = { ...this.config, [key]: value };
+    if (value === undefined || value === "") {
+      delete newConfig[key];
+    }
+    const event = new CustomEvent("config-changed", {
+      detail: { config: newConfig },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+}
+
+// Register the cards
+customElements.define(
+  "taskmate-approvals-card",
+  TaskMateApprovalsCard
+);
+customElements.define(
+  "taskmate-approvals-card-editor",
+  TaskMateApprovalsCardEditor
+);
+
+// Register with Home Assistant
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: "taskmate-approvals-card",
+  name: "TaskMate Approvals",
+  description: "A card to manage pending chore approvals for TaskMate",
+  preview: true,
+});
+
+// Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM
+const _tmVersion = new URLSearchParams(
+  Array.from(document.querySelectorAll('script[src*="/taskmate-approvals-card.js"]'))
+    .map(s => s.src.split("?")[1]).find(Boolean) || ""
+).get("v") || "?";
+console.info(
+  "%c TASKMATE APPROVALS CARD %c v" + _tmVersion + " ",
+  "background:#27ae60;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
+  "background:#2c3e50;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
+);

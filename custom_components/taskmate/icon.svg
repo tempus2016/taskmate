@@ -1,0 +1,35 @@
+<svg width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Flame body -->
+  <path d="M150 40
+           C200 90, 220 130, 200 180
+           C185 215, 160 240, 150 250
+           C140 240, 115 215, 100 180
+           C80 130, 100 90, 150 40 Z"
+        fill="#FF8C42"
+        stroke="#2E2E2E"
+        stroke-width="6"/>
+
+  <!-- Inner flame -->
+  <path d="M150 85
+           C175 115, 175 150, 150 185
+           C125 150, 125 115, 150 85 Z"
+        fill="#F9C74F"/>
+
+  <!-- Eyes -->
+  <circle cx="135" cy="150" r="6" fill="#2E2E2E"/>
+  <circle cx="165" cy="150" r="6" fill="#2E2E2E"/>
+
+  <!-- Smile -->
+  <path d="M135 170 Q150 180 165 170"
+        stroke="#2E2E2E"
+        stroke-width="4"
+        fill="none"/>
+
+  <!-- Checkmark -->
+  <path d="M120 210 L140 225 L180 195"
+        stroke="#2E2E2E"
+        stroke-width="6"
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>
