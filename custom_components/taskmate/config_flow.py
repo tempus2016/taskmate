@@ -377,7 +377,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Optional("visibility_entity", default=""): selector.EntitySelector(
+            vol.Optional("visibility_entity"): selector.EntitySelector(
                 selector.EntitySelectorConfig()
             ),
         }
@@ -602,7 +602,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Optional("visibility_entity", default=""): selector.EntitySelector(
+            vol.Optional("visibility_entity"): selector.EntitySelector(
                 selector.EntitySelectorConfig()
             ),
         }
@@ -762,32 +762,41 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Optional("visibility_entity", default=getattr(chore, 'visibility_entity', "")): selector.EntitySelector(
-                selector.EntitySelectorConfig()
-            ),
-            vol.Required("visibility_operator", default=getattr(chore, 'visibility_operator', "none") if not getattr(chore, 'visibility_entity', '') else getattr(chore, 'visibility_operator', 'equals')): selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=[
-                        selector.SelectOptionDict(value="none", label="No filter (always show)"),
-                        selector.SelectOptionDict(value="equals", label="Equals (exact match)"),
-                        selector.SelectOptionDict(value="gte", label="Greater than or equal (>=)"),
-                        selector.SelectOptionDict(value="lte", label="Less than or equal (<=)"),
-                        selector.SelectOptionDict(value="gt", label="Greater than (>)"),
-                        selector.SelectOptionDict(value="lt", label="Less than (<)"),
-                        selector.SelectOptionDict(value="not_equals", label="Not equal (!=)"),
-                    ],
-                    mode=selector.SelectSelectorMode.DROPDOWN,
-                )
-            ),
-            vol.Optional("visibility_state", default=getattr(chore, 'visibility_state', '') if getattr(chore, 'visibility_entity', '') else ""): str,
-            vol.Required("action", default="save"): selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=self._get_chore_action_options(chore),
-                    translation_key="chore_action",
-                    mode=selector.SelectSelectorMode.LIST,
-                )
-            ),
         }
+        # Add visibility fields — EntitySelector rejects empty string default,
+        # so only set default when entity has a value
+        vis_entity = getattr(chore, 'visibility_entity', '')
+        if vis_entity:
+            schema_dict[vol.Optional("visibility_entity", default=vis_entity)] = selector.EntitySelector(
+                selector.EntitySelectorConfig()
+            )
+        else:
+            schema_dict[vol.Optional("visibility_entity")] = selector.EntitySelector(
+                selector.EntitySelectorConfig()
+            )
+        schema_dict[vol.Required("visibility_operator", default="none" if not vis_entity else getattr(chore, 'visibility_operator', 'equals'))] = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    selector.SelectOptionDict(value="none", label="No filter (always show)"),
+                    selector.SelectOptionDict(value="equals", label="Equals (exact match)"),
+                    selector.SelectOptionDict(value="gte", label="Greater than or equal (>=)"),
+                    selector.SelectOptionDict(value="lte", label="Less than or equal (<=)"),
+                    selector.SelectOptionDict(value="gt", label="Greater than (>)"),
+                    selector.SelectOptionDict(value="lt", label="Less than (<)"),
+                    selector.SelectOptionDict(value="not_equals", label="Not equal (!=)"),
+                ],
+                mode=selector.SelectSelectorMode.DROPDOWN,
+            )
+        )
+        schema_dict[vol.Optional("visibility_state", default=getattr(chore, 'visibility_state', '') if vis_entity else "")] = str
+        schema_dict[vol.Required("action", default="save")] = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=self._get_chore_action_options(chore),
+                translation_key="chore_action",
+                mode=selector.SelectSelectorMode.LIST,
+            )
+        )
+
         if child_options:
             schema_dict[vol.Optional("assigned_to", default=current_assigned)] = selector.SelectSelector(
                 selector.SelectSelectorConfig(
