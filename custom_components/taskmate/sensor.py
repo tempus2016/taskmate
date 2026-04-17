@@ -326,6 +326,14 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
                 "icon": p.icon,
                 "assigned_to": p.assigned_to or [],
             } for p in data.get("penalties", [])],
+            "bonuses": [{
+                "id": b.id,
+                "name": b.name,
+                "points": b.points,
+                "description": b.description,
+                "icon": b.icon,
+                "assigned_to": b.assigned_to or [],
+            } for b in data.get("bonuses", [])],
         }
 
     @property
