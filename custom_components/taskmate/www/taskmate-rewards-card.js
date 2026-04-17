@@ -4,7 +4,7 @@
  * Shows rewards in a vertical list with star cost, name, description, and progress gauges.
  * Supports regular rewards, Jackpot rewards, and (v3.0+) Pool Mode "savings jar" rewards.
  *
- * Version: 0.1.2
+ * Version: 0.1.3
  * Last Updated: 2026-04-17
  */
 
@@ -1274,51 +1274,20 @@ class TaskMateRewardsCardEditor extends LitElement {
       :host {
         display: block;
       }
-
-      .form-root {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        padding: 8px 0;
-      }
-
-      ha-textfield,
-      ha-select {
+      ha-form {
         display: block;
-        width: 100%;
       }
-
-      /* Toggle rows: label + ha-switch on the right, helper text below */
-      .toggle-row {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
-
-      .toggle-row ha-formfield {
-        display: flex;
-        width: 100%;
-        --mdc-typography-body2-font-size: 1rem;
-      }
-
-      .helper-text {
-        color: var(--secondary-text-color);
-        font-size: 0.82rem;
-        line-height: 1.3;
-      }
-
       .colour-row {
         display: flex;
         flex-direction: column;
         gap: 6px;
+        margin-top: 12px;
       }
-
       .colour-row-inner {
         display: flex;
         align-items: center;
         gap: 12px;
       }
-
       .colour-row-inner input[type="color"] {
         width: 42px;
         height: 36px;
@@ -1328,13 +1297,11 @@ class TaskMateRewardsCardEditor extends LitElement {
         cursor: pointer;
         background: transparent;
       }
-
       .colour-value {
         font-family: var(--code-font-family, monospace);
         font-size: 0.85rem;
         color: var(--secondary-text-color);
       }
-
       .reset-btn {
         font-size: 0.78rem;
         color: var(--secondary-text-color);
@@ -1344,6 +1311,15 @@ class TaskMateRewardsCardEditor extends LitElement {
         padding: 4px 10px;
         cursor: pointer;
       }
+      .colour-label {
+        font-size: 0.95rem;
+        color: var(--primary-text-color);
+      }
+      .colour-helper {
+        color: var(--secondary-text-color);
+        font-size: 0.82rem;
+        line-height: 1.3;
+      }
     `;
   }
 
@@ -1351,138 +1327,142 @@ class TaskMateRewardsCardEditor extends LitElement {
     this.config = config;
   }
 
+  // Build the ha-form schema based on the current state (e.g. child list from the entity).
+  _buildSchema() {
+    const entity = this.config?.entity ? this.hass?.states?.[this.config.entity] : null;
+    const children = entity?.attributes?.children || [];
+
+    const childOptions = [
+      { value: '', label: this._t('rewards.editor.filter_by_child_all') },
+      ...children.map((c) => ({ value: c.id, label: c.name })),
+    ];
+
+    return [
+      {
+        name: 'entity',
+        selector: { entity: { domain: 'sensor' } },
+      },
+      {
+        name: 'title',
+        selector: { text: {} },
+      },
+      {
+        name: 'child_id',
+        selector: { select: { options: childOptions, mode: 'dropdown' } },
+      },
+      {
+        name: 'show_child_badges',
+        selector: { boolean: {} },
+      },
+      {
+        name: 'enable_pool_mode',
+        selector: { boolean: {} },
+      },
+    ];
+  }
+
+  _computeLabel = (schemaEntry) => {
+    const labels = {
+      entity: this._t('rewards.editor.entity'),
+      title: this._t('rewards.editor.title'),
+      child_id: this._t('rewards.editor.filter_by_child'),
+      show_child_badges: this._t('rewards.editor.show_child_badges'),
+      enable_pool_mode: this._t('rewards.editor.enable_pool_mode'),
+    };
+    return labels[schemaEntry.name] ?? schemaEntry.name;
+  };
+
+  _computeHelper = (schemaEntry) => {
+    const helpers = {
+      entity: this._t('rewards.editor.entity_helper'),
+      title: this._t('rewards.editor.title_helper'),
+      child_id: this._t('rewards.editor.filter_by_child_helper'),
+      show_child_badges: this._t('rewards.editor.show_child_badges_helper'),
+      enable_pool_mode: this._t('rewards.editor.enable_pool_mode_helper'),
+    };
+    return helpers[schemaEntry.name] ?? '';
+  };
+
   render() {
     if (!this.hass || !this.config) {
       return html``;
     }
-
-    // Get children from the entity for the dropdown
-    const entity = this.config.entity ? this.hass.states[this.config.entity] : null;
-    const children = entity?.attributes?.children || [];
     const headerColour = this.config.header_color || '#e67e22';
+    // ha-form treats missing keys as empty; normalise for consistent values.
+    const data = {
+      entity: this.config.entity || '',
+      title: this.config.title || '',
+      child_id: this.config.child_id || '',
+      show_child_badges: this.config.show_child_badges !== false,
+      enable_pool_mode: this.config.enable_pool_mode === true,
+    };
 
     return html`
-      <div class="form-root">
-        <ha-textfield
-          label="${this._t('rewards.editor.entity')}"
-          .value="${this.config.entity || ''}"
-          placeholder="sensor.taskmate_overview"
-          .helper="${this._t('rewards.editor.entity_helper')}"
-          helper-persistent
-          @input="${this._entityChanged}"
-        ></ha-textfield>
+      <ha-form
+        .hass=${this.hass}
+        .data=${data}
+        .schema=${this._buildSchema()}
+        .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
+        @value-changed=${this._formChanged}
+      ></ha-form>
 
-        <ha-textfield
-          label="${this._t('rewards.editor.title')}"
-          .value="${this.config.title || ''}"
-          placeholder="Rewards"
-          .helper="${this._t('rewards.editor.title_helper')}"
-          helper-persistent
-          @input="${this._titleChanged}"
-        ></ha-textfield>
-
-        <div>
-          <ha-select
-            label="${this._t('rewards.editor.filter_by_child')}"
-            .value="${this.config.child_id || ''}"
-            @selected="${this._childIdChanged}"
-            @closed="${(e) => e.stopPropagation()}"
-            naturalMenuWidth
-            fixedMenuPosition
-          >
-            <mwc-list-item value="">
-              ${this._t('rewards.editor.filter_by_child_all')}
-            </mwc-list-item>
-            ${children.map(
-              (child) => html`
-                <mwc-list-item value="${child.id}">${child.name}</mwc-list-item>
-              `
-            )}
-          </ha-select>
-          <div class="helper-text" style="margin-top: 4px;">
-            ${this._t('rewards.editor.filter_by_child_helper')}
-          </div>
+      <div class="colour-row">
+        <span class="colour-label">${this._t('common.editor.header_colour')}</span>
+        <div class="colour-row-inner">
+          <input
+            type="color"
+            .value="${headerColour}"
+            @input="${(e) => this._updateConfig('header_color', e.target.value)}"
+          />
+          <span class="colour-value">${headerColour}</span>
+          <button
+            class="reset-btn"
+            @click="${() => this._updateConfig('header_color', '#e67e22')}"
+          >${this._t('common.reset')}</button>
         </div>
-
-        <div class="toggle-row">
-          <ha-formfield label="${this._t('rewards.editor.show_child_badges')}">
-            <ha-switch
-              ?checked="${this.config.show_child_badges !== false}"
-              @change="${this._showChildBadgesChanged}"
-            ></ha-switch>
-          </ha-formfield>
-          <div class="helper-text">
-            ${this._t('rewards.editor.show_child_badges_helper')}
-          </div>
-        </div>
-
-        <div class="toggle-row">
-          <ha-formfield label="${this._t('rewards.editor.enable_pool_mode')}">
-            <ha-switch
-              ?checked="${this.config.enable_pool_mode === true}"
-              @change="${this._enablePoolModeChanged}"
-            ></ha-switch>
-          </ha-formfield>
-          <div class="helper-text">
-            ${this._t('rewards.editor.enable_pool_mode_helper')}
-          </div>
-        </div>
-
-        <div class="colour-row">
-          <label>${this._t('common.editor.header_colour')}</label>
-          <div class="colour-row-inner">
-            <input
-              type="color"
-              .value="${headerColour}"
-              @input="${(e) => this._updateConfig('header_color', e.target.value)}"
-            />
-            <span class="colour-value">${headerColour}</span>
-            <button
-              class="reset-btn"
-              @click="${() => this._updateConfig('header_color', '#e67e22')}"
-            >${this._t('common.reset')}</button>
-          </div>
-          <div class="helper-text">
-            ${this._t('common.editor.header_colour_helper')}
-          </div>
+        <div class="colour-helper">
+          ${this._t('common.editor.header_colour_helper')}
         </div>
       </div>
     `;
   }
 
-  _entityChanged(e) {
-    this._updateConfig("entity", e.target.value);
-  }
-
-  _titleChanged(e) {
-    this._updateConfig("title", e.target.value);
-  }
-
-  _childIdChanged(e) {
-    // ha-select fires "selected" with e.detail.index or the target has .value
-    const value = e.target?.value ?? '';
-    this._updateConfig("child_id", value || null);
-  }
-
-  _showChildBadgesChanged(e) {
-    this._updateConfig("show_child_badges", e.target.checked);
-  }
-
-  _enablePoolModeChanged(e) {
-    this._updateConfig("enable_pool_mode", e.target.checked);
+  _formChanged(e) {
+    const newValues = e.detail.value || {};
+    // Merge into config, removing keys that are empty/default so the YAML stays clean.
+    const newConfig = { ...this.config };
+    for (const [key, value] of Object.entries(newValues)) {
+      if (value === '' || value === null || value === undefined) {
+        delete newConfig[key];
+      } else if (key === 'show_child_badges' && value === true) {
+        // Default is true — omit to keep config minimal
+        delete newConfig[key];
+      } else if (key === 'enable_pool_mode' && value === false) {
+        delete newConfig[key];
+      } else {
+        newConfig[key] = value;
+      }
+    }
+    this._dispatchConfig(newConfig);
   }
 
   _updateConfig(key, value) {
     const newConfig = { ...this.config, [key]: value };
-    if (value === undefined || value === "" || value === null) {
+    if (value === undefined || value === '' || value === null) {
       delete newConfig[key];
     }
-    const event = new CustomEvent("config-changed", {
-      detail: { config: newConfig },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
+    this._dispatchConfig(newConfig);
+  }
+
+  _dispatchConfig(newConfig) {
+    this.dispatchEvent(
+      new CustomEvent('config-changed', {
+        detail: { config: newConfig },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 }
 
