@@ -569,6 +569,86 @@
           "description": "O ID da criança a quem aplicar a penalização"
         }
       }
+    },
+    "add_bonus": {
+      "name": "Adicionar bônus",
+      "description": "Criar uma nova definição de bônus",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "O nome do bônus"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "O número de pontos a conceder quando aplicado"
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Descrição opcional do bônus"
+        },
+        "icon": {
+          "name": "Ícone",
+          "description": "Ícone MDI para o bônus"
+        },
+        "assigned_to": {
+          "name": "Atribuído a",
+          "description": "Lista de IDs de crianças a que este bônus se aplica"
+        }
+      }
+    },
+    "update_bonus": {
+      "name": "Atualizar bônus",
+      "description": "Atualizar uma definição de bônus existente",
+      "fields": {
+        "bonus_id": {
+          "name": "ID do bônus",
+          "description": "O ID do bônus a atualizar"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Novo nome para o bônus"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "Novo valor de pontos"
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Nova descrição"
+        },
+        "icon": {
+          "name": "Ícone",
+          "description": "Novo ícone"
+        },
+        "assigned_to": {
+          "name": "Atribuído a",
+          "description": "Nova lista de IDs de crianças"
+        }
+      }
+    },
+    "remove_bonus": {
+      "name": "Remover bônus",
+      "description": "Remover uma definição de bônus",
+      "fields": {
+        "bonus_id": {
+          "name": "ID do bônus",
+          "description": "O ID do bônus a remover"
+        }
+      }
+    },
+    "apply_bonus": {
+      "name": "Aplicar bônus",
+      "description": "Aplicar um bônus a uma criança, concedendo pontos",
+      "fields": {
+        "bonus_id": {
+          "name": "ID do bônus",
+          "description": "O ID do bônus a aplicar"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança a quem aplicar o bônus"
+        }
+      }
     }
   }
 }
