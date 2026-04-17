@@ -350,7 +350,16 @@ class TaskMateApprovalsCard extends LitElement {
     }
     const filteredCompletions = this._filterByChild(completions);
     const groupedByDay = this._groupByDay(filteredCompletions);
-    const totalPending = filteredCompletions.length;
+
+    // Pending reward claims: supported via either the pending_approvals sensor
+    // (reward_claims attribute) or the overview sensor (pending_reward_claims).
+    let rewardClaims =
+      entity.attributes.reward_claims ||
+      entity.attributes.pending_reward_claims ||
+      [];
+    const filteredClaims = this._filterClaimsByChild(rewardClaims);
+
+    const totalPending = filteredCompletions.length + filteredClaims.length;
 
     return html`
       <ha-card>
@@ -366,7 +375,10 @@ class TaskMateApprovalsCard extends LitElement {
         <div class="card-content">
           ${totalPending === 0
             ? this._renderEmptyState()
-            : this._renderApprovals(groupedByDay)}
+            : html`
+                ${filteredClaims.length > 0 ? this._renderRewardClaims(filteredClaims) : ''}
+                ${filteredCompletions.length > 0 ? this._renderApprovals(groupedByDay) : ''}
+              `}
         </div>
       </ha-card>
     `;
@@ -379,6 +391,103 @@ class TaskMateApprovalsCard extends LitElement {
     return completions.filter(
       (c) => c.child_id === this.config.child_id
     );
+  }
+
+  _filterClaimsByChild(claims) {
+    if (!this.config.child_id) return claims;
+    return claims.filter((c) => c.child_id === this.config.child_id);
+  }
+
+  _renderRewardClaims(claims) {
+    return html`
+      <div class="day-group">
+        <div class="day-header">
+          <ha-icon icon="mdi:gift-outline" style="--mdc-icon-size: 18px; vertical-align: -3px; margin-right: 6px;"></ha-icon>
+          ${this._t('approvals.reward_claims_section') || 'Reward claims'}
+        </div>
+        ${claims.map((claim) => this._renderClaimItem(claim))}
+      </div>
+    `;
+  }
+
+  _renderClaimItem(claim) {
+    const claimId = claim.claim_id || claim.id;
+    const isLoading = this._loading[claimId];
+    const rewardName = claim.reward_name || '';
+    const childName = claim.child_name || '';
+    const cost = claim.cost ?? 0;
+
+    return html`
+      <div class="approval-item ${isLoading ? 'loading' : ''}">
+        <div class="action-buttons left">
+          <button
+            class="action-button reject ${isLoading ? 'loading' : ''}"
+            @click="${() => this._handleRejectReward(claimId)}"
+            title="${this._t('approvals.reject')}"
+            ?disabled="${isLoading}"
+          >
+            <ha-icon icon="mdi:close"></ha-icon>
+          </button>
+        </div>
+        <div class="item-info">
+          <span class="chore-name">
+            <ha-icon icon="${claim.reward_icon || 'mdi:gift'}" style="--mdc-icon-size: 16px; vertical-align: -3px; margin-right: 4px;"></ha-icon>
+            ${rewardName}
+          </span>
+          <div class="item-details">
+            <span class="child-name">
+              <ha-icon icon="mdi:account"></ha-icon>
+              ${childName}
+            </span>
+            <span class="points-badge">
+              <ha-icon icon="mdi:star"></ha-icon>
+              ${cost}
+            </span>
+          </div>
+        </div>
+        <div class="action-buttons right">
+          <button
+            class="action-button approve ${isLoading ? 'loading' : ''}"
+            @click="${() => this._handleApproveReward(claimId)}"
+            title="${this._t('approvals.approve')}"
+            ?disabled="${isLoading}"
+          >
+            <ha-icon icon="mdi:check"></ha-icon>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  async _handleApproveReward(claimId) {
+    await this._callClaimService('approve_reward', claimId);
+  }
+
+  async _handleRejectReward(claimId) {
+    await this._callClaimService('reject_reward', claimId);
+  }
+
+  async _callClaimService(service, claimId) {
+    this._loading = { ...this._loading, [claimId]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService('taskmate', service, { claim_id: claimId });
+    } catch (error) {
+      console.error(`Failed to call ${service}:`, error);
+      if (this.hass.callService) {
+        this.hass.callService('persistent_notification', 'create', {
+          title: this._t('approvals.error_title'),
+          message: this._t('approvals.error_failed_service', {
+            service: service.replace('_', ' '),
+            message: error.message,
+          }),
+          notification_id: `taskmate_error_${claimId}`,
+        });
+      }
+    } finally {
+      this._loading = { ...this._loading, [claimId]: false };
+      this.requestUpdate();
+    }
   }
 
   _groupByDay(completions) {
