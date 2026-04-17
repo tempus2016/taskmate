@@ -4,7 +4,7 @@
  * Shows rewards in a vertical list with star cost, name, description, and progress gauges.
  * Supports regular rewards, Jackpot rewards, and (v3.0+) Pool Mode "savings jar" rewards.
  *
- * Version: 0.0.9
+ * Version: 0.1.0
  * Last Updated: 2026-04-17
  */
 
@@ -688,29 +688,36 @@ class TaskMateRewardsCard extends LitElement {
         margin-left: 4px;
       }
 
-      .allocation-controls {
+      /* Pool Mode controls — render BELOW the progress bar, full width */
+      .pool-controls {
         display: flex;
-        gap: 4px;
+        gap: 6px;
         flex-wrap: wrap;
-        justify-content: flex-end;
-        margin-top: 6px;
+        justify-content: flex-start;
+        margin-top: 4px;
+      }
+
+      .pool-controls-redeem {
+        justify-content: flex-start;
       }
 
       .alloc-btn {
-        padding: 5px 10px;
+        flex: 1 1 0;
+        min-width: 56px;
+        padding: 7px 10px;
         border-radius: 8px;
         border: none;
         cursor: pointer;
         background: linear-gradient(135deg, #3498db, #2980b9);
         color: white;
-        font-weight: 600;
-        font-size: 0.8rem;
+        font-weight: 700;
+        font-size: 0.9rem;
         transition: transform 0.1s, opacity 0.1s, box-shadow 0.15s;
         box-shadow: 0 1px 3px rgba(52, 152, 219, 0.3);
       }
 
       .alloc-btn:hover:not(:disabled) {
-        transform: scale(1.08);
+        transform: scale(1.04);
         box-shadow: 0 2px 6px rgba(52, 152, 219, 0.5);
       }
 
@@ -722,15 +729,17 @@ class TaskMateRewardsCard extends LitElement {
       .redeem-btn {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 6px;
-        padding: 8px 14px;
+        flex: 1 1 auto;
+        padding: 9px 18px;
         border-radius: 20px;
         border: none;
         cursor: pointer;
         background: linear-gradient(135deg, #2ecc71, #27ae60);
         color: white;
         font-weight: 700;
-        font-size: 0.88rem;
+        font-size: 0.95rem;
         box-shadow: 0 3px 10px rgba(46, 204, 113, 0.35);
         animation: pulse-green 1.6s ease-in-out infinite;
       }
@@ -741,13 +750,7 @@ class TaskMateRewardsCard extends LitElement {
 
       @keyframes pulse-green {
         0%, 100% { box-shadow: 0 3px 10px rgba(46, 204, 113, 0.35); transform: scale(1); }
-        50% { box-shadow: 0 3px 18px rgba(46, 204, 113, 0.65); transform: scale(1.03); }
-      }
-
-      .reward-row.pool-mode .reward-right-col {
-        min-width: 120px;
-        align-items: flex-end;
-        justify-content: center;
+        50% { box-shadow: 0 3px 18px rgba(46, 204, 113, 0.65); transform: scale(1.02); }
       }
 
       .pool-locked-note {
@@ -984,6 +987,10 @@ class TaskMateRewardsCard extends LitElement {
     const isLoading = this._loading[reward.id];
     const isAllocLoading = this._loading[`${reward.id}_alloc`];
 
+    // Pool-mode controls render below the progress bar (full width) rather than
+    // in the right column, so the progress bar keeps its full width.
+    const showPoolControls = enablePoolMode && childId && !hasPendingClaim;
+
     return html`
       <div class="reward-row ${isJackpot ? 'jackpot' : ''} ${hasPendingClaim ? 'pending-approval' : ''} ${enablePoolMode ? 'pool-mode' : ''}">
         <div class="cost-badge">
@@ -1001,6 +1008,10 @@ class TaskMateRewardsCard extends LitElement {
           ${isJackpot
             ? this._renderJackpotProgress(reward, childContributions, currentStars, pointsIcon, displayCost)
             : this._renderRegularProgress(currentStars, displayCost, percentage, pointsIcon)}
+
+          ${showPoolControls
+            ? this._renderPoolControls(reward, relevantChild, spendable, poolFull, isAllocLoading, isLoading)
+            : ''}
 
           ${hasPendingClaim ? html`
             <div class="pending-label">
@@ -1023,23 +1034,20 @@ class TaskMateRewardsCard extends LitElement {
             : ""}
         </div>
         <div class="reward-right-col">
-          ${enablePoolMode && childId && !hasPendingClaim
-            ? this._renderPoolControls(reward, relevantChild, spendable, poolFull, isAllocLoading, isLoading)
-            : (!hasPendingClaim && childId ? html`
-                <button
-                  class="claim-btn ${!canAfford ? 'cant-afford' : ''}"
-                  ?disabled="${!canAfford || isLoading}"
-                  @click="${(e) => { e.stopPropagation(); this._handleClaim(reward, relevantChild); }}"
-                  title="${canAfford ? this._t('rewards.claim_reward') : this._t('rewards.not_enough_points')}"
-                >
-                  <ha-icon icon="${isLoading ? 'mdi:loading' : rewardIcon}"></ha-icon>
-                </button>
-              ` : html`
-                <div class="reward-icon-container">
-                  <ha-icon icon="${rewardIcon}"></ha-icon>
-                </div>
-              `)
-          }
+          ${!enablePoolMode && !hasPendingClaim && childId ? html`
+            <button
+              class="claim-btn ${!canAfford ? 'cant-afford' : ''}"
+              ?disabled="${!canAfford || isLoading}"
+              @click="${(e) => { e.stopPropagation(); this._handleClaim(reward, relevantChild); }}"
+              title="${canAfford ? this._t('rewards.claim_reward') : this._t('rewards.not_enough_points')}"
+            >
+              <ha-icon icon="${isLoading ? 'mdi:loading' : rewardIcon}"></ha-icon>
+            </button>
+          ` : html`
+            <div class="reward-icon-container">
+              <ha-icon icon="${rewardIcon}"></ha-icon>
+            </div>
+          `}
         </div>
       </div>
     `;
@@ -1048,20 +1056,22 @@ class TaskMateRewardsCard extends LitElement {
   _renderPoolControls(reward, child, spendable, poolFull, isAllocLoading, isRedeemLoading) {
     if (poolFull) {
       return html`
-        <button
-          class="redeem-btn"
-          ?disabled="${isRedeemLoading}"
-          @click="${(e) => { e.stopPropagation(); this._handleRedeem(reward, child); }}"
-          title="${this._t('rewards.redeem')}"
-        >
-          <ha-icon icon="${isRedeemLoading ? 'mdi:loading' : 'mdi:check-circle'}"></ha-icon>
-          ${this._t('rewards.redeem')}
-        </button>
+        <div class="pool-controls pool-controls-redeem">
+          <button
+            class="redeem-btn"
+            ?disabled="${isRedeemLoading}"
+            @click="${(e) => { e.stopPropagation(); this._handleRedeem(reward, child); }}"
+            title="${this._t('rewards.redeem')}"
+          >
+            <ha-icon icon="${isRedeemLoading ? 'mdi:loading' : 'mdi:check-circle'}"></ha-icon>
+            ${this._t('rewards.redeem')}
+          </button>
+        </div>
       `;
     }
     const amounts = [1, 5, 10];
     return html`
-      <div class="allocation-controls">
+      <div class="pool-controls">
         ${amounts.map((amt) => {
           const disabled = !child || spendable < amt || isAllocLoading;
           const tooltip = this._depositTooltip({ child, spendable, amt, isAllocLoading });
