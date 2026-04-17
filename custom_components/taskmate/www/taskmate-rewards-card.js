@@ -4,7 +4,7 @@
  * Shows rewards in a vertical list with star cost, name, description, and progress gauges.
  * Supports regular rewards, Jackpot rewards, and (v3.0+) Pool Mode "savings jar" rewards.
  *
- * Version: 0.1.0
+ * Version: 0.1.1
  * Last Updated: 2026-04-17
  */
 
@@ -1263,53 +1263,78 @@ class TaskMateRewardsCardEditor extends LitElement {
 
   static get styles() {
     return css`
-      .form-group {
-        margin-bottom: 16px;
-      }
-
-      .form-group label {
+      :host {
         display: block;
-        margin-bottom: 4px;
-        font-weight: 500;
       }
 
-      .form-group input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 1em;
-        box-sizing: border-box;
+      .form-root {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 8px 0;
       }
 
-      .form-group input[type="text"]:focus,
-      .form-group select:focus {
-        outline: none;
-        border-color: var(--primary-color);
-      }
-
-      .form-group select {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 1em;
-        box-sizing: border-box;
-      }
-
-      .form-group label input[type="checkbox"] {
-        margin-right: 8px;
-      }
-
-      .form-group small {
+      ha-textfield,
+      ha-select {
         display: block;
-        margin-top: 4px;
+        width: 100%;
+      }
+
+      /* Toggle rows: label + ha-switch on the right, helper text below */
+      .toggle-row {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .toggle-row ha-formfield {
+        display: flex;
+        width: 100%;
+        --mdc-typography-body2-font-size: 1rem;
+      }
+
+      .helper-text {
         color: var(--secondary-text-color);
-        font-size: 0.85em;
+        font-size: 0.82rem;
+        line-height: 1.3;
+      }
+
+      .colour-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .colour-row-inner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .colour-row-inner input[type="color"] {
+        width: 42px;
+        height: 36px;
+        padding: 2px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        border-radius: 6px;
+        cursor: pointer;
+        background: transparent;
+      }
+
+      .colour-value {
+        font-family: var(--code-font-family, monospace);
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+      }
+
+      .reset-btn {
+        font-size: 0.78rem;
+        color: var(--secondary-text-color);
+        background: none;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        border-radius: 4px;
+        padding: 4px 10px;
+        cursor: pointer;
       }
     `;
   }
@@ -1326,86 +1351,93 @@ class TaskMateRewardsCardEditor extends LitElement {
     // Get children from the entity for the dropdown
     const entity = this.config.entity ? this.hass.states[this.config.entity] : null;
     const children = entity?.attributes?.children || [];
+    const headerColour = this.config.header_color || '#e67e22';
 
     return html`
-      <div class="form-group">
-        <label>${this._t('rewards.editor.entity')}</label>
-        <input
-          type="text"
-          .value="${this.config.entity || ""}"
-          @input="${this._entityChanged}"
+      <div class="form-root">
+        <ha-textfield
+          label="${this._t('rewards.editor.entity')}"
+          .value="${this.config.entity || ''}"
           placeholder="sensor.taskmate_overview"
-        />
-        <small>${this._t('rewards.editor.entity_helper')}</small>
-      </div>
+          .helper="${this._t('rewards.editor.entity_helper')}"
+          helper-persistent
+          @input="${this._entityChanged}"
+        ></ha-textfield>
 
-      <div class="form-group">
-        <label>${this._t('rewards.editor.title')}</label>
-        <input
-          type="text"
-          .value="${this.config.title || ""}"
-          @input="${this._titleChanged}"
+        <ha-textfield
+          label="${this._t('rewards.editor.title')}"
+          .value="${this.config.title || ''}"
           placeholder="Rewards"
-        />
-        <small>${this._t('rewards.editor.title_helper')}</small>
-      </div>
+          .helper="${this._t('rewards.editor.title_helper')}"
+          helper-persistent
+          @input="${this._titleChanged}"
+        ></ha-textfield>
 
-      <div class="form-group">
-        <label>${this._t('rewards.editor.filter_by_child')}</label>
-        <select @change="${this._childIdChanged}">
-          <option value="" ?selected="${!this.config.child_id}">${this._t('rewards.editor.filter_by_child_all')}</option>
-          ${children.map(
-            (child) => html`
-              <option value="${child.id}" ?selected="${this.config.child_id === child.id}">
-                ${child.name}
-              </option>
-            `
-          )}
-        </select>
-        <small>${this._t('rewards.editor.filter_by_child_helper')}</small>
-      </div>
-
-      <div class="form-group">
-        <label>
-          <input
-            type="checkbox"
-            ?checked="${this.config.show_child_badges !== false}"
-            @change="${this._showChildBadgesChanged}"
-          />
-          ${this._t('rewards.editor.show_child_badges')}
-        </label>
-        <small>${this._t('rewards.editor.show_child_badges_helper')}</small>
-      </div>
-
-      <div class="form-group">
-        <label>
-          <input
-            type="checkbox"
-            ?checked="${this.config.enable_pool_mode === true}"
-            @change="${this._enablePoolModeChanged}"
-          />
-          ${this._t('rewards.editor.enable_pool_mode')}
-        </label>
-        <small>${this._t('rewards.editor.enable_pool_mode_helper')}</small>
-      </div>
-        <span class="field-helper">${this._t('common.editor.header_colour_helper')}</span>
-      </div>
-      <div class="field-row">
-        <label class="field-label">${this._t('common.editor.header_colour')}</label>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input
-            type="color"
-            .value=${this.config.header_color || '#e67e22'}
-            @input=${e => this._updateConfig('header_color', e.target.value)}
-            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
-          />
-          <span style="font-size:13px;color:var(--secondary-text-color);">${this.config.header_color || '#e67e22'}</span>
-          <button
-            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
-            @click=${() => this._updateConfig('header_color', '#e67e22')}
-          >${this._t('common.reset')}</button>
+        <div>
+          <ha-select
+            label="${this._t('rewards.editor.filter_by_child')}"
+            .value="${this.config.child_id || ''}"
+            @selected="${this._childIdChanged}"
+            @closed="${(e) => e.stopPropagation()}"
+            naturalMenuWidth
+            fixedMenuPosition
+          >
+            <mwc-list-item value="">
+              ${this._t('rewards.editor.filter_by_child_all')}
+            </mwc-list-item>
+            ${children.map(
+              (child) => html`
+                <mwc-list-item value="${child.id}">${child.name}</mwc-list-item>
+              `
+            )}
+          </ha-select>
+          <div class="helper-text" style="margin-top: 4px;">
+            ${this._t('rewards.editor.filter_by_child_helper')}
+          </div>
         </div>
-        <span class="field-helper">${this._t('common.editor.header_colour_helper')}</span>
+
+        <div class="toggle-row">
+          <ha-formfield label="${this._t('rewards.editor.show_child_badges')}">
+            <ha-switch
+              ?checked="${this.config.show_child_badges !== false}"
+              @change="${this._showChildBadgesChanged}"
+            ></ha-switch>
+          </ha-formfield>
+          <div class="helper-text">
+            ${this._t('rewards.editor.show_child_badges_helper')}
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <ha-formfield label="${this._t('rewards.editor.enable_pool_mode')}">
+            <ha-switch
+              ?checked="${this.config.enable_pool_mode === true}"
+              @change="${this._enablePoolModeChanged}"
+            ></ha-switch>
+          </ha-formfield>
+          <div class="helper-text">
+            ${this._t('rewards.editor.enable_pool_mode_helper')}
+          </div>
+        </div>
+
+        <div class="colour-row">
+          <label>${this._t('common.editor.header_colour')}</label>
+          <div class="colour-row-inner">
+            <input
+              type="color"
+              .value="${headerColour}"
+              @input="${(e) => this._updateConfig('header_color', e.target.value)}"
+            />
+            <span class="colour-value">${headerColour}</span>
+            <button
+              class="reset-btn"
+              @click="${() => this._updateConfig('header_color', '#e67e22')}"
+            >${this._t('common.reset')}</button>
+          </div>
+          <div class="helper-text">
+            ${this._t('common.editor.header_colour_helper')}
+          </div>
+        </div>
       </div>
     `;
   }
@@ -1419,7 +1451,8 @@ class TaskMateRewardsCardEditor extends LitElement {
   }
 
   _childIdChanged(e) {
-    const value = e.detail?.value ?? e.target?.value;
+    // ha-select fires "selected" with e.detail.index or the target has .value
+    const value = e.target?.value ?? '';
     this._updateConfig("child_id", value || null);
   }
 
