@@ -4,7 +4,7 @@
  * Shows rewards in a vertical list with star cost, name, description, and progress gauges.
  * Supports regular rewards, Jackpot rewards, and (v3.0+) Pool Mode "savings jar" rewards.
  *
- * Version: 0.0.8
+ * Version: 0.0.9
  * Last Updated: 2026-04-17
  */
 
@@ -1062,16 +1062,30 @@ class TaskMateRewardsCard extends LitElement {
     const amounts = [1, 5, 10];
     return html`
       <div class="allocation-controls">
-        ${amounts.map((amt) => html`
-          <button
-            class="alloc-btn"
-            ?disabled="${!child || spendable < amt || isAllocLoading}"
-            @click="${(e) => { e.stopPropagation(); this._handleAllocate(reward, child, amt); }}"
-            title="${this._t('rewards.deposit_points', { amount: amt })}"
-          >+${amt}</button>
-        `)}
+        ${amounts.map((amt) => {
+          const disabled = !child || spendable < amt || isAllocLoading;
+          const tooltip = this._depositTooltip({ child, spendable, amt, isAllocLoading });
+          return html`
+            <button
+              class="alloc-btn"
+              ?disabled="${disabled}"
+              @click="${(e) => { e.stopPropagation(); this._handleAllocate(reward, child, amt); }}"
+              title="${tooltip}"
+              aria-label="${tooltip}"
+            >+${amt}</button>
+          `;
+        })}
       </div>
     `;
+  }
+
+  _depositTooltip({ child, spendable, amt, isAllocLoading }) {
+    if (isAllocLoading) return this._t('rewards.deposit_disabled_loading');
+    if (!child) return this._t('rewards.deposit_disabled_no_child');
+    if (spendable < amt) {
+      return this._t('rewards.deposit_disabled_insufficient', { spendable });
+    }
+    return this._t('rewards.deposit_points', { amount: amt });
   }
 
   async _handleClaim(reward, child) {
