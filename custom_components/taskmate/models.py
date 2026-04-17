@@ -328,6 +328,35 @@ class RewardClaim:
 
 
 @dataclass
+class PoolAllocation:
+    """Represents points a child has deposited into a specific reward's pool."""
+
+    child_id: str
+    reward_id: str
+    allocated_points: int = 0
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "PoolAllocation":
+        """Create a PoolAllocation from a dictionary."""
+        return cls(
+            child_id=data.get("child_id", ""),
+            reward_id=data.get("reward_id", ""),
+            allocated_points=data.get("allocated_points", 0),
+            id=data.get("id", generate_id()),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "child_id": self.child_id,
+            "reward_id": self.reward_id,
+            "allocated_points": self.allocated_points,
+            "id": self.id,
+        }
+
+
+@dataclass
 class Penalty:
     """Represents a penalty that deducts points from a child."""
 

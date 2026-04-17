@@ -199,6 +199,16 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
                 cost = reward.cost
                 committed_points_by_child[rc.child_id] = committed_points_by_child.get(rc.child_id, 0) + cost
 
+        # Build pool allocation lookups for v3.0 pool mode
+        pool_alloc_objs = data.get("pool_allocations", [])
+        pool_by_child_reward: dict[str, dict[str, int]] = {}
+        pool_total_by_reward: dict[str, int] = {}
+        total_allocated_by_child: dict[str, int] = {}
+        for pa in pool_alloc_objs:
+            pool_by_child_reward.setdefault(pa.child_id, {})[pa.reward_id] = pa.allocated_points
+            pool_total_by_reward[pa.reward_id] = pool_total_by_reward.get(pa.reward_id, 0) + pa.allocated_points
+            total_allocated_by_child[pa.child_id] = total_allocated_by_child.get(pa.child_id, 0) + pa.allocated_points
+
         # Build chores list with recurrence fields and availability per child
         chores_list = []
         for c in chores:
@@ -247,6 +257,15 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
             # Static cost for all children
             calculated_costs = {child_id: r.cost for child_id in assigned}
 
+            # Pool allocations per assigned child for this reward (v3.0)
+            reward_pool_allocations = {
+                cid: pool_by_child_reward.get(cid, {}).get(r.id, 0)
+                for cid in assigned
+            }
+            jackpot_pool_total = (
+                pool_total_by_reward.get(r.id, 0) if getattr(r, 'is_jackpot', False) else None
+            )
+
             rewards_list.append({
                 "id": r.id,
                 "name": r.name,
@@ -256,6 +275,8 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
                 "assigned_to": r.assigned_to if isinstance(r.assigned_to, list) else [],
                 "is_jackpot": getattr(r, 'is_jackpot', False),
                 "calculated_costs": calculated_costs,
+                "pool_allocations": reward_pool_allocations,
+                "jackpot_pool_total": jackpot_pool_total,
             })
 
         # Day of week for due_days filtering in frontend (lowercase, e.g. "monday")
@@ -282,6 +303,13 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
                 "points": c.points,
                 "pending_points": pending_points_by_child.get(c.id, 0),
                 "committed_points": committed_points_by_child.get(c.id, 0),
+                "allocated_points": total_allocated_by_child.get(c.id, 0),
+                "spendable_balance": max(
+                    0,
+                    c.points
+                    - committed_points_by_child.get(c.id, 0)
+                    - total_allocated_by_child.get(c.id, 0),
+                ),
                 "chore_order": c.chore_order,
                 "current_streak": getattr(c, 'current_streak', 0) or 0,
                 "best_streak": getattr(c, 'best_streak', 0) or 0,
@@ -301,6 +329,7 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
             "pending_reward_claims": self._build_pending_reward_claims(
                 data.get("pending_reward_claims", []), rewards, child_lookup
             ),
+            "pool_allocations": [pa.to_dict() for pa in pool_alloc_objs],
             "recent_completions": [{
                 "completion_id": comp.id,
                 "chore_id": comp.chore_id,

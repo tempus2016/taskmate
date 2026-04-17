@@ -2,10 +2,10 @@
  * TaskMate Rewards Card
  * A Lovelace card for displaying available rewards.
  * Shows rewards in a vertical list with star cost, name, description, and progress gauges.
- * Supports regular rewards, Jackpot rewards, and Dynamic rewards (goal-based pricing).
+ * Supports regular rewards, Jackpot rewards, and (v3.0+) Pool Mode "savings jar" rewards.
  *
- * Version: 0.0.7
- * Last Updated: 2026-01-07
+ * Version: 0.0.8
+ * Last Updated: 2026-04-17
  */
 
 const LitElement = customElements.get("hui-masonry-view")
@@ -649,6 +649,113 @@ class TaskMateRewardsCard extends LitElement {
           --mdc-icon-size: 20px;
         }
       }
+
+      /* v3.0 Pool Mode styles */
+      .spendable-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        margin: 8px 14px 0 14px;
+        background: linear-gradient(135deg, rgba(52, 152, 219, 0.15), rgba(46, 204, 113, 0.12));
+        border-radius: 10px;
+        border: 1px solid rgba(52, 152, 219, 0.25);
+      }
+
+      .spendable-banner ha-icon {
+        color: var(--reward-purple);
+        --mdc-icon-size: 22px;
+      }
+
+      .spendable-banner .spendable-label {
+        color: var(--text-secondary);
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .spendable-banner .spendable-value {
+        font-weight: 700;
+        font-size: 1.15rem;
+        color: var(--text-primary);
+        margin-left: auto;
+      }
+
+      .spendable-banner .spendable-of {
+        font-weight: 400;
+        color: var(--text-secondary);
+        font-size: 0.82rem;
+        margin-left: 4px;
+      }
+
+      .allocation-controls {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        margin-top: 6px;
+      }
+
+      .alloc-btn {
+        padding: 5px 10px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: transform 0.1s, opacity 0.1s, box-shadow 0.15s;
+        box-shadow: 0 1px 3px rgba(52, 152, 219, 0.3);
+      }
+
+      .alloc-btn:hover:not(:disabled) {
+        transform: scale(1.08);
+        box-shadow: 0 2px 6px rgba(52, 152, 219, 0.5);
+      }
+
+      .alloc-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .redeem-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 20px;
+        border: none;
+        cursor: pointer;
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+        color: white;
+        font-weight: 700;
+        font-size: 0.88rem;
+        box-shadow: 0 3px 10px rgba(46, 204, 113, 0.35);
+        animation: pulse-green 1.6s ease-in-out infinite;
+      }
+
+      .redeem-btn ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      @keyframes pulse-green {
+        0%, 100% { box-shadow: 0 3px 10px rgba(46, 204, 113, 0.35); transform: scale(1); }
+        50% { box-shadow: 0 3px 18px rgba(46, 204, 113, 0.65); transform: scale(1.03); }
+      }
+
+      .reward-row.pool-mode .reward-right-col {
+        min-width: 120px;
+        align-items: flex-end;
+        justify-content: center;
+      }
+
+      .pool-locked-note {
+        font-size: 0.72rem;
+        color: var(--text-secondary);
+        font-style: italic;
+        margin-top: 4px;
+      }
     `;
   }
 
@@ -660,8 +767,9 @@ class TaskMateRewardsCard extends LitElement {
       title: null,
       child_id: null, // Optional: filter rewards for a specific child
       show_child_badges: true, // Show which children can claim each reward
-            header_color: '#e67e22',
-    ...config,
+      enable_pool_mode: false, // v3.0: "savings jar" allocation mode (opt-in per card)
+      header_color: '#e67e22',
+      ...config,
     };
   }
 
@@ -679,6 +787,7 @@ class TaskMateRewardsCard extends LitElement {
       title: "Rewards",
       child_id: null,
       show_child_badges: true,
+      enable_pool_mode: false,
     };
   }
 
@@ -732,6 +841,10 @@ class TaskMateRewardsCard extends LitElement {
       childMap[child.id] = child.name;
     });
 
+    const enablePoolMode = this.config.enable_pool_mode === true;
+    const activeChildId = this.config.child_id || this._selectedChildId;
+    const activeChild = activeChildId ? children.find((c) => c.id === activeChildId) : null;
+
     return html`
       <ha-card>
         <style>:host { --taskmate-header-bg: ${this.config.header_color || '#e67e22'}; }</style>
@@ -745,12 +858,29 @@ class TaskMateRewardsCard extends LitElement {
             : ""}
         </div>
 
+        ${enablePoolMode && activeChild ? this._renderSpendableBanner(activeChild, pointsIcon, pointsName) : ''}
+
         <div class="card-content">
           ${sortedRewards.length === 0
             ? this._renderEmptyState()
             : sortedRewards.map((reward) => this._renderRewardRow(reward, pointsIcon, pointsName, childMap, children))}
         </div>
       </ha-card>
+    `;
+  }
+
+  _renderSpendableBanner(child, pointsIcon, pointsName) {
+    const spendable = typeof child.spendable_balance === 'number' ? child.spendable_balance : (child.points || 0);
+    const gross = child.points || 0;
+    return html`
+      <div class="spendable-banner">
+        <ha-icon icon="${pointsIcon}"></ha-icon>
+        <span class="spendable-label">${this._t('rewards.spendable_balance')}</span>
+        <span class="spendable-value">
+          ${spendable}
+          <span class="spendable-of">/ ${gross} ${pointsName}</span>
+        </span>
+      </div>
     `;
   }
 
@@ -770,6 +900,7 @@ class TaskMateRewardsCard extends LitElement {
     const assignedTo = reward.assigned_to || [];
     const showChildBadges = this.config.show_child_badges !== false;
     const isJackpot = reward.is_jackpot || false;
+    const enablePoolMode = this.config.enable_pool_mode === true;
     // All costs are static — just use reward.cost
     const displayCost = this._getDisplayCost(reward, children);
 
@@ -778,18 +909,30 @@ class TaskMateRewardsCard extends LitElement {
       ? children
       : children.filter(c => assignedTo.includes(c.id));
 
+    // Determine active child context
+    const childId = this.config?.child_id || this._selectedChildId;
+    const relevantChild = childId
+      ? children.find(c => c.id === childId)
+      : relevantChildren[0];
+
+    // Pool allocations for this reward (v3.0). Falls back to empty dict in wallet mode.
+    const poolAllocations = reward.pool_allocations || {};
+    const jackpotPoolTotal = typeof reward.jackpot_pool_total === 'number' ? reward.jackpot_pool_total : 0;
+
     // Calculate progress
     let currentStars = 0;
     let childContributions = [];
 
     if (isJackpot) {
-      // Jackpot: equal share per assigned child (no dynamic weighting)
       const sharePerChild = relevantChildren.length > 0
         ? Math.round(displayCost / relevantChildren.length)
         : displayCost;
 
       relevantChildren.forEach((child, index) => {
-        const points = child.points || 0;
+        // In pool mode, show allocated points only; in wallet mode show wallet points
+        const points = enablePoolMode
+          ? (poolAllocations[child.id] || 0)
+          : (child.points || 0);
         const shareOfGoal = relevantChildren.length > 0 ? (100 / relevantChildren.length) : 100;
         const weightedProgress = sharePerChild > 0 ? Math.min((points / sharePerChild) * 100, 100) : 0;
 
@@ -804,8 +947,10 @@ class TaskMateRewardsCard extends LitElement {
         });
       });
     } else {
-      // Regular reward: show progress for filtered child or first assigned child
-      if (this.config.child_id) {
+      if (enablePoolMode) {
+        // Pool mode: show this child's allocation for this reward
+        currentStars = childId ? (poolAllocations[childId] || 0) : 0;
+      } else if (this.config.child_id) {
         const filteredChild = children.find(c => c.id === this.config.child_id);
         currentStars = filteredChild ? (filteredChild.points || 0) : 0;
       } else if (relevantChildren.length > 0) {
@@ -815,25 +960,32 @@ class TaskMateRewardsCard extends LitElement {
 
     const percentage = displayCost > 0 ? Math.min((currentStars / displayCost) * 100, 100) : 0;
 
-    // Check if this reward has a pending claim
+    // Pending claim check
     const entity = this.hass?.states?.[this.config?.entity];
     const pendingClaims = entity?.attributes?.pending_reward_claims || [];
-    const childId = this.config?.child_id || this._selectedChildId;
     const hasPendingClaim = pendingClaims.some(c =>
       c.reward_id === reward.id && (!childId || c.child_id === childId)
     );
 
-    // Can the current child afford it? Account for points committed to other pending claims
-    const relevantChild = childId
-      ? children.find(c => c.id === childId)
-      : relevantChildren[0];
+    // Pool mode affordability / redeem state
+    const spendable = relevantChild
+      ? (typeof relevantChild.spendable_balance === 'number'
+          ? relevantChild.spendable_balance
+          : (relevantChild.points || 0) - (relevantChild.committed_points || 0))
+      : 0;
+    const poolFull = enablePoolMode && (
+      isJackpot ? jackpotPoolTotal >= displayCost : currentStars >= displayCost
+    );
+
+    // Wallet mode: affordability based on gross − committed
     const committedPoints = relevantChild?.committed_points || 0;
     const availablePoints = (relevantChild?.points || 0) - committedPoints;
     const canAfford = relevantChild && availablePoints >= displayCost;
     const isLoading = this._loading[reward.id];
+    const isAllocLoading = this._loading[`${reward.id}_alloc`];
 
     return html`
-      <div class="reward-row ${isJackpot ? 'jackpot' : ''} ${hasPendingClaim ? 'pending-approval' : ''}">
+      <div class="reward-row ${isJackpot ? 'jackpot' : ''} ${hasPendingClaim ? 'pending-approval' : ''} ${enablePoolMode ? 'pool-mode' : ''}">
         <div class="cost-badge">
           <ha-icon icon="${pointsIcon}"></ha-icon>
           <span class="cost-value">${displayCost}</span>
@@ -863,29 +1015,61 @@ class TaskMateRewardsCard extends LitElement {
                   ${assignedTo.length === 0
                     ? html`<span class="child-badge all-children">${this._t('rewards.all_children')}</span>`
                     : assignedTo.map(
-                        (childId) =>
-                          html`<span class="child-badge">${childMap[childId] || childId}</span>`
+                        (cid) =>
+                          html`<span class="child-badge">${childMap[cid] || cid}</span>`
                       )}
                 </div>
               `
             : ""}
         </div>
         <div class="reward-right-col">
-          ${!hasPendingClaim && childId ? html`
-            <button
-              class="claim-btn ${!canAfford ? 'cant-afford' : ''}"
-              ?disabled="${!canAfford || isLoading}"
-              @click="${(e) => { e.stopPropagation(); this._handleClaim(reward, relevantChild); }}"
-              title="${canAfford ? this._t('rewards.claim_reward') : this._t('rewards.not_enough_points')}"
-            >
-              <ha-icon icon="${isLoading ? 'mdi:loading' : rewardIcon}"></ha-icon>
-            </button>
-          ` : html`
-            <div class="reward-icon-container">
-              <ha-icon icon="${rewardIcon}"></ha-icon>
-            </div>
-          `}
+          ${enablePoolMode && childId && !hasPendingClaim
+            ? this._renderPoolControls(reward, relevantChild, spendable, poolFull, isAllocLoading, isLoading)
+            : (!hasPendingClaim && childId ? html`
+                <button
+                  class="claim-btn ${!canAfford ? 'cant-afford' : ''}"
+                  ?disabled="${!canAfford || isLoading}"
+                  @click="${(e) => { e.stopPropagation(); this._handleClaim(reward, relevantChild); }}"
+                  title="${canAfford ? this._t('rewards.claim_reward') : this._t('rewards.not_enough_points')}"
+                >
+                  <ha-icon icon="${isLoading ? 'mdi:loading' : rewardIcon}"></ha-icon>
+                </button>
+              ` : html`
+                <div class="reward-icon-container">
+                  <ha-icon icon="${rewardIcon}"></ha-icon>
+                </div>
+              `)
+          }
         </div>
+      </div>
+    `;
+  }
+
+  _renderPoolControls(reward, child, spendable, poolFull, isAllocLoading, isRedeemLoading) {
+    if (poolFull) {
+      return html`
+        <button
+          class="redeem-btn"
+          ?disabled="${isRedeemLoading}"
+          @click="${(e) => { e.stopPropagation(); this._handleRedeem(reward, child); }}"
+          title="${this._t('rewards.redeem')}"
+        >
+          <ha-icon icon="${isRedeemLoading ? 'mdi:loading' : 'mdi:check-circle'}"></ha-icon>
+          ${this._t('rewards.redeem')}
+        </button>
+      `;
+    }
+    const amounts = [1, 5, 10];
+    return html`
+      <div class="allocation-controls">
+        ${amounts.map((amt) => html`
+          <button
+            class="alloc-btn"
+            ?disabled="${!child || spendable < amt || isAllocLoading}"
+            @click="${(e) => { e.stopPropagation(); this._handleAllocate(reward, child, amt); }}"
+            title="${this._t('rewards.deposit_points', { amount: amt })}"
+          >+${amt}</button>
+        `)}
       </div>
     `;
   }
@@ -915,6 +1099,41 @@ class TaskMateRewardsCard extends LitElement {
       this._loading = { ...this._loading, [reward.id]: false };
       this.requestUpdate();
     }
+  }
+
+  async _handleAllocate(reward, child, points) {
+    if (!child || !reward) return;
+    const key = `${reward.id}_alloc`;
+    this._loading = { ...this._loading, [key]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "allocate_points_to_pool", {
+        child_id: child.id,
+        reward_id: reward.id,
+        points,
+      });
+    } catch (e) {
+      console.error("Failed to allocate points to pool:", e);
+      if (this.hass && this.hass.callService) {
+        this.hass.callService("persistent_notification", "create", {
+          title: this._t('approvals.error_title'),
+          message: this._t('approvals.error_failed_service', {
+            service: "allocate_points_to_pool",
+            message: e && e.message ? e.message : String(e),
+          }),
+          notification_id: `taskmate_pool_alloc_${reward.id}`,
+        });
+      }
+    } finally {
+      this._loading = { ...this._loading, [key]: false };
+      this.requestUpdate();
+    }
+  }
+
+  async _handleRedeem(reward, child) {
+    // "Redeem" is implemented via the existing claim_reward service — the coordinator
+    // detects pool-mode automatically based on the allocation record.
+    return this._handleClaim(reward, child);
   }
 
   _renderRegularProgress(currentStars, cost, percentage, pointsIcon) {
@@ -1133,6 +1352,18 @@ class TaskMateRewardsCardEditor extends LitElement {
         </label>
         <small>${this._t('rewards.editor.show_child_badges_helper')}</small>
       </div>
+
+      <div class="form-group">
+        <label>
+          <input
+            type="checkbox"
+            ?checked="${this.config.enable_pool_mode === true}"
+            @change="${this._enablePoolModeChanged}"
+          />
+          ${this._t('rewards.editor.enable_pool_mode')}
+        </label>
+        <small>${this._t('rewards.editor.enable_pool_mode_helper')}</small>
+      </div>
         <span class="field-helper">${this._t('common.editor.header_colour_helper')}</span>
       </div>
       <div class="field-row">
@@ -1170,6 +1401,10 @@ class TaskMateRewardsCardEditor extends LitElement {
 
   _showChildBadgesChanged(e) {
     this._updateConfig("show_child_badges", e.target.checked);
+  }
+
+  _enablePoolModeChanged(e) {
+    this._updateConfig("enable_pool_mode", e.target.checked);
   }
 
   _updateConfig(key, value) {

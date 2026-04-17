@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
-from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, Reward, RewardClaim, PointsTransaction
+from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ class TaskMateStorage:
                 "completions": [],
                 "reward_claims": [],
                 "points_transactions": [],
+                "pool_allocations": [],
                 "points_name": "Stars",
                 "points_icon": "mdi:star",
                 "last_completed": {},
@@ -46,6 +47,10 @@ class TaskMateStorage:
         # Ensure last_completed store exists (migration for existing installs)
         if "last_completed" not in self._data:
             self._data["last_completed"] = {}
+
+        # Ensure pool_allocations store exists (migration for v3.0 pool mode)
+        if "pool_allocations" not in self._data:
+            self._data["pool_allocations"] = []
 
         # Run data migrations
         await self._migrate_assigned_to_child_ids()
@@ -387,6 +392,62 @@ class TaskMateStorage:
         self._data["reward_claims"] = [
             c for c in self._data.get("reward_claims", []) if c.get("reward_id") != reward_id
         ]
+
+    # Pool allocations management (v3.0 pool mode)
+    def get_pool_allocations(self) -> list[PoolAllocation]:
+        """Get all pool allocations."""
+        return [PoolAllocation.from_dict(a) for a in self._data.get("pool_allocations", [])]
+
+    def get_pool_allocation(self, child_id: str, reward_id: str) -> PoolAllocation | None:
+        """Get a pool allocation for a specific (child, reward) pair."""
+        for a in self._data.get("pool_allocations", []):
+            if a.get("child_id") == child_id and a.get("reward_id") == reward_id:
+                return PoolAllocation.from_dict(a)
+        return None
+
+    def upsert_pool_allocation(self, allocation: PoolAllocation) -> None:
+        """Insert or update a pool allocation (keyed by child_id + reward_id)."""
+        allocations = self._data.setdefault("pool_allocations", [])
+        for i, a in enumerate(allocations):
+            if a.get("child_id") == allocation.child_id and a.get("reward_id") == allocation.reward_id:
+                allocations[i] = allocation.to_dict()
+                return
+        allocations.append(allocation.to_dict())
+
+    def remove_pool_allocation(self, child_id: str, reward_id: str) -> None:
+        """Remove a pool allocation for a specific (child, reward) pair."""
+        self._data["pool_allocations"] = [
+            a for a in self._data.get("pool_allocations", [])
+            if not (a.get("child_id") == child_id and a.get("reward_id") == reward_id)
+        ]
+
+    def remove_pool_allocations_for_child(self, child_id: str) -> None:
+        """Remove all pool allocations for a given child."""
+        self._data["pool_allocations"] = [
+            a for a in self._data.get("pool_allocations", []) if a.get("child_id") != child_id
+        ]
+
+    def remove_pool_allocations_for_reward(self, reward_id: str) -> None:
+        """Remove all pool allocations for a given reward."""
+        self._data["pool_allocations"] = [
+            a for a in self._data.get("pool_allocations", []) if a.get("reward_id") != reward_id
+        ]
+
+    def get_total_allocated_for_child(self, child_id: str) -> int:
+        """Return the sum of this child's allocations across all rewards."""
+        return sum(
+            a.get("allocated_points", 0)
+            for a in self._data.get("pool_allocations", [])
+            if a.get("child_id") == child_id
+        )
+
+    def get_total_allocated_for_reward(self, reward_id: str) -> int:
+        """Return the sum of all children's allocations for a specific reward (used for jackpots)."""
+        return sum(
+            a.get("allocated_points", 0)
+            for a in self._data.get("pool_allocations", [])
+            if a.get("reward_id") == reward_id
+        )
 
     def remove_transactions_for_child(self, child_id: str) -> None:
         """Remove all points transactions for a given child."""

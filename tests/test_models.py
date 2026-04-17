@@ -11,6 +11,7 @@ from custom_components.taskmate.models import (
     Chore,
     ChoreCompletion,
     PointsTransaction,
+    PoolAllocation,
     Reward,
     RewardClaim,
     format_datetime,
@@ -434,3 +435,36 @@ class TestBonus:
         assert bonus.icon == "mdi:star-circle-outline"
         assert bonus.assigned_to == []
         assert bonus.id == "legacy"
+
+
+# ---------------------------------------------------------------------------
+# PoolAllocation (v3.0 pool mode)
+# ---------------------------------------------------------------------------
+
+
+class TestPoolAllocationModel:
+    def test_defaults(self):
+        pa = PoolAllocation(child_id="kid1", reward_id="reward1")
+        assert pa.child_id == "kid1"
+        assert pa.reward_id == "reward1"
+        assert pa.allocated_points == 0
+        assert pa.id  # auto-generated
+
+    def test_roundtrip(self):
+        pa = PoolAllocation(
+            child_id="kid1",
+            reward_id="rewardA",
+            allocated_points=30,
+            id="alloc001",
+        )
+        restored = PoolAllocation.from_dict(pa.to_dict())
+        assert restored.child_id == pa.child_id
+        assert restored.reward_id == pa.reward_id
+        assert restored.allocated_points == pa.allocated_points
+        assert restored.id == pa.id
+
+    def test_legacy_missing_fields(self):
+        legacy = {"child_id": "kid1", "reward_id": "reward1", "id": "legacy"}
+        pa = PoolAllocation.from_dict(legacy)
+        assert pa.allocated_points == 0
+        assert pa.id == "legacy"
