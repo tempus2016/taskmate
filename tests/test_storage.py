@@ -9,9 +9,8 @@ import asyncio
 import datetime as dt
 from datetime import timezone
 
-import pytest
 
-from custom_components.taskmate.models import Child, Chore, ChoreCompletion, Reward
+from custom_components.taskmate.models import Child, ChoreCompletion
 from custom_components.taskmate.storage import TaskMateStorage
 
 UTC = timezone.utc
