@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
-from custom_components.taskmate.models import Child, Reward, RewardClaim
+from custom_components.taskmate.models import Child, PoolAllocation, Reward, RewardClaim
 
 
 def run(coro):
@@ -198,8 +198,6 @@ class TestRejectReward:
 # ---------------------------------------------------------------------------
 # async_allocate_points_to_pool (v3.0 pool mode)
 # ---------------------------------------------------------------------------
-
-from custom_components.taskmate.models import PoolAllocation
 
 
 class TestAllocatePointsToPool:
