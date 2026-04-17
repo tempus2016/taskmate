@@ -569,6 +569,86 @@
           "description": "L'identifiant de l'enfant à pénaliser"
         }
       }
+    },
+    "add_bonus": {
+      "name": "Ajouter un bonus",
+      "description": "Créer une nouvelle définition de bonus",
+      "fields": {
+        "name": {
+          "name": "Nom",
+          "description": "Le nom du bonus"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Le nombre de points à attribuer lors de l'application"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Description optionnelle du bonus"
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Icône MDI pour le bonus"
+        },
+        "assigned_to": {
+          "name": "Assigné à",
+          "description": "Liste des identifiants d'enfants auxquels ce bonus s'applique"
+        }
+      }
+    },
+    "update_bonus": {
+      "name": "Mettre à jour le bonus",
+      "description": "Mettre à jour une définition de bonus existante",
+      "fields": {
+        "bonus_id": {
+          "name": "ID de bonus",
+          "description": "L'identifiant du bonus à mettre à jour"
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Nouveau nom pour le bonus"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Nouvelle valeur de points"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Nouvelle description"
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Nouvelle icône"
+        },
+        "assigned_to": {
+          "name": "Assigné à",
+          "description": "Nouvelle liste d'identifiants d'enfants"
+        }
+      }
+    },
+    "remove_bonus": {
+      "name": "Supprimer le bonus",
+      "description": "Supprimer une définition de bonus",
+      "fields": {
+        "bonus_id": {
+          "name": "ID de bonus",
+          "description": "L'identifiant du bonus à supprimer"
+        }
+      }
+    },
+    "apply_bonus": {
+      "name": "Appliquer un bonus",
+      "description": "Appliquer un bonus à un enfant, attribuant des points",
+      "fields": {
+        "bonus_id": {
+          "name": "ID de bonus",
+          "description": "L'identifiant du bonus à appliquer"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant à qui attribuer le bonus"
+        }
+      }
     }
   }
 }

@@ -204,6 +204,10 @@ SERVICE_ADD_PENALTY: Final = "add_penalty"
 SERVICE_UPDATE_PENALTY: Final = "update_penalty"
 SERVICE_REMOVE_PENALTY: Final = "remove_penalty"
 SERVICE_APPLY_PENALTY: Final = "apply_penalty"
+SERVICE_ADD_BONUS: Final = "add_bonus"
+SERVICE_UPDATE_BONUS: Final = "update_bonus"
+SERVICE_REMOVE_BONUS: Final = "remove_bonus"
+SERVICE_APPLY_BONUS: Final = "apply_bonus"
 
 # Events
 EVENT_PREVIEW_SOUND: Final = "taskmate_preview_sound"
@@ -222,6 +226,12 @@ ATTR_PENALTY_POINTS: Final = "points"
 ATTR_PENALTY_DESCRIPTION: Final = "description"
 ATTR_PENALTY_ICON: Final = "icon"
 ATTR_PENALTY_ASSIGNED_TO: Final = "assigned_to"
+ATTR_BONUS_ID: Final = "bonus_id"
+ATTR_BONUS_NAME: Final = "name"
+ATTR_BONUS_POINTS: Final = "points"
+ATTR_BONUS_DESCRIPTION: Final = "description"
+ATTR_BONUS_ICON: Final = "icon"
+ATTR_BONUS_ASSIGNED_TO: Final = "assigned_to"
 
 # States
 STATE_PENDING: Final = "pending"
