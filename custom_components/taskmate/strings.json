@@ -652,6 +652,40 @@
           "description": "The ID of the child to apply the bonus to"
         }
       }
+    },
+    "add_chore": {
+      "name": "Add Chore",
+      "description": "Create a new chore dynamically, typically from an automation or script",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "The name of the chore"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Optional description of the chore"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Points awarded when this chore is completed"
+        },
+        "assigned_to": {
+          "name": "Assigned To",
+          "description": "List of child IDs to assign this chore to. Leave empty to assign to all children"
+        },
+        "time_category": {
+          "name": "Time Category",
+          "description": "When this chore should be completed: morning, afternoon, evening, night, or anytime"
+        },
+        "one_shot": {
+          "name": "One-Shot",
+          "description": "If true, this is a one-time chore that expires after being completed or at the end of the day"
+        },
+        "requires_approval": {
+          "name": "Requires Approval",
+          "description": "If true, a parent must approve the completion before points are awarded"
+        }
+      }
     }
   }
 }
