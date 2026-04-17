@@ -68,6 +68,15 @@ TaskMate is not yet in the HACS default store. Add it as a custom repository:
 2. Copy the `taskmate` folder to `/config/custom_components/taskmate/`
 3. **Restart Home Assistant**
  
+### Requirements
+
+- **Home Assistant** 2024.1 or newer
+- A modern browser for the dashboard cards: current Chrome, Firefox, Edge, or Safari. The cards use Web Components, Web Audio, and ES2020 features and will not work in Internet Explorer or pre-2022 browsers.
+
+### Privacy
+
+All TaskMate data — children, chores, points, reward claims, completion history — is stored inside your Home Assistant instance via HA's native storage helpers. Nothing is sent to any external service.
+
 ---
  
 ## Setup
