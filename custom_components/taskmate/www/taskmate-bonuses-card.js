@@ -681,3 +681,14 @@ window.customCards.push({
   description: "Apply point-awarding bonuses to children",
   preview: false,
 });
+
+// Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM
+const _tmVersion = new URLSearchParams(
+  Array.from(document.querySelectorAll('script[src*="/taskmate-bonuses-card.js"]'))
+    .map(s => s.src.split("?")[1]).find(Boolean) || ""
+).get("v") || "?";
+console.info(
+  "%c TASKMATE BONUSES CARD %c v" + _tmVersion + " ",
+  "background:#f39c12;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
+  "background:#2c3e50;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
+);
