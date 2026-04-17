@@ -615,13 +615,27 @@ class TaskMateParentDashboardCard extends LitElement {
     `;
   }
 
+  _notifyServiceError(service, error, notificationId) {
+    console.error(`Failed to call ${service}:`, error);
+    if (this.hass && this.hass.callService) {
+      this.hass.callService("persistent_notification", "create", {
+        title: this._t('approvals.error_title'),
+        message: this._t('approvals.error_failed_service', {
+          service: service.replace(/_/g, " "),
+          message: error && error.message ? error.message : String(error),
+        }),
+        notification_id: notificationId,
+      });
+    }
+  }
+
   async _handleApprove(completionId) {
     this._loading = { ...this._loading, [completionId]: true };
     this.requestUpdate();
     try {
       await this.hass.callService("taskmate", "approve_chore", { completion_id: completionId });
     } catch (e) {
-      console.error("Failed to approve chore:", e);
+      this._notifyServiceError("approve_chore", e, `taskmate_dashboard_approve_${completionId}`);
     } finally {
       this._loading = { ...this._loading, [completionId]: false };
       this.requestUpdate();
@@ -634,7 +648,7 @@ class TaskMateParentDashboardCard extends LitElement {
     try {
       await this.hass.callService("taskmate", "reject_chore", { completion_id: completionId });
     } catch (e) {
-      console.error("Failed to reject chore:", e);
+      this._notifyServiceError("reject_chore", e, `taskmate_dashboard_reject_${completionId}`);
     } finally {
       this._loading = { ...this._loading, [completionId]: false };
       this.requestUpdate();
@@ -647,7 +661,7 @@ class TaskMateParentDashboardCard extends LitElement {
     try {
       await this.hass.callService("taskmate", "approve_reward", { claim_id: claimId });
     } catch (e) {
-      console.error("Failed to approve reward:", e);
+      this._notifyServiceError("approve_reward", e, `taskmate_dashboard_approve_reward_${claimId}`);
     } finally {
       this._loading = { ...this._loading, [claimId]: false };
       this.requestUpdate();
@@ -660,7 +674,7 @@ class TaskMateParentDashboardCard extends LitElement {
     try {
       await this.hass.callService("taskmate", "reject_reward", { claim_id: claimId });
     } catch (e) {
-      console.error("Failed to reject reward:", e);
+      this._notifyServiceError("reject_reward", e, `taskmate_dashboard_reject_reward_${claimId}`);
     } finally {
       this._loading = { ...this._loading, [claimId]: false };
       this.requestUpdate();
@@ -671,14 +685,14 @@ class TaskMateParentDashboardCard extends LitElement {
     const key = `${childId}_${delta}`;
     this._loading = { ...this._loading, [key]: true };
     this.requestUpdate();
+    const service = delta > 0 ? "add_points" : "remove_points";
     try {
-      const service = delta > 0 ? "add_points" : "remove_points";
       await this.hass.callService("taskmate", service, {
         child_id: childId,
         points: Math.abs(delta),
       });
     } catch (e) {
-      console.error("Failed to adjust points:", e);
+      this._notifyServiceError(service, e, `taskmate_dashboard_points_${key}`);
     } finally {
       this._loading = { ...this._loading, [key]: false };
       this.requestUpdate();

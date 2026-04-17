@@ -519,12 +519,25 @@ class TaskMateGraphCard extends LitElement {
 
     if (!tooltip) return;
     const dateLabel = this._formatTooltipDate(date);
-    let html_content = `<div class="tooltip-date">${dateLabel}</div>`;
+    while (tooltip.firstChild) tooltip.removeChild(tooltip.firstChild);
+    const dateDiv = document.createElement('div');
+    dateDiv.className = 'tooltip-date';
+    dateDiv.textContent = dateLabel;
+    tooltip.appendChild(dateDiv);
     series.forEach(s => {
       const val = s[dataKey][nearest] || 0;
-      html_content += `<div class="tooltip-row"><div class="tooltip-dot" style="background:${s.color.line}"></div><span>${series.length > 1 ? s.child.name + ': ' : ''}${val} ${pointsName}</span></div>`;
+      const row = document.createElement('div');
+      row.className = 'tooltip-row';
+      const dot = document.createElement('div');
+      dot.className = 'tooltip-dot';
+      dot.style.background = s.color.line;
+      const span = document.createElement('span');
+      const prefix = series.length > 1 ? `${s.child.name}: ` : '';
+      span.textContent = `${prefix}${val} ${pointsName}`;
+      row.appendChild(dot);
+      row.appendChild(span);
+      tooltip.appendChild(row);
     });
-    tooltip.innerHTML = html_content;
     tooltip.classList.add('visible');
 
     const tipW = 150;
