@@ -220,6 +220,7 @@ class Reward:
     icon: str = "mdi:gift"
     assigned_to: list[str] = field(default_factory=list)  # List of child IDs, empty means all children
     is_jackpot: bool = False  # If True, pool stars from all assigned children together
+    pool_enabled: bool = False  # If True, this reward uses pool-mode (savings jar) semantics
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -232,6 +233,7 @@ class Reward:
             icon=data.get("icon", "mdi:gift"),
             assigned_to=list(data.get("assigned_to", [])),
             is_jackpot=data.get("is_jackpot", False),
+            pool_enabled=data.get("pool_enabled", False),
             id=data.get("id", generate_id()),
         )
 
@@ -244,6 +246,7 @@ class Reward:
             "icon": self.icon,
             "assigned_to": self.assigned_to,
             "is_jackpot": self.is_jackpot,
+            "pool_enabled": self.pool_enabled,
             "id": self.id,
         }
 
