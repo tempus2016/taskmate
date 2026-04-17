@@ -12,7 +12,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
-from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, Reward, RewardClaim, PointsTransaction
+from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction
 from .storage import TaskMateStorage
 
 _LOGGER = logging.getLogger(__name__)
@@ -210,6 +210,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             "settings": self.storage._data.get("settings", {}),
             "penalties": self.storage.get_penalties(),
             "bonuses": self.storage.get_bonuses(),
+            "pool_allocations": self.storage.get_pool_allocations(),
         }
 
     # Child operations
@@ -234,6 +235,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         self.storage.remove_reward_claims_for_child(child_id)
         self.storage.remove_transactions_for_child(child_id)
         self.storage.remove_last_completed_for_child(child_id)
+        self.storage.remove_pool_allocations_for_child(child_id)
         # Remove child from chore assigned_to lists
         for chore in self.storage.get_chores():
             if child_id in chore.assigned_to:
@@ -807,8 +809,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         await self.async_refresh()
 
     async def async_remove_reward(self, reward_id: str) -> None:
-        """Remove a reward and clean up any pending claims referencing it."""
+        """Remove a reward and clean up any pending claims and pool allocations referencing it."""
         self.storage.remove_reward_claims_for_reward(reward_id)
+        self.storage.remove_pool_allocations_for_reward(reward_id)
         self.storage.remove_reward(reward_id)
         await self.storage.async_save()
         await self.async_refresh()
@@ -866,7 +869,14 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                     )
 
     async def async_claim_reward(self, reward_id: str, child_id: str) -> RewardClaim:
-        """Child claims a reward — creates a pending claim awaiting parent approval."""
+        """Child claims a reward — creates a pending claim awaiting parent approval.
+
+        Two modes are supported:
+          * Wallet mode (default): requires child.points (minus committed) to cover cost
+          * Pool mode: if pool allocations exist for this (child, reward) and they fill the
+            reward's cost, the claim is a "redeem" — no wallet check needed. For jackpot
+            rewards the pool total across all contributing children must reach the cost.
+        """
         reward = self.get_reward(reward_id)
         if not reward:
             raise ValueError(f"Reward {reward_id} not found")
@@ -878,18 +888,35 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         # Cost is always static
         effective_cost = reward.cost
 
-        # Calculate points already committed by pending (unapproved) claims
-        pending_claims = self.storage.get_pending_reward_claims()
-        committed = 0
-        for c in pending_claims:
-            if c.child_id == child_id:
-                pending_reward = self.get_reward(c.reward_id)
-                if pending_reward:
-                    committed += pending_reward.cost
-        available_points = child.points - committed
+        # Detect pool mode: a filled pool allocation for this (child, reward) is sufficient,
+        # or for jackpots the summed pool across all children reaches cost.
+        pool_filled = False
+        if reward.is_jackpot:
+            pool_total = self.storage.get_total_allocated_for_reward(reward_id)
+            if pool_total >= effective_cost:
+                pool_filled = True
+        else:
+            allocation = self.storage.get_pool_allocation(child_id, reward_id)
+            if allocation and allocation.allocated_points >= effective_cost:
+                pool_filled = True
 
-        if available_points < effective_cost:
-            raise ValueError(f"Not enough points. Need {effective_cost}, have {available_points} available")
+        if not pool_filled:
+            # Wallet mode: verify child has enough uncommitted points
+            pending_claims = self.storage.get_pending_reward_claims()
+            committed = 0
+            for c in pending_claims:
+                if c.child_id == child_id:
+                    pending_reward = self.get_reward(c.reward_id)
+                    if pending_reward:
+                        committed += pending_reward.cost
+            # Pool-allocated points are already reserved — count them as committed too
+            committed += self.storage.get_total_allocated_for_child(child_id)
+            available_points = child.points - committed
+
+            if available_points < effective_cost:
+                raise ValueError(
+                    f"Not enough points. Need {effective_cost}, have {available_points} available"
+                )
 
         claim = RewardClaim(
             reward_id=reward_id,
@@ -903,7 +930,12 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         return claim
 
     async def async_approve_reward(self, claim_id: str) -> None:
-        """Approve a reward claim and deduct points from the child."""
+        """Approve a reward claim and deduct points from the child.
+
+        If a pool allocation exists for this (child, reward) pair with enough points,
+        the deduction consumes the pool allocation first (pool mode). Otherwise the
+        wallet-mode path deducts directly from child.points.
+        """
         claims = self.storage.get_reward_claims()
         for claim in claims:
             if claim.id == claim_id:
@@ -916,16 +948,57 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 if not reward or not child:
                     raise ValueError(f"Reward or child not found for claim {claim_id}")
 
-                # Deduct points now that parent has approved (cost is always static)
+                # Cost is always static
                 effective_cost = reward.cost
 
-                if child.points < effective_cost:
-                    raise ValueError(
-                        f"Not enough points to approve. Need {effective_cost}, have {child.points}"
-                    )
+                # Detect pool mode: either a direct allocation, or a filled jackpot pool.
+                pool_alloc = self.storage.get_pool_allocation(claim.child_id, claim.reward_id)
+                is_pool_mode = False
+                if reward.is_jackpot:
+                    pool_total = self.storage.get_total_allocated_for_reward(claim.reward_id)
+                    if pool_total >= effective_cost:
+                        is_pool_mode = True
+                elif pool_alloc and pool_alloc.allocated_points >= effective_cost:
+                    is_pool_mode = True
 
-                child.points -= effective_cost
-                self.storage.update_child(child)
+                if is_pool_mode:
+                    # Pool mode: each contributing child loses exactly their own allocation
+                    # from gross points. The allocation records are cleared.
+                    if reward.is_jackpot:
+                        jackpot_allocs = [
+                            a for a in self.storage.get_pool_allocations()
+                            if a.reward_id == claim.reward_id and a.allocated_points > 0
+                        ]
+                        for alloc in jackpot_allocs:
+                            contrib_child = self.get_child(alloc.child_id)
+                            if contrib_child:
+                                contrib_child.points = max(
+                                    0, contrib_child.points - alloc.allocated_points
+                                )
+                                self.storage.update_child(contrib_child)
+                            self.storage.remove_pool_allocation(alloc.child_id, alloc.reward_id)
+                    else:
+                        # Regular reward: this child loses reward.cost from gross balance,
+                        # allocation is consumed.
+                        if child.points < effective_cost:
+                            raise ValueError(
+                                f"Not enough points to approve. Need {effective_cost}, have {child.points}"
+                            )
+                        child.points -= effective_cost
+                        self.storage.update_child(child)
+                        pool_alloc.allocated_points -= effective_cost
+                        if pool_alloc.allocated_points <= 0:
+                            self.storage.remove_pool_allocation(claim.child_id, claim.reward_id)
+                        else:
+                            self.storage.upsert_pool_allocation(pool_alloc)
+                else:
+                    # Wallet mode: deduct directly from child.points
+                    if child.points < effective_cost:
+                        raise ValueError(
+                            f"Not enough points to approve. Need {effective_cost}, have {child.points}"
+                        )
+                    child.points -= effective_cost
+                    self.storage.update_child(child)
 
                 claim.approved = True
                 claim.approved_at = dt_util.now()
@@ -940,6 +1013,74 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         self.storage.remove_reward_claim(claim_id)
         await self.storage.async_save()
         await self.async_refresh()
+
+    async def async_allocate_points_to_pool(
+        self, child_id: str, reward_id: str, points: int
+    ) -> PoolAllocation:
+        """Move `points` from a child's spendable balance into a reward pool.
+
+        Spendable balance = child.points − (committed pending claims) − (existing pool allocations).
+        Requested points are capped silently at the pool's remaining capacity.
+        Allocations are locked — there is no matching "withdraw" operation.
+        """
+        child = self.get_child(child_id)
+        if not child:
+            raise ValueError(f"Child {child_id} not found")
+
+        reward = self.get_reward(reward_id)
+        if not reward:
+            raise ValueError(f"Reward {reward_id} not found")
+
+        if points < 1:
+            raise ValueError("Points to allocate must be at least 1")
+
+        # Compute this child's spendable balance (uncommitted, unallocated points)
+        pending_claims = self.storage.get_pending_reward_claims()
+        committed = 0
+        for c in pending_claims:
+            if c.child_id == child_id:
+                pending_reward = self.get_reward(c.reward_id)
+                if pending_reward:
+                    committed += pending_reward.cost
+        total_allocated = self.storage.get_total_allocated_for_child(child_id)
+        spendable = child.points - committed - total_allocated
+
+        if spendable < 1:
+            raise ValueError(f"No spendable points available for {child.name}")
+
+        # Compute remaining pool capacity
+        existing = self.storage.get_pool_allocation(child_id, reward_id)
+        current_child_allocation = existing.allocated_points if existing else 0
+        if reward.is_jackpot:
+            room_left = reward.cost - self.storage.get_total_allocated_for_reward(reward_id)
+        else:
+            room_left = reward.cost - current_child_allocation
+
+        if room_left <= 0:
+            raise ValueError(f"Pool for reward '{reward.name}' is already full")
+
+        capped_points = min(points, spendable, room_left)
+
+        allocation = PoolAllocation(
+            child_id=child_id,
+            reward_id=reward_id,
+            allocated_points=current_child_allocation + capped_points,
+            id=existing.id if existing else PoolAllocation(child_id, reward_id).id,
+        )
+        self.storage.upsert_pool_allocation(allocation)
+
+        # Audit trail: negative transaction to show the reservation
+        transaction = PointsTransaction(
+            child_id=child_id,
+            points=-capped_points,
+            reason=f"Allocated to pool: {reward.name}",
+            created_at=dt_util.now(),
+        )
+        self.storage.add_points_transaction(transaction)
+
+        await self.storage.async_save()
+        await self.async_refresh()
+        return allocation
 
     # Penalty operations
     async def async_add_penalty(
