@@ -209,6 +209,7 @@ class TestReward:
         assert reward.icon == "mdi:gift"
         assert reward.assigned_to == []
         assert reward.is_jackpot is False
+        assert reward.pool_enabled is False
 
     def test_roundtrip(self):
         reward = Reward(
@@ -218,13 +219,20 @@ class TestReward:
             icon="mdi:pizza",
             assigned_to=["child1"],
             is_jackpot=True,
+            pool_enabled=True,
             id="reward01",
         )
         restored = Reward.from_dict(reward.to_dict())
         assert restored.name == reward.name
         assert restored.cost == reward.cost
         assert restored.is_jackpot == reward.is_jackpot
+        assert restored.pool_enabled is True
         assert restored.id == reward.id
+
+    def test_legacy_missing_pool_enabled_defaults_to_false(self):
+        legacy = {"name": "Old reward", "cost": 20, "id": "r1"}
+        reward = Reward.from_dict(legacy)
+        assert reward.pool_enabled is False
 
 
 # ---------------------------------------------------------------------------

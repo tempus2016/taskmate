@@ -4,7 +4,7 @@
  * Shows rewards in a vertical list with star cost, name, description, and progress gauges.
  * Supports regular rewards, Jackpot rewards, and (v3.0+) Pool Mode "savings jar" rewards.
  *
- * Version: 0.1.1
+ * Version: 0.1.2
  * Last Updated: 2026-04-17
  */
 
@@ -844,9 +844,15 @@ class TaskMateRewardsCard extends LitElement {
       childMap[child.id] = child.name;
     });
 
-    const enablePoolMode = this.config.enable_pool_mode === true;
+    // Card-level override: when true, every reward on this card is treated as a pool reward.
+    // Otherwise each reward decides for itself via reward.pool_enabled.
+    const cardForcesPool = this.config.enable_pool_mode === true;
     const activeChildId = this.config.child_id || this._selectedChildId;
     const activeChild = activeChildId ? children.find((c) => c.id === activeChildId) : null;
+    // Show the spendable banner when any visible reward is in pool mode
+    const anyPoolReward = sortedRewards.some(
+      (r) => cardForcesPool || r.pool_enabled === true
+    );
 
     return html`
       <ha-card>
@@ -861,7 +867,7 @@ class TaskMateRewardsCard extends LitElement {
             : ""}
         </div>
 
-        ${enablePoolMode && activeChild ? this._renderSpendableBanner(activeChild, pointsIcon, pointsName) : ''}
+        ${anyPoolReward && activeChild ? this._renderSpendableBanner(activeChild, pointsIcon, pointsName) : ''}
 
         <div class="card-content">
           ${sortedRewards.length === 0
@@ -903,7 +909,9 @@ class TaskMateRewardsCard extends LitElement {
     const assignedTo = reward.assigned_to || [];
     const showChildBadges = this.config.show_child_badges !== false;
     const isJackpot = reward.is_jackpot || false;
-    const enablePoolMode = this.config.enable_pool_mode === true;
+    // Pool mode is enabled per-reward (reward.pool_enabled) OR forced on via card config.
+    const cardForcesPool = this.config.enable_pool_mode === true;
+    const enablePoolMode = cardForcesPool || reward.pool_enabled === true;
     // All costs are static — just use reward.cost
     const displayCost = this._getDisplayCost(reward, children);
 

@@ -787,6 +787,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         icon: str = "mdi:gift",
         assigned_to: list[str] | None = None,
         is_jackpot: bool = False,
+        pool_enabled: bool = False,
     ) -> Reward:
         """Add a new reward."""
         reward = Reward(
@@ -796,6 +797,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             icon=icon,
             assigned_to=assigned_to or [],
             is_jackpot=is_jackpot,
+            pool_enabled=pool_enabled,
         )
         self.storage.add_reward(reward)
         await self.storage.async_save()
