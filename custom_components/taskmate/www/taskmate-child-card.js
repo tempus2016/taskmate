@@ -1976,90 +1976,82 @@ class TaskMateChildCardEditor extends LitElement {
   static get styles() {
     return css`
       :host { display: block; padding: 4px 0; }
+      ha-form { display: block; margin-bottom: 16px; }
 
-      ha-textfield { width: 100%; margin-bottom: 8px; }
-
-      .field-row { margin-bottom: 16px; }
-
-      .field-label {
-        display: block;
-        font-size: 12px;
-        font-weight: 500;
-        color: var(--secondary-text-color);
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 6px;
-        padding: 0 4px;
-      }
-
-      .field-select {
-        display: block;
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid var(--divider-color, #e0e0e0);
+      .colour-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 16px;
+        border: 1px solid var(--outline-color, var(--divider-color, #e0e0e0));
         border-radius: 4px;
-        background: var(--card-background-color, #fff);
-        color: var(--primary-text-color);
-        font-size: 14px;
-        font-family: var(--mdc-typography-body1-font-family, Roboto, sans-serif);
-        box-sizing: border-box;
-        cursor: pointer;
-        appearance: auto;
-        transition: border-color 0.15s;
+        background: var(--mdc-text-field-fill-color, var(--card-background-color));
       }
-
-      .field-select:focus {
-        outline: none;
-        border-color: var(--primary-color, #3498db);
-        border-width: 2px;
+      .colour-field-label {
+        font-size: 0.82rem;
+        color: var(--primary-color);
+        font-weight: 500;
       }
-
-      .field-helper {
-        display: block;
-        font-size: 11px;
-        color: var(--secondary-text-color);
-        margin-top: 5px;
-        padding: 0 4px;
-        line-height: 1.4;
-      }
-
-      .check-row {
+      .colour-field-body {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 10px 12px;
+        flex-wrap: wrap;
+      }
+      .colour-swatch-wrapper {
+        position: relative;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        overflow: hidden;
+        cursor: pointer;
+        border: 2px solid var(--divider-color, #e0e0e0);
+        flex-shrink: 0;
+      }
+      .colour-swatch-wrapper input[type="color"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        border: 0;
+        padding: 0;
+      }
+      .colour-swatch-preview { position: absolute; inset: 0; pointer-events: none; }
+      .colour-hex {
+        font-family: var(--code-font-family, monospace);
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+        min-width: 70px;
+      }
+      .colour-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+      .preset-swatch {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid var(--divider-color, #e0e0e0);
+        transition: transform 0.1s;
+        padding: 0;
+      }
+      .preset-swatch:hover { transform: scale(1.15); }
+      .preset-swatch.active {
+        border-color: var(--primary-text-color);
+        box-shadow: 0 0 0 2px var(--primary-color);
+      }
+      .colour-reset {
+        font-size: 0.78rem;
+        color: var(--secondary-text-color);
+        background: none;
         border: 1px solid var(--divider-color, #e0e0e0);
         border-radius: 4px;
-        background: var(--card-background-color, #fff);
+        padding: 4px 10px;
         cursor: pointer;
-        user-select: none;
-        margin-bottom: 4px;
-        transition: background 0.15s;
+        margin-left: auto;
       }
-
-      .check-row:hover { background: var(--secondary-background-color, #f5f5f5); }
-
-      .check-row input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        cursor: pointer;
-        flex-shrink: 0;
-        accent-color: var(--primary-color, #3498db);
-        margin: 0;
-      }
-
-      .check-label {
-        font-size: 14px;
-        color: var(--primary-text-color);
-        font-family: var(--mdc-typography-body1-font-family, Roboto, sans-serif);
-        flex: 1;
+      .colour-helper {
+        color: var(--secondary-text-color);
+        font-size: 0.82rem;
         line-height: 1.3;
-      }
-
-      .section-divider {
-        height: 1px;
-        background: var(--divider-color, #e0e0e0);
-        margin: 16px 0;
       }
     `;
   }
@@ -2068,153 +2060,204 @@ class TaskMateChildCardEditor extends LitElement {
     this.config = config;
   }
 
-  render() {
-    if (!this.hass || !this.config) {
-      return html``;
-    }
-
-    // Get children from overview entity
-    const overviewEntity = this.hass.states[this.config.entity];
+  _buildSchema() {
+    const overviewEntity = this.config?.entity
+      ? this.hass?.states?.[this.config.entity]
+      : null;
     const children = overviewEntity?.attributes?.children || [];
 
+    return [
+      { name: 'entity', selector: { entity: { domain: 'sensor' } } },
+      {
+        name: 'child_id',
+        selector: {
+          select: {
+            options: [
+              { value: '', label: this._t('child.editor.select_child') },
+              ...children.map((c) => ({ value: c.id, label: c.name })),
+            ],
+            mode: 'dropdown',
+          },
+        },
+      },
+      {
+        name: 'time_category',
+        selector: {
+          select: {
+            options: [
+              { value: 'morning', label: this._t('child.editor.time_category_morning') },
+              { value: 'afternoon', label: this._t('child.editor.time_category_afternoon') },
+              { value: 'evening', label: this._t('child.editor.time_category_evening') },
+              { value: 'night', label: this._t('child.editor.time_category_night') },
+              { value: 'anytime', label: this._t('child.editor.time_category_anytime') },
+              { value: 'all', label: this._t('child.editor.time_category_all') },
+            ],
+            mode: 'dropdown',
+          },
+        },
+      },
+      {
+        name: 'due_days_mode',
+        selector: {
+          select: {
+            options: [
+              { value: 'hide', label: this._t('child.editor.due_days_hide') },
+              { value: 'dim', label: this._t('child.editor.due_days_dim') },
+              { value: 'show', label: this._t('child.editor.due_days_show') },
+            ],
+            mode: 'dropdown',
+          },
+        },
+      },
+      {
+        name: 'recurrence_done_mode',
+        selector: {
+          select: {
+            options: [
+              { value: 'dim', label: this._t('child.editor.recurrence_dim') },
+              { value: 'hide', label: this._t('child.editor.recurrence_hide') },
+              { value: 'show', label: this._t('child.editor.recurrence_show') },
+            ],
+            mode: 'dropdown',
+          },
+        },
+      },
+      {
+        name: 'elapsed_time_mode',
+        selector: {
+          select: {
+            options: [
+              { value: 'dim', label: this._t('child.editor.elapsed_dim') },
+              { value: 'hide', label: this._t('child.editor.elapsed_hide') },
+              { value: 'show', label: this._t('child.editor.elapsed_show') },
+            ],
+            mode: 'dropdown',
+          },
+        },
+      },
+      { name: 'show_countdown', selector: { boolean: {} } },
+      { name: 'show_description', selector: { boolean: {} } },
+      { name: 'debug', selector: { boolean: {} } },
+    ];
+  }
+
+  _computeLabel = (entry) => {
+    const labels = {
+      entity: this._t('common.editor.overview_entity'),
+      child_id: this._t('child.editor.child'),
+      time_category: this._t('child.editor.time_category'),
+      due_days_mode: this._t('child.editor.chores_not_due_today'),
+      recurrence_done_mode: this._t('child.editor.recurring_when_completed'),
+      elapsed_time_mode: this._t('child.editor.missed_time_chores'),
+      show_countdown: this._t('child.editor.show_countdown'),
+      show_description: this._t('child.editor.show_description'),
+      debug: this._t('child.editor.show_debug'),
+    };
+    return labels[entry.name] ?? entry.name;
+  };
+
+  _computeHelper = (entry) => {
+    const helpers = {
+      entity: this._t('common.editor.overview_entity_helper'),
+      child_id: this._t('child.editor.child_helper'),
+      time_category: this._t('child.editor.time_category_helper'),
+      due_days_mode: this._t('child.editor.due_days_helper'),
+      recurrence_done_mode: this._t('child.editor.recurrence_helper'),
+      elapsed_time_mode: this._t('child.editor.elapsed_helper'),
+    };
+    return helpers[entry.name] ?? '';
+  };
+
+  render() {
+    if (!this.hass || !this.config) return html``;
+
+    const data = {
+      entity: this.config.entity || '',
+      child_id: this.config.child_id || '',
+      time_category: this.config.time_category || 'morning',
+      due_days_mode: this.config.due_days_mode || 'hide',
+      recurrence_done_mode: this.config.recurrence_done_mode || 'dim',
+      elapsed_time_mode: this.config.elapsed_time_mode || 'dim',
+      show_countdown: this.config.show_countdown !== false,
+      show_description: this.config.show_description === true,
+      debug: this.config.debug === true,
+    };
+
     return html`
-      <ha-textfield
-        label="${this._t('common.editor.overview_entity')}"
-        .value="${this.config.entity || ''}"
-        @change="${this._entityChanged}"
-        helper="${this._t('common.editor.overview_entity_helper')}"
-        helperPersistent
-        placeholder="sensor.taskmate_overview"
-      ></ha-textfield>
+      <ha-form
+        .hass=${this.hass}
+        .data=${data}
+        .schema=${this._buildSchema()}
+        .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
+        @value-changed=${this._formChanged}
+      ></ha-form>
+      ${this._renderColourPicker('header_color', '#9b59b6')}
+    `;
+  }
 
-      <div class="field-row">
-        <label class="field-label">${this._t('child.editor.child')}</label>
-        <select class="field-select" @change="${this._childIdChanged}">
-          <option value="">${this._t('child.editor.select_child')}</option>
-          ${children.map(child => html`
-            <option value="${child.id}" ?selected="${this.config.child_id === child.id}">${child.name}</option>
-          `)}
-        </select>
-        <span class="field-helper">${this._t('child.editor.child_helper')}</span>
-      </div>
-
-      <div class="field-row">
-        <label class="field-label">${this._t('child.editor.time_category')}</label>
-        <select class="field-select" @change="${this._timeCategoryChanged}">
-          <option value="morning" ?selected="${this.config.time_category === 'morning'}">${this._t('child.editor.time_category_morning')}</option>
-          <option value="afternoon" ?selected="${this.config.time_category === 'afternoon'}">${this._t('child.editor.time_category_afternoon')}</option>
-          <option value="evening" ?selected="${this.config.time_category === 'evening'}">${this._t('child.editor.time_category_evening')}</option>
-          <option value="night" ?selected="${this.config.time_category === 'night'}">${this._t('child.editor.time_category_night')}</option>
-          <option value="anytime" ?selected="${this.config.time_category === 'anytime'}">${this._t('child.editor.time_category_anytime')}</option>
-          <option value="all" ?selected="${this.config.time_category === 'all'}">${this._t('child.editor.time_category_all')}</option>
-        </select>
-        <span class="field-helper">${this._t('child.editor.time_category_helper')}</span>
-      </div>
-
-      <div class="field-row">
-        <label class="field-label">${this._t('child.editor.chores_not_due_today')}</label>
-        <select class="field-select" @change="${e => this._updateConfig('due_days_mode', e.target.value)}">
-          <option value="hide" ?selected="${(this.config.due_days_mode || 'hide') === 'hide'}">${this._t('child.editor.due_days_hide')}</option>
-          <option value="dim" ?selected="${this.config.due_days_mode === 'dim'}">${this._t('child.editor.due_days_dim')}</option>
-          <option value="show" ?selected="${this.config.due_days_mode === 'show'}">${this._t('child.editor.due_days_show')}</option>
-        </select>
-        <span class="field-helper">${this._t('child.editor.due_days_helper')}</span>
-      </div>
-
-      <div class="field-row">
-        <label class="field-label">${this._t('child.editor.recurring_when_completed')}</label>
-        <select class="field-select" @change="${e => this._updateConfig('recurrence_done_mode', e.target.value)}">
-          <option value="dim" ?selected="${(this.config.recurrence_done_mode || 'dim') === 'dim'}">${this._t('child.editor.recurrence_dim')}</option>
-          <option value="hide" ?selected="${this.config.recurrence_done_mode === 'hide'}">${this._t('child.editor.recurrence_hide')}</option>
-          <option value="show" ?selected="${this.config.recurrence_done_mode === 'show'}">${this._t('child.editor.recurrence_show')}</option>
-        </select>
-        <span class="field-helper">${this._t('child.editor.recurrence_helper')}</span>
-      </div>
-
-      <div class="field-row">
-        <label class="field-label">${this._t('child.editor.missed_time_chores')}</label>
-        <select class="field-select" @change="${e => this._updateConfig('elapsed_time_mode', e.target.value)}">
-          <option value="dim" ?selected="${(this.config.elapsed_time_mode || 'dim') === 'dim'}">${this._t('child.editor.elapsed_dim')}</option>
-          <option value="hide" ?selected="${this.config.elapsed_time_mode === 'hide'}">${this._t('child.editor.elapsed_hide')}</option>
-          <option value="show" ?selected="${this.config.elapsed_time_mode === 'show'}">${this._t('child.editor.elapsed_show')}</option>
-        </select>
-        <span class="field-helper">${this._t('child.editor.elapsed_helper')}</span>
-      </div>
-
-      <div class="section-divider"></div>
-
-      <label class="check-row">
-        <input type="checkbox"
-          ?checked="${this.config.show_countdown !== false}"
-          @change="${e => this._updateConfig('show_countdown', e.target.checked)}"
-        />
-        <span class="check-label">${this._t('child.editor.show_countdown')}</span>
-      </label>
-
-      <label class="check-row">
-        <input type="checkbox"
-          ?checked="${this.config.show_description === true}"
-          @change="${e => this._updateConfig('show_description', e.target.checked)}"
-        />
-        <span class="check-label">${this._t('child.editor.show_description')}</span>
-      </label>
-
-      <label class="check-row">
-        <input type="checkbox"
-          ?checked="${this.config.debug === true}"
-          @change="${this._debugChanged}"
-        />
-        <span class="check-label">${this._t('child.editor.show_debug')}</span>
-      </label>
-        <span class="field-helper">${this._t('common.editor.header_colour_helper')}</span>
-      </div>
-      <div class="field-row">
-        <label class="field-label">${this._t('common.editor.header_colour')}</label>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input
-            type="color"
-            .value=${this.config.header_color || '#9b59b6'}
-            @input=${e => this._updateConfig('header_color', e.target.value)}
-            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
-          />
-          <span style="font-size:13px;color:var(--secondary-text-color);">${this.config.header_color || '#9b59b6'}</span>
-          <button
-            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
-            @click=${() => this._updateConfig('header_color', '#9b59b6')}
+  _renderColourPicker(key, defaultValue) {
+    const current = this.config[key] || defaultValue;
+    const presets = ['#9b59b6', '#e67e22', '#27ae60', '#3498db', '#f1c40f', '#e74c3c', '#34495e'];
+    const isActive = (c) => c.toLowerCase() === current.toLowerCase();
+    return html`
+      <div class="colour-field">
+        <span class="colour-field-label">${this._t('common.editor.header_colour')}</span>
+        <div class="colour-field-body">
+          <label class="colour-swatch-wrapper">
+            <input type="color" .value=${current}
+              @input=${(e) => this._updateConfig(key, e.target.value)} />
+            <span class="colour-swatch-preview" style="background:${current}"></span>
+          </label>
+          <span class="colour-hex">${current}</span>
+          <div class="colour-presets">
+            ${presets.map((p) => html`
+              <button class="preset-swatch ${isActive(p) ? 'active' : ''}"
+                style="background:${p}"
+                title=${p}
+                @click=${(e) => { e.preventDefault(); this._updateConfig(key, p); }}
+              ></button>
+            `)}
+          </div>
+          <button class="colour-reset"
+            @click=${(e) => { e.preventDefault(); this._updateConfig(key, defaultValue); }}
           >${this._t('common.reset')}</button>
         </div>
-        <span class="field-helper">${this._t('common.editor.header_colour_helper')}</span>
+        <div class="colour-helper">${this._t('common.editor.header_colour_helper')}</div>
       </div>
     `;
   }
 
-  _entityChanged(e) {
-    this._updateConfig("entity", e.target.value);
-  }
-
-  _childIdChanged(e) {
-    this._updateConfig("child_id", e.target.value);
-  }
-
-  _timeCategoryChanged(e) {
-    this._updateConfig("time_category", e.target.value);
-  }
-
-  _debugChanged(e) {
-    this._updateConfig("debug", e.target.checked);
+  _formChanged(e) {
+    const newValues = e.detail.value || {};
+    const newConfig = { ...this.config };
+    for (const [key, value] of Object.entries(newValues)) {
+      const defaults = {
+        show_countdown: true, show_description: false, debug: false,
+        time_category: 'morning', due_days_mode: 'hide',
+        recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',
+      };
+      if (value === '' || value === null || value === undefined) {
+        delete newConfig[key];
+      } else if (defaults[key] !== undefined && value === defaults[key]) {
+        delete newConfig[key];
+      } else {
+        newConfig[key] = value;
+      }
+    }
+    this._dispatchConfig(newConfig);
   }
 
   _updateConfig(key, value) {
     const newConfig = { ...this.config, [key]: value };
-    if (value === undefined || value === "") {
-      delete newConfig[key];
-    }
-    const event = new CustomEvent("config-changed", {
-      detail: { config: newConfig },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
+    if (value === undefined || value === '') delete newConfig[key];
+    this._dispatchConfig(newConfig);
+  }
+
+  _dispatchConfig(newConfig) {
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: newConfig }, bubbles: true, composed: true,
+    }));
   }
 }
 

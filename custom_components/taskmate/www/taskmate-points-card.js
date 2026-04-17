@@ -947,18 +947,24 @@ class TaskMatePointsCardEditor extends LitElement {
   static get styles() {
     return css`
       :host { display: block; padding: 4px 0; }
-      ha-textfield { width: 100%; margin-bottom: 8px; }
-      .field-row { margin-bottom: 16px; }
-      .field-label { display: block; font-size: 12px; font-weight: 500; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; padding: 0 4px; }
-      .field-helper { display: block; font-size: 11px; color: var(--secondary-text-color); margin-top: 5px; padding: 0 4px; line-height: 1.4; }
-      .section-divider { height: 1px; background: var(--divider-color, #e0e0e0); margin: 16px 0; }
-      .check-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; background: var(--card-background-color, #fff); cursor: pointer; user-select: none; margin-bottom: 4px; }
-      .check-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; accent-color: var(--primary-color, #3498db); margin: 0; }
-      .check-label { font-size: 14px; color: var(--primary-text-color); flex: 1; }
-      .amounts-preview { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+      ha-form { display: block; margin-bottom: 16px; }
+      .amounts-preview { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0 16px; }
       .preview-btn { padding: 3px 9px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; border: none; }
       .preview-btn.add { background: #43a047; color: white; }
       .preview-btn.remove { background: #e53935; color: white; }
+      .colour-field { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border: 1px solid var(--outline-color, var(--divider-color, #e0e0e0)); border-radius: 4px; background: var(--mdc-text-field-fill-color, var(--card-background-color)); }
+      .colour-field-label { font-size: 0.82rem; color: var(--primary-color); font-weight: 500; }
+      .colour-field-body { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .colour-swatch-wrapper { position: relative; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); flex-shrink: 0; }
+      .colour-swatch-wrapper input[type="color"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+      .colour-swatch-preview { position: absolute; inset: 0; pointer-events: none; }
+      .colour-hex { font-family: var(--code-font-family, monospace); font-size: 0.85rem; color: var(--secondary-text-color); min-width: 70px; }
+      .colour-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+      .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
+      .preset-swatch:hover { transform: scale(1.15); }
+      .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }
 
@@ -973,89 +979,118 @@ class TaskMatePointsCardEditor extends LitElement {
     return Array.isArray(arr) ? arr.join(', ') : '';
   }
 
+  _buildSchema() {
+    return [
+      { name: 'entity', selector: { entity: { domain: 'sensor' } } },
+      { name: 'title', selector: { text: {} } },
+      { name: 'quick_add_amounts', selector: { text: {} } },
+      { name: 'quick_remove_amounts', selector: { text: {} } },
+      { name: 'show_dialog', selector: { boolean: {} } },
+    ];
+  }
+
+  _computeLabel = (entry) => {
+    const labels = {
+      entity: this._t('points_card.editor.entity_label'),
+      title: this._t('points_card.editor.title_label'),
+      quick_add_amounts: this._t('points_card.editor.add_buttons_label'),
+      quick_remove_amounts: this._t('points_card.editor.remove_buttons_label'),
+      show_dialog: this._t('points_card.editor.show_dialog_label'),
+    };
+    return labels[entry.name] ?? entry.name;
+  };
+
+  _computeHelper = (entry) => {
+    const helpers = {
+      entity: this._t('points_card.editor.entity_helper'),
+      quick_add_amounts: this._t('points_card.editor.add_buttons_helper'),
+      quick_remove_amounts: this._t('points_card.editor.remove_buttons_helper'),
+    };
+    return helpers[entry.name] ?? '';
+  };
+
   render() {
     if (!this.hass || !this.config) return html``;
 
     const addAmounts = this.config.quick_add_amounts || [1, 5, 10];
     const removeAmounts = this.config.quick_remove_amounts || [1, 5, 10];
 
+    const data = {
+      entity: this.config.entity || '',
+      title: this.config.title || '',
+      quick_add_amounts: this._amountsToString(addAmounts),
+      quick_remove_amounts: this._amountsToString(removeAmounts),
+      show_dialog: this.config.show_dialog !== false,
+    };
+
     return html`
-      <ha-textfield
-        label="${this._t('points_card.editor.entity_label')}"
-        .value="${this.config.entity || ''}"
-        @change="${e => this._updateConfig('entity', e.target.value)}"
-        helper="${this._t('points_card.editor.entity_helper')}"
-        helperPersistent
-        placeholder="sensor.taskmate_overview"
-      ></ha-textfield>
-
-      <ha-textfield
-        label="${this._t('points_card.editor.title_label')}"
-        .value="${this.config.title || ''}"
-        @change="${e => this._updateConfig('title', e.target.value)}"
-        placeholder="Manage Points"
-      ></ha-textfield>
-
-      <div class="section-divider"></div>
-
-      <div class="field-row">
-        <label class="field-label">${this._t('points_card.editor.add_buttons_label')}</label>
-        <ha-textfield
-          .value="${this._amountsToString(addAmounts)}"
-          @change="${e => this._updateConfig('quick_add_amounts', this._parseAmounts(e.target.value, [1,5,10]))}"
-          helper="${this._t('points_card.editor.add_buttons_helper')}"
-          helperPersistent
-          placeholder="1, 5, 10"
-          style="width:100%;"
-        ></ha-textfield>
-        <div class="amounts-preview">
-          ${addAmounts.map(a => html`<span class="preview-btn add">+${a}</span>`)}
-        </div>
+      <ha-form
+        .hass=${this.hass}
+        .data=${data}
+        .schema=${this._buildSchema()}
+        .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
+        @value-changed=${this._formChanged}
+      ></ha-form>
+      <div class="amounts-preview">
+        ${addAmounts.map(a => html`<span class="preview-btn add">+${a}</span>`)}
+        ${removeAmounts.map(a => html`<span class="preview-btn remove">−${a}</span>`)}
       </div>
+      ${this._renderColourPicker('header_color', '#2980b9')}
+    `;
+  }
 
-      <div class="field-row">
-        <label class="field-label">${this._t('points_card.editor.remove_buttons_label')}</label>
-        <ha-textfield
-          .value="${this._amountsToString(removeAmounts)}"
-          @change="${e => this._updateConfig('quick_remove_amounts', this._parseAmounts(e.target.value, [1,5,10]))}"
-          helper="${this._t('points_card.editor.remove_buttons_helper')}"
-          helperPersistent
-          placeholder="1, 5, 10"
-          style="width:100%;"
-        ></ha-textfield>
-        <div class="amounts-preview">
-          ${removeAmounts.map(a => html`<span class="preview-btn remove">−${a}</span>`)}
-        </div>
-      </div>
-
-      <label class="check-row">
-        <input type="checkbox"
-          ?checked="${this.config.show_dialog !== false}"
-          @change="${e => this._updateConfig('show_dialog', e.target.checked)}"
-        />
-        <span class="check-label">${this._t('points_card.editor.show_dialog_label')}</span>
-      </label>
-
-      <div class="section-divider"></div>
-
-      <div class="field-row">
-        <label class="field-label">${this._t('points_card.editor.header_colour_label')}</label>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input
-            type="color"
-            .value=${this.config.header_color || '#2980b9'}
-            @input=${e => this._updateConfig('header_color', e.target.value)}
-            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
-          />
-          <span style="font-size:13px;color:var(--secondary-text-color);">${this.config.header_color || '#2980b9'}</span>
-          <button
-            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
-            @click=${() => this._updateConfig('header_color', '#2980b9')}
+  _renderColourPicker(key, defaultValue) {
+    const current = this.config[key] || defaultValue;
+    const presets = [defaultValue, '#e67e22', '#27ae60', '#9b59b6', '#f1c40f', '#e74c3c', '#34495e'];
+    const isActive = (c) => c.toLowerCase() === current.toLowerCase();
+    return html`
+      <div class="colour-field">
+        <span class="colour-field-label">${this._t('common.editor.header_colour')}</span>
+        <div class="colour-field-body">
+          <label class="colour-swatch-wrapper">
+            <input type="color" .value=${current}
+              @input=${(e) => this._updateConfig(key, e.target.value)} />
+            <span class="colour-swatch-preview" style="background:${current}"></span>
+          </label>
+          <span class="colour-hex">${current}</span>
+          <div class="colour-presets">
+            ${presets.map((p) => html`
+              <button class="preset-swatch ${isActive(p) ? 'active' : ''}"
+                style="background:${p}"
+                title=${p}
+                @click=${(e) => { e.preventDefault(); this._updateConfig(key, p); }}
+              ></button>
+            `)}
+          </div>
+          <button class="colour-reset"
+            @click=${(e) => { e.preventDefault(); this._updateConfig(key, defaultValue); }}
           >${this._t('common.reset')}</button>
         </div>
-        <span class="field-helper">${this._t('points_card.editor.header_colour_helper')}</span>
+        <div class="colour-helper">${this._t('common.editor.header_colour_helper')}</div>
       </div>
     `;
+  }
+
+  _formChanged(e) {
+    const newValues = e.detail.value || {};
+    const newConfig = { ...this.config };
+    for (const [key, value] of Object.entries(newValues)) {
+      if (value === '' || value === null || value === undefined) {
+        delete newConfig[key];
+      } else if (key === 'show_dialog' && value === true) {
+        delete newConfig[key];
+      } else if (key === 'quick_add_amounts' || key === 'quick_remove_amounts') {
+        const parsed = this._parseAmounts(value, null);
+        if (parsed && parsed.length) newConfig[key] = parsed;
+        else delete newConfig[key];
+      } else {
+        newConfig[key] = value;
+      }
+    }
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: newConfig }, bubbles: true, composed: true,
+    }));
   }
 
   _t(key, params) {
