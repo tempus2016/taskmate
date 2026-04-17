@@ -65,6 +65,7 @@
   "approvals.please_define_entity": "Please define an entity (pending_approvals sensor)",
   "approvals.all_caught_up": "All caught up!",
   "approvals.no_pending_approvals": "No pending approvals",
+  "approvals.reward_claims_section": "Reward claims",
   "approvals.approve": "Approve",
   "approvals.reject": "Reject",
   "approvals.error_title": "TaskMate Error",

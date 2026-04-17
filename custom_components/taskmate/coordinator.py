@@ -821,13 +821,35 @@ class TaskMateCoordinator(DataUpdateCoordinator):
     async def _async_notify_pending_approval(
         self, child_name: str, chore_name: str, points: int
     ) -> None:
-        """Fire a persistent notification and optional notify service when approval is needed."""
+        """Fire a persistent notification and optional notify service when a chore needs approval."""
         points_name = self.storage.get_points_name()
         message = (
             f"{child_name} completed '{chore_name}' (+{points} {points_name}) "
             f"and is waiting for your approval."
         )
+        notification_id = (
+            f"taskmate_approval_{child_name}_{chore_name}".replace(" ", "_").lower()
+        )
+        await self._async_fire_approval_notification(message, notification_id)
 
+    async def _async_notify_pending_reward_claim(
+        self, child_name: str, reward_name: str, cost: int
+    ) -> None:
+        """Fire a persistent notification and optional notify service when a reward claim needs approval."""
+        points_name = self.storage.get_points_name()
+        message = (
+            f"{child_name} claimed '{reward_name}' ({cost} {points_name}) "
+            f"and is waiting for your approval."
+        )
+        notification_id = (
+            f"taskmate_reward_claim_{child_name}_{reward_name}".replace(" ", "_").lower()
+        )
+        await self._async_fire_approval_notification(message, notification_id)
+
+    async def _async_fire_approval_notification(
+        self, message: str, notification_id: str
+    ) -> None:
+        """Shared helper: create a persistent notification and (optionally) call a notify.* service."""
         self.hass.async_create_task(
             self.hass.services.async_call(
                 "persistent_notification",
@@ -835,10 +857,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 {
                     "title": "TaskMate — Approval Needed",
                     "message": message,
-                    "notification_id": (
-                        f"taskmate_approval_{child_name}_{chore_name}"
-                        .replace(" ", "_").lower()
-                    ),
+                    "notification_id": notification_id,
                 },
                 blocking=False,
             )
@@ -929,6 +948,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         self.storage.add_reward_claim(claim)
         await self.storage.async_save()
         await self.async_refresh()
+        await self._async_notify_pending_reward_claim(
+            child.name, reward.name, reward.cost
+        )
         return claim
 
     async def async_approve_reward(self, claim_id: str) -> None:
