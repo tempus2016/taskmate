@@ -10,8 +10,8 @@ body:
     attributes:
       value: |
         Thanks for taking the time to report a bug. Please fill in as much detail as possible — it helps fix issues faster.
-        
-        Before submitting, please check the [Troubleshooting wiki](https://github.com/tempus2016/taskmate/wiki/Troubleshooting) to see if your issue is already covered.
+
+        Before submitting, please check the [Troubleshooting section of the README](https://github.com/tempus2016/taskmate#troubleshooting) and [existing issues](https://github.com/tempus2016/taskmate/issues) to see if your issue is already covered.
 
   # ── Environment ──────────────────────────────────────────────────────────────
 

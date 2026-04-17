@@ -1,6 +1,7 @@
 """Data coordinator for TaskMate integration."""
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date, datetime, timedelta
 import logging
 from typing import Any
@@ -30,8 +31,8 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         )
         self.storage = TaskMateStorage(hass, entry_id)
         self.entry_id = entry_id
-        self._unsub_midnight: callable | None = None
-        self._unsub_prune: callable | None = None
+        self._unsub_midnight: Callable[[], None] | None = None
+        self._unsub_prune: Callable[[], None] | None = None
 
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""

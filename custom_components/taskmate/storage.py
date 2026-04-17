@@ -409,7 +409,7 @@ class TaskMateStorage:
     # Last completed store — used for recurrence window checks
     def get_last_completed(self, chore_id: str, child_id: str) -> dict:
         """Get last_completed record for a chore/child pair.
-        
+
         Returns dict with 'current' and 'previous' ISO datetime strings,
         or empty dict if never completed.
         """
