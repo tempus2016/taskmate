@@ -901,7 +901,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 pool_filled = True
 
         if not pool_filled:
-            # Wallet mode: verify child has enough uncommitted points
+            # Wallet mode: verify child has enough uncommitted points.
+            # Pool allocations are already deducted from child.points at allocation time,
+            # so they don't need to be subtracted again here.
             pending_claims = self.storage.get_pending_reward_claims()
             committed = 0
             for c in pending_claims:
@@ -909,8 +911,6 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                     pending_reward = self.get_reward(c.reward_id)
                     if pending_reward:
                         committed += pending_reward.cost
-            # Pool-allocated points are already reserved — count them as committed too
-            committed += self.storage.get_total_allocated_for_child(child_id)
             available_points = child.points - committed
 
             if available_points < effective_cost:
@@ -962,35 +962,17 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                     is_pool_mode = True
 
                 if is_pool_mode:
-                    # Pool mode: each contributing child loses exactly their own allocation
-                    # from gross points. The allocation records are cleared.
+                    # Pool mode: points were already deducted from child.points at allocation
+                    # time — approving the redeem just clears the allocation record(s).
                     if reward.is_jackpot:
                         jackpot_allocs = [
                             a for a in self.storage.get_pool_allocations()
                             if a.reward_id == claim.reward_id and a.allocated_points > 0
                         ]
                         for alloc in jackpot_allocs:
-                            contrib_child = self.get_child(alloc.child_id)
-                            if contrib_child:
-                                contrib_child.points = max(
-                                    0, contrib_child.points - alloc.allocated_points
-                                )
-                                self.storage.update_child(contrib_child)
                             self.storage.remove_pool_allocation(alloc.child_id, alloc.reward_id)
                     else:
-                        # Regular reward: this child loses reward.cost from gross balance,
-                        # allocation is consumed.
-                        if child.points < effective_cost:
-                            raise ValueError(
-                                f"Not enough points to approve. Need {effective_cost}, have {child.points}"
-                            )
-                        child.points -= effective_cost
-                        self.storage.update_child(child)
-                        pool_alloc.allocated_points -= effective_cost
-                        if pool_alloc.allocated_points <= 0:
-                            self.storage.remove_pool_allocation(claim.child_id, claim.reward_id)
-                        else:
-                            self.storage.upsert_pool_allocation(pool_alloc)
+                        self.storage.remove_pool_allocation(claim.child_id, claim.reward_id)
                 else:
                     # Wallet mode: deduct directly from child.points
                     if child.points < effective_cost:
@@ -1019,8 +1001,10 @@ class TaskMateCoordinator(DataUpdateCoordinator):
     ) -> PoolAllocation:
         """Move `points` from a child's spendable balance into a reward pool.
 
-        Spendable balance = child.points − (committed pending claims) − (existing pool allocations).
-        Requested points are capped silently at the pool's remaining capacity.
+        Deducts immediately from child.points so the visible balance reflects the
+        commitment. The matching PoolAllocation record tracks the earmarked total
+        for each (child, reward) pair. Requested points are capped silently at the
+        pool's remaining capacity and the child's spendable balance.
         Allocations are locked — there is no matching "withdraw" operation.
         """
         child = self.get_child(child_id)
@@ -1034,7 +1018,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         if points < 1:
             raise ValueError("Points to allocate must be at least 1")
 
-        # Compute this child's spendable balance (uncommitted, unallocated points)
+        # Spendable balance = child.points − points committed to other pending claims.
+        # (Already-allocated points are no longer part of child.points, so we do NOT
+        # subtract total_allocated here — they've been deducted at allocation time.)
         pending_claims = self.storage.get_pending_reward_claims()
         committed = 0
         for c in pending_claims:
@@ -1042,8 +1028,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 pending_reward = self.get_reward(c.reward_id)
                 if pending_reward:
                     committed += pending_reward.cost
-        total_allocated = self.storage.get_total_allocated_for_child(child_id)
-        spendable = child.points - committed - total_allocated
+        spendable = child.points - committed
 
         if spendable < 1:
             raise ValueError(f"No spendable points available for {child.name}")
@@ -1061,6 +1046,10 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         capped_points = min(points, spendable, room_left)
 
+        # Deduct from the visible balance; the allocation record holds the earmarked points.
+        child.points -= capped_points
+        self.storage.update_child(child)
+
         allocation = PoolAllocation(
             child_id=child_id,
             reward_id=reward_id,
@@ -1069,7 +1058,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         )
         self.storage.upsert_pool_allocation(allocation)
 
-        # Audit trail: negative transaction to show the reservation
+        # Audit trail: negative transaction showing the deduction
         transaction = PointsTransaction(
             child_id=child_id,
             points=-capped_points,

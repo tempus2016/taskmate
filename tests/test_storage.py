@@ -362,3 +362,85 @@ class TestSettings:
         assert storage.get_points_icon() == "mdi:star"
         storage.set_points_icon("mdi:coin")
         assert storage.get_points_icon() == "mdi:coin"
+
+
+class TestPoolSemanticsV2Migration:
+    """Migration from v3.0.0-beta1 to beta2 pool allocation semantics.
+
+    In beta1, allocations did not deduct from child.points. In beta2, they do.
+    The migration subtracts each existing allocation from the corresponding child's
+    points once on first load.
+    """
+
+    def test_beta1_install_has_points_adjusted_on_upgrade(self):
+        existing = {
+            "children": [
+                {"id": "kid1", "name": "Alice", "points": 31,
+                 "total_points_earned": 100, "total_chores_completed": 5,
+                 "current_streak": 0, "best_streak": 0, "avatar": "mdi:account-circle",
+                 "pending_rewards": [], "chore_order": [],
+                 "last_completion_date": None, "streak_paused": False,
+                 "streak_milestones_achieved": [], "awarded_perfect_weeks": []},
+            ],
+            "chores": [],
+            "rewards": [],
+            "completions": [],
+            "reward_claims": [],
+            "points_transactions": [],
+            "pool_allocations": [
+                {"id": "a1", "child_id": "kid1", "reward_id": "r1", "allocated_points": 20},
+                {"id": "a2", "child_id": "kid1", "reward_id": "r2", "allocated_points": 5},
+            ],
+            "points_name": "Stars", "points_icon": "mdi:star",
+        }
+        storage = _make_storage(initial_data=existing)
+        run(storage.async_load())
+
+        # 31 − 20 − 5 = 6
+        assert storage._data["children"][0]["points"] == 6
+        assert storage._data["_pool_semantics_version"] == 2
+
+    def test_already_migrated_is_idempotent(self):
+        existing = {
+            "children": [
+                {"id": "kid1", "name": "Alice", "points": 10,
+                 "total_points_earned": 100, "total_chores_completed": 5,
+                 "current_streak": 0, "best_streak": 0, "avatar": "mdi:account-circle",
+                 "pending_rewards": [], "chore_order": [],
+                 "last_completion_date": None, "streak_paused": False,
+                 "streak_milestones_achieved": [], "awarded_perfect_weeks": []},
+            ],
+            "chores": [], "rewards": [], "completions": [],
+            "reward_claims": [], "points_transactions": [],
+            "pool_allocations": [
+                {"id": "a1", "child_id": "kid1", "reward_id": "r1", "allocated_points": 20},
+            ],
+            "points_name": "Stars", "points_icon": "mdi:star",
+            "_pool_semantics_version": 2,
+        }
+        storage = _make_storage(initial_data=existing)
+        run(storage.async_load())
+        # Points untouched because migration flag is already set
+        assert storage._data["children"][0]["points"] == 10
+
+    def test_zero_points_does_not_go_negative(self):
+        existing = {
+            "children": [
+                {"id": "kid1", "name": "Alice", "points": 5,
+                 "total_points_earned": 100, "total_chores_completed": 5,
+                 "current_streak": 0, "best_streak": 0, "avatar": "mdi:account-circle",
+                 "pending_rewards": [], "chore_order": [],
+                 "last_completion_date": None, "streak_paused": False,
+                 "streak_milestones_achieved": [], "awarded_perfect_weeks": []},
+            ],
+            "chores": [], "rewards": [], "completions": [],
+            "reward_claims": [], "points_transactions": [],
+            "pool_allocations": [
+                {"id": "a1", "child_id": "kid1", "reward_id": "r1", "allocated_points": 99},
+            ],
+            "points_name": "Stars", "points_icon": "mdi:star",
+        }
+        storage = _make_storage(initial_data=existing)
+        run(storage.async_load())
+        # max(0, 5 - 99) = 0
+        assert storage._data["children"][0]["points"] == 0
