@@ -12,13 +12,12 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from datetime import datetime
 
 import logging
 
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
-from .models import Child, Chore, Reward
+from .models import Child
 
 _LOGGER = logging.getLogger(__name__)
 

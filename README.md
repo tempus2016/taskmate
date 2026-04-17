@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/logo.svg" alt="TaskMate" width="180">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/logo.svg" alt="TaskMate" width="180">
 </p>
  
 <h1 align="center">TaskMate</h1>
@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://github.com/tempus2016/taskmate/releases"><img src="https://img.shields.io/github/v/release/tempus2016/taskmate" alt="Latest Release"></a>
   <a href="https://github.com/tempus2016/taskmate/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
-  <img src="https://img.shields.io/badge/Home%20Assistant-2025.1+-blue" alt="HA Version">
+  <img src="https://img.shields.io/badge/Home%20Assistant-2024.1+-blue" alt="HA Version">
 </p>
  
 > Originally created by [vinnybad/choremander](https://github.com/vinnybad/choremander). This fork adds 14 Lovelace cards, a bonus points system, streak tracking, reward approval flow, a penalty system, and much more.
@@ -87,7 +87,7 @@ Click **Configure** on the TaskMate integration card to access:
 - **Settings** — bonus points, streak mode, history retention
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/settingsPage.png" alt="Settings Menu" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/settingsPage.png" alt="Settings Menu" width="500">
 </p>
  
 ### Add Cards to Your Dashboard
@@ -366,7 +366,7 @@ data:
 Kid-friendly chore completion. The entire row is tappable — no small targets. Supports colourful animated badges, confetti celebrations, and completion sounds. Tapping a completed chore undoes it.
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/childCard.png" alt="Child Card" width="300">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/childCard.png" alt="Child Card" width="300">
 </p>
  
 ```yaml
@@ -393,7 +393,7 @@ header_color: "#9b59b6"
 Shows all available rewards with progress bars and claim buttons. After claiming, the button shows "Awaiting parent approval" until approved. Jackpot rewards show a colour-coded contribution bar per child.
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/rewardCard.png" alt="Rewards Card" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/rewardCard.png" alt="Rewards Card" width="500">
 </p>
  
 ```yaml
@@ -411,7 +411,7 @@ header_color: "#e67e22"
 Review and approve or reject chore completions requiring parent sign-off. Items are grouped by date and time of day.
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/pendingApproval.png" alt="Pending Approvals" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/pendingApproval.png" alt="Pending Approvals" width="500">
 </p>
  
 ```yaml
@@ -429,7 +429,7 @@ header_color: "#27ae60"
 Manually award bonus points or deduct points for consequences — useful for situations outside the normal chore flow.
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/managePoints.png" alt="Manage Points" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/managePoints.png" alt="Manage Points" width="500">
 </p>
  
 Each child row shows two rows of quick-tap buttons — one for adding, one for removing. Tap a button to apply instantly with no dialog. The `⋯` button opens a dialog for a custom amount with an optional reason.
@@ -451,7 +451,7 @@ header_color: "#2980b9"
 Drag-and-drop interface to set the order chores appear for each child.
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/reorderCard.png" alt="Reorder Card" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/reorderCard.png" alt="Reorder Card" width="500">
 </p> Saves per-child.
  
 ```yaml
@@ -474,7 +474,7 @@ The most useful parent card — four tabs in one:
 - **Points** — quick +/- buttons per child
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/parent-dashboard.png" alt="Parent Dashboard" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/parent-dashboard.png" alt="Parent Dashboard" width="500">
 </p>
  
 ```yaml
@@ -493,7 +493,7 @@ header_color: "#c0392b"
 At-a-glance view of every child — today's chore progress bars, current points, and a pulsing red badge when approvals are pending. Progress counts only chores due today — chores with `due_days` set are excluded from the total on days they are not scheduled.
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/overview.png" alt="Overview" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/overview.png" alt="Overview" width="500">
 </p>
  
 ```yaml
@@ -510,7 +510,7 @@ header_color: "#8e44ad"
 Scrollable timeline of everything — chore completions, manual point adjustments, bonus point events (weekends, streaks, perfect weeks), and reward claims. Grouped by Today / Yesterday / date.
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/activity.png" alt="Activity" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/activity.png" alt="Activity" width="500">
 </p>
  
 ```yaml
@@ -528,7 +528,7 @@ header_color: "#2471a3"
 Per-child streak display with a dot history grid, current and best streak, and achievement badges.
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/streak.png" alt="Streak" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/streak.png" alt="Streak" width="500">
 </p>
  
 ```yaml
@@ -546,7 +546,7 @@ header_color: "#e74c3c"
 Monday–Sunday bar chart
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/weeklyCard.png" alt="Weekly Card" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/weeklyCard.png" alt="Weekly Card" width="500">
 </p> with headline stats (chores completed, points earned, days active). Counts only approved completions.
  
 ```yaml
@@ -563,7 +563,7 @@ header_color: "#27ae60"
 Canvas-based line graph
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/pointsGraph.png" alt="Points Graph" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/pointsGraph.png" alt="Points Graph" width="500">
 </p> of points over time. Supports multiple children with colour-coded lines and a hover/touch tooltip.
  
 ```yaml
@@ -581,7 +581,7 @@ header_color: "#d35400"
 Full-screen motivational display
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/rewardProgressCard.png" alt="Reward Progress" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/rewardProgressCard.png" alt="Reward Progress" width="500">
 </p> for a single reward — animated progress bar, floating reward icon, and a pulsing "Ready to claim!" badge. Designed for wall-mounted tablets.
  
 ```yaml
@@ -600,7 +600,7 @@ header_color: "#7d3c98"
 Competitive ranking
  
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/leaderboardCard.png" alt="Leaderboard" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/leaderboardCard.png" alt="Leaderboard" width="500">
 </p> of all children. Top 3 get gold/silver/bronze styling. For single-child households, automatically shows a personal bests display instead.
  
 ```yaml
@@ -619,7 +619,7 @@ header_color: "#b7950b"
 Parent-facing card for applying point-deduction penalties. Select the child using tabs, then tap **Apply** next to the relevant penalty. Tap the pencil icon to add, edit, or delete penalty definitions.
 
 <p align="center">
-  <img src="https://github.com/tempus2016/taskmate/blob/main/images/penalties.png" alt="Settings Menu" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/penalties.png" alt="Settings Menu" width="500">
 </p>
 
 ```yaml

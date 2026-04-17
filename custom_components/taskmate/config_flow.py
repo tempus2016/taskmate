@@ -19,12 +19,9 @@ from .const import (
     DEFAULT_POINTS_ICON,
     DEFAULT_POINTS_NAME,
     DOMAIN,
-    FIRST_OCCURRENCE_MODES,
     RECURRENCE_OPTIONS,
     REWARD_ICON_OPTIONS,
-    SCHEDULE_MODES,
     TIME_CATEGORIES,
-    TIME_CATEGORY_ICONS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -91,8 +88,14 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
 
     @property
     def coordinator(self):
-        """Get the coordinator."""
-        return self.hass.data[DOMAIN][self.config_entry.entry_id]
+        """Get the coordinator, or raise a clear error if not yet registered."""
+        entry_id = getattr(self.config_entry, "entry_id", None)
+        domain_data = self.hass.data.get(DOMAIN) if self.hass is not None else None
+        if not entry_id or not domain_data or entry_id not in domain_data:
+            raise RuntimeError(
+                "TaskMate coordinator is not available for this config entry yet"
+            )
+        return domain_data[entry_id]
 
     async def _async_get_user_language(self) -> str:
         """Get the current user's language from their HA profile."""
@@ -113,8 +116,8 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     user_data = await frontend_data.async_get_user_data(user_id)
                     if user_data and user_data.get("language"):
                         return user_data["language"]
-        except Exception:
-            pass
+        except Exception as err:
+            _LOGGER.debug("TaskMate i18n: could not resolve user language: %s", err)
         # Fall back to system language
         return getattr(self.hass.config, 'language', None) or "en"
 
@@ -150,7 +153,8 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     self._translations = json.loads(text)
                     _LOGGER.debug("TaskMate i18n: loaded file %s", candidate)
                     return
-                except Exception:
+                except (OSError, ValueError) as err:
+                    _LOGGER.debug("TaskMate i18n: failed to load %s: %s", candidate, err)
                     continue
         self._translations = {}
 
@@ -545,7 +549,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 if not chore_names:
                     errors["chore_names"] = "name_required"
                 else:
-                    chores = await self.coordinator.async_add_chores_bulk(
+                    await self.coordinator.async_add_chores_bulk(
                         chore_names=chore_names,
                         points=int(user_input.get("points", 10)),
                         due_days=user_input.get("due_days", []),
