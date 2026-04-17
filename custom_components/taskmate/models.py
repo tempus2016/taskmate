@@ -8,7 +8,13 @@ import uuid
 
 
 def generate_id() -> str:
-    """Generate a unique ID."""
+    """Generate a unique ID.
+
+    Returns the first 16 hex chars of a UUID4 (64 bits). Short enough to
+    use in dotted HA keys and service-call payloads without being unwieldy;
+    still provides ~1.8e19 values, far more than the entities a household
+    will ever create.
+    """
     return str(uuid.uuid4()).replace("-", "")[:16]
 
 
