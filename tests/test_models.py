@@ -7,6 +7,7 @@ from datetime import timezone
 import pytest
 
 from custom_components.taskmate.models import (
+    Bonus,
     Child,
     Chore,
     ChoreCompletion,
@@ -396,3 +397,41 @@ class TestChoreOneShotFields:
         restored = Chore.from_dict(chore.to_dict())
         assert restored.enabled is False
         assert restored.disabled_for == ["kid1", "kid2"]
+
+
+# ---------------------------------------------------------------------------
+# Bonus model
+# ---------------------------------------------------------------------------
+
+class TestBonus:
+    def test_defaults(self):
+        bonus = Bonus(name="Tidied bedroom", points=5)
+        assert bonus.description == ""
+        assert bonus.icon == "mdi:star-circle-outline"
+        assert bonus.assigned_to == []
+        assert bonus.id
+
+    def test_roundtrip(self):
+        bonus = Bonus(
+            name="Helped with dishes",
+            points=10,
+            description="Cleared and washed up",
+            icon="mdi:silverware-fork-knife",
+            assigned_to=["kid1", "kid2"],
+            id="bonus001",
+        )
+        restored = Bonus.from_dict(bonus.to_dict())
+        assert restored.name == bonus.name
+        assert restored.points == bonus.points
+        assert restored.description == bonus.description
+        assert restored.icon == bonus.icon
+        assert restored.assigned_to == bonus.assigned_to
+        assert restored.id == bonus.id
+
+    def test_legacy_missing_fields(self):
+        legacy = {"name": "Old bonus", "points": 3, "id": "legacy"}
+        bonus = Bonus.from_dict(legacy)
+        assert bonus.description == ""
+        assert bonus.icon == "mdi:star-circle-outline"
+        assert bonus.assigned_to == []
+        assert bonus.id == "legacy"

@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
-from .models import Child, Chore, ChoreCompletion, Penalty, Reward, RewardClaim, PointsTransaction
+from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, Reward, RewardClaim, PointsTransaction
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -312,6 +312,37 @@ class TaskMateStorage:
         """Remove a penalty."""
         self._data["penalties"] = [
             p for p in self._data.get("penalties", []) if p.get("id") != penalty_id
+        ]
+
+    # Bonuses management
+    def get_bonuses(self) -> list[Bonus]:
+        """Get all bonuses."""
+        return [Bonus.from_dict(b) for b in self._data.get("bonuses", [])]
+
+    def get_bonus(self, bonus_id: str) -> Bonus | None:
+        """Get a bonus by ID."""
+        for b in self._data.get("bonuses", []):
+            if b.get("id") == bonus_id:
+                return Bonus.from_dict(b)
+        return None
+
+    def add_bonus(self, bonus) -> None:
+        """Add a new bonus."""
+        self._data.setdefault("bonuses", []).append(bonus.to_dict())
+
+    def update_bonus(self, bonus) -> None:
+        """Update an existing bonus."""
+        bonuses = self._data.get("bonuses", [])
+        for i, b in enumerate(bonuses):
+            if b.get("id") == bonus.id:
+                bonuses[i] = bonus.to_dict()
+                return
+        bonuses.append(bonus.to_dict())
+
+    def remove_bonus(self, bonus_id: str) -> None:
+        """Remove a bonus."""
+        self._data["bonuses"] = [
+            b for b in self._data.get("bonuses", []) if b.get("id") != bonus_id
         ]
 
     # Points transactions management
