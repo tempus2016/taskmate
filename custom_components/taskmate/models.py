@@ -357,6 +357,41 @@ class Penalty:
 
 
 @dataclass
+class Bonus:
+    """Represents a bonus that awards points to a child."""
+
+    name: str
+    points: int  # Points to award (always positive)
+    description: str = ""
+    icon: str = "mdi:star-circle-outline"
+    assigned_to: list[str] = field(default_factory=list)  # Child IDs who can receive this bonus (empty = all)
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Bonus":
+        """Create a Bonus from a dictionary."""
+        return cls(
+            id=data.get("id", generate_id()),
+            name=data.get("name", ""),
+            points=data.get("points", 0),
+            description=data.get("description", ""),
+            icon=data.get("icon", "mdi:star-circle-outline"),
+            assigned_to=list(data.get("assigned_to", [])),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "points": self.points,
+            "description": self.description,
+            "icon": self.icon,
+            "assigned_to": self.assigned_to,
+        }
+
+
+@dataclass
 class PointsTransaction:
     """Represents a manual points adjustment (add or remove)."""
 

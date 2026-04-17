@@ -284,3 +284,113 @@ apply_penalty:
       required: true
       selector:
         text:
+
+add_bonus:
+  name: Add Bonus
+  description: Create a new bonus definition
+  fields:
+    name:
+      name: Name
+      description: The name of the bonus
+      required: true
+      selector:
+        text:
+    points:
+      name: Points
+      description: The number of points to award when applied
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 10000
+          mode: box
+    description:
+      name: Description
+      description: Optional description of the bonus
+      required: false
+      selector:
+        text:
+    icon:
+      name: Icon
+      description: MDI icon for the bonus
+      required: false
+      selector:
+        icon:
+    assigned_to:
+      name: Assigned To
+      description: List of child IDs this bonus applies to (empty for all)
+      required: false
+      selector:
+        object:
+
+update_bonus:
+  name: Update Bonus
+  description: Update an existing bonus definition
+  fields:
+    bonus_id:
+      name: Bonus ID
+      description: The ID of the bonus to update
+      required: true
+      selector:
+        text:
+    name:
+      name: Name
+      description: New name for the bonus
+      required: false
+      selector:
+        text:
+    points:
+      name: Points
+      description: New points value for the bonus
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 10000
+          mode: box
+    description:
+      name: Description
+      description: New description for the bonus
+      required: false
+      selector:
+        text:
+    icon:
+      name: Icon
+      description: New icon for the bonus
+      required: false
+      selector:
+        icon:
+    assigned_to:
+      name: Assigned To
+      description: New list of child IDs this bonus applies to
+      required: false
+      selector:
+        object:
+
+remove_bonus:
+  name: Remove Bonus
+  description: Remove a bonus definition
+  fields:
+    bonus_id:
+      name: Bonus ID
+      description: The ID of the bonus to remove
+      required: true
+      selector:
+        text:
+
+apply_bonus:
+  name: Apply Bonus
+  description: Apply a bonus to a child, awarding points
+  fields:
+    bonus_id:
+      name: Bonus ID
+      description: The ID of the bonus to apply
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child to apply the bonus to
+      required: true
+      selector:
+        text:

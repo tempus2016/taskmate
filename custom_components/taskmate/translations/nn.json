@@ -569,6 +569,86 @@
           "description": "ID-en til bornet straffen skal brukast på"
         }
       }
+    },
+    "add_bonus": {
+      "name": "Legg til bonus",
+      "description": "Opprett ein ny bonusdefinisjon",
+      "fields": {
+        "name": {
+          "name": "Namn",
+          "description": "Namnet på bonusen"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Kor mange poeng som vert tildelt når bonusen vert brukt"
+        },
+        "description": {
+          "name": "Omtale",
+          "description": "Valfri omtale av bonusen"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "MDI-ikon for bonusen"
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Liste over born-ID-ar bonusen gjeld for"
+        }
+      }
+    },
+    "update_bonus": {
+      "name": "Oppdater bonus",
+      "description": "Oppdater ein eksisterande bonusdefinisjon",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "ID-en til bonusen som skal oppdaterast"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Nytt namn for bonusen"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Ny poengverdi"
+        },
+        "description": {
+          "name": "Omtale",
+          "description": "Ny omtale"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Nytt ikon"
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Ny liste over born-ID-ar"
+        }
+      }
+    },
+    "remove_bonus": {
+      "name": "Fjern bonus",
+      "description": "Fjern ein bonusdefinisjon",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "ID-en til bonusen som skal fjernast"
+        }
+      }
+    },
+    "apply_bonus": {
+      "name": "Bruk bonus",
+      "description": "Bruk ein bonus på eit born og tildel poeng",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "ID-en til bonusen som skal brukast"
+        },
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet bonusen skal brukast på"
+        }
+      }
     }
   }
 }

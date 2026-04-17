@@ -11,7 +11,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
-from .models import Child, Chore, ChoreCompletion, Penalty, Reward, RewardClaim, PointsTransaction
+from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, Reward, RewardClaim, PointsTransaction
 from .storage import TaskMateStorage
 
 _LOGGER = logging.getLogger(__name__)
@@ -208,6 +208,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             "points_icon": self.storage.get_points_icon(),
             "settings": self.storage._data.get("settings", {}),
             "penalties": self.storage.get_penalties(),
+            "bonuses": self.storage.get_bonuses(),
         }
 
     # Child operations
@@ -982,6 +983,50 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         if not child:
             raise ValueError(f"Child {child_id} not found")
         await self.async_remove_points(child_id, penalty.points, reason=f"Penalty: {penalty.name}")
+
+    # Bonus operations
+    async def async_add_bonus(
+        self,
+        name: str,
+        points: int,
+        description: str = "",
+        icon: str = "mdi:star-circle-outline",
+        assigned_to: list | None = None,
+    ):
+        """Create a new bonus definition."""
+        bonus = Bonus(
+            name=name,
+            points=points,
+            description=description,
+            icon=icon,
+            assigned_to=assigned_to or [],
+        )
+        self.storage.add_bonus(bonus)
+        await self.storage.async_save()
+        await self.async_refresh()
+        return bonus
+
+    async def async_update_bonus(self, bonus) -> None:
+        """Update an existing bonus definition."""
+        self.storage.update_bonus(bonus)
+        await self.storage.async_save()
+        await self.async_refresh()
+
+    async def async_remove_bonus(self, bonus_id: str) -> None:
+        """Delete a bonus definition."""
+        self.storage.remove_bonus(bonus_id)
+        await self.storage.async_save()
+        await self.async_refresh()
+
+    async def async_apply_bonus(self, bonus_id: str, child_id: str) -> None:
+        """Apply a bonus — awards the bonus's points to the child."""
+        bonus = self.storage.get_bonus(bonus_id)
+        if not bonus:
+            raise ValueError(f"Bonus {bonus_id} not found")
+        child = self.get_child(child_id)
+        if not child:
+            raise ValueError(f"Child {child_id} not found")
+        await self.async_add_points(child_id, bonus.points, reason=f"Bonus: {bonus.name}")
 
     # Points operations
     async def async_add_points(self, child_id: str, points: int, reason: str = "") -> None:
