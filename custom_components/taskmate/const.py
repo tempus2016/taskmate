@@ -208,6 +208,7 @@ SERVICE_ADD_BONUS: Final = "add_bonus"
 SERVICE_UPDATE_BONUS: Final = "update_bonus"
 SERVICE_REMOVE_BONUS: Final = "remove_bonus"
 SERVICE_APPLY_BONUS: Final = "apply_bonus"
+SERVICE_ADD_CHORE: Final = "add_chore"
 
 # Events
 EVENT_PREVIEW_SOUND: Final = "taskmate_preview_sound"
@@ -232,6 +233,13 @@ ATTR_BONUS_POINTS: Final = "points"
 ATTR_BONUS_DESCRIPTION: Final = "description"
 ATTR_BONUS_ICON: Final = "icon"
 ATTR_BONUS_ASSIGNED_TO: Final = "assigned_to"
+ATTR_CHORE_NAME: Final = "name"
+ATTR_CHORE_DESCRIPTION: Final = "description"
+ATTR_CHORE_POINTS: Final = "points"
+ATTR_CHORE_ASSIGNED_TO: Final = "assigned_to"
+ATTR_CHORE_TIME_CATEGORY: Final = "time_category"
+ATTR_CHORE_ONE_SHOT: Final = "one_shot"
+ATTR_CHORE_REQUIRES_APPROVAL: Final = "requires_approval"
 
 # States
 STATE_PENDING: Final = "pending"
