@@ -18,8 +18,15 @@ from .const import (
     ATTR_BONUS_NAME,
     ATTR_BONUS_POINTS,
     ATTR_CHILD_ID,
+    ATTR_CHORE_ASSIGNED_TO,
+    ATTR_CHORE_DESCRIPTION,
     ATTR_CHORE_ID,
+    ATTR_CHORE_NAME,
+    ATTR_CHORE_ONE_SHOT,
     ATTR_CHORE_ORDER,
+    ATTR_CHORE_POINTS,
+    ATTR_CHORE_REQUIRES_APPROVAL,
+    ATTR_CHORE_TIME_CATEGORY,
     ATTR_PENALTY_ASSIGNED_TO,
     ATTR_PENALTY_DESCRIPTION,
     ATTR_PENALTY_ICON,
@@ -33,6 +40,7 @@ from .const import (
     DOMAIN,
     EVENT_PREVIEW_SOUND,
     SERVICE_ADD_BONUS,
+    SERVICE_ADD_CHORE,
     SERVICE_ADD_PENALTY,
     SERVICE_ADD_POINTS,
     SERVICE_APPLY_BONUS,
@@ -50,6 +58,7 @@ from .const import (
     SERVICE_SET_CHORE_ORDER,
     SERVICE_UPDATE_BONUS,
     SERVICE_UPDATE_PENALTY,
+    TIME_CATEGORIES,
 )
 from .coordinator import TaskMateCoordinator
 from .frontend import async_register_cards, async_register_frontend
@@ -325,6 +334,23 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             child_id=call.data[ATTR_CHILD_ID],
         )
 
+    async def handle_add_chore(call: ServiceCall) -> None:
+        """Handle the add_chore service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        schedule_mode = "one_shot" if call.data.get(ATTR_CHORE_ONE_SHOT, False) else "specific_days"
+        await coordinator.async_add_chore(
+            name=call.data[ATTR_CHORE_NAME],
+            description=call.data.get(ATTR_CHORE_DESCRIPTION, ""),
+            points=call.data.get(ATTR_CHORE_POINTS, 10),
+            assigned_to=call.data.get(ATTR_CHORE_ASSIGNED_TO, []),
+            time_category=call.data.get(ATTR_CHORE_TIME_CATEGORY, "anytime"),
+            requires_approval=call.data.get(ATTR_CHORE_REQUIRES_APPROVAL, True),
+            schedule_mode=schedule_mode,
+        )
+
     # Register all services
     hass.services.async_register(
         DOMAIN,
@@ -532,6 +558,21 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         }),
     )
 
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ADD_CHORE,
+        handle_add_chore,
+        schema=vol.Schema({
+            vol.Required(ATTR_CHORE_NAME): cv.string,
+            vol.Optional(ATTR_CHORE_DESCRIPTION, default=""): cv.string,
+            vol.Optional(ATTR_CHORE_POINTS, default=10): cv.positive_int,
+            vol.Optional(ATTR_CHORE_ASSIGNED_TO, default=[]): vol.All(cv.ensure_list, [cv.string]),
+            vol.Optional(ATTR_CHORE_TIME_CATEGORY, default="anytime"): vol.In(TIME_CATEGORIES),
+            vol.Optional(ATTR_CHORE_ONE_SHOT, default=False): cv.boolean,
+            vol.Optional(ATTR_CHORE_REQUIRES_APPROVAL, default=True): cv.boolean,
+        }),
+    )
+
 
 def _async_unregister_services(hass: HomeAssistant) -> None:
     """Unregister TaskMate services."""
@@ -554,6 +595,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_UPDATE_BONUS,
         SERVICE_REMOVE_BONUS,
         SERVICE_APPLY_BONUS,
+        SERVICE_ADD_CHORE,
     ]
     for service in services:
         hass.services.async_remove(DOMAIN, service)
