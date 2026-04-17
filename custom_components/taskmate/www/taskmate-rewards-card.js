@@ -901,6 +901,16 @@ class TaskMateRewardsCard extends LitElement {
       });
     } catch (e) {
       console.error("Failed to claim reward:", e);
+      if (this.hass && this.hass.callService) {
+        this.hass.callService("persistent_notification", "create", {
+          title: this._t('approvals.error_title'),
+          message: this._t('approvals.error_failed_service', {
+            service: "claim reward",
+            message: e && e.message ? e.message : String(e),
+          }),
+          notification_id: `taskmate_reward_claim_${reward.id}`,
+        });
+      }
     } finally {
       this._loading = { ...this._loading, [reward.id]: false };
       this.requestUpdate();

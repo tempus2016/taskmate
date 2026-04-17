@@ -585,11 +585,24 @@
 
   // Initialize
   function init() {
+    if (window._taskmateConfigSoundsInit) return;
+    window._taskmateConfigSoundsInit = true;
     findAndEnhanceSoundSelectors();
     startObserver();
 
     // Periodic scan to catch dynamically loaded content
-    setInterval(findAndEnhanceSoundSelectors, 2000);
+    window._taskmateConfigSoundsPoll = setInterval(findAndEnhanceSoundSelectors, 2000);
+
+    window.addEventListener('beforeunload', () => {
+      if (window._taskmateConfigSoundsPoll) {
+        clearInterval(window._taskmateConfigSoundsPoll);
+        window._taskmateConfigSoundsPoll = null;
+      }
+      if (window._taskmateScanTimeout) {
+        clearTimeout(window._taskmateScanTimeout);
+        window._taskmateScanTimeout = null;
+      }
+    }, { once: true });
   }
 
   if (document.readyState === 'loading') {
