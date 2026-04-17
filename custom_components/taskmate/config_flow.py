@@ -993,6 +993,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     icon=user_input.get("icon", "mdi:gift"),
                     assigned_to=user_input.get("assigned_to", []),
                     is_jackpot=user_input.get("is_jackpot", False),
+                    pool_enabled=user_input.get("pool_enabled", False),
                 )
                 return await self.async_step_manage_rewards()
 
@@ -1014,6 +1015,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 )
             ),
             vol.Optional("is_jackpot", default=False): selector.BooleanSelector(),
+            vol.Optional("pool_enabled", default=False): selector.BooleanSelector(),
             vol.Required("cost", default=50): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=10000, mode=selector.NumberSelectorMode.BOX)
             ),
@@ -1057,6 +1059,9 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 reward.icon = user_input.get("icon", reward.icon)
                 reward.assigned_to = user_input.get("assigned_to", reward.assigned_to)
                 reward.is_jackpot = user_input.get("is_jackpot", reward.is_jackpot)
+                reward.pool_enabled = user_input.get(
+                    "pool_enabled", getattr(reward, "pool_enabled", False)
+                )
                 await self.coordinator.async_update_reward(reward)
                 return await self.async_step_manage_rewards()
 
@@ -1078,6 +1083,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 )
             ),
             vol.Optional("is_jackpot", default=getattr(reward, 'is_jackpot', False)): selector.BooleanSelector(),
+            vol.Optional("pool_enabled", default=getattr(reward, 'pool_enabled', False)): selector.BooleanSelector(),
             vol.Optional("cost", default=reward.cost): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=10000, mode=selector.NumberSelectorMode.BOX)
             ),

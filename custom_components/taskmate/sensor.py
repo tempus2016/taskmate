@@ -274,6 +274,7 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
                 "icon": r.icon,
                 "assigned_to": r.assigned_to if isinstance(r.assigned_to, list) else [],
                 "is_jackpot": getattr(r, 'is_jackpot', False),
+                "pool_enabled": getattr(r, 'pool_enabled', False),
                 "calculated_costs": calculated_costs,
                 "pool_allocations": reward_pool_allocations,
                 "jackpot_pool_total": jackpot_pool_total,

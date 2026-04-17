@@ -160,10 +160,12 @@
           "cost": "Points Cost (fixed)",
           "icon": "Icon",
           "assigned_to": "Assigned To (leave empty for all children)",
-          "is_jackpot": "Is Jackpot"
+          "is_jackpot": "Is Jackpot",
+          "pool_enabled": "Pool Reward (Savings Jar)"
         },
         "data_description": {
           "is_jackpot": "Pool points from all assigned children toward one shared reward",
+          "pool_enabled": "Children deposit points into this reward's dedicated pool rather than spending from their global balance. Good for long-term savings goals.",
           "cost": "Number of points required to claim this reward"
         }
       },
@@ -177,10 +179,12 @@
           "icon": "Icon",
           "assigned_to": "Assigned To",
           "is_jackpot": "Is Jackpot",
+          "pool_enabled": "Pool Reward (Savings Jar)",
           "action": "Action"
         },
         "data_description": {
           "is_jackpot": "Pool points from all assigned children toward one shared reward",
+          "pool_enabled": "Children deposit points into this reward's dedicated pool rather than spending from their global balance. Good for long-term savings goals.",
           "cost": "Number of points required to claim this reward"
         }
       },
