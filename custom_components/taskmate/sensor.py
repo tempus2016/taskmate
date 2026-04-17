@@ -304,11 +304,11 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
                 "pending_points": pending_points_by_child.get(c.id, 0),
                 "committed_points": committed_points_by_child.get(c.id, 0),
                 "allocated_points": total_allocated_by_child.get(c.id, 0),
+                # Allocations are deducted from child.points at allocation time,
+                # so spendable only needs to account for pending-claim commitments.
                 "spendable_balance": max(
                     0,
-                    c.points
-                    - committed_points_by_child.get(c.id, 0)
-                    - total_allocated_by_child.get(c.id, 0),
+                    c.points - committed_points_by_child.get(c.id, 0),
                 ),
                 "chore_order": c.chore_order,
                 "current_streak": getattr(c, 'current_streak', 0) or 0,
