@@ -54,8 +54,53 @@ class TaskMateStorage:
 
         # Run data migrations
         await self._migrate_assigned_to_child_ids()
+        await self._migrate_pool_allocations_v2()
 
         return data
+
+    async def _migrate_pool_allocations_v2(self) -> None:
+        """Migrate beta1 pool allocations to beta2 semantics.
+
+        In v3.0.0-beta1, pool allocations did NOT deduct from child.points (the points
+        stayed in the gross balance until redeem). From beta2 onward, allocations deduct
+        immediately so the visible balance reflects commitment.
+
+        For existing installs: subtract each allocation's allocated_points from the
+        corresponding child's points, once. Guarded by a version flag so it runs only
+        on the first beta2 load.
+        """
+        if self._data.get("_pool_semantics_version", 1) >= 2:
+            return
+
+        allocations = self._data.get("pool_allocations", [])
+        children = self._data.get("children", [])
+        if not allocations or not children:
+            # Mark as migrated even if nothing to do
+            self._data["_pool_semantics_version"] = 2
+            await self.async_save()
+            return
+
+        # Build child lookup keyed by id
+        children_by_id = {c.get("id"): c for c in children}
+        adjusted = 0
+        for alloc in allocations:
+            child_data = children_by_id.get(alloc.get("child_id"))
+            if not child_data:
+                continue
+            allocated = int(alloc.get("allocated_points", 0) or 0)
+            if allocated <= 0:
+                continue
+            current_points = int(child_data.get("points", 0) or 0)
+            child_data["points"] = max(0, current_points - allocated)
+            adjusted += 1
+
+        self._data["_pool_semantics_version"] = 2
+        if adjusted:
+            _LOGGER.info(
+                "TaskMate: migrated %d pool allocation(s) to beta2 semantics "
+                "(points now deducted at allocation time)", adjusted
+            )
+        await self.async_save()
 
     async def _migrate_assigned_to_child_ids(self) -> None:
         """Migrate chore assigned_to from child names to child IDs if needed.
