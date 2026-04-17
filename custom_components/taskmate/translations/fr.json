@@ -111,8 +111,8 @@
           "schedule_mode": "Choisissez comment cette corvée est planifiée",
           "completion_sound": "Son à jouer quand les corvées sont complétées",
           "visibility_entity": "ID d'entité Home Assistant qui contrôle quand ces corvées apparaissent. Laissez vide pour toujours les afficher. Exemples : binary_sensor.lave_vaisselle, sensor.humidite_sol, input_boolean.mode_invite. Les corvées n'apparaissent sur la carte enfant que quand la condition est satisfaite.",
-          "visibility_operator": "Comment comparer l'état actuel de l'entité avec votre valeur cible :\n• Aucun filtre — toujours afficher la corvée (ignore l'état de l'entité)\n• Égale — l'état correspond exactement (ex. : 'on', 'home')\n• Non égale — l'état ne correspond pas\n• Supérieur ou égal (≥) — pour valeurs numériques\n• Inférieur ou égal (≤) — pour valeurs numériques\n• Supérieur (>) — pour valeurs numériques\n• Inférieur (<) — pour valeurs numériques",
-          "visibility_state": "La valeur à comparer. Pour opérateurs texte : tout texte (ex. : 'on', 'running'). Pour opérateurs numériques : un nombre (ex. : '25', '50.5')."
+          "visibility_operator": "Comment comparer l'état actuel de l'entité avec votre valeur cible.",
+          "visibility_state": "La valeur à comparer (texte ou nombre)."
         }
       },
       "edit_chore": {
@@ -138,9 +138,9 @@
           "daily_limit": "Nombre de fois par jour que cette corvée peut être effectuée",
           "schedule_mode": "Choisissez comment cette corvée est planifiée — jours spécifiques de la semaine ou intervalle récurrent.",
           "completion_sound": "Son à jouer quand cette corvée est complétée",
-          "visibility_entity": "ID d'entité Home Assistant qui contrôle quand cette corvée apparaît. Laissez vide pour toujours afficher la corvée. Exemples : binary_sensor.lave_vaisselle, sensor.humidite_sol, input_boolean.mode_invite, switch.salle_blanchisserie. La corvée n'apparaît sur la carte enfant que quand la condition de visibilité est satisfaite.",
-          "visibility_operator": "Comment comparer l'état actuel de l'entité avec votre valeur cible :\n• Aucun filtre — toujours afficher la corvée (ignore l'état de l'entité)\n• Égale — l'état correspond exactement (ex. : 'on', 'home', 'running')\n• Non égale — l'état ne correspond pas\n• Supérieur ou égal (≥) — pour valeurs numériques (ex. : 80 pour batterie ≥ 80%)\n• Inférieur ou égal (≤) — pour valeurs numériques (ex. : 30 pour humidité ≤ 30%)\n• Supérieur (>) — pour valeurs numériques\n• Inférieur (<) — pour valeurs numériques",
-          "visibility_state": "La valeur à comparer. Pour 'Égale' ou 'Non égale' : tout texte (ex. : 'on', 'off', 'home', 'away'). Pour opérateurs numériques (≥, ≤, >, <) : entrez un nombre (ex. : 25, 50.5, 100). Exemple : Entité 'sensor.temperature', Opérateur '>=', Valeur '20' affiche la corvée quand la température est 20°C ou plus."
+          "visibility_entity": "ID d'entité Home Assistant (ex: binary_sensor.lave_vaisselle).",
+          "visibility_operator": "Opérateur de comparaison pour l'état de l'entité.",
+          "visibility_state": "Valeur cible pour la visibilité."
         }
       },
       "manage_rewards": {
@@ -160,11 +160,13 @@
           "cost": "Coût en points (fixe)",
           "icon": "Icône",
           "assigned_to": "Assignée à (laisser vide pour tous les enfants)",
-          "is_jackpot": "Est un Jackpot"
+          "is_jackpot": "Est un Jackpot",
+          "pool_enabled": "Activer la cagnotte (Tirelire)"
         },
         "data_description": {
           "is_jackpot": "Cumuler les points de tous les enfants assignés pour une récompense partagée",
-          "cost": "Nombre de points requis pour réclamer cette récompense"
+          "cost": "Nombre de points requis pour réclamer cette récompense",
+          "pool_enabled": "Permet aux enfants de déposer des points spécifiquement pour cet objectif au lieu d'utiliser leur solde global."
         }
       },
       "edit_reward": {
@@ -177,6 +179,7 @@
           "icon": "Icône",
           "assigned_to": "Assignée à",
           "is_jackpot": "Est un Jackpot",
+          "pool_enabled": "Cagnotte (Tirelire)",
           "action": "Action"
         },
         "data_description": {
@@ -222,12 +225,9 @@
       },
       "edit_chore_schedule_specific": {
         "title": "Étape 2 — Jours spécifiques",
-        "description": "Choisissez les jours de la semaine où cette corvée doit apparaître. Laissez vide pour l'afficher tous les jours.",
+        "description": "Choisissez les jours de la semaine où cette corvée doit apparaître.",
         "data": {
           "due_days": "Jours d'échéance"
-        },
-        "data_description": {
-          "due_days": "Sélectionnez un ou plusieurs jours. Laissez vide pour afficher la corvée tous les jours."
         }
       },
       "chore_schedule_recurring": {
@@ -254,12 +254,6 @@
           "recurrence_day": "Jour de la semaine (optionnel)",
           "recurrence_start": "Date de début (optionnel)",
           "first_occurrence_mode": "Première disponibilité"
-        },
-        "data_description": {
-          "recurrence": "Fréquence à laquelle la corvée peut être effectuée",
-          "recurrence_day": "Jour fixe pour Hebdomadaire / Toutes les 2 semaines.",
-          "recurrence_start": "Date d'ancrage pour Tous les 2 jours.",
-          "first_occurrence_mode": "Déterminer si la corvée est active immédiatement ou au prochain cycle."
         }
       }
     },
@@ -364,291 +358,75 @@
   "services": {
     "complete_chore": {
       "name": "Terminer une corvée",
-      "description": "Marquer une corvée comme terminée par un enfant",
-      "fields": {
-        "chore_id": {
-          "name": "ID de la corvée",
-          "description": "L'identifiant de la corvée à terminer"
-        },
-        "child_id": {
-          "name": "ID de l'enfant",
-          "description": "L'identifiant de l'enfant effectuant la corvée"
-        }
-      }
+      "description": "Marquer une corvée comme terminée par un enfant"
     },
     "approve_chore": {
       "name": "Approuver une corvée",
-      "description": "Approuver une corvée terminée et attribuer les points",
-      "fields": {
-        "completion_id": {
-          "name": "ID de complétion",
-          "description": "L'identifiant de l'exécution à approuver"
-        }
-      }
+      "description": "Approuver une corvée terminée et attribuer les points"
     },
     "reject_chore": {
       "name": "Rejeter une corvée",
-      "description": "Rejeter une corvée terminée",
-      "fields": {
-        "completion_id": {
-          "name": "ID de complétion",
-          "description": "L'identifiant de l'exécution à rejeter"
-        }
-      }
+      "description": "Rejeter une corvée terminée"
     },
     "claim_reward": {
       "name": "Réclamer une récompense",
-      "description": "L'enfant réclame une récompense en utilisant ses points",
-      "fields": {
-        "reward_id": {
-          "name": "ID de la récompense",
-          "description": "L'identifiant de la récompense à réclamer"
-        },
-        "child_id": {
-          "name": "ID de l'enfant",
-          "description": "L'identifiant de l'enfant réclamant la récompense"
-        }
-      }
+      "description": "L'enfant réclame une récompense en utilisant ses points"
     },
     "approve_reward": {
       "name": "Approuver une récompense",
-      "description": "Approuver une demande de récompense",
-      "fields": {
-        "claim_id": {
-          "name": "ID de la demande",
-          "description": "L'identifiant de la demande de récompense à approuver"
-        }
-      }
+      "description": "Approuver une demande de récompense"
     },
     "add_points": {
       "name": "Ajouter des points",
-      "description": "Ajouter des points bonus à un enfant",
-      "fields": {
-        "child_id": {
-          "name": "ID de l'enfant",
-          "description": "L'identifiant de l'enfant à qui ajouter des points"
-        },
-        "points": {
-          "name": "Points",
-          "description": "Le nombre de points à ajouter"
-        },
-        "reason": {
-          "name": "Raison",
-          "description": "Raison optionnelle pour le bonus"
-        }
-      }
+      "description": "Ajouter des points bonus à un enfant"
     },
     "remove_points": {
       "name": "Retirer des points",
-      "description": "Retirer des points à un enfant (pénalité)",
-      "fields": {
-        "child_id": {
-          "name": "ID de l'enfant",
-          "description": "L'identifiant de l'enfant à qui retirer des points"
-        },
-        "points": {
-          "name": "Points",
-          "description": "Le nombre de points à retirer"
-        },
-        "reason": {
-          "name": "Raison",
-          "description": "Raison optionnelle pour la pénalité"
-        }
-      }
+      "description": "Retirer des points à un enfant (pénalité)"
     },
     "reject_reward": {
       "name": "Rejeter une récompense",
-      "description": "Rejeter une demande de récompense",
-      "fields": {
-        "claim_id": {
-          "name": "ID de la demande",
-          "description": "L'identifiant de la demande à rejeter"
-        }
-      }
+      "description": "Rejeter une demande de récompense"
     },
     "preview_sound": {
       "name": "Aperçu du son",
-      "description": "Tester un effet sonore de complétion dans le navigateur",
-      "fields": {
-        "sound": {
-          "name": "Son",
-          "description": "Le son à tester"
-        }
-      }
+      "description": "Tester un effet sonore de complétion dans le navigateur"
     },
     "set_chore_order": {
       "name": "Définir l'ordre des corvées",
-      "description": "Définir l'ordre d'affichage des corvées pour un enfant",
-      "fields": {
-        "child_id": {
-          "name": "ID de l'enfant",
-          "description": "L'identifiant de l'enfant"
-        },
-        "chore_order": {
-          "name": "Ordre des corvées",
-          "description": "Liste ordonnée des IDs de corvées"
-        }
-      }
+      "description": "Définir l'ordre d'affichage des corvées pour un enfant"
     },
     "add_penalty": {
       "name": "Ajouter une pénalité",
-      "description": "Créer une nouvelle définition de pénalité",
-      "fields": {
-        "name": {
-          "name": "Nom",
-          "description": "Le nom de la pénalité"
-        },
-        "points": {
-          "name": "Points",
-          "description": "Le nombre de points à déduire"
-        },
-        "description": {
-          "name": "Description",
-          "description": "Description optionnelle"
-        },
-        "icon": {
-          "name": "Icône",
-          "description": "Icône MDI pour la pénalité"
-        },
-        "assigned_to": {
-          "name": "Assignée à",
-          "description": "Liste des IDs d'enfants concernés"
-        }
-      }
+      "description": "Créer une nouvelle définition de pénalité"
     },
     "update_penalty": {
       "name": "Mettre à jour la pénalité",
-      "description": "Modifier une définition de pénalité existante",
-      "fields": {
-        "penalty_id": {
-          "name": "ID de pénalité",
-          "description": "L'identifiant de la pénalité à modifier"
-        },
-        "name": {
-          "name": "Nom",
-          "description": "Nouveau nom"
-        },
-        "points": {
-          "name": "Points",
-          "description": "Nouvelle valeur de points"
-        },
-        "description": {
-          "name": "Description",
-          "description": "Nouvelle description"
-        },
-        "icon": {
-          "name": "Icône",
-          "description": "Nouvelle icône"
-        },
-        "assigned_to": {
-          "name": "Assignée à",
-          "description": "Nouvelle liste d'identifiants d'enfants"
-        }
-      }
+      "description": "Modifier une définition de pénalité existante"
     },
     "remove_penalty": {
       "name": "Supprimer la pénalité",
-      "description": "Supprimer une définition de pénalité",
-      "fields": {
-        "penalty_id": {
-          "name": "ID de pénalité",
-          "description": "L'identifiant de la pénalité à supprimer"
-        }
-      }
+      "description": "Supprimer une définition de pénalité"
     },
     "apply_penalty": {
       "name": "Appliquer une pénalité",
-      "description": "Appliquer une pénalité à un enfant, déduisant ses points",
-      "fields": {
-        "penalty_id": {
-          "name": "ID de pénalité",
-          "description": "L'identifiant de la pénalité à appliquer"
-        },
-        "child_id": {
-          "name": "ID de l'enfant",
-          "description": "L'identifiant de l'enfant à pénaliser"
-        }
-      }
+      "description": "Appliquer une pénalité à un enfant, déduisant ses points"
     },
     "add_bonus": {
       "name": "Ajouter un bonus",
-      "description": "Créer une nouvelle définition de bonus",
-      "fields": {
-        "name": {
-          "name": "Nom",
-          "description": "Le nom du bonus"
-        },
-        "points": {
-          "name": "Points",
-          "description": "Le nombre de points à attribuer lors de l'application"
-        },
-        "description": {
-          "name": "Description",
-          "description": "Description optionnelle du bonus"
-        },
-        "icon": {
-          "name": "Icône",
-          "description": "Icône MDI pour le bonus"
-        },
-        "assigned_to": {
-          "name": "Assigné à",
-          "description": "Liste des identifiants d'enfants auxquels ce bonus s'applique"
-        }
-      }
+      "description": "Créer une nouvelle définition de bonus"
     },
     "update_bonus": {
       "name": "Mettre à jour le bonus",
-      "description": "Mettre à jour une définition de bonus existante",
-      "fields": {
-        "bonus_id": {
-          "name": "ID de bonus",
-          "description": "L'identifiant du bonus à mettre à jour"
-        },
-        "name": {
-          "name": "Nom",
-          "description": "Nouveau nom pour le bonus"
-        },
-        "points": {
-          "name": "Points",
-          "description": "Nouvelle valeur de points"
-        },
-        "description": {
-          "name": "Description",
-          "description": "Nouvelle description"
-        },
-        "icon": {
-          "name": "Icône",
-          "description": "Nouvelle icône"
-        },
-        "assigned_to": {
-          "name": "Assigné à",
-          "description": "Nouvelle liste d'identifiants d'enfants"
-        }
-      }
+      "description": "Mettre à jour une définition de bonus existante"
     },
     "remove_bonus": {
       "name": "Supprimer le bonus",
-      "description": "Supprimer une définition de bonus",
-      "fields": {
-        "bonus_id": {
-          "name": "ID de bonus",
-          "description": "L'identifiant du bonus à supprimer"
-        }
-      }
+      "description": "Supprimer une définition de bonus"
     },
     "apply_bonus": {
       "name": "Appliquer un bonus",
-      "description": "Appliquer un bonus à un enfant, attribuant des points",
-      "fields": {
-        "bonus_id": {
-          "name": "ID de bonus",
-          "description": "L'identifiant du bonus à appliquer"
-        },
-        "child_id": {
-          "name": "ID de l'enfant",
-          "description": "L'identifiant de l'enfant à qui attribuer le bonus"
-        }
-      }
+      "description": "Appliquer un bonus à un enfant, attribuant des points"
     }
   }
 }
