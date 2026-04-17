@@ -468,6 +468,8 @@ class TaskMateBonusesCard extends LitElement {
         icon: this._newForm.icon || "mdi:star-circle-outline",
       });
       this._showNewForm = false;
+      this._newForm = { name: "", points: "", description: "", icon: "mdi:star-circle-outline" };
+      this._showToast(this._t('bonuses.toast_saved'));
     } catch (e) {
       this._showToast(this._t('bonuses.toast_add_failed'));
     }
@@ -597,7 +599,7 @@ class TaskMateBonusesCard extends LitElement {
         <div class="form-row full">
           <div class="form-field">
             <label>${this._t('bonuses.form_description_label')}</label>
-            <input type="text" placeholder="${this._t('bonuses.form_description_placeholder')}"
+            <input type="text" placeholder="${this._t('bonuses.form_description_placeholder')}" .value=${f.description}
               @input=${e => this._newForm = { ...f, description: e.target.value }} />
           </div>
         </div>
