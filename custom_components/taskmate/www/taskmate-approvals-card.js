@@ -760,33 +760,21 @@ class TaskMateApprovalsCardEditor extends LitElement {
 
   static get styles() {
     return css`
-      .form-group {
-        margin-bottom: 16px;
-      }
-
-      .form-group label {
-        display: block;
-        margin-bottom: 4px;
-        font-weight: 500;
-      }
-
-      .form-group input,
-      .form-group select {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 1em;
-      }
-
-      .form-group small {
-        display: block;
-        margin-top: 4px;
-        color: var(--secondary-text-color);
-        font-size: 0.85em;
-      }
+      :host { display: block; }
+      ha-form { display: block; margin-bottom: 16px; }
+      .colour-field { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border: 1px solid var(--outline-color, var(--divider-color, #e0e0e0)); border-radius: 4px; background: var(--mdc-text-field-fill-color, var(--card-background-color)); }
+      .colour-field-label { font-size: 0.82rem; color: var(--primary-color); font-weight: 500; }
+      .colour-field-body { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .colour-swatch-wrapper { position: relative; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); flex-shrink: 0; }
+      .colour-swatch-wrapper input[type="color"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+      .colour-swatch-preview { position: absolute; inset: 0; pointer-events: none; }
+      .colour-hex { font-family: var(--code-font-family, monospace); font-size: 0.85rem; color: var(--secondary-text-color); min-width: 70px; }
+      .colour-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+      .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
+      .preset-swatch:hover { transform: scale(1.15); }
+      .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }
 
@@ -794,75 +782,111 @@ class TaskMateApprovalsCardEditor extends LitElement {
     this.config = config;
   }
 
+  _buildSchema() {
+    const overviewEntity = this.config?.entity
+      ? this.hass?.states?.[this.config.entity]
+      : null;
+    const children = overviewEntity?.attributes?.children || [];
+    return [
+      { name: 'entity', selector: { entity: { domain: 'sensor' } } },
+      { name: 'title', selector: { text: {} } },
+      {
+        name: 'child_id',
+        selector: {
+          select: {
+            options: [
+              { value: '', label: this._t('common.editor.filter_by_child_all') },
+              ...children.map((c) => ({ value: c.id, label: c.name })),
+            ],
+            mode: 'dropdown',
+          },
+        },
+      },
+    ];
+  }
+
+  _computeLabel = (entry) => {
+    const labels = {
+      entity: this._t('common.entity'),
+      title: this._t('common.title'),
+      child_id: this._t('approvals.editor.child_id'),
+    };
+    return labels[entry.name] ?? entry.name;
+  };
+
+  _computeHelper = (entry) => {
+    const helpers = {
+      entity: this._t('approvals.editor.entity_helper'),
+      child_id: this._t('approvals.editor.child_id_helper'),
+    };
+    return helpers[entry.name] ?? '';
+  };
+
   render() {
-    if (!this.hass || !this.config) {
-      return html``;
-    }
-
+    if (!this.hass || !this.config) return html``;
+    const data = {
+      entity: this.config.entity || '',
+      title: this.config.title || '',
+      child_id: this.config.child_id || '',
+    };
     return html`
-      <div class="form-group">
-        <label>${this._t('common.entity')}</label>
-        <input
-          type="text"
-          .value="${this.config.entity || ""}"
-          @input="${this._entityChanged}"
-          placeholder="sensor.pending_approvals"
-        />
-        <small>${this._t('approvals.editor.entity_helper')}</small>
-      </div>
+      <ha-form
+        .hass=${this.hass}
+        .data=${data}
+        .schema=${this._buildSchema()}
+        .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
+        @value-changed=${this._formChanged}
+      ></ha-form>
+      ${this._renderColourPicker('header_color', '#27ae60')}
+    `;
+  }
 
-      <div class="form-group">
-        <label>${this._t('common.title')}</label>
-        <input
-          type="text"
-          .value="${this.config.title || ""}"
-          @input="${this._titleChanged}"
-          placeholder="${this._t('approvals.default_title')}"
-        />
-      </div>
-
-      <div class="form-group">
-        <label>${this._t('approvals.editor.child_id')}</label>
-        <input
-          type="text"
-          .value="${this.config.child_id || ""}"
-          @input="${this._childIdChanged}"
-          placeholder="${this._t('approvals.editor.child_id_placeholder')}"
-        />
-        <small>${this._t('approvals.editor.child_id_helper')}</small>
-      </div>
-        <small>${this._t('common.editor.header_colour_helper')}</small>
-      </div>
-      <div class="field-row">
-        <label class="field-label">${this._t('common.editor.header_colour')}</label>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input
-            type="color"
-            .value=${this.config.header_color || '#27ae60'}
-            @input=${e => this._updateConfig('header_color', e.target.value)}
-            style="width:48px;height:36px;padding:2px;border:1px solid var(--divider-color,#e0e0e0);border-radius:6px;cursor:pointer;"
-          />
-          <span style="font-size:13px;color:var(--secondary-text-color);">${this.config.header_color || '#27ae60'}</span>
-          <button
-            style="font-size:11px;color:var(--secondary-text-color);background:none;border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:3px 8px;cursor:pointer;"
-            @click=${() => this._updateConfig('header_color', '#27ae60')}
+  _renderColourPicker(key, defaultValue) {
+    const current = this.config[key] || defaultValue;
+    const presets = [defaultValue, '#e67e22', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c', '#34495e'];
+    const isActive = (c) => c.toLowerCase() === current.toLowerCase();
+    return html`
+      <div class="colour-field">
+        <span class="colour-field-label">${this._t('common.editor.header_colour')}</span>
+        <div class="colour-field-body">
+          <label class="colour-swatch-wrapper">
+            <input type="color" .value=${current}
+              @input=${(e) => this._updateConfig(key, e.target.value)} />
+            <span class="colour-swatch-preview" style="background:${current}"></span>
+          </label>
+          <span class="colour-hex">${current}</span>
+          <div class="colour-presets">
+            ${presets.map((p) => html`
+              <button class="preset-swatch ${isActive(p) ? 'active' : ''}"
+                style="background:${p}"
+                title=${p}
+                @click=${(e) => { e.preventDefault(); this._updateConfig(key, p); }}
+              ></button>
+            `)}
+          </div>
+          <button class="colour-reset"
+            @click=${(e) => { e.preventDefault(); this._updateConfig(key, defaultValue); }}
           >${this._t('common.reset')}</button>
         </div>
-        <span class="field-helper">${this._t('common.editor.header_colour_helper')}</span>
+        <div class="colour-helper">${this._t('common.editor.header_colour_helper')}</div>
       </div>
     `;
   }
 
-  _entityChanged(e) {
-    this._updateConfig("entity", e.target.value);
-  }
-
-  _titleChanged(e) {
-    this._updateConfig("title", e.target.value);
-  }
-
-  _childIdChanged(e) {
-    this._updateConfig("child_id", e.target.value || undefined);
+  _formChanged(e) {
+    const newValues = e.detail.value || {};
+    const newConfig = { ...this.config };
+    for (const [key, value] of Object.entries(newValues)) {
+      if (value === '' || value === null || value === undefined) {
+        delete newConfig[key];
+      } else {
+        newConfig[key] = value;
+      }
+    }
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: newConfig }, bubbles: true, composed: true,
+    }));
   }
 
   _updateConfig(key, value) {

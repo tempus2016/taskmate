@@ -1271,38 +1271,70 @@ class TaskMateRewardsCardEditor extends LitElement {
 
   static get styles() {
     return css`
-      :host {
-        display: block;
-      }
-      ha-form {
-        display: block;
-      }
-      .colour-row {
+      :host { display: block; }
+      ha-form { display: block; margin-bottom: 16px; }
+
+      .colour-field {
         display: flex;
         flex-direction: column;
-        gap: 6px;
-        margin-top: 12px;
+        gap: 8px;
+        padding: 12px 16px;
+        border: 1px solid var(--outline-color, var(--divider-color, #e0e0e0));
+        border-radius: 4px;
+        background: var(--mdc-text-field-fill-color, var(--card-background-color));
       }
-      .colour-row-inner {
+      .colour-field-label {
+        font-size: 0.82rem;
+        color: var(--primary-color);
+        font-weight: 500;
+      }
+      .colour-field-body {
         display: flex;
         align-items: center;
         gap: 12px;
+        flex-wrap: wrap;
       }
-      .colour-row-inner input[type="color"] {
-        width: 42px;
+      .colour-swatch-wrapper {
+        position: relative;
+        width: 36px;
         height: 36px;
-        padding: 2px;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 6px;
+        border-radius: 50%;
+        overflow: hidden;
         cursor: pointer;
-        background: transparent;
+        border: 2px solid var(--divider-color, #e0e0e0);
+        flex-shrink: 0;
       }
-      .colour-value {
+      .colour-swatch-wrapper input[type="color"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        border: 0;
+        padding: 0;
+      }
+      .colour-swatch-preview { position: absolute; inset: 0; pointer-events: none; }
+      .colour-hex {
         font-family: var(--code-font-family, monospace);
         font-size: 0.85rem;
         color: var(--secondary-text-color);
+        min-width: 70px;
       }
-      .reset-btn {
+      .colour-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+      .preset-swatch {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid var(--divider-color, #e0e0e0);
+        transition: transform 0.1s;
+        padding: 0;
+      }
+      .preset-swatch:hover { transform: scale(1.15); }
+      .preset-swatch.active {
+        border-color: var(--primary-text-color);
+        box-shadow: 0 0 0 2px var(--primary-color);
+      }
+      .colour-reset {
         font-size: 0.78rem;
         color: var(--secondary-text-color);
         background: none;
@@ -1310,10 +1342,7 @@ class TaskMateRewardsCardEditor extends LitElement {
         border-radius: 4px;
         padding: 4px 10px;
         cursor: pointer;
-      }
-      .colour-label {
-        font-size: 0.95rem;
-        color: var(--primary-text-color);
+        margin-left: auto;
       }
       .colour-helper {
         color: var(--secondary-text-color);
@@ -1387,7 +1416,6 @@ class TaskMateRewardsCardEditor extends LitElement {
     if (!this.hass || !this.config) {
       return html``;
     }
-    const headerColour = this.config.header_color || '#e67e22';
     // ha-form treats missing keys as empty; normalise for consistent values.
     const data = {
       entity: this.config.entity || '',
@@ -1406,24 +1434,38 @@ class TaskMateRewardsCardEditor extends LitElement {
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
       ></ha-form>
+      ${this._renderColourPicker('header_color', '#e67e22')}
+    `;
+  }
 
-      <div class="colour-row">
-        <span class="colour-label">${this._t('common.editor.header_colour')}</span>
-        <div class="colour-row-inner">
-          <input
-            type="color"
-            .value="${headerColour}"
-            @input="${(e) => this._updateConfig('header_color', e.target.value)}"
-          />
-          <span class="colour-value">${headerColour}</span>
-          <button
-            class="reset-btn"
-            @click="${() => this._updateConfig('header_color', '#e67e22')}"
+  _renderColourPicker(key, defaultValue) {
+    const current = this.config[key] || defaultValue;
+    const presets = ['#e67e22', '#27ae60', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c', '#34495e'];
+    const isActive = (c) => c.toLowerCase() === current.toLowerCase();
+    return html`
+      <div class="colour-field">
+        <span class="colour-field-label">${this._t('common.editor.header_colour')}</span>
+        <div class="colour-field-body">
+          <label class="colour-swatch-wrapper">
+            <input type="color" .value=${current}
+              @input=${(e) => this._updateConfig(key, e.target.value)} />
+            <span class="colour-swatch-preview" style="background:${current}"></span>
+          </label>
+          <span class="colour-hex">${current}</span>
+          <div class="colour-presets">
+            ${presets.map((p) => html`
+              <button class="preset-swatch ${isActive(p) ? 'active' : ''}"
+                style="background:${p}"
+                title=${p}
+                @click=${(e) => { e.preventDefault(); this._updateConfig(key, p); }}
+              ></button>
+            `)}
+          </div>
+          <button class="colour-reset"
+            @click=${(e) => { e.preventDefault(); this._updateConfig(key, defaultValue); }}
           >${this._t('common.reset')}</button>
         </div>
-        <div class="colour-helper">
-          ${this._t('common.editor.header_colour_helper')}
-        </div>
+        <div class="colour-helper">${this._t('common.editor.header_colour_helper')}</div>
       </div>
     `;
   }
