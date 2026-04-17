@@ -240,6 +240,7 @@
   "bonuses.applying_to": "Applying to {childName} — current balance: {points} {pointsName}",
   "bonuses.toast_applied": "+{points} {pointsName} to {childName}",
   "bonuses.toast_apply_failed": "Failed to apply bonus",
+  "bonuses.toast_saved": "Bonus saved",
   "bonuses.toast_save_failed": "Failed to save changes",
   "bonuses.toast_delete_failed": "Failed to delete bonus",
   "bonuses.toast_add_failed": "Failed to add bonus",
