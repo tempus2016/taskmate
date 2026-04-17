@@ -11,6 +11,12 @@ import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
+    ATTR_BONUS_ASSIGNED_TO,
+    ATTR_BONUS_DESCRIPTION,
+    ATTR_BONUS_ICON,
+    ATTR_BONUS_ID,
+    ATTR_BONUS_NAME,
+    ATTR_BONUS_POINTS,
     ATTR_CHILD_ID,
     ATTR_CHORE_ID,
     ATTR_CHORE_ORDER,
@@ -26,8 +32,10 @@ from .const import (
     ATTR_SOUND,
     DOMAIN,
     EVENT_PREVIEW_SOUND,
+    SERVICE_ADD_BONUS,
     SERVICE_ADD_PENALTY,
     SERVICE_ADD_POINTS,
+    SERVICE_APPLY_BONUS,
     SERVICE_APPLY_PENALTY,
     SERVICE_APPROVE_CHORE,
     SERVICE_APPROVE_REWARD,
@@ -36,9 +44,11 @@ from .const import (
     SERVICE_COMPLETE_CHORE,
     SERVICE_PREVIEW_SOUND,
     SERVICE_REJECT_CHORE,
+    SERVICE_REMOVE_BONUS,
     SERVICE_REMOVE_PENALTY,
     SERVICE_REMOVE_POINTS,
     SERVICE_SET_CHORE_ORDER,
+    SERVICE_UPDATE_BONUS,
     SERVICE_UPDATE_PENALTY,
 )
 from .coordinator import TaskMateCoordinator
@@ -264,6 +274,57 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             child_id=call.data[ATTR_CHILD_ID],
         )
 
+    async def handle_add_bonus(call: ServiceCall) -> None:
+        """Handle the add_bonus service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_add_bonus(
+            name=call.data[ATTR_BONUS_NAME],
+            points=call.data[ATTR_BONUS_POINTS],
+            description=call.data.get(ATTR_BONUS_DESCRIPTION, ""),
+            icon=call.data.get(ATTR_BONUS_ICON, "mdi:star-circle-outline"),
+            assigned_to=call.data.get(ATTR_BONUS_ASSIGNED_TO, []),
+        )
+
+    async def handle_update_bonus(call: ServiceCall) -> None:
+        """Handle the update_bonus service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        bonus_id = call.data[ATTR_BONUS_ID]
+        existing = coordinator.storage.get_bonus(bonus_id)
+        if not existing:
+            _LOGGER.error("Bonus %s not found", bonus_id)
+            return
+        existing.name = call.data.get(ATTR_BONUS_NAME, existing.name)
+        existing.points = call.data.get(ATTR_BONUS_POINTS, existing.points)
+        existing.description = call.data.get(ATTR_BONUS_DESCRIPTION, existing.description)
+        existing.icon = call.data.get(ATTR_BONUS_ICON, existing.icon)
+        existing.assigned_to = call.data.get(ATTR_BONUS_ASSIGNED_TO, existing.assigned_to)
+        await coordinator.async_update_bonus(existing)
+
+    async def handle_remove_bonus(call: ServiceCall) -> None:
+        """Handle the remove_bonus service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_remove_bonus(call.data[ATTR_BONUS_ID])
+
+    async def handle_apply_bonus(call: ServiceCall) -> None:
+        """Handle the apply_bonus service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_apply_bonus(
+            bonus_id=call.data[ATTR_BONUS_ID],
+            child_id=call.data[ATTR_CHILD_ID],
+        )
+
     # Register all services
     hass.services.async_register(
         DOMAIN,
@@ -427,6 +488,50 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         }),
     )
 
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ADD_BONUS,
+        handle_add_bonus,
+        schema=vol.Schema({
+            vol.Required(ATTR_BONUS_NAME): cv.string,
+            vol.Required(ATTR_BONUS_POINTS): cv.positive_int,
+            vol.Optional(ATTR_BONUS_DESCRIPTION, default=""): cv.string,
+            vol.Optional(ATTR_BONUS_ICON, default="mdi:star-circle-outline"): cv.string,
+            vol.Optional(ATTR_BONUS_ASSIGNED_TO, default=[]): vol.All(cv.ensure_list, [cv.string]),
+        }),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_UPDATE_BONUS,
+        handle_update_bonus,
+        schema=vol.Schema({
+            vol.Required(ATTR_BONUS_ID): cv.string,
+            vol.Optional(ATTR_BONUS_NAME): cv.string,
+            vol.Optional(ATTR_BONUS_POINTS): cv.positive_int,
+            vol.Optional(ATTR_BONUS_DESCRIPTION): cv.string,
+            vol.Optional(ATTR_BONUS_ICON): cv.string,
+            vol.Optional(ATTR_BONUS_ASSIGNED_TO): vol.All(cv.ensure_list, [cv.string]),
+        }),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_REMOVE_BONUS,
+        handle_remove_bonus,
+        schema=vol.Schema({vol.Required(ATTR_BONUS_ID): cv.string}),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_APPLY_BONUS,
+        handle_apply_bonus,
+        schema=vol.Schema({
+            vol.Required(ATTR_BONUS_ID): cv.string,
+            vol.Required(ATTR_CHILD_ID): cv.string,
+        }),
+    )
+
 
 def _async_unregister_services(hass: HomeAssistant) -> None:
     """Unregister TaskMate services."""
@@ -445,6 +550,10 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_UPDATE_PENALTY,
         SERVICE_REMOVE_PENALTY,
         SERVICE_APPLY_PENALTY,
+        SERVICE_ADD_BONUS,
+        SERVICE_UPDATE_BONUS,
+        SERVICE_REMOVE_BONUS,
+        SERVICE_APPLY_BONUS,
     ]
     for service in services:
         hass.services.async_remove(DOMAIN, service)
