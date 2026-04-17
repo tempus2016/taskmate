@@ -742,105 +742,21 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
 
   static get styles() {
     return css`
-      .editor-wrap { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-
-      .field-row { display: flex; flex-direction: column; gap: 4px; }
-      .field-label {
-        font-size: 0.78rem;
-        font-weight: 600;
-        color: var(--secondary-text-color);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
-
-      .segment-row { display: flex; gap: 8px; flex-wrap: wrap; }
-      .segment-btn {
-        flex: 1;
-        min-width: 80px;
-        padding: 8px 10px;
-        border-radius: 10px;
-        border: 2px solid var(--divider-color, #ddd);
-        background: var(--card-background-color, #fff);
-        cursor: pointer;
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--primary-text-color);
-        text-align: center;
-        transition: border-color 0.15s, background 0.15s;
-      }
-      .segment-btn.active {
-        border-color: var(--primary-color, #3498db);
-        background: var(--primary-color, #3498db);
-        color: white;
-      }
-
-      select, input[type="text"] {
-        width: 100%;
-        padding: 9px 12px;
-        border-radius: 10px;
-        border: 1px solid var(--divider-color, #ccc);
-        background: var(--card-background-color, #fff);
-        color: var(--primary-text-color);
-        font-size: 0.9rem;
-        box-sizing: border-box;
-      }
-      select:focus, input[type="text"]:focus {
-        outline: none;
-        border-color: var(--primary-color, #3498db);
-      }
-
-      .toggle-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-      }
-      .toggle-label {
-        font-size: 0.88rem;
-        font-weight: 500;
-        color: var(--primary-text-color);
-      }
-
-      .colour-row { display: flex; align-items: center; gap: 10px; }
-      .colour-swatch {
-        width: 36px; height: 36px; border-radius: 8px;
-        border: 2px solid var(--divider-color, #ddd);
-        flex-shrink: 0;
-        cursor: pointer;
-        overflow: hidden;
-        position: relative;
-      }
-      .colour-swatch input[type="color"] {
-        position: absolute; inset: 0; width: 100%; height: 100%;
-        border: none; padding: 0; margin: 0; cursor: pointer; opacity: 0;
-      }
-      .colour-hex {
-        flex: 1; font-size: 0.85rem; font-weight: 600;
-        font-family: monospace; padding: 9px 12px;
-        border-radius: 10px; border: 1px solid var(--divider-color, #ccc);
-        background: var(--card-background-color, #fff);
-        color: var(--primary-text-color);
-      }
-
-      .section-header {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--secondary-text-color);
-        border-bottom: 1px solid var(--divider-color, #e0e0e0);
-        padding-bottom: 6px;
-        margin-top: 4px;
-      }
-
-      .info-note {
-        font-size: 0.8rem;
-        color: var(--secondary-text-color);
-        background: var(--secondary-background-color, #f5f5f5);
-        border-radius: 8px;
-        padding: 8px 12px;
-        line-height: 1.4;
-      }
+      :host { display: block; padding: 8px 0; }
+      ha-form { display: block; margin-bottom: 16px; }
+      .colour-field { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border: 1px solid var(--outline-color, var(--divider-color, #e0e0e0)); border-radius: 4px; background: var(--mdc-text-field-fill-color, var(--card-background-color)); }
+      .colour-field-label { font-size: 0.82rem; color: var(--primary-color); font-weight: 500; }
+      .colour-field-body { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .colour-swatch-wrapper { position: relative; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); flex-shrink: 0; }
+      .colour-swatch-wrapper input[type="color"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+      .colour-swatch-preview { position: absolute; inset: 0; pointer-events: none; }
+      .colour-hex { font-family: var(--code-font-family, monospace); font-size: 0.85rem; color: var(--secondary-text-color); min-width: 70px; }
+      .colour-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+      .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
+      .preset-swatch:hover { transform: scale(1.15); }
+      .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }
 
@@ -849,7 +765,7 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
   }
 
   updated(changed) {
-    if (changed.has("hass") && this.hass && this.config?.entity) {
+    if (changed.has('hass') && this.hass && this.config?.entity) {
       this._loadChildren();
     }
   }
@@ -860,8 +776,140 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
     this._children = getChildren(state);
   }
 
+  _buildSchema() {
+    const mode = this.config.mode || 'single';
+    const schema = [
+      { name: 'entity', selector: { entity: { domain: 'sensor' } } },
+      { name: 'title', selector: { text: {} } },
+      {
+        name: 'mode',
+        selector: {
+          select: {
+            options: [
+              { value: 'single', label: this._t('points_display.editor.mode_single') },
+              { value: 'multi', label: this._t('points_display.editor.mode_multi') },
+              { value: 'cumulative', label: this._t('points_display.editor.mode_cumulative') },
+            ],
+            mode: 'dropdown',
+          },
+        },
+      },
+    ];
+
+    if (mode === 'single') {
+      schema.push({
+        name: 'child_id',
+        selector: {
+          select: {
+            options: [
+              { value: '', label: this._t('points_display.editor.select_child') },
+              ...this._children.map((c) => ({ value: c.id, label: c.name })),
+            ],
+            mode: 'dropdown',
+          },
+        },
+      });
+    }
+
+    schema.push({ name: 'show_weekly', selector: { boolean: {} } });
+    schema.push({ name: 'show_streak', selector: { boolean: {} } });
+    if (mode !== 'single') {
+      schema.push({ name: 'show_rank', selector: { boolean: {} } });
+    }
+    return schema;
+  }
+
+  _computeLabel = (entry) => {
+    const labels = {
+      entity: this._t('points_display.editor.entity_label'),
+      title: this._t('common.editor.card_title'),
+      mode: this._t('points_display.editor.mode_label'),
+      child_id: this._t('points_display.editor.child_label'),
+      show_weekly: this._t('points_display.editor.show_weekly'),
+      show_streak: this._t('points_display.editor.show_streak'),
+      show_rank: this._t('points_display.editor.show_rank'),
+    };
+    return labels[entry.name] ?? entry.name;
+  };
+
+  _computeHelper = () => '';
+
+  render() {
+    if (!this.config) return html``;
+    const mode = this.config.mode || 'single';
+    const data = {
+      entity: this.config.entity || '',
+      title: this.config.title || '',
+      mode,
+      child_id: this.config.child_id || '',
+      show_weekly: this.config.show_weekly !== false,
+      show_streak: this.config.show_streak !== false,
+      show_rank: this.config.show_rank !== false,
+    };
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${data}
+        .schema=${this._buildSchema()}
+        .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
+        @value-changed=${this._formChanged}
+      ></ha-form>
+      ${this._renderColourPicker('header_color', DEFAULT_HEADER)}
+    `;
+  }
+
+  _renderColourPicker(key, defaultValue) {
+    const current = this.config[key] || defaultValue;
+    const presets = [defaultValue, '#e67e22', '#27ae60', '#3498db', '#f1c40f', '#e74c3c', '#34495e'];
+    const isActive = (c) => c.toLowerCase() === current.toLowerCase();
+    return html`
+      <div class="colour-field">
+        <span class="colour-field-label">${this._t('common.editor.header_colour')}</span>
+        <div class="colour-field-body">
+          <label class="colour-swatch-wrapper">
+            <input type="color" .value=${current}
+              @input=${(e) => this._set(key, e.target.value)} />
+            <span class="colour-swatch-preview" style="background:${current}"></span>
+          </label>
+          <span class="colour-hex">${current}</span>
+          <div class="colour-presets">
+            ${presets.map((p) => html`
+              <button class="preset-swatch ${isActive(p) ? 'active' : ''}"
+                style="background:${p}"
+                title=${p}
+                @click=${(e) => { e.preventDefault(); this._set(key, p); }}
+              ></button>
+            `)}
+          </div>
+          <button class="colour-reset"
+            @click=${(e) => { e.preventDefault(); this._set(key, defaultValue); }}
+          >${this._t('common.reset')}</button>
+        </div>
+        <div class="colour-helper">${this._t('common.editor.header_colour_helper')}</div>
+      </div>
+    `;
+  }
+
+  _formChanged(e) {
+    const newValues = e.detail.value || {};
+    const newConfig = { ...this.config };
+    for (const [key, value] of Object.entries(newValues)) {
+      if (value === '' || value === null || value === undefined) {
+        delete newConfig[key];
+      } else if (key === 'mode' && value === 'single') {
+        delete newConfig[key];
+      } else if ((key === 'show_weekly' || key === 'show_streak' || key === 'show_rank') && value === true) {
+        delete newConfig[key];
+      } else {
+        newConfig[key] = value;
+      }
+    }
+    this._fire(newConfig);
+  }
+
   _fire(config) {
-    this.dispatchEvent(new CustomEvent("config-changed", {
+    this.dispatchEvent(new CustomEvent('config-changed', {
       detail: { config },
       bubbles: true,
       composed: true,
@@ -870,109 +918,6 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
 
   _set(key, value) {
     this._fire({ ...this.config, [key]: value });
-  }
-
-  _toggle(key) {
-    this._set(key, !this.config[key]);
-  }
-
-  _onEntityChange(e) { this._set("entity", e.target.value); }
-  _onTitleChange(e)  { this._set("title",  e.target.value); }
-  _onColourChange(e) { this._set("header_color", e.target.value); }
-  _onHexChange(e)    {
-    const v = e.target.value;
-    if (/^#[0-9a-fA-F]{6}$/.test(v)) this._set("header_color", v);
-  }
-  _onChildChange(e)  { this._set("child_id", e.target.value); }
-  _setMode(m)        { this._set("mode", m); }
-
-  render() {
-    if (!this.config) return html``;
-
-    const mode       = this.config.mode       || "single";
-    const headerCol  = this.config.header_color || DEFAULT_HEADER;
-    const showStreak = this.config.show_streak !== false;
-    const showWeekly = this.config.show_weekly !== false;
-    const showRank   = this.config.show_rank   !== false;
-
-    return html`
-      <div class="editor-wrap">
-
-        <!-- Entity -->
-        <div class="field-row">
-          <div class="field-label">${this._t("points_display.editor.entity_label")}</div>
-          <input type="text" .value="${this.config.entity || ""}"
-            placeholder="sensor.taskmate_overview"
-            @change="${this._onEntityChange}">
-        </div>
-
-        <!-- Display Mode -->
-        <div class="section-header">${this._t("points_display.editor.display_mode")}</div>
-        <div class="field-row">
-          <div class="field-label">${this._t("points_display.editor.mode_label")}</div>
-          <div class="segment-row">
-            ${["single","multi","cumulative"].map(m => html`
-              <button class="segment-btn ${mode === m ? "active" : ""}"
-                      @click="${() => this._setMode(m)}">
-                ${{ single: this._t("points_display.editor.mode_single"), multi: this._t("points_display.editor.mode_multi"), cumulative: this._t("points_display.editor.mode_cumulative") }[m]}
-              </button>`)}
-          </div>
-        </div>
-
-        ${mode === "single" ? html`
-          <div class="field-row">
-            <div class="field-label">${this._t("points_display.editor.child_label")}</div>
-            ${this._children.length ? html`
-              <select .value="${this.config.child_id || ""}" @change="${this._onChildChange}">
-                <option value="">${this._t("points_display.editor.select_child")}</option>
-                ${this._children.map(c => html`
-                  <option value="${c.id}" ?selected="${c.id === this.config.child_id}">${c.name}</option>`)}
-              </select>` : html`
-              <input type="text" .value="${this.config.child_id || ""}"
-                placeholder="${this._t("points_display.editor.child_id_placeholder")}"
-                @change="${this._onChildChange}">
-              <div class="info-note">${this._t("points_display.editor.child_id_note")}</div>`}
-          </div>` : ""}
-
-        <!-- Appearance -->
-        <div class="section-header">${this._t("points_display.editor.appearance")}</div>
-
-        <div class="field-row">
-          <div class="field-label">${this._t("common.editor.header_colour")}</div>
-          <div class="colour-row">
-            <div class="colour-swatch" style="background:${headerCol};">
-              <input type="color" .value="${headerCol}" @input="${this._onColourChange}">
-            </div>
-            <input type="text" class="colour-hex" .value="${headerCol}"
-              maxlength="7" placeholder="#9b59b6" @change="${this._onHexChange}">
-          </div>
-        </div>
-
-        <div class="field-row">
-          <div class="field-label">${this._t("common.editor.card_title")}</div>
-          <input type="text" .value="${this.config.title || ""}"
-            placeholder="${this._t("points_display.editor.title_placeholder")}"
-            @change="${this._onTitleChange}">
-        </div>
-
-        <!-- Stats to show -->
-        <div class="section-header">${this._t("points_display.editor.stats_to_show")}</div>
-
-        <div class="toggle-row">
-          <span class="toggle-label">${this._t("points_display.editor.show_weekly")}</span>
-          <ha-switch ?checked="${showWeekly}" @change="${() => this._toggle("show_weekly")}"></ha-switch>
-        </div>
-        <div class="toggle-row">
-          <span class="toggle-label">${this._t("points_display.editor.show_streak")}</span>
-          <ha-switch ?checked="${showStreak}" @change="${() => this._toggle("show_streak")}"></ha-switch>
-        </div>
-        ${mode !== "single" ? html`
-          <div class="toggle-row">
-            <span class="toggle-label">${this._t("points_display.editor.show_rank")}</span>
-            <ha-switch ?checked="${showRank}" @change="${() => this._toggle("show_rank")}"></ha-switch>
-          </div>` : ""}
-
-      </div>`;
   }
 }
 
