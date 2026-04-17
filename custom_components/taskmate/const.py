@@ -208,6 +208,7 @@ SERVICE_UPDATE_BONUS: Final = "update_bonus"
 SERVICE_REMOVE_BONUS: Final = "remove_bonus"
 SERVICE_APPLY_BONUS: Final = "apply_bonus"
 SERVICE_ADD_CHORE: Final = "add_chore"
+SERVICE_ALLOCATE_POINTS_TO_POOL: Final = "allocate_points_to_pool"
 
 # Events
 EVENT_PREVIEW_SOUND: Final = "taskmate_preview_sound"

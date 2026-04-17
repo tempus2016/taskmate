@@ -42,6 +42,7 @@ from .const import (
     SERVICE_ADD_CHORE,
     SERVICE_ADD_PENALTY,
     SERVICE_ADD_POINTS,
+    SERVICE_ALLOCATE_POINTS_TO_POOL,
     SERVICE_APPLY_BONUS,
     SERVICE_APPLY_PENALTY,
     SERVICE_APPROVE_CHORE,
@@ -193,6 +194,17 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             return
         claim_id = call.data["claim_id"]
         await coordinator.async_approve_reward(claim_id)
+
+    async def handle_allocate_points_to_pool(call: ServiceCall) -> None:
+        """Handle the allocate_points_to_pool service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        child_id = call.data[ATTR_CHILD_ID]
+        reward_id = call.data[ATTR_REWARD_ID]
+        points = call.data[ATTR_POINTS]
+        await coordinator.async_allocate_points_to_pool(child_id, reward_id, points)
 
     async def handle_add_points(call: ServiceCall) -> None:
         """Handle the add_points service call."""
@@ -417,6 +429,19 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN,
+        SERVICE_ALLOCATE_POINTS_TO_POOL,
+        handle_allocate_points_to_pool,
+        schema=vol.Schema(
+            {
+                vol.Required(ATTR_CHILD_ID): cv.string,
+                vol.Required(ATTR_REWARD_ID): cv.string,
+                vol.Required(ATTR_POINTS): cv.positive_int,
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
         SERVICE_ADD_POINTS,
         handle_add_points,
         schema=vol.Schema(
@@ -582,6 +607,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_CLAIM_REWARD,
         SERVICE_APPROVE_REWARD,
         SERVICE_REJECT_REWARD,
+        SERVICE_ALLOCATE_POINTS_TO_POOL,
         SERVICE_ADD_POINTS,
         SERVICE_REMOVE_POINTS,
         SERVICE_SET_CHORE_ORDER,
