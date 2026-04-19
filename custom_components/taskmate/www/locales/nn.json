@@ -92,6 +92,8 @@
   "child.recurring": "Gjentakande",
   "child.not_scheduled_for_today": "Ikkje planlagt for i dag",
   "child.time_has_passed": "Tida har gått for denne oppgåva",
+  "child.chore_locked_until": "Tilgjengeleg kl. {time}",
+  "child.chore_locked_until_generic": "Tilgjengeleg seinare",
   "child.click_to_undo": "Klikk for å angre",
   "child.click_to_complete": "Klikk for å fullføre",
   "child.celebration_title": "KJEMPEBRA!",

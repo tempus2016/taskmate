@@ -70,6 +70,7 @@
           "description": "Description (optionnel)",
           "points": "Récompense en points",
           "time_category": "Moment de la journée",
+          "claim_allowance_minutes": "Délai de réclamation (minutes)",
           "due_days": "Jours d'échéance (optionnel)",
           "assigned_to": "Assigné à (laisser vide pour tous les enfants)",
           "requires_approval": "Nécessite l'approbation d'un parent",
@@ -81,6 +82,7 @@
           "visibility_state": "Valeur à comparer"
         },
         "data_description": {
+          "claim_allowance_minutes": "Minutes supplémentaires après la fin de cette plage horaire pendant lesquelles la corvée peut encore être réclamée. 0 désactive le délai de grâce. Les corvées nocturnes sont toujours limitées à minuit.",
           "daily_limit": "Nombre de fois par jour que cette corvée peut être effectuée",
           "schedule_mode": "Choisissez comment cette corvée est planifiée — jours spécifiques de la semaine ou intervalle récurrent. Les options de planification seront configurées sur la page suivante.",
           "completion_sound": "Son à jouer quand cette corvée est complétée",
@@ -96,6 +98,7 @@
           "chore_names": "Noms des corvées (un par ligne ou par virgule)",
           "points": "Points de récompense (pour toutes)",
           "time_category": "Moment de la journée (pour toutes)",
+          "claim_allowance_minutes": "Délai de réclamation (minutes)",
           "due_days": "Jours d'échéance (optionnel)",
           "assigned_to": "Assigné à (laisser vide pour tous les enfants)",
           "requires_approval": "Nécessite l'approbation d'un parent",
@@ -107,6 +110,7 @@
           "visibility_state": "Valeur à comparer"
         },
         "data_description": {
+          "claim_allowance_minutes": "Minutes supplémentaires après la fin de cette plage horaire pendant lesquelles la corvée peut encore être réclamée. 0 désactive le délai de grâce. Les corvées nocturnes sont toujours limitées à minuit.",
           "daily_limit": "Nombre de fois par jour que cette corvée peut être effectuée",
           "schedule_mode": "Choisissez comment cette corvée est planifiée",
           "completion_sound": "Son à jouer quand les corvées sont complétées",
@@ -123,6 +127,7 @@
           "description": "Description",
           "points": "Récompense en points",
           "time_category": "Moment de la journée",
+          "claim_allowance_minutes": "Délai de réclamation (minutes)",
           "due_days": "Jours d'échéance",
           "assigned_to": "Assigné à",
           "requires_approval": "Nécessite l'approbation d'un parent",
@@ -135,6 +140,7 @@
           "visibility_state": "Valeur à comparer"
         },
         "data_description": {
+          "claim_allowance_minutes": "Minutes supplémentaires après la fin de cette plage horaire pendant lesquelles la corvée peut encore être réclamée. 0 désactive le délai de grâce. Les corvées nocturnes sont toujours limitées à minuit.",
           "daily_limit": "Nombre de fois par jour que cette corvée peut être effectuée",
           "schedule_mode": "Choisissez comment cette corvée est planifiée — jours spécifiques de la semaine ou intervalle récurrent.",
           "completion_sound": "Son à jouer quand cette corvée est complétée",

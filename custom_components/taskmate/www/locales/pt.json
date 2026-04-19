@@ -92,6 +92,8 @@
   "child.recurring": "Recorrente",
   "child.not_scheduled_for_today": "Não agendado para hoje",
   "child.time_has_passed": "O horário desta tarefa já passou",
+  "child.chore_locked_until": "Disponível às {time}",
+  "child.chore_locked_until_generic": "Disponível mais tarde",
   "child.click_to_undo": "Clica para desfazer",
   "child.click_to_complete": "Clica para concluir",
   "child.celebration_title": "INCRÍVEL!",

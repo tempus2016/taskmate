@@ -70,6 +70,7 @@
           "description": "Description (optional)",
           "points": "Points Reward",
           "time_category": "Time of Day",
+          "claim_allowance_minutes": "Claim allowance (minutes)",
           "due_days": "Due Days (optional)",
           "assigned_to": "Assigned To (leave empty for all children)",
           "requires_approval": "Requires Parent Approval",
@@ -81,6 +82,7 @@
           "visibility_state": "Value to compare"
         },
         "data_description": {
+          "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
           "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
           "completion_sound": "Sound to play when this chore is completed",
@@ -96,6 +98,7 @@
           "chore_names": "Chore Names (one per line or comma-separated)",
           "points": "Points Reward (for all)",
           "time_category": "Time of Day (for all)",
+          "claim_allowance_minutes": "Claim allowance (minutes)",
           "due_days": "Due Days (optional)",
           "assigned_to": "Assigned To (leave empty for all children)",
           "requires_approval": "Requires Parent Approval",
@@ -107,6 +110,7 @@
           "visibility_state": "Value to compare"
         },
         "data_description": {
+          "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
           "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled",
           "completion_sound": "Sound to play when chores are completed",
@@ -123,6 +127,7 @@
           "description": "Description",
           "points": "Points Reward",
           "time_category": "Time of Day",
+          "claim_allowance_minutes": "Claim allowance (minutes)",
           "due_days": "Due Days",
           "assigned_to": "Assigned To",
           "requires_approval": "Requires Parent Approval",
@@ -135,6 +140,7 @@
           "visibility_state": "Value to compare"
         },
         "data_description": {
+          "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
           "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
           "completion_sound": "Sound to play when this chore is completed",
