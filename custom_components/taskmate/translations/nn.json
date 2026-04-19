@@ -70,6 +70,7 @@
           "description": "Omtale (valfritt)",
           "points": "Poengløning",
           "time_category": "Tid på dagen",
+          "claim_allowance_minutes": "Claim allowance (minutes)",
           "due_days": "Forfallsdagar (valfritt)",
           "assigned_to": "Tildelt til (lat stå tom for alle born)",
           "requires_approval": "Krev foreldregodkjenning",
@@ -81,6 +82,7 @@
           "visibility_state": "Synlegheitstilstand"
         },
         "data_description": {
+          "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
           "daily_limit": "Kor mange gonger per dag denne oppgåva kan fullførast",
           "schedule_mode": "Vel korleis denne oppgåva vert planlagd — bestemte vekedagar eller gjentakande intervall. Planleggingsalternativa vert konfigurerte på neste side.",
           "completion_sound": "Lyd som skal spelast når denne oppgåva vert fullført",
@@ -96,6 +98,7 @@
           "chore_names": "Oppgåvenamn (éi per linje eller kommaseparert)",
           "points": "Poengløning (for alle)",
           "time_category": "Tid på dagen (for alle)",
+          "claim_allowance_minutes": "Claim allowance (minutes)",
           "due_days": "Forfallsdagar (valfritt)",
           "assigned_to": "Tildelt til (lat stå tom for alle born)",
           "requires_approval": "Krev foreldregodkjenning",
@@ -107,6 +110,7 @@
           "visibility_state": "Synlegheitstilstand"
         },
         "data_description": {
+          "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
           "daily_limit": "Kor mange gonger per dag denne oppgåva kan fullførast",
           "schedule_mode": "Vel korleis denne oppgåva vert planlagd",
           "completion_sound": "Lyd som skal spelast når denne oppgåva vert fullført",
@@ -123,6 +127,7 @@
           "description": "Omtale",
           "points": "Poengløning",
           "time_category": "Tid på dagen",
+          "claim_allowance_minutes": "Claim allowance (minutes)",
           "due_days": "Forfallsdagar",
           "assigned_to": "Tildelt til",
           "requires_approval": "Krev foreldregodkjenning",
@@ -135,6 +140,7 @@
           "visibility_state": "Synlegheitstilstand"
         },
         "data_description": {
+          "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
           "daily_limit": "Kor mange gonger per dag denne oppgåva kan fullførast",
           "schedule_mode": "Vel korleis denne oppgåva vert planlagd — bestemte vekedagar eller gjentakande intervall. Planleggingsalternativa vert konfigurerte på neste side.",
           "completion_sound": "Lyd som skal spelast når denne oppgåva vert fullført",

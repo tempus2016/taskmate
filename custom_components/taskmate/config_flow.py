@@ -15,6 +15,7 @@ from .const import (
     AVATAR_OPTIONS,
     COMPLETION_SOUND_OPTIONS,
     DAYS_OF_WEEK,
+    DEFAULT_CLAIM_ALLOWANCE_MINUTES,
     DEFAULT_COMPLETION_SOUND,
     DEFAULT_POINTS_ICON,
     DEFAULT_POINTS_NAME,
@@ -361,6 +362,9 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
+            vol.Optional("claim_allowance_minutes", default=DEFAULT_CLAIM_ALLOWANCE_MINUTES): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=720, step=5, mode=selector.NumberSelectorMode.BOX, unit_of_measurement="min")
+            ),
             vol.Required("schedule_mode", default="specific_days"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=["specific_days", "recurring", "one_shot"],
@@ -414,6 +418,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 assigned_to=s1.get("assigned_to", []),
                 requires_approval=s1.get("requires_approval", True),
                 time_category=s1.get("time_category", "anytime"),
+                claim_allowance_minutes=int(s1.get("claim_allowance_minutes", DEFAULT_CLAIM_ALLOWANCE_MINUTES) or 0),
                 daily_limit=int(s1.get("daily_limit", 1)),
                 completion_sound=s1.get("completion_sound", DEFAULT_COMPLETION_SOUND),
                 schedule_mode="specific_days",
@@ -449,6 +454,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             assigned_to=s1.get("assigned_to", []),
             requires_approval=s1.get("requires_approval", True),
             time_category=s1.get("time_category", "anytime"),
+            claim_allowance_minutes=int(s1.get("claim_allowance_minutes", DEFAULT_CLAIM_ALLOWANCE_MINUTES) or 0),
             daily_limit=1,
             completion_sound=s1.get("completion_sound", DEFAULT_COMPLETION_SOUND),
             schedule_mode="one_shot",
@@ -484,6 +490,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 assigned_to=s1.get("assigned_to", []),
                 requires_approval=s1.get("requires_approval", True),
                 time_category=s1.get("time_category", "anytime"),
+                claim_allowance_minutes=int(s1.get("claim_allowance_minutes", DEFAULT_CLAIM_ALLOWANCE_MINUTES) or 0),
                 daily_limit=int(s1.get("daily_limit", 1)),
                 completion_sound=s1.get("completion_sound", DEFAULT_COMPLETION_SOUND),
                 schedule_mode="recurring",
@@ -556,6 +563,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         assigned_to=user_input.get("assigned_to", []),
                         requires_approval=user_input.get("requires_approval", True),
                         time_category=user_input.get("time_category", "anytime"),
+                        claim_allowance_minutes=int(user_input.get("claim_allowance_minutes", DEFAULT_CLAIM_ALLOWANCE_MINUTES) or 0),
                         daily_limit=int(user_input.get("daily_limit", 1)),
                         schedule_mode="specific_days",
                         completion_sound=user_input.get("completion_sound", DEFAULT_COMPLETION_SOUND),
@@ -583,6 +591,9 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     translation_key="time_category",
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
+            ),
+            vol.Optional("claim_allowance_minutes", default=DEFAULT_CLAIM_ALLOWANCE_MINUTES): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=720, step=5, mode=selector.NumberSelectorMode.BOX, unit_of_measurement="min")
             ),
             vol.Optional("due_days", default=[]): selector.SelectSelector(
                 selector.SelectSelectorConfig(
@@ -700,6 +711,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 chore.assigned_to = user_input.get("assigned_to", chore.assigned_to)
                 chore.requires_approval = user_input.get("requires_approval", chore.requires_approval)
                 chore.time_category = user_input.get("time_category", chore.time_category)
+                chore.claim_allowance_minutes = max(0, int(user_input.get("claim_allowance_minutes", getattr(chore, "claim_allowance_minutes", 0)) or 0))
                 chore.daily_limit = int(user_input.get("daily_limit", chore.daily_limit))
                 chore.completion_sound = user_input.get("completion_sound", getattr(chore, 'completion_sound', DEFAULT_COMPLETION_SOUND))
                 if vis_entity:
@@ -745,6 +757,9 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     translation_key="time_category",
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
+            ),
+            vol.Optional("claim_allowance_minutes", default=getattr(chore, "claim_allowance_minutes", DEFAULT_CLAIM_ALLOWANCE_MINUTES)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=720, step=5, mode=selector.NumberSelectorMode.BOX, unit_of_measurement="min")
             ),
             vol.Required("schedule_mode", default=current_schedule_mode): selector.SelectSelector(
                 selector.SelectSelectorConfig(
