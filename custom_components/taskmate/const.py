@@ -24,6 +24,8 @@ CONF_CHORE_DUE_DAYS: Final = "due_days"
 CONF_CHORE_ASSIGNED_TO: Final = "assigned_to"
 CONF_CHORE_ID: Final = "id"
 CONF_CHORE_REQUIRES_APPROVAL: Final = "requires_approval"
+CONF_CLAIM_ALLOWANCE_MINUTES: Final = "claim_allowance_minutes"
+DEFAULT_CLAIM_ALLOWANCE_MINUTES: Final = 0
 
 # Reward keys
 CONF_REWARD_NAME: Final = "name"

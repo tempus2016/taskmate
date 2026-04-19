@@ -799,6 +799,17 @@ class TaskMateChildCard extends LitElement {
         pointer-events: none;
       }
 
+      /* Locked preview — chore is visible but not yet claimable because its
+         time-of-day window has not started. Dim with a padlock badge. */
+      .chore-card.chore-locked {
+        opacity: 0.55;
+        filter: grayscale(0.5);
+        cursor: not-allowed;
+      }
+      .chore-card.chore-locked .chore-lock-icon {
+        color: var(--secondary-text-color);
+      }
+
       .recurrence-label {
         display: inline-flex;
         align-items: center;
@@ -1330,11 +1341,18 @@ class TaskMateChildCard extends LitElement {
       const disabledFor = chore.disabled_for || [];
       if (disabledFor.includes(childId)) return false;
 
-      // Check time category
-      const matchesTime =
+      // Check time category. The card's configured filter matches as before;
+      // on top of that, chores currently in their claim window (including the
+      // post-period grace) and next-period preview chores are let through so
+      // they can render as locked previews or keep claimable during grace.
+      const isLockedPreview = this._isChorePreviewLocked(chore);
+      const inClaimWindow = this._isChoreInClaimWindow(chore);
+      chore._isLockedPreview = isLockedPreview;
+      const matchesCardFilter =
         this.config.time_category === "all" ||
         chore.time_category === this.config.time_category ||
         chore.time_category === "anytime";
+      const matchesTime = matchesCardFilter || isLockedPreview || inClaimWindow;
 
       // Check assignment
       let assignedTo = chore.assigned_to;
@@ -1418,8 +1436,8 @@ class TaskMateChildCard extends LitElement {
       chore._isDueToday = isDueToday;
       chore._hasDueDays = hasDueDays;
 
-      // Mark whether this chore's time period has elapsed
-      chore._isTimeElapsed = this._isTimePeriodElapsed(chore.time_category);
+      // Mark whether this chore's time period has elapsed (grace-aware).
+      chore._isTimeElapsed = this._isTimePeriodElapsed(chore);
 
       // If elapsed_time_mode is "hide", exclude elapsed-and-incomplete chores at filter stage.
       // Completed chores are handled at render time so we can't check here — use a sentinel.
@@ -1518,15 +1536,82 @@ class TaskMateChildCard extends LitElement {
     return 'night';
   }
 
+  // Period hour bounds [startHour, endHour). Night caps at 24 (midnight).
+  _getPeriodHours(period) {
+    switch (period) {
+      case 'morning': return [0, 12];
+      case 'afternoon': return [12, 17];
+      case 'evening': return [17, 21];
+      case 'night': return [21, 24];
+      default: return null;
+    }
+  }
+
+  // Current {hour, minute} in HA timezone. Honours debug_time_period by
+  // pinning to the period's start so preview/grace logic remains deterministic.
+  _getCurrentHourMinute() {
+    if (this.config.debug_time_period) {
+      const hours = this._getPeriodHours(this.config.debug_time_period);
+      if (hours) return { hour: hours[0], minute: 0 };
+    }
+    const tz = this._getTimezone();
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, hour: 'numeric', minute: 'numeric', hour12: false,
+    }).formatToParts(new Date());
+    let hour = parseInt(parts.find(p => p.type === 'hour')?.value, 10);
+    const minute = parseInt(parts.find(p => p.type === 'minute')?.value, 10) || 0;
+    if (isNaN(hour)) hour = 0;
+    if (hour === 24) hour = 0;
+    return { hour, minute };
+  }
+
+  // True iff the chore's period is the immediate next period after the current
+  // one. Never true for "anytime"; no cross-midnight preview.
+  _isChorePreviewLocked(chore) {
+    const cat = chore?.time_category;
+    if (!cat || cat === 'anytime') return false;
+    const order = ['morning', 'afternoon', 'evening', 'night'];
+    const choreIndex = order.indexOf(cat);
+    const currentIndex = order.indexOf(this._getCurrentTimePeriod());
+    if (choreIndex < 0 || currentIndex < 0) return false;
+    return choreIndex === currentIndex + 1;
+  }
+
+  // True iff the current HA-local time is within the chore's claim window,
+  // i.e. between period start and (period end + claim_allowance_minutes),
+  // capped at midnight for night-period chores.
+  _isChoreInClaimWindow(chore) {
+    const cat = chore?.time_category;
+    if (!cat) return false;
+    if (cat === 'anytime') return true;
+    const hours = this._getPeriodHours(cat);
+    if (!hours) return false;
+    const [startH, endH] = hours;
+    const allowance = Math.max(0, parseInt(chore.claim_allowance_minutes, 10) || 0);
+    const startMinutes = startH * 60;
+    const endMinutes = Math.min(24 * 60, endH * 60 + allowance);
+    const { hour, minute } = this._getCurrentHourMinute();
+    const nowMinutes = hour * 60 + minute;
+    return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+  }
+
   // Returns true when the chore's time_category period has passed without completion.
-  // "anytime" chores never elapse. Already-completed chores are handled at the call site.
-  _isTimePeriodElapsed(choreTimeCategory) {
-    if (!choreTimeCategory || choreTimeCategory === 'anytime') return false;
+  // "anytime" chores never elapse. A chore still inside its claim grace window is
+  // not considered elapsed. Already-completed chores are handled at the call site.
+  _isTimePeriodElapsed(choreOrCategory) {
+    const cat = typeof choreOrCategory === 'string'
+      ? choreOrCategory
+      : choreOrCategory?.time_category;
+    if (!cat || cat === 'anytime') return false;
     const order = { morning: 0, afternoon: 1, evening: 2, night: 3 };
-    const choreIndex = order[choreTimeCategory];
+    const choreIndex = order[cat];
     if (choreIndex === undefined) return false;
     const currentIndex = order[this._getCurrentTimePeriod()];
-    return currentIndex > choreIndex;
+    if (currentIndex <= choreIndex) return false;
+    if (typeof choreOrCategory === 'object' && this._isChoreInClaimWindow(choreOrCategory)) {
+      return false;
+    }
+    return true;
   }
 
   _getDatePartsInTimezone(date) {
@@ -1665,10 +1750,18 @@ class TaskMateChildCard extends LitElement {
     // Elapsed: only dim incomplete chores — completed ones keep their green "done" style
     const elapsedTimeMode = this.config.elapsed_time_mode || 'dim';
     const timeElapsed = chore._isTimeElapsed && !isCompletedForToday && elapsedTimeMode === 'dim';
+    const isLockedPreview = !!chore._isLockedPreview && !isCompletedForToday;
+    const periodStartHour = isLockedPreview
+      ? (this._getPeriodHours(chore.time_category)?.[0] ?? null)
+      : null;
+    const lockedUntilLabel = isLockedPreview && periodStartHour !== null
+      ? this._t('child.chore_locked_until', { time: `${String(periodStartHour).padStart(2, '0')}:00` })
+      : '';
     const handleRowClick = () => {
       if (isLoading) return;
       if (notDueToday) return;  // Dim mode — not interactive
       if (notAvailableRecurrence) return;  // Recurrence window not open — not interactive
+      if (isLockedPreview) return;  // Next-period preview — not yet claimable
       if (timeElapsed) return;  // Time period passed — not interactive
       if (isCompletedForToday) {
         this._handleUndo(chore, child, childCompletionsToday);
@@ -1677,11 +1770,21 @@ class TaskMateChildCard extends LitElement {
       }
     };
 
+    const titleText = isLockedPreview
+      ? (lockedUntilLabel || this._t('child.chore_locked_until_generic'))
+      : notDueToday
+        ? this._t('child.not_scheduled_for_today')
+        : timeElapsed
+          ? this._t('child.time_has_passed')
+          : isCompletedForToday
+            ? this._t('child.click_to_undo')
+            : this._t('child.click_to_complete');
+
     return html`
       <div
-        class="chore-card ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence ? "recurrence-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""}"
+        class="chore-card ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence ? "recurrence-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""}"
         @click="${handleRowClick}"
-        title="${notDueToday ? this._t('child.not_scheduled_for_today') : timeElapsed ? this._t('child.time_has_passed') : isCompletedForToday ? this._t('child.click_to_undo') : this._t('child.click_to_complete')}"
+        title="${titleText}"
       >
         <div class="chore-info">
           <div class="chore-number-wrapper">
@@ -1708,7 +1811,9 @@ class TaskMateChildCard extends LitElement {
         <div class="chore-checkbox">
           ${isLoading
             ? html`<ha-icon icon="mdi:loading" style="animation: spin 1s linear infinite; color: var(--fun-purple);"></ha-icon>`
-            : html`<ha-icon icon="mdi:check-bold"></ha-icon>`}
+            : isLockedPreview
+              ? html`<ha-icon icon="mdi:lock-clock" class="chore-lock-icon"></ha-icon>`
+              : html`<ha-icon icon="mdi:check-bold"></ha-icon>`}
         </div>
       </div>
     `;

@@ -93,6 +93,8 @@
   "child.recurring": "Recurring",
   "child.not_scheduled_for_today": "Not scheduled for today",
   "child.time_has_passed": "Time has passed for this chore",
+  "child.chore_locked_until": "Available at {time}",
+  "child.chore_locked_until_generic": "Available later",
   "child.click_to_undo": "Click to undo",
   "child.click_to_complete": "Click to complete",
   "child.celebration_title": "AWESOME!",
