@@ -127,6 +127,7 @@ class Chore:
     assigned_to: list[str] = field(default_factory=list)  # List of child IDs
     requires_approval: bool = True
     time_category: str = "anytime"  # morning, afternoon, evening, night, anytime
+    claim_allowance_minutes: int = 0  # Grace minutes past period end during which the chore stays claimable; 0 = no grace. Night chores still cap at midnight.
     daily_limit: int = 1
     completion_sound: str = "coin"  # Sound to play on completion
     # Scheduling
@@ -166,6 +167,7 @@ class Chore:
             assigned_to=list(data.get("assigned_to", [])),
             requires_approval=data.get("requires_approval", True),
             time_category=data.get("time_category", "anytime"),
+            claim_allowance_minutes=max(0, int(data.get("claim_allowance_minutes", 0) or 0)),
             daily_limit=data.get("daily_limit", 1),
             completion_sound=data.get("completion_sound", "coin"),
             schedule_mode=schedule_mode,
@@ -192,6 +194,7 @@ class Chore:
             "assigned_to": self.assigned_to,
             "requires_approval": self.requires_approval,
             "time_category": self.time_category,
+            "claim_allowance_minutes": self.claim_allowance_minutes,
             "daily_limit": self.daily_limit,
             "completion_sound": self.completion_sound,
             "schedule_mode": self.schedule_mode,

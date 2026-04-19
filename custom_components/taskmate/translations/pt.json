@@ -70,6 +70,7 @@
           "description": "Descrição (opcional)",
           "points": "Recompensa em pontos",
           "time_category": "Período do dia",
+          "claim_allowance_minutes": "Tolerância para reivindicar (minutos)",
           "due_days": "Dias de vencimento (opcional)",
           "assigned_to": "Atribuída a (deixe vazio para todas as crianças)",
           "requires_approval": "Requer aprovação dos pais",
@@ -81,6 +82,7 @@
           "visibility_state": "Estado de visibilidade"
         },
         "data_description": {
+          "claim_allowance_minutes": "Minutos extra após o fim desta janela horária durante os quais a tarefa ainda pode ser reivindicada. 0 desativa o período de tolerância. As tarefas noturnas são sempre limitadas à meia-noite.",
           "daily_limit": "Quantas vezes por dia esta tarefa pode ser concluída",
           "schedule_mode": "Escolha como esta tarefa é agendada — dias específicos da semana ou intervalo recorrente. As opções de agendamento serão configuradas na página seguinte.",
           "completion_sound": "Som a reproduzir quando esta tarefa é concluída",
@@ -96,6 +98,7 @@
           "chore_names": "Nomes das tarefas (um por linha ou separados por vírgulas)",
           "points": "Recompensa em pontos (para todas)",
           "time_category": "Período do dia (para todas)",
+          "claim_allowance_minutes": "Tolerância para reivindicar (minutos)",
           "due_days": "Dias de vencimento (opcional)",
           "assigned_to": "Atribuída a (deixe vazio para todas as crianças)",
           "requires_approval": "Requer aprovação dos pais",
@@ -107,6 +110,7 @@
           "visibility_state": "Estado de visibilidade"
         },
         "data_description": {
+          "claim_allowance_minutes": "Minutos extra após o fim desta janela horária durante os quais a tarefa ainda pode ser reivindicada. 0 desativa o período de tolerância. As tarefas noturnas são sempre limitadas à meia-noite.",
           "daily_limit": "Quantas vezes por dia esta tarefa pode ser concluída",
           "schedule_mode": "Escolha como esta tarefa é agendada",
           "completion_sound": "Som a reproduzir quando esta tarefa é concluída",
@@ -123,6 +127,7 @@
           "description": "Descrição",
           "points": "Recompensa em pontos",
           "time_category": "Período do dia",
+          "claim_allowance_minutes": "Tolerância para reivindicar (minutos)",
           "due_days": "Dias de vencimento",
           "assigned_to": "Atribuída a",
           "requires_approval": "Requer aprovação dos pais",
@@ -135,6 +140,7 @@
           "visibility_state": "Estado de visibilidade"
         },
         "data_description": {
+          "claim_allowance_minutes": "Minutos extra após o fim desta janela horária durante os quais a tarefa ainda pode ser reivindicada. 0 desativa o período de tolerância. As tarefas noturnas são sempre limitadas à meia-noite.",
           "daily_limit": "Quantas vezes por dia esta tarefa pode ser concluída",
           "schedule_mode": "Escolha como esta tarefa é agendada — dias específicos da semana ou intervalo recorrente. As opções de agendamento serão configuradas na página seguinte.",
           "completion_sound": "Som a reproduzir quando esta tarefa é concluída",
