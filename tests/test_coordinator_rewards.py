@@ -368,3 +368,109 @@ class TestPoolClaimDoesNotBlockOtherAllocations:
             claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
         )
         assert coord.is_pool_mode_claim(claim) is False
+
+
+class TestPoolOverallocationRefund:
+    """When a reward's cost is reduced (or when an over-allocated pool is
+    redeemed) any pool allocation that exceeds the reward's cost must be
+    trimmed and the excess refunded to the contributing child's wallet."""
+
+    def test_update_reward_refunds_excess_when_cost_reduced(self):
+        # Child started with 100, allocated 10 to a reward originally costing 10.
+        child = _child(points=90)
+        old_reward = Reward(name="Test", cost=10, id="reward1")
+        existing = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=10)
+        coord = _make_coord(children=[child], rewards=[old_reward])
+        coord.storage.get_pool_allocation = MagicMock(return_value=existing)
+        coord.storage.get_pool_allocations = MagicMock(return_value=[existing])
+
+        # Parent edits the cost down to 5 — 5 points should refund.
+        new_reward = Reward(name="Test", cost=5, id="reward1")
+        run(coord.async_update_reward(new_reward))
+
+        assert child.points == 95  # 90 + 5 refunded
+        # Allocation trimmed to the new cost
+        upsert_args = coord.storage.upsert_pool_allocation.call_args[0][0]
+        assert upsert_args.allocated_points == 5
+        # Audit transaction recorded
+        coord.storage.add_points_transaction.assert_called_once()
+        txn = coord.storage.add_points_transaction.call_args[0][0]
+        assert txn.points == 5
+        assert "cost reduced" in txn.reason.lower()
+
+    def test_update_reward_no_refund_when_cost_unchanged(self):
+        child = _child(points=90)
+        reward = Reward(name="Test", cost=10, id="reward1")
+        existing = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=10)
+        coord = _make_coord(children=[child], rewards=[reward])
+        coord.storage.get_pool_allocation = MagicMock(return_value=existing)
+        coord.storage.get_pool_allocations = MagicMock(return_value=[existing])
+
+        run(coord.async_update_reward(Reward(name="Test renamed", cost=10, id="reward1")))
+
+        assert child.points == 90  # No refund
+        coord.storage.add_points_transaction.assert_not_called()
+
+    def test_update_reward_no_refund_when_cost_increased(self):
+        child = _child(points=90)
+        reward = Reward(name="Test", cost=10, id="reward1")
+        existing = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=10)
+        coord = _make_coord(children=[child], rewards=[reward])
+        coord.storage.get_pool_allocation = MagicMock(return_value=existing)
+        coord.storage.get_pool_allocations = MagicMock(return_value=[existing])
+
+        run(coord.async_update_reward(Reward(name="Test", cost=20, id="reward1")))
+
+        assert child.points == 90
+        coord.storage.add_points_transaction.assert_not_called()
+
+    def test_update_reward_removes_allocation_when_cost_drops_to_zero(self):
+        child = _child(points=90)
+        reward = Reward(name="Test", cost=10, id="reward1")
+        existing = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=10)
+        coord = _make_coord(children=[child], rewards=[reward])
+        coord.storage.get_pool_allocation = MagicMock(return_value=existing)
+        coord.storage.get_pool_allocations = MagicMock(return_value=[existing])
+
+        run(coord.async_update_reward(Reward(name="Test", cost=0, id="reward1")))
+
+        assert child.points == 100  # all 10 refunded
+        coord.storage.remove_pool_allocation.assert_called_once_with("kid1", "reward1")
+
+    def test_jackpot_cost_reduction_refunds_newest_first(self):
+        # Two children each contributed to a 100-point jackpot. Newer allocation
+        # (id sorts later) gets trimmed first when cost drops to 60 (overshoot 20).
+        child_a = Child(name="A", points=0, id="kidA")
+        child_b = Child(name="B", points=0, id="kidB")
+        old_reward = Reward(name="Jackpot", cost=100, is_jackpot=True, id="rewardJ")
+        alloc_a = PoolAllocation(child_id="kidA", reward_id="rewardJ", allocated_points=50, id="alloc_aaa")
+        alloc_b = PoolAllocation(child_id="kidB", reward_id="rewardJ", allocated_points=30, id="alloc_zzz")
+        coord = _make_coord(children=[child_a, child_b], rewards=[old_reward])
+        coord.storage.get_pool_allocations = MagicMock(return_value=[alloc_a, alloc_b])
+
+        run(coord.async_update_reward(Reward(name="Jackpot", cost=60, is_jackpot=True, id="rewardJ")))
+
+        # Total was 80, cost dropped to 60 → overshoot 20 refunded from kidB (newer id).
+        assert child_b.points == 20  # full refund of 20
+        assert child_a.points == 0   # untouched
+
+    def test_approve_refunds_overshoot_on_redeem(self):
+        # Pre-existing over-allocation: child put 11 into a pool that costs 10.
+        # On approval, the 1-point overshoot must be refunded to the wallet.
+        import datetime as dt
+        child = _child(points=89)  # 100 earned − 11 allocated = 89
+        reward = _reward(cost=10)
+        over_alloc = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=11)
+        claim = RewardClaim(
+            reward_id="reward1", child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+        )
+        coord = _make_coord(children=[child], rewards=[reward], claims=[claim])
+        coord.storage.get_pool_allocation = MagicMock(return_value=over_alloc)
+        coord.storage.get_pool_allocations = MagicMock(return_value=[over_alloc])
+
+        run(coord.async_approve_reward("claim1"))
+
+        # 1 point refunded back to the wallet on redeem
+        assert child.points == 90
+        coord.storage.remove_pool_allocation.assert_called()

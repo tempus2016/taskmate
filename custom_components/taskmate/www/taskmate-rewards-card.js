@@ -881,13 +881,17 @@ class TaskMateRewardsCard extends LitElement {
   _renderSpendableBanner(child, pointsIcon, pointsName) {
     const spendable = typeof child.spendable_balance === 'number' ? child.spendable_balance : (child.points || 0);
     const gross = child.points || 0;
+    // Only show "/ gross" when points are reserved by a pending claim.
+    const detail = spendable !== gross
+      ? html`<span class="spendable-of">/ ${gross} ${pointsName}</span>`
+      : html`<span class="spendable-of">${pointsName}</span>`;
     return html`
       <div class="spendable-banner">
         <ha-icon icon="${pointsIcon}"></ha-icon>
         <span class="spendable-label">${this._t('rewards.spendable_balance')}</span>
         <span class="spendable-value">
           ${spendable}
-          <span class="spendable-of">/ ${gross} ${pointsName}</span>
+          ${detail}
         </span>
       </div>
     `;
