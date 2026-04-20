@@ -79,7 +79,10 @@
           "completion_sound": "Completion Sound",
           "visibility_entity": "Show when entity is (optional)",
           "visibility_operator": "How to compare",
-          "visibility_state": "Value to compare"
+          "visibility_state": "Value to compare",
+          "assignment_mode": "Assignment Mode",
+          "assignment_rotation_anchor": "Rotation start date (alternating only)",
+          "publish_calendar_entities": "Publish to calendars (optional)"
         },
         "data_description": {
           "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
@@ -88,7 +91,10 @@
           "completion_sound": "Sound to play when this chore is completed",
           "visibility_entity": "Home Assistant entity ID that controls when this chore appears. Leave blank to always show the chore. Examples: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. The chore only appears on the child card when the visibility condition is met.",
           "visibility_operator": "How to compare the entity's current state with your target value:\n• No filter — always show the chore (ignores entity state)\n• Equals — state exactly matches (e.g., 'on', 'home', 'running')\n• Not Equal — state does not match\n• Greater than or equal (≥) — for numeric values (e.g., 80 for battery ≥ 80%)\n• Less than or equal (≤) — for numeric values (e.g., 30 for moisture ≤ 30%)\n• Greater than (>) — for numeric values\n• Less than (<) — for numeric values",
-          "visibility_state": "The value to compare against. For 'Equals' or 'Not Equal': any text value (e.g., 'on', 'off', 'home', 'away'). For numeric operators (≥, ≤, >, <): enter a number (e.g., 25, 50.5, 100). Example: Entity 'sensor.temperature', Operator '>=', Value '20' shows chore when temperature is 20°C or higher."
+          "visibility_state": "The value to compare against. For 'Equals' or 'Not Equal': any text value (e.g., 'on', 'off', 'home', 'away'). For numeric operators (≥, ≤, >, <): enter a number (e.g., 25, 50.5, 100). Example: Entity 'sensor.temperature', Operator '>=', Value '20' shows chore when temperature is 20°C or higher.",
+          "assignment_mode": "Everyone = every assigned child sees this chore. Alternating = one child at a time, rotating by day. Random = one randomly picked child per day (stable within the day).",
+          "assignment_rotation_anchor": "Day-0 of the alternating rotation. Leave blank to start today. Only used when Assignment Mode is 'Alternating'.",
+          "publish_calendar_entities": "Pick one or more Home Assistant calendar entities. Whenever this chore is created, updated, or rolls over at midnight, today's assigned child is added as a calendar event on each selected calendar. Works with any number of calendars."
         }
       },
       "add_chores_bulk": {
@@ -137,7 +143,10 @@
           "completion_sound": "Completion Sound",
           "visibility_entity": "Show when entity is (optional)",
           "visibility_operator": "How to compare",
-          "visibility_state": "Value to compare"
+          "visibility_state": "Value to compare",
+          "assignment_mode": "Assignment Mode",
+          "assignment_rotation_anchor": "Rotation start date (alternating only)",
+          "publish_calendar_entities": "Publish to calendars (optional)"
         },
         "data_description": {
           "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
@@ -146,7 +155,10 @@
           "completion_sound": "Sound to play when this chore is completed",
           "visibility_entity": "Home Assistant entity ID that controls when this chore appears. Leave blank to always show the chore. Examples: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. The chore only appears on the child card when the visibility condition is met.",
           "visibility_operator": "How to compare the entity's current state with your target value:\n• No filter — always show the chore (ignores entity state)\n• Equals — state exactly matches (e.g., 'on', 'home', 'running')\n• Not Equal — state does not match\n• Greater than or equal (≥) — for numeric values (e.g., 80 for battery ≥ 80%)\n• Less than or equal (≤) — for numeric values (e.g., 30 for moisture ≤ 30%)\n• Greater than (>) — for numeric values\n• Less than (<) — for numeric values",
-          "visibility_state": "The value to compare against. For 'Equals' or 'Not Equal': any text value (e.g., 'on', 'off', 'home', 'away'). For numeric operators (≥, ≤, >, <): enter a number (e.g., 25, 50.5, 100). Example: Entity 'sensor.temperature', Operator '>=', Value '20' shows chore when temperature is 20°C or higher."
+          "visibility_state": "The value to compare against. For 'Equals' or 'Not Equal': any text value (e.g., 'on', 'off', 'home', 'away'). For numeric operators (≥, ≤, >, <): enter a number (e.g., 25, 50.5, 100). Example: Entity 'sensor.temperature', Operator '>=', Value '20' shows chore when temperature is 20°C or higher.",
+          "assignment_mode": "Everyone = every assigned child sees this chore. Alternating = one child at a time, rotating by day. Random = one randomly picked child per day (stable within the day).",
+          "assignment_rotation_anchor": "Day-0 of the alternating rotation. Leave blank to start today. Only used when Assignment Mode is 'Alternating'.",
+          "publish_calendar_entities": "Pick one or more Home Assistant calendar entities. Whenever this chore is created, updated, or rolls over at midnight, today's assigned child is added as a calendar event on each selected calendar. Works with any number of calendars."
         }
       },
       "manage_rewards": {
@@ -368,6 +380,13 @@
         "lte": "Less than or equal (≤) — Show when numeric value is ≤ target",
         "gt": "Greater than (>) — Show when numeric value is > target",
         "lt": "Less than (<) — Show when numeric value is < target"
+      }
+    },
+    "assignment_mode": {
+      "options": {
+        "everyone": "Everyone — every assigned child sees the chore",
+        "alternating": "Alternating — rotate through the assigned children, one per day",
+        "random": "Random — pick one assigned child at random each day"
       }
     }
   },

@@ -79,7 +79,10 @@
           "completion_sound": "Lyd når oppgåva vert fullført",
           "visibility_entity": "Home Assistant-eining for synlegheit",
           "visibility_operator": "Synlegheitsoperator",
-          "visibility_state": "Synlegheitstilstand"
+          "visibility_state": "Synlegheitstilstand",
+          "assignment_mode": "Tildelingsmodus",
+          "assignment_rotation_anchor": "Startdato for rotasjon (berre vekslande)",
+          "publish_calendar_entities": "Publiser til kalendrar (valfritt)"
         },
         "data_description": {
           "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
@@ -88,7 +91,10 @@
           "completion_sound": "Lyd som skal spelast når denne oppgåva vert fullført",
           "visibility_entity": "Home Assistant-eining-ID som styr når denne oppgåva vert viste. Lat stå tom for alltid å vise oppgåva. Døme: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. Oppgåva vert berre viste på bornekortet når synlegheitsbetingelsen er oppfylt.",
           "visibility_operator": "Korleis samanliknast eininga si noverande tilstand med målverdien:\n• Ingen filter — vis alltid oppgåva (ignorerer eininga si tilstand)\n• Lik — tilstanden stemmer nøyaktig (t.d. 'on', 'home', 'running')\n• Ikkje lik — tilstanden stemmer ikkje\n• Større enn eller lik (≥) — for numeriske verdiar (t.d. 80 for batteri ≥ 80%)\n• Mindre enn eller lik (≤) — for numeriske verdiar (t.d. 30 for fukt ≤ 30%)\n• Større enn (>) — for numeriske verdiar\n• Mindre enn (<) — for numeriske verdiar",
-          "visibility_state": "Verdien som skal samanliknast. For 'Lik' eller 'Ikkje lik': kva som helst tekstverde (t.d. 'on', 'off', 'home', 'away'). For numeriske operatorar (≥, ≤, >, <): skriv inn eit tal (t.d. 25, 50,5, 100). Døme: Eining 'sensor.temperature', Operator '≥', Verdi '20' viser oppgåva når temperaturen er 20°C eller høgare."
+          "visibility_state": "Verdien som skal samanliknast. For 'Lik' eller 'Ikkje lik': kva som helst tekstverde (t.d. 'on', 'off', 'home', 'away'). For numeriske operatorar (≥, ≤, >, <): skriv inn eit tal (t.d. 25, 50,5, 100). Døme: Eining 'sensor.temperature', Operator '≥', Verdi '20' viser oppgåva når temperaturen er 20°C eller høgare.",
+          "assignment_mode": "Alle = kvart tilknytt barn ser oppgåva. Vekslande = eitt barn om gongen, roterer dagleg. Tilfeldig = eitt barn plukka tilfeldig kvar dag (stabilt gjennom dagen).",
+          "assignment_rotation_anchor": "Dag 0 i den vekslande rotasjonen. Lat stå tom for å starte i dag. Vert brukt berre når tildelingsmodus er 'Vekslande'.",
+          "publish_calendar_entities": "Vel ein eller fleire Home Assistant-kalenderentitetar. Kvar gong oppgåva vert oppretta, oppdatert eller skiftar ved midnatt vert dagens tildelte barn lagt til som ei kalenderoppføring i kvar valde kalender. Fungerer med eit kva som helst tal kalendrar."
         }
       },
       "add_chores_bulk": {
@@ -137,7 +143,10 @@
           "completion_sound": "Lyd når oppgåva vert fullført",
           "visibility_entity": "Home Assistant-eining for synlegheit",
           "visibility_operator": "Synlegheitsoperator",
-          "visibility_state": "Synlegheitstilstand"
+          "visibility_state": "Synlegheitstilstand",
+          "assignment_mode": "Tildelingsmodus",
+          "assignment_rotation_anchor": "Startdato for rotasjon (berre vekslande)",
+          "publish_calendar_entities": "Publiser til kalendrar (valfritt)"
         },
         "data_description": {
           "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
@@ -146,7 +155,10 @@
           "completion_sound": "Lyd som skal spelast når denne oppgåva vert fullført",
           "visibility_entity": "Home Assistant-eining-ID som styr når denne oppgåva vert viste. Lat stå tom for alltid å vise oppgåva. Døme: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. Oppgåva vert berre viste på bornekortet når synlegheitsbetingelsen er oppfylt.",
           "visibility_operator": "Korleis samanliknast eininga si noverande tilstand med målverdien:\n• Ingen filter — vis alltid oppgåva (ignorerer eininga si tilstand)\n• Lik — tilstanden stemmer nøyaktig (t.d. 'on', 'home', 'running')\n• Ikkje lik — tilstanden stemmer ikkje\n• Større enn eller lik (≥) — for numeriske verdiar (t.d. 80 for batteri ≥ 80%)\n• Mindre enn eller lik (≤) — for numeriske verdiar (t.d. 30 for fukt ≤ 30%)\n• Større enn (>) — for numeriske verdiar\n• Mindre enn (<) — for numeriske verdiar",
-          "visibility_state": "Verdien som skal samanliknast. For 'Lik' eller 'Ikkje lik': kva som helst tekstverde (t.d. 'on', 'off', 'home', 'away'). For numeriske operatorar (≥, ≤, >, <): skriv inn eit tal (t.d. 25, 50,5, 100). Døme: Eining 'sensor.temperature', Operator '≥', Verdi '20' viser oppgåva når temperaturen er 20°C eller høgare."
+          "visibility_state": "Verdien som skal samanliknast. For 'Lik' eller 'Ikkje lik': kva som helst tekstverde (t.d. 'on', 'off', 'home', 'away'). For numeriske operatorar (≥, ≤, >, <): skriv inn eit tal (t.d. 25, 50,5, 100). Døme: Eining 'sensor.temperature', Operator '≥', Verdi '20' viser oppgåva når temperaturen er 20°C eller høgare.",
+          "assignment_mode": "Alle = kvart tilknytt barn ser oppgåva. Vekslande = eitt barn om gongen, roterer dagleg. Tilfeldig = eitt barn plukka tilfeldig kvar dag (stabilt gjennom dagen).",
+          "assignment_rotation_anchor": "Dag 0 i den vekslande rotasjonen. Lat stå tom for å starte i dag. Vert brukt berre når tildelingsmodus er 'Vekslande'.",
+          "publish_calendar_entities": "Vel ein eller fleire Home Assistant-kalenderentitetar. Kvar gong oppgåva vert oppretta, oppdatert eller skiftar ved midnatt vert dagens tildelte barn lagt til som ei kalenderoppføring i kvar valde kalender. Fungerer med eit kva som helst tal kalendrar."
         }
       },
       "manage_rewards": {
@@ -364,6 +376,13 @@
         "lte": "Mindre enn eller lik (≤) — Vis når numerisk verdi er ≤ målverdien",
         "gt": "Større enn (>) — Vis når numerisk verdi er > målverdien",
         "lt": "Mindre enn (<) — Vis når numerisk verdi er < målverdien"
+      }
+    },
+    "assignment_mode": {
+      "options": {
+        "everyone": "Alle — kvart tildelt barn ser oppgåva",
+        "alternating": "Vekslande — roter mellom dei tildelte barna, eitt per dag",
+        "random": "Tilfeldig — plukk eitt tildelt barn tilfeldig kvar dag"
       }
     }
   },

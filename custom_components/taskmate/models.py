@@ -148,6 +148,13 @@ class Chore:
     enabled: bool = True  # False = soft-disabled (completed or expired)
     disabled_for: list[str] = field(default_factory=list)  # Child IDs this chore is disabled for
     created_date: str = ""  # ISO date for one-shot expiry, e.g. "2026-04-16"
+    # Dynamic assignment (sibling rotation)
+    assignment_mode: str = "everyone"  # everyone | alternating | random
+    assignment_rotation_anchor: str = ""  # ISO date; day-0 of the rotation for alternating
+    assignment_current_child_id: str = ""  # cached active child ID for today (computed at midnight and on create/update)
+    # Calendar publish: list of HA calendar entity ids to mirror the chore to. Any number supported.
+    publish_calendar_entities: list[str] = field(default_factory=list)
+    publish_calendar_last_date: str = ""  # ISO date guarding against duplicate publishes on the same day
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -182,6 +189,11 @@ class Chore:
             enabled=data.get("enabled", True),
             disabled_for=list(data.get("disabled_for", [])),
             created_date=data.get("created_date", ""),
+            assignment_mode=data.get("assignment_mode", "everyone"),
+            assignment_rotation_anchor=data.get("assignment_rotation_anchor", ""),
+            assignment_current_child_id=data.get("assignment_current_child_id", ""),
+            publish_calendar_entities=list(data.get("publish_calendar_entities", [])),
+            publish_calendar_last_date=data.get("publish_calendar_last_date", ""),
             id=data.get("id", generate_id()),
         )
 
@@ -209,6 +221,11 @@ class Chore:
             "enabled": self.enabled,
             "disabled_for": self.disabled_for,
             "created_date": self.created_date,
+            "assignment_mode": self.assignment_mode,
+            "assignment_rotation_anchor": self.assignment_rotation_anchor,
+            "assignment_current_child_id": self.assignment_current_child_id,
+            "publish_calendar_entities": self.publish_calendar_entities,
+            "publish_calendar_last_date": self.publish_calendar_last_date,
             "id": self.id,
         }
 

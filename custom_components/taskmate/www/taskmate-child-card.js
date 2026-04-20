@@ -1359,7 +1359,15 @@ class TaskMateChildCard extends LitElement {
       if (!Array.isArray(assignedTo)) assignedTo = [];
       const assignedToStrings = assignedTo.map(id => String(id));
       const isAssignedToAll = assignedToStrings.length === 0;
-      const isAssignedToChild = isAssignedToAll || assignedToStrings.includes(childId);
+      let isAssignedToChild = isAssignedToAll || assignedToStrings.includes(childId);
+
+      // Dynamic assignment (alternating / random): only the currently-active child
+      // sees the chore. The backend caches today's pick in assignment_current_child_id.
+      const assignmentMode = chore.assignment_mode || 'everyone';
+      if (assignmentMode !== 'everyone' && isAssignedToChild) {
+        const activeId = chore.assignment_current_child_id ? String(chore.assignment_current_child_id) : '';
+        isAssignedToChild = activeId !== '' && activeId === String(childId);
+      }
 
       // Check visibility_entity — if set, chore is only visible if entity matches visibility_state
       // Supports exact match, numeric comparisons, and attributes

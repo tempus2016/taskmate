@@ -12,6 +12,7 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
 from .const import (
+    ASSIGNMENT_MODES,
     AVATAR_OPTIONS,
     COMPLETION_SOUND_OPTIONS,
     DAYS_OF_WEEK,
@@ -388,6 +389,19 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             vol.Optional("visibility_entity"): selector.EntitySelector(
                 selector.EntitySelectorConfig()
             ),
+            vol.Optional("assignment_mode", default="everyone"): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=list(ASSIGNMENT_MODES),
+                    translation_key="assignment_mode",
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Optional("assignment_rotation_anchor", default=""): selector.TextSelector(
+                selector.TextSelectorConfig(type=selector.TextSelectorType.DATE)
+            ),
+            vol.Optional("publish_calendar_entities", default=[]): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="calendar", multiple=True)
+            ),
         }
         if child_options:
             schema_dict[vol.Optional("assigned_to", default=[])] = selector.SelectSelector(
@@ -424,6 +438,9 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 schedule_mode="specific_days",
                 due_days=user_input.get("due_days", []),
                 visibility_entity=s1.get("visibility_entity") or "",
+                assignment_mode=s1.get("assignment_mode", "everyone"),
+                assignment_rotation_anchor=s1.get("assignment_rotation_anchor", "") or "",
+                publish_calendar_entities=list(s1.get("publish_calendar_entities") or []),
             )
             self._chore_step1_data = None
             return await self.async_step_manage_chores()
@@ -459,6 +476,9 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             completion_sound=s1.get("completion_sound", DEFAULT_COMPLETION_SOUND),
             schedule_mode="one_shot",
             visibility_entity=s1.get("visibility_entity") or "",
+            assignment_mode=s1.get("assignment_mode", "everyone"),
+            assignment_rotation_anchor=s1.get("assignment_rotation_anchor", "") or "",
+            publish_calendar_entities=list(s1.get("publish_calendar_entities") or []),
         )
         self._chore_step1_data = None
         return await self.async_step_manage_chores()
@@ -499,6 +519,9 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 recurrence_start=recurrence_start,
                 first_occurrence_mode=first_occurrence_mode,
                 visibility_entity=s1.get("visibility_entity") or "",
+                assignment_mode=s1.get("assignment_mode", "everyone"),
+                assignment_rotation_anchor=s1.get("assignment_rotation_anchor", "") or "",
+                publish_calendar_entities=list(s1.get("publish_calendar_entities") or []),
             )
             self._chore_step1_data = None
             return await self.async_step_manage_chores()
@@ -722,6 +745,10 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     chore.visibility_entity = ""
                     chore.visibility_operator = "equals"
                     chore.visibility_state = "on"
+                mode_in = user_input.get("assignment_mode", getattr(chore, "assignment_mode", "everyone"))
+                chore.assignment_mode = mode_in if mode_in in ASSIGNMENT_MODES else "everyone"
+                chore.assignment_rotation_anchor = user_input.get("assignment_rotation_anchor", getattr(chore, "assignment_rotation_anchor", "")) or ""
+                chore.publish_calendar_entities = list(user_input.get("publish_calendar_entities", getattr(chore, "publish_calendar_entities", []) or []))
                 self._edited_chore = chore
                 _LOGGER.debug(
                     "Edit chore step 1 - saved visibility fields: entity=%s, operator=%s, state=%s",
@@ -808,6 +835,25 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             )
         )
         schema_dict[vol.Optional("visibility_state", default=getattr(chore, 'visibility_state', '') if vis_entity else "")] = str
+        schema_dict[vol.Optional("assignment_mode", default=getattr(chore, "assignment_mode", "everyone"))] = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=list(ASSIGNMENT_MODES),
+                translation_key="assignment_mode",
+                mode=selector.SelectSelectorMode.DROPDOWN,
+            )
+        )
+        schema_dict[vol.Optional("assignment_rotation_anchor", default=getattr(chore, "assignment_rotation_anchor", "") or "")] = selector.TextSelector(
+            selector.TextSelectorConfig(type=selector.TextSelectorType.DATE)
+        )
+        existing_calendars = list(getattr(chore, "publish_calendar_entities", []) or [])
+        if existing_calendars:
+            schema_dict[vol.Optional("publish_calendar_entities", default=existing_calendars)] = selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="calendar", multiple=True)
+            )
+        else:
+            schema_dict[vol.Optional("publish_calendar_entities", default=[])] = selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="calendar", multiple=True)
+            )
         schema_dict[vol.Required("action", default="save")] = selector.SelectSelector(
             selector.SelectSelectorConfig(
                 options=self._get_chore_action_options(chore),
