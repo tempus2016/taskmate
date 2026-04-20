@@ -1178,7 +1178,8 @@ class TaskMateChildCard extends LitElement {
     }
 
     // Get child info
-    const children = entity.attributes.children || [];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const children = attrs.children || [];
     const child = children.find(c => c.id === this.config.child_id);
 
     if (!child) {
@@ -1193,7 +1194,7 @@ class TaskMateChildCard extends LitElement {
     }
 
     // Get chores for this child and time category
-    const allChores = entity.attributes.chores || [];
+    const allChores = attrs.chores || [];
 
     // Log raw data for debugging assignment issues
 
@@ -1221,8 +1222,8 @@ class TaskMateChildCard extends LitElement {
       filteredCount: childChores.length
     };
 
-    const pointsIcon = entity.attributes.points_icon || "mdi:star";
-    const pointsName = entity.attributes.points_name || this._t('common.stars');
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    const pointsName = attrs.points_name || this._t('common.stars');
 
     // Avatar now in children array directly
     const avatar = child.avatar || "mdi:account-circle";
@@ -1233,7 +1234,7 @@ class TaskMateChildCard extends LitElement {
     // Get today's completions for this child (with timezone-aware filtering as fallback)
     // The backend provides todays_completions, but we also apply client-side filtering
     // to ensure timezone correctness matches the HA frontend timezone
-    const allCompletions = entity.attributes.todays_completions || entity.attributes.completions || [];
+    const allCompletions = attrs.todays_completions || attrs.completions || [];
     const todaysCompletions = this._filterCompletionsForToday(allCompletions);
 
     // Debug logging to help troubleshoot daily limit issues
@@ -1828,9 +1829,9 @@ class TaskMateChildCard extends LitElement {
   }
 
   _renderCelebration() {
-    const entity = this.hass.states[this.config.entity];
-    const pointsIcon = entity?.attributes?.points_icon || "mdi:star";
-    const celebratingChore = (entity?.attributes?.chores || []).find(
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || this.hass.states[this.config.entity]?.attributes || {};
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    const celebratingChore = (attrs.chores || []).find(
       c => c.id === this._celebrating
     );
     const points = celebratingChore?.points || 0;
@@ -1882,8 +1883,8 @@ class TaskMateChildCard extends LitElement {
     }
 
     // Get current completion count including optimistic completions
-    const entity = this.hass.states[this.config.entity];
-    const allCompletions = entity?.attributes?.todays_completions || [];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || this.hass.states[this.config.entity]?.attributes || {};
+    const allCompletions = attrs.todays_completions || [];
     const todaysCompletions = this._filterCompletionsForToday(allCompletions);
     const actualCompletionsToday = todaysCompletions.filter(
       (comp) => comp.chore_id === chore.id && comp.child_id === child.id

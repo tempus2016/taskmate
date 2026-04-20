@@ -379,10 +379,11 @@ class TaskMateRewardProgressCard extends LitElement {
     if (!entity) return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div></ha-card>`;
     if (entity.state === "unavailable" || entity.state === "unknown") return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('reward_progress.unavailable')}</div></div></ha-card>`;
 
-    const rewards = entity.attributes.rewards || [];
-    const children = entity.attributes.children || [];
-    const pointsIcon = entity.attributes.points_icon || "mdi:star";
-    const pointsName = entity.attributes.points_name || "Points";
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const rewards = attrs.rewards || [];
+    const children = attrs.children || [];
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    const pointsName = attrs.points_name || "Points";
 
     // Pick reward
     let reward = this.config.reward_id
@@ -589,9 +590,9 @@ class TaskMateRewardProgressCardEditor extends LitElement {
   setConfig(config) { this.config = config; }
 
   _buildSchema() {
-    const entity = this.config?.entity ? this.hass?.states?.[this.config.entity] : null;
-    const rewards = entity?.attributes?.rewards || [];
-    const children = entity?.attributes?.children || [];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity)) || (this.config?.entity ? this.hass?.states?.[this.config.entity]?.attributes : null) || {};
+    const rewards = attrs.rewards || [];
+    const children = attrs.children || [];
     return [
       { name: 'entity', selector: { entity: { domain: 'sensor' } } },
       { name: 'title', selector: { text: {} } },

@@ -38,10 +38,12 @@ CARDS: Final = [
     "taskmate-calendar-card.js",
 ]
 
-# JS modules to load globally (for config flow sound preview + i18n)
+# JS modules to load globally (for config flow sound preview + i18n +
+# split-sensor attribute resolver used by every TaskMate Lovelace card).
 GLOBAL_MODULES: Final = [
     "taskmate-localize.js",
     "taskmate-config-sounds.js",
+    "taskmate-attr-resolver.js",
 ]
 
 # Track if frontend is registered

@@ -234,11 +234,12 @@ class TaskMateStreakCard extends LitElement {
       return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.unavailable')}</div></div></ha-card>`;
     }
 
-    let children = entity.attributes.children || [];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    let children = attrs.children || [];
     // Use recent_completions (all-time history, last 50) for streak/achievement calculation
-    const completions = [...(entity.attributes.recent_completions || entity.attributes.todays_completions || [])];
-    const pointsIcon = entity.attributes.points_icon || "mdi:star";
-    const chores = entity.attributes.chores || [];
+    const completions = [...(attrs.recent_completions || attrs.todays_completions || [])];
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    const chores = attrs.chores || [];
 
     if (this.config.child_id) {
       children = children.filter(c => c.id === this.config.child_id);

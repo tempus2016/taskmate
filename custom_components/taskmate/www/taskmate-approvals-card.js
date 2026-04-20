@@ -343,19 +343,23 @@ class TaskMateApprovalsCard extends LitElement {
     }
 
     // Support both the pending_approvals sensor (chore_completions)
-    // and the overview sensor (todays_completions filtered to unapproved)
+    // and the overview sensor (todays_completions filtered to unapproved).
+    // The resolver is used so pending_reward_claims / todays_completions
+    // resolve from their new companion sensors when the card is pointed at
+    // the overview entity.
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     let completions = entity.attributes.chore_completions;
     if (!completions) {
-      completions = (entity.attributes.todays_completions || []).filter(c => !c.approved);
+      completions = (attrs.todays_completions || []).filter(c => !c.approved);
     }
     const filteredCompletions = this._filterByChild(completions);
     const groupedByDay = this._groupByDay(filteredCompletions);
 
     // Pending reward claims: supported via either the pending_approvals sensor
-    // (reward_claims attribute) or the overview sensor (pending_reward_claims).
+    // (reward_claims attribute) or the rewards sensor (pending_reward_claims).
     let rewardClaims =
       entity.attributes.reward_claims ||
-      entity.attributes.pending_reward_claims ||
+      attrs.pending_reward_claims ||
       [];
     const filteredClaims = this._filterClaimsByChild(rewardClaims);
 
