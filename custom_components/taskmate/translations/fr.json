@@ -201,7 +201,7 @@
           "weekend_multiplier": "Multiplicateur de points le week-end",
           "streak_milestones_enabled": "Bonus de paliers de série",
           "perfect_week_enabled": "Bonus de semaine parfaite",
-          "perfect_week_bonus": "Points bonus semaine parfaite",
+          "perfect_week_bonus": "Bonus semaine parfaite",
           "streak_milestones": "Configuration des paliers de série",
           "notify_service": "Service de notification (optionnel)"
         },
