@@ -629,7 +629,7 @@ header_color: "#b7950b"
 Parent-facing card for applying point-deduction penalties. Select the child using tabs, then tap **Apply** next to the relevant penalty. Tap the pencil icon to add, edit, or delete penalty definitions.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/penalties.png" alt="Settings Menu" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/penalties.png" alt="Penalties Card" width="500">
 </p>
 
 ```yaml

@@ -535,10 +535,10 @@ class TaskMateParentDashboardCard extends LitElement {
               </div>
             </div>
             <div class="approval-actions">
-              <button class="btn-approve" @click="${() => this._handleApprove(comp.completion_id)}" title="${this._t('common.approve')}">
+              <button class="btn-approve" @click="${() => this._handleApprove(comp.completion_id)}" title="${this._t('common.approve')}" aria-label="${this._t('common.approve')}">
                 <ha-icon icon="mdi:check-bold"></ha-icon>
               </button>
-              <button class="btn-reject" @click="${() => this._handleReject(comp.completion_id)}" title="${this._t('common.reject')}">
+              <button class="btn-reject" @click="${() => this._handleReject(comp.completion_id)}" title="${this._t('common.reject')}" aria-label="${this._t('common.reject')}">
                 <ha-icon icon="mdi:close-thick"></ha-icon>
               </button>
             </div>
@@ -576,10 +576,10 @@ class TaskMateParentDashboardCard extends LitElement {
               </div>
             </div>
             <div class="approval-actions">
-              <button class="btn-approve" @click="${() => this._handleApproveReward(claim.claim_id)}" title="${this._t('common.approve')}">
+              <button class="btn-approve" @click="${() => this._handleApproveReward(claim.claim_id)}" title="${this._t('common.approve')}" aria-label="${this._t('common.approve')}">
                 <ha-icon icon="mdi:check-bold"></ha-icon>
               </button>
-              <button class="btn-reject" @click="${() => this._handleRejectReward(claim.claim_id)}" title="${this._t('common.reject')}">
+              <button class="btn-reject" @click="${() => this._handleRejectReward(claim.claim_id)}" title="${this._t('common.reject')}" aria-label="${this._t('common.reject')}">
                 <ha-icon icon="mdi:close-thick"></ha-icon>
               </button>
             </div>
@@ -604,10 +604,10 @@ class TaskMateParentDashboardCard extends LitElement {
             ${child.points}
           </span>
           <div class="qp-actions">
-            <button class="btn-remove" @click="${() => this._handlePoints(child.id, -amount)}" title="${this._t('dashboard.btn_remove_points_title', { amount, pointsName })}">
+            <button class="btn-remove" @click="${() => this._handlePoints(child.id, -amount)}" title="${this._t('dashboard.btn_remove_points_title', { amount, pointsName })}" aria-label="${this._t('dashboard.btn_remove_points_title', { amount, pointsName })}">
               <ha-icon icon="mdi:minus"></ha-icon>
             </button>
-            <button class="btn-add" @click="${() => this._handlePoints(child.id, amount)}" title="${this._t('dashboard.btn_add_points_title', { amount, pointsName })}">
+            <button class="btn-add" @click="${() => this._handlePoints(child.id, amount)}" title="${this._t('dashboard.btn_add_points_title', { amount, pointsName })}" aria-label="${this._t('dashboard.btn_add_points_title', { amount, pointsName })}">
               <ha-icon icon="mdi:plus"></ha-icon>
             </button>
           </div>

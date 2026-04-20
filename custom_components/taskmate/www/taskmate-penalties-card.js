@@ -515,10 +515,10 @@ class TaskMatePenaltiesCard extends LitElement {
 
         ${this._editMode ? html`
           <div class="edit-actions">
-            <button class="edit-btn" title="${this._t('penalties.btn_edit_title')}" @click=${() => this._startEdit(p)}>
+            <button class="edit-btn" title="${this._t('penalties.btn_edit_title')}" aria-label="${this._t('penalties.btn_edit_title')}" @click=${() => this._startEdit(p)}>
               <ha-icon icon="mdi:pencil"></ha-icon>
             </button>
-            <button class="edit-btn delete" title="${this._t('penalties.btn_delete_title')}" @click=${() => this._deletePenalty(p.id)}>
+            <button class="edit-btn delete" title="${this._t('penalties.btn_delete_title')}" aria-label="${this._t('penalties.btn_delete_title')}" @click=${() => this._deletePenalty(p.id)}>
               <ha-icon icon="mdi:trash-can-outline"></ha-icon>
             </button>
           </div>
