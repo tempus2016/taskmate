@@ -215,7 +215,8 @@
           "perfect_week_enabled": "Perfekt veke-bonus",
           "perfect_week_bonus": "Perfekt veke-bonuspoeng",
           "streak_milestones": "Rekke-milepælkonfigurasjon",
-          "notify_service": "Varslingsteneste (valfritt)"
+          "notify_service": "Varslingsteneste (valfritt)",
+          "calendar_projection_days": "Kalenderplanhorisont"
         },
         "data_description": {
           "streak_reset_mode": "Kva som skjer med ei rekke når ein dag vert hoppa over",
@@ -225,7 +226,8 @@
           "perfect_week_enabled": "Gje bonuspoeng når eit born fullfører minst éi oppgåve kvar dag i ei heil veke",
           "perfect_week_bonus": "Bonuspoeng tildelt for ei perfekt veke",
           "streak_milestones": "Eigendefinerte milepælar som 'dagar:poeng'-par, kommaseparert. Døme: 3:5, 7:10, 14:20, 30:50, 60:100, 100:200",
-          "notify_service": "HA-varslingsteneste for å varsle foreldre når ei oppgåve krev godkjenning. Format: notify.mobile_app_din_telefon — lat stå tom for berre vedvarande varsel"
+          "notify_service": "HA-varslingsteneste for å varsle foreldre når ei oppgåve krev godkjenning. Format: notify.mobile_app_din_telefon — lat stå tom for berre vedvarande varsel",
+          "calendar_projection_days": "Kor mange dagar framover kvar oppgåve publiserer oppdrag til dei konfigurerte HA-kalenderane (1–90). Høgare verdiar gir meir planoversikt, men fleire kalenderoppføringar."
         }
       },
       "chore_schedule_specific": {

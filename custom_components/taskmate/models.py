@@ -154,7 +154,10 @@ class Chore:
     assignment_current_child_id: str = ""  # cached active child ID for today (computed at midnight and on create/update)
     # Calendar publish: list of HA calendar entity ids to mirror the chore to. Any number supported.
     publish_calendar_entities: list[str] = field(default_factory=list)
-    publish_calendar_last_date: str = ""  # ISO date guarding against duplicate publishes on the same day
+    # ISO dates already written to the configured calendars. Used for both
+    # idempotence (don't re-publish the same day) and projection cleanup
+    # (entries < today are pruned before each publish pass).
+    publish_calendar_published_dates: list[str] = field(default_factory=list)
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -193,7 +196,13 @@ class Chore:
             assignment_rotation_anchor=data.get("assignment_rotation_anchor", ""),
             assignment_current_child_id=data.get("assignment_current_child_id", ""),
             publish_calendar_entities=list(data.get("publish_calendar_entities", [])),
-            publish_calendar_last_date=data.get("publish_calendar_last_date", ""),
+            # Back-compat: old records stored a single ISO date in
+            # `publish_calendar_last_date`. Seed the new list with it so we
+            # don't immediately republish today on the next tick after upgrade.
+            publish_calendar_published_dates=(
+                list(data.get("publish_calendar_published_dates", []))
+                or ([data["publish_calendar_last_date"]] if data.get("publish_calendar_last_date") else [])
+            ),
             id=data.get("id", generate_id()),
         )
 
@@ -225,7 +234,7 @@ class Chore:
             "assignment_rotation_anchor": self.assignment_rotation_anchor,
             "assignment_current_child_id": self.assignment_current_child_id,
             "publish_calendar_entities": self.publish_calendar_entities,
-            "publish_calendar_last_date": self.publish_calendar_last_date,
+            "publish_calendar_published_dates": self.publish_calendar_published_dates,
             "id": self.id,
         }
 
