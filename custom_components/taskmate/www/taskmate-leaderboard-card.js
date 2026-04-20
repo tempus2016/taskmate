@@ -240,15 +240,16 @@ class TaskMateLeaderboardCard extends LitElement {
     if (!entity) return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div></ha-card>`;
     if (entity.state === "unavailable" || entity.state === "unknown") return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.unavailable')}</div></div></ha-card>`;
 
-    const children = [...(entity.attributes.children || [])];
-    const pointsIcon = entity.attributes.points_icon || "mdi:star";
-    const pointsName = entity.attributes.points_name || this._t('common.points');
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const children = [...(attrs.children || [])];
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    const pointsName = attrs.points_name || this._t('common.points');
 
     if (children.length === 0) return html`<ha-card><div class="empty-state"><ha-icon icon="mdi:account-group"></ha-icon><div>${this._t('common.no_children')}</div></div></ha-card>`;
 
     // Build weekly points from recent_completions
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const weeklyPoints = this._buildWeeklyPoints(entity, tz);
+    const weeklyPoints = this._buildWeeklyPoints(attrs, tz);
 
     // Sort children
     const sortBy = this.config.sort_by || "points";
@@ -421,11 +422,11 @@ class TaskMateLeaderboardCard extends LitElement {
     `;
   }
 
-  _buildWeeklyPoints(entity, tz) {
+  _buildWeeklyPoints(attrs, tz) {
     const result = {};
-    const completions = entity.attributes.recent_completions || entity.attributes.todays_completions || [];
+    const completions = attrs.recent_completions || attrs.todays_completions || [];
     const choreMap = {};
-    (entity.attributes.chores || []).forEach(ch => { choreMap[ch.id] = ch.points || 0; });
+    (attrs.chores || []).forEach(ch => { choreMap[ch.id] = ch.points || 0; });
 
     const today = new Date();
     const weekDays = new Set();

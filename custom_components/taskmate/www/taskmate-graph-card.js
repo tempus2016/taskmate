@@ -236,9 +236,10 @@ class TaskMateGraphCard extends LitElement {
     }
 
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    let children = entity.attributes.children || [];
-    const pointsIcon = entity.attributes.points_icon || "mdi:star";
-    const pointsName = entity.attributes.points_name || this._t('common.points');
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    let children = attrs.children || [];
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    const pointsName = attrs.points_name || this._t('common.points');
     const days = Math.max(3, Math.min(90, this.config.days || 14));
 
     // Filter to specific child if configured
@@ -248,15 +249,15 @@ class TaskMateGraphCard extends LitElement {
 
     // Get all completions (approved only for points)
     const allCompletions = [
-      ...(entity.attributes.recent_completions || entity.attributes.todays_completions || []),
+      ...(attrs.recent_completions || attrs.todays_completions || []),
     ].filter(c => c.approved);
 
     // Get manual transactions
-    const allTransactions = entity.attributes.recent_transactions || [];
+    const allTransactions = attrs.recent_transactions || [];
 
     // Build chore points map
     const chorePointsMap = {};
-    (entity.attributes.chores || []).forEach(ch => { chorePointsMap[ch.id] = ch.points || 0; });
+    (attrs.chores || []).forEach(ch => { chorePointsMap[ch.id] = ch.points || 0; });
 
     // Build date range
     const dateRange = this._buildDateRange(days, tz);
