@@ -92,7 +92,7 @@
           "visibility_entity": "ID d'entité Home Assistant qui contrôle quand cette corvée apparaît. Laissez vide pour toujours afficher la corvée. Exemples : binary_sensor.lave_vaisselle, sensor.humidite_sol, input_boolean.mode_invite, switch.salle_blanchisserie. La corvée n'apparaît sur la carte enfant que quand la condition de visibilité est satisfaite.",
           "visibility_operator": "Comment comparer l'état actuel de l'entité avec votre valeur cible :\n• Aucun filtre — toujours afficher la corvée (ignore l'état de l'entité)\n• Égale — l'état correspond exactement (ex. : 'on', 'home', 'running')\n• Non égale — l'état ne correspond pas\n• Supérieur ou égal (≥) — pour valeurs numériques (ex. : 80 pour batterie ≥ 80%)\n• Inférieur ou égal (≤) — pour valeurs numériques (ex. : 30 pour humidité ≤ 30%)\n• Supérieur (>) — pour valeurs numériques\n• Inférieur (<) — pour valeurs numériques",
           "visibility_state": "La valeur à comparer. Pour 'Égale' ou 'Non égale' : tout texte (ex. : 'on', 'off', 'home', 'away'). Pour opérateurs numériques (≥, ≤, >, <) : entrez un nombre (ex. : 25, 50.5, 100). Exemple : Entité 'sensor.temperature', Opérateur '>=', Valeur '20' affiche la corvée quand la température est 20°C ou plus.",
-          "assignment_mode": "Tout le monde = chaque enfant assigné voit cette tâche. Alternance = un enfant à la fois, rotation par jour. Aléatoire = un enfant choisi au hasard chaque jour (stable dans la journée).",
+          "assignment_mode": "Tout le monde = chaque enfant assigné voit cette tâche. Alternance = un enfant à la fois, rotation par jour. Aléatoire = un enfant choisi au hasard chaque jour (stable dans la journée). Équilibré = les tâches en mode équilibré du jour sont réparties équitablement entre les enfants assignés — aucun enfant ne se retrouve avec tout.",
           "assignment_rotation_anchor": "Jour 0 du roulement alterné. Laissez vide pour commencer aujourd'hui. Utilisé uniquement avec le mode 'Alternance'.",
           "publish_calendar_entities": "Choisissez un ou plusieurs calendriers Home Assistant. À chaque création, mise à jour ou passage à minuit, l'enfant attribué du jour est ajouté comme événement sur chaque calendrier sélectionné. Fonctionne avec un nombre illimité de calendriers."
         }
@@ -156,7 +156,7 @@
           "visibility_entity": "ID d'entité Home Assistant qui contrôle quand cette corvée apparaît. Laissez vide pour toujours afficher la corvée. Exemples : binary_sensor.lave_vaisselle, sensor.humidite_sol, input_boolean.mode_invite, switch.salle_blanchisserie. La corvée n'apparaît sur la carte enfant que quand la condition de visibilité est satisfaite.",
           "visibility_operator": "Comment comparer l'état actuel de l'entité avec votre valeur cible :\n• Aucun filtre — toujours afficher la corvée (ignore l'état de l'entité)\n• Égale — l'état correspond exactement (ex. : 'on', 'home', 'running')\n• Non égale — l'état ne correspond pas\n• Supérieur ou égal (≥) — pour valeurs numériques (ex. : 80 pour batterie ≥ 80%)\n• Inférieur ou égal (≤) — pour valeurs numériques (ex. : 30 pour humidité ≤ 30%)\n• Supérieur (>) — pour valeurs numériques\n• Inférieur (<) — pour valeurs numériques",
           "visibility_state": "La valeur à comparer. Pour 'Égale' ou 'Non égale' : tout texte (ex. : 'on', 'off', 'home', 'away'). Pour opérateurs numériques (≥, ≤, >, <) : entrez un nombre (ex. : 25, 50.5, 100). Exemple : Entité 'sensor.temperature', Opérateur '>=', Valeur '20' affiche la corvée quand la température est 20°C ou plus.",
-          "assignment_mode": "Tout le monde = chaque enfant assigné voit cette tâche. Alternance = un enfant à la fois, rotation par jour. Aléatoire = un enfant choisi au hasard chaque jour (stable dans la journée).",
+          "assignment_mode": "Tout le monde = chaque enfant assigné voit cette tâche. Alternance = un enfant à la fois, rotation par jour. Aléatoire = un enfant choisi au hasard chaque jour (stable dans la journée). Équilibré = les tâches en mode équilibré du jour sont réparties équitablement entre les enfants assignés — aucun enfant ne se retrouve avec tout.",
           "assignment_rotation_anchor": "Jour 0 du roulement alterné. Laissez vide pour commencer aujourd'hui. Utilisé uniquement avec le mode 'Alternance'.",
           "publish_calendar_entities": "Choisissez un ou plusieurs calendriers Home Assistant. À chaque création, mise à jour ou passage à minuit, l'enfant attribué du jour est ajouté comme événement sur chaque calendrier sélectionné. Fonctionne avec un nombre illimité de calendriers."
         }
@@ -382,7 +382,8 @@
       "options": {
         "everyone": "Tout le monde — chaque enfant assigné voit la tâche",
         "alternating": "Alternance — rotation entre les enfants assignés, un par jour",
-        "random": "Aléatoire — un enfant assigné choisi au hasard chaque jour"
+        "random": "Aléatoire — un enfant assigné choisi au hasard chaque jour",
+        "balanced": "Équilibré — répartit les tâches équilibrées du jour équitablement entre les enfants assignés"
       }
     }
   },
