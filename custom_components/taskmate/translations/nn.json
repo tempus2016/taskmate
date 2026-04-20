@@ -92,7 +92,7 @@
           "visibility_entity": "Home Assistant-eining-ID som styr når denne oppgåva vert viste. Lat stå tom for alltid å vise oppgåva. Døme: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. Oppgåva vert berre viste på bornekortet når synlegheitsbetingelsen er oppfylt.",
           "visibility_operator": "Korleis samanliknast eininga si noverande tilstand med målverdien:\n• Ingen filter — vis alltid oppgåva (ignorerer eininga si tilstand)\n• Lik — tilstanden stemmer nøyaktig (t.d. 'on', 'home', 'running')\n• Ikkje lik — tilstanden stemmer ikkje\n• Større enn eller lik (≥) — for numeriske verdiar (t.d. 80 for batteri ≥ 80%)\n• Mindre enn eller lik (≤) — for numeriske verdiar (t.d. 30 for fukt ≤ 30%)\n• Større enn (>) — for numeriske verdiar\n• Mindre enn (<) — for numeriske verdiar",
           "visibility_state": "Verdien som skal samanliknast. For 'Lik' eller 'Ikkje lik': kva som helst tekstverde (t.d. 'on', 'off', 'home', 'away'). For numeriske operatorar (≥, ≤, >, <): skriv inn eit tal (t.d. 25, 50,5, 100). Døme: Eining 'sensor.temperature', Operator '≥', Verdi '20' viser oppgåva når temperaturen er 20°C eller høgare.",
-          "assignment_mode": "Alle = kvart tilknytt barn ser oppgåva. Vekslande = eitt barn om gongen, roterer dagleg. Tilfeldig = eitt barn plukka tilfeldig kvar dag (stabilt gjennom dagen).",
+          "assignment_mode": "Alle = kvart tilknytt barn ser oppgåva. Vekslande = eitt barn om gongen, roterer dagleg. Tilfeldig = eitt barn plukka tilfeldig kvar dag (stabilt gjennom dagen). Balansert = dagens balanserte oppgåver vert fordelte jamt mellom dei tildelte barna — ingen endar opp med alt.",
           "assignment_rotation_anchor": "Dag 0 i den vekslande rotasjonen. Lat stå tom for å starte i dag. Vert brukt berre når tildelingsmodus er 'Vekslande'.",
           "publish_calendar_entities": "Vel ein eller fleire Home Assistant-kalenderentitetar. Kvar gong oppgåva vert oppretta, oppdatert eller skiftar ved midnatt vert dagens tildelte barn lagt til som ei kalenderoppføring i kvar valde kalender. Fungerer med eit kva som helst tal kalendrar."
         }
@@ -156,7 +156,7 @@
           "visibility_entity": "Home Assistant-eining-ID som styr når denne oppgåva vert viste. Lat stå tom for alltid å vise oppgåva. Døme: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. Oppgåva vert berre viste på bornekortet når synlegheitsbetingelsen er oppfylt.",
           "visibility_operator": "Korleis samanliknast eininga si noverande tilstand med målverdien:\n• Ingen filter — vis alltid oppgåva (ignorerer eininga si tilstand)\n• Lik — tilstanden stemmer nøyaktig (t.d. 'on', 'home', 'running')\n• Ikkje lik — tilstanden stemmer ikkje\n• Større enn eller lik (≥) — for numeriske verdiar (t.d. 80 for batteri ≥ 80%)\n• Mindre enn eller lik (≤) — for numeriske verdiar (t.d. 30 for fukt ≤ 30%)\n• Større enn (>) — for numeriske verdiar\n• Mindre enn (<) — for numeriske verdiar",
           "visibility_state": "Verdien som skal samanliknast. For 'Lik' eller 'Ikkje lik': kva som helst tekstverde (t.d. 'on', 'off', 'home', 'away'). For numeriske operatorar (≥, ≤, >, <): skriv inn eit tal (t.d. 25, 50,5, 100). Døme: Eining 'sensor.temperature', Operator '≥', Verdi '20' viser oppgåva når temperaturen er 20°C eller høgare.",
-          "assignment_mode": "Alle = kvart tilknytt barn ser oppgåva. Vekslande = eitt barn om gongen, roterer dagleg. Tilfeldig = eitt barn plukka tilfeldig kvar dag (stabilt gjennom dagen).",
+          "assignment_mode": "Alle = kvart tilknytt barn ser oppgåva. Vekslande = eitt barn om gongen, roterer dagleg. Tilfeldig = eitt barn plukka tilfeldig kvar dag (stabilt gjennom dagen). Balansert = dagens balanserte oppgåver vert fordelte jamt mellom dei tildelte barna — ingen endar opp med alt.",
           "assignment_rotation_anchor": "Dag 0 i den vekslande rotasjonen. Lat stå tom for å starte i dag. Vert brukt berre når tildelingsmodus er 'Vekslande'.",
           "publish_calendar_entities": "Vel ein eller fleire Home Assistant-kalenderentitetar. Kvar gong oppgåva vert oppretta, oppdatert eller skiftar ved midnatt vert dagens tildelte barn lagt til som ei kalenderoppføring i kvar valde kalender. Fungerer med eit kva som helst tal kalendrar."
         }
@@ -382,7 +382,8 @@
       "options": {
         "everyone": "Alle — kvart tildelt barn ser oppgåva",
         "alternating": "Vekslande — roter mellom dei tildelte barna, eitt per dag",
-        "random": "Tilfeldig — plukk eitt tildelt barn tilfeldig kvar dag"
+        "random": "Tilfeldig — plukk eitt tildelt barn tilfeldig kvar dag",
+        "balanced": "Balansert — fordel dagens balanserte oppgåver jamt mellom dei tildelte barna"
       }
     }
   },
