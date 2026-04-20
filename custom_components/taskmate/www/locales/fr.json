@@ -134,6 +134,7 @@
   "child.editor.show_debug": "Afficher le panneau de débogage",
 
   "graph.default_title": "Graphique des points",
+  "graph.all_children": "Tous les enfants",
   "graph.daily": "Quotidien",
   "graph.total": "Total",
   "graph.graph_error": "Erreur de graphique : {message}",
