@@ -610,6 +610,13 @@ class TaskMateChildCard extends LitElement {
         transform: scale(0.98);
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       }
+      .chore-card:focus {
+        outline: none;
+      }
+      .chore-card:focus-visible {
+        outline: 2px solid var(--primary-color, #2196f3);
+        outline-offset: 2px;
+      }
 
       @media (hover: hover) {
         .chore-card:hover {
@@ -1778,6 +1785,13 @@ class TaskMateChildCard extends LitElement {
         this._handleComplete(chore, child);
       }
     };
+    const isInteractive = !(isLoading || notDueToday || notAvailableRecurrence || isLockedPreview || timeElapsed);
+    const handleRowKeyDown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleRowClick();
+      }
+    };
 
     const titleText = isLockedPreview
       ? (lockedUntilLabel || this._t('child.chore_locked_until_generic'))
@@ -1792,7 +1806,12 @@ class TaskMateChildCard extends LitElement {
     return html`
       <div
         class="chore-card ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence ? "recurrence-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""}"
+        role="button"
+        tabindex="${isInteractive ? '0' : '-1'}"
+        aria-disabled="${isInteractive ? 'false' : 'true'}"
+        aria-label="${chore.name}"
         @click="${handleRowClick}"
+        @keydown="${handleRowKeyDown}"
         title="${titleText}"
       >
         <div class="chore-info">

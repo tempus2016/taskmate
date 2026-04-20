@@ -848,6 +848,10 @@ class TaskMatePointsCard extends LitElement {
 
   _openDialog(child, action, pointsIcon, pointsName) {
     this._dialog = { child, action, pointsIcon, pointsName };
+    this._dialogKeyHandler = (e) => {
+      if (e.key === "Escape") this._closeDialog();
+    };
+    document.addEventListener("keydown", this._dialogKeyHandler);
     this.requestUpdate();
 
     // Focus the points input after dialog renders
@@ -862,7 +866,19 @@ class TaskMatePointsCard extends LitElement {
 
   _closeDialog() {
     this._dialog = null;
+    if (this._dialogKeyHandler) {
+      document.removeEventListener("keydown", this._dialogKeyHandler);
+      this._dialogKeyHandler = null;
+    }
     this.requestUpdate();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._dialogKeyHandler) {
+      document.removeEventListener("keydown", this._dialogKeyHandler);
+      this._dialogKeyHandler = null;
+    }
   }
 
   _handleKeyDown(e, child, action) {
