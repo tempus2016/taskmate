@@ -13,7 +13,12 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
+from .const import (
+    DEFAULT_CALENDAR_PROJECTION_DAYS,
+    DOMAIN,
+    MAX_CALENDAR_PROJECTION_DAYS,
+    MIN_CALENDAR_PROJECTION_DAYS,
+)
 from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction
 from .storage import TaskMateStorage
 
@@ -376,33 +381,17 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             chore.assignment_current_child_id = active[0] if active else ""
         else:
             chore.assignment_current_child_id = ""
-        # If anything calendar-user-visible changed (name, active child, time window,
-        # or entity list), purge the previous events from every calendar the chore
-        # used to publish to — including ones the user just removed — and then
-        # re-publish to the current list. Otherwise the guard skips re-publish.
+        # Any edit to a chore with calendar publishing can shift which dates
+        # project to which child (new assignment_mode, anchor, due_days,
+        # recurrence, rename, time_category, entity list, etc.), so purge the
+        # entire horizon from both the old and new calendar sets and let the
+        # following publish pass re-write the projection.
         existing = self.storage.get_chore(chore.id)
-        cleanup_entities: list[str] = []
-        should_republish = False
-        if existing is not None:
-            prev_entities = list(getattr(existing, "publish_calendar_entities", []) or [])
-            new_entities = list(chore.publish_calendar_entities or [])
-            prev_name = getattr(existing, "name", "")
-            prev_active = getattr(existing, "assignment_current_child_id", "")
-            prev_category = getattr(existing, "time_category", "anytime")
-            if (
-                set(new_entities) != set(prev_entities)
-                or chore.name != prev_name
-                or chore.assignment_current_child_id != prev_active
-                or getattr(chore, "time_category", "anytime") != prev_category
-            ):
-                # Purge from every calendar that ever had this chore — new ones will
-                # be cleaned along with old, so republish produces a fresh event.
-                cleanup_entities = list({*prev_entities, *new_entities})
-                should_republish = True
+        prev_entities = list(getattr(existing, "publish_calendar_entities", []) or []) if existing else []
+        new_entities = list(chore.publish_calendar_entities or [])
+        cleanup_entities = list({*prev_entities, *new_entities})
         if cleanup_entities:
             await self._cleanup_chore_from_calendars(chore, cleanup_entities, today)
-        elif should_republish:
-            chore.publish_calendar_last_date = ""
         self.storage.update_chore(chore)
         await self._publish_chore_to_calendars(chore, today)
         await self.storage.async_save()
@@ -624,14 +613,131 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         """Marker stitched into the event description so we can find our own events."""
         return f"taskmate:chore:{chore.id}"
 
-    async def _publish_chore_to_calendars(self, chore: Chore, today: date | None = None) -> None:
-        """Publish today's assignment for `chore` to every entity in publish_calendar_entities.
+    def _calendar_projection_days(self) -> int:
+        """Return the configured projection horizon, clamped to the allowed range."""
+        try:
+            raw = int(float(self.storage.get_setting(
+                "calendar_projection_days", str(DEFAULT_CALENDAR_PROJECTION_DAYS)
+            )))
+        except (TypeError, ValueError):
+            raw = DEFAULT_CALENDAR_PROJECTION_DAYS
+        return max(MIN_CALENDAR_PROJECTION_DAYS, min(MAX_CALENDAR_PROJECTION_DAYS, raw))
 
-        Idempotent per calendar-day thanks to `publish_calendar_last_date`. Fans
-        out all create_event service calls via asyncio.gather so N entities per
-        chore scale with the slowest single call, not the sum of them. When the
-        chore has a non-"anytime" time_category the event is timed to that
-        window; otherwise it's an all-day event.
+    _SCHEDULE_DOW = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+    def _is_chore_scheduled_for_date(self, chore: Chore, day: date) -> bool:
+        """Return True if the chore's schedule places it on `day`.
+
+        Mirrors the client-side `_isChoreScheduledOn` in taskmate-calendar-card.js
+        so the HA calendar projection matches what the card shows. Does not
+        consult completion state — this is purely the recurrence/schedule math.
+        """
+        if not getattr(chore, "enabled", True):
+            return False
+
+        schedule_mode = getattr(chore, "schedule_mode", "specific_days")
+        created_iso = getattr(chore, "created_date", "") or ""
+
+        if schedule_mode == "one_shot":
+            return bool(created_iso) and created_iso == day.isoformat()
+
+        if created_iso:
+            try:
+                if day < date.fromisoformat(created_iso):
+                    return False
+            except ValueError:
+                pass
+
+        if schedule_mode == "specific_days":
+            due_days = list(getattr(chore, "due_days", []) or [])
+            if not due_days:
+                return True
+            return self._SCHEDULE_DOW[day.weekday()] in due_days
+
+        if schedule_mode != "recurring":
+            return False
+
+        recurrence = getattr(chore, "recurrence", "weekly")
+        recurrence_day = (getattr(chore, "recurrence_day", "") or "").lower()
+        recurrence_start = getattr(chore, "recurrence_start", "") or ""
+        day_dow = self._SCHEDULE_DOW[day.weekday()]
+
+        if recurrence_day and recurrence in ("weekly", "every_2_weeks"):
+            if recurrence_day != day_dow:
+                return False
+            if recurrence == "every_2_weeks" and recurrence_start:
+                try:
+                    anchor = date.fromisoformat(recurrence_start)
+                    diff = (day - anchor).days
+                    if diff < 0 or (diff // 7) % 2 != 0:
+                        return False
+                except ValueError:
+                    pass
+            return True
+
+        if recurrence == "every_2_days" and recurrence_start:
+            try:
+                anchor = date.fromisoformat(recurrence_start)
+                diff = (day - anchor).days
+                return diff >= 0 and diff % 2 == 0
+            except ValueError:
+                return False
+
+        if recurrence == "monthly" and recurrence_start:
+            try:
+                anchor = date.fromisoformat(recurrence_start)
+                if day < anchor:
+                    return False
+                return day.day == anchor.day
+            except ValueError:
+                return False
+
+        # Weekly/every_2_weeks without an explicit day: same weekday as today,
+        # matching the card's fallback for loosely-scheduled recurrences.
+        if recurrence in ("weekly", "every_2_weeks"):
+            today = dt_util.as_local(dt_util.now()).date()
+            return day.weekday() == today.weekday()
+
+        return False
+
+    def _build_event_payload(self, chore: Chore, day: date, summary: str) -> dict:
+        """Build the calendar.create_event payload for one (chore, day)."""
+        description = self._chore_event_marker(chore)
+        window = self._time_category_window(
+            getattr(chore, "time_category", "anytime"), day
+        )
+        if window is None:
+            return {
+                "summary": summary,
+                "description": description,
+                "start_date": day.isoformat(),
+                "end_date": (day + timedelta(days=1)).isoformat(),
+            }
+        start_dt, end_dt = window
+        return {
+            "summary": summary,
+            "description": description,
+            "start_date_time": start_dt.isoformat(),
+            "end_date_time": end_dt.isoformat(),
+        }
+
+    def _child_name_for_day(self, chore: Chore, day: date) -> str:
+        """Return the display name for the chore's assignee on `day`."""
+        active = self._compute_active_children(chore, day)
+        if not active:
+            return "Everyone"
+        child = self.storage.get_child(active[0])
+        return child.name if child else "Everyone"
+
+    async def _publish_chore_to_calendars(self, chore: Chore, today: date | None = None) -> None:
+        """Publish assignments for `chore` across the configured projection horizon.
+
+        For every date in [today, today + horizon) that the schedule covers and
+        hasn't already been published, computes that date's active child and
+        writes an event to each configured calendar. Past entries are pruned
+        from `publish_calendar_published_dates` so the list doesn't grow
+        unbounded. Fan-out is via asyncio.gather so N entities × M missing
+        days scale with the slowest single service call.
         """
         entities = list(getattr(chore, "publish_calendar_entities", []) or [])
         if not entities:
@@ -639,44 +745,36 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         if today is None:
             today = dt_util.as_local(dt_util.now()).date()
-        today_iso = today.isoformat()
-        if getattr(chore, "publish_calendar_last_date", "") == today_iso:
+        horizon = self._calendar_projection_days()
+
+        published = set(getattr(chore, "publish_calendar_published_dates", []) or [])
+        # Prune stale entries (strictly before today) so the list stays small.
+        published = {iso for iso in published if iso >= today.isoformat()}
+
+        pending: list[tuple[date, dict]] = []
+        for offset in range(horizon):
+            day = today + timedelta(days=offset)
+            day_iso = day.isoformat()
+            if day_iso in published:
+                continue
+            if not self._is_chore_scheduled_for_date(chore, day):
+                continue
+            summary = f"{chore.name} — {self._child_name_for_day(chore, day)}"
+            pending.append((day, self._build_event_payload(chore, day, summary)))
+
+        if not pending and not published.symmetric_difference(
+            getattr(chore, "publish_calendar_published_dates", []) or []
+        ):
+            # Nothing to publish and nothing pruned — leave the chore untouched
+            # so the caller doesn't write the record out for no reason.
             return
 
-        active = self._compute_active_children(chore, today)
-        if active:
-            child = self.storage.get_child(active[0])
-            child_name = child.name if child else "Everyone"
-        else:
-            child_name = "Everyone"
-
-        summary = f"{chore.name} — {child_name}"
-        description = self._chore_event_marker(chore)
-        window = self._time_category_window(getattr(chore, "time_category", "anytime"), today)
-
-        if window is None:
-            end = today + timedelta(days=1)
-            event_payload = {
-                "summary": summary,
-                "description": description,
-                "start_date": today_iso,
-                "end_date": end.isoformat(),
-            }
-        else:
-            start_dt, end_dt = window
-            event_payload = {
-                "summary": summary,
-                "description": description,
-                "start_date_time": start_dt.isoformat(),
-                "end_date_time": end_dt.isoformat(),
-            }
-
-        async def _call(entity_id: str) -> None:
+        async def _call(entity_id: str, payload: dict) -> None:
             try:
                 await self.hass.services.async_call(
                     "calendar",
                     "create_event",
-                    {"entity_id": entity_id, **event_payload},
+                    {"entity_id": entity_id, **payload},
                     blocking=True,
                 )
             except Exception as err:  # noqa: BLE001 - HA service errors vary
@@ -687,8 +785,13 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                     err,
                 )
 
-        await asyncio.gather(*(_call(e) for e in entities), return_exceptions=True)
-        chore.publish_calendar_last_date = today_iso
+        tasks = [_call(e, payload) for day, payload in pending for e in entities]
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+            for day, _ in pending:
+                published.add(day.isoformat())
+
+        chore.publish_calendar_published_dates = sorted(published)
 
     async def _cleanup_chore_from_calendars(
         self,
@@ -699,9 +802,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         """Best-effort delete of the chore's own events from each configured calendar.
 
         Uses a description marker (`taskmate:chore:<id>`) stitched in at create
-        time to re-identify events. Covers today through +30 days so future
-        calendar entries for this chore — if any — are also cleaned up. Failure
-        modes (unavailable calendar, integration without delete_event support,
+        time to re-identify events. Covers today through today+horizon+7 so the
+        full projection range is cleaned up on edit/delete. Failure modes
+        (unavailable calendar, integration without delete_event support,
         response service disabled) are caught and logged; cleanup never blocks
         the caller.
         """
@@ -711,8 +814,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         if today is None:
             today = dt_util.as_local(dt_util.now()).date()
+        window_days = max(30, self._calendar_projection_days() + 7)
         window_start = datetime.combine(today, time(0, 0)).isoformat()
-        window_end = datetime.combine(today + timedelta(days=30), time(0, 0)).isoformat()
+        window_end = datetime.combine(today + timedelta(days=window_days), time(0, 0)).isoformat()
         marker = self._chore_event_marker(chore)
 
         async def _purge(entity_id: str) -> None:
@@ -766,7 +870,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                     )
 
         await asyncio.gather(*(_purge(e) for e in ents), return_exceptions=True)
-        chore.publish_calendar_last_date = ""
+        chore.publish_calendar_published_dates = []
 
     async def _async_refresh_assignments_and_publish(self) -> None:
         """Recompute today's active child per chore and publish to calendars.
@@ -786,9 +890,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             if getattr(chore, "assignment_current_child_id", "") != desired:
                 chore.assignment_current_child_id = desired
                 dirty = True
-            before = getattr(chore, "publish_calendar_last_date", "")
+            before = list(getattr(chore, "publish_calendar_published_dates", []) or [])
             await self._publish_chore_to_calendars(chore, today)
-            if getattr(chore, "publish_calendar_last_date", "") != before:
+            if list(getattr(chore, "publish_calendar_published_dates", []) or []) != before:
                 dirty = True
             if dirty:
                 self.storage.update_chore(chore)
