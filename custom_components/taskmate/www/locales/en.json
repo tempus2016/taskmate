@@ -229,6 +229,7 @@
   "penalties.form_description_placeholder": "Short description",
   "penalties.btn_edit_title": "Edit",
   "penalties.btn_delete_title": "Delete",
+  "penalties.editor.manage_note": "Add, edit, and delete penalty templates directly on the card itself — tap the pencil icon in the card header. This editor only controls the card's appearance.",
 
   "bonuses.card_name": "TaskMate Bonuses",
   "bonuses.card_description": "Apply point-awarding bonuses to children",
@@ -253,6 +254,7 @@
   "bonuses.form_description_placeholder": "Short description",
   "bonuses.btn_edit_title": "Edit",
   "bonuses.btn_delete_title": "Delete",
+  "bonuses.editor.manage_note": "Add, edit, and delete bonus templates directly on the card itself — tap the pencil icon in the card header. This editor only controls the card's appearance.",
 
   "points_card.card_name": "TaskMate Points Card",
   "points_card.card_description": "A parent-friendly card to add or remove points from children",
