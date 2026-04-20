@@ -367,7 +367,7 @@ data:
 | [Reward Progress Card](#reward-progress-card) | Kids | Full-screen motivational reward display |
 | [Leaderboard Card](#leaderboard-card) | Both | Competitive ranking by points, streak, or weekly |
 | [Penalties Card](#penalties-card) | Parents | Apply point-deduction penalties |
-| [Calendar Card](#calendar-card) | Both | Week view of chores assigned to each child |
+| [Calendar Card](#calendar-card) | Both | One-day view of chores assigned to each child |
  
 ---
  
@@ -643,9 +643,9 @@ header_color: "#e74c3c"
 
 ### Calendar Card
 
-Week-at-a-glance view of the chores assigned to each child. Rows are children, columns are Mon–Sun. Each cell lists the chores scheduled for that child on that day, colour-coded by state: **green** = approved, **amber** = pending approval, **grey** = due but not completed. Rotating-assignment chores (alternating, random, balanced) render dimmed on days other than today so you can see they rotate.
+One-day view of the chores assigned to each child. Each child gets a section showing the chores scheduled for the selected day, colour-coded by state: **green** = approved, **amber** = pending approval, **grey** = due but not completed. Rotating-assignment chores (alternating, random, balanced) render dimmed on days other than today so you can see they rotate.
 
-Use the ◀ / ▶ buttons in the header to step through weeks, or **This week** to jump back to the current week. Set `child_id` to show a single row for a per-child dashboard.
+Use the ◀ / ▶ buttons to step through days, or the calendar icon to jump back to today. Set `child_id` to show only a single child.
 
 ```yaml
 type: custom:taskmate-calendar-card
