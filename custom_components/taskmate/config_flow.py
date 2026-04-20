@@ -16,11 +16,14 @@ from .const import (
     AVATAR_OPTIONS,
     COMPLETION_SOUND_OPTIONS,
     DAYS_OF_WEEK,
+    DEFAULT_CALENDAR_PROJECTION_DAYS,
     DEFAULT_CLAIM_ALLOWANCE_MINUTES,
     DEFAULT_COMPLETION_SOUND,
     DEFAULT_POINTS_ICON,
     DEFAULT_POINTS_NAME,
     DOMAIN,
+    MAX_CALENDAR_PROJECTION_DAYS,
+    MIN_CALENDAR_PROJECTION_DAYS,
     RECURRENCE_OPTIONS,
     REWARD_ICON_OPTIONS,
     TIME_CATEGORIES,
@@ -1234,6 +1237,12 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 "notify_service",
                 user_input.get("notify_service", "").strip(),
             )
+            self.coordinator.storage.set_setting(
+                "calendar_projection_days",
+                str(int(float(user_input.get(
+                    "calendar_projection_days", DEFAULT_CALENDAR_PROJECTION_DAYS
+                )))),
+            )
             # Single save and refresh for all settings
             await self.coordinator.storage.async_save()
             await self.coordinator.async_refresh()
@@ -1258,6 +1267,16 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         except (ValueError, TypeError):
             current_perfect_week_bonus = 50.0
         current_notify_service = self.coordinator.storage.get_setting("notify_service", "")
+        try:
+            current_calendar_projection_days = int(float(self.coordinator.storage.get_setting(
+                "calendar_projection_days", str(DEFAULT_CALENDAR_PROJECTION_DAYS)
+            )))
+        except (ValueError, TypeError):
+            current_calendar_projection_days = DEFAULT_CALENDAR_PROJECTION_DAYS
+        current_calendar_projection_days = max(
+            MIN_CALENDAR_PROJECTION_DAYS,
+            min(MAX_CALENDAR_PROJECTION_DAYS, current_calendar_projection_days),
+        )
 
         return self.async_show_form(
             step_id="settings",
@@ -1333,6 +1352,18 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         default=current_notify_service,
                     ): selector.TextSelector(
                         selector.TextSelectorConfig(multiline=False)
+                    ),
+                    vol.Required(
+                        "calendar_projection_days",
+                        default=current_calendar_projection_days,
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=MIN_CALENDAR_PROJECTION_DAYS,
+                            max=MAX_CALENDAR_PROJECTION_DAYS,
+                            step=1,
+                            mode=selector.NumberSelectorMode.BOX,
+                            unit_of_measurement="days",
+                        )
                     ),
                 }
             ),

@@ -30,6 +30,14 @@ CONF_CHORE_ASSIGNMENT_MODE: Final = "assignment_mode"
 CONF_CHORE_ASSIGNMENT_ROTATION_ANCHOR: Final = "assignment_rotation_anchor"
 CONF_CHORE_PUBLISH_CALENDARS: Final = "publish_calendar_entities"
 
+# Calendar projection: how many days ahead each chore's assignment is pushed
+# into the configured HA calendars. 14 days balances planning visibility with
+# calendar noise; raise via the Settings flow for longer planning horizons.
+CONF_CALENDAR_PROJECTION_DAYS: Final = "calendar_projection_days"
+DEFAULT_CALENDAR_PROJECTION_DAYS: Final = 14
+MIN_CALENDAR_PROJECTION_DAYS: Final = 1
+MAX_CALENDAR_PROJECTION_DAYS: Final = 90
+
 # Assignment modes
 # "everyone"    = visible to every child in assigned_to (or all children if empty) -- existing behavior
 # "alternating" = round-robin through assigned_to (or all children), one child per calendar day

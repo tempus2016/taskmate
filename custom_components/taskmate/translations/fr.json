@@ -215,7 +215,8 @@
           "perfect_week_enabled": "Bonus de semaine parfaite",
           "perfect_week_bonus": "Bonus semaine parfaite",
           "streak_milestones": "Configuration des paliers de série",
-          "notify_service": "Service de notification (optionnel)"
+          "notify_service": "Service de notification (optionnel)",
+          "calendar_projection_days": "Horizon de planification du calendrier"
         },
         "data_description": {
           "streak_reset_mode": "Ce qui arrive à une série lorsqu'un jour est manqué",
@@ -225,7 +226,8 @@
           "perfect_week_enabled": "Accorder des points bonus lorsqu'un enfant termine au moins une corvée chaque jour pendant une semaine complète",
           "perfect_week_bonus": "Points bonus accordés pour une semaine parfaite",
           "streak_milestones": "Paliers personnalisés sous forme de paires 'jours:points', séparées par des virgules. Exemple : 3:5, 7:10, 14:20",
-          "notify_service": "Service de notification HA pour alerter les parents lorsqu'une corvée nécessite une approbation. Format : notify.mobile_app_votre_telephone"
+          "notify_service": "Service de notification HA pour alerter les parents lorsqu'une corvée nécessite une approbation. Format : notify.mobile_app_votre_telephone",
+          "calendar_projection_days": "Nombre de jours à l'avance que chaque corvée publie dans les calendriers HA configurés (1-90). Plus la valeur est élevée, plus la visibilité est grande au prix d'entrées de calendrier supplémentaires."
         }
       },
       "chore_schedule_specific": {
