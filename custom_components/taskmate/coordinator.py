@@ -1,8 +1,10 @@
 """Data coordinator for TaskMate integration."""
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 from datetime import date, datetime, timedelta
+import hashlib
 import logging
 from typing import Any
 
@@ -61,6 +63,8 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         """Scheduled callback at midnight to check and reset streaks if needed."""
         self.hass.async_create_task(self._async_check_streaks())
         self.hass.async_create_task(self._async_expire_one_shot_chores())
+        # Rotate assignment_current_child_id and publish today's events to every configured calendar
+        self.hass.async_create_task(self._async_refresh_assignments_and_publish())
         # Check for perfect week bonus every Monday at midnight
         if now.weekday() == 0:
             self.hass.async_create_task(self._async_check_perfect_week())
@@ -270,6 +274,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         visibility_state: str = "on",
         visibility_operator: str = "equals",
         created_date: str = "",
+        assignment_mode: str = "everyone",
+        assignment_rotation_anchor: str = "",
+        publish_calendar_entities: list[str] | None = None,
     ) -> Chore:
         """Add a new chore."""
         # One-shot chores: force daily_limit=1, set created_date to today
@@ -298,8 +305,18 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             visibility_state=visibility_state,
             visibility_operator=visibility_operator,
             created_date=created_date,
+            assignment_mode=assignment_mode if assignment_mode in ("everyone", "alternating", "random") else "everyone",
+            assignment_rotation_anchor=assignment_rotation_anchor,
+            publish_calendar_entities=list(publish_calendar_entities or []),
         )
+        # Cache today's active child so the card can show it immediately
+        today = dt_util.as_local(dt_util.now()).date()
+        active = self._compute_active_children(chore, today)
+        if active and chore.assignment_mode != "everyone":
+            chore.assignment_current_child_id = active[0]
         self.storage.add_chore(chore)
+        # Publish to any configured calendars ASAP — before save so we persist the last_date stamp
+        await self._publish_chore_to_calendars(chore, today)
         await self.storage.async_save()
         await self.async_refresh()
         return chore
@@ -353,7 +370,29 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
     async def async_update_chore(self, chore: Chore) -> None:
         """Update a chore."""
+        today = dt_util.as_local(dt_util.now()).date()
+        active = self._compute_active_children(chore, today)
+        if getattr(chore, "assignment_mode", "everyone") != "everyone":
+            chore.assignment_current_child_id = active[0] if active else ""
+        else:
+            chore.assignment_current_child_id = ""
+        # Re-publish on update so a changed name/assignment/calendar list shows up ASAP.
+        # Force a re-publish by clearing the guard if the publish list changed meaningfully;
+        # otherwise the guard keeps us from spamming duplicate events.
+        existing = self.storage.get_chore(chore.id)
+        if existing is not None:
+            prev_entities = set(getattr(existing, "publish_calendar_entities", []) or [])
+            new_entities = set(chore.publish_calendar_entities or [])
+            prev_name = getattr(existing, "name", "")
+            prev_active = getattr(existing, "assignment_current_child_id", "")
+            if (
+                new_entities != prev_entities
+                or chore.name != prev_name
+                or chore.assignment_current_child_id != prev_active
+            ):
+                chore.publish_calendar_last_date = ""
         self.storage.update_chore(chore)
+        await self._publish_chore_to_calendars(chore, today)
         await self.storage.async_save()
         await self.async_refresh()
 
@@ -482,6 +521,132 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         return False
 
+    def _chore_assignment_pool(self, chore: Chore) -> list[str]:
+        """Resolve the ordered pool of child IDs this chore rotates through.
+
+        Prefers the chore's `assigned_to` list. When empty, falls back to every
+        stored child so "Everyone"-style chores can still alternate/randomize.
+        """
+        pool = [cid for cid in (chore.assigned_to or []) if self.storage.get_child(cid)]
+        if pool:
+            return pool
+        return [child.id for child in self.storage.get_children()]
+
+    def _compute_active_children(self, chore: Chore, today: date | None = None) -> list[str]:
+        """Return the child IDs the chore is active for today.
+
+        - everyone: whatever `assigned_to` already said (empty = all children).
+        - alternating: one child picked by `(today - anchor).days % len(pool)`.
+        - random: one child picked by a deterministic per-day+chore-id hash.
+        """
+        mode = getattr(chore, "assignment_mode", "everyone")
+        if mode not in ("alternating", "random"):
+            return list(chore.assigned_to or [])
+
+        pool = self._chore_assignment_pool(chore)
+        if not pool:
+            return []
+
+        if today is None:
+            today = dt_util.as_local(dt_util.now()).date()
+
+        if mode == "alternating":
+            anchor_iso = getattr(chore, "assignment_rotation_anchor", "") or ""
+            try:
+                anchor = date.fromisoformat(anchor_iso) if anchor_iso else today
+            except ValueError:
+                anchor = today
+            offset = (today - anchor).days
+            idx = offset % len(pool)
+            return [pool[idx]]
+
+        # random: stable per (chore.id, date) so the frontend and backend agree
+        digest = hashlib.sha256(f"{chore.id}:{today.toordinal()}".encode()).digest()
+        idx = int.from_bytes(digest[:8], "big") % len(pool)
+        return [pool[idx]]
+
+    async def _publish_chore_to_calendars(self, chore: Chore, today: date | None = None) -> None:
+        """Publish today's assignment for `chore` to every entity in publish_calendar_entities.
+
+        Idempotent per calendar-day thanks to `publish_calendar_last_date`. Fans
+        out all create_event service calls via asyncio.gather so N entities per
+        chore scale with the slowest single call, not the sum of them.
+        """
+        entities = list(getattr(chore, "publish_calendar_entities", []) or [])
+        if not entities:
+            return
+
+        if today is None:
+            today = dt_util.as_local(dt_util.now()).date()
+        today_iso = today.isoformat()
+        if getattr(chore, "publish_calendar_last_date", "") == today_iso:
+            return
+
+        active = self._compute_active_children(chore, today)
+        if active:
+            child = self.storage.get_child(active[0])
+            child_name = child.name if child else "Everyone"
+        else:
+            child_name = "Everyone"
+
+        summary = f"{chore.name} — {child_name}"
+        end = today + timedelta(days=1)
+
+        async def _call(entity_id: str) -> None:
+            try:
+                await self.hass.services.async_call(
+                    "calendar",
+                    "create_event",
+                    {
+                        "entity_id": entity_id,
+                        "summary": summary,
+                        "start_date": today_iso,
+                        "end_date": end.isoformat(),
+                    },
+                    blocking=True,
+                )
+            except Exception as err:  # noqa: BLE001 - HA service errors vary
+                _LOGGER.warning(
+                    "TaskMate: failed to publish chore %s to calendar %s: %s",
+                    chore.name,
+                    entity_id,
+                    err,
+                )
+
+        await asyncio.gather(*(_call(e) for e in entities), return_exceptions=True)
+        chore.publish_calendar_last_date = today_iso
+
+    async def _async_refresh_assignments_and_publish(self) -> None:
+        """Recompute today's active child per chore and publish to calendars.
+
+        Runs at midnight. All chores are processed concurrently so the runtime
+        is bounded by the slowest single publish, not the sum across chores.
+        """
+        today = dt_util.as_local(dt_util.now()).date()
+        chores = self.storage.get_chores()
+        if not chores:
+            return
+
+        async def _process(chore: Chore) -> bool:
+            dirty = False
+            active = self._compute_active_children(chore, today)
+            desired = active[0] if active and getattr(chore, "assignment_mode", "everyone") != "everyone" else ""
+            if getattr(chore, "assignment_current_child_id", "") != desired:
+                chore.assignment_current_child_id = desired
+                dirty = True
+            before = getattr(chore, "publish_calendar_last_date", "")
+            await self._publish_chore_to_calendars(chore, today)
+            if getattr(chore, "publish_calendar_last_date", "") != before:
+                dirty = True
+            if dirty:
+                self.storage.update_chore(chore)
+            return dirty
+
+        results = await asyncio.gather(*(_process(c) for c in chores), return_exceptions=True)
+        if any(r is True for r in results):
+            await self.storage.async_save()
+            await self.async_refresh()
+
     def is_chore_available_for_child(self, chore, child_id: str) -> bool:
         """Check if a recurring chore is available for a child to complete.
 
@@ -500,6 +665,12 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         disabled_for = getattr(chore, 'disabled_for', [])
         if child_id in disabled_for:
             return False
+
+        # Dynamic assignment — only the active child(ren) see alternating/random chores
+        if getattr(chore, 'assignment_mode', 'everyone') != 'everyone':
+            active = self._compute_active_children(chore)
+            if child_id not in active:
+                return False
 
         # Check visibility entity first — if not visible, chore is not available
         visibility_entity = getattr(chore, 'visibility_entity', '')

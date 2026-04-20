@@ -79,7 +79,10 @@
           "completion_sound": "Som quando a tarefa é concluída",
           "visibility_entity": "Entidade Home Assistant para visibilidade",
           "visibility_operator": "Operador de visibilidade",
-          "visibility_state": "Estado de visibilidade"
+          "visibility_state": "Estado de visibilidade",
+          "assignment_mode": "Modo de atribuição",
+          "assignment_rotation_anchor": "Data de início da rotação (apenas alternância)",
+          "publish_calendar_entities": "Publicar nos calendários (opcional)"
         },
         "data_description": {
           "claim_allowance_minutes": "Minutos extra após o fim desta janela horária durante os quais a tarefa ainda pode ser reivindicada. 0 desativa o período de tolerância. As tarefas noturnas são sempre limitadas à meia-noite.",
@@ -88,7 +91,10 @@
           "completion_sound": "Som a reproduzir quando esta tarefa é concluída",
           "visibility_entity": "ID da entidade Home Assistant que controla quando esta tarefa é apresentada. Deixe vazio para mostrar sempre a tarefa. Exemplos: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. A tarefa só aparece no cartão da criança quando a condição de visibilidade é atendida.",
           "visibility_operator": "Como comparar o estado atual da entidade com seu valor alvo:\n• Sem filtro — mostrar sempre a tarefa (ignora o estado da entidade)\n• Igual — estado corresponde exatamente (p. ex., 'on', 'home', 'running')\n• Não igual — estado não corresponde\n• Maior ou igual (≥) — para valores numéricos (p. ex., 80 para bateria ≥ 80%)\n• Menor ou igual (≤) — para valores numéricos (p. ex., 30 para umidade ≤ 30%)\n• Maior que (>) — para valores numéricos\n• Menor que (<) — para valores numéricos",
-          "visibility_state": "O valor a comparar. Para 'Igual' ou 'Não igual': qualquer valor de texto (p. ex., 'on', 'off', 'home', 'away'). Para operadores numéricos (≥, ≤, >, <): introduza um número (p. ex., 25, 50.5, 100). Exemplo: Entidade 'sensor.temperature', Operador '≥', Valor '20' mostra a tarefa quando a temperatura é 20°C ou superior."
+          "visibility_state": "O valor a comparar. Para 'Igual' ou 'Não igual': qualquer valor de texto (p. ex., 'on', 'off', 'home', 'away'). Para operadores numéricos (≥, ≤, >, <): introduza um número (p. ex., 25, 50.5, 100). Exemplo: Entidade 'sensor.temperature', Operador '≥', Valor '20' mostra a tarefa quando a temperatura é 20°C ou superior.",
+          "assignment_mode": "Todos = todas as crianças atribuídas veem esta tarefa. Alternado = uma criança de cada vez, alternando por dia. Aleatório = uma criança escolhida aleatoriamente por dia (estável durante o dia).",
+          "assignment_rotation_anchor": "Dia 0 da rotação alternada. Deixe em branco para começar hoje. Usado apenas quando o modo de atribuição é 'Alternado'.",
+          "publish_calendar_entities": "Escolha uma ou mais entidades de calendário do Home Assistant. Sempre que esta tarefa for criada, atualizada ou passar da meia-noite, a criança atribuída do dia é adicionada como evento em cada calendário selecionado. Funciona com qualquer número de calendários."
         }
       },
       "add_chores_bulk": {
@@ -137,7 +143,10 @@
           "completion_sound": "Som quando a tarefa é concluída",
           "visibility_entity": "Entidade Home Assistant para visibilidade",
           "visibility_operator": "Operador de visibilidade",
-          "visibility_state": "Estado de visibilidade"
+          "visibility_state": "Estado de visibilidade",
+          "assignment_mode": "Modo de atribuição",
+          "assignment_rotation_anchor": "Data de início da rotação (apenas alternância)",
+          "publish_calendar_entities": "Publicar nos calendários (opcional)"
         },
         "data_description": {
           "claim_allowance_minutes": "Minutos extra após o fim desta janela horária durante os quais a tarefa ainda pode ser reivindicada. 0 desativa o período de tolerância. As tarefas noturnas são sempre limitadas à meia-noite.",
@@ -146,7 +155,10 @@
           "completion_sound": "Som a reproduzir quando esta tarefa é concluída",
           "visibility_entity": "ID da entidade Home Assistant que controla quando esta tarefa é apresentada. Deixe vazio para mostrar sempre a tarefa. Exemplos: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. A tarefa só aparece no cartão da criança quando a condição de visibilidade é atendida.",
           "visibility_operator": "Como comparar o estado atual da entidade com seu valor alvo:\n• Sem filtro — mostrar sempre a tarefa (ignora o estado da entidade)\n• Igual — estado corresponde exatamente (p. ex., 'on', 'home', 'running')\n• Não igual — estado não corresponde\n• Maior ou igual (≥) — para valores numéricos (p. ex., 80 para bateria ≥ 80%)\n• Menor ou igual (≤) — para valores numéricos (p. ex., 30 para umidade ≤ 30%)\n• Maior que (>) — para valores numéricos\n• Menor que (<) — para valores numéricos",
-          "visibility_state": "O valor a comparar. Para 'Igual' ou 'Não igual': qualquer valor de texto (p. ex., 'on', 'off', 'home', 'away'). Para operadores numéricos (≥, ≤, >, <): introduza um número (p. ex., 25, 50.5, 100). Exemplo: Entidade 'sensor.temperature', Operador '≥', Valor '20' mostra a tarefa quando a temperatura é 20°C ou superior."
+          "visibility_state": "O valor a comparar. Para 'Igual' ou 'Não igual': qualquer valor de texto (p. ex., 'on', 'off', 'home', 'away'). Para operadores numéricos (≥, ≤, >, <): introduza um número (p. ex., 25, 50.5, 100). Exemplo: Entidade 'sensor.temperature', Operador '≥', Valor '20' mostra a tarefa quando a temperatura é 20°C ou superior.",
+          "assignment_mode": "Todos = todas as crianças atribuídas veem esta tarefa. Alternado = uma criança de cada vez, alternando por dia. Aleatório = uma criança escolhida aleatoriamente por dia (estável durante o dia).",
+          "assignment_rotation_anchor": "Dia 0 da rotação alternada. Deixe em branco para começar hoje. Usado apenas quando o modo de atribuição é 'Alternado'.",
+          "publish_calendar_entities": "Escolha uma ou mais entidades de calendário do Home Assistant. Sempre que esta tarefa for criada, atualizada ou passar da meia-noite, a criança atribuída do dia é adicionada como evento em cada calendário selecionado. Funciona com qualquer número de calendários."
         }
       },
       "manage_rewards": {
@@ -364,6 +376,13 @@
         "lte": "Menor ou igual (≤) — Mostrar quando valor numérico é ≤ alvo",
         "gt": "Maior que (>) — Mostrar quando valor numérico é > alvo",
         "lt": "Menor que (<) — Mostrar quando valor numérico é < alvo"
+      }
+    },
+    "assignment_mode": {
+      "options": {
+        "everyone": "Todos — todas as crianças atribuídas veem a tarefa",
+        "alternating": "Alternado — alterna entre as crianças atribuídas, uma por dia",
+        "random": "Aleatório — escolhe aleatoriamente uma criança atribuída por dia"
       }
     }
   },
