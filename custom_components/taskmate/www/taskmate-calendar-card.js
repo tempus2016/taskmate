@@ -1,8 +1,8 @@
 /**
  * TaskMate Calendar Card
- * Week-at-a-glance grid showing the chores assigned to each child per day.
- * Rows = children, columns = Mon–Sun. Each cell lists the chores scheduled
- * for that child on that day and colour-codes them by completion state.
+ * One-day view of the chores assigned to each child. Each child gets a
+ * section with the chores scheduled for the selected day, colour-coded
+ * by completion state. Prev/Next/Today buttons step through days.
  */
 
 const LitElement = customElements.get("hui-masonry-view")
@@ -17,7 +17,6 @@ const DAY_NAMES = [
   "friday", "saturday", "sunday",
 ];
 
-// 0 = Monday to match chore day keys
 const WINDOW_DAYS = {
   every_2_days: 2,
   weekly: 7,
@@ -47,13 +46,13 @@ class TaskMateCalendarCard extends LitElement {
     return {
       hass: { type: Object },
       config: { type: Object },
-      _weekOffset: { type: Number, state: true },
+      _dayOffset: { type: Number, state: true },
     };
   }
 
   constructor() {
     super();
-    this._weekOffset = 0;
+    this._dayOffset = 0;
   }
 
   _t(key, params) {
@@ -85,8 +84,13 @@ class TaskMateCalendarCard extends LitElement {
       .header-content { display: flex; align-items: center; gap: 10px; }
       .header-icon { --mdc-icon-size: 28px; opacity: 0.9; }
       .header-title { font-size: 1.2rem; font-weight: 600; }
-      .week-nav { display: flex; align-items: center; gap: 4px; }
-      .week-nav button {
+
+      .day-nav {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .day-nav button {
         background: rgba(255,255,255,0.2);
         border: none;
         color: white;
@@ -99,56 +103,40 @@ class TaskMateCalendarCard extends LitElement {
         align-items: center;
         gap: 4px;
       }
-      .week-nav button:hover { background: rgba(255,255,255,0.3); }
-      .week-nav ha-icon { --mdc-icon-size: 18px; }
-      .week-label {
+      .day-nav button:hover { background: rgba(255,255,255,0.3); }
+      .day-nav ha-icon { --mdc-icon-size: 18px; }
+      .day-label {
         background: rgba(255,255,255,0.2);
-        padding: 3px 10px;
+        padding: 4px 12px;
         border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 500;
+        font-size: 0.85rem;
+        font-weight: 600;
+        white-space: nowrap;
       }
 
-      .card-content { padding: 12px; }
-
-      .grid {
-        display: grid;
-        grid-template-columns: 110px repeat(7, minmax(0, 1fr));
-        gap: 4px;
-        font-size: 0.78rem;
+      .card-content {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
       }
 
-      .day-head, .child-head {
-        font-size: 0.7rem;
-        font-weight: 700;
-        color: var(--secondary-text-color);
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        text-align: center;
-        padding: 6px 0;
+      .child-block {
+        background: var(--secondary-background-color, #f5f5f5);
+        border-radius: 12px;
+        padding: 10px 12px;
       }
 
-      .day-head.today {
-        color: var(--cal-blue);
-        background: rgba(52,152,219,0.1);
-        border-radius: 6px;
-      }
-
-      .child-head { text-align: left; padding-left: 4px; }
-
-      .child-cell {
+      .child-head {
         display: flex;
         align-items: center;
-        gap: 6px;
-        padding: 4px;
-        background: var(--secondary-background-color, #f5f5f5);
-        border-radius: 8px;
-        min-height: 38px;
+        gap: 10px;
+        margin-bottom: 8px;
       }
 
       .child-avatar {
-        width: 28px;
-        height: 28px;
+        width: 34px;
+        height: 34px;
         border-radius: 50%;
         background: linear-gradient(135deg, #9b59b6, #a569bd);
         display: flex;
@@ -156,70 +144,80 @@ class TaskMateCalendarCard extends LitElement {
         justify-content: center;
         flex-shrink: 0;
       }
-      .child-avatar ha-icon { --mdc-icon-size: 16px; color: white; }
+      .child-avatar ha-icon { --mdc-icon-size: 20px; color: white; }
+
       .child-name {
-        font-size: 0.78rem;
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 0.95rem;
         color: var(--primary-text-color);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        flex: 1;
       }
 
-      .day-cell {
-        min-height: 38px;
-        border-radius: 8px;
-        padding: 4px;
+      .child-summary {
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        font-weight: 500;
+      }
+
+      .chore-list {
         display: flex;
         flex-direction: column;
-        gap: 2px;
-        background: var(--secondary-background-color, #f5f5f5);
+        gap: 4px;
       }
 
-      .day-cell.today { background: rgba(52,152,219,0.08); }
-      .day-cell.empty { opacity: 0.4; }
-
-      .chore-chip {
+      .chore-row {
         display: flex;
         align-items: center;
-        gap: 4px;
-        padding: 2px 4px;
-        border-radius: 4px;
-        font-size: 0.7rem;
-        line-height: 1.1;
+        gap: 8px;
+        padding: 6px 10px;
         background: var(--card-background-color, white);
-        border: 1px solid var(--divider-color, #e0e0e0);
+        border-radius: 8px;
+        border-left: 4px solid var(--cal-grey);
       }
-      .chore-chip .chip-name {
+      .chore-row.approved { border-left-color: var(--cal-green); }
+      .chore-row.pending  { border-left-color: var(--cal-amber); }
+      .chore-row.rotating { opacity: 0.6; font-style: italic; }
+
+      .chore-icon { --mdc-icon-size: 18px; color: var(--secondary-text-color); }
+      .chore-icon.approved { color: var(--cal-green); }
+      .chore-icon.pending  { color: var(--cal-amber); }
+
+      .chore-name {
         flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        font-size: 0.88rem;
         color: var(--primary-text-color);
       }
 
-      .chore-chip.approved { border-left: 3px solid var(--cal-green); }
-      .chore-chip.pending  { border-left: 3px solid var(--cal-amber); }
-      .chore-chip.due      { border-left: 3px solid var(--cal-grey); }
-      .chore-chip.rotating { opacity: 0.55; font-style: italic; }
-
-      .dot {
-        width: 6px; height: 6px; border-radius: 50%;
-        flex-shrink: 0;
+      .chore-points {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.78rem;
+        color: var(--secondary-text-color);
+        font-weight: 600;
       }
-      .dot.approved { background: var(--cal-green); }
-      .dot.pending  { background: var(--cal-amber); }
-      .dot.due      { background: var(--cal-grey); }
+      .chore-points ha-icon { --mdc-icon-size: 14px; color: #f1c40f; }
+
+      .no-chores {
+        padding: 8px 10px;
+        font-size: 0.82rem;
+        color: var(--secondary-text-color);
+        font-style: italic;
+      }
 
       .legend {
         display: flex;
         gap: 12px;
         flex-wrap: wrap;
-        padding: 10px 4px 2px;
-        font-size: 0.7rem;
+        padding: 4px 4px 0;
+        font-size: 0.72rem;
         color: var(--secondary-text-color);
       }
       .legend-item { display: flex; align-items: center; gap: 4px; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+      .dot.approved { background: var(--cal-green); }
+      .dot.pending  { background: var(--cal-amber); }
+      .dot.due      { background: var(--cal-grey); }
 
       .error-state, .empty-state {
         display: flex; flex-direction: column; align-items: center;
@@ -243,60 +241,39 @@ class TaskMateCalendarCard extends LitElement {
     };
   }
 
-  getCardSize() { return 5; }
+  getCardSize() { return 4; }
   static getConfigElement() { return document.createElement("taskmate-calendar-card-editor"); }
   static getStubConfig() {
     return { entity: "sensor.taskmate_overview", title: "Task Calendar" };
   }
 
-  _shiftWeek(delta) { this._weekOffset = (this._weekOffset || 0) + delta; }
-  _resetWeek() { this._weekOffset = 0; }
+  _shiftDay(delta) { this._dayOffset = (this._dayOffset || 0) + delta; }
+  _resetDay() { this._dayOffset = 0; }
 
-  _getWeekDays(tz) {
+  _getSelectedDay(tz) {
     const today = new Date();
-    const todayDow = today.getDay(); // 0 = Sunday
-    const mondayOffset = todayDow === 0 ? -6 : 1 - todayDow;
-    const monday = addDays(today, mondayOffset + (this._weekOffset || 0) * 7);
-
-    const shortNames = [
-      this._t("calendar.day_mon"), this._t("calendar.day_tue"),
-      this._t("calendar.day_wed"), this._t("calendar.day_thu"),
-      this._t("calendar.day_fri"), this._t("calendar.day_sat"),
-      this._t("calendar.day_sun"),
-    ];
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const d = addDays(monday, i);
-      days.push({
-        key: ymd(d, tz),
-        short: shortNames[i],
-        dow: DAY_NAMES[i],
-        date: d,
-      });
-    }
-    return days;
+    const selected = addDays(today, this._dayOffset || 0);
+    const dow = selected.getDay(); // 0 = Sunday
+    const dayNameIdx = dow === 0 ? 6 : dow - 1;
+    return {
+      key: ymd(selected, tz),
+      dow: DAY_NAMES[dayNameIdx],
+      date: selected,
+      todayKey: ymd(today, tz),
+    };
   }
 
-  // Port of coordinator.is_chore_available_for_child() restricted to the
-  // schedule-rule parts that tell us which *days* a chore falls on.
-  // We deliberately do NOT check visibility_entity (that's a live-state
-  // thing that doesn't make sense for past/future days) nor
-  // last_completed_at for recurring chores (the calendar shows the
-  // recurrence pattern, the completion dots overlay actual history).
   _isChoreScheduledOn(chore, dayDow, dayDate, todayKey, tz) {
     if (chore.enabled === false) return false;
 
     const scheduleMode = chore.schedule_mode || "specific_days";
     const createdDate = chore.created_date || "";
 
-    // One-shot: only on the created_date
     if (scheduleMode === "one_shot") {
       if (!createdDate) return false;
       return createdDate === ymd(dayDate, tz);
     }
 
-    // If we have a created_date for a recurring/specific chore,
-    // don't schedule it before that date.
     if (createdDate) {
       try {
         const created = new Date(createdDate + "T00:00:00");
@@ -306,7 +283,7 @@ class TaskMateCalendarCard extends LitElement {
 
     if (scheduleMode === "specific_days") {
       const dueDays = Array.isArray(chore.due_days) ? chore.due_days : [];
-      if (dueDays.length === 0) return true; // no restriction
+      if (dueDays.length === 0) return true;
       return dueDays.includes(dayDow);
     }
 
@@ -315,7 +292,6 @@ class TaskMateCalendarCard extends LitElement {
       const recurrenceDay = (chore.recurrence_day || "").toLowerCase();
       const recurrenceStart = chore.recurrence_start || "";
 
-      // weekly / every_2_weeks anchored to a specific weekday
       if (recurrenceDay && (recurrence === "weekly" || recurrence === "every_2_weeks")) {
         if (recurrenceDay !== dayDow) return false;
         if (recurrence === "every_2_weeks" && recurrenceStart) {
@@ -346,10 +322,11 @@ class TaskMateCalendarCard extends LitElement {
         } catch (e) { return false; }
       }
 
-      // Fallback: show on the same weekday as today for weekly-like
       const windowDays = WINDOW_DAYS[recurrence] || 7;
       if (windowDays === 7 || windowDays === 14) {
-        return dayDow === DAY_NAMES[new Date(todayKey + "T00:00:00").getDay() === 0 ? 6 : new Date(todayKey + "T00:00:00").getDay() - 1];
+        const todayDow = new Date(todayKey + "T00:00:00").getDay();
+        const todayIdx = todayDow === 0 ? 6 : todayDow - 1;
+        return dayDow === DAY_NAMES[todayIdx];
       }
       return false;
     }
@@ -359,13 +336,10 @@ class TaskMateCalendarCard extends LitElement {
 
   _isAssignedTo(chore, childId) {
     const assignedTo = Array.isArray(chore.assigned_to) ? chore.assigned_to : [];
-    if (assignedTo.length === 0) return true; // unassigned = everyone
+    if (assignedTo.length === 0) return true;
     return assignedTo.includes(childId);
   }
 
-  // Rotating chores (alternating/random/balanced) only show as "active"
-  // for the currently rotated child on today — for other days we render
-  // them dimmed/italic for every assigned child so you know it rotates.
   _rotationRenderMode(chore, childId, dayKey, todayKey) {
     const mode = chore.assignment_mode || "everyone";
     if (mode === "everyone") return "active";
@@ -404,26 +378,6 @@ class TaskMateCalendarCard extends LitElement {
     const chores = entity.attributes.chores || [];
     const pointsIcon = entity.attributes.points_icon || "mdi:star";
 
-    // Dedup + collect completions for the visible week
-    const weekDays = this._getWeekDays(tz);
-    const weekKeys = new Set(weekDays.map((d) => d.key));
-    const todayKey = ymd(new Date(), tz);
-
-    const rawCompletions = entity.attributes.recent_completions
-      || entity.attributes.todays_completions
-      || [];
-    const seen = new Set();
-    const completions = [];
-    rawCompletions.forEach((c) => {
-      const id = c.completion_id || `${c.chore_id}:${c.child_id}:${c.completed_at}`;
-      if (seen.has(id)) return;
-      seen.add(id);
-      if (!c.completed_at) return;
-      const key = ymd(new Date(c.completed_at), tz);
-      if (!weekKeys.has(key)) return;
-      completions.push({ ...c, _dayKey: key });
-    });
-
     if (this.config.child_id) {
       children = children.filter((c) => c.id === this.config.child_id);
     }
@@ -438,7 +392,26 @@ class TaskMateCalendarCard extends LitElement {
         </ha-card>`;
     }
 
-    const weekLabel = `${weekDays[0].date.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${weekDays[6].date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+    const day = this._getSelectedDay(tz);
+
+    const rawCompletions = entity.attributes.recent_completions
+      || entity.attributes.todays_completions
+      || [];
+    const seen = new Set();
+    const dayCompletions = [];
+    rawCompletions.forEach((c) => {
+      const id = c.completion_id || `${c.chore_id}:${c.child_id}:${c.completed_at}`;
+      if (seen.has(id)) return;
+      seen.add(id);
+      if (!c.completed_at) return;
+      if (ymd(new Date(c.completed_at), tz) !== day.key) return;
+      dayCompletions.push(c);
+    });
+
+    const dayLabel = day.date.toLocaleDateString(undefined, {
+      weekday: "long", month: "short", day: "numeric",
+    });
+    const isToday = day.key === day.todayKey;
 
     return html`
       <ha-card>
@@ -448,39 +421,24 @@ class TaskMateCalendarCard extends LitElement {
             <ha-icon class="header-icon" icon="mdi:calendar-account"></ha-icon>
             <span class="header-title">${this.config.title || this._t("calendar.default_title")}</span>
           </div>
-          <div class="week-nav">
-            <button @click=${() => this._shiftWeek(-1)} title=${this._t("calendar.prev_week")}>
+          <div class="day-nav">
+            <button @click=${() => this._shiftDay(-1)} title=${this._t("calendar.prev_day")}>
               <ha-icon icon="mdi:chevron-left"></ha-icon>
             </button>
-            <button @click=${() => this._resetWeek()} title=${this._t("calendar.this_week")}>
-              ${this._t("calendar.this_week")}
-            </button>
-            <button @click=${() => this._shiftWeek(1)} title=${this._t("calendar.next_week")}>
+            <span class="day-label">${isToday ? this._t("common.today") : dayLabel}</span>
+            <button @click=${() => this._shiftDay(1)} title=${this._t("calendar.next_day")}>
               <ha-icon icon="mdi:chevron-right"></ha-icon>
             </button>
-            <span class="week-label">${weekLabel}</span>
+            ${!isToday ? html`
+              <button @click=${() => this._resetDay()} title=${this._t("common.today")}>
+                <ha-icon icon="mdi:calendar-today"></ha-icon>
+              </button>
+            ` : ""}
           </div>
         </div>
 
         <div class="card-content">
-          <div class="grid">
-            <div class="child-head"></div>
-            ${weekDays.map((d) => html`
-              <div class="day-head ${d.key === todayKey ? "today" : ""}">
-                ${d.short}<br><span style="font-weight:500;opacity:0.75">${d.date.getDate()}</span>
-              </div>
-            `)}
-
-            ${children.map((child) => html`
-              <div class="child-cell">
-                <div class="child-avatar">
-                  <ha-icon icon="${child.avatar || "mdi:account-circle"}"></ha-icon>
-                </div>
-                <div class="child-name" title=${child.name}>${child.name}</div>
-              </div>
-              ${weekDays.map((day) => this._renderDayCell(child, day, chores, completions, todayKey, tz, pointsIcon))}
-            `)}
-          </div>
+          ${children.map((child) => this._renderChildBlock(child, day, chores, dayCompletions, pointsIcon, tz))}
 
           <div class="legend">
             <span class="legend-item"><span class="dot approved"></span>${this._t("common.approved")}</span>
@@ -492,46 +450,63 @@ class TaskMateCalendarCard extends LitElement {
     `;
   }
 
-  _renderDayCell(child, day, chores, completions, todayKey, tz, pointsIcon) {
-    const isToday = day.key === todayKey;
-    const cellClass = `day-cell${isToday ? " today" : ""}`;
+  _renderChildBlock(child, day, chores, dayCompletions, pointsIcon, tz) {
+    const rows = [];
+    let dueCount = 0;
+    let doneCount = 0;
 
-    const chips = [];
     chores.forEach((chore) => {
       if (!this._isAssignedTo(chore, child.id)) return;
 
-      // Skip chores that are per-child disabled (one-shot already done)
       const disabledFor = Array.isArray(chore.disabled_for) ? chore.disabled_for : [];
       if (disabledFor.includes(child.id)) return;
 
-      if (!this._isChoreScheduledOn(chore, day.dow, day.date, todayKey, tz)) return;
+      if (!this._isChoreScheduledOn(chore, day.dow, day.date, day.todayKey, tz)) return;
 
-      const rotation = this._rotationRenderMode(chore, child.id, day.key, todayKey);
+      const rotation = this._rotationRenderMode(chore, child.id, day.key, day.todayKey);
       if (rotation === "hidden") return;
 
-      // Find completion state for this chore+child on this day
-      const comp = completions.find(
-        (c) => c.chore_id === chore.id
-          && c.child_id === child.id
-          && c._dayKey === day.key,
+      const comp = dayCompletions.find(
+        (c) => c.chore_id === chore.id && c.child_id === child.id,
       );
       let state = "due";
-      if (comp) state = comp.approved ? "approved" : "pending";
+      let stateIcon = "mdi:circle-outline";
+      if (comp) {
+        if (comp.approved) { state = "approved"; stateIcon = "mdi:check-circle"; doneCount++; }
+        else { state = "pending"; stateIcon = "mdi:clock-outline"; }
+      }
+      dueCount++;
 
-      const extra = rotation === "rotating" ? " rotating" : "";
-      const title = `${chore.name} · ${chore.points} pts${rotation === "rotating" ? ` · ${this._t("calendar.rotating")}` : ""}`;
-      chips.push(html`
-        <div class="chore-chip ${state}${extra}" title=${title}>
-          <span class="dot ${state}"></span>
-          <span class="chip-name">${chore.name}</span>
+      const rotatingClass = rotation === "rotating" ? " rotating" : "";
+      const title = `${chore.name}${rotation === "rotating" ? ` · ${this._t("calendar.rotating")}` : ""}`;
+
+      rows.push(html`
+        <div class="chore-row ${state}${rotatingClass}" title=${title}>
+          <ha-icon class="chore-icon ${state}" icon="${stateIcon}"></ha-icon>
+          <span class="chore-name">${chore.name}</span>
+          <span class="chore-points">
+            <ha-icon icon="${pointsIcon}"></ha-icon>${chore.points}
+          </span>
         </div>
       `);
     });
 
-    const emptyClass = chips.length === 0 ? " empty" : "";
+    const summary = dueCount === 0
+      ? this._t("calendar.no_chores_today")
+      : this._t("calendar.child_summary", { done: doneCount, total: dueCount });
+
     return html`
-      <div class="${cellClass}${emptyClass}">
-        ${chips.length > 0 ? chips : html`<span style="opacity:0.5;font-size:0.7rem;text-align:center">·</span>`}
+      <div class="child-block">
+        <div class="child-head">
+          <div class="child-avatar">
+            <ha-icon icon="${child.avatar || "mdi:account-circle"}"></ha-icon>
+          </div>
+          <span class="child-name">${child.name}</span>
+          <span class="child-summary">${summary}</span>
+        </div>
+        <div class="chore-list">
+          ${rows.length > 0 ? rows : html`<div class="no-chores">${this._t("calendar.no_chores_today")}</div>`}
+        </div>
       </div>
     `;
   }
@@ -694,7 +669,7 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-calendar-card",
   name: "TaskMate Calendar",
-  description: "Week view of chores assigned to each child",
+  description: "One-day view of chores assigned to each child",
   preview: true,
 });
 
