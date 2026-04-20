@@ -189,10 +189,15 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
             if chore:
                 pending_points_by_child[child_id] = pending_points_by_child.get(child_id, 0) + chore.points
 
-        # Calculate committed points per child (reward claims awaiting approval = points reserved)
+        # Calculate committed points per child (reward claims awaiting approval = points reserved).
+        # Pool-mode pending claims are skipped because their cost was already deducted
+        # from child.points at allocation time — counting them here would drive
+        # spendable_balance to zero and prevent allocating to other pool rewards.
         committed_points_by_child = {}
         pending_reward_claim_objs = data.get("pending_reward_claims", [])
         for rc in pending_reward_claim_objs:
+            if self.coordinator.is_pool_mode_claim(rc):
+                continue
             reward = next((r for r in rewards if r.id == rc.reward_id), None)
             if reward:
                 # All reward costs are static
