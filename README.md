@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.1+-blue" alt="HA Version">
 </p>
  
-> Originally created by [vinnybad/choremander](https://github.com/vinnybad/choremander). This fork adds 14 Lovelace cards, a bonus points system, streak tracking, reward approval flow, a penalty system, and much more.
+> Originally created by [vinnybad/choremander](https://github.com/vinnybad/choremander). This fork adds 15 Lovelace cards, a bonus points system, streak tracking, reward approval flow, a penalty system, and much more.
  
 ---
  
@@ -367,6 +367,7 @@ data:
 | [Reward Progress Card](#reward-progress-card) | Kids | Full-screen motivational reward display |
 | [Leaderboard Card](#leaderboard-card) | Both | Competitive ranking by points, streak, or weekly |
 | [Penalties Card](#penalties-card) | Parents | Apply point-deduction penalties |
+| [Calendar Card](#calendar-card) | Both | Week view of chores assigned to each child |
  
 ---
  
@@ -636,6 +637,22 @@ type: custom:taskmate-penalties-card
 entity: sensor.taskmate_overview
 title: Penalties
 header_color: "#e74c3c"
+```
+
+---
+
+### Calendar Card
+
+Week-at-a-glance view of the chores assigned to each child. Rows are children, columns are Mon–Sun. Each cell lists the chores scheduled for that child on that day, colour-coded by state: **green** = approved, **amber** = pending approval, **grey** = due but not completed. Rotating-assignment chores (alternating, random, balanced) render dimmed on days other than today so you can see they rotate.
+
+Use the ◀ / ▶ buttons in the header to step through weeks, or **This week** to jump back to the current week. Set `child_id` to show a single row for a per-child dashboard.
+
+```yaml
+type: custom:taskmate-calendar-card
+entity: sensor.taskmate_overview
+title: Task Calendar
+child_id: a8c8376a            # optional — show only one child
+header_color: "#3498db"
 ```
 
 ---
