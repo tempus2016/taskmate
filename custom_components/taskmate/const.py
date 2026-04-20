@@ -26,6 +26,16 @@ CONF_CHORE_ID: Final = "id"
 CONF_CHORE_REQUIRES_APPROVAL: Final = "requires_approval"
 CONF_CLAIM_ALLOWANCE_MINUTES: Final = "claim_allowance_minutes"
 DEFAULT_CLAIM_ALLOWANCE_MINUTES: Final = 0
+CONF_CHORE_ASSIGNMENT_MODE: Final = "assignment_mode"
+CONF_CHORE_ASSIGNMENT_ROTATION_ANCHOR: Final = "assignment_rotation_anchor"
+CONF_CHORE_PUBLISH_CALENDARS: Final = "publish_calendar_entities"
+
+# Assignment modes
+# "everyone"    = visible to every child in assigned_to (or all children if empty) -- existing behavior
+# "alternating" = round-robin through assigned_to (or all children), one child per calendar day
+# "random"      = deterministic per-day random pick from the same pool
+ASSIGNMENT_MODES: Final = ["everyone", "alternating", "random"]
+DEFAULT_ASSIGNMENT_MODE: Final = "everyone"
 
 # Reward keys
 CONF_REWARD_NAME: Final = "name"
