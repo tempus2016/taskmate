@@ -635,9 +635,10 @@ class TaskMatePointsCard extends LitElement {
       `;
     }
 
-    const children = entity.attributes.children || [];
-    const pointsIcon = entity.attributes.points_icon || "mdi:star";
-    const pointsName = entity.attributes.points_name || "Stars";
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const children = attrs.children || [];
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    const pointsName = attrs.points_name || "Stars";
 
     return html`
       <ha-card>

@@ -371,13 +371,14 @@ class TaskMateParentDashboardCard extends LitElement {
     if (!entity) return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div></ha-card>`;
     if (entity.state === "unavailable" || entity.state === "unknown") return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.unavailable')}</div></div></ha-card>`;
 
-    const children = entity.attributes.children || [];
-    const chores = entity.attributes.chores || [];
-    const completions = entity.attributes.todays_completions || [];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const children = attrs.children || [];
+    const chores = attrs.chores || [];
+    const completions = attrs.todays_completions || [];
     const pendingCompletions = completions.filter(c => !c.approved);
-    const pendingRewardClaims = entity.attributes.pending_reward_claims || [];
-    const pointsIcon = entity.attributes.points_icon || "mdi:star";
-    const pointsName = entity.attributes.points_name || "Points";
+    const pendingRewardClaims = attrs.pending_reward_claims || [];
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    const pointsName = attrs.points_name || "Points";
     const totalPending = pendingCompletions.length + pendingRewardClaims.length;
 
     const tabs = [
@@ -432,9 +433,10 @@ class TaskMateParentDashboardCard extends LitElement {
   _renderOverview(children, chores, completions, pointsIcon, pointsName) {
     if (!children.length) return html`<div class="empty-section"><ha-icon icon="mdi:account-group"></ha-icon><span>${this._t('dashboard.empty_no_children')}</span></div>`;
 
-    const entity = this.hass?.states?.[this.config?.entity];
-    const todayDow = entity?.attributes?.today_day_of_week ||
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity)) || {};
+    const todayDow = attrs.today_day_of_week ||
       new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    const availability = attrs.chore_availability || {};
 
     return html`
       ${children.map(child => {
@@ -446,10 +448,10 @@ class TaskMateParentDashboardCard extends LitElement {
           const at = c.assigned_to || [];
           const assigned = at.length === 0 || at.includes(child.id);
           if (!assigned) return false;
+          const perChild = availability[c.id];
           // One-shot: use is_available check (same as recurring)
           if (c.schedule_mode === 'one_shot') {
-            const isAvailable = c.is_available && c.is_available[child.id];
-            if (isAvailable === false) return false;
+            if (perChild && perChild[child.id] === false) return false;
           }
           // Mode A: due days check
           if (c.schedule_mode === 'specific_days') {
@@ -458,8 +460,7 @@ class TaskMateParentDashboardCard extends LitElement {
           }
           // Mode B: recurrence availability check
           if (c.schedule_mode === 'recurring') {
-            const isAvailable = c.is_available && c.is_available[child.id];
-            if (isAvailable === false) return false;
+            if (perChild && perChild[child.id] === false) return false;
           }
           return true;
         });

@@ -374,9 +374,10 @@ class TaskMateCalendarCard extends LitElement {
     }
 
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    let children = entity.attributes.children || [];
-    const chores = entity.attributes.chores || [];
-    const pointsIcon = entity.attributes.points_icon || "mdi:star";
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    let children = attrs.children || [];
+    const chores = attrs.chores || [];
+    const pointsIcon = attrs.points_icon || "mdi:star";
 
     if (this.config.child_id) {
       children = children.filter((c) => c.id === this.config.child_id);
@@ -394,8 +395,8 @@ class TaskMateCalendarCard extends LitElement {
 
     const day = this._getSelectedDay(tz);
 
-    const rawCompletions = entity.attributes.recent_completions
-      || entity.attributes.todays_completions
+    const rawCompletions = attrs.recent_completions
+      || attrs.todays_completions
       || [];
     const seen = new Set();
     const dayCompletions = [];
