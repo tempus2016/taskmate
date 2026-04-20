@@ -10,13 +10,10 @@ Covers:
 """
 from __future__ import annotations
 
-import asyncio
 import datetime as dt
 import time
 from datetime import date, timezone
 from unittest.mock import AsyncMock, MagicMock
-
-import pytest
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.models import Child, Chore
