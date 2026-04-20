@@ -380,6 +380,20 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         """Get a reward by ID."""
         return self.storage.get_reward(reward_id)
 
+    def is_pool_mode_claim(self, claim: "RewardClaim") -> bool:
+        """True if the claim is covered by pool allocations (points already deducted).
+
+        Pool-mode claims must NOT be counted against a child's spendable balance,
+        because their cost was already removed from child.points at allocation time.
+        """
+        reward = self.get_reward(claim.reward_id)
+        if not reward:
+            return False
+        if getattr(reward, "is_jackpot", False):
+            return self.storage.get_total_allocated_for_reward(claim.reward_id) >= reward.cost
+        alloc = self.storage.get_pool_allocation(claim.child_id, claim.reward_id)
+        return bool(alloc and alloc.allocated_points >= reward.cost)
+
     # ── Chore completion operations ───────────────────────────────────────────
 
     def _is_visibility_entity_active(
@@ -927,12 +941,12 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         if not pool_filled:
             # Wallet mode: verify child has enough uncommitted points.
-            # Pool allocations are already deducted from child.points at allocation time,
-            # so they don't need to be subtracted again here.
+            # Pool-mode pending claims already had their cost deducted at allocation time,
+            # so they are skipped here to avoid double-counting against the wallet.
             pending_claims = self.storage.get_pending_reward_claims()
             committed = 0
             for c in pending_claims:
-                if c.child_id == child_id:
+                if c.child_id == child_id and not self.is_pool_mode_claim(c):
                     pending_reward = self.get_reward(c.reward_id)
                     if pending_reward:
                         committed += pending_reward.cost
@@ -1049,10 +1063,13 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         # Spendable balance = child.points − points committed to other pending claims.
         # (Already-allocated points are no longer part of child.points, so we do NOT
         # subtract total_allocated here — they've been deducted at allocation time.)
+        # Pool-mode pending claims are also skipped — their cost was already removed
+        # from child.points at allocation time, so counting it again would block the
+        # child from allocating to any other pool reward while one awaits approval.
         pending_claims = self.storage.get_pending_reward_claims()
         committed = 0
         for c in pending_claims:
-            if c.child_id == child_id:
+            if c.child_id == child_id and not self.is_pool_mode_claim(c):
                 pending_reward = self.get_reward(c.reward_id)
                 if pending_reward:
                     committed += pending_reward.cost

@@ -281,3 +281,90 @@ class TestPoolModeApproval:
         assert child.points == 50
         # Allocation is cleared
         coord.storage.remove_pool_allocation.assert_called_once()
+
+
+class TestPoolClaimDoesNotBlockOtherAllocations:
+    """A pending claim on a filled pool reward must not stop the child from
+    allocating points to other pool rewards. The pool claim's cost was already
+    deducted from child.points at allocation time, so counting it again as
+    "committed" would drive spendable to zero."""
+
+    def test_allocation_to_other_pool_reward_while_first_awaits_approval(self):
+        import datetime as dt
+        # Child started with 100; 50 already allocated to reward1 (pool-filled).
+        # Visible points dropped to 50, and reward1 is claimed but unapproved.
+        child = _child(points=50)
+        reward1 = Reward(name="Movie", cost=50, id="reward1")
+        reward2 = Reward(name="Toy", cost=50, id="reward2")
+        filled_alloc = PoolAllocation(
+            child_id="kid1", reward_id="reward1", allocated_points=50
+        )
+        claim = RewardClaim(
+            reward_id="reward1", child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+        )
+        coord = _make_coord(children=[child], rewards=[reward1, reward2], claims=[claim])
+
+        def _get_alloc(child_id, reward_id):
+            if reward_id == "reward1":
+                return filled_alloc
+            return None
+        coord.storage.get_pool_allocation = MagicMock(side_effect=_get_alloc)
+
+        # Allocating to a different pool reward should succeed — the pending
+        # pool-mode claim on reward1 must not be counted as committed wallet points.
+        alloc = run(coord.async_allocate_points_to_pool("kid1", "reward2", 20))
+        assert alloc.reward_id == "reward2"
+        assert alloc.allocated_points == 20
+        assert child.points == 30  # 50 − 20
+
+    def test_wallet_claim_still_blocks_pool_allocation(self):
+        """Sanity check: a non-pool-mode pending claim should still reserve points."""
+        import datetime as dt
+        child = _child(points=50)
+        reward1 = Reward(name="Movie", cost=40, id="reward1")
+        reward2 = Reward(name="Toy", cost=30, id="reward2")
+        # No allocation → claim is wallet-mode and its cost IS committed.
+        claim = RewardClaim(
+            reward_id="reward1", child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+        )
+        coord = _make_coord(children=[child], rewards=[reward1, reward2], claims=[claim])
+        # spendable = 50 − 40 = 10, so requesting 30 is capped to 10.
+        alloc = run(coord.async_allocate_points_to_pool("kid1", "reward2", 30))
+        assert alloc.allocated_points == 10
+        assert child.points == 40
+
+    def test_is_pool_mode_claim_detects_filled_allocation(self):
+        import datetime as dt
+        reward = _reward(cost=50)
+        coord = _make_coord(rewards=[reward])
+        filled = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=50)
+        coord.storage.get_pool_allocation = MagicMock(return_value=filled)
+        claim = RewardClaim(
+            reward_id="reward1", child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+        )
+        assert coord.is_pool_mode_claim(claim) is True
+
+    def test_is_pool_mode_claim_false_for_partial_allocation(self):
+        import datetime as dt
+        reward = _reward(cost=50)
+        coord = _make_coord(rewards=[reward])
+        partial = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=20)
+        coord.storage.get_pool_allocation = MagicMock(return_value=partial)
+        claim = RewardClaim(
+            reward_id="reward1", child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+        )
+        assert coord.is_pool_mode_claim(claim) is False
+
+    def test_is_pool_mode_claim_false_without_allocation(self):
+        import datetime as dt
+        reward = _reward(cost=50)
+        coord = _make_coord(rewards=[reward])
+        claim = RewardClaim(
+            reward_id="reward1", child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+        )
+        assert coord.is_pool_mode_claim(claim) is False
