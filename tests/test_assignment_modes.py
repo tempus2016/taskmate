@@ -233,6 +233,77 @@ def test_scale_50_chores_5_children_3_calendars():
     assert duration < 5.0
 
 
+def test_balanced_splits_evenly_across_pool():
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    today = date(2026, 4, 20)
+    pool = [a.id, b.id]
+    chores = []
+    for i in range(10):
+        chore = Chore(name=f"C{i}", assigned_to=pool, assignment_mode="balanced")
+        coord.storage.add_chore(chore)
+        chores.append(chore)
+
+    picks = [coord._compute_active_children(c, today)[0] for c in chores]
+    counts = {cid: picks.count(cid) for cid in pool}
+    # 10 chores, 2 children → exactly 5/5 with zero overlap.
+    assert counts == {a.id: 5, b.id: 5}
+
+    # 11th chore — ceiling split means 6/5.
+    extra = Chore(name="C10", assigned_to=pool, assignment_mode="balanced")
+    coord.storage.add_chore(extra)
+    chores.append(extra)
+    picks = [coord._compute_active_children(c, today)[0] for c in chores]
+    counts = {cid: picks.count(cid) for cid in pool}
+    assert sorted(counts.values()) == [5, 6]
+
+
+def test_balanced_rotates_starting_child_across_days():
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    chores = []
+    for i in range(4):
+        c = Chore(name=f"C{i}", assigned_to=[a.id, b.id], assignment_mode="balanced")
+        coord.storage.add_chore(c)
+        chores.append(c)
+
+    def day_picks(d):
+        return [coord._compute_active_children(c, d)[0] for c in chores]
+
+    # Over a span of days the starting child should flip at least once.
+    first_children = {day_picks(date(2026, 4, 20) + dt.timedelta(days=i))[0] for i in range(14)}
+    assert len(first_children) == 2
+
+
+def test_balanced_pools_are_independent():
+    a, b = Child(name="A"), Child(name="B")
+    c = Child(name="C")
+    coord = _coord([a, b, c])
+    today = date(2026, 4, 20)
+
+    # Pool AB: 4 chores → 2/2 across {a, b}
+    pool_ab = [a.id, b.id]
+    ab_chores = []
+    for i in range(4):
+        ch = Chore(name=f"AB{i}", assigned_to=pool_ab, assignment_mode="balanced")
+        coord.storage.add_chore(ch)
+        ab_chores.append(ch)
+
+    # Pool BC: 2 chores → 1/1 across {b, c}; must not be affected by pool AB.
+    pool_bc = [b.id, c.id]
+    bc_chores = []
+    for i in range(2):
+        ch = Chore(name=f"BC{i}", assigned_to=pool_bc, assignment_mode="balanced")
+        coord.storage.add_chore(ch)
+        bc_chores.append(ch)
+
+    ab_picks = [coord._compute_active_children(ch, today)[0] for ch in ab_chores]
+    bc_picks = [coord._compute_active_children(ch, today)[0] for ch in bc_chores]
+    assert set(ab_picks) == {a.id, b.id}
+    assert sorted(ab_picks).count(a.id) == 2
+    assert set(bc_picks) == {b.id, c.id}
+
+
 def test_chore_from_dict_defaults_are_legacy_safe():
     legacy = {"name": "Legacy"}
     chore = Chore.from_dict(legacy)
