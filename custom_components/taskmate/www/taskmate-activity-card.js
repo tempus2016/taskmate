@@ -493,7 +493,7 @@ class TaskMateActivityCardEditor extends LitElement {
         selector: {
           select: {
             options: [
-              { value: '', label: this._t('common.editor.filter_by_child_all') },
+              { value: '__all__', label: this._t('common.editor.filter_by_child_all') },
               ...children.map((c) => ({ value: c.id, label: c.name })),
             ],
             mode: 'dropdown',
@@ -528,7 +528,7 @@ class TaskMateActivityCardEditor extends LitElement {
     const data = {
       entity: this.config.entity || '',
       title: this.config.title || '',
-      child_id: this.config.child_id || '',
+      child_id: this.config.child_id || '__all__',
       max_items: this.config.max_items || 30,
     };
     return html`
@@ -580,7 +580,10 @@ class TaskMateActivityCardEditor extends LitElement {
     const newValues = e.detail.value || {};
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
-      if (value === '' || value === null || value === undefined) {
+      if (
+        value === '' || value === null || value === undefined
+        || (key === 'child_id' && value === '__all__')
+      ) {
         delete newConfig[key];
       } else if (key === 'max_items' && value === 30) {
         delete newConfig[key];

@@ -134,6 +134,7 @@
   "child.editor.show_debug": "Vis feilsøkingspanel",
 
   "graph.default_title": "Poengraf",
+  "graph.all_children": "Alle barn",
   "graph.daily": "Daglig",
   "graph.total": "Totalt",
   "graph.graph_error": "Graffeil: {message}",

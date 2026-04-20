@@ -1362,7 +1362,7 @@ class TaskMateRewardsCardEditor extends LitElement {
     const children = entity?.attributes?.children || [];
 
     const childOptions = [
-      { value: '', label: this._t('rewards.editor.filter_by_child_all') },
+      { value: '__all__', label: this._t('rewards.editor.filter_by_child_all') },
       ...children.map((c) => ({ value: c.id, label: c.name })),
     ];
 
@@ -1420,7 +1420,7 @@ class TaskMateRewardsCardEditor extends LitElement {
     const data = {
       entity: this.config.entity || '',
       title: this.config.title || '',
-      child_id: this.config.child_id || '',
+      child_id: this.config.child_id || '__all__',
       show_child_badges: this.config.show_child_badges !== false,
       enable_pool_mode: this.config.enable_pool_mode === true,
     };
@@ -1475,7 +1475,10 @@ class TaskMateRewardsCardEditor extends LitElement {
     // Merge into config, removing keys that are empty/default so the YAML stays clean.
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
-      if (value === '' || value === null || value === undefined) {
+      if (
+        value === '' || value === null || value === undefined
+        || (key === 'child_id' && value === '__all__')
+      ) {
         delete newConfig[key];
       } else if (key === 'show_child_badges' && value === true) {
         // Default is true — omit to keep config minimal
