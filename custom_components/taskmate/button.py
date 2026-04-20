@@ -186,11 +186,15 @@ class ClaimRewardButton(TaskMateBaseButton):
         return reward.icon if reward else "mdi:gift"
 
     def _get_committed_points(self, child_id: str) -> int:
-        """Calculate points committed by pending reward claims for a child."""
+        """Calculate points committed by pending reward claims for a child.
+
+        Pool-mode pending claims are skipped because their cost was already
+        deducted from child.points at allocation time.
+        """
         pending_claims = self.coordinator.data.get("pending_reward_claims", [])
         committed = 0
         for c in pending_claims:
-            if c.child_id == child_id:
+            if c.child_id == child_id and not self.coordinator.is_pool_mode_claim(c):
                 reward = self.coordinator.get_reward(c.reward_id)
                 if reward:
                     committed += reward.cost
