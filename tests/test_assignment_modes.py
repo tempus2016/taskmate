@@ -23,7 +23,13 @@ from .conftest import dt_util_mock, run_async
 UTC = timezone.utc
 
 
-def _coord(children: list[Child]) -> TaskMateCoordinator:
+def _coord(children: list[Child], projection_days: int = 1) -> TaskMateCoordinator:
+    """Build a coordinator with stub storage.
+
+    The default `projection_days=1` keeps assertion counts sane for tests that
+    only care about today's behaviour; pass a larger value when a test needs
+    to exercise the multi-day projection directly.
+    """
     coord = object.__new__(TaskMateCoordinator)
     coord.hass = MagicMock()
     coord.hass.services = MagicMock()
@@ -34,11 +40,14 @@ def _coord(children: list[Child]) -> TaskMateCoordinator:
 
     by_id = {c.id: c for c in children}
     stored_chores: list[Chore] = []
+    settings = {"calendar_projection_days": str(projection_days)}
 
     storage = MagicMock()
     storage.get_children = MagicMock(return_value=list(children))
     storage.get_child = MagicMock(side_effect=lambda cid: by_id.get(cid))
     storage.get_chores = MagicMock(side_effect=lambda: list(stored_chores))
+    storage.get_setting = MagicMock(side_effect=lambda key, default="": settings.get(key, default))
+    storage.set_setting = MagicMock(side_effect=lambda key, value: settings.__setitem__(key, value))
 
     def _get_chore(cid):
         found = next((c for c in stored_chores if c.id == cid), None)
@@ -185,7 +194,7 @@ def test_async_add_chore_publishes_immediately():
         publish_calendar_entities=["calendar.kids", "calendar.family"],
     ))
     assert coord.hass.services.async_call.await_count == 2
-    assert chore.publish_calendar_last_date == "2026-04-20"
+    assert chore.publish_calendar_published_dates == ["2026-04-20"]
     assert chore.assignment_current_child_id == a.id
 
 
@@ -417,8 +426,12 @@ def test_chore_from_dict_defaults_are_legacy_safe():
     assert chore.assignment_rotation_anchor == ""
     assert chore.assignment_current_child_id == ""
     assert chore.publish_calendar_entities == []
-    assert chore.publish_calendar_last_date == ""
+    assert chore.publish_calendar_published_dates == []
     # Round-trip preserves the new fields
     restored = Chore.from_dict(chore.to_dict())
     assert restored.assignment_mode == "everyone"
     assert restored.publish_calendar_entities == []
+    assert restored.publish_calendar_published_dates == []
+    # Back-compat: legacy records with the old scalar seed the new list
+    migrated = Chore.from_dict({"name": "Old", "publish_calendar_last_date": "2026-04-20"})
+    assert migrated.publish_calendar_published_dates == ["2026-04-20"]

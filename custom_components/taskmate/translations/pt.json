@@ -215,7 +215,8 @@
           "perfect_week_enabled": "Bónus de semana perfeita",
           "perfect_week_bonus": "Pontos de bónus de semana perfeita",
           "streak_milestones": "Configuração de marcos de sequência",
-          "notify_service": "Serviço de notificação (opcional)"
+          "notify_service": "Serviço de notificação (opcional)",
+          "calendar_projection_days": "Horizonte de planeamento do calendário"
         },
         "data_description": {
           "streak_reset_mode": "O que acontece a uma sequência quando um dia é falhado",
@@ -225,7 +226,8 @@
           "perfect_week_enabled": "Atribuir pontos de bónus quando uma criança completa pelo menos uma tarefa todos os dias durante uma semana inteira",
           "perfect_week_bonus": "Pontos de bónus atribuídos por uma semana perfeita",
           "streak_milestones": "Marcos personalizados como pares 'dias:pontos', separados por vírgulas. Exemplo: 3:5, 7:10, 14:20, 30:50, 60:100, 100:200",
-          "notify_service": "Serviço de notificação do HA para alertar os pais quando uma tarefa requer aprovação. Formato: notify.mobile_app_seu_telefone — deixe vazio para usar apenas notificações persistentes"
+          "notify_service": "Serviço de notificação do HA para alertar os pais quando uma tarefa requer aprovação. Formato: notify.mobile_app_seu_telefone — deixe vazio para usar apenas notificações persistentes",
+          "calendar_projection_days": "Quantos dias à frente cada tarefa publica atribuições nos calendários HA configurados (1-90). Valores maiores mostram mais horizonte de planeamento ao custo de mais entradas de calendário."
         }
       },
       "chore_schedule_specific": {
