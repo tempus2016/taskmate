@@ -198,14 +198,16 @@ def test_async_update_chore_republishes_on_name_change():
         assigned_to=[a.id],
         publish_calendar_entities=["calendar.x"],
     ))
-    # One publish for the initial create
-    assert coord.hass.services.async_call.await_count == 1
+    # One create_event from the initial add
+    services = [c.args[1] for c in coord.hass.services.async_call.await_args_list]
+    assert services == ["create_event"]
     # Simulate an edit flow: fetch a fresh copy, mutate, save.
     edited = coord.storage.get_chore(chore.id)
     edited.name = "New"
     run_async(coord.async_update_chore(edited))
-    # Guard cleared due to name change, so we publish again
-    assert coord.hass.services.async_call.await_count == 2
+    services = [c.args[1] for c in coord.hass.services.async_call.await_args_list]
+    # Update pattern: get_events (cleanup probe) → (no delete because nothing matched) → create_event
+    assert services == ["create_event", "get_events", "create_event"]
 
 
 def test_scale_50_chores_5_children_3_calendars():
@@ -302,6 +304,110 @@ def test_balanced_pools_are_independent():
     assert set(ab_picks) == {a.id, b.id}
     assert sorted(ab_picks).count(a.id) == 2
     assert set(bc_picks) == {b.id, c.id}
+
+
+def test_timed_event_uses_time_category_window():
+    a = Child(name="A")
+    coord = _coord([a])
+    today = date(2026, 4, 20)
+    chore = Chore(
+        name="Dishes",
+        assigned_to=[a.id],
+        time_category="evening",
+        publish_calendar_entities=["calendar.x"],
+    )
+    run_async(coord._publish_chore_to_calendars(chore, today))
+    args = coord.hass.services.async_call.await_args_list[0].args
+    payload = args[2]
+    assert payload["start_date_time"] == "2026-04-20T17:00:00"
+    assert payload["end_date_time"] == "2026-04-20T21:00:00"
+    assert "start_date" not in payload
+    assert payload["description"] == f"taskmate:chore:{chore.id}"
+
+
+def test_anytime_chore_still_emits_all_day_event():
+    a = Child(name="A")
+    coord = _coord([a])
+    chore = Chore(
+        name="Open",
+        assigned_to=[a.id],
+        time_category="anytime",
+        publish_calendar_entities=["calendar.x"],
+    )
+    run_async(coord._publish_chore_to_calendars(chore, date(2026, 4, 20)))
+    payload = coord.hass.services.async_call.await_args_list[0].args[2]
+    assert payload["start_date"] == "2026-04-20"
+    assert payload["end_date"] == "2026-04-21"
+    assert "start_date_time" not in payload
+
+
+def test_update_chore_cleans_up_old_events_before_republishing():
+    a = Child(name="A")
+    coord = _coord([a])
+    dt_util_mock._now = dt.datetime(2026, 4, 20, 10, 0, tzinfo=UTC)
+
+    chore = run_async(coord.async_add_chore(
+        name="Old Name",
+        assigned_to=[a.id],
+        publish_calendar_entities=["calendar.x"],
+    ))
+    marker = coord._chore_event_marker(chore)
+    # 1 publish from create.
+    assert coord.hass.services.async_call.await_count == 1
+
+    # Mock calendar.get_events to return one event that carries our marker.
+    async def _service_side_effect(domain, service, data, *args, **kwargs):
+        if service == "get_events":
+            return {data["entity_id"]: {"events": [
+                {"uid": "evt-abc", "summary": "Old Name — A", "description": marker},
+                {"uid": "evt-foreign", "summary": "Unrelated", "description": ""},
+            ]}}
+        return None
+    coord.hass.services.async_call.side_effect = _service_side_effect
+
+    edited = coord.storage.get_chore(chore.id)
+    edited.name = "New Name"
+    run_async(coord.async_update_chore(edited))
+
+    services_seen = [call.args[1] for call in coord.hass.services.async_call.await_args_list]
+    assert "get_events" in services_seen
+    assert "delete_event" in services_seen
+    assert services_seen.count("delete_event") == 1  # foreign event left alone
+    # and the new event got created after the purge
+    assert services_seen[-1] == "create_event"
+    new_payload = coord.hass.services.async_call.await_args_list[-1].args[2]
+    assert new_payload["summary"] == "New Name — A"
+
+
+def test_remove_chore_cleans_up_events():
+    a = Child(name="A")
+    coord = _coord([a])
+    dt_util_mock._now = dt.datetime(2026, 4, 20, 10, 0, tzinfo=UTC)
+    chore = run_async(coord.async_add_chore(
+        name="Trash",
+        assigned_to=[a.id],
+        publish_calendar_entities=["calendar.family"],
+    ))
+    marker = coord._chore_event_marker(chore)
+
+    # Fake a stored event we previously published.
+    async def _service_side_effect(domain, service, data, *args, **kwargs):
+        if service == "get_events":
+            return {data["entity_id"]: {"events": [
+                {"uid": "evt-purge-me", "summary": "Trash — A", "description": marker},
+            ]}}
+        return None
+    coord.hass.services.async_call.side_effect = _service_side_effect
+    # Storage needs these mocks for async_remove_chore's cleanup pass
+    coord.storage.remove_chore = MagicMock()
+    coord.storage.remove_completions_for_chore = MagicMock()
+    coord.storage.remove_last_completed_for_chore = MagicMock()
+
+    run_async(coord.async_remove_chore(chore.id))
+    services_seen = [call.args[1] for call in coord.hass.services.async_call.await_args_list]
+    assert services_seen.count("get_events") == 1
+    assert services_seen.count("delete_event") == 1
+    coord.storage.remove_chore.assert_called_once_with(chore.id)
 
 
 def test_chore_from_dict_defaults_are_legacy_safe():
