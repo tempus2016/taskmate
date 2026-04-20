@@ -48,6 +48,7 @@
   "activity.unknown_child": "Unknown",
   "activity.received": "received",
   "activity.lost": "lost",
+  "activity.spent": "spent",
   "activity.points_manually": "points manually",
   "activity.claimed": "claimed",
   "activity.redeemed": "redeemed",

@@ -324,6 +324,25 @@ class TaskMateActivityCard extends LitElement {
     if (type === "points_added" || type === "points_removed") {
       const isAdd = type === "points_added";
       const pts = Math.abs(item.points || 0);
+      // Distinguish "spent" (rewards/pool) from "lost" (penalty) for negative txns
+      // so a child sees a celebration of spending instead of a punishment colour.
+      const reason = item.reason || '';
+      const isPenalty = reason.startsWith('Penalty:');
+      const isSpend = !isAdd && !isPenalty && (
+        reason.startsWith('Allocated to pool:')
+      );
+      let verb;
+      let pointsColour;
+      if (isAdd) {
+        verb = this._t('activity.received');
+        pointsColour = '';
+      } else if (isSpend) {
+        verb = this._t('activity.spent');
+        pointsColour = 'color: var(--act-orange);';
+      } else {
+        verb = this._t('activity.lost');
+        pointsColour = 'color: var(--act-red);';
+      }
       return html`
         <div class="activity-item">
           <div class="activity-icon ${type}">
@@ -332,13 +351,13 @@ class TaskMateActivityCard extends LitElement {
           <div class="activity-body">
             <div class="activity-title">
               <strong>${childName}</strong>
-              ${isAdd ? ` ${this._t('activity.received')}` : ` ${this._t('activity.lost')}`}
+              ${' '}${verb}
               <strong> ${pts}</strong>
               ${item.reason ? html` — <em>${item.reason}</em>` : ` ${this._t('activity.points_manually')}`}
             </div>
             <div class="activity-meta">
               <span class="activity-time">${time}</span>
-              <span class="activity-points" style="${isAdd ? '' : 'color: var(--act-red);'}">
+              <span class="activity-points" style="${pointsColour}">
                 <ha-icon icon="${pointsIcon}"></ha-icon>
                 ${isAdd ? '+' : '-'}${pts}
               </span>
@@ -348,7 +367,8 @@ class TaskMateActivityCard extends LitElement {
       `;
     }
 
-    // Reward claim events
+    // Reward claim events — these are purchases, not losses, so render in
+    // the "spent" colour even though points are deducted.
     if (type === "reward_claimed" || type === "reward_approved") {
       const pts = Math.abs(item.points || 0);
       const isPending = type === "reward_claimed" && !item.approved;
@@ -366,7 +386,7 @@ class TaskMateActivityCard extends LitElement {
             <div class="activity-meta">
               <span class="activity-time">${time}</span>
               ${pts ? html`
-                <span class="activity-points" style="color: var(--act-red);">
+                <span class="activity-points" style="color: var(--act-orange);">
                   <ha-icon icon="${pointsIcon}"></ha-icon>
                   -${pts}
                 </span>

@@ -48,6 +48,7 @@
   "activity.unknown_child": "Desconhecido",
   "activity.received": "recebeu",
   "activity.lost": "perdeu",
+  "activity.spent": "gastou",
   "activity.points_manually": "pontos manualmente",
   "activity.claimed": "reclamou",
   "activity.redeemed": "resgatou",
