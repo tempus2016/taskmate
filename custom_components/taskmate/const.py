@@ -33,8 +33,9 @@ CONF_CHORE_PUBLISH_CALENDARS: Final = "publish_calendar_entities"
 # Assignment modes
 # "everyone"    = visible to every child in assigned_to (or all children if empty) -- existing behavior
 # "alternating" = round-robin through assigned_to (or all children), one child per calendar day
-# "random"      = deterministic per-day random pick from the same pool
-ASSIGNMENT_MODES: Final = ["everyone", "alternating", "random"]
+# "random"      = deterministic per-day random pick from the same pool (each chore picks independently)
+# "balanced"    = split today's balanced-mode chores evenly across the pool so no one child gets swamped
+ASSIGNMENT_MODES: Final = ["everyone", "alternating", "random", "balanced"]
 DEFAULT_ASSIGNMENT_MODE: Final = "everyone"
 
 # Reward keys

@@ -538,9 +538,12 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         - everyone: whatever `assigned_to` already said (empty = all children).
         - alternating: one child picked by `(today - anchor).days % len(pool)`.
         - random: one child picked by a deterministic per-day+chore-id hash.
+        - balanced: today's balanced-mode chores sharing this pool are evenly
+          split across the pool via a round-robin anchored by the date — so 10
+          chores across 2 children always land 5/5 (11 lands 6/5, etc.).
         """
         mode = getattr(chore, "assignment_mode", "everyone")
-        if mode not in ("alternating", "random"):
+        if mode not in ("alternating", "random", "balanced"):
             return list(chore.assigned_to or [])
 
         pool = self._chore_assignment_pool(chore)
@@ -560,10 +563,30 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             idx = offset % len(pool)
             return [pool[idx]]
 
-        # random: stable per (chore.id, date) so the frontend and backend agree
-        digest = hashlib.sha256(f"{chore.id}:{today.toordinal()}".encode()).digest()
-        idx = int.from_bytes(digest[:8], "big") % len(pool)
-        return [pool[idx]]
+        if mode == "random":
+            # random: stable per (chore.id, date) so the frontend and backend agree
+            digest = hashlib.sha256(f"{chore.id}:{today.toordinal()}".encode()).digest()
+            idx = int.from_bytes(digest[:8], "big") % len(pool)
+            return [pool[idx]]
+
+        # balanced: group today's balanced-mode chores that share this exact pool,
+        # sort them by id for determinism, then round-robin across the pool. A
+        # per-day start offset rotates who gets the "first" chore so no child is
+        # always the one doing chore #1.
+        pool_key = tuple(sorted(pool))
+        group_ids = sorted(
+            c.id
+            for c in self.storage.get_chores()
+            if getattr(c, "assignment_mode", "everyone") == "balanced"
+            and tuple(sorted(self._chore_assignment_pool(c))) == pool_key
+        )
+        try:
+            position = group_ids.index(chore.id)
+        except ValueError:
+            position = 0
+        start_digest = hashlib.sha256(f"balanced:{pool_key}:{today.toordinal()}".encode()).digest()
+        start = int.from_bytes(start_digest[:4], "big") % len(pool)
+        return [pool[(start + position) % len(pool)]]
 
     async def _publish_chore_to_calendars(self, chore: Chore, today: date | None = None) -> None:
         """Publish today's assignment for `chore` to every entity in publish_calendar_entities.
