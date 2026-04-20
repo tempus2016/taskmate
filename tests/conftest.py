@@ -57,8 +57,16 @@ class FakeDataUpdateCoordinator:
         """No-op in tests unless overridden."""
 
 
+class FakeCoordinatorEntity:
+    """Minimal stand-in so sensor.py's TaskMateBaseSensor can inherit from it."""
+
+    def __init__(self, coordinator):
+        self.coordinator = coordinator
+
+
 _ha_coordinator = MagicMock()
 _ha_coordinator.DataUpdateCoordinator = FakeDataUpdateCoordinator
+_ha_coordinator.CoordinatorEntity = FakeCoordinatorEntity
 
 
 # ── homeassistant.helpers.storage ───────────────────────────────────────────
@@ -84,6 +92,39 @@ _ha_storage_mod.Store = FakeStore
 
 _ha_event = MagicMock()
 _ha_event.async_track_time_change = MagicMock(return_value=lambda: None)
+
+
+# ── homeassistant.components.sensor / helpers.entity / entity_platform ─────
+# sensor.py pulls SensorEntity + SensorStateClass + DeviceInfo. These are only
+# ever touched for type hints and base-class inheritance; a MagicMock class
+# suffices for unit tests.
+
+class _FakeSensorEntity:
+    pass
+
+
+class _FakeSensorStateClass:
+    TOTAL = "total"
+    MEASUREMENT = "measurement"
+
+
+_ha_components_sensor = MagicMock()
+_ha_components_sensor.SensorEntity = _FakeSensorEntity
+_ha_components_sensor.SensorStateClass = _FakeSensorStateClass
+
+
+class _FakeDeviceInfo(dict):
+    """DeviceInfo behaves like a TypedDict; accept kwargs like the real one."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+_ha_helpers_entity = MagicMock()
+_ha_helpers_entity.DeviceInfo = _FakeDeviceInfo
+
+
+_ha_helpers_entity_platform = MagicMock()
 
 
 # ── homeassistant.util.dt ────────────────────────────────────────────────────
@@ -124,6 +165,10 @@ sys.modules.update(
         "homeassistant.helpers.event": _ha_event,
         "homeassistant.helpers.update_coordinator": _ha_coordinator,
         "homeassistant.helpers.config_validation": MagicMock(),
+        "homeassistant.helpers.entity": _ha_helpers_entity,
+        "homeassistant.helpers.entity_platform": _ha_helpers_entity_platform,
+        "homeassistant.components": MagicMock(),
+        "homeassistant.components.sensor": _ha_components_sensor,
         "homeassistant.util": _ha_util,
         "homeassistant.util.dt": dt_util_mock,
         # Stub the frontend sub-module so __init__.py's relative import succeeds

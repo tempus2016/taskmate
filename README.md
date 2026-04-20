@@ -726,9 +726,32 @@ Several card options require a `child_id` or `reward_id`. The easiest way to fin
 1. Go to **Developer Tools** → **States**
 2. Find `sensor.taskmate_overview`
 3. Click the entity to expand its attributes
-4. Look in the `children` array for `id` values, or the `rewards` array for reward IDs
+4. Look in the `children` array for `id` values
+5. For reward IDs, look at `sensor.taskmate_rewards` → `rewards` array
  
 Alternatively, IDs are visible in the URL when editing a child or reward in the TaskMate configuration UI.
+
+## Sensors Exposed
+
+Home Assistant limits a single entity's attribute payload to 16 KB for the
+recorder. TaskMate therefore splits its data across several global sensors
+and per-child sensors. Cards configured with `entity: sensor.taskmate_overview`
+keep working unchanged — every TaskMate card internally merges attributes from
+the overview sensor and its companion sensors at render time.
+
+| Entity | State | What lives here |
+|---|---|---|
+| `sensor.taskmate_overview` | total children | `children` summary, `points_name`, `points_icon`, `today_day_of_week`, totals, streak / perfect-week settings |
+| `sensor.taskmate_chores` | total chores | `chores` list (definitions), `todays_completions` |
+| `sensor.taskmate_chore_availability` | total chores available today | `chore_availability`: `{chore_id: {child_id: bool}}` |
+| `sensor.taskmate_rewards` | total rewards | `rewards`, `pending_reward_claims`, `pool_allocations` |
+| `sensor.taskmate_activity` | total completions all-time | `recent_completions` (last 35), `recent_transactions` (last 20) |
+| `sensor.taskmate_incentives` | penalties + bonuses count | `penalties`, `bonuses` |
+| `sensor.pending_approvals` | pending approvals count | `chore_completions`, `reward_claims` (detailed lists) |
+| `sensor.<child>_points` | points for that child | `child_id`, `current_streak`, `best_streak`, `total_*` |
+| `sensor.<child>_stats` | chores completed by that child | `assigned_chores`, streak / totals |
+
+Automations that read the old overview attributes (e.g. `sensor.taskmate_overview.attributes.chores`) should instead read from the matching companion sensor listed above.
  
 ---
  

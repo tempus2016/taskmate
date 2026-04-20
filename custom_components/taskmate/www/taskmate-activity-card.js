@@ -228,9 +228,10 @@ class TaskMateActivityCard extends LitElement {
       return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.unavailable')}</div></div></ha-card>`;
     }
 
-    const pointsIcon = entity.attributes.points_icon || "mdi:star";
-    const children = entity.attributes.children || [];
-    const chores = entity.attributes.chores || [];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    const children = attrs.children || [];
+    const chores = attrs.chores || [];
 
     // Build lookup maps
     const childNames = {};
@@ -241,7 +242,7 @@ class TaskMateActivityCard extends LitElement {
     chores.forEach(ch => { choreNamesMap[ch.id] = ch.name; });
 
     // Use recent_completions (last 50 all-time) if available, fall back to today only
-    let completions = [...(entity.attributes.recent_completions || entity.attributes.todays_completions || [])];
+    let completions = [...(attrs.recent_completions || attrs.todays_completions || [])];
 
     // Deduplicate by completion_id
     const seen = new Set();
@@ -252,7 +253,7 @@ class TaskMateActivityCard extends LitElement {
     });
 
     // Merge in manual points transactions
-    const transactions = (entity.attributes.recent_transactions || []).map(t => ({
+    const transactions = (attrs.recent_transactions || []).map(t => ({
       ...t,
       // Normalise to a single timestamp field for sorting
       completed_at: t.created_at,

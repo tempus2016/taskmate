@@ -466,7 +466,8 @@ class TaskMateReorderCard extends LitElement {
       `;
     }
 
-    const children = entity.attributes.children || [];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const children = attrs.children || [];
     const child = children.find((c) => c.id === this.config.child_id);
     if (!child) return;
 
@@ -474,7 +475,7 @@ class TaskMateReorderCard extends LitElement {
     if (!this._hasChanges) {
       const serverOrder = child.chore_order || [];
       // Build a map of time_category -> ordered chore IDs
-      const chores = entity.attributes.chores || [];
+      const chores = attrs.chores || [];
       const childChores = this._getChoresForChild(chores, child.id);
 
       const newLocalOrder = {};
@@ -574,7 +575,8 @@ class TaskMateReorderCard extends LitElement {
       `;
     }
 
-    const children = entity.attributes.children || [];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const children = attrs.children || [];
     const child = children.find((c) => c.id === this.config.child_id);
 
     if (!child) {
@@ -588,7 +590,7 @@ class TaskMateReorderCard extends LitElement {
       `;
     }
 
-    const chores = entity.attributes.chores || [];
+    const chores = attrs.chores || [];
     const childChores = this._getChoresForChild(chores, child.id);
 
     if (childChores.length === 0) {
@@ -611,7 +613,7 @@ class TaskMateReorderCard extends LitElement {
     }
 
     const timeCategories = ["morning", "afternoon", "evening", "night", "anytime"];
-    const pointsIcon = entity.attributes.points_icon || "mdi:star";
+    const pointsIcon = attrs.points_icon || "mdi:star";
 
     return html`
       <ha-card>

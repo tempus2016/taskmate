@@ -812,10 +812,11 @@ class TaskMateRewardsCard extends LitElement {
       `;
     }
 
-    const allRewards = entity.attributes.rewards || [];
-    const children = entity.attributes.children || [];
-    const pointsIcon = entity.attributes.points_icon || "mdi:star";
-    const pointsName = entity.attributes.points_name || "Stars";
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const allRewards = attrs.rewards || [];
+    const children = attrs.children || [];
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    const pointsName = attrs.points_name || "Stars";
 
     // Filter rewards based on child_id if configured
     let rewards = allRewards;
@@ -976,8 +977,8 @@ class TaskMateRewardsCard extends LitElement {
     const percentage = displayCost > 0 ? Math.min((currentStars / displayCost) * 100, 100) : 0;
 
     // Pending claim check
-    const entity = this.hass?.states?.[this.config?.entity];
-    const pendingClaims = entity?.attributes?.pending_reward_claims || [];
+    const pcAttrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity)) || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    const pendingClaims = pcAttrs.pending_reward_claims || [];
     const hasPendingClaim = pendingClaims.some(c =>
       c.reward_id === reward.id && (!childId || c.child_id === childId)
     );

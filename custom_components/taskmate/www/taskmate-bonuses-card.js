@@ -348,6 +348,10 @@ class TaskMateBonusesCard extends LitElement {
   }
 
   _getAttrs() {
+    const entityId = this.config?.entity || "sensor.taskmate_overview";
+    if (window.__taskmate_attrs) {
+      return window.__taskmate_attrs(this.hass, entityId);
+    }
     return this._getState()?.attributes || {};
   }
 
