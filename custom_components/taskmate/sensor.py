@@ -251,6 +251,10 @@ class TaskMateOverallStatsSensor(TaskMateBaseSensor):
                 "enabled": getattr(c, 'enabled', True),
                 "disabled_for": getattr(c, 'disabled_for', []),
                 "created_date": getattr(c, 'created_date', ''),
+                "assignment_mode": getattr(c, 'assignment_mode', 'everyone'),
+                "assignment_rotation_anchor": getattr(c, 'assignment_rotation_anchor', ''),
+                "assignment_current_child_id": getattr(c, 'assignment_current_child_id', ''),
+                "publish_calendar_entities": list(getattr(c, 'publish_calendar_entities', []) or []),
                 "last_completed_at": last_completed_at,
                 "is_available": is_available,
             })
@@ -536,9 +540,16 @@ class ChildStatsSensor(TaskMateBaseSensor):
         if not child:
             return {}
 
-        # Get chores assigned to this child
+        # Get chores assigned to this child. For alternating/random assignment,
+        # only include a chore when this child is the active one today.
         chores = self.coordinator.data.get("chores", [])
-        assigned_chores = [c for c in chores if child.id in c.assigned_to or not c.assigned_to]
+        def _included(c):
+            if not (child.id in c.assigned_to or not c.assigned_to):
+                return False
+            if getattr(c, "assignment_mode", "everyone") != "everyone":
+                return getattr(c, "assignment_current_child_id", "") == child.id
+            return True
+        assigned_chores = [c for c in chores if _included(c)]
 
         return {
             "child_id": child.id,
