@@ -278,13 +278,21 @@ class TaskMateGraphCard extends LitElement {
     const dataKey = this._mode === "daily" ? "dailyPoints" : "cumulativePoints";
     const hasData = series.some(s => s[dataKey].some(v => v > 0));
 
+    const baseTitle = this.config.title || this._t('graph.default_title');
+    const filterLabel = this.config.child_id
+      ? (series[0]?.child?.name || '')
+      : this._t('graph.all_children');
+    const headerTitle = this.config.title
+      ? baseTitle
+      : (filterLabel ? `${baseTitle} — ${filterLabel}` : baseTitle);
+
     return html`
       <ha-card>
         <style>:host { --taskmate-header-bg: ${this.config.header_color || '#d35400'}; }</style>
         <div class="card-header">
           <div class="header-left">
             <ha-icon class="header-icon" icon="mdi:chart-line"></ha-icon>
-            <span class="header-title">${this.config.title || this._t('graph.default_title')}</span>
+            <span class="header-title">${headerTitle}</span>
           </div>
           <div class="mode-toggle">
             <button
@@ -673,7 +681,7 @@ class TaskMateGraphCardEditor extends LitElement {
         selector: {
           select: {
             options: [
-              { value: '', label: this._t('common.editor.filter_by_child_all') },
+              { value: '__all__', label: this._t('common.editor.filter_by_child_all') },
               ...children.map((c) => ({ value: c.id, label: c.name })),
             ],
             mode: 'dropdown',
@@ -708,7 +716,7 @@ class TaskMateGraphCardEditor extends LitElement {
       entity: this.config.entity || '',
       title: this.config.title || '',
       days: this.config.days || 14,
-      child_id: this.config.child_id || '',
+      child_id: this.config.child_id || '__all__',
     };
     return html`
       <ha-form
@@ -759,7 +767,10 @@ class TaskMateGraphCardEditor extends LitElement {
     const newValues = e.detail.value || {};
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
-      if (value === '' || value === null || value === undefined) {
+      if (
+        value === '' || value === null || value === undefined
+        || (key === 'child_id' && value === '__all__')
+      ) {
         delete newConfig[key];
       } else if (key === 'days' && value === 14) {
         delete newConfig[key];

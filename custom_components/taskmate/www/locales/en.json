@@ -135,6 +135,7 @@
   "child.editor.show_debug": "Show debug panel",
 
   "graph.default_title": "Points Graph",
+  "graph.all_children": "All Children",
   "graph.daily": "Daily",
   "graph.total": "Total",
   "graph.graph_error": "Graph error: {message}",
