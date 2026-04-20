@@ -823,10 +823,82 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         return reward
 
     async def async_update_reward(self, reward: Reward) -> None:
-        """Update a reward."""
+        """Update a reward.
+
+        If the cost is reduced below any existing pool allocation, the excess is
+        refunded to the contributing children's wallets so over-allocated pools
+        can't appear as e.g. 11/10.
+        """
+        old = self.get_reward(reward.id)
         self.storage.update_reward(reward)
+        if old and reward.cost < old.cost:
+            self._refund_pool_excess(reward, "Pool refund (reward cost reduced)")
         await self.storage.async_save()
         await self.async_refresh()
+
+    def _refund_pool_excess(self, reward: Reward, reason: str) -> None:
+        """Trim any pool allocations on `reward` that exceed its cost.
+
+        Non-jackpot: each allocation is capped at the reward's cost individually.
+        Jackpot: allocations are trimmed starting from the newest contributor
+        until the combined total matches the cost.
+        """
+        allocations = [
+            a for a in self.storage.get_pool_allocations()
+            if a.reward_id == reward.id and a.allocated_points > 0
+        ]
+        if not allocations:
+            return
+
+        if reward.is_jackpot:
+            overshoot = sum(a.allocated_points for a in allocations) - reward.cost
+            if overshoot <= 0:
+                return
+            for alloc in sorted(allocations, key=lambda a: a.id, reverse=True):
+                if overshoot <= 0:
+                    break
+                refund = min(alloc.allocated_points, overshoot)
+                self._apply_pool_refund(alloc, refund, reward, reason)
+                overshoot -= refund
+        else:
+            for alloc in allocations:
+                if alloc.allocated_points > reward.cost:
+                    self._apply_pool_refund(
+                        alloc, alloc.allocated_points - reward.cost, reward, reason
+                    )
+
+    def _apply_pool_refund(
+        self, allocation: "PoolAllocation", refund: int, reward: Reward, reason: str
+    ) -> None:
+        """Refund `refund` points from `allocation` back to the child's wallet.
+
+        Updates or removes the allocation record and writes an audit transaction.
+        """
+        if refund <= 0:
+            return
+        child = self.get_child(allocation.child_id)
+        if not child:
+            return
+        child.points += refund
+        self.storage.update_child(child)
+
+        remaining = allocation.allocated_points - refund
+        if remaining <= 0:
+            self.storage.remove_pool_allocation(allocation.child_id, allocation.reward_id)
+        else:
+            self.storage.upsert_pool_allocation(PoolAllocation(
+                child_id=allocation.child_id,
+                reward_id=allocation.reward_id,
+                allocated_points=remaining,
+                id=allocation.id,
+            ))
+
+        self.storage.add_points_transaction(PointsTransaction(
+            child_id=allocation.child_id,
+            points=refund,
+            reason=f"{reason}: {reward.name}",
+            created_at=dt_util.now(),
+        ))
 
     async def async_remove_reward(self, reward_id: str) -> None:
         """Remove a reward and clean up any pending claims and pool allocations referencing it."""
@@ -1006,6 +1078,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 if is_pool_mode:
                     # Pool mode: points were already deducted from child.points at allocation
                     # time — approving the redeem just clears the allocation record(s).
+                    # Refund any over-allocation first (e.g. left over from a prior cost reduction)
+                    # so the child doesn't lose points beyond the reward's actual cost.
+                    self._refund_pool_excess(reward, "Pool refund on redeem")
                     if reward.is_jackpot:
                         jackpot_allocs = [
                             a for a in self.storage.get_pool_allocations()
