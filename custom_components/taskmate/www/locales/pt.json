@@ -134,6 +134,7 @@
   "child.editor.show_debug": "Mostrar painel de depuração",
 
   "graph.default_title": "Gráfico de Pontos",
+  "graph.all_children": "Todas as Crianças",
   "graph.daily": "Diário",
   "graph.total": "Total",
   "graph.graph_error": "Erro no gráfico: {message}",
