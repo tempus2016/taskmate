@@ -618,6 +618,7 @@ class TaskMatePenaltiesCard extends LitElement {
 
     return html`
       <ha-card>
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#e74c3c'}; }</style>
         <div class="card-header">
           <div class="header-left">
             <ha-icon class="header-icon" icon="mdi:alert-circle-outline"></ha-icon>
@@ -671,7 +672,138 @@ class TaskMatePenaltiesCard extends LitElement {
   }
 }
 
+class TaskMatePenaltiesCardEditor extends LitElement {
+  static get properties() {
+    return { hass: { type: Object }, config: { type: Object } };
+  }
+
+  _t(key, params) {
+    const fn = window.__taskmate_localize;
+    return fn ? fn(this.hass, key, params) : key;
+  }
+
+  static get styles() {
+    return css`
+      :host { display: block; }
+      ha-form { display: block; margin-bottom: 16px; }
+      .info-note { font-size: 0.85rem; color: var(--secondary-text-color); background: var(--secondary-background-color, #f5f5f5); border-radius: 8px; padding: 10px 14px; line-height: 1.4; margin-bottom: 16px; display: flex; gap: 10px; align-items: flex-start; }
+      .info-note ha-icon { flex-shrink: 0; color: var(--primary-color); --mdc-icon-size: 20px; margin-top: 1px; }
+      .colour-field { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border: 1px solid var(--outline-color, var(--divider-color, #e0e0e0)); border-radius: 4px; background: var(--mdc-text-field-fill-color, var(--card-background-color)); }
+      .colour-field-label { font-size: 0.82rem; color: var(--primary-color); font-weight: 500; }
+      .colour-field-body { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .colour-swatch-wrapper { position: relative; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); flex-shrink: 0; }
+      .colour-swatch-wrapper input[type="color"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+      .colour-swatch-preview { position: absolute; inset: 0; pointer-events: none; }
+      .colour-hex { font-family: var(--code-font-family, monospace); font-size: 0.85rem; color: var(--secondary-text-color); min-width: 70px; }
+      .colour-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+      .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
+      .preset-swatch:hover { transform: scale(1.15); }
+      .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
+    `;
+  }
+
+  setConfig(config) { this.config = config; }
+
+  _buildSchema() {
+    return [
+      { name: 'entity', selector: { entity: { domain: 'sensor' } } },
+      { name: 'title', selector: { text: {} } },
+    ];
+  }
+
+  _computeLabel = (entry) => {
+    const labels = {
+      entity: this._t('common.editor.overview_entity'),
+      title: this._t('common.editor.card_title'),
+    };
+    return labels[entry.name] ?? entry.name;
+  };
+
+  _computeHelper = (entry) => {
+    const helpers = {
+      entity: this._t('common.editor.overview_entity_helper'),
+    };
+    return helpers[entry.name] ?? '';
+  };
+
+  render() {
+    if (!this.hass || !this.config) return html``;
+    const data = {
+      entity: this.config.entity || '',
+      title: this.config.title || '',
+    };
+    return html`
+      <div class="info-note">
+        <ha-icon icon="mdi:information-outline"></ha-icon>
+        <span>${this._t('penalties.editor.manage_note')}</span>
+      </div>
+      <ha-form
+        .hass=${this.hass}
+        .data=${data}
+        .schema=${this._buildSchema()}
+        .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
+        @value-changed=${this._formChanged}
+      ></ha-form>
+      ${this._renderColourPicker('header_color', '#e74c3c')}
+    `;
+  }
+
+  _renderColourPicker(key, defaultValue) {
+    const current = this.config[key] || defaultValue;
+    const presets = [defaultValue, '#e67e22', '#27ae60', '#3498db', '#9b59b6', '#f1c40f', '#34495e'];
+    const isActive = (c) => c.toLowerCase() === current.toLowerCase();
+    return html`
+      <div class="colour-field">
+        <span class="colour-field-label">${this._t('common.editor.header_colour')}</span>
+        <div class="colour-field-body">
+          <label class="colour-swatch-wrapper">
+            <input type="color" .value=${current}
+              @input=${(e) => this._update(key, e.target.value)} />
+            <span class="colour-swatch-preview" style="background:${current}"></span>
+          </label>
+          <span class="colour-hex">${current}</span>
+          <div class="colour-presets">
+            ${presets.map((p) => html`
+              <button class="preset-swatch ${isActive(p) ? 'active' : ''}"
+                style="background:${p}"
+                title=${p}
+                @click=${(e) => { e.preventDefault(); this._update(key, p); }}
+              ></button>
+            `)}
+          </div>
+          <button class="colour-reset"
+            @click=${(e) => { e.preventDefault(); this._update(key, defaultValue); }}
+          >${this._t('common.reset')}</button>
+        </div>
+        <div class="colour-helper">${this._t('common.editor.header_colour_helper')}</div>
+      </div>
+    `;
+  }
+
+  _formChanged(e) {
+    const newValues = e.detail.value || {};
+    const newConfig = { ...this.config };
+    for (const [key, value] of Object.entries(newValues)) {
+      if (value === '' || value === null || value === undefined) delete newConfig[key];
+      else newConfig[key] = value;
+    }
+    this._fire(newConfig);
+  }
+
+  _update(key, value) {
+    this._fire({ ...this.config, [key]: value });
+  }
+
+  _fire(config) {
+    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config }, bubbles: true, composed: true }));
+  }
+}
+
 customElements.define("taskmate-penalties-card", TaskMatePenaltiesCard);
+customElements.define("taskmate-penalties-card-editor", TaskMatePenaltiesCardEditor);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-penalties-card",
