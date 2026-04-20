@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 import hashlib
 import logging
 from typing import Any
@@ -376,21 +376,33 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             chore.assignment_current_child_id = active[0] if active else ""
         else:
             chore.assignment_current_child_id = ""
-        # Re-publish on update so a changed name/assignment/calendar list shows up ASAP.
-        # Force a re-publish by clearing the guard if the publish list changed meaningfully;
-        # otherwise the guard keeps us from spamming duplicate events.
+        # If anything calendar-user-visible changed (name, active child, time window,
+        # or entity list), purge the previous events from every calendar the chore
+        # used to publish to — including ones the user just removed — and then
+        # re-publish to the current list. Otherwise the guard skips re-publish.
         existing = self.storage.get_chore(chore.id)
+        cleanup_entities: list[str] = []
+        should_republish = False
         if existing is not None:
-            prev_entities = set(getattr(existing, "publish_calendar_entities", []) or [])
-            new_entities = set(chore.publish_calendar_entities or [])
+            prev_entities = list(getattr(existing, "publish_calendar_entities", []) or [])
+            new_entities = list(chore.publish_calendar_entities or [])
             prev_name = getattr(existing, "name", "")
             prev_active = getattr(existing, "assignment_current_child_id", "")
+            prev_category = getattr(existing, "time_category", "anytime")
             if (
-                new_entities != prev_entities
+                set(new_entities) != set(prev_entities)
                 or chore.name != prev_name
                 or chore.assignment_current_child_id != prev_active
+                or getattr(chore, "time_category", "anytime") != prev_category
             ):
-                chore.publish_calendar_last_date = ""
+                # Purge from every calendar that ever had this chore — new ones will
+                # be cleaned along with old, so republish produces a fresh event.
+                cleanup_entities = list({*prev_entities, *new_entities})
+                should_republish = True
+        if cleanup_entities:
+            await self._cleanup_chore_from_calendars(chore, cleanup_entities, today)
+        elif should_republish:
+            chore.publish_calendar_last_date = ""
         self.storage.update_chore(chore)
         await self._publish_chore_to_calendars(chore, today)
         await self.storage.async_save()
@@ -398,6 +410,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
     async def async_remove_chore(self, chore_id: str) -> None:
         """Remove a chore and all associated data."""
+        existing = self.storage.get_chore(chore_id)
+        if existing is not None and getattr(existing, "publish_calendar_entities", []):
+            await self._cleanup_chore_from_calendars(existing)
         self.storage.remove_chore(chore_id)
         self.storage.remove_completions_for_chore(chore_id)
         self.storage.remove_last_completed_for_chore(chore_id)
@@ -588,12 +603,35 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         start = int.from_bytes(start_digest[:4], "big") % len(pool)
         return [pool[(start + position) % len(pool)]]
 
+    # time_category -> (start_time, end_time). None means "anytime" -> all-day event.
+    _TIME_CATEGORY_WINDOWS: dict[str, tuple[time, time] | None] = {
+        "morning":   (time(6, 0),  time(12, 0)),
+        "afternoon": (time(12, 0), time(17, 0)),
+        "evening":   (time(17, 0), time(21, 0)),
+        "night":     (time(21, 0), time(23, 59)),
+        "anytime":   None,
+    }
+
+    def _time_category_window(self, category: str, today: date) -> tuple[datetime, datetime] | None:
+        """Return (start, end) datetimes for a time_category, or None for all-day."""
+        window = self._TIME_CATEGORY_WINDOWS.get(category or "anytime")
+        if window is None:
+            return None
+        start_t, end_t = window
+        return datetime.combine(today, start_t), datetime.combine(today, end_t)
+
+    def _chore_event_marker(self, chore: Chore) -> str:
+        """Marker stitched into the event description so we can find our own events."""
+        return f"taskmate:chore:{chore.id}"
+
     async def _publish_chore_to_calendars(self, chore: Chore, today: date | None = None) -> None:
         """Publish today's assignment for `chore` to every entity in publish_calendar_entities.
 
         Idempotent per calendar-day thanks to `publish_calendar_last_date`. Fans
         out all create_event service calls via asyncio.gather so N entities per
-        chore scale with the slowest single call, not the sum of them.
+        chore scale with the slowest single call, not the sum of them. When the
+        chore has a non-"anytime" time_category the event is timed to that
+        window; otherwise it's an all-day event.
         """
         entities = list(getattr(chore, "publish_calendar_entities", []) or [])
         if not entities:
@@ -613,19 +651,32 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             child_name = "Everyone"
 
         summary = f"{chore.name} — {child_name}"
-        end = today + timedelta(days=1)
+        description = self._chore_event_marker(chore)
+        window = self._time_category_window(getattr(chore, "time_category", "anytime"), today)
+
+        if window is None:
+            end = today + timedelta(days=1)
+            event_payload = {
+                "summary": summary,
+                "description": description,
+                "start_date": today_iso,
+                "end_date": end.isoformat(),
+            }
+        else:
+            start_dt, end_dt = window
+            event_payload = {
+                "summary": summary,
+                "description": description,
+                "start_date_time": start_dt.isoformat(),
+                "end_date_time": end_dt.isoformat(),
+            }
 
         async def _call(entity_id: str) -> None:
             try:
                 await self.hass.services.async_call(
                     "calendar",
                     "create_event",
-                    {
-                        "entity_id": entity_id,
-                        "summary": summary,
-                        "start_date": today_iso,
-                        "end_date": end.isoformat(),
-                    },
+                    {"entity_id": entity_id, **event_payload},
                     blocking=True,
                 )
             except Exception as err:  # noqa: BLE001 - HA service errors vary
@@ -638,6 +689,84 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         await asyncio.gather(*(_call(e) for e in entities), return_exceptions=True)
         chore.publish_calendar_last_date = today_iso
+
+    async def _cleanup_chore_from_calendars(
+        self,
+        chore: Chore,
+        entities: list[str] | None = None,
+        today: date | None = None,
+    ) -> None:
+        """Best-effort delete of the chore's own events from each configured calendar.
+
+        Uses a description marker (`taskmate:chore:<id>`) stitched in at create
+        time to re-identify events. Covers today through +30 days so future
+        calendar entries for this chore — if any — are also cleaned up. Failure
+        modes (unavailable calendar, integration without delete_event support,
+        response service disabled) are caught and logged; cleanup never blocks
+        the caller.
+        """
+        ents = list(entities if entities is not None else getattr(chore, "publish_calendar_entities", []) or [])
+        if not ents:
+            return
+
+        if today is None:
+            today = dt_util.as_local(dt_util.now()).date()
+        window_start = datetime.combine(today, time(0, 0)).isoformat()
+        window_end = datetime.combine(today + timedelta(days=30), time(0, 0)).isoformat()
+        marker = self._chore_event_marker(chore)
+
+        async def _purge(entity_id: str) -> None:
+            try:
+                response = await self.hass.services.async_call(
+                    "calendar",
+                    "get_events",
+                    {
+                        "entity_id": entity_id,
+                        "start_date_time": window_start,
+                        "end_date_time": window_end,
+                    },
+                    blocking=True,
+                    return_response=True,
+                )
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug(
+                    "TaskMate: could not list events on %s for cleanup: %s",
+                    entity_id,
+                    err,
+                )
+                return
+
+            events = []
+            if isinstance(response, dict):
+                bucket = response.get(entity_id, response)
+                if isinstance(bucket, dict):
+                    events = bucket.get("events", []) or []
+                elif isinstance(bucket, list):
+                    events = bucket
+
+            for event in events:
+                if marker not in (event.get("description") or ""):
+                    continue
+                uid = event.get("uid") or event.get("recurrence_id") or event.get("id")
+                if not uid:
+                    continue
+                try:
+                    await self.hass.services.async_call(
+                        "calendar",
+                        "delete_event",
+                        {"entity_id": entity_id, "uid": uid},
+                        blocking=True,
+                    )
+                except Exception as err:  # noqa: BLE001
+                    _LOGGER.warning(
+                        "TaskMate: failed to delete event %s from %s: %s",
+                        uid,
+                        entity_id,
+                        err,
+                    )
+
+        await asyncio.gather(*(_purge(e) for e in ents), return_exceptions=True)
+        chore.publish_calendar_last_date = ""
 
     async def _async_refresh_assignments_and_publish(self) -> None:
         """Recompute today's active child per chore and publish to calendars.
