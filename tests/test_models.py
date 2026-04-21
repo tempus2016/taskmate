@@ -234,6 +234,29 @@ class TestReward:
         reward = Reward.from_dict(legacy)
         assert reward.pool_enabled is False
 
+    def test_quantity_and_expires_at_defaults(self):
+        reward = Reward(name="Ice cream")
+        assert reward.quantity is None
+        assert reward.expires_at is None
+
+    def test_quantity_and_expires_at_roundtrip(self):
+        reward = Reward(
+            name="Movie tickets",
+            cost=200,
+            quantity=3,
+            expires_at="2024-12-31",
+            id="r_movie",
+        )
+        restored = Reward.from_dict(reward.to_dict())
+        assert restored.quantity == 3
+        assert restored.expires_at == "2024-12-31"
+
+    def test_legacy_missing_quantity_and_expires_at_backcompat(self):
+        legacy = {"name": "Old reward", "cost": 20, "id": "r1"}
+        reward = Reward.from_dict(legacy)
+        assert reward.quantity is None
+        assert reward.expires_at is None
+
 
 # ---------------------------------------------------------------------------
 # ChoreCompletion
