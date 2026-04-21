@@ -633,7 +633,6 @@ class TestAvailabilityAwareAssignment:
         assert updated.assignment_current_child_id == b.id
 
     def test_state_change_event_skips_completed_chore(self):
-        import datetime as dt2
         a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
         b = Child(name="B", id="kidB")
         coord = _coord([a, b])
