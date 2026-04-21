@@ -1,6 +1,7 @@
 """Config flow for TaskMate integration."""
 from __future__ import annotations
 
+from datetime import date, datetime
 import logging
 from typing import Any
 
@@ -30,6 +31,30 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _normalise_quantity(value: Any) -> int | None:
+    """Coerce a form value to an int stock count, or None if blank/invalid."""
+    if value is None or value == "":
+        return None
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _normalise_expires_at(value: Any) -> str | None:
+    """Coerce a DateSelector value to an ISO 'YYYY-MM-DD' string or None."""
+    if not value:
+        return None
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    try:
+        return date.fromisoformat(str(value)).isoformat()
+    except (TypeError, ValueError):
+        return None
 
 
 class TaskMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -1058,6 +1083,8 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     assigned_to=user_input.get("assigned_to", []),
                     is_jackpot=user_input.get("is_jackpot", False),
                     pool_enabled=user_input.get("pool_enabled", False),
+                    quantity=_normalise_quantity(user_input.get("quantity")),
+                    expires_at=_normalise_expires_at(user_input.get("expires_at")),
                 )
                 return await self.async_step_manage_rewards()
 
@@ -1083,6 +1110,10 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             vol.Required("cost", default=50): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=10000, mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Optional("quantity"): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=10000, mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Optional("expires_at"): selector.DateSelector(),
         }
 
         if child_options:
@@ -1126,6 +1157,8 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 reward.pool_enabled = user_input.get(
                     "pool_enabled", getattr(reward, "pool_enabled", False)
                 )
+                reward.quantity = _normalise_quantity(user_input.get("quantity"))
+                reward.expires_at = _normalise_expires_at(user_input.get("expires_at"))
                 await self.coordinator.async_update_reward(reward)
                 return await self.async_step_manage_rewards()
 
@@ -1168,6 +1201,22 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     multiple=True,
                 )
             )
+
+        quantity_key = (
+            vol.Optional("quantity", default=reward.quantity)
+            if reward.quantity is not None
+            else vol.Optional("quantity")
+        )
+        schema_dict[quantity_key] = selector.NumberSelector(
+            selector.NumberSelectorConfig(min=0, max=10000, mode=selector.NumberSelectorMode.BOX)
+        )
+
+        expires_key = (
+            vol.Optional("expires_at", default=reward.expires_at)
+            if reward.expires_at
+            else vol.Optional("expires_at")
+        )
+        schema_dict[expires_key] = selector.DateSelector()
 
         return self.async_show_form(
             step_id="edit_reward",

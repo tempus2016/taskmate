@@ -250,11 +250,17 @@ class Reward:
     assigned_to: list[str] = field(default_factory=list)  # List of child IDs, empty means all children
     is_jackpot: bool = False  # If True, pool stars from all assigned children together
     pool_enabled: bool = False  # If True, this reward uses pool-mode (savings jar) semantics
+    quantity: int | None = None  # Remaining stock; None means unlimited
+    expires_at: str | None = None  # ISO "YYYY-MM-DD"; None means no deadline
     id: str = field(default_factory=generate_id)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Reward:
         """Create a Reward from a dictionary."""
+        raw_quantity = data.get("quantity")
+        quantity = int(raw_quantity) if raw_quantity is not None else None
+        raw_expires = data.get("expires_at")
+        expires_at = str(raw_expires) if raw_expires else None
         return cls(
             name=data.get("name", ""),
             cost=data.get("cost", 50),
@@ -263,6 +269,8 @@ class Reward:
             assigned_to=list(data.get("assigned_to", [])),
             is_jackpot=data.get("is_jackpot", False),
             pool_enabled=data.get("pool_enabled", False),
+            quantity=quantity,
+            expires_at=expires_at,
             id=data.get("id", generate_id()),
         )
 
@@ -276,6 +284,8 @@ class Reward:
             "assigned_to": self.assigned_to,
             "is_jackpot": self.is_jackpot,
             "pool_enabled": self.pool_enabled,
+            "quantity": self.quantity,
+            "expires_at": self.expires_at,
             "id": self.id,
         }
 

@@ -52,6 +52,8 @@ CONF_REWARD_DESCRIPTION: Final = "description"
 CONF_REWARD_COST: Final = "cost"
 CONF_REWARD_ICON: Final = "icon"
 CONF_REWARD_ID: Final = "id"
+CONF_REWARD_QUANTITY: Final = "quantity"
+CONF_REWARD_EXPIRES_AT: Final = "expires_at"
 
 # Default values
 DEFAULT_POINTS_NAME: Final = "Stars"

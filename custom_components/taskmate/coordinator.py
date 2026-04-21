@@ -68,6 +68,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         """Scheduled callback at midnight to check and reset streaks if needed."""
         self.hass.async_create_task(self._async_check_streaks())
         self.hass.async_create_task(self._async_expire_one_shot_chores())
+        self.hass.async_create_task(self._async_expire_rewards())
         # Rotate assignment_current_child_id and publish today's events to every configured calendar
         self.hass.async_create_task(self._async_refresh_assignments_and_publish())
         # Check for perfect week bonus every Monday at midnight
@@ -1222,6 +1223,33 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             await self.storage.async_save()
             await self.async_refresh()
 
+    async def _async_expire_rewards(self) -> None:
+        """Refund pool allocations on any reward whose expires_at is past.
+
+        The reward row itself is kept in storage so the sensor can surface the
+        "Expired" state and existing claim history stays intact.
+        """
+        changed = False
+        for reward in self.storage.get_rewards():
+            if not self._reward_is_expired(reward):
+                continue
+            allocations_before = [
+                a for a in self.storage.get_pool_allocations()
+                if a.reward_id == reward.id and a.allocated_points > 0
+            ]
+            if not allocations_before:
+                continue
+            self._refund_all_pool_allocations(reward, "Pool refund (reward expired)")
+            changed = True
+            _LOGGER.info(
+                "Reward '%s' expired on %s — refunded %d pool allocation(s)",
+                reward.name, reward.expires_at, len(allocations_before),
+            )
+
+        if changed:
+            await self.storage.async_save()
+            await self.async_refresh()
+
     # ── Reward operations ─────────────────────────────────────────────────────
 
     async def async_add_reward(
@@ -1233,6 +1261,8 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         assigned_to: list[str] | None = None,
         is_jackpot: bool = False,
         pool_enabled: bool = False,
+        quantity: int | None = None,
+        expires_at: str | None = None,
     ) -> Reward:
         """Add a new reward."""
         reward = Reward(
@@ -1243,6 +1273,8 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             assigned_to=assigned_to or [],
             is_jackpot=is_jackpot,
             pool_enabled=pool_enabled,
+            quantity=quantity,
+            expires_at=expires_at,
         )
         self.storage.add_reward(reward)
         await self.storage.async_save()
@@ -1254,14 +1286,64 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         If the cost is reduced below any existing pool allocation, the excess is
         refunded to the contributing children's wallets so over-allocated pools
-        can't appear as e.g. 11/10.
+        can't appear as e.g. 11/10. If the edit makes the reward unavailable
+        (quantity set to 0, or expires_at moved into the past) any pool
+        allocations on that reward are refunded in full.
         """
         old = self.get_reward(reward.id)
         self.storage.update_reward(reward)
         if old and reward.cost < old.cost:
             self._refund_pool_excess(reward, "Pool refund (reward cost reduced)")
+        became_unavailable = (
+            self._reward_is_unavailable(reward)
+            and old is not None
+            and not self._reward_is_unavailable(old)
+        )
+        if became_unavailable:
+            reason = (
+                "Pool refund (reward expired)"
+                if self._reward_is_expired(reward)
+                else "Pool refund (reward sold out)"
+            )
+            self._refund_all_pool_allocations(reward, reason)
         await self.storage.async_save()
         await self.async_refresh()
+
+    @staticmethod
+    def _reward_is_sold_out(reward: Reward) -> bool:
+        """True if the reward has a stock count and it's been exhausted."""
+        return reward.quantity is not None and reward.quantity <= 0
+
+    @staticmethod
+    def _reward_is_expired(reward: Reward) -> bool:
+        """True if the reward has an expiry date and it's on/before today."""
+        if not reward.expires_at:
+            return False
+        try:
+            deadline = date.fromisoformat(reward.expires_at)
+        except (TypeError, ValueError):
+            return False
+        return deadline <= dt_util.now().date()
+
+    @classmethod
+    def _reward_is_unavailable(cls, reward: Reward) -> bool:
+        """True if the reward cannot currently be claimed or allocated to."""
+        return cls._reward_is_sold_out(reward) or cls._reward_is_expired(reward)
+
+    def _refund_all_pool_allocations(self, reward: Reward, reason: str) -> None:
+        """Refund every pool allocation on `reward` back to its contributor.
+
+        Used when a reward becomes unavailable (sold out or expired) while
+        children still have points earmarked for it. Reuses the existing
+        per-allocation refund helper so the PointsTransaction audit trail
+        stays consistent with cost-reduction refunds.
+        """
+        allocations = [
+            a for a in self.storage.get_pool_allocations()
+            if a.reward_id == reward.id and a.allocated_points > 0
+        ]
+        for alloc in allocations:
+            self._apply_pool_refund(alloc, alloc.allocated_points, reward, reason)
 
     def _refund_pool_excess(self, reward: Reward, reason: str) -> None:
         """Trim any pool allocations on `reward` that exceed its cost.
@@ -1423,6 +1505,11 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         if not child:
             raise ValueError(f"Child {child_id} not found")
 
+        if self._reward_is_sold_out(reward):
+            raise ValueError(f"Reward '{reward.name}' is sold out")
+        if self._reward_is_expired(reward):
+            raise ValueError(f"Reward '{reward.name}' has expired")
+
         # Cost is always static
         effective_cost = reward.cost
 
@@ -1526,6 +1613,16 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                     child.points -= effective_cost
                     self.storage.update_child(child)
 
+                if reward.quantity is not None:
+                    reward.quantity = max(0, reward.quantity - 1)
+                    self.storage.update_reward(reward)
+                    if reward.quantity == 0:
+                        # Last unit claimed — refund any points other children
+                        # still have earmarked for this reward's pool.
+                        self._refund_all_pool_allocations(
+                            reward, "Pool refund (reward sold out)"
+                        )
+
                 claim.approved = True
                 claim.approved_at = dt_util.now()
                 self.storage.update_reward_claim(claim)
@@ -1558,6 +1655,11 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         reward = self.get_reward(reward_id)
         if not reward:
             raise ValueError(f"Reward {reward_id} not found")
+
+        if self._reward_is_sold_out(reward):
+            raise ValueError(f"Reward '{reward.name}' is sold out")
+        if self._reward_is_expired(reward):
+            raise ValueError(f"Reward '{reward.name}' has expired")
 
         if points < 1:
             raise ValueError("Points to allocate must be at least 1")

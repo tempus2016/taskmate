@@ -530,6 +530,35 @@ class TaskMateRewardsCard extends LitElement {
 
       .pending-label ha-icon { --mdc-icon-size: 12px; }
 
+      /* Availability badges (low stock / sold out / expiring / expired) */
+      .availability-badges { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+      .availability-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 8px;
+        padding: 3px 8px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+      .availability-badge.badge-sold-out {
+        background: rgba(189,195,199,0.25);
+        color: #7f8c8d;
+      }
+      .availability-badge.badge-expired {
+        background: rgba(52,73,94,0.18);
+        color: #34495e;
+      }
+      .availability-badge.badge-low-stock {
+        background: rgba(231,76,60,0.15);
+        color: #c0392b;
+      }
+      .availability-badge.badge-expiring-soon {
+        background: rgba(243,156,18,0.18);
+        color: #d35400;
+      }
+      .reward-row.unavailable { opacity: 0.55; }
+
       /* Claim button */
       .claim-btn {
         width: 42px; height: 42px;
@@ -1000,12 +1029,21 @@ class TaskMateRewardsCard extends LitElement {
     const isLoading = this._loading[reward.id];
     const isAllocLoading = this._loading[`${reward.id}_alloc`];
 
+    // Availability (quantity / expiration)
+    const isSoldOut = reward.is_sold_out === true;
+    const isExpired = reward.is_expired === true;
+    const isUnavailable = isSoldOut || isExpired;
+    const daysUntilExpiry = (typeof reward.days_until_expiry === 'number')
+      ? reward.days_until_expiry
+      : null;
+    const availabilityBadge = this._renderAvailabilityBadge(reward, isSoldOut, isExpired, daysUntilExpiry);
+
     // Pool-mode controls render below the progress bar (full width) rather than
     // in the right column, so the progress bar keeps its full width.
-    const showPoolControls = enablePoolMode && childId && !hasPendingClaim;
+    const showPoolControls = enablePoolMode && childId && !hasPendingClaim && !isUnavailable;
 
     return html`
-      <div class="reward-row ${isJackpot ? 'jackpot' : ''} ${hasPendingClaim ? 'pending-approval' : ''} ${enablePoolMode ? 'pool-mode' : ''}">
+      <div class="reward-row ${isJackpot ? 'jackpot' : ''} ${hasPendingClaim ? 'pending-approval' : ''} ${enablePoolMode ? 'pool-mode' : ''} ${isUnavailable ? 'unavailable' : ''}">
         <div class="cost-badge">
           <ha-icon icon="${pointsIcon}"></ha-icon>
           <span class="cost-value">${displayCost}</span>
@@ -1014,6 +1052,7 @@ class TaskMateRewardsCard extends LitElement {
         <div class="reward-details">
           ${isJackpot ? html`<div class="jackpot-label"><span>&#127920;</span> ${this._t('rewards.jackpot')}</div>` : ''}
           <div class="reward-name">${reward.name}</div>
+          ${availabilityBadge}
           ${hasDescription
             ? html`<div class="reward-description">${reward.description}</div>`
             : ""}
@@ -1047,7 +1086,7 @@ class TaskMateRewardsCard extends LitElement {
             : ""}
         </div>
         <div class="reward-right-col">
-          ${!enablePoolMode && !hasPendingClaim && childId ? html`
+          ${!enablePoolMode && !hasPendingClaim && childId && !isUnavailable ? html`
             <button
               class="claim-btn ${!canAfford ? 'cant-afford' : ''}"
               ?disabled="${!canAfford || isLoading}"
@@ -1057,13 +1096,36 @@ class TaskMateRewardsCard extends LitElement {
               <ha-icon icon="${isLoading ? 'mdi:loading' : rewardIcon}"></ha-icon>
             </button>
           ` : html`
-            <div class="reward-icon-container">
+            <div class="reward-icon-container" title="${isUnavailable ? this._t('rewards.unavailable_hint') : ''}">
               <ha-icon icon="${rewardIcon}"></ha-icon>
             </div>
           `}
         </div>
       </div>
     `;
+  }
+
+  _renderAvailabilityBadge(reward, isSoldOut, isExpired, daysUntilExpiry) {
+    if (isExpired) {
+      return html`<div class="availability-badge badge-expired">${this._t('rewards.expired')}</div>`;
+    }
+    if (isSoldOut) {
+      return html`<div class="availability-badge badge-sold-out">${this._t('rewards.sold_out')}</div>`;
+    }
+    const badges = [];
+    if (typeof reward.quantity === 'number' && reward.quantity > 0 && reward.quantity <= 3) {
+      badges.push(html`<div class="availability-badge badge-low-stock">${this._t('rewards.only_n_left', { count: reward.quantity })}</div>`);
+    }
+    if (typeof daysUntilExpiry === 'number' && daysUntilExpiry >= 0 && daysUntilExpiry <= 7) {
+      const label = daysUntilExpiry === 0
+        ? this._t('rewards.expires_today')
+        : (daysUntilExpiry === 1
+            ? this._t('rewards.expires_in_days', { count: daysUntilExpiry })
+            : this._t('rewards.expires_in_days_plural', { count: daysUntilExpiry }));
+      badges.push(html`<div class="availability-badge badge-expiring-soon">${label}</div>`);
+    }
+    if (badges.length === 0) return '';
+    return html`<div class="availability-badges">${badges}</div>`;
   }
 
   _renderPoolControls(reward, child, spendable, poolFull, isAllocLoading, isRedeemLoading) {
