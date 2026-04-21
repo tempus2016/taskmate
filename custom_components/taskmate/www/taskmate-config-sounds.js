@@ -7,6 +7,15 @@
 (function() {
   'use strict';
 
+  // Debug logging gate. Set window.__taskmate_config_sounds_debug = true in the
+  // browser console to enable the chatty console.debug/warn output.
+  const debugLog = (...args) => {
+    if (window.__taskmate_config_sounds_debug) console.debug(...args);
+  };
+  const debugWarn = (...args) => {
+    if (window.__taskmate_config_sounds_debug) console.warn(...args);
+  };
+
   // Audio context for sound preview (lazy initialized)
   let audioContext = null;
 
@@ -410,7 +419,7 @@
    */
   function playSound(soundName) {
     if (!soundName || soundName === 'none') {
-      console.debug('[TaskMate Config] No sound to play');
+      debugLog('[TaskMate Config] No sound to play');
       return;
     }
 
@@ -428,11 +437,11 @@
         case 'fart': playFartSound(ctx, now); break;
         case 'fart_long': playFartLongSound(ctx, now); break;
         default:
-          console.warn(`[TaskMate Config] Unknown sound: ${soundName}`);
+          debugWarn(`[TaskMate Config] Unknown sound: ${soundName}`);
           playCoinSound(ctx, now);
       }
     } catch (e) {
-      console.warn('[TaskMate Config] Error playing sound:', e);
+      debugWarn('[TaskMate Config] Error playing sound:', e);
     }
   }
 
@@ -474,7 +483,7 @@
       const value = e.target?.value || e.detail?.value;
       const soundValue = textToSoundValue(value) || value;
 
-      console.debug('[TaskMate Config] Sound changed to:', soundValue);
+      debugLog('[TaskMate Config] Sound changed to:', soundValue);
 
       if (soundValue && soundValue !== 'none' && VALID_SOUNDS.includes(soundValue)) {
         playSound(soundValue);
@@ -496,7 +505,7 @@
       }
     });
 
-    console.debug('[TaskMate Config] Attached sound change listener to element');
+    debugLog('[TaskMate Config] Attached sound change listener to element');
   }
 
   /**
@@ -580,7 +589,7 @@
       subtree: true,
     });
 
-    console.debug('[TaskMate Config] Sound change observer started');
+    debugLog('[TaskMate Config] Sound change observer started');
   }
 
   // Initialize
@@ -593,7 +602,7 @@
     // Periodic scan to catch dynamically loaded content
     window._taskmateConfigSoundsPoll = setInterval(findAndEnhanceSoundSelectors, 2000);
 
-    window.addEventListener('beforeunload', () => {
+    const cleanup = () => {
       if (window._taskmateConfigSoundsPoll) {
         clearInterval(window._taskmateConfigSoundsPoll);
         window._taskmateConfigSoundsPoll = null;
@@ -602,7 +611,10 @@
         clearTimeout(window._taskmateScanTimeout);
         window._taskmateScanTimeout = null;
       }
-    }, { once: true });
+    };
+    // pagehide covers SPA navigation in HA; beforeunload covers full reloads.
+    window.addEventListener('pagehide', cleanup, { once: true });
+    window.addEventListener('beforeunload', cleanup, { once: true });
   }
 
   if (document.readyState === 'loading') {
