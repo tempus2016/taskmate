@@ -394,8 +394,10 @@ class TaskMateChildCard extends LitElement {
       const audio = new Audio(`/local/taskmate/${filename}`);
       audio.volume = 1.0;
       audio.play().catch(e => {
+        console.warn(`[TaskMate] Failed to play ${filename}:`, e);
       });
     } catch (e) {
+      console.warn(`[TaskMate] Error preparing audio ${filename}:`, e);
     }
   }
 
@@ -1852,7 +1854,7 @@ class TaskMateChildCard extends LitElement {
   }
 
   _renderCelebration() {
-    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || this.hass.states[this.config.entity]?.attributes || {};
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || this.hass?.states?.[this.config.entity]?.attributes || {};
     const pointsIcon = attrs.points_icon || "mdi:star";
     const celebratingChore = (attrs.chores || []).find(
       c => c.id === this._celebrating
@@ -1906,7 +1908,7 @@ class TaskMateChildCard extends LitElement {
     }
 
     // Get current completion count including optimistic completions
-    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || this.hass.states[this.config.entity]?.attributes || {};
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || this.hass?.states?.[this.config.entity]?.attributes || {};
     const allCompletions = attrs.todays_completions || [];
     const todaysCompletions = this._filterCompletionsForToday(allCompletions);
     const actualCompletionsToday = todaysCompletions.filter(
