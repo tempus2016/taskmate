@@ -58,7 +58,7 @@ async def _async_get_version(hass: HomeAssistant) -> str:
             manifest_path.read_text, "utf-8"
         )
         return json.loads(content).get("version", "1.0.0")
-    except Exception:  # noqa: BLE001
+    except (OSError, json.JSONDecodeError, AttributeError):
         return "1.0.0"
 
 
@@ -181,5 +181,5 @@ async def async_register_cards(hass: HomeAssistant) -> None:
                 else:
                     _LOGGER.debug("TaskMate: resource up to date: %s", versioned_url)
 
-    except Exception as err:  # noqa: BLE001
+    except (AttributeError, KeyError, TypeError, OSError) as err:
         _LOGGER.error("TaskMate: error managing Lovelace resources: %s", err)
