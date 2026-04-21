@@ -15,6 +15,7 @@ CONF_CHILD_NAME: Final = "name"
 CONF_CHILD_AVATAR: Final = "avatar"
 CONF_CHILD_POINTS: Final = "points"
 CONF_CHILD_ID: Final = "id"
+CONF_CHILD_AVAILABILITY_ENTITY: Final = "availability_entity"
 
 # Chore keys
 CONF_CHORE_NAME: Final = "name"
@@ -29,6 +30,7 @@ DEFAULT_CLAIM_ALLOWANCE_MINUTES: Final = 0
 CONF_CHORE_ASSIGNMENT_MODE: Final = "assignment_mode"
 CONF_CHORE_ASSIGNMENT_ROTATION_ANCHOR: Final = "assignment_rotation_anchor"
 CONF_CHORE_PUBLISH_CALENDARS: Final = "publish_calendar_entities"
+CONF_CHORE_REQUIRE_AVAILABILITY: Final = "require_availability"
 
 # Calendar projection: how many days ahead each chore's assignment is pushed
 # into the configured HA calendars. 14 days balances planning visibility with

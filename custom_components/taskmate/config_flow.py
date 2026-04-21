@@ -256,6 +256,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 await self.coordinator.async_add_child(
                     name=name,
                     avatar=user_input.get("avatar", "mdi:account-circle"),
+                    availability_entity=user_input.get("availability_entity", "") or "",
                 )
                 return await self.async_step_manage_children()
 
@@ -272,6 +273,9 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                             ],
                             mode=selector.SelectSelectorMode.DROPDOWN,
                         )
+                    ),
+                    vol.Optional("availability_entity", default=""): selector.EntitySelector(
+                        selector.EntitySelectorConfig()
                     ),
                 }
             ),
@@ -296,8 +300,18 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             elif action == "save":
                 child.name = user_input.get("name", child.name)
                 child.avatar = user_input.get("avatar", child.avatar)
+                child.availability_entity = (
+                    user_input.get("availability_entity", "") or ""
+                )
                 await self.coordinator.async_update_child(child)
                 return await self.async_step_manage_children()
+
+        availability_default = getattr(child, "availability_entity", "") or ""
+        availability_key = (
+            vol.Optional("availability_entity", default=availability_default)
+            if availability_default
+            else vol.Optional("availability_entity")
+        )
 
         return self.async_show_form(
             step_id="edit_child",
@@ -312,6 +326,9 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                             ],
                             mode=selector.SelectSelectorMode.DROPDOWN,
                         )
+                    ),
+                    availability_key: selector.EntitySelector(
+                        selector.EntitySelectorConfig()
                     ),
                     vol.Required("action", default="save"): selector.SelectSelector(
                         selector.SelectSelectorConfig(
@@ -427,6 +444,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             vol.Optional("assignment_rotation_anchor", default=""): selector.TextSelector(
                 selector.TextSelectorConfig(type=selector.TextSelectorType.DATE)
             ),
+            vol.Optional("require_availability", default=False): selector.BooleanSelector(),
             vol.Optional("publish_calendar_entities", default=[]): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="calendar", multiple=True)
             ),
@@ -469,6 +487,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 assignment_mode=s1.get("assignment_mode", "everyone"),
                 assignment_rotation_anchor=s1.get("assignment_rotation_anchor", "") or "",
                 publish_calendar_entities=list(s1.get("publish_calendar_entities") or []),
+                require_availability=bool(s1.get("require_availability", False)),
             )
             self._chore_step1_data = None
             return await self.async_step_manage_chores()
@@ -507,6 +526,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             assignment_mode=s1.get("assignment_mode", "everyone"),
             assignment_rotation_anchor=s1.get("assignment_rotation_anchor", "") or "",
             publish_calendar_entities=list(s1.get("publish_calendar_entities") or []),
+            require_availability=bool(s1.get("require_availability", False)),
         )
         self._chore_step1_data = None
         return await self.async_step_manage_chores()
@@ -550,6 +570,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 assignment_mode=s1.get("assignment_mode", "everyone"),
                 assignment_rotation_anchor=s1.get("assignment_rotation_anchor", "") or "",
                 publish_calendar_entities=list(s1.get("publish_calendar_entities") or []),
+                require_availability=bool(s1.get("require_availability", False)),
             )
             self._chore_step1_data = None
             return await self.async_step_manage_chores()
@@ -776,6 +797,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 mode_in = user_input.get("assignment_mode", getattr(chore, "assignment_mode", "everyone"))
                 chore.assignment_mode = mode_in if mode_in in ASSIGNMENT_MODES else "everyone"
                 chore.assignment_rotation_anchor = user_input.get("assignment_rotation_anchor", getattr(chore, "assignment_rotation_anchor", "")) or ""
+                chore.require_availability = bool(user_input.get("require_availability", getattr(chore, "require_availability", False)))
                 chore.publish_calendar_entities = list(user_input.get("publish_calendar_entities", getattr(chore, "publish_calendar_entities", []) or []))
                 self._edited_chore = chore
                 _LOGGER.debug(
@@ -873,6 +895,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         schema_dict[vol.Optional("assignment_rotation_anchor", default=getattr(chore, "assignment_rotation_anchor", "") or "")] = selector.TextSelector(
             selector.TextSelectorConfig(type=selector.TextSelectorType.DATE)
         )
+        schema_dict[vol.Optional("require_availability", default=bool(getattr(chore, "require_availability", False)))] = selector.BooleanSelector()
         existing_calendars = list(getattr(chore, "publish_calendar_entities", []) or [])
         if existing_calendars:
             schema_dict[vol.Optional("publish_calendar_entities", default=existing_calendars)] = selector.EntitySelector(
