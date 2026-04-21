@@ -113,6 +113,14 @@ _ha_components_sensor.SensorEntity = _FakeSensorEntity
 _ha_components_sensor.SensorStateClass = _FakeSensorStateClass
 
 
+class _FakeBinarySensorEntity:
+    pass
+
+
+_ha_components_binary_sensor = MagicMock()
+_ha_components_binary_sensor.BinarySensorEntity = _FakeBinarySensorEntity
+
+
 class _FakeDeviceInfo(dict):
     """DeviceInfo behaves like a TypedDict; accept kwargs like the real one."""
 
@@ -169,6 +177,7 @@ sys.modules.update(
         "homeassistant.helpers.entity_platform": _ha_helpers_entity_platform,
         "homeassistant.components": MagicMock(),
         "homeassistant.components.sensor": _ha_components_sensor,
+        "homeassistant.components.binary_sensor": _ha_components_binary_sensor,
         "homeassistant.util": _ha_util,
         "homeassistant.util.dt": dt_util_mock,
         # Stub the frontend sub-module so __init__.py's relative import succeeds
