@@ -587,21 +587,25 @@ class TaskMateChildCard extends LitElement {
 
       .chore-card:nth-child(odd) {
         border-color: var(--fun-blue);
+        background: var(--card-background-color, #fff);
         background: color-mix(in srgb, var(--fun-blue) 10%, var(--card-background-color, #fff));
       }
 
       .chore-card:nth-child(even) {
         border-color: var(--fun-pink);
+        background: var(--card-background-color, #fff);
         background: color-mix(in srgb, var(--fun-pink) 10%, var(--card-background-color, #fff));
       }
 
       .chore-card:nth-child(3n) {
         border-color: var(--fun-green);
+        background: var(--card-background-color, #fff);
         background: color-mix(in srgb, var(--fun-green) 10%, var(--card-background-color, #fff));
       }
 
       .chore-card:nth-child(4n) {
         border-color: var(--fun-orange);
+        background: var(--card-background-color, #fff);
         background: color-mix(in srgb, var(--fun-orange) 10%, var(--card-background-color, #fff));
       }
 
