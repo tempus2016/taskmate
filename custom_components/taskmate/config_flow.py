@@ -121,7 +121,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     user_data = await frontend_data.async_get_user_data(user_id)
                     if user_data and user_data.get("language"):
                         return user_data["language"]
-        except Exception as err:
+        except (AttributeError, KeyError, TypeError) as err:
             _LOGGER.debug("TaskMate i18n: could not resolve user language: %s", err)
         # Fall back to system language
         return getattr(self.hass.config, 'language', None) or "en"
@@ -145,7 +145,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             if self._translations:
                 _LOGGER.debug("TaskMate i18n: loaded %d keys via HA for lang=%s", len(self._translations), lang)
                 return
-        except Exception as e:
+        except (ImportError, AttributeError, RuntimeError) as e:
             _LOGGER.debug("TaskMate i18n: HA translation system unavailable: %s", e)
 
         # Fallback: load translation file directly

@@ -123,7 +123,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                     comp_date_str = comp_local.date().isoformat()
                     if comp_date_str in last_week_dates:
                         completed_days.add(comp_date_str)
-                except Exception:
+                except (ValueError, TypeError, AttributeError):
                     continue
 
             if completed_days == last_week_dates:
