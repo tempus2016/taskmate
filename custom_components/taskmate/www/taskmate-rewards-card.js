@@ -1178,10 +1178,19 @@ class TaskMateRewardsCard extends LitElement {
     this._loading = { ...this._loading, [reward.id]: true };
     this.requestUpdate();
     try {
-      await this.hass.callService("taskmate", "claim_reward", {
-        reward_id: reward.id,
-        child_id: child.id,
-      });
+      // Prefer pressing the per-child/per-reward button entity so HA
+      // state-trigger automations on button.taskmate_<child>_claim_<reward>
+      // fire. Falls back to the service call if the entity isn't registered.
+      const buttonEntityId = window.__taskmate_find_button
+        && window.__taskmate_find_button(this.hass, child.id, "claim", reward.id);
+      if (buttonEntityId) {
+        await this.hass.callService("button", "press", { entity_id: buttonEntityId });
+      } else {
+        await this.hass.callService("taskmate", "claim_reward", {
+          reward_id: reward.id,
+          child_id: child.id,
+        });
+      }
     } catch (e) {
       console.error("Failed to claim reward:", e);
       if (this.hass && this.hass.callService) {
