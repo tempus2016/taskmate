@@ -84,7 +84,7 @@ All TaskMate data — children, chores, points, reward claims, completion histor
 ### Add the Integration
  
 1. **Settings** → Devices & Services → **Add Integration** → search "TaskMate"
-2. Choose your points currency name (Stars, Coins, Points, Bucks — whatever motivates your kids)
+2. Choose your points currency name (Stars, Coins, Points, Bucks — whatever motivates your children)
  
 ### Configure
  
@@ -307,7 +307,7 @@ Leave empty to use persistent notifications only.
 
 > **Note:** The service must be in the `notify` domain (e.g. `notify.mobile_app_...`). Services from other domains are ignored with a warning in the HA logs.
 
-> **Tip:** Use `binary_sensor.taskmate_has_pending_approvals` in your own automations for more customised notification logic — see [Automations](#automations--examples).
+> **Tip:** Use `binary_sensor.taskmate_has_pending_approvals` in your own automations for more customised notification logic.
  
 ---
  
@@ -367,6 +367,8 @@ data:
 | [Reward Progress Card](#reward-progress-card) | Kids | Full-screen motivational reward display |
 | [Leaderboard Card](#leaderboard-card) | Both | Competitive ranking by points, streak, or weekly |
 | [Penalties Card](#penalties-card) | Parents | Apply point-deduction penalties |
+| [Bonuses Card](#bonuses-card) | Parents | Apply one-tap point bonuses |
+| [Points Display Card](#points-display-card) | Kids | Big, kid-friendly points readout |
 | [Calendar Card](#calendar-card) | Both | One-day view of chores assigned to each child |
  
 ---
@@ -641,6 +643,33 @@ header_color: "#e74c3c"
 
 ---
 
+### Bonuses Card
+
+Parent-facing counterpart to the Penalties Card. Define one-tap point bonuses and apply them to any child from the card. Use the pencil icon to add, edit, or delete bonus definitions.
+
+```yaml
+type: custom:taskmate-bonuses-card
+entity: sensor.taskmate_overview
+title: Bonuses
+header_color: "#27ae60"
+```
+
+---
+
+### Points Display Card
+
+Big, kid-friendly readout of current points. Supports three modes: a single child, every child side-by-side, or the combined family total. Pair it with the Child Card on a tablet dashboard.
+
+```yaml
+type: custom:taskmate-points-display-card
+entity: sensor.taskmate_overview
+mode: single            # single | all | family
+child_id: a8c8376a      # required when mode: single
+header_color: "#2980b9"
+```
+
+---
+
 ### Calendar Card
 
 One-day view of the chores assigned to each child. Each child gets a section showing the chores scheduled for the selected day, colour-coded by state: **green** = approved, **amber** = pending approval, **grey** = due but not completed. Rotating-assignment chores (alternating, random, balanced) render dimmed on days other than today so you can see they rotate.
@@ -786,14 +815,14 @@ Automations that read the old overview attributes (e.g. `sensor.taskmate_overvie
  
 ## Tips
  
-- **Two dashboards** — One for kids (Child Card + Rewards Card), one for parents (Parent Dashboard). Kids don't need to see the approval queue
+- **Two dashboards** — One for children (Child Card + Rewards Card), one for parents (Parent Dashboard). Children don't need to see the approval queue
 - **Completion %** — Set this lower for optional or weekly chores. If a chore is done twice a week, set it to ~30%. This prevents infrequent chores from inflating reward costs
 - **Due Days** — Use these so Monday's homework doesn't appear on Saturday. Set `due_days_mode: hide` on the child card
 - **Chore descriptions** — Add short instructions like "Put the lid back on the bin" and enable `show_description: true` in the card editor
-- **Streak mode: Pause** — If you go on holiday, "Pause" mode means kids don't lose their streak. "Reset" mode is stricter and more motivating for consistent households
-- **Weekend Multiplier** — Great for incentivising chores on days kids have more free time. Set it to `1.5` for a gentler boost or `3.0` for a big incentive
+- **Streak mode: Pause** — If you go on holiday, "Pause" mode means children don't lose their streak. "Reset" mode is stricter and more motivating for consistent households
+- **Weekend Multiplier** — Great for incentivising chores on days children have more free time. Set it to `1.5` for a gentler boost or `3.0` for a big incentive
 - **Jackpot rewards** — Use these for big shared goals. A family holiday, a trip to a theme park, a new board game — something everyone works toward together
-- **Header colours** — Each card has its own default colour. Customise them in the visual editor to make the kids' dashboard bright and fun, and the parent dashboard more neutral
+- **Header colours** — Each card has its own default colour. Customise them in the visual editor to make the children's dashboard bright and fun, and the parent dashboard more neutral
 - **Per-chore sounds** — Set `completion_sound: fanfare` on harder chores to make completing them feel more rewarding than easy ones
 - **Time-of-day cards** — Set `time_category: morning` on a card for the breakfast routine and `elapsed_time_mode: dim` so missed morning chores grey out automatically once it's afternoon — no clutter, no guilt trips
  
