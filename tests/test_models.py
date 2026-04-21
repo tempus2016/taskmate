@@ -148,6 +148,27 @@ class TestChild:
 
 
 # ---------------------------------------------------------------------------
+# Child availability field
+# ---------------------------------------------------------------------------
+
+
+class TestChildAvailability:
+    def test_default_is_empty(self):
+        child = Child(name="Alice")
+        assert child.availability_entity == ""
+
+    def test_serialises_availability_entity(self):
+        child = Child(name="Alice", availability_entity="binary_sensor.alice_home", id="kid1")
+        restored = Child.from_dict(child.to_dict())
+        assert restored.availability_entity == "binary_sensor.alice_home"
+
+    def test_legacy_missing_availability_entity_backcompat(self):
+        legacy = {"name": "Alice"}
+        child = Child.from_dict(legacy)
+        assert child.availability_entity == ""
+
+
+# ---------------------------------------------------------------------------
 # Chore
 # ---------------------------------------------------------------------------
 
@@ -196,6 +217,22 @@ class TestChore:
         restored = Chore.from_dict(chore.to_dict())
         assert restored.schedule_mode == "recurring"
         assert restored.recurrence == "weekly"
+
+
+class TestChoreRequireAvailability:
+    def test_default_is_false(self):
+        chore = Chore(name="Any")
+        assert chore.require_availability is False
+
+    def test_serialises_require_availability(self):
+        chore = Chore(name="Dishes", require_availability=True, id="c1")
+        restored = Chore.from_dict(chore.to_dict())
+        assert restored.require_availability is True
+
+    def test_legacy_missing_require_availability_backcompat(self):
+        legacy = {"name": "Old chore"}
+        chore = Chore.from_dict(legacy)
+        assert chore.require_availability is False
 
 
 # ---------------------------------------------------------------------------

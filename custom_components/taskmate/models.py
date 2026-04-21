@@ -75,6 +75,7 @@ class Child:
     streak_paused: bool = False  # True if streak is paused due to missed day (pause mode)
     streak_milestones_achieved: list[int] = field(default_factory=list)
     awarded_perfect_weeks: list[str] = field(default_factory=list)
+    availability_entity: str = ""  # HA entity id; empty = always available
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -94,6 +95,7 @@ class Child:
             streak_paused=data.get("streak_paused", False),
             streak_milestones_achieved=list(data.get("streak_milestones_achieved", [])),
             awarded_perfect_weeks=list(data.get("awarded_perfect_weeks", [])),
+            availability_entity=data.get("availability_entity", ""),
             id=data.get("id", generate_id()),
         )
 
@@ -113,6 +115,7 @@ class Child:
             "streak_paused": self.streak_paused,
             "streak_milestones_achieved": self.streak_milestones_achieved,
             "awarded_perfect_weeks": self.awarded_perfect_weeks,
+            "availability_entity": self.availability_entity,
             "id": self.id,
         }
 
@@ -152,6 +155,7 @@ class Chore:
     assignment_mode: str = "everyone"  # everyone | alternating | random
     assignment_rotation_anchor: str = ""  # ISO date; day-0 of the rotation for alternating
     assignment_current_child_id: str = ""  # cached active child ID for today (computed at midnight and on create/update)
+    require_availability: bool = False  # When True, skip children whose availability entity says they're unavailable
     # Calendar publish: list of HA calendar entity ids to mirror the chore to. Any number supported.
     publish_calendar_entities: list[str] = field(default_factory=list)
     # ISO dates already written to the configured calendars. Used for both
@@ -195,6 +199,7 @@ class Chore:
             assignment_mode=data.get("assignment_mode", "everyone"),
             assignment_rotation_anchor=data.get("assignment_rotation_anchor", ""),
             assignment_current_child_id=data.get("assignment_current_child_id", ""),
+            require_availability=data.get("require_availability", False),
             publish_calendar_entities=list(data.get("publish_calendar_entities", [])),
             # Back-compat: old records stored a single ISO date in
             # `publish_calendar_last_date`. Seed the new list with it so we
@@ -233,6 +238,7 @@ class Chore:
             "assignment_mode": self.assignment_mode,
             "assignment_rotation_anchor": self.assignment_rotation_anchor,
             "assignment_current_child_id": self.assignment_current_child_id,
+            "require_availability": self.require_availability,
             "publish_calendar_entities": self.publish_calendar_entities,
             "publish_calendar_published_dates": self.publish_calendar_published_dates,
             "id": self.id,

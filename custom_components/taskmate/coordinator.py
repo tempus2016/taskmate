@@ -40,6 +40,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         self.entry_id = entry_id
         self._unsub_midnight: Callable[[], None] | None = None
         self._unsub_prune: Callable[[], None] | None = None
+        self._unsub_availability: Callable[[], None] | None = None
 
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""
@@ -53,6 +54,12 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         self._unsub_prune = async_track_time_change(
             self.hass, self._async_scheduled_prune, hour=0, minute=1, second=0
         )
+        # Re-evaluate availability-aware chore assignments when any HA entity
+        # state changes. The callback filters cheaply on entity id so only
+        # relevant flips trigger a recompute.
+        self._unsub_availability = self.hass.bus.async_listen(
+            "state_changed", self._availability_state_changed
+        )
 
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator and clean up listeners."""
@@ -62,6 +69,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         if self._unsub_prune:
             self._unsub_prune()
             self._unsub_prune = None
+        if self._unsub_availability:
+            self._unsub_availability()
+            self._unsub_availability = None
 
     @callback
     def _async_midnight_streak_check(self, now: datetime) -> None:
@@ -80,6 +90,59 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         """Scheduled callback to prune old completion history."""
         days = int(self.storage.get_setting("history_days", "90"))
         self.hass.async_create_task(self.async_prune_history(days))
+
+    @callback
+    def _availability_state_changed(self, event: Any) -> None:
+        """Cheap bus-filter: only dispatch a re-eval when a tracked availability entity changes."""
+        data = getattr(event, "data", None) or {}
+        entity_id = data.get("entity_id")
+        if not entity_id:
+            return
+        tracked = {
+            c.availability_entity
+            for c in self.storage.get_children()
+            if getattr(c, "availability_entity", "")
+        }
+        if entity_id not in tracked:
+            return
+        self.hass.async_create_task(self._async_reevaluate_availability())
+
+    async def _async_reevaluate_availability(self) -> None:
+        """Re-run assignment for require_availability chores when availability flips.
+
+        Skips chores that already have a completion today so we don't phantom-
+        reassign a chore a child already ticked off. Only non-`everyone` modes
+        cache a single current child on the chore; `everyone` mode resolves
+        availability at read-time via `_compute_active_children`.
+        """
+        today = dt_util.as_local(dt_util.now()).date()
+        completions_today: set[str] = set()
+        for comp in self.storage.get_completions():
+            try:
+                comp_date = dt_util.as_local(comp.completed_at).date()
+            except (AttributeError, TypeError, ValueError):
+                continue
+            if comp_date == today:
+                completions_today.add(comp.chore_id)
+
+        changed = False
+        for chore in self.storage.get_chores():
+            if not getattr(chore, "require_availability", False):
+                continue
+            if getattr(chore, "assignment_mode", "everyone") == "everyone":
+                continue
+            if chore.id in completions_today:
+                continue
+            active = self._compute_active_children(chore, today)
+            desired = active[0] if active else ""
+            if getattr(chore, "assignment_current_child_id", "") != desired:
+                chore.assignment_current_child_id = desired
+                self.storage.update_chore(chore)
+                changed = True
+
+        if changed:
+            await self.storage.async_save()
+            await self.async_refresh()
 
     async def _async_check_perfect_week(self) -> None:
         """Award perfect week bonus to children who completed at least one chore every day last week."""
@@ -224,9 +287,14 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         }
 
     # Child operations
-    async def async_add_child(self, name: str, avatar: str = "mdi:account-circle") -> Child:
+    async def async_add_child(
+        self,
+        name: str,
+        avatar: str = "mdi:account-circle",
+        availability_entity: str = "",
+    ) -> Child:
         """Add a new child."""
-        child = Child(name=name, avatar=avatar)
+        child = Child(name=name, avatar=avatar, availability_entity=availability_entity)
         self.storage.add_child(child)
         await self.storage.async_save()
         await self.async_refresh()
@@ -283,6 +351,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         assignment_mode: str = "everyone",
         assignment_rotation_anchor: str = "",
         publish_calendar_entities: list[str] | None = None,
+        require_availability: bool = False,
     ) -> Chore:
         """Add a new chore."""
         # One-shot chores: force daily_limit=1, set created_date to today
@@ -314,6 +383,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             assignment_mode=assignment_mode if assignment_mode in ("everyone", "alternating", "random") else "everyone",
             assignment_rotation_anchor=assignment_rotation_anchor,
             publish_calendar_entities=list(publish_calendar_entities or []),
+            require_availability=require_availability,
         )
         # Cache today's active child so the card can show it immediately
         today = dt_util.as_local(dt_util.now()).date()
@@ -526,6 +596,38 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         return False
 
+    _AVAILABLE_STATES: frozenset[str] = frozenset({
+        "on", "home", "available", "present", "true",
+    })
+
+    def _is_child_available(self, child_id: str) -> bool:
+        """Return True if the child's availability entity reports them as available.
+
+        Rules:
+          - Empty/missing availability_entity on the child → True (no opinion).
+          - Entity not registered, or state is unavailable/unknown/None → True
+            (fail-open; don't block on a broken sensor).
+          - State (case-insensitive) in {"on", "home", "available", "present",
+            "true"} → True. Everything else (e.g. "off", "not_home", "away")
+            → False.
+        """
+        child = self.storage.get_child(child_id)
+        if not child:
+            return True
+        entity_id = getattr(child, "availability_entity", "") or ""
+        if not entity_id:
+            return True
+        state_obj = self.hass.states.get(entity_id)
+        if state_obj is None:
+            return True
+        raw = getattr(state_obj, "state", None)
+        if raw is None:
+            return True
+        value = str(raw).strip().lower()
+        if value in ("unavailable", "unknown", "none", ""):
+            return True
+        return value in self._AVAILABLE_STATES
+
     def _chore_assignment_pool(self, chore: Chore) -> list[str]:
         """Resolve the ordered pool of child IDs this chore rotates through.
 
@@ -548,8 +650,14 @@ class TaskMateCoordinator(DataUpdateCoordinator):
           chores across 2 children always land 5/5 (11 lands 6/5, etc.).
         """
         mode = getattr(chore, "assignment_mode", "everyone")
+        require_availability = getattr(chore, "require_availability", False)
+
         if mode not in ("alternating", "random", "balanced"):
-            return list(chore.assigned_to or [])
+            assigned = list(chore.assigned_to or [])
+            if require_availability and assigned:
+                filtered = [cid for cid in assigned if self._is_child_available(cid)]
+                return filtered if filtered else assigned
+            return assigned
 
         pool = self._chore_assignment_pool(chore)
         if not pool:
@@ -566,13 +674,13 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 anchor = today
             offset = (today - anchor).days
             idx = offset % len(pool)
-            return [pool[idx]]
+            return [self._skip_unavailable(pool, idx, require_availability)]
 
         if mode == "random":
             # random: stable per (chore.id, date) so the frontend and backend agree
             digest = hashlib.sha256(f"{chore.id}:{today.toordinal()}".encode()).digest()
             idx = int.from_bytes(digest[:8], "big") % len(pool)
-            return [pool[idx]]
+            return [self._skip_unavailable(pool, idx, require_availability)]
 
         # balanced: group today's balanced-mode chores that share this exact pool,
         # sort them by id for determinism, then round-robin across the pool. A
@@ -591,7 +699,34 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             position = 0
         start_digest = hashlib.sha256(f"balanced:{pool_key}:{today.toordinal()}".encode()).digest()
         start = int.from_bytes(start_digest[:4], "big") % len(pool)
-        return [pool[(start + position) % len(pool)]]
+        idx = (start + position) % len(pool)
+        return [self._skip_unavailable(pool, idx, require_availability)]
+
+    def _skip_unavailable(self, pool: list[str], start_idx: int, enabled: bool) -> str:
+        """Walk forward from `start_idx` through `pool` looking for an available
+        child. If none of the pool is available (or the skip is disabled), return
+        the originally picked child so the chore is still visible to someone.
+        """
+        original = pool[start_idx]
+        if not enabled:
+            return original
+        size = len(pool)
+        # Cache per-call so the same child isn't queried twice in a scan.
+        cache: dict[str, bool] = {}
+        def available(cid: str) -> bool:
+            if cid not in cache:
+                cache[cid] = self._is_child_available(cid)
+            return cache[cid]
+        for step in range(size):
+            cid = pool[(start_idx + step) % size]
+            if available(cid):
+                return cid
+        _LOGGER.debug(
+            "Availability skip: no available child in pool %s for chore, "
+            "falling back to original pick %s",
+            pool, original,
+        )
+        return original
 
     # time_category -> (start_time, end_time). None means "anytime" -> all-day event.
     _TIME_CATEGORY_WINDOWS: dict[str, tuple[time, time] | None] = {
