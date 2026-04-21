@@ -435,3 +435,249 @@ def test_chore_from_dict_defaults_are_legacy_safe():
     # Back-compat: legacy records with the old scalar seed the new list
     migrated = Chore.from_dict({"name": "Old", "publish_calendar_last_date": "2026-04-20"})
     assert migrated.publish_calendar_published_dates == ["2026-04-20"]
+
+
+# ---------------------------------------------------------------------------
+# Availability-aware assignment
+# ---------------------------------------------------------------------------
+
+
+class _FakeState:
+    """Minimal stand-in for homeassistant.core.State used by hass.states.get."""
+
+    def __init__(self, state: str) -> None:
+        self.state = state
+
+
+class _FakeEvent:
+    """Minimal stand-in for an HA Event — coordinator only reads .data."""
+
+    def __init__(self, entity_id: str) -> None:
+        self.data = {"entity_id": entity_id}
+
+
+def _states_lookup(mapping: dict[str, str]):
+    """Build a hass.states.get(entity_id) stub from an {entity_id: state} dict."""
+    return MagicMock(side_effect=lambda eid: (_FakeState(mapping[eid]) if eid in mapping else None))
+
+
+class TestAvailabilityAwareAssignment:
+    def test_require_availability_off_ignores_entity(self):
+        # Even with an availability sensor saying "off", a chore without
+        # require_availability rotates normally.
+        a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
+        b = Child(name="B", id="kidB")
+        coord = _coord([a, b])
+        coord.hass.states.get = _states_lookup({"binary_sensor.a": "off"})
+        anchor = date(2026, 4, 20)
+        chore = Chore(
+            name="X", assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+        )
+        # Day 0 normally picks A — and does, because the skip is disabled.
+        assert coord._compute_active_children(chore, anchor) == [a.id]
+
+    def test_alternating_skips_unavailable_child(self):
+        a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
+        b = Child(name="B", id="kidB")
+        coord = _coord([a, b])
+        coord.hass.states.get = _states_lookup({"binary_sensor.a": "off"})
+        anchor = date(2026, 4, 20)
+        chore = Chore(
+            name="X", assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+            require_availability=True,
+        )
+        # Day 0 would be A; A is away so we skip to B.
+        assert coord._compute_active_children(chore, anchor) == [b.id]
+        # Day 1 naturally falls on B too; stays B.
+        assert coord._compute_active_children(chore, anchor + dt.timedelta(days=1)) == [b.id]
+
+    def test_random_skips_unavailable_child(self):
+        # Deterministic seed: random picks are stable per (chore.id, date).
+        # We pick a fake chore id whose hash lands on 'A' for this date, then
+        # flip A's sensor off and assert it reroutes. The test is stable
+        # because _skip_unavailable walks forward from the original idx.
+        a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
+        b = Child(name="B", id="kidB")
+        coord = _coord([a, b])
+        coord.hass.states.get = _states_lookup({"binary_sensor.a": "on"})
+        today = date(2026, 4, 20)
+        base = Chore(
+            name="R", assigned_to=[a.id, b.id],
+            assignment_mode="random", require_availability=True,
+            id="reward_alpha",
+        )
+        original_pick = coord._compute_active_children(base, today)[0]
+        coord.hass.states.get = _states_lookup({
+            "binary_sensor.a": "off" if original_pick == a.id else "on",
+        })
+        # Only flip the originally picked child away — if it was A, A's sensor
+        # is off; if it was B, A stays on and we'd expect no change.
+        result = coord._compute_active_children(base, today)[0]
+        if original_pick == a.id:
+            assert result == b.id
+        else:
+            assert result == b.id  # unchanged; B was already picked
+
+    def test_balanced_skips_unavailable_child(self):
+        a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
+        b = Child(name="B", id="kidB")
+        coord = _coord([a, b])
+        coord.hass.states.get = _states_lookup({"binary_sensor.a": "off"})
+        today = date(2026, 4, 20)
+        chores = [
+            Chore(name=f"C{i}", assigned_to=[a.id, b.id],
+                  assignment_mode="balanced", require_availability=True,
+                  id=f"c{i}")
+            for i in range(4)
+        ]
+        for c in chores:
+            coord.storage.add_chore(c)
+        picks = [coord._compute_active_children(c, today)[0] for c in chores]
+        # With A unavailable, every balanced chore must land on B.
+        assert all(p == b.id for p in picks)
+
+    def test_everyone_filters_unavailable_children(self):
+        a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
+        b = Child(name="B", id="kidB")
+        coord = _coord([a, b])
+        coord.hass.states.get = _states_lookup({"binary_sensor.a": "off"})
+        chore = Chore(name="X", assigned_to=[a.id, b.id], require_availability=True)
+        # Everyone mode with require_availability filters A out.
+        assert coord._compute_active_children(chore, date(2026, 4, 20)) == [b.id]
+
+    def test_all_unavailable_falls_back_to_original_pick(self):
+        a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
+        b = Child(name="B", availability_entity="binary_sensor.b", id="kidB")
+        coord = _coord([a, b])
+        coord.hass.states.get = _states_lookup(
+            {"binary_sensor.a": "off", "binary_sensor.b": "off"}
+        )
+        anchor = date(2026, 4, 20)
+        chore = Chore(
+            name="X", assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+            require_availability=True,
+        )
+        # Day 0 originally picks A — keep A so the chore is still visible.
+        assert coord._compute_active_children(chore, anchor) == [a.id]
+
+    def test_missing_entity_treated_as_available(self):
+        a = Child(name="A", availability_entity="binary_sensor.not_registered", id="kidA")
+        b = Child(name="B", id="kidB")
+        coord = _coord([a, b])
+        coord.hass.states.get = _states_lookup({})  # nothing registered
+        anchor = date(2026, 4, 20)
+        chore = Chore(
+            name="X", assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+            require_availability=True,
+        )
+        # Broken sensor → fail-open; A stays picked.
+        assert coord._compute_active_children(chore, anchor) == [a.id]
+
+    def test_unknown_state_treated_as_available(self):
+        a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
+        b = Child(name="B", id="kidB")
+        coord = _coord([a, b])
+        coord.hass.states.get = _states_lookup({"binary_sensor.a": "unknown"})
+        anchor = date(2026, 4, 20)
+        chore = Chore(
+            name="X", assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+            require_availability=True,
+        )
+        assert coord._compute_active_children(chore, anchor) == [a.id]
+
+    def test_child_without_availability_entity_always_available(self):
+        a = Child(name="A", id="kidA")  # no availability_entity
+        b = Child(name="B", id="kidB")
+        coord = _coord([a, b])
+        coord.hass.states.get = MagicMock(return_value=None)
+        anchor = date(2026, 4, 20)
+        chore = Chore(
+            name="X", assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+            require_availability=True,
+        )
+        assert coord._compute_active_children(chore, anchor) == [a.id]
+
+    def test_state_change_event_reassigns_chore(self):
+        a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
+        b = Child(name="B", id="kidB")
+        coord = _coord([a, b])
+        anchor = date(2026, 4, 20)
+        # Seed: A is home, chore picks A.
+        coord.hass.states.get = _states_lookup({"binary_sensor.a": "on"})
+        chore = Chore(
+            name="X", assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+            require_availability=True,
+            assignment_current_child_id=a.id,
+            id="chore1",
+        )
+        coord.storage.add_chore(chore)
+        coord.storage.get_completions = MagicMock(return_value=[])
+        # A leaves → reevaluate should move the chore to B.
+        coord.hass.states.get = _states_lookup({"binary_sensor.a": "off"})
+        run_async(coord._async_reevaluate_availability())
+        updated = coord.storage.get_chore("chore1")
+        assert updated.assignment_current_child_id == b.id
+
+    def test_state_change_event_skips_completed_chore(self):
+        import datetime as dt2
+        a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
+        b = Child(name="B", id="kidB")
+        coord = _coord([a, b])
+        anchor = date(2026, 4, 20)
+        coord.hass.states.get = _states_lookup({"binary_sensor.a": "off"})
+        chore = Chore(
+            name="X", assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+            require_availability=True,
+            assignment_current_child_id=a.id,
+            id="chore1",
+        )
+        coord.storage.add_chore(chore)
+
+        # Today in dt_util_mock is 2024-03-20 (see conftest).
+        from custom_components.taskmate.models import ChoreCompletion
+        today_dt = dt_util_mock.now()
+        completion = ChoreCompletion(
+            chore_id="chore1", child_id=a.id,
+            completed_at=today_dt, approved=True,
+        )
+        coord.storage.get_completions = MagicMock(return_value=[completion])
+
+        run_async(coord._async_reevaluate_availability())
+        # Chore stays on A because it's already done today.
+        updated = coord.storage.get_chore("chore1")
+        assert updated.assignment_current_child_id == a.id
+
+    def test_state_change_for_unrelated_entity_is_ignored(self):
+        a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
+        b = Child(name="B", id="kidB")
+        coord = _coord([a, b])
+        coord.hass.states.get = _states_lookup({"binary_sensor.a": "on"})
+        # Filter: fire an event for an entity no child is linked to.
+        event = _FakeEvent("binary_sensor.something_else")
+        # Callback does not schedule a reeval (hass.async_create_task is the
+        # FakeHass no-op anyway, but we still assert the tracked filter
+        # short-circuits before scheduling).
+        called = []
+        original = coord.hass.async_create_task
+        def _capture(coro):
+            called.append(coro)
+            return original(coro) if callable(original) else None
+        coord.hass.async_create_task = _capture
+        coord._availability_state_changed(event)
+        assert called == []

@@ -41,7 +41,11 @@
         "description": "Enter the child's information",
         "data": {
           "name": "Child's Name",
-          "avatar": "Avatar"
+          "avatar": "Avatar",
+          "availability_entity": "Availability Sensor (optional)"
+        },
+        "data_description": {
+          "availability_entity": "Optional Home Assistant entity whose state tells TaskMate whether this child is available. States 'on', 'home', 'available', 'present', or 'true' mean available; anything else (e.g. 'off', 'not_home', 'away') means unavailable. Leave blank to treat the child as always available. For calendars, wire up a template binary sensor since a calendar event usually means 'busy / unavailable'."
         }
       },
       "edit_child": {
@@ -50,7 +54,11 @@
         "data": {
           "name": "Child's Name",
           "avatar": "Avatar",
+          "availability_entity": "Availability Sensor (optional)",
           "action": "Action"
+        },
+        "data_description": {
+          "availability_entity": "Optional Home Assistant entity whose state tells TaskMate whether this child is available. States 'on', 'home', 'available', 'present', or 'true' mean available; anything else (e.g. 'off', 'not_home', 'away') means unavailable. Leave blank to treat the child as always available."
         }
       },
       "manage_chores": {
@@ -82,6 +90,7 @@
           "visibility_state": "Value to compare",
           "assignment_mode": "Assignment Mode",
           "assignment_rotation_anchor": "Rotation start date (alternating only)",
+          "require_availability": "Skip unavailable children",
           "publish_calendar_entities": "Publish to calendars (optional)"
         },
         "data_description": {
@@ -94,6 +103,7 @@
           "visibility_state": "The value to compare against. For 'Equals' or 'Not Equal': any text value (e.g., 'on', 'off', 'home', 'away'). For numeric operators (≥, ≤, >, <): enter a number (e.g., 25, 50.5, 100). Example: Entity 'sensor.temperature', Operator '>=', Value '20' shows chore when temperature is 20°C or higher.",
           "assignment_mode": "Everyone = every assigned child sees this chore. Alternating = one child at a time, rotating by day. Random = one randomly picked child per day (stable within the day). Balanced = today's balanced chores are split evenly across the assigned children — no one child ends up with everything.",
           "assignment_rotation_anchor": "Day-0 of the alternating rotation. Leave blank to start today. Only used when Assignment Mode is 'Alternating'.",
+          "require_availability": "When on, an unavailable child (based on the Availability Sensor in their profile) is skipped and the next available sibling takes the chore. Re-evaluated at midnight and whenever an availability sensor flips. Chores already completed today are not reassigned.",
           "publish_calendar_entities": "Pick one or more Home Assistant calendar entities. Whenever this chore is created, updated, or rolls over at midnight, today's assigned child is added as a calendar event on each selected calendar. Works with any number of calendars."
         }
       },
@@ -146,6 +156,7 @@
           "visibility_state": "Value to compare",
           "assignment_mode": "Assignment Mode",
           "assignment_rotation_anchor": "Rotation start date (alternating only)",
+          "require_availability": "Skip unavailable children",
           "publish_calendar_entities": "Publish to calendars (optional)"
         },
         "data_description": {
@@ -158,6 +169,7 @@
           "visibility_state": "The value to compare against. For 'Equals' or 'Not Equal': any text value (e.g., 'on', 'off', 'home', 'away'). For numeric operators (≥, ≤, >, <): enter a number (e.g., 25, 50.5, 100). Example: Entity 'sensor.temperature', Operator '>=', Value '20' shows chore when temperature is 20°C or higher.",
           "assignment_mode": "Everyone = every assigned child sees this chore. Alternating = one child at a time, rotating by day. Random = one randomly picked child per day (stable within the day). Balanced = today's balanced chores are split evenly across the assigned children — no one child ends up with everything.",
           "assignment_rotation_anchor": "Day-0 of the alternating rotation. Leave blank to start today. Only used when Assignment Mode is 'Alternating'.",
+          "require_availability": "When on, an unavailable child (based on the Availability Sensor in their profile) is skipped and the next available sibling takes the chore. Re-evaluated at midnight and whenever an availability sensor flips. Chores already completed today are not reassigned.",
           "publish_calendar_entities": "Pick one or more Home Assistant calendar entities. Whenever this chore is created, updated, or rolls over at midnight, today's assigned child is added as a calendar event on each selected calendar. Works with any number of calendars."
         }
       },
