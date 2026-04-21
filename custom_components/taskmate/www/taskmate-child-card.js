@@ -1947,10 +1947,20 @@ class TaskMateChildCard extends LitElement {
 
     let cleanupTimeout;
     try {
-      await this.hass.callService("taskmate", "complete_chore", {
-        chore_id: chore.id,
-        child_id: child.id,
-      });
+      // Prefer pressing the per-child/per-chore button entity so HA
+      // state-trigger automations on button.taskmate_<child>_complete_<chore>
+      // fire. Falls back to the service call if the entity isn't registered
+      // yet (e.g. right after HA restart).
+      const buttonEntityId = window.__taskmate_find_button
+        && window.__taskmate_find_button(this.hass, child.id, "complete", chore.id);
+      if (buttonEntityId) {
+        await this.hass.callService("button", "press", { entity_id: buttonEntityId });
+      } else {
+        await this.hass.callService("taskmate", "complete_chore", {
+          chore_id: chore.id,
+          child_id: child.id,
+        });
+      }
 
       // Trigger celebration!
       this._celebrating = chore.id;

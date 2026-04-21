@@ -61,4 +61,38 @@
   }
 
   window.__taskmate_attrs = resolveAttrs;
+
+  /**
+   * Find the entity id of a TaskMate button by (child_id, action, target_id).
+   *
+   * TaskMate creates per-child/per-chore and per-child/per-reward button
+   * entities. Lovelace cards used to call the backend services directly
+   * (e.g. taskmate.complete_chore), which bypassed the button entity and
+   * left its last_pressed state unchanged — so HA state-trigger automations
+   * on button.taskmate_<child>_complete_<chore> never fired. Cards now
+   * resolve the matching button entity and call button.press, making the
+   * card and the HA entity the same code path.
+   *
+   * action: "complete" (chore) | "claim" (reward)
+   * target_id: chore_id or reward_id
+   */
+  function findButtonEntity(hass, childId, action, targetId) {
+    if (!hass || !hass.states || !childId || !targetId) return null;
+    const targetKey = action === "claim" ? "reward_id" : "chore_id";
+    for (const [entityId, state] of Object.entries(hass.states)) {
+      if (!entityId.startsWith("button.taskmate_")) continue;
+      const attrs = state && state.attributes;
+      if (!attrs) continue;
+      if (attrs.child_id !== childId) continue;
+      if (attrs[targetKey] !== targetId) continue;
+      // Disambiguate chore complete vs reward claim — both carry child_id,
+      // but only one of chore_id / reward_id.
+      if (action === "claim" && !("reward_id" in attrs)) continue;
+      if (action === "complete" && !("chore_id" in attrs)) continue;
+      return entityId;
+    }
+    return null;
+  }
+
+  window.__taskmate_find_button = findButtonEntity;
 })();
