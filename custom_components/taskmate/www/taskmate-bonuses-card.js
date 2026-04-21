@@ -517,10 +517,10 @@ class TaskMateBonusesCard extends LitElement {
 
         ${this._editMode ? html`
           <div class="edit-actions">
-            <button class="edit-btn" title="${this._t('bonuses.btn_edit_title')}" @click=${() => this._startEdit(b)}>
+            <button class="edit-btn" title="${this._t('bonuses.btn_edit_title')}" aria-label="${this._t('bonuses.btn_edit_title')}" @click=${() => this._startEdit(b)}>
               <ha-icon icon="mdi:pencil"></ha-icon>
             </button>
-            <button class="edit-btn delete" title="${this._t('bonuses.btn_delete_title')}" @click=${() => this._deleteBonus(b.id)}>
+            <button class="edit-btn delete" title="${this._t('bonuses.btn_delete_title')}" aria-label="${this._t('bonuses.btn_delete_title')}" @click=${() => this._deleteBonus(b.id)}>
               <ha-icon icon="mdi:trash-can-outline"></ha-icon>
             </button>
           </div>
