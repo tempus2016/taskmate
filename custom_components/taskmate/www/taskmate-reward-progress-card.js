@@ -289,6 +289,35 @@ class TaskMateRewardProgressCard extends LitElement {
 
       .jackpot-badge ha-icon { --mdc-icon-size: 14px; }
 
+      /* Availability badges (low stock / sold out / expiring / expired) */
+      .availability-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        align-self: flex-start;
+      }
+      .availability-badge.badge-sold-out {
+        background: rgba(189,195,199,0.3);
+        color: #7f8c8d;
+      }
+      .availability-badge.badge-expired {
+        background: rgba(52,73,94,0.2);
+        color: #34495e;
+      }
+      .availability-badge.badge-low-stock {
+        background: rgba(231,76,60,0.18);
+        color: #c0392b;
+      }
+      .availability-badge.badge-expiring-soon {
+        background: rgba(243,156,18,0.2);
+        color: #d35400;
+      }
+
       .jackpot-pool {
         display: flex;
         flex-direction: column;
@@ -399,6 +428,30 @@ class TaskMateRewardProgressCard extends LitElement {
     if (!showChildren.length) showChildren = children;
 
     const isJackpot = reward.is_jackpot;
+    const isSoldOut = reward.is_sold_out === true;
+    const isExpired = reward.is_expired === true;
+    const daysUntilExpiry = (typeof reward.days_until_expiry === 'number')
+      ? reward.days_until_expiry
+      : null;
+    let availabilityLabel = '';
+    let availabilityClass = '';
+    if (isExpired) {
+      availabilityLabel = this._t('rewards.expired');
+      availabilityClass = 'badge-expired';
+    } else if (isSoldOut) {
+      availabilityLabel = this._t('rewards.sold_out');
+      availabilityClass = 'badge-sold-out';
+    } else if (typeof reward.quantity === 'number' && reward.quantity > 0 && reward.quantity <= 3) {
+      availabilityLabel = this._t('rewards.only_n_left', { count: reward.quantity });
+      availabilityClass = 'badge-low-stock';
+    } else if (typeof daysUntilExpiry === 'number' && daysUntilExpiry >= 0 && daysUntilExpiry <= 7) {
+      availabilityLabel = daysUntilExpiry === 0
+        ? this._t('rewards.expires_today')
+        : (daysUntilExpiry === 1
+            ? this._t('rewards.expires_in_days', { count: daysUntilExpiry })
+            : this._t('rewards.expires_in_days_plural', { count: daysUntilExpiry }));
+      availabilityClass = 'badge-expiring-soon';
+    }
 
     return html`
       <ha-card>
@@ -416,6 +469,9 @@ class TaskMateRewardProgressCard extends LitElement {
             </div>
             <div class="reward-name">${reward.name}</div>
             ${reward.description ? html`<div class="reward-description">${reward.description}</div>` : ''}
+            ${availabilityLabel ? html`
+              <div class="availability-badge ${availabilityClass}">${availabilityLabel}</div>
+            ` : ''}
             ${isJackpot ? html`
               <div class="jackpot-badge">
                 <ha-icon icon="mdi:star-shooting"></ha-icon>

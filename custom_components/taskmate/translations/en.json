@@ -179,12 +179,16 @@
           "icon": "Icon",
           "assigned_to": "Assigned To (leave empty for all children)",
           "is_jackpot": "Is Jackpot",
-          "pool_enabled": "Pool Reward (Savings Jar)"
+          "pool_enabled": "Pool Reward (Savings Jar)",
+          "quantity": "Limited Quantity (leave blank for unlimited)",
+          "expires_at": "Expiration Date (optional)"
         },
         "data_description": {
           "is_jackpot": "Pool points from all assigned children toward one shared reward",
           "pool_enabled": "Children deposit points into this reward's dedicated pool rather than spending from their global balance. Good for long-term savings goals.",
-          "cost": "Number of points required to claim this reward"
+          "cost": "Number of points required to claim this reward",
+          "quantity": "How many of this reward exist. Each approved claim reduces it by 1. When it reaches 0, the reward is marked Sold Out and any points other children had pooled for it are refunded to their balance.",
+          "expires_at": "The reward disappears on this date. Any points children have pooled for it are refunded to their balance at midnight."
         }
       },
       "edit_reward": {
@@ -198,12 +202,16 @@
           "assigned_to": "Assigned To",
           "is_jackpot": "Is Jackpot",
           "pool_enabled": "Pool Reward (Savings Jar)",
+          "quantity": "Limited Quantity (leave blank for unlimited)",
+          "expires_at": "Expiration Date (optional)",
           "action": "Action"
         },
         "data_description": {
           "is_jackpot": "Pool points from all assigned children toward one shared reward",
           "pool_enabled": "Children deposit points into this reward's dedicated pool rather than spending from their global balance. Good for long-term savings goals.",
-          "cost": "Number of points required to claim this reward"
+          "cost": "Number of points required to claim this reward",
+          "quantity": "Remaining stock. Each approved claim reduces it by 1. Set to 0 now to immediately mark as Sold Out and refund any pooled points.",
+          "expires_at": "The reward disappears on this date and any pooled points are refunded."
         }
       },
       "settings": {

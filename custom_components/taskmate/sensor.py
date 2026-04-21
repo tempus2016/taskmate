@@ -1,6 +1,8 @@
 """Sensor platform for TaskMate integration."""
 from __future__ import annotations
 
+from datetime import date
+
 from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
@@ -287,6 +289,7 @@ def _build_rewards_list(common: dict) -> list[dict]:
     children = common["children"]
     pool_by_child_reward = common["pool_by_child_reward"]
     pool_total_by_reward = common["pool_total_by_reward"]
+    today = dt_util.now().date()
     out = []
     for r in rewards:
         assigned = (
@@ -301,6 +304,18 @@ def _build_rewards_list(common: dict) -> list[dict]:
         jackpot_pool_total = (
             pool_total_by_reward.get(r.id, 0) if getattr(r, 'is_jackpot', False) else None
         )
+        quantity = getattr(r, 'quantity', None)
+        expires_at = getattr(r, 'expires_at', None)
+        is_sold_out = quantity is not None and quantity <= 0
+        is_expired = False
+        days_until_expiry: int | None = None
+        if expires_at:
+            try:
+                deadline = date.fromisoformat(expires_at)
+                is_expired = deadline <= today
+                days_until_expiry = (deadline - today).days
+            except (TypeError, ValueError):
+                pass
         out.append({
             "id": r.id,
             "name": r.name,
@@ -313,6 +328,12 @@ def _build_rewards_list(common: dict) -> list[dict]:
             "calculated_costs": calculated_costs,
             "pool_allocations": reward_pool_allocations,
             "jackpot_pool_total": jackpot_pool_total,
+            "quantity": quantity,
+            "expires_at": expires_at,
+            "is_sold_out": is_sold_out,
+            "is_expired": is_expired,
+            "is_available": not (is_sold_out or is_expired),
+            "days_until_expiry": days_until_expiry,
         })
     return out
 

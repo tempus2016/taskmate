@@ -376,6 +376,13 @@
   "rewards.deposit_disabled_no_child": "Select a child to deposit",
   "rewards.deposit_disabled_insufficient": "Not enough spendable ({spendable} available)",
   "rewards.deposit_disabled_loading": "Depositing…",
+  "rewards.sold_out": "Sold Out",
+  "rewards.expired": "Expired",
+  "rewards.only_n_left": "Only {count} left!",
+  "rewards.expires_today": "Expires today",
+  "rewards.expires_in_days": "Expires in {count} day",
+  "rewards.expires_in_days_plural": "Expires in {count} days",
+  "rewards.unavailable_hint": "This reward can no longer be claimed",
 
   "streak.card_name": "TaskMate Streaks & Achievements",
   "streak.card_description": "Consecutive day streaks and milestone badges for each child",

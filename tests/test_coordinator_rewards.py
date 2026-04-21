@@ -474,3 +474,167 @@ class TestPoolOverallocationRefund:
         # 1 point refunded back to the wallet on redeem
         assert child.points == 90
         coord.storage.remove_pool_allocation.assert_called()
+
+
+class TestRewardStockAndExpiration:
+    """Quantity-based sold-out behaviour and expires_at expiration, plus the
+    automatic refund that fires when either condition makes a reward
+    unavailable while children still have points earmarked for it."""
+
+    def test_approve_decrements_quantity(self):
+        import datetime as dt
+        child = _child(points=100)
+        reward = Reward(name="Unique toy", cost=50, quantity=2, id="reward1")
+        claim = RewardClaim(
+            reward_id="reward1", child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+        )
+        coord = _make_coord(children=[child], rewards=[reward], claims=[claim])
+        run(coord.async_approve_reward("claim1"))
+        assert reward.quantity == 1
+        coord.storage.update_reward.assert_called()
+
+    def test_unlimited_quantity_not_decremented(self):
+        import datetime as dt
+        child = _child(points=100)
+        reward = Reward(name="Ice cream", cost=50, quantity=None, id="reward1")
+        claim = RewardClaim(
+            reward_id="reward1", child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+        )
+        coord = _make_coord(children=[child], rewards=[reward], claims=[claim])
+        run(coord.async_approve_reward("claim1"))
+        assert reward.quantity is None
+
+    def test_approve_sold_out_refunds_other_pool_allocations(self):
+        """Non-jackpot reward with quantity 1: child A redeems, child B had
+        pre-allocated points on the same reward. On approval the reward hits 0
+        and child B's allocation must be refunded to their wallet."""
+        import datetime as dt
+        child_a = Child(name="A", points=100, id="kidA")
+        child_b = Child(name="B", points=50, id="kidB")
+        reward = Reward(name="Unique toy", cost=50, quantity=1, id="reward1")
+        alloc_b = PoolAllocation(
+            child_id="kidB", reward_id="reward1", allocated_points=20, id="alloc_b",
+        )
+        claim = RewardClaim(
+            reward_id="reward1", child_id="kidA",
+            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+        )
+        coord = _make_coord(
+            children=[child_a, child_b], rewards=[reward], claims=[claim],
+        )
+        # Child A is redeeming from their wallet; allocations belong to B.
+        coord.storage.get_pool_allocation = MagicMock(return_value=None)
+        coord.storage.get_pool_allocations = MagicMock(return_value=[alloc_b])
+
+        run(coord.async_approve_reward("claim1"))
+
+        assert reward.quantity == 0
+        assert child_a.points == 50  # 100 − 50 cost
+        assert child_b.points == 70  # 50 + 20 refunded
+        coord.storage.remove_pool_allocation.assert_any_call("kidB", "reward1")
+
+    def test_jackpot_sold_out_refunds_remaining_contributors(self):
+        """Jackpot redeem of a quantity=1 reward: allocations are cleared by
+        the pool-mode redeem path, so when quantity hits 0 there's nothing
+        left to refund. Points stay spent on the reward."""
+        import datetime as dt
+        child_a = Child(name="A", points=0, id="kidA")
+        child_b = Child(name="B", points=0, id="kidB")
+        reward = Reward(name="Shared prize", cost=80, quantity=1, is_jackpot=True, id="rewardJ")
+        alloc_a = PoolAllocation(child_id="kidA", reward_id="rewardJ", allocated_points=50, id="a1")
+        alloc_b = PoolAllocation(child_id="kidB", reward_id="rewardJ", allocated_points=30, id="a2")
+        claim = RewardClaim(
+            reward_id="rewardJ", child_id="kidA",
+            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+        )
+        coord = _make_coord(
+            children=[child_a, child_b], rewards=[reward], claims=[claim],
+        )
+        coord.storage.get_total_allocated_for_reward = MagicMock(return_value=80)
+
+        # Stateful mock: allocations shrink as storage.remove_pool_allocation
+        # is called, mirroring the real storage behaviour.
+        allocs = {("kidA", "rewardJ"): alloc_a, ("kidB", "rewardJ"): alloc_b}
+        coord.storage.get_pool_allocations = MagicMock(
+            side_effect=lambda: list(allocs.values())
+        )
+        def _remove(child_id, reward_id):
+            allocs.pop((child_id, reward_id), None)
+        coord.storage.remove_pool_allocation = MagicMock(side_effect=_remove)
+
+        run(coord.async_approve_reward("claim1"))
+
+        assert reward.quantity == 0
+        # Points stay spent — they were deducted at allocation time and the
+        # redeem consumed them. No refund fires because allocations are gone
+        # by the time the sold-out check runs.
+        assert child_a.points == 0
+        assert child_b.points == 0
+        assert allocs == {}
+
+    def test_claim_blocked_when_sold_out(self):
+        child = _child(points=100)
+        reward = Reward(name="Gone", cost=50, quantity=0, id="reward1")
+        coord = _make_coord(children=[child], rewards=[reward])
+        with pytest.raises(ValueError, match="sold out"):
+            run(coord.async_claim_reward("reward1", "kid1"))
+
+    def test_pool_allocation_blocked_when_sold_out(self):
+        child = _child(points=100)
+        reward = Reward(name="Gone", cost=50, quantity=0, id="reward1")
+        coord = _make_coord(children=[child], rewards=[reward])
+        with pytest.raises(ValueError, match="sold out"):
+            run(coord.async_allocate_points_to_pool("kid1", "reward1", 10))
+
+    def test_claim_blocked_when_expired(self):
+        child = _child(points=100)
+        # dt_util_mock returns 2024-03-20; use 2024-03-19 to be expired.
+        reward = Reward(name="Old", cost=50, expires_at="2024-03-19", id="reward1")
+        coord = _make_coord(children=[child], rewards=[reward])
+        with pytest.raises(ValueError, match="expired"):
+            run(coord.async_claim_reward("reward1", "kid1"))
+
+    def test_pool_allocation_blocked_when_expired(self):
+        child = _child(points=100)
+        reward = Reward(name="Old", cost=50, expires_at="2024-03-19", id="reward1")
+        coord = _make_coord(children=[child], rewards=[reward])
+        with pytest.raises(ValueError, match="expired"):
+            run(coord.async_allocate_points_to_pool("kid1", "reward1", 10))
+
+    def test_expires_at_in_future_does_not_expire_yet(self):
+        child = _child(points=100)
+        reward = Reward(name="Future", cost=50, expires_at="2099-01-01", id="reward1")
+        coord = _make_coord(children=[child], rewards=[reward])
+        claim = run(coord.async_claim_reward("reward1", "kid1"))
+        assert claim.reward_id == "reward1"
+
+    def test_expiration_midnight_refunds_all_allocations(self):
+        child_a = Child(name="A", points=10, id="kidA")
+        child_b = Child(name="B", points=20, id="kidB")
+        reward = Reward(name="Old", cost=100, expires_at="2024-03-19", id="reward1")
+        alloc_a = PoolAllocation(child_id="kidA", reward_id="reward1", allocated_points=15, id="a1")
+        alloc_b = PoolAllocation(child_id="kidB", reward_id="reward1", allocated_points=25, id="a2")
+        coord = _make_coord(children=[child_a, child_b], rewards=[reward])
+        coord.storage.get_rewards = MagicMock(return_value=[reward])
+        coord.storage.get_pool_allocations = MagicMock(return_value=[alloc_a, alloc_b])
+
+        run(coord._async_expire_rewards())
+
+        assert child_a.points == 25  # 10 + 15 refund
+        assert child_b.points == 45  # 20 + 25 refund
+
+    def test_update_reward_to_quantity_zero_refunds_allocations(self):
+        child = _child(points=50)
+        reward = Reward(name="Limited", cost=100, quantity=2, id="reward1")
+        alloc = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=30, id="a1")
+        coord = _make_coord(children=[child], rewards=[reward])
+        coord.storage.get_pool_allocation = MagicMock(return_value=alloc)
+        coord.storage.get_pool_allocations = MagicMock(return_value=[alloc])
+
+        updated = Reward(name="Limited", cost=100, quantity=0, id="reward1")
+        run(coord.async_update_reward(updated))
+
+        assert child.points == 80  # 50 + 30 refund
+        coord.storage.remove_pool_allocation.assert_called_with("kid1", "reward1")
