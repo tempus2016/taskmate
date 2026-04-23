@@ -351,6 +351,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         """Manage chores menu."""
         await self._async_load_translations()
         chores = self.coordinator.storage.get_chores()
+        child_names = {c.id: c.name for c in self.coordinator.storage.get_children()}
         _m = lambda key, default: self._t(f"options.step.manage_chores.menu_options.{key}", default)
         menu_options = {
             "add_chore": _m("add_chore", "Add Single Chore"),
@@ -360,7 +361,12 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         for chore in chores:
             time_label = f" [{chore.time_category}]" if chore.time_category != "anytime" else ""
             disabled_label = " (disabled)" if (not getattr(chore, 'enabled', True) or getattr(chore, 'disabled_for', [])) else ""
-            menu_options[f"edit_chore_{chore.id}"] = f"{chore.name} ({chore.points} pts){time_label}{disabled_label}"
+            if not chore.assigned_to:
+                assigned_label = " - All"
+            else:
+                resolved = [child_names[cid] for cid in chore.assigned_to if cid in child_names]
+                assigned_label = f" - {', '.join(resolved)}" if resolved else ""
+            menu_options[f"edit_chore_{chore.id}"] = f"{chore.name} ({chore.points} pts){time_label}{assigned_label}{disabled_label}"
 
         menu_options["init"] = _m("init", "Back to Main Menu")
 
