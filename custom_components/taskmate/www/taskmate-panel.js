@@ -8,7 +8,7 @@
  * Vanilla HTMLElement — no LitElement dependency.
  */
 
-const PANEL_VERSION = "3.5.0-alpha.3";
+const PANEL_VERSION = "3.5.0-alpha.4";
 
 const TABS = [
   { id: "children",  label: "Children" },
@@ -117,10 +117,20 @@ class TaskMatePanel extends HTMLElement {
       return;
     }
 
-    // Dialog open / close
-    if (act === "close-dialog" || act === "scrim") {
+    // Dialog close button — always closes
+    if (act === "close-dialog") {
       this._dialog = null;
       this._render();
+      return;
+    }
+    // Scrim — closes ONLY when the dark backdrop itself was clicked, not
+    // when a click inside the dialog bubbled up to it.
+    if (act === "scrim") {
+      const scrimEl = this.querySelector(".tm-scrim");
+      if (e.target === scrimEl) {
+        this._dialog = null;
+        this._render();
+      }
       return;
     }
 
@@ -380,7 +390,7 @@ class TaskMatePanel extends HTMLElement {
     const title = this._dialog.mode === "add" ? "Add child" : "Edit child";
     return `
       <div class="tm-scrim" data-act="scrim">
-        <div class="tm-dialog" onclick="event.stopPropagation()">
+        <div class="tm-dialog">
           <header class="tm-dialog-head">
             <h2>${title}</h2>
             <button class="tm-icon-btn" data-act="close-dialog" title="Close">&times;</button>
