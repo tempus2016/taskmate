@@ -21,6 +21,7 @@
     "step": {
       "init": {
         "title": "TaskMate Settings",
+        "description": "⚠ TaskMate now has a dedicated admin panel in the sidebar (TaskMate → /taskmate-admin) which covers everything below in one place. This menu will be removed in v4.0 — please switch over.",
         "menu_options": {
           "manage_children": "Manage Children",
           "manage_chores": "Manage Chores",
