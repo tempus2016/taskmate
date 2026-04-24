@@ -41,7 +41,11 @@
         "description": "Saisissez les informations de l'enfant",
         "data": {
           "name": "Nom de l'enfant",
-          "avatar": "Avatar"
+          "avatar": "Avatar",
+          "availability_entity": "Capteur de disponibilité (optionnel)"
+        },
+        "data_description": {
+          "availability_entity": "Entité Home Assistant optionnelle dont l'état indique à TaskMate si cet enfant est disponible. Les états 'on', 'home', 'available', 'present' ou 'true' signifient disponible ; tout autre état (ex. 'off', 'not_home', 'away') signifie indisponible. Laissez vide pour considérer l'enfant comme toujours disponible. Pour les calendriers, utilisez un capteur binaire modèle puisqu'un événement de calendrier signifie généralement 'occupé / indisponible'."
         }
       },
       "edit_child": {
@@ -50,7 +54,11 @@
         "data": {
           "name": "Nom de l'enfant",
           "avatar": "Avatar",
+          "availability_entity": "Capteur de disponibilité (optionnel)",
           "action": "Action"
+        },
+        "data_description": {
+          "availability_entity": "Entité Home Assistant optionnelle dont l'état indique à TaskMate si cet enfant est disponible. Les états 'on', 'home', 'available', 'present' ou 'true' signifient disponible ; tout autre état (ex. 'off', 'not_home', 'away') signifie indisponible. Laissez vide pour considérer l'enfant comme toujours disponible."
         }
       },
       "manage_chores": {
@@ -82,6 +90,7 @@
           "visibility_state": "Valeur à comparer",
           "assignment_mode": "Mode d'attribution",
           "assignment_rotation_anchor": "Date de début du roulement (alternance uniquement)",
+          "require_availability": "Ignorer les enfants indisponibles",
           "publish_calendar_entities": "Publier vers les calendriers (optionnel)"
         },
         "data_description": {
@@ -94,7 +103,8 @@
           "visibility_state": "La valeur à comparer. Pour 'Égale' ou 'Non égale' : tout texte (ex. : 'on', 'off', 'home', 'away'). Pour opérateurs numériques (≥, ≤, >, <) : entrez un nombre (ex. : 25, 50.5, 100). Exemple : Entité 'sensor.temperature', Opérateur '>=', Valeur '20' affiche la corvée quand la température est 20°C ou plus.",
           "assignment_mode": "Tout le monde = chaque enfant assigné voit cette tâche. Alternance = un enfant à la fois, rotation par jour. Aléatoire = un enfant choisi au hasard chaque jour (stable dans la journée). Équilibré = les tâches en mode équilibré du jour sont réparties équitablement entre les enfants assignés — aucun enfant ne se retrouve avec tout.",
           "assignment_rotation_anchor": "Jour 0 du roulement alterné. Laissez vide pour commencer aujourd'hui. Utilisé uniquement avec le mode 'Alternance'.",
-          "publish_calendar_entities": "Choisissez un ou plusieurs calendriers Home Assistant. À chaque création, mise à jour ou passage à minuit, l'enfant attribué du jour est ajouté comme événement sur chaque calendrier sélectionné. Fonctionne avec un nombre illimité de calendriers."
+          "publish_calendar_entities": "Choisissez un ou plusieurs calendriers Home Assistant. À chaque création, mise à jour ou passage à minuit, l'enfant attribué du jour est ajouté comme événement sur chaque calendrier sélectionné. Fonctionne avec un nombre illimité de calendriers.",
+          "require_availability": "Lorsqu'activé, un enfant indisponible (selon le capteur de disponibilité de son profil) est ignoré et le prochain frère/sœur disponible prend la corvée. Réévalué à minuit et chaque fois qu'un capteur de disponibilité change d'état. Les corvées déjà terminées aujourd'hui ne sont pas réaffectées."
         }
       },
       "add_chores_bulk": {
@@ -146,6 +156,7 @@
           "visibility_state": "Valeur à comparer",
           "assignment_mode": "Mode d'attribution",
           "assignment_rotation_anchor": "Date de début du roulement (alternance uniquement)",
+          "require_availability": "Ignorer les enfants indisponibles",
           "publish_calendar_entities": "Publier vers les calendriers (optionnel)"
         },
         "data_description": {
@@ -158,7 +169,8 @@
           "visibility_state": "La valeur à comparer. Pour 'Égale' ou 'Non égale' : tout texte (ex. : 'on', 'off', 'home', 'away'). Pour opérateurs numériques (≥, ≤, >, <) : entrez un nombre (ex. : 25, 50.5, 100). Exemple : Entité 'sensor.temperature', Opérateur '>=', Valeur '20' affiche la corvée quand la température est 20°C ou plus.",
           "assignment_mode": "Tout le monde = chaque enfant assigné voit cette tâche. Alternance = un enfant à la fois, rotation par jour. Aléatoire = un enfant choisi au hasard chaque jour (stable dans la journée). Équilibré = les tâches en mode équilibré du jour sont réparties équitablement entre les enfants assignés — aucun enfant ne se retrouve avec tout.",
           "assignment_rotation_anchor": "Jour 0 du roulement alterné. Laissez vide pour commencer aujourd'hui. Utilisé uniquement avec le mode 'Alternance'.",
-          "publish_calendar_entities": "Choisissez un ou plusieurs calendriers Home Assistant. À chaque création, mise à jour ou passage à minuit, l'enfant attribué du jour est ajouté comme événement sur chaque calendrier sélectionné. Fonctionne avec un nombre illimité de calendriers."
+          "publish_calendar_entities": "Choisissez un ou plusieurs calendriers Home Assistant. À chaque création, mise à jour ou passage à minuit, l'enfant attribué du jour est ajouté comme événement sur chaque calendrier sélectionné. Fonctionne avec un nombre illimité de calendriers.",
+          "require_availability": "Lorsqu'activé, un enfant indisponible (selon le capteur de disponibilité de son profil) est ignoré et le prochain frère/sœur disponible prend la corvée. Réévalué à minuit et chaque fois qu'un capteur de disponibilité change d'état. Les corvées déjà terminées aujourd'hui ne sont pas réaffectées."
         }
       },
       "manage_rewards": {
@@ -178,11 +190,17 @@
           "cost": "Coût en points (fixe)",
           "icon": "Icône",
           "assigned_to": "Assignée à (laisser vide pour tous les enfants)",
-          "is_jackpot": "Est un Jackpot"
+          "is_jackpot": "Est un Jackpot",
+          "pool_enabled": "Récompense-cagnotte (tirelire)",
+          "quantity": "Quantité limitée (laisser vide pour illimité)",
+          "expires_at": "Date d'expiration (optionnel)"
         },
         "data_description": {
           "is_jackpot": "Cumuler les points de tous les enfants assignés pour une récompense partagée",
-          "cost": "Nombre de points requis pour réclamer cette récompense"
+          "cost": "Nombre de points requis pour réclamer cette récompense",
+          "pool_enabled": "Les enfants déposent des points dans la cagnotte dédiée de cette récompense plutôt que de dépenser depuis leur solde global. Idéal pour les objectifs d'épargne à long terme.",
+          "quantity": "Combien d'exemplaires de cette récompense existent. Chaque réclamation approuvée la réduit de 1. Quand elle atteint 0, la récompense est marquée Épuisée et les points que d'autres enfants y avaient alloués sont remboursés sur leur solde.",
+          "expires_at": "La récompense disparaît à cette date. Les points que les enfants y ont alloués sont remboursés sur leur solde à minuit."
         }
       },
       "edit_reward": {
@@ -195,11 +213,17 @@
           "icon": "Icône",
           "assigned_to": "Assignée à",
           "is_jackpot": "Est un Jackpot",
+          "pool_enabled": "Récompense-cagnotte (tirelire)",
+          "quantity": "Quantité limitée (laisser vide pour illimité)",
+          "expires_at": "Date d'expiration (optionnel)",
           "action": "Action"
         },
         "data_description": {
           "is_jackpot": "Cumuler les points de tous les enfants assignés pour une récompense partagée",
-          "cost": "Nombre de points requis pour réclamer cette récompense"
+          "cost": "Nombre de points requis pour réclamer cette récompense",
+          "pool_enabled": "Les enfants déposent des points dans la cagnotte dédiée de cette récompense plutôt que de dépenser depuis leur solde global. Idéal pour les objectifs d'épargne à long terme.",
+          "quantity": "Stock restant. Chaque réclamation approuvée le réduit de 1. Définissez à 0 maintenant pour marquer immédiatement comme Épuisée et rembourser les points alloués.",
+          "expires_at": "La récompense disparaît à cette date et tous les points alloués sont remboursés."
         }
       },
       "settings": {
@@ -285,7 +309,9 @@
     },
     "error": {
       "name_required": "Le nom est requis",
-      "invalid_milestone_format": "Format de palier invalide — utilisez des paires jours:points, ex: 3:5, 7:10"
+      "invalid_milestone_format": "Format de palier invalide — utilisez des paires jours:points, ex: 3:5, 7:10",
+      "operator_required": "L'opérateur est requis lorsqu'une entité est définie",
+      "state_required": "La valeur est requise lorsqu'une entité est définie"
     }
   },
   "selector": {
@@ -372,6 +398,7 @@
     },
     "visibility_operator": {
       "options": {
+        "none": "Aucun filtre — Toujours afficher la corvée",
         "equals": "Égale — Afficher quand l'état correspond exactement",
         "not_equals": "Non égale — Afficher quand l'état ne correspond pas",
         "gte": "Supérieur ou égal (≥) — Afficher quand la valeur est ≥ cible",
@@ -675,6 +702,40 @@
         "child_id": {
           "name": "ID de l'enfant",
           "description": "L'identifiant de l'enfant à qui attribuer le bonus"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "Ajouter une corvée",
+      "description": "Créer une nouvelle corvée dynamiquement, généralement depuis une automatisation ou un script",
+      "fields": {
+        "name": {
+          "name": "Nom",
+          "description": "Le nom de la corvée"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Description optionnelle de la corvée"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Points attribués à l'achèvement de cette corvée"
+        },
+        "assigned_to": {
+          "name": "Assignée à",
+          "description": "Liste des IDs d'enfants à qui assigner cette corvée. Laisser vide pour l'assigner à tous les enfants"
+        },
+        "time_category": {
+          "name": "Catégorie horaire",
+          "description": "Quand cette corvée doit être effectuée : morning, afternoon, evening, night ou anytime"
+        },
+        "one_shot": {
+          "name": "Unique",
+          "description": "Si vrai, c'est une corvée unique qui expire après exécution ou à la fin de la journée"
+        },
+        "requires_approval": {
+          "name": "Nécessite approbation",
+          "description": "Si vrai, un parent doit approuver l'exécution avant que les points soient attribués"
         }
       }
     }

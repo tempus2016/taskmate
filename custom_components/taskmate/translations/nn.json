@@ -41,7 +41,11 @@
         "description": "Skriv inn informasjon om bornet",
         "data": {
           "name": "Namnet til bornet",
-          "avatar": "Avatar"
+          "avatar": "Avatar",
+          "availability_entity": "Tilgjengesensor (valfritt)"
+        },
+        "data_description": {
+          "availability_entity": "Valfri Home Assistant-entitet som med tilstanden si fortel TaskMate om dette bornet er tilgjengeleg. Tilstandane 'on', 'home', 'available', 'present' eller 'true' tyder tilgjengeleg; alt anna (t.d. 'off', 'not_home', 'away') tyder utilgjengeleg. Lat stå tom for å handsame bornet som alltid tilgjengeleg. For kalenderar, bruk ein template binary sensor sidan ei kalenderhending oftast tyder 'oppteken / utilgjengeleg'."
         }
       },
       "edit_child": {
@@ -50,7 +54,11 @@
         "data": {
           "name": "Namnet til bornet",
           "avatar": "Avatar",
+          "availability_entity": "Tilgjengesensor (valfritt)",
           "action": "Handling"
+        },
+        "data_description": {
+          "availability_entity": "Valfri Home Assistant-entitet som med tilstanden si fortel TaskMate om dette bornet er tilgjengeleg. Tilstandane 'on', 'home', 'available', 'present' eller 'true' tyder tilgjengeleg; alt anna (t.d. 'off', 'not_home', 'away') tyder utilgjengeleg. Lat stå tom for å handsame bornet som alltid tilgjengeleg."
         }
       },
       "manage_chores": {
@@ -82,6 +90,7 @@
           "visibility_state": "Synlegheitstilstand",
           "assignment_mode": "Tildelingsmodus",
           "assignment_rotation_anchor": "Startdato for rotasjon (berre vekslande)",
+          "require_availability": "Hopp over utilgjengelege born",
           "publish_calendar_entities": "Publiser til kalendrar (valfritt)"
         },
         "data_description": {
@@ -94,7 +103,8 @@
           "visibility_state": "Verdien som skal samanliknast. For 'Lik' eller 'Ikkje lik': kva som helst tekstverde (t.d. 'on', 'off', 'home', 'away'). For numeriske operatorar (≥, ≤, >, <): skriv inn eit tal (t.d. 25, 50,5, 100). Døme: Eining 'sensor.temperature', Operator '≥', Verdi '20' viser oppgåva når temperaturen er 20°C eller høgare.",
           "assignment_mode": "Alle = kvart tilknytt barn ser oppgåva. Vekslande = eitt barn om gongen, roterer dagleg. Tilfeldig = eitt barn plukka tilfeldig kvar dag (stabilt gjennom dagen). Balansert = dagens balanserte oppgåver vert fordelte jamt mellom dei tildelte barna — ingen endar opp med alt.",
           "assignment_rotation_anchor": "Dag 0 i den vekslande rotasjonen. Lat stå tom for å starte i dag. Vert brukt berre når tildelingsmodus er 'Vekslande'.",
-          "publish_calendar_entities": "Vel ein eller fleire Home Assistant-kalenderentitetar. Kvar gong oppgåva vert oppretta, oppdatert eller skiftar ved midnatt vert dagens tildelte barn lagt til som ei kalenderoppføring i kvar valde kalender. Fungerer med eit kva som helst tal kalendrar."
+          "publish_calendar_entities": "Vel ein eller fleire Home Assistant-kalenderentitetar. Kvar gong oppgåva vert oppretta, oppdatert eller skiftar ved midnatt vert dagens tildelte barn lagt til som ei kalenderoppføring i kvar valde kalender. Fungerer med eit kva som helst tal kalendrar.",
+          "require_availability": "Når slått på, vert eit utilgjengeleg born (basert på tilgjengesensoren i profilen) hoppa over, og neste tilgjengelege syskenet tek oppgåva. Vert vurdert på nytt ved midnatt og kvar gong ein tilgjengesensor endrar tilstand. Oppgåver som alt er fullførde i dag, vert ikkje tildelt på nytt."
         }
       },
       "add_chores_bulk": {
@@ -146,6 +156,7 @@
           "visibility_state": "Synlegheitstilstand",
           "assignment_mode": "Tildelingsmodus",
           "assignment_rotation_anchor": "Startdato for rotasjon (berre vekslande)",
+          "require_availability": "Hopp over utilgjengelege born",
           "publish_calendar_entities": "Publiser til kalendrar (valfritt)"
         },
         "data_description": {
@@ -158,7 +169,8 @@
           "visibility_state": "Verdien som skal samanliknast. For 'Lik' eller 'Ikkje lik': kva som helst tekstverde (t.d. 'on', 'off', 'home', 'away'). For numeriske operatorar (≥, ≤, >, <): skriv inn eit tal (t.d. 25, 50,5, 100). Døme: Eining 'sensor.temperature', Operator '≥', Verdi '20' viser oppgåva når temperaturen er 20°C eller høgare.",
           "assignment_mode": "Alle = kvart tilknytt barn ser oppgåva. Vekslande = eitt barn om gongen, roterer dagleg. Tilfeldig = eitt barn plukka tilfeldig kvar dag (stabilt gjennom dagen). Balansert = dagens balanserte oppgåver vert fordelte jamt mellom dei tildelte barna — ingen endar opp med alt.",
           "assignment_rotation_anchor": "Dag 0 i den vekslande rotasjonen. Lat stå tom for å starte i dag. Vert brukt berre når tildelingsmodus er 'Vekslande'.",
-          "publish_calendar_entities": "Vel ein eller fleire Home Assistant-kalenderentitetar. Kvar gong oppgåva vert oppretta, oppdatert eller skiftar ved midnatt vert dagens tildelte barn lagt til som ei kalenderoppføring i kvar valde kalender. Fungerer med eit kva som helst tal kalendrar."
+          "publish_calendar_entities": "Vel ein eller fleire Home Assistant-kalenderentitetar. Kvar gong oppgåva vert oppretta, oppdatert eller skiftar ved midnatt vert dagens tildelte barn lagt til som ei kalenderoppføring i kvar valde kalender. Fungerer med eit kva som helst tal kalendrar.",
+          "require_availability": "Når slått på, vert eit utilgjengeleg born (basert på tilgjengesensoren i profilen) hoppa over, og neste tilgjengelege syskenet tek oppgåva. Vert vurdert på nytt ved midnatt og kvar gong ein tilgjengesensor endrar tilstand. Oppgåver som alt er fullførde i dag, vert ikkje tildelt på nytt."
         }
       },
       "manage_rewards": {
@@ -178,11 +190,17 @@
           "cost": "Poengkostnad (fast)",
           "icon": "Ikon",
           "assigned_to": "Tildelt til (lat stå tom for alle born)",
-          "is_jackpot": "Er jackpot"
+          "is_jackpot": "Er jackpot",
+          "pool_enabled": "Løning med sparegris",
+          "quantity": "Avgrensa tal (lat stå tomt for ubegrensa)",
+          "expires_at": "Utløpsdato (valfritt)"
         },
         "data_description": {
           "is_jackpot": "Slå saman poeng frå alle tildelte born mot éi felles løning",
-          "cost": "Tal poeng som krevst for å hente denne løninga"
+          "cost": "Tal poeng som krevst for å hente denne løninga",
+          "pool_enabled": "Borna set poeng inn i denne løninga sin eigen sparegris i staden for å bruke frå saldoen sin. Bra for langsiktige sparemål.",
+          "quantity": "Kor mange av denne løninga som finst. Kvart godkjent krav reduserer med 1. Når ho når 0, vert løninga merka som Utseld, og poeng andre born har sett inn i sparegrisen vert refunderte til saldoen deira.",
+          "expires_at": "Løninga forsvinn på denne datoen. Alle poeng borna har sett inn i sparegrisen vert refunderte til saldoen deira ved midnatt."
         }
       },
       "edit_reward": {
@@ -195,11 +213,17 @@
           "icon": "Ikon",
           "assigned_to": "Tildelt til",
           "is_jackpot": "Er jackpot",
+          "pool_enabled": "Løning med sparegris",
+          "quantity": "Avgrensa tal (lat stå tomt for ubegrensa)",
+          "expires_at": "Utløpsdato (valfritt)",
           "action": "Handling"
         },
         "data_description": {
           "is_jackpot": "Slå saman poeng frå alle tildelte born mot éi felles løning",
-          "cost": "Tal poeng som krevst for å hente denne løninga"
+          "cost": "Tal poeng som krevst for å hente denne løninga",
+          "pool_enabled": "Borna set poeng inn i denne løninga sin eigen sparegris i staden for å bruke frå saldoen sin. Bra for langsiktige sparemål.",
+          "quantity": "Gjenverande lager. Kvart godkjent krav reduserer med 1. Set til 0 no for å straks merke som Utseld og refundere eventuelle sparegris-poeng.",
+          "expires_at": "Løninga forsvinn på denne datoen, og alle sparegris-poeng vert refunderte."
         }
       },
       "settings": {
@@ -285,7 +309,9 @@
     },
     "error": {
       "name_required": "Namn er påkravd",
-      "invalid_milestone_format": "Ugyldig milepælformat — bruk dagar:poeng-par, t.d. 3:5, 7:10, 14:20"
+      "invalid_milestone_format": "Ugyldig milepælformat — bruk dagar:poeng-par, t.d. 3:5, 7:10, 14:20",
+      "operator_required": "Operator er påkravd når ein entitet er sett",
+      "state_required": "Verdi er påkravd når ein entitet er sett"
     }
   },
   "selector": {
@@ -372,6 +398,7 @@
     },
     "visibility_operator": {
       "options": {
+        "none": "Ingen filter — Vis oppgåva alltid",
         "equals": "Lik — Vis når eininga si tilstand stemmer nøyaktig",
         "not_equals": "Ikkje lik — Vis når eininga si tilstand ikkje stemmer",
         "gte": "Større enn eller lik (≥) — Vis når numerisk verdi er ≥ målverdien",
@@ -675,6 +702,40 @@
         "child_id": {
           "name": "Born-ID",
           "description": "ID-en til bornet bonusen skal brukast på"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "Legg til oppgåve",
+      "description": "Opprett ei ny oppgåve dynamisk, vanlegvis frå ein automasjon eller eit skript",
+      "fields": {
+        "name": {
+          "name": "Namn",
+          "description": "Namnet på oppgåva"
+        },
+        "description": {
+          "name": "Skildring",
+          "description": "Valfri skildring av oppgåva"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Poeng som vert tildelte når oppgåva er fullført"
+        },
+        "assigned_to": {
+          "name": "Tildelt",
+          "description": "Liste over born-ID-ar oppgåva skal tildelast. Lat stå tom for å tildele alle born"
+        },
+        "time_category": {
+          "name": "Tidskategori",
+          "description": "Når oppgåva skal fullførast: morning, afternoon, evening, night eller anytime"
+        },
+        "one_shot": {
+          "name": "Eingongsoppgåve",
+          "description": "Om sann er dette ei eingongsoppgåve som går ut etter fullføring eller ved dagens slutt"
+        },
+        "requires_approval": {
+          "name": "Krev godkjenning",
+          "description": "Om sann må ein forelder godkjenne fullføringa før poeng vert tildelte"
         }
       }
     }

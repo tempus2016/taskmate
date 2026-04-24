@@ -309,7 +309,9 @@
     },
     "error": {
       "name_required": "Name is required",
-      "invalid_milestone_format": "Invalid milestone format — use days:points pairs, e.g. 3:5, 7:10, 14:20"
+      "invalid_milestone_format": "Invalid milestone format — use days:points pairs, e.g. 3:5, 7:10, 14:20",
+      "operator_required": "Operator is required when an entity is set",
+      "state_required": "Value is required when an entity is set"
     }
   },
   "selector": {
@@ -396,6 +398,7 @@
     },
     "visibility_operator": {
       "options": {
+        "none": "No filter — Always show chore",
         "equals": "Equals — Show when entity state matches exactly",
         "not_equals": "Not Equal — Show when entity state does not match",
         "gte": "Greater than or equal (≥) — Show when numeric value is ≥ target",
@@ -699,6 +702,40 @@
         "child_id": {
           "name": "Child ID",
           "description": "The ID of the child to apply the bonus to"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "Add Chore",
+      "description": "Create a new chore dynamically, typically from an automation or script",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "The name of the chore"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Optional description of the chore"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Points awarded when this chore is completed"
+        },
+        "assigned_to": {
+          "name": "Assigned To",
+          "description": "List of child IDs to assign this chore to. Leave empty to assign to all children"
+        },
+        "time_category": {
+          "name": "Time Category",
+          "description": "When this chore should be completed: morning, afternoon, evening, night, or anytime"
+        },
+        "one_shot": {
+          "name": "One-Shot",
+          "description": "If true, this is a one-time chore that expires after being completed or at the end of the day"
+        },
+        "requires_approval": {
+          "name": "Requires Approval",
+          "description": "If true, a parent must approve the completion before points are awarded"
         }
       }
     }

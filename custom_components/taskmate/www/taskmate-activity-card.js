@@ -26,6 +26,38 @@ class TaskMateActivityCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
+  // Transaction reasons are stored in English in the DB (e.g. "Penalty: Messy room").
+  // Map known prefixes to translation keys so they render in the user's language.
+  _translateReason(reason) {
+    if (!reason) return reason;
+    const prefixMap = [
+      ['Allocated to pool:', 'activity.reason_allocated_to_pool'],
+      ['Pool refund (reward expired):', 'activity.reason_pool_refund_expired'],
+      ['Pool refund (reward sold out):', 'activity.reason_pool_refund_sold_out'],
+      ['Pool refund (reward cost reduced):', 'activity.reason_pool_refund_cost_reduced'],
+      ['Penalty:', 'activity.reason_penalty'],
+      ['Bonus:', 'activity.reason_bonus'],
+    ];
+    for (const [prefix, key] of prefixMap) {
+      if (reason.startsWith(prefix)) {
+        const name = reason.slice(prefix.length).trim();
+        return this._t(key, { name });
+      }
+    }
+    if (reason.startsWith('Perfect week bonus!')) {
+      return this._t('activity.reason_perfect_week');
+    }
+    const weekendMatch = reason.match(/^Weekend bonus \(×(\d+)\)$/);
+    if (weekendMatch) {
+      return this._t('activity.reason_weekend_bonus', { multiplier: weekendMatch[1] });
+    }
+    const streakMatch = reason.match(/^Streak milestone bonus \((\d+) day streak!\)$/);
+    if (streakMatch) {
+      return this._t('activity.reason_streak_milestone', { days: streakMatch[1] });
+    }
+    return reason;
+  }
+
   static get styles() {
     return css`
       :host {
@@ -329,9 +361,8 @@ class TaskMateActivityCard extends LitElement {
       // so a child sees a celebration of spending instead of a punishment colour.
       const reason = item.reason || '';
       const isPenalty = reason.startsWith('Penalty:');
-      const isSpend = !isAdd && !isPenalty && (
-        reason.startsWith('Allocated to pool:')
-      );
+      const isPoolAllocation = reason.startsWith('Allocated to pool:');
+      const isSpend = !isAdd && !isPenalty && isPoolAllocation;
       let verb;
       let pointsColour;
       if (isAdd) {
@@ -344,6 +375,7 @@ class TaskMateActivityCard extends LitElement {
         verb = this._t('activity.lost');
         pointsColour = 'color: var(--act-red);';
       }
+      const displayReason = this._translateReason(item.reason);
       return html`
         <div class="activity-item">
           <div class="activity-icon ${type}">
@@ -354,7 +386,7 @@ class TaskMateActivityCard extends LitElement {
               <strong>${childName}</strong>
               ${' '}${verb}
               <strong> ${pts}</strong>
-              ${item.reason ? html` — <em>${item.reason}</em>` : ` ${this._t('activity.points_manually')}`}
+              ${item.reason ? html` — <em>${displayReason}</em>` : ` ${this._t('activity.points_manually')}`}
             </div>
             <div class="activity-meta">
               <span class="activity-time">${time}</span>

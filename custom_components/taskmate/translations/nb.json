@@ -41,7 +41,11 @@
         "description": "Skriv inn barnets informasjon",
         "data": {
           "name": "Barnets navn",
-          "avatar": "Avatar"
+          "avatar": "Avatar",
+          "availability_entity": "Tilgjengelighetssensor (valgfritt)"
+        },
+        "data_description": {
+          "availability_entity": "Valgfri Home Assistant-entitet hvis tilstand forteller TaskMate om dette barnet er tilgjengelig. Tilstandene 'on', 'home', 'available', 'present' eller 'true' betyr tilgjengelig; alt annet (f.eks. 'off', 'not_home', 'away') betyr utilgjengelig. La stå tom for å behandle barnet som alltid tilgjengelig. For kalendere, bruk en template binary sensor siden en kalenderhendelse vanligvis betyr 'opptatt / utilgjengelig'."
         }
       },
       "edit_child": {
@@ -50,7 +54,11 @@
         "data": {
           "name": "Barnets navn",
           "avatar": "Avatar",
+          "availability_entity": "Tilgjengelighetssensor (valgfritt)",
           "action": "Handling"
+        },
+        "data_description": {
+          "availability_entity": "Valgfri Home Assistant-entitet hvis tilstand forteller TaskMate om dette barnet er tilgjengelig. Tilstandene 'on', 'home', 'available', 'present' eller 'true' betyr tilgjengelig; alt annet (f.eks. 'off', 'not_home', 'away') betyr utilgjengelig. La stå tom for å behandle barnet som alltid tilgjengelig."
         }
       },
       "manage_chores": {
@@ -82,6 +90,7 @@
           "visibility_state": "Synlighetstilstand",
           "assignment_mode": "Tildelingsmodus",
           "assignment_rotation_anchor": "Startdato for rotasjon (kun vekslende)",
+          "require_availability": "Hopp over utilgjengelige barn",
           "publish_calendar_entities": "Publiser til kalendere (valgfritt)"
         },
         "data_description": {
@@ -94,7 +103,8 @@
           "visibility_state": "Verdien som skal sammenlignes. For 'Lik' eller 'Ikke lik': hvilken som helst tekstverdi (f.eks. 'on', 'off', 'home', 'away'). For numeriske operatorer (≥, ≤, >, <): skriv inn et tall (f.eks. 25, 50,5, 100). Eksempel: Enhet 'sensor.temperature', Operatør '≥', Verdi '20' viser oppgaven når temperaturen er 20°C eller høyere.",
           "assignment_mode": "Alle = hvert tilknyttet barn ser oppgaven. Vekslende = ett barn om gangen, roterer daglig. Tilfeldig = ett barn plukket tilfeldig hver dag (stabilt gjennom dagen). Balansert = dagens balanserte oppgaver fordeles jevnt mellom de tildelte barna — ingen ender opp med alt.",
           "assignment_rotation_anchor": "Dag 0 i den vekslende rotasjonen. La stå tom for å starte i dag. Brukes kun når tildelingsmodus er 'Vekslende'.",
-          "publish_calendar_entities": "Velg én eller flere Home Assistant-kalenderentiteter. Hver gang oppgaven opprettes, oppdateres eller bytter ved midnatt legges dagens tildelte barn til som en kalenderoppføring i hver valgte kalender. Fungerer med et hvilket som helst antall kalendere."
+          "publish_calendar_entities": "Velg én eller flere Home Assistant-kalenderentiteter. Hver gang oppgaven opprettes, oppdateres eller bytter ved midnatt legges dagens tildelte barn til som en kalenderoppføring i hver valgte kalender. Fungerer med et hvilket som helst antall kalendere.",
+          "require_availability": "Når aktivert, hoppes et utilgjengelig barn (basert på tilgjengelighetssensoren i profilen) over, og neste tilgjengelige søsken tar oppgaven. Revurderes ved midnatt og hver gang en tilgjengelighetssensor endrer tilstand. Oppgaver som allerede er fullført i dag, tildeles ikke på nytt."
         }
       },
       "add_chores_bulk": {
@@ -146,6 +156,7 @@
           "visibility_state": "Synlighetstilstand",
           "assignment_mode": "Tildelingsmodus",
           "assignment_rotation_anchor": "Startdato for rotasjon (kun vekslende)",
+          "require_availability": "Hopp over utilgjengelige barn",
           "publish_calendar_entities": "Publiser til kalendere (valgfritt)"
         },
         "data_description": {
@@ -158,7 +169,8 @@
           "visibility_state": "Verdien som skal sammenlignes. For 'Lik' eller 'Ikke lik': hvilken som helst tekstverdi (f.eks. 'on', 'off', 'home', 'away'). For numeriske operatorer (≥, ≤, >, <): skriv inn et tall (f.eks. 25, 50,5, 100). Eksempel: Enhet 'sensor.temperature', Operatør '≥', Verdi '20' viser oppgaven når temperaturen er 20°C eller høyere.",
           "assignment_mode": "Alle = hvert tilknyttet barn ser oppgaven. Vekslende = ett barn om gangen, roterer daglig. Tilfeldig = ett barn plukket tilfeldig hver dag (stabilt gjennom dagen). Balansert = dagens balanserte oppgaver fordeles jevnt mellom de tildelte barna — ingen ender opp med alt.",
           "assignment_rotation_anchor": "Dag 0 i den vekslende rotasjonen. La stå tom for å starte i dag. Brukes kun når tildelingsmodus er 'Vekslende'.",
-          "publish_calendar_entities": "Velg én eller flere Home Assistant-kalenderentiteter. Hver gang oppgaven opprettes, oppdateres eller bytter ved midnatt legges dagens tildelte barn til som en kalenderoppføring i hver valgte kalender. Fungerer med et hvilket som helst antall kalendere."
+          "publish_calendar_entities": "Velg én eller flere Home Assistant-kalenderentiteter. Hver gang oppgaven opprettes, oppdateres eller bytter ved midnatt legges dagens tildelte barn til som en kalenderoppføring i hver valgte kalender. Fungerer med et hvilket som helst antall kalendere.",
+          "require_availability": "Når aktivert, hoppes et utilgjengelig barn (basert på tilgjengelighetssensoren i profilen) over, og neste tilgjengelige søsken tar oppgaven. Revurderes ved midnatt og hver gang en tilgjengelighetssensor endrer tilstand. Oppgaver som allerede er fullført i dag, tildeles ikke på nytt."
         }
       },
       "manage_rewards": {
@@ -178,11 +190,17 @@
           "cost": "Poengkostnad (fast)",
           "icon": "Ikon",
           "assigned_to": "Tildelt til (la stå tom for alle barn)",
-          "is_jackpot": "Er jackpot"
+          "is_jackpot": "Er jackpot",
+          "pool_enabled": "Belønning med sparegris",
+          "quantity": "Begrenset antall (la stå tomt for ubegrenset)",
+          "expires_at": "Utløpsdato (valgfritt)"
         },
         "data_description": {
           "is_jackpot": "Slå sammen poeng fra alle tildelte barn mot én felles belønning",
-          "cost": "Antall poeng som kreves for å hente denne belønningen"
+          "cost": "Antall poeng som kreves for å hente denne belønningen",
+          "pool_enabled": "Barna setter poeng inn i denne belønningens egen sparegris i stedet for å bruke fra sin globale saldo. Bra for langsiktige sparemål.",
+          "quantity": "Hvor mange av denne belønningen som finnes. Hvert godkjent krav reduserer med 1. Når den når 0, merkes belønningen som Utsolgt, og poeng andre barn har satt inn i sparegrisen refunderes til deres saldo.",
+          "expires_at": "Belønningen forsvinner på denne datoen. Alle poeng barn har satt inn i sparegrisen refunderes til saldoen deres ved midnatt."
         }
       },
       "edit_reward": {
@@ -195,11 +213,17 @@
           "icon": "Ikon",
           "assigned_to": "Tildelt til",
           "is_jackpot": "Er jackpot",
+          "pool_enabled": "Belønning med sparegris",
+          "quantity": "Begrenset antall (la stå tomt for ubegrenset)",
+          "expires_at": "Utløpsdato (valgfritt)",
           "action": "Handling"
         },
         "data_description": {
           "is_jackpot": "Slå sammen poeng fra alle tildelte barn mot én felles belønning",
-          "cost": "Antall poeng som kreves for å hente denne belønningen"
+          "cost": "Antall poeng som kreves for å hente denne belønningen",
+          "pool_enabled": "Barna setter poeng inn i denne belønningens egen sparegris i stedet for å bruke fra sin globale saldo. Bra for langsiktige sparemål.",
+          "quantity": "Gjenværende lager. Hvert godkjent krav reduserer med 1. Sett til 0 nå for å umiddelbart merke som Utsolgt og refundere eventuelle sparegris-poeng.",
+          "expires_at": "Belønningen forsvinner på denne datoen, og alle sparegris-poeng refunderes."
         }
       },
       "settings": {
@@ -285,7 +309,9 @@
     },
     "error": {
       "name_required": "Navn er påkrevd",
-      "invalid_milestone_format": "Ugyldig milepælformat — bruk dager:poeng-par, f.eks. 3:5, 7:10, 14:20"
+      "invalid_milestone_format": "Ugyldig milepælformat — bruk dager:poeng-par, f.eks. 3:5, 7:10, 14:20",
+      "operator_required": "Operator kreves når en entitet er satt",
+      "state_required": "Verdi kreves når en entitet er satt"
     }
   },
   "selector": {
@@ -372,6 +398,7 @@
     },
     "visibility_operator": {
       "options": {
+        "none": "Ingen filter — Vis oppgaven alltid",
         "equals": "Lik — Vis når enhetstilstanden stemmer nøyaktig",
         "not_equals": "Ikke lik — Vis når enhetstilstanden ikke stemmer",
         "gte": "Større enn eller lik (≥) — Vis når numerisk verdi er ≥ målverdien",
@@ -675,6 +702,40 @@
         "child_id": {
           "name": "Barn-ID",
           "description": "ID-en til barnet bonusen skal brukes på"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "Legg til oppgave",
+      "description": "Opprett en ny oppgave dynamisk, typisk fra en automasjon eller et skript",
+      "fields": {
+        "name": {
+          "name": "Navn",
+          "description": "Navnet på oppgaven"
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Valgfri beskrivelse av oppgaven"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Poeng som tildeles når denne oppgaven fullføres"
+        },
+        "assigned_to": {
+          "name": "Tildelt",
+          "description": "Liste over barne-ID-er oppgaven skal tildeles. La stå tom for å tildele alle barn"
+        },
+        "time_category": {
+          "name": "Tidskategori",
+          "description": "Når oppgaven skal fullføres: morning, afternoon, evening, night eller anytime"
+        },
+        "one_shot": {
+          "name": "Engangsoppgave",
+          "description": "Hvis sann er dette en engangsoppgave som utløper etter fullføring eller ved dagens slutt"
+        },
+        "requires_approval": {
+          "name": "Krever godkjenning",
+          "description": "Hvis sann må en forelder godkjenne fullføringen før poeng tildeles"
         }
       }
     }

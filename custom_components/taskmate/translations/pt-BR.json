@@ -41,7 +41,11 @@
         "description": "Introduza as informações da criança",
         "data": {
           "name": "Nome da criança",
-          "avatar": "Avatar"
+          "avatar": "Avatar",
+          "availability_entity": "Sensor de disponibilidade (opcional)"
+        },
+        "data_description": {
+          "availability_entity": "Entidade opcional do Home Assistant cujo estado informa ao TaskMate se esta criança está disponível. Os estados 'on', 'home', 'available', 'present' ou 'true' significam disponível; qualquer outro (ex.: 'off', 'not_home', 'away') significa indisponível. Deixe em branco para tratar a criança como sempre disponível. Para calendários, configure um binary sensor por template, já que um evento de calendário normalmente significa 'ocupado / indisponível'."
         }
       },
       "edit_child": {
@@ -50,7 +54,11 @@
         "data": {
           "name": "Nome da criança",
           "avatar": "Avatar",
+          "availability_entity": "Sensor de disponibilidade (opcional)",
           "action": "Ação"
+        },
+        "data_description": {
+          "availability_entity": "Entidade opcional do Home Assistant cujo estado informa ao TaskMate se esta criança está disponível. Os estados 'on', 'home', 'available', 'present' ou 'true' significam disponível; qualquer outro (ex.: 'off', 'not_home', 'away') significa indisponível. Deixe em branco para tratar a criança como sempre disponível."
         }
       },
       "manage_chores": {
@@ -82,6 +90,7 @@
           "visibility_state": "Valor a comparar",
           "assignment_mode": "Modo de atribuição",
           "assignment_rotation_anchor": "Data de início da rotação (apenas alternância)",
+          "require_availability": "Ignorar crianças indisponíveis",
           "publish_calendar_entities": "Publicar nos calendários (opcional)"
         },
         "data_description": {
@@ -94,7 +103,8 @@
           "visibility_state": "O valor a comparar. Para 'Igual' ou 'Não igual': qualquer valor de texto (ex.: 'on', 'off', 'home', 'away'). Para operadores numéricos (≥, ≤, >, <): digite um número (ex.: 25, 50.5, 100). Exemplo: Entidade 'sensor.temperature', Operador '>=', Valor '20' mostra a tarefa quando a temperatura é 20°C ou mais alta.",
           "assignment_mode": "Todos = todas as crianças atribuídas veem esta tarefa. Alternado = uma criança de cada vez, alternando por dia. Aleatório = uma criança escolhida aleatoriamente por dia (estável durante o dia). Equilibrado = as tarefas no modo equilibrado do dia são divididas igualmente entre as crianças atribuídas — nenhuma fica com tudo.",
           "assignment_rotation_anchor": "Dia 0 da rotação alternada. Deixe em branco para começar hoje. Usado apenas quando o modo de atribuição é 'Alternado'.",
-          "publish_calendar_entities": "Escolha uma ou mais entidades de calendário do Home Assistant. Sempre que esta tarefa for criada, atualizada ou passar da meia-noite, a criança atribuída do dia é adicionada como evento em cada calendário selecionado. Funciona com qualquer número de calendários."
+          "publish_calendar_entities": "Escolha uma ou mais entidades de calendário do Home Assistant. Sempre que esta tarefa for criada, atualizada ou passar da meia-noite, a criança atribuída do dia é adicionada como evento em cada calendário selecionado. Funciona com qualquer número de calendários.",
+          "require_availability": "Quando ativo, uma criança indisponível (com base no Sensor de disponibilidade do perfil dela) é ignorada e o próximo irmão/irmã disponível assume a tarefa. Reavaliado à meia-noite e sempre que um sensor de disponibilidade mudar de estado. Tarefas já concluídas hoje não são reatribuídas."
         }
       },
       "add_chores_bulk": {
@@ -146,6 +156,7 @@
           "visibility_state": "Valor a comparar",
           "assignment_mode": "Modo de atribuição",
           "assignment_rotation_anchor": "Data de início da rotação (apenas alternância)",
+          "require_availability": "Ignorar crianças indisponíveis",
           "publish_calendar_entities": "Publicar nos calendários (opcional)"
         },
         "data_description": {
@@ -158,7 +169,8 @@
           "visibility_state": "O valor a comparar. Para 'Igual' ou 'Não igual': qualquer valor de texto (ex.: 'on', 'off', 'home', 'away'). Para operadores numéricos (≥, ≤, >, <): digite um número (ex.: 25, 50.5, 100). Exemplo: Entidade 'sensor.temperature', Operador '>=', Valor '20' mostra a tarefa quando a temperatura é 20°C ou mais alta.",
           "assignment_mode": "Todos = todas as crianças atribuídas veem esta tarefa. Alternado = uma criança de cada vez, alternando por dia. Aleatório = uma criança escolhida aleatoriamente por dia (estável durante o dia). Equilibrado = as tarefas no modo equilibrado do dia são divididas igualmente entre as crianças atribuídas — nenhuma fica com tudo.",
           "assignment_rotation_anchor": "Dia 0 da rotação alternada. Deixe em branco para começar hoje. Usado apenas quando o modo de atribuição é 'Alternado'.",
-          "publish_calendar_entities": "Escolha uma ou mais entidades de calendário do Home Assistant. Sempre que esta tarefa for criada, atualizada ou passar da meia-noite, a criança atribuída do dia é adicionada como evento em cada calendário selecionado. Funciona com qualquer número de calendários."
+          "publish_calendar_entities": "Escolha uma ou mais entidades de calendário do Home Assistant. Sempre que esta tarefa for criada, atualizada ou passar da meia-noite, a criança atribuída do dia é adicionada como evento em cada calendário selecionado. Funciona com qualquer número de calendários.",
+          "require_availability": "Quando ativo, uma criança indisponível (com base no Sensor de disponibilidade do perfil dela) é ignorada e o próximo irmão/irmã disponível assume a tarefa. Reavaliado à meia-noite e sempre que um sensor de disponibilidade mudar de estado. Tarefas já concluídas hoje não são reatribuídas."
         }
       },
       "manage_rewards": {
@@ -178,11 +190,17 @@
           "cost": "Custo em pontos (fixo)",
           "icon": "Ícone",
           "assigned_to": "Atribuída a (deixe vazio para todas as crianças)",
-          "is_jackpot": "É jackpot"
+          "is_jackpot": "É jackpot",
+          "pool_enabled": "Recompensa-cofrinho",
+          "quantity": "Quantidade limitada (deixe em branco para ilimitado)",
+          "expires_at": "Data de expiração (opcional)"
         },
         "data_description": {
           "is_jackpot": "Juntar pontos de todas as crianças atribuídas para uma recompensa partilhada",
-          "cost": "Número de pontos necessários para reclamar esta recompensa"
+          "cost": "Número de pontos necessários para reclamar esta recompensa",
+          "pool_enabled": "As crianças depositam pontos no cofrinho dedicado desta recompensa em vez de gastar do saldo global. Ótimo para metas de economia de longo prazo.",
+          "quantity": "Quantas unidades desta recompensa existem. Cada reclamação aprovada reduz em 1. Quando chega a 0, a recompensa é marcada como Esgotada e os pontos que outras crianças haviam alocado são reembolsados no saldo delas.",
+          "expires_at": "A recompensa desaparece nesta data. Todos os pontos que as crianças alocaram são reembolsados no saldo delas à meia-noite."
         }
       },
       "edit_reward": {
@@ -195,11 +213,17 @@
           "icon": "Ícone",
           "assigned_to": "Atribuída a",
           "is_jackpot": "É jackpot",
+          "pool_enabled": "Recompensa-cofrinho",
+          "quantity": "Quantidade limitada (deixe em branco para ilimitado)",
+          "expires_at": "Data de expiração (opcional)",
           "action": "Ação"
         },
         "data_description": {
           "is_jackpot": "Juntar pontos de todas as crianças atribuídas para uma recompensa partilhada",
-          "cost": "Número de pontos necessários para reclamar esta recompensa"
+          "cost": "Número de pontos necessários para reclamar esta recompensa",
+          "pool_enabled": "As crianças depositam pontos no cofrinho dedicado desta recompensa em vez de gastar do saldo global. Ótimo para metas de economia de longo prazo.",
+          "quantity": "Estoque restante. Cada reclamação aprovada reduz em 1. Definir como 0 agora marca imediatamente como Esgotada e reembolsa os pontos do cofrinho.",
+          "expires_at": "A recompensa desaparece nesta data e todos os pontos alocados são reembolsados."
         }
       },
       "settings": {
@@ -285,7 +309,9 @@
     },
     "error": {
       "name_required": "O nome é obrigatório",
-      "invalid_milestone_format": "Formato de marco inválido — use pares dias:pontos, ex: 3:5, 7:10, 14:20"
+      "invalid_milestone_format": "Formato de marco inválido — use pares dias:pontos, ex: 3:5, 7:10, 14:20",
+      "operator_required": "O operador é obrigatório quando uma entidade está definida",
+      "state_required": "O valor é obrigatório quando uma entidade está definida"
     }
   },
   "selector": {
@@ -372,6 +398,7 @@
     },
     "visibility_operator": {
       "options": {
+        "none": "Sem filtro — Sempre mostrar a tarefa",
         "equals": "Igual — Mostrar quando o estado da entidade corresponde exatamente",
         "not_equals": "Não igual — Mostrar quando o estado da entidade não corresponde",
         "gte": "Maior ou igual (≥) — Mostrar quando valor numérico é ≥ alvo",
@@ -675,6 +702,40 @@
         "child_id": {
           "name": "ID da criança",
           "description": "O ID da criança a quem aplicar o bônus"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "Adicionar tarefa",
+      "description": "Criar uma nova tarefa dinamicamente, normalmente a partir de uma automação ou script",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "O nome da tarefa"
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Descrição opcional da tarefa"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "Pontos concedidos quando esta tarefa é concluída"
+        },
+        "assigned_to": {
+          "name": "Atribuída a",
+          "description": "Lista de IDs de crianças para atribuir esta tarefa. Deixe em branco para atribuir a todas as crianças"
+        },
+        "time_category": {
+          "name": "Categoria de tempo",
+          "description": "Quando esta tarefa deve ser concluída: morning, afternoon, evening, night ou anytime"
+        },
+        "one_shot": {
+          "name": "Única",
+          "description": "Se verdadeiro, é uma tarefa única que expira após a conclusão ou no final do dia"
+        },
+        "requires_approval": {
+          "name": "Requer aprovação",
+          "description": "Se verdadeiro, um pai/mãe deve aprovar a conclusão antes de os pontos serem concedidos"
         }
       }
     }
