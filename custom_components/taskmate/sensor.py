@@ -853,13 +853,18 @@ class ChildStatsSensor(TaskMateBaseSensor):
             return {}
 
         # Get chores assigned to this child. For alternating/random assignment,
-        # only include a chore when this child is the active one today.
+        # only include a chore when this child is the active one today — and
+        # drop it once any pool member has completed it today (so a parent
+        # crediting the off-rotation child clears the chore for everyone).
         chores = self.coordinator.data.get("chores", [])
         def _included(c):
             if not (child.id in c.assigned_to or not c.assigned_to):
                 return False
             if getattr(c, "assignment_mode", "everyone") != "everyone":
-                return getattr(c, "assignment_current_child_id", "") == child.id
+                if getattr(c, "assignment_current_child_id", "") != child.id:
+                    return False
+                if self.coordinator._is_rotation_done_today(c):
+                    return False
             return True
         assigned_chores = [c for c in chores if _included(c)]
 
