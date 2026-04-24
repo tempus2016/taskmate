@@ -235,6 +235,43 @@ class TestChoreRequireAvailability:
         assert chore.require_availability is False
 
 
+class TestChoreSkipFields:
+    def test_defaults(self):
+        chore = Chore(name="Any")
+        assert chore.skip_date == ""
+        assert chore.skip_count == 0
+
+    def test_roundtrip_preserves_skip_state(self):
+        chore = Chore(name="Bins", skip_date="2026-04-24", skip_count=2, id="c1")
+        restored = Chore.from_dict(chore.to_dict())
+        assert restored.skip_date == "2026-04-24"
+        assert restored.skip_count == 2
+
+    def test_legacy_missing_skip_fields_backcompat(self):
+        legacy = {"name": "Old chore"}
+        chore = Chore.from_dict(legacy)
+        assert chore.skip_date == ""
+        assert chore.skip_count == 0
+
+
+class TestTaskGroup:
+    def test_defaults(self):
+        from custom_components.taskmate.models import TaskGroup
+        g = TaskGroup(name="Cat litter")
+        assert g.policy == "sticky"
+        assert g.chore_ids == []
+        assert g.id  # generated
+
+    def test_roundtrip(self):
+        from custom_components.taskmate.models import TaskGroup
+        g = TaskGroup(name="Cat litter", policy="spread", chore_ids=["c1", "c2"], id="g1")
+        restored = TaskGroup.from_dict(g.to_dict())
+        assert restored.name == g.name
+        assert restored.policy == "spread"
+        assert restored.chore_ids == ["c1", "c2"]
+        assert restored.id == "g1"
+
+
 # ---------------------------------------------------------------------------
 # Reward
 # ---------------------------------------------------------------------------

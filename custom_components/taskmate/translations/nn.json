@@ -25,7 +25,8 @@
           "manage_children": "Administrer born",
           "manage_chores": "Administrer oppgåver",
           "manage_rewards": "Administrer løningar",
-          "settings": "Innstillingar"
+          "settings": "Innstillingar",
+          "manage_task_groups": "Administrer oppgåvegrupper"
         }
       },
       "manage_children": {
@@ -91,7 +92,8 @@
           "assignment_mode": "Tildelingsmodus",
           "assignment_rotation_anchor": "Startdato for rotasjon (berre vekslande)",
           "require_availability": "Hopp over utilgjengelege born",
-          "publish_calendar_entities": "Publiser til kalendrar (valfritt)"
+          "publish_calendar_entities": "Publiser til kalendrar (valfritt)",
+          "manual_start_child_id": "Start rotasjon med (valfritt)"
         },
         "data_description": {
           "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
@@ -104,7 +106,8 @@
           "assignment_mode": "Alle = kvart tilknytt barn ser oppgåva. Vekslande = eitt barn om gongen, roterer dagleg. Tilfeldig = eitt barn plukka tilfeldig kvar dag (stabilt gjennom dagen). Balansert = dagens balanserte oppgåver vert fordelte jamt mellom dei tildelte barna — ingen endar opp med alt.",
           "assignment_rotation_anchor": "Dag 0 i den vekslande rotasjonen. Lat stå tom for å starte i dag. Vert brukt berre når tildelingsmodus er 'Vekslande'.",
           "publish_calendar_entities": "Vel ein eller fleire Home Assistant-kalenderentitetar. Kvar gong oppgåva vert oppretta, oppdatert eller skiftar ved midnatt vert dagens tildelte barn lagt til som ei kalenderoppføring i kvar valde kalender. Fungerer med eit kva som helst tal kalendrar.",
-          "require_availability": "Når slått på, vert eit utilgjengeleg born (basert på tilgjengesensoren i profilen) hoppa over, og neste tilgjengelege syskenet tek oppgåva. Vert vurdert på nytt ved midnatt og kvar gong ein tilgjengesensor endrar tilstand. Oppgåver som alt er fullførde i dag, vert ikkje tildelt på nytt."
+          "require_availability": "Når slått på, vert eit utilgjengeleg born (basert på tilgjengesensoren i profilen) hoppa over, og neste tilgjengelege syskenet tek oppgåva. Vert vurdert på nytt ved midnatt og kvar gong ein tilgjengesensor endrar tilstand. Oppgåver som alt er fullførde i dag, vert ikkje tildelt på nytt.",
+          "manual_start_child_id": "Picks which child starts the rotation. For Alternating mode this permanently reorders the pool. For Random / Balanced it only overrides today's assignee — tomorrow's rotation resumes normally. Ignored for Everyone mode."
         }
       },
       "add_chores_bulk": {
@@ -157,7 +160,8 @@
           "assignment_mode": "Tildelingsmodus",
           "assignment_rotation_anchor": "Startdato for rotasjon (berre vekslande)",
           "require_availability": "Hopp over utilgjengelege born",
-          "publish_calendar_entities": "Publiser til kalendrar (valfritt)"
+          "publish_calendar_entities": "Publiser til kalendrar (valfritt)",
+          "manual_start_child_id": "Start rotasjon med (valfritt)"
         },
         "data_description": {
           "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
@@ -170,7 +174,8 @@
           "assignment_mode": "Alle = kvart tilknytt barn ser oppgåva. Vekslande = eitt barn om gongen, roterer dagleg. Tilfeldig = eitt barn plukka tilfeldig kvar dag (stabilt gjennom dagen). Balansert = dagens balanserte oppgåver vert fordelte jamt mellom dei tildelte barna — ingen endar opp med alt.",
           "assignment_rotation_anchor": "Dag 0 i den vekslande rotasjonen. Lat stå tom for å starte i dag. Vert brukt berre når tildelingsmodus er 'Vekslande'.",
           "publish_calendar_entities": "Vel ein eller fleire Home Assistant-kalenderentitetar. Kvar gong oppgåva vert oppretta, oppdatert eller skiftar ved midnatt vert dagens tildelte barn lagt til som ei kalenderoppføring i kvar valde kalender. Fungerer med eit kva som helst tal kalendrar.",
-          "require_availability": "Når slått på, vert eit utilgjengeleg born (basert på tilgjengesensoren i profilen) hoppa over, og neste tilgjengelege syskenet tek oppgåva. Vert vurdert på nytt ved midnatt og kvar gong ein tilgjengesensor endrar tilstand. Oppgåver som alt er fullførde i dag, vert ikkje tildelt på nytt."
+          "require_availability": "Når slått på, vert eit utilgjengeleg born (basert på tilgjengesensoren i profilen) hoppa over, og neste tilgjengelege syskenet tek oppgåva. Vert vurdert på nytt ved midnatt og kvar gong ein tilgjengesensor endrar tilstand. Oppgåver som alt er fullførde i dag, vert ikkje tildelt på nytt.",
+          "manual_start_child_id": "Picks which child starts the rotation. For Alternating mode this permanently reorders the pool and resets the anchor. For Random / Balanced it only overrides today's assignee — tomorrow's rotation resumes normally. Ignored for Everyone mode."
         }
       },
       "manage_rewards": {
@@ -305,13 +310,48 @@
           "recurrence_start": "Berre annakvar dag — ankerdato i ÅÅÅÅ-MM-DD-format. Vert ignorert for alle andre gjentakingstypar. Lat stå tom for å bruke i dag.",
           "first_occurrence_mode": "Tilgjengeleg med ein gong — bornet kan fullføre ho med det same. Vent på fyrste førekomst — oppgåva er låst til fyrste planlagde dag."
         }
+      },
+      "manage_task_groups": {
+        "title": "Administrer oppgåvegrupper",
+        "description": "Group chores so their assignments stay coordinated. Sticky forces all chores in the group onto the same child today. Spread gives each chore a different child.",
+        "menu_options": {
+          "add_task_group": "Legg til ny gruppe",
+          "init": "Tilbake til hovudmeny"
+        }
+      },
+      "add_task_group": {
+        "title": "Legg til oppgåvegruppe",
+        "description": "Only rotation-mode chores (alternating / random / balanced) can join a group, and each chore can belong to at most one group.",
+        "data": {
+          "name": "Gruppenamn",
+          "policy": "Retningsline",
+          "chore_ids": "Medlemsoppgåver"
+        },
+        "data_description": {
+          "policy": "Sticky — all chores in the group go to the same child today (the first chore in the list is the leader whose assignment the others follow). Spread — each chore is assigned to a different child today; if the group has more chores than children, it wraps.",
+          "chore_ids": "Pick the chores to include. The order matters: for Sticky, the first chore is the leader whose assignee the others follow."
+        }
+      },
+      "edit_task_group": {
+        "title": "Rediger gruppe: {group_name}",
+        "description": "Update or delete this task group.",
+        "data": {
+          "name": "Gruppenamn",
+          "policy": "Retningsline",
+          "chore_ids": "Medlemsoppgåver",
+          "action": "Handling"
+        },
+        "data_description": {
+          "policy": "Sticky — all chores in the group go to the same child today. Spread — each chore is assigned to a different child today; if the group has more chores than children, it wraps."
+        }
       }
     },
     "error": {
       "name_required": "Namn er påkravd",
       "invalid_milestone_format": "Ugyldig milepælformat — bruk dagar:poeng-par, t.d. 3:5, 7:10, 14:20",
       "operator_required": "Operator er påkravd når ein entitet er sett",
-      "state_required": "Verdi er påkravd når ein entitet er sett"
+      "state_required": "Verdi er påkravd når ein entitet er sett",
+      "task_group_invalid": "Ugyldig gruppe: ei oppgåve kan ikkje vere i meir enn éi gruppe, og oppgåver i 'everyone'-modus er ikkje tillatne."
     }
   },
   "selector": {
@@ -413,6 +453,18 @@
         "alternating": "Vekslande — roter mellom dei tildelte barna, eitt per dag",
         "random": "Tilfeldig — plukk eitt tildelt barn tilfeldig kvar dag",
         "balanced": "Balansert — fordel dagens balanserte oppgåver jamt mellom dei tildelte barna"
+      }
+    },
+    "task_group_policy": {
+      "options": {
+        "sticky": "Sticky — same barn for alle oppgåver i gruppa",
+        "spread": "Spread — ulike barn i gruppa i dag"
+      }
+    },
+    "task_group_action": {
+      "options": {
+        "save": "Lagre endringar",
+        "delete": "Slett gruppe"
       }
     }
   },
@@ -736,6 +788,80 @@
         "requires_approval": {
           "name": "Krev godkjenning",
           "description": "Om sann må ein forelder godkjenne fullføringa før poeng vert tildelte"
+        }
+      }
+    },
+    "skip_chore": {
+      "name": "Skip Chore",
+      "description": "Advance today's rotation past the current assignee. Ephemeral — tomorrow's rotation resumes as normal.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the chore to skip"
+        }
+      }
+    },
+    "set_chore_manual_start": {
+      "name": "Set Manual Start Child",
+      "description": "Set which child starts a rotating chore. For alternating mode this reorders the pool; for random/balanced it only overrides today's assignee.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the chore to update"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child who should start the rotation"
+        }
+      }
+    },
+    "add_task_group": {
+      "name": "Add Task Group",
+      "description": "Create a task group (sticky = same child, spread = different children).",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Display name for the group"
+        },
+        "policy": {
+          "name": "Policy",
+          "description": "sticky (same child) or spread (different children)"
+        },
+        "chore_ids": {
+          "name": "Chore IDs",
+          "description": "List of chore IDs in the group. For sticky, the first chore is the leader."
+        }
+      }
+    },
+    "update_task_group": {
+      "name": "Update Task Group",
+      "description": "Update a task group's name, policy, or membership.",
+      "fields": {
+        "group_id": {
+          "name": "Group ID",
+          "description": "The ID of the group to update"
+        },
+        "name": {
+          "name": "Name",
+          "description": "New display name"
+        },
+        "policy": {
+          "name": "Policy",
+          "description": "New policy (sticky or spread)"
+        },
+        "chore_ids": {
+          "name": "Chore IDs",
+          "description": "Replacement chore ID list. For sticky, the first chore is the leader."
+        }
+      }
+    },
+    "remove_task_group": {
+      "name": "Remove Task Group",
+      "description": "Delete a task group. Member chores are not affected.",
+      "fields": {
+        "group_id": {
+          "name": "Group ID",
+          "description": "The ID of the group to delete"
         }
       }
     }

@@ -156,6 +156,9 @@ class Chore:
     assignment_rotation_anchor: str = ""  # ISO date; day-0 of the rotation for alternating
     assignment_current_child_id: str = ""  # cached active child ID for today (computed at midnight and on create/update)
     require_availability: bool = False  # When True, skip children whose availability entity says they're unavailable
+    # Skip state (ephemeral: cleared at midnight when skip_date != today)
+    skip_date: str = ""  # ISO date the skip applies to ("" = no active skip)
+    skip_count: int = 0  # number of times skipped today; added to rotation index
     # Calendar publish: list of HA calendar entity ids to mirror the chore to. Any number supported.
     publish_calendar_entities: list[str] = field(default_factory=list)
     # ISO dates already written to the configured calendars. Used for both
@@ -200,6 +203,8 @@ class Chore:
             assignment_rotation_anchor=data.get("assignment_rotation_anchor", ""),
             assignment_current_child_id=data.get("assignment_current_child_id", ""),
             require_availability=data.get("require_availability", False),
+            skip_date=data.get("skip_date", ""),
+            skip_count=int(data.get("skip_count", 0) or 0),
             publish_calendar_entities=list(data.get("publish_calendar_entities", [])),
             # Back-compat: old records stored a single ISO date in
             # `publish_calendar_last_date`. Seed the new list with it so we
@@ -239,6 +244,8 @@ class Chore:
             "assignment_rotation_anchor": self.assignment_rotation_anchor,
             "assignment_current_child_id": self.assignment_current_child_id,
             "require_availability": self.require_availability,
+            "skip_date": self.skip_date,
+            "skip_count": self.skip_count,
             "publish_calendar_entities": self.publish_calendar_entities,
             "publish_calendar_published_dates": self.publish_calendar_published_dates,
             "id": self.id,
@@ -503,5 +510,41 @@ class PointsTransaction:
             "points": self.points,
             "reason": self.reason,
             "created_at": format_datetime(self.created_at),
+            "id": self.id,
+        }
+
+
+@dataclass
+class TaskGroup:
+    """Groups chores so assignments stay coordinated across them.
+
+    Policies:
+    - sticky: followers are forced onto the leader chore's assignee today.
+    - spread: group members are assigned distinct children today (wraps when
+      there are more chores than children).
+
+    `chore_ids` order is meaningful: index 0 is the leader for sticky; for
+    spread it's the iteration order when walking the "already used" set.
+    """
+
+    name: str
+    policy: str = "sticky"  # sticky | spread
+    chore_ids: list[str] = field(default_factory=list)
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "TaskGroup":
+        return cls(
+            name=data.get("name", ""),
+            policy=data.get("policy", "sticky"),
+            chore_ids=list(data.get("chore_ids", [])),
+            id=data.get("id", generate_id()),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "policy": self.policy,
+            "chore_ids": self.chore_ids,
             "id": self.id,
         }

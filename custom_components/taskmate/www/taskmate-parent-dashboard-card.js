@@ -381,14 +381,21 @@ class TaskMateParentDashboardCard extends LitElement {
     const pointsName = attrs.points_name || "Points";
     const totalPending = pendingCompletions.length + pendingRewardClaims.length;
 
+    const rotationChores = chores.filter(c => (c.assignment_mode || 'everyone') !== 'everyone');
+
     const tabs = [
       { id: "overview", label: this._t('dashboard.tab_overview'), icon: "mdi:view-dashboard" },
       { id: "approvals", label: this._t('dashboard.tab_approvals'), icon: "mdi:check-circle", count: pendingCompletions.length },
       { id: "points", label: this._t('dashboard.tab_points'), icon: "mdi:star-plus" },
     ];
 
+    if (rotationChores.length > 0) {
+      tabs.splice(1, 0, { id: "rotation", label: this._t('dashboard.tab_rotation', {}, 'Rotation'), icon: "mdi:rotate-3d-variant" });
+    }
+
     if (this.config.show_claims) {
-      tabs.splice(2, 0, { id: "claims", label: this._t('dashboard.tab_claims'), icon: "mdi:gift", count: pendingRewardClaims.length });
+      const insertAt = tabs.findIndex(t => t.id === "points");
+      tabs.splice(insertAt, 0, { id: "claims", label: this._t('dashboard.tab_claims'), icon: "mdi:gift", count: pendingRewardClaims.length });
     }
 
     return html`
@@ -422,6 +429,7 @@ class TaskMateParentDashboardCard extends LitElement {
 
         <div class="tab-content">
           ${this._activeSection === "overview" ? this._renderOverview(children, chores, completions, pointsIcon, pointsName) : ''}
+          ${this._activeSection === "rotation" ? this._renderRotation(rotationChores, children, attrs) : ''}
           ${this._activeSection === "approvals" ? this._renderApprovals(pendingCompletions, children, chores, pointsIcon) : ''}
           ${this._activeSection === "claims" ? this._renderClaims(pendingRewardClaims, pointsIcon) : ''}
           ${this._activeSection === "points" ? this._renderPoints(children, pointsIcon, pointsName) : ''}
@@ -490,6 +498,67 @@ class TaskMateParentDashboardCard extends LitElement {
                 </div>
                 <span class="progress-label">${approved}/${total}</span>
               </div>
+            </div>
+          </div>
+        `;
+      })}
+    `;
+  }
+
+  _renderRotation(rotationChores, children, attrs) {
+    if (!rotationChores.length) {
+      return html`
+        <div class="empty-section">
+          <ha-icon icon="mdi:rotate-3d-variant"></ha-icon>
+          <span>${this._t('dashboard.empty_rotation', {}, 'No rotating chores configured')}</span>
+        </div>
+      `;
+    }
+    const childById = Object.fromEntries((children || []).map(c => [c.id, c]));
+    const groups = attrs.task_groups || [];
+    const groupByChoreId = {};
+    for (const g of groups) {
+      for (const cid of (g.chore_ids || [])) {
+        groupByChoreId[cid] = g;
+      }
+    }
+    const unknown = this._t('dashboard.rotation_unassigned', {}, 'Nobody');
+    return html`
+      ${rotationChores.map(chore => {
+        const currentChildId = chore.assignment_current_child_id || '';
+        const currentChild = childById[currentChildId];
+        const pool = (chore.assigned_to && chore.assigned_to.length) ? chore.assigned_to : (children || []).map(c => c.id);
+        const poolSize = pool.length;
+        const isSticky = groupByChoreId[chore.id] && groupByChoreId[chore.id].policy === 'sticky';
+        const isStickyFollower = isSticky && groupByChoreId[chore.id].chore_ids[0] !== chore.id;
+        const skipDisabled = poolSize <= 1 || isStickyFollower;
+        const group = groupByChoreId[chore.id];
+        const key = `skip_${chore.id}`;
+        const loading = !!this._loading[key];
+        return html`
+          <div class="approval-item ${loading ? 'loading' : ''}">
+            <div class="approval-child-avatar" style="background: linear-gradient(135deg, #16a085, #1abc9c);">
+              <ha-icon icon="${currentChild?.avatar || 'mdi:rotate-3d-variant'}"></ha-icon>
+            </div>
+            <div class="approval-info">
+              <span class="approval-chore">${chore.name}</span>
+              <span class="approval-meta">
+                <ha-icon icon="mdi:account" style="--mdc-icon-size: 14px;"></ha-icon>
+                ${currentChild?.name || unknown}
+                · <span>${chore.assignment_mode}</span>
+                ${group ? html`· <span>${group.policy === 'sticky' ? '🔗' : '🔀'} ${group.name}</span>` : ''}
+              </span>
+            </div>
+            <div class="approval-actions">
+              <button
+                class="btn-reject"
+                title="${this._t('dashboard.rotation_skip_hint', {}, 'Skip current child and move to the next in rotation (today only)')}"
+                ?disabled="${skipDisabled}"
+                style="${skipDisabled ? 'opacity:0.4; cursor: not-allowed;' : ''}"
+                @click="${() => this._handleSkip(chore.id)}"
+              >
+                <ha-icon icon="mdi:skip-next"></ha-icon>
+              </button>
             </div>
           </div>
         `;
@@ -678,6 +747,26 @@ class TaskMateParentDashboardCard extends LitElement {
       this._notifyServiceError("reject_reward", e, `taskmate_dashboard_reject_reward_${claimId}`);
     } finally {
       this._loading = { ...this._loading, [claimId]: false };
+      this.requestUpdate();
+    }
+  }
+
+  async _handleSkip(choreId) {
+    const key = `skip_${choreId}`;
+    // Guard rail: ask before skipping — this affects today's rotation only,
+    // but parents often tap it by mistake.
+    if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+      const prompt = this._t('dashboard.rotation_skip_confirm', {}, "Skip today's assignee for this chore?");
+      if (!window.confirm(prompt)) return;
+    }
+    this._loading = { ...this._loading, [key]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "skip_chore", { chore_id: choreId });
+    } catch (e) {
+      this._notifyServiceError("skip_chore", e, `taskmate_dashboard_skip_${choreId}`);
+    } finally {
+      this._loading = { ...this._loading, [key]: false };
       this.requestUpdate();
     }
   }

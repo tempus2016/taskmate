@@ -22,11 +22,13 @@ from .const import (
     DEFAULT_COMPLETION_SOUND,
     DEFAULT_POINTS_ICON,
     DEFAULT_POINTS_NAME,
+    DEFAULT_TASK_GROUP_POLICY,
     DOMAIN,
     MAX_CALENDAR_PROJECTION_DAYS,
     MIN_CALENDAR_PROJECTION_DAYS,
     RECURRENCE_OPTIONS,
     REWARD_ICON_OPTIONS,
+    TASK_GROUP_POLICIES,
     TIME_CATEGORIES,
 )
 
@@ -115,6 +117,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         self._chore_step1_data: dict | None = None  # Holds step 1 data while user completes step 2
         self._edited_chore = None  # Holds the chore object during edit flow across steps
         self._translations: dict | None = None
+        self._selected_task_group_id: str | None = None
 
     @property
     def coordinator(self):
@@ -216,6 +219,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             menu_options=[
                 "manage_children",
                 "manage_chores",
+                "manage_task_groups",
                 "manage_rewards",
                 "settings",
             ],
@@ -345,6 +349,24 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
 
     # ==================== CHORES MANAGEMENT ====================
 
+    async def _maybe_apply_manual_start(self, chore_id: str) -> None:
+        """Apply a manual start selection from step 1 after the chore is saved.
+
+        Called by the edit-chore schedule sub-steps. No-op when the dropdown
+        was left at "(auto)".
+        """
+        s1 = self._chore_step1_data or {}
+        manual_start = (s1.get("manual_start_child_id") or "").strip()
+        if not manual_start:
+            return
+        chore = self.coordinator.get_chore(chore_id)
+        if not chore or getattr(chore, "assignment_mode", "everyone") == "everyone":
+            return
+        try:
+            await self.coordinator.async_set_chore_manual_start(chore_id, manual_start)
+        except ValueError as err:
+            _LOGGER.debug("Manual start ignored: %s", err)
+
     async def async_step_manage_chores(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
@@ -463,6 +485,18 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     multiple=True,
                 )
             )
+            # Manual start: only meaningful for rotation modes with >1 child. We
+            # always render the dropdown (HA config flow is stateless between
+            # re-renders) but document that it's ignored for 'everyone' mode.
+            manual_start_options = [selector.SelectOptionDict(value="", label="(auto)")] + [
+                selector.SelectOptionDict(value=c.id, label=c.name) for c in children
+            ]
+            schema_dict[vol.Optional("manual_start_child_id", default="")] = selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=manual_start_options,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            )
 
         return self.async_show_form(
             step_id="add_chore",
@@ -494,6 +528,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 assignment_rotation_anchor=s1.get("assignment_rotation_anchor", "") or "",
                 publish_calendar_entities=list(s1.get("publish_calendar_entities") or []),
                 require_availability=bool(s1.get("require_availability", False)),
+                manual_start_child_id=s1.get("manual_start_child_id", "") or "",
             )
             self._chore_step1_data = None
             return await self.async_step_manage_chores()
@@ -533,6 +568,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             assignment_rotation_anchor=s1.get("assignment_rotation_anchor", "") or "",
             publish_calendar_entities=list(s1.get("publish_calendar_entities") or []),
             require_availability=bool(s1.get("require_availability", False)),
+            manual_start_child_id=s1.get("manual_start_child_id", "") or "",
         )
         self._chore_step1_data = None
         return await self.async_step_manage_chores()
@@ -577,6 +613,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 assignment_rotation_anchor=s1.get("assignment_rotation_anchor", "") or "",
                 publish_calendar_entities=list(s1.get("publish_calendar_entities") or []),
                 require_availability=bool(s1.get("require_availability", False)),
+                manual_start_child_id=s1.get("manual_start_child_id", "") or "",
             )
             self._chore_step1_data = None
             return await self.async_step_manage_chores()
@@ -927,6 +964,15 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     multiple=True,
                 )
             )
+            manual_start_options = [selector.SelectOptionDict(value="", label="(auto)")] + [
+                selector.SelectOptionDict(value=c.id, label=c.name) for c in children
+            ]
+            schema_dict[vol.Optional("manual_start_child_id", default="")] = selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=manual_start_options,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            )
 
         return self.async_show_form(
             step_id="edit_chore",
@@ -962,6 +1008,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             chore.recurrence_start = ""
             chore.first_occurrence_mode = "available_immediately"
             await self.coordinator.async_update_chore(chore)
+            await self._maybe_apply_manual_start(chore.id)
             self._chore_step1_data = None
             self._edited_chore = None
             return await self.async_step_manage_chores()
@@ -1003,6 +1050,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             from homeassistant.util import dt as dt_util
             chore.created_date = dt_util.as_local(dt_util.now()).date().isoformat()
         await self.coordinator.async_update_chore(chore)
+        await self._maybe_apply_manual_start(chore.id)
         self._chore_step1_data = None
         self._edited_chore = None
         return await self.async_step_manage_chores()
@@ -1035,6 +1083,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 chore.name, chore.visibility_entity, chore.visibility_operator, chore.visibility_state
             )
             await self.coordinator.async_update_chore(chore)
+            await self._maybe_apply_manual_start(chore.id)
             self._chore_step1_data = None
             self._edited_chore = None
             return await self.async_step_manage_chores()
@@ -1447,6 +1496,141 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
         )
 
+    # ==================== TASK GROUPS MANAGEMENT ====================
+
+    async def async_step_manage_task_groups(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Task groups menu."""
+        await self._async_load_translations()
+        groups = self.coordinator.storage.get_task_groups()
+        _m = lambda key, default: self._t(f"options.step.manage_task_groups.menu_options.{key}", default)
+        menu_options = {"add_task_group": _m("add_task_group", "Add New Group")}
+        for group in groups:
+            count = len(group.chore_ids or [])
+            menu_options[f"edit_task_group_{group.id}"] = f"{group.name} ({group.policy}, {count} chores)"
+        menu_options["init"] = _m("init", "Back to Main Menu")
+        return self.async_show_menu(
+            step_id="manage_task_groups",
+            menu_options=menu_options,
+        )
+
+    def _rotation_chore_options(self):
+        """Return select options for chores that can legally join a group."""
+        options = []
+        for c in self.coordinator.storage.get_chores():
+            if getattr(c, "assignment_mode", "everyone") == "everyone":
+                continue
+            options.append(selector.SelectOptionDict(value=c.id, label=f"{c.name} ({c.assignment_mode})"))
+        return options
+
+    async def async_step_add_task_group(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Add a new task group."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            name = (user_input.get("name") or "").strip()
+            policy = user_input.get("policy", DEFAULT_TASK_GROUP_POLICY)
+            chore_ids = user_input.get("chore_ids", []) or []
+            if not name:
+                errors["name"] = "name_required"
+            else:
+                try:
+                    await self.coordinator.async_add_task_group(
+                        name=name, policy=policy, chore_ids=list(chore_ids)
+                    )
+                    return await self.async_step_manage_task_groups()
+                except ValueError as err:
+                    _LOGGER.warning("add_task_group validation failed: %s", err)
+                    errors["base"] = "task_group_invalid"
+
+        chore_options = self._rotation_chore_options()
+        return self.async_show_form(
+            step_id="add_task_group",
+            data_schema=vol.Schema({
+                vol.Required("name"): str,
+                vol.Required("policy", default=DEFAULT_TASK_GROUP_POLICY): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=list(TASK_GROUP_POLICIES),
+                        translation_key="task_group_policy",
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
+                vol.Optional("chore_ids", default=[]): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=chore_options,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                        multiple=True,
+                    )
+                ),
+            }),
+            errors=errors,
+        )
+
+    async def async_step_edit_task_group(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Edit an existing task group."""
+        group = self.coordinator.storage.get_task_group(self._selected_task_group_id or "")
+        if not group:
+            return await self.async_step_manage_task_groups()
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            action = user_input.get("action", "save")
+            if action == "delete":
+                await self.coordinator.async_remove_task_group(group.id)
+                return await self.async_step_manage_task_groups()
+            name = (user_input.get("name") or "").strip()
+            policy = user_input.get("policy", group.policy)
+            chore_ids = user_input.get("chore_ids", []) or []
+            if not name:
+                errors["name"] = "name_required"
+            else:
+                try:
+                    await self.coordinator.async_update_task_group(
+                        group_id=group.id,
+                        name=name,
+                        policy=policy,
+                        chore_ids=list(chore_ids),
+                    )
+                    return await self.async_step_manage_task_groups()
+                except ValueError as err:
+                    _LOGGER.warning("update_task_group validation failed: %s", err)
+                    errors["base"] = "task_group_invalid"
+
+        chore_options = self._rotation_chore_options()
+        return self.async_show_form(
+            step_id="edit_task_group",
+            data_schema=vol.Schema({
+                vol.Required("name", default=group.name): str,
+                vol.Required("policy", default=group.policy): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=list(TASK_GROUP_POLICIES),
+                        translation_key="task_group_policy",
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
+                vol.Optional("chore_ids", default=list(group.chore_ids or [])): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=chore_options,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                        multiple=True,
+                    )
+                ),
+                vol.Required("action", default="save"): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=["save", "delete"],
+                        translation_key="task_group_action",
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
+            }),
+            errors=errors,
+            description_placeholders={"group_name": group.name},
+        )
+
     # ==================== DYNAMIC STEP ROUTING ====================
 
     def __getattr__(self, name: str):
@@ -1466,4 +1650,9 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             if self.coordinator.storage.get_reward(reward_id):
                 self._selected_reward_id = reward_id
                 return self.async_step_edit_reward
+        elif name.startswith("async_step_edit_task_group_"):
+            group_id = name.replace("async_step_edit_task_group_", "")
+            if self.coordinator.storage.get_task_group(group_id):
+                self._selected_task_group_id = group_id
+                return self.async_step_edit_task_group
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")

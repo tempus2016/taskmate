@@ -480,3 +480,101 @@ add_chore:
       default: true
       selector:
         boolean:
+
+skip_chore:
+  name: Skip Chore
+  description: Skip today's assigned child for a rotating chore and move the pointer to the next child in the pool. Ephemeral — tomorrow the rotation resumes its normal schedule.
+  fields:
+    chore_id:
+      name: Chore ID
+      description: The ID of the chore to skip
+      required: true
+      selector:
+        text:
+
+set_chore_manual_start:
+  name: Set Manual Start Child
+  description: Set which child the rotation starts with for a rotating chore. For alternating mode this reorders the pool and resets the anchor; for random/balanced it overrides today's cached assignee only.
+  fields:
+    chore_id:
+      name: Chore ID
+      description: The ID of the chore to update
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child who should start the rotation
+      required: true
+      selector:
+        text:
+
+add_task_group:
+  name: Add Task Group
+  description: Create a task group that coordinates assignments across chores (sticky = same child, spread = different children).
+  fields:
+    name:
+      name: Name
+      description: Display name for the group
+      required: true
+      selector:
+        text:
+    policy:
+      name: Policy
+      description: sticky (same child) or spread (different children)
+      required: true
+      default: sticky
+      selector:
+        select:
+          options:
+            - sticky
+            - spread
+    chore_ids:
+      name: Chore IDs
+      description: List of chore IDs to include in the group. For sticky, the first chore is the leader.
+      required: false
+      selector:
+        object:
+
+update_task_group:
+  name: Update Task Group
+  description: Update a task group's name, policy, or chore membership.
+  fields:
+    group_id:
+      name: Group ID
+      description: The ID of the group to update
+      required: true
+      selector:
+        text:
+    name:
+      name: Name
+      description: New display name
+      required: false
+      selector:
+        text:
+    policy:
+      name: Policy
+      description: New policy (sticky or spread)
+      required: false
+      selector:
+        select:
+          options:
+            - sticky
+            - spread
+    chore_ids:
+      name: Chore IDs
+      description: Replacement list of chore IDs. For sticky, the first chore is the leader.
+      required: false
+      selector:
+        object:
+
+remove_task_group:
+  name: Remove Task Group
+  description: Delete a task group. The member chores are not affected.
+  fields:
+    group_id:
+      name: Group ID
+      description: The ID of the group to delete
+      required: true
+      selector:
+        text:

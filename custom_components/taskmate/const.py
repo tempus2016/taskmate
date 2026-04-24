@@ -31,6 +31,16 @@ CONF_CHORE_ASSIGNMENT_MODE: Final = "assignment_mode"
 CONF_CHORE_ASSIGNMENT_ROTATION_ANCHOR: Final = "assignment_rotation_anchor"
 CONF_CHORE_PUBLISH_CALENDARS: Final = "publish_calendar_entities"
 CONF_CHORE_REQUIRE_AVAILABILITY: Final = "require_availability"
+CONF_CHORE_MANUAL_START_CHILD: Final = "manual_start_child_id"
+
+# Task groups
+CONF_TASK_GROUPS: Final = "task_groups"
+CONF_TASK_GROUP_ID: Final = "group_id"
+CONF_TASK_GROUP_NAME: Final = "name"
+CONF_TASK_GROUP_POLICY: Final = "policy"
+CONF_TASK_GROUP_CHORE_IDS: Final = "chore_ids"
+TASK_GROUP_POLICIES: Final = ["sticky", "spread"]
+DEFAULT_TASK_GROUP_POLICY: Final = "sticky"
 
 # Calendar projection: how many days ahead each chore's assignment is pushed
 # into the configured HA calendars. 14 days balances planning visibility with
@@ -234,6 +244,11 @@ SERVICE_REMOVE_BONUS: Final = "remove_bonus"
 SERVICE_APPLY_BONUS: Final = "apply_bonus"
 SERVICE_ADD_CHORE: Final = "add_chore"
 SERVICE_ALLOCATE_POINTS_TO_POOL: Final = "allocate_points_to_pool"
+SERVICE_SKIP_CHORE: Final = "skip_chore"
+SERVICE_SET_CHORE_MANUAL_START: Final = "set_chore_manual_start"
+SERVICE_ADD_TASK_GROUP: Final = "add_task_group"
+SERVICE_UPDATE_TASK_GROUP: Final = "update_task_group"
+SERVICE_REMOVE_TASK_GROUP: Final = "remove_task_group"
 
 # Events
 EVENT_PREVIEW_SOUND: Final = "taskmate_preview_sound"

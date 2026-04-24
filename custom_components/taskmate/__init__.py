@@ -58,6 +58,16 @@ from .const import (
     SERVICE_SET_CHORE_ORDER,
     SERVICE_UPDATE_BONUS,
     SERVICE_UPDATE_PENALTY,
+    SERVICE_SKIP_CHORE,
+    SERVICE_SET_CHORE_MANUAL_START,
+    SERVICE_ADD_TASK_GROUP,
+    SERVICE_UPDATE_TASK_GROUP,
+    SERVICE_REMOVE_TASK_GROUP,
+    CONF_TASK_GROUP_ID,
+    CONF_TASK_GROUP_NAME,
+    CONF_TASK_GROUP_POLICY,
+    CONF_TASK_GROUP_CHORE_IDS,
+    TASK_GROUP_POLICIES,
     TIME_CATEGORIES,
 )
 from .coordinator import TaskMateCoordinator
@@ -345,6 +355,73 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             child_id=call.data[ATTR_CHILD_ID],
         )
 
+    async def handle_skip_chore(call: ServiceCall) -> None:
+        """Handle the skip_chore service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        try:
+            await coordinator.async_skip_chore(call.data[ATTR_CHORE_ID])
+        except ValueError as err:
+            _LOGGER.warning("skip_chore rejected: %s", err)
+            raise
+
+    async def handle_set_chore_manual_start(call: ServiceCall) -> None:
+        """Handle the set_chore_manual_start service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        try:
+            await coordinator.async_set_chore_manual_start(
+                call.data[ATTR_CHORE_ID], call.data[ATTR_CHILD_ID]
+            )
+        except ValueError as err:
+            _LOGGER.warning("set_chore_manual_start rejected: %s", err)
+            raise
+
+    async def handle_add_task_group(call: ServiceCall) -> None:
+        """Handle the add_task_group service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        try:
+            await coordinator.async_add_task_group(
+                name=call.data[CONF_TASK_GROUP_NAME],
+                policy=call.data[CONF_TASK_GROUP_POLICY],
+                chore_ids=call.data.get(CONF_TASK_GROUP_CHORE_IDS, []),
+            )
+        except ValueError as err:
+            _LOGGER.warning("add_task_group rejected: %s", err)
+            raise
+
+    async def handle_update_task_group(call: ServiceCall) -> None:
+        """Handle the update_task_group service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        try:
+            await coordinator.async_update_task_group(
+                group_id=call.data[CONF_TASK_GROUP_ID],
+                name=call.data.get(CONF_TASK_GROUP_NAME),
+                policy=call.data.get(CONF_TASK_GROUP_POLICY),
+                chore_ids=call.data.get(CONF_TASK_GROUP_CHORE_IDS),
+            )
+        except ValueError as err:
+            _LOGGER.warning("update_task_group rejected: %s", err)
+            raise
+
+    async def handle_remove_task_group(call: ServiceCall) -> None:
+        """Handle the remove_task_group service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_remove_task_group(call.data[CONF_TASK_GROUP_ID])
+
     async def handle_add_chore(call: ServiceCall) -> None:
         """Handle the add_chore service call."""
         coordinator = _get_coordinator(hass)
@@ -597,6 +674,53 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         }),
     )
 
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_SKIP_CHORE,
+        handle_skip_chore,
+        schema=vol.Schema({vol.Required(ATTR_CHORE_ID): cv.string}),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_SET_CHORE_MANUAL_START,
+        handle_set_chore_manual_start,
+        schema=vol.Schema({
+            vol.Required(ATTR_CHORE_ID): cv.string,
+            vol.Required(ATTR_CHILD_ID): cv.string,
+        }),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ADD_TASK_GROUP,
+        handle_add_task_group,
+        schema=vol.Schema({
+            vol.Required(CONF_TASK_GROUP_NAME): cv.string,
+            vol.Required(CONF_TASK_GROUP_POLICY): vol.In(TASK_GROUP_POLICIES),
+            vol.Optional(CONF_TASK_GROUP_CHORE_IDS, default=[]): vol.All(cv.ensure_list, [cv.string]),
+        }),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_UPDATE_TASK_GROUP,
+        handle_update_task_group,
+        schema=vol.Schema({
+            vol.Required(CONF_TASK_GROUP_ID): cv.string,
+            vol.Optional(CONF_TASK_GROUP_NAME): cv.string,
+            vol.Optional(CONF_TASK_GROUP_POLICY): vol.In(TASK_GROUP_POLICIES),
+            vol.Optional(CONF_TASK_GROUP_CHORE_IDS): vol.All(cv.ensure_list, [cv.string]),
+        }),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_REMOVE_TASK_GROUP,
+        handle_remove_task_group,
+        schema=vol.Schema({vol.Required(CONF_TASK_GROUP_ID): cv.string}),
+    )
+
 
 def _async_unregister_services(hass: HomeAssistant) -> None:
     """Unregister TaskMate services."""
@@ -621,6 +745,11 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_REMOVE_BONUS,
         SERVICE_APPLY_BONUS,
         SERVICE_ADD_CHORE,
+        SERVICE_SKIP_CHORE,
+        SERVICE_SET_CHORE_MANUAL_START,
+        SERVICE_ADD_TASK_GROUP,
+        SERVICE_UPDATE_TASK_GROUP,
+        SERVICE_REMOVE_TASK_GROUP,
     ]
     for service in services:
         hass.services.async_remove(DOMAIN, service)
