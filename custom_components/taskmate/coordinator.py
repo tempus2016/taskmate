@@ -1039,6 +1039,38 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             await self.storage.async_save()
             await self.async_refresh()
 
+    def _is_rotation_done_today(self, chore) -> bool:
+        """Return True when a non-everyone-mode chore has been completed
+        enough times today (across the whole rotation pool) to fill its
+        daily_limit. Once that quota is met the chore is "done for the
+        rotation" and should disappear from every pool member's list — not
+        just the child who happened to complete it. Returns False for
+        everyone-mode chores since they don't share a single daily quota.
+        """
+        if getattr(chore, 'assignment_mode', 'everyone') == 'everyone':
+            return False
+        pool = set(self._chore_assignment_pool(chore))
+        if not pool:
+            return False
+        today = dt_util.as_local(dt_util.now()).date()
+        completions_today = 0
+        for comp in self.storage.get_completions():
+            if comp.chore_id != chore.id:
+                continue
+            if comp.child_id not in pool:
+                continue
+            comp_dt = comp.completed_at
+            try:
+                if hasattr(comp_dt, 'astimezone'):
+                    comp_dt = dt_util.as_local(comp_dt)
+                comp_date = comp_dt.date() if hasattr(comp_dt, 'date') else None
+            except (AttributeError, TypeError, ValueError):
+                continue
+            if comp_date == today:
+                completions_today += 1
+        daily_limit = getattr(chore, 'daily_limit', 1) or 1
+        return completions_today >= daily_limit
+
     def is_chore_available_for_child(self, chore, child_id: str) -> bool:
         """Check if a recurring chore is available for a child to complete.
 
@@ -1062,6 +1094,11 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         if getattr(chore, 'assignment_mode', 'everyone') != 'everyone':
             active = self._compute_active_children(chore)
             if child_id not in active:
+                return False
+            # Once anyone in the rotation pool has completed it today (e.g. a
+            # parent ticked it off for the off-rotation child), the chore is
+            # done for the whole pool — including today's active child.
+            if self._is_rotation_done_today(chore):
                 return False
 
         # Check visibility entity first — if not visible, chore is not available

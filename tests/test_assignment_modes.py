@@ -132,6 +132,7 @@ def test_is_chore_available_respects_dynamic_assignment():
     coord = _coord([a, b])
     # needs storage.get_last_completed for is_chore_available_for_child
     coord.storage.get_last_completed = MagicMock(return_value={})
+    coord.storage.get_completions = MagicMock(return_value=[])
     anchor = date(2026, 4, 20)
     dt_util_mock._now = dt.datetime.combine(anchor, dt.time(12, 0), tzinfo=UTC)
     chore = Chore(
@@ -145,6 +146,63 @@ def test_is_chore_available_respects_dynamic_assignment():
     # Everyone mode is unchanged
     chore.assignment_mode = "everyone"
     assert coord.is_chore_available_for_child(chore, a.id) is True
+    assert coord.is_chore_available_for_child(chore, b.id) is True
+
+
+def test_rotation_chore_clears_for_pool_when_off_rotation_child_completes():
+    """Regression for issue where a parent crediting User B (off rotation)
+    leaves the chore visible on User A (today's active child)."""
+    from custom_components.taskmate.models import ChoreCompletion
+
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    anchor = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(anchor, dt.time(12, 0), tzinfo=UTC)
+    chore = Chore(
+        name="Bins",
+        assigned_to=[a.id, b.id],
+        assignment_mode="alternating",
+        assignment_rotation_anchor=anchor.isoformat(),
+    )
+    # A is the active child today, B is off-rotation.
+    assert coord._compute_active_children(chore, anchor) == [a.id]
+
+    # Parent credits B (off-rotation) — completion lands on B today.
+    completion = ChoreCompletion(
+        chore_id=chore.id, child_id=b.id,
+        completed_at=dt_util_mock.now(), approved=True,
+    )
+    coord.storage.get_completions = MagicMock(return_value=[completion])
+
+    # Chore is now done for the whole rotation pool — invisible to A as well.
+    assert coord._is_rotation_done_today(chore) is True
+    assert coord.is_chore_available_for_child(chore, a.id) is False
+    assert coord.is_chore_available_for_child(chore, b.id) is False
+
+    # Sanity: with daily_limit=2 and only one completion so far, A still sees it.
+    chore.daily_limit = 2
+    assert coord._is_rotation_done_today(chore) is False
+    assert coord.is_chore_available_for_child(chore, a.id) is True
+
+
+def test_everyone_mode_unaffected_by_rotation_done_helper():
+    """Everyone-mode chores share no single daily quota across the pool, so
+    the helper must not retire them after one child completes."""
+    from custom_components.taskmate.models import ChoreCompletion
+
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(12, 0), tzinfo=UTC)
+    chore = Chore(name="Brush teeth", assigned_to=[a.id, b.id])  # default everyone
+    completion = ChoreCompletion(
+        chore_id=chore.id, child_id=a.id,
+        completed_at=dt_util_mock.now(), approved=True,
+    )
+    coord.storage.get_completions = MagicMock(return_value=[completion])
+    assert coord._is_rotation_done_today(chore) is False
     assert coord.is_chore_available_for_child(chore, b.id) is True
 
 

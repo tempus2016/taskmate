@@ -1341,6 +1341,7 @@ class TaskMateChildCard extends LitElement {
 
     // Get today's day of week from sensor (set by backend) or compute client-side
     const entity = this.hass?.states?.[this.config.entity];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity?.attributes || {};
     const todayDow = entity?.attributes?.today_day_of_week ||
       new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
 
@@ -1377,10 +1378,27 @@ class TaskMateChildCard extends LitElement {
 
       // Dynamic assignment (alternating / random): only the currently-active child
       // sees the chore. The backend caches today's pick in assignment_current_child_id.
+      // Once any eligible pool member has completed the chore today (e.g. a parent
+      // credited the off-rotation child), the chore is done for the whole pool and
+      // should disappear for everyone — including today's active child.
       const assignmentMode = chore.assignment_mode || 'everyone';
       if (assignmentMode !== 'everyone' && isAssignedToChild) {
         const activeId = chore.assignment_current_child_id ? String(chore.assignment_current_child_id) : '';
         isAssignedToChild = activeId !== '' && activeId === String(childId);
+        if (isAssignedToChild) {
+          const poolIds = assignedToStrings.length > 0
+            ? assignedToStrings
+            : (attrs.children || []).map(c => String(c.id));
+          const poolSet = new Set(poolIds);
+          const dailyLimit = chore.daily_limit || 1;
+          const allTodayCompletions = attrs.todays_completions || [];
+          const poolCompletionsToday = allTodayCompletions.filter(
+            comp => comp.chore_id === chore.id && poolSet.has(String(comp.child_id))
+          ).length;
+          if (poolCompletionsToday >= dailyLimit) {
+            isAssignedToChild = false;
+          }
+        }
       }
 
       // Check visibility_entity — if set, chore is only visible if entity matches visibility_state
