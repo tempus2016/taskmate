@@ -470,6 +470,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         # Capture pre-update state before storage is mutated below.
         existing = self.storage.get_chore(chore.id)
         prev_entities = list(getattr(existing, "publish_calendar_entities", []) or []) if existing else []
+        prev_name = (existing.name if existing else "") or ""
         # Persist the incoming chore so _compute_daily_assignments sees the
         # latest pool / mode / etc. when applying group policies.
         self.storage.update_chore(chore)
@@ -486,7 +487,16 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         new_entities = list(chore.publish_calendar_entities or [])
         cleanup_entities = list({*prev_entities, *new_entities})
         if cleanup_entities:
-            await self._cleanup_chore_from_calendars(chore, cleanup_entities, today)
+            # Pass both the previous and current names so cleanup can fall back
+            # to summary-prefix matching when an integration's get_events
+            # response omits the description marker we use as primary key.
+            extra_prefixes = []
+            if prev_name and prev_name != chore.name:
+                extra_prefixes.append(f"{prev_name} — ")
+            extra_prefixes.append(f"{chore.name} — ")
+            await self._cleanup_chore_from_calendars(
+                chore, cleanup_entities, today, summary_prefixes=extra_prefixes,
+            )
         self.storage.update_chore(chore)
         await self._publish_chore_to_calendars(chore, today)
         await self.storage.async_save()
@@ -1252,6 +1262,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         chore: Chore,
         entities: list[str] | None = None,
         today: date | None = None,
+        summary_prefixes: list[str] | None = None,
     ) -> None:
         """Best-effort delete of the chore's own events from each configured calendar.
 
@@ -1272,6 +1283,16 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         window_start = datetime.combine(today, time(0, 0)).isoformat()
         window_end = datetime.combine(today + timedelta(days=window_days), time(0, 0)).isoformat()
         marker = self._chore_event_marker(chore)
+        # Fallback summary prefixes: covers integrations whose get_events
+        # response omits or strips the description field. Default to the
+        # current chore's name so deletes still work for unedited chores.
+        prefixes = list(summary_prefixes or [f"{chore.name} — "])
+
+        def _matches(event: dict) -> bool:
+            if marker in (event.get("description") or ""):
+                return True
+            summary = event.get("summary") or ""
+            return any(summary.startswith(p) for p in prefixes if p)
 
         async def _purge(entity_id: str) -> None:
             try:
@@ -1303,7 +1324,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                     events = bucket
 
             for event in events:
-                if marker not in (event.get("description") or ""):
+                if not _matches(event):
                     continue
                 uid = event.get("uid") or event.get("recurrence_id") or event.get("id")
                 if not uid:
