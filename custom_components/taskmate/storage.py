@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
-from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction
+from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction, TaskGroup
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ class TaskMateStorage:
                 "reward_claims": [],
                 "points_transactions": [],
                 "pool_allocations": [],
+                "task_groups": [],
                 "points_name": "Stars",
                 "points_icon": "mdi:star",
                 "last_completed": {},
@@ -51,6 +52,10 @@ class TaskMateStorage:
         # Ensure pool_allocations store exists (migration for v3.0 pool mode)
         if "pool_allocations" not in self._data:
             self._data["pool_allocations"] = []
+
+        # Ensure task_groups store exists (migration for existing installs)
+        if "task_groups" not in self._data:
+            self._data["task_groups"] = []
 
         # Run data migrations
         await self._migrate_assigned_to_child_ids()
@@ -394,6 +399,50 @@ class TaskMateStorage:
         self._data["bonuses"] = [
             b for b in self._data.get("bonuses", []) if b.get("id") != bonus_id
         ]
+
+    # Task groups management
+    def get_task_groups(self) -> list[TaskGroup]:
+        """Get all task groups."""
+        return [TaskGroup.from_dict(g) for g in self._data.get("task_groups", [])]
+
+    def get_task_group(self, group_id: str) -> TaskGroup | None:
+        """Get a task group by ID."""
+        for g in self._data.get("task_groups", []):
+            if g.get("id") == group_id:
+                return TaskGroup.from_dict(g)
+        return None
+
+    def get_task_group_for_chore(self, chore_id: str) -> TaskGroup | None:
+        """Return the group that contains this chore, or None."""
+        for g in self._data.get("task_groups", []):
+            if chore_id in g.get("chore_ids", []):
+                return TaskGroup.from_dict(g)
+        return None
+
+    def add_task_group(self, group: TaskGroup) -> None:
+        """Add a task group."""
+        self._data.setdefault("task_groups", []).append(group.to_dict())
+
+    def update_task_group(self, group: TaskGroup) -> None:
+        """Update an existing task group."""
+        groups = self._data.get("task_groups", [])
+        for i, g in enumerate(groups):
+            if g.get("id") == group.id:
+                groups[i] = group.to_dict()
+                return
+        groups.append(group.to_dict())
+
+    def remove_task_group(self, group_id: str) -> None:
+        """Remove a task group."""
+        self._data["task_groups"] = [
+            g for g in self._data.get("task_groups", []) if g.get("id") != group_id
+        ]
+
+    def remove_chore_from_task_groups(self, chore_id: str) -> None:
+        """Strip a chore ID from every group (used on chore delete)."""
+        for g in self._data.get("task_groups", []):
+            if chore_id in g.get("chore_ids", []):
+                g["chore_ids"] = [c for c in g["chore_ids"] if c != chore_id]
 
     # Points transactions management
     def get_points_transactions(self) -> list[PointsTransaction]:

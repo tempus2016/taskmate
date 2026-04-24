@@ -125,6 +125,10 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             if comp_date == today:
                 completions_today.add(comp.chore_id)
 
+        # Use the group-aware daily map so sticky/spread policies are honored
+        # when an availability flip causes a shift.
+        daily = self._compute_daily_assignments(today)
+
         changed = False
         for chore in self.storage.get_chores():
             if not getattr(chore, "require_availability", False):
@@ -133,8 +137,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 continue
             if chore.id in completions_today:
                 continue
-            active = self._compute_active_children(chore, today)
-            desired = active[0] if active else ""
+            desired = daily.get(chore.id, "")
             if getattr(chore, "assignment_current_child_id", "") != desired:
                 chore.assignment_current_child_id = desired
                 self.storage.update_chore(chore)
@@ -352,6 +355,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         assignment_rotation_anchor: str = "",
         publish_calendar_entities: list[str] | None = None,
         require_availability: bool = False,
+        manual_start_child_id: str = "",
     ) -> Chore:
         """Add a new chore."""
         # One-shot chores: force daily_limit=1, set created_date to today
@@ -360,11 +364,22 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             if not created_date:
                 created_date = dt_util.as_local(dt_util.now()).date().isoformat()
 
+        resolved_mode = assignment_mode if assignment_mode in ("everyone", "alternating", "random", "balanced") else "everyone"
+        today = dt_util.as_local(dt_util.now()).date()
+
+        # Apply manual start: for alternating, reorder pool + reset anchor so the
+        # chosen child is day-0 of the rotation. For random/balanced, we pin the
+        # cached assignment below after the chore is constructed.
+        pool = list(assigned_to or [])
+        if manual_start_child_id and resolved_mode == "alternating" and manual_start_child_id in pool:
+            pool = [manual_start_child_id] + [c for c in pool if c != manual_start_child_id]
+            assignment_rotation_anchor = today.isoformat()
+
         chore = Chore(
             name=name,
             points=points,
             description=description,
-            assigned_to=assigned_to or [],
+            assigned_to=pool,
             requires_approval=requires_approval,
             time_category=time_category,
             claim_allowance_minutes=max(0, int(claim_allowance_minutes or 0)),
@@ -380,16 +395,21 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             visibility_state=visibility_state,
             visibility_operator=visibility_operator,
             created_date=created_date,
-            assignment_mode=assignment_mode if assignment_mode in ("everyone", "alternating", "random") else "everyone",
+            assignment_mode=resolved_mode,
             assignment_rotation_anchor=assignment_rotation_anchor,
             publish_calendar_entities=list(publish_calendar_entities or []),
             require_availability=require_availability,
         )
         # Cache today's active child so the card can show it immediately
-        today = dt_util.as_local(dt_util.now()).date()
         active = self._compute_active_children(chore, today)
         if active and chore.assignment_mode != "everyone":
             chore.assignment_current_child_id = active[0]
+        # For random/balanced manual-start, override today's cached child so
+        # the parent sees the chosen child immediately.
+        if manual_start_child_id and resolved_mode in ("random", "balanced"):
+            resolved_pool = self._chore_assignment_pool(chore) if chore.assigned_to else [c.id for c in self.storage.get_children()]
+            if manual_start_child_id in resolved_pool:
+                chore.assignment_current_child_id = manual_start_child_id
         self.storage.add_chore(chore)
         # Publish to any configured calendars ASAP — before save so we persist the last_date stamp
         await self._publish_chore_to_calendars(chore, today)
@@ -447,9 +467,15 @@ class TaskMateCoordinator(DataUpdateCoordinator):
     async def async_update_chore(self, chore: Chore) -> None:
         """Update a chore."""
         today = dt_util.as_local(dt_util.now()).date()
-        active = self._compute_active_children(chore, today)
+        # Capture pre-update state before storage is mutated below.
+        existing = self.storage.get_chore(chore.id)
+        prev_entities = list(getattr(existing, "publish_calendar_entities", []) or []) if existing else []
+        # Persist the incoming chore so _compute_daily_assignments sees the
+        # latest pool / mode / etc. when applying group policies.
+        self.storage.update_chore(chore)
+        daily = self._compute_daily_assignments(today)
         if getattr(chore, "assignment_mode", "everyone") != "everyone":
-            chore.assignment_current_child_id = active[0] if active else ""
+            chore.assignment_current_child_id = daily.get(chore.id, "")
         else:
             chore.assignment_current_child_id = ""
         # Any edit to a chore with calendar publishing can shift which dates
@@ -457,8 +483,6 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         # recurrence, rename, time_category, entity list, etc.), so purge the
         # entire horizon from both the old and new calendar sets and let the
         # following publish pass re-write the projection.
-        existing = self.storage.get_chore(chore.id)
-        prev_entities = list(getattr(existing, "publish_calendar_entities", []) or []) if existing else []
         new_entities = list(chore.publish_calendar_entities or [])
         cleanup_entities = list({*prev_entities, *new_entities})
         if cleanup_entities:
@@ -476,6 +500,8 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         self.storage.remove_chore(chore_id)
         self.storage.remove_completions_for_chore(chore_id)
         self.storage.remove_last_completed_for_chore(chore_id)
+        # Strip chore from any task group it belonged to.
+        self.storage.remove_chore_from_task_groups(chore_id)
         # Remove chore from children's chore_order lists
         for child in self.storage.get_children():
             if chore_id in child.chore_order:
@@ -487,6 +513,195 @@ class TaskMateCoordinator(DataUpdateCoordinator):
     def get_chore(self, chore_id: str) -> Chore | None:
         """Get a chore by ID."""
         return self.storage.get_chore(chore_id)
+
+    async def async_skip_chore(self, chore_id: str) -> Chore:
+        """Advance today's rotation pointer past the current assignee.
+
+        Ephemeral: the skip applies only today. Tomorrow's midnight refresh
+        clears `skip_date` / `skip_count` so the rotation resumes its normal
+        schedule. Skip creates no completion record; the pool-wide daily_limit
+        count is unaffected.
+        """
+        chore = self.storage.get_chore(chore_id)
+        if not chore:
+            raise ValueError(f"Unknown chore: {chore_id}")
+        mode = getattr(chore, "assignment_mode", "everyone")
+        if mode == "everyone":
+            raise ValueError("Skip is not supported for 'everyone' assignment mode")
+
+        # Reject skipping a sticky group follower — the group would drift.
+        group = self.storage.get_task_group_for_chore(chore_id)
+        if group and group.policy == "sticky" and group.chore_ids and group.chore_ids[0] != chore_id:
+            raise ValueError(
+                "Cannot skip a sticky group follower; skip the leader chore instead"
+            )
+
+        pool = self._chore_assignment_pool(chore)
+        if len(pool) <= 1:
+            raise ValueError("Skip requires a rotation pool of 2 or more children")
+
+        today = dt_util.as_local(dt_util.now()).date()
+        today_iso = today.isoformat()
+
+        # Reset stale skip state.
+        if getattr(chore, "skip_date", "") != today_iso:
+            chore.skip_date = today_iso
+            chore.skip_count = 0
+
+        # Clamp: a full pool's worth of skips returns to the original child, so
+        # anything beyond pool_size-1 is a no-op.
+        if chore.skip_count >= len(pool) - 1:
+            return chore
+        chore.skip_count += 1
+
+        # Recompute with the group-aware map so sticky followers shift too.
+        self.storage.update_chore(chore)
+        daily = self._compute_daily_assignments(today)
+        chore.assignment_current_child_id = daily.get(chore_id, "")
+        self.storage.update_chore(chore)
+
+        # Propagate to sticky followers (their cached current_child_id shifts
+        # when the leader shifts).
+        if group and group.policy == "sticky" and group.chore_ids and group.chore_ids[0] == chore_id:
+            for follower_id in group.chore_ids[1:]:
+                follower = self.storage.get_chore(follower_id)
+                if not follower:
+                    continue
+                desired = daily.get(follower_id, "")
+                if getattr(follower, "assignment_current_child_id", "") != desired:
+                    follower.assignment_current_child_id = desired
+                    self.storage.update_chore(follower)
+
+        await self.storage.async_save()
+        await self.async_refresh()
+        return chore
+
+    async def async_set_chore_manual_start(self, chore_id: str, child_id: str) -> Chore:
+        """Set the chore's rotation to start with the given child today.
+
+        - alternating: reorder `assigned_to` so the chosen child is day-0, and
+          reset the rotation anchor to today.
+        - random / balanced: override today's cached assignment only; the
+          deterministic hash takes over tomorrow.
+        """
+        chore = self.storage.get_chore(chore_id)
+        if not chore:
+            raise ValueError(f"Unknown chore: {chore_id}")
+        mode = getattr(chore, "assignment_mode", "everyone")
+        if mode == "everyone":
+            raise ValueError("Manual start is not supported for 'everyone' assignment mode")
+
+        pool = self._chore_assignment_pool(chore)
+        if child_id not in pool:
+            raise ValueError(f"Child {child_id} is not in this chore's pool")
+
+        today = dt_util.as_local(dt_util.now()).date()
+
+        if mode == "alternating":
+            # Reorder only when assigned_to is explicit; fallback pool ordering
+            # matches storage.get_children() order, which we preserve by
+            # materializing assigned_to to the full pool here.
+            chore.assigned_to = [child_id] + [c for c in pool if c != child_id]
+            chore.assignment_rotation_anchor = today.isoformat()
+
+        # Any previous skip is wiped — manual start is an explicit reset.
+        chore.skip_date = ""
+        chore.skip_count = 0
+
+        if mode in ("random", "balanced"):
+            chore.assignment_current_child_id = child_id
+        else:
+            chore.assignment_current_child_id = child_id
+
+        self.storage.update_chore(chore)
+        await self.storage.async_save()
+        await self.async_refresh()
+        return chore
+
+    # Task group operations
+
+    def get_task_groups(self):
+        """Return all task groups."""
+        return self.storage.get_task_groups()
+
+    def get_task_group(self, group_id: str):
+        """Return a task group by ID."""
+        return self.storage.get_task_group(group_id)
+
+    def get_task_group_for_chore(self, chore_id: str):
+        """Return the (at most one) task group containing the given chore."""
+        return self.storage.get_task_group_for_chore(chore_id)
+
+    def _validate_task_group_members(self, chore_ids: list[str], exclude_group_id: str = "") -> None:
+        """Raise ValueError if any chore can't legally join a group.
+
+        Rules:
+        - chore must exist.
+        - chore.assignment_mode must be a rotation mode (not 'everyone').
+        - chore must not already belong to a different group.
+        """
+        seen: set[str] = set()
+        for chore_id in chore_ids:
+            if chore_id in seen:
+                raise ValueError(f"Duplicate chore in group: {chore_id}")
+            seen.add(chore_id)
+            chore = self.storage.get_chore(chore_id)
+            if not chore:
+                raise ValueError(f"Unknown chore: {chore_id}")
+            if getattr(chore, "assignment_mode", "everyone") == "everyone":
+                raise ValueError(
+                    f"Chore '{chore.name}' uses 'everyone' mode and cannot join a group"
+                )
+            existing_group = self.storage.get_task_group_for_chore(chore_id)
+            if existing_group and existing_group.id != exclude_group_id:
+                raise ValueError(
+                    f"Chore '{chore.name}' already belongs to group '{existing_group.name}'"
+                )
+
+    async def async_add_task_group(self, name: str, policy: str, chore_ids: list[str] | None = None):
+        """Create a task group."""
+        from .models import TaskGroup  # local import to avoid top-level cycles
+        if policy not in ("sticky", "spread"):
+            raise ValueError(f"Unknown task group policy: {policy}")
+        chore_ids = list(chore_ids or [])
+        self._validate_task_group_members(chore_ids)
+        group = TaskGroup(name=name, policy=policy, chore_ids=chore_ids)
+        self.storage.add_task_group(group)
+        await self.storage.async_save()
+        await self.async_refresh()
+        return group
+
+    async def async_update_task_group(
+        self,
+        group_id: str,
+        name: str | None = None,
+        policy: str | None = None,
+        chore_ids: list[str] | None = None,
+    ):
+        """Update an existing task group."""
+        group = self.storage.get_task_group(group_id)
+        if not group:
+            raise ValueError(f"Unknown task group: {group_id}")
+        if policy is not None:
+            if policy not in ("sticky", "spread"):
+                raise ValueError(f"Unknown task group policy: {policy}")
+            group.policy = policy
+        if name is not None:
+            group.name = name
+        if chore_ids is not None:
+            new_chore_ids = list(chore_ids)
+            self._validate_task_group_members(new_chore_ids, exclude_group_id=group_id)
+            group.chore_ids = new_chore_ids
+        self.storage.update_task_group(group)
+        await self.storage.async_save()
+        await self.async_refresh()
+        return group
+
+    async def async_remove_task_group(self, group_id: str) -> None:
+        """Delete a task group."""
+        self.storage.remove_task_group(group_id)
+        await self.storage.async_save()
+        await self.async_refresh()
 
     # Reward operations
 
@@ -648,6 +863,11 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         - balanced: today's balanced-mode chores sharing this pool are evenly
           split across the pool via a round-robin anchored by the date — so 10
           chores across 2 children always land 5/5 (11 lands 6/5, etc.).
+
+        When `chore.skip_date` matches today, `chore.skip_count` is added to the
+        computed rotation index so the pointer advances past any children the
+        parent has skipped. Stale skip state (skip_date != today) is ignored at
+        read time and cleared during the midnight refresh.
         """
         mode = getattr(chore, "assignment_mode", "everyone")
         require_availability = getattr(chore, "require_availability", False)
@@ -666,6 +886,11 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         if today is None:
             today = dt_util.as_local(dt_util.now()).date()
 
+        # Skip offset only applies when the skip was recorded today.
+        skip_offset = 0
+        if getattr(chore, "skip_date", "") == today.isoformat():
+            skip_offset = int(getattr(chore, "skip_count", 0) or 0)
+
         if mode == "alternating":
             anchor_iso = getattr(chore, "assignment_rotation_anchor", "") or ""
             try:
@@ -673,13 +898,13 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             except ValueError:
                 anchor = today
             offset = (today - anchor).days
-            idx = offset % len(pool)
+            idx = (offset + skip_offset) % len(pool)
             return [self._skip_unavailable(pool, idx, require_availability)]
 
         if mode == "random":
             # random: stable per (chore.id, date) so the frontend and backend agree
             digest = hashlib.sha256(f"{chore.id}:{today.toordinal()}".encode()).digest()
-            idx = int.from_bytes(digest[:8], "big") % len(pool)
+            idx = (int.from_bytes(digest[:8], "big") + skip_offset) % len(pool)
             return [self._skip_unavailable(pool, idx, require_availability)]
 
         # balanced: group today's balanced-mode chores that share this exact pool,
@@ -699,8 +924,101 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             position = 0
         start_digest = hashlib.sha256(f"balanced:{pool_key}:{today.toordinal()}".encode()).digest()
         start = int.from_bytes(start_digest[:4], "big") % len(pool)
-        idx = (start + position) % len(pool)
+        idx = (start + position + skip_offset) % len(pool)
         return [self._skip_unavailable(pool, idx, require_availability)]
+
+    def _compute_daily_assignments(self, today: date | None = None) -> dict[str, str]:
+        """Compute today's assignment per rotation-mode chore, honoring groups.
+
+        Returns a map of chore_id -> child_id. Only chores with a non-everyone
+        assignment_mode are present. Task group policies (sticky / spread) are
+        applied on top of the per-chore raw pick.
+        """
+        if today is None:
+            today = dt_util.as_local(dt_util.now()).date()
+
+        chores = self.storage.get_chores()
+        chore_by_id: dict[str, Chore] = {c.id: c for c in chores}
+
+        # Step 1: raw per-chore picks for rotation modes.
+        result: dict[str, str] = {}
+        for chore in chores:
+            mode = getattr(chore, "assignment_mode", "everyone")
+            if mode == "everyone":
+                continue
+            active = self._compute_active_children(chore, today)
+            if active:
+                result[chore.id] = active[0]
+
+        # Step 2: apply group policies.
+        for group in self.storage.get_task_groups():
+            if not group.chore_ids:
+                continue
+            if group.policy == "sticky":
+                self._apply_sticky_policy(group, chore_by_id, result)
+            elif group.policy == "spread":
+                self._apply_spread_policy(group, chore_by_id, result)
+
+        return result
+
+    def _apply_sticky_policy(
+        self, group, chore_by_id: dict[str, Chore], result: dict[str, str]
+    ) -> None:
+        """Force followers onto the leader chore's assignee (when in pool)."""
+        leader_id = group.chore_ids[0]
+        leader_child = result.get(leader_id)
+        if not leader_child:
+            return
+        for follower_id in group.chore_ids[1:]:
+            follower = chore_by_id.get(follower_id)
+            if not follower:
+                continue
+            if getattr(follower, "assignment_mode", "everyone") == "everyone":
+                continue
+            pool = self._chore_assignment_pool(follower)
+            if leader_child in pool:
+                result[follower_id] = leader_child
+            else:
+                _LOGGER.debug(
+                    "STICKY fallback: leader %s assigned to %s not in follower %s pool",
+                    leader_id, leader_child, follower_id,
+                )
+
+    def _apply_spread_policy(
+        self, group, chore_by_id: dict[str, Chore], result: dict[str, str]
+    ) -> None:
+        """Assign group members to distinct children; wraps when pool < group size."""
+        used: set[str] = set()
+        for chore_id in group.chore_ids:
+            chore = chore_by_id.get(chore_id)
+            if not chore:
+                continue
+            if getattr(chore, "assignment_mode", "everyone") == "everyone":
+                continue
+            pool = self._chore_assignment_pool(chore)
+            if not pool:
+                continue
+            # Wrap: once every child in this pool has been used, start over.
+            if len(used) >= len(pool) or all(p in used for p in pool):
+                used = set()
+            raw = result.get(chore_id) or pool[0]
+            if raw not in used:
+                result[chore_id] = raw
+                used.add(raw)
+                continue
+            # Walk pool from raw pick looking for an unused child.
+            try:
+                start_idx = pool.index(raw)
+            except ValueError:
+                start_idx = 0
+            picked = raw
+            for step in range(len(pool)):
+                cid = pool[(start_idx + step) % len(pool)]
+                if cid not in used:
+                    picked = cid
+                    break
+            result[chore_id] = picked
+            used.add(picked)
 
     def _skip_unavailable(self, pool: list[str], start_idx: int, enabled: bool) -> str:
         """Walk forward from `start_idx` through `pool` looking for an available
@@ -1013,16 +1331,29 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
         Runs at midnight. All chores are processed concurrently so the runtime
         is bounded by the slowest single publish, not the sum across chores.
+
+        Also clears stale skip state (skip_date != today) so yesterday's skip
+        doesn't bleed into the new day.
         """
         today = dt_util.as_local(dt_util.now()).date()
+        today_iso = today.isoformat()
         chores = self.storage.get_chores()
         if not chores:
             return
 
+        # Clear stale skip state in-memory (persisted via update_chore below).
+        for chore in chores:
+            if getattr(chore, "skip_date", "") and chore.skip_date != today_iso:
+                chore.skip_date = ""
+                chore.skip_count = 0
+
+        # Group-aware daily assignment map.
+        daily = self._compute_daily_assignments(today)
+
         async def _process(chore: Chore) -> bool:
             dirty = False
-            active = self._compute_active_children(chore, today)
-            desired = active[0] if active and getattr(chore, "assignment_mode", "everyone") != "everyone" else ""
+            mode = getattr(chore, "assignment_mode", "everyone")
+            desired = daily.get(chore.id, "") if mode != "everyone" else ""
             if getattr(chore, "assignment_current_child_id", "") != desired:
                 chore.assignment_current_child_id = desired
                 dirty = True
@@ -1030,6 +1361,11 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             await self._publish_chore_to_calendars(chore, today)
             if list(getattr(chore, "publish_calendar_published_dates", []) or []) != before:
                 dirty = True
+            # Always persist if skip state was cleared above.
+            if getattr(chore, "skip_date", "") == "" and getattr(chore, "skip_count", 0) == 0:
+                stored = self.storage.get_chore(chore.id)
+                if stored and (stored.skip_date or stored.skip_count):
+                    dirty = True
             if dirty:
                 self.storage.update_chore(chore)
             return dirty

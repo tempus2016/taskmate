@@ -40,6 +40,7 @@ def _coord(children: list[Child], projection_days: int = 1) -> TaskMateCoordinat
 
     by_id = {c.id: c for c in children}
     stored_chores: list[Chore] = []
+    stored_task_groups: list = []
     settings = {"calendar_projection_days": str(projection_days)}
 
     storage = MagicMock()
@@ -61,6 +62,41 @@ def _coord(children: list[Child], projection_days: int = 1) -> TaskMateCoordinat
         next(i for i, c in enumerate(stored_chores) if c.id == chore.id), chore
     ))
     storage.async_save = AsyncMock()
+
+    # Task group stubs — tests that don't touch groups still work because
+    # get_task_groups returns an empty list.
+    storage.get_task_groups = MagicMock(side_effect=lambda: list(stored_task_groups))
+
+    def _get_task_group(gid):
+        return next((g for g in stored_task_groups if g.id == gid), None)
+
+    def _get_task_group_for_chore(chore_id):
+        return next((g for g in stored_task_groups if chore_id in (g.chore_ids or [])), None)
+
+    storage.get_task_group = MagicMock(side_effect=_get_task_group)
+    storage.get_task_group_for_chore = MagicMock(side_effect=_get_task_group_for_chore)
+    storage.add_task_group = MagicMock(side_effect=stored_task_groups.append)
+
+    def _update_task_group(group):
+        for i, g in enumerate(stored_task_groups):
+            if g.id == group.id:
+                stored_task_groups[i] = group
+                return
+        stored_task_groups.append(group)
+
+    storage.update_task_group = MagicMock(side_effect=_update_task_group)
+    storage.remove_task_group = MagicMock(
+        side_effect=lambda gid: stored_task_groups.__setitem__(
+            slice(None),
+            [g for g in stored_task_groups if g.id != gid],
+        )
+    )
+    storage.remove_chore_from_task_groups = MagicMock(
+        side_effect=lambda cid: [
+            setattr(g, "chore_ids", [c for c in g.chore_ids if c != cid])
+            for g in stored_task_groups if cid in (g.chore_ids or [])
+        ]
+    )
 
     coord.storage = storage
     coord.async_refresh = AsyncMock()
@@ -738,3 +774,359 @@ class TestAvailabilityAwareAssignment:
         coord.hass.async_create_task = _capture
         coord._availability_state_changed(event)
         assert called == []
+
+
+# ---------------------------------------------------------------------------
+# Skip / Manual-start / Task group coverage
+# ---------------------------------------------------------------------------
+
+class TestSkipChore:
+    """Skip advances today's rotation pointer; tomorrow resumes original schedule."""
+
+    def test_skip_advances_alternating_pointer_today_only(self):
+        from custom_components.taskmate.models import TaskGroup  # noqa: F401 (ensure importable)
+        a, b, c = Child(name="A"), Child(name="B"), Child(name="C")
+        coord = _coord([a, b, c])
+        anchor = date(2026, 4, 20)
+        chore = Chore(
+            name="Bins",
+            assigned_to=[a.id, b.id, c.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+        )
+        coord.storage.add_chore(chore)
+
+        # Today = anchor day → A.
+        dt_util_mock._now = dt.datetime.combine(anchor, dt.time(12, 0), tzinfo=UTC)
+        assert coord._compute_active_children(chore, anchor) == [a.id]
+
+        # Skip today → pointer advances to B.
+        run_async(coord.async_skip_chore(chore.id))
+        updated = coord.storage.get_chore(chore.id)
+        assert updated.skip_date == anchor.isoformat()
+        assert updated.skip_count == 1
+        assert coord._compute_active_children(updated, anchor) == [b.id]
+
+        # Skip again → C.
+        run_async(coord.async_skip_chore(chore.id))
+        updated = coord.storage.get_chore(chore.id)
+        assert updated.skip_count == 2
+        assert coord._compute_active_children(updated, anchor) == [c.id]
+
+        # Tomorrow's compute MUST ignore stale skip state (still set today)
+        # since skip_date != tomorrow.
+        tomorrow = anchor + dt.timedelta(days=1)
+        assert coord._compute_active_children(updated, tomorrow) == [b.id]
+
+    def test_skip_rejects_everyone_mode(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        chore = Chore(name="Brush teeth", assigned_to=[a.id, b.id])  # mode = everyone
+        coord.storage.add_chore(chore)
+        try:
+            run_async(coord.async_skip_chore(chore.id))
+        except ValueError as err:
+            assert "everyone" in str(err)
+            return
+        raise AssertionError("Expected ValueError for everyone-mode skip")
+
+    def test_skip_rejects_pool_size_one(self):
+        a = Child(name="A")
+        coord = _coord([a])
+        chore = Chore(
+            name="Solo",
+            assigned_to=[a.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor="2026-04-20",
+        )
+        coord.storage.add_chore(chore)
+        try:
+            run_async(coord.async_skip_chore(chore.id))
+        except ValueError as err:
+            assert "pool" in str(err).lower()
+            return
+        raise AssertionError("Expected ValueError for single-child pool skip")
+
+    def test_skip_is_noop_past_pool_size(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        chore = Chore(
+            name="Bins",
+            assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor="2026-04-20",
+        )
+        coord.storage.add_chore(chore)
+        dt_util_mock._now = dt.datetime(2026, 4, 20, 12, 0, tzinfo=UTC)
+        run_async(coord.async_skip_chore(chore.id))  # 0 → 1 (B)
+        # Second skip would wrap to A, same as original — clamp at pool-1.
+        run_async(coord.async_skip_chore(chore.id))  # still 1
+        updated = coord.storage.get_chore(chore.id)
+        assert updated.skip_count == 1
+
+    def test_skip_affects_random_mode(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        today = date(2026, 4, 20)
+        chore = Chore(
+            name="Roulette",
+            assigned_to=[a.id, b.id],
+            assignment_mode="random",
+        )
+        coord.storage.add_chore(chore)
+        dt_util_mock._now = dt.datetime.combine(today, dt.time(12, 0), tzinfo=UTC)
+        before = coord._compute_active_children(chore, today)
+        run_async(coord.async_skip_chore(chore.id))
+        updated = coord.storage.get_chore(chore.id)
+        after = coord._compute_active_children(updated, today)
+        # Pool size 2 → skip must shift to the other child.
+        assert before != after
+
+    def test_midnight_refresh_clears_stale_skip_state(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        chore = Chore(
+            name="Bins",
+            assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor="2026-04-20",
+            skip_date="2026-04-20",
+            skip_count=1,
+        )
+        coord.storage.add_chore(chore)
+        # Midnight rolls over to 2026-04-21 — skip state is stale.
+        dt_util_mock._now = dt.datetime(2026, 4, 21, 0, 0, 5, tzinfo=UTC)
+        run_async(coord._async_refresh_assignments_and_publish())
+        updated = coord.storage.get_chore(chore.id)
+        assert updated.skip_date == ""
+        assert updated.skip_count == 0
+
+
+class TestManualStart:
+    """Manual-start reorders alternating pool and pins cache for random/balanced."""
+
+    def test_manual_start_alternating_reorders_pool(self):
+        a, b, c = Child(name="A"), Child(name="B"), Child(name="C")
+        coord = _coord([a, b, c])
+        anchor = date(2026, 4, 20)
+        dt_util_mock._now = dt.datetime.combine(anchor, dt.time(12, 0), tzinfo=UTC)
+        chore = run_async(coord.async_add_chore(
+            name="Bins",
+            assigned_to=[a.id, b.id, c.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+            manual_start_child_id=b.id,
+        ))
+        # Pool should now start with B (today's active child).
+        assert chore.assigned_to[0] == b.id
+        assert chore.assignment_current_child_id == b.id
+        # Day 1 in the rotation uses the new anchor + new pool order.
+        new_anchor = date.fromisoformat(chore.assignment_rotation_anchor)
+        assert coord._compute_active_children(chore, new_anchor + dt.timedelta(days=1))[0] == chore.assigned_to[1]
+
+    def test_manual_start_random_pins_today_only(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        today = date(2026, 4, 20)
+        dt_util_mock._now = dt.datetime.combine(today, dt.time(12, 0), tzinfo=UTC)
+        chore = run_async(coord.async_add_chore(
+            name="Roulette",
+            assigned_to=[a.id, b.id],
+            assignment_mode="random",
+            manual_start_child_id=a.id,
+        ))
+        assert chore.assignment_current_child_id == a.id
+
+
+class TestTaskGroups:
+    """Sticky & Spread policies, and group-aware daily assignment."""
+
+    def test_sticky_forces_followers_onto_leader_pick(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        anchor = date(2026, 4, 20)
+        leader = Chore(
+            name="Vacuum",
+            assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+        )
+        follower = Chore(
+            name="Mop",
+            assigned_to=[a.id, b.id],
+            assignment_mode="random",
+        )
+        coord.storage.add_chore(leader)
+        coord.storage.add_chore(follower)
+        run_async(coord.async_add_task_group(name="Clean", policy="sticky", chore_ids=[leader.id, follower.id]))
+
+        dt_util_mock._now = dt.datetime.combine(anchor, dt.time(12, 0), tzinfo=UTC)
+        daily = coord._compute_daily_assignments(anchor)
+        # Leader is A (alternating day-0). Follower must match.
+        assert daily[leader.id] == a.id
+        assert daily[follower.id] == a.id
+
+    def test_sticky_fallback_when_leader_pick_not_in_follower_pool(self):
+        a, b, c = Child(name="A"), Child(name="B"), Child(name="C")
+        coord = _coord([a, b, c])
+        anchor = date(2026, 4, 20)
+        leader = Chore(
+            name="Lead",
+            assigned_to=[a.id, b.id, c.id],  # can pick A
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+        )
+        follower = Chore(
+            name="Follow",
+            assigned_to=[b.id, c.id],  # NO A in pool
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+        )
+        coord.storage.add_chore(leader)
+        coord.storage.add_chore(follower)
+        run_async(coord.async_add_task_group(name="Grp", policy="sticky", chore_ids=[leader.id, follower.id]))
+
+        dt_util_mock._now = dt.datetime.combine(anchor, dt.time(12, 0), tzinfo=UTC)
+        daily = coord._compute_daily_assignments(anchor)
+        assert daily[leader.id] == a.id
+        # Follower keeps its raw pick (not A, since A isn't in pool).
+        assert daily[follower.id] in {b.id, c.id}
+
+    def test_spread_gives_distinct_children(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        today = date(2026, 4, 20)
+        c1 = Chore(name="AM", assigned_to=[a.id, b.id], assignment_mode="alternating",
+                   assignment_rotation_anchor=today.isoformat())
+        c2 = Chore(name="PM", assigned_to=[a.id, b.id], assignment_mode="alternating",
+                   assignment_rotation_anchor=today.isoformat())
+        coord.storage.add_chore(c1)
+        coord.storage.add_chore(c2)
+        run_async(coord.async_add_task_group(name="Cat litter", policy="spread", chore_ids=[c1.id, c2.id]))
+
+        daily = coord._compute_daily_assignments(today)
+        assert daily[c1.id] != daily[c2.id]
+
+    def test_spread_wraps_when_group_larger_than_pool(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        today = date(2026, 4, 20)
+        chores = []
+        for i in range(4):
+            ch = Chore(
+                name=f"C{i}",
+                assigned_to=[a.id, b.id],
+                assignment_mode="alternating",
+                assignment_rotation_anchor=today.isoformat(),
+            )
+            coord.storage.add_chore(ch)
+            chores.append(ch)
+        run_async(coord.async_add_task_group(
+            name="Big", policy="spread", chore_ids=[c.id for c in chores]
+        ))
+
+        daily = coord._compute_daily_assignments(today)
+        picks = [daily[c.id] for c in chores]
+        # Must alternate: both children used exactly twice.
+        assert picks.count(a.id) == 2
+        assert picks.count(b.id) == 2
+        # Adjacent entries differ (spread walks raw-indexed avoidance).
+        for i in range(len(picks) - 1):
+            assert picks[i] != picks[i + 1]
+
+    def test_everyone_mode_chore_cannot_join_group(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        chore = Chore(name="Brush", assigned_to=[a.id, b.id])  # everyone
+        coord.storage.add_chore(chore)
+        try:
+            run_async(coord.async_add_task_group(
+                name="Bad", policy="sticky", chore_ids=[chore.id]
+            ))
+        except ValueError as err:
+            assert "everyone" in str(err).lower()
+            return
+        raise AssertionError("Expected ValueError for everyone-mode chore in group")
+
+    def test_chore_cannot_belong_to_two_groups(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        c1 = Chore(name="C1", assigned_to=[a.id, b.id], assignment_mode="alternating",
+                   assignment_rotation_anchor="2026-04-20")
+        c2 = Chore(name="C2", assigned_to=[a.id, b.id], assignment_mode="alternating",
+                   assignment_rotation_anchor="2026-04-20")
+        coord.storage.add_chore(c1)
+        coord.storage.add_chore(c2)
+        run_async(coord.async_add_task_group(name="G1", policy="sticky", chore_ids=[c1.id, c2.id]))
+        try:
+            run_async(coord.async_add_task_group(
+                name="G2", policy="spread", chore_ids=[c1.id]
+            ))
+        except ValueError as err:
+            assert "group" in str(err).lower()
+            return
+        raise AssertionError("Expected ValueError for duplicate group membership")
+
+    def test_skip_on_sticky_follower_rejected(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        leader = Chore(name="L", assigned_to=[a.id, b.id], assignment_mode="alternating",
+                       assignment_rotation_anchor="2026-04-20")
+        follower = Chore(name="F", assigned_to=[a.id, b.id], assignment_mode="alternating",
+                         assignment_rotation_anchor="2026-04-20")
+        coord.storage.add_chore(leader)
+        coord.storage.add_chore(follower)
+        run_async(coord.async_add_task_group(name="G", policy="sticky", chore_ids=[leader.id, follower.id]))
+
+        dt_util_mock._now = dt.datetime(2026, 4, 20, 12, 0, tzinfo=UTC)
+        try:
+            run_async(coord.async_skip_chore(follower.id))
+        except ValueError as err:
+            assert "leader" in str(err).lower() or "follower" in str(err).lower()
+            return
+        raise AssertionError("Expected ValueError for skipping sticky follower")
+
+    def test_skip_on_sticky_leader_propagates_to_followers(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        anchor = date(2026, 4, 20)
+        leader = Chore(name="L", assigned_to=[a.id, b.id], assignment_mode="alternating",
+                       assignment_rotation_anchor=anchor.isoformat())
+        follower = Chore(name="F", assigned_to=[a.id, b.id], assignment_mode="random")
+        coord.storage.add_chore(leader)
+        coord.storage.add_chore(follower)
+        run_async(coord.async_add_task_group(name="G", policy="sticky", chore_ids=[leader.id, follower.id]))
+
+        dt_util_mock._now = dt.datetime.combine(anchor, dt.time(12, 0), tzinfo=UTC)
+        # Pre-skip: leader = A, follower = A (sticky).
+        daily = coord._compute_daily_assignments(anchor)
+        assert daily[leader.id] == a.id
+        assert daily[follower.id] == a.id
+
+        # Skip leader.
+        run_async(coord.async_skip_chore(leader.id))
+        updated_leader = coord.storage.get_chore(leader.id)
+        updated_follower = coord.storage.get_chore(follower.id)
+        assert updated_leader.assignment_current_child_id == b.id
+        assert updated_follower.assignment_current_child_id == b.id
+
+
+class TestRemoveChoreFromGroups:
+    """Deleting a chore strips its id from any group it was in."""
+
+    def test_remove_chore_strips_from_group(self):
+        a, b = Child(name="A"), Child(name="B")
+        coord = _coord([a, b])
+        c1 = Chore(name="C1", assigned_to=[a.id, b.id], assignment_mode="alternating",
+                   assignment_rotation_anchor="2026-04-20")
+        c2 = Chore(name="C2", assigned_to=[a.id, b.id], assignment_mode="alternating",
+                   assignment_rotation_anchor="2026-04-20")
+        coord.storage.add_chore(c1)
+        coord.storage.add_chore(c2)
+        run_async(coord.async_add_task_group(name="G", policy="sticky", chore_ids=[c1.id, c2.id]))
+
+        run_async(coord.async_remove_chore(c1.id))
+        groups = coord.storage.get_task_groups()
+        assert len(groups) == 1
+        assert c1.id not in groups[0].chore_ids
+        assert c2.id in groups[0].chore_ids

@@ -24,6 +24,7 @@
         "menu_options": {
           "manage_children": "Manage Children",
           "manage_chores": "Manage Chores",
+          "manage_task_groups": "Manage Task Groups",
           "manage_rewards": "Manage Rewards",
           "settings": "Settings"
         }
@@ -90,12 +91,13 @@
           "visibility_state": "Value to compare",
           "assignment_mode": "Assignment Mode",
           "assignment_rotation_anchor": "Rotation start date (alternating only)",
+          "manual_start_child_id": "Start rotation with (optional)",
           "require_availability": "Skip unavailable children",
           "publish_calendar_entities": "Publish to calendars (optional)"
         },
         "data_description": {
-          "daily_limit": "How many times per day this chore can be completed",
           "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
+          "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
           "completion_sound": "Sound to play when this chore is completed",
           "visibility_entity": "Home Assistant entity ID that controls when this chore appears. Leave blank to always show the chore. Examples: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. The chore only appears on the child card when the visibility condition is met.",
@@ -103,6 +105,7 @@
           "visibility_state": "The value to compare against. For 'Equals' or 'Not Equal': any text value (e.g., 'on', 'off', 'home', 'away'). For numeric operators (≥, ≤, >, <): enter a number (e.g., 25, 50.5, 100). Example: Entity 'sensor.temperature', Operator '>=', Value '20' shows chore when temperature is 20°C or higher.",
           "assignment_mode": "Everyone = every assigned child sees this chore. Alternating = one child at a time, rotating by day. Random = one randomly picked child per day (stable within the day). Balanced = today's balanced chores are split evenly across the assigned children — no one child ends up with everything.",
           "assignment_rotation_anchor": "Day-0 of the alternating rotation. Leave blank to start today. Only used when Assignment Mode is 'Alternating'.",
+          "manual_start_child_id": "Picks which child starts the rotation. For Alternating mode this permanently reorders the pool. For Random / Balanced it only overrides today's assignee — tomorrow's rotation resumes normally. Ignored for Everyone mode.",
           "require_availability": "When on, an unavailable child (based on the Availability Sensor in their profile) is skipped and the next available sibling takes the chore. Re-evaluated at midnight and whenever an availability sensor flips. Chores already completed today are not reassigned.",
           "publish_calendar_entities": "Pick one or more Home Assistant calendar entities. Whenever this chore is created, updated, or rolls over at midnight, today's assigned child is added as a calendar event on each selected calendar. Works with any number of calendars."
         }
@@ -126,8 +129,8 @@
           "visibility_state": "Value to compare"
         },
         "data_description": {
-          "daily_limit": "How many times per day this chore can be completed",
           "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
+          "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled",
           "completion_sound": "Sound to play when chores are completed",
           "visibility_entity": "Home Assistant entity ID that controls when these chores appear. Leave blank to always show them. Examples: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode. The chores only appear on the child card when the visibility condition is met.",
@@ -156,12 +159,13 @@
           "visibility_state": "Value to compare",
           "assignment_mode": "Assignment Mode",
           "assignment_rotation_anchor": "Rotation start date (alternating only)",
+          "manual_start_child_id": "Start rotation with (optional)",
           "require_availability": "Skip unavailable children",
           "publish_calendar_entities": "Publish to calendars (optional)"
         },
         "data_description": {
-          "daily_limit": "How many times per day this chore can be completed",
           "claim_allowance_minutes": "Extra minutes after this time-of-day window ends during which the chore can still be claimed. 0 disables the grace period. Night chores are always capped at midnight.",
+          "daily_limit": "How many times per day this chore can be completed",
           "schedule_mode": "Choose how this chore is scheduled — specific days of the week, or a repeating interval. The scheduling options will be configured on the next page.",
           "completion_sound": "Sound to play when this chore is completed",
           "visibility_entity": "Home Assistant entity ID that controls when this chore appears. Leave blank to always show the chore. Examples: binary_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. The chore only appears on the child card when the visibility condition is met.",
@@ -169,8 +173,43 @@
           "visibility_state": "The value to compare against. For 'Equals' or 'Not Equal': any text value (e.g., 'on', 'off', 'home', 'away'). For numeric operators (≥, ≤, >, <): enter a number (e.g., 25, 50.5, 100). Example: Entity 'sensor.temperature', Operator '>=', Value '20' shows chore when temperature is 20°C or higher.",
           "assignment_mode": "Everyone = every assigned child sees this chore. Alternating = one child at a time, rotating by day. Random = one randomly picked child per day (stable within the day). Balanced = today's balanced chores are split evenly across the assigned children — no one child ends up with everything.",
           "assignment_rotation_anchor": "Day-0 of the alternating rotation. Leave blank to start today. Only used when Assignment Mode is 'Alternating'.",
+          "manual_start_child_id": "Picks which child starts the rotation. For Alternating mode this permanently reorders the pool and resets the anchor. For Random / Balanced it only overrides today's assignee — tomorrow's rotation resumes normally. Ignored for Everyone mode.",
           "require_availability": "When on, an unavailable child (based on the Availability Sensor in their profile) is skipped and the next available sibling takes the chore. Re-evaluated at midnight and whenever an availability sensor flips. Chores already completed today are not reassigned.",
           "publish_calendar_entities": "Pick one or more Home Assistant calendar entities. Whenever this chore is created, updated, or rolls over at midnight, today's assigned child is added as a calendar event on each selected calendar. Works with any number of calendars."
+        }
+      },
+      "manage_task_groups": {
+        "title": "Manage Task Groups",
+        "description": "Group chores so their assignments stay coordinated. Sticky forces all chores in the group onto the same child today. Spread gives each chore a different child.",
+        "menu_options": {
+          "add_task_group": "Add New Group",
+          "init": "Back to Main Menu"
+        }
+      },
+      "add_task_group": {
+        "title": "Add Task Group",
+        "description": "Only rotation-mode chores (alternating / random / balanced) can join a group, and each chore can belong to at most one group.",
+        "data": {
+          "name": "Group Name",
+          "policy": "Policy",
+          "chore_ids": "Member Chores"
+        },
+        "data_description": {
+          "policy": "Sticky — all chores in the group go to the same child today (the first chore in the list is the leader whose assignment the others follow). Spread — each chore is assigned to a different child today; if the group has more chores than children, it wraps.",
+          "chore_ids": "Pick the chores to include. The order matters: for Sticky, the first chore is the leader whose assignee the others follow."
+        }
+      },
+      "edit_task_group": {
+        "title": "Edit Group: {group_name}",
+        "description": "Update or delete this task group.",
+        "data": {
+          "name": "Group Name",
+          "policy": "Policy",
+          "chore_ids": "Member Chores",
+          "action": "Action"
+        },
+        "data_description": {
+          "policy": "Sticky — all chores in the group go to the same child today. Spread — each chore is assigned to a different child today; if the group has more chores than children, it wraps."
         }
       },
       "manage_rewards": {
@@ -311,7 +350,8 @@
       "name_required": "Name is required",
       "invalid_milestone_format": "Invalid milestone format — use days:points pairs, e.g. 3:5, 7:10, 14:20",
       "operator_required": "Operator is required when an entity is set",
-      "state_required": "Value is required when an entity is set"
+      "state_required": "Value is required when an entity is set",
+      "task_group_invalid": "Task group is invalid: a chore can't join more than one group, and 'everyone'-mode chores aren't allowed."
     }
   },
   "selector": {
@@ -374,14 +414,14 @@
     },
     "recurrence_day_option": {
       "options": {
-        "any_day": "Any day",
         "monday": "Monday",
         "tuesday": "Tuesday",
         "wednesday": "Wednesday",
         "thursday": "Thursday",
         "friday": "Friday",
         "saturday": "Saturday",
-        "sunday": "Sunday"
+        "sunday": "Sunday",
+        "any_day": "Any day"
       }
     },
     "first_occurrence_mode": {
@@ -413,6 +453,18 @@
         "alternating": "Alternating — rotate through the assigned children, one per day",
         "random": "Random — pick one assigned child at random each day",
         "balanced": "Balanced — split today's balanced chores evenly across the assigned children"
+      }
+    },
+    "task_group_policy": {
+      "options": {
+        "sticky": "Sticky — same child for all chores in the group",
+        "spread": "Spread — different children across the group today"
+      }
+    },
+    "task_group_action": {
+      "options": {
+        "save": "Save Changes",
+        "delete": "Delete Group"
       }
     }
   },
@@ -736,6 +788,80 @@
         "requires_approval": {
           "name": "Requires Approval",
           "description": "If true, a parent must approve the completion before points are awarded"
+        }
+      }
+    },
+    "skip_chore": {
+      "name": "Skip Chore",
+      "description": "Advance today's rotation past the current assignee. Ephemeral — tomorrow's rotation resumes as normal.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the chore to skip"
+        }
+      }
+    },
+    "set_chore_manual_start": {
+      "name": "Set Manual Start Child",
+      "description": "Set which child starts a rotating chore. For alternating mode this reorders the pool; for random/balanced it only overrides today's assignee.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the chore to update"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child who should start the rotation"
+        }
+      }
+    },
+    "add_task_group": {
+      "name": "Add Task Group",
+      "description": "Create a task group (sticky = same child, spread = different children).",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Display name for the group"
+        },
+        "policy": {
+          "name": "Policy",
+          "description": "sticky (same child) or spread (different children)"
+        },
+        "chore_ids": {
+          "name": "Chore IDs",
+          "description": "List of chore IDs in the group. For sticky, the first chore is the leader."
+        }
+      }
+    },
+    "update_task_group": {
+      "name": "Update Task Group",
+      "description": "Update a task group's name, policy, or membership.",
+      "fields": {
+        "group_id": {
+          "name": "Group ID",
+          "description": "The ID of the group to update"
+        },
+        "name": {
+          "name": "Name",
+          "description": "New display name"
+        },
+        "policy": {
+          "name": "Policy",
+          "description": "New policy (sticky or spread)"
+        },
+        "chore_ids": {
+          "name": "Chore IDs",
+          "description": "Replacement chore ID list. For sticky, the first chore is the leader."
+        }
+      }
+    },
+    "remove_task_group": {
+      "name": "Remove Task Group",
+      "description": "Delete a task group. Member chores are not affected.",
+      "fields": {
+        "group_id": {
+          "name": "Group ID",
+          "description": "The ID of the group to delete"
         }
       }
     }

@@ -633,9 +633,19 @@ class TaskMateChoresSensor(_CachedAttrsSensor):
 
     def _build_attributes(self) -> dict:
         common = _compute_common(self.coordinator)
+        task_groups = [
+            {
+                "id": g.id,
+                "name": g.name,
+                "policy": g.policy,
+                "chore_ids": list(g.chore_ids or []),
+            }
+            for g in self.coordinator.storage.get_task_groups()
+        ]
         return {
             "chores": _build_chores_list(self.coordinator, common),
             "todays_completions": _build_todays_completions(common),
+            "task_groups": task_groups,
         }
 
 

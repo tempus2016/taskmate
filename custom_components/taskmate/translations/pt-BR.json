@@ -25,7 +25,8 @@
           "manage_children": "Gerir crianças",
           "manage_chores": "Gerir tarefas",
           "manage_rewards": "Gerir recompensas",
-          "settings": "Definições"
+          "settings": "Definições",
+          "manage_task_groups": "Gerenciar grupos de tarefas"
         }
       },
       "manage_children": {
@@ -91,7 +92,8 @@
           "assignment_mode": "Modo de atribuição",
           "assignment_rotation_anchor": "Data de início da rotação (apenas alternância)",
           "require_availability": "Ignorar crianças indisponíveis",
-          "publish_calendar_entities": "Publicar nos calendários (opcional)"
+          "publish_calendar_entities": "Publicar nos calendários (opcional)",
+          "manual_start_child_id": "Iniciar rotação com (opcional)"
         },
         "data_description": {
           "claim_allowance_minutes": "Minutos extras após o fim desta janela horária durante os quais a tarefa ainda pode ser reivindicada. 0 desativa o período de tolerância. As tarefas noturnas são sempre limitadas à meia-noite.",
@@ -104,7 +106,8 @@
           "assignment_mode": "Todos = todas as crianças atribuídas veem esta tarefa. Alternado = uma criança de cada vez, alternando por dia. Aleatório = uma criança escolhida aleatoriamente por dia (estável durante o dia). Equilibrado = as tarefas no modo equilibrado do dia são divididas igualmente entre as crianças atribuídas — nenhuma fica com tudo.",
           "assignment_rotation_anchor": "Dia 0 da rotação alternada. Deixe em branco para começar hoje. Usado apenas quando o modo de atribuição é 'Alternado'.",
           "publish_calendar_entities": "Escolha uma ou mais entidades de calendário do Home Assistant. Sempre que esta tarefa for criada, atualizada ou passar da meia-noite, a criança atribuída do dia é adicionada como evento em cada calendário selecionado. Funciona com qualquer número de calendários.",
-          "require_availability": "Quando ativo, uma criança indisponível (com base no Sensor de disponibilidade do perfil dela) é ignorada e o próximo irmão/irmã disponível assume a tarefa. Reavaliado à meia-noite e sempre que um sensor de disponibilidade mudar de estado. Tarefas já concluídas hoje não são reatribuídas."
+          "require_availability": "Quando ativo, uma criança indisponível (com base no Sensor de disponibilidade do perfil dela) é ignorada e o próximo irmão/irmã disponível assume a tarefa. Reavaliado à meia-noite e sempre que um sensor de disponibilidade mudar de estado. Tarefas já concluídas hoje não são reatribuídas.",
+          "manual_start_child_id": "Picks which child starts the rotation. For Alternating mode this permanently reorders the pool. For Random / Balanced it only overrides today's assignee — tomorrow's rotation resumes normally. Ignored for Everyone mode."
         }
       },
       "add_chores_bulk": {
@@ -157,7 +160,8 @@
           "assignment_mode": "Modo de atribuição",
           "assignment_rotation_anchor": "Data de início da rotação (apenas alternância)",
           "require_availability": "Ignorar crianças indisponíveis",
-          "publish_calendar_entities": "Publicar nos calendários (opcional)"
+          "publish_calendar_entities": "Publicar nos calendários (opcional)",
+          "manual_start_child_id": "Iniciar rotação com (opcional)"
         },
         "data_description": {
           "claim_allowance_minutes": "Minutos extras após o fim desta janela horária durante os quais a tarefa ainda pode ser reivindicada. 0 desativa o período de tolerância. As tarefas noturnas são sempre limitadas à meia-noite.",
@@ -170,7 +174,8 @@
           "assignment_mode": "Todos = todas as crianças atribuídas veem esta tarefa. Alternado = uma criança de cada vez, alternando por dia. Aleatório = uma criança escolhida aleatoriamente por dia (estável durante o dia). Equilibrado = as tarefas no modo equilibrado do dia são divididas igualmente entre as crianças atribuídas — nenhuma fica com tudo.",
           "assignment_rotation_anchor": "Dia 0 da rotação alternada. Deixe em branco para começar hoje. Usado apenas quando o modo de atribuição é 'Alternado'.",
           "publish_calendar_entities": "Escolha uma ou mais entidades de calendário do Home Assistant. Sempre que esta tarefa for criada, atualizada ou passar da meia-noite, a criança atribuída do dia é adicionada como evento em cada calendário selecionado. Funciona com qualquer número de calendários.",
-          "require_availability": "Quando ativo, uma criança indisponível (com base no Sensor de disponibilidade do perfil dela) é ignorada e o próximo irmão/irmã disponível assume a tarefa. Reavaliado à meia-noite e sempre que um sensor de disponibilidade mudar de estado. Tarefas já concluídas hoje não são reatribuídas."
+          "require_availability": "Quando ativo, uma criança indisponível (com base no Sensor de disponibilidade do perfil dela) é ignorada e o próximo irmão/irmã disponível assume a tarefa. Reavaliado à meia-noite e sempre que um sensor de disponibilidade mudar de estado. Tarefas já concluídas hoje não são reatribuídas.",
+          "manual_start_child_id": "Picks which child starts the rotation. For Alternating mode this permanently reorders the pool and resets the anchor. For Random / Balanced it only overrides today's assignee — tomorrow's rotation resumes normally. Ignored for Everyone mode."
         }
       },
       "manage_rewards": {
@@ -305,13 +310,48 @@
           "recurrence_start": "Apenas a cada 2 dias — data âncora no formato AAAA-MM-DD. Ignorado para todos os outros tipos de recorrência. Deixe vazio para usar hoje.",
           "first_occurrence_mode": "Disponível imediatamente — a criança pode completar de imediato. Aguardar primeira ocorrência — a tarefa fica bloqueada até o primeiro dia agendado."
         }
+      },
+      "manage_task_groups": {
+        "title": "Gerenciar grupos de tarefas",
+        "description": "Group chores so their assignments stay coordinated. Sticky forces all chores in the group onto the same child today. Spread gives each chore a different child.",
+        "menu_options": {
+          "add_task_group": "Adicionar novo grupo",
+          "init": "Voltar ao menu principal"
+        }
+      },
+      "add_task_group": {
+        "title": "Adicionar grupo de tarefas",
+        "description": "Only rotation-mode chores (alternating / random / balanced) can join a group, and each chore can belong to at most one group.",
+        "data": {
+          "name": "Nome do grupo",
+          "policy": "Política",
+          "chore_ids": "Tarefas incluídas"
+        },
+        "data_description": {
+          "policy": "Sticky — all chores in the group go to the same child today (the first chore in the list is the leader whose assignment the others follow). Spread — each chore is assigned to a different child today; if the group has more chores than children, it wraps.",
+          "chore_ids": "Pick the chores to include. The order matters: for Sticky, the first chore is the leader whose assignee the others follow."
+        }
+      },
+      "edit_task_group": {
+        "title": "Editar grupo: {group_name}",
+        "description": "Update or delete this task group.",
+        "data": {
+          "name": "Nome do grupo",
+          "policy": "Política",
+          "chore_ids": "Tarefas incluídas",
+          "action": "Ação"
+        },
+        "data_description": {
+          "policy": "Sticky — all chores in the group go to the same child today. Spread — each chore is assigned to a different child today; if the group has more chores than children, it wraps."
+        }
       }
     },
     "error": {
       "name_required": "O nome é obrigatório",
       "invalid_milestone_format": "Formato de marco inválido — use pares dias:pontos, ex: 3:5, 7:10, 14:20",
       "operator_required": "O operador é obrigatório quando uma entidade está definida",
-      "state_required": "O valor é obrigatório quando uma entidade está definida"
+      "state_required": "O valor é obrigatório quando uma entidade está definida",
+      "task_group_invalid": "Grupo inválido: uma tarefa não pode pertencer a mais de um grupo, e tarefas no modo 'everyone' não são permitidas."
     }
   },
   "selector": {
@@ -413,6 +453,18 @@
         "alternating": "Alternado — alterna entre as crianças atribuídas, uma por dia",
         "random": "Aleatório — escolhe aleatoriamente uma criança atribuída por dia",
         "balanced": "Equilibrado — divide as tarefas equilibradas do dia igualmente entre as crianças atribuídas"
+      }
+    },
+    "task_group_policy": {
+      "options": {
+        "sticky": "Sticky — mesma criança para todas as tarefas do grupo",
+        "spread": "Spread — crianças diferentes no grupo hoje"
+      }
+    },
+    "task_group_action": {
+      "options": {
+        "save": "Salvar alterações",
+        "delete": "Excluir grupo"
       }
     }
   },
@@ -736,6 +788,80 @@
         "requires_approval": {
           "name": "Requer aprovação",
           "description": "Se verdadeiro, um pai/mãe deve aprovar a conclusão antes de os pontos serem concedidos"
+        }
+      }
+    },
+    "skip_chore": {
+      "name": "Skip Chore",
+      "description": "Advance today's rotation past the current assignee. Ephemeral — tomorrow's rotation resumes as normal.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the chore to skip"
+        }
+      }
+    },
+    "set_chore_manual_start": {
+      "name": "Set Manual Start Child",
+      "description": "Set which child starts a rotating chore. For alternating mode this reorders the pool; for random/balanced it only overrides today's assignee.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the chore to update"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child who should start the rotation"
+        }
+      }
+    },
+    "add_task_group": {
+      "name": "Add Task Group",
+      "description": "Create a task group (sticky = same child, spread = different children).",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Display name for the group"
+        },
+        "policy": {
+          "name": "Policy",
+          "description": "sticky (same child) or spread (different children)"
+        },
+        "chore_ids": {
+          "name": "Chore IDs",
+          "description": "List of chore IDs in the group. For sticky, the first chore is the leader."
+        }
+      }
+    },
+    "update_task_group": {
+      "name": "Update Task Group",
+      "description": "Update a task group's name, policy, or membership.",
+      "fields": {
+        "group_id": {
+          "name": "Group ID",
+          "description": "The ID of the group to update"
+        },
+        "name": {
+          "name": "Name",
+          "description": "New display name"
+        },
+        "policy": {
+          "name": "Policy",
+          "description": "New policy (sticky or spread)"
+        },
+        "chore_ids": {
+          "name": "Chore IDs",
+          "description": "Replacement chore ID list. For sticky, the first chore is the leader."
+        }
+      }
+    },
+    "remove_task_group": {
+      "name": "Remove Task Group",
+      "description": "Delete a task group. Member chores are not affected.",
+      "fields": {
+        "group_id": {
+          "name": "Group ID",
+          "description": "The ID of the group to delete"
         }
       }
     }
