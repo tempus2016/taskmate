@@ -1357,7 +1357,7 @@ class TaskMateChildCard extends LitElement {
 
       // Check time category. The card's configured filter matches as before;
       // on top of that, chores currently in their claim window (including the
-      // post-period grace) and next-period preview chores are let through so
+      // post-period grace) and any future-period chores are let through so
       // they can render as locked previews or keep claimable during grace.
       const isLockedPreview = this._isChorePreviewLocked(chore);
       const inClaimWindow = this._isChoreInClaimWindow(chore);
@@ -1587,8 +1587,9 @@ class TaskMateChildCard extends LitElement {
     return { hour, minute };
   }
 
-  // True iff the chore's period is the immediate next period after the current
-  // one. Never true for "anytime"; no cross-midnight preview.
+  // True iff the chore's period is strictly later than the current period
+  // (any future period today, not just the immediately next one). Never true
+  // for "anytime"; no cross-midnight preview.
   _isChorePreviewLocked(chore) {
     const cat = chore?.time_category;
     if (!cat || cat === 'anytime') return false;
@@ -1596,7 +1597,7 @@ class TaskMateChildCard extends LitElement {
     const choreIndex = order.indexOf(cat);
     const currentIndex = order.indexOf(this._getCurrentTimePeriod());
     if (choreIndex < 0 || currentIndex < 0) return false;
-    return choreIndex === currentIndex + 1;
+    return choreIndex > currentIndex;
   }
 
   // True iff the current HA-local time is within the chore's claim window,
