@@ -277,17 +277,29 @@ def _chore_payload_schema(*, require_name: bool):
     }
 
 
+async def _maybe_apply_manual_start(coordinator, chore_id: str, child_id: str | None) -> None:
+    """If a manual rotation start was supplied, apply it via the coordinator.
+
+    The coordinator handles the "alternating reorders the pool / random+balanced
+    is ephemeral" semantics; we just pass through. Silently ignored for
+    'everyone' mode chores (the coordinator raises ValueError).
+    """
+    if not child_id:
+        return
+    try:
+        await coordinator.async_set_chore_manual_start(chore_id, child_id)
+    except ValueError as err:
+        _LOGGER.debug("manual start ignored for %s: %s", chore_id, err)
+
+
 @websocket_api.websocket_command({
     vol.Required("type"): WS_ADD_CHORE,
+    vol.Optional("manual_start_child_id"): vol.Any(str, None),
     **_chore_payload_schema(require_name=True),
 })
 @websocket_api.async_response
 @_admin_only
 async def _ws_add_chore(hass, connection, msg, coordinator):
-    # The coordinator's async_add_chore signature accepts most of these fields
-    # natively, but a few (visibility_*, enabled, assignment_*, calendar) are
-    # set after creation by mutating the returned chore. Simpler path: build
-    # via async_add_chore for the bread-and-butter fields, then patch.
     chore = await coordinator.async_add_chore(
         name=msg["name"].strip(),
         points=msg.get("points", 10),
@@ -300,7 +312,6 @@ async def _ws_add_chore(hass, connection, msg, coordinator):
         completion_sound=msg.get("completion_sound", "coin"),
         schedule_mode=msg.get("schedule_mode", "specific_days"),
     )
-    # Apply any remaining editable fields and re-save.
     extra_fields = (set(msg.keys()) & _CHORE_EDITABLE_FIELDS) - {
         "name", "points", "description", "assigned_to", "requires_approval",
         "time_category", "claim_allowance_minutes", "daily_limit",
@@ -310,12 +321,14 @@ async def _ws_add_chore(hass, connection, msg, coordinator):
         for f in extra_fields:
             setattr(chore, f, msg[f] if not isinstance(msg[f], list) else list(msg[f]))
         await coordinator.async_update_chore(chore)
+    await _maybe_apply_manual_start(coordinator, chore.id, msg.get("manual_start_child_id"))
     connection.send_result(msg["id"], {"id": chore.id})
 
 
 @websocket_api.websocket_command({
     vol.Required("type"): WS_UPDATE_CHORE,
     vol.Required("chore_id"): str,
+    vol.Optional("manual_start_child_id"): vol.Any(str, None),
     **_chore_payload_schema(require_name=False),
 })
 @websocket_api.async_response
@@ -334,6 +347,7 @@ async def _ws_update_chore(hass, connection, msg, coordinator):
                 value = value.strip()
             setattr(existing, field, value)
     await coordinator.async_update_chore(existing)
+    await _maybe_apply_manual_start(coordinator, existing.id, msg.get("manual_start_child_id"))
     connection.send_result(msg["id"], {"id": existing.id})
 
 

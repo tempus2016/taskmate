@@ -1,17 +1,19 @@
 /**
  * TaskMate admin panel — sidebar entry at /taskmate-admin.
  *
- * All seven tabs (Children, Chores, Rewards, Penalties, Bonuses, Groups,
- * Settings) are wired to WebSocket commands. The classic options-flow menu
- * remains in place but is now redundant for everyday admin work.
- *
- * Vanilla HTMLElement — no LitElement dependency. The panel hits a single
- * read command (taskmate/get_state) on mount and after every mutation;
- * mutations call dedicated WS commands which in turn call coordinator
- * methods so existing business logic (refunds, cleanup, recompute) runs.
+ * v3.5.0-alpha.6 — polished visual treatment + UX fixes:
+ *   - Layered surfaces, frosted-glass app bar, refined typography
+ *   - Light/dark mode adapts via HA theme tokens (no hard-coded blacks)
+ *   - <ha-icon-picker> for icon fields (autocomplete with previews)
+ *   - <input type=date> for date fields (locale-aware display)
+ *   - Chip-multi-select for calendar entities (from hass.states)
+ *   - Schedule-mode selector dynamically reveals options on change
+ *   - Notify-service dropdown built from hass.services.notify
+ *   - Empty assignments render as "All children", not "(unassigned)"
+ *   - Adds Claim allowance, Start rotation with, "No filter" visibility
  */
 
-const PANEL_VERSION = "3.5.0-alpha.5";
+const PANEL_VERSION = "3.5.0-alpha.6";
 
 const TABS = [
   { id: "children",  label: "Children" },
@@ -59,7 +61,8 @@ const ASSIGNMENT_MODES = [
 ];
 
 const VISIBILITY_OPS = [
-  { v: "equals",     l: "Equals" },
+  { v: "none",       l: "No filter — always show chore" },
+  { v: "equals",     l: "Equals — state matches exactly" },
   { v: "not_equals", l: "Not equal" },
   { v: "gte",        l: "Greater than or equal (≥)" },
   { v: "lte",        l: "Less than or equal (≤)" },
@@ -102,20 +105,22 @@ class TaskMatePanel extends HTMLElement {
     this._error = null;
     this._loading = false;
     this._activeTab = "children";
-    this._dialog = null;        // { kind, mode: "add"|"edit", data }
+    this._dialog = null;
     this._rendered = false;
     this._onClick = this._onClick.bind(this);
     this._onInput = this._onInput.bind(this);
     this._onChange = this._onChange.bind(this);
+    this._onValueChanged = this._onValueChanged.bind(this);
     this._onKeyDown = this._onKeyDown.bind(this);
   }
 
-  // ---- HA injects these ------------------------------------------------
   set hass(value) {
     const first = this._hass === null;
     this._hass = value;
     if (first) this._fetchState();
     if (!this._rendered) this._render();
+    // Keep ha-picker components fed with the latest hass on every update
+    this._bindHaPickers();
   }
   get hass() { return this._hass; }
   set narrow(_v) {}
@@ -126,6 +131,7 @@ class TaskMatePanel extends HTMLElement {
     this.addEventListener("click", this._onClick);
     this.addEventListener("input", this._onInput);
     this.addEventListener("change", this._onChange);
+    this.addEventListener("value-changed", this._onValueChanged);
     this.addEventListener("keydown", this._onKeyDown);
     if (!this._rendered) this._render();
   }
@@ -133,6 +139,7 @@ class TaskMatePanel extends HTMLElement {
     this.removeEventListener("click", this._onClick);
     this.removeEventListener("input", this._onInput);
     this.removeEventListener("change", this._onChange);
+    this.removeEventListener("value-changed", this._onValueChanged);
     this.removeEventListener("keydown", this._onKeyDown);
   }
 
@@ -178,37 +185,33 @@ class TaskMatePanel extends HTMLElement {
     if (!t) return;
     const act = t.dataset.act;
 
-    if (act === "tab")           { this._activeTab = t.dataset.tab; this._render(); return; }
-    if (act === "close-dialog")  { this._dialog = null; this._render(); return; }
+    if (act === "tab")          { this._activeTab = t.dataset.tab; this._render(); return; }
+    if (act === "close-dialog") { this._dialog = null; this._render(); return; }
     if (act === "scrim") {
       if (e.target === this.querySelector(".tm-scrim")) { this._dialog = null; this._render(); }
       return;
     }
-    if (act === "retry")         { this._fetchState(); return; }
+    if (act === "retry")        { this._fetchState(); return; }
 
-    // -- Children --
-    if (act === "add-child")     { this._openChildDialog(null); return; }
-    if (act === "edit-child")    { this._openChildDialog(t.dataset.id); return; }
-    if (act === "delete-child")  { this._confirmDelete("child", t.dataset.id); return; }
-    if (act === "save-child")    { this._doSaveChild(); return; }
+    if (act === "add-child")    { this._openChildDialog(null); return; }
+    if (act === "edit-child")   { this._openChildDialog(t.dataset.id); return; }
+    if (act === "delete-child") { this._confirmDelete("child", t.dataset.id); return; }
+    if (act === "save-child")   { this._doSaveChild(); return; }
 
-    // -- Chores --
-    if (act === "add-chore")     { this._openChoreDialog(null); return; }
-    if (act === "edit-chore")    { this._openChoreDialog(t.dataset.id); return; }
-    if (act === "delete-chore")  { this._confirmDelete("chore", t.dataset.id); return; }
-    if (act === "save-chore")    { this._doSaveChore(); return; }
-    if (act === "toggle-day")    { this._toggleArrayField("due_days", t.dataset.day); return; }
-    if (act === "toggle-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
-    if (act === "toggle-advanced") { const adv = this.querySelector(".tm-advanced"); if (adv) adv.toggleAttribute("open"); return; }
+    if (act === "add-chore")    { this._openChoreDialog(null); return; }
+    if (act === "edit-chore")   { this._openChoreDialog(t.dataset.id); return; }
+    if (act === "delete-chore") { this._confirmDelete("chore", t.dataset.id); return; }
+    if (act === "save-chore")   { this._doSaveChore(); return; }
+    if (act === "toggle-day")        { this._toggleArrayField("due_days", t.dataset.day); return; }
+    if (act === "toggle-assigned")   { this._toggleArrayField("assigned_to", t.dataset.id); return; }
+    if (act === "toggle-calendar")   { this._toggleArrayField("publish_calendar_entities", t.dataset.id); return; }
 
-    // -- Rewards --
     if (act === "add-reward")    { this._openRewardDialog(null); return; }
     if (act === "edit-reward")   { this._openRewardDialog(t.dataset.id); return; }
     if (act === "delete-reward") { this._confirmDelete("reward", t.dataset.id); return; }
     if (act === "save-reward")   { this._doSaveReward(); return; }
     if (act === "toggle-reward-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
 
-    // -- Penalties --
     if (act === "add-penalty")    { this._openPenBonDialog("penalty", null); return; }
     if (act === "edit-penalty")   { this._openPenBonDialog("penalty", t.dataset.id); return; }
     if (act === "delete-penalty") { this._confirmDelete("penalty", t.dataset.id); return; }
@@ -216,7 +219,6 @@ class TaskMatePanel extends HTMLElement {
     if (act === "apply-penalty")  { this._openApplyDialog("penalty", t.dataset.id); return; }
     if (act === "do-apply-penalty") { this._doApplyPenBon("penalty", t.dataset.id, t.dataset.child); return; }
 
-    // -- Bonuses --
     if (act === "add-bonus")    { this._openPenBonDialog("bonus", null); return; }
     if (act === "edit-bonus")   { this._openPenBonDialog("bonus", t.dataset.id); return; }
     if (act === "delete-bonus") { this._confirmDelete("bonus", t.dataset.id); return; }
@@ -226,14 +228,12 @@ class TaskMatePanel extends HTMLElement {
 
     if (act === "toggle-penbon-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
 
-    // -- Task groups --
     if (act === "add-group")    { this._openGroupDialog(null); return; }
     if (act === "edit-group")   { this._openGroupDialog(t.dataset.id); return; }
     if (act === "delete-group") { this._confirmDelete("group", t.dataset.id); return; }
     if (act === "save-group")   { this._doSaveGroup(); return; }
     if (act === "toggle-group-chore") { this._toggleArrayField("chore_ids", t.dataset.id); return; }
 
-    // -- Settings --
     if (act === "save-settings") { this._doSaveSettings(); return; }
   }
 
@@ -254,6 +254,16 @@ class TaskMatePanel extends HTMLElement {
     else if (t.type === "number") value = (t.value === "" ? null : Number(t.value));
     else value = t.value;
     this._dialog.data[t.dataset.field] = value;
+    if (t.dataset.rerender === "true") this._render();
+  }
+
+  // <ha-icon-picker> + <ha-entity-picker> fire value-changed instead of change.
+  _onValueChanged(e) {
+    if (!this._dialog) return;
+    const t = e.target;
+    if (!t.dataset || !t.dataset.field) return;
+    const v = e.detail && "value" in e.detail ? e.detail.value : t.value;
+    this._dialog.data[t.dataset.field] = v == null ? "" : v;
   }
 
   _onKeyDown(e) {
@@ -304,7 +314,7 @@ class TaskMatePanel extends HTMLElement {
     this._showToast("ok", "Deleted");
   }
 
-  // ---- Children: dialog open / save ------------------------------------
+  // ---- Children --------------------------------------------------------
   _openChildDialog(id) {
     if (id) {
       const c = (this._state.children || []).find(x => x.id === id);
@@ -335,20 +345,22 @@ class TaskMatePanel extends HTMLElement {
     this._showToast("ok", wasAdd ? "Child added" : "Child updated");
   }
 
-  // ---- Chores: dialog open / save --------------------------------------
+  // ---- Chores ----------------------------------------------------------
   _openChoreDialog(id) {
     const blank = {
       name: "", description: "", points: 10,
       assigned_to: [], requires_approval: true,
       time_category: "anytime", completion_sound: "coin", daily_limit: 1,
+      claim_allowance_minutes: 0,
       schedule_mode: "specific_days",
       due_days: [], recurrence: "weekly", recurrence_day: "", recurrence_start: "",
       first_occurrence_mode: "available_immediately",
       assignment_mode: "everyone", assignment_rotation_anchor: "",
+      manual_start_child_id: "",
       require_availability: false,
-      visibility_entity: "", visibility_state: "on", visibility_operator: "equals",
+      visibility_entity: "", visibility_state: "on", visibility_operator: "none",
       enabled: true,
-      publish_calendar_entities_csv: "",
+      publish_calendar_entities: [],
     };
     if (id) {
       const c = (this._state.chores || []).find(x => x.id === id);
@@ -358,7 +370,9 @@ class TaskMatePanel extends HTMLElement {
         ...c,
         assigned_to: [...(c.assigned_to || [])],
         due_days: [...(c.due_days || [])],
-        publish_calendar_entities_csv: (c.publish_calendar_entities || []).join(", "),
+        publish_calendar_entities: [...(c.publish_calendar_entities || [])],
+        visibility_operator: c.visibility_operator || "none",
+        manual_start_child_id: "",  // ephemeral — only set if user picks one
       } };
     } else {
       this._dialog = { kind: "chore", mode: "add", data: blank };
@@ -370,7 +384,6 @@ class TaskMatePanel extends HTMLElement {
     const d = this._dialog.data;
     if (!d.name || !d.name.trim()) { this._showToast("err", "Name is required"); return; }
     const wasAdd = this._dialog.mode === "add";
-    const calCsv = (d.publish_calendar_entities_csv || "").split(",").map(s => s.trim()).filter(Boolean);
     const base = {
       name: d.name.trim(),
       description: d.description || "",
@@ -378,6 +391,7 @@ class TaskMatePanel extends HTMLElement {
       assigned_to: d.assigned_to || [],
       requires_approval: !!d.requires_approval,
       time_category: d.time_category || "anytime",
+      claim_allowance_minutes: Math.max(0, Number(d.claim_allowance_minutes) || 0),
       completion_sound: d.completion_sound || "coin",
       daily_limit: Number(d.daily_limit) || 1,
       schedule_mode: d.schedule_mode || "specific_days",
@@ -391,9 +405,10 @@ class TaskMatePanel extends HTMLElement {
       require_availability: !!d.require_availability,
       visibility_entity: d.visibility_entity || "",
       visibility_state: d.visibility_state || "on",
-      visibility_operator: d.visibility_operator || "equals",
+      visibility_operator: d.visibility_operator || "none",
       enabled: d.enabled !== false,
-      publish_calendar_entities: calCsv,
+      publish_calendar_entities: d.publish_calendar_entities || [],
+      manual_start_child_id: d.manual_start_child_id || null,
     };
     const payload = wasAdd
       ? { type: "taskmate/add_chore", ...base }
@@ -449,7 +464,7 @@ class TaskMatePanel extends HTMLElement {
     this._showToast("ok", wasAdd ? "Reward added" : "Reward updated");
   }
 
-  // ---- Penalties / Bonuses (shared shape) ------------------------------
+  // ---- Penalties / Bonuses ---------------------------------------------
   _openPenBonDialog(kind, id) {
     const blank = { name: "", description: "", points: 10,
       icon: kind === "penalty" ? "mdi:alert-circle-outline" : "mdi:star-circle-outline",
@@ -532,7 +547,6 @@ class TaskMatePanel extends HTMLElement {
 
   // ---- Settings --------------------------------------------------------
   async _doSaveSettings() {
-    // Settings tab uses inline inputs; gather values directly from DOM.
     const root = this.querySelector(".tm-settings");
     if (!root) return;
     const fields = root.querySelectorAll("[data-setting]");
@@ -545,10 +559,33 @@ class TaskMatePanel extends HTMLElement {
       else v = el.value;
       if (v !== undefined) payload[name] = v;
     });
+    // ha-icon-picker: read .value
+    root.querySelectorAll("ha-icon-picker[data-setting]").forEach(el => {
+      payload[el.dataset.setting] = el.value || "";
+    });
     const { ok, err, res } = await this._callWS(payload);
     if (!ok) { this._showToast("err", `Save failed: ${err}`); return; }
     await this._fetchState();
     this._showToast("ok", `Saved (${(res && res.updated || []).length} field${(res && res.updated || []).length === 1 ? "" : "s"})`);
+  }
+
+  // ---- HA picker binding -----------------------------------------------
+  _bindHaPickers() {
+    if (!this._hass) return;
+    // <ha-icon-picker> needs hass + value via property
+    this.querySelectorAll("ha-icon-picker").forEach(el => {
+      el.hass = this._hass;
+      const v = el.getAttribute("data-current") || "";
+      if (el.value !== v) el.value = v;
+    });
+    // <ha-entity-picker> needs hass + includeDomains + value
+    this.querySelectorAll("ha-entity-picker").forEach(el => {
+      el.hass = this._hass;
+      const dom = el.getAttribute("data-domains");
+      if (dom && !el.includeDomains) el.includeDomains = dom.split(",");
+      const v = el.getAttribute("data-current") || "";
+      if (el.value !== v) el.value = v;
+    });
   }
 
   // ---- rendering -------------------------------------------------------
@@ -558,40 +595,61 @@ class TaskMatePanel extends HTMLElement {
     this.innerHTML = `
       ${this._styles()}
       <div class="tm-shell">
+        <div class="tm-bg-glow"></div>
         ${this._appbar()}
         ${this._tabstrip()}
         <div class="tm-body">
-          ${this._renderBody()}
+          <div class="tm-body-inner">
+            ${this._renderBody()}
+          </div>
         </div>
         ${this._dialog ? this._renderDialog() : ""}
       </div>
     `;
     if (existingToast) this.appendChild(existingToast);
+    // After DOM is in place, bind hass to ha-* pickers
+    this._bindHaPickers();
   }
 
   _appbar() {
+    const crumb = (TABS.find(t => t.id === this._activeTab) || {}).label || "";
+    const crumbLabel = (this._activeTab === "settings") ? "Settings" : crumb;
     return `
       <div class="tm-appbar">
-        <h1>TaskMate</h1>
-        <span class="tm-chip">v${PANEL_VERSION}</span>
+        <div class="tm-appbar-icon">
+          <ha-icon icon="mdi:checkbox-marked-circle-plus-outline"></ha-icon>
+        </div>
+        <h1 class="tm-appbar-title">TaskMate <span class="tm-sep">/</span> <span class="tm-crumb">${this._esc(crumbLabel)}</span></h1>
+        <span class="tm-version-chip">v${PANEL_VERSION}</span>
       </div>
     `;
   }
 
   _tabstrip() {
+    const counts = this._state ? {
+      children:  (this._state.children || []).length,
+      chores:    (this._state.chores || []).length,
+      rewards:   (this._state.rewards || []).length,
+      penalties: (this._state.penalties || []).length,
+      bonuses:   (this._state.bonuses || []).length,
+      groups:    (this._state.task_groups || []).length,
+    } : {};
     return `
       <nav class="tm-tabs">
-        ${TABS.map(t => `
-          <button class="tm-tab ${t.id === this._activeTab ? "tm-tab-active" : ""}" data-act="tab" data-tab="${t.id}" ${t.title ? `title="${t.title}"` : ""}>
-            ${this._esc(t.label)}
-          </button>
-        `).join("")}
+        ${TABS.map(t => {
+          const cnt = counts[t.id];
+          return `
+            <button class="tm-tab ${t.id === this._activeTab ? "tm-tab-active" : ""}" data-act="tab" data-tab="${t.id}" ${t.title ? `title="${t.title}"` : ""}>
+              ${this._esc(t.label)}${cnt != null ? `<span class="tm-tab-pill">${cnt}</span>` : ""}
+            </button>
+          `;
+        }).join("")}
       </nav>
     `;
   }
 
   _renderBody() {
-    if (this._loading && !this._state) return `<div class="tm-card">Loading…</div>`;
+    if (this._loading && !this._state) return `<div class="tm-card tm-loading">Loading…</div>`;
     if (this._error) return `
       <div class="tm-card tm-card-error">
         <h2>Failed to load state</h2>
@@ -618,19 +676,13 @@ class TaskMatePanel extends HTMLElement {
     const pointsName = this._state.settings.points_name || "points";
     return `
       <div class="tm-toolbar">
-        <div class="tm-title-sub">Manage the children in your family. Points balance and history stay intact when you edit.</div>
-        <button class="tm-btn" data-act="add-child">+ Add child</button>
+        <h2 class="tm-toolbar-title">Children <span class="tm-toolbar-count">${children.length}</span></h2>
+        <button class="tm-btn" data-act="add-child">＋ Add child</button>
       </div>
-      ${children.length === 0 ? `
-        <div class="tm-card tm-empty">
-          <h2>No children yet</h2>
-          <p>Add your first child to get started.</p>
-          <button class="tm-btn" data-act="add-child">+ Add child</button>
-        </div>
-      ` : `
+      ${children.length === 0 ? this._emptyState("👨‍👩‍👧‍👦", "No children yet", "Add your first child to get started.", "add-child", "+ Add child") : `
         <div class="tm-grid">
           ${children.map(c => this._renderChildCard(c, pointsName)).join("")}
-          <button class="tm-add-tile" data-act="add-child"><span class="tm-add-plus">+</span>Add child</button>
+          <button class="tm-add-tile" data-act="add-child"><span class="tm-add-plus">＋</span>Add child</button>
         </div>
       `}
     `;
@@ -639,22 +691,22 @@ class TaskMatePanel extends HTMLElement {
   _renderChildCard(child, pointsName) {
     return `
       <article class="tm-card tm-child-card">
-        <header class="tm-child-head">
+        <div class="tm-child-head">
           <div class="tm-avatar">${this._mdi(child.avatar)}</div>
           <div class="tm-child-name">
             <h3>${this._esc(child.name || "(unnamed)")}</h3>
-            <div class="tm-sub">${child.availability_entity ? `Availability: <code>${this._esc(child.availability_entity)}</code>` : `<em>No availability sensor</em>`}</div>
+            <div class="tm-meta">${child.availability_entity ? `<code>${this._esc(child.availability_entity)}</code>` : `No availability sensor`}</div>
           </div>
-        </header>
-        <div class="tm-stats">
-          <div class="tm-stat"><strong>${this._fmtNum(child.points || 0)}</strong><span>${this._esc(pointsName)}</span></div>
-          <div class="tm-stat"><strong>${this._fmtNum(child.total_points_earned || 0)}</strong><span>earned</span></div>
-          <div class="tm-stat"><strong>${this._fmtNum(child.total_chores_completed || 0)}</strong><span>chores done</span></div>
         </div>
-        <footer class="tm-card-foot">
-          <button class="tm-btn tm-btn-ghost" data-act="edit-child" data-id="${this._esc(child.id)}">Edit</button>
-          <button class="tm-btn tm-btn-danger" data-act="delete-child" data-id="${this._esc(child.id)}">Delete</button>
-        </footer>
+        <div class="tm-stats-row">
+          <div class="tm-stat tm-stat-highlight"><div class="tm-stat-value">${this._fmtNum(child.points || 0)}</div><div class="tm-stat-label">${this._esc(pointsName)}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.total_points_earned || 0)}</div><div class="tm-stat-label">Earned</div></div>
+          <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.total_chores_completed || 0)}</div><div class="tm-stat-label">Done</div></div>
+        </div>
+        <div class="tm-card-foot">
+          <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="edit-child" data-id="${this._esc(child.id)}">Edit</button>
+          <button class="tm-btn tm-btn-danger tm-btn-sm" data-act="delete-child" data-id="${this._esc(child.id)}">Delete</button>
+        </div>
       </article>
     `;
   }
@@ -665,16 +717,10 @@ class TaskMatePanel extends HTMLElement {
     const childById = Object.fromEntries((this._state.children || []).map(c => [c.id, c]));
     return `
       <div class="tm-toolbar">
-        <div class="tm-title-sub">${chores.length} chore${chores.length === 1 ? "" : "s"} configured.</div>
-        <button class="tm-btn" data-act="add-chore">+ Add chore</button>
+        <h2 class="tm-toolbar-title">Chores <span class="tm-toolbar-count">${chores.length}</span></h2>
+        <button class="tm-btn" data-act="add-chore">＋ Add chore</button>
       </div>
-      ${chores.length === 0 ? `
-        <div class="tm-card tm-empty">
-          <h2>No chores yet</h2>
-          <p>Add a chore — it'll appear on the assigned children's cards.</p>
-          <button class="tm-btn" data-act="add-chore">+ Add chore</button>
-        </div>
-      ` : `
+      ${chores.length === 0 ? this._emptyState("📋", "No chores yet", "Add a chore — it'll show on the assigned children's cards.", "add-chore", "+ Add chore") : `
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr>
@@ -690,20 +736,23 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _renderChoreRow(c, childById) {
-    const assignedNames = (c.assigned_to || []).map(id => (childById[id] && childById[id].name) || "?").join(", ") || "(unassigned)";
+    const assignedNames = (c.assigned_to || []).length === 0
+      ? `<span class="tm-text-muted">All children</span>`
+      : this._esc((c.assigned_to || []).map(id => (childById[id] && childById[id].name) || "?").join(", "));
     const schedLabel = c.schedule_mode === "recurring"
       ? this._labelOf(RECURRENCES, c.recurrence) + (c.recurrence_day && c.recurrence_day !== "any_day" ? ` · ${c.recurrence_day}` : "")
       : c.schedule_mode === "one_shot"
       ? "One-shot"
-      : ((c.due_days || []).length === 0 ? "Daily" : (c.due_days || []).map(d => d.slice(0, 3)).join("/"));
+      : ((c.due_days || []).length === 0 ? "Daily" : (c.due_days || []).map(d => d.slice(0, 3)).join(" · "));
+    const schedClass = c.schedule_mode === "recurring" ? "tm-pill-accent" : c.schedule_mode === "one_shot" ? "tm-pill-warn" : "tm-pill-success";
     const modeBadge = c.assignment_mode && c.assignment_mode !== "everyone"
       ? `<span class="tm-pill tm-pill-${c.assignment_mode}">${c.assignment_mode}</span>` : "";
     return `
       <tr class="tm-row ${c.enabled === false ? "tm-row-disabled" : ""}">
         <td><strong>${this._esc(c.name)}</strong>${c.enabled === false ? ` <span class="tm-pill">disabled</span>` : ""}</td>
-        <td><strong>${c.points}</strong></td>
-        <td>${this._esc(assignedNames)} ${modeBadge}</td>
-        <td>${this._esc(schedLabel)}</td>
+        <td><strong class="tm-numeric">${c.points}</strong></td>
+        <td>${assignedNames} ${modeBadge}</td>
+        <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span></td>
         <td>${c.requires_approval ? "<span class='tm-yes'>Yes</span>" : "<span class='tm-no'>No</span>"}</td>
         <td class="tm-row-actions">
           <button class="tm-icon-btn" data-act="edit-chore" data-id="${this._esc(c.id)}" title="Edit">✏</button>
@@ -719,19 +768,13 @@ class TaskMatePanel extends HTMLElement {
     const pointsName = this._state.settings.points_name || "points";
     return `
       <div class="tm-toolbar">
-        <div class="tm-title-sub">${rewards.length} reward${rewards.length === 1 ? "" : "s"} configured.</div>
-        <button class="tm-btn" data-act="add-reward">+ Add reward</button>
+        <h2 class="tm-toolbar-title">Rewards <span class="tm-toolbar-count">${rewards.length}</span></h2>
+        <button class="tm-btn" data-act="add-reward">＋ Add reward</button>
       </div>
-      ${rewards.length === 0 ? `
-        <div class="tm-card tm-empty">
-          <h2>No rewards yet</h2>
-          <p>Add a reward children can spend their ${this._esc(pointsName.toLowerCase())} on.</p>
-          <button class="tm-btn" data-act="add-reward">+ Add reward</button>
-        </div>
-      ` : `
+      ${rewards.length === 0 ? this._emptyState("🎁", "No rewards yet", `Add a reward children can spend their ${this._esc(pointsName.toLowerCase())} on.`, "add-reward", "+ Add reward") : `
         <div class="tm-grid">
           ${rewards.map(r => this._renderRewardCard(r, pointsName)).join("")}
-          <button class="tm-add-tile" data-act="add-reward"><span class="tm-add-plus">+</span>Add reward</button>
+          <button class="tm-add-tile" data-act="add-reward"><span class="tm-add-plus">＋</span>Add reward</button>
         </div>
       `}
     `;
@@ -739,29 +782,30 @@ class TaskMatePanel extends HTMLElement {
 
   _renderRewardCard(r, pointsName) {
     const totalPooled = (this._state.pool_allocations || []).filter(a => a.reward_id === r.id).reduce((s, a) => s + (a.allocated_points || 0), 0);
-    const progressBar = r.pool_enabled && r.cost > 0
-      ? `<div class="tm-progress"><span style="width:${Math.min(100, Math.round(totalPooled / r.cost * 100))}%"></span></div>
-         <div class="tm-sub">${this._fmtNum(totalPooled)} / ${this._fmtNum(r.cost)} ${this._esc(pointsName)}</div>`
-      : "";
+    const showProgress = r.pool_enabled && r.cost > 0;
+    const pct = showProgress ? Math.min(100, Math.round(totalPooled / r.cost * 100)) : 0;
     return `
       <article class="tm-card tm-reward-card">
-        <header class="tm-child-head">
-          <div class="tm-avatar tm-reward-avatar">${this._mdi(r.icon || "mdi:gift")}</div>
+        <div class="tm-child-head">
+          <div class="tm-avatar tm-avatar-reward">${this._mdi(r.icon || "mdi:gift")}</div>
           <div class="tm-child-name">
             <h3>${this._esc(r.name)} ${r.is_jackpot ? `<span class="tm-pill tm-pill-jackpot">🏆 Jackpot</span>` : ""} ${r.pool_enabled ? `<span class="tm-pill tm-pill-pool">Pool</span>` : ""}</h3>
-            <div class="tm-sub">${this._esc(r.description || "")}</div>
+            <div class="tm-meta">${this._esc(r.description || "")}</div>
           </div>
-        </header>
-        <div class="tm-stats">
-          <div class="tm-stat"><strong>${this._fmtNum(r.cost)}</strong><span>${this._esc(pointsName)} cost</span></div>
-          ${r.quantity != null ? `<div class="tm-stat"><strong>${r.quantity}</strong><span>remaining</span></div>` : ""}
-          ${r.expires_at ? `<div class="tm-stat"><strong>${this._esc(r.expires_at)}</strong><span>expires</span></div>` : ""}
         </div>
-        ${progressBar}
-        <footer class="tm-card-foot">
-          <button class="tm-btn tm-btn-ghost" data-act="edit-reward" data-id="${this._esc(r.id)}">Edit</button>
-          <button class="tm-btn tm-btn-danger" data-act="delete-reward" data-id="${this._esc(r.id)}">Delete</button>
-        </footer>
+        <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr ${r.expires_at ? "1fr" : ""};">
+          <div class="tm-stat"><div class="tm-stat-value tm-numeric tm-cost">${this._fmtNum(r.cost)}</div><div class="tm-stat-label">${this._esc(pointsName)} cost</div></div>
+          ${r.quantity != null ? `<div class="tm-stat"><div class="tm-stat-value tm-numeric">${r.quantity}</div><div class="tm-stat-label">Remaining</div></div>` : `<div class="tm-stat"><div class="tm-stat-value">∞</div><div class="tm-stat-label">Unlimited</div></div>`}
+          ${r.expires_at ? `<div class="tm-stat"><div class="tm-stat-value" style="font-size: 14px;">${this._esc(r.expires_at)}</div><div class="tm-stat-label">Expires</div></div>` : ""}
+        </div>
+        ${showProgress ? `
+          <div class="tm-progress"><span style="width:${pct}%"></span></div>
+          <div class="tm-progress-text"><span><strong>${this._fmtNum(totalPooled)}</strong> / ${this._fmtNum(r.cost)}</span><span>${pct}%</span></div>
+        ` : ""}
+        <div class="tm-card-foot">
+          <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="edit-reward" data-id="${this._esc(r.id)}">Edit</button>
+          <button class="tm-btn tm-btn-danger tm-btn-sm" data-act="delete-reward" data-id="${this._esc(r.id)}">Delete</button>
+        </div>
       </article>
     `;
   }
@@ -770,34 +814,28 @@ class TaskMatePanel extends HTMLElement {
   _renderPenBonTab(kind) {
     const items = (kind === "penalty" ? this._state.penalties : this._state.bonuses) || [];
     const childById = Object.fromEntries((this._state.children || []).map(c => [c.id, c]));
-    const labels = kind === "penalty" ? { plural: "Penalties", add: "+ Add penalty" } : { plural: "Bonuses", add: "+ Add bonus" };
+    const labels = kind === "penalty" ? { plural: "Penalties", add: "+ Add penalty", icon: "⚠️" } : { plural: "Bonuses", add: "+ Add bonus", icon: "⭐" };
     return `
       <div class="tm-toolbar">
-        <div class="tm-title-sub">${items.length} ${labels.plural.toLowerCase()} configured.</div>
-        <button class="tm-btn" data-act="add-${kind}">${labels.add}</button>
+        <h2 class="tm-toolbar-title">${labels.plural} <span class="tm-toolbar-count">${items.length}</span></h2>
+        <button class="tm-btn" data-act="add-${kind}">＋ Add ${kind}</button>
       </div>
-      ${items.length === 0 ? `
-        <div class="tm-card tm-empty">
-          <h2>No ${labels.plural.toLowerCase()} yet</h2>
-          <p>${kind === "penalty" ? "Add a penalty to deduct points from a child for misbehaviour." : "Add a bonus to award points for going above and beyond."}</p>
-          <button class="tm-btn" data-act="add-${kind}">${labels.add}</button>
-        </div>
-      ` : `
+      ${items.length === 0 ? this._emptyState(labels.icon, `No ${labels.plural.toLowerCase()} yet`, kind === "penalty" ? "Add a penalty to deduct points for misbehaviour." : "Add a bonus to award points for going above and beyond.", `add-${kind}`, labels.add) : `
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr><th>Name</th><th>Points</th><th>Assigned</th><th></th></tr></thead>
             <tbody>
               ${items.map(item => {
                 const assignedNames = (item.assigned_to || []).length === 0
-                  ? "Both / All"
-                  : (item.assigned_to || []).map(id => (childById[id] && childById[id].name) || "?").join(", ");
+                  ? `<span class="tm-text-muted">All children</span>`
+                  : this._esc((item.assigned_to || []).map(id => (childById[id] && childById[id].name) || "?").join(", "));
                 return `
                   <tr class="tm-row">
-                    <td><span class="tm-row-icon">${this._mdi(item.icon)}</span><strong>${this._esc(item.name)}</strong>${item.description ? `<div class="tm-sub">${this._esc(item.description)}</div>` : ""}</td>
-                    <td><strong class="${kind === "penalty" ? "tm-neg" : "tm-pos"}">${kind === "penalty" ? "−" : "+"}${item.points}</strong></td>
-                    <td>${this._esc(assignedNames)}</td>
+                    <td><span class="tm-row-icon">${this._mdi(item.icon)}</span><strong>${this._esc(item.name)}</strong>${item.description ? `<div class="tm-meta">${this._esc(item.description)}</div>` : ""}</td>
+                    <td><strong class="tm-numeric ${kind === "penalty" ? "tm-neg" : "tm-pos"}">${kind === "penalty" ? "−" : "+"}${item.points}</strong></td>
+                    <td>${assignedNames}</td>
                     <td class="tm-row-actions">
-                      <button class="tm-btn tm-btn-ghost" data-act="apply-${kind}" data-id="${this._esc(item.id)}">Apply…</button>
+                      <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="apply-${kind}" data-id="${this._esc(item.id)}">Apply…</button>
                       <button class="tm-icon-btn" data-act="edit-${kind}" data-id="${this._esc(item.id)}" title="Edit">✏</button>
                       <button class="tm-icon-btn" data-act="delete-${kind}" data-id="${this._esc(item.id)}" title="Delete">🗑</button>
                     </td>
@@ -817,31 +855,30 @@ class TaskMatePanel extends HTMLElement {
     const choreById = Object.fromEntries((this._state.chores || []).map(c => [c.id, c]));
     return `
       <div class="tm-toolbar">
-        <div class="tm-title-sub">Groups coordinate chore assignment across multiple chores. Sticky = same child for all; Spread = different children.</div>
-        <button class="tm-btn" data-act="add-group">+ Add group</button>
+        <h2 class="tm-toolbar-title">Task groups <span class="tm-toolbar-count">${groups.length}</span></h2>
+        <button class="tm-btn" data-act="add-group">＋ Add group</button>
       </div>
-      ${groups.length === 0 ? `
-        <div class="tm-card tm-empty">
-          <h2>No task groups yet</h2>
-          <p>Create a group to make chores rotate together (e.g. all the kitchen chores stay with one child each day).</p>
-          <button class="tm-btn" data-act="add-group">+ Add group</button>
-        </div>
-      ` : `
+      ${groups.length === 0 ? this._emptyState("🔗", "No task groups yet", "Create a group to make chores rotate together (e.g. all kitchen chores stay with one child each day).", "add-group", "+ Add group") : `
         <div class="tm-grid">
           ${groups.map(g => `
             <article class="tm-card">
-              <h3 style="margin: 0 0 6px;">${this._esc(g.name)} <span class="tm-pill tm-pill-${g.policy}">${g.policy}</span></h3>
-              <div class="tm-sub" style="margin-bottom: 12px;">${(g.chore_ids || []).length} member chore${(g.chore_ids || []).length === 1 ? "" : "s"}</div>
+              <div class="tm-child-head">
+                <div class="tm-avatar"><ha-icon icon="${g.policy === 'sticky' ? 'mdi:link-variant' : 'mdi:arrow-split-horizontal'}"></ha-icon></div>
+                <div class="tm-child-name">
+                  <h3>${this._esc(g.name)}</h3>
+                  <div class="tm-meta"><span class="tm-pill tm-pill-${g.policy}">${g.policy}</span> · ${(g.chore_ids || []).length} chore${(g.chore_ids || []).length === 1 ? "" : "s"}</div>
+                </div>
+              </div>
               <ul class="tm-group-list">
                 ${(g.chore_ids || []).map(id => `<li>${this._esc((choreById[id] && choreById[id].name) || `(missing chore ${id})`)}</li>`).join("")}
               </ul>
-              <footer class="tm-card-foot" style="margin-top: 12px;">
-                <button class="tm-btn tm-btn-ghost" data-act="edit-group" data-id="${this._esc(g.id)}">Edit</button>
-                <button class="tm-btn tm-btn-danger" data-act="delete-group" data-id="${this._esc(g.id)}">Delete</button>
-              </footer>
+              <div class="tm-card-foot">
+                <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="edit-group" data-id="${this._esc(g.id)}">Edit</button>
+                <button class="tm-btn tm-btn-danger tm-btn-sm" data-act="delete-group" data-id="${this._esc(g.id)}">Delete</button>
+              </div>
             </article>
           `).join("")}
-          <button class="tm-add-tile" data-act="add-group"><span class="tm-add-plus">+</span>Add group</button>
+          <button class="tm-add-tile" data-act="add-group"><span class="tm-add-plus">＋</span>Add group</button>
         </div>
       `}
     `;
@@ -850,64 +887,92 @@ class TaskMatePanel extends HTMLElement {
   // -- Settings tab ------------------------------------------------------
   _renderSettingsTab() {
     const s = this._state.settings || {};
+    const notifyServices = Object.keys((this._hass && this._hass.services && this._hass.services.notify) || {});
+    const notifyOptions = [
+      { v: "", l: "(none — use HA persistent notifications)" },
+      ...notifyServices.map(k => ({ v: `notify.${k}`, l: `notify.${k}` })),
+    ];
     return `
-      <div class="tm-card tm-settings">
-        <h2>Currency</h2>
-        <div class="tm-field-row">
-          <label class="tm-field-inline"><span>Points name</span>
-            <input type="text" data-setting="points_name" value="${this._esc(s.points_name || "Stars")}" placeholder="Stars">
-          </label>
-          <label class="tm-field-inline"><span>Points icon</span>
-            <input type="text" data-setting="points_icon" value="${this._esc(s.points_icon || "mdi:star")}" placeholder="mdi:star">
-          </label>
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">Settings</h2>
+      </div>
+      <div class="tm-settings">
+        <div class="tm-section">
+          <div class="tm-section-head">
+            <div>
+              <h3>Currency</h3>
+              <p class="tm-meta">How points are named and shown across the app.</p>
+            </div>
+          </div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Points name<small>What you call them, e.g. Stars or Coins</small></div>
+              <input type="text" data-setting="points_name" value="${this._esc(s.points_name || "Stars")}" placeholder="Stars">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Points icon<small>Pick any MDI icon</small></div>
+              <ha-icon-picker data-setting="points_icon" data-current="${this._esc(s.points_icon || 'mdi:star')}"></ha-icon-picker>
+            </div>
+          </div>
         </div>
 
-        <h2>History &amp; streaks</h2>
-        <div class="tm-field-row">
-          <label class="tm-field-inline"><span>History days to retain (30–365)</span>
-            <input type="number" min="30" max="365" data-setting="history_days" value="${s.history_days || 90}">
-          </label>
-          <label class="tm-field-inline"><span>Streak reset mode</span>
-            <select data-setting="streak_reset_mode">
-              ${STREAK_MODES.map(m => `<option value="${m.v}" ${m.v === (s.streak_reset_mode || "reset") ? "selected" : ""}>${this._esc(m.l)}</option>`).join("")}
-            </select>
-          </label>
-        </div>
-        <div class="tm-field-row">
-          <label class="tm-field-inline"><span>Weekend points multiplier (1.0 = off)</span>
-            <input type="number" step="0.1" min="1" max="5" data-setting="weekend_multiplier" value="${s.weekend_multiplier || 1.0}">
-          </label>
-          <label class="tm-field-inline"><span>Calendar planning horizon (days)</span>
-            <input type="number" min="1" max="90" data-setting="calendar_projection_days" value="${s.calendar_projection_days || 14}">
-          </label>
-        </div>
-
-        <h2>Bonuses</h2>
-        <div class="tm-check-row">
-          <label class="tm-switch"><input type="checkbox" data-setting="streak_milestones_enabled" ${s.streak_milestones_enabled ? "checked" : ""}><span class="tm-slider"></span></label>
-          Award bonus points at streak milestones (3, 7, 14, 30, 60, 100 days)
-        </div>
-        <div class="tm-check-row">
-          <label class="tm-switch"><input type="checkbox" data-setting="perfect_week_enabled" ${s.perfect_week_enabled ? "checked" : ""}><span class="tm-slider"></span></label>
-          Award bonus for completing chores every day of a week
-        </div>
-        <div class="tm-field-row">
-          <label class="tm-field-inline"><span>Perfect week bonus points</span>
-            <input type="number" min="0" data-setting="perfect_week_bonus" value="${s.perfect_week_bonus || 50}">
-          </label>
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>History &amp; streaks</h3></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Retention<small>How many days of completion history to keep</small></div>
+              <input type="number" min="30" max="365" data-setting="history_days" value="${s.history_days || 90}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Streak reset<small>What happens when a day is missed</small></div>
+              <select data-setting="streak_reset_mode">
+                ${STREAK_MODES.map(m => `<option value="${m.v}" ${m.v === (s.streak_reset_mode || "reset") ? "selected" : ""}>${this._esc(m.l)}</option>`).join("")}
+              </select>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Weekend multiplier<small>Bonus on Sat/Sun (1.0 = off)</small></div>
+              <input type="number" step="0.1" min="1" max="5" data-setting="weekend_multiplier" value="${s.weekend_multiplier || 1.0}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Calendar projection<small>Days ahead each chore publishes to calendars</small></div>
+              <input type="number" min="1" max="90" data-setting="calendar_projection_days" value="${s.calendar_projection_days || 14}">
+            </div>
+          </div>
         </div>
 
-        <h2>Notifications</h2>
-        <div class="tm-field-row">
-          <label class="tm-field-inline"><span>Notify service for approval pings</span>
-            <input type="text" data-setting="notify_service" value="${this._esc(s.notify_service || "")}" placeholder="notify.mobile_app_your_phone">
-          </label>
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>Bonuses</h3></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Streak milestones<small>Bonus at 3, 7, 14, 30, 60, 100 days</small></div>
+              <label class="tm-switch"><input type="checkbox" data-setting="streak_milestones_enabled" ${s.streak_milestones_enabled ? "checked" : ""}><span class="tm-slider"></span></label>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Perfect-week bonus<small>Bonus for completing every day of a week</small></div>
+              <label class="tm-switch"><input type="checkbox" data-setting="perfect_week_enabled" ${s.perfect_week_enabled ? "checked" : ""}><span class="tm-slider"></span></label>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Perfect-week bonus points<small>How many points to award</small></div>
+              <input type="number" min="0" data-setting="perfect_week_bonus" value="${s.perfect_week_bonus || 50}">
+            </div>
+          </div>
         </div>
-        <div class="tm-sub" style="margin-bottom: 16px;">Leave blank to use HA's persistent notifications only.</div>
 
-        <footer class="tm-card-foot" style="border-top: 1px solid var(--divider-color); padding-top: 16px; justify-content: flex-end;">
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>Notifications</h3></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Notify service<small>Used for parent approval pings</small></div>
+              <select data-setting="notify_service">
+                ${notifyOptions.map(o => `<option value="${this._esc(o.v)}" ${o.v === (s.notify_service || "") ? "selected" : ""}>${this._esc(o.l)}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-settings-foot">
           <button class="tm-btn" data-act="save-settings">Save settings</button>
-        </footer>
+        </div>
       </div>
     `;
   }
@@ -930,9 +995,9 @@ class TaskMatePanel extends HTMLElement {
     return this._dialogShell(this._dialog.mode === "add" ? "Add child" : "Edit child",
       [
         this._field("Name", "name", d.name, "text", "e.g. Malia"),
-        this._field("Avatar (MDI icon)", "avatar", d.avatar, "text", "Examples: mdi:face-woman, mdi:face-man, mdi:dog"),
-        this._field("Availability sensor (optional)", "availability_entity", d.availability_entity, "text",
-          "HA entity that says whether the child is available. States <code>on</code>, <code>home</code>, <code>available</code>, <code>present</code>, <code>true</code> mean available. Leave blank to treat as always available."),
+        this._iconPickerField("Avatar", "avatar", d.avatar),
+        this._entityPickerField("Availability sensor (optional)", "availability_entity", d.availability_entity, ["binary_sensor", "sensor", "input_boolean", "person"],
+          "States <code>on</code>, <code>home</code>, <code>available</code>, <code>present</code>, <code>true</code> mean available. Leave blank to treat as always available."),
       ].join(""),
       `<button class="tm-btn tm-btn-ghost" data-act="close-dialog">Cancel</button>
        <button class="tm-btn" data-act="save-child">Save</button>`
@@ -946,6 +1011,12 @@ class TaskMatePanel extends HTMLElement {
     const memberInGroup = (d.id && groups.find(g => (g.chore_ids || []).includes(d.id))) || null;
     const showSpecificDays = d.schedule_mode === "specific_days";
     const showRecurring    = d.schedule_mode === "recurring";
+    const showRotation     = ["alternating", "random", "balanced"].includes(d.assignment_mode);
+
+    // Calendar entities available in this HA
+    const calendarEntities = Object.keys((this._hass && this._hass.states) || {})
+      .filter(id => id.startsWith("calendar."))
+      .sort();
 
     return this._dialogShell(this._dialog.mode === "add" ? "Add chore" : "Edit chore",
       [
@@ -957,28 +1028,38 @@ class TaskMatePanel extends HTMLElement {
           ${this._field("Daily limit", "daily_limit", d.daily_limit, "number")}
         </div>`,
 
-        // Assigned to (multi-checkbox)
+        // Assigned to
         children.length > 0 ? `
           <div class="tm-field">
             <span class="tm-field-label">Assigned to</span>
-            <div class="tm-multi">
+            <div class="tm-chip-row">
               ${children.map(c => `
                 <button type="button" class="tm-chip-btn ${(d.assigned_to || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="toggle-assigned" data-id="${this._esc(c.id)}">
                   ${this._esc(c.name)}
                 </button>
               `).join("")}
             </div>
-            <span class="tm-field-hint">Leave empty to assign to all children.</span>
+            <span class="tm-field-hint">Leave empty to assign to <strong>all children</strong>.</span>
           </div>
         ` : `<div class="tm-field"><span class="tm-field-hint">Add some children first to assign chores to them.</span></div>`,
 
         this._select("Assignment mode", "assignment_mode", d.assignment_mode, ASSIGNMENT_MODES,
-          "Everyone = all assigned children see it. Alternating = rotate one per day. Random = pick one daily. Balanced = split evenly across the day."),
+          "Everyone = all assigned children see it. Alternating = rotate one per day. Random = pick one daily. Balanced = split evenly across the day.",
+          true /* rerender on change so the rotation field appears */),
+
+        showRotation && children.length > 0 ? this._select(
+          "Start rotation with (optional)", "manual_start_child_id", d.manual_start_child_id,
+          [{ v: "", l: "(no override)" }, ...children.map(c => ({ v: c.id, l: c.name }))],
+          "Alternating mode: permanently reorders the pool. Random/Balanced: only overrides today; tomorrow resumes normally."
+        ) : "",
 
         this._select("Time category", "time_category", d.time_category, TIME_CATEGORIES),
 
-        // Schedule mode
-        this._select("Schedule mode", "schedule_mode", d.schedule_mode, SCHEDULE_MODES),
+        this._field("Claim allowance (minutes)", "claim_allowance_minutes", d.claim_allowance_minutes, "number",
+          "Extra minutes after the time-of-day window ends during which the chore stays claimable. 0 = no grace. Night chores still cap at midnight."),
+
+        // Schedule mode — re-renders to reveal options
+        this._select("Schedule mode", "schedule_mode", d.schedule_mode, SCHEDULE_MODES, "", true),
 
         showSpecificDays ? `
           <div class="tm-field">
@@ -997,14 +1078,13 @@ class TaskMatePanel extends HTMLElement {
             ${this._field("Day of week (weekly only)", "recurrence_day", d.recurrence_day, "text", "e.g. monday — leave blank for any day")}
           </div>
           <div class="tm-field-row">
-            ${this._field("Start date (every-2-days only)", "recurrence_start", d.recurrence_start, "text", "YYYY-MM-DD; blank = today")}
+            ${this._dateField("Start date (every-2-days only)", "recurrence_start", d.recurrence_start, "Anchor date — blank = today")}
             ${this._select("First occurrence", "first_occurrence_mode", d.first_occurrence_mode, FIRST_OCCURRENCE)}
           </div>
         ` : "",
 
         this._select("Completion sound", "completion_sound", d.completion_sound, COMPLETION_SOUNDS.map(s => ({ v: s, l: s }))),
 
-        // Switches
         this._switch("Requires parent approval", "requires_approval", d.requires_approval),
         this._switch("Skip unavailable children", "require_availability", d.require_availability,
           "Uses each child's availability sensor (set on their profile)."),
@@ -1015,16 +1095,31 @@ class TaskMatePanel extends HTMLElement {
           </div>
         ` : "",
 
-        // Advanced section
+        // Advanced
         `<details class="tm-advanced">
-          <summary>Advanced</summary>
-          <div style="padding-top: 12px;">
-            ${this._field("Visibility entity (optional)", "visibility_entity", d.visibility_entity, "text", "Entity ID; chore only shows when its state matches the rule below.")}
+          <summary>Advanced — visibility &amp; calendar publishing</summary>
+          <div>
+            ${this._entityPickerField("Visibility entity (optional)", "visibility_entity", d.visibility_entity, ["binary_sensor", "sensor", "switch", "input_boolean", "input_select"],
+              "Chore only shows when its state matches the rule below. Leave blank for always-show.")}
             <div class="tm-field-row">
               ${this._select("Visibility operator", "visibility_operator", d.visibility_operator, VISIBILITY_OPS)}
               ${this._field("Visibility value", "visibility_state", d.visibility_state, "text", 'e.g. "on", "home", "30"')}
             </div>
-            ${this._field("Calendar entities to publish to (comma-separated)", "publish_calendar_entities_csv", d.publish_calendar_entities_csv, "text", "e.g. calendar.family, calendar.kids — blank = no calendar publishing")}
+
+            <div class="tm-field">
+              <span class="tm-field-label">Publish to calendars (optional)</span>
+              ${calendarEntities.length === 0 ? `<span class="tm-field-hint">No calendar entities found in Home Assistant. Set one up first.</span>` : `
+                <div class="tm-chip-row">
+                  ${calendarEntities.map(cid => `
+                    <button type="button" class="tm-chip-btn ${(d.publish_calendar_entities || []).includes(cid) ? "tm-chip-on" : ""}" data-act="toggle-calendar" data-id="${this._esc(cid)}">
+                      ${this._esc(cid)}
+                    </button>
+                  `).join("")}
+                </div>
+                <span class="tm-field-hint">Today's assignment will be added as a calendar event on each selected calendar.</span>
+              `}
+            </div>
+
             ${this._switch("Enabled", "enabled", d.enabled !== false)}
           </div>
         </details>`,
@@ -1044,31 +1139,31 @@ class TaskMatePanel extends HTMLElement {
         this._field("Description (optional)", "description", d.description, "text"),
         `<div class="tm-field-row">
           ${this._field(`Cost (${pointsName})`, "cost", d.cost, "number")}
-          ${this._field("Icon (MDI)", "icon", d.icon, "text")}
+          ${this._iconPickerField("Icon", "icon", d.icon)}
         </div>`,
 
         children.length > 0 ? `
           <div class="tm-field">
             <span class="tm-field-label">Assigned to</span>
-            <div class="tm-multi">
+            <div class="tm-chip-row">
               ${children.map(c => `
                 <button type="button" class="tm-chip-btn ${(d.assigned_to || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="toggle-reward-assigned" data-id="${this._esc(c.id)}">
                   ${this._esc(c.name)}
                 </button>
               `).join("")}
             </div>
-            <span class="tm-field-hint">Leave empty to make available to all children.</span>
+            <span class="tm-field-hint">Leave empty to make available to <strong>all children</strong>.</span>
           </div>
         ` : "",
 
         this._switch("Pool reward (savings jar)", "pool_enabled", d.pool_enabled,
-          "Children deposit points into this reward's dedicated pool rather than spending from their balance. Good for long-term savings goals."),
+          "Children deposit points into this reward's dedicated pool rather than spending from their balance. Good for long-term goals."),
         this._switch("Jackpot — pool from all assigned children", "is_jackpot", d.is_jackpot,
           "Combine all children's contributions toward one shared reward."),
 
         `<div class="tm-field-row">
           ${this._field("Limited quantity (blank = unlimited)", "quantity_str", d.quantity_str, "text", "Each approved claim reduces by 1.")}
-          ${this._field("Expires (YYYY-MM-DD, blank = never)", "expires_at", d.expires_at, "text", "Pooled points are refunded at midnight.")}
+          ${this._dateField("Expires (blank = never)", "expires_at", d.expires_at, "Pooled points are refunded at midnight.")}
         </div>`,
       ].join(""),
       `<button class="tm-btn tm-btn-ghost" data-act="close-dialog">Cancel</button>
@@ -1086,19 +1181,19 @@ class TaskMatePanel extends HTMLElement {
         this._field("Description (optional)", "description", d.description, "text"),
         `<div class="tm-field-row">
           ${this._field(`Points to ${isPenalty ? "deduct" : "award"}`, "points", d.points, "number")}
-          ${this._field("Icon (MDI)", "icon", d.icon, "text")}
+          ${this._iconPickerField("Icon", "icon", d.icon)}
         </div>`,
         children.length > 0 ? `
           <div class="tm-field">
             <span class="tm-field-label">Applies to</span>
-            <div class="tm-multi">
+            <div class="tm-chip-row">
               ${children.map(c => `
                 <button type="button" class="tm-chip-btn ${(d.assigned_to || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="toggle-penbon-assigned" data-id="${this._esc(c.id)}">
                   ${this._esc(c.name)}
                 </button>
               `).join("")}
             </div>
-            <span class="tm-field-hint">Leave empty to apply to all children.</span>
+            <span class="tm-field-hint">Leave empty to apply to <strong>all children</strong>.</span>
           </div>
         ` : "",
       ].join(""),
@@ -1117,8 +1212,8 @@ class TaskMatePanel extends HTMLElement {
       : children.filter(c => (item.assigned_to || []).includes(c.id));
     return this._dialogShell(`Apply ${kind}: ${item.name}`,
       `<p>Choose which child to ${isPenalty ? "apply this penalty to (will deduct" : "award this bonus to (will add"} <strong>${item.points}</strong> points).</p>
-       ${eligible.length === 0 ? `<p class="tm-sub">No eligible children. Edit the ${kind} to set who it applies to.</p>` : `
-        <div class="tm-multi" style="margin-top: 12px;">
+       ${eligible.length === 0 ? `<p class="tm-meta">No eligible children. Edit the ${kind} to set who it applies to.</p>` : `
+        <div class="tm-chip-row" style="margin-top: 12px;">
           ${eligible.map(c => `
             <button type="button" class="tm-btn tm-btn-ghost" data-act="do-apply-${kind}" data-id="${this._esc(item.id)}" data-child="${this._esc(c.id)}">
               ${this._esc(c.name)}
@@ -1145,7 +1240,7 @@ class TaskMatePanel extends HTMLElement {
         ` : `
           <div class="tm-field">
             <span class="tm-field-label">Member chores (order matters for sticky — first is the leader)</span>
-            <div class="tm-multi">
+            <div class="tm-chip-row">
               ${chores.map(c => `
                 <button type="button" class="tm-chip-btn ${(d.chore_ids || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="toggle-group-chore" data-id="${this._esc(c.id)}">
                   ${this._esc(c.name)}
@@ -1160,7 +1255,7 @@ class TaskMatePanel extends HTMLElement {
     );
   }
 
-  // ---- form-element helpers --------------------------------------------
+  // ---- form helpers ----------------------------------------------------
   _dialogShell(title, body, footer) {
     return `
       <div class="tm-scrim" data-act="scrim">
@@ -1184,11 +1279,23 @@ class TaskMatePanel extends HTMLElement {
       </label>`;
   }
 
-  _select(label, name, value, options, hint = "") {
+  _dateField(label, name, value, hint = "") {
+    // <input type=date> — the displayed format follows the user's browser
+    // locale (DD/MM/YYYY in en-GB) but the underlying value is YYYY-MM-DD,
+    // which is what TaskMate's storage expects.
     return `
       <label class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
-        <select data-field="${name}">
+        <input type="date" data-field="${name}" value="${this._esc(value || "")}">
+        ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
+      </label>`;
+  }
+
+  _select(label, name, value, options, hint = "", rerender = false) {
+    return `
+      <label class="tm-field">
+        <span class="tm-field-label">${this._esc(label)}</span>
+        <select data-field="${name}" ${rerender ? `data-rerender="true"` : ""}>
           ${options.map(o => `<option value="${this._esc(o.v)}" ${o.v === value ? "selected" : ""}>${this._esc(o.l)}</option>`).join("")}
         </select>
         ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
@@ -1203,10 +1310,39 @@ class TaskMatePanel extends HTMLElement {
           <span class="tm-slider"></span>
         </label>
         <div>
-          <div>${this._esc(label)}</div>
+          <div class="tm-check-title">${this._esc(label)}</div>
           ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
         </div>
       </div>`;
+  }
+
+  _iconPickerField(label, name, value) {
+    return `
+      <label class="tm-field">
+        <span class="tm-field-label">${this._esc(label)}</span>
+        <ha-icon-picker data-field="${name}" data-current="${this._esc(value || "")}"></ha-icon-picker>
+      </label>`;
+  }
+
+  _entityPickerField(label, name, value, domains, hint = "") {
+    const dom = (domains || []).join(",");
+    return `
+      <label class="tm-field">
+        <span class="tm-field-label">${this._esc(label)}</span>
+        <ha-entity-picker data-field="${name}" data-current="${this._esc(value || "")}" ${dom ? `data-domains="${this._esc(dom)}"` : ""}></ha-entity-picker>
+        ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
+      </label>`;
+  }
+
+  _emptyState(icon, title, copy, action, label) {
+    return `
+      <div class="tm-empty">
+        <div class="tm-empty-icon">${icon}</div>
+        <h3>${this._esc(title)}</h3>
+        <p>${this._esc(copy)}</p>
+        <button class="tm-btn" data-act="${action}">${this._esc(label)}</button>
+      </div>
+    `;
   }
 
   _labelOf(options, value) {
@@ -1229,140 +1365,679 @@ class TaskMatePanel extends HTMLElement {
     return `<ha-icon icon="${this._esc(name || "mdi:account-circle")}"></ha-icon>`;
   }
 
-  // ---- styles ----------------------------------------------------------
+  // ---- styles (HA-token-aware, light/dark adaptive) --------------------
   _styles() {
     return `<style>
-      :host, taskmate-panel { display: block; height: 100%; background: var(--primary-background-color, #111418); color: var(--primary-text-color, #e1e3e6); }
-      .tm-shell { display: flex; flex-direction: column; height: 100%; font-family: var(--paper-font-body1_-_font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif); position: relative; }
+      taskmate-panel {
+        display: block; height: 100%;
 
-      .tm-appbar { height: 56px; background: var(--app-header-background-color, #1a1d22); color: var(--app-header-text-color, #fff); display: flex; align-items: center; gap: 12px; padding: 0 16px; flex-shrink: 0; border-bottom: 1px solid var(--divider-color, #2a2e36); }
-      .tm-appbar h1 { margin: 0; font-size: 20px; font-weight: 400; flex: 1; }
-      .tm-chip { background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 999px; font-size: 12px; }
+        /* Source HA primaries with sensible dark fallbacks. Surfaces and
+           borders are derived from these via color-mix() so the panel
+           adapts to whatever HA theme is active. */
+        --tm-bg:           var(--primary-background-color, #08090b);
+        --tm-text:         var(--primary-text-color,        #f4f5f7);
+        --tm-text-muted:   var(--secondary-text-color,      #a8aeb8);
+        --tm-text-faint:   var(--disabled-text-color,       #6b7280);
+        --tm-text-vfaint:  color-mix(in srgb, var(--tm-text), transparent 70%);
 
-      .tm-tabs { display: flex; background: var(--app-header-background-color, #1a1d22); border-bottom: 1px solid var(--divider-color, #2a2e36); padding: 0 8px; overflow-x: auto; flex-shrink: 0; scrollbar-width: none; }
+        --tm-accent:       var(--primary-color,             #5eb1ff);
+        --tm-accent-press: color-mix(in srgb, var(--tm-accent), black 12%);
+        --tm-accent-soft:  color-mix(in srgb, var(--tm-accent), transparent 88%);
+        --tm-accent-glow:  color-mix(in srgb, var(--tm-accent), transparent 78%);
+
+        /* Layered surfaces — shift toward text colour so works in both themes */
+        --tm-surface-0: color-mix(in srgb, var(--tm-bg), var(--tm-text) 3%);
+        --tm-surface-1: color-mix(in srgb, var(--tm-bg), var(--tm-text) 5%);
+        --tm-surface-2: color-mix(in srgb, var(--tm-bg), var(--tm-text) 9%);
+        --tm-surface-3: color-mix(in srgb, var(--tm-bg), var(--tm-text) 13%);
+        --tm-surface-hover: color-mix(in srgb, var(--tm-bg), var(--tm-text) 7%);
+
+        --tm-border:        color-mix(in srgb, var(--tm-text), transparent 92%);
+        --tm-border-strong: color-mix(in srgb, var(--tm-text), transparent 86%);
+        --tm-border-soft:   color-mix(in srgb, var(--tm-text), transparent 95%);
+
+        --tm-positive:     var(--success-color,             #4ade80);
+        --tm-positive-soft: color-mix(in srgb, var(--tm-positive), transparent 90%);
+        --tm-warning:      var(--warning-color,             #fbbf24);
+        --tm-warning-soft: color-mix(in srgb, var(--tm-warning), transparent 90%);
+        --tm-danger:       var(--error-color,               #f87171);
+        --tm-danger-soft:  color-mix(in srgb, var(--tm-danger), transparent 90%);
+
+        --tm-gold:   #f5b300;
+        --tm-pool:   #fb923c;
+        --tm-sticky: #c084fc;
+
+        --tm-radius-sm: 8px;
+        --tm-radius:    12px;
+        --tm-radius-lg: 16px;
+
+        --tm-shadow-sm: 0 1px 2px rgba(0,0,0,0.18);
+        --tm-shadow:    0 4px 12px rgba(0,0,0,0.22);
+        --tm-shadow-lg: 0 24px 48px -12px rgba(0,0,0,0.40);
+        --tm-easing:    cubic-bezier(0.16, 1, 0.3, 1);
+
+        background: var(--tm-bg);
+        color: var(--tm-text);
+        font-family: var(--paper-font-body1_-_font-family,
+                     -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display",
+                     "Segoe UI", Roboto, sans-serif);
+        font-size: 14px;
+        line-height: 1.5;
+        letter-spacing: -0.005em;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Lighten shadows in light themes */
+      @media (prefers-color-scheme: light) {
+        taskmate-panel {
+          --tm-shadow-sm: 0 1px 2px rgba(15,15,15,0.06);
+          --tm-shadow:    0 2px 8px rgba(15,15,15,0.08);
+          --tm-shadow-lg: 0 16px 40px rgba(15,15,15,0.12);
+        }
+      }
+
+      .tm-shell { display: flex; flex-direction: column; height: 100%; position: relative; overflow: hidden; }
+      .tm-bg-glow {
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(900px 600px at 90% -10%, color-mix(in srgb, var(--tm-accent), transparent 92%), transparent 60%),
+          radial-gradient(700px 500px at -10% 110%, color-mix(in srgb, var(--tm-sticky), transparent 94%), transparent 60%);
+        pointer-events: none;
+      }
+
+      /* App bar */
+      .tm-appbar {
+        position: relative; z-index: 5;
+        height: 56px; padding: 0 24px;
+        display: flex; align-items: center; gap: 14px;
+        flex-shrink: 0;
+        border-bottom: 1px solid var(--tm-border);
+        background: color-mix(in srgb, var(--tm-bg), transparent 20%);
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+      }
+      .tm-appbar-icon {
+        width: 32px; height: 32px;
+        background: linear-gradient(135deg, var(--tm-accent), var(--tm-accent-press));
+        border-radius: 9px;
+        display: grid; place-items: center;
+        color: white;
+        box-shadow: 0 2px 8px var(--tm-accent-glow);
+      }
+      .tm-appbar-icon ha-icon { --mdc-icon-size: 18px; }
+      .tm-appbar-title {
+        margin: 0; font-size: 16px; font-weight: 600;
+        letter-spacing: -0.015em;
+        flex: 1;
+      }
+      .tm-sep   { color: var(--tm-text-vfaint); font-weight: 400; margin: 0 8px; }
+      .tm-crumb { color: var(--tm-text-muted); font-weight: 500; }
+      .tm-version-chip {
+        background: var(--tm-surface-2);
+        color: var(--tm-text-muted);
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--tm-border);
+      }
+
+      /* Tabs */
+      .tm-tabs {
+        position: relative; z-index: 4;
+        display: flex; padding: 0 16px;
+        border-bottom: 1px solid var(--tm-border);
+        background: color-mix(in srgb, var(--tm-bg), transparent 20%);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        overflow-x: auto; scrollbar-width: none;
+        flex-shrink: 0;
+      }
       .tm-tabs::-webkit-scrollbar { display: none; }
-      .tm-tab { border: 0; background: transparent; color: var(--secondary-text-color, #9aa0a6); padding: 14px 18px; cursor: pointer; font-size: 14px; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; font-family: inherit; }
-      .tm-tab:hover { color: var(--primary-text-color, #e1e3e6); }
-      .tm-tab-active { color: var(--primary-color, #03a9f4); border-bottom-color: var(--primary-color, #03a9f4); }
+      .tm-tab {
+        position: relative;
+        background: transparent; border: 0;
+        color: var(--tm-text-faint);
+        padding: 14px 16px;
+        cursor: pointer;
+        font-size: 13px; font-weight: 500;
+        letter-spacing: -0.005em;
+        white-space: nowrap;
+        display: flex; align-items: center; gap: 6px;
+        font-family: inherit;
+        transition: color 0.15s var(--tm-easing);
+      }
+      .tm-tab:hover       { color: var(--tm-text); }
+      .tm-tab-active      { color: var(--tm-text); }
+      .tm-tab-active::after {
+        content: "";
+        position: absolute;
+        left: 16px; right: 16px; bottom: -1px;
+        height: 2px; border-radius: 2px 2px 0 0;
+        background: var(--tm-accent);
+      }
+      .tm-tab-pill {
+        background: var(--tm-surface-2); color: var(--tm-text-muted);
+        font-size: 10px; font-weight: 600;
+        padding: 1px 7px; border-radius: 999px;
+        line-height: 1.4;
+      }
+      .tm-tab-active .tm-tab-pill { background: var(--tm-accent-soft); color: var(--tm-accent); }
 
-      .tm-body { flex: 1; overflow: auto; padding: 20px 24px 48px; }
-      .tm-toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
-      .tm-title-sub { flex: 1; color: var(--secondary-text-color, #9aa0a6); font-size: 13px; }
+      /* Body */
+      .tm-body { flex: 1; overflow-y: auto; padding: 28px 32px 56px; position: relative; z-index: 1; }
+      .tm-body-inner { max-width: 1200px; margin: 0 auto; }
 
-      .tm-card { background: var(--card-background-color, #1c1f24); border: 1px solid var(--divider-color, #2a2e36); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; }
-      .tm-card h2 { margin: 16px 0 12px; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary-text-color); }
-      .tm-card h2:first-child { margin-top: 0; }
-      .tm-card p { margin: 8px 0; color: var(--secondary-text-color, #9aa0a6); }
-      .tm-card code { background: var(--code-editor-background-color, #0e1115); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
-      .tm-card-error { border-left: 3px solid var(--error-color, #ef5350); color: var(--error-color, #ef5350); }
-      .tm-empty { text-align: center; padding: 40px 24px; }
+      /* Toolbar */
+      .tm-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+      .tm-toolbar-title {
+        margin: 0; font-size: 22px; font-weight: 600;
+        letter-spacing: -0.02em;
+        flex: 1;
+      }
+      .tm-toolbar-count {
+        color: var(--tm-text-faint); font-weight: 400;
+        margin-left: 6px;
+        font-feature-settings: "tnum";
+      }
 
-      .tm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-      .tm-child-card { margin-bottom: 0; display: flex; flex-direction: column; }
-      .tm-child-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-      .tm-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--secondary-background-color, #242830); display: grid; place-items: center; flex-shrink: 0; color: var(--primary-color, #03a9f4); }
-      .tm-avatar ha-icon { --mdc-icon-size: 28px; }
-      .tm-reward-avatar { color: var(--accent-color, #ffca28); }
+      /* Buttons */
+      .tm-btn {
+        background: linear-gradient(180deg, var(--tm-accent), var(--tm-accent-press));
+        color: white; border: 0;
+        padding: 8px 14px; border-radius: var(--tm-radius-sm);
+        font-size: 13px; font-weight: 500;
+        letter-spacing: -0.005em;
+        font-family: inherit;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.06) inset;
+        transition: all 0.12s var(--tm-easing);
+        display: inline-flex; align-items: center; gap: 6px;
+      }
+      .tm-btn:hover  { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 2px 8px var(--tm-accent-glow), 0 0 0 1px rgba(255,255,255,0.06) inset; }
+      .tm-btn:active { transform: translateY(0); filter: brightness(0.95); }
+      .tm-btn-sm     { padding: 5px 10px; font-size: 12px; }
+      .tm-btn-ghost {
+        background: var(--tm-surface-2);
+        color: var(--tm-text);
+        box-shadow: 0 0 0 1px var(--tm-border) inset;
+      }
+      .tm-btn-ghost:hover { background: var(--tm-surface-3); transform: translateY(-1px); }
+      .tm-btn-danger {
+        background: transparent;
+        color: var(--tm-danger);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--tm-danger), transparent 75%) inset;
+      }
+      .tm-btn-danger:hover { background: var(--tm-danger-soft); transform: translateY(-1px); }
+      .tm-icon-btn {
+        width: 32px; height: 32px;
+        border: 0; background: transparent;
+        border-radius: 8px;
+        display: grid; place-items: center;
+        color: var(--tm-text-muted);
+        font-size: 14px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.12s var(--tm-easing);
+      }
+      .tm-icon-btn:hover { background: var(--tm-surface-2); color: var(--tm-text); }
+
+      /* Cards */
+      .tm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+      .tm-card {
+        position: relative; overflow: hidden;
+        background: linear-gradient(180deg, var(--tm-surface-1), var(--tm-surface-0));
+        border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius);
+        padding: 20px;
+        box-shadow: var(--tm-shadow-sm);
+        transition: all 0.15s var(--tm-easing);
+      }
+      .tm-card::before {
+        content: "";
+        position: absolute; top: 0; left: 1px; right: 1px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--tm-text), transparent 88%), transparent);
+      }
+      .tm-card:hover { border-color: var(--tm-border-strong); transform: translateY(-1px); box-shadow: var(--tm-shadow); }
+      .tm-card-error { border-left: 3px solid var(--tm-danger); color: var(--tm-danger); }
+      .tm-loading { color: var(--tm-text-muted); }
+
+      /* Child / reward / group cards share head/avatar */
+      .tm-child-card { display: flex; flex-direction: column; gap: 16px; }
+      .tm-child-head { display: flex; align-items: center; gap: 14px; }
+      .tm-avatar {
+        width: 48px; height: 48px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--tm-surface-3), var(--tm-surface-2));
+        display: grid; place-items: center;
+        flex-shrink: 0;
+        color: var(--tm-accent);
+        box-shadow: 0 0 0 1px var(--tm-border) inset, 0 1px 2px rgba(0,0,0,0.2);
+      }
+      .tm-avatar ha-icon { --mdc-icon-size: 26px; }
+      .tm-avatar-reward  { color: var(--tm-gold); }
       .tm-child-name { min-width: 0; flex: 1; }
-      .tm-child-name h3 { margin: 0; font-size: 17px; font-weight: 600; }
-      .tm-sub { color: var(--secondary-text-color, #9aa0a6); font-size: 12px; margin-top: 2px; word-break: break-all; }
-      .tm-sub code { background: var(--code-editor-background-color, #0e1115); padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+      .tm-child-name h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+      .tm-meta { color: var(--tm-text-faint); font-size: 12px; margin-top: 2px; word-break: break-word; }
+      .tm-meta code { font-family: ui-monospace, "SF Mono", Menlo, monospace; background: var(--tm-surface-2); padding: 1px 6px; border-radius: 4px; font-size: 11px; color: var(--tm-text-muted); }
+      .tm-text-muted { color: var(--tm-text-muted); }
 
-      .tm-stats { display: flex; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
-      .tm-stat { background: var(--secondary-background-color, #242830); padding: 8px 12px; border-radius: 8px; flex: 1; min-width: 80px; }
-      .tm-stat strong { display: block; font-size: 20px; font-weight: 600; color: var(--primary-color, #03a9f4); }
-      .tm-stat span { font-size: 11px; color: var(--secondary-text-color, #9aa0a6); text-transform: uppercase; letter-spacing: 0.5px; }
+      .tm-stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+      .tm-stat {
+        background: var(--tm-surface-2);
+        border-radius: var(--tm-radius-sm);
+        padding: 10px 12px;
+        box-shadow: 0 0 0 1px var(--tm-border-soft) inset;
+      }
+      .tm-stat-value {
+        font-size: 20px; font-weight: 600;
+        letter-spacing: -0.02em;
+        font-feature-settings: "tnum";
+        color: var(--tm-text);
+        line-height: 1.1;
+      }
+      .tm-stat-label {
+        font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+        color: var(--tm-text-faint);
+        margin-top: 4px; font-weight: 500;
+      }
+      .tm-stat-highlight .tm-stat-value { color: var(--tm-accent); }
 
-      .tm-card-foot { display: flex; gap: 8px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--divider-color, #2a2e36); }
+      .tm-card-foot {
+        display: flex; gap: 8px;
+        margin-top: auto;
+        padding-top: 16px;
+        border-top: 1px solid var(--tm-border-soft);
+      }
 
-      .tm-add-tile { display: grid; place-items: center; gap: 6px; background: transparent; border: 2px dashed var(--divider-color, #2a2e36); border-radius: 12px; color: var(--secondary-text-color, #9aa0a6); cursor: pointer; min-height: 180px; font-size: 14px; font-family: inherit; transition: border-color .15s, color .15s, background .15s; }
-      .tm-add-tile:hover { border-color: var(--primary-color, #03a9f4); color: var(--primary-color, #03a9f4); background: rgba(3,169,244,0.06); }
-      .tm-add-plus { font-size: 32px; line-height: 1; }
-
-      .tm-btn { background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #001a26); border: 0; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; font-family: inherit; }
-      .tm-btn:hover { filter: brightness(1.1); }
-      .tm-btn-ghost { background: transparent; color: var(--primary-text-color, #e1e3e6); border: 1px solid var(--divider-color, #2a2e36); }
-      .tm-btn-ghost:hover { background: var(--secondary-background-color, #242830); filter: none; }
-      .tm-btn-danger { background: transparent; color: var(--error-color, #ef5350); border: 1px solid rgba(239,83,80,0.4); }
-      .tm-btn-danger:hover { background: rgba(239,83,80,0.1); filter: none; }
-      .tm-icon-btn { width: 36px; height: 36px; border: 0; background: transparent; border-radius: 50%; cursor: pointer; display: grid; place-items: center; color: var(--secondary-text-color, #9aa0a6); font-size: 18px; line-height: 1; font-family: inherit; }
-      .tm-icon-btn:hover { background: var(--secondary-background-color, #242830); color: var(--primary-text-color, #e1e3e6); }
-
-      /* Pills */
-      .tm-pill { display: inline-block; background: var(--secondary-background-color, #242830); color: var(--secondary-text-color, #9aa0a6); padding: 1px 8px; border-radius: 999px; font-size: 11px; margin-left: 4px; vertical-align: middle; }
-      .tm-pill-alternating, .tm-pill-random, .tm-pill-balanced { background: rgba(3,169,244,0.15); color: var(--primary-color, #03a9f4); }
-      .tm-pill-jackpot { background: rgba(255,202,40,0.15); color: var(--accent-color, #ffca28); }
-      .tm-pill-pool { background: rgba(255,167,38,0.15); color: #ffa726; }
-      .tm-pill-sticky { background: rgba(149,117,205,0.18); color: #b39ddb; }
-      .tm-pill-spread { background: rgba(102,187,106,0.15); color: var(--success-color, #66bb6a); }
+      .tm-add-tile {
+        background: transparent;
+        border: 1px dashed var(--tm-border-strong);
+        border-radius: var(--tm-radius);
+        padding: 36px 18px;
+        color: var(--tm-text-faint);
+        text-align: center;
+        font-size: 13px;
+        cursor: pointer;
+        font-family: inherit;
+        display: grid; place-items: center; gap: 8px;
+        transition: all 0.15s var(--tm-easing);
+      }
+      .tm-add-tile:hover {
+        border-color: var(--tm-accent);
+        color: var(--tm-accent);
+        background: var(--tm-accent-soft);
+      }
+      .tm-add-plus {
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        background: var(--tm-surface-2);
+        display: grid; place-items: center;
+        font-size: 18px;
+        transition: all 0.15s var(--tm-easing);
+      }
+      .tm-add-tile:hover .tm-add-plus { background: var(--tm-accent); color: white; }
 
       /* Tables */
-      .tm-table-wrap { background: var(--card-background-color, #1c1f24); border: 1px solid var(--divider-color, #2a2e36); border-radius: 12px; overflow: hidden; }
-      .tm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-      .tm-table th, .tm-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--divider-color, #2a2e36); }
-      .tm-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--secondary-text-color, #9aa0a6); font-weight: 500; background: var(--app-header-background-color, #1a1d22); }
+      .tm-table-wrap {
+        background: linear-gradient(180deg, var(--tm-surface-1), var(--tm-surface-0));
+        border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius);
+        overflow: hidden;
+        box-shadow: var(--tm-shadow-sm);
+      }
+      .tm-table { width: 100%; border-collapse: collapse; }
+      .tm-table th, .tm-table td {
+        text-align: left; padding: 14px 18px;
+        border-bottom: 1px solid var(--tm-border-soft);
+        font-size: 13px;
+      }
+      .tm-table th {
+        color: var(--tm-text-faint);
+        font-weight: 500; font-size: 10px;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        background: var(--tm-surface-0);
+        border-bottom: 1px solid var(--tm-border);
+      }
       .tm-table tr:last-child td { border-bottom: 0; }
-      .tm-row:hover { background: var(--secondary-background-color, #242830); }
+      .tm-row { transition: background 0.12s var(--tm-easing); }
+      .tm-row:hover { background: var(--tm-surface-hover); }
       .tm-row-disabled { opacity: 0.5; }
-      .tm-row-icon { display: inline-flex; vertical-align: middle; margin-right: 8px; --mdc-icon-size: 18px; color: var(--secondary-text-color); }
+      .tm-row-icon { display: inline-flex; vertical-align: middle; margin-right: 10px; opacity: 0.7; --mdc-icon-size: 18px; color: var(--tm-text-muted); }
       .tm-row-actions { text-align: right; white-space: nowrap; display: flex; gap: 4px; justify-content: flex-end; align-items: center; }
-      .tm-yes { color: var(--success-color, #66bb6a); }
-      .tm-no  { color: var(--secondary-text-color, #6a7079); }
-      .tm-neg { color: var(--error-color, #ef5350); }
-      .tm-pos { color: var(--success-color, #66bb6a); }
+      .tm-numeric { font-feature-settings: "tnum"; }
+      .tm-yes { color: var(--tm-positive); font-weight: 500; }
+      .tm-no  { color: var(--tm-text-faint); }
+      .tm-neg { color: var(--tm-danger); }
+      .tm-pos { color: var(--tm-positive); }
+      .tm-cost { color: var(--tm-gold); }
 
-      .tm-progress { height: 8px; background: var(--secondary-background-color, #242830); border-radius: 999px; overflow: hidden; margin: 8px 0 4px; }
-      .tm-progress > span { display: block; height: 100%; background: linear-gradient(90deg, var(--primary-color, #03a9f4), #4fc3f7); }
+      /* Pills */
+      .tm-pill {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 2px 8px; border-radius: 999px;
+        font-size: 11px; font-weight: 500;
+        line-height: 1.5;
+        background: var(--tm-surface-2); color: var(--tm-text-muted);
+        margin-left: 4px; vertical-align: middle;
+      }
+      .tm-pill-accent  { background: var(--tm-accent-soft);   color: var(--tm-accent); }
+      .tm-pill-success { background: var(--tm-positive-soft); color: var(--tm-positive); }
+      .tm-pill-warn    { background: var(--tm-warning-soft);  color: var(--tm-warning); }
+      .tm-pill-danger  { background: var(--tm-danger-soft);   color: var(--tm-danger); }
+      .tm-pill-pool    { background: color-mix(in srgb, var(--tm-pool), transparent 90%); color: var(--tm-pool); }
+      .tm-pill-sticky  { background: color-mix(in srgb, var(--tm-sticky), transparent 90%); color: var(--tm-sticky); }
+      .tm-pill-spread  { background: var(--tm-positive-soft); color: var(--tm-positive); }
+      .tm-pill-jackpot { background: color-mix(in srgb, var(--tm-gold), transparent 88%); color: var(--tm-gold); }
+      .tm-pill-alternating, .tm-pill-random, .tm-pill-balanced { background: var(--tm-accent-soft); color: var(--tm-accent); }
+      .tm-pill-dot::before {
+        content: ""; width: 5px; height: 5px; border-radius: 50%;
+        background: currentColor;
+      }
 
-      .tm-group-list { margin: 0; padding-left: 20px; color: var(--secondary-text-color, #9aa0a6); font-size: 13px; }
+      /* Reward extras */
+      .tm-reward-card { display: flex; flex-direction: column; gap: 14px; }
+      .tm-progress {
+        height: 6px;
+        background: var(--tm-surface-2);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 4px;
+        box-shadow: 0 0 0 1px var(--tm-border-soft) inset;
+      }
+      .tm-progress > span {
+        display: block; height: 100%;
+        background: linear-gradient(90deg, var(--tm-accent), color-mix(in srgb, var(--tm-accent), white 25%));
+        border-radius: 999px;
+        box-shadow: 0 0 8px var(--tm-accent-glow);
+      }
+      .tm-progress-text {
+        font-size: 12px; color: var(--tm-text-muted);
+        display: flex; justify-content: space-between;
+        font-feature-settings: "tnum";
+        margin-top: 6px;
+      }
+      .tm-progress-text strong { color: var(--tm-text); font-weight: 600; }
+
+      /* Empty state */
+      .tm-empty {
+        text-align: center;
+        padding: 64px 24px;
+        background: var(--tm-surface-1);
+        border: 1px dashed var(--tm-border-strong);
+        border-radius: var(--tm-radius);
+      }
+      .tm-empty-icon {
+        width: 56px; height: 56px;
+        border-radius: 16px;
+        background: var(--tm-surface-2);
+        display: inline-grid; place-items: center;
+        font-size: 26px;
+        margin-bottom: 16px;
+        box-shadow: 0 0 0 1px var(--tm-border) inset;
+      }
+      .tm-empty h3 { margin: 0 0 6px; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+      .tm-empty p  { margin: 0 0 20px; color: var(--tm-text-muted); font-size: 13px; }
+
+      /* Group list */
+      .tm-group-list { margin: 8px 0 0; padding-left: 20px; color: var(--tm-text-muted); font-size: 13px; }
+      .tm-group-list li { margin-bottom: 2px; }
 
       /* Settings */
-      .tm-settings .tm-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px; }
-      .tm-field-inline { display: block; margin-bottom: 12px; }
-      .tm-field-inline span { display: block; color: var(--secondary-text-color, #9aa0a6); font-size: 12px; margin-bottom: 4px; }
-      .tm-field-inline input, .tm-field-inline select { width: 100%; background: var(--secondary-background-color, #242830); border: 1px solid var(--divider-color, #2a2e36); border-radius: 8px; padding: 8px 12px; color: var(--primary-text-color); font-size: 14px; box-sizing: border-box; font-family: inherit; }
+      .tm-settings { display: flex; flex-direction: column; gap: 16px; }
+      .tm-section {
+        background: linear-gradient(180deg, var(--tm-surface-1), var(--tm-surface-0));
+        border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius);
+        overflow: hidden;
+        box-shadow: var(--tm-shadow-sm);
+        position: relative;
+      }
+      .tm-section::before {
+        content: "";
+        position: absolute; top: 0; left: 1px; right: 1px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--tm-text), transparent 88%), transparent);
+      }
+      .tm-section-head {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--tm-border-soft);
+      }
+      .tm-section-head h3 { margin: 0 0 2px; font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
+      .tm-section-head p  { margin: 0; color: var(--tm-text-faint); font-size: 12px; }
+      .tm-section-body { padding: 8px 20px 16px; }
+      .tm-setting-row {
+        display: grid; grid-template-columns: 240px 1fr;
+        gap: 24px; align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--tm-border-soft);
+      }
+      .tm-setting-row:last-child { border-bottom: 0; }
+      .tm-setting-label { color: var(--tm-text); font-size: 13px; font-weight: 500; }
+      .tm-setting-label small { display: block; color: var(--tm-text-faint); font-weight: 400; font-size: 12px; margin-top: 2px; }
+      .tm-setting-row input[type=text],
+      .tm-setting-row input[type=number],
+      .tm-setting-row select {
+        background: var(--tm-surface-2);
+        border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm);
+        padding: 8px 12px;
+        color: var(--tm-text);
+        font-size: 13px;
+        font-family: inherit;
+        max-width: 360px;
+        transition: all 0.15s var(--tm-easing);
+      }
+      .tm-setting-row input:focus, .tm-setting-row select:focus {
+        outline: 0;
+        border-color: var(--tm-accent);
+        box-shadow: 0 0 0 3px var(--tm-accent-soft);
+      }
+      .tm-settings-foot {
+        display: flex; justify-content: flex-end;
+        padding-top: 8px;
+      }
+
+      /* iOS-style switch */
+      .tm-switch {
+        position: relative; display: inline-block;
+        width: 44px; height: 26px; flex-shrink: 0;
+      }
+      .tm-switch input { opacity: 0; width: 0; height: 0; }
+      .tm-slider {
+        position: absolute; inset: 0;
+        background: var(--tm-surface-3);
+        border-radius: 999px;
+        transition: background 0.2s var(--tm-easing);
+        cursor: pointer;
+        box-shadow: 0 0 0 1px var(--tm-border) inset;
+      }
+      .tm-slider::before {
+        content: ''; position: absolute;
+        height: 20px; width: 20px;
+        left: 3px; top: 3px;
+        background: white; border-radius: 50%;
+        transition: transform 0.2s var(--tm-easing);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      }
+      .tm-switch input:checked + .tm-slider {
+        background: var(--tm-accent);
+        box-shadow: 0 0 0 1px var(--tm-accent) inset, 0 0 12px var(--tm-accent-glow);
+      }
+      .tm-switch input:checked + .tm-slider::before { transform: translateX(18px); }
 
       /* Dialog */
-      .tm-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: flex-start; justify-content: center; padding: 60px 20px; z-index: 100; overflow-y: auto; }
-      .tm-dialog { background: var(--card-background-color, #1c1f24); border: 1px solid var(--divider-color, #2a2e36); border-radius: 12px; width: 100%; max-width: 560px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; max-height: calc(100vh - 120px); }
-      .tm-dialog-head { padding: 16px 20px; border-bottom: 1px solid var(--divider-color, #2a2e36); display: flex; align-items: center; }
-      .tm-dialog-head h2 { margin: 0; font-size: 18px; font-weight: 500; flex: 1; }
-      .tm-dialog-body { padding: 16px 20px; overflow-y: auto; }
-      .tm-dialog-body .tm-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      .tm-dialog-foot { padding: 14px 20px; border-top: 1px solid var(--divider-color, #2a2e36); display: flex; justify-content: flex-end; gap: 10px; }
+      .tm-scrim {
+        position: fixed; inset: 0;
+        background: color-mix(in srgb, var(--tm-bg), transparent 30%);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        display: flex; align-items: flex-start; justify-content: center;
+        padding: 60px 20px; z-index: 100;
+        overflow-y: auto;
+        animation: tm-scrim-in 0.2s var(--tm-easing);
+      }
+      @keyframes tm-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+      .tm-dialog {
+        background: linear-gradient(180deg, var(--tm-surface-2), var(--tm-surface-1));
+        border: 1px solid var(--tm-border-strong);
+        border-radius: var(--tm-radius-lg);
+        width: 100%; max-width: 560px;
+        box-shadow: var(--tm-shadow-lg);
+        display: flex; flex-direction: column;
+        max-height: calc(100vh - 120px);
+        overflow: hidden;
+        animation: tm-dialog-in 0.25s var(--tm-easing);
+        position: relative;
+      }
+      .tm-dialog::before {
+        content: "";
+        position: absolute; top: 0; left: 1px; right: 1px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--tm-text), transparent 86%), transparent);
+      }
+      @keyframes tm-dialog-in { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
 
-      .tm-field { display: block; margin-bottom: 16px; }
-      .tm-field-label { display: block; color: var(--secondary-text-color, #9aa0a6); font-size: 12px; margin-bottom: 6px; font-weight: 500; }
-      .tm-field input, .tm-field select { width: 100%; background: var(--secondary-background-color, #242830); border: 1px solid var(--divider-color, #2a2e36); border-radius: 8px; padding: 9px 12px; color: var(--primary-text-color, #e1e3e6); font-size: 14px; box-sizing: border-box; font-family: inherit; }
-      .tm-field input:focus, .tm-field select:focus { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: -1px; border-color: transparent; }
-      .tm-field-hint { display: block; color: var(--secondary-text-color, #6a7079); font-size: 12px; margin-top: 6px; line-height: 1.4; }
-      .tm-field-hint code { background: var(--code-editor-background-color, #0e1115); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+      .tm-dialog-head {
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--tm-border-soft);
+        display: flex; align-items: center;
+      }
+      .tm-dialog-head h2 {
+        margin: 0; font-size: 16px; font-weight: 600;
+        letter-spacing: -0.01em;
+        flex: 1;
+      }
+      .tm-dialog-body { padding: 18px 22px; overflow-y: auto; }
+      .tm-dialog-foot {
+        padding: 14px 22px;
+        border-top: 1px solid var(--tm-border-soft);
+        background: var(--tm-surface-0);
+        display: flex; justify-content: flex-end; gap: 8px;
+      }
 
-      .tm-multi { display: flex; gap: 6px; flex-wrap: wrap; }
-      .tm-chip-btn { background: var(--secondary-background-color, #242830); color: var(--secondary-text-color, #9aa0a6); border: 1px solid var(--divider-color, #2a2e36); padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 13px; font-family: inherit; }
-      .tm-chip-btn:hover { color: var(--primary-text-color, #e1e3e6); }
-      .tm-chip-on { background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #001a26); border-color: var(--primary-color, #03a9f4); }
+      .tm-field { display: block; margin-bottom: 18px; }
+      .tm-field-label { display: block; color: var(--tm-text-muted); font-size: 12px; margin-bottom: 6px; font-weight: 500; }
+      .tm-field input[type=text], .tm-field input[type=number], .tm-field input[type=date], .tm-field select {
+        width: 100%;
+        background: var(--tm-surface-1);
+        border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm);
+        padding: 10px 12px;
+        color: var(--tm-text);
+        font-size: 13px;
+        font-family: inherit;
+        box-sizing: border-box;
+        transition: all 0.15s var(--tm-easing);
+      }
+      .tm-field input:focus, .tm-field select:focus {
+        outline: 0;
+        border-color: var(--tm-accent);
+        box-shadow: 0 0 0 3px var(--tm-accent-soft);
+      }
+      .tm-field-hint {
+        display: block; color: var(--tm-text-faint);
+        font-size: 11px; margin-top: 6px; line-height: 1.5;
+      }
+      .tm-field-hint code {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        background: var(--tm-surface-2); padding: 1px 5px;
+        border-radius: 3px; font-size: 10px;
+      }
+      .tm-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+      /* HA pickers — make them blend with the dialog form */
+      .tm-field ha-icon-picker, .tm-field ha-entity-picker,
+      .tm-section-body ha-icon-picker {
+        display: block; width: 100%;
+      }
+
+      /* Chip multi-select */
+      .tm-chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+      .tm-chip-btn {
+        background: var(--tm-surface-1);
+        color: var(--tm-text-muted);
+        border: 1px solid var(--tm-border);
+        padding: 6px 12px; border-radius: 999px;
+        font-size: 12px; font-weight: 500;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.12s var(--tm-easing);
+      }
+      .tm-chip-btn:hover { color: var(--tm-text); border-color: var(--tm-border-strong); }
+      .tm-chip-on {
+        background: var(--tm-accent-soft);
+        color: var(--tm-accent);
+        border-color: var(--tm-accent);
+      }
 
       .tm-day-row { display: flex; gap: 6px; flex-wrap: wrap; }
-      .tm-day-btn { width: 44px; height: 36px; background: var(--secondary-background-color, #242830); color: var(--secondary-text-color, #9aa0a6); border: 1px solid var(--divider-color, #2a2e36); border-radius: 6px; cursor: pointer; font-size: 12px; font-family: inherit; }
-      .tm-day-on { background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #001a26); border-color: var(--primary-color, #03a9f4); }
+      .tm-day-btn {
+        width: 42px; height: 36px;
+        background: var(--tm-surface-1);
+        color: var(--tm-text-muted);
+        border: 1px solid var(--tm-border);
+        border-radius: 8px;
+        font-size: 12px; font-weight: 500;
+        font-family: inherit; cursor: pointer;
+        transition: all 0.12s var(--tm-easing);
+      }
+      .tm-day-on {
+        background: var(--tm-accent); color: white;
+        border-color: var(--tm-accent);
+        box-shadow: 0 1px 4px var(--tm-accent-glow);
+      }
 
-      .tm-check-row { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; color: var(--primary-text-color, #e1e3e6); font-size: 14px; }
+      .tm-check-row {
+        display: flex; align-items: flex-start; gap: 14px;
+        padding: 12px 0;
+        border-top: 1px solid var(--tm-border-soft);
+      }
+      .tm-check-row:first-child { border-top: 0; padding-top: 0; }
       .tm-check-row > div { flex: 1; }
-      .tm-switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
-      .tm-switch input { opacity: 0; width: 0; height: 0; }
-      .tm-slider { position: absolute; inset: 0; background: var(--secondary-background-color, #242830); border: 1px solid var(--divider-color, #2a2e36); border-radius: 999px; transition: background .15s; cursor: pointer; }
-      .tm-slider::before { content: ''; position: absolute; height: 16px; width: 16px; left: 2px; top: 2px; background: white; border-radius: 50%; transition: transform .15s; }
-      .tm-switch input:checked + .tm-slider { background: var(--primary-color, #03a9f4); border-color: var(--primary-color, #03a9f4); }
-      .tm-switch input:checked + .tm-slider::before { transform: translateX(16px); }
+      .tm-check-title { font-size: 13px; color: var(--tm-text); font-weight: 500; }
 
-      .tm-advanced { border: 1px dashed var(--divider-color, #2a2e36); border-radius: 8px; padding: 10px 14px; margin-top: 8px; }
-      .tm-advanced summary { cursor: pointer; color: var(--secondary-text-color, #9aa0a6); font-size: 13px; user-select: none; }
+      /* Advanced */
+      details.tm-advanced {
+        background: var(--tm-surface-0);
+        border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm);
+        margin-top: 16px;
+        overflow: hidden;
+      }
+      details.tm-advanced summary {
+        cursor: pointer; padding: 12px 14px;
+        color: var(--tm-text-muted); font-size: 12px; font-weight: 500;
+        user-select: none; list-style: none;
+        display: flex; align-items: center; gap: 8px;
+      }
+      details.tm-advanced summary::-webkit-details-marker { display: none; }
+      details.tm-advanced summary::before {
+        content: "▸";
+        transition: transform 0.15s var(--tm-easing);
+        color: var(--tm-text-faint);
+        font-size: 10px;
+      }
+      details.tm-advanced[open] summary::before { transform: rotate(90deg); }
+      details.tm-advanced > div {
+        padding: 14px;
+        border-top: 1px solid var(--tm-border-soft);
+      }
 
       /* Toast */
-      .tm-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 10px 18px; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); z-index: 200; }
-      .tm-toast-ok { background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #001a26); }
-      .tm-toast-err { background: var(--error-color, #ef5350); color: white; }
+      .tm-toast {
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+        padding: 10px 18px; border-radius: var(--tm-radius-sm);
+        font-size: 13px; font-weight: 500;
+        box-shadow: var(--tm-shadow);
+        z-index: 200;
+        animation: tm-toast-in 0.25s var(--tm-easing);
+      }
+      @keyframes tm-toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translateX(-50%); } }
+      .tm-toast-ok  { background: var(--tm-accent); color: white; box-shadow: 0 4px 16px var(--tm-accent-glow); }
+      .tm-toast-err { background: var(--tm-danger); color: white; }
 
       @media (max-width: 700px) {
         .tm-body { padding: 16px; }
@@ -1370,7 +2045,8 @@ class TaskMatePanel extends HTMLElement {
         .tm-dialog { max-width: none; }
         .tm-scrim { padding: 0; }
         .tm-dialog { border-radius: 0; max-height: 100vh; height: 100vh; }
-        .tm-dialog-body .tm-field-row, .tm-settings .tm-field-row { grid-template-columns: 1fr; }
+        .tm-dialog-body .tm-field-row { grid-template-columns: 1fr; }
+        .tm-setting-row { grid-template-columns: 1fr; gap: 6px; }
       }
     </style>`;
   }
