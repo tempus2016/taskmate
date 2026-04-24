@@ -10,7 +10,7 @@
  * Lovelace view has been opened.
  */
 
-const PANEL_VERSION = "3.5.0-alpha.1";
+const PANEL_VERSION = "3.5.0-alpha.2";
 
 class TaskMatePanel extends HTMLElement {
   constructor() {

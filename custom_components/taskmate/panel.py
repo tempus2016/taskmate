@@ -14,7 +14,10 @@ from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 PANEL_REGISTERED: Final = "panel_registered"
-PANEL_URL_PATH: Final = "taskmate"
+# URL slug must NOT collide with the /taskmate/ static-files prefix used by
+# frontend.py — a bare GET /taskmate gets caught by the static handler trying
+# to serve a directory and returns 403. Sidebar label is unaffected.
+PANEL_URL_PATH: Final = "taskmate-admin"
 PANEL_WEBCOMPONENT: Final = "taskmate-panel"
 PANEL_MODULE_FILE: Final = "taskmate-panel.js"
 
