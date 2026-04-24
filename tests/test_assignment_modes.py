@@ -920,8 +920,7 @@ class TestManualStart:
         # Pool should now start with B (today's active child).
         assert chore.assigned_to[0] == b.id
         assert chore.assignment_current_child_id == b.id
-        # Day 1 in rotation → next in new pool order.
-        tomorrow = anchor + dt.timedelta(days=1)
+        # Day 1 in the rotation uses the new anchor + new pool order.
         new_anchor = date.fromisoformat(chore.assignment_rotation_anchor)
         assert coord._compute_active_children(chore, new_anchor + dt.timedelta(days=1))[0] == chore.assigned_to[1]
 
