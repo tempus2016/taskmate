@@ -1,22 +1,20 @@
 /**
  * TaskMate admin panel — sidebar entry at /taskmate-admin.
  *
- * v3.5.0-alpha.8 — Shopify-grade theme + 8 new features:
- *   - Light theme rebuilt from scratch (warm off-white bg, crisp white
- *     cards, layered shadows, Inter typography). Dark theme retained.
- *   - Backdrop blur reduced from 16/12/8 to 2px throughout.
- *   - New "Activity" tab: approval queue (chores + rewards) + recent
- *     events feed + full points-transaction audit log.
- *   - Approval pill in app bar — shows pending count, jumps to Activity.
- *   - Search/filter input on Children, Chores, Rewards, Penalties,
- *     Bonuses, Groups tabs. Filters by name (case-insensitive).
- *   - Bulk add chores: textarea + shared settings, one WS call.
- *   - Reorder chores per child: drag-and-drop dialog.
- *   - Inline chore rename: double-click the name in the table.
- *   - Confirm-on-leave when dialogs have unsaved changes.
+ * v3.5.0-alpha.9 — sidebar layout + connection recovery:
+ *   - Left-rail navigation replaces horizontal tabs (grouped by section).
+ *     Horizontal tab row falls back automatically on narrow screens.
+ *   - Slim topbar: breadcrumbs, approval pill, version chip.
+ *   - Refined token system: light is the primary aesthetic (cleaner
+ *     #fafafa/#fff palette, sharper #2563eb accent, less roundness,
+ *     border-first instead of shadow-heavy). Dark inverted to match.
+ *   - Connection recovery: refetch state when WS reconnects after a
+ *     drop and when the tab becomes visible again. Fixes blank-panel
+ *     after the tab has been idle for a while.
+ *   - _fetchState retries once on transient failure.
  */
 
-const PANEL_VERSION = "3.5.0-alpha.8";
+const PANEL_VERSION = "3.5.0-alpha.9";
 
 const TABS = [
   { id: "children",  label: "Children" },
@@ -124,12 +122,27 @@ class TaskMatePanel extends HTMLElement {
     this._onDragStart = this._onDragStart.bind(this);
     this._onDragOver = this._onDragOver.bind(this);
     this._onDrop = this._onDrop.bind(this);
+    this._onVisibilityChange = this._onVisibilityChange.bind(this);
+    this._lastConnected = null;
   }
 
   set hass(value) {
     const first = this._hass === null;
+    const prevConnected = this._lastConnected;
     this._hass = value;
-    if (first) this._fetchState();
+    const connNow = !!(value && value.connection && value.connection.connected !== false);
+    this._lastConnected = connNow;
+
+    if (first) {
+      this._fetchState();
+    } else if (connNow && prevConnected === false) {
+      // WS reconnected after a drop — refetch so the panel reflects current state.
+      this._fetchState();
+    } else if (connNow && this._error) {
+      // Recover from a previous fetch failure (e.g. WS was mid-handshake earlier).
+      this._error = null;
+      this._fetchState();
+    }
     if (!this._rendered) this._render();
     this._bindHaPickers();
   }
@@ -148,6 +161,7 @@ class TaskMatePanel extends HTMLElement {
     this.addEventListener("dragstart", this._onDragStart);
     this.addEventListener("dragover", this._onDragOver);
     this.addEventListener("drop", this._onDrop);
+    document.addEventListener("visibilitychange", this._onVisibilityChange);
     if (!this._rendered) this._render();
   }
   disconnectedCallback() {
@@ -160,10 +174,18 @@ class TaskMatePanel extends HTMLElement {
     this.removeEventListener("dragstart", this._onDragStart);
     this.removeEventListener("dragover", this._onDragOver);
     this.removeEventListener("drop", this._onDrop);
+    document.removeEventListener("visibilitychange", this._onVisibilityChange);
+  }
+
+  _onVisibilityChange() {
+    if (document.visibilityState !== "visible") return;
+    if (!this._hass) return;
+    // Tab woke up — if we're showing an error or have no state, refetch.
+    if (this._error || !this._state) this._fetchState();
   }
 
   // ---- state -----------------------------------------------------------
-  async _fetchState() {
+  async _fetchState(_attempt = 0) {
     if (!this._hass) return;
     this._loading = true;
     this._render();
@@ -171,6 +193,13 @@ class TaskMatePanel extends HTMLElement {
       this._state = await this._hass.callWS({ type: "taskmate/get_state" });
       this._error = null;
     } catch (err) {
+      // Retry once after a short delay — covers the race where the WS is
+      // still mid-reconnect when we make the call.
+      if (_attempt < 1) {
+        this._loading = false;
+        await new Promise(r => setTimeout(r, 800));
+        return this._fetchState(_attempt + 1);
+      }
       this._error = (err && err.message) || String(err);
       this._state = null;
     } finally {
@@ -836,13 +865,15 @@ class TaskMatePanel extends HTMLElement {
     this.innerHTML = `
       ${this._styles()}
       <div class="tm-shell">
-        <div class="tm-bg-glow"></div>
-        ${this._appbar()}
-        ${this._tabstrip()}
-        ${this._approvalBanner()}
-        <div class="tm-body">
-          <div class="tm-body-inner">
-            ${this._renderBody()}
+        ${this._sidebar()}
+        <div class="tm-main">
+          ${this._topbar()}
+          ${this._mobileTabs()}
+          ${this._approvalBanner()}
+          <div class="tm-body">
+            <div class="tm-body-inner">
+              ${this._renderBody()}
+            </div>
           </div>
         </div>
         ${this._dialog ? this._renderDialog() : ""}
@@ -852,30 +883,7 @@ class TaskMatePanel extends HTMLElement {
     this._bindHaPickers();
   }
 
-  _appbar() {
-    const crumb = (TABS.find(t => t.id === this._activeTab) || {}).label || "";
-    const crumbLabel = (this._activeTab === "settings") ? "Settings" : crumb;
-    const pendingCount = this._state
-      ? (this._state.pending_completions || []).length + (this._state.pending_reward_claims || []).length
-      : 0;
-    return `
-      <div class="tm-appbar">
-        <div class="tm-appbar-icon">
-          <ha-icon icon="mdi:checkbox-marked-circle-plus-outline"></ha-icon>
-        </div>
-        <h1 class="tm-appbar-title">TaskMate <span class="tm-sep">/</span> <span class="tm-crumb">${this._esc(crumbLabel)}</span></h1>
-        ${pendingCount > 0 ? `
-          <button class="tm-approval-pill" data-act="switch-to-activity" title="${pendingCount} pending — click to review">
-            <span class="tm-approval-dot"></span>
-            ${pendingCount} pending
-          </button>
-        ` : ""}
-        <span class="tm-version-chip">v${PANEL_VERSION}</span>
-      </div>
-    `;
-  }
-
-  _tabstrip() {
+  _sidebarGroups() {
     const counts = this._state ? {
       children:  (this._state.children || []).length,
       activity:  (this._state.pending_completions || []).length + (this._state.pending_reward_claims || []).length,
@@ -885,15 +893,97 @@ class TaskMatePanel extends HTMLElement {
       bonuses:   (this._state.bonuses || []).length,
       groups:    (this._state.task_groups || []).length,
     } : {};
+    return [
+      { head: "Today", items: [
+        { id: "activity", label: "Activity", icon: "mdi:pulse" },
+      ]},
+      { head: "Manage", items: [
+        { id: "children",  label: "Children",  icon: "mdi:account-multiple" },
+        { id: "chores",    label: "Chores",    icon: "mdi:check-circle-outline" },
+        { id: "rewards",   label: "Rewards",   icon: "mdi:gift-outline" },
+        { id: "penalties", label: "Penalties", icon: "mdi:alert-circle-outline" },
+        { id: "bonuses",   label: "Bonuses",   icon: "mdi:flash-outline" },
+        { id: "groups",    label: "Groups",    icon: "mdi:layers-outline" },
+      ]},
+      { head: "System", items: [
+        { id: "settings", label: "Settings", icon: "mdi:cog-outline" },
+      ]},
+    ].map(g => ({
+      ...g,
+      items: g.items.map(it => ({ ...it, count: counts[it.id] }))
+    }));
+  }
+
+  _sidebar() {
+    const groups = this._sidebarGroups();
     return `
-      <nav class="tm-tabs">
-        ${TABS.map(t => {
-          const cnt = counts[t.id];
-          const showCount = cnt != null && cnt > 0;
-          const urgent = t.id === "activity" && cnt > 0;
+      <aside class="tm-sidebar">
+        <div class="tm-brand">
+          <div class="tm-brand-mark"><ha-icon icon="mdi:checkbox-marked-circle-plus-outline"></ha-icon></div>
+          <div class="tm-brand-text">
+            TaskMate
+            <small>v${PANEL_VERSION}</small>
+          </div>
+        </div>
+        <nav class="tm-nav">
+          ${groups.map(g => `
+            <div class="tm-nav-group">
+              <div class="tm-nav-head">${this._esc(g.head)}</div>
+              ${g.items.map(it => {
+                const active = it.id === this._activeTab;
+                const urgent = it.id === "activity" && it.count > 0;
+                const showCount = it.count != null && it.count > 0;
+                return `
+                  <button class="tm-nav-item ${active ? "tm-nav-active" : ""}" data-act="tab" data-tab="${it.id}">
+                    <span class="tm-nav-icon"><ha-icon icon="${it.icon}"></ha-icon></span>
+                    <span class="tm-nav-label">${this._esc(it.label)}</span>
+                    ${showCount ? `<span class="tm-nav-badge ${urgent ? "tm-nav-badge-urgent" : ""}">${it.count}</span>` : ""}
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          `).join("")}
+        </nav>
+      </aside>
+    `;
+  }
+
+  _topbar() {
+    const crumb = this._sidebarGroups()
+      .flatMap(g => g.items)
+      .find(i => i.id === this._activeTab);
+    const crumbLabel = crumb ? crumb.label : "";
+    const pendingCount = this._state
+      ? (this._state.pending_completions || []).length + (this._state.pending_reward_claims || []).length
+      : 0;
+    return `
+      <div class="tm-topbar">
+        <div class="tm-crumbs">
+          <span class="tm-crumbs-root">TaskMate</span>
+          <span class="tm-crumbs-sep">/</span>
+          <strong>${this._esc(crumbLabel)}</strong>
+        </div>
+        ${pendingCount > 0 && this._activeTab !== "activity" ? `
+          <button class="tm-approval-pill" data-act="switch-to-activity" title="${pendingCount} pending — click to review">
+            <span class="tm-approval-dot"></span>
+            ${pendingCount} pending
+          </button>
+        ` : ""}
+      </div>
+    `;
+  }
+
+  _mobileTabs() {
+    const groups = this._sidebarGroups();
+    return `
+      <nav class="tm-mobile-tabs">
+        ${groups.flatMap(g => g.items).map(it => {
+          const active = it.id === this._activeTab;
+          const urgent = it.id === "activity" && it.count > 0;
+          const showCount = it.count != null && it.count > 0;
           return `
-            <button class="tm-tab ${t.id === this._activeTab ? "tm-tab-active" : ""}" data-act="tab" data-tab="${t.id}" ${t.title ? `title="${t.title}"` : ""}>
-              ${this._esc(t.label)}${showCount ? `<span class="tm-tab-pill ${urgent ? "tm-tab-pill-urgent" : ""}">${cnt}</span>` : ""}
+            <button class="tm-mtab ${active ? "tm-mtab-active" : ""}" data-act="tab" data-tab="${it.id}">
+              ${this._esc(it.label)}${showCount ? `<span class="tm-mtab-pill ${urgent ? "tm-mtab-pill-urgent" : ""}">${it.count}</span>` : ""}
             </button>
           `;
         }).join("")}
@@ -1866,211 +1956,290 @@ class TaskMatePanel extends HTMLElement {
       taskmate-panel {
         display: block; height: 100%;
 
-        /* ===== Default token set (DARK) — overridden in light @media below */
-        --tm-bg:           var(--primary-background-color, #08090b);
-        --tm-text:         var(--primary-text-color,        #f4f5f7);
-        --tm-text-muted:   var(--secondary-text-color,      #a8aeb8);
-        --tm-text-faint:   var(--disabled-text-color,       #6b7280);
-        --tm-text-vfaint:  color-mix(in srgb, var(--tm-text), transparent 70%);
+        /* ===== Light is the default ===== */
+        --tm-bg:            #fafafa;
+        --tm-surface-0:     #ffffff;
+        --tm-surface-1:     #ffffff;
+        --tm-surface-2:     #f5f5f5;
+        --tm-surface-3:     #ebebeb;
+        --tm-surface-hover: #f5f5f5;
 
-        --tm-accent:       var(--primary-color,             #5eb1ff);
-        --tm-accent-press: color-mix(in srgb, var(--tm-accent), black 12%);
-        --tm-accent-soft:  color-mix(in srgb, var(--tm-accent), transparent 88%);
-        --tm-accent-glow:  color-mix(in srgb, var(--tm-accent), transparent 78%);
+        --tm-border:        #e5e5e5;
+        --tm-border-strong: #d4d4d4;
+        --tm-border-soft:   #ededed;
 
-        --tm-surface-0: color-mix(in srgb, var(--tm-bg), var(--tm-text) 3%);
-        --tm-surface-1: color-mix(in srgb, var(--tm-bg), var(--tm-text) 5%);
-        --tm-surface-2: color-mix(in srgb, var(--tm-bg), var(--tm-text) 9%);
-        --tm-surface-3: color-mix(in srgb, var(--tm-bg), var(--tm-text) 13%);
-        --tm-surface-hover: color-mix(in srgb, var(--tm-bg), var(--tm-text) 7%);
+        --tm-text:          #0a0a0a;
+        --tm-text-muted:    #525252;
+        --tm-text-faint:    #737373;
+        --tm-text-vfaint:   #a3a3a3;
 
-        --tm-border:        color-mix(in srgb, var(--tm-text), transparent 92%);
-        --tm-border-strong: color-mix(in srgb, var(--tm-text), transparent 86%);
-        --tm-border-soft:   color-mix(in srgb, var(--tm-text), transparent 95%);
+        --tm-accent:        #2563eb;
+        --tm-accent-hover:  #1d4ed8;
+        --tm-accent-press:  #1e40af;
+        --tm-accent-soft:   #eff6ff;
+        --tm-accent-border: #bfdbfe;
+        --tm-accent-text:   #1e40af;
+        --tm-accent-glow:   rgba(37,99,235,0.15);
 
-        --tm-positive:     var(--success-color,             #4ade80);
-        --tm-positive-soft: color-mix(in srgb, var(--tm-positive), transparent 90%);
-        --tm-warning:      var(--warning-color,             #fbbf24);
-        --tm-warning-soft: color-mix(in srgb, var(--tm-warning), transparent 90%);
-        --tm-danger:       var(--error-color,               #f87171);
-        --tm-danger-soft:  color-mix(in srgb, var(--tm-danger), transparent 90%);
+        --tm-positive:      #16a34a;
+        --tm-positive-soft: #f0fdf4;
+        --tm-positive-border:#bbf7d0;
+        --tm-warning:       #d97706;
+        --tm-warning-soft:  #fffbeb;
+        --tm-warning-border:#fde68a;
+        --tm-danger:        #dc2626;
+        --tm-danger-soft:   #fef2f2;
+        --tm-danger-border: #fecaca;
 
-        --tm-gold:   #f5b300;
-        --tm-pool:   #fb923c;
-        --tm-sticky: #c084fc;
+        --tm-gold:          #ca8a04;
+        --tm-gold-soft:     #fefce8;
+        --tm-pool:          #c2410c;
+        --tm-pool-soft:     #fff7ed;
+        --tm-sticky:        #7c3aed;
+        --tm-sticky-soft:   #f5f3ff;
 
-        --tm-radius-sm: 8px;
-        --tm-radius:    12px;
-        --tm-radius-lg: 16px;
+        --tm-radius-sm:     6px;
+        --tm-radius:        8px;
+        --tm-radius-lg:     12px;
 
-        --tm-shadow-sm: 0 1px 2px rgba(0,0,0,0.18);
-        --tm-shadow:    0 4px 12px rgba(0,0,0,0.22);
-        --tm-shadow-lg: 0 24px 48px -12px rgba(0,0,0,0.40);
-        --tm-easing:    cubic-bezier(0.16, 1, 0.3, 1);
+        --tm-shadow-xs:     0 1px 2px rgba(0,0,0,0.04);
+        --tm-shadow-sm:     0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+        --tm-shadow:        0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+        --tm-shadow-lg:     0 24px 48px -12px rgba(0,0,0,0.18), 0 8px 16px -4px rgba(0,0,0,0.06);
+        --tm-shadow-focus:  0 0 0 3px var(--tm-accent-glow);
+        --tm-easing:        cubic-bezier(0.16, 1, 0.3, 1);
+
+        --tm-sidebar-w:     240px;
 
         background: var(--tm-bg);
         color: var(--tm-text);
-        font-family: var(--paper-font-body1_-_font-family,
-                     -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display",
+        font-family: "Inter", var(--paper-font-body1_-_font-family,
+                     -apple-system, BlinkMacSystemFont, "SF Pro Text",
                      "Segoe UI", Roboto, sans-serif);
-        font-size: 14px;
+        font-size: 13px;
         line-height: 1.5;
-        letter-spacing: -0.005em;
+        letter-spacing: -0.003em;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        font-feature-settings: "cv11", "ss01", "ss03";
+        font-feature-settings: "cv11", "ss01";
       }
 
-      /* ===== LIGHT theme — Shopify Polaris-inspired explicit overrides ===== */
-      @media (prefers-color-scheme: light) {
+      /* ===== Dark theme override ===== */
+      @media (prefers-color-scheme: dark) {
         taskmate-panel {
-          --tm-bg:            #f6f7f9;
-          --tm-text:          #1a1c1f;
-          --tm-text-muted:    #4b5563;
-          --tm-text-faint:    #6b7280;
-          --tm-text-vfaint:   #9ca3af;
+          --tm-bg:            #0a0a0a;
+          --tm-surface-0:     #111111;
+          --tm-surface-1:     #161616;
+          --tm-surface-2:     #1c1c1c;
+          --tm-surface-3:     #242424;
+          --tm-surface-hover: #1c1c1c;
 
-          /* Crisp white cards on warm off-white bg */
-          --tm-surface-0:     #ffffff;
-          --tm-surface-1:     #ffffff;
-          --tm-surface-2:     #f3f4f6;
-          --tm-surface-3:     #e5e7eb;
-          --tm-surface-hover: #fafbfc;
+          --tm-border:        #262626;
+          --tm-border-strong: #333333;
+          --tm-border-soft:   #1f1f1f;
 
-          --tm-border:        #e5e7eb;
-          --tm-border-strong: #d1d5db;
-          --tm-border-soft:   #f1f3f5;
+          --tm-text:          #fafafa;
+          --tm-text-muted:    #a3a3a3;
+          --tm-text-faint:    #737373;
+          --tm-text-vfaint:   #525252;
 
-          --tm-accent-soft:   color-mix(in srgb, var(--tm-accent), white 88%);
-          --tm-accent-glow:   color-mix(in srgb, var(--tm-accent), transparent 80%);
+          --tm-accent:        #60a5fa;
+          --tm-accent-hover:  #93c5fd;
+          --tm-accent-press:  #3b82f6;
+          --tm-accent-soft:   rgba(96,165,250,0.10);
+          --tm-accent-border: rgba(96,165,250,0.25);
+          --tm-accent-text:   #93c5fd;
+          --tm-accent-glow:   rgba(96,165,250,0.20);
 
-          /* Crisp layered shadows in the Shopify Polaris style */
-          --tm-shadow-sm:     0 1px 0 rgba(15,15,15,0.04), 0 0 0 1px rgba(15,15,15,0.04);
-          --tm-shadow:        0 1px 3px rgba(15,15,15,0.05), 0 4px 12px rgba(15,15,15,0.04);
-          --tm-shadow-lg:     0 12px 32px -8px rgba(15,15,15,0.18);
+          --tm-positive:      #4ade80;
+          --tm-positive-soft: rgba(74,222,128,0.10);
+          --tm-positive-border:rgba(74,222,128,0.25);
+          --tm-warning:       #fbbf24;
+          --tm-warning-soft:  rgba(251,191,36,0.10);
+          --tm-warning-border:rgba(251,191,36,0.25);
+          --tm-danger:        #f87171;
+          --tm-danger-soft:   rgba(248,113,113,0.10);
+          --tm-danger-border: rgba(248,113,113,0.25);
+
+          --tm-gold:          #f5b300;
+          --tm-gold-soft:     rgba(245,179,0,0.10);
+          --tm-pool:          #fb923c;
+          --tm-pool-soft:     rgba(251,146,60,0.10);
+          --tm-sticky:        #c084fc;
+          --tm-sticky-soft:   rgba(192,132,252,0.10);
+
+          --tm-shadow-xs:     0 1px 2px rgba(0,0,0,0.4);
+          --tm-shadow-sm:     0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+          --tm-shadow:        0 4px 12px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
+          --tm-shadow-lg:     0 24px 48px -12px rgba(0,0,0,0.7), 0 8px 16px -4px rgba(0,0,0,0.3);
         }
       }
 
-      .tm-shell { display: flex; flex-direction: column; height: 100%; position: relative; overflow: hidden; }
-      .tm-bg-glow {
-        position: absolute; inset: 0;
-        background:
-          radial-gradient(900px 600px at 90% -10%, color-mix(in srgb, var(--tm-accent), transparent 92%), transparent 60%),
-          radial-gradient(700px 500px at -10% 110%, color-mix(in srgb, var(--tm-sticky), transparent 94%), transparent 60%);
-        pointer-events: none;
-      }
-
-      /* App bar */
-      .tm-appbar {
-        position: relative; z-index: 5;
-        height: 56px; padding: 0 24px;
-        display: flex; align-items: center; gap: 14px;
-        flex-shrink: 0;
-        border-bottom: 1px solid var(--tm-border);
-        background: color-mix(in srgb, var(--tm-bg), transparent 14%);
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
-      }
-      .tm-appbar-icon {
-        width: 32px; height: 32px;
-        background: linear-gradient(135deg, var(--tm-accent), var(--tm-accent-press));
-        border-radius: 9px;
-        display: grid; place-items: center;
-        color: white;
-        box-shadow: 0 2px 8px var(--tm-accent-glow);
-      }
-      .tm-appbar-icon ha-icon { --mdc-icon-size: 18px; }
-      .tm-appbar-title {
-        margin: 0; font-size: 16px; font-weight: 600;
-        letter-spacing: -0.015em;
-        flex: 1;
-      }
-      .tm-sep   { color: var(--tm-text-vfaint); font-weight: 400; margin: 0 8px; }
-      .tm-crumb { color: var(--tm-text-muted); font-weight: 500; }
-      .tm-version-chip {
-        background: var(--tm-surface-2);
-        color: var(--tm-text-muted);
-        font-family: ui-monospace, "SF Mono", Menlo, monospace;
-        font-size: 11px;
-        padding: 4px 10px;
-        border-radius: 999px;
-        border: 1px solid var(--tm-border);
-      }
-      .tm-approval-pill {
-        background: var(--tm-warning-soft);
-        color: var(--tm-warning);
-        border: 1px solid color-mix(in srgb, var(--tm-warning), transparent 70%);
-        padding: 5px 12px 5px 10px;
-        border-radius: 999px;
-        font-size: 12px; font-weight: 600;
-        cursor: pointer;
-        font-family: inherit;
-        display: inline-flex; align-items: center; gap: 6px;
-        transition: all 0.12s var(--tm-easing);
-      }
-      .tm-approval-pill:hover { background: color-mix(in srgb, var(--tm-warning), transparent 80%); transform: translateY(-1px); }
-      .tm-approval-dot {
-        width: 8px; height: 8px; border-radius: 50%;
-        background: var(--tm-warning);
-        box-shadow: 0 0 8px var(--tm-warning);
-        animation: tm-pulse 2s ease-in-out infinite;
-      }
-      @keyframes tm-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
-
-      /* Tabs */
-      .tm-tabs {
-        position: relative; z-index: 4;
-        display: flex; padding: 0 16px;
-        border-bottom: 1px solid var(--tm-border);
-        background: color-mix(in srgb, var(--tm-bg), transparent 14%);
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
-        overflow-x: auto; scrollbar-width: none;
-        flex-shrink: 0;
-      }
-      .tm-tabs::-webkit-scrollbar { display: none; }
-      .tm-tab {
+      /* ===== Shell ===== */
+      .tm-shell {
+        display: grid;
+        grid-template-columns: var(--tm-sidebar-w) 1fr;
+        height: 100%;
         position: relative;
-        background: transparent; border: 0;
-        color: var(--tm-text-faint);
+        overflow: hidden;
+      }
+      .tm-main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+      /* ===== Sidebar ===== */
+      .tm-sidebar {
+        background: var(--tm-surface-0);
+        border-right: 1px solid var(--tm-border);
+        display: flex; flex-direction: column;
+        overflow: hidden;
+      }
+      .tm-brand {
+        display: flex; align-items: center; gap: 10px;
         padding: 14px 16px;
+        border-bottom: 1px solid var(--tm-border-soft);
+      }
+      .tm-brand-mark {
+        width: 28px; height: 28px;
+        border-radius: 7px;
+        background: linear-gradient(135deg, var(--tm-accent), var(--tm-accent-press));
+        color: #fff;
+        display: grid; place-items: center;
+        flex-shrink: 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.18);
+      }
+      .tm-brand-mark ha-icon { --mdc-icon-size: 16px; }
+      .tm-brand-text {
+        flex: 1; min-width: 0;
+        font-weight: 600; font-size: 14px;
+        letter-spacing: -0.01em;
+        line-height: 1.15;
+      }
+      .tm-brand-text small {
+        display: block;
+        font-weight: 400;
+        color: var(--tm-text-faint);
+        font-size: 11px;
+        font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+        margin-top: 1px;
+      }
+      .tm-nav {
+        padding: 10px 8px;
+        flex: 1;
+        overflow-y: auto;
+      }
+      .tm-nav-group { margin-bottom: 16px; }
+      .tm-nav-group:last-child { margin-bottom: 0; }
+      .tm-nav-head {
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--tm-text-faint);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 4px 10px 6px;
+      }
+      .tm-nav-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 7px 10px;
+        border-radius: var(--tm-radius-sm);
+        color: var(--tm-text-muted);
         cursor: pointer;
-        font-size: 13px; font-weight: 500;
-        letter-spacing: -0.005em;
-        white-space: nowrap;
-        display: flex; align-items: center; gap: 6px;
+        font-size: 13px;
+        font-weight: 500;
         font-family: inherit;
-        transition: color 0.15s var(--tm-easing);
+        background: transparent; border: 0;
+        width: 100%; text-align: left;
+        position: relative;
+        transition: all 0.1s var(--tm-easing);
       }
-      .tm-tab:hover       { color: var(--tm-text); }
-      .tm-tab-active      { color: var(--tm-text); }
-      .tm-tab-active::after {
-        content: "";
-        position: absolute;
-        left: 16px; right: 16px; bottom: -1px;
-        height: 2px; border-radius: 2px 2px 0 0;
+      .tm-nav-item:hover { background: var(--tm-surface-2); color: var(--tm-text); }
+      .tm-nav-active {
+        background: var(--tm-surface-2);
+        color: var(--tm-text);
+        font-weight: 600;
+      }
+      .tm-nav-active::before {
+        content: ""; position: absolute;
+        left: -8px; top: 6px; bottom: 6px; width: 2px;
         background: var(--tm-accent);
+        border-radius: 0 2px 2px 0;
       }
-      .tm-tab-pill {
-        background: var(--tm-surface-2); color: var(--tm-text-muted);
-        font-size: 10px; font-weight: 600;
-        padding: 1px 7px; border-radius: 999px;
+      .tm-nav-icon {
+        width: 16px; height: 16px;
+        display: grid; place-items: center;
+        color: var(--tm-text-faint);
+        flex-shrink: 0;
+      }
+      .tm-nav-icon ha-icon { --mdc-icon-size: 16px; }
+      .tm-nav-active .tm-nav-icon { color: var(--tm-accent); }
+      .tm-nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+      .tm-nav-badge {
+        font-size: 11px;
+        color: var(--tm-text-faint);
+        background: var(--tm-surface-3);
+        padding: 1px 7px;
+        border-radius: 999px;
+        font-variant-numeric: tabular-nums;
         line-height: 1.4;
       }
-      .tm-tab-active .tm-tab-pill { background: var(--tm-accent-soft); color: var(--tm-accent); }
-      .tm-tab-pill-urgent {
+      .tm-nav-active .tm-nav-badge {
+        background: var(--tm-accent-soft);
+        color: var(--tm-accent-text);
+      }
+      .tm-nav-badge-urgent {
         background: var(--tm-warning-soft) !important;
         color: var(--tm-warning) !important;
       }
 
+      /* ===== Topbar ===== */
+      .tm-topbar {
+        height: 52px;
+        display: flex; align-items: center; gap: 12px;
+        padding: 0 24px;
+        border-bottom: 1px solid var(--tm-border);
+        background: var(--tm-surface-0);
+        flex-shrink: 0;
+      }
+      .tm-crumbs {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 13px;
+        color: var(--tm-text-faint);
+        flex: 1;
+      }
+      .tm-crumbs strong {
+        color: var(--tm-text);
+        font-weight: 600;
+        letter-spacing: -0.005em;
+      }
+      .tm-crumbs-sep { color: var(--tm-text-vfaint); }
+      .tm-approval-pill {
+        background: var(--tm-warning-soft);
+        color: var(--tm-warning);
+        border: 1px solid var(--tm-warning-border);
+        padding: 4px 12px 4px 10px;
+        border-radius: 999px;
+        font-size: 12px; font-weight: 500;
+        cursor: pointer;
+        font-family: inherit;
+        display: inline-flex; align-items: center; gap: 6px;
+        transition: all 0.1s var(--tm-easing);
+      }
+      .tm-approval-pill:hover { filter: brightness(0.97); }
+      .tm-approval-dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--tm-warning);
+        animation: tm-pulse 2s ease-in-out infinite;
+      }
+      @keyframes tm-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+      /* ===== Mobile tabs (hidden by default, shown on narrow) ===== */
+      .tm-mobile-tabs { display: none; }
+
       /* Approval banner */
       .tm-approval-banner {
-        position: relative; z-index: 3;
         display: flex; align-items: center; gap: 12px;
         padding: 10px 24px;
         background: var(--tm-warning-soft);
-        border-bottom: 1px solid color-mix(in srgb, var(--tm-warning), transparent 70%);
-        color: color-mix(in srgb, var(--tm-warning), var(--tm-text) 50%);
+        border-bottom: 1px solid var(--tm-warning-border);
+        color: var(--tm-warning);
         font-size: 13px;
       }
       .tm-approval-banner ha-icon { --mdc-icon-size: 18px; color: var(--tm-warning); }
@@ -2078,19 +2247,20 @@ class TaskMatePanel extends HTMLElement {
       .tm-approval-banner strong { color: var(--tm-text); font-weight: 600; }
 
       /* Body */
-      .tm-body { flex: 1; overflow-y: auto; padding: 28px 32px 56px; position: relative; z-index: 1; }
-      .tm-body-inner { max-width: 1200px; margin: 0 auto; }
+      .tm-body { flex: 1; overflow-y: auto; padding: 24px 32px 56px; background: var(--tm-bg); }
+      .tm-body-inner { max-width: 1180px; margin: 0 auto; }
 
       /* Toolbar */
-      .tm-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+      .tm-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
       .tm-toolbar-title {
-        margin: 0; font-size: 22px; font-weight: 600;
-        letter-spacing: -0.02em;
+        margin: 0; font-size: 20px; font-weight: 600;
+        letter-spacing: -0.018em;
       }
       .tm-toolbar-count {
         color: var(--tm-text-faint); font-weight: 400;
         margin-left: 6px;
-        font-feature-settings: "tnum";
+        font-variant-numeric: tabular-nums;
+        font-size: 16px;
       }
 
       /* Search input */
@@ -2100,32 +2270,34 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-search-icon {
         position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-        --mdc-icon-size: 16px; color: var(--tm-text-faint);
+        --mdc-icon-size: 14px; color: var(--tm-text-faint);
         pointer-events: none;
       }
       .tm-search {
         width: 100%;
-        background: var(--tm-surface-1);
+        background: var(--tm-surface-0);
         border: 1px solid var(--tm-border);
         border-radius: var(--tm-radius-sm);
-        padding: 8px 12px 8px 34px;
+        padding: 6px 10px 6px 32px;
         color: var(--tm-text);
         font-size: 13px;
         font-family: inherit;
-        transition: all 0.15s var(--tm-easing);
+        box-shadow: var(--tm-shadow-xs);
+        transition: all 0.1s var(--tm-easing);
       }
+      .tm-search:hover { border-color: var(--tm-border-strong); }
       .tm-search:focus {
         outline: 0;
         border-color: var(--tm-accent);
-        box-shadow: 0 0 0 3px var(--tm-accent-soft);
+        box-shadow: var(--tm-shadow-focus);
       }
-      .tm-search::placeholder { color: var(--tm-text-faint); }
+      .tm-search::placeholder { color: var(--tm-text-vfaint); }
       .tm-search-clear {
-        position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+        position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
         background: var(--tm-surface-2);
         color: var(--tm-text-muted);
         border: 0;
-        width: 22px; height: 22px;
+        width: 20px; height: 20px;
         border-radius: 50%; cursor: pointer; font-size: 11px;
         display: grid; place-items: center;
       }
@@ -2133,59 +2305,73 @@ class TaskMatePanel extends HTMLElement {
 
       /* Buttons */
       .tm-btn {
-        background: linear-gradient(180deg, var(--tm-accent), var(--tm-accent-press));
-        color: white; border: 0;
-        padding: 8px 14px; border-radius: var(--tm-radius-sm);
+        background: var(--tm-accent);
+        color: white;
+        border: 1px solid var(--tm-accent);
+        padding: 6px 12px;
+        border-radius: var(--tm-radius-sm);
         font-size: 13px; font-weight: 500;
         letter-spacing: -0.005em;
         font-family: inherit;
         cursor: pointer;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.10), 0 0 0 1px rgba(255,255,255,0.06) inset;
-        transition: all 0.12s var(--tm-easing);
+        box-shadow: var(--tm-shadow-xs), inset 0 1px 0 rgba(255,255,255,0.15);
+        transition: all 0.1s var(--tm-easing);
         display: inline-flex; align-items: center; gap: 6px;
+        white-space: nowrap;
       }
-      .tm-btn:hover  { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 2px 8px var(--tm-accent-glow), 0 0 0 1px rgba(255,255,255,0.06) inset; }
-      .tm-btn:active { transform: translateY(0); filter: brightness(0.95); }
-      .tm-btn-sm     { padding: 5px 10px; font-size: 12px; }
+      .tm-btn:hover  { background: var(--tm-accent-hover); border-color: var(--tm-accent-hover); }
+      .tm-btn:focus-visible { outline: 0; box-shadow: var(--tm-shadow-focus); }
+      .tm-btn:active { filter: brightness(0.95); }
+      .tm-btn-sm     { padding: 4px 9px; font-size: 12px; }
       .tm-btn-ghost {
-        background: var(--tm-surface-1);
+        background: var(--tm-surface-0);
         color: var(--tm-text);
-        box-shadow: 0 0 0 1px var(--tm-border) inset;
+        border: 1px solid var(--tm-border);
+        box-shadow: var(--tm-shadow-xs);
       }
-      .tm-btn-ghost:hover { background: var(--tm-surface-2); transform: translateY(-1px); }
+      .tm-btn-ghost:hover {
+        background: var(--tm-surface-2);
+        border-color: var(--tm-border-strong);
+        color: var(--tm-text);
+      }
       .tm-btn-danger {
-        background: transparent;
+        background: var(--tm-surface-0);
         color: var(--tm-danger);
-        box-shadow: 0 0 0 1px color-mix(in srgb, var(--tm-danger), transparent 75%) inset;
+        border: 1px solid var(--tm-danger-border);
+        box-shadow: var(--tm-shadow-xs);
       }
-      .tm-btn-danger:hover { background: var(--tm-danger-soft); transform: translateY(-1px); }
+      .tm-btn-danger:hover {
+        background: var(--tm-danger);
+        color: #fff;
+        border-color: var(--tm-danger);
+      }
       .tm-icon-btn {
-        width: 32px; height: 32px;
+        width: 28px; height: 28px;
         border: 0; background: transparent;
-        border-radius: 8px;
+        border-radius: var(--tm-radius-sm);
         display: grid; place-items: center;
-        color: var(--tm-text-muted);
-        font-size: 14px;
+        color: var(--tm-text-faint);
         cursor: pointer;
         font-family: inherit;
-        transition: all 0.12s var(--tm-easing);
+        transition: all 0.1s var(--tm-easing);
       }
+      .tm-icon-btn ha-icon { --mdc-icon-size: 16px; }
       .tm-icon-btn:hover { background: var(--tm-surface-2); color: var(--tm-text); }
 
       /* Cards */
-      .tm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+      .tm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
       .tm-card {
         position: relative; overflow: hidden;
-        background: var(--tm-surface-1);
+        background: var(--tm-surface-0);
         border: 1px solid var(--tm-border);
-        border-radius: var(--tm-radius);
-        padding: 20px;
-        box-shadow: var(--tm-shadow-sm);
+        border-radius: var(--tm-radius-lg);
+        padding: 18px;
+        box-shadow: var(--tm-shadow-xs);
         transition: all 0.15s var(--tm-easing);
-        margin-bottom: 16px;
+        margin-bottom: 14px;
       }
       .tm-card:last-child { margin-bottom: 0; }
-      .tm-card:hover { border-color: var(--tm-border-strong); box-shadow: var(--tm-shadow); }
+      .tm-card:hover { border-color: var(--tm-border-strong); box-shadow: var(--tm-shadow-sm); }
       .tm-card-error { border-left: 3px solid var(--tm-danger); color: var(--tm-danger); }
       .tm-loading { color: var(--tm-text-muted); }
 
@@ -2197,70 +2383,79 @@ class TaskMatePanel extends HTMLElement {
       }
 
       /* Child / reward / group cards share head/avatar */
-      .tm-child-card { display: flex; flex-direction: column; gap: 16px; margin-bottom: 0; }
-      .tm-child-head { display: flex; align-items: center; gap: 14px; }
+      .tm-child-card { display: flex; flex-direction: column; gap: 14px; margin-bottom: 0; }
+      .tm-child-head { display: flex; align-items: center; gap: 12px; }
       .tm-avatar {
-        width: 48px; height: 48px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, var(--tm-surface-3), var(--tm-surface-2));
+        width: 44px; height: 44px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--tm-accent-soft), var(--tm-surface-0));
+        border: 1px solid var(--tm-border);
         display: grid; place-items: center;
         flex-shrink: 0;
         color: var(--tm-accent);
-        box-shadow: 0 0 0 1px var(--tm-border) inset;
       }
-      .tm-avatar ha-icon { --mdc-icon-size: 26px; }
+      .tm-avatar ha-icon { --mdc-icon-size: 24px; }
       .tm-avatar-reward  { color: var(--tm-gold); }
       .tm-child-name { min-width: 0; flex: 1; }
-      .tm-child-name h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+      .tm-child-name h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
       .tm-meta { color: var(--tm-text-faint); font-size: 12px; margin-top: 2px; word-break: break-word; }
       .tm-meta code { font-family: ui-monospace, "SF Mono", Menlo, monospace; background: var(--tm-surface-2); padding: 1px 6px; border-radius: 4px; font-size: 11px; color: var(--tm-text-muted); }
       .tm-text-muted { color: var(--tm-text-muted); }
 
-      .tm-stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+      .tm-stats-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1px;
+        background: var(--tm-border-soft);
+        border: 1px solid var(--tm-border-soft);
+        border-radius: var(--tm-radius);
+        overflow: hidden;
+      }
       .tm-stat {
-        background: var(--tm-surface-2);
-        border-radius: var(--tm-radius-sm);
+        background: var(--tm-surface-1);
         padding: 10px 12px;
-        box-shadow: 0 0 0 1px var(--tm-border-soft) inset;
       }
       .tm-stat-value {
-        font-size: 20px; font-weight: 600;
-        letter-spacing: -0.02em;
-        font-feature-settings: "tnum";
+        font-size: 17px; font-weight: 600;
+        letter-spacing: -0.01em;
+        font-variant-numeric: tabular-nums;
         color: var(--tm-text);
-        line-height: 1.1;
+        line-height: 1.15;
       }
       .tm-stat-label {
-        font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+        font-size: 11px;
         color: var(--tm-text-faint);
-        margin-top: 4px; font-weight: 500;
+        margin-top: 2px; font-weight: 400;
+        letter-spacing: 0.01em;
       }
-      .tm-stat-highlight .tm-stat-value { color: var(--tm-accent); }
+      .tm-stat-highlight .tm-stat-value { color: var(--tm-gold); }
 
       .tm-card-foot {
-        display: flex; gap: 8px;
+        display: flex; gap: 6px;
         margin-top: auto;
-        padding-top: 16px;
+        padding-top: 12px;
         border-top: 1px solid var(--tm-border-soft);
         flex-wrap: wrap;
+        align-items: center;
       }
 
       .tm-add-tile {
         background: transparent;
-        border: 1px dashed var(--tm-border-strong);
-        border-radius: var(--tm-radius);
+        border: 1.5px dashed var(--tm-border-strong);
+        border-radius: var(--tm-radius-lg);
         padding: 36px 18px;
         color: var(--tm-text-faint);
         text-align: center;
-        font-size: 13px;
+        font-size: 13px; font-weight: 500;
         cursor: pointer;
         font-family: inherit;
         display: grid; place-items: center; gap: 8px;
-        transition: all 0.15s var(--tm-easing);
+        transition: all 0.12s var(--tm-easing);
+        min-height: 200px;
       }
       .tm-add-tile:hover {
         border-color: var(--tm-accent);
-        color: var(--tm-accent);
+        color: var(--tm-accent-text);
         background: var(--tm-accent-soft);
       }
       .tm-add-plus {
@@ -2275,27 +2470,28 @@ class TaskMatePanel extends HTMLElement {
 
       /* Tables */
       .tm-table-wrap {
-        background: var(--tm-surface-1);
+        background: var(--tm-surface-0);
         border: 1px solid var(--tm-border);
-        border-radius: var(--tm-radius);
+        border-radius: var(--tm-radius-lg);
         overflow: hidden;
-        box-shadow: var(--tm-shadow-sm);
+        box-shadow: var(--tm-shadow-xs);
       }
-      .tm-table { width: 100%; border-collapse: collapse; }
+      .tm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
       .tm-table th, .tm-table td {
-        text-align: left; padding: 12px 18px;
+        text-align: left;
+        padding: 11px 16px;
         border-bottom: 1px solid var(--tm-border-soft);
-        font-size: 13px;
+        vertical-align: middle;
       }
       .tm-table th {
         color: var(--tm-text-faint);
-        font-weight: 500; font-size: 10px;
-        text-transform: uppercase; letter-spacing: 0.06em;
+        font-weight: 500; font-size: 11.5px;
+        text-transform: uppercase; letter-spacing: 0.02em;
         background: var(--tm-surface-2);
         border-bottom: 1px solid var(--tm-border);
       }
       .tm-table tr:last-child td { border-bottom: 0; }
-      .tm-row { transition: background 0.12s var(--tm-easing); }
+      .tm-row { transition: background 0.1s var(--tm-easing); }
       .tm-row:hover { background: var(--tm-surface-hover); }
       .tm-row-disabled { opacity: 0.5; }
       .tm-row-icon { display: inline-flex; vertical-align: middle; margin-right: 10px; opacity: 0.7; --mdc-icon-size: 18px; color: var(--tm-text-muted); }
@@ -2323,46 +2519,47 @@ class TaskMatePanel extends HTMLElement {
 
       /* Pills */
       .tm-pill {
-        display: inline-flex; align-items: center; gap: 4px;
+        display: inline-flex; align-items: center; gap: 5px;
         padding: 2px 8px; border-radius: 999px;
-        font-size: 11px; font-weight: 500;
+        font-size: 11.5px; font-weight: 500;
         line-height: 1.5;
         background: var(--tm-surface-2); color: var(--tm-text-muted);
+        border: 1px solid var(--tm-border);
         margin-left: 4px; vertical-align: middle;
       }
-      .tm-pill-accent  { background: var(--tm-accent-soft);   color: var(--tm-accent); }
-      .tm-pill-success { background: var(--tm-positive-soft); color: var(--tm-positive); }
-      .tm-pill-warn    { background: var(--tm-warning-soft);  color: var(--tm-warning); }
-      .tm-pill-danger  { background: var(--tm-danger-soft);   color: var(--tm-danger); }
-      .tm-pill-pool    { background: color-mix(in srgb, var(--tm-pool), transparent 90%); color: var(--tm-pool); }
-      .tm-pill-sticky  { background: color-mix(in srgb, var(--tm-sticky), transparent 90%); color: var(--tm-sticky); }
-      .tm-pill-spread  { background: var(--tm-positive-soft); color: var(--tm-positive); }
-      .tm-pill-jackpot { background: color-mix(in srgb, var(--tm-gold), transparent 88%); color: var(--tm-gold); }
-      .tm-pill-alternating, .tm-pill-random, .tm-pill-balanced { background: var(--tm-accent-soft); color: var(--tm-accent); }
+      .tm-pill-accent  { background: var(--tm-accent-soft);   color: var(--tm-accent-text); border-color: var(--tm-accent-border); }
+      .tm-pill-success { background: var(--tm-positive-soft); color: var(--tm-positive);    border-color: var(--tm-positive-border); }
+      .tm-pill-warn    { background: var(--tm-warning-soft);  color: var(--tm-warning);     border-color: var(--tm-warning-border); }
+      .tm-pill-danger  { background: var(--tm-danger-soft);   color: var(--tm-danger);      border-color: var(--tm-danger-border); }
+      .tm-pill-pool    { background: var(--tm-pool-soft);     color: var(--tm-pool);        border-color: color-mix(in srgb, var(--tm-pool), transparent 75%); }
+      .tm-pill-sticky  { background: var(--tm-sticky-soft);   color: var(--tm-sticky);      border-color: color-mix(in srgb, var(--tm-sticky), transparent 75%); }
+      .tm-pill-spread  { background: var(--tm-positive-soft); color: var(--tm-positive);    border-color: var(--tm-positive-border); }
+      .tm-pill-jackpot { background: var(--tm-gold-soft);     color: var(--tm-gold);        border-color: color-mix(in srgb, var(--tm-gold), transparent 75%); }
+      .tm-pill-alternating, .tm-pill-random, .tm-pill-balanced { background: var(--tm-accent-soft); color: var(--tm-accent-text); border-color: var(--tm-accent-border); }
       .tm-pill-dot::before {
         content: ""; width: 5px; height: 5px; border-radius: 50%;
         background: currentColor;
       }
 
       /* Reward extras */
-      .tm-reward-card { display: flex; flex-direction: column; gap: 14px; margin-bottom: 0; }
+      .tm-reward-card { display: flex; flex-direction: column; gap: 12px; margin-bottom: 0; }
       .tm-progress {
-        height: 6px;
+        height: 8px;
         background: var(--tm-surface-2);
         border-radius: 999px;
         overflow: hidden;
         margin-top: 4px;
-        box-shadow: 0 0 0 1px var(--tm-border-soft) inset;
+        border: 1px solid var(--tm-border-soft);
       }
       .tm-progress > span {
         display: block; height: 100%;
-        background: linear-gradient(90deg, var(--tm-accent), color-mix(in srgb, var(--tm-accent), white 25%));
+        background: linear-gradient(90deg, var(--tm-accent), var(--tm-sticky));
         border-radius: 999px;
       }
       .tm-progress-text {
-        font-size: 12px; color: var(--tm-text-muted);
+        font-size: 12px; color: var(--tm-text-faint);
         display: flex; justify-content: space-between;
-        font-feature-settings: "tnum";
+        font-variant-numeric: tabular-nums;
         margin-top: 6px;
       }
       .tm-progress-text strong { color: var(--tm-text); font-weight: 600; }
@@ -2370,22 +2567,22 @@ class TaskMatePanel extends HTMLElement {
       /* Empty state */
       .tm-empty {
         text-align: center;
-        padding: 64px 24px;
-        background: var(--tm-surface-1);
+        padding: 56px 24px;
+        background: var(--tm-surface-0);
         border: 1px dashed var(--tm-border-strong);
-        border-radius: var(--tm-radius);
+        border-radius: var(--tm-radius-lg);
       }
       .tm-empty-icon {
-        width: 56px; height: 56px;
-        border-radius: 16px;
+        width: 48px; height: 48px;
+        border-radius: 12px;
         background: var(--tm-surface-2);
         display: inline-grid; place-items: center;
-        font-size: 26px;
-        margin-bottom: 16px;
-        box-shadow: 0 0 0 1px var(--tm-border) inset;
+        font-size: 22px;
+        margin-bottom: 12px;
+        border: 1px solid var(--tm-border);
       }
-      .tm-empty h3 { margin: 0 0 6px; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
-      .tm-empty p  { margin: 0 0 20px; color: var(--tm-text-muted); font-size: 13px; }
+      .tm-empty h3 { margin: 0 0 4px; font-size: 14px; font-weight: 600; letter-spacing: -0.005em; color: var(--tm-text); }
+      .tm-empty p  { margin: 0 0 16px; color: var(--tm-text-muted); font-size: 13px; max-width: 360px; margin-left: auto; margin-right: auto; }
 
       /* Group list */
       .tm-group-list { margin: 8px 0 0; padding-left: 20px; color: var(--tm-text-muted); font-size: 13px; }
@@ -2438,101 +2635,102 @@ class TaskMatePanel extends HTMLElement {
       /* Settings */
       .tm-settings { display: flex; flex-direction: column; gap: 16px; }
       .tm-section {
-        background: var(--tm-surface-1);
+        background: var(--tm-surface-0);
         border: 1px solid var(--tm-border);
-        border-radius: var(--tm-radius);
+        border-radius: var(--tm-radius-lg);
         overflow: hidden;
-        box-shadow: var(--tm-shadow-sm);
+        box-shadow: var(--tm-shadow-xs);
       }
       .tm-section-head {
-        padding: 16px 20px;
-        border-bottom: 1px solid var(--tm-border-soft);
+        padding: 16px 20px 12px;
       }
-      .tm-section-head h3 { margin: 0 0 2px; font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
-      .tm-section-head p  { margin: 0; color: var(--tm-text-faint); font-size: 12px; }
-      .tm-section-body { padding: 8px 20px 16px; }
+      .tm-section-head h3 { margin: 0 0 3px; font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
+      .tm-section-head p  { margin: 0; color: var(--tm-text-faint); font-size: 12.5px; }
+      .tm-section-body { padding: 0; }
       .tm-setting-row {
-        display: grid; grid-template-columns: 240px 1fr;
-        gap: 24px; align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--tm-border-soft);
+        display: grid; grid-template-columns: 280px 1fr;
+        gap: 20px; align-items: center;
+        padding: 14px 20px;
+        border-top: 1px solid var(--tm-border-soft);
       }
-      .tm-setting-row:last-child { border-bottom: 0; }
+      .tm-setting-row:first-child { border-top: 0; }
       .tm-setting-label { color: var(--tm-text); font-size: 13px; font-weight: 500; }
       .tm-setting-label small { display: block; color: var(--tm-text-faint); font-weight: 400; font-size: 12px; margin-top: 2px; }
       .tm-setting-row input[type=text],
       .tm-setting-row input[type=number],
       .tm-setting-row select {
-        background: var(--tm-surface-1);
+        background: var(--tm-surface-0);
         border: 1px solid var(--tm-border);
         border-radius: var(--tm-radius-sm);
-        padding: 8px 12px;
+        padding: 6px 10px;
         color: var(--tm-text);
         font-size: 13px;
         font-family: inherit;
         max-width: 360px;
-        transition: all 0.15s var(--tm-easing);
+        box-shadow: var(--tm-shadow-xs);
+        transition: all 0.1s var(--tm-easing);
       }
       .tm-setting-row input:focus, .tm-setting-row select:focus {
         outline: 0;
         border-color: var(--tm-accent);
-        box-shadow: 0 0 0 3px var(--tm-accent-soft);
+        box-shadow: var(--tm-shadow-focus);
       }
       .tm-settings-foot {
         display: flex; justify-content: flex-end;
         padding-top: 8px;
       }
 
-      /* iOS-style switch */
+      /* Switch */
       .tm-switch {
         position: relative; display: inline-block;
-        width: 44px; height: 26px; flex-shrink: 0;
+        width: 34px; height: 20px; flex-shrink: 0;
       }
       .tm-switch input { opacity: 0; width: 0; height: 0; }
       .tm-slider {
         position: absolute; inset: 0;
-        background: var(--tm-surface-3);
+        background: var(--tm-border-strong);
         border-radius: 999px;
-        transition: background 0.2s var(--tm-easing);
+        transition: background 0.15s var(--tm-easing);
         cursor: pointer;
-        box-shadow: 0 0 0 1px var(--tm-border) inset;
       }
       .tm-slider::before {
         content: ''; position: absolute;
-        height: 20px; width: 20px;
-        left: 3px; top: 3px;
+        height: 16px; width: 16px;
+        left: 2px; top: 2px;
         background: white; border-radius: 50%;
-        transition: transform 0.2s var(--tm-easing);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        transition: transform 0.15s var(--tm-easing);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2);
       }
       .tm-switch input:checked + .tm-slider {
         background: var(--tm-accent);
-        box-shadow: 0 0 0 1px var(--tm-accent) inset;
       }
-      .tm-switch input:checked + .tm-slider::before { transform: translateX(18px); }
+      .tm-switch input:checked + .tm-slider::before { transform: translateX(14px); }
 
       /* Dialog */
       .tm-scrim {
         position: fixed; inset: 0;
-        background: color-mix(in srgb, var(--tm-bg), transparent 25%);
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
+        background: rgba(10,10,10,0.4);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
         display: flex; align-items: flex-start; justify-content: center;
         padding: 60px 20px; z-index: 100;
         overflow-y: auto;
-        animation: tm-scrim-in 0.2s var(--tm-easing);
+        animation: tm-scrim-in 0.18s var(--tm-easing);
+      }
+      @media (prefers-color-scheme: dark) {
+        .tm-scrim { background: rgba(0,0,0,0.6); }
       }
       @keyframes tm-scrim-in { from { opacity: 0; } to { opacity: 1; } }
       .tm-dialog {
-        background: var(--tm-surface-1);
-        border: 1px solid var(--tm-border-strong);
+        background: var(--tm-surface-0);
+        border: 1px solid var(--tm-border);
         border-radius: var(--tm-radius-lg);
         width: 100%; max-width: 560px;
         box-shadow: var(--tm-shadow-lg);
         display: flex; flex-direction: column;
         max-height: calc(100vh - 120px);
         overflow: hidden;
-        animation: tm-dialog-in 0.25s var(--tm-easing);
+        animation: tm-dialog-in 0.2s var(--tm-easing);
       }
       @keyframes tm-dialog-in { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
 
@@ -2546,41 +2744,46 @@ class TaskMatePanel extends HTMLElement {
         letter-spacing: -0.01em;
         flex: 1;
       }
-      .tm-dialog-body { padding: 18px 22px; overflow-y: auto; }
+      .tm-dialog-body { padding: 16px 20px; overflow-y: auto; }
       .tm-dialog-foot {
-        padding: 14px 22px;
+        padding: 12px 20px;
         border-top: 1px solid var(--tm-border-soft);
-        background: var(--tm-surface-0);
+        background: var(--tm-surface-2);
         display: flex; justify-content: flex-end; gap: 8px;
       }
 
-      .tm-field { display: block; margin-bottom: 18px; }
-      .tm-field-label { display: block; color: var(--tm-text-muted); font-size: 12px; margin-bottom: 6px; font-weight: 500; }
+      .tm-field { display: block; margin-bottom: 14px; }
+      .tm-field-label {
+        display: block; color: var(--tm-text);
+        font-size: 12.5px; margin-bottom: 5px;
+        font-weight: 500;
+      }
       .tm-field input[type=text], .tm-field input[type=number], .tm-field input[type=date], .tm-field select, .tm-textarea {
         width: 100%;
         background: var(--tm-surface-0);
         border: 1px solid var(--tm-border);
         border-radius: var(--tm-radius-sm);
-        padding: 10px 12px;
+        padding: 7px 10px;
         color: var(--tm-text);
         font-size: 13px;
         font-family: inherit;
         box-sizing: border-box;
-        transition: all 0.15s var(--tm-easing);
+        box-shadow: var(--tm-shadow-xs);
+        transition: all 0.1s var(--tm-easing);
       }
       .tm-field input:focus, .tm-field select:focus, .tm-textarea:focus {
         outline: 0;
         border-color: var(--tm-accent);
-        box-shadow: 0 0 0 3px var(--tm-accent-soft);
+        box-shadow: var(--tm-shadow-focus);
       }
       .tm-field-hint {
         display: block; color: var(--tm-text-faint);
-        font-size: 11px; margin-top: 6px; line-height: 1.5;
+        font-size: 11.5px; margin-top: 4px; line-height: 1.5;
       }
       .tm-field-hint code {
         font-family: ui-monospace, "SF Mono", Menlo, monospace;
         background: var(--tm-surface-2); padding: 1px 5px;
-        border-radius: 3px; font-size: 10px;
+        border-radius: 3px; font-size: 11px;
       }
       .tm-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
       .tm-textarea { resize: vertical; min-height: 100px; line-height: 1.5; }
@@ -2593,33 +2796,36 @@ class TaskMatePanel extends HTMLElement {
       /* Chip multi-select */
       .tm-chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
       .tm-chip-btn {
-        background: var(--tm-surface-1);
+        background: var(--tm-surface-0);
         color: var(--tm-text-muted);
         border: 1px solid var(--tm-border);
-        padding: 6px 12px; border-radius: 999px;
-        font-size: 12px; font-weight: 500;
+        padding: 4px 10px; border-radius: 999px;
+        font-size: 12.5px; font-weight: 500;
         font-family: inherit;
         cursor: pointer;
-        transition: all 0.12s var(--tm-easing);
+        transition: all 0.1s var(--tm-easing);
       }
       .tm-chip-btn:hover { color: var(--tm-text); border-color: var(--tm-border-strong); }
       .tm-chip-on {
         background: var(--tm-accent-soft);
-        color: var(--tm-accent);
-        border-color: var(--tm-accent);
+        color: var(--tm-accent-text);
+        border-color: var(--tm-accent-border);
       }
 
-      .tm-day-row { display: flex; gap: 6px; flex-wrap: wrap; }
+      .tm-day-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
       .tm-day-btn {
-        width: 42px; height: 36px;
-        background: var(--tm-surface-1);
+        background: var(--tm-surface-0);
         color: var(--tm-text-muted);
         border: 1px solid var(--tm-border);
-        border-radius: 8px;
-        font-size: 12px; font-weight: 500;
+        border-radius: var(--tm-radius-sm);
+        padding: 8px 0;
+        font-size: 11.5px; font-weight: 600;
         font-family: inherit; cursor: pointer;
-        transition: all 0.12s var(--tm-easing);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        transition: all 0.1s var(--tm-easing);
       }
+      .tm-day-btn:hover { color: var(--tm-text); border-color: var(--tm-border-strong); }
       .tm-day-on {
         background: var(--tm-accent); color: white;
         border-color: var(--tm-accent);
@@ -2680,24 +2886,74 @@ class TaskMatePanel extends HTMLElement {
       /* Toast */
       .tm-toast {
         position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-        padding: 10px 18px; border-radius: var(--tm-radius-sm);
+        padding: 10px 16px; border-radius: var(--tm-radius);
         font-size: 13px; font-weight: 500;
         box-shadow: var(--tm-shadow);
         z-index: 200;
-        animation: tm-toast-in 0.25s var(--tm-easing);
+        animation: tm-toast-in 0.2s var(--tm-easing);
       }
       @keyframes tm-toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translateX(-50%); } }
-      .tm-toast-ok  { background: var(--tm-accent); color: white; box-shadow: 0 4px 16px var(--tm-accent-glow); }
+      .tm-toast-ok  { background: var(--tm-positive); color: white; }
       .tm-toast-err { background: var(--tm-danger); color: white; }
 
-      @media (max-width: 700px) {
+      /* ===== Mobile / narrow ===== */
+      @media (max-width: 900px) {
+        .tm-shell { grid-template-columns: 1fr; }
+        .tm-sidebar { display: none; }
+        .tm-mobile-tabs {
+          display: flex;
+          overflow-x: auto;
+          scrollbar-width: none;
+          padding: 0 12px;
+          background: var(--tm-surface-0);
+          border-bottom: 1px solid var(--tm-border);
+          flex-shrink: 0;
+        }
+        .tm-mobile-tabs::-webkit-scrollbar { display: none; }
+        .tm-mtab {
+          position: relative;
+          background: transparent;
+          border: 0;
+          color: var(--tm-text-faint);
+          padding: 12px 14px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 500;
+          font-family: inherit;
+          white-space: nowrap;
+          display: flex; align-items: center; gap: 6px;
+          transition: color 0.1s var(--tm-easing);
+        }
+        .tm-mtab:hover { color: var(--tm-text); }
+        .tm-mtab-active { color: var(--tm-text); }
+        .tm-mtab-active::after {
+          content: ""; position: absolute;
+          left: 14px; right: 14px; bottom: -1px;
+          height: 2px; background: var(--tm-accent);
+          border-radius: 2px 2px 0 0;
+        }
+        .tm-mtab-pill {
+          background: var(--tm-surface-2);
+          color: var(--tm-text-muted);
+          font-size: 10.5px; font-weight: 600;
+          padding: 1px 6px; border-radius: 999px;
+        }
+        .tm-mtab-active .tm-mtab-pill {
+          background: var(--tm-accent-soft);
+          color: var(--tm-accent-text);
+        }
+        .tm-mtab-pill-urgent {
+          background: var(--tm-warning-soft) !important;
+          color: var(--tm-warning) !important;
+        }
         .tm-body { padding: 16px; }
         .tm-toolbar { flex-direction: column; align-items: stretch; }
         .tm-search-wrap { max-width: none; }
         .tm-dialog { max-width: none; border-radius: 0; max-height: 100vh; height: 100vh; }
         .tm-scrim { padding: 0; }
         .tm-dialog-body .tm-field-row { grid-template-columns: 1fr; }
-        .tm-setting-row { grid-template-columns: 1fr; gap: 6px; }
+        .tm-setting-row { grid-template-columns: 1fr; gap: 6px; padding: 12px 16px; }
+        .tm-section-head, .tm-setting-row { padding-left: 16px; padding-right: 16px; }
         .tm-timeline-row { grid-template-columns: 1fr auto; }
         .tm-timeline-time, .tm-timeline-icon { display: none; }
       }
