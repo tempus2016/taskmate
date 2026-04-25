@@ -89,6 +89,14 @@ WS_REMOVE_TASK_GROUP: Final   = "taskmate/remove_task_group"
 
 WS_UPDATE_SETTINGS: Final     = "taskmate/update_settings"
 
+# Operational
+WS_APPROVE_CHORE: Final       = "taskmate/approve_chore"
+WS_REJECT_CHORE: Final        = "taskmate/reject_chore"
+WS_APPROVE_REWARD: Final      = "taskmate/approve_reward"
+WS_REJECT_REWARD: Final       = "taskmate/reject_reward"
+WS_SET_CHORE_ORDER: Final     = "taskmate/set_chore_order"
+WS_ADD_CHORES_BULK: Final     = "taskmate/add_chores_bulk"
+
 
 def _get_coordinator(hass: HomeAssistant) -> TaskMateCoordinator | None:
     for value in hass.data.get(DOMAIN, {}).values():
@@ -146,8 +154,11 @@ def _opt_int(v: Any) -> int | None:
 
 def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
     data = coordinator.storage.data
+    completions = list(data.get("completions", []))
+    reward_claims = list(data.get("reward_claims", []))
+    transactions = list(data.get("points_transactions", []))
     return {
-        "version": "1",
+        "version": "2",
         "children":         list(data.get("children", [])),
         "chores":           list(data.get("chores", [])),
         "rewards":          list(data.get("rewards", [])),
@@ -155,6 +166,12 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "bonuses":          list(data.get("bonuses", [])),
         "task_groups":      list(data.get("task_groups", [])),
         "pool_allocations": list(data.get("pool_allocations", [])),
+        # Operational state — used by the panel's Activity tab + approval banner
+        "completions":          completions,           # all (panel slices for display)
+        "pending_completions":  [c for c in completions if not c.get("approved")],
+        "reward_claims":        reward_claims,
+        "pending_reward_claims": [c for c in reward_claims if not c.get("approved")],
+        "points_transactions":  transactions[-100:],   # most recent 100 for audit log
         "settings": {
             "points_name":       data.get("points_name", "Stars"),
             "points_icon":       data.get("points_icon", "mdi:star"),
@@ -721,6 +738,99 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
 
 
 # ---------------------------------------------------------------------------
+# Operational — approval / rejection / reorder / bulk add
+# ---------------------------------------------------------------------------
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_APPROVE_CHORE,
+    vol.Required("completion_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_approve_chore(hass, connection, msg, coordinator):
+    await coordinator.async_approve_chore(msg["completion_id"])
+    connection.send_result(msg["id"], {"completion_id": msg["completion_id"]})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_REJECT_CHORE,
+    vol.Required("completion_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_reject_chore(hass, connection, msg, coordinator):
+    await coordinator.async_reject_chore(msg["completion_id"])
+    connection.send_result(msg["id"], {"completion_id": msg["completion_id"]})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_APPROVE_REWARD,
+    vol.Required("claim_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_approve_reward(hass, connection, msg, coordinator):
+    await coordinator.async_approve_reward(msg["claim_id"])
+    connection.send_result(msg["id"], {"claim_id": msg["claim_id"]})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_REJECT_REWARD,
+    vol.Required("claim_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_reject_reward(hass, connection, msg, coordinator):
+    await coordinator.async_reject_reward(msg["claim_id"])
+    connection.send_result(msg["id"], {"claim_id": msg["claim_id"]})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_SET_CHORE_ORDER,
+    vol.Required("child_id"): str,
+    vol.Required("chore_order"): [str],
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_set_chore_order(hass, connection, msg, coordinator):
+    await coordinator.async_set_chore_order(msg["child_id"], list(msg["chore_order"]))
+    connection.send_result(msg["id"], {"child_id": msg["child_id"]})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_ADD_CHORES_BULK,
+    vol.Required("chore_names"): [str],
+    vol.Optional("points"): vol.All(int, vol.Range(min=0)),
+    vol.Optional("assigned_to"): [str],
+    vol.Optional("requires_approval"): bool,
+    vol.Optional("time_category"): str,
+    vol.Optional("schedule_mode"): vol.In(["specific_days", "recurring", "one_shot"]),
+    vol.Optional("due_days"): [str],
+    vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
+    vol.Optional("completion_sound"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_add_chores_bulk(hass, connection, msg, coordinator):
+    chore_names = [n.strip() for n in msg.get("chore_names", []) if n and n.strip()]
+    if not chore_names:
+        connection.send_error(msg["id"], "no_names", "At least one chore name is required")
+        return
+    chores = await coordinator.async_add_chores_bulk(
+        chore_names=chore_names,
+        points=msg.get("points", 10),
+        due_days=list(msg.get("due_days", []) or []),
+        assigned_to=list(msg.get("assigned_to", []) or []),
+        requires_approval=msg.get("requires_approval", True),
+        time_category=msg.get("time_category", "anytime"),
+        daily_limit=msg.get("daily_limit", 1),
+        schedule_mode=msg.get("schedule_mode", "specific_days"),
+        completion_sound=msg.get("completion_sound", "coin"),
+    )
+    connection.send_result(msg["id"], {"created": [c.id for c in chores], "count": len(chores)})
+
+
+# ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
 
@@ -733,6 +843,8 @@ _COMMANDS = (
     _ws_add_bonus, _ws_update_bonus, _ws_remove_bonus, _ws_apply_bonus,
     _ws_add_task_group, _ws_update_task_group, _ws_remove_task_group,
     _ws_update_settings,
+    _ws_approve_chore, _ws_reject_chore, _ws_approve_reward, _ws_reject_reward,
+    _ws_set_chore_order, _ws_add_chores_bulk,
 )
 
 
