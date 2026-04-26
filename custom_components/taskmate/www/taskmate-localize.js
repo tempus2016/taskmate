@@ -120,6 +120,30 @@ async function loadTranslations(hass) {
 }
 
 // Expose globally so cards can access without ES module imports
-// (HA custom cards are loaded as classic scripts, not ES modules)
 window.__taskmate_localize = localize;
 window.__taskmate_loadTranslations = loadTranslations;
+
+// Cold-cache fix: any TaskMate cards that mounted before this module loaded
+// rendered raw translation keys ("common.today" instead of "Today"). Walk
+// the DOM across shadow roots and trigger a re-render now that the
+// localizer is defined.
+(function _refreshTaskMateCards() {
+  function walk() {
+    const stack = [document];
+    while (stack.length) {
+      const node = stack.pop();
+      if (!node) continue;
+      if (node.tagName && node.tagName.startsWith('TASKMATE-')) {
+        if (typeof node.requestUpdate === 'function') {
+          try { node.requestUpdate(); } catch (_e) { /* ignore */ }
+        }
+      }
+      if (node.shadowRoot) stack.push(node.shadowRoot);
+      const children = node.children;
+      if (children) {
+        for (let i = 0; i < children.length; i++) stack.push(children[i]);
+      }
+    }
+  }
+  queueMicrotask(walk);
+})();

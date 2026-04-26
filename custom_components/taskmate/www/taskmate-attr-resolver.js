@@ -95,4 +95,28 @@
   }
 
   window.__taskmate_find_button = findButtonEntity;
+
+  // Cold-cache fix: if any TaskMate cards already mounted before this module
+  // finished loading, they fell back to entity.attributes (overview-only) and
+  // rendered empty chore lists. Walk the DOM (crossing shadow roots, since HA
+  // nests Lovelace inside several shadow trees) and force a re-render now
+  // that window.__taskmate_attrs is defined.
+  function _refreshTaskMateCards() {
+    const stack = [document];
+    while (stack.length) {
+      const node = stack.pop();
+      if (!node) continue;
+      if (node.tagName && node.tagName.startsWith("TASKMATE-")) {
+        if (typeof node.requestUpdate === "function") {
+          try { node.requestUpdate(); } catch (_e) { /* ignore */ }
+        }
+      }
+      if (node.shadowRoot) stack.push(node.shadowRoot);
+      const children = node.children;
+      if (children) {
+        for (let i = 0; i < children.length; i++) stack.push(children[i]);
+      }
+    }
+  }
+  queueMicrotask(_refreshTaskMateCards);
 })();
