@@ -17,8 +17,14 @@ _LOGGER = logging.getLogger(__name__)
 # URL base path for serving static files
 URL_BASE: Final = "/taskmate"
 
-# List of card files to register as Lovelace resources
+# Lovelace resources. Listed in load order: shared utilities first so that
+# window.__taskmate_attrs / __taskmate_localize are reliably defined by the
+# time card modules execute. Without this, a cold-cache load could render
+# cards before the utility globals existed, producing empty chore lists and
+# raw localisation keys for non-admin users.
 CARDS: Final = [
+    "taskmate-attr-resolver.js",
+    "taskmate-localize.js",
     "taskmate-child-card.js",
     "taskmate-rewards-card.js",
     "taskmate-approvals-card.js",
@@ -38,12 +44,9 @@ CARDS: Final = [
     "taskmate-calendar-card.js",
 ]
 
-# JS modules to load globally (for config flow sound preview + i18n +
-# split-sensor attribute resolver used by every TaskMate Lovelace card).
+# JS modules loaded on every HA frontend page (config flow sound preview).
 GLOBAL_MODULES: Final = [
-    "taskmate-localize.js",
     "taskmate-config-sounds.js",
-    "taskmate-attr-resolver.js",
 ]
 
 # Track if frontend is registered
