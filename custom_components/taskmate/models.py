@@ -76,6 +76,8 @@ class Child:
     streak_milestones_achieved: list[int] = field(default_factory=list)
     awarded_perfect_weeks: list[str] = field(default_factory=list)
     availability_entity: str = ""  # HA entity id; empty = always available
+    availability_inverted: bool = False  # When True, _AVAILABLE_STATES means UNAVAILABLE
+    unavailability_entity: str = ""  # Second HA entity; _AVAILABLE_STATES = child is busy
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -96,6 +98,8 @@ class Child:
             streak_milestones_achieved=list(data.get("streak_milestones_achieved", [])),
             awarded_perfect_weeks=list(data.get("awarded_perfect_weeks", [])),
             availability_entity=data.get("availability_entity", ""),
+            availability_inverted=data.get("availability_inverted", False),
+            unavailability_entity=data.get("unavailability_entity", ""),
             id=data.get("id", generate_id()),
         )
 
@@ -116,6 +120,8 @@ class Child:
             "streak_milestones_achieved": self.streak_milestones_achieved,
             "awarded_perfect_weeks": self.awarded_perfect_weeks,
             "availability_entity": self.availability_entity,
+            "availability_inverted": self.availability_inverted,
+            "unavailability_entity": self.unavailability_entity,
             "id": self.id,
         }
 

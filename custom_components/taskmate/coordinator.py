@@ -98,11 +98,12 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         entity_id = data.get("entity_id")
         if not entity_id:
             return
-        tracked = {
-            c.availability_entity
-            for c in self.storage.get_children()
-            if getattr(c, "availability_entity", "")
-        }
+        tracked: set[str] = set()
+        for c in self.storage.get_children():
+            if getattr(c, "availability_entity", ""):
+                tracked.add(c.availability_entity)
+            if getattr(c, "unavailability_entity", ""):
+                tracked.add(c.unavailability_entity)
         if entity_id not in tracked:
             return
         self.hass.async_create_task(self._async_reevaluate_availability())
@@ -295,9 +296,17 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         name: str,
         avatar: str = "mdi:account-circle",
         availability_entity: str = "",
+        availability_inverted: bool = False,
+        unavailability_entity: str = "",
     ) -> Child:
         """Add a new child."""
-        child = Child(name=name, avatar=avatar, availability_entity=availability_entity)
+        child = Child(
+            name=name,
+            avatar=avatar,
+            availability_entity=availability_entity,
+            availability_inverted=availability_inverted,
+            unavailability_entity=unavailability_entity,
+        )
         self.storage.add_child(child)
         await self.storage.async_save()
         await self.async_refresh()
@@ -826,31 +835,53 @@ class TaskMateCoordinator(DataUpdateCoordinator):
     })
 
     def _is_child_available(self, child_id: str) -> bool:
-        """Return True if the child's availability entity reports them as available.
+        """Return True when the child should receive chores today.
 
-        Rules:
-          - Empty/missing availability_entity on the child → True (no opinion).
-          - Entity not registered, or state is unavailable/unknown/None → True
-            (fail-open; don't block on a broken sensor).
-          - State (case-insensitive) in {"on", "home", "available", "present",
-            "true"} → True. Everything else (e.g. "off", "not_home", "away")
-            → False.
+        Two-step evaluation:
+          1. availability_entity  — fail-open; if inverted, _AVAILABLE_STATES means BUSY.
+             Inversion only applies to real states, not broken/missing sensors.
+          2. unavailability_entity — neutral when missing; _AVAILABLE_STATES means BUSY.
+        Final = step1 AND NOT step2.
         """
         child = self.storage.get_child(child_id)
         if not child:
             return True
+
+        # Step 1: availability sensor (fail-open when broken/missing)
+        avail_ok = True
         entity_id = getattr(child, "availability_entity", "") or ""
-        if not entity_id:
-            return True
+        if entity_id:
+            raw = self._read_entity_active(entity_id)
+            if raw is not None:
+                avail_ok = raw
+                if getattr(child, "availability_inverted", False):
+                    avail_ok = not avail_ok
+
+        # Step 2: unavailability sensor (neutral when broken/missing)
+        busy = False
+        unav_id = getattr(child, "unavailability_entity", "") or ""
+        if unav_id:
+            raw = self._read_entity_active(unav_id)
+            if raw is not None:
+                busy = raw
+
+        return avail_ok and not busy
+
+    def _read_entity_active(self, entity_id: str) -> bool | None:
+        """Read an entity's state and return True if it's in _AVAILABLE_STATES,
+        False if it's a real state not in the set, or None if the entity is
+        missing/broken (unavailable/unknown/None) so callers can apply their
+        own default.
+        """
         state_obj = self.hass.states.get(entity_id)
         if state_obj is None:
-            return True
+            return None
         raw = getattr(state_obj, "state", None)
         if raw is None:
-            return True
+            return None
         value = str(raw).strip().lower()
         if value in ("unavailable", "unknown", "none", ""):
-            return True
+            return None
         return value in self._AVAILABLE_STATES
 
     def _chore_assignment_pool(self, chore: Chore) -> list[str]:
