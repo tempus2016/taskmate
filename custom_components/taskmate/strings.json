@@ -21,6 +21,7 @@
     "step": {
       "init": {
         "title": "TaskMate Settings",
+        "description": "⚠ TaskMate now has a dedicated admin panel in the sidebar (TaskMate → /taskmate-admin) which covers everything below in one place. This menu will be removed in v4.0 — please switch over.",
         "menu_options": {
           "manage_children": "Manage Children",
           "manage_chores": "Manage Chores",
@@ -51,15 +52,21 @@
       },
       "edit_child": {
         "title": "Edit Child: {child_name}",
-        "description": "Update or delete this child",
+        "description": "Update this child's details",
         "data": {
           "name": "Child's Name",
           "avatar": "Avatar",
-          "availability_entity": "Availability Sensor (optional)",
-          "action": "Action"
+          "availability_entity": "Availability Sensor (optional)"
         },
         "data_description": {
           "availability_entity": "Optional Home Assistant entity whose state tells TaskMate whether this child is available. States 'on', 'home', 'available', 'present', or 'true' mean available; anything else (e.g. 'off', 'not_home', 'away') means unavailable. Leave blank to treat the child as always available."
+        }
+      },
+      "confirm_delete_child": {
+        "title": "Delete Child: {child_name}",
+        "description": "This will permanently remove {child_name} and all of their completion history, reward claims, points transactions, and pool allocations. Chores assigned to them will be updated. This cannot be undone.",
+        "data": {
+          "confirm": "Yes, delete this child"
         }
       },
       "manage_chores": {
@@ -355,12 +362,6 @@
     }
   },
   "selector": {
-    "child_action": {
-      "options": {
-        "save": "Save Changes",
-        "delete": "Delete Child"
-      }
-    },
     "chore_action": {
       "options": {
         "save": "Save Changes",

@@ -7,6 +7,9 @@ on:
 jobs:
   announce:
     runs-on: ubuntu-latest
+    # Skip pre-releases entirely — only stable releases get a discussion thread.
+    # Without this, every -alpha.N / -beta.N pushed for testing posts noise.
+    if: github.event.release.prerelease == false
     permissions:
       discussions: write
 

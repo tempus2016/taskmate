@@ -72,6 +72,8 @@ from .const import (
 )
 from .coordinator import TaskMateCoordinator
 from .frontend import async_register_cards, async_register_frontend
+from .panel import async_register_panel
+from .websocket import async_register_websocket_commands
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -107,6 +109,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register and version-update Lovelace resources on every startup.
     # Only TaskMate's own resources (/taskmate/*) are ever touched.
     await async_register_cards(hass)
+
+    # Register the standalone admin panel (sidebar entry at /taskmate)
+    # and the WebSocket commands it talks to.
+    await async_register_panel(hass)
+    async_register_websocket_commands(hass)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
