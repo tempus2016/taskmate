@@ -885,8 +885,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         if mode not in ("alternating", "random", "balanced"):
             assigned = list(chore.assigned_to or [])
             if require_availability and assigned:
-                filtered = [cid for cid in assigned if self._is_child_available(cid)]
-                return filtered if filtered else assigned
+                return [cid for cid in assigned if self._is_child_available(cid)]
             return assigned
 
         pool = self._chore_assignment_pool(chore)
@@ -909,13 +908,15 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 anchor = today
             offset = (today - anchor).days
             idx = (offset + skip_offset) % len(pool)
-            return [self._skip_unavailable(pool, idx, require_availability)]
+            picked = self._skip_unavailable(pool, idx, require_availability)
+            return [picked] if picked else []
 
         if mode == "random":
             # random: stable per (chore.id, date) so the frontend and backend agree
             digest = hashlib.sha256(f"{chore.id}:{today.toordinal()}".encode()).digest()
             idx = (int.from_bytes(digest[:8], "big") + skip_offset) % len(pool)
-            return [self._skip_unavailable(pool, idx, require_availability)]
+            picked = self._skip_unavailable(pool, idx, require_availability)
+            return [picked] if picked else []
 
         # balanced: group today's balanced-mode chores that share this exact pool,
         # sort them by id for determinism, then round-robin across the pool. A
@@ -935,7 +936,8 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         start_digest = hashlib.sha256(f"balanced:{pool_key}:{today.toordinal()}".encode()).digest()
         start = int.from_bytes(start_digest[:4], "big") % len(pool)
         idx = (start + position + skip_offset) % len(pool)
-        return [self._skip_unavailable(pool, idx, require_availability)]
+        picked = self._skip_unavailable(pool, idx, require_availability)
+        return [picked] if picked else []
 
     def _compute_daily_assignments(self, today: date | None = None) -> dict[str, str]:
         """Compute today's assignment per rotation-mode chore, honoring groups.
@@ -1032,8 +1034,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
     def _skip_unavailable(self, pool: list[str], start_idx: int, enabled: bool) -> str:
         """Walk forward from `start_idx` through `pool` looking for an available
-        child. If none of the pool is available (or the skip is disabled), return
-        the originally picked child so the chore is still visible to someone.
+        child. If the skip is disabled, return the originally picked child.
+        If enabled and no child is available, return ``""`` so callers can hide
+        the chore entirely.
         """
         original = pool[start_idx]
         if not enabled:
@@ -1051,10 +1054,10 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 return cid
         _LOGGER.debug(
             "Availability skip: no available child in pool %s for chore, "
-            "falling back to original pick %s",
-            pool, original,
+            "hiding chore (all children unavailable)",
+            pool,
         )
-        return original
+        return ""
 
     # time_category -> (start_time, end_time). None means "anytime" -> all-day event.
     _TIME_CATEGORY_WINDOWS: dict[str, tuple[time, time] | None] = {
