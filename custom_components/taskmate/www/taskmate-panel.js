@@ -131,8 +131,7 @@ class TaskMatePanel extends HTMLElement {
     const prevConnected = this._lastConnected;
     this._hass = value;
 
-    // Sync light/dark with HA's theme selector (Settings > General > Theme)
-    const isDark = !!value?.themes?.darkMode;
+    const isDark = this._isHaDark();
     this.classList.toggle("dark", isDark);
     this.classList.toggle("light", !isDark);
     const connNow = !!(value && value.connection && value.connection.connected !== false);
@@ -167,11 +166,10 @@ class TaskMatePanel extends HTMLElement {
     this.addEventListener("dragover", this._onDragOver);
     this.addEventListener("drop", this._onDrop);
     document.addEventListener("visibilitychange", this._onVisibilityChange);
-    // OS-preference fallback until HA's hass.themes.darkMode arrives
     if (!this.classList.contains("dark") && !this.classList.contains("light")) {
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        this.classList.add("dark");
-      }
+      const isDark = this._isHaDark();
+      this.classList.toggle("dark", isDark);
+      this.classList.toggle("light", !isDark);
     }
     if (!this._rendered) this._render();
   }
@@ -193,6 +191,24 @@ class TaskMatePanel extends HTMLElement {
     if (!this._hass) return;
     // Tab woke up — if we're showing an error or have no state, refetch.
     if (this._error || !this._state) this._fetchState();
+  }
+
+  _isHaDark() {
+    const bg = getComputedStyle(document.documentElement)
+      .getPropertyValue("--primary-background-color").trim();
+    if (!bg) return false;
+    let r, g, b;
+    if (bg.startsWith("#")) {
+      const h = bg.slice(1);
+      r = parseInt(h.substr(0, 2), 16);
+      g = parseInt(h.substr(2, 2), 16);
+      b = parseInt(h.substr(4, 2), 16);
+    } else {
+      const m = bg.match(/\d+/g);
+      if (m) { r = +m[0]; g = +m[1]; b = +m[2]; }
+    }
+    if (r === undefined) return false;
+    return (r * 299 + g * 587 + b * 114) / 1000 < 128;
   }
 
   // ---- state -----------------------------------------------------------
