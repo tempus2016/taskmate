@@ -196,6 +196,8 @@ async def _ws_get_state(hass, connection, msg, coordinator):
     vol.Required("name"): vol.All(str, vol.Length(min=1, max=120)),
     vol.Optional("avatar", default="mdi:account-circle"): str,
     vol.Optional("availability_entity", default=""): str,
+    vol.Optional("availability_inverted", default=False): bool,
+    vol.Optional("unavailability_entity", default=""): str,
 })
 @websocket_api.async_response
 @_admin_only
@@ -204,6 +206,8 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         name=msg["name"].strip(),
         avatar=msg.get("avatar") or "mdi:account-circle",
         availability_entity=_opt_str(msg.get("availability_entity")),
+        availability_inverted=bool(msg.get("availability_inverted", False)),
+        unavailability_entity=_opt_str(msg.get("unavailability_entity")),
     )
     connection.send_result(msg["id"], {"id": child.id})
 
@@ -214,6 +218,8 @@ async def _ws_add_child(hass, connection, msg, coordinator):
     vol.Optional("name"): vol.All(str, vol.Length(min=1, max=120)),
     vol.Optional("avatar"): str,
     vol.Optional("availability_entity"): str,
+    vol.Optional("availability_inverted"): bool,
+    vol.Optional("unavailability_entity"): str,
 })
 @websocket_api.async_response
 @_admin_only
@@ -228,6 +234,10 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.avatar = msg["avatar"] or "mdi:account-circle"
     if "availability_entity" in msg:
         existing.availability_entity = _opt_str(msg["availability_entity"])
+    if "availability_inverted" in msg:
+        existing.availability_inverted = bool(msg["availability_inverted"])
+    if "unavailability_entity" in msg:
+        existing.unavailability_entity = _opt_str(msg["unavailability_entity"])
     await coordinator.async_update_child(existing)
     connection.send_result(msg["id"], {"id": existing.id})
 
