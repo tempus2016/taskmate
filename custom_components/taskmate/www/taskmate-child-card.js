@@ -830,7 +830,7 @@ class TaskMateChildCard extends LitElement {
         font-size: 0.72rem;
         font-weight: 600;
         color: var(--secondary-text-color);
-        background: rgba(0,0,0,0.06);
+        background: color-mix(in srgb, var(--primary-text-color, #212121) 8%, transparent);
         border-radius: 8px;
         padding: 1px 6px;
         margin-top: 3px;
@@ -853,7 +853,7 @@ class TaskMateChildCard extends LitElement {
         font-size: 0.72rem;
         font-weight: 600;
         color: var(--secondary-text-color);
-        background: rgba(0,0,0,0.06);
+        background: color-mix(in srgb, var(--primary-text-color, #212121) 8%, transparent);
         border-radius: 8px;
         padding: 1px 6px;
         margin-top: 3px;
