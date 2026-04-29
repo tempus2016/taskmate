@@ -43,10 +43,14 @@
         "data": {
           "name": "Nom de l'enfant",
           "avatar": "Avatar",
-          "availability_entity": "Capteur de disponibilité (optionnel)"
+          "availability_entity": "Capteur de disponibilité (optionnel)",
+          "availability_inverted": "Invert availability logic",
+          "unavailability_entity": "Unavailability Sensor (optional)"
         },
         "data_description": {
-          "availability_entity": "Entité Home Assistant optionnelle dont l'état indique à TaskMate si cet enfant est disponible. Les états 'on', 'home', 'available', 'present' ou 'true' signifient disponible ; tout autre état (ex. 'off', 'not_home', 'away') signifie indisponible. Laissez vide pour considérer l'enfant comme toujours disponible. Pour les calendriers, utilisez un capteur binaire modèle puisqu'un événement de calendrier signifie généralement 'occupé / indisponible'."
+          "availability_entity": "Entité Home Assistant optionnelle dont l'état indique à TaskMate si cet enfant est disponible. Les états 'on', 'home', 'available', 'present' ou 'true' signifient disponible ; tout autre état (ex. 'off', 'not_home', 'away') signifie indisponible. Laissez vide pour considérer l'enfant comme toujours disponible. Pour les calendriers, utilisez un capteur binaire modèle puisqu'un événement de calendrier signifie généralement 'occupé / indisponible'.",
+          "availability_inverted": "When on, an active state (on/home/available) on the Availability Sensor means the child is unavailable. Use this for calendar or schedule sensors where an event means the child is busy.",
+          "unavailability_entity": "A second sensor that indicates when the child is busy. An active state (on/home/available) on this sensor means unavailable. Useful for school calendars or schedule sensors. The child is only available when the Availability Sensor says available AND this sensor does not say busy."
         }
       },
       "edit_child": {
@@ -55,10 +59,14 @@
         "data": {
           "name": "Nom de l'enfant",
           "avatar": "Avatar",
-          "availability_entity": "Capteur de disponibilité (optionnel)"
+          "availability_entity": "Capteur de disponibilité (optionnel)",
+          "availability_inverted": "Invert availability logic",
+          "unavailability_entity": "Unavailability Sensor (optional)"
         },
         "data_description": {
-          "availability_entity": "Entité Home Assistant optionnelle dont l'état indique à TaskMate si cet enfant est disponible. Les états 'on', 'home', 'available', 'present' ou 'true' signifient disponible ; tout autre état (ex. 'off', 'not_home', 'away') signifie indisponible. Laissez vide pour considérer l'enfant comme toujours disponible."
+          "availability_entity": "Entité Home Assistant optionnelle dont l'état indique à TaskMate si cet enfant est disponible. Les états 'on', 'home', 'available', 'present' ou 'true' signifient disponible ; tout autre état (ex. 'off', 'not_home', 'away') signifie indisponible. Laissez vide pour considérer l'enfant comme toujours disponible.",
+          "availability_inverted": "When on, an active state (on/home/available) on the Availability Sensor means the child is unavailable. Use this for calendar or schedule sensors where an event means the child is busy.",
+          "unavailability_entity": "A second sensor that indicates when the child is busy. An active state (on/home/available) on this sensor means unavailable. Useful for school calendars or schedule sensors. The child is only available when the Availability Sensor says available AND this sensor does not say busy."
         }
       },
       "confirm_delete_child": {
