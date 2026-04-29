@@ -303,11 +303,11 @@ class TaskMateRewardProgressCard extends LitElement {
       }
       .availability-badge.badge-sold-out {
         background: rgba(189,195,199,0.3);
-        color: #7f8c8d;
+        color: var(--secondary-text-color, #757575);
       }
       .availability-badge.badge-expired {
-        background: rgba(52,73,94,0.2);
-        color: #34495e;
+        background: color-mix(in srgb, var(--secondary-text-color, #757575) 20%, transparent);
+        color: var(--secondary-text-color, #757575);
       }
       .availability-badge.badge-low-stock {
         background: rgba(231,76,60,0.18);
