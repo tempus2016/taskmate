@@ -166,6 +166,9 @@ class TaskMatePanel extends HTMLElement {
     this.addEventListener("dragover", this._onDragOver);
     this.addEventListener("drop", this._onDrop);
     document.addEventListener("visibilitychange", this._onVisibilityChange);
+    if (!customElements.get("ha-entity-picker") && window.loadCardHelpers) {
+      window.loadCardHelpers().catch(() => {});
+    }
     if (!this.classList.contains("dark") && !this.classList.contains("light")) {
       const isDark = this._isHaDark();
       this.classList.toggle("dark", isDark);
@@ -194,7 +197,8 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _isHaDark() {
-    const bg = getComputedStyle(document.documentElement)
+    const el = this.isConnected ? this : document.documentElement;
+    const bg = getComputedStyle(el)
       .getPropertyValue("--primary-background-color").trim();
     if (!bg) return false;
     let r, g, b;
@@ -460,7 +464,13 @@ class TaskMatePanel extends HTMLElement {
     const i = arr.indexOf(value);
     if (i >= 0) arr.splice(i, 1); else arr.push(value);
     this._dialog.data[field] = arr;
+    const scrim = this.querySelector(".tm-scrim");
+    const scrollY = scrim ? scrim.scrollTop : 0;
     this._render();
+    if (scrollY) {
+      const s = this.querySelector(".tm-scrim");
+      if (s) s.scrollTop = scrollY;
+    }
   }
 
   _confirmDelete(kind, id) {
@@ -1121,7 +1131,7 @@ class TaskMatePanel extends HTMLElement {
         </div>
         <div class="tm-card-foot">
           <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="edit-child" data-id="${this._esc(child.id)}">Edit</button>
-          <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="reorder-chores-for-child" data-id="${this._esc(child.id)}" title="Reorder this child's chores">⇅ Order</button>
+          <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="reorder-chores-for-child" data-id="${this._esc(child.id)}" title="Reorder this child's chores">⇅ Chore Order</button>
           <button class="tm-btn tm-btn-danger tm-btn-sm" data-act="delete-child" data-id="${this._esc(child.id)}">Delete</button>
         </div>
       </article>
@@ -2396,7 +2406,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-icon-btn:hover { background: var(--tm-surface-2); color: var(--tm-text); }
 
       /* Cards */
-      .tm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+      .tm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 14px; }
       .tm-card {
         position: relative; overflow: hidden;
         background: var(--tm-surface-0);
