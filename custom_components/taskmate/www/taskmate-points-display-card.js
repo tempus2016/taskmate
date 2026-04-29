@@ -56,6 +56,8 @@ function weeklyPoints(child) {
 }
 
 function childAvatar(child, colour) {
+  const av = child.avatar || "mdi:account-circle";
+  const isIcon = av.startsWith("mdi:");
   const initials = (child.name || "?")
     .split(" ")
     .map(w => w[0])
@@ -64,9 +66,11 @@ function childAvatar(child, colour) {
     .toUpperCase();
   return html`
     <div class="avatar" style="background:${colour}">
-      ${child.avatar
-        ? html`<img src="${child.avatar}" alt="${child.name}">`
-        : initials}
+      ${isIcon
+        ? html`<ha-icon icon="${av}"></ha-icon>`
+        : av
+          ? html`<img src="${av}" alt="${child.name}">`
+          : initials}
     </div>`;
 }
 
@@ -149,6 +153,10 @@ class TaskMatePointsDisplayCard extends LitElement {
         flex-shrink: 0;
         overflow: hidden;
       }
+      .avatar ha-icon {
+        --mdc-icon-size: 32px;
+        color: white;
+      }
       .avatar img {
         width: 100%;
         height: 100%;
@@ -177,6 +185,9 @@ class TaskMatePointsDisplayCard extends LitElement {
         height: 80px;
         font-size: 1.8rem;
         box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      }
+      .single-wrap .avatar ha-icon {
+        --mdc-icon-size: 48px;
       }
       .child-name {
         font-size: 1.25rem;
