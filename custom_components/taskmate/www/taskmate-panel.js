@@ -498,10 +498,13 @@ class TaskMatePanel extends HTMLElement {
       this._openDialog({ kind: "child", mode: "edit", data: {
         id: c.id, name: c.name || "", avatar: c.avatar || "mdi:account-circle",
         availability_entity: c.availability_entity || "",
+        availability_inverted: !!c.availability_inverted,
+        unavailability_entity: c.unavailability_entity || "",
       } });
     } else {
       this._openDialog({ kind: "child", mode: "add", data: {
         name: "", avatar: "mdi:account-circle", availability_entity: "",
+        availability_inverted: false, unavailability_entity: "",
       } });
     }
   }
@@ -511,8 +514,12 @@ class TaskMatePanel extends HTMLElement {
     if (!d.name || !d.name.trim()) { this._showToast("err", "Name is required"); return; }
     const wasAdd = this._dialog.mode === "add";
     const payload = wasAdd
-      ? { type: "taskmate/add_child", name: d.name.trim(), avatar: d.avatar || "mdi:account-circle", availability_entity: d.availability_entity || "" }
-      : { type: "taskmate/update_child", child_id: d.id, name: d.name.trim(), avatar: d.avatar || "mdi:account-circle", availability_entity: d.availability_entity || "" };
+      ? { type: "taskmate/add_child", name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
+          availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
+          unavailability_entity: d.unavailability_entity || "" }
+      : { type: "taskmate/update_child", child_id: d.id, name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
+          availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
+          unavailability_entity: d.unavailability_entity || "" };
     const { ok, err } = await this._callWS(payload);
     if (!ok) { this._showToast("err", `Save failed: ${err}`); return; }
     this._closeDialog(true);
@@ -1077,7 +1084,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-avatar">${this._mdi(child.avatar)}</div>
           <div class="tm-child-name">
             <h3>${this._esc(child.name || "(unnamed)")}</h3>
-            <div class="tm-meta">${child.availability_entity ? `<code>${this._esc(child.availability_entity)}</code>` : `No availability sensor`}</div>
+            <div class="tm-meta">${child.availability_entity ? `<code>${this._esc(child.availability_entity)}</code>${child.availability_inverted ? ` <em>(inverted)</em>` : ""}` : `No availability sensor`}${child.unavailability_entity ? ` · Busy: <code>${this._esc(child.unavailability_entity)}</code>` : ""}</div>
           </div>
         </div>
         <div class="tm-stats-row">
@@ -1534,12 +1541,17 @@ class TaskMatePanel extends HTMLElement {
 
   _renderChildDialog() {
     const d = this._dialog.data;
+    const hasAvail = !!(d.availability_entity && d.availability_entity.trim());
     return this._dialogShell(this._dialog.mode === "add" ? "Add child" : "Edit child",
       [
         this._field("Name", "name", d.name, "text", "e.g. Malia"),
         this._iconPickerField("Avatar", "avatar", d.avatar),
         this._entityPickerField("Availability sensor (optional)", "availability_entity", d.availability_entity, ["binary_sensor", "sensor", "input_boolean", "person"],
           "States <code>on</code>, <code>home</code>, <code>available</code>, <code>present</code>, <code>true</code> mean available. Leave blank to treat as always available."),
+        hasAvail ? this._switch("Invert logic (ON = unavailable)", "availability_inverted", d.availability_inverted,
+          "Turn on for calendar or schedule sensors where an active state means the child is busy.") : "",
+        this._entityPickerField("Unavailability sensor (optional)", "unavailability_entity", d.unavailability_entity, ["binary_sensor", "sensor", "input_boolean", "person", "calendar"],
+          "A second sensor where <code>on</code>/<code>active</code> means the child is busy. Useful for school calendars. The child is available only when the availability sensor says available AND this sensor does not say busy."),
       ].join(""),
       `<button class="tm-btn tm-btn-ghost" data-act="close-dialog">Cancel</button>
        <button class="tm-btn" data-act="save-child">Save</button>`
