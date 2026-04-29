@@ -51,15 +51,21 @@
       },
       "edit_child": {
         "title": "Rediger barn: {child_name}",
-        "description": "Oppdater eller slett dette barnet",
+        "description": "Oppdater dette barnets detaljer",
         "data": {
           "name": "Barnets navn",
           "avatar": "Avatar",
-          "availability_entity": "Tilgjengelighetssensor (valgfritt)",
-          "action": "Handling"
+          "availability_entity": "Tilgjengelighetssensor (valgfritt)"
         },
         "data_description": {
           "availability_entity": "Valgfri Home Assistant-entitet hvis tilstand forteller TaskMate om dette barnet er tilgjengelig. Tilstandene 'on', 'home', 'available', 'present' eller 'true' betyr tilgjengelig; alt annet (f.eks. 'off', 'not_home', 'away') betyr utilgjengelig. La stå tom for å behandle barnet som alltid tilgjengelig."
+        }
+      },
+      "confirm_delete_child": {
+        "title": "Slett barn: {child_name}",
+        "description": "Dette vil permanent fjerne {child_name} og all fullføringshistorikk, belønningskrav, poengtransaksjoner og sparegris-tildelinger. Oppgaver tildelt dem vil bli oppdatert. Dette kan ikke angres.",
+        "data": {
+          "confirm": "Ja, slett dette barnet"
         }
       },
       "manage_chores": {
@@ -355,12 +361,6 @@
     }
   },
   "selector": {
-    "child_action": {
-      "options": {
-        "save": "Lagre endringer",
-        "delete": "Slett barn"
-      }
-    },
     "chore_action": {
       "options": {
         "save": "Lagre endringer",

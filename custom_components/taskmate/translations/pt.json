@@ -51,15 +51,21 @@
       },
       "edit_child": {
         "title": "Editar criança: {child_name}",
-        "description": "Atualizar ou eliminar esta criança",
+        "description": "Atualizar as informações desta criança",
         "data": {
           "name": "Nome da criança",
           "avatar": "Avatar",
-          "availability_entity": "Sensor de disponibilidade (opcional)",
-          "action": "Ação"
+          "availability_entity": "Sensor de disponibilidade (opcional)"
         },
         "data_description": {
           "availability_entity": "Entidade opcional do Home Assistant cujo estado indica ao TaskMate se esta criança está disponível. Os estados 'on', 'home', 'available', 'present' ou 'true' significam disponível; qualquer outro (ex.: 'off', 'not_home', 'away') significa indisponível. Deixe vazio para tratar a criança como sempre disponível."
+        }
+      },
+      "confirm_delete_child": {
+        "title": "Eliminar criança: {child_name}",
+        "description": "Isto irá remover permanentemente {child_name} e todo o seu histórico de conclusão, reclamações de recompensas, transações de pontos e alocações de mealheiro. As tarefas atribuídas serão atualizadas. Esta ação não pode ser desfeita.",
+        "data": {
+          "confirm": "Sim, eliminar esta criança"
         }
       },
       "manage_chores": {
@@ -355,12 +361,6 @@
     }
   },
   "selector": {
-    "child_action": {
-      "options": {
-        "save": "Guardar alterações",
-        "delete": "Eliminar criança"
-      }
-    },
     "chore_action": {
       "options": {
         "save": "Guardar alterações",

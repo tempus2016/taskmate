@@ -237,7 +237,8 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         menu_options = {"add_child": _m("add_child", "Add New Child")}
 
         for child in children:
-            menu_options[f"edit_child_{child.id}"] = f"{child.name}"
+            menu_options[f"edit_child_{child.id}"] = f"Edit: {child.name}"
+            menu_options[f"confirm_delete_child_{child.id}"] = f"Delete: {child.name}"
 
         menu_options["init"] = _m("init", "Back to Main Menu")
 
@@ -297,19 +298,15 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            action = user_input.get("action")
-            if action == "delete":
-                await self.coordinator.async_remove_child(child.id)
-                return await self.async_step_manage_children()
-            elif action == "save":
-                child.name = user_input.get("name", child.name)
-                child.avatar = user_input.get("avatar", child.avatar)
-                child.availability_entity = (
-                    user_input.get("availability_entity", "") or ""
-                )
-                await self.coordinator.async_update_child(child)
-                return await self.async_step_manage_children()
+            child.name = user_input.get("name", child.name)
+            child.avatar = user_input.get("avatar", child.avatar)
+            child.availability_entity = (
+                user_input.get("availability_entity", "") or ""
+            )
+            await self.coordinator.async_update_child(child)
+            return await self.async_step_manage_children()
 
+        avatar_default = child.avatar if child.avatar in AVATAR_OPTIONS else "mdi:account-circle"
         availability_default = getattr(child, "availability_entity", "") or ""
         availability_key = (
             vol.Optional("availability_entity", default=availability_default)
@@ -322,7 +319,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Required("name", default=child.name): str,
-                    vol.Optional("avatar", default=child.avatar): selector.SelectSelector(
+                    vol.Optional("avatar", default=avatar_default): selector.SelectSelector(
                         selector.SelectSelectorConfig(
                             options=[
                                 selector.SelectOptionDict(value=icon, label=icon.replace("mdi:", "").replace("-", " ").title())
@@ -334,16 +331,32 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     availability_key: selector.EntitySelector(
                         selector.EntitySelectorConfig()
                     ),
-                    vol.Required("action", default="save"): selector.SelectSelector(
-                        selector.SelectSelectorConfig(
-                            options=["save", "delete"],
-                            translation_key="child_action",
-                            mode=selector.SelectSelectorMode.LIST,
-                        )
-                    ),
                 }
             ),
             errors=errors,
+            description_placeholders={"child_name": child.name},
+        )
+
+    async def async_step_confirm_delete_child(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Confirm deletion of a child."""
+        child = self.coordinator.get_child(self._selected_child_id)
+        if not child:
+            return await self.async_step_manage_children()
+
+        if user_input is not None:
+            if user_input.get("confirm"):
+                await self.coordinator.async_remove_child(child.id)
+            return await self.async_step_manage_children()
+
+        return self.async_show_form(
+            step_id="confirm_delete_child",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("confirm", default=False): selector.BooleanSelector(),
+                }
+            ),
             description_placeholders={"child_name": child.name},
         )
 
@@ -1635,7 +1648,12 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
 
     def __getattr__(self, name: str):
         """Handle dynamic step routing for edit_child_*, edit_chore_*, etc."""
-        if name.startswith("async_step_edit_child_"):
+        if name.startswith("async_step_confirm_delete_child_"):
+            child_id = name.replace("async_step_confirm_delete_child_", "")
+            if self.coordinator.storage.get_child(child_id):
+                self._selected_child_id = child_id
+                return self.async_step_confirm_delete_child
+        elif name.startswith("async_step_edit_child_"):
             child_id = name.replace("async_step_edit_child_", "")
             if self.coordinator.storage.get_child(child_id):
                 self._selected_child_id = child_id

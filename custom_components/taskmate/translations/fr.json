@@ -51,15 +51,21 @@
       },
       "edit_child": {
         "title": "Modifier l'enfant : {child_name}",
-        "description": "Mettre à jour ou supprimer cet enfant",
+        "description": "Mettre à jour les informations de cet enfant",
         "data": {
           "name": "Nom de l'enfant",
           "avatar": "Avatar",
-          "availability_entity": "Capteur de disponibilité (optionnel)",
-          "action": "Action"
+          "availability_entity": "Capteur de disponibilité (optionnel)"
         },
         "data_description": {
           "availability_entity": "Entité Home Assistant optionnelle dont l'état indique à TaskMate si cet enfant est disponible. Les états 'on', 'home', 'available', 'present' ou 'true' signifient disponible ; tout autre état (ex. 'off', 'not_home', 'away') signifie indisponible. Laissez vide pour considérer l'enfant comme toujours disponible."
+        }
+      },
+      "confirm_delete_child": {
+        "title": "Supprimer l'enfant : {child_name}",
+        "description": "Cela supprimera définitivement {child_name} ainsi que tout son historique de complétion, ses réclamations de récompenses, ses transactions de points et ses allocations de cagnotte. Les corvées qui lui sont assignées seront mises à jour. Cette action est irréversible.",
+        "data": {
+          "confirm": "Oui, supprimer cet enfant"
         }
       },
       "manage_chores": {
@@ -355,12 +361,6 @@
     }
   },
   "selector": {
-    "child_action": {
-      "options": {
-        "save": "Enregistrer les modifications",
-        "delete": "Supprimer l'enfant"
-      }
-    },
     "chore_action": {
       "options": {
         "save": "Enregistrer les modifications",

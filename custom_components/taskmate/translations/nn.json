@@ -51,15 +51,21 @@
       },
       "edit_child": {
         "title": "Rediger born: {child_name}",
-        "description": "Oppdater eller slett dette bornet",
+        "description": "Oppdater dette bornet sine detaljar",
         "data": {
           "name": "Namnet til bornet",
           "avatar": "Avatar",
-          "availability_entity": "Tilgjengesensor (valfritt)",
-          "action": "Handling"
+          "availability_entity": "Tilgjengesensor (valfritt)"
         },
         "data_description": {
           "availability_entity": "Valfri Home Assistant-entitet som med tilstanden si fortel TaskMate om dette bornet er tilgjengeleg. Tilstandane 'on', 'home', 'available', 'present' eller 'true' tyder tilgjengeleg; alt anna (t.d. 'off', 'not_home', 'away') tyder utilgjengeleg. Lat stå tom for å handsame bornet som alltid tilgjengeleg."
+        }
+      },
+      "confirm_delete_child": {
+        "title": "Slett born: {child_name}",
+        "description": "Dette vil permanent fjerne {child_name} og all fullføringshistorikk, løningskrav, poengtransaksjonar og sparegris-tildelingar. Oppgåver tildelte dei vil verte oppdaterte. Dette kan ikkje gjerast om.",
+        "data": {
+          "confirm": "Ja, slett dette bornet"
         }
       },
       "manage_chores": {
@@ -355,12 +361,6 @@
     }
   },
   "selector": {
-    "child_action": {
-      "options": {
-        "save": "Lagre endringar",
-        "delete": "Slett born"
-      }
-    },
     "chore_action": {
       "options": {
         "save": "Lagre endringar",
