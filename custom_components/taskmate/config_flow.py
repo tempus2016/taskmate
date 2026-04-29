@@ -262,6 +262,8 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                     name=name,
                     avatar=user_input.get("avatar", "mdi:account-circle"),
                     availability_entity=user_input.get("availability_entity", "") or "",
+                    availability_inverted=user_input.get("availability_inverted", False),
+                    unavailability_entity=user_input.get("unavailability_entity", "") or "",
                 )
                 return await self.async_step_manage_children()
 
@@ -280,6 +282,10 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         )
                     ),
                     vol.Optional("availability_entity", default=""): selector.EntitySelector(
+                        selector.EntitySelectorConfig()
+                    ),
+                    vol.Optional("availability_inverted", default=False): selector.BooleanSelector(),
+                    vol.Optional("unavailability_entity", default=""): selector.EntitySelector(
                         selector.EntitySelectorConfig()
                     ),
                 }
@@ -303,6 +309,10 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             child.availability_entity = (
                 user_input.get("availability_entity", "") or ""
             )
+            child.availability_inverted = user_input.get("availability_inverted", False)
+            child.unavailability_entity = (
+                user_input.get("unavailability_entity", "") or ""
+            )
             await self.coordinator.async_update_child(child)
             return await self.async_step_manage_children()
 
@@ -312,6 +322,13 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             vol.Optional("availability_entity", default=availability_default)
             if availability_default
             else vol.Optional("availability_entity")
+        )
+        inverted_default = getattr(child, "availability_inverted", False)
+        unavailability_default = getattr(child, "unavailability_entity", "") or ""
+        unavailability_key = (
+            vol.Optional("unavailability_entity", default=unavailability_default)
+            if unavailability_default
+            else vol.Optional("unavailability_entity")
         )
 
         return self.async_show_form(
@@ -329,6 +346,10 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                         )
                     ),
                     availability_key: selector.EntitySelector(
+                        selector.EntitySelectorConfig()
+                    ),
+                    vol.Optional("availability_inverted", default=inverted_default): selector.BooleanSelector(),
+                    unavailability_key: selector.EntitySelector(
                         selector.EntitySelectorConfig()
                     ),
                 }
