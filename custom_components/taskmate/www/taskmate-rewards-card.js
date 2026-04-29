@@ -215,7 +215,7 @@ class TaskMateRewardsCard extends LitElement {
       .progress-bar {
         flex: 1;
         height: 14px;
-        background: rgba(0, 0, 0, 0.08);
+        background: var(--divider-color, #e0e0e0);
         border-radius: 7px;
         overflow: hidden;
         position: relative;
@@ -322,7 +322,7 @@ class TaskMateRewardsCard extends LitElement {
       .jackpot-progress-bar {
         flex: 1;
         height: 18px;
-        background: rgba(0, 0, 0, 0.08);
+        background: var(--divider-color, #e0e0e0);
         border-radius: 9px;
         overflow: hidden;
         position: relative;
@@ -399,7 +399,7 @@ class TaskMateRewardsCard extends LitElement {
         align-items: center;
         gap: 3px;
         padding: 2px 8px;
-        background: rgba(0, 0, 0, 0.05);
+        background: color-mix(in srgb, var(--primary-text-color, #212121) 8%, transparent);
         border-radius: 10px;
         font-weight: 500;
       }
@@ -543,11 +543,11 @@ class TaskMateRewardsCard extends LitElement {
       }
       .availability-badge.badge-sold-out {
         background: rgba(189,195,199,0.25);
-        color: #7f8c8d;
+        color: var(--secondary-text-color, #757575);
       }
       .availability-badge.badge-expired {
-        background: rgba(52,73,94,0.18);
-        color: #34495e;
+        background: color-mix(in srgb, var(--secondary-text-color, #757575) 18%, transparent);
+        color: var(--secondary-text-color, #757575);
       }
       .availability-badge.badge-low-stock {
         background: rgba(231,76,60,0.15);
