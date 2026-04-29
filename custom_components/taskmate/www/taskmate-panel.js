@@ -464,13 +464,11 @@ class TaskMatePanel extends HTMLElement {
     const i = arr.indexOf(value);
     if (i >= 0) arr.splice(i, 1); else arr.push(value);
     this._dialog.data[field] = arr;
-    const scrim = this.querySelector(".tm-scrim");
-    const scrollY = scrim ? scrim.scrollTop : 0;
+    const body = this.querySelector(".tm-dialog-body");
+    const scrollY = body ? body.scrollTop : 0;
     this._render();
-    if (scrollY) {
-      const s = this.querySelector(".tm-scrim");
-      if (s) s.scrollTop = scrollY;
-    }
+    const b = this.querySelector(".tm-dialog-body");
+    if (b) b.scrollTop = scrollY;
   }
 
   _confirmDelete(kind, id) {
@@ -880,7 +878,12 @@ class TaskMatePanel extends HTMLElement {
       const v = el.getAttribute("data-current") || "";
       if (el.value !== v) el.value = v;
     });
-    this.querySelectorAll("ha-entity-picker").forEach(el => {
+    const pickers = this.querySelectorAll("ha-entity-picker");
+    if (pickers.length > 0 && !customElements.get("ha-entity-picker")) {
+      customElements.whenDefined("ha-entity-picker").then(() => this._bindHaPickers());
+      return;
+    }
+    pickers.forEach(el => {
       el.hass = this._hass;
       const dom = el.getAttribute("data-domains");
       if (dom && !el.includeDomains) el.includeDomains = dom.split(",");
@@ -1963,7 +1966,7 @@ class TaskMatePanel extends HTMLElement {
     return `
       <label class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
-        <ha-entity-picker data-field="${name}" data-current="${this._esc(value || "")}" ${dom ? `data-domains="${this._esc(dom)}"` : ""}></ha-entity-picker>
+        <ha-entity-picker label="${this._esc(label)}" data-field="${name}" data-current="${this._esc(value || "")}" ${dom ? `data-domains="${this._esc(dom)}"` : ""}></ha-entity-picker>
         ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
       </label>`;
   }
