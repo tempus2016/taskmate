@@ -296,9 +296,17 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         name: str,
         avatar: str = "mdi:account-circle",
         availability_entity: str = "",
+        availability_inverted: bool = False,
+        unavailability_entity: str = "",
     ) -> Child:
         """Add a new child."""
-        child = Child(name=name, avatar=avatar, availability_entity=availability_entity)
+        child = Child(
+            name=name,
+            avatar=avatar,
+            availability_entity=availability_entity,
+            availability_inverted=availability_inverted,
+            unavailability_entity=unavailability_entity,
+        )
         self.storage.add_child(child)
         await self.storage.async_save()
         await self.async_refresh()
