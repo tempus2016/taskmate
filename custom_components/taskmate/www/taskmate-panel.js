@@ -130,6 +130,11 @@ class TaskMatePanel extends HTMLElement {
     const first = this._hass === null;
     const prevConnected = this._lastConnected;
     this._hass = value;
+
+    // Sync light/dark with HA's theme selector (Settings > General > Theme)
+    const isDark = !!value?.themes?.darkMode;
+    this.classList.toggle("dark", isDark);
+    this.classList.toggle("light", !isDark);
     const connNow = !!(value && value.connection && value.connection.connected !== false);
     this._lastConnected = connNow;
 
@@ -162,6 +167,12 @@ class TaskMatePanel extends HTMLElement {
     this.addEventListener("dragover", this._onDragOver);
     this.addEventListener("drop", this._onDrop);
     document.addEventListener("visibilitychange", this._onVisibilityChange);
+    // OS-preference fallback until HA's hass.themes.darkMode arrives
+    if (!this.classList.contains("dark") && !this.classList.contains("light")) {
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        this.classList.add("dark");
+      }
+    }
     if (!this._rendered) this._render();
   }
   disconnectedCallback() {
@@ -2036,9 +2047,8 @@ class TaskMatePanel extends HTMLElement {
         font-feature-settings: "cv11", "ss01";
       }
 
-      /* ===== Dark theme override ===== */
-      @media (prefers-color-scheme: dark) {
-        taskmate-panel {
+      /* ===== Dark theme — follows HA's theme selector ===== */
+      taskmate-panel.dark {
           --tm-bg:            #0a0a0a;
           --tm-surface-0:     #111111;
           --tm-surface-1:     #161616;
@@ -2084,7 +2094,6 @@ class TaskMatePanel extends HTMLElement {
           --tm-shadow-sm:     0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
           --tm-shadow:        0 4px 12px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
           --tm-shadow-lg:     0 24px 48px -12px rgba(0,0,0,0.7), 0 8px 16px -4px rgba(0,0,0,0.3);
-        }
       }
 
       /* ===== Shell ===== */
@@ -2729,9 +2738,7 @@ class TaskMatePanel extends HTMLElement {
         overflow-y: auto;
         animation: tm-scrim-in 0.18s var(--tm-easing);
       }
-      @media (prefers-color-scheme: dark) {
-        .tm-scrim { background: rgba(0,0,0,0.6); }
-      }
+      taskmate-panel.dark .tm-scrim { background: rgba(0,0,0,0.6); }
       @keyframes tm-scrim-in { from { opacity: 0; } to { opacity: 1; } }
       .tm-dialog {
         background: var(--tm-surface-0);
