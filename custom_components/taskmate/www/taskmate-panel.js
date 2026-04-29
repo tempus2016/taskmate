@@ -1995,15 +1995,36 @@ class TaskMatePanel extends HTMLElement {
       .slice(0, 50);
     if (!entities.length) return;
     const dd = document.createElement("div");
-    dd.className = "tm-ep-dropdown";
+    Object.assign(dd.style, {
+      position: "absolute", top: "100%", left: "0", right: "0",
+      maxHeight: "260px", overflowY: "auto",
+      background: "#1c1c1e", border: "1px solid #3a3a3c",
+      borderRadius: "10px", zIndex: "200",
+      marginTop: "4px", padding: "4px 0",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.45)"
+    });
     entities.forEach(([id, st]) => {
       const fn = st.attributes?.friendly_name || "";
       const opt = document.createElement("div");
-      opt.className = "tm-ep-option";
       opt.dataset.act = "pick-entity";
       opt.dataset.field = field;
       opt.dataset.value = id;
-      opt.innerHTML = `<div class="tm-ep-id">${this._esc(id)}</div>${fn ? `<div class="tm-ep-name">${this._esc(fn)}</div>` : ""}`;
+      Object.assign(opt.style, {
+        padding: "8px 12px", cursor: "pointer",
+        borderBottom: "1px solid rgba(255,255,255,0.06)"
+      });
+      opt.addEventListener("mouseenter", () => opt.style.background = "rgba(255,255,255,0.1)");
+      opt.addEventListener("mouseleave", () => opt.style.background = "transparent");
+      const idDiv = document.createElement("div");
+      idDiv.textContent = id;
+      Object.assign(idDiv.style, { fontSize: "13px", color: "#f5f5f5", fontFamily: "ui-monospace, monospace" });
+      opt.appendChild(idDiv);
+      if (fn) {
+        const nameDiv = document.createElement("div");
+        nameDiv.textContent = fn;
+        Object.assign(nameDiv.style, { fontSize: "11px", color: "#8e8e93", marginTop: "2px" });
+        opt.appendChild(nameDiv);
+      }
       dd.appendChild(opt);
     });
     picker.appendChild(dd);
