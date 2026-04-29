@@ -166,9 +166,6 @@ class TaskMatePanel extends HTMLElement {
     this.addEventListener("dragover", this._onDragOver);
     this.addEventListener("drop", this._onDrop);
     document.addEventListener("visibilitychange", this._onVisibilityChange);
-    if (!customElements.get("ha-entity-picker") && window.loadCardHelpers) {
-      window.loadCardHelpers().catch(() => {});
-    }
     if (!this.classList.contains("dark") && !this.classList.contains("light")) {
       const isDark = this._isHaDark();
       this.classList.toggle("dark", isDark);
@@ -285,6 +282,7 @@ class TaskMatePanel extends HTMLElement {
 
     if (act === "tab")          { this._activeTab = t.dataset.tab; this._filter = ""; this._render(); return; }
     if (act === "close-dialog") { this._closeDialog(); return; }
+    if (act === "clear-field") { if (this._dialog?.data) { this._dialog.data[t.dataset.field] = ""; this._render(); } return; }
     if (act === "scrim") {
       if (e.target === this.querySelector(".tm-scrim")) this._closeDialog();
       return;
@@ -875,18 +873,6 @@ class TaskMatePanel extends HTMLElement {
     if (!this._hass) return;
     this.querySelectorAll("ha-icon-picker").forEach(el => {
       el.hass = this._hass;
-      const v = el.getAttribute("data-current") || "";
-      if (el.value !== v) el.value = v;
-    });
-    const pickers = this.querySelectorAll("ha-entity-picker");
-    if (pickers.length > 0 && !customElements.get("ha-entity-picker")) {
-      customElements.whenDefined("ha-entity-picker").then(() => this._bindHaPickers());
-      return;
-    }
-    pickers.forEach(el => {
-      el.hass = this._hass;
-      const dom = el.getAttribute("data-domains");
-      if (dom && !el.includeDomains) el.includeDomains = dom.split(",");
       const v = el.getAttribute("data-current") || "";
       if (el.value !== v) el.value = v;
     });
@@ -1962,11 +1948,25 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _entityPickerField(label, name, value, domains, hint = "") {
-    const dom = (domains || []).join(",");
+    const listId = `tm-el-${name}`;
+    let opts = "";
+    if (this._hass && this._hass.states) {
+      const ids = Object.keys(this._hass.states)
+        .filter(e => !domains || domains.length === 0 || domains.some(d => e.startsWith(d + ".")))
+        .sort();
+      opts = ids.map(e => {
+        const friendly = this._hass.states[e].attributes?.friendly_name || "";
+        return `<option value="${this._esc(e)}">${this._esc(friendly)}</option>`;
+      }).join("");
+    }
     return `
       <label class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
-        <ha-entity-picker label="${this._esc(label)}" data-field="${name}" data-current="${this._esc(value || "")}" ${dom ? `data-domains="${this._esc(dom)}"` : ""}></ha-entity-picker>
+        <div class="tm-entity-wrap">
+          <input type="text" class="tm-input" data-field="${name}" value="${this._esc(value || "")}" list="${listId}" placeholder="e.g. binary_sensor.name" autocomplete="off">
+          ${value ? `<button type="button" class="tm-entity-clear" data-act="clear-field" data-field="${name}" title="Clear">✕</button>` : ""}
+        </div>
+        <datalist id="${listId}">${opts}</datalist>
         ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
       </label>`;
   }
@@ -2824,6 +2824,20 @@ class TaskMatePanel extends HTMLElement {
         border-color: var(--tm-accent);
         box-shadow: var(--tm-shadow-focus);
       }
+      .tm-entity-wrap {
+        position: relative; display: flex; align-items: center;
+      }
+      .tm-entity-wrap .tm-input { flex: 1; padding-right: 30px; }
+      .tm-entity-clear {
+        position: absolute; right: 6px;
+        width: 20px; height: 20px;
+        border: 0; background: var(--tm-surface-2);
+        border-radius: 50%; cursor: pointer;
+        font-size: 11px; color: var(--tm-text-faint);
+        display: grid; place-items: center;
+        font-family: inherit;
+      }
+      .tm-entity-clear:hover { background: var(--tm-danger-soft); color: var(--tm-danger); }
       .tm-field-hint {
         display: block; color: var(--tm-text-faint);
         font-size: 11.5px; margin-top: 4px; line-height: 1.5;
@@ -2836,7 +2850,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
       .tm-textarea { resize: vertical; min-height: 100px; line-height: 1.5; }
 
-      .tm-field ha-icon-picker, .tm-field ha-entity-picker,
+      .tm-field ha-icon-picker,
       .tm-section-body ha-icon-picker {
         display: block; width: 100%;
       }
