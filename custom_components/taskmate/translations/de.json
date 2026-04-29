@@ -1,0 +1,877 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Willkommen bei TaskMate!",
+        "description": "Richten Sie Ihr Familien Aufgabenverwaltungssystem ein. Sie können die Punktewährung anpassen, die Kinder verdienen können.",
+        "data": {
+          "points_name": "Name der Punktewährung (z. B. Sterne, Münzen, Dollar)",
+          "points_icon": "Punkte-Symbol"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Name ist erforderlich"
+    },
+    "abort": {
+      "already_configured": "TaskMate ist bereits konfiguriert"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "TaskMate-Einstellungen",
+        "menu_options": {
+          "manage_children": "Kinder verwalten",
+          "manage_chores": "Aufgaben verwalten",
+          "manage_task_groups": "Aufgabengruppen verwalten",
+          "manage_rewards": "Prämien verwalten",
+          "settings": "Einstellungen"
+        }
+      },
+      "manage_children": {
+        "title": "Kinder verwalten",
+        "description": "Untergeordnete Elemente hinzufügen, bearbeiten oder entfernen",
+        "menu_options": {
+          "add_child": "Neues Kind hinzufügen",
+          "init": "Zurück zum Hauptmenü"
+        }
+      },
+      "add_child": {
+        "title": "Neues Kind hinzufügen",
+        "description": "Geben Sie die Daten des Kindes ein",
+        "data": {
+          "name": "Name des Kindes",
+          "avatar": "Avatar",
+          "availability_entity": "Verfügbarkeitssensor (optional)",
+          "availability_inverted": "Verfügbarkeitslogik umkehren",
+          "unavailability_entity": "Nichtverfügbarkeitssensor (optional)"
+        },
+        "data_description": {
+          "availability_entity": "Optionale Home Assistant-Entität, deren Status TaskMate mitteilt, ob dieses untergeordnete Element verfügbar ist. Die Zustände „on“, „home“, „available“, „present“ oder „true“ bedeuten verfügbar; alles andere (z. B. „off“, „not_home“, „away“) bedeutet „nicht verfügbar“. Lassen Sie das Feld leer, um das Kind als immer verfügbar zu behandeln. Verdrahten Sie für Kalender einen Vorlagen-Binärsensor, da ein Kalenderereignis normalerweise „beschäftigt/nicht verfügbar“ bedeutet.",
+          "availability_inverted": "Wenn der Verfügbarkeitssensor aktiviert ist, bedeutet ein aktiver Status (Ein/Zuhause/Verfügbar), dass das Kind nicht verfügbar ist. Verwenden Sie dies für Kalender- oder Zeitplansensoren, bei denen ein Ereignis bedeutet, dass das Kind beschäftigt ist.",
+          "unavailability_entity": "Ein zweiter Sensor, der anzeigt, wenn das Kind beschäftigt ist. Ein aktiver Zustand (Ein/Zuhause/Verfügbar) auf diesem Sensor bedeutet „Nicht verfügbar“. Nützlich für Schulkalender oder Stundenplansensoren. Das Kind ist nur verfügbar, wenn der Verfügbarkeitssensor „Verfügbar“ anzeigt UND dieser Sensor nicht „Besetzt“ anzeigt."
+        }
+      },
+      "edit_child": {
+        "title": "Kind bearbeiten: {child_name}",
+        "description": "Aktualisieren Sie die Daten dieses Kindes",
+        "data": {
+          "name": "Name des Kindes",
+          "avatar": "Avatar",
+          "availability_entity": "Verfügbarkeitssensor (optional)",
+          "availability_inverted": "Verfügbarkeitslogik umkehren",
+          "unavailability_entity": "Nichtverfügbarkeitssensor (optional)"
+        },
+        "data_description": {
+          "availability_entity": "Optionale Home Assistant-Entität, deren Status TaskMate mitteilt, ob dieses untergeordnete Element verfügbar ist. Die Zustände „on“, „home“, „available“, „present“ oder „true“ bedeuten verfügbar; alles andere (z. B. „off“, „not_home“, „away“) bedeutet „nicht verfügbar“. Lassen Sie das Feld leer, um das Kind als immer verfügbar zu behandeln.",
+          "availability_inverted": "Wenn der Verfügbarkeitssensor aktiviert ist, bedeutet ein aktiver Status (Ein/Zuhause/Verfügbar), dass das Kind nicht verfügbar ist. Verwenden Sie dies für Kalender- oder Zeitplansensoren, bei denen ein Ereignis bedeutet, dass das Kind beschäftigt ist.",
+          "unavailability_entity": "Ein zweiter Sensor, der anzeigt, wenn das Kind beschäftigt ist. Ein aktiver Zustand (Ein/Zuhause/Verfügbar) auf diesem Sensor bedeutet „Nicht verfügbar“. Nützlich für Schulkalender oder Stundenplansensoren. Das Kind ist nur verfügbar, wenn der Verfügbarkeitssensor „Verfügbar“ anzeigt UND dieser Sensor nicht „Besetzt“ anzeigt."
+        }
+      },
+      "confirm_delete_child": {
+        "title": "Kind löschen: {child_name}",
+        "description": "Dadurch werden {child_name} und sein gesamter Abschlussverlauf, seine Prämienansprüche, Punktetransaktionen und Poolzuweisungen dauerhaft entfernt. Die ihnen zugewiesenen Aufgaben werden aktualisiert. Dies kann nicht rückgängig gemacht werden.",
+        "data": {
+          "confirm": "Ja, dieses Kind löschen"
+        }
+      },
+      "manage_chores": {
+        "title": "Aufgaben verwalten",
+        "description": "Aufgaben hinzufügen, bearbeiten oder entfernen",
+        "menu_options": {
+          "add_chore": "Einzelne Aufgabe hinzufügen",
+          "add_chores_bulk": "Fügen Sie mehrere Aufgaben hinzu",
+          "init": "Zurück zum Hauptmenü"
+        }
+      },
+      "add_chore": {
+        "title": "Neue Aufgabe hinzufügen",
+        "description": "Erstellen Sie eine neue Aufgabe für Ihre Kinder",
+        "data": {
+          "name": "Aufgabenname",
+          "description": "Beschreibung (optional)",
+          "points": "Punktebelohnung",
+          "time_category": "Uhrzeit",
+          "claim_allowance_minutes": "Zusätzliche Beanspruchung (Minuten)",
+          "due_days": "Fälligkeitstage (optional)",
+          "assigned_to": "Zugewiesen an (für alle Kinder leer lassen)",
+          "requires_approval": "Erfordert die Zustimmung der Eltern",
+          "daily_limit": "Tägliches Abschlusslimit",
+          "schedule_mode": "Planungsmodus",
+          "completion_sound": "Abschlusssound",
+          "visibility_entity": "Anzeigen, wenn Entität vorhanden ist (optional)",
+          "visibility_operator": "So vergleichen Sie",
+          "visibility_state": "Wert zum Vergleichen",
+          "assignment_mode": "Zuweisungsmodus",
+          "assignment_rotation_anchor": "Startdatum der Rotation (nur alternierend)",
+          "manual_start_child_id": "Rotation starten mit (optional)",
+          "require_availability": "Überspringen Sie nicht verfügbare Kinder",
+          "publish_calendar_entities": "In Kalendern veröffentlichen (optional)"
+        },
+        "data_description": {
+          "claim_allowance_minutes": "Zusätzliche Minuten nach Ablauf dieses Tageszeitfensters, in denen die Aufgabe noch beansprucht werden kann. 0 deaktiviert die Kulanzfrist. Nachtarbeiten sind immer um Mitternacht begrenzt.",
+          "daily_limit": "Wie oft pro Tag kann diese Aufgabe erledigt werden?",
+          "schedule_mode": "Wählen Sie, wie diese Aufgabe geplant werden soll – bestimmte Wochentage oder ein sich wiederholendes Intervall. Die Planungsoptionen werden auf der nächsten Seite konfiguriert.",
+          "completion_sound": "Ton, der abgespielt wird, wenn diese Aufgabe erledigt ist",
+          "visibility_entity": "Home Assistant-Entitäts-ID, die steuert, wann diese Aufgabe angezeigt wird. Lassen Sie das Feld leer, um die Aufgabe immer anzuzeigen. Beispiele: binärer_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. Die Aufgabe erscheint nur auf der Kinderkarte, wenn die Sichtbarkeitsbedingung erfüllt ist.",
+          "visibility_operator": "So vergleichen Sie den aktuellen Zustand der Entität mit Ihrem Zielwert:\n• Kein Filter – zeigt immer die Aufgabe an (ignoriert den Entitätsstatus)\n• Ist gleich – geben Sie exakte Übereinstimmungen an (z. B. „on“, „home“, „running“).\n• Nicht gleich: Der Status stimmt nicht überein\n• Größer als oder gleich (≥) – für numerische Werte (z. B. 80 für Batterie ≥ 80 %).\n• Kleiner oder gleich (≤) – für numerische Werte (z. B. 30 für Feuchtigkeit ≤ 30 %).\n• Größer als (>) – für numerische Werte\n• Kleiner als (<) – für numerische Werte",
+          "visibility_state": "Der Wert, mit dem verglichen werden soll. Für „Gleich“ oder „Ungleich“: ein beliebiger Textwert (z. B. „Ein“, „Aus“, „Heim“, „Weg“). Für numerische Operatoren (≥, ≤, >, <): Geben Sie eine Zahl ein (z. B. 25, 50,5, 100). Beispiel: Entität „sensor.temperature“, Operator „>=“, Wert „20“ zeigt Aufgaben an, wenn die Temperatur 20 °C oder mehr beträgt.",
+          "assignment_mode": "Jeder = jedes zugewiesene Kind sieht diese Aufgabe. Abwechselnd = jeweils ein Kind, abwechselnd am Tag. Zufällig = ein zufällig ausgewähltes Kind pro Tag (stabil innerhalb des Tages). Ausgewogen = Die heutigen ausgeglichenen Aufgaben werden gleichmäßig auf die zugewiesenen Kinder aufgeteilt – kein Kind bekommt am Ende alles.",
+          "assignment_rotation_anchor": "Tag 0 der alternierenden Rotation. Lassen Sie das Feld leer, um noch heute zu beginnen. Wird nur verwendet, wenn der Zuweisungsmodus „Abwechselnd“ ist.",
+          "manual_start_child_id": "Wählt aus, welches Kind die Rotation startet. Im Wechselmodus wird der Pool dadurch dauerhaft neu angeordnet. Bei „Zufällig/Ausgeglichen“ überschreibt es nur den heutigen Beauftragten – die morgige Rotation wird normal fortgesetzt. Wird im Modus „Jeder“ ignoriert.",
+          "require_availability": "Wenn diese Option aktiviert ist, wird ein nicht verfügbares Kind (basierend auf dem Verfügbarkeitssensor in seinem Profil) übersprungen und das nächste verfügbare Geschwisterkind übernimmt die Aufgabe. Neubewertung um Mitternacht und immer dann, wenn ein Verfügbarkeitssensor auslöst. Heute bereits erledigte Aufgaben werden nicht neu vergeben.",
+          "publish_calendar_entities": "Wählen Sie ein oder mehrere Home Assistant-Kalenderobjekte aus. Immer wenn diese Aufgabe um Mitternacht erstellt, aktualisiert oder verschoben wird, wird das heute zugewiesene Kind als Kalenderereignis zu jedem ausgewählten Kalender hinzugefügt. Funktioniert mit einer beliebigen Anzahl von Kalendern."
+        }
+      },
+      "add_chores_bulk": {
+        "title": "Fügen Sie mehrere Aufgaben hinzu",
+        "description": "Erstellen Sie mehrere Aufgaben gleichzeitig mit denselben Einstellungen. Geben Sie Aufgabennamen einzeln oder durch Kommas getrennt ein.",
+        "data": {
+          "chore_names": "Aufgabennamen (einer pro Zeile oder durch Kommas getrennt)",
+          "points": "Punkteprämie (für alle)",
+          "time_category": "Tageszeit (für alle)",
+          "claim_allowance_minutes": "Anspruchsentschädigung (Minuten)",
+          "due_days": "Fälligkeitstage (optional)",
+          "assigned_to": "Zugewiesen an (für alle Kinder leer lassen)",
+          "requires_approval": "Erfordert die Zustimmung der Eltern",
+          "daily_limit": "Tägliches Abschlusslimit",
+          "schedule_mode": "Planungsmodus",
+          "completion_sound": "Abschlusssound",
+          "visibility_entity": "Anzeigen, wenn Entität vorhanden ist (optional)",
+          "visibility_operator": "So vergleichen Sie",
+          "visibility_state": "Wert zum Vergleichen"
+        },
+        "data_description": {
+          "claim_allowance_minutes": "Zusätzliche Minuten nach Ablauf dieses Tageszeitfensters, in denen die Aufgabe noch beansprucht werden kann. 0 deaktiviert die Kulanzfrist. Nachtarbeiten sind immer um Mitternacht begrenzt.",
+          "daily_limit": "Wie oft pro Tag kann diese Aufgabe erledigt werden?",
+          "schedule_mode": "Wählen Sie, wie diese Aufgabe geplant werden soll",
+          "completion_sound": "Ton, der abgespielt wird, wenn die Aufgaben erledigt sind",
+          "visibility_entity": "Home Assistant-Entitäts-ID, die steuert, wann diese Aufgaben angezeigt werden. Lassen Sie das Feld leer, um sie immer anzuzeigen. Beispiele: binärer_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode. Die Aufgaben erscheinen nur dann auf der Kinderkarte, wenn die Sichtbarkeitsbedingung erfüllt ist.",
+          "visibility_operator": "So vergleichen Sie den aktuellen Zustand der Entität mit Ihrem Zielwert:\n• Kein Filter – zeigt immer die Aufgabe an (ignoriert den Entitätsstatus)\n• Gleich – Geben Sie genaue Übereinstimmungen an (z. B. „on“, „home“).\n• Nicht gleich: Der Status stimmt nicht überein\n• Größer als oder gleich (≥) – für numerische Werte\n• Kleiner oder gleich (≤) – für numerische Werte\n• Größer als (>) – für numerische Werte\n• Kleiner als (<) – für numerische Werte",
+          "visibility_state": "Der Wert, mit dem verglichen werden soll. Für Textoperatoren: beliebiger Wert (z. B. „on“, „running“). Für numerische Operatoren: eine Zahl (z. B. „25“, „50,5“)."
+        }
+      },
+      "edit_chore": {
+        "title": "Aufgabe bearbeiten: {chore_name}",
+        "description": "Aktualisieren oder löschen Sie diese Aufgabe",
+        "data": {
+          "name": "Aufgabenname",
+          "description": "Beschreibung",
+          "points": "Punktebelohnung",
+          "time_category": "Uhrzeit",
+          "claim_allowance_minutes": "Anspruchsentschädigung (Minuten)",
+          "due_days": "Fälligkeitstage",
+          "assigned_to": "Zugewiesen an",
+          "requires_approval": "Erfordert die Zustimmung der Eltern",
+          "daily_limit": "Tägliches Abschlusslimit",
+          "action": "Aktion",
+          "schedule_mode": "Planungsmodus",
+          "completion_sound": "Abschlusssound",
+          "visibility_entity": "Anzeigen, wenn Entität vorhanden ist (optional)",
+          "visibility_operator": "So vergleichen Sie",
+          "visibility_state": "Wert zum Vergleichen",
+          "assignment_mode": "Zuweisungsmodus",
+          "assignment_rotation_anchor": "Startdatum der Rotation (nur alternierend)",
+          "manual_start_child_id": "Rotation starten mit (optional)",
+          "require_availability": "Überspringen Sie nicht verfügbare Kinder",
+          "publish_calendar_entities": "In Kalendern veröffentlichen (optional)"
+        },
+        "data_description": {
+          "claim_allowance_minutes": "Zusätzliche Minuten nach Ablauf dieses Tageszeitfensters, in denen die Aufgabe noch beansprucht werden kann. 0 deaktiviert die Kulanzfrist. Nachtarbeiten sind immer um Mitternacht begrenzt.",
+          "daily_limit": "Wie oft pro Tag kann diese Aufgabe erledigt werden?",
+          "schedule_mode": "Wählen Sie, wie diese Aufgabe geplant werden soll – bestimmte Wochentage oder ein sich wiederholendes Intervall. Die Planungsoptionen werden auf der nächsten Seite konfiguriert.",
+          "completion_sound": "Ton, der abgespielt wird, wenn diese Aufgabe erledigt ist",
+          "visibility_entity": "Home Assistant-Entitäts-ID, die steuert, wann diese Aufgabe angezeigt wird. Lassen Sie das Feld leer, um die Aufgabe immer anzuzeigen. Beispiele: binärer_sensor.dishwasher, sensor.soil_moisture, input_boolean.guest_mode, switch.laundry_room. Die Aufgabe erscheint nur auf der Kinderkarte, wenn die Sichtbarkeitsbedingung erfüllt ist.",
+          "visibility_operator": "So vergleichen Sie den aktuellen Zustand der Entität mit Ihrem Zielwert:\n• Kein Filter – zeigt immer die Aufgabe an (ignoriert den Entitätsstatus)\n• Ist gleich – geben Sie exakte Übereinstimmungen an (z. B. „on“, „home“, „running“).\n• Nicht gleich: Der Status stimmt nicht überein\n• Größer als oder gleich (≥) – für numerische Werte (z. B. 80 für Batterie ≥ 80 %).\n• Kleiner oder gleich (≤) – für numerische Werte (z. B. 30 für Feuchtigkeit ≤ 30 %).\n• Größer als (>) – für numerische Werte\n• Kleiner als (<) – für numerische Werte",
+          "visibility_state": "Der Wert, mit dem verglichen werden soll. Für „Gleich“ oder „Ungleich“: ein beliebiger Textwert (z. B. „Ein“, „Aus“, „Heim“, „Weg“). Für numerische Operatoren (≥, ≤, >, <): Geben Sie eine Zahl ein (z. B. 25, 50,5, 100). Beispiel: Entität „sensor.temperature“, Operator „>=“, Wert „20“ zeigt Aufgaben an, wenn die Temperatur 20 °C oder mehr beträgt.",
+          "assignment_mode": "Jeder = jedes zugewiesene Kind sieht diese Aufgabe. Abwechselnd = jeweils ein Kind, abwechselnd am Tag. Zufällig = ein zufällig ausgewähltes Kind pro Tag (stabil innerhalb des Tages). Ausgewogen = Die heutigen ausgeglichenen Aufgaben werden gleichmäßig auf die zugewiesenen Kinder aufgeteilt – kein Kind bekommt am Ende alles.",
+          "assignment_rotation_anchor": "Tag 0 der alternierenden Rotation. Lassen Sie das Feld leer, um noch heute zu beginnen. Wird nur verwendet, wenn der Zuweisungsmodus „Abwechselnd“ ist.",
+          "manual_start_child_id": "Wählt aus, welches Kind die Rotation startet. Im Wechselmodus ordnet dies den Pool dauerhaft neu und setzt den Anker zurück. Bei „Zufällig/Ausgeglichen“ überschreibt es nur den heutigen Beauftragten – die morgige Rotation wird normal fortgesetzt. Wird im Modus „Jeder“ ignoriert.",
+          "require_availability": "Wenn diese Option aktiviert ist, wird ein nicht verfügbares Kind (basierend auf dem Verfügbarkeitssensor in seinem Profil) übersprungen und das nächste verfügbare Geschwisterkind übernimmt die Aufgabe. Neubewertung um Mitternacht und immer dann, wenn ein Verfügbarkeitssensor auslöst. Heute bereits erledigte Aufgaben werden nicht neu vergeben.",
+          "publish_calendar_entities": "Wählen Sie ein oder mehrere Home Assistant-Kalenderobjekte aus. Immer wenn diese Aufgabe um Mitternacht erstellt, aktualisiert oder verschoben wird, wird das heute zugewiesene Kind als Kalenderereignis zu jedem ausgewählten Kalender hinzugefügt. Funktioniert mit einer beliebigen Anzahl von Kalendern."
+        }
+      },
+      "manage_task_groups": {
+        "title": "Aufgabengruppen verwalten",
+        "description": "Gruppenaufgaben, damit ihre Aufgaben koordiniert bleiben. Festgelegt überträgt heute alle Aufgaben in der Gruppe demselben Kind. Verteilt gibt jeder Aufgabe ein anderes Kind.",
+        "menu_options": {
+          "add_task_group": "Neue Gruppe hinzufügen",
+          "init": "Zurück zum Hauptmenü"
+        }
+      },
+      "add_task_group": {
+        "title": "Aufgabengruppe hinzufügen",
+        "description": "Nur Aufgaben im Rotationsmodus (abwechselnd / zufällig / ausgeglichen) können einer Gruppe beitreten, und jede Aufgabe kann höchstens einer Gruppe angehören.",
+        "data": {
+          "name": "Gruppenname",
+          "policy": "Richtlinie",
+          "chore_ids": "Mitgliederaufgaben"
+        },
+        "data_description": {
+          "policy": "Festgelegt – alle Aufgaben in der Gruppe gehen heute an dasselbe Kind (die erste Aufgabe in der Liste ist der Leiter, dessen Aufgabe die anderen befolgen). Verteilt – jede Aufgabe wird heute einem anderen Kind zugewiesen; Wenn die Gruppe mehr Aufgaben als Kinder hat, wird sie beendet.",
+          "chore_ids": "Wählen Sie die Aufgaben aus, die Sie einbeziehen möchten. Die Reihenfolge ist wichtig: Für Festgelegt ist die erste Aufgabe der Anführer, dessen Beauftragter die anderen befolgen."
+        }
+      },
+      "edit_task_group": {
+        "title": "Gruppe bearbeiten: {group_name}",
+        "description": "Aktualisieren oder löschen Sie diese Aufgabengruppe.",
+        "data": {
+          "name": "Gruppenname",
+          "policy": "Richtlinie",
+          "chore_ids": "Mitgliederaufgaben",
+          "action": "Aktion"
+        },
+        "data_description": {
+          "policy": "Festgelegt – alle Aufgaben in der Gruppe gehen heute an dasselbe Kind. Verteilt – jede Aufgabe wird heute einem anderen Kind zugewiesen; Wenn die Gruppe mehr Aufgaben als Kinder hat, wird sie beendet."
+        }
+      },
+      "manage_rewards": {
+        "title": "Prämien verwalten",
+        "description": "Prämien hinzufügen, bearbeiten oder entfernen",
+        "menu_options": {
+          "add_reward": "Neue Belohnung hinzufügen",
+          "init": "Zurück zum Hauptmenü"
+        }
+      },
+      "add_reward": {
+        "title": "Neue Belohnung hinzufügen",
+        "description": "Erstellen Sie eine Belohnung, die Kinder verdienen können",
+        "data": {
+          "name": "Belohnungsname",
+          "description": "Beschreibung (optional)",
+          "cost": "Punktekosten (fest)",
+          "icon": "Symbol",
+          "assigned_to": "Zugewiesen an (für alle Kinder leer lassen)",
+          "is_jackpot": "Ist Jackpot",
+          "pool_enabled": "Pool-Belohnung (Sparglas)",
+          "quantity": "Begrenzte Menge (für unbegrenzte Menge leer lassen)",
+          "expires_at": "Ablaufdatum (optional)"
+        },
+        "data_description": {
+          "is_jackpot": "Bündeln Sie die Punkte aller zugewiesenen Kinder zu einer gemeinsamen Belohnung",
+          "pool_enabled": "Kinder zahlen Punkte in den speziellen Pool dieser Belohnung ein, anstatt sie von ihrem Gesamtguthaben auszugeben. Gut für langfristige Sparziele.",
+          "cost": "Anzahl der Punkte, die erforderlich sind, um diese Belohnung zu erhalten",
+          "quantity": "Wie viele dieser Belohnung gibt es? Jeder genehmigte Anspruch reduziert ihn um 1. Wenn er 0 erreicht, wird die Belohnung als „Ausverkauft“ markiert und alle Punkte, die andere Kinder dafür gesammelt haben, werden auf ihr Guthaben zurückerstattet.",
+          "expires_at": "Die Belohnung verschwindet an diesem Datum. Alle dafür gesammelten Punkte werden den Kindern um Mitternacht auf ihr Guthaben zurückerstattet."
+        }
+      },
+      "edit_reward": {
+        "title": "Belohnung bearbeiten: {reward_name}",
+        "description": "Aktualisieren oder löschen Sie diese Belohnung",
+        "data": {
+          "name": "Belohnungsname",
+          "description": "Beschreibung",
+          "cost": "Punktekosten (fest)",
+          "icon": "Symbol",
+          "assigned_to": "Zugewiesen an",
+          "is_jackpot": "Ist Jackpot",
+          "pool_enabled": "Pool-Belohnung (Sparglas)",
+          "quantity": "Begrenzte Menge (für unbegrenzte Menge leer lassen)",
+          "expires_at": "Ablaufdatum (optional)",
+          "action": "Aktion"
+        },
+        "data_description": {
+          "is_jackpot": "Bündeln Sie die Punkte aller zugewiesenen Kinder zu einer gemeinsamen Belohnung",
+          "pool_enabled": "Kinder zahlen Punkte in den speziellen Pool dieser Belohnung ein, anstatt sie von ihrem Gesamtguthaben auszugeben. Gut für langfristige Sparziele.",
+          "cost": "Anzahl der Punkte, die erforderlich sind, um diese Belohnung zu erhalten",
+          "quantity": "Restposten. Jeder genehmigte Anspruch reduziert ihn um 1. Setzen Sie ihn jetzt auf 0, um ihn sofort als „Ausverkauft“ zu markieren und alle gesammelten Punkte zurückzuerstatten.",
+          "expires_at": "An diesem Tag verfällt die Prämie und alle gesammelten Punkte werden zurückerstattet."
+        }
+      },
+      "settings": {
+        "title": "Einstellungen",
+        "description": "Konfigurieren Sie Ihre TaskMate-Einstellungen",
+        "data": {
+          "points_name": "Name der Punktewährung",
+          "points_icon": "Punkte-Symbol",
+          "streak_reset_mode": "Serien-Reset-Modus",
+          "history_days": "Geschichtstage zum Behalten",
+          "weekend_multiplier": "Wochenend-Punkte-Multiplikator",
+          "streak_milestones_enabled": "Serie-Meilenstein-Boni",
+          "perfect_week_enabled": "Perfekter Wochenbonus",
+          "perfect_week_bonus": "Bonuspunkte für die perfekte Woche",
+          "streak_milestones": "Serie-Meilensteinkonfiguration",
+          "notify_service": "Benachrichtigungsdienst (optional)",
+          "calendar_projection_days": "Kalenderplanungshorizont"
+        },
+        "data_description": {
+          "streak_reset_mode": "Was passiert mit einer Serie, wenn ein Tag verpasst wird?",
+          "history_days": "Wie viele Tage des Aufgabenerledigungsverlaufs sollen aufbewahrt werden (30–365)?",
+          "weekend_multiplier": "Punktemultiplikator an Samstagen und Sonntagen (1,0 = deaktiviert, 2,0 = doppelte Punkte)",
+          "streak_milestones_enabled": "Vergeben Sie Bonuspunkte, wenn Kinder Meilensteine der Serie erreichen (3, 7, 14, 30, 60, 100 Tage)",
+          "perfect_week_enabled": "Bonuspunkte werden vergeben, wenn ein Kind eine ganze Woche lang jeden Tag mindestens eine Aufgabe erledigt",
+          "perfect_week_bonus": "Bonuspunkte für eine perfekte Woche",
+          "streak_milestones": "Benutzerdefinierte Meilensteine als „Tage:Punkte“-Paare, durch Kommas getrennt. Beispiel: 3:5, 7:10, 14:20, 30:50, 60:100, 100:200",
+          "notify_service": "HA-Benachrichtigungsdienst, um Eltern zu benachrichtigen, wenn eine Hausarbeit einer Genehmigung bedarf. Format: notify.mobile_app_your_phone – leer lassen, um nur dauerhafte Benachrichtigungen zu verwenden",
+          "calendar_projection_days": "Wie viele Tage im Voraus jede Aufgabe Aufgaben in den konfigurierten HA-Kalendern veröffentlicht (1–90). Größere Werte zeigen einen größeren Planungshorizont auf Kosten von mehr Kalendereinträgen."
+        }
+      },
+      "chore_schedule_specific": {
+        "title": "Schritt 2 – Spezifische Tage",
+        "description": "Wählen Sie aus, an welchen Wochentagen diese Aufgabe auf der Kinderkarte erscheinen soll. Lassen Sie es leer, um es jeden Tag anzuzeigen.",
+        "data": {
+          "due_days": "Fälligkeitstage"
+        },
+        "data_description": {
+          "due_days": "Wählen Sie einen oder mehrere Tage aus. Lassen Sie es leer, um die Aufgabe jeden Tag anzuzeigen. Verwenden Sie den Fälligkeitstage-Modus auf der Kinderkarte, um Aufgaben an nicht geplanten Tagen auszublenden oder abzuschwächen."
+        }
+      },
+      "edit_chore_schedule_specific": {
+        "title": "Schritt 2 – Spezifische Tage",
+        "description": "Wählen Sie aus, an welchen Wochentagen diese Aufgabe auf der Kinderkarte erscheinen soll. Lassen Sie es leer, um es jeden Tag anzuzeigen.",
+        "data": {
+          "due_days": "Fälligkeitstage"
+        },
+        "data_description": {
+          "due_days": "Wählen Sie einen oder mehrere Tage aus. Lassen Sie es leer, um die Aufgabe jeden Tag anzuzeigen. Verwenden Sie den Fälligkeitstage-Modus auf der Kinderkarte, um Aufgaben an nicht geplanten Tagen auszublenden oder abzuschwächen."
+        }
+      },
+      "chore_schedule_recurring": {
+        "title": "Schritt 2 – Wiederkehrender Zeitplan",
+        "description": "Legen Sie fest, wie oft diese Aufgabe erledigt werden kann. Sobald der Vorgang abgeschlossen ist, ist er erst wieder verfügbar, wenn das Fenster zurückgesetzt wird.\n\nHinweis: Der Wochentag gilt nur für wöchentlich und alle 2 Wochen. Das Startdatum gilt nur für alle 2 Tage. Alle für nicht anwendbare Optionen eingegebenen Werte werden ignoriert.",
+        "data": {
+          "recurrence": "Wiederauftreten",
+          "recurrence_day": "Wochentag (optional)",
+          "recurrence_start": "Startdatum (optional)",
+          "first_occurrence_mode": "Wann ist es erstmals verfügbar?"
+        },
+        "data_description": {
+          "recurrence": "Wie oft kann die Aufgabe erledigt werden?",
+          "recurrence_day": "Wöchentlich/Nur alle 2 Wochen – an einen bestimmten Tag anpinnen. Wird für alle anderen Wiederholungstypen ignoriert.",
+          "recurrence_start": "Nur alle 2 Tage – Ankerdatum im Format JJJJ-MM-TT. Wird für alle anderen Wiederholungstypen ignoriert. Lassen Sie es leer, um es noch heute zu verwenden.",
+          "first_occurrence_mode": "Sofort verfügbar – das Kind kann es sofort fertigstellen. Auf das erste Vorkommen warten – die Aufgabe ist gesperrt, bis der erste geplante Tag eintrifft."
+        }
+      },
+      "edit_chore_schedule_recurring": {
+        "title": "Schritt 2 – Wiederkehrender Zeitplan",
+        "description": "Legen Sie fest, wie oft diese Aufgabe erledigt werden kann. Sobald der Vorgang abgeschlossen ist, ist er erst wieder verfügbar, wenn das Fenster zurückgesetzt wird.\n\nHinweis: Der Wochentag gilt nur für wöchentlich und alle 2 Wochen. Das Startdatum gilt nur für alle 2 Tage. Alle für nicht anwendbare Optionen eingegebenen Werte werden ignoriert.",
+        "data": {
+          "recurrence": "Wiederauftreten",
+          "recurrence_day": "Wochentag (optional)",
+          "recurrence_start": "Startdatum (optional)",
+          "first_occurrence_mode": "Wann ist es erstmals verfügbar?"
+        },
+        "data_description": {
+          "recurrence": "Wie oft kann die Aufgabe erledigt werden?",
+          "recurrence_day": "Wöchentlich/Nur alle 2 Wochen – an einen bestimmten Tag anpinnen. Wird für alle anderen Wiederholungstypen ignoriert.",
+          "recurrence_start": "Nur alle 2 Tage – Ankerdatum im Format JJJJ-MM-TT. Wird für alle anderen Wiederholungstypen ignoriert. Lassen Sie es leer, um es noch heute zu verwenden.",
+          "first_occurrence_mode": "Sofort verfügbar – das Kind kann es sofort fertigstellen. Auf das erste Vorkommen warten – die Aufgabe ist gesperrt, bis der erste geplante Tag eintrifft."
+        }
+      }
+    },
+    "error": {
+      "name_required": "Name ist erforderlich",
+      "invalid_milestone_format": "Ungültiges Meilensteinformat – verwenden Sie Tage:Punkte-Paare, z.B. 3:5, 7:10, 14:20",
+      "operator_required": "Beim Festlegen einer Entität ist ein Operator erforderlich",
+      "state_required": "Beim Festlegen einer Entität ist ein Wert erforderlich",
+      "task_group_invalid": "Die Aufgabengruppe ist ungültig: Eine Aufgabe kann nicht mehr als einer Gruppe beitreten und Aufgaben im „Jeder“-Modus sind nicht zulässig."
+    }
+  },
+  "selector": {
+    "chore_action": {
+      "options": {
+        "save": "Änderungen speichern",
+        "re_enable": "Aufgabe erneut aktivieren",
+        "disable": "Aufgabe deaktivieren",
+        "delete": "Diese Aufgabe löschen"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "Änderungen speichern",
+        "delete": "Belohnung löschen"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "Morgen",
+        "afternoon": "Nachmittag",
+        "evening": "Abend",
+        "night": "Nacht",
+        "anytime": "Jederzeit"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "Bestimmte Wochentage",
+        "recurring": "Wiederkehrend (alle N Tage/Wochen/Monate)",
+        "one_shot": "Einmalige Aufgabe (einzelner Tag)"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "Montag",
+        "tuesday": "Dienstag",
+        "wednesday": "Mittwoch",
+        "thursday": "Donnerstag",
+        "friday": "Freitag",
+        "saturday": "Samstag",
+        "sunday": "Sonntag"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "Alle 2 Tage",
+        "weekly": "Wöchentlich",
+        "every_2_weeks": "Alle 2 Wochen",
+        "monthly": "Monatlich",
+        "every_3_months": "Alle 3 Monate",
+        "every_6_months": "Alle 6 Monate"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "Montag",
+        "tuesday": "Dienstag",
+        "wednesday": "Mittwoch",
+        "thursday": "Donnerstag",
+        "friday": "Freitag",
+        "saturday": "Samstag",
+        "sunday": "Sonntag",
+        "any_day": "Jeder Tag"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "Sofort verfügbar",
+        "wait_for_first_occurrence": "Warten Sie auf das erste geplante Ereignis"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "Zurücksetzen – Serie geht am verpassten Tag auf 0",
+        "pause": "Pause – die Serie bleibt bis zum nächsten Abschluss erhalten"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "none": "Kein Filter – Aufgaben immer anzeigen",
+        "equals": "Gleicht – Wird angezeigt, wenn der Entitätsstatus genau übereinstimmt",
+        "not_equals": "Nicht gleich – Wird angezeigt, wenn der Entitätsstatus nicht übereinstimmt",
+        "gte": "Größer als oder gleich (≥) – Wird angezeigt, wenn der numerische Wert ≥ dem Zielwert ist",
+        "lte": "Kleiner oder gleich (≤) – Wird angezeigt, wenn der numerische Wert ≤ Ziel ist",
+        "gt": "Größer als (>) – Wird angezeigt, wenn der numerische Wert > Ziel ist",
+        "lt": "Kleiner als (<) – Wird angezeigt, wenn der numerische Wert < Ziel ist"
+      }
+    },
+    "assignment_mode": {
+      "options": {
+        "everyone": "Jeder – jedes zugewiesene Kind sieht die Aufgabe",
+        "alternating": "Abwechselnd – wechseln Sie durch die zugewiesenen Kinder, eines pro Tag",
+        "random": "Zufällig – Wählen Sie jeden Tag zufällig ein zugewiesenes Kind aus",
+        "balanced": "Ausgewogen – Verteilen Sie die heutigen ausgeglichenen Aufgaben gleichmäßig auf die zugewiesenen Kinder"
+      }
+    },
+    "task_group_policy": {
+      "options": {
+        "sticky": "Festgelegt – dasselbe Kind für alle Aufgaben in der Gruppe",
+        "spread": "Verteilt - für verschiedene Kinder in der Gruppe heute"
+      }
+    },
+    "task_group_action": {
+      "options": {
+        "save": "Änderungen speichern",
+        "delete": "Gruppe löschen"
+      }
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "Erledige Aufgabe",
+      "description": "Markieren Sie eine Aufgabe als von einem Kind erledigt",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID der Aufgabe, die abgeschlossen werden soll"
+        },
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, das die Aufgabe erledigt"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Genehmigen Sie die Aufgabe",
+      "description": "Genehmigen Sie eine erledigte Aufgabe und vergeben Sie Punkte",
+      "fields": {
+        "completion_id": {
+          "name": "Abschluss-ID",
+          "description": "Die ID des zu genehmigenden Aufgabenabschlusses"
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Aufgabe ablehnen",
+      "description": "Eine erledigte Aufgabe ablehnen",
+      "fields": {
+        "completion_id": {
+          "name": "Abschluss-ID",
+          "description": "Die ID des abzulehnenden Aufgabenabschlusses"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "Fordern Sie eine Belohnung an",
+      "description": "Das Kind erhält mit seinen Punkten eine Belohnung",
+      "fields": {
+        "reward_id": {
+          "name": "Prämien-ID",
+          "description": "Die ID der zu beanspruchenden Belohnung"
+        },
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, das die Belohnung beansprucht"
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Belohnung genehmigen",
+      "description": "Genehmigen Sie einen Prämienanspruch",
+      "fields": {
+        "claim_id": {
+          "name": "Anspruchs-ID",
+          "description": "Die ID des zu genehmigenden Prämienanspruchs"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Punkte hinzufügen",
+      "description": "Fügen Sie einem Kind Bonuspunkte hinzu",
+      "fields": {
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, dem Punkte hinzugefügt werden sollen"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Die Anzahl der hinzuzufügenden Punkte"
+        },
+        "reason": {
+          "name": "Grund",
+          "description": "Optionaler Grund für den Bonus"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Punkte entfernen",
+      "description": "Punkte von einem Kind abziehen (Strafe)",
+      "fields": {
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, von dem Punkte entfernt werden sollen"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Die Anzahl der zu entfernenden Punkte"
+        },
+        "reason": {
+          "name": "Grund",
+          "description": "Optionaler Grund für die Strafe"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "Belohnung ablehnen",
+      "description": "Einen Prämienanspruch ablehnen",
+      "fields": {
+        "claim_id": {
+          "name": "Anspruchs-ID",
+          "description": "Die ID des abzulehnenden Prämienanspruchs"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "Vorschau des Tons",
+      "description": "Vorschau eines Abschlusssoundeffekts im Browser",
+      "fields": {
+        "sound": {
+          "name": "Klang",
+          "description": "Der Ton zur Vorschau"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "Legen Sie die Aufgabenreihenfolge fest",
+      "description": "Legen Sie die Anzeigereihenfolge der Aufgaben für ein Kind fest",
+      "fields": {
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, für das die Aufgabenreihenfolge festgelegt werden soll"
+        },
+        "chore_order": {
+          "name": "Aufgabenreihenfolge",
+          "description": "Geordnete Liste der Aufgaben-IDs"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "Strafe hinzufügen",
+      "description": "Erstellen Sie eine neue Strafdefinition",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Der Name der Strafe"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Die Anzahl der Punkte, die bei der Anwendung abgezogen werden"
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Optionale Beschreibung der Strafe"
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "MDI-Symbol für den Elfmeter"
+        },
+        "assigned_to": {
+          "name": "Zugewiesen an",
+          "description": "Liste der Kinder-IDs, für die diese Strafe gilt"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "Strafe aktualisieren",
+      "description": "Aktualisieren Sie eine vorhandene Strafdefinition",
+      "fields": {
+        "penalty_id": {
+          "name": "Straf-ID",
+          "description": "Die ID der zu aktualisierenden Strafe"
+        },
+        "name": {
+          "name": "Name",
+          "description": "Neuer Name für den Elfmeter"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Neuer Punktewert"
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Neue Beschreibung"
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Neues Symbol"
+        },
+        "assigned_to": {
+          "name": "Zugewiesen an",
+          "description": "Neue Liste der Kinder-IDs"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "Strafe entfernen",
+      "description": "Entfernen Sie eine Strafdefinition",
+      "fields": {
+        "penalty_id": {
+          "name": "Straf-ID",
+          "description": "Die ID der zu entfernenden Strafe"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "Strafe anwenden",
+      "description": "Verhängen Sie eine Strafe gegen ein Kind und ziehen Sie Punkte ab",
+      "fields": {
+        "penalty_id": {
+          "name": "Straf-ID",
+          "description": "Die ID der anzuwendenden Strafe"
+        },
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, auf das die Strafe angewendet werden soll"
+        }
+      }
+    },
+    "add_bonus": {
+      "name": "Bonus hinzufügen",
+      "description": "Erstellen Sie eine neue Bonusdefinition",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Der Name des Bonus"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Die Anzahl der bei der Bewerbung zu vergebenden Punkte"
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Optionale Beschreibung des Bonus"
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "MDI-Symbol für den Bonus"
+        },
+        "assigned_to": {
+          "name": "Zugewiesen an",
+          "description": "Liste der Kinder-IDs, für die dieser Bonus gilt"
+        }
+      }
+    },
+    "update_bonus": {
+      "name": "Update-Bonus",
+      "description": "Aktualisieren Sie eine vorhandene Bonusdefinition",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "Die ID des zu aktualisierenden Bonus"
+        },
+        "name": {
+          "name": "Name",
+          "description": "Neuer Name für den Bonus"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Neuer Punktewert"
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Neue Beschreibung"
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Neues Symbol"
+        },
+        "assigned_to": {
+          "name": "Zugewiesen an",
+          "description": "Neue Liste der Kinder-IDs"
+        }
+      }
+    },
+    "remove_bonus": {
+      "name": "Bonus entfernen",
+      "description": "Entfernen Sie eine Bonusdefinition",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "Die ID des zu entfernenden Bonus"
+        }
+      }
+    },
+    "apply_bonus": {
+      "name": "Bonus anwenden",
+      "description": "Geben Sie einem Kind einen Bonus und vergeben Sie Punkte",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "Die ID des anzuwendenden Bonus"
+        },
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, auf das der Bonus angewendet werden soll"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "Aufgaben hinzufügen",
+      "description": "Erstellen Sie dynamisch eine neue Aufgabe, normalerweise aus einer Automatisierung oder einem Skript",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Der Name der Aufgabe"
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Optionale Beschreibung der Aufgabe"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Punkte werden vergeben, wenn diese Aufgabe erledigt ist"
+        },
+        "assigned_to": {
+          "name": "Zugewiesen an",
+          "description": "Liste der Kinder-IDs, denen diese Aufgabe zugewiesen werden soll. Lassen Sie das Feld leer, um es allen Kindern zuzuweisen"
+        },
+        "time_category": {
+          "name": "Zeitkategorie",
+          "description": "Wann diese Aufgabe erledigt sein sollte: morgens, nachmittags, abends, abends oder jederzeit"
+        },
+        "one_shot": {
+          "name": "One-Shot",
+          "description": "Wenn dies zutrifft, handelt es sich um eine einmalige Aufgabe, die nach Abschluss oder am Ende des Tages abläuft"
+        },
+        "requires_approval": {
+          "name": "Erfordert eine Genehmigung",
+          "description": "Wenn dies zutrifft, muss ein Elternteil den Abschluss genehmigen, bevor Punkte vergeben werden"
+        }
+      }
+    },
+    "skip_chore": {
+      "name": "Überspringen Sie lästige Aufgaben",
+      "description": "Führen Sie die heutige Rotation über den aktuellen Beauftragten hinaus weiter. Ephemeral – die morgige Rotation wird wie gewohnt fortgesetzt.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID der Aufgabe, die übersprungen werden soll"
+        }
+      }
+    },
+    "set_chore_manual_start": {
+      "name": "Manuelles Start-Kind festlegen",
+      "description": "Legen Sie fest, welches Kind eine rotierende Aufgabe beginnt. Im Wechselmodus ordnet dies den Pool neu; Bei „Zufällig/Ausgeglichen“ überschreibt es nur den heutigen Beauftragten.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID des zu aktualisierenden Jobs"
+        },
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, das die Rotation starten soll"
+        }
+      }
+    },
+    "add_task_group": {
+      "name": "Aufgabengruppe hinzufügen",
+      "description": "Erstellen Sie eine Aufgabengruppe (festgelegt = dasselbe untergeordnete Element, verteilt = verschiedene untergeordnete Elemente).",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Anzeigename für die Gruppe"
+        },
+        "policy": {
+          "name": "Richtlinie",
+          "description": "festglegt (gleiches Kind) oder verteilt (verschiedene Kinder)"
+        },
+        "chore_ids": {
+          "name": "Aufgaben-IDs",
+          "description": "Liste der Aufgaben-IDs in der Gruppe. Für Festgelegt ist die erste Aufgabe der Anführer."
+        }
+      }
+    },
+    "update_task_group": {
+      "name": "Aufgabengruppe aktualisieren",
+      "description": "Aktualisieren Sie den Namen, die Richtlinie oder die Mitgliedschaft einer Aufgabengruppe.",
+      "fields": {
+        "group_id": {
+          "name": "Gruppen-ID",
+          "description": "Die ID der zu aktualisierenden Gruppe"
+        },
+        "name": {
+          "name": "Name",
+          "description": "Neuer Anzeigename"
+        },
+        "policy": {
+          "name": "Richtlinie",
+          "description": "Neue Richtlinie (festgelegt oder verteilt)"
+        },
+        "chore_ids": {
+          "name": "Aufgaben-IDs",
+          "description": "Ersatz-Aufgaben-ID-Liste. Für Festgelegt ist die erste Aufgabe der Anführer."
+        }
+      }
+    },
+    "remove_task_group": {
+      "name": "Aufgabengruppe entfernen",
+      "description": "Löschen Sie eine Aufgabengruppe. Die Aufgaben der Mitglieder sind nicht betroffen.",
+      "fields": {
+        "group_id": {
+          "name": "Gruppen-ID",
+          "description": "Die ID der zu löschenden Gruppe"
+        }
+      }
+    }
+  }
+}
