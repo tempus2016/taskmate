@@ -31,13 +31,6 @@ class TaskMateOverviewCard extends LitElement {
     return css`
       :host {
         display: block;
-        --ov-purple: #9b59b6;
-        --ov-purple-light: #a569bd;
-        --ov-gold: #f1c40f;
-        --ov-green: #2ecc71;
-        --ov-orange: #e67e22;
-        --ov-red: #e74c3c;
-        --ov-blue: #3498db;
       }
 
       ha-card { overflow: hidden; }
@@ -47,8 +40,8 @@ class TaskMateOverviewCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, #8e44ad);
-        color: white;
+        background: var(--taskmate-header-bg, var(--primary-color));
+        color: var(--text-primary-color, #fff);
       }
 
       .header-content { display: flex; align-items: center; gap: 10px; }
@@ -56,8 +49,8 @@ class TaskMateOverviewCard extends LitElement {
       .header-title { font-size: 1.2rem; font-weight: 600; }
 
       .pending-badge {
-        background: var(--ov-red);
-        color: white;
+        background: var(--error-color, #db4437);
+        color: var(--text-primary-color, #fff);
         border-radius: 12px;
         padding: 3px 10px;
         font-size: 0.85rem;
@@ -69,8 +62,8 @@ class TaskMateOverviewCard extends LitElement {
       }
 
       @keyframes badge-pulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.4); }
-        50% { box-shadow: 0 0 0 5px rgba(231,76,60,0); }
+        0%, 100% { box-shadow: 0 0 0 0 rgba(var(--rgb-error-color, 219,68,55),0.4); }
+        50% { box-shadow: 0 0 0 5px rgba(var(--rgb-error-color, 219,68,55),0); }
       }
 
       .pending-badge ha-icon { --mdc-icon-size: 14px; }
@@ -95,21 +88,21 @@ class TaskMateOverviewCard extends LitElement {
       }
 
       .child-tile:hover {
-        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0,0,0,0.08));
       }
 
       .child-avatar {
         width: 46px;
         height: 46px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--ov-purple) 0%, var(--ov-purple-light) 100%);
+        background: var(--primary-color);
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
       }
 
-      .child-avatar ha-icon { --mdc-icon-size: 28px; color: white; }
+      .child-avatar ha-icon { --mdc-icon-size: 28px; color: var(--text-primary-color, #fff); }
 
       .child-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 
@@ -133,8 +126,8 @@ class TaskMateOverviewCard extends LitElement {
         display: flex;
         align-items: center;
         gap: 4px;
-        background: rgba(241,196,15,0.15);
-        color: var(--ov-orange);
+        background: rgba(var(--rgb-warning-color, 255,152,0),0.15);
+        color: var(--warning-color, #ff9800);
         border-radius: 10px;
         padding: 3px 8px;
         font-size: 0.85rem;
@@ -142,14 +135,14 @@ class TaskMateOverviewCard extends LitElement {
         flex-shrink: 0;
       }
 
-      .points-pill ha-icon { --mdc-icon-size: 14px; color: var(--ov-gold); }
+      .points-pill ha-icon { --mdc-icon-size: 14px; color: var(--warning-color, #ff9800); }
 
       .pending-points-pill {
         display: flex;
         align-items: center;
         gap: 3px;
-        background: rgba(230,126,34,0.12);
-        color: var(--ov-orange);
+        background: rgba(var(--rgb-warning-color, 255,152,0),0.12);
+        color: var(--warning-color, #ff9800);
         border-radius: 10px;
         padding: 2px 7px;
         font-size: 0.78rem;
@@ -182,11 +175,11 @@ class TaskMateOverviewCard extends LitElement {
       }
 
       .progress-bar-fill.complete {
-        background: linear-gradient(90deg, var(--ov-green), #27ae60);
+        background: var(--success-color, #4caf50);
       }
 
       .progress-bar-fill.partial {
-        background: linear-gradient(90deg, var(--ov-blue), #2980b9);
+        background: var(--primary-color);
       }
 
       .progress-bar-fill.none {
@@ -203,15 +196,15 @@ class TaskMateOverviewCard extends LitElement {
         text-align: right;
       }
 
-      .progress-label.complete { color: var(--ov-green); }
+      .progress-label.complete { color: var(--success-color, #4caf50); }
 
       /* Approval item in tile */
       .approvals-chip {
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        background: rgba(231,76,60,0.12);
-        color: var(--ov-red);
+        background: rgba(var(--rgb-error-color, 219,68,55),0.12);
+        color: var(--error-color, #db4437);
         border-radius: 10px;
         padding: 2px 8px;
         font-size: 0.78rem;
@@ -278,7 +271,7 @@ class TaskMateOverviewCard extends LitElement {
     this.config = {
       title: "TaskMate",
       approvals_entity: null,
-            header_color: '#8e44ad',
+            header_color: null,
     ...config,
     };
   }
@@ -329,7 +322,7 @@ class TaskMateOverviewCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#8e44ad'}; }</style>
+        ${this.config.header_color ? html`<style>:host { --taskmate-header-bg: ${this.config.header_color}; }</style>` : ''}
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:home-heart"></ha-icon>
@@ -365,7 +358,7 @@ class TaskMateOverviewCard extends LitElement {
           ${pendingApprovals > 0 ? html`
             <div class="summary-divider"></div>
             <div class="summary-stat">
-              <span class="summary-stat-value" style="color: var(--ov-red);">${pendingApprovals}</span>
+              <span class="summary-stat-value" style="color: var(--error-color, #db4437);">${pendingApprovals}</span>
               <span class="summary-stat-label">${this._t('common.pending')}</span>
             </div>
           ` : ''}

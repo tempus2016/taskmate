@@ -62,12 +62,6 @@ class TaskMateActivityCard extends LitElement {
     return css`
       :host {
         display: block;
-        --act-purple: #9b59b6;
-        --act-green: #2ecc71;
-        --act-orange: #e67e22;
-        --act-blue: #3498db;
-        --act-red: #e74c3c;
-        --act-gold: #f1c40f;
       }
 
       ha-card { overflow: hidden; }
@@ -77,8 +71,8 @@ class TaskMateActivityCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, #2471a3);
-        color: white;
+        background: var(--taskmate-header-bg, var(--primary-color));
+        color: var(--text-primary-color, #fff);
       }
 
       .header-content { display: flex; align-items: center; gap: 10px; }
@@ -135,17 +129,17 @@ class TaskMateActivityCard extends LitElement {
         margin-top: 2px;
       }
 
-      .activity-icon ha-icon { --mdc-icon-size: 18px; color: white; }
+      .activity-icon ha-icon { --mdc-icon-size: 18px; color: var(--text-primary-color, #fff); }
 
-      .activity-icon.chore { background: var(--act-blue); }
-      .activity-icon.approved { background: var(--act-green); }
-      .activity-icon.rejected { background: var(--act-red); }
-      .activity-icon.points_added { background: var(--act-green); }
-      .activity-icon.points_removed { background: var(--act-red); }
-      .activity-icon.reward { background: var(--act-purple); }
-      .activity-icon.reward_claimed { background: var(--act-orange); }
-      .activity-icon.reward_approved { background: var(--act-purple); }
-      .activity-icon.pending { background: var(--act-orange); }
+      .activity-icon.chore { background: var(--primary-color); }
+      .activity-icon.approved { background: var(--success-color, #4caf50); }
+      .activity-icon.rejected { background: var(--error-color, #db4437); }
+      .activity-icon.points_added { background: var(--success-color, #4caf50); }
+      .activity-icon.points_removed { background: var(--error-color, #db4437); }
+      .activity-icon.reward { background: var(--primary-color); }
+      .activity-icon.reward_claimed { background: var(--warning-color, #ff9800); }
+      .activity-icon.reward_approved { background: var(--primary-color); }
+      .activity-icon.pending { background: var(--warning-color, #ff9800); }
 
       .activity-reason {
         font-size: 0.78rem;
@@ -163,7 +157,7 @@ class TaskMateActivityCard extends LitElement {
         line-height: 1.3;
       }
 
-      .activity-title strong { color: var(--act-purple); }
+      .activity-title strong { color: var(--primary-color); }
 
       .activity-meta {
         display: flex;
@@ -184,10 +178,10 @@ class TaskMateActivityCard extends LitElement {
         gap: 3px;
         font-size: 0.75rem;
         font-weight: 600;
-        color: var(--act-orange);
+        color: var(--warning-color, #ff9800);
       }
 
-      .activity-points ha-icon { --mdc-icon-size: 12px; color: var(--act-gold); }
+      .activity-points ha-icon { --mdc-icon-size: 12px; color: var(--warning-color, #ff9800); }
 
       .activity-status {
         display: inline-flex;
@@ -200,18 +194,18 @@ class TaskMateActivityCard extends LitElement {
       }
 
       .activity-status.pending {
-        background: rgba(230,126,34,0.15);
-        color: var(--act-orange);
+        background: rgba(var(--rgb-warning-color, 255,152,0),0.15);
+        color: var(--warning-color, #ff9800);
       }
 
       .activity-status.approved {
-        background: rgba(46,204,113,0.15);
-        color: var(--act-green);
+        background: rgba(var(--rgb-success-color, 76,175,80),0.15);
+        color: var(--success-color, #4caf50);
       }
 
       .activity-status.rejected {
-        background: rgba(231,76,60,0.15);
-        color: var(--act-red);
+        background: rgba(var(--rgb-error-color, 219,68,55),0.15);
+        color: var(--error-color, #db4437);
       }
 
       /* Empty / error */
@@ -238,7 +232,7 @@ class TaskMateActivityCard extends LitElement {
       title: "",
       max_items: 30,
       child_id: null,
-            header_color: '#2471a3',
+            header_color: null,
     ...config,
     };
   }
@@ -328,7 +322,7 @@ class TaskMateActivityCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#2471a3'}; }</style>
+        ${this.config.header_color ? html`<style>:host { --taskmate-header-bg: ${this.config.header_color}; }</style>` : ''}
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:timeline-clock"></ha-icon>
@@ -370,10 +364,10 @@ class TaskMateActivityCard extends LitElement {
         pointsColour = '';
       } else if (isSpend) {
         verb = this._t('activity.spent');
-        pointsColour = 'color: var(--act-orange);';
+        pointsColour = 'color: var(--warning-color, #ff9800);';
       } else {
         verb = this._t('activity.lost');
-        pointsColour = 'color: var(--act-red);';
+        pointsColour = 'color: var(--error-color, #db4437);';
       }
       const displayReason = this._translateReason(item.reason);
       return html`
@@ -419,7 +413,7 @@ class TaskMateActivityCard extends LitElement {
             <div class="activity-meta">
               <span class="activity-time">${time}</span>
               ${pts ? html`
-                <span class="activity-points" style="color: var(--act-orange);">
+                <span class="activity-points" style="color: var(--warning-color, #ff9800);">
                   <ha-icon icon="${pointsIcon}"></ha-icon>
                   -${pts}
                 </span>
