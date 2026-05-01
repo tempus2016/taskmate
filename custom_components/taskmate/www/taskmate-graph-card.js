@@ -47,11 +47,6 @@ class TaskMateGraphCard extends LitElement {
     return css`
       :host {
         display: block;
-        --gr-purple: #9b59b6;
-        --gr-purple-light: #a569bd;
-        --gr-gold: #f1c40f;
-        --gr-green: #2ecc71;
-        --gr-blue: #3498db;
       }
 
       ha-card { overflow: hidden; }
@@ -61,8 +56,8 @@ class TaskMateGraphCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, #d35400);
-        color: white;
+        background: var(--taskmate-header-bg, var(--primary-color, #03a9f4));
+        color: var(--text-primary-color, #fff);
         gap: 12px;
       }
 
@@ -94,11 +89,11 @@ class TaskMateGraphCard extends LitElement {
 
       .mode-btn.active {
         background: rgba(255,255,255,0.2);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .mode-btn:hover:not(.active) {
-        color: rgba(255,255,255,0.85);
+        color: var(--text-primary-color, rgba(255,255,255,0.85));
       }
 
       .card-content {
@@ -148,7 +143,7 @@ class TaskMateGraphCard extends LitElement {
         padding: 8px 12px;
         font-size: 0.8rem;
         color: var(--primary-text-color);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0,0,0,0.15));
         pointer-events: none;
         z-index: 10;
         white-space: nowrap;

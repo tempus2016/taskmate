@@ -38,12 +38,13 @@ class TaskMatePointsCard extends LitElement {
     return css`
       :host {
         display: block;
-        --card-primary-color: var(--primary-color, #5c6bc0);
+        --card-primary-color: var(--primary-color);
         --card-success-color: var(--success-color, #4caf50);
-        --card-error-color: var(--error-color, #f44336);
+        --card-error-color: var(--error-color, #db4437);
         --card-warning-color: var(--warning-color, #ff9800);
-        --text-primary: var(--primary-text-color, #212121);
-        --text-secondary: var(--secondary-text-color, #757575);
+        --card-gold-color: #ca8a04;
+        --text-primary: var(--primary-text-color);
+        --text-secondary: var(--secondary-text-color);
       }
 
       ha-card {
@@ -55,8 +56,8 @@ class TaskMatePointsCard extends LitElement {
         justify-content: space-between;
         align-items: center;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, #2980b9);
-        color: white;
+        background: var(--taskmate-header-bg, var(--primary-color));
+        color: var(--text-primary-color, #fff);
       }
 
       .header-content {
@@ -95,7 +96,7 @@ class TaskMatePointsCard extends LitElement {
       }
 
       .child-row:hover {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--ha-card-box-shadow, none);
       }
 
       .child-row.loading {
@@ -115,7 +116,7 @@ class TaskMatePointsCard extends LitElement {
         width: 48px;
         height: 48px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--card-primary-color) 0%, #7986cb 100%);
+        background: var(--card-primary-color);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -124,7 +125,7 @@ class TaskMatePointsCard extends LitElement {
 
       .child-avatar ha-icon {
         --mdc-icon-size: 28px;
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .child-details {
@@ -154,7 +155,7 @@ class TaskMatePointsCard extends LitElement {
 
       .child-points ha-icon {
         --mdc-icon-size: 18px;
-        color: #ffd700;
+        color: var(--card-gold-color);
       }
 
       /* Action buttons */
@@ -180,7 +181,7 @@ class TaskMatePointsCard extends LitElement {
 
       .action-button:hover {
         transform: scale(1.1);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--ha-card-box-shadow, none);
       }
 
       .action-button:active {
@@ -188,13 +189,13 @@ class TaskMatePointsCard extends LitElement {
       }
 
       .action-button.remove {
-        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
-        color: white;
+        background: var(--card-error-color);
+        color: var(--text-primary-color, #fff);
       }
 
       .action-button.add {
-        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
-        color: white;
+        background: var(--card-success-color);
+        color: var(--text-primary-color, #fff);
       }
 
       .action-button ha-icon {
@@ -237,19 +238,19 @@ class TaskMatePointsCard extends LitElement {
 
       .quick-btn:hover {
         transform: scale(1.08);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        box-shadow: var(--ha-card-box-shadow, none);
       }
 
       .quick-btn:active { transform: scale(0.95); }
 
       .quick-btn.add {
-        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
-        color: white;
+        background: var(--card-success-color);
+        color: var(--text-primary-color, #fff);
       }
 
       .quick-btn.remove {
-        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
-        color: white;
+        background: var(--card-error-color);
+        color: var(--text-primary-color, #fff);
       }
 
       .quick-btn.custom {
@@ -299,7 +300,7 @@ class TaskMatePointsCard extends LitElement {
         padding: 24px;
         min-width: 300px;
         max-width: 400px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0, 0, 0, 0.15));
         animation: slide-up 0.3s ease;
       }
 
@@ -331,16 +332,16 @@ class TaskMatePointsCard extends LitElement {
       }
 
       .dialog-header .icon-container.add {
-        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+        background: var(--card-success-color);
       }
 
       .dialog-header .icon-container.remove {
-        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+        background: var(--card-error-color);
       }
 
       .dialog-header .icon-container ha-icon {
         --mdc-icon-size: 28px;
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .dialog-header-text {
@@ -431,7 +432,7 @@ class TaskMatePointsCard extends LitElement {
 
       .dialog-button:hover {
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        box-shadow: var(--ha-card-box-shadow, none);
       }
 
       .dialog-button:active {
@@ -444,15 +445,15 @@ class TaskMatePointsCard extends LitElement {
       }
 
       .dialog-button.confirm {
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .dialog-button.confirm.add {
-        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+        background: var(--card-success-color);
       }
 
       .dialog-button.confirm.remove {
-        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+        background: var(--card-error-color);
       }
 
       .dialog-button.loading {
@@ -468,12 +469,12 @@ class TaskMatePointsCard extends LitElement {
         transform: translateX(-50%);
         padding: 12px 24px;
         border-radius: 8px;
-        color: white;
+        color: var(--text-primary-color, #fff);
         font-weight: 500;
         display: flex;
         align-items: center;
         gap: 8px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0, 0, 0, 0.15));
         z-index: 10000;
         animation: slide-up-notification 0.3s ease;
       }
@@ -490,11 +491,11 @@ class TaskMatePointsCard extends LitElement {
       }
 
       .notification.success {
-        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+        background: var(--card-success-color);
       }
 
       .notification.error {
-        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+        background: var(--card-error-color);
       }
 
       .notification ha-icon {
@@ -586,7 +587,6 @@ class TaskMatePointsCard extends LitElement {
     }
     this.config = {
       title: "Manage Points",
-            header_color: '#2980b9',
     ...config,
     };
   }
@@ -642,7 +642,7 @@ class TaskMatePointsCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#2980b9'}; }</style>
+        ${this.config.header_color ? html`<style>:host { --taskmate-header-bg: ${this.config.header_color}; }</style>` : ''}
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="${pointsIcon}"></ha-icon>
@@ -967,8 +967,8 @@ class TaskMatePointsCardEditor extends LitElement {
       ha-form { display: block; margin-bottom: 16px; }
       .amounts-preview { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0 16px; }
       .preview-btn { padding: 3px 9px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; border: none; }
-      .preview-btn.add { background: #43a047; color: white; }
-      .preview-btn.remove { background: #e53935; color: white; }
+      .preview-btn.add { background: var(--success-color, #4caf50); color: var(--text-primary-color, #fff); }
+      .preview-btn.remove { background: var(--error-color, #db4437); color: var(--text-primary-color, #fff); }
       .colour-field { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border: 1px solid var(--outline-color, var(--divider-color, #e0e0e0)); border-radius: 4px; background: var(--mdc-text-field-fill-color, var(--card-background-color)); }
       .colour-field-label { font-size: 0.82rem; color: var(--primary-color); font-weight: 500; }
       .colour-field-body { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -1053,7 +1053,7 @@ class TaskMatePointsCardEditor extends LitElement {
         ${addAmounts.map(a => html`<span class="preview-btn add">+${a}</span>`)}
         ${removeAmounts.map(a => html`<span class="preview-btn remove">−${a}</span>`)}
       </div>
-      ${this._renderColourPicker('header_color', '#2980b9')}
+      ${this._renderColourPicker('header_color', '')}
     `;
   }
 
@@ -1147,6 +1147,6 @@ const _tmVersion = new URLSearchParams(
 ).get("v") || "?";
 console.info(
   "%c TASKMATE POINTS CARD %c v" + _tmVersion + " ",
-  "background:#2980b9;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
+  "background:#03a9f4;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
   "background:#2c3e50;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
 );
