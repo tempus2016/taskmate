@@ -12,7 +12,7 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
-const RANK_COLOURS = ["#ca8a04", null, "#cd7f32", null, null];
+const RANK_COLOURS = ["#f1c40f", "#bdc3c7", "#cd7f32", "#9b59b6", "#3498db"];
 const RANK_LABELS = ["🥇", "🥈", "🥉", "4th", "5th"];
 
 class TaskMateLeaderboardCard extends LitElement {
@@ -33,8 +33,8 @@ class TaskMateLeaderboardCard extends LitElement {
       .card-header {
         display: flex; align-items: center; justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, var(--primary-color));
-        color: var(--text-primary-color, #fff); gap: 12px;
+        background: var(--taskmate-header-bg, #b7950b);
+        color: white; gap: 12px;
       }
 
       .header-content { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -66,21 +66,21 @@ class TaskMateLeaderboardCard extends LitElement {
         overflow: hidden;
       }
 
-      .rank-row:hover { box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0,0,0,0.08)); }
+      .rank-row:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
 
       .rank-row.first {
-        border-color: #ca8a04;
-        background: var(--card-background-color, #fff);
+        border-color: #f1c40f;
+        background: linear-gradient(135deg, rgba(241,196,15,0.06) 0%, var(--card-background-color, #fff) 100%);
       }
 
       .rank-row.second {
-        border-color: var(--disabled-text-color, #bdbdbd);
-        background: var(--card-background-color, #fff);
+        border-color: #bdc3c7;
+        background: linear-gradient(135deg, rgba(189,195,199,0.06) 0%, var(--card-background-color, #fff) 100%);
       }
 
       .rank-row.third {
         border-color: #cd7f32;
-        background: var(--card-background-color, #fff);
+        background: linear-gradient(135deg, rgba(205,127,50,0.06) 0%, var(--card-background-color, #fff) 100%);
       }
 
       .rank-badge {
@@ -107,7 +107,7 @@ class TaskMateLeaderboardCard extends LitElement {
         flex-shrink: 0;
       }
 
-      .child-avatar ha-icon { --mdc-icon-size: 26px; color: var(--text-primary-color, #fff); }
+      .child-avatar ha-icon { --mdc-icon-size: 26px; color: white; }
 
       .rank-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 
@@ -148,7 +148,7 @@ class TaskMateLeaderboardCard extends LitElement {
       /* Tie indicator */
       .tie-line {
         height: 1px;
-        background: var(--divider-color, #e0e0e0);
+        background: linear-gradient(90deg, transparent, var(--divider-color, #e0e0e0), transparent);
         margin: -4px 0;
         position: relative;
       }
@@ -222,7 +222,7 @@ class TaskMateLeaderboardCard extends LitElement {
       sort_by: "points",      // "points" | "streak" | "weekly"
       show_streak: true,
       show_weekly: true,
-            header_color: null,
+            header_color: '#b7950b',
     ...config,
     };
   }
@@ -269,7 +269,7 @@ class TaskMateLeaderboardCard extends LitElement {
 
     return html`
       <ha-card>
-        ${this.config.header_color ? html`<style>:host { --taskmate-header-bg: ${this.config.header_color}; }</style>` : ''}
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#b7950b'}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:trophy"></ha-icon>
@@ -300,16 +300,9 @@ class TaskMateLeaderboardCard extends LitElement {
     return (a.points || 0) === (b.points || 0);
   }
 
-  _getRankColour(idx) {
-    const c = RANK_COLOURS[idx];
-    if (c) return c;
-    if (idx === 1) return getComputedStyle(this).getPropertyValue('--disabled-text-color').trim() || '#9e9e9e';
-    return getComputedStyle(this).getPropertyValue('--primary-color').trim() || '#03a9f4';
-  }
-
   _renderRankRow(child, idx, sortBy, weeklyPoints, pointsIcon, pointsName) {
     const rankClass = idx === 0 ? "first" : idx === 1 ? "second" : idx === 2 ? "third" : "";
-    const avatarColour = this._getRankColour(idx);
+    const avatarColour = RANK_COLOURS[idx % RANK_COLOURS.length];
     const rankEmoji = idx < 3 ? RANK_LABELS[idx] : null;
     const rankNum = idx + 1;
 
@@ -331,7 +324,7 @@ class TaskMateLeaderboardCard extends LitElement {
           ? html`<div class="rank-badge">${rankEmoji}</div>`
           : html`<div class="rank-number">${rankNum}</div>`}
 
-        <div class="child-avatar" style="background: ${avatarColour};">
+        <div class="child-avatar" style="background: linear-gradient(135deg, ${avatarColour} 0%, ${avatarColour}cc 100%);">
           <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
         </div>
 
@@ -340,19 +333,19 @@ class TaskMateLeaderboardCard extends LitElement {
           <div class="rank-stats">
             ${this.config.show_streak !== false && sortBy !== "streak" ? html`
               <span class="stat-chip">
-                <ha-icon icon="mdi:fire" style="color: var(--warning-color, #ff9800);"></ha-icon>
+                <ha-icon icon="mdi:fire" style="color: #e67e22;"></ha-icon>
                 ${this._t('common.d_streak', { count: child.current_streak || 0 })}
               </span>
             ` : ''}
             ${this.config.show_weekly !== false && sortBy !== "weekly" ? html`
               <span class="stat-chip">
-                <ha-icon icon="mdi:calendar-week" style="color: var(--primary-color);"></ha-icon>
+                <ha-icon icon="mdi:calendar-week" style="color: #3498db;"></ha-icon>
                 ${weeklyPoints[child.id] || 0} ${this._t('common.this_week')}
               </span>
             ` : ''}
             ${sortBy !== "points" ? html`
               <span class="stat-chip">
-                <ha-icon icon="${pointsIcon}" style="color: var(--warning-color, #ff9800);"></ha-icon>
+                <ha-icon icon="${pointsIcon}" style="color: #f1c40f;"></ha-icon>
                 ${child.points || 0} ${this._t('common.total')}
               </span>
             ` : ''}
@@ -375,7 +368,7 @@ class TaskMateLeaderboardCard extends LitElement {
 
     return html`
       <ha-card>
-        ${this.config.header_color ? html`<style>:host { --taskmate-header-bg: ${this.config.header_color}; }</style>` : ''}
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#b7950b'}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:trophy"></ha-icon>
@@ -385,19 +378,19 @@ class TaskMateLeaderboardCard extends LitElement {
         <div class="card-content">
           <div class="rank-row first">
             <div class="rank-badge">🥇</div>
-            <div class="child-avatar" style="background: #ca8a04;">
+            <div class="child-avatar" style="background: linear-gradient(135deg, #f1c40f 0%, #e67e22 100%);">
               <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
             </div>
             <div class="rank-info">
               <div class="rank-name">${child.name}</div>
               <div class="rank-stats">
                 <span class="stat-chip">
-                  <ha-icon icon="mdi:fire" style="color: var(--warning-color, #ff9800);"></ha-icon>
+                  <ha-icon icon="mdi:fire" style="color:#e67e22;"></ha-icon>
                   ${this._t('common.d_streak', { count: child.current_streak || 0 })}
                 </span>
               </div>
             </div>
-            <div class="rank-score" style="color: #ca8a04;">
+            <div class="rank-score" style="color:#f1c40f;">
               <div class="score-value">${child.points || 0}</div>
               <div class="score-label">${pointsName}</div>
             </div>
@@ -405,22 +398,22 @@ class TaskMateLeaderboardCard extends LitElement {
 
           <div class="solo-header">${this._t('leaderboard.personal_bests')}</div>
           <div class="personal-best-row">
-            <ha-icon class="pb-icon" icon="mdi:fire" style="color: var(--warning-color, #ff9800);"></ha-icon>
+            <ha-icon class="pb-icon" icon="mdi:fire" style="color:#e67e22;"></ha-icon>
             <span class="pb-label">${this._t('leaderboard.best_streak')}</span>
             <span class="pb-value">${this._t('leaderboard.best_streak_value', { count: bestStreak })}</span>
           </div>
           <div class="personal-best-row">
-            <ha-icon class="pb-icon" icon="mdi:checkbox-multiple-marked" style="color: var(--primary-color);"></ha-icon>
+            <ha-icon class="pb-icon" icon="mdi:checkbox-multiple-marked" style="color:#3498db;"></ha-icon>
             <span class="pb-label">${this._t('leaderboard.total_chores_completed')}</span>
             <span class="pb-value">${totalChores}</span>
           </div>
           <div class="personal-best-row">
-            <ha-icon class="pb-icon" icon="mdi:calendar-week" style="color: var(--primary-color);"></ha-icon>
+            <ha-icon class="pb-icon" icon="mdi:calendar-week" style="color:#9b59b6;"></ha-icon>
             <span class="pb-label">${this._t('leaderboard.points_this_week')}</span>
             <span class="pb-value">${weekly}</span>
           </div>
           <div class="personal-best-row">
-            <ha-icon class="pb-icon" icon="${pointsIcon}" style="color: var(--warning-color, #ff9800);"></ha-icon>
+            <ha-icon class="pb-icon" icon="${pointsIcon}" style="color:#f1c40f;"></ha-icon>
             <span class="pb-label">${this._t('leaderboard.total_points_earned')}</span>
             <span class="pb-value">${child.total_points_earned || child.points || 0}</span>
           </div>

@@ -60,8 +60,9 @@ class TaskMatePenaltiesCard extends LitElement {
     return css`
       :host {
         display: block;
-        --penalty-accent: var(--error-color, #db4437);
-        --penalty-accent-light: color-mix(in srgb, var(--error-color, #db4437) 12%, transparent);
+        --penalty-red: #e74c3c;
+        --penalty-red-dark: #c0392b;
+        --penalty-red-light: rgba(231, 76, 60, 0.12);
         --text-primary: var(--primary-text-color, #212121);
         --text-secondary: var(--secondary-text-color, #757575);
         --card-bg: var(--card-background-color, #fff);
@@ -76,8 +77,8 @@ class TaskMatePenaltiesCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, var(--penalty-accent));
-        color: var(--text-primary-color, #fff);
+        background: var(--taskmate-header-bg, var(--penalty-red));
+        color: white;
       }
       .header-left { display: flex; align-items: center; gap: 12px; }
       .header-icon { --mdc-icon-size: 32px; opacity: 0.95; }
@@ -133,9 +134,9 @@ class TaskMatePenaltiesCard extends LitElement {
       }
       .child-tab ha-icon { --mdc-icon-size: 18px; }
       .child-tab.selected {
-        background: var(--penalty-accent-light);
-        border-color: var(--penalty-accent);
-        color: var(--penalty-accent);
+        background: var(--penalty-red-light);
+        border-color: var(--penalty-red);
+        color: var(--penalty-red);
       }
 
       /* ── Card body ── */
@@ -157,12 +158,12 @@ class TaskMatePenaltiesCard extends LitElement {
         border-radius: 12px;
         transition: box-shadow 0.2s, transform 0.15s;
       }
-      .penalty-row:hover { box-shadow: var(--ha-card-box-shadow, none); transform: translateY(-1px); }
+      .penalty-row:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.09); transform: translateY(-1px); }
 
       /* Flash animation when penalty is applied */
       @keyframes flash-red {
-        0%   { background: var(--penalty-accent-light); }
-        40%  { background: color-mix(in srgb, var(--error-color, #db4437) 25%, transparent); }
+        0%   { background: var(--penalty-red-light); }
+        40%  { background: rgba(231,76,60,0.25); }
         100% { background: var(--card-bg); }
       }
       .penalty-row.flashing { animation: flash-red 0.6s ease forwards; }
@@ -175,13 +176,14 @@ class TaskMatePenaltiesCard extends LitElement {
         justify-content: center;
         min-width: 64px;
         padding: 10px 8px;
-        background: var(--penalty-accent);
+        background: linear-gradient(135deg, var(--penalty-red) 0%, var(--penalty-red-dark) 100%);
         border-radius: 10px;
         flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(231,76,60,0.3);
       }
-      .points-badge ha-icon { --mdc-icon-size: 20px; color: var(--text-primary-color, #fff); margin-bottom: 2px; }
-      .points-value { font-size: 1.3rem; font-weight: 700; color: var(--text-primary-color, #fff); line-height: 1; }
-      .points-label { font-size: 0.62rem; font-weight: 600; color: var(--text-primary-color, #fff); opacity: 0.88; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+      .points-badge ha-icon { --mdc-icon-size: 20px; color: white; margin-bottom: 2px; }
+      .points-value { font-size: 1.3rem; font-weight: 700; color: white; line-height: 1; }
+      .points-label { font-size: 0.62rem; font-weight: 600; color: rgba(255,255,255,0.88); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
 
       /* Penalty info */
       .penalty-info { flex: 1; min-width: 0; }
@@ -195,19 +197,19 @@ class TaskMatePenaltiesCard extends LitElement {
         justify-content: center;
         gap: 6px;
         padding: 8px 16px;
-        background: var(--penalty-accent);
-        color: var(--text-primary-color, #fff);
+        background: var(--penalty-red);
+        color: white;
         border: none;
         border-radius: 8px;
         font-size: 0.9rem;
         font-weight: 600;
         cursor: pointer;
-        transition: opacity 0.15s, transform 0.1s;
+        transition: background 0.15s, transform 0.1s;
         white-space: nowrap;
         flex-shrink: 0;
         --mdc-icon-size: 16px;
       }
-      .apply-btn:hover { opacity: 0.85; }
+      .apply-btn:hover { background: var(--penalty-red-dark); }
       .apply-btn:active { transform: scale(0.97); }
       .apply-btn:disabled { opacity: 0.55; cursor: default; }
 
@@ -228,11 +230,11 @@ class TaskMatePenaltiesCard extends LitElement {
         transition: all 0.15s;
       }
       .edit-btn:hover { background: var(--divider); color: var(--text-primary); }
-      .edit-btn.delete:hover { background: var(--penalty-accent-light); color: var(--penalty-accent); border-color: var(--penalty-accent); }
+      .edit-btn.delete:hover { background: var(--penalty-red-light); color: var(--penalty-red); border-color: var(--penalty-red); }
 
       /* Inline edit form */
       .edit-form {
-        background: var(--secondary-background-color, #f5f5f5);
+        background: var(--ha-card-background, #f5f5f5);
         border: 1px solid var(--divider);
         border-radius: 12px;
         padding: 14px;
@@ -260,19 +262,19 @@ class TaskMatePenaltiesCard extends LitElement {
         width: 100%;
         box-sizing: border-box;
       }
-      .form-field input:focus { outline: 2px solid var(--primary-color); border-color: transparent; }
+      .form-field input:focus { outline: 2px solid var(--penalty-red); border-color: transparent; }
       .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
       .btn-save {
         padding: 8px 18px;
-        background: var(--primary-color);
-        color: var(--text-primary-color, #fff);
+        background: var(--penalty-red);
+        color: white;
         border: none;
         border-radius: 8px;
         font-size: 0.9rem;
         font-weight: 600;
         cursor: pointer;
       }
-      .btn-save:hover { opacity: 0.85; }
+      .btn-save:hover { background: var(--penalty-red-dark); }
       .btn-cancel {
         padding: 8px 14px;
         background: none;
@@ -301,7 +303,7 @@ class TaskMatePenaltiesCard extends LitElement {
         transition: all 0.15s;
         --mdc-icon-size: 20px;
       }
-      .add-penalty-btn:hover { border-color: var(--penalty-accent); color: var(--penalty-accent); background: var(--penalty-accent-light); }
+      .add-penalty-btn:hover { border-color: var(--penalty-red); color: var(--penalty-red); background: var(--penalty-red-light); }
 
       /* Empty state */
       .empty-state {
@@ -319,8 +321,8 @@ class TaskMatePenaltiesCard extends LitElement {
         bottom: 24px;
         left: 50%;
         transform: translateX(-50%) translateY(0);
-        background: var(--primary-text-color, #333);
-        color: var(--card-background-color, #fff);
+        background: #333;
+        color: white;
         padding: 10px 20px;
         border-radius: 24px;
         font-size: 0.92rem;
@@ -620,7 +622,7 @@ class TaskMatePenaltiesCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || 'var(--error-color, #db4437)'}; }</style>
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#e74c3c'}; }</style>
         <div class="card-header">
           <div class="header-left">
             <ha-icon class="header-icon" icon="mdi:alert-circle-outline"></ha-icon>
@@ -749,13 +751,13 @@ class TaskMatePenaltiesCardEditor extends LitElement {
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
       ></ha-form>
-      ${this._renderColourPicker('header_color', '#db4437')}
+      ${this._renderColourPicker('header_color', '#e74c3c')}
     `;
   }
 
   _renderColourPicker(key, defaultValue) {
     const current = this.config[key] || defaultValue;
-    const presets = [defaultValue, '#e74c3c', '#e67e22', '#3498db', '#9b59b6', '#f1c40f', '#34495e'];
+    const presets = [defaultValue, '#e67e22', '#27ae60', '#3498db', '#9b59b6', '#f1c40f', '#34495e'];
     const isActive = (c) => c.toLowerCase() === current.toLowerCase();
     return html`
       <div class="colour-field">

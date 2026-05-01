@@ -405,6 +405,14 @@ class TaskMateChildCard extends LitElement {
     return css`
       :host {
         display: block;
+        --fun-pink: #ff6b9d;
+        --fun-purple: #9b59b6;
+        --fun-blue: #3498db;
+        --fun-green: #2ecc71;
+        --fun-yellow: #f1c40f;
+        --fun-orange: #e67e22;
+        --fun-red: #e74c3c;
+        --fun-cyan: #1abc9c;
       }
 
       ha-card { overflow: hidden; }
@@ -415,8 +423,8 @@ class TaskMateChildCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, var(--primary-color));
-        color: var(--text-primary-color, #fff);
+        background: var(--taskmate-header-bg, #9b59b6);
+        color: white;
         gap: 12px;
         min-width: 0;
       }
@@ -444,7 +452,7 @@ class TaskMateChildCard extends LitElement {
 
       .avatar-container ha-icon {
         --mdc-icon-size: 30px;
-        color: var(--text-primary-color, #fff);
+        color: white;
       }
 
       .child-name-container {
@@ -456,7 +464,7 @@ class TaskMateChildCard extends LitElement {
       .child-name {
         font-size: 1.15rem;
         font-weight: 700;
-        color: var(--text-primary-color, #fff);
+        color: white;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -497,10 +505,10 @@ class TaskMateChildCard extends LitElement {
         align-items: center;
         gap: 3px;
         white-space: nowrap;
-        color: var(--text-primary-color, #fff);
+        color: white;
       }
 
-      .stars-value.my-stars { color: var(--text-primary-color, #fff); }
+      .stars-value.my-stars { color: white; }
 
       .stars-value.waiting-stars {
         color: rgba(255,255,255,0.75);
@@ -509,8 +517,8 @@ class TaskMateChildCard extends LitElement {
 
       .stars-value ha-icon { --mdc-icon-size: 16px; flex-shrink: 0; }
 
-      .stars-value.my-stars ha-icon { color: #ca8a04; }
-      .stars-value.waiting-stars ha-icon { color: var(--warning-color, #ff9800); }
+      .stars-value.my-stars ha-icon { color: var(--fun-yellow); }
+      .stars-value.waiting-stars ha-icon { color: var(--fun-orange); }
 
       .stars-label {
         font-size: 0.6rem;
@@ -543,7 +551,7 @@ class TaskMateChildCard extends LitElement {
       .section-title {
         font-size: 1.4rem;
         font-weight: 700;
-        color: var(--primary-text-color);
+        color: var(--fun-purple);
         display: flex;
         align-items: center;
         gap: 10px;
@@ -557,8 +565,8 @@ class TaskMateChildCard extends LitElement {
 
       /* Individual chore card - optimized for tablet touch, ENTIRE ROW IS CLICKABLE */
       .chore-card {
-        background: var(--secondary-background-color, #f5f5f5);
-        border-radius: var(--ha-card-border-radius, 12px);
+        background: var(--card-background-color, #fff);
+        border-radius: 20px;
         padding: 16px 18px;
         display: flex;
         flex-direction: row;
@@ -566,8 +574,9 @@ class TaskMateChildCard extends LitElement {
         justify-content: space-between;
         flex-wrap: nowrap;
         gap: 12px;
-        border: 1px solid var(--divider-color);
-        transition: transform 0.15s ease, background 0.15s ease;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        border: 3px solid transparent;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
         position: relative;
         overflow: hidden;
         min-height: 68px;
@@ -578,21 +587,47 @@ class TaskMateChildCard extends LitElement {
         box-sizing: border-box;
       }
 
+      .chore-card:nth-child(odd) {
+        border-color: var(--fun-blue);
+        background: var(--card-background-color, #fff);
+        background: color-mix(in srgb, var(--fun-blue) 10%, var(--card-background-color, #fff));
+      }
+
+      .chore-card:nth-child(even) {
+        border-color: var(--fun-pink);
+        background: var(--card-background-color, #fff);
+        background: color-mix(in srgb, var(--fun-pink) 10%, var(--card-background-color, #fff));
+      }
+
+      .chore-card:nth-child(3n) {
+        border-color: var(--fun-green);
+        background: var(--card-background-color, #fff);
+        background: color-mix(in srgb, var(--fun-green) 10%, var(--card-background-color, #fff));
+      }
+
+      .chore-card:nth-child(4n) {
+        border-color: var(--fun-orange);
+        background: var(--card-background-color, #fff);
+        background: color-mix(in srgb, var(--fun-orange) 10%, var(--card-background-color, #fff));
+      }
+
       /* Touch/hover feedback - works for both touch and mouse */
       .chore-card:active {
         transform: scale(0.98);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       }
       .chore-card:focus {
         outline: none;
       }
       .chore-card:focus-visible {
-        outline: 2px solid var(--primary-color);
+        outline: 2px solid var(--primary-color, #2196f3);
         outline-offset: 2px;
       }
 
       @media (hover: hover) {
         .chore-card:hover {
-          background: color-mix(in srgb, var(--primary-color) 8%, var(--secondary-background-color, #f5f5f5));
+          transform: scale(1.02);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
       }
 
@@ -628,7 +663,7 @@ class TaskMateChildCard extends LitElement {
         position: relative;
       }
 
-      /* Chore number badge */
+      /* Fun chore number badge */
       .chore-number-badge {
         width: 38px;
         height: 38px;
@@ -639,26 +674,28 @@ class TaskMateChildCard extends LitElement {
         justify-content: center;
         font-size: 1.3rem;
         font-weight: 800;
-        color: var(--text-primary-color, #fff);
-        background: var(--primary-color);
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+        transform: rotate(-5deg);
         transition: transform 0.2s ease;
-        font-family: inherit;
+        font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
         flex-shrink: 0;
       }
 
       .chore-card:hover .chore-number-badge {
-        transform: scale(1.05);
+        transform: rotate(5deg) scale(1.1);
       }
 
-      /* Cycle through colors for number badges — all use HA variables */
-      .chore-number-badge.color-0 { background: var(--primary-color); }
-      .chore-number-badge.color-1 { background: var(--primary-color); }
-      .chore-number-badge.color-2 { background: var(--success-color, #4caf50); }
-      .chore-number-badge.color-3 { background: var(--warning-color, #ff9800); }
-      .chore-number-badge.color-4 { background: var(--primary-color); }
-      .chore-number-badge.color-5 { background: var(--success-color, #4caf50); }
-      .chore-number-badge.color-6 { background: var(--warning-color, #ff9800); }
-      .chore-number-badge.color-7 { background: var(--error-color, #f44336); }
+      /* Cycle through fun colors for number badges */
+      .chore-number-badge.color-0 { background: linear-gradient(135deg, #ff6b9d 0%, #ff4081 100%); } /* Pink */
+      .chore-number-badge.color-1 { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); } /* Blue */
+      .chore-number-badge.color-2 { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); } /* Green */
+      .chore-number-badge.color-3 { background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); } /* Orange */
+      .chore-number-badge.color-4 { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); } /* Purple */
+      .chore-number-badge.color-5 { background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%); } /* Teal */
+      .chore-number-badge.color-6 { background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%); } /* Yellow */
+      .chore-number-badge.color-7 { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); } /* Red */
 
       /* Completed state for number badge */
       .chore-card.completed .chore-number-badge {
@@ -672,11 +709,12 @@ class TaskMateChildCard extends LitElement {
         height: 40px;
         min-width: 40px;
         border-radius: 10px;
-        border: 2px solid var(--divider-color);
+        border: 3px solid var(--divider-color, #bdc3c7);
         background: var(--card-background-color, #fff);
         display: flex;
         align-items: center;
         justify-content: center;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         transition: all 0.2s ease;
         flex-shrink: 0;
         align-self: center;
@@ -690,18 +728,19 @@ class TaskMateChildCard extends LitElement {
 
       /* Unchecked state - hover effect */
       .chore-card:not(.completed):hover .chore-checkbox {
-        border-color: var(--success-color, #4caf50);
-        background: color-mix(in srgb, var(--success-color, #4caf50) 10%, var(--card-background-color, #fff));
+        border-color: var(--fun-green);
+        background: rgba(46, 204, 113, 0.1);
       }
 
       /* Checked state */
       .chore-card.completed .chore-checkbox {
-        border-color: var(--success-color, #4caf50);
-        background: var(--success-color, #4caf50);
+        border-color: var(--fun-green);
+        background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        box-shadow: 0 3px 10px rgba(46, 204, 113, 0.4);
       }
 
       .chore-card.completed .chore-checkbox ha-icon {
-        color: var(--text-primary-color, #fff);
+        color: white;
       }
 
       .chore-details {
@@ -737,14 +776,14 @@ class TaskMateChildCard extends LitElement {
         align-items: center;
         gap: 6px;
         font-size: 1rem;
-        color: #ca8a04;
+        color: var(--fun-orange);
         font-weight: 600;
         margin-top: 2px;
       }
 
       .chore-points ha-icon {
         --mdc-icon-size: 18px;
-        color: #ca8a04;
+        color: var(--fun-yellow);
       }
 
       @keyframes spin {
@@ -824,16 +863,19 @@ class TaskMateChildCard extends LitElement {
         --mdc-icon-size: 12px;
       }
 
-      /* Chore card in completed state */
+      /* Chore card in completed state - faded green styling */
       .chore-card.completed {
         opacity: 0.75;
         border-style: dashed;
-        border-color: var(--success-color, #4caf50) !important;
-        background: color-mix(in srgb, var(--success-color, #4caf50) 12%, var(--secondary-background-color, #f5f5f5)) !important;
+        border-color: var(--fun-green) !important;
+        background: linear-gradient(135deg,
+          rgba(46, 204, 113, 0.25) 0%,
+          rgba(39, 174, 96, 0.35) 100%) !important;
+        filter: saturate(0.7);
       }
 
       .chore-card.completed .chore-icon-container {
-        background: var(--card-background-color, #fff);
+        background: rgba(255, 255, 255, 0.8);
       }
 
       .chore-card.completed .chore-name {
@@ -867,8 +909,8 @@ class TaskMateChildCard extends LitElement {
       }
 
       .reset-countdown.soon {
-        color: var(--warning-color, #ff9800);
-        background: color-mix(in srgb, var(--warning-color, #ff9800) 12%, transparent);
+        color: var(--fun-orange);
+        background: rgba(230,126,34,0.12);
         font-weight: 700;
       }
 
@@ -884,7 +926,7 @@ class TaskMateChildCard extends LitElement {
 
       .empty-state ha-icon {
         --mdc-icon-size: 80px;
-        color: var(--success-color, #4caf50);
+        color: var(--fun-green);
         margin-bottom: 16px;
         animation: bounce 1s ease infinite;
       }
@@ -897,7 +939,7 @@ class TaskMateChildCard extends LitElement {
       .empty-state .message {
         font-size: 1.6rem;
         font-weight: bold;
-        color: var(--primary-text-color);
+        color: var(--fun-purple);
         margin-bottom: 8px;
       }
 
@@ -928,7 +970,7 @@ class TaskMateChildCard extends LitElement {
 
       .celebration-content {
         background: var(--card-background-color, #fff);
-        border-radius: var(--ha-card-border-radius, 12px);
+        border-radius: 30px;
         padding: 40px 50px;
         text-align: center;
         animation: pop-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -961,7 +1003,7 @@ class TaskMateChildCard extends LitElement {
       .celebration-title {
         font-size: 2.5rem;
         font-weight: bold;
-        color: var(--primary-text-color);
+        color: var(--fun-purple);
         margin-bottom: 8px;
       }
 
@@ -974,7 +1016,7 @@ class TaskMateChildCard extends LitElement {
       .celebration-points {
         font-size: 1.8rem;
         font-weight: bold;
-        color: #ca8a04;
+        color: var(--fun-orange);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -983,7 +1025,7 @@ class TaskMateChildCard extends LitElement {
 
       .celebration-points ha-icon {
         --mdc-icon-size: 28px;
-        color: #ca8a04;
+        color: var(--fun-yellow);
       }
 
       /* Confetti */
@@ -1109,7 +1151,7 @@ class TaskMateChildCard extends LitElement {
       elapsed_time_mode: "dim",      // "dim" | "hide" | "show" — chores whose time period has passed without completion
       show_countdown: true,          // Show midnight reset countdown below section title
       show_due_days_only: true,      // Whether to apply due_days filtering at all
-            header_color: '',
+            header_color: '#9b59b6',
     ...config,
     };
   }
@@ -1214,7 +1256,7 @@ class TaskMateChildCard extends LitElement {
 
     return html`
       <ha-card>
-        ${this.config.header_color ? html`<style>:host { --taskmate-header-bg: ${this.config.header_color}; }</style>` : ''}
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#9b59b6'}; }</style>
         <div class="card-header">
           <div class="header-left">
             <div class="avatar-container">
@@ -1821,7 +1863,7 @@ class TaskMateChildCard extends LitElement {
         </div>
         <div class="chore-checkbox">
           ${isLoading
-            ? html`<ha-icon icon="mdi:loading" style="animation: spin 1s linear infinite; color: var(--primary-color);"></ha-icon>`
+            ? html`<ha-icon icon="mdi:loading" style="animation: spin 1s linear infinite; color: var(--fun-purple);"></ha-icon>`
             : isLockedPreview
               ? html`<ha-icon icon="mdi:lock-clock" class="chore-lock-icon"></ha-icon>`
               : html`<ha-icon icon="mdi:check-bold"></ha-icon>`}
@@ -1854,15 +1896,7 @@ class TaskMateChildCard extends LitElement {
   }
 
   _renderConfetti() {
-    const cs = getComputedStyle(this);
-    const colors = [
-      cs.getPropertyValue('--primary-color').trim() || '#03a9f4',
-      cs.getPropertyValue('--success-color').trim() || '#4caf50',
-      cs.getPropertyValue('--warning-color').trim() || '#ff9800',
-      cs.getPropertyValue('--error-color').trim() || '#f44336',
-      '#ca8a04',
-      cs.getPropertyValue('--primary-color').trim() || '#03a9f4',
-    ];
+    const colors = ["#ff6b9d", "#9b59b6", "#3498db", "#2ecc71", "#f1c40f", "#e67e22"];
 
     return html`
       <div class="confetti-container">
@@ -2326,13 +2360,13 @@ class TaskMateChildCardEditor extends LitElement {
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
       ></ha-form>
-      ${this._renderColourPicker('header_color', '#4183c4')}
+      ${this._renderColourPicker('header_color', '#9b59b6')}
     `;
   }
 
   _renderColourPicker(key, defaultValue) {
     const current = this.config[key] || defaultValue;
-    const presets = ['#4183c4', '#4caf50', '#ff9800', '#f44336', '#9c27b0', '#607d8b', '#795548'];
+    const presets = ['#9b59b6', '#e67e22', '#27ae60', '#3498db', '#f1c40f', '#e74c3c', '#34495e'];
     const isActive = (c) => c.toLowerCase() === current.toLowerCase();
     return html`
       <div class="colour-field">
@@ -2415,6 +2449,6 @@ const _tmVersion = new URLSearchParams(
 ).get("v") || "?";
 console.info(
   "%c TASKMATE CHILD CARD %c v" + _tmVersion + " ",
-  "background:#4183c4;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
-  "background:#37474f;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
+  "background:#9b59b6;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
+  "background:#2c3e50;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
 );
