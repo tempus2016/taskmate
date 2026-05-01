@@ -31,12 +31,6 @@ class TaskMateStreakCard extends LitElement {
     return css`
       :host {
         display: block;
-        --str-purple: #9b59b6;
-        --str-gold: #f1c40f;
-        --str-orange: #e67e22;
-        --str-green: #2ecc71;
-        --str-red: #e74c3c;
-        --str-fire: #ff6b35;
       }
 
       ha-card { overflow: hidden; }
@@ -46,8 +40,8 @@ class TaskMateStreakCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, #e74c3c);
-        color: white;
+        background: var(--taskmate-header-bg, var(--primary-color));
+        color: var(--text-primary-color, #fff);
       }
 
       .header-content { display: flex; align-items: center; gap: 10px; }
@@ -80,14 +74,14 @@ class TaskMateStreakCard extends LitElement {
         width: 42px;
         height: 42px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--str-purple) 0%, #a569bd 100%);
+        background: var(--primary-color);
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
       }
 
-      .child-avatar ha-icon { --mdc-icon-size: 26px; color: white; }
+      .child-avatar ha-icon { --mdc-icon-size: 26px; color: var(--text-primary-color, #fff); }
 
       .streak-info { flex: 1; }
       .child-name {
@@ -109,8 +103,8 @@ class TaskMateStreakCard extends LitElement {
         line-height: 1;
       }
 
-      .streak-number.hot { color: var(--str-fire); }
-      .streak-number.warm { color: var(--str-orange); }
+      .streak-number.hot { color: var(--error-color, #db4437); }
+      .streak-number.warm { color: var(--warning-color, #ff9800); }
       .streak-number.cold { color: var(--secondary-text-color); }
 
       .streak-label {
@@ -136,9 +130,9 @@ class TaskMateStreakCard extends LitElement {
         transition: transform 0.2s ease;
       }
 
-      .day-dot.active { background: var(--str-fire); }
-      .day-dot.today-active { background: var(--str-green); transform: scale(1.3); }
-      .day-dot.inactive { background: var(--divider-color, #e0e0e0); }
+      .day-dot.active { background: var(--warning-color, #ff9800); }
+      .day-dot.today-active { background: var(--success-color, #4caf50); transform: scale(1.3); }
+      .day-dot.inactive { background: var(--divider-color); }
 
       /* Achievements */
       .achievements-section {
@@ -177,8 +171,8 @@ class TaskMateStreakCard extends LitElement {
       .badge:hover { transform: scale(1.05); }
 
       .badge.earned {
-        background: linear-gradient(135deg, rgba(241,196,15,0.2), rgba(230,126,34,0.2));
-        border: 1px solid rgba(241,196,15,0.4);
+        background: var(--secondary-background-color);
+        border: 1px solid var(--divider-color);
       }
 
       .badge.locked { opacity: 0.35; filter: grayscale(1); }
@@ -192,7 +186,7 @@ class TaskMateStreakCard extends LitElement {
         line-height: 1.2;
       }
 
-      .badge.earned .badge-name { color: var(--str-orange); }
+      .badge.earned .badge-name { color: #ca8a04; }
 
       /* Empty / error */
       .error-state, .empty-state {
@@ -212,8 +206,8 @@ class TaskMateStreakCard extends LitElement {
       title: null,
       child_id: null,
       streak_days_shown: 14,
-            header_color: '#e74c3c',
-    ...config,
+      header_color: null,
+      ...config,
     };
   }
 
@@ -251,7 +245,7 @@ class TaskMateStreakCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#e74c3c'}; }</style>
+        ${this.config.header_color ? html`<style>:host { --taskmate-header-bg: ${this.config.header_color}; }</style>` : ''}
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:fire"></ha-icon>
