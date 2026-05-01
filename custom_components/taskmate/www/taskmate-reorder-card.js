@@ -50,8 +50,8 @@ class TaskMateReorderCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, #16a085);
-        color: white;
+        background: var(--taskmate-header-bg, var(--primary-color));
+        color: var(--text-primary-color, #fff);
         gap: 12px;
       }
 
@@ -73,7 +73,7 @@ class TaskMateReorderCard extends LitElement {
       .card-title {
         font-size: 1.05rem;
         font-weight: 600;
-        color: white;
+        color: var(--text-primary-color, #fff);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

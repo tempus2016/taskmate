@@ -28,7 +28,7 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css  = LitElement.prototype.css;
 
-const DEFAULT_HEADER = "#9b59b6";
+const DEFAULT_HEADER = "";
 
 const CHILD_COLOURS = [
   "#e74c3c", "#3498db", "#27ae60", "#f39c12",
@@ -107,7 +107,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        color: white;
+        color: var(--text-primary-color, #fff);
         gap: 10px;
       }
       .header-left {
@@ -149,13 +149,13 @@ class TaskMatePointsDisplayCard extends LitElement {
         justify-content: center;
         font-size: 1.3rem;
         font-weight: 800;
-        color: white;
+        color: var(--text-primary-color, #fff);
         flex-shrink: 0;
         overflow: hidden;
       }
       .avatar ha-icon {
         --mdc-icon-size: 32px;
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
       .avatar img {
         width: 100%;
@@ -184,7 +184,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         width: 80px;
         height: 80px;
         font-size: 1.8rem;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        box-shadow: var(--ha-card-box-shadow, none);
       }
       .single-wrap .avatar ha-icon {
         --mdc-icon-size: 48px;
@@ -206,7 +206,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         padding: 22px 40px;
         width: 100%;
         box-sizing: border-box;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        box-shadow: var(--ha-card-box-shadow, none);
         position: relative;
         overflow: hidden;
       }
@@ -299,7 +299,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         transition: box-shadow 0.2s;
         overflow: hidden;
       }
-      .child-tile:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+      .child-tile:hover { box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0,0,0,0.1)); }
       .child-tile .rank-badge {
         position: absolute;
         top: 8px;
@@ -380,7 +380,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         background: var(--card-background-color, #fff);
         border: 2px solid var(--divider-color, #e0e0e0);
         border-radius: 20px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        box-shadow: var(--ha-card-box-shadow, none);
         position: relative;
         overflow: hidden;
       }
@@ -521,7 +521,8 @@ class TaskMatePointsDisplayCard extends LitElement {
   /* ── Render helpers ─────────────────────────────────────────────────── */
 
   _headerStyle() {
-    return `background: ${this.config.header_color || DEFAULT_HEADER};`;
+    const c = this.config.header_color;
+    return c ? `background: ${c};` : `background: var(--primary-color, #03a9f4);`;
   }
 
   _defaultTitle() {
@@ -655,7 +656,7 @@ class TaskMatePointsDisplayCard extends LitElement {
       <div class="cumulative-wrap">
         <div class="cumulative-total">
           <div class="points-label">${this._t("points_display.combined_family_total")}</div>
-          <div class="points-number" style="color:${this.config.header_color || DEFAULT_HEADER}">
+          <div class="points-number" style="color:${this.config.header_color || 'var(--primary-color, #03a9f4)'}">
             <span class="points-star">\u{1F31F}</span>${total.toLocaleString()}
           </div>
           <div class="family-label">${this._t("points_display.family_subtitle", { count: ranked.length })}</div>

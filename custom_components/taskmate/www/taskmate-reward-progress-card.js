@@ -33,8 +33,8 @@ class TaskMateRewardProgressCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, #7d3c98);
-        color: white;
+        background: var(--taskmate-header-bg, var(--primary-color));
+        color: var(--text-primary-color, #fff);
         gap: 12px;
       }
 
@@ -61,11 +61,11 @@ class TaskMateRewardProgressCard extends LitElement {
         width: 90px;
         height: 90px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+        background: var(--primary-color);
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 6px 24px rgba(155,89,182,0.35);
+        box-shadow: var(--ha-card-box-shadow, none);
         animation: hero-float 3s ease-in-out infinite;
       }
 
@@ -74,7 +74,7 @@ class TaskMateRewardProgressCard extends LitElement {
         50% { transform: translateY(-6px); }
       }
 
-      .reward-icon-wrap ha-icon { --mdc-icon-size: 52px; color: white; }
+      .reward-icon-wrap ha-icon { --mdc-icon-size: 52px; color: var(--text-primary-color, #fff); }
 
       .reward-name {
         font-size: 1.6rem;
@@ -124,13 +124,13 @@ class TaskMateRewardProgressCard extends LitElement {
         height: 40px;
         min-width: 40px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+        background: var(--primary-color);
         display: flex;
         align-items: center;
         justify-content: center;
       }
 
-      .child-avatar ha-icon { --mdc-icon-size: 24px; color: white; }
+      .child-avatar ha-icon { --mdc-icon-size: 24px; color: var(--text-primary-color, #fff); }
 
       .child-progress-name {
         font-size: 1rem;
@@ -161,14 +161,14 @@ class TaskMateRewardProgressCard extends LitElement {
       .cost-value {
         font-size: 1.2rem;
         font-weight: 700;
-        color: #9b59b6;
+        color: var(--primary-color);
         display: flex;
         align-items: center;
         gap: 3px;
         justify-content: flex-end;
       }
 
-      .cost-value ha-icon { --mdc-icon-size: 16px; color: #f1c40f; }
+      .cost-value ha-icon { --mdc-icon-size: 16px; color: #ca8a04; }
 
       /* Big animated progress bar */
       .big-progress-wrap {
@@ -209,19 +209,19 @@ class TaskMateRewardProgressCard extends LitElement {
       }
 
       .big-progress-fill.affordable {
-        background: linear-gradient(90deg, #27ae60, #2ecc71);
+        background: var(--success-color, #4caf50);
       }
 
       .big-progress-fill.close {
-        background: linear-gradient(90deg, #e67e22, #f39c12);
+        background: var(--warning-color, #ff9800);
       }
 
       .big-progress-fill.far {
-        background: linear-gradient(90deg, #9b59b6, #a569bd);
+        background: var(--primary-color);
       }
 
       .big-progress-fill.complete {
-        background: linear-gradient(90deg, #27ae60, #1abc9c);
+        background: var(--success-color, #4caf50);
       }
 
       .progress-stat-row {
@@ -245,17 +245,17 @@ class TaskMateRewardProgressCard extends LitElement {
         font-size: 0.95rem;
       }
 
-      .progress-pct.affordable { color: #27ae60; }
-      .progress-pct.close { color: #e67e22; }
-      .progress-pct.far { color: #9b59b6; }
+      .progress-pct.affordable { color: var(--success-color, #4caf50); }
+      .progress-pct.close { color: var(--warning-color, #ff9800); }
+      .progress-pct.far { color: var(--primary-color); }
 
       /* Can afford badge */
       .can-afford-badge {
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        background: rgba(46,204,113,0.15);
-        color: #27ae60;
+        background: color-mix(in srgb, var(--success-color, #4caf50) 15%, transparent);
+        color: var(--success-color, #4caf50);
         border-radius: 20px;
         padding: 5px 12px;
         font-size: 0.85rem;
@@ -267,8 +267,8 @@ class TaskMateRewardProgressCard extends LitElement {
       .can-afford-badge ha-icon { --mdc-icon-size: 16px; }
 
       @keyframes pulse-green {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(46,204,113,0.3); }
-        50% { box-shadow: 0 0 0 6px rgba(46,204,113,0); }
+        0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--success-color, #4caf50) 30%, transparent); }
+        50% { box-shadow: 0 0 0 6px transparent; }
       }
 
       /* Jackpot section */
@@ -276,8 +276,8 @@ class TaskMateRewardProgressCard extends LitElement {
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        background: linear-gradient(135deg, #f39c12, #f1c40f);
-        color: white;
+        background: #ca8a04;
+        color: var(--text-primary-color, #fff);
         border-radius: 20px;
         padding: 4px 12px;
         font-size: 0.8rem;
@@ -310,20 +310,20 @@ class TaskMateRewardProgressCard extends LitElement {
         color: var(--secondary-text-color, #757575);
       }
       .availability-badge.badge-low-stock {
-        background: rgba(231,76,60,0.18);
-        color: #c0392b;
+        background: color-mix(in srgb, var(--error-color, #db4437) 18%, transparent);
+        color: var(--error-color, #db4437);
       }
       .availability-badge.badge-expiring-soon {
-        background: rgba(243,156,18,0.2);
-        color: #d35400;
+        background: color-mix(in srgb, var(--warning-color, #ff9800) 20%, transparent);
+        color: var(--warning-color, #ff9800);
       }
 
       .jackpot-pool {
         display: flex;
         flex-direction: column;
         gap: 8px;
-        background: rgba(241,196,15,0.08);
-        border: 1px solid rgba(241,196,15,0.25);
+        background: color-mix(in srgb, #ca8a04 8%, transparent);
+        border: 1px solid color-mix(in srgb, #ca8a04 25%, transparent);
         border-radius: 12px;
         padding: 12px;
       }
@@ -357,11 +357,11 @@ class TaskMateRewardProgressCard extends LitElement {
       .jackpot-contributor .mini-avatar {
         width: 22px; height: 22px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #f39c12, #f1c40f);
+        background: #ca8a04;
         display: flex; align-items: center; justify-content: center;
       }
 
-      .jackpot-contributor .mini-avatar ha-icon { --mdc-icon-size: 13px; color: white; }
+      .jackpot-contributor .mini-avatar ha-icon { --mdc-icon-size: 13px; color: var(--text-primary-color, #fff); }
 
       /* Error / empty */
       .error-state, .empty-state {
@@ -369,7 +369,7 @@ class TaskMateRewardProgressCard extends LitElement {
         justify-content: center; padding: 40px 20px;
         color: var(--secondary-text-color); text-align: center;
       }
-      .error-state { color: var(--error-color, #f44336); }
+      .error-state { color: var(--error-color, #db4437); }
       .error-state ha-icon, .empty-state ha-icon { --mdc-icon-size: 48px; margin-bottom: 12px; opacity: 0.5; }
 
       /* Responsive */
@@ -390,7 +390,6 @@ class TaskMateRewardProgressCard extends LitElement {
       title: null,
       reward_id: null,
       child_id: null,
-            header_color: '#7d3c98',
     ...config,
     };
   }
@@ -455,7 +454,7 @@ class TaskMateRewardProgressCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#7d3c98'}; }</style>
+        ${this.config.header_color ? html`<style>:host { --taskmate-header-bg: ${this.config.header_color}; }</style>` : ''}
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:trophy-outline"></ha-icon>
@@ -715,7 +714,7 @@ class TaskMateRewardProgressCardEditor extends LitElement {
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
       ></ha-form>
-      ${this._renderColourPicker('header_color', '#7d3c98')}
+      ${this._renderColourPicker('header_color', '')}
     `;
   }
 
@@ -788,6 +787,6 @@ const _tmVersion = new URLSearchParams(
 ).get("v") || "?";
 console.info(
   "%c TASKMATE REWARD PROGRESS CARD %c v" + _tmVersion + " ",
-  "background:#7d3c98;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
+  "background:#03a9f4;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
   "background:#2c3e50;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
 );

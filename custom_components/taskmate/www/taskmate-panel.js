@@ -1,20 +1,15 @@
 /**
  * TaskMate admin panel — sidebar entry at /taskmate-admin.
  *
- * v3.5.0-alpha.9 — sidebar layout + connection recovery:
- *   - Left-rail navigation replaces horizontal tabs (grouped by section).
- *     Horizontal tab row falls back automatically on narrow screens.
- *   - Slim topbar: breadcrumbs, approval pill, version chip.
- *   - Refined token system: light is the primary aesthetic (cleaner
- *     #fafafa/#fff palette, sharper #2563eb accent, less roundness,
- *     border-first instead of shadow-heavy). Dark inverted to match.
- *   - Connection recovery: refetch state when WS reconnects after a
- *     drop and when the tab becomes visible again. Fixes blank-panel
- *     after the tab has been idle for a while.
- *   - _fetchState retries once on transient failure.
+ * v3.5.0-beta.5 — HA-native styling:
+ *   - All custom --tm-* tokens now map to HA theme variables
+ *     (--primary-color, --card-background-color, etc.).
+ *   - Dark mode handled automatically via HA vars (no .dark override).
+ *   - Shadows, radii, fonts follow HA defaults.
+ *   - Entity picker dropdown uses theme-aware colors.
  */
 
-const PANEL_VERSION = "3.5.0-alpha.9";
+const PANEL_VERSION = "3.5.0-beta.5";
 
 const TABS = [
   { id: "children",  label: "Children" },
@@ -411,7 +406,7 @@ class TaskMatePanel extends HTMLElement {
     const t = e.target;
     if (!t.dataset || !t.dataset.field) return;
     let value;
-    if (t.type === "checkbox") value = t.checked;
+    if (t.type === "checkbox" || t.tagName === "HA-SWITCH") value = t.checked;
     else if (t.type === "number") value = (t.value === "" ? null : Number(t.value));
     else value = t.value;
     this._dialog.data[t.dataset.field] = value;
@@ -890,6 +885,14 @@ class TaskMatePanel extends HTMLElement {
     this.querySelectorAll("ha-icon-picker").forEach(el => {
       el.hass = this._hass;
       const v = el.getAttribute("data-current") || "";
+      if (el.value !== v) el.value = v;
+    });
+    this.querySelectorAll("ha-textfield[data-field]").forEach(el => {
+      const v = el.getAttribute("data-value") || "";
+      if (el.value !== v) el.value = v;
+    });
+    this.querySelectorAll("ha-select[data-field]").forEach(el => {
+      const v = el.getAttribute("data-value") || "";
       if (el.value !== v) el.value = v;
     });
   }
@@ -1560,7 +1563,7 @@ class TaskMatePanel extends HTMLElement {
         </div>
 
         <div class="tm-settings-foot">
-          <button class="tm-btn" data-act="save-settings">Save settings</button>
+          <mwc-button raised data-act="save-settings">Save settings</mwc-button>
         </div>
       </div>
     `;
@@ -1595,8 +1598,8 @@ class TaskMatePanel extends HTMLElement {
         this._entityPickerField("Unavailability sensor (optional)", "unavailability_entity", d.unavailability_entity, ["binary_sensor", "sensor", "input_boolean", "person", "calendar"],
           "A second sensor where <code>on</code>/<code>active</code> means the child is busy. Useful for school calendars. The child is available only when the availability sensor says available AND this sensor does not say busy."),
       ].join(""),
-      `<button class="tm-btn tm-btn-ghost" data-act="close-dialog">Cancel</button>
-       <button class="tm-btn" data-act="save-child">Save</button>`
+      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
+       <mwc-button slot="primaryAction" raised data-act="save-child">Save</mwc-button>`
     );
   }
 
@@ -1699,8 +1702,8 @@ class TaskMatePanel extends HTMLElement {
           </div>
         </details>`,
       ].join(""),
-      `<button class="tm-btn tm-btn-ghost" data-act="close-dialog">Cancel</button>
-       <button class="tm-btn" data-act="save-chore">Save</button>`
+      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
+       <mwc-button slot="primaryAction" raised data-act="save-chore">Save</mwc-button>`
     );
   }
 
@@ -1738,8 +1741,8 @@ class TaskMatePanel extends HTMLElement {
           ${this._dateField("Expires (blank = never)", "expires_at", d.expires_at, "Pooled points are refunded at midnight.")}
         </div>`,
       ].join(""),
-      `<button class="tm-btn tm-btn-ghost" data-act="close-dialog">Cancel</button>
-       <button class="tm-btn" data-act="save-reward">Save</button>`
+      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
+       <mwc-button slot="primaryAction" raised data-act="save-reward">Save</mwc-button>`
     );
   }
 
@@ -1769,8 +1772,8 @@ class TaskMatePanel extends HTMLElement {
           </div>
         ` : "",
       ].join(""),
-      `<button class="tm-btn tm-btn-ghost" data-act="close-dialog">Cancel</button>
-       <button class="tm-btn" data-act="save-${kind}">Save</button>`
+      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
+       <mwc-button slot="primaryAction" raised data-act="save-${kind}">Save</mwc-button>`
     );
   }
 
@@ -1793,7 +1796,7 @@ class TaskMatePanel extends HTMLElement {
           `).join("")}
         </div>
        `}`,
-      `<button class="tm-btn tm-btn-ghost" data-act="close-dialog">Close</button>`
+      `<mwc-button slot="secondaryAction" data-act="close-dialog">Close</mwc-button>`
     );
   }
 
@@ -1822,8 +1825,8 @@ class TaskMatePanel extends HTMLElement {
           </div>
         `,
       ].join(""),
-      `<button class="tm-btn tm-btn-ghost" data-act="close-dialog">Cancel</button>
-       <button class="tm-btn" data-act="save-group">Save</button>`
+      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
+       <mwc-button slot="primaryAction" raised data-act="save-group">Save</mwc-button>`
     );
   }
 
@@ -1869,8 +1872,8 @@ class TaskMatePanel extends HTMLElement {
         this._select("Completion sound", "completion_sound", d.completion_sound, COMPLETION_SOUNDS.map(s => ({ v: s, l: s }))),
         this._switch("Requires parent approval", "requires_approval", d.requires_approval),
       ].join(""),
-      `<button class="tm-btn tm-btn-ghost" data-act="close-dialog">Cancel</button>
-       <button class="tm-btn" data-act="save-bulk-chores">Create chores</button>`
+      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
+       <mwc-button slot="primaryAction" raised data-act="save-bulk-chores">Create chores</mwc-button>`
     );
   }
 
@@ -1892,8 +1895,8 @@ class TaskMatePanel extends HTMLElement {
            `;
          }).join("")}
        </div>`,
-      `<button class="tm-btn tm-btn-ghost" data-act="close-dialog">Cancel</button>
-       <button class="tm-btn" data-act="save-chore-order">Save order</button>`
+      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
+       <mwc-button slot="primaryAction" raised data-act="save-chore-order">Save order</mwc-button>`
     );
   }
 
@@ -1914,40 +1917,51 @@ class TaskMatePanel extends HTMLElement {
 
   _field(label, name, value, type = "text", hint = "") {
     return `
-      <label class="tm-field">
-        <span class="tm-field-label">${this._esc(label)}</span>
-        <input type="${type}" data-field="${name}" value="${this._esc(value == null ? "" : value)}">
+      <div class="tm-field">
+        <ha-textfield
+          label="${this._esc(label)}"
+          data-field="${name}"
+          data-value="${this._esc(value == null ? "" : value)}"
+          ${type === "number" ? 'type="number"' : ''}
+        ></ha-textfield>
         ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
-      </label>`;
+      </div>`;
   }
 
   _dateField(label, name, value, hint = "") {
     return `
-      <label class="tm-field">
-        <span class="tm-field-label">${this._esc(label)}</span>
-        <input type="date" data-field="${name}" value="${this._esc(value || "")}">
+      <div class="tm-field">
+        <ha-textfield
+          label="${this._esc(label)}"
+          data-field="${name}"
+          data-value="${this._esc(value || "")}"
+          type="date"
+        ></ha-textfield>
         ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
-      </label>`;
+      </div>`;
   }
 
   _select(label, name, value, options, hint = "", rerender = false) {
     return `
-      <label class="tm-field">
-        <span class="tm-field-label">${this._esc(label)}</span>
-        <select data-field="${name}" ${rerender ? `data-rerender="true"` : ""}>
-          ${options.map(o => `<option value="${this._esc(o.v)}" ${o.v === value ? "selected" : ""}>${this._esc(o.l)}</option>`).join("")}
-        </select>
+      <div class="tm-field">
+        <ha-select
+          label="${this._esc(label)}"
+          data-field="${name}"
+          data-value="${this._esc(value || "")}"
+          ${rerender ? 'data-rerender="true"' : ""}
+          fixedMenuPosition
+          naturalMenuWidth
+        >
+          ${options.map(o => `<mwc-list-item value="${this._esc(o.v)}" ${String(o.v) === String(value) ? "selected activated" : ""}>${this._esc(o.l)}</mwc-list-item>`).join("")}
+        </ha-select>
         ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
-      </label>`;
+      </div>`;
   }
 
   _switch(label, name, checked, hint = "") {
     return `
       <div class="tm-check-row">
-        <label class="tm-switch">
-          <input type="checkbox" data-field="${name}" ${checked ? "checked" : ""}>
-          <span class="tm-slider"></span>
-        </label>
+        <ha-switch data-field="${name}" ${checked ? "checked" : ""}></ha-switch>
         <div>
           <div class="tm-check-title">${this._esc(label)}</div>
           ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
@@ -1957,10 +1971,10 @@ class TaskMatePanel extends HTMLElement {
 
   _iconPickerField(label, name, value) {
     return `
-      <label class="tm-field">
+      <div class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
         <ha-icon-picker data-field="${name}" data-current="${this._esc(value || "")}"></ha-icon-picker>
-      </label>`;
+      </div>`;
   }
 
   _entityPickerField(label, name, value, domains, hint = "") {
@@ -1995,34 +2009,22 @@ class TaskMatePanel extends HTMLElement {
       .slice(0, 50);
     if (!entities.length) return;
     const dd = document.createElement("div");
-    Object.assign(dd.style, {
-      position: "absolute", top: "100%", left: "0", right: "0",
-      maxHeight: "260px", overflowY: "auto",
-      background: "#1c1c1e", border: "1px solid #3a3a3c",
-      borderRadius: "10px", zIndex: "200",
-      marginTop: "4px", padding: "4px 0",
-      boxShadow: "0 8px 32px rgba(0,0,0,0.45)"
-    });
+    dd.className = "tm-ep-dropdown";
     entities.forEach(([id, st]) => {
       const fn = st.attributes?.friendly_name || "";
       const opt = document.createElement("div");
+      opt.className = "tm-ep-option";
       opt.dataset.act = "pick-entity";
       opt.dataset.field = field;
       opt.dataset.value = id;
-      Object.assign(opt.style, {
-        padding: "8px 12px", cursor: "pointer",
-        borderBottom: "1px solid rgba(255,255,255,0.06)"
-      });
-      opt.addEventListener("mouseenter", () => opt.style.background = "rgba(255,255,255,0.1)");
-      opt.addEventListener("mouseleave", () => opt.style.background = "transparent");
       const idDiv = document.createElement("div");
+      idDiv.className = "tm-ep-id";
       idDiv.textContent = id;
-      Object.assign(idDiv.style, { fontSize: "13px", color: "#f5f5f5", fontFamily: "ui-monospace, monospace" });
       opt.appendChild(idDiv);
       if (fn) {
         const nameDiv = document.createElement("div");
+        nameDiv.className = "tm-ep-name";
         nameDiv.textContent = fn;
-        Object.assign(nameDiv.style, { fontSize: "11px", color: "#8e8e93", marginTop: "2px" });
         opt.appendChild(nameDiv);
       }
       dd.appendChild(opt);
@@ -2066,127 +2068,71 @@ class TaskMatePanel extends HTMLElement {
     return `<ha-icon icon="${this._esc(name || "mdi:account-circle")}"></ha-icon>`;
   }
 
-  // ---- styles (Shopify-grade light + polished dark, blur 2px) ----------
   _styles() {
     return `<style>
       taskmate-panel {
         display: block; height: 100%;
 
-        /* ===== Light is the default ===== */
-        --tm-bg:            #fafafa;
-        --tm-surface-0:     #ffffff;
-        --tm-surface-1:     #ffffff;
-        --tm-surface-2:     #f5f5f5;
-        --tm-surface-3:     #ebebeb;
-        --tm-surface-hover: #f5f5f5;
+        --tm-bg:            var(--primary-background-color, #fafafa);
+        --tm-surface-0:     var(--card-background-color, #fff);
+        --tm-surface-1:     var(--card-background-color, #fff);
+        --tm-surface-2:     var(--secondary-background-color, #f5f5f5);
+        --tm-surface-3:     var(--secondary-background-color, #e8e8e8);
+        --tm-surface-hover: var(--secondary-background-color, #f5f5f5);
 
-        --tm-border:        #e5e5e5;
-        --tm-border-strong: #d4d4d4;
-        --tm-border-soft:   #ededed;
+        --tm-border:        var(--divider-color, #e0e0e0);
+        --tm-border-strong: var(--divider-color, #d4d4d4);
+        --tm-border-soft:   var(--divider-color, #e8e8e8);
 
-        --tm-text:          #0a0a0a;
-        --tm-text-muted:    #525252;
-        --tm-text-faint:    #737373;
-        --tm-text-vfaint:   #a3a3a3;
+        --tm-text:          var(--primary-text-color, #212121);
+        --tm-text-muted:    var(--secondary-text-color, #727272);
+        --tm-text-faint:    var(--secondary-text-color, #727272);
+        --tm-text-vfaint:   var(--disabled-text-color, #bdbdbd);
 
-        --tm-accent:        #2563eb;
-        --tm-accent-hover:  #1d4ed8;
-        --tm-accent-press:  #1e40af;
-        --tm-accent-soft:   #eff6ff;
-        --tm-accent-border: #bfdbfe;
-        --tm-accent-text:   #1e40af;
-        --tm-accent-glow:   rgba(37,99,235,0.15);
+        --tm-accent:        var(--primary-color, #03a9f4);
+        --tm-accent-hover:  var(--primary-color, #03a9f4);
+        --tm-accent-press:  var(--primary-color, #03a9f4);
+        --tm-accent-soft:   color-mix(in srgb, var(--primary-color, #03a9f4), transparent 90%);
+        --tm-accent-border: color-mix(in srgb, var(--primary-color, #03a9f4), transparent 70%);
+        --tm-accent-text:   var(--primary-color, #03a9f4);
+        --tm-accent-glow:   color-mix(in srgb, var(--primary-color, #03a9f4), transparent 85%);
 
-        --tm-positive:      #16a34a;
-        --tm-positive-soft: #f0fdf4;
-        --tm-positive-border:#bbf7d0;
-        --tm-warning:       #d97706;
-        --tm-warning-soft:  #fffbeb;
-        --tm-warning-border:#fde68a;
-        --tm-danger:        #dc2626;
-        --tm-danger-soft:   #fef2f2;
-        --tm-danger-border: #fecaca;
+        --tm-positive:      var(--success-color, #4caf50);
+        --tm-positive-soft: color-mix(in srgb, var(--success-color, #4caf50), transparent 90%);
+        --tm-positive-border:color-mix(in srgb, var(--success-color, #4caf50), transparent 70%);
+        --tm-warning:       var(--warning-color, #ff9800);
+        --tm-warning-soft:  color-mix(in srgb, var(--warning-color, #ff9800), transparent 90%);
+        --tm-warning-border:color-mix(in srgb, var(--warning-color, #ff9800), transparent 70%);
+        --tm-danger:        var(--error-color, #db4437);
+        --tm-danger-soft:   color-mix(in srgb, var(--error-color, #db4437), transparent 90%);
+        --tm-danger-border: color-mix(in srgb, var(--error-color, #db4437), transparent 70%);
 
-        --tm-gold:          #ca8a04;
-        --tm-gold-soft:     #fefce8;
-        --tm-pool:          #c2410c;
-        --tm-pool-soft:     #fff7ed;
-        --tm-sticky:        #7c3aed;
-        --tm-sticky-soft:   #f5f3ff;
+        --tm-gold:          var(--warning-color, #ff9800);
+        --tm-gold-soft:     color-mix(in srgb, var(--warning-color, #ff9800), transparent 90%);
+        --tm-pool:          var(--accent-color, #ff9800);
+        --tm-pool-soft:     color-mix(in srgb, var(--accent-color, #ff9800), transparent 90%);
+        --tm-sticky:        var(--info-color, #039be5);
+        --tm-sticky-soft:   color-mix(in srgb, var(--info-color, #039be5), transparent 90%);
 
-        --tm-radius-sm:     6px;
-        --tm-radius:        8px;
-        --tm-radius-lg:     12px;
+        --tm-radius-sm:     8px;
+        --tm-radius:        var(--ha-card-border-radius, 12px);
+        --tm-radius-lg:     var(--ha-card-border-radius, 12px);
 
-        --tm-shadow-xs:     0 1px 2px rgba(0,0,0,0.04);
-        --tm-shadow-sm:     0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-        --tm-shadow:        0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
-        --tm-shadow-lg:     0 24px 48px -12px rgba(0,0,0,0.18), 0 8px 16px -4px rgba(0,0,0,0.06);
-        --tm-shadow-focus:  0 0 0 3px var(--tm-accent-glow);
-        --tm-easing:        cubic-bezier(0.16, 1, 0.3, 1);
+        --tm-shadow-xs:     none;
+        --tm-shadow-sm:     none;
+        --tm-shadow:        var(--ha-card-box-shadow, none);
+        --tm-shadow-lg:     var(--ha-card-box-shadow, 0 2px 6px rgba(0,0,0,0.15));
+        --tm-shadow-focus:  0 0 0 2px var(--tm-accent-glow);
+        --tm-easing:        ease;
 
         --tm-sidebar-w:     240px;
 
         background: var(--tm-bg);
         color: var(--tm-text);
-        font-family: "Inter", var(--paper-font-body1_-_font-family,
-                     -apple-system, BlinkMacSystemFont, "SF Pro Text",
-                     "Segoe UI", Roboto, sans-serif);
-        font-size: 13px;
+        font-family: var(--paper-font-body1_-_font-family, Roboto, "Noto Sans", sans-serif);
+        font-size: 14px;
         line-height: 1.5;
-        letter-spacing: -0.003em;
         -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        font-feature-settings: "cv11", "ss01";
-      }
-
-      /* ===== Dark theme — follows HA's theme selector ===== */
-      taskmate-panel.dark {
-          --tm-bg:            #0a0a0a;
-          --tm-surface-0:     #111111;
-          --tm-surface-1:     #161616;
-          --tm-surface-2:     #1c1c1c;
-          --tm-surface-3:     #242424;
-          --tm-surface-hover: #1c1c1c;
-
-          --tm-border:        #262626;
-          --tm-border-strong: #333333;
-          --tm-border-soft:   #1f1f1f;
-
-          --tm-text:          #fafafa;
-          --tm-text-muted:    #a3a3a3;
-          --tm-text-faint:    #737373;
-          --tm-text-vfaint:   #525252;
-
-          --tm-accent:        #60a5fa;
-          --tm-accent-hover:  #93c5fd;
-          --tm-accent-press:  #3b82f6;
-          --tm-accent-soft:   rgba(96,165,250,0.10);
-          --tm-accent-border: rgba(96,165,250,0.25);
-          --tm-accent-text:   #93c5fd;
-          --tm-accent-glow:   rgba(96,165,250,0.20);
-
-          --tm-positive:      #4ade80;
-          --tm-positive-soft: rgba(74,222,128,0.10);
-          --tm-positive-border:rgba(74,222,128,0.25);
-          --tm-warning:       #fbbf24;
-          --tm-warning-soft:  rgba(251,191,36,0.10);
-          --tm-warning-border:rgba(251,191,36,0.25);
-          --tm-danger:        #f87171;
-          --tm-danger-soft:   rgba(248,113,113,0.10);
-          --tm-danger-border: rgba(248,113,113,0.25);
-
-          --tm-gold:          #f5b300;
-          --tm-gold-soft:     rgba(245,179,0,0.10);
-          --tm-pool:          #fb923c;
-          --tm-pool-soft:     rgba(251,146,60,0.10);
-          --tm-sticky:        #c084fc;
-          --tm-sticky-soft:   rgba(192,132,252,0.10);
-
-          --tm-shadow-xs:     0 1px 2px rgba(0,0,0,0.4);
-          --tm-shadow-sm:     0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
-          --tm-shadow:        0 4px 12px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
-          --tm-shadow-lg:     0 24px 48px -12px rgba(0,0,0,0.7), 0 8px 16px -4px rgba(0,0,0,0.3);
       }
 
       /* ===== Shell ===== */
@@ -2214,11 +2160,10 @@ class TaskMatePanel extends HTMLElement {
       .tm-brand-mark {
         width: 28px; height: 28px;
         border-radius: 7px;
-        background: linear-gradient(135deg, var(--tm-accent), var(--tm-accent-press));
-        color: #fff;
+        background: var(--tm-accent);
+        color: var(--text-primary-color, #fff);
         display: grid; place-items: center;
         flex-shrink: 0;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.18);
       }
       .tm-brand-mark ha-icon { --mdc-icon-size: 16px; }
       .tm-brand-text {
@@ -2420,44 +2365,39 @@ class TaskMatePanel extends HTMLElement {
       /* Buttons */
       .tm-btn {
         background: var(--tm-accent);
-        color: white;
-        border: 1px solid var(--tm-accent);
-        padding: 6px 12px;
+        color: var(--text-primary-color, #fff);
+        border: none;
+        padding: 8px 16px;
         border-radius: var(--tm-radius-sm);
-        font-size: 13px; font-weight: 500;
-        letter-spacing: -0.005em;
+        font-size: 14px; font-weight: 500;
         font-family: inherit;
         cursor: pointer;
-        box-shadow: var(--tm-shadow-xs), inset 0 1px 0 rgba(255,255,255,0.15);
-        transition: all 0.1s var(--tm-easing);
+        transition: opacity 0.1s ease;
         display: inline-flex; align-items: center; gap: 6px;
         white-space: nowrap;
       }
-      .tm-btn:hover  { background: var(--tm-accent-hover); border-color: var(--tm-accent-hover); }
+      .tm-btn:hover  { opacity: 0.85; }
       .tm-btn:focus-visible { outline: 0; box-shadow: var(--tm-shadow-focus); }
-      .tm-btn:active { filter: brightness(0.95); }
+      .tm-btn:active { opacity: 0.75; }
       .tm-btn-sm     { padding: 4px 9px; font-size: 12px; }
       .tm-btn-ghost {
-        background: var(--tm-surface-0);
+        background: transparent;
         color: var(--tm-text);
         border: 1px solid var(--tm-border);
-        box-shadow: var(--tm-shadow-xs);
       }
       .tm-btn-ghost:hover {
         background: var(--tm-surface-2);
-        border-color: var(--tm-border-strong);
-        color: var(--tm-text);
+        opacity: 1;
       }
       .tm-btn-danger {
-        background: var(--tm-surface-0);
+        background: transparent;
         color: var(--tm-danger);
         border: 1px solid var(--tm-danger-border);
-        box-shadow: var(--tm-shadow-xs);
       }
       .tm-btn-danger:hover {
         background: var(--tm-danger);
-        color: #fff;
-        border-color: var(--tm-danger);
+        color: var(--text-primary-color, #fff);
+        opacity: 1;
       }
       .tm-icon-btn {
         width: 28px; height: 28px;
@@ -2502,7 +2442,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-avatar {
         width: 44px; height: 44px;
         border-radius: 10px;
-        background: linear-gradient(135deg, var(--tm-accent-soft), var(--tm-surface-0));
+        background: var(--tm-accent-soft);
         border: 1px solid var(--tm-border);
         display: grid; place-items: center;
         flex-shrink: 0;
@@ -2580,7 +2520,7 @@ class TaskMatePanel extends HTMLElement {
         font-size: 18px;
         transition: all 0.15s var(--tm-easing);
       }
-      .tm-add-tile:hover .tm-add-plus { background: var(--tm-accent); color: white; }
+      .tm-add-tile:hover .tm-add-plus { background: var(--tm-accent); color: var(--text-primary-color, #fff); }
 
       /* Tables */
       .tm-table-wrap {
@@ -2667,7 +2607,7 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-progress > span {
         display: block; height: 100%;
-        background: linear-gradient(90deg, var(--tm-accent), var(--tm-sticky));
+        background: var(--tm-accent);
         border-radius: 999px;
       }
       .tm-progress-text {
@@ -2811,9 +2751,9 @@ class TaskMatePanel extends HTMLElement {
         content: ''; position: absolute;
         height: 16px; width: 16px;
         left: 2px; top: 2px;
-        background: white; border-radius: 50%;
+        background: var(--card-background-color, #fff); border-radius: 50%;
         transition: transform 0.15s var(--tm-easing);
-        box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.15);
       }
       .tm-switch input:checked + .tm-slider {
         background: var(--tm-accent);
@@ -2823,15 +2763,12 @@ class TaskMatePanel extends HTMLElement {
       /* Dialog */
       .tm-scrim {
         position: fixed; inset: 0;
-        background: rgba(10,10,10,0.4);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
+        background: rgba(0,0,0,0.5);
         display: flex; align-items: flex-start; justify-content: center;
         padding: 60px 20px; z-index: 100;
         overflow-y: auto;
         animation: tm-scrim-in 0.18s var(--tm-easing);
       }
-      taskmate-panel.dark .tm-scrim { background: rgba(0,0,0,0.6); }
       @keyframes tm-scrim-in { from { opacity: 0; } to { opacity: 1; } }
       .tm-dialog {
         background: var(--tm-surface-0);
@@ -2903,18 +2840,18 @@ class TaskMatePanel extends HTMLElement {
       .tm-ep-dropdown {
         position: absolute; top: 100%; left: 0; right: 0;
         max-height: 260px; overflow-y: auto;
-        background: #1c1c1e; border: 1px solid #3a3a3c;
-        border-radius: 10px; z-index: 200;
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius); z-index: 200;
         margin-top: 4px; padding: 4px 0;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+        box-shadow: var(--tm-shadow-lg);
       }
       .tm-ep-option {
         padding: 7px 12px; cursor: pointer;
         transition: background 0.08s;
       }
-      .tm-ep-option:hover { background: rgba(255,255,255,0.08); }
-      .tm-ep-id { font-size: 12px; color: #f5f5f5; font-family: ui-monospace, monospace; }
-      .tm-ep-name { font-size: 11px; color: #8e8e93; margin-top: 1px; }
+      .tm-ep-option:hover { background: var(--tm-surface-hover); }
+      .tm-ep-id { font-size: 12px; color: var(--tm-text); font-family: ui-monospace, monospace; }
+      .tm-ep-name { font-size: 11px; color: var(--tm-text-muted); margin-top: 1px; }
       .tm-field-hint {
         display: block; color: var(--tm-text-faint);
         font-size: 11.5px; margin-top: 4px; line-height: 1.5;
@@ -2966,7 +2903,7 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-day-btn:hover { color: var(--tm-text); border-color: var(--tm-border-strong); }
       .tm-day-on {
-        background: var(--tm-accent); color: white;
+        background: var(--tm-accent); color: var(--text-primary-color, #fff);
         border-color: var(--tm-accent);
       }
 
@@ -3032,8 +2969,8 @@ class TaskMatePanel extends HTMLElement {
         animation: tm-toast-in 0.2s var(--tm-easing);
       }
       @keyframes tm-toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translateX(-50%); } }
-      .tm-toast-ok  { background: var(--tm-positive); color: white; }
-      .tm-toast-err { background: var(--tm-danger); color: white; }
+      .tm-toast-ok  { background: var(--tm-positive); color: var(--text-primary-color, #fff); }
+      .tm-toast-err { background: var(--tm-danger); color: var(--text-primary-color, #fff); }
 
       /* ===== Mobile / narrow ===== */
       @media (max-width: 900px) {
