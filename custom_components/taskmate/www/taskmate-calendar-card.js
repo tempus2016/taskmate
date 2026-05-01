@@ -64,6 +64,10 @@ class TaskMateCalendarCard extends LitElement {
     return css`
       :host {
         display: block;
+        --cal-green: #2ecc71;
+        --cal-amber: #f39c12;
+        --cal-grey: #bdc3c7;
+        --cal-blue: #3498db;
       }
 
       ha-card { overflow: hidden; }
@@ -73,8 +77,8 @@ class TaskMateCalendarCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, var(--primary-color));
-        color: var(--text-primary-color, #fff);
+        background: var(--taskmate-header-bg, #3498db);
+        color: white;
       }
 
       .header-content { display: flex; align-items: center; gap: 10px; }
@@ -134,13 +138,13 @@ class TaskMateCalendarCard extends LitElement {
         width: 34px;
         height: 34px;
         border-radius: 50%;
-        background: var(--primary-color);
+        background: linear-gradient(135deg, #9b59b6, #a569bd);
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
       }
-      .child-avatar ha-icon { --mdc-icon-size: 20px; color: var(--text-primary-color, #fff); }
+      .child-avatar ha-icon { --mdc-icon-size: 20px; color: white; }
 
       .child-name {
         font-weight: 700;
@@ -166,17 +170,17 @@ class TaskMateCalendarCard extends LitElement {
         align-items: center;
         gap: 8px;
         padding: 6px 10px;
-        background: var(--card-background-color);
+        background: var(--card-background-color, white);
         border-radius: 8px;
-        border-left: 4px solid var(--disabled-text-color);
+        border-left: 4px solid var(--cal-grey);
       }
-      .chore-row.approved { border-left-color: var(--success-color, #4caf50); }
-      .chore-row.pending  { border-left-color: var(--warning-color, #ff9800); }
+      .chore-row.approved { border-left-color: var(--cal-green); }
+      .chore-row.pending  { border-left-color: var(--cal-amber); }
       .chore-row.rotating { opacity: 0.6; font-style: italic; }
 
       .chore-icon { --mdc-icon-size: 18px; color: var(--secondary-text-color); }
-      .chore-icon.approved { color: var(--success-color, #4caf50); }
-      .chore-icon.pending  { color: var(--warning-color, #ff9800); }
+      .chore-icon.approved { color: var(--cal-green); }
+      .chore-icon.pending  { color: var(--cal-amber); }
 
       .chore-name {
         flex: 1;
@@ -192,7 +196,7 @@ class TaskMateCalendarCard extends LitElement {
         color: var(--secondary-text-color);
         font-weight: 600;
       }
-      .chore-points ha-icon { --mdc-icon-size: 14px; color: #ca8a04; }
+      .chore-points ha-icon { --mdc-icon-size: 14px; color: #f1c40f; }
 
       .no-chores {
         padding: 8px 10px;
@@ -211,9 +215,9 @@ class TaskMateCalendarCard extends LitElement {
       }
       .legend-item { display: flex; align-items: center; gap: 4px; }
       .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-      .dot.approved { background: var(--success-color, #4caf50); }
-      .dot.pending  { background: var(--warning-color, #ff9800); }
-      .dot.due      { background: var(--disabled-text-color); }
+      .dot.approved { background: var(--cal-green); }
+      .dot.pending  { background: var(--cal-amber); }
+      .dot.due      { background: var(--cal-grey); }
 
       .error-state, .empty-state {
         display: flex; flex-direction: column; align-items: center;
@@ -232,7 +236,7 @@ class TaskMateCalendarCard extends LitElement {
     this.config = {
       title: null,
       child_id: null,
-      header_color: null,
+      header_color: "#3498db",
       ...config,
     };
   }
@@ -412,7 +416,7 @@ class TaskMateCalendarCard extends LitElement {
 
     return html`
       <ha-card>
-        ${this.config.header_color ? html`<style>:host { --taskmate-header-bg: ${this.config.header_color}; }</style>` : ''}
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || "#3498db"}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:calendar-account"></ha-icon>

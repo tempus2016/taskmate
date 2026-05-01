@@ -42,8 +42,8 @@ class TaskMateApprovalsCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, var(--primary-color));
-        color: var(--text-primary-color, #fff);
+        background: var(--taskmate-header-bg, #27ae60);
+        color: white;
       }
 
       .header-left {
@@ -56,7 +56,7 @@ class TaskMateApprovalsCard extends LitElement {
 
       .header-icon {
         --mdc-icon-size: 22px;
-        color: var(--text-primary-color, #fff);
+        color: white;
         opacity: 0.9;
         flex-shrink: 0;
       }
@@ -64,15 +64,15 @@ class TaskMateApprovalsCard extends LitElement {
       .card-title {
         font-size: 1.05rem;
         font-weight: 600;
-        color: var(--text-primary-color, #fff);
+        color: white;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
       .pending-count {
-        background: var(--error-color, #db4437);
-        color: var(--text-primary-color, #fff);
+        background: #e74c3c;
+        color: white;
         border-radius: 12px;
         padding: 3px 10px;
         font-size: 0.82rem;
@@ -128,7 +128,7 @@ class TaskMateApprovalsCard extends LitElement {
       }
 
       .approval-item:hover {
-        box-shadow: var(--ha-card-box-shadow, none);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
 
       .approval-item.loading {
@@ -208,7 +208,7 @@ class TaskMateApprovalsCard extends LitElement {
 
       .action-button:hover {
         transform: scale(1.1);
-        box-shadow: var(--ha-card-box-shadow, none);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       }
 
       .action-button:active {
@@ -216,13 +216,13 @@ class TaskMateApprovalsCard extends LitElement {
       }
 
       .action-button.approve {
-        background: var(--success-color, #4caf50);
-        color: var(--text-primary-color, #fff);
+        background: #4caf50;
+        color: white;
       }
 
       .action-button.reject {
-        background: var(--error-color, #db4437);
-        color: var(--text-primary-color, #fff);
+        background: #f44336;
+        color: white;
       }
 
       .action-button ha-icon {
@@ -304,7 +304,7 @@ class TaskMateApprovalsCard extends LitElement {
     }
     this.config = {
       title: "",
-      header_color: '',
+      header_color: '#27ae60',
       ...config,
     };
   }
@@ -367,7 +367,7 @@ class TaskMateApprovalsCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || 'var(--primary-color)'}; }</style>
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#27ae60'}; }</style>
         <div class="card-header">
           <div class="header-left">
             <ha-icon class="header-icon" icon="mdi:check-circle-outline"></ha-icon>
@@ -842,13 +842,13 @@ class TaskMateApprovalsCardEditor extends LitElement {
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
       ></ha-form>
-      ${this._renderColourPicker('header_color', '#03a9f4')}
+      ${this._renderColourPicker('header_color', '#27ae60')}
     `;
   }
 
   _renderColourPicker(key, defaultValue) {
     const current = this.config[key] || defaultValue;
-    const presets = [defaultValue, '#4caf50', '#e67e22', '#3498db', '#9b59b6', '#f1c40f', '#34495e'];
+    const presets = [defaultValue, '#e67e22', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c', '#34495e'];
     const isActive = (c) => c.toLowerCase() === current.toLowerCase();
     return html`
       <div class="colour-field">

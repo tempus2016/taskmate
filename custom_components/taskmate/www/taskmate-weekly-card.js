@@ -31,6 +31,12 @@ class TaskMateWeeklyCard extends LitElement {
     return css`
       :host {
         display: block;
+        --wk-purple: #9b59b6;
+        --wk-green: #2ecc71;
+        --wk-orange: #e67e22;
+        --wk-blue: #3498db;
+        --wk-gold: #f1c40f;
+        --wk-red: #e74c3c;
       }
 
       ha-card { overflow: hidden; }
@@ -40,8 +46,8 @@ class TaskMateWeeklyCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, var(--primary-color));
-        color: var(--text-primary-color, #fff);
+        background: var(--taskmate-header-bg, #27ae60);
+        color: white;
       }
 
       .header-content { display: flex; align-items: center; gap: 10px; }
@@ -86,9 +92,9 @@ class TaskMateWeeklyCard extends LitElement {
         line-height: 1;
       }
 
-      .stat-value.green { color: var(--success-color, #4caf50); }
-      .stat-value.orange { color: var(--warning-color, #ff9800); }
-      .stat-value.purple { color: var(--primary-color); }
+      .stat-value.green { color: var(--wk-green); }
+      .stat-value.orange { color: var(--wk-orange); }
+      .stat-value.purple { color: var(--wk-purple); }
 
       .stat-label {
         font-size: 0.68rem;
@@ -143,19 +149,19 @@ class TaskMateWeeklyCard extends LitElement {
       }
 
       .bar-fill.today {
-        background: var(--success-color, #4caf50);
+        background: linear-gradient(180deg, var(--wk-green) 0%, #27ae60 100%);
       }
 
       .bar-fill.past {
-        background: var(--primary-color);
+        background: linear-gradient(180deg, var(--wk-blue) 0%, #2980b9 100%);
       }
 
       .bar-fill.future {
-        background: var(--divider-color);
+        background: var(--divider-color, #e8e8e8);
       }
 
       .bar-fill.zero {
-        background: var(--divider-color);
+        background: var(--divider-color, #e8e8e8);
         min-height: 3px !important;
         height: 3px !important;
       }
@@ -167,7 +173,7 @@ class TaskMateWeeklyCard extends LitElement {
       }
 
       .bar-day.today {
-        color: var(--success-color, #4caf50);
+        color: var(--wk-green);
         font-weight: 800;
       }
 
@@ -188,14 +194,14 @@ class TaskMateWeeklyCard extends LitElement {
         width: 34px;
         height: 34px;
         border-radius: 50%;
-        background: var(--primary-color);
+        background: linear-gradient(135deg, var(--wk-purple), #a569bd);
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
       }
 
-      .child-avatar ha-icon { --mdc-icon-size: 20px; color: var(--text-primary-color, #fff); }
+      .child-avatar ha-icon { --mdc-icon-size: 20px; color: white; }
 
       .child-info { flex: 1; min-width: 0; }
 
@@ -230,7 +236,7 @@ class TaskMateWeeklyCard extends LitElement {
       .week-progress-fill {
         height: 100%;
         border-radius: 3px;
-        background: var(--success-color, #4caf50);
+        background: linear-gradient(90deg, var(--wk-green), #27ae60);
       }
 
       /* Error / empty */
@@ -250,8 +256,8 @@ class TaskMateWeeklyCard extends LitElement {
     this.config = {
       title: null,
       child_id: null,
-      header_color: null,
-      ...config,
+            header_color: '#27ae60',
+    ...config,
     };
   }
 
@@ -341,7 +347,7 @@ class TaskMateWeeklyCard extends LitElement {
 
     return html`
       <ha-card>
-        ${this.config.header_color ? html`<style>:host { --taskmate-header-bg: ${this.config.header_color}; }</style>` : ''}
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#27ae60'}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:calendar-week"></ha-icon>
@@ -413,9 +419,9 @@ class TaskMateWeeklyCard extends LitElement {
                     <div class="child-info">
                       <div class="child-name">${child.name}</div>
                       <div class="child-week-stats">
-                        <span><ha-icon icon="mdi:checkbox-marked-circle" style="color:var(--success-color, #4caf50)"></ha-icon>${this._t('weekly.child_chores', { count: childChoreCount })}</span>
-                        <span><ha-icon icon="${pointsIcon}" style="color:#ca8a04"></ha-icon>${childPoints} ${pointsName}</span>
-                        <span><ha-icon icon="mdi:calendar-check" style="color:var(--primary-color)"></ha-icon>${this._t('weekly.child_days', { count: childDaysActive })}</span>
+                        <span><ha-icon icon="mdi:checkbox-marked-circle" style="color:var(--wk-green)"></ha-icon>${this._t('weekly.child_chores', { count: childChoreCount })}</span>
+                        <span><ha-icon icon="${pointsIcon}" style="color:var(--wk-gold)"></ha-icon>${childPoints} ${pointsName}</span>
+                        <span><ha-icon icon="mdi:calendar-check" style="color:var(--wk-blue)"></ha-icon>${this._t('weekly.child_days', { count: childDaysActive })}</span>
                       </div>
                     </div>
                     <div class="week-progress-bar" title="${this._t('weekly.child_days_active_title', { count: childDaysActive })}">
