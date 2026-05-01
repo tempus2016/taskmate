@@ -67,7 +67,7 @@ class TaskMateReorderCard extends LitElement {
         --mdc-icon-size: 22px;
         opacity: 0.9;
         flex-shrink: 0;
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .card-title {
@@ -92,7 +92,7 @@ class TaskMateReorderCard extends LitElement {
 
       .save-button {
         background: rgba(255,255,255,0.15);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border: 1px solid rgba(255,255,255,0.3);
         border-radius: 8px;
         padding: 7px 14px;
@@ -196,7 +196,7 @@ class TaskMateReorderCard extends LitElement {
       }
 
       .chore-item:hover {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-shadow: var(--ha-card-box-shadow, none);
         border-color: var(--primary-color);
       }
 
