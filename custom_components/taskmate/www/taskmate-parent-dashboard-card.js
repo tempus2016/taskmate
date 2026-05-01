@@ -42,8 +42,8 @@ class TaskMateParentDashboardCard extends LitElement {
       .card-header {
         display: flex; align-items: center; justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, #c0392b);
-        color: white; gap: 12px;
+        background: var(--taskmate-header-bg, var(--primary-color));
+        color: var(--text-primary-color, #fff); gap: 12px;
       }
 
       .header-content { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
@@ -51,7 +51,7 @@ class TaskMateParentDashboardCard extends LitElement {
       .header-title { font-size: 1.1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
       .pending-badge {
-        background: #e74c3c; color: white;
+        background: var(--error-color, #db4437); color: var(--text-primary-color, #fff);
         border-radius: 12px; padding: 3px 10px;
         font-size: 0.82rem; font-weight: 700;
         display: flex; align-items: center; gap: 4px;
@@ -62,8 +62,8 @@ class TaskMateParentDashboardCard extends LitElement {
       .pending-badge ha-icon { --mdc-icon-size: 14px; }
 
       @keyframes badge-pulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.4); }
-        50% { box-shadow: 0 0 0 5px rgba(231,76,60,0); }
+        0%, 100% { box-shadow: 0 0 0 0 rgba(var(--rgb-error-color, 219,68,55), 0.4); }
+        50% { box-shadow: 0 0 0 5px rgba(var(--rgb-error-color, 219,68,55), 0); }
       }
 
       /* ── Tab nav ── */
@@ -88,12 +88,12 @@ class TaskMateParentDashboardCard extends LitElement {
       .tab-btn ha-icon { --mdc-icon-size: 16px; }
 
       .tab-btn.active {
-        color: var(--primary-color, #3498db);
-        border-bottom-color: var(--primary-color, #3498db);
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
       }
 
       .tab-badge {
-        background: #e74c3c; color: white;
+        background: var(--error-color, #db4437); color: var(--text-primary-color, #fff);
         border-radius: 8px; padding: 1px 5px;
         font-size: 0.65rem; font-weight: 700;
         line-height: 1.4;
@@ -114,12 +114,12 @@ class TaskMateParentDashboardCard extends LitElement {
       .child-avatar {
         width: 42px; height: 42px; min-width: 42px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+        background: var(--primary-color);
         display: flex; align-items: center; justify-content: center;
         flex-shrink: 0;
       }
 
-      .child-avatar ha-icon { --mdc-icon-size: 26px; color: white; }
+      .child-avatar ha-icon { --mdc-icon-size: 26px; color: var(--text-primary-color, #fff); }
 
       .child-tile-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 
@@ -135,13 +135,13 @@ class TaskMateParentDashboardCard extends LitElement {
 
       .points-pill {
         display: flex; align-items: center; gap: 3px;
-        background: rgba(241,196,15,0.15);
-        color: #e67e22; border-radius: 10px;
+        background: rgba(var(--rgb-warning-color, 255,152,0), 0.15);
+        color: var(--warning-color, #ff9800); border-radius: 10px;
         padding: 2px 8px; font-size: 0.8rem; font-weight: 700;
         flex-shrink: 0;
       }
 
-      .points-pill ha-icon { --mdc-icon-size: 13px; color: #f1c40f; }
+      .points-pill ha-icon { --mdc-icon-size: 13px; color: var(--warning-color, #ff9800); }
 
       .progress-row { display: flex; align-items: center; gap: 8px; }
 
@@ -156,8 +156,8 @@ class TaskMateParentDashboardCard extends LitElement {
         transition: width 0.4s ease;
       }
 
-      .progress-fill.complete { background: linear-gradient(90deg, #27ae60, #2ecc71); }
-      .progress-fill.partial { background: linear-gradient(90deg, #3498db, #2980b9); }
+      .progress-fill.complete { background: var(--success-color, #4caf50); }
+      .progress-fill.partial { background: var(--primary-color); }
       .progress-fill.none { width: 0 !important; }
 
       .progress-label {
@@ -181,11 +181,11 @@ class TaskMateParentDashboardCard extends LitElement {
       .approval-child-avatar {
         width: 38px; height: 38px; min-width: 38px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        background: var(--primary-color);
         display: flex; align-items: center; justify-content: center;
       }
 
-      .approval-child-avatar ha-icon { --mdc-icon-size: 22px; color: white; }
+      .approval-child-avatar ha-icon { --mdc-icon-size: 22px; color: var(--text-primary-color, #fff); }
 
       .approval-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 
@@ -202,10 +202,10 @@ class TaskMateParentDashboardCard extends LitElement {
 
       .approval-points {
         display: flex; align-items: center; gap: 2px;
-        font-weight: 600; color: #e67e22;
+        font-weight: 600; color: var(--warning-color, #ff9800);
       }
 
-      .approval-points ha-icon { --mdc-icon-size: 12px; color: #f1c40f; }
+      .approval-points ha-icon { --mdc-icon-size: 12px; color: var(--warning-color, #ff9800); }
 
       .approval-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
@@ -218,13 +218,13 @@ class TaskMateParentDashboardCard extends LitElement {
       }
 
       .btn-approve {
-        background: linear-gradient(135deg, #27ae60, #2ecc71);
-        color: white; box-shadow: 0 2px 8px rgba(46,204,113,0.3);
+        background: var(--success-color, #4caf50);
+        color: var(--text-primary-color, #fff); box-shadow: var(--ha-card-box-shadow, none);
       }
 
       .btn-reject {
-        background: linear-gradient(135deg, #c0392b, #e74c3c);
-        color: white; box-shadow: 0 2px 8px rgba(231,76,60,0.3);
+        background: var(--error-color, #db4437);
+        color: var(--text-primary-color, #fff); box-shadow: var(--ha-card-box-shadow, none);
       }
 
       .btn-approve:hover { transform: scale(1.1); }
@@ -235,10 +235,9 @@ class TaskMateParentDashboardCard extends LitElement {
       .claim-item {
         display: flex; align-items: center; gap: 10px;
         padding: 12px 14px;
-        background: var(--card-background-color, #fff);
-        border: 1px solid rgba(155,89,182,0.3);
-        border-radius: 12px;
-        background: rgba(155,89,182,0.04);
+        background: var(--secondary-background-color, #f5f5f5);
+        border: 1px solid var(--divider-color, #e0e0e0);
+        border-radius: var(--ha-card-border-radius, 12px);
         transition: opacity 0.2s;
       }
 
@@ -247,11 +246,11 @@ class TaskMateParentDashboardCard extends LitElement {
       .claim-icon-wrap {
         width: 38px; height: 38px; min-width: 38px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        background: var(--primary-color);
         display: flex; align-items: center; justify-content: center;
       }
 
-      .claim-icon-wrap ha-icon { --mdc-icon-size: 22px; color: white; }
+      .claim-icon-wrap ha-icon { --mdc-icon-size: 22px; color: var(--text-primary-color, #fff); }
 
       .claim-info { flex: 1; min-width: 0; }
 
@@ -277,11 +276,11 @@ class TaskMateParentDashboardCard extends LitElement {
       .qp-avatar {
         width: 38px; height: 38px; min-width: 38px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+        background: var(--primary-color);
         display: flex; align-items: center; justify-content: center;
       }
 
-      .qp-avatar ha-icon { --mdc-icon-size: 22px; color: white; }
+      .qp-avatar ha-icon { --mdc-icon-size: 22px; color: var(--text-primary-color, #fff); }
 
       .qp-name {
         flex: 1; font-size: 0.9rem; font-weight: 600;
@@ -291,11 +290,11 @@ class TaskMateParentDashboardCard extends LitElement {
 
       .qp-points {
         font-size: 1rem; font-weight: 700;
-        color: #9b59b6; white-space: nowrap;
+        color: var(--primary-color); white-space: nowrap;
         display: flex; align-items: center; gap: 3px;
       }
 
-      .qp-points ha-icon { --mdc-icon-size: 14px; color: #f1c40f; }
+      .qp-points ha-icon { --mdc-icon-size: 14px; color: var(--warning-color, #ff9800); }
 
       .qp-actions { display: flex; gap: 6px; }
 
@@ -308,13 +307,13 @@ class TaskMateParentDashboardCard extends LitElement {
       }
 
       .btn-add {
-        background: linear-gradient(135deg, #27ae60, #2ecc71);
-        color: white; box-shadow: 0 2px 6px rgba(46,204,113,0.3);
+        background: var(--success-color, #4caf50);
+        color: var(--text-primary-color, #fff); box-shadow: var(--ha-card-box-shadow, none);
       }
 
       .btn-remove {
-        background: linear-gradient(135deg, #c0392b, #e74c3c);
-        color: white; box-shadow: 0 2px 6px rgba(231,76,60,0.3);
+        background: var(--error-color, #db4437);
+        color: var(--text-primary-color, #fff); box-shadow: var(--ha-card-box-shadow, none);
       }
 
       .btn-add:hover, .btn-remove:hover { transform: scale(1.1); }
@@ -353,7 +352,7 @@ class TaskMateParentDashboardCard extends LitElement {
       title: "Parent Dashboard",
       quick_points_amount: 5,
       show_claims: true,
-            header_color: '#c0392b',
+            header_color: '',
     ...config,
     };
   }
@@ -400,7 +399,7 @@ class TaskMateParentDashboardCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#c0392b'}; }</style>
+        ${this.config.header_color ? html`<style>:host { --taskmate-header-bg: ${this.config.header_color}; }</style>` : ''}
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:shield-account"></ha-icon>
@@ -537,7 +536,7 @@ class TaskMateParentDashboardCard extends LitElement {
         const loading = !!this._loading[key];
         return html`
           <div class="approval-item ${loading ? 'loading' : ''}">
-            <div class="approval-child-avatar" style="background: linear-gradient(135deg, #16a085, #1abc9c);">
+            <div class="approval-child-avatar">
               <ha-icon icon="${currentChild?.avatar || 'mdi:rotate-3d-variant'}"></ha-icon>
             </div>
             <div class="approval-info">
@@ -569,7 +568,7 @@ class TaskMateParentDashboardCard extends LitElement {
   _renderApprovals(pending, children, chores, pointsIcon) {
     if (!pending.length) return html`
       <div class="empty-section">
-        <ha-icon icon="mdi:check-all" style="color: #2ecc71;"></ha-icon>
+        <ha-icon icon="mdi:check-all" style="color: var(--success-color, #4caf50);"></ha-icon>
         <span>${this._t('dashboard.empty_approvals')}</span>
       </div>
     `;
@@ -620,7 +619,7 @@ class TaskMateParentDashboardCard extends LitElement {
   _renderClaims(claims, pointsIcon) {
     if (!claims.length) return html`
       <div class="empty-section">
-        <ha-icon icon="mdi:gift-outline" style="color: #9b59b6;"></ha-icon>
+        <ha-icon icon="mdi:gift-outline" style="color: var(--primary-color);"></ha-icon>
         <span>${this._t('dashboard.empty_claims')}</span>
       </div>
     `;
@@ -638,8 +637,8 @@ class TaskMateParentDashboardCard extends LitElement {
               <div class="claim-reward-name">${claim.reward_name}</div>
               <div class="claim-meta">
                 ${claim.child_name} • ${time} •
-                <span style="display:inline-flex;align-items:center;gap:2px;color:#e67e22;font-weight:600;">
-                  <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:11px;color:#f1c40f;"></ha-icon>
+                <span style="display:inline-flex;align-items:center;gap:2px;color:var(--warning-color, #ff9800);font-weight:600;">
+                  <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:11px;color:var(--warning-color, #ff9800);"></ha-icon>
                   ${claim.cost}
                 </span>
               </div>
@@ -866,13 +865,13 @@ class TaskMateParentDashboardCardEditor extends LitElement {
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
       ></ha-form>
-      ${this._renderColourPicker('header_color', '#c0392b')}
+      ${this._renderColourPicker('header_color', '#03a9f4')}
     `;
   }
 
   _renderColourPicker(key, defaultValue) {
     const current = this.config[key] || defaultValue;
-    const presets = [defaultValue, '#e67e22', '#27ae60', '#3498db', '#9b59b6', '#f1c40f', '#34495e'];
+    const presets = [defaultValue, '#ff9800', '#4caf50', '#2196f3', '#9c27b0', '#ff5722', '#455a64'];
     const isActive = (c) => c.toLowerCase() === current.toLowerCase();
     return html`
       <div class="colour-field">
@@ -945,6 +944,6 @@ const _tmVersion = new URLSearchParams(
 ).get("v") || "?";
 console.info(
   "%c TASKMATE PARENT DASHBOARD CARD %c v" + _tmVersion + " ",
-  "background:#c0392b;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
-  "background:#2c3e50;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
+  "background:#03a9f4;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
+  "background:#455a64;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
 );
