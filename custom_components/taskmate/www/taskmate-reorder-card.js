@@ -50,8 +50,8 @@ class TaskMateReorderCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, #16a085);
-        color: white;
+        background: var(--taskmate-header-bg, var(--primary-color));
+        color: var(--text-primary-color, #fff);
         gap: 12px;
       }
 
@@ -67,13 +67,13 @@ class TaskMateReorderCard extends LitElement {
         --mdc-icon-size: 22px;
         opacity: 0.9;
         flex-shrink: 0;
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .card-title {
         font-size: 1.05rem;
         font-weight: 600;
-        color: white;
+        color: var(--text-primary-color, #fff);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -92,7 +92,7 @@ class TaskMateReorderCard extends LitElement {
 
       .save-button {
         background: rgba(255,255,255,0.15);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border: 1px solid rgba(255,255,255,0.3);
         border-radius: 8px;
         padding: 7px 14px;
@@ -244,7 +244,7 @@ class TaskMateReorderCard extends LitElement {
 
       .chore-points ha-icon {
         --mdc-icon-size: 14px;
-        color: #ffc107;
+        color: #ca8a04;
       }
 
       .reorder-buttons {
@@ -421,7 +421,6 @@ class TaskMateReorderCard extends LitElement {
     }
     this.config = {
       title: "Reorder Chores",
-            header_color: '#16a085',
     ...config,
     };
   }
@@ -615,9 +614,13 @@ class TaskMateReorderCard extends LitElement {
     const timeCategories = ["morning", "afternoon", "evening", "night", "anytime"];
     const pointsIcon = attrs.points_icon || "mdi:star";
 
+    const headerStyle = this.config.header_color
+      ? `--taskmate-header-bg: ${this.config.header_color};`
+      : '';
+
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#16a085'}; }</style>
+        ${headerStyle ? html`<style>:host { ${headerStyle} }</style>` : ''}
         <div class="card-header">
           <div class="header-left">
             <ha-icon class="header-icon" icon="mdi:sort"></ha-icon>
@@ -733,7 +736,7 @@ class TaskMateReorderCard extends LitElement {
     `;
   }
 
-  // ── Drag and Drop (mouse/pointer) ──────────────────────────
+  // -- Drag and Drop (mouse/pointer) --
   _onDragStart(e, category, index) {
     this._dragState = { category, index };
     e.dataTransfer.effectAllowed = "move";
@@ -769,7 +772,7 @@ class TaskMateReorderCard extends LitElement {
     this._dragState = null;
   }
 
-  // ── Touch drag (mobile) ────────────────────────────────────
+  // -- Touch drag (mobile) --
   _onTouchStart(e, category, index) {
     this._touchState = { category, index, startY: e.touches[0].clientY };
   }
@@ -974,24 +977,24 @@ class TaskMateReorderCardEditor extends LitElement {
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
       ></ha-form>
-      ${this._renderColourPicker('header_color', '#16a085')}
+      ${this._renderColourPicker('header_color', '')}
     `;
   }
 
   _renderColourPicker(key, defaultValue) {
     const current = this.config[key] || defaultValue;
-    const presets = [defaultValue, '#e67e22', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c', '#34495e'];
-    const isActive = (c) => c.toLowerCase() === current.toLowerCase();
+    const presets = ['#16a085', '#e67e22', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c', '#34495e'];
+    const isActive = (c) => current && c.toLowerCase() === current.toLowerCase();
     return html`
       <div class="colour-field">
         <span class="colour-field-label">${this._t('common.editor.header_colour')}</span>
         <div class="colour-field-body">
           <label class="colour-swatch-wrapper">
-            <input type="color" .value=${current}
+            <input type="color" .value=${current || '#16a085'}
               @input=${(e) => this._updateConfig(key, e.target.value)} />
-            <span class="colour-swatch-preview" style="background:${current}"></span>
+            <span class="colour-swatch-preview" style="background:${current || '#16a085'}"></span>
           </label>
-          <span class="colour-hex">${current}</span>
+          <span class="colour-hex">${current || this._t('common.default')}</span>
           <div class="colour-presets">
             ${presets.map((p) => html`
               <button class="preset-swatch ${isActive(p) ? 'active' : ''}"
@@ -1002,7 +1005,7 @@ class TaskMateReorderCardEditor extends LitElement {
             `)}
           </div>
           <button class="colour-reset"
-            @click=${(e) => { e.preventDefault(); this._updateConfig(key, defaultValue); }}
+            @click=${(e) => { e.preventDefault(); this._updateConfig(key, ''); }}
           >${this._t('common.reset')}</button>
         </div>
         <div class="colour-helper">${this._t('common.editor.header_colour_helper')}</div>
@@ -1051,6 +1054,6 @@ const _tmVersion = new URLSearchParams(
 ).get("v") || "?";
 console.info(
   "%c TASKMATE REORDER CARD %c v" + _tmVersion + " ",
-  "background:#16a085;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
+  "background:#03a9f4;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
   "background:#2c3e50;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
 );

@@ -40,7 +40,7 @@ class TaskMatePointsCard extends LitElement {
         display: block;
         --card-primary-color: var(--primary-color, #5c6bc0);
         --card-success-color: var(--success-color, #4caf50);
-        --card-error-color: var(--error-color, #f44336);
+        --card-error-color: var(--error-color, #db4437);
         --card-warning-color: var(--warning-color, #ff9800);
         --text-primary: var(--primary-text-color, #212121);
         --text-secondary: var(--secondary-text-color, #757575);
@@ -55,8 +55,8 @@ class TaskMatePointsCard extends LitElement {
         justify-content: space-between;
         align-items: center;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, #2980b9);
-        color: white;
+        background: var(--taskmate-header-bg, var(--primary-color));
+        color: var(--text-primary-color, #fff);
       }
 
       .header-content {
@@ -115,7 +115,7 @@ class TaskMatePointsCard extends LitElement {
         width: 48px;
         height: 48px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--card-primary-color) 0%, #7986cb 100%);
+        background: var(--card-primary-color);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -124,7 +124,7 @@ class TaskMatePointsCard extends LitElement {
 
       .child-avatar ha-icon {
         --mdc-icon-size: 28px;
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .child-details {
@@ -154,7 +154,7 @@ class TaskMatePointsCard extends LitElement {
 
       .child-points ha-icon {
         --mdc-icon-size: 18px;
-        color: #ffd700;
+        color: #ca8a04;
       }
 
       /* Action buttons */
@@ -188,13 +188,13 @@ class TaskMatePointsCard extends LitElement {
       }
 
       .action-button.remove {
-        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
-        color: white;
+        background: var(--error-color, #db4437);
+        color: var(--text-primary-color, #fff);
       }
 
       .action-button.add {
-        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
-        color: white;
+        background: var(--success-color, #4caf50);
+        color: var(--text-primary-color, #fff);
       }
 
       .action-button ha-icon {
@@ -243,13 +243,13 @@ class TaskMatePointsCard extends LitElement {
       .quick-btn:active { transform: scale(0.95); }
 
       .quick-btn.add {
-        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
-        color: white;
+        background: var(--success-color, #4caf50);
+        color: var(--text-primary-color, #fff);
       }
 
       .quick-btn.remove {
-        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
-        color: white;
+        background: var(--error-color, #db4437);
+        color: var(--text-primary-color, #fff);
       }
 
       .quick-btn.custom {
@@ -299,7 +299,7 @@ class TaskMatePointsCard extends LitElement {
         padding: 24px;
         min-width: 300px;
         max-width: 400px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--ha-card-box-shadow, 0 8px 32px rgba(0, 0, 0, 0.2));
         animation: slide-up 0.3s ease;
       }
 
@@ -331,16 +331,16 @@ class TaskMatePointsCard extends LitElement {
       }
 
       .dialog-header .icon-container.add {
-        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+        background: var(--success-color, #4caf50);
       }
 
       .dialog-header .icon-container.remove {
-        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+        background: var(--error-color, #db4437);
       }
 
       .dialog-header .icon-container ha-icon {
         --mdc-icon-size: 28px;
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .dialog-header-text {
@@ -444,15 +444,15 @@ class TaskMatePointsCard extends LitElement {
       }
 
       .dialog-button.confirm {
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .dialog-button.confirm.add {
-        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+        background: var(--success-color, #4caf50);
       }
 
       .dialog-button.confirm.remove {
-        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+        background: var(--error-color, #db4437);
       }
 
       .dialog-button.loading {
@@ -468,12 +468,12 @@ class TaskMatePointsCard extends LitElement {
         transform: translateX(-50%);
         padding: 12px 24px;
         border-radius: 8px;
-        color: white;
+        color: var(--text-primary-color, #fff);
         font-weight: 500;
         display: flex;
         align-items: center;
         gap: 8px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--ha-card-box-shadow, 0 4px 16px rgba(0, 0, 0, 0.2));
         z-index: 10000;
         animation: slide-up-notification 0.3s ease;
       }
@@ -490,11 +490,11 @@ class TaskMatePointsCard extends LitElement {
       }
 
       .notification.success {
-        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+        background: var(--success-color, #4caf50);
       }
 
       .notification.error {
-        background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+        background: var(--error-color, #db4437);
       }
 
       .notification ha-icon {
@@ -586,7 +586,6 @@ class TaskMatePointsCard extends LitElement {
     }
     this.config = {
       title: "Manage Points",
-            header_color: '#2980b9',
     ...config,
     };
   }
@@ -640,9 +639,13 @@ class TaskMatePointsCard extends LitElement {
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || "Stars";
 
+    const headerStyle = this.config.header_color
+      ? `--taskmate-header-bg: ${this.config.header_color};`
+      : '';
+
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#2980b9'}; }</style>
+        ${headerStyle ? html`<style>:host { ${headerStyle} }</style>` : ''}
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="${pointsIcon}"></ha-icon>
@@ -715,7 +718,7 @@ class TaskMatePointsCard extends LitElement {
                 ${this.config.show_dialog !== false ? html`
                   <button class="quick-btn custom" ?disabled="${isLoading}"
                     @click="${() => this._openDialog(child, 'add', pointsIcon, pointsName)}"
-                    title="${this._t('points_card.quick_custom_title')}">⋯</button>
+                    title="${this._t('points_card.quick_custom_title')}">&#x22EF;</button>
                 ` : ''}
               </div>
               <div class="quick-row-label">${this._t('points_card.quick_label_remove', { pointsName })}</div>
@@ -723,12 +726,12 @@ class TaskMatePointsCard extends LitElement {
                 ${removeAmounts.map(amt => html`
                   <button class="quick-btn remove" ?disabled="${isLoading}"
                     @click="${(e) => { e.stopPropagation(); this._quickAdjust(child, 'remove', amt); }}"
-                    title="${this._t('points_card.quick_remove_title', { amount: amt, pointsName })}">−${amt}</button>
+                    title="${this._t('points_card.quick_remove_title', { amount: amt, pointsName })}">&#x2212;${amt}</button>
                 `)}
                 ${this.config.show_dialog !== false ? html`
                   <button class="quick-btn custom" ?disabled="${isLoading}"
                     @click="${() => this._openDialog(child, 'remove', pointsIcon, pointsName)}"
-                    title="${this._t('points_card.quick_custom_title')}">⋯</button>
+                    title="${this._t('points_card.quick_custom_title')}">&#x22EF;</button>
                 ` : ''}
               </div>
             `;
@@ -967,8 +970,8 @@ class TaskMatePointsCardEditor extends LitElement {
       ha-form { display: block; margin-bottom: 16px; }
       .amounts-preview { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0 16px; }
       .preview-btn { padding: 3px 9px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; border: none; }
-      .preview-btn.add { background: #43a047; color: white; }
-      .preview-btn.remove { background: #e53935; color: white; }
+      .preview-btn.add { background: var(--success-color, #4caf50); color: var(--text-primary-color, #fff); }
+      .preview-btn.remove { background: var(--error-color, #db4437); color: var(--text-primary-color, #fff); }
       .colour-field { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border: 1px solid var(--outline-color, var(--divider-color, #e0e0e0)); border-radius: 4px; background: var(--mdc-text-field-fill-color, var(--card-background-color)); }
       .colour-field-label { font-size: 0.82rem; color: var(--primary-color); font-weight: 500; }
       .colour-field-body { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -1053,24 +1056,24 @@ class TaskMatePointsCardEditor extends LitElement {
         ${addAmounts.map(a => html`<span class="preview-btn add">+${a}</span>`)}
         ${removeAmounts.map(a => html`<span class="preview-btn remove">−${a}</span>`)}
       </div>
-      ${this._renderColourPicker('header_color', '#2980b9')}
+      ${this._renderColourPicker('header_color', '')}
     `;
   }
 
   _renderColourPicker(key, defaultValue) {
     const current = this.config[key] || defaultValue;
-    const presets = [defaultValue, '#e67e22', '#27ae60', '#9b59b6', '#f1c40f', '#e74c3c', '#34495e'];
-    const isActive = (c) => c.toLowerCase() === current.toLowerCase();
+    const presets = ['#2980b9', '#e67e22', '#27ae60', '#9b59b6', '#f1c40f', '#e74c3c', '#34495e'];
+    const isActive = (c) => current && c.toLowerCase() === current.toLowerCase();
     return html`
       <div class="colour-field">
         <span class="colour-field-label">${this._t('common.editor.header_colour')}</span>
         <div class="colour-field-body">
           <label class="colour-swatch-wrapper">
-            <input type="color" .value=${current}
+            <input type="color" .value=${current || '#2980b9'}
               @input=${(e) => this._updateConfig(key, e.target.value)} />
-            <span class="colour-swatch-preview" style="background:${current}"></span>
+            <span class="colour-swatch-preview" style="background:${current || '#2980b9'}"></span>
           </label>
-          <span class="colour-hex">${current}</span>
+          <span class="colour-hex">${current || this._t('common.default')}</span>
           <div class="colour-presets">
             ${presets.map((p) => html`
               <button class="preset-swatch ${isActive(p) ? 'active' : ''}"
@@ -1081,7 +1084,7 @@ class TaskMatePointsCardEditor extends LitElement {
             `)}
           </div>
           <button class="colour-reset"
-            @click=${(e) => { e.preventDefault(); this._updateConfig(key, defaultValue); }}
+            @click=${(e) => { e.preventDefault(); this._updateConfig(key, ''); }}
           >${this._t('common.reset')}</button>
         </div>
         <div class="colour-helper">${this._t('common.editor.header_colour_helper')}</div>
@@ -1147,6 +1150,6 @@ const _tmVersion = new URLSearchParams(
 ).get("v") || "?";
 console.info(
   "%c TASKMATE POINTS CARD %c v" + _tmVersion + " ",
-  "background:#2980b9;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
+  "background:#03a9f4;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
   "background:#2c3e50;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
 );
