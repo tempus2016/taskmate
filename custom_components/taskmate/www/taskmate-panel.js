@@ -865,7 +865,7 @@ class TaskMatePanel extends HTMLElement {
     fields.forEach(el => {
       const name = el.dataset.setting;
       let v;
-      if (el.type === "checkbox") v = el.checked;
+      if (el.type === "checkbox" || el.tagName === "HA-SWITCH") v = el.checked;
       else if (el.type === "number") v = el.value === "" ? undefined : Number(el.value);
       else v = el.value;
       if (v !== undefined) payload[name] = v;
@@ -887,11 +887,11 @@ class TaskMatePanel extends HTMLElement {
       const v = el.getAttribute("data-current") || "";
       if (el.value !== v) el.value = v;
     });
-    this.querySelectorAll("ha-textfield[data-field]").forEach(el => {
+    this.querySelectorAll("ha-textfield[data-value]").forEach(el => {
       const v = el.getAttribute("data-value") || "";
       if (el.value !== v) el.value = v;
     });
-    this.querySelectorAll("ha-select[data-field]").forEach(el => {
+    this.querySelectorAll("ha-select[data-value]").forEach(el => {
       const v = el.getAttribute("data-value") || "";
       if (el.value !== v) el.value = v;
     });
@@ -1057,7 +1057,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-approval-banner">
         <ha-icon icon="mdi:bell-ring-outline"></ha-icon>
         <span>Awaiting your approval — ${parts.join(" · ")}</span>
-        <button class="tm-btn tm-btn-sm" data-act="switch-to-activity">Review</button>
+        <mwc-button dense unelevated data-act="switch-to-activity">Review</mwc-button>
       </div>
     `;
   }
@@ -1068,7 +1068,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-card tm-card-error">
         <h2>Failed to load state</h2>
         <p>${this._esc(this._error)}</p>
-        <button class="tm-btn" data-act="retry">Retry</button>
+        <mwc-button raised data-act="retry">Retry</mwc-button>
       </div>`;
     if (!this._state) return `<div class="tm-card">No state yet.</div>`;
 
@@ -1110,7 +1110,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">Children <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox("Search children…") : ""}
-        <button class="tm-btn" data-act="add-child">＋ Add child</button>
+        <mwc-button raised data-act="add-child">＋ Add child</mwc-button>
       </div>
       ${all.length === 0 ? this._emptyState("👨‍👩‍👧‍👦", "No children yet", "Add your first child to get started.", "add-child", "+ Add child") :
         children.length === 0 ? `<div class="tm-card tm-empty"><p>No children match "<strong>${this._esc(this._filter)}</strong>".</p></div>` : `
@@ -1138,9 +1138,9 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.total_chores_completed || 0)}</div><div class="tm-stat-label">Done</div></div>
         </div>
         <div class="tm-card-foot">
-          <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="edit-child" data-id="${this._esc(child.id)}">Edit</button>
-          <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="reorder-chores-for-child" data-id="${this._esc(child.id)}" title="Reorder this child's chores">⇅ Chore Order</button>
-          <button class="tm-btn tm-btn-danger tm-btn-sm" data-act="delete-child" data-id="${this._esc(child.id)}">Delete</button>
+          <mwc-button dense data-act="edit-child" data-id="${this._esc(child.id)}">Edit</mwc-button>
+          <mwc-button dense data-act="reorder-chores-for-child" data-id="${this._esc(child.id)}" title="Reorder this child's chores">⇅ Chore Order</mwc-button>
+          <mwc-button dense class="danger" data-act="delete-child" data-id="${this._esc(child.id)}">Delete</mwc-button>
         </div>
       </article>
     `;
@@ -1208,8 +1208,8 @@ class TaskMatePanel extends HTMLElement {
                     <div class="tm-meta">${this._timeAgo(c.completed_at)}${chore ? ` · ${chore.points} points` : ""}</div>
                   </div>
                   <div class="tm-approval-actions">
-                    <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="reject-chore"  data-id="${this._esc(c.id)}">Reject</button>
-                    <button class="tm-btn tm-btn-sm" data-act="approve-chore" data-id="${this._esc(c.id)}">Approve</button>
+                    <mwc-button dense data-act="reject-chore" data-id="${this._esc(c.id)}">Reject</mwc-button>
+                    <mwc-button dense unelevated data-act="approve-chore" data-id="${this._esc(c.id)}">Approve</mwc-button>
                   </div>
                 </div>
               `;
@@ -1225,8 +1225,8 @@ class TaskMatePanel extends HTMLElement {
                     <div class="tm-meta">${this._timeAgo(c.claimed_at)}${reward ? ` · ${reward.cost} points` : ""}</div>
                   </div>
                   <div class="tm-approval-actions">
-                    <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="reject-reward"  data-id="${this._esc(c.id)}">Reject</button>
-                    <button class="tm-btn tm-btn-sm" data-act="approve-reward" data-id="${this._esc(c.id)}">Approve</button>
+                    <mwc-button dense data-act="reject-reward" data-id="${this._esc(c.id)}">Reject</mwc-button>
+                    <mwc-button dense unelevated data-act="approve-reward" data-id="${this._esc(c.id)}">Approve</mwc-button>
                   </div>
                 </div>
               `;
@@ -1292,8 +1292,8 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">Chores <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox("Filter chores…") : ""}
-        <button class="tm-btn tm-btn-ghost" data-act="bulk-add-chore">＋＋ Bulk add</button>
-        <button class="tm-btn" data-act="add-chore">＋ Add chore</button>
+        <mwc-button data-act="bulk-add-chore">＋＋ Bulk add</mwc-button>
+        <mwc-button raised data-act="add-chore">＋ Add chore</mwc-button>
       </div>
       ${all.length === 0 ? this._emptyState("📋", "No chores yet", "Add a chore — it'll show on the assigned children's cards.", "add-chore", "+ Add chore") :
         chores.length === 0 ? `<div class="tm-card tm-empty"><p>No chores match "<strong>${this._esc(this._filter)}</strong>".</p></div>` : `
@@ -1354,7 +1354,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">Rewards <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox("Search rewards…") : ""}
-        <button class="tm-btn" data-act="add-reward">＋ Add reward</button>
+        <mwc-button raised data-act="add-reward">＋ Add reward</mwc-button>
       </div>
       ${all.length === 0 ? this._emptyState("🎁", "No rewards yet", `Add a reward children can spend their ${this._esc(pointsName.toLowerCase())} on.`, "add-reward", "+ Add reward") :
         rewards.length === 0 ? `<div class="tm-card tm-empty"><p>No rewards match "<strong>${this._esc(this._filter)}</strong>".</p></div>` : `
@@ -1389,8 +1389,8 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-progress-text"><span><strong>${this._fmtNum(totalPooled)}</strong> / ${this._fmtNum(r.cost)}</span><span>${pct}%</span></div>
         ` : ""}
         <div class="tm-card-foot">
-          <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="edit-reward" data-id="${this._esc(r.id)}">Edit</button>
-          <button class="tm-btn tm-btn-danger tm-btn-sm" data-act="delete-reward" data-id="${this._esc(r.id)}">Delete</button>
+          <mwc-button dense data-act="edit-reward" data-id="${this._esc(r.id)}">Edit</mwc-button>
+          <mwc-button dense class="danger" data-act="delete-reward" data-id="${this._esc(r.id)}">Delete</mwc-button>
         </div>
       </article>
     `;
@@ -1406,7 +1406,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">${labels.plural} <span class="tm-toolbar-count">${allItems.length}</span></h2>
         ${allItems.length > 0 ? this._searchBox(`Search ${labels.plural.toLowerCase()}…`) : ""}
-        <button class="tm-btn" data-act="add-${kind}">＋ Add ${kind}</button>
+        <mwc-button raised data-act="add-${kind}">＋ Add ${kind}</mwc-button>
       </div>
       ${allItems.length === 0 ? this._emptyState(labels.icon, `No ${labels.plural.toLowerCase()} yet`, kind === "penalty" ? "Add a penalty to deduct points for misbehaviour." : "Add a bonus to award points for going above and beyond.", `add-${kind}`, labels.add) :
         items.length === 0 ? `<div class="tm-card tm-empty"><p>No ${labels.plural.toLowerCase()} match "<strong>${this._esc(this._filter)}</strong>".</p></div>` : `
@@ -1424,7 +1424,7 @@ class TaskMatePanel extends HTMLElement {
                     <td><strong class="tm-numeric ${kind === "penalty" ? "tm-neg" : "tm-pos"}">${kind === "penalty" ? "−" : "+"}${item.points}</strong></td>
                     <td>${assignedNames}</td>
                     <td class="tm-row-actions">
-                      <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="apply-${kind}" data-id="${this._esc(item.id)}">Apply…</button>
+                      <mwc-button dense data-act="apply-${kind}" data-id="${this._esc(item.id)}">Apply…</mwc-button>
                       <button class="tm-icon-btn" data-act="edit-${kind}" data-id="${this._esc(item.id)}" title="Edit">✏</button>
                       <button class="tm-icon-btn" data-act="delete-${kind}" data-id="${this._esc(item.id)}" title="Delete">🗑</button>
                     </td>
@@ -1447,7 +1447,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">Task groups <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox("Search groups…") : ""}
-        <button class="tm-btn" data-act="add-group">＋ Add group</button>
+        <mwc-button raised data-act="add-group">＋ Add group</mwc-button>
       </div>
       ${all.length === 0 ? this._emptyState("🔗", "No task groups yet", "Create a group to make chores rotate together (e.g. all kitchen chores stay with one child each day).", "add-group", "+ Add group") :
         groups.length === 0 ? `<div class="tm-card tm-empty"><p>No groups match "<strong>${this._esc(this._filter)}</strong>".</p></div>` : `
@@ -1465,8 +1465,8 @@ class TaskMatePanel extends HTMLElement {
                 ${(g.chore_ids || []).map(id => `<li>${this._esc((choreById[id] && choreById[id].name) || `(missing chore ${id})`)}</li>`).join("")}
               </ul>
               <div class="tm-card-foot">
-                <button class="tm-btn tm-btn-ghost tm-btn-sm" data-act="edit-group" data-id="${this._esc(g.id)}">Edit</button>
-                <button class="tm-btn tm-btn-danger tm-btn-sm" data-act="delete-group" data-id="${this._esc(g.id)}">Delete</button>
+                <mwc-button dense data-act="edit-group" data-id="${this._esc(g.id)}">Edit</mwc-button>
+                <mwc-button dense class="danger" data-act="delete-group" data-id="${this._esc(g.id)}">Delete</mwc-button>
               </div>
             </article>
           `).join("")}
@@ -1499,7 +1499,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-section-body">
             <div class="tm-setting-row">
               <div class="tm-setting-label">Points name<small>What you call them, e.g. Stars or Coins</small></div>
-              <input type="text" data-setting="points_name" value="${this._esc(s.points_name || "Stars")}" placeholder="Stars">
+              <ha-textfield data-setting="points_name" data-value="${this._esc(s.points_name || "Stars")}" placeholder="Stars"></ha-textfield>
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">Points icon<small>Pick any MDI icon</small></div>
@@ -1513,21 +1513,21 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-section-body">
             <div class="tm-setting-row">
               <div class="tm-setting-label">Retention<small>How many days of completion history to keep</small></div>
-              <input type="number" min="30" max="365" data-setting="history_days" value="${s.history_days || 90}">
+              <ha-textfield type="number" min="30" max="365" data-setting="history_days" data-value="${s.history_days || 90}"></ha-textfield>
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">Streak reset<small>What happens when a day is missed</small></div>
-              <select data-setting="streak_reset_mode">
-                ${STREAK_MODES.map(m => `<option value="${m.v}" ${m.v === (s.streak_reset_mode || "reset") ? "selected" : ""}>${this._esc(m.l)}</option>`).join("")}
-              </select>
+              <ha-select data-setting="streak_reset_mode" data-value="${this._esc(s.streak_reset_mode || "reset")}" fixedMenuPosition naturalMenuWidth>
+                ${STREAK_MODES.map(m => `<mwc-list-item value="${m.v}" ${m.v === (s.streak_reset_mode || "reset") ? "selected activated" : ""}>${this._esc(m.l)}</mwc-list-item>`).join("")}
+              </ha-select>
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">Weekend multiplier<small>Bonus on Sat/Sun (1.0 = off)</small></div>
-              <input type="number" step="0.1" min="1" max="5" data-setting="weekend_multiplier" value="${s.weekend_multiplier || 1.0}">
+              <ha-textfield type="number" step="0.1" min="1" max="5" data-setting="weekend_multiplier" data-value="${s.weekend_multiplier || 1.0}"></ha-textfield>
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">Calendar projection<small>Days ahead each chore publishes to calendars</small></div>
-              <input type="number" min="1" max="90" data-setting="calendar_projection_days" value="${s.calendar_projection_days || 14}">
+              <ha-textfield type="number" min="1" max="90" data-setting="calendar_projection_days" data-value="${s.calendar_projection_days || 14}"></ha-textfield>
             </div>
           </div>
         </div>
@@ -1537,15 +1537,15 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-section-body">
             <div class="tm-setting-row">
               <div class="tm-setting-label">Streak milestones<small>Bonus at 3, 7, 14, 30, 60, 100 days</small></div>
-              <label class="tm-switch"><input type="checkbox" data-setting="streak_milestones_enabled" ${s.streak_milestones_enabled ? "checked" : ""}><span class="tm-slider"></span></label>
+              <ha-switch data-setting="streak_milestones_enabled" ${s.streak_milestones_enabled ? "checked" : ""}></ha-switch>
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">Perfect-week bonus<small>Bonus for completing every day of a week</small></div>
-              <label class="tm-switch"><input type="checkbox" data-setting="perfect_week_enabled" ${s.perfect_week_enabled ? "checked" : ""}><span class="tm-slider"></span></label>
+              <ha-switch data-setting="perfect_week_enabled" ${s.perfect_week_enabled ? "checked" : ""}></ha-switch>
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">Perfect-week bonus points<small>How many points to award</small></div>
-              <input type="number" min="0" data-setting="perfect_week_bonus" value="${s.perfect_week_bonus || 50}">
+              <ha-textfield type="number" min="0" data-setting="perfect_week_bonus" data-value="${s.perfect_week_bonus || 50}"></ha-textfield>
             </div>
           </div>
         </div>
@@ -1555,9 +1555,9 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-section-body">
             <div class="tm-setting-row">
               <div class="tm-setting-label">Notify service<small>Used for parent approval pings</small></div>
-              <select data-setting="notify_service">
-                ${notifyOptions.map(o => `<option value="${this._esc(o.v)}" ${o.v === (s.notify_service || "") ? "selected" : ""}>${this._esc(o.l)}</option>`).join("")}
-              </select>
+              <ha-select data-setting="notify_service" data-value="${this._esc(s.notify_service || "")}" fixedMenuPosition naturalMenuWidth>
+                ${notifyOptions.map(o => `<mwc-list-item value="${this._esc(o.v)}" ${o.v === (s.notify_service || "") ? "selected activated" : ""}>${this._esc(o.l)}</mwc-list-item>`).join("")}
+              </ha-select>
             </div>
           </div>
         </div>
@@ -1790,9 +1790,9 @@ class TaskMatePanel extends HTMLElement {
        ${eligible.length === 0 ? `<p class="tm-meta">No eligible children. Edit the ${kind} to set who it applies to.</p>` : `
         <div class="tm-chip-row" style="margin-top: 12px;">
           ${eligible.map(c => `
-            <button type="button" class="tm-btn tm-btn-ghost" data-act="do-apply-${kind}" data-id="${this._esc(item.id)}" data-child="${this._esc(c.id)}">
+            <mwc-button data-act="do-apply-${kind}" data-id="${this._esc(item.id)}" data-child="${this._esc(c.id)}">
               ${this._esc(c.name)}
-            </button>
+            </mwc-button>
           `).join("")}
         </div>
        `}`,
@@ -2043,7 +2043,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-empty-icon">${icon}</div>
         <h3>${this._esc(title)}</h3>
         <p>${this._esc(copy)}</p>
-        <button class="tm-btn" data-act="${action}">${this._esc(label)}</button>
+        <mwc-button raised data-act="${action}">${this._esc(label)}</mwc-button>
       </div>
     `;
   }
@@ -2362,42 +2362,13 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-search-clear:hover { background: var(--tm-surface-3); color: var(--tm-text); }
 
-      /* Buttons */
-      .tm-btn {
-        background: var(--tm-accent);
-        color: var(--text-primary-color, #fff);
-        border: none;
-        padding: 8px 16px;
-        border-radius: var(--tm-radius-sm);
-        font-size: 14px; font-weight: 500;
-        font-family: inherit;
-        cursor: pointer;
-        transition: opacity 0.1s ease;
-        display: inline-flex; align-items: center; gap: 6px;
-        white-space: nowrap;
+      /* Buttons (HA native mwc-button) */
+      mwc-button {
+        --mdc-theme-primary: var(--primary-color);
+        --mdc-theme-on-primary: var(--text-primary-color, #fff);
       }
-      .tm-btn:hover  { opacity: 0.85; }
-      .tm-btn:focus-visible { outline: 0; box-shadow: var(--tm-shadow-focus); }
-      .tm-btn:active { opacity: 0.75; }
-      .tm-btn-sm     { padding: 4px 9px; font-size: 12px; }
-      .tm-btn-ghost {
-        background: transparent;
-        color: var(--tm-text);
-        border: 1px solid var(--tm-border);
-      }
-      .tm-btn-ghost:hover {
-        background: var(--tm-surface-2);
-        opacity: 1;
-      }
-      .tm-btn-danger {
-        background: transparent;
-        color: var(--tm-danger);
-        border: 1px solid var(--tm-danger-border);
-      }
-      .tm-btn-danger:hover {
-        background: var(--tm-danger);
-        color: var(--text-primary-color, #fff);
-        opacity: 1;
+      mwc-button.danger {
+        --mdc-theme-primary: var(--tm-danger);
       }
       .tm-icon-btn {
         width: 28px; height: 28px;
@@ -2710,55 +2681,19 @@ class TaskMatePanel extends HTMLElement {
       .tm-setting-row:first-child { border-top: 0; }
       .tm-setting-label { color: var(--tm-text); font-size: 13px; font-weight: 500; }
       .tm-setting-label small { display: block; color: var(--tm-text-faint); font-weight: 400; font-size: 12px; margin-top: 2px; }
-      .tm-setting-row input[type=text],
-      .tm-setting-row input[type=number],
-      .tm-setting-row select {
-        background: var(--tm-surface-0);
-        border: 1px solid var(--tm-border);
-        border-radius: var(--tm-radius-sm);
-        padding: 6px 10px;
-        color: var(--tm-text);
-        font-size: 13px;
-        font-family: inherit;
+      .tm-setting-row ha-textfield,
+      .tm-setting-row ha-select {
         max-width: 360px;
-        box-shadow: var(--tm-shadow-xs);
-        transition: all 0.1s var(--tm-easing);
-      }
-      .tm-setting-row input:focus, .tm-setting-row select:focus {
-        outline: 0;
-        border-color: var(--tm-accent);
-        box-shadow: var(--tm-shadow-focus);
       }
       .tm-settings-foot {
         display: flex; justify-content: flex-end;
         padding-top: 8px;
       }
 
-      /* Switch */
-      .tm-switch {
-        position: relative; display: inline-block;
-        width: 34px; height: 20px; flex-shrink: 0;
+      /* Switch (HA native ha-switch) */
+      ha-switch {
+        --mdc-theme-secondary: var(--primary-color);
       }
-      .tm-switch input { opacity: 0; width: 0; height: 0; }
-      .tm-slider {
-        position: absolute; inset: 0;
-        background: var(--tm-border-strong);
-        border-radius: 999px;
-        transition: background 0.15s var(--tm-easing);
-        cursor: pointer;
-      }
-      .tm-slider::before {
-        content: ''; position: absolute;
-        height: 16px; width: 16px;
-        left: 2px; top: 2px;
-        background: var(--card-background-color, #fff); border-radius: 50%;
-        transition: transform 0.15s var(--tm-easing);
-        box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-      }
-      .tm-switch input:checked + .tm-slider {
-        background: var(--tm-accent);
-      }
-      .tm-switch input:checked + .tm-slider::before { transform: translateX(14px); }
 
       /* Dialog */
       .tm-scrim {
@@ -2807,7 +2742,10 @@ class TaskMatePanel extends HTMLElement {
         font-size: 12.5px; margin-bottom: 5px;
         font-weight: 500;
       }
-      .tm-field input[type=text], .tm-field input[type=number], .tm-field input[type=date], .tm-field select, .tm-textarea {
+      .tm-field ha-textfield, .tm-field ha-select {
+        display: block; width: 100%;
+      }
+      .tm-textarea {
         width: 100%;
         background: var(--tm-surface-0);
         border: 1px solid var(--tm-border);
@@ -2820,7 +2758,7 @@ class TaskMatePanel extends HTMLElement {
         box-shadow: var(--tm-shadow-xs);
         transition: all 0.1s var(--tm-easing);
       }
-      .tm-field input:focus, .tm-field select:focus, .tm-textarea:focus {
+      .tm-textarea:focus {
         outline: 0;
         border-color: var(--tm-accent);
         box-shadow: var(--tm-shadow-focus);
