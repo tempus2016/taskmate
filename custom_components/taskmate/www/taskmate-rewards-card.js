@@ -40,14 +40,6 @@ class TaskMateRewardsCard extends LitElement {
     return css`
       :host {
         display: block;
-        --reward-purple: #9b59b6;
-        --reward-purple-light: #a569bd;
-        --reward-gold: #f1c40f;
-        --reward-gold-dark: #d4a80a;
-        --text-primary: var(--primary-text-color, #212121);
-        --text-secondary: var(--secondary-text-color, #757575);
-        --card-bg: var(--card-background-color, #fff);
-        --divider: var(--divider-color, #e0e0e0);
       }
 
       ha-card {
@@ -59,8 +51,8 @@ class TaskMateRewardsCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: var(--taskmate-header-bg, #e67e22);
-        color: white;
+        background: var(--taskmate-header-bg, var(--primary-color));
+        color: var(--text-primary-color, #fff);
       }
 
       .header-content {
@@ -80,7 +72,7 @@ class TaskMateRewardsCard extends LitElement {
       }
 
       .reward-count {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.25);
         padding: 4px 12px;
         border-radius: 16px;
         font-size: 0.9rem;
@@ -100,14 +92,14 @@ class TaskMateRewardsCard extends LitElement {
         align-items: flex-start;
         gap: 16px;
         padding: 16px;
-        background: var(--card-bg);
-        border: 1px solid var(--divider);
-        border-radius: 12px;
+        background: var(--card-background-color, #fff);
+        border: 1px solid var(--divider-color, #e0e0e0);
+        border-radius: var(--ha-card-border-radius, 12px);
         transition: box-shadow 0.2s ease, transform 0.15s ease;
       }
 
       .reward-row:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--ha-card-box-shadow, none);
         transform: translateY(-1px);
       }
 
@@ -119,31 +111,29 @@ class TaskMateRewardsCard extends LitElement {
         justify-content: center;
         min-width: 70px;
         padding: 12px 8px;
-        background: linear-gradient(135deg, var(--reward-gold) 0%, var(--reward-gold-dark) 100%);
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(241, 196, 15, 0.3);
+        background: #ca8a04;
+        border-radius: var(--ha-card-border-radius, 12px);
         flex-shrink: 0;
       }
 
       .cost-badge ha-icon {
         --mdc-icon-size: 24px;
-        color: white;
-        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+        color: var(--text-primary-color, #fff);
         margin-bottom: 4px;
       }
 
       .cost-value {
         font-size: 1.4rem;
         font-weight: 700;
-        color: white;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        color: var(--text-primary-color, #fff);
         line-height: 1;
       }
 
       .cost-label {
         font-size: 0.65rem;
         font-weight: 600;
-        color: rgba(255, 255, 255, 0.9);
+        color: var(--text-primary-color, #fff);
+        opacity: 0.9;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-top: 2px;
@@ -162,13 +152,13 @@ class TaskMateRewardsCard extends LitElement {
       .reward-name {
         font-size: 1.15rem;
         font-weight: 600;
-        color: var(--text-primary);
+        color: var(--primary-text-color, #212121);
         line-height: 1.3;
       }
 
       .reward-description {
         font-size: 0.9rem;
-        color: var(--text-secondary);
+        color: var(--secondary-text-color, #757575);
         line-height: 1.4;
       }
 
@@ -184,16 +174,16 @@ class TaskMateRewardsCard extends LitElement {
         display: inline-flex;
         align-items: center;
         padding: 2px 8px;
-        background: rgba(155, 89, 182, 0.15);
+        background: color-mix(in srgb, var(--primary-color) 15%, transparent);
         border-radius: 12px;
         font-size: 0.75rem;
-        color: var(--reward-purple);
+        color: var(--primary-color);
         font-weight: 500;
       }
 
       .child-badge.all-children {
-        background: rgba(46, 204, 113, 0.15);
-        color: #27ae60;
+        background: color-mix(in srgb, var(--success-color, #4caf50) 15%, transparent);
+        color: var(--success-color, #4caf50);
       }
 
       /* Progress bar styles */
@@ -215,48 +205,26 @@ class TaskMateRewardsCard extends LitElement {
       .progress-bar {
         flex: 1;
         height: 14px;
-        background: var(--divider-color, #e0e0e0);
+        background: var(--secondary-background-color, #e0e0e0);
         border-radius: 7px;
         overflow: hidden;
         position: relative;
-        border: 2px solid rgba(52, 152, 219, 0.4);
-        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--divider-color, #e0e0e0);
       }
 
       .progress-fill {
         height: 100%;
         border-radius: 7px;
-        background: linear-gradient(90deg, #3498db 0%, #2ecc71 100%);
+        background: var(--primary-color);
         transition: width 0.4s ease;
         position: relative;
         overflow: hidden;
       }
 
-      .progress-fill::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 50%;
-        height: 100%;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.4),
-          transparent
-        );
-        animation: shimmer 2s infinite;
-      }
-
-      @keyframes shimmer {
-        0% { left: -100%; }
-        100% { left: 200%; }
-      }
-
       .progress-text {
         font-size: 0.85rem;
         font-weight: 600;
-        color: var(--text-secondary);
+        color: var(--secondary-text-color, #757575);
         white-space: nowrap;
         min-width: 70px;
         text-align: right;
@@ -264,38 +232,10 @@ class TaskMateRewardsCard extends LitElement {
 
       /* Jackpot reward styles */
       .reward-row.jackpot {
-        border: 2px solid var(--reward-gold);
-        background: linear-gradient(135deg, rgba(241, 196, 15, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+        border: 2px solid #ca8a04;
+        background: color-mix(in srgb, #ca8a04 6%, var(--card-background-color, #fff));
         position: relative;
         overflow: hidden;
-      }
-
-      .reward-row.jackpot::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(
-          45deg,
-          transparent 40%,
-          rgba(241, 196, 15, 0.1) 50%,
-          transparent 60%
-        );
-        animation: jackpot-shine 40s ease-in-out infinite;
-        pointer-events: none;
-      }
-
-      /* Shine 3 times (each ~2.5s = 7.5s total), then wait ~32.5s before repeating */
-      @keyframes jackpot-shine {
-        0% { transform: translateX(-100%); }
-        2.5% { transform: translateX(100%); }
-        5% { transform: translateX(-100%); }
-        7.5% { transform: translateX(100%); }
-        10% { transform: translateX(-100%); }
-        12.5% { transform: translateX(100%); }
-        15%, 100% { transform: translateX(-100%); opacity: 0; }
       }
 
       .jackpot-label {
@@ -303,15 +243,14 @@ class TaskMateRewardsCard extends LitElement {
         align-items: center;
         gap: 4px;
         padding: 3px 10px;
-        background: linear-gradient(135deg, var(--reward-gold) 0%, #e67e22 100%);
+        background: #ca8a04;
         border-radius: 12px;
         font-size: 0.7rem;
         font-weight: 700;
-        color: white;
+        color: var(--text-primary-color, #fff);
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-bottom: 4px;
-        box-shadow: 0 2px 6px rgba(241, 196, 15, 0.4);
       }
 
       .jackpot-label span {
@@ -322,13 +261,12 @@ class TaskMateRewardsCard extends LitElement {
       .jackpot-progress-bar {
         flex: 1;
         height: 18px;
-        background: var(--divider-color, #e0e0e0);
+        background: var(--secondary-background-color, #e0e0e0);
         border-radius: 9px;
         overflow: hidden;
         position: relative;
         display: flex;
-        border: 2px solid rgba(241, 196, 15, 0.5);
-        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--divider-color, #e0e0e0);
       }
 
       .jackpot-segment {
@@ -336,33 +274,6 @@ class TaskMateRewardsCard extends LitElement {
         transition: width 0.4s ease;
         position: relative;
         overflow: hidden;
-      }
-
-      .jackpot-segment::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.4),
-          transparent
-        );
-        animation: jackpot-segment-shimmer 40s infinite;
-      }
-
-      /* Shimmer 3 times then wait ~30s before repeating */
-      @keyframes jackpot-segment-shimmer {
-        0% { left: -100%; }
-        2.5% { left: 200%; }
-        5% { left: -100%; }
-        7.5% { left: 200%; }
-        10% { left: -100%; }
-        12.5% { left: 200%; }
-        15%, 100% { left: -100%; opacity: 0; }
       }
 
       .jackpot-segment:first-child {
@@ -377,13 +288,13 @@ class TaskMateRewardsCard extends LitElement {
         border-radius: 9px;
       }
 
-      /* Fun kid-friendly colors for segments */
-      .jackpot-segment.color-0 { background: linear-gradient(180deg, #ff6b9d 0%, #e91e63 100%); }
-      .jackpot-segment.color-1 { background: linear-gradient(180deg, #64b5f6 0%, #2196f3 100%); }
-      .jackpot-segment.color-2 { background: linear-gradient(180deg, #81c784 0%, #4caf50 100%); }
-      .jackpot-segment.color-3 { background: linear-gradient(180deg, #ffb74d 0%, #ff9800 100%); }
-      .jackpot-segment.color-4 { background: linear-gradient(180deg, #ba68c8 0%, #9c27b0 100%); }
-      .jackpot-segment.color-5 { background: linear-gradient(180deg, #4dd0e1 0%, #00bcd4 100%); }
+      /* Distinct colors for segments */
+      .jackpot-segment.color-0 { background: #e91e63; }
+      .jackpot-segment.color-1 { background: #2196f3; }
+      .jackpot-segment.color-2 { background: var(--success-color, #4caf50); }
+      .jackpot-segment.color-3 { background: var(--warning-color, #ff9800); }
+      .jackpot-segment.color-4 { background: #9c27b0; }
+      .jackpot-segment.color-5 { background: #00bcd4; }
 
       .jackpot-breakdown {
         display: flex;
@@ -391,7 +302,7 @@ class TaskMateRewardsCard extends LitElement {
         gap: 6px;
         margin-top: 4px;
         font-size: 0.8rem;
-        color: var(--text-secondary);
+        color: var(--secondary-text-color, #757575);
       }
 
       .jackpot-child-contribution {
@@ -427,33 +338,30 @@ class TaskMateRewardsCard extends LitElement {
 
       .jackpot-total {
         font-weight: 700;
-        color: var(--reward-gold-dark);
+        color: #ca8a04;
         padding: 2px 8px;
-        background: rgba(241, 196, 15, 0.15);
+        background: color-mix(in srgb, #ca8a04 15%, transparent);
         border-radius: 10px;
       }
 
       /* Cost badge for jackpot - special styling */
       .reward-row.jackpot .cost-badge {
-        background: linear-gradient(135deg, var(--reward-gold) 0%, #e67e22 100%);
-        box-shadow: 0 3px 10px rgba(241, 196, 15, 0.4);
+        background: #ca8a04;
       }
 
       /* Dynamic reward styles */
       .reward-row.dynamic {
-        border: 1px dashed rgba(52, 152, 219, 0.5);
+        border: 1px dashed color-mix(in srgb, var(--primary-color) 50%, transparent);
       }
 
       .cost-badge.dynamic-cost {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        background: var(--primary-color);
         position: relative;
       }
 
       .dynamic-indicator {
         font-size: 0.9rem;
         margin-top: 2px;
-        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
       }
 
       /* Reward icon + claim button wrapper */
@@ -497,7 +405,7 @@ class TaskMateRewardsCard extends LitElement {
         width: 44px;
         height: 44px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--reward-purple) 0%, var(--reward-purple-light) 100%);
+        background: var(--primary-color);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -506,21 +414,21 @@ class TaskMateRewardsCard extends LitElement {
 
       .reward-icon-container ha-icon {
         --mdc-icon-size: 24px;
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       /* Pending approval state */
       .reward-row.pending-approval {
         opacity: 0.6;
-        border-left: 3px solid #e67e22;
+        border-left: 3px solid var(--warning-color, #ff9800);
       }
 
       .pending-label {
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        background: rgba(230,126,34,0.12);
-        color: #e67e22;
+        background: color-mix(in srgb, var(--warning-color, #ff9800) 12%, transparent);
+        color: var(--warning-color, #ff9800);
         border-radius: 8px;
         padding: 3px 8px;
         font-size: 0.75rem;
@@ -542,7 +450,7 @@ class TaskMateRewardsCard extends LitElement {
         letter-spacing: 0.02em;
       }
       .availability-badge.badge-sold-out {
-        background: rgba(189,195,199,0.25);
+        background: color-mix(in srgb, var(--disabled-text-color, #bdbdbd) 25%, transparent);
         color: var(--secondary-text-color, #757575);
       }
       .availability-badge.badge-expired {
@@ -550,12 +458,12 @@ class TaskMateRewardsCard extends LitElement {
         color: var(--secondary-text-color, #757575);
       }
       .availability-badge.badge-low-stock {
-        background: rgba(231,76,60,0.15);
-        color: #c0392b;
+        background: color-mix(in srgb, var(--error-color, #f44336) 15%, transparent);
+        color: var(--error-color, #f44336);
       }
       .availability-badge.badge-expiring-soon {
-        background: rgba(243,156,18,0.18);
-        color: #d35400;
+        background: color-mix(in srgb, var(--warning-color, #ff9800) 18%, transparent);
+        color: var(--warning-color, #ff9800);
       }
       .reward-row.unavailable { opacity: 0.55; }
 
@@ -563,22 +471,20 @@ class TaskMateRewardsCard extends LitElement {
       .claim-btn {
         width: 42px; height: 42px;
         border-radius: 50%; border: none; cursor: pointer;
-        background: linear-gradient(135deg, #9b59b6, #8e44ad);
-        color: white;
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
         display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 3px 10px rgba(155,89,182,0.35);
-        transition: transform 0.15s, box-shadow 0.15s;
+        transition: transform 0.15s, opacity 0.15s;
         flex-shrink: 0;
       }
 
-      .claim-btn:hover { transform: scale(1.08); box-shadow: 0 4px 14px rgba(155,89,182,0.45); }
+      .claim-btn:hover { transform: scale(1.08); }
       .claim-btn:active { transform: scale(0.96); }
       .claim-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
       .claim-btn ha-icon { --mdc-icon-size: 22px; }
 
       .claim-btn.cant-afford {
-        background: linear-gradient(135deg, #bdc3c7, #95a5a6);
-        box-shadow: none;
+        background: var(--disabled-text-color, #bdbdbd);
         cursor: not-allowed;
       }
 
@@ -589,7 +495,7 @@ class TaskMateRewardsCard extends LitElement {
         align-items: center;
         justify-content: center;
         padding: 48px 24px;
-        color: var(--text-secondary);
+        color: var(--secondary-text-color, #757575);
         text-align: center;
       }
 
@@ -597,14 +503,14 @@ class TaskMateRewardsCard extends LitElement {
         --mdc-icon-size: 56px;
         margin-bottom: 16px;
         opacity: 0.5;
-        color: var(--reward-purple);
+        color: var(--primary-color);
       }
 
       .empty-state .message {
         font-size: 1.1rem;
         font-weight: 500;
         margin-bottom: 4px;
-        color: var(--text-primary);
+        color: var(--primary-text-color, #212121);
       }
 
       .empty-state .submessage {
@@ -686,18 +592,18 @@ class TaskMateRewardsCard extends LitElement {
         gap: 10px;
         padding: 10px 14px;
         margin: 8px 14px 0 14px;
-        background: linear-gradient(135deg, rgba(52, 152, 219, 0.15), rgba(46, 204, 113, 0.12));
+        background: var(--secondary-background-color, #f5f5f5);
         border-radius: 10px;
-        border: 1px solid rgba(52, 152, 219, 0.25);
+        border: 1px solid var(--divider-color, #e0e0e0);
       }
 
       .spendable-banner ha-icon {
-        color: var(--reward-purple);
+        color: var(--primary-color);
         --mdc-icon-size: 22px;
       }
 
       .spendable-banner .spendable-label {
-        color: var(--text-secondary);
+        color: var(--secondary-text-color, #757575);
         font-size: 0.82rem;
         text-transform: uppercase;
         letter-spacing: 0.04em;
@@ -706,13 +612,13 @@ class TaskMateRewardsCard extends LitElement {
       .spendable-banner .spendable-value {
         font-weight: 700;
         font-size: 1.15rem;
-        color: var(--text-primary);
+        color: var(--primary-text-color, #212121);
         margin-left: auto;
       }
 
       .spendable-banner .spendable-of {
         font-weight: 400;
-        color: var(--text-secondary);
+        color: var(--secondary-text-color, #757575);
         font-size: 0.82rem;
         margin-left: 4px;
       }
@@ -737,17 +643,16 @@ class TaskMateRewardsCard extends LitElement {
         border-radius: 8px;
         border: none;
         cursor: pointer;
-        background: linear-gradient(135deg, #3498db, #2980b9);
-        color: white;
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
         font-weight: 700;
         font-size: 0.9rem;
-        transition: transform 0.1s, opacity 0.1s, box-shadow 0.15s;
-        box-shadow: 0 1px 3px rgba(52, 152, 219, 0.3);
+        transition: transform 0.1s, opacity 0.1s;
       }
 
       .alloc-btn:hover:not(:disabled) {
         transform: scale(1.04);
-        box-shadow: 0 2px 6px rgba(52, 152, 219, 0.5);
+        opacity: 0.9;
       }
 
       .alloc-btn:disabled {
@@ -765,26 +670,19 @@ class TaskMateRewardsCard extends LitElement {
         border-radius: 20px;
         border: none;
         cursor: pointer;
-        background: linear-gradient(135deg, #2ecc71, #27ae60);
-        color: white;
+        background: var(--success-color, #4caf50);
+        color: var(--text-primary-color, #fff);
         font-weight: 700;
         font-size: 0.95rem;
-        box-shadow: 0 3px 10px rgba(46, 204, 113, 0.35);
-        animation: pulse-green 1.6s ease-in-out infinite;
       }
 
       .redeem-btn ha-icon {
         --mdc-icon-size: 18px;
       }
 
-      @keyframes pulse-green {
-        0%, 100% { box-shadow: 0 3px 10px rgba(46, 204, 113, 0.35); transform: scale(1); }
-        50% { box-shadow: 0 3px 18px rgba(46, 204, 113, 0.65); transform: scale(1.02); }
-      }
-
       .pool-locked-note {
         font-size: 0.72rem;
-        color: var(--text-secondary);
+        color: var(--secondary-text-color, #757575);
         font-style: italic;
         margin-top: 4px;
       }
@@ -800,7 +698,7 @@ class TaskMateRewardsCard extends LitElement {
       child_id: null, // Optional: filter rewards for a specific child
       show_child_badges: true, // Show which children can claim each reward
       enable_pool_mode: false, // v3.0: "savings jar" allocation mode (opt-in per card)
-      header_color: '#e67e22',
+      header_color: '',
       ...config,
     };
   }
@@ -886,7 +784,7 @@ class TaskMateRewardsCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#e67e22'}; }</style>
+        <style>:host { --taskmate-header-bg: ${this.config.header_color || ''}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:gift-outline"></ha-icon>
@@ -1510,13 +1408,13 @@ class TaskMateRewardsCardEditor extends LitElement {
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
       ></ha-form>
-      ${this._renderColourPicker('header_color', '#e67e22')}
+      ${this._renderColourPicker('header_color', '#03a9f4')}
     `;
   }
 
   _renderColourPicker(key, defaultValue) {
     const current = this.config[key] || defaultValue;
-    const presets = ['#e67e22', '#27ae60', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c', '#34495e'];
+    const presets = ['#03a9f4', '#4caf50', '#ff9800', '#e91e63', '#9c27b0', '#f44336', '#607d8b'];
     const isActive = (c) => c.toLowerCase() === current.toLowerCase();
     return html`
       <div class="colour-field">
@@ -1607,6 +1505,6 @@ const _tmVersion = new URLSearchParams(
 ).get("v") || "?";
 console.info(
   "%c TASKMATE REWARDS CARD %c v" + _tmVersion + " ",
-  "background:#e67e22;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
-  "background:#2c3e50;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
+  "background:#4183c4;color:white;font-weight:bold;padding:2px 4px;border-radius:4px 0 0 4px;",
+  "background:#333;color:white;font-weight:bold;padding:2px 4px;border-radius:0 4px 4px 0;"
 );
