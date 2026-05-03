@@ -250,6 +250,9 @@ SERVICE_ADD_TASK_GROUP: Final = "add_task_group"
 SERVICE_UPDATE_TASK_GROUP: Final = "update_task_group"
 SERVICE_REMOVE_TASK_GROUP: Final = "remove_task_group"
 SERVICE_COMPLETE_BONUS_SUBTASK: Final = "complete_bonus_subtask"
+SERVICE_START_TIMED_TASK: Final = "start_timed_task"
+SERVICE_PAUSE_TIMED_TASK: Final = "pause_timed_task"
+SERVICE_STOP_TIMED_TASK: Final = "stop_timed_task"
 
 # Events
 EVENT_PREVIEW_SOUND: Final = "taskmate_preview_sound"

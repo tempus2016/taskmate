@@ -59,6 +59,42 @@ def format_datetime(dt: datetime | None) -> str | None:
 
 
 @dataclass
+class TimedSession:
+    """Tracks an active or paused timed-task session."""
+
+    chore_id: str
+    child_id: str
+    state: str = "stopped"  # "running" | "paused" | "stopped"
+    segments: list[dict[str, Any]] = field(default_factory=list)
+    total_seconds_today: int = 0
+    session_date: str = ""  # ISO date this session belongs to
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "TimedSession":
+        return cls(
+            chore_id=data.get("chore_id", ""),
+            child_id=data.get("child_id", ""),
+            state=data.get("state", "stopped"),
+            segments=list(data.get("segments", [])),
+            total_seconds_today=data.get("total_seconds_today", 0),
+            session_date=data.get("session_date", ""),
+            id=data.get("id", generate_id()),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "chore_id": self.chore_id,
+            "child_id": self.child_id,
+            "state": self.state,
+            "segments": self.segments,
+            "total_seconds_today": self.total_seconds_today,
+            "session_date": self.session_date,
+            "id": self.id,
+        }
+
+
+@dataclass
 class BonusSubTask:
     """An optional bonus sub-task embedded within a parent chore."""
 
@@ -200,6 +236,11 @@ class Chore:
     publish_calendar_published_dates: list[str] = field(default_factory=list)
     # Bonus sub-tasks: optional extra-credit tasks that unlock after the parent chore is completed
     bonus_subtasks: list[BonusSubTask] = field(default_factory=list)
+    # Timed task fields
+    task_type: str = "standard"  # "standard" | "timed"
+    timed_rate_points: int = 10  # points awarded per rate window
+    timed_rate_minutes: int = 5  # rate window size in minutes
+    timed_max_daily_minutes: int = 0  # 0 = unlimited; caps total daily duration
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -249,6 +290,10 @@ class Chore:
                 or ([data["publish_calendar_last_date"]] if data.get("publish_calendar_last_date") else [])
             ),
             bonus_subtasks=[BonusSubTask.from_dict(b) for b in data.get("bonus_subtasks", [])],
+            task_type=data.get("task_type", "standard"),
+            timed_rate_points=data.get("timed_rate_points", 10),
+            timed_rate_minutes=max(1, int(data.get("timed_rate_minutes", 5) or 5)),
+            timed_max_daily_minutes=max(0, int(data.get("timed_max_daily_minutes", 0) or 0)),
             id=data.get("id", generate_id()),
         )
 
@@ -285,6 +330,10 @@ class Chore:
             "publish_calendar_entities": self.publish_calendar_entities,
             "publish_calendar_published_dates": self.publish_calendar_published_dates,
             "bonus_subtasks": [b.to_dict() for b in self.bonus_subtasks],
+            "task_type": self.task_type,
+            "timed_rate_points": self.timed_rate_points,
+            "timed_rate_minutes": self.timed_rate_minutes,
+            "timed_max_daily_minutes": self.timed_max_daily_minutes,
             "id": self.id,
         }
 
@@ -351,6 +400,7 @@ class ChoreCompletion:
     approved_at: datetime | None = None
     points_awarded: int = 0
     bonus_subtask_id: str = ""  # Non-empty = this completion is for a bonus sub-task
+    timed_duration_seconds: int = 0
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -367,6 +417,7 @@ class ChoreCompletion:
             approved_at=approved_at,
             points_awarded=data.get("points_awarded", 0),
             bonus_subtask_id=data.get("bonus_subtask_id", ""),
+            timed_duration_seconds=data.get("timed_duration_seconds", 0),
             id=data.get("id", generate_id()),
         )
 
@@ -380,6 +431,7 @@ class ChoreCompletion:
             "approved_at": format_datetime(self.approved_at),
             "points_awarded": self.points_awarded,
             "bonus_subtask_id": self.bonus_subtask_id,
+            "timed_duration_seconds": self.timed_duration_seconds,
             "id": self.id,
         }
 

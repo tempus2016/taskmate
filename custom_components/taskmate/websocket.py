@@ -167,6 +167,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "bonuses":          list(data.get("bonuses", [])),
         "task_groups":      list(data.get("task_groups", [])),
         "pool_allocations": list(data.get("pool_allocations", [])),
+        "timed_sessions":   list(data.get("timed_sessions", [])),
         # Operational state — used by the panel's Activity tab + approval banner
         "completions":          completions,           # all (panel slices for display)
         "pending_completions":  [c for c in completions if not c.get("approved")],
@@ -272,6 +273,7 @@ _CHORE_EDITABLE_FIELDS = {
     "visibility_state", "visibility_operator", "enabled",
     "assignment_mode", "assignment_rotation_anchor", "require_availability",
     "publish_calendar_entities", "bonus_subtasks",
+    "task_type", "timed_rate_points", "timed_rate_minutes", "timed_max_daily_minutes",
 }
 
 
@@ -308,6 +310,10 @@ def _chore_payload_schema(*, require_name: bool):
             vol.Optional("description"): str,
             vol.Optional("id"): str,
         }],
+        vol.Optional("task_type"): vol.In(["standard", "timed"]),
+        vol.Optional("timed_rate_points"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("timed_rate_minutes"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("timed_max_daily_minutes"): vol.All(int, vol.Range(min=0)),
     }
 
 

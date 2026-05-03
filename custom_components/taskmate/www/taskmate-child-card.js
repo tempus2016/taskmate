@@ -45,6 +45,34 @@ class TaskMateChildCard extends LitElement {
     this._optimisticCompletions = {};
     // Audio context for generating sounds (lazy initialized)
     this._audioContext = null;
+    // Timer intervals for live counters (timed tasks)
+    this._timerInterval = null;
+    this._timerTick = 0;
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._stopTimerTick();
+  }
+
+  updated(changedProperties) {
+    super.updated(changedProperties);
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
+      || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    const sessions = attrs.active_timed_sessions || [];
+    const hasRunning = sessions.some(s => s.state === 'running' && s.child_id === this.config?.child_id);
+    if (hasRunning && !this._timerInterval) {
+      this._timerInterval = setInterval(() => { this._timerTick++; this.requestUpdate(); }, 1000);
+    } else if (!hasRunning && this._timerInterval) {
+      this._stopTimerTick();
+    }
+  }
+
+  _stopTimerTick() {
+    if (this._timerInterval) {
+      clearInterval(this._timerInterval);
+      this._timerInterval = null;
+    }
   }
 
   _t(key, params) {
@@ -1177,6 +1205,170 @@ class TaskMateChildCard extends LitElement {
         .chore-checkbox { width: 38px; height: 38px; min-width: 38px; border-radius: 9px; }
         .chore-checkbox ha-icon { --mdc-icon-size: 22px; }
       }
+
+      /* ── Timed task card ─── */
+      .timed-chore-card {
+        border-radius: 20px;
+        padding: 16px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        border: 3px solid var(--fun-cyan);
+        background: color-mix(in srgb, var(--fun-cyan) 8%, white);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .timed-chore-card.loading { opacity: 0.6; pointer-events: none; }
+
+      .timed-top-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .timed-rate {
+        margin-left: auto;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--fun-cyan);
+        background: rgba(26, 188, 156, 0.12);
+        padding: 4px 10px;
+        border-radius: 12px;
+        white-space: nowrap;
+      }
+      .timer-display {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 10px 16px;
+        background: rgba(0, 0, 0, 0.03);
+        border-radius: 14px;
+      }
+      .timer-counter {
+        font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-text-color, #2c3e50);
+        letter-spacing: 0.05em;
+        min-width: 100px;
+        text-align: center;
+      }
+      .timer-counter.running { color: var(--fun-green); }
+      .timer-counter.paused { color: var(--fun-orange); }
+      .timer-points-live {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--fun-orange);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .timer-points-live ha-icon { --mdc-icon-size: 18px; color: var(--fun-yellow); }
+      .recording-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--fun-green);
+        animation: pulse-dot 1.5s ease-in-out infinite;
+      }
+      @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.7); }
+      }
+      .paused-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--fun-orange);
+        background: rgba(230, 126, 34, 0.12);
+        padding: 3px 8px;
+        border-radius: 6px;
+        letter-spacing: 0.03em;
+      }
+      .timer-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
+      .timer-btn {
+        border: none;
+        border-radius: 14px;
+        padding: 12px 24px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: transform 0.1s ease, box-shadow 0.15s ease;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .timer-btn:active { transform: scale(0.95); }
+      .timer-btn.start, .timer-btn.resume {
+        background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(46, 204, 113, 0.35);
+        flex: 1;
+      }
+      .timer-btn.start:hover, .timer-btn.resume:hover {
+        box-shadow: 0 6px 16px rgba(46, 204, 113, 0.5);
+        transform: scale(1.02);
+      }
+      .timer-btn.pause {
+        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(243, 156, 18, 0.35);
+        flex: 1;
+      }
+      .timer-btn.pause:hover {
+        box-shadow: 0 6px 16px rgba(243, 156, 18, 0.5);
+        transform: scale(1.02);
+      }
+      .timer-btn.stop {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.35);
+        padding: 12px 20px;
+      }
+      .timer-btn.stop:hover {
+        box-shadow: 0 6px 16px rgba(231, 76, 60, 0.5);
+        transform: scale(1.02);
+      }
+      .btn-icon { font-size: 1.2rem; }
+      .daily-cap-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color, #7f8c8d);
+        padding: 0 4px;
+      }
+      .cap-track {
+        flex: 1;
+        height: 6px;
+        background: rgba(0, 0, 0, 0.06);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .cap-fill {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(90deg, var(--fun-cyan), var(--fun-green));
+        transition: width 0.3s ease;
+      }
+      .cap-fill.warning {
+        background: linear-gradient(90deg, var(--fun-orange), var(--fun-red));
+      }
+      .cap-label {
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .cap-label.near-cap { color: var(--fun-red); font-weight: 700; }
     `;
   }
 
@@ -1352,8 +1544,12 @@ class TaskMateChildCard extends LitElement {
                   })() : ''}
                 </div>
                 ${childChores.map((chore, index) => html`
-                  ${this._renderChoreCard(chore, child, pointsIcon, todaysCompletions, index)}
-                  ${this._renderBonusSubtasks(chore, child, pointsIcon, todaysCompletions)}
+                  ${chore.task_type === 'timed'
+                    ? this._renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, index)
+                    : html`
+                      ${this._renderChoreCard(chore, child, pointsIcon, todaysCompletions, index)}
+                      ${this._renderBonusSubtasks(chore, child, pointsIcon, todaysCompletions)}
+                    `}
                 `)}
               `}
         </div>
@@ -1916,6 +2112,155 @@ class TaskMateChildCard extends LitElement {
               ? html`<ha-icon icon="mdi:lock-clock" class="chore-lock-icon"></ha-icon>`
               : html`<ha-icon icon="mdi:check-bold"></ha-icon>`}
         </div>
+      </div>
+    `;
+  }
+
+  _renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, choreIndex) {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+      || this.hass?.states?.[this.config.entity]?.attributes || {};
+    const timedSessions = attrs.active_timed_sessions || [];
+    const session = timedSessions.find(s => s.chore_id === chore.id && s.child_id === child.id);
+    const state = session ? session.state : 'idle';
+    const isLoading = this._loading[`timed_${chore.id}`];
+
+    const colorClass = `color-${choreIndex % 8}`;
+    const choreNumber = choreIndex + 1;
+
+    // Calculate elapsed seconds
+    let elapsed = session ? (session.total_seconds_today || 0) : 0;
+    if (state === 'running' && session && session.current_segment_start) {
+      const startMs = new Date(session.current_segment_start).getTime();
+      const nowMs = Date.now();
+      elapsed += Math.max(0, Math.floor((nowMs - startMs) / 1000));
+    }
+
+    // Calculate earned points
+    const rateSeconds = (chore.timed_rate_minutes || 5) * 60;
+    const ratePoints = chore.timed_rate_points || 10;
+    const earnedPoints = Math.floor(elapsed / rateSeconds) * ratePoints;
+
+    // Format time as MM:SS
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+    // Rate display
+    const rateLabel = chore.timed_rate_minutes === 1
+      ? `${ratePoints} pts/min`
+      : `${ratePoints} pts/${chore.timed_rate_minutes} min`;
+
+    // Daily cap info
+    const maxMin = chore.timed_max_daily_minutes || 0;
+    const usedMin = Math.floor(elapsed / 60);
+    const capPct = maxMin > 0 ? Math.min(100, (elapsed / (maxMin * 60)) * 100) : 0;
+    const nearCap = maxMin > 0 && capPct >= 85;
+
+    const handleStart = (e) => {
+      e.stopPropagation();
+      if (isLoading) return;
+      this._loading = { ...this._loading, [`timed_${chore.id}`]: true };
+      this.hass.callService('taskmate', 'start_timed_task', {
+        chore_id: chore.id, child_id: child.id
+      }).then(() => {
+        this._loading = { ...this._loading, [`timed_${chore.id}`]: false };
+      }).catch(() => {
+        this._loading = { ...this._loading, [`timed_${chore.id}`]: false };
+      });
+    };
+
+    const handlePause = (e) => {
+      e.stopPropagation();
+      if (isLoading) return;
+      this._loading = { ...this._loading, [`timed_${chore.id}`]: true };
+      this.hass.callService('taskmate', 'pause_timed_task', {
+        chore_id: chore.id, child_id: child.id
+      }).then(() => {
+        this._loading = { ...this._loading, [`timed_${chore.id}`]: false };
+      }).catch(() => {
+        this._loading = { ...this._loading, [`timed_${chore.id}`]: false };
+      });
+    };
+
+    const handleStop = (e) => {
+      e.stopPropagation();
+      if (isLoading) return;
+      this._loading = { ...this._loading, [`timed_${chore.id}`]: true };
+      this.hass.callService('taskmate', 'stop_timed_task', {
+        chore_id: chore.id, child_id: child.id
+      }).then(() => {
+        this._loading = { ...this._loading, [`timed_${chore.id}`]: false };
+        const sound = chore.completion_sound || this.config.default_sound || 'coin';
+        this._playSound(sound);
+        this._celebrating = chore.id;
+        this._launchConfetti();
+        setTimeout(() => { this._celebrating = null; this.requestUpdate(); }, 2000);
+      }).catch(() => {
+        this._loading = { ...this._loading, [`timed_${chore.id}`]: false };
+      });
+    };
+
+    return html`
+      <div class="timed-chore-card ${state} ${isLoading ? 'loading' : ''}">
+        <div class="timed-top-row">
+          <div class="chore-number-wrapper">
+            <div class="chore-number-badge ${colorClass}">${choreNumber}</div>
+          </div>
+          <div class="chore-details">
+            <div class="chore-name">${chore.name}</div>
+          </div>
+          <div class="timed-rate">${rateLabel}</div>
+        </div>
+
+        ${state !== 'idle' ? html`
+          <div class="timer-display">
+            ${state === 'running' ? html`<div class="recording-dot"></div>` : ''}
+            ${state === 'paused' ? html`<div class="paused-badge">${this._t('child.paused') || 'PAUSED'}</div>` : ''}
+            <div class="timer-counter ${state}">${timeStr}</div>
+            <div class="timer-points-live">
+              <ha-icon icon="${pointsIcon}"></ha-icon>
+              ${earnedPoints}
+            </div>
+          </div>
+        ` : ''}
+
+        <div class="timer-actions">
+          ${state === 'idle' ? html`
+            <button class="timer-btn start" @click="${handleStart}" ?disabled="${isLoading}">
+              <span class="btn-icon">&#9654;</span>
+              ${this._t('child.start') || 'START'}
+            </button>
+          ` : ''}
+          ${state === 'running' ? html`
+            <button class="timer-btn pause" @click="${handlePause}" ?disabled="${isLoading}">
+              <span class="btn-icon">&#9208;</span>
+              ${this._t('child.pause') || 'PAUSE'}
+            </button>
+            <button class="timer-btn stop" @click="${handleStop}" ?disabled="${isLoading}">
+              <span class="btn-icon">&#9209;</span>
+              ${this._t('child.done') || 'DONE'}
+            </button>
+          ` : ''}
+          ${state === 'paused' ? html`
+            <button class="timer-btn resume" @click="${handleStart}" ?disabled="${isLoading}">
+              <span class="btn-icon">&#9654;</span>
+              ${this._t('child.resume') || 'RESUME'}
+            </button>
+            <button class="timer-btn stop" @click="${handleStop}" ?disabled="${isLoading}">
+              <span class="btn-icon">&#9209;</span>
+              ${this._t('child.done') || 'DONE'}
+            </button>
+          ` : ''}
+        </div>
+
+        ${maxMin > 0 ? html`
+          <div class="daily-cap-bar">
+            <span class="cap-label ${nearCap ? 'near-cap' : ''}">${usedMin} / ${maxMin} min</span>
+            <div class="cap-track">
+              <div class="cap-fill ${nearCap ? 'warning' : ''}" style="width: ${capPct}%"></div>
+            </div>
+          </div>
+        ` : ''}
       </div>
     `;
   }

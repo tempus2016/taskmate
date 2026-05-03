@@ -181,6 +181,21 @@ class TaskMateApprovalsCard extends LitElement {
         --mdi-icon-size: 14px;
       }
 
+      .duration-badge {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(26, 188, 156, 0.15);
+        color: #1abc9c;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 500;
+        font-size: 0.85em;
+      }
+      .duration-badge ha-icon {
+        --mdi-icon-size: 14px;
+      }
+
       .action-buttons {
         display: flex;
         gap: 8px;
@@ -695,6 +710,12 @@ class TaskMateApprovalsCard extends LitElement {
               <ha-icon icon="mdi:account"></ha-icon>
               ${completion.child_name}
             </span>
+            ${completion.timed_duration_seconds > 0 ? html`
+              <span class="duration-badge">
+                <ha-icon icon="mdi:timer-outline"></ha-icon>
+                ${Math.floor(completion.timed_duration_seconds / 60)} min
+              </span>
+            ` : ''}
             <span class="points-badge">
               <ha-icon icon="mdi:star"></ha-icon>
               ${completion.points}
