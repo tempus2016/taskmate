@@ -275,6 +275,20 @@ class TaskMatePanel extends HTMLElement {
   // ---- event delegation ------------------------------------------------
   _onClick(e) {
     if (!e.target.closest(".tm-ep")) this._closeEntityDropdown();
+    const epSelected = e.target.closest(".tm-ep-selected");
+    if (epSelected && !e.target.closest(".tm-entity-clear")) {
+      const picker = epSelected.closest(".tm-ep");
+      const field = picker?.dataset?.epField;
+      if (field && this._dialog?.data) {
+        this._dialog.data[field] = "";
+        this._render();
+        requestAnimationFrame(() => {
+          const input = this.querySelector(`.tm-ep[data-ep-field="${field}"] .tm-ep-input`);
+          if (input) { input.focus(); }
+        });
+      }
+      return;
+    }
     const t = e.target.closest("[data-act]");
     if (!t) return;
     const act = t.dataset.act;
@@ -1977,18 +1991,41 @@ class TaskMatePanel extends HTMLElement {
       </div>`;
   }
 
+  _entityDomainIcon(entityId) {
+    const domain = (entityId || "").split(".")[0];
+    const map = {
+      binary_sensor: "mdi:checkbox-marked-circle-outline",
+      sensor: "mdi:eye",
+      input_boolean: "mdi:toggle-switch",
+      person: "mdi:account",
+      calendar: "mdi:calendar",
+      switch: "mdi:light-switch",
+      input_select: "mdi:form-dropdown",
+    };
+    return map[domain] || "mdi:puzzle";
+  }
+
   _entityPickerField(label, name, value, domains, hint = "") {
     const friendly = value && this._hass?.states?.[value]?.attributes?.friendly_name || "";
-    const display = value ? (friendly ? `${value} · ${friendly}` : value) : "";
+    const icon = value ? (this._hass?.states?.[value]?.attributes?.icon || this._entityDomainIcon(value)) : "";
     return `
-      <label class="tm-field">
+      <div class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
         <div class="tm-ep" data-ep-field="${name}" data-ep-domains="${(domains || []).join(",")}">
-          <input type="text" class="tm-input tm-ep-input" placeholder="e.g. binary_sensor.name" value="${this._esc(display)}" autocomplete="off">
-          ${value ? `<button type="button" class="tm-entity-clear" data-act="clear-field" data-field="${name}" title="Clear">✕</button>` : ""}
+          ${value
+            ? `<div class="tm-ep-selected">
+                <ha-icon icon="${this._esc(icon)}" class="tm-ep-selected-icon"></ha-icon>
+                <span class="tm-ep-selected-text">${this._esc(friendly || value)}</span>
+                <button type="button" class="tm-entity-clear" data-act="clear-field" data-field="${name}" title="Clear">✕</button>
+              </div>`
+            : `<div class="tm-ep-search-wrap">
+                <ha-icon icon="mdi:magnify" class="tm-ep-search-icon"></ha-icon>
+                <input type="text" class="tm-ep-input" placeholder="Search | Add custom item" value="" autocomplete="off">
+              </div>`
+          }
         </div>
         ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
-      </label>`;
+      </div>`;
   }
 
   _openEntityDropdown(input) {
@@ -2012,21 +2049,29 @@ class TaskMatePanel extends HTMLElement {
     dd.className = "tm-ep-dropdown";
     entities.forEach(([id, st]) => {
       const fn = st.attributes?.friendly_name || "";
+      const stateIcon = st.attributes?.icon || this._entityDomainIcon(id);
       const opt = document.createElement("div");
       opt.className = "tm-ep-option";
       opt.dataset.act = "pick-entity";
       opt.dataset.field = field;
       opt.dataset.value = id;
+      const iconEl = document.createElement("ha-icon");
+      iconEl.setAttribute("icon", stateIcon);
+      iconEl.className = "tm-ep-option-icon";
+      opt.appendChild(iconEl);
+      const textWrap = document.createElement("div");
+      textWrap.className = "tm-ep-option-text";
       const idDiv = document.createElement("div");
       idDiv.className = "tm-ep-id";
-      idDiv.textContent = id;
-      opt.appendChild(idDiv);
+      idDiv.textContent = fn || id;
+      textWrap.appendChild(idDiv);
       if (fn) {
         const nameDiv = document.createElement("div");
         nameDiv.className = "tm-ep-name";
-        nameDiv.textContent = fn;
-        opt.appendChild(nameDiv);
+        nameDiv.textContent = id;
+        textWrap.appendChild(nameDiv);
       }
+      opt.appendChild(textWrap);
       dd.appendChild(opt);
     });
     picker.appendChild(dd);
@@ -2763,16 +2808,47 @@ class TaskMatePanel extends HTMLElement {
         border-color: var(--tm-accent);
         box-shadow: var(--tm-shadow-focus);
       }
-      .tm-ep { position: relative; display: flex; align-items: center; }
-      .tm-ep .tm-ep-input { flex: 1; padding-right: 30px; }
+      .tm-ep { position: relative; }
+      .tm-ep-search-wrap {
+        display: flex; align-items: center;
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm); padding: 0 10px;
+        box-shadow: var(--tm-shadow-xs); transition: all 0.1s var(--tm-easing);
+      }
+      .tm-ep-search-wrap:focus-within {
+        border-color: var(--tm-accent);
+        box-shadow: var(--tm-shadow-focus);
+      }
+      .tm-ep-search-icon {
+        --mdc-icon-size: 18px;
+        color: var(--tm-text-faint); flex-shrink: 0; margin-right: 6px;
+      }
+      .tm-ep-input {
+        flex: 1; border: 0; background: transparent; outline: 0;
+        color: var(--tm-text); font-size: 13px; font-family: inherit;
+        padding: 8px 0; width: 100%;
+      }
+      .tm-ep-input::placeholder { color: var(--tm-text-faint); }
+      .tm-ep-selected {
+        display: flex; align-items: center; gap: 8px;
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm); padding: 6px 10px;
+        cursor: pointer; transition: all 0.1s var(--tm-easing);
+        box-shadow: var(--tm-shadow-xs);
+      }
+      .tm-ep-selected:hover { border-color: var(--tm-accent); }
+      .tm-ep-selected-icon { --mdc-icon-size: 20px; color: var(--tm-text-muted); flex-shrink: 0; }
+      .tm-ep-selected-text {
+        flex: 1; font-size: 13px; color: var(--tm-text);
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
       .tm-entity-clear {
-        position: absolute; right: 6px;
         width: 20px; height: 20px;
         border: 0; background: var(--tm-surface-2);
         border-radius: 50%; cursor: pointer;
         font-size: 11px; color: var(--tm-text-faint);
         display: grid; place-items: center;
-        font-family: inherit; z-index: 1;
+        font-family: inherit; flex-shrink: 0;
       }
       .tm-entity-clear:hover { background: var(--tm-danger-soft); color: var(--tm-danger); }
       .tm-ep-dropdown {
@@ -2784,12 +2860,15 @@ class TaskMatePanel extends HTMLElement {
         box-shadow: var(--tm-shadow-lg);
       }
       .tm-ep-option {
-        padding: 7px 12px; cursor: pointer;
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 12px; cursor: pointer;
         transition: background 0.08s;
       }
       .tm-ep-option:hover { background: var(--tm-surface-hover); }
-      .tm-ep-id { font-size: 12px; color: var(--tm-text); font-family: ui-monospace, monospace; }
-      .tm-ep-name { font-size: 11px; color: var(--tm-text-muted); margin-top: 1px; }
+      .tm-ep-option-icon { --mdc-icon-size: 20px; color: var(--tm-text-muted); flex-shrink: 0; }
+      .tm-ep-option-text { flex: 1; min-width: 0; }
+      .tm-ep-id { font-size: 13px; color: var(--tm-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .tm-ep-name { font-size: 11px; color: var(--tm-text-muted); margin-top: 1px; font-family: ui-monospace, monospace; }
       .tm-field-hint {
         display: block; color: var(--tm-text-faint);
         font-size: 11.5px; margin-top: 4px; line-height: 1.5;
