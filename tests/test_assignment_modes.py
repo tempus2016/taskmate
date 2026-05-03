@@ -643,7 +643,7 @@ class TestAvailabilityAwareAssignment:
         # Everyone mode with require_availability filters A out.
         assert coord._compute_active_children(chore, date(2026, 4, 20)) == [b.id]
 
-    def test_all_unavailable_falls_back_to_original_pick(self):
+    def test_all_unavailable_hides_chore(self):
         a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
         b = Child(name="B", availability_entity="binary_sensor.b", id="kidB")
         coord = _coord([a, b])
@@ -657,8 +657,7 @@ class TestAvailabilityAwareAssignment:
             assignment_rotation_anchor=anchor.isoformat(),
             require_availability=True,
         )
-        # Day 0 originally picks A — keep A so the chore is still visible.
-        assert coord._compute_active_children(chore, anchor) == [a.id]
+        assert coord._compute_active_children(chore, anchor) == []
 
     def test_missing_entity_treated_as_available(self):
         a = Child(name="A", availability_entity="binary_sensor.not_registered", id="kidA")
