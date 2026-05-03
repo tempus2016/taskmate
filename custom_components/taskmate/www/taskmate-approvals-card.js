@@ -19,6 +19,13 @@ class TaskMateApprovalsCard extends LitElement {
     };
   }
 
+  shouldUpdate(changedProps) {
+    if (changedProps.has("hass")) {
+      return window.__taskmate_hasChanged(changedProps.get("hass"), this.hass, this.config?.entity);
+    }
+    return true;
+  }
+
   constructor() {
     super();
     this._loading = {};
