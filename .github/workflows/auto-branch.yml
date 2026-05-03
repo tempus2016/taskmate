@@ -1,0 +1,66 @@
+name: Auto-create branch for planned issues
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  create-branch:
+    if: github.event.label.name == 'planned'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issue = context.payload.issue;
+            const number = issue.number;
+
+            // Build branch name from issue number + slugified title
+            const slug = issue.title
+              .toLowerCase()
+              .replace(/\[.*?\]:\s*/g, '')       // strip [Bug]: or [Feature]: prefix
+              .replace(/[^a-z0-9]+/g, '-')        // non-alphanum to dashes
+              .replace(/^-|-$/g, '')               // trim leading/trailing dashes
+              .slice(0, 50);                       // keep it short
+
+            const isFeature = issue.labels.some(l => l.name === 'enhancement');
+            const prefix = isFeature ? 'feat' : 'fix';
+            const branch = `${prefix}/${number}-${slug}`;
+
+            // Get main branch SHA
+            const { data: ref } = await github.rest.git.getRef({
+              owner, repo, ref: 'heads/main',
+            });
+
+            // Create branch (skip if it already exists)
+            try {
+              await github.rest.git.createRef({
+                owner, repo,
+                ref: `refs/heads/${branch}`,
+                sha: ref.object.sha,
+              });
+              console.log(`Created branch: ${branch}`);
+
+              // Comment on the issue with the branch name
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: number,
+                body: `Branch \`${branch}\` created from main.`,
+              });
+            } catch (err) {
+              if (err.status === 422) {
+                console.log(`Branch ${branch} already exists — skipping`);
+              } else {
+                throw err;
+              }
+            }
+
+            // Add in-progress label
+            await github.rest.issues.addLabels({
+              owner, repo, issue_number: number,
+              labels: ['in-progress'],
+            });
