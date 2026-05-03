@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
-from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction, TaskGroup
+from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction, TaskGroup, TimedSession
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -56,6 +56,10 @@ class TaskMateStorage:
         # Ensure task_groups store exists (migration for existing installs)
         if "task_groups" not in self._data:
             self._data["task_groups"] = []
+
+        # Ensure timed_sessions store exists (migration for timed tasks feature)
+        if "timed_sessions" not in self._data:
+            self._data["timed_sessions"] = []
 
         # Run data migrations
         await self._migrate_assigned_to_child_ids()
@@ -602,6 +606,45 @@ class TaskMateStorage:
             del self._data["last_completed"][chore_id][child_id]
             if not self._data["last_completed"][chore_id]:
                 del self._data["last_completed"][chore_id]
+
+    # Timed sessions management
+    def get_timed_sessions(self) -> list[TimedSession]:
+        """Get all timed sessions."""
+        return [TimedSession.from_dict(s) for s in self._data.get("timed_sessions", [])]
+
+    def get_timed_session(self, chore_id: str, child_id: str, session_date: str) -> TimedSession | None:
+        """Get a timed session for a specific chore/child/date."""
+        for s in self._data.get("timed_sessions", []):
+            if (s.get("chore_id") == chore_id
+                    and s.get("child_id") == child_id
+                    and s.get("session_date") == session_date):
+                return TimedSession.from_dict(s)
+        return None
+
+    def get_active_timed_session(self, chore_id: str, child_id: str) -> TimedSession | None:
+        """Get a running or paused session for a chore/child pair."""
+        for s in self._data.get("timed_sessions", []):
+            if (s.get("chore_id") == chore_id
+                    and s.get("child_id") == child_id
+                    and s.get("state") in ("running", "paused")):
+                return TimedSession.from_dict(s)
+        return None
+
+    def save_timed_session(self, session: TimedSession) -> None:
+        """Insert or update a timed session."""
+        sessions = self._data.setdefault("timed_sessions", [])
+        for i, s in enumerate(sessions):
+            if s.get("id") == session.id:
+                sessions[i] = session.to_dict()
+                return
+        sessions.append(session.to_dict())
+
+    def remove_timed_session(self, session_id: str) -> None:
+        """Remove a timed session."""
+        self._data["timed_sessions"] = [
+            s for s in self._data.get("timed_sessions", [])
+            if s.get("id") != session_id
+        ]
 
     # Generic settings
     def get_setting(self, key: str, default: str = "") -> str:

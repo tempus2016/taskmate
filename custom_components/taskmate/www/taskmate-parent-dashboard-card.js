@@ -330,6 +330,21 @@ class TaskMateParentDashboardCard extends LitElement {
       .empty-section ha-icon { --mdc-icon-size: 40px; opacity: 0.35; }
       .empty-section span { font-size: 0.9rem; }
 
+      .timed-sessions-section {
+        padding: 8px 0; margin-bottom: 8px;
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      }
+      .timed-session-row {
+        display: flex; align-items: center; gap: 8px;
+        padding: 6px 0; font-size: 0.9rem;
+      }
+      .timed-session-row ha-icon { --mdc-icon-size: 18px; }
+      .paused-tag {
+        font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+        color: #e67e22; background: rgba(230, 126, 34, 0.12);
+        padding: 2px 6px; border-radius: 4px;
+      }
+
       .error-state {
         display: flex; flex-direction: column; align-items: center;
         justify-content: center; padding: 40px 20px;
@@ -446,7 +461,33 @@ class TaskMateParentDashboardCard extends LitElement {
       new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const availability = attrs.chore_availability || {};
 
+    const timedSessions = attrs.active_timed_sessions || [];
+    const childById = Object.fromEntries(children.map(c => [c.id, c]));
+    const choreById = Object.fromEntries(chores.map(c => [c.id, c]));
+
     return html`
+      ${timedSessions.length > 0 ? html`
+        <div class="timed-sessions-section">
+          ${timedSessions.map(s => {
+            const sChild = childById[s.child_id];
+            const sChore = choreById[s.chore_id];
+            if (!sChild || !sChore) return '';
+            let elapsed = s.total_seconds_today || 0;
+            if (s.state === 'running' && s.current_segment_start) {
+              elapsed += Math.max(0, Math.floor((Date.now() - new Date(s.current_segment_start).getTime()) / 1000));
+            }
+            const mins = Math.floor(elapsed / 60);
+            const secs = elapsed % 60;
+            return html`
+              <div class="timed-session-row">
+                <ha-icon icon="mdi:timer-outline" style="color: ${s.state === 'running' ? '#2ecc71' : '#e67e22'};"></ha-icon>
+                <span><strong>${sChild.name}</strong> — ${sChore.name} (${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')})</span>
+                ${s.state === 'paused' ? html`<span class="paused-tag">PAUSED</span>` : ''}
+              </div>
+            `;
+          })}
+        </div>
+      ` : ''}
       ${children.map(child => {
         const childChores = chores.filter(c => {
           // Skip disabled chores (one-shot completed or expired)

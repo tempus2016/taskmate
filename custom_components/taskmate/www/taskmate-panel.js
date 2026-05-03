@@ -754,6 +754,10 @@ class TaskMatePanel extends HTMLElement {
         name: b.name.trim(), points: Number(b.points) || 5,
         description: b.description || "", ...(b.id ? {id: b.id} : {}),
       })),
+      task_type: d.task_type || "standard",
+      timed_rate_points: Number(d.timed_rate_points) || 10,
+      timed_rate_minutes: Math.max(1, Number(d.timed_rate_minutes) || 5),
+      timed_max_daily_minutes: Math.max(0, Number(d.timed_max_daily_minutes) || 0),
       manual_start_child_id: d.manual_start_child_id || null,
     };
     const payload = wasAdd
@@ -1669,11 +1673,24 @@ class TaskMatePanel extends HTMLElement {
       .filter(id => id.startsWith("calendar."))
       .sort();
 
+    const isTimedTask = d.task_type === "timed";
+
     return this._dialogShell(this._dialog.mode === "add" ? "Add chore" : "Edit chore",
       [
         this._field("Name", "name", d.name, "text"),
         this._field("Description (optional)", "description", d.description, "text"),
-        `<div class="tm-field-row">
+        this._select("Task type", "task_type", d.task_type || "standard", [
+          { v: "standard", l: "Standard — fixed points on completion" },
+          { v: "timed", l: "Timed — points per minute" },
+        ]),
+        isTimedTask ? `<div class="tm-field-row">
+          ${this._field("Points per window", "timed_rate_points", d.timed_rate_points || 10, "number")}
+          ${this._field("Window (minutes)", "timed_rate_minutes", d.timed_rate_minutes || 5, "number")}
+        </div>
+        <div class="tm-field-row">
+          ${this._field("Daily cap (minutes, 0 = unlimited)", "timed_max_daily_minutes", d.timed_max_daily_minutes || 0, "number")}
+          ${this._field("Daily limit", "daily_limit", d.daily_limit, "number")}
+        </div>` : `<div class="tm-field-row">
           ${this._field("Points", "points", d.points, "number")}
           ${this._field("Daily limit", "daily_limit", d.daily_limit, "number")}
         </div>`,

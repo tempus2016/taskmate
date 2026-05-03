@@ -52,6 +52,9 @@ from .const import (
     SERVICE_REJECT_REWARD,
     SERVICE_COMPLETE_BONUS_SUBTASK,
     SERVICE_COMPLETE_CHORE,
+    SERVICE_START_TIMED_TASK,
+    SERVICE_PAUSE_TIMED_TASK,
+    SERVICE_STOP_TIMED_TASK,
     SERVICE_PREVIEW_SOUND,
     SERVICE_REJECT_CHORE,
     SERVICE_REMOVE_BONUS,
@@ -178,6 +181,36 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         bonus_subtask_id = call.data[ATTR_BONUS_SUBTASK_ID]
         child_id = call.data[ATTR_CHILD_ID]
         await coordinator.async_complete_bonus_subtask(chore_id, bonus_subtask_id, child_id)
+
+    async def handle_start_timed_task(call: ServiceCall) -> None:
+        """Handle the start_timed_task service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_start_timed_task(
+            call.data[ATTR_CHORE_ID], call.data[ATTR_CHILD_ID]
+        )
+
+    async def handle_pause_timed_task(call: ServiceCall) -> None:
+        """Handle the pause_timed_task service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_pause_timed_task(
+            call.data[ATTR_CHORE_ID], call.data[ATTR_CHILD_ID]
+        )
+
+    async def handle_stop_timed_task(call: ServiceCall) -> None:
+        """Handle the stop_timed_task service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_stop_timed_task(
+            call.data[ATTR_CHORE_ID], call.data[ATTR_CHILD_ID]
+        )
 
     async def handle_approve_chore(call: ServiceCall) -> None:
         """Handle the approve_chore service call."""
@@ -487,6 +520,42 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN,
+        SERVICE_START_TIMED_TASK,
+        handle_start_timed_task,
+        schema=vol.Schema(
+            {
+                vol.Required(ATTR_CHORE_ID): cv.string,
+                vol.Required(ATTR_CHILD_ID): cv.string,
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_PAUSE_TIMED_TASK,
+        handle_pause_timed_task,
+        schema=vol.Schema(
+            {
+                vol.Required(ATTR_CHORE_ID): cv.string,
+                vol.Required(ATTR_CHILD_ID): cv.string,
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_STOP_TIMED_TASK,
+        handle_stop_timed_task,
+        schema=vol.Schema(
+            {
+                vol.Required(ATTR_CHORE_ID): cv.string,
+                vol.Required(ATTR_CHILD_ID): cv.string,
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
         SERVICE_APPROVE_CHORE,
         handle_approve_chore,
         schema=vol.Schema(
@@ -784,6 +853,9 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_ADD_TASK_GROUP,
         SERVICE_UPDATE_TASK_GROUP,
         SERVICE_REMOVE_TASK_GROUP,
+        SERVICE_START_TIMED_TASK,
+        SERVICE_PAUSE_TIMED_TASK,
+        SERVICE_STOP_TIMED_TASK,
     ]
     for service in services:
         hass.services.async_remove(DOMAIN, service)

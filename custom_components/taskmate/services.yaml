@@ -601,3 +601,54 @@ remove_task_group:
       required: true
       selector:
         text:
+
+start_timed_task:
+  name: Start Timed Task
+  description: Start or resume the timer on a timed task
+  fields:
+    chore_id:
+      name: Chore ID
+      description: The ID of the timed chore
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child starting the timer
+      required: true
+      selector:
+        text:
+
+pause_timed_task:
+  name: Pause Timed Task
+  description: Pause a running timed task timer
+  fields:
+    chore_id:
+      name: Chore ID
+      description: The ID of the timed chore
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child pausing the timer
+      required: true
+      selector:
+        text:
+
+stop_timed_task:
+  name: Stop Timed Task
+  description: Stop a timed task timer and submit for approval
+  fields:
+    chore_id:
+      name: Chore ID
+      description: The ID of the timed chore
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child stopping the timer
+      required: true
+      selector:
+        text:

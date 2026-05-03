@@ -234,6 +234,12 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         completion_sound = getattr(c, 'completion_sound', 'coin')
         if completion_sound and completion_sound != 'coin':
             record["completion_sound"] = completion_sound
+        task_type = getattr(c, 'task_type', 'standard')
+        if task_type == "timed":
+            record["task_type"] = "timed"
+            record["timed_rate_points"] = getattr(c, 'timed_rate_points', 10)
+            record["timed_rate_minutes"] = getattr(c, 'timed_rate_minutes', 5)
+            record["timed_max_daily_minutes"] = getattr(c, 'timed_max_daily_minutes', 0)
         chores_list.append(record)
     return chores_list
 
@@ -278,7 +284,7 @@ def _build_todays_completions(common: dict) -> list[dict]:
         else:
             display_name = matched_chore.name if matched_chore else ""
             display_points = matched_chore.points if matched_chore else 0
-        out.append({
+        rec = {
             "completion_id": comp.id,
             "chore_id": comp.chore_id,
             "child_id": comp.child_id,
@@ -288,7 +294,53 @@ def _build_todays_completions(common: dict) -> list[dict]:
             "approved": comp.approved,
             "completed_at": comp.completed_at.isoformat() if hasattr(comp.completed_at, 'isoformat') else str(comp.completed_at),
             "bonus_subtask_id": bonus_subtask_id,
-        })
+        }
+        timed_secs = getattr(comp, "timed_duration_seconds", 0) or 0
+        if timed_secs > 0:
+            rec["timed_duration_seconds"] = timed_secs
+        out.append(rec)
+    return out
+
+
+def _build_active_timed_sessions(coordinator: TaskMateCoordinator) -> list[dict]:
+    """Build active timed sessions for frontend consumption."""
+    sessions = coordinator.data.get("timed_sessions", [])
+    out = []
+    for s in sessions:
+        if hasattr(s, 'state'):
+            state = s.state
+            if state not in ("running", "paused"):
+                continue
+            segments = s.segments or []
+            current_segment_start = ""
+            if state == "running" and segments:
+                last_seg = segments[-1]
+                if isinstance(last_seg, dict) and last_seg.get("end") is None:
+                    current_segment_start = last_seg.get("start", "")
+            out.append({
+                "chore_id": s.chore_id,
+                "child_id": s.child_id,
+                "state": state,
+                "total_seconds_today": s.total_seconds_today,
+                "current_segment_start": current_segment_start,
+            })
+        else:
+            state = s.get("state", "stopped") if isinstance(s, dict) else "stopped"
+            if state not in ("running", "paused"):
+                continue
+            segments = s.get("segments", []) if isinstance(s, dict) else []
+            current_segment_start = ""
+            if state == "running" and segments:
+                last_seg = segments[-1]
+                if isinstance(last_seg, dict) and last_seg.get("end") is None:
+                    current_segment_start = last_seg.get("start", "")
+            out.append({
+                "chore_id": s.get("chore_id", "") if isinstance(s, dict) else "",
+                "child_id": s.get("child_id", "") if isinstance(s, dict) else "",
+                "state": state,
+                "total_seconds_today": s.get("total_seconds_today", 0) if isinstance(s, dict) else 0,
+                "current_segment_start": current_segment_start,
+            })
     return out
 
 
@@ -655,6 +707,7 @@ class TaskMateChoresSensor(_CachedAttrsSensor):
             "chores": _build_chores_list(self.coordinator, common),
             "todays_completions": _build_todays_completions(common),
             "task_groups": task_groups,
+            "active_timed_sessions": _build_active_timed_sessions(self.coordinator),
         }
 
 
