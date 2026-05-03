@@ -326,6 +326,8 @@ class TaskMatePanel extends HTMLElement {
     if (act === "toggle-bulk-day")   { this._toggleArrayField("due_days", t.dataset.day); return; }
     if (act === "toggle-assigned")   { this._toggleArrayField("assigned_to", t.dataset.id); return; }
     if (act === "toggle-calendar")   { this._toggleArrayField("publish_calendar_entities", t.dataset.id); return; }
+    if (act === "add-bonus-subtask") { this._addBonusSubtask(); return; }
+    if (act === "remove-bonus-subtask") { this._removeBonusSubtask(Number(t.dataset.idx)); return; }
 
     // Rewards
     if (act === "add-reward")    { this._openRewardDialog(null); return; }
@@ -409,8 +411,17 @@ class TaskMatePanel extends HTMLElement {
     }
     // Dialog field
     if (this._dialog && t.dataset.field) {
+      const field = t.dataset.field;
       const value = (t.type === "number") ? (t.value === "" ? null : Number(t.value)) : t.value;
-      this._dialog.data[t.dataset.field] = value;
+      const arrMatch = field.match(/^(\w+)\[(\d+)\]\.(\w+)$/);
+      if (arrMatch) {
+        const [, arr, idx, prop] = arrMatch;
+        if (this._dialog.data[arr] && this._dialog.data[arr][Number(idx)] !== undefined) {
+          this._dialog.data[arr][Number(idx)][prop] = value;
+        }
+      } else {
+        this._dialog.data[field] = value;
+      }
       return;
     }
   }
@@ -692,6 +703,7 @@ class TaskMatePanel extends HTMLElement {
       visibility_entity: "", visibility_state: "on", visibility_operator: "none",
       enabled: true,
       publish_calendar_entities: [],
+      bonus_subtasks: [],
     };
     if (id) {
       const c = (this._state.chores || []).find(x => x.id === id);
@@ -701,6 +713,7 @@ class TaskMatePanel extends HTMLElement {
         assigned_to: [...(c.assigned_to || [])],
         due_days: [...(c.due_days || [])],
         publish_calendar_entities: [...(c.publish_calendar_entities || [])],
+        bonus_subtasks: (c.bonus_subtasks || []).map(b => ({...b})),
         visibility_operator: c.visibility_operator || "none",
         manual_start_child_id: "",
       } });
@@ -737,6 +750,10 @@ class TaskMatePanel extends HTMLElement {
       visibility_operator: d.visibility_operator || "none",
       enabled: d.enabled !== false,
       publish_calendar_entities: d.publish_calendar_entities || [],
+      bonus_subtasks: (d.bonus_subtasks || []).filter(b => b.name && b.name.trim()).map(b => ({
+        name: b.name.trim(), points: Number(b.points) || 5,
+        description: b.description || "", ...(b.id ? {id: b.id} : {}),
+      })),
       manual_start_child_id: d.manual_start_child_id || null,
     };
     const payload = wasAdd
@@ -747,6 +764,23 @@ class TaskMatePanel extends HTMLElement {
     this._closeDialog(true);
     await this._fetchState();
     this._showToast("ok", wasAdd ? "Chore added" : "Chore updated");
+  }
+
+  _addBonusSubtask() {
+    if (!this._dialog) return;
+    const d = this._dialog.data;
+    d.bonus_subtasks = d.bonus_subtasks || [];
+    d.bonus_subtasks.push({ name: "", points: 5, description: "" });
+    this._render();
+  }
+
+  _removeBonusSubtask(idx) {
+    if (!this._dialog) return;
+    const d = this._dialog.data;
+    if (d.bonus_subtasks && d.bonus_subtasks[idx] !== undefined) {
+      d.bonus_subtasks.splice(idx, 1);
+      this._render();
+    }
   }
 
   // ---- Rewards ---------------------------------------------------------
@@ -1214,12 +1248,18 @@ class TaskMatePanel extends HTMLElement {
             ${pendingCompletions.map(c => {
               const chore = choreById[c.chore_id];
               const child = childById[c.child_id];
+              let choreName = (chore && chore.name) || "(deleted chore)";
+              let chorePoints = chore ? chore.points : 0;
+              if (c.bonus_subtask_id && chore) {
+                const sub = (chore.bonus_subtasks || []).find(b => b.id === c.bonus_subtask_id);
+                if (sub) { choreName = `${chore.name} › ${sub.name}`; chorePoints = sub.points; }
+              }
               return `
                 <div class="tm-approval-item">
-                  <div class="tm-approval-icon"><ha-icon icon="mdi:checkbox-marked-circle-outline"></ha-icon></div>
+                  <div class="tm-approval-icon"><ha-icon icon="${c.bonus_subtask_id ? 'mdi:star-plus' : 'mdi:checkbox-marked-circle-outline'}"></ha-icon></div>
                   <div class="tm-approval-body">
-                    <div class="tm-approval-line"><strong>${this._esc((child && child.name) || "?")}</strong> completed <strong>${this._esc((chore && chore.name) || "(deleted chore)")}</strong></div>
-                    <div class="tm-meta">${this._timeAgo(c.completed_at)}${chore ? ` · ${chore.points} points` : ""}</div>
+                    <div class="tm-approval-line"><strong>${this._esc((child && child.name) || "?")}</strong> completed <strong>${this._esc(choreName)}</strong></div>
+                    <div class="tm-meta">${this._timeAgo(c.completed_at)} · ${chorePoints} points</div>
                   </div>
                   <div class="tm-approval-actions">
                     <button class="tm-btn tm-btn-sm" data-act="reject-chore" data-id="${this._esc(c.id)}">Reject</button>
@@ -1690,6 +1730,20 @@ class TaskMatePanel extends HTMLElement {
             <span class="tm-field-hint">Member of task group: <strong>${this._esc(memberInGroup.name)}</strong> (${memberInGroup.policy}). Manage membership on the Groups tab.</span>
           </div>
         ` : "",
+        `<details class="tm-advanced">
+          <summary>Bonus sub-tasks (optional)</summary>
+          <div>
+            <span class="tm-field-hint" style="margin-bottom:8px;display:block">Optional extra-credit tasks that unlock after the main chore is completed.</span>
+            ${(d.bonus_subtasks || []).map((b, idx) => `
+              <div class="tm-field-row" style="align-items:flex-end;gap:6px;margin-bottom:6px">
+                <div class="tm-field" style="flex:2;margin:0"><input class="tm-input" placeholder="Sub-task name" value="${this._esc(b.name)}" data-field="bonus_subtasks[${idx}].name"></div>
+                <div class="tm-field" style="flex:0 0 70px;margin:0"><input class="tm-input" type="number" min="0" placeholder="Pts" value="${b.points}" data-field="bonus_subtasks[${idx}].points"></div>
+                <button type="button" class="tm-btn tm-btn-icon" data-act="remove-bonus-subtask" data-idx="${idx}" title="Remove" style="padding:6px 10px">✕</button>
+              </div>
+            `).join("")}
+            <button type="button" class="tm-btn" data-act="add-bonus-subtask" style="margin-top:4px">+ Add bonus sub-task</button>
+          </div>
+        </details>`,
         `<details class="tm-advanced">
           <summary>Advanced — visibility &amp; calendar publishing</summary>
           <div>

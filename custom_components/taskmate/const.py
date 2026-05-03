@@ -249,6 +249,7 @@ SERVICE_SET_CHORE_MANUAL_START: Final = "set_chore_manual_start"
 SERVICE_ADD_TASK_GROUP: Final = "add_task_group"
 SERVICE_UPDATE_TASK_GROUP: Final = "update_task_group"
 SERVICE_REMOVE_TASK_GROUP: Final = "remove_task_group"
+SERVICE_COMPLETE_BONUS_SUBTASK: Final = "complete_bonus_subtask"
 
 # Events
 EVENT_PREVIEW_SOUND: Final = "taskmate_preview_sound"
@@ -280,6 +281,7 @@ ATTR_CHORE_ASSIGNED_TO: Final = "assigned_to"
 ATTR_CHORE_TIME_CATEGORY: Final = "time_category"
 ATTR_CHORE_ONE_SHOT: Final = "one_shot"
 ATTR_CHORE_REQUIRES_APPROVAL: Final = "requires_approval"
+ATTR_BONUS_SUBTASK_ID: Final = "bonus_subtask_id"
 
 # States
 STATE_PENDING: Final = "pending"

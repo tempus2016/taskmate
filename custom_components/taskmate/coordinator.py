@@ -19,7 +19,7 @@ from .const import (
     MAX_CALENDAR_PROJECTION_DAYS,
     MIN_CALENDAR_PROJECTION_DAYS,
 )
-from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction
+from .models import Bonus, BonusSubTask, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction
 from .storage import TaskMateStorage
 
 _LOGGER = logging.getLogger(__name__)
@@ -1616,11 +1616,11 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                     f"Chore '{chore.name}' is not available (one-shot chore already completed or expired)."
                 )
 
-        # Check daily limit
+        # Check daily limit (only count parent completions, not bonus sub-tasks)
         all_completions = self.storage.get_completions()
         todays_completions_count = 0
         for comp in all_completions:
-            if comp.chore_id == chore_id and comp.child_id == child_id:
+            if comp.chore_id == chore_id and comp.child_id == child_id and not comp.bonus_subtask_id:
                 comp_dt = comp.completed_at
                 if isinstance(comp_dt, str):
                     try:
@@ -1674,6 +1674,79 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         await self.async_refresh()
         return completion
 
+    async def async_complete_bonus_subtask(
+        self, chore_id: str, bonus_subtask_id: str, child_id: str
+    ) -> ChoreCompletion:
+        """Complete a bonus sub-task (only available after parent chore is completed today)."""
+        chore = self.get_chore(chore_id)
+        if not chore:
+            raise ValueError(f"Chore {chore_id} not found")
+
+        subtask = next((b for b in chore.bonus_subtasks if b.id == bonus_subtask_id), None)
+        if not subtask:
+            raise ValueError(f"Bonus sub-task {bonus_subtask_id} not found on chore '{chore.name}'")
+
+        child = self.get_child(child_id)
+        if not child:
+            raise ValueError(f"Child {child_id} not found")
+
+        now = dt_util.now()
+        today = dt_util.as_local(now).date()
+
+        # Gate check: parent chore must be completed today
+        all_completions = self.storage.get_completions()
+        parent_done_today = any(
+            c.chore_id == chore_id
+            and c.child_id == child_id
+            and not c.bonus_subtask_id
+            and dt_util.as_local(c.completed_at).date() == today
+            for c in all_completions
+        )
+        if not parent_done_today:
+            raise ValueError(
+                f"Cannot complete bonus sub-task '{subtask.name}' — "
+                f"parent chore '{chore.name}' must be completed first today."
+            )
+
+        # Duplicate check: bonus sub-task not already completed today
+        already_done = any(
+            c.chore_id == chore_id
+            and c.child_id == child_id
+            and c.bonus_subtask_id == bonus_subtask_id
+            and dt_util.as_local(c.completed_at).date() == today
+            for c in all_completions
+        )
+        if already_done:
+            raise ValueError(
+                f"Bonus sub-task '{subtask.name}' already completed today."
+            )
+
+        completion = ChoreCompletion(
+            chore_id=chore_id,
+            child_id=child_id,
+            completed_at=now,
+            approved=not chore.requires_approval,
+            points_awarded=subtask.points if not chore.requires_approval else 0,
+            bonus_subtask_id=bonus_subtask_id,
+        )
+
+        if not chore.requires_approval:
+            total_awarded = await self._award_points(child, subtask.points, skip_streak=True)
+            completion.approved = True
+            completion.approved_at = dt_util.now()
+            completion.points_awarded = total_awarded
+
+        self.storage.add_completion(completion)
+        await self.storage.async_save()
+
+        if chore.requires_approval:
+            await self._async_notify_pending_approval(
+                child.name, f"{chore.name} › {subtask.name}", subtask.points
+            )
+
+        await self.async_refresh()
+        return completion
+
     async def async_approve_chore(self, completion_id: str) -> None:
         """Approve a chore completion."""
         completions = self.storage.get_completions()
@@ -1684,14 +1757,24 @@ class TaskMateCoordinator(DataUpdateCoordinator):
 
                 if chore and child:
                     comp_date = dt_util.as_local(completion.completed_at).date()
-                    total_awarded = await self._award_points(child, chore.points, completion_date=comp_date)
+                    is_bonus = bool(completion.bonus_subtask_id)
+                    if is_bonus:
+                        subtask = next(
+                            (b for b in chore.bonus_subtasks if b.id == completion.bonus_subtask_id), None
+                        )
+                        pts = subtask.points if subtask else 0
+                    else:
+                        pts = chore.points
+                    total_awarded = await self._award_points(
+                        child, pts, completion_date=comp_date, skip_streak=is_bonus
+                    )
                     completion.approved = True
                     completion.approved_at = dt_util.now()
                     completion.points_awarded = total_awarded
                     self.storage.update_completion(completion)
 
-                    # One-shot: disable for this child on approval
-                    if getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
+                    # One-shot: disable for this child on approval (parent completions only)
+                    if not is_bonus and getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
                         if completion.child_id not in chore.disabled_for:
                             chore.disabled_for.append(completion.child_id)
                         self._check_one_shot_fully_disabled(chore)
@@ -1717,30 +1800,56 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 if completion.points_awarded > 0:
                     child = self.get_child(completion.child_id)
                     if child:
-                        # Reverse base + weekend bonus points
                         child.points = max(0, child.points - completion.points_awarded)
                         child.total_points_earned = max(0, child.total_points_earned - completion.points_awarded)
                         child.total_chores_completed = max(0, child.total_chores_completed - 1)
 
-                        # Reverse streak: decrement (but don't go below 0)
-                        child.current_streak = max(0, child.current_streak - 1)
+                        # Only reverse streak for parent completions
+                        if not completion.bonus_subtask_id:
+                            child.current_streak = max(0, child.current_streak - 1)
 
                         self.storage.update_child(child)
                 break
 
-        # Undo last_completed store so recurrence window resets correctly
         if target_completion:
-            self.storage.undo_last_completed(
-                target_completion.chore_id, target_completion.child_id
-            )
+            is_parent = not target_completion.bonus_subtask_id
 
-            # One-shot: re-enable for this child on rejection
-            chore = self.get_chore(target_completion.chore_id)
-            if chore and getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
-                if target_completion.child_id in chore.disabled_for:
-                    chore.disabled_for.remove(target_completion.child_id)
-                chore.enabled = True
-                self.storage.update_chore(chore)
+            # Cascade: if rejecting a parent completion, also reverse any bonus sub-task
+            # completions for the same chore/child on the same day
+            if is_parent:
+                comp_date = dt_util.as_local(target_completion.completed_at).date()
+                bonus_completions = [
+                    c for c in completions
+                    if c.chore_id == target_completion.chore_id
+                    and c.child_id == target_completion.child_id
+                    and c.bonus_subtask_id
+                    and c.id != completion_id
+                    and dt_util.as_local(c.completed_at).date() == comp_date
+                ]
+                if bonus_completions:
+                    child = self.get_child(target_completion.child_id)
+                    for bc in bonus_completions:
+                        if bc.points_awarded > 0 and child:
+                            child.points = max(0, child.points - bc.points_awarded)
+                            child.total_points_earned = max(0, child.total_points_earned - bc.points_awarded)
+                            child.total_chores_completed = max(0, child.total_chores_completed - 1)
+                        self.storage.remove_completion(bc.id)
+                    if child:
+                        self.storage.update_child(child)
+
+            # Undo last_completed store so recurrence window resets correctly (parent only)
+            if is_parent:
+                self.storage.undo_last_completed(
+                    target_completion.chore_id, target_completion.child_id
+                )
+
+                # One-shot: re-enable for this child on rejection
+                chore = self.get_chore(target_completion.chore_id)
+                if chore and getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
+                    if target_completion.child_id in chore.disabled_for:
+                        chore.disabled_for.remove(target_completion.child_id)
+                    chore.enabled = True
+                    self.storage.update_chore(chore)
 
         self.storage.remove_completion(completion_id)
         await self.storage.async_save()
@@ -2449,11 +2558,15 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         child: Child,
         points: int,
         completion_date: date | None = None,
+        skip_streak: bool = False,
     ) -> int:
         """Award points to a child, update streak, and apply bonus systems.
 
         Returns the total points awarded (base + weekend bonus), excluding
         milestone bonuses (which are logged as separate transactions).
+
+        If skip_streak is True, streak tracking is skipped (used for bonus
+        sub-task completions where the parent already counted).
         """
         now = dt_util.now()
         today = now.date()
@@ -2492,43 +2605,44 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             self.storage.add_points_transaction(transaction)
 
         # ── Streak tracking ─────────────────────────────────────────────────
-        streak_mode = self.storage.get_setting("streak_reset_mode", "reset")
-        streak_paused = getattr(child, "streak_paused", False)
-        streak_before = child.current_streak or 0
         streak_reset_occurred = False
+        if not skip_streak:
+            streak_mode = self.storage.get_setting("streak_reset_mode", "reset")
+            streak_paused = getattr(child, "streak_paused", False)
+            streak_before = child.current_streak or 0
 
-        if last_date_str is None:
-            child.current_streak = 1
-            child.streak_paused = False
-        elif last_date_str == effective_date_str:
-            pass  # Already completed on this date — streak unchanged
-        else:
-            try:
-                last_date = date.fromisoformat(last_date_str)
-                yesterday = effective_date - timedelta(days=1)
-                if last_date == yesterday:
-                    child.current_streak = streak_before + 1
-                    child.streak_paused = False
-                elif streak_mode == "pause" or streak_paused:
-                    child.streak_paused = False
-                    _LOGGER.debug("Streak resumed for %s at %d", child.name, child.current_streak)
-                else:
+            if last_date_str is None:
+                child.current_streak = 1
+                child.streak_paused = False
+            elif last_date_str == effective_date_str:
+                pass  # Already completed on this date — streak unchanged
+            else:
+                try:
+                    last_date = date.fromisoformat(last_date_str)
+                    yesterday = effective_date - timedelta(days=1)
+                    if last_date == yesterday:
+                        child.current_streak = streak_before + 1
+                        child.streak_paused = False
+                    elif streak_mode == "pause" or streak_paused:
+                        child.streak_paused = False
+                        _LOGGER.debug("Streak resumed for %s at %d", child.name, child.current_streak)
+                    else:
+                        child.current_streak = 1
+                        child.streak_paused = False
+                        streak_reset_occurred = True
+                except (ValueError, TypeError):
                     child.current_streak = 1
                     child.streak_paused = False
                     streak_reset_occurred = True
-            except (ValueError, TypeError):
-                child.current_streak = 1
-                child.streak_paused = False
-                streak_reset_occurred = True
 
-        child.last_completion_date = effective_date_str
+            child.last_completion_date = effective_date_str
 
-        if child.current_streak > (child.best_streak or 0):
-            child.best_streak = child.current_streak
+            if child.current_streak > (child.best_streak or 0):
+                child.best_streak = child.current_streak
 
         # ── Streak milestone bonus ──────────────────────────────────────────
         milestones_enabled = self.storage.get_setting("streak_milestones_enabled", "true") == "true"
-        if milestones_enabled and child.current_streak > 0:
+        if not skip_streak and milestones_enabled and child.current_streak > 0:
             # Parse custom milestone config
             milestone_setting = self.storage.get_setting(
                 "streak_milestones", self.DEFAULT_STREAK_MILESTONES

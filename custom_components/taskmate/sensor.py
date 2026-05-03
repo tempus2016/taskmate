@@ -270,15 +270,24 @@ def _build_todays_completions(common: dict) -> list[dict]:
         if comp_date != today:
             continue
         matched_chore = chore_lookup.get(comp.chore_id)
+        bonus_subtask_id = getattr(comp, "bonus_subtask_id", "") or ""
+        if bonus_subtask_id and matched_chore:
+            subtask = next((b for b in matched_chore.bonus_subtasks if b.id == bonus_subtask_id), None)
+            display_name = f"{matched_chore.name} › {subtask.name}" if subtask else matched_chore.name
+            display_points = subtask.points if subtask else 0
+        else:
+            display_name = matched_chore.name if matched_chore else ""
+            display_points = matched_chore.points if matched_chore else 0
         out.append({
             "completion_id": comp.id,
             "chore_id": comp.chore_id,
             "child_id": comp.child_id,
             "child_name": child_lookup[comp.child_id].name if comp.child_id in child_lookup else "",
-            "chore_name": matched_chore.name if matched_chore else "",
-            "points": matched_chore.points if matched_chore else 0,
+            "chore_name": display_name,
+            "points": display_points,
             "approved": comp.approved,
             "completed_at": comp.completed_at.isoformat() if hasattr(comp.completed_at, 'isoformat') else str(comp.completed_at),
+            "bonus_subtask_id": bonus_subtask_id,
         })
     return out
 

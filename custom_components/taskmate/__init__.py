@@ -16,6 +16,7 @@ from .const import (
     ATTR_BONUS_ID,
     ATTR_BONUS_NAME,
     ATTR_BONUS_POINTS,
+    ATTR_BONUS_SUBTASK_ID,
     ATTR_CHILD_ID,
     ATTR_CHORE_ASSIGNED_TO,
     ATTR_CHORE_DESCRIPTION,
@@ -49,6 +50,7 @@ from .const import (
     SERVICE_APPROVE_REWARD,
     SERVICE_CLAIM_REWARD,
     SERVICE_REJECT_REWARD,
+    SERVICE_COMPLETE_BONUS_SUBTASK,
     SERVICE_COMPLETE_CHORE,
     SERVICE_PREVIEW_SOUND,
     SERVICE_REJECT_CHORE,
@@ -165,6 +167,17 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         chore_id = call.data[ATTR_CHORE_ID]
         child_id = call.data[ATTR_CHILD_ID]
         await coordinator.async_complete_chore(chore_id, child_id)
+
+    async def handle_complete_bonus_subtask(call: ServiceCall) -> None:
+        """Handle the complete_bonus_subtask service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        chore_id = call.data[ATTR_CHORE_ID]
+        bonus_subtask_id = call.data[ATTR_BONUS_SUBTASK_ID]
+        child_id = call.data[ATTR_CHILD_ID]
+        await coordinator.async_complete_bonus_subtask(chore_id, bonus_subtask_id, child_id)
 
     async def handle_approve_chore(call: ServiceCall) -> None:
         """Handle the approve_chore service call."""
@@ -461,6 +474,19 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN,
+        SERVICE_COMPLETE_BONUS_SUBTASK,
+        handle_complete_bonus_subtask,
+        schema=vol.Schema(
+            {
+                vol.Required(ATTR_CHORE_ID): cv.string,
+                vol.Required(ATTR_BONUS_SUBTASK_ID): cv.string,
+                vol.Required(ATTR_CHILD_ID): cv.string,
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
         SERVICE_APPROVE_CHORE,
         handle_approve_chore,
         schema=vol.Schema(
@@ -733,6 +759,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
     """Unregister TaskMate services."""
     services = [
         SERVICE_COMPLETE_CHORE,
+        SERVICE_COMPLETE_BONUS_SUBTASK,
         SERVICE_APPROVE_CHORE,
         SERVICE_REJECT_CHORE,
         SERVICE_CLAIM_REWARD,
