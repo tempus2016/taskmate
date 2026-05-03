@@ -52,7 +52,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
-from .models import Reward
+from .models import BonusSubTask, Reward
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -90,6 +90,7 @@ WS_REMOVE_TASK_GROUP: Final   = "taskmate/remove_task_group"
 WS_UPDATE_SETTINGS: Final     = "taskmate/update_settings"
 
 # Operational
+WS_COMPLETE_BONUS_SUBTASK: Final = "taskmate/complete_bonus_subtask"
 WS_APPROVE_CHORE: Final       = "taskmate/approve_chore"
 WS_REJECT_CHORE: Final        = "taskmate/reject_chore"
 WS_APPROVE_REWARD: Final      = "taskmate/approve_reward"
@@ -270,7 +271,7 @@ _CHORE_EDITABLE_FIELDS = {
     "recurrence_start", "first_occurrence_mode", "visibility_entity",
     "visibility_state", "visibility_operator", "enabled",
     "assignment_mode", "assignment_rotation_anchor", "require_availability",
-    "publish_calendar_entities",
+    "publish_calendar_entities", "bonus_subtasks",
 }
 
 
@@ -301,6 +302,12 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("assignment_rotation_anchor"): str,
         vol.Optional("require_availability"): bool,
         vol.Optional("publish_calendar_entities"): [str],
+        vol.Optional("bonus_subtasks"): [{
+            vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+            vol.Optional("points"): vol.All(int, vol.Range(min=0)),
+            vol.Optional("description"): str,
+            vol.Optional("id"): str,
+        }],
     }
 
 
@@ -346,7 +353,10 @@ async def _ws_add_chore(hass, connection, msg, coordinator):
     }
     if extra_fields:
         for f in extra_fields:
-            setattr(chore, f, msg[f] if not isinstance(msg[f], list) else list(msg[f]))
+            if f == "bonus_subtasks":
+                setattr(chore, f, [BonusSubTask.from_dict(b) for b in (msg[f] or [])])
+            else:
+                setattr(chore, f, msg[f] if not isinstance(msg[f], list) else list(msg[f]))
         await coordinator.async_update_chore(chore)
     await _maybe_apply_manual_start(coordinator, chore.id, msg.get("manual_start_child_id"))
     connection.send_result(msg["id"], {"id": chore.id})
@@ -368,7 +378,9 @@ async def _ws_update_chore(hass, connection, msg, coordinator):
     for field in _CHORE_EDITABLE_FIELDS:
         if field in msg:
             value = msg[field]
-            if isinstance(value, list):
+            if field == "bonus_subtasks":
+                value = [BonusSubTask.from_dict(b) for b in (value or [])]
+            elif isinstance(value, list):
                 value = list(value)
             elif field == "name":
                 value = value.strip()
@@ -752,6 +764,21 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
 # ---------------------------------------------------------------------------
 
 @websocket_api.websocket_command({
+    vol.Required("type"): WS_COMPLETE_BONUS_SUBTASK,
+    vol.Required("chore_id"): str,
+    vol.Required("bonus_subtask_id"): str,
+    vol.Required("child_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_complete_bonus_subtask(hass, connection, msg, coordinator):
+    completion = await coordinator.async_complete_bonus_subtask(
+        msg["chore_id"], msg["bonus_subtask_id"], msg["child_id"]
+    )
+    connection.send_result(msg["id"], {"id": completion.id})
+
+
+@websocket_api.websocket_command({
     vol.Required("type"): WS_APPROVE_CHORE,
     vol.Required("completion_id"): str,
 })
@@ -853,6 +880,7 @@ _COMMANDS = (
     _ws_add_bonus, _ws_update_bonus, _ws_remove_bonus, _ws_apply_bonus,
     _ws_add_task_group, _ws_update_task_group, _ws_remove_task_group,
     _ws_update_settings,
+    _ws_complete_bonus_subtask,
     _ws_approve_chore, _ws_reject_chore, _ws_approve_reward, _ws_reject_reward,
     _ws_set_chore_order, _ws_add_chores_bulk,
 )

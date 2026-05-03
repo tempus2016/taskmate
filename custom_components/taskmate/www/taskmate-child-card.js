@@ -888,6 +888,51 @@ class TaskMateChildCard extends LitElement {
         opacity: 0.6;
       }
 
+      /* Bonus sub-task cards */
+      .chore-card.bonus-subtask {
+        margin-left: 24px;
+        border-left: 3px solid var(--fun-amber, #f39c12);
+        background: linear-gradient(135deg,
+          rgba(243, 156, 18, 0.08) 0%,
+          rgba(241, 196, 15, 0.12) 100%);
+        padding: 8px 12px;
+        min-height: unset;
+      }
+
+      .chore-card.bonus-subtask .bonus-badge {
+        background: linear-gradient(135deg, #f39c12, #f1c40f) !important;
+        width: 22px;
+        height: 22px;
+        min-width: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .chore-card.bonus-subtask .bonus-badge ha-icon {
+        color: #fff;
+      }
+
+      .bonus-name {
+        font-size: 0.88em;
+      }
+
+      .bonus-label {
+        font-size: 0.65em;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #f39c12;
+        background: rgba(243, 156, 18, 0.15);
+        padding: 1px 5px;
+        border-radius: 3px;
+        margin-left: 6px;
+      }
+
+      .chore-card.bonus-subtask.completed {
+        border-color: var(--fun-green) !important;
+        border-left: 3px solid var(--fun-green);
+      }
+
       /* Reset countdown — inline beside section title */
       .reset-countdown {
         display: inline-flex;
@@ -1306,7 +1351,10 @@ class TaskMateChildCard extends LitElement {
                     ` : '';
                   })() : ''}
                 </div>
-                ${childChores.map((chore, index) => this._renderChoreCard(chore, child, pointsIcon, todaysCompletions, index))}
+                ${childChores.map((chore, index) => html`
+                  ${this._renderChoreCard(chore, child, pointsIcon, todaysCompletions, index)}
+                  ${this._renderBonusSubtasks(chore, child, pointsIcon, todaysCompletions)}
+                `)}
               `}
         </div>
 
@@ -1735,7 +1783,7 @@ class TaskMateChildCard extends LitElement {
     // Check how many times this chore was completed today by this child
     // Both pending (awaiting approval) AND approved completions count toward the daily limit
     const childCompletionsToday = todaysCompletions.filter(
-      (comp) => comp.chore_id === chore.id && comp.child_id === child.id
+      (comp) => comp.chore_id === chore.id && comp.child_id === child.id && !comp.bonus_subtask_id
     );
     let completionsToday = childCompletionsToday.length;
     const dailyLimit = chore.daily_limit || 1;
@@ -1870,6 +1918,98 @@ class TaskMateChildCard extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  _renderBonusSubtasks(chore, child, pointsIcon, todaysCompletions) {
+    const subtasks = chore.bonus_subtasks;
+    if (!subtasks || subtasks.length === 0) return '';
+
+    // Check if parent chore is completed today (including optimistic)
+    const parentCompletions = todaysCompletions.filter(
+      c => c.chore_id === chore.id && c.child_id === child.id && !c.bonus_subtask_id
+    );
+    const optimisticKey = `${chore.id}_${child.id}`;
+    const hasOptimistic = this._optimisticCompletions && this._optimisticCompletions[optimisticKey];
+    const parentDone = parentCompletions.length > 0 || hasOptimistic;
+
+    if (!parentDone) return '';
+
+    return html`${subtasks.map(subtask => {
+      const bonusKey = `${chore.id}_bonus_${subtask.id}_${child.id}`;
+      const bonusOptimistic = this._optimisticCompletions && this._optimisticCompletions[bonusKey];
+      const bonusDone = todaysCompletions.some(
+        c => c.chore_id === chore.id && c.child_id === child.id && c.bonus_subtask_id === subtask.id
+      ) || bonusOptimistic;
+      const isLoading = this._loading[bonusKey];
+
+      const handleClick = () => {
+        if (isLoading || bonusDone) return;
+        this._handleCompleteBonusSubtask(chore, subtask, child);
+      };
+
+      return html`
+        <div
+          class="chore-card bonus-subtask ${bonusDone ? 'completed' : ''} ${isLoading ? 'loading' : ''}"
+          role="button"
+          tabindex="${bonusDone ? '-1' : '0'}"
+          @click="${handleClick}"
+          title="${bonusDone ? this._t('child.click_to_undo') : 'Bonus: ' + subtask.name}"
+        >
+          <div class="chore-info">
+            <div class="chore-number-wrapper">
+              <div class="chore-number-badge bonus-badge">
+                <ha-icon icon="mdi:star-plus" style="--mdc-icon-size:14px"></ha-icon>
+              </div>
+            </div>
+            <div class="chore-details">
+              <div class="chore-name bonus-name">${subtask.name}</div>
+              <div class="chore-points">
+                <ha-icon icon="${pointsIcon}"></ha-icon>
+                +${subtask.points}
+                <span class="bonus-label">BONUS</span>
+              </div>
+            </div>
+          </div>
+          <div class="chore-checkbox">
+            ${isLoading
+              ? html`<ha-icon icon="mdi:loading" style="animation: spin 1s linear infinite; color: var(--fun-purple);"></ha-icon>`
+              : html`<ha-icon icon="mdi:check-bold"></ha-icon>`}
+          </div>
+        </div>
+      `;
+    })}`;
+  }
+
+  async _handleCompleteBonusSubtask(chore, subtask, child) {
+    const bonusKey = `${chore.id}_bonus_${subtask.id}_${child.id}`;
+    this._loading = { ...this._loading, [bonusKey]: true };
+    this.requestUpdate();
+
+    // Optimistic completion
+    if (!this._optimisticCompletions) this._optimisticCompletions = {};
+    this._optimisticCompletions[bonusKey] = { timestamp: Date.now(), count: 1 };
+
+    try {
+      await this.hass.callService("taskmate", "complete_bonus_subtask", {
+        chore_id: chore.id,
+        bonus_subtask_id: subtask.id,
+        child_id: child.id,
+      });
+      this._playSound(chore.completion_sound || this.config.default_sound || "chime");
+    } catch (err) {
+      delete this._optimisticCompletions[bonusKey];
+    }
+
+    this._loading = { ...this._loading, [bonusKey]: false };
+    this.requestUpdate();
+
+    // Clear optimistic after 30s
+    setTimeout(() => {
+      if (this._optimisticCompletions && this._optimisticCompletions[bonusKey]) {
+        delete this._optimisticCompletions[bonusKey];
+        this.requestUpdate();
+      }
+    }, 30000);
   }
 
   _renderCelebration() {
@@ -2079,10 +2219,16 @@ class TaskMateChildCard extends LitElement {
       const undoSoundToPlay = this.config.undo_sound || 'undo';
       this._playSound(undoSoundToPlay);
 
-      // Clear any optimistic completion data for this chore/child
+      // Clear any optimistic completion data for this chore/child (including bonus sub-tasks)
       const key = `${chore.id}_${child.id}`;
       const newOptimistic = { ...this._optimisticCompletions };
       delete newOptimistic[key];
+      // Also clear bonus sub-task optimistic completions
+      const bonusPrefix = `${chore.id}_bonus_`;
+      const bonusSuffix = `_${child.id}`;
+      for (const k of Object.keys(newOptimistic)) {
+        if (k.startsWith(bonusPrefix) && k.endsWith(bonusSuffix)) delete newOptimistic[k];
+      }
       this._optimisticCompletions = newOptimistic;
 
     } catch (error) {

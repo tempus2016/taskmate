@@ -15,6 +15,29 @@ complete_chore:
       selector:
         text:
 
+complete_bonus_subtask:
+  name: Complete Bonus Sub-task
+  description: Complete a bonus sub-task after the parent chore is done
+  fields:
+    chore_id:
+      name: Chore ID
+      description: The ID of the parent chore
+      required: true
+      selector:
+        text:
+    bonus_subtask_id:
+      name: Bonus Sub-task ID
+      description: The ID of the bonus sub-task to complete
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child completing the bonus sub-task
+      required: true
+      selector:
+        text:
+
 approve_chore:
   name: Approve Chore
   description: Approve a completed chore and award points

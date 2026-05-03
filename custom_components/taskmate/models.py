@@ -59,6 +59,33 @@ def format_datetime(dt: datetime | None) -> str | None:
 
 
 @dataclass
+class BonusSubTask:
+    """An optional bonus sub-task embedded within a parent chore."""
+
+    name: str
+    points: int = 5
+    description: str = ""
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> BonusSubTask:
+        return cls(
+            name=data.get("name", ""),
+            points=data.get("points", 5),
+            description=data.get("description", ""),
+            id=data.get("id", generate_id()),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "points": self.points,
+            "description": self.description,
+            "id": self.id,
+        }
+
+
+@dataclass
 class Child:
     """Represents a child."""
 
@@ -171,6 +198,8 @@ class Chore:
     # idempotence (don't re-publish the same day) and projection cleanup
     # (entries < today are pruned before each publish pass).
     publish_calendar_published_dates: list[str] = field(default_factory=list)
+    # Bonus sub-tasks: optional extra-credit tasks that unlock after the parent chore is completed
+    bonus_subtasks: list[BonusSubTask] = field(default_factory=list)
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -219,6 +248,7 @@ class Chore:
                 list(data.get("publish_calendar_published_dates", []))
                 or ([data["publish_calendar_last_date"]] if data.get("publish_calendar_last_date") else [])
             ),
+            bonus_subtasks=[BonusSubTask.from_dict(b) for b in data.get("bonus_subtasks", [])],
             id=data.get("id", generate_id()),
         )
 
@@ -254,6 +284,7 @@ class Chore:
             "skip_count": self.skip_count,
             "publish_calendar_entities": self.publish_calendar_entities,
             "publish_calendar_published_dates": self.publish_calendar_published_dates,
+            "bonus_subtasks": [b.to_dict() for b in self.bonus_subtasks],
             "id": self.id,
         }
 
@@ -319,6 +350,7 @@ class ChoreCompletion:
     approved: bool = False
     approved_at: datetime | None = None
     points_awarded: int = 0
+    bonus_subtask_id: str = ""  # Non-empty = this completion is for a bonus sub-task
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -334,6 +366,7 @@ class ChoreCompletion:
             approved=data.get("approved", False),
             approved_at=approved_at,
             points_awarded=data.get("points_awarded", 0),
+            bonus_subtask_id=data.get("bonus_subtask_id", ""),
             id=data.get("id", generate_id()),
         )
 
@@ -346,6 +379,7 @@ class ChoreCompletion:
             "approved": self.approved,
             "approved_at": format_datetime(self.approved_at),
             "points_awarded": self.points_awarded,
+            "bonus_subtask_id": self.bonus_subtask_id,
             "id": self.id,
         }
 
