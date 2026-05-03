@@ -1038,7 +1038,7 @@ class TestCareerScore:
 
         import custom_components.taskmate.coordinator as _mod
         with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
-            total = run(coord._award_points(child, 5))
+            run(coord._award_points(child, 5))
 
         # 5 base + 10 milestone bonus = 15 total earned on top of 50
         assert child.total_points_earned == 65
