@@ -200,6 +200,10 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 child.awarded_perfect_weeks = awarded_weeks + [week_key]
                 child.points += perfect_week_bonus
                 child.total_points_earned += perfect_week_bonus
+                child.career_score = child.total_points_earned - child.total_penalties_received
+                self.storage.append_career_score_snapshot(
+                    child.id, today.isoformat(), child.career_score
+                )
                 self.storage.update_child(child)
 
                 transaction = PointsTransaction(
@@ -329,6 +333,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         self.storage.remove_transactions_for_child(child_id)
         self.storage.remove_last_completed_for_child(child_id)
         self.storage.remove_pool_allocations_for_child(child_id)
+        self.storage.remove_career_score_history_for_child(child_id)
         # Remove child from chore assigned_to lists
         for chore in self.storage.get_chores():
             if child_id in chore.assigned_to:
@@ -2700,7 +2705,11 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             raise ValueError(f"Child {child_id} not found")
         child.points += points
         child.total_points_earned += points
+        child.career_score = child.total_points_earned - child.total_penalties_received
         self.storage.update_child(child)
+        self.storage.append_career_score_snapshot(
+            child_id, date.today().isoformat(), child.career_score
+        )
         # Log the manual transaction
         transaction = PointsTransaction(
             child_id=child_id,
@@ -2719,6 +2728,12 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             raise ValueError(f"Child {child_id} not found")
         actual_deducted = min(points, child.points)  # Can't go below 0
         child.points = max(0, child.points - points)
+        if reason.startswith("Penalty: "):
+            child.total_penalties_received += actual_deducted
+            child.career_score = child.total_points_earned - child.total_penalties_received
+            self.storage.append_career_score_snapshot(
+                child_id, date.today().isoformat(), child.career_score
+            )
         self.storage.update_child(child)
         # Log the manual transaction (negative points)
         transaction = PointsTransaction(
@@ -2801,6 +2816,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         child.points += total_points
         child.total_points_earned += total_points
         child.total_chores_completed += 1
+        child.career_score = child.total_points_earned - child.total_penalties_received
 
         if weekend_bonus > 0:
             _LOGGER.info(
@@ -2884,6 +2900,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
             if milestone_bonus > 0:
                 child.points += milestone_bonus
                 child.total_points_earned += milestone_bonus
+                child.career_score = child.total_points_earned - child.total_penalties_received
                 transaction = PointsTransaction(
                     child_id=child.id,
                     points=milestone_bonus,
@@ -2892,6 +2909,9 @@ class TaskMateCoordinator(DataUpdateCoordinator):
                 )
                 self.storage.add_points_transaction(transaction)
 
+        self.storage.append_career_score_snapshot(
+            child.id, effective_date.isoformat(), child.career_score
+        )
         self.storage.update_child(child)
         return total_points
 

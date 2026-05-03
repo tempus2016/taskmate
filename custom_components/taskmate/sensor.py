@@ -165,6 +165,8 @@ def _build_children_summary(common: dict) -> list[dict]:
             "streak_paused": getattr(c, 'streak_paused', False),
             "streak_milestones_achieved": getattr(c, 'streak_milestones_achieved', None) or [],
             "awarded_perfect_weeks": getattr(c, 'awarded_perfect_weeks', None) or [],
+            "career_score": getattr(c, 'career_score', 0) or 0,
+            "total_penalties_received": getattr(c, 'total_penalties_received', 0) or 0,
         })
     return summary
 
@@ -799,9 +801,14 @@ class TaskMateActivitySensor(_CachedAttrsSensor):
 
     def _build_attributes(self) -> dict:
         common = _compute_common(self.coordinator)
+        children = common["children"]
+        career_history = {}
+        for c in children:
+            career_history[c.id] = self.coordinator.storage.get_career_score_history(c.id)
         return {
             "recent_completions": _build_recent_completions(common),
             "recent_transactions": _build_recent_transactions(common),
+            "career_score_history": career_history,
         }
 
 
@@ -881,6 +888,8 @@ class ChildPointsSensor(TaskMateBaseSensor):
             "total_chores_completed": child.total_chores_completed,
             "current_streak": child.current_streak,
             "best_streak": child.best_streak,
+            "career_score": child.career_score,
+            "total_penalties_received": child.total_penalties_received,
         }
 
 
@@ -949,6 +958,8 @@ class ChildStatsSensor(TaskMateBaseSensor):
             "total_chores_completed": child.total_chores_completed,
             "current_streak": child.current_streak,
             "best_streak": child.best_streak,
+            "career_score": child.career_score,
+            "total_penalties_received": child.total_penalties_received,
             "assigned_chores": [{"id": c.id, "name": c.name, "points": c.points, "time_category": c.time_category} for c in assigned_chores],
             "chore_order": child.chore_order,
         }

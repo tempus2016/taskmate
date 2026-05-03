@@ -1,6 +1,7 @@
 """Storage management for TaskMate integration."""
 from __future__ import annotations
 
+from datetime import date, timedelta
 import logging
 from typing import Any
 
@@ -61,9 +62,14 @@ class TaskMateStorage:
         if "timed_sessions" not in self._data:
             self._data["timed_sessions"] = []
 
+        # Ensure career_score_history store exists
+        if "career_score_history" not in self._data:
+            self._data["career_score_history"] = {}
+
         # Run data migrations
         await self._migrate_assigned_to_child_ids()
         await self._migrate_pool_allocations_v2()
+        await self._migrate_career_score()
 
         return data
 
@@ -174,6 +180,30 @@ class TaskMateStorage:
         if data_modified:
             _LOGGER.info("Data migration completed: converted child names to IDs in assigned_to")
             await self.async_save()
+
+    async def _migrate_career_score(self) -> None:
+        """Initialize career_score for existing installations.
+
+        Sets career_score = total_points_earned for each child (we cannot
+        retroactively determine penalty totals from the pruned transaction
+        buffer).  Runs once, guarded by _career_score_initialized flag.
+        """
+        if self._data.get("_career_score_initialized"):
+            return
+
+        children = self._data.get("children", [])
+        for child_data in children:
+            earned = int(child_data.get("total_points_earned", 0) or 0)
+            child_data.setdefault("career_score", earned)
+            child_data.setdefault("total_penalties_received", 0)
+
+        self._data["_career_score_initialized"] = True
+        if children:
+            _LOGGER.info(
+                "TaskMate: initialized career_score for %d child(ren) "
+                "from total_points_earned", len(children)
+            )
+        await self.async_save()
 
     async def async_save(self) -> None:
         """Save data to storage."""
@@ -673,3 +703,34 @@ class TaskMateStorage:
     def set_points_icon(self, icon: str) -> None:
         """Set the points icon."""
         self._data["points_icon"] = icon
+
+    # Career score history management
+    def get_career_score_history(self, child_id: str) -> list[dict]:
+        """Get career score history for a child."""
+        return list(self._data.get("career_score_history", {}).get(child_id, []))
+
+    def append_career_score_snapshot(self, child_id: str, date_str: str, score: int) -> None:
+        """Upsert a daily career score snapshot for a child.
+
+        If an entry for the given date already exists, its score is updated
+        (last-write-wins).  Entries older than 90 days are pruned.
+        """
+        history = self._data.setdefault("career_score_history", {})
+        entries = history.setdefault(child_id, [])
+
+        # Upsert: update existing date or append
+        for entry in entries:
+            if entry.get("date") == date_str:
+                entry["score"] = score
+                break
+        else:
+            entries.append({"date": date_str, "score": score})
+
+        # Prune entries older than 90 days
+        cutoff = (date.today() - timedelta(days=90)).isoformat()
+        history[child_id] = [e for e in entries if e.get("date", "") >= cutoff]
+
+    def remove_career_score_history_for_child(self, child_id: str) -> None:
+        """Remove all career score history for a child."""
+        history = self._data.get("career_score_history", {})
+        history.pop(child_id, None)

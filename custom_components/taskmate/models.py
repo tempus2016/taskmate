@@ -141,6 +141,8 @@ class Child:
     availability_entity: str = ""  # HA entity id; empty = always available
     availability_inverted: bool = False  # When True, _AVAILABLE_STATES means UNAVAILABLE
     unavailability_entity: str = ""  # Second HA entity; _AVAILABLE_STATES = child is busy
+    career_score: int = 0
+    total_penalties_received: int = 0
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -163,6 +165,8 @@ class Child:
             availability_entity=data.get("availability_entity", ""),
             availability_inverted=data.get("availability_inverted", False),
             unavailability_entity=data.get("unavailability_entity", ""),
+            career_score=data.get("career_score", 0),
+            total_penalties_received=data.get("total_penalties_received", 0),
             id=data.get("id", generate_id()),
         )
 
@@ -185,6 +189,8 @@ class Child:
             "availability_entity": self.availability_entity,
             "availability_inverted": self.availability_inverted,
             "unavailability_entity": self.unavailability_entity,
+            "career_score": self.career_score,
+            "total_penalties_received": self.total_penalties_received,
             "id": self.id,
         }
 
