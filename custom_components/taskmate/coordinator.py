@@ -46,6 +46,7 @@ class TaskMateCoordinator(DataUpdateCoordinator):
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""
         await self.storage.async_load()
+        await self._async_stop_stale_timed_sessions()
         await self.async_refresh()
         # Schedule midnight streak check at 00:00:05
         self._unsub_midnight = async_track_time_change(

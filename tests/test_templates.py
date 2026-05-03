@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from custom_components.taskmate.storage import TaskMateStorage
-from custom_components.taskmate.templates import BUILT_IN_TEMPLATES, BUILT_IN_IDS
 
 
 @pytest.fixture
