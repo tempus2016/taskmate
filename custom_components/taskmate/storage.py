@@ -66,6 +66,10 @@ class TaskMateStorage:
         if "career_score_history" not in self._data:
             self._data["career_score_history"] = {}
 
+        # Ensure templates store exists
+        if "templates" not in self._data:
+            self._data["templates"] = []
+
         # Run data migrations
         await self._migrate_assigned_to_child_ids()
         await self._migrate_pool_allocations_v2()
@@ -734,3 +738,38 @@ class TaskMateStorage:
         """Remove all career score history for a child."""
         history = self._data.get("career_score_history", {})
         history.pop(child_id, None)
+
+    # Template management
+    def get_custom_templates(self) -> list[dict]:
+        """Get all custom (user-created) templates."""
+        return list(self._data.get("templates", []))
+
+    def get_custom_template(self, template_id: str) -> dict | None:
+        """Get a single custom template by ID."""
+        for tpl in self._data.get("templates", []):
+            if tpl.get("id") == template_id:
+                return dict(tpl)
+        return None
+
+    def add_custom_template(self, template: dict) -> None:
+        """Add a custom template."""
+        if "templates" not in self._data:
+            self._data["templates"] = []
+        self._data["templates"].append(template)
+
+    def update_custom_template(self, template_id: str, updates: dict) -> None:
+        """Update a custom template's fields."""
+        templates = self._data.get("templates", [])
+        for tpl in templates:
+            if tpl.get("id") == template_id:
+                tpl.update(updates)
+                return
+        raise ValueError(f"Template {template_id} not found")
+
+    def remove_custom_template(self, template_id: str) -> None:
+        """Remove a custom template."""
+        templates = self._data.get("templates", [])
+        original_len = len(templates)
+        self._data["templates"] = [t for t in templates if t.get("id") != template_id]
+        if len(self._data["templates"]) == original_len:
+            raise ValueError(f"Template {template_id} not found")
