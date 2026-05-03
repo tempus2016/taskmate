@@ -20,6 +20,13 @@ class TaskMateLeaderboardCard extends LitElement {
     return { hass: { type: Object }, config: { type: Object } };
   }
 
+  shouldUpdate(changedProps) {
+    if (changedProps.has("hass")) {
+      return window.__taskmate_hasChanged(changedProps.get("hass"), this.hass, this.config?.entity);
+    }
+    return true;
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;

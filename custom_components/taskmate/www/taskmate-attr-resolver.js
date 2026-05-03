@@ -63,6 +63,47 @@
   window.__taskmate_attrs = resolveAttrs;
 
   /**
+   * Event-driven update guard for LitElement cards.
+   *
+   * HA sets a new `hass` object on every card whenever ANY entity changes.
+   * Cards that don't filter will re-render for every light toggle, thermostat
+   * update, etc. This helper compares only TaskMate-relevant entities so
+   * cards skip renders that can't possibly change their output.
+   *
+   * Usage inside a card class:
+   *   shouldUpdate(changedProps) {
+   *     if (changedProps.has("hass")) {
+   *       return window.__taskmate_hasChanged(changedProps.get("hass"), this.hass, this.config?.entity);
+   *     }
+   *     return true;
+   *   }
+   */
+  const TASKMATE_BUTTON_PREFIX = "button.taskmate_";
+
+  function hasRelevantChange(oldHass, newHass, primaryEntityId) {
+    if (!oldHass || !oldHass.states || !newHass || !newHass.states) return true;
+    if (oldHass.states === newHass.states) return false;
+
+    if (primaryEntityId) {
+      if (oldHass.states[primaryEntityId] !== newHass.states[primaryEntityId]) return true;
+    }
+
+    for (const id of COMPANIONS) {
+      if (oldHass.states[id] !== newHass.states[id]) return true;
+    }
+
+    for (const id in newHass.states) {
+      if (id.startsWith(TASKMATE_BUTTON_PREFIX)) {
+        if (oldHass.states[id] !== newHass.states[id]) return true;
+      }
+    }
+
+    return false;
+  }
+
+  window.__taskmate_hasChanged = hasRelevantChange;
+
+  /**
    * Find the entity id of a TaskMate button by (child_id, action, target_id).
    *
    * TaskMate creates per-child/per-chore and per-child/per-reward button
