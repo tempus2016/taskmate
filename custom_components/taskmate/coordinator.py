@@ -1998,7 +1998,6 @@ class TaskMateCoordinator(DataUpdateCoordinator):
         await self.storage.async_save()
 
         if chore.requires_approval:
-            duration_min = total_seconds // 60
             await self._async_notify_pending_approval(
                 child.name, chore.name, pts,
             )
