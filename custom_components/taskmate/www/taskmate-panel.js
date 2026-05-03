@@ -1071,7 +1071,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-approval-banner">
         <ha-icon icon="mdi:bell-ring-outline"></ha-icon>
         <span>Awaiting your approval — ${parts.join(" · ")}</span>
-        <mwc-button dense unelevated data-act="switch-to-activity">Review</mwc-button>
+        <button class="tm-btn tm-btn-raised tm-btn-sm" data-act="switch-to-activity">Review</button>
       </div>
     `;
   }
@@ -1082,7 +1082,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-card tm-card-error">
         <h2>Failed to load state</h2>
         <p>${this._esc(this._error)}</p>
-        <mwc-button raised data-act="retry">Retry</mwc-button>
+        <button class="tm-btn tm-btn-raised" data-act="retry">Retry</button>
       </div>`;
     if (!this._state) return `<div class="tm-card">No state yet.</div>`;
 
@@ -1124,7 +1124,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">Children <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox("Search children…") : ""}
-        <mwc-button raised data-act="add-child">＋ Add child</mwc-button>
+        <button class="tm-btn tm-btn-raised" data-act="add-child">＋ Add child</button>
       </div>
       ${all.length === 0 ? this._emptyState("👨‍👩‍👧‍👦", "No children yet", "Add your first child to get started.", "add-child", "+ Add child") :
         children.length === 0 ? `<div class="tm-card tm-empty"><p>No children match "<strong>${this._esc(this._filter)}</strong>".</p></div>` : `
@@ -1152,9 +1152,9 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.total_chores_completed || 0)}</div><div class="tm-stat-label">Done</div></div>
         </div>
         <div class="tm-card-foot">
-          <mwc-button dense data-act="edit-child" data-id="${this._esc(child.id)}">Edit</mwc-button>
-          <mwc-button dense data-act="reorder-chores-for-child" data-id="${this._esc(child.id)}" title="Reorder this child's chores">⇅ Chore Order</mwc-button>
-          <mwc-button dense class="danger" data-act="delete-child" data-id="${this._esc(child.id)}">Delete</mwc-button>
+          <button class="tm-btn tm-btn-sm" data-act="edit-child" data-id="${this._esc(child.id)}">Edit</button>
+          <button class="tm-btn tm-btn-sm" data-act="reorder-chores-for-child" data-id="${this._esc(child.id)}" title="Reorder this child's chores">⇅ Chore Order</button>
+          <button class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-child" data-id="${this._esc(child.id)}">Delete</button>
         </div>
       </article>
     `;
@@ -1222,8 +1222,8 @@ class TaskMatePanel extends HTMLElement {
                     <div class="tm-meta">${this._timeAgo(c.completed_at)}${chore ? ` · ${chore.points} points` : ""}</div>
                   </div>
                   <div class="tm-approval-actions">
-                    <mwc-button dense data-act="reject-chore" data-id="${this._esc(c.id)}">Reject</mwc-button>
-                    <mwc-button dense unelevated data-act="approve-chore" data-id="${this._esc(c.id)}">Approve</mwc-button>
+                    <button class="tm-btn tm-btn-sm" data-act="reject-chore" data-id="${this._esc(c.id)}">Reject</button>
+                    <button class="tm-btn tm-btn-raised tm-btn-sm" data-act="approve-chore" data-id="${this._esc(c.id)}">Approve</button>
                   </div>
                 </div>
               `;
@@ -1239,8 +1239,8 @@ class TaskMatePanel extends HTMLElement {
                     <div class="tm-meta">${this._timeAgo(c.claimed_at)}${reward ? ` · ${reward.cost} points` : ""}</div>
                   </div>
                   <div class="tm-approval-actions">
-                    <mwc-button dense data-act="reject-reward" data-id="${this._esc(c.id)}">Reject</mwc-button>
-                    <mwc-button dense unelevated data-act="approve-reward" data-id="${this._esc(c.id)}">Approve</mwc-button>
+                    <button class="tm-btn tm-btn-sm" data-act="reject-reward" data-id="${this._esc(c.id)}">Reject</button>
+                    <button class="tm-btn tm-btn-raised tm-btn-sm" data-act="approve-reward" data-id="${this._esc(c.id)}">Approve</button>
                   </div>
                 </div>
               `;
@@ -1306,8 +1306,8 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">Chores <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox("Filter chores…") : ""}
-        <mwc-button data-act="bulk-add-chore">＋＋ Bulk add</mwc-button>
-        <mwc-button raised data-act="add-chore">＋ Add chore</mwc-button>
+        <button class="tm-btn" data-act="bulk-add-chore">＋＋ Bulk add</button>
+        <button class="tm-btn tm-btn-raised" data-act="add-chore">＋ Add chore</button>
       </div>
       ${all.length === 0 ? this._emptyState("📋", "No chores yet", "Add a chore — it'll show on the assigned children's cards.", "add-chore", "+ Add chore") :
         chores.length === 0 ? `<div class="tm-card tm-empty"><p>No chores match "<strong>${this._esc(this._filter)}</strong>".</p></div>` : `
@@ -1368,7 +1368,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">Rewards <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox("Search rewards…") : ""}
-        <mwc-button raised data-act="add-reward">＋ Add reward</mwc-button>
+        <button class="tm-btn tm-btn-raised" data-act="add-reward">＋ Add reward</button>
       </div>
       ${all.length === 0 ? this._emptyState("🎁", "No rewards yet", `Add a reward children can spend their ${this._esc(pointsName.toLowerCase())} on.`, "add-reward", "+ Add reward") :
         rewards.length === 0 ? `<div class="tm-card tm-empty"><p>No rewards match "<strong>${this._esc(this._filter)}</strong>".</p></div>` : `
@@ -1403,8 +1403,8 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-progress-text"><span><strong>${this._fmtNum(totalPooled)}</strong> / ${this._fmtNum(r.cost)}</span><span>${pct}%</span></div>
         ` : ""}
         <div class="tm-card-foot">
-          <mwc-button dense data-act="edit-reward" data-id="${this._esc(r.id)}">Edit</mwc-button>
-          <mwc-button dense class="danger" data-act="delete-reward" data-id="${this._esc(r.id)}">Delete</mwc-button>
+          <button class="tm-btn tm-btn-sm" data-act="edit-reward" data-id="${this._esc(r.id)}">Edit</button>
+          <button class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-reward" data-id="${this._esc(r.id)}">Delete</button>
         </div>
       </article>
     `;
@@ -1420,7 +1420,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">${labels.plural} <span class="tm-toolbar-count">${allItems.length}</span></h2>
         ${allItems.length > 0 ? this._searchBox(`Search ${labels.plural.toLowerCase()}…`) : ""}
-        <mwc-button raised data-act="add-${kind}">＋ Add ${kind}</mwc-button>
+        <button class="tm-btn tm-btn-raised" data-act="add-${kind}">＋ Add ${kind}</button>
       </div>
       ${allItems.length === 0 ? this._emptyState(labels.icon, `No ${labels.plural.toLowerCase()} yet`, kind === "penalty" ? "Add a penalty to deduct points for misbehaviour." : "Add a bonus to award points for going above and beyond.", `add-${kind}`, labels.add) :
         items.length === 0 ? `<div class="tm-card tm-empty"><p>No ${labels.plural.toLowerCase()} match "<strong>${this._esc(this._filter)}</strong>".</p></div>` : `
@@ -1438,7 +1438,7 @@ class TaskMatePanel extends HTMLElement {
                     <td><strong class="tm-numeric ${kind === "penalty" ? "tm-neg" : "tm-pos"}">${kind === "penalty" ? "−" : "+"}${item.points}</strong></td>
                     <td>${assignedNames}</td>
                     <td class="tm-row-actions">
-                      <mwc-button dense data-act="apply-${kind}" data-id="${this._esc(item.id)}">Apply…</mwc-button>
+                      <button class="tm-btn tm-btn-sm" data-act="apply-${kind}" data-id="${this._esc(item.id)}">Apply…</button>
                       <button class="tm-icon-btn" data-act="edit-${kind}" data-id="${this._esc(item.id)}" title="Edit">✏</button>
                       <button class="tm-icon-btn" data-act="delete-${kind}" data-id="${this._esc(item.id)}" title="Delete">🗑</button>
                     </td>
@@ -1461,7 +1461,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">Task groups <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox("Search groups…") : ""}
-        <mwc-button raised data-act="add-group">＋ Add group</mwc-button>
+        <button class="tm-btn tm-btn-raised" data-act="add-group">＋ Add group</button>
       </div>
       ${all.length === 0 ? this._emptyState("🔗", "No task groups yet", "Create a group to make chores rotate together (e.g. all kitchen chores stay with one child each day).", "add-group", "+ Add group") :
         groups.length === 0 ? `<div class="tm-card tm-empty"><p>No groups match "<strong>${this._esc(this._filter)}</strong>".</p></div>` : `
@@ -1479,8 +1479,8 @@ class TaskMatePanel extends HTMLElement {
                 ${(g.chore_ids || []).map(id => `<li>${this._esc((choreById[id] && choreById[id].name) || `(missing chore ${id})`)}</li>`).join("")}
               </ul>
               <div class="tm-card-foot">
-                <mwc-button dense data-act="edit-group" data-id="${this._esc(g.id)}">Edit</mwc-button>
-                <mwc-button dense class="danger" data-act="delete-group" data-id="${this._esc(g.id)}">Delete</mwc-button>
+                <button class="tm-btn tm-btn-sm" data-act="edit-group" data-id="${this._esc(g.id)}">Edit</button>
+                <button class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-group" data-id="${this._esc(g.id)}">Delete</button>
               </div>
             </article>
           `).join("")}
@@ -1577,7 +1577,7 @@ class TaskMatePanel extends HTMLElement {
         </div>
 
         <div class="tm-settings-foot">
-          <mwc-button raised data-act="save-settings">Save settings</mwc-button>
+          <button class="tm-btn tm-btn-raised" data-act="save-settings">Save settings</button>
         </div>
       </div>
     `;
@@ -1612,8 +1612,8 @@ class TaskMatePanel extends HTMLElement {
         this._entityPickerField("Unavailability sensor (optional)", "unavailability_entity", d.unavailability_entity, ["binary_sensor", "sensor", "input_boolean", "person", "calendar"],
           "A second sensor where <code>on</code>/<code>active</code> means the child is busy. Useful for school calendars. The child is available only when the availability sensor says available AND this sensor does not say busy."),
       ].join(""),
-      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
-       <mwc-button slot="primaryAction" raised data-act="save-child">Save</mwc-button>`
+      `<button class="tm-btn" data-act="close-dialog">Cancel</button>
+       <button class="tm-btn tm-btn-raised" data-act="save-child">Save</button>`
     );
   }
 
@@ -1716,8 +1716,8 @@ class TaskMatePanel extends HTMLElement {
           </div>
         </details>`,
       ].join(""),
-      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
-       <mwc-button slot="primaryAction" raised data-act="save-chore">Save</mwc-button>`
+      `<button class="tm-btn" data-act="close-dialog">Cancel</button>
+       <button class="tm-btn tm-btn-raised" data-act="save-chore">Save</button>`
     );
   }
 
@@ -1755,8 +1755,8 @@ class TaskMatePanel extends HTMLElement {
           ${this._dateField("Expires (blank = never)", "expires_at", d.expires_at, "Pooled points are refunded at midnight.")}
         </div>`,
       ].join(""),
-      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
-       <mwc-button slot="primaryAction" raised data-act="save-reward">Save</mwc-button>`
+      `<button class="tm-btn" data-act="close-dialog">Cancel</button>
+       <button class="tm-btn tm-btn-raised" data-act="save-reward">Save</button>`
     );
   }
 
@@ -1786,8 +1786,8 @@ class TaskMatePanel extends HTMLElement {
           </div>
         ` : "",
       ].join(""),
-      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
-       <mwc-button slot="primaryAction" raised data-act="save-${kind}">Save</mwc-button>`
+      `<button class="tm-btn" data-act="close-dialog">Cancel</button>
+       <button class="tm-btn tm-btn-raised" data-act="save-${kind}">Save</button>`
     );
   }
 
@@ -1804,13 +1804,13 @@ class TaskMatePanel extends HTMLElement {
        ${eligible.length === 0 ? `<p class="tm-meta">No eligible children. Edit the ${kind} to set who it applies to.</p>` : `
         <div class="tm-chip-row" style="margin-top: 12px;">
           ${eligible.map(c => `
-            <mwc-button data-act="do-apply-${kind}" data-id="${this._esc(item.id)}" data-child="${this._esc(c.id)}">
+            <button class="tm-btn" data-act="do-apply-${kind}" data-id="${this._esc(item.id)}" data-child="${this._esc(c.id)}">
               ${this._esc(c.name)}
-            </mwc-button>
+            </button>
           `).join("")}
         </div>
        `}`,
-      `<mwc-button slot="secondaryAction" data-act="close-dialog">Close</mwc-button>`
+      `<button class="tm-btn" data-act="close-dialog">Close</button>`
     );
   }
 
@@ -1839,8 +1839,8 @@ class TaskMatePanel extends HTMLElement {
           </div>
         `,
       ].join(""),
-      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
-       <mwc-button slot="primaryAction" raised data-act="save-group">Save</mwc-button>`
+      `<button class="tm-btn" data-act="close-dialog">Cancel</button>
+       <button class="tm-btn tm-btn-raised" data-act="save-group">Save</button>`
     );
   }
 
@@ -1886,8 +1886,8 @@ class TaskMatePanel extends HTMLElement {
         this._select("Completion sound", "completion_sound", d.completion_sound, COMPLETION_SOUNDS.map(s => ({ v: s, l: s }))),
         this._switch("Requires parent approval", "requires_approval", d.requires_approval),
       ].join(""),
-      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
-       <mwc-button slot="primaryAction" raised data-act="save-bulk-chores">Create chores</mwc-button>`
+      `<button class="tm-btn" data-act="close-dialog">Cancel</button>
+       <button class="tm-btn tm-btn-raised" data-act="save-bulk-chores">Create chores</button>`
     );
   }
 
@@ -1909,8 +1909,8 @@ class TaskMatePanel extends HTMLElement {
            `;
          }).join("")}
        </div>`,
-      `<mwc-button slot="secondaryAction" data-act="close-dialog">Cancel</mwc-button>
-       <mwc-button slot="primaryAction" raised data-act="save-chore-order">Save order</mwc-button>`
+      `<button class="tm-btn" data-act="close-dialog">Cancel</button>
+       <button class="tm-btn tm-btn-raised" data-act="save-chore-order">Save order</button>`
     );
   }
 
@@ -2088,7 +2088,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-empty-icon">${icon}</div>
         <h3>${this._esc(title)}</h3>
         <p>${this._esc(copy)}</p>
-        <mwc-button raised data-act="${action}">${this._esc(label)}</mwc-button>
+        <button class="tm-btn tm-btn-raised" data-act="${action}">${this._esc(label)}</button>
       </div>
     `;
   }
@@ -2407,13 +2407,46 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-search-clear:hover { background: var(--tm-surface-3); color: var(--tm-text); }
 
-      /* Buttons (HA native mwc-button) */
-      mwc-button {
-        --mdc-theme-primary: var(--primary-color);
-        --mdc-theme-on-primary: var(--text-primary-color, #fff);
+      /* Buttons */
+      .tm-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        gap: 6px; padding: 8px 16px;
+        border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm);
+        background: var(--tm-surface-0);
+        color: var(--tm-accent);
+        font-size: 13px; font-weight: 500;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.12s var(--tm-easing);
+        white-space: nowrap;
+        text-decoration: none;
+        line-height: 1.3;
       }
-      mwc-button.danger {
-        --mdc-theme-primary: var(--tm-danger);
+      .tm-btn:hover {
+        background: var(--tm-accent-soft);
+        border-color: var(--tm-accent);
+      }
+      .tm-btn-raised {
+        background: var(--tm-accent);
+        color: var(--text-primary-color, #fff);
+        border-color: var(--tm-accent);
+        box-shadow: var(--tm-shadow-xs);
+      }
+      .tm-btn-raised:hover {
+        filter: brightness(1.1);
+        box-shadow: var(--tm-shadow-sm);
+      }
+      .tm-btn-sm {
+        padding: 5px 12px; font-size: 12.5px;
+      }
+      .tm-btn-danger {
+        color: var(--tm-danger);
+        border-color: var(--tm-danger-soft);
+      }
+      .tm-btn-danger:hover {
+        background: var(--tm-danger-soft);
+        border-color: var(--tm-danger);
       }
       .tm-icon-btn {
         width: 28px; height: 28px;
