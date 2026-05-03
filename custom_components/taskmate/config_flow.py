@@ -281,11 +281,11 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                             mode=selector.SelectSelectorMode.DROPDOWN,
                         )
                     ),
-                    vol.Optional("availability_entity", default=""): selector.EntitySelector(
+                    vol.Optional("availability_entity"): selector.EntitySelector(
                         selector.EntitySelectorConfig()
                     ),
                     vol.Optional("availability_inverted", default=False): selector.BooleanSelector(),
-                    vol.Optional("unavailability_entity", default=""): selector.EntitySelector(
+                    vol.Optional("unavailability_entity"): selector.EntitySelector(
                         selector.EntitySelectorConfig()
                     ),
                 }
