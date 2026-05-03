@@ -1,0 +1,90 @@
+"""Built-in chore template packs for TaskMate."""
+from __future__ import annotations
+
+TEMPLATE_CHORE_FIELDS = (
+    "name", "points", "description", "requires_approval", "time_category",
+    "daily_limit", "completion_sound", "schedule_mode", "due_days",
+    "recurrence", "recurrence_day", "recurrence_start", "first_occurrence_mode",
+    "assignment_mode", "require_availability", "visibility_entity",
+    "visibility_state", "visibility_operator", "task_type",
+    "timed_rate_points", "timed_rate_minutes", "timed_max_daily_minutes",
+)
+
+_WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday"]
+_WEEKENDS = ["saturday", "sunday"]
+
+BUILT_IN_TEMPLATES: list[dict] = [
+    {
+        "id": "morning_routine",
+        "name": "Morning routine",
+        "icon": "mdi:weather-sunny",
+        "builtin": True,
+        "chores": [
+            {"name": "Make bed", "points": 2, "time_category": "morning", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Brush teeth", "points": 1, "time_category": "morning", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Get dressed", "points": 1, "time_category": "morning", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Pack school bag", "points": 2, "time_category": "morning", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+        ],
+    },
+    {
+        "id": "evening_routine",
+        "name": "Evening routine",
+        "icon": "mdi:weather-night",
+        "builtin": True,
+        "chores": [
+            {"name": "Brush teeth", "points": 1, "time_category": "evening", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Put on pyjamas", "points": 1, "time_category": "evening", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Tidy room", "points": 2, "time_category": "evening", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Set out clothes for tomorrow", "points": 1, "time_category": "evening", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+        ],
+    },
+    {
+        "id": "kitchen_helper",
+        "name": "Kitchen helper",
+        "icon": "mdi:silverware-fork-knife",
+        "builtin": True,
+        "chores": [
+            {"name": "Set table", "points": 2, "time_category": "evening", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Clear plates", "points": 2, "time_category": "evening", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Load dishwasher", "points": 3, "time_category": "evening", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Wipe counters", "points": 2, "time_category": "evening", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+        ],
+    },
+    {
+        "id": "weekend_helper",
+        "name": "Weekend helper",
+        "icon": "mdi:broom",
+        "builtin": True,
+        "chores": [
+            {"name": "Tidy bedroom", "points": 3, "time_category": "anytime", "schedule_mode": "specific_days", "due_days": list(_WEEKENDS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Hoover", "points": 4, "time_category": "anytime", "schedule_mode": "specific_days", "due_days": list(_WEEKENDS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Help with laundry", "points": 3, "time_category": "anytime", "schedule_mode": "specific_days", "due_days": list(_WEEKENDS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Take bins out", "points": 2, "time_category": "anytime", "schedule_mode": "specific_days", "due_days": list(_WEEKENDS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+        ],
+    },
+    {
+        "id": "pet_care",
+        "name": "Pet care",
+        "icon": "mdi:paw",
+        "builtin": True,
+        "chores": [
+            {"name": "Feed pet", "points": 2, "time_category": "morning", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Fill water bowl", "points": 1, "time_category": "morning", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Walk dog", "points": 3, "time_category": "afternoon", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Clean litter tray", "points": 3, "time_category": "anytime", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+        ],
+    },
+    {
+        "id": "homework_reading",
+        "name": "Homework & reading",
+        "icon": "mdi:book-open-variant",
+        "builtin": True,
+        "chores": [
+            {"name": "Do homework", "points": 3, "time_category": "afternoon", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Read for 20 minutes", "points": 2, "time_category": "anytime", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+            {"name": "Practice instrument", "points": 2, "time_category": "anytime", "schedule_mode": "specific_days", "due_days": list(_WEEKDAYS), "requires_approval": False, "assignment_mode": "everyone", "daily_limit": 1, "completion_sound": "coin"},
+        ],
+    },
+]
+
+BUILT_IN_IDS = frozenset(t["id"] for t in BUILT_IN_TEMPLATES)

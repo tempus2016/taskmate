@@ -98,6 +98,15 @@ WS_REJECT_REWARD: Final       = "taskmate/reject_reward"
 WS_SET_CHORE_ORDER: Final     = "taskmate/set_chore_order"
 WS_ADD_CHORES_BULK: Final     = "taskmate/add_chores_bulk"
 
+# Templates
+WS_TEMPLATES_LIST: Final       = "taskmate/templates/list"
+WS_TEMPLATES_GET: Final        = "taskmate/templates/get"
+WS_TEMPLATES_APPLY: Final      = "taskmate/templates/apply"
+WS_TEMPLATES_SAVE_FROM: Final  = "taskmate/templates/save_from_chores"
+WS_TEMPLATES_CREATE: Final     = "taskmate/templates/create"
+WS_TEMPLATES_UPDATE: Final     = "taskmate/templates/update"
+WS_TEMPLATES_DELETE: Final     = "taskmate/templates/delete"
+
 
 def _get_coordinator(hass: HomeAssistant) -> TaskMateCoordinator | None:
     for value in hass.data.get(DOMAIN, {}).values():
@@ -168,6 +177,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "task_groups":      list(data.get("task_groups", [])),
         "pool_allocations": list(data.get("pool_allocations", [])),
         "timed_sessions":   list(data.get("timed_sessions", [])),
+        "templates":        coordinator.get_all_templates(),
         # Operational state — used by the panel's Activity tab + approval banner
         "completions":          completions,           # all (panel slices for display)
         "pending_completions":  [c for c in completions if not c.get("approved")],
@@ -874,6 +884,130 @@ async def _ws_add_chores_bulk(hass, connection, msg, coordinator):
 
 
 # ---------------------------------------------------------------------------
+# Templates
+# ---------------------------------------------------------------------------
+
+@websocket_api.websocket_command({vol.Required("type"): WS_TEMPLATES_LIST})
+@websocket_api.async_response
+@_admin_only
+async def _ws_templates_list(hass, connection, msg, coordinator):
+    connection.send_result(msg["id"], {"templates": coordinator.get_all_templates()})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TEMPLATES_GET,
+    vol.Required("template_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_templates_get(hass, connection, msg, coordinator):
+    tpl = coordinator.get_template(msg["template_id"])
+    if tpl is None:
+        connection.send_error(msg["id"], "not_found", f"Template {msg['template_id']} not found")
+        return
+    connection.send_result(msg["id"], tpl)
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TEMPLATES_APPLY,
+    vol.Required("chores"): [{
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Optional("points"): vol.All(int, vol.Range(min=0)),
+        vol.Optional("description"): str,
+        vol.Optional("assigned_to"): [str],
+        vol.Optional("requires_approval"): bool,
+        vol.Optional("time_category"): str,
+        vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("completion_sound"): str,
+        vol.Optional("schedule_mode"): vol.In(["specific_days", "recurring", "one_shot"]),
+        vol.Optional("due_days"): [str],
+        vol.Optional("recurrence"): str,
+        vol.Optional("recurrence_day"): str,
+        vol.Optional("recurrence_start"): str,
+        vol.Optional("first_occurrence_mode"): str,
+        vol.Optional("assignment_mode"): vol.In(["everyone", "alternating", "random", "balanced"]),
+        vol.Optional("require_availability"): bool,
+        vol.Optional("visibility_entity"): str,
+        vol.Optional("visibility_state"): str,
+        vol.Optional("visibility_operator"): str,
+        vol.Optional("task_type"): vol.In(["standard", "timed"]),
+        vol.Optional("timed_rate_points"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("timed_rate_minutes"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("timed_max_daily_minutes"): vol.All(int, vol.Range(min=0)),
+    }],
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_templates_apply(hass, connection, msg, coordinator):
+    created_ids = await coordinator.async_apply_template(list(msg["chores"]))
+    connection.send_result(msg["id"], {"created_ids": created_ids})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TEMPLATES_SAVE_FROM,
+    vol.Required("chore_ids"): vol.All([str], vol.Length(min=1)),
+    vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+    vol.Optional("icon", default="mdi:clipboard-list"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_templates_save_from(hass, connection, msg, coordinator):
+    tpl_id = await coordinator.async_save_template_from_chores(
+        chore_ids=list(msg["chore_ids"]),
+        name=msg["name"],
+        icon=msg.get("icon", "mdi:clipboard-list"),
+    )
+    connection.send_result(msg["id"], {"template_id": tpl_id})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TEMPLATES_CREATE,
+    vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+    vol.Optional("icon", default="mdi:clipboard-list"): str,
+    vol.Required("chores"): vol.All(list, vol.Length(min=1)),
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_templates_create(hass, connection, msg, coordinator):
+    tpl_id = await coordinator.async_create_template(
+        name=msg["name"],
+        icon=msg.get("icon", "mdi:clipboard-list"),
+        chores=list(msg["chores"]),
+    )
+    connection.send_result(msg["id"], {"template_id": tpl_id})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TEMPLATES_UPDATE,
+    vol.Required("template_id"): str,
+    vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
+    vol.Optional("icon"): str,
+    vol.Optional("chores"): vol.All(list, vol.Length(min=1)),
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_templates_update(hass, connection, msg, coordinator):
+    await coordinator.async_update_template(
+        msg["template_id"],
+        name=msg.get("name"),
+        icon=msg.get("icon"),
+        chores=msg.get("chores"),
+    )
+    connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TEMPLATES_DELETE,
+    vol.Required("template_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_templates_delete(hass, connection, msg, coordinator):
+    await coordinator.async_delete_template(msg["template_id"])
+    connection.send_result(msg["id"], {"success": True})
+
+
+# ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
 
@@ -889,6 +1023,9 @@ _COMMANDS = (
     _ws_complete_bonus_subtask,
     _ws_approve_chore, _ws_reject_chore, _ws_approve_reward, _ws_reject_reward,
     _ws_set_chore_order, _ws_add_chores_bulk,
+    _ws_templates_list, _ws_templates_get, _ws_templates_apply,
+    _ws_templates_save_from, _ws_templates_create, _ws_templates_update,
+    _ws_templates_delete,
 )
 
 
