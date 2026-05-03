@@ -9,6 +9,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.util import dt as dt_util  # noqa: F401 — used by tests as patch target
 
 from .const import DOMAIN
 from .coord_assignments import AssignmentsMixin
