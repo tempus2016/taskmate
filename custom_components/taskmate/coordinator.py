@@ -19,7 +19,7 @@ from .const import (
     MAX_CALENDAR_PROJECTION_DAYS,
     MIN_CALENDAR_PROJECTION_DAYS,
 )
-from .models import Bonus, BonusSubTask, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction
+from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction
 from .storage import TaskMateStorage
 
 _LOGGER = logging.getLogger(__name__)
