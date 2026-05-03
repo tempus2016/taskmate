@@ -219,9 +219,10 @@ class TaskMateLeaderboardCard extends LitElement {
     if (!config.entity) throw new Error("Please define an entity");
     this.config = {
       title: "",
-      sort_by: "points",      // "points" | "streak" | "weekly"
+      sort_by: "points",      // "points" | "streak" | "weekly" | "career"
       show_streak: true,
       show_weekly: true,
+      show_career: true,
             header_color: '#b7950b',
     ...config,
     };
@@ -256,10 +257,11 @@ class TaskMateLeaderboardCard extends LitElement {
     const sorted = [...children].sort((a, b) => {
       if (sortBy === "streak") return (b.current_streak || 0) - (a.current_streak || 0);
       if (sortBy === "weekly") return (weeklyPoints[b.id] || 0) - (weeklyPoints[a.id] || 0);
+      if (sortBy === "career") return (b.career_score || 0) - (a.career_score || 0);
       return (b.points || 0) - (a.points || 0);
     });
 
-    const sortLabels = { points: this._t('leaderboard.sort_all_time_points'), streak: this._t('leaderboard.sort_current_streak'), weekly: this._t('leaderboard.sort_this_week') };
+    const sortLabels = { points: this._t('leaderboard.sort_all_time_points'), streak: this._t('leaderboard.sort_current_streak'), weekly: this._t('leaderboard.sort_this_week'), career: this._t('leaderboard.sort_career_score') };
     const periodLabel = sortLabels[sortBy] || sortLabels.points;
 
     // Solo mode
@@ -297,6 +299,7 @@ class TaskMateLeaderboardCard extends LitElement {
   _getScore(a, b, sortBy, weeklyPoints) {
     if (sortBy === "streak") return (a.current_streak || 0) === (b.current_streak || 0);
     if (sortBy === "weekly") return (weeklyPoints[a.id] || 0) === (weeklyPoints[b.id] || 0);
+    if (sortBy === "career") return (a.career_score || 0) === (b.career_score || 0);
     return (a.points || 0) === (b.points || 0);
   }
 
@@ -313,6 +316,9 @@ class TaskMateLeaderboardCard extends LitElement {
     } else if (sortBy === "weekly") {
       scoreValue = weeklyPoints[child.id] || 0;
       scoreLabel = this._t('common.this_week');
+    } else if (sortBy === "career") {
+      scoreValue = child.career_score || 0;
+      scoreLabel = this._t('leaderboard.career_score');
     } else {
       scoreValue = child.points || 0;
       scoreLabel = pointsName;
@@ -347,6 +353,12 @@ class TaskMateLeaderboardCard extends LitElement {
               <span class="stat-chip">
                 <ha-icon icon="${pointsIcon}" style="color: #f1c40f;"></ha-icon>
                 ${child.points || 0} ${this._t('common.total')}
+              </span>
+            ` : ''}
+            ${this.config.show_career !== false && sortBy !== "career" ? html`
+              <span class="stat-chip">
+                <ha-icon icon="mdi:trophy-variant" style="color: #27ae60;"></ha-icon>
+                ${child.career_score || 0} ${this._t('leaderboard.career_label')}
               </span>
             ` : ''}
           </div>
@@ -416,6 +428,11 @@ class TaskMateLeaderboardCard extends LitElement {
             <ha-icon class="pb-icon" icon="${pointsIcon}" style="color:#f1c40f;"></ha-icon>
             <span class="pb-label">${this._t('leaderboard.total_points_earned')}</span>
             <span class="pb-value">${child.total_points_earned || child.points || 0}</span>
+          </div>
+          <div class="personal-best-row">
+            <ha-icon class="pb-icon" icon="mdi:trophy-variant" style="color:#27ae60;"></ha-icon>
+            <span class="pb-label">${this._t('leaderboard.career_score')}</span>
+            <span class="pb-value">${child.career_score || 0}</span>
           </div>
         </div>
       </ha-card>
@@ -494,6 +511,7 @@ class TaskMateLeaderboardCardEditor extends LitElement {
               { value: 'points', label: this._t('leaderboard.editor.sort_option_points') },
               { value: 'streak', label: this._t('leaderboard.editor.sort_option_streak') },
               { value: 'weekly', label: this._t('leaderboard.editor.sort_option_weekly') },
+              { value: 'career', label: this._t('leaderboard.editor.sort_option_career') },
             ],
             mode: 'dropdown',
           },
@@ -501,6 +519,7 @@ class TaskMateLeaderboardCardEditor extends LitElement {
       },
       { name: 'show_streak', selector: { boolean: {} } },
       { name: 'show_weekly', selector: { boolean: {} } },
+      { name: 'show_career', selector: { boolean: {} } },
     ];
   }
 
@@ -511,6 +530,7 @@ class TaskMateLeaderboardCardEditor extends LitElement {
       sort_by: this._t('leaderboard.editor.rank_by_label'),
       show_streak: this._t('leaderboard.editor.show_streak'),
       show_weekly: this._t('leaderboard.editor.show_weekly'),
+      show_career: this._t('leaderboard.editor.show_career'),
     };
     return labels[entry.name] ?? entry.name;
   };
@@ -531,6 +551,7 @@ class TaskMateLeaderboardCardEditor extends LitElement {
       sort_by: this.config.sort_by || 'points',
       show_streak: this.config.show_streak !== false,
       show_weekly: this.config.show_weekly !== false,
+      show_career: this.config.show_career !== false,
     };
     return html`
       <ha-form
@@ -583,7 +604,7 @@ class TaskMateLeaderboardCardEditor extends LitElement {
     for (const [key, value] of Object.entries(newValues)) {
       if (value === '' || value === null || value === undefined) {
         delete newConfig[key];
-      } else if ((key === 'show_streak' || key === 'show_weekly') && value === true) {
+      } else if ((key === 'show_streak' || key === 'show_weekly' || key === 'show_career') && value === true) {
         delete newConfig[key];
       } else if (key === 'sort_by' && value === 'points') {
         delete newConfig[key];

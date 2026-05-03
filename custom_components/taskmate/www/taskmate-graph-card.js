@@ -29,7 +29,7 @@ class TaskMateGraphCard extends LitElement {
     return {
       hass: { type: Object },
       config: { type: Object },
-      _mode: { type: String }, // "daily" | "cumulative"
+      _mode: { type: String }, // "daily" | "cumulative" | "career"
     };
   }
 
@@ -262,6 +262,9 @@ class TaskMateGraphCard extends LitElement {
     // Build date range
     const dateRange = this._buildDateRange(days, tz);
 
+    // Build career score history lookup
+    const careerHistory = attrs.career_score_history || {};
+
     // Build per-child data series
     const series = children.map((child, idx) => {
       const color = CHILD_COLORS[idx % CHILD_COLORS.length];
@@ -269,14 +272,15 @@ class TaskMateGraphCard extends LitElement {
         child.id, dateRange, allCompletions, allTransactions, chorePointsMap, tz
       );
       const cumulativePoints = this._buildCumulative(dailyPoints);
-      return { child, color, dailyPoints, cumulativePoints };
+      const careerPoints = this._buildCareerSeries(child, careerHistory[child.id] || [], dateRange);
+      return { child, color, dailyPoints, cumulativePoints, careerPoints };
     });
 
     if (series.length === 0) {
       return html`<ha-card><div class="empty-state"><ha-icon icon="mdi:account-group"></ha-icon><div>${this._t('common.no_children')}</div></div></ha-card>`;
     }
 
-    const dataKey = this._mode === "daily" ? "dailyPoints" : "cumulativePoints";
+    const dataKey = this._mode === "daily" ? "dailyPoints" : this._mode === "career" ? "careerPoints" : "cumulativePoints";
     const hasData = series.some(s => s[dataKey].some(v => v > 0));
 
     const baseTitle = this.config.title || this._t('graph.default_title');
@@ -304,6 +308,10 @@ class TaskMateGraphCard extends LitElement {
               class="mode-btn ${this._mode === 'cumulative' ? 'active' : ''}"
               @click="${() => { this._mode = 'cumulative'; this.requestUpdate(); }}"
             >${this._t('graph.total')}</button>
+            <button
+              class="mode-btn ${this._mode === 'career' ? 'active' : ''}"
+              @click="${() => { this._mode = 'career'; this.requestUpdate(); }}"
+            >${this._t('graph.career_growth')}</button>
           </div>
         </div>
 
@@ -606,6 +614,31 @@ class TaskMateGraphCard extends LitElement {
   _buildCumulative(dailyPoints) {
     let running = 0;
     return dailyPoints.map(v => { running += v; return running; });
+  }
+
+  _buildCareerSeries(child, history, dateRange) {
+    const historyMap = {};
+    (history || []).forEach(h => { historyMap[h.date] = h.score; });
+    let lastKnown = child.career_score || 0;
+    // Walk backwards through history to find the earliest known value
+    // then walk forward with carry-forward
+    const earliest = dateRange[0];
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (history[i].date <= earliest) {
+        lastKnown = history[i].score;
+        break;
+      }
+    }
+    // If no history before the range, use the first history entry in range or current score
+    if (history.length > 0 && history[0].date > earliest) {
+      // Carry back from the earliest known history point
+      lastKnown = history[0].score;
+    }
+    let carry = lastKnown;
+    return dateRange.map(d => {
+      if (d in historyMap) carry = historyMap[d];
+      return carry;
+    });
   }
 
   _niceMax(val) {

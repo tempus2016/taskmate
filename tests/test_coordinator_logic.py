@@ -73,6 +73,7 @@ def _make_coord(
     storage.get_completions = MagicMock(return_value=_completions)
     storage.update_child = MagicMock()
     storage.add_points_transaction = MagicMock()
+    storage.append_career_score_snapshot = MagicMock()
     storage.async_save = AsyncMock()
     # Provide a real _data dict for testing
     storage._data = {"completions": [c.to_dict() for c in _completions]}
@@ -945,3 +946,101 @@ class TestOneShotChores:
             )
 
         coord.storage.update_chore.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Career Score
+# ---------------------------------------------------------------------------
+
+class TestCareerScore:
+    """Tests for career_score tracking across coordinator operations."""
+
+    def test_add_points_increments_career_score(self):
+        child = _make_child(points=50)
+        child.career_score = 50
+        coord = _make_coord(children=[child])
+        coord.storage.get_child = MagicMock(return_value=child)
+
+        import custom_components.taskmate.coordinator as _mod
+        with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
+            run(coord.async_add_points(child.id, 10, reason="Bonus: Tidied room"))
+
+        assert child.career_score == 60
+        assert child.total_points_earned == 60
+        coord.storage.append_career_score_snapshot.assert_called()
+
+    def test_penalty_decrements_career_score(self):
+        child = _make_child(points=100)
+        child.career_score = 100
+        child.total_penalties_received = 0
+        coord = _make_coord(children=[child])
+        coord.storage.get_child = MagicMock(return_value=child)
+
+        import custom_components.taskmate.coordinator as _mod
+        with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
+            run(coord.async_remove_points(child.id, 15, reason="Penalty: Not tidying"))
+
+        assert child.total_penalties_received == 15
+        assert child.career_score == 85  # 100 earned - 15 penalties
+        coord.storage.append_career_score_snapshot.assert_called()
+
+    def test_non_penalty_remove_does_not_affect_career_score(self):
+        child = _make_child(points=100)
+        child.career_score = 100
+        child.total_penalties_received = 0
+        coord = _make_coord(children=[child])
+        coord.storage.get_child = MagicMock(return_value=child)
+
+        import custom_components.taskmate.coordinator as _mod
+        with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
+            run(coord.async_remove_points(child.id, 20, reason="Admin correction"))
+
+        assert child.total_penalties_received == 0
+        assert child.career_score == 100  # Unchanged
+        coord.storage.append_career_score_snapshot.assert_not_called()
+
+    def test_pool_allocation_does_not_affect_career_score(self):
+        child = _make_child(points=100)
+        child.career_score = 100
+        child.total_penalties_received = 0
+        coord = _make_coord(children=[child])
+        coord.storage.get_child = MagicMock(return_value=child)
+
+        import custom_components.taskmate.coordinator as _mod
+        with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
+            run(coord.async_remove_points(child.id, 30, reason="Allocated to pool: Bike"))
+
+        assert child.total_penalties_received == 0
+        assert child.career_score == 100  # Unchanged
+
+    def test_award_points_updates_career_score(self):
+        child = _make_child(points=50, current_streak=1, last_completion_date="2024-03-19")
+        child.career_score = 50
+        child.total_penalties_received = 0
+        coord = _make_coord(children=[child], settings={"weekend_multiplier": "1.0", "streak_milestones_enabled": "false"})
+
+        import custom_components.taskmate.coordinator as _mod
+        with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
+            total = run(coord._award_points(child, 10))
+
+        assert total == 10
+        assert child.career_score == 60  # 50 + 10
+        coord.storage.append_career_score_snapshot.assert_called_once()
+
+    def test_award_points_with_milestone_bonus(self):
+        child = _make_child(points=50, current_streak=6, last_completion_date="2024-03-19")
+        child.career_score = 50
+        child.total_penalties_received = 0
+        coord = _make_coord(
+            children=[child],
+            settings={"weekend_multiplier": "1.0", "streak_milestones_enabled": "true", "streak_milestones": "7:10"},
+        )
+
+        import custom_components.taskmate.coordinator as _mod
+        with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
+            total = run(coord._award_points(child, 5))
+
+        # 5 base + 10 milestone bonus = 15 total earned on top of 50
+        assert child.total_points_earned == 65
+        assert child.career_score == 65
+        coord.storage.append_career_score_snapshot.assert_called()

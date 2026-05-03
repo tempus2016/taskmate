@@ -444,3 +444,126 @@ class TestPoolSemanticsV2Migration:
         run(storage.async_load())
         # max(0, 5 - 99) = 0
         assert storage._data["children"][0]["points"] == 0
+
+
+# ---------------------------------------------------------------------------
+# Career score migration
+# ---------------------------------------------------------------------------
+
+class TestCareerScoreMigration:
+    def test_migration_sets_career_score_from_total_earned(self):
+        existing = {
+            "children": [
+                {"id": "kid1", "name": "Alice", "points": 80,
+                 "total_points_earned": 200, "total_chores_completed": 15,
+                 "current_streak": 0, "best_streak": 0, "avatar": "mdi:account-circle",
+                 "pending_rewards": [], "chore_order": [],
+                 "last_completion_date": None, "streak_paused": False,
+                 "streak_milestones_achieved": [], "awarded_perfect_weeks": []},
+            ],
+            "chores": [], "rewards": [], "completions": [],
+            "reward_claims": [], "points_transactions": [],
+            "pool_allocations": [],
+            "points_name": "Stars", "points_icon": "mdi:star",
+        }
+        storage = _make_storage(initial_data=existing)
+        run(storage.async_load())
+        child = storage._data["children"][0]
+        assert child["career_score"] == 200
+        assert child["total_penalties_received"] == 0
+        assert storage._data["_career_score_initialized"] is True
+
+    def test_migration_runs_only_once(self):
+        existing = {
+            "children": [
+                {"id": "kid1", "name": "Alice", "points": 80,
+                 "total_points_earned": 200, "total_chores_completed": 15,
+                 "current_streak": 0, "best_streak": 0, "avatar": "mdi:account-circle",
+                 "pending_rewards": [], "chore_order": [],
+                 "last_completion_date": None, "streak_paused": False,
+                 "streak_milestones_achieved": [], "awarded_perfect_weeks": [],
+                 "career_score": 150, "total_penalties_received": 50},
+            ],
+            "chores": [], "rewards": [], "completions": [],
+            "reward_claims": [], "points_transactions": [],
+            "pool_allocations": [],
+            "points_name": "Stars", "points_icon": "mdi:star",
+            "_career_score_initialized": True,
+        }
+        storage = _make_storage(initial_data=existing)
+        run(storage.async_load())
+        child = storage._data["children"][0]
+        assert child["career_score"] == 150
+        assert child["total_penalties_received"] == 50
+
+    def test_fresh_load_initialises_career_score_history(self):
+        storage = _make_storage(initial_data=None)
+        run(storage.async_load())
+        assert "career_score_history" in storage._data
+        assert storage._data["career_score_history"] == {}
+
+
+# ---------------------------------------------------------------------------
+# Career score history management
+# ---------------------------------------------------------------------------
+
+class TestCareerScoreHistory:
+    def _loaded_storage(self):
+        storage = _make_storage(initial_data=None)
+        run(storage.async_load())
+        return storage
+
+    @staticmethod
+    def _today_str():
+        return dt.date.today().isoformat()
+
+    @staticmethod
+    def _yesterday_str():
+        return (dt.date.today() - dt.timedelta(days=1)).isoformat()
+
+    def test_append_and_get(self):
+        storage = self._loaded_storage()
+        today = self._today_str()
+        storage.append_career_score_snapshot("kid1", today, 100)
+        history = storage.get_career_score_history("kid1")
+        assert len(history) == 1
+        assert history[0] == {"date": today, "score": 100}
+
+    def test_upsert_same_day(self):
+        storage = self._loaded_storage()
+        today = self._today_str()
+        storage.append_career_score_snapshot("kid1", today, 100)
+        storage.append_career_score_snapshot("kid1", today, 120)
+        history = storage.get_career_score_history("kid1")
+        assert len(history) == 1
+        assert history[0]["score"] == 120
+
+    def test_multiple_days(self):
+        storage = self._loaded_storage()
+        today = self._today_str()
+        yesterday = self._yesterday_str()
+        storage.append_career_score_snapshot("kid1", yesterday, 100)
+        storage.append_career_score_snapshot("kid1", today, 115)
+        history = storage.get_career_score_history("kid1")
+        assert len(history) == 2
+
+    def test_prune_old_entries(self):
+        storage = self._loaded_storage()
+        today = self._today_str()
+        storage.append_career_score_snapshot("kid1", "2020-01-01", 10)
+        storage.append_career_score_snapshot("kid1", today, 100)
+        history = storage.get_career_score_history("kid1")
+        assert all(e["date"] != "2020-01-01" for e in history)
+
+    def test_remove_for_child(self):
+        storage = self._loaded_storage()
+        today = self._today_str()
+        storage.append_career_score_snapshot("kid1", today, 100)
+        storage.append_career_score_snapshot("kid2", today, 50)
+        storage.remove_career_score_history_for_child("kid1")
+        assert storage.get_career_score_history("kid1") == []
+        assert len(storage.get_career_score_history("kid2")) == 1
+
+    def test_get_nonexistent_child(self):
+        storage = self._loaded_storage()
+        assert storage.get_career_score_history("nonexistent") == []
