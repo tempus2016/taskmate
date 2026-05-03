@@ -19,6 +19,7 @@ const TABS = [
   { id: "penalties", label: "Penalties" },
   { id: "bonuses",   label: "Bonuses" },
   { id: "groups",    label: "Groups" },
+  { id: "templates", label: "Templates" },
   { id: "settings",  label: "⚙",  title: "Settings" },
 ];
 
@@ -107,6 +108,10 @@ class TaskMatePanel extends HTMLElement {
     this._filter = "";               // per-tab search/filter
     this._inlineRename = null;       // { kind: "chore", id, value }
     this._reorderDrag = null;        // tracks drag state during reorder
+    this._templateView = null;       // null | "picker" | "preview"
+    this._templateSelected = null;   // selected template object
+    this._templateChores = [];       // editable chores for preview step
+    this._saveTemplateDialog = false; // "save as template" dialog state
     this._rendered = false;
     this._onFocusIn = this._onFocusIn.bind(this);
     this._onClick = this._onClick.bind(this);
@@ -354,6 +359,25 @@ class TaskMatePanel extends HTMLElement {
 
     if (act === "toggle-penbon-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
 
+    // Templates
+    if (act === "tpl-add-from")     { this._activeTab = "templates"; this._templateView = "picker"; this._render(); return; }
+    if (act === "tpl-select")       { this._selectTemplate(t.dataset.id); return; }
+    if (act === "tpl-back")         { this._templateView = null; this._templateSelected = null; this._templateChores = []; this._render(); return; }
+    if (act === "tpl-remove-chore") { this._templateChores.splice(Number(t.dataset.idx), 1); this._render(); return; }
+    if (act === "tpl-toggle-expand"){ const idx = Number(t.dataset.idx); if (this._templateChores[idx]) { this._templateChores[idx]._expanded = !this._templateChores[idx]._expanded; this._render(); } return; }
+    if (act === "tpl-apply")        { this._doApplyTemplate(); return; }
+    if (act === "tpl-save-from")    { this._saveTemplateDialog = true; this._render(); return; }
+    if (act === "tpl-save-confirm") { this._doSaveFromChores(); return; }
+    if (act === "tpl-save-cancel")  { this._saveTemplateDialog = false; this._render(); return; }
+    if (act === "tpl-create")       { this._openCreateTemplateDialog(); return; }
+    if (act === "tpl-edit")         { this._openEditTemplateDialog(t.dataset.id); return; }
+    if (act === "tpl-delete")       { this._confirmDeleteTemplate(t.dataset.id); return; }
+    if (act === "tpl-save-created") { this._doSaveCreatedTemplate(); return; }
+    if (act === "tpl-save-edited")  { this._doSaveEditedTemplate(); return; }
+    if (act === "tpl-toggle-day")   { const idx = Number(t.dataset.idx); const day = t.dataset.day; if (this._templateChores[idx]) { const days = this._templateChores[idx].due_days || []; const pos = days.indexOf(day); if (pos >= 0) days.splice(pos, 1); else days.push(day); this._templateChores[idx].due_days = days; this._render(); } return; }
+    if (act === "tpl-dialog-add-chore") { if (this._dialog?.data?.chores) { this._dialog.data.chores.push({ name: "", points: 5, time_category: "anytime", schedule_mode: "specific_days", due_days: [], requires_approval: false, assignment_mode: "everyone", daily_limit: 1, completion_sound: "coin" }); this._render(); } return; }
+    if (act === "tpl-dialog-remove-chore") { if (this._dialog?.data?.chores) { this._dialog.data.chores.splice(Number(t.dataset.idx), 1); this._render(); } return; }
+
     // Groups
     if (act === "add-group")    { this._openGroupDialog(null); return; }
     if (act === "edit-group")   { this._openGroupDialog(t.dataset.id); return; }
@@ -409,6 +433,25 @@ class TaskMatePanel extends HTMLElement {
       this._inlineRename.value = t.value;
       return;
     }
+    // Template preview chore field edits
+    const tplField = t.dataset?.tplField;
+    const tplIdx = t.dataset?.tplIdx;
+    if (tplField && tplIdx != null && this._templateChores[Number(tplIdx)]) {
+      let value = t.value;
+      if (tplField === "points" || tplField === "daily_limit") value = Math.max(0, parseInt(value) || 0);
+      if (tplField === "requires_approval") value = value === "true";
+      this._templateChores[Number(tplIdx)][tplField] = value;
+      return;
+    }
+    // Template dialog chore field edits
+    const dField = t.dataset?.tplDialogField;
+    const dIdx = t.dataset?.tplDialogIdx;
+    if (dField && dIdx != null && this._dialog?.data?.chores?.[Number(dIdx)]) {
+      let value = t.value;
+      if (dField === "points") value = Math.max(0, parseInt(value) || 0);
+      this._dialog.data.chores[Number(dIdx)][dField] = value;
+      return;
+    }
     // Dialog field
     if (this._dialog && t.dataset.field) {
       const field = t.dataset.field;
@@ -427,9 +470,26 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _onChange(e) {
-    if (!this._dialog) return;
     const t = e.target;
-    if (!t.dataset || !t.dataset.field) return;
+    if (!t.dataset) return;
+    // Template preview chore field changes (selects)
+    const tplField = t.dataset?.tplField;
+    const tplIdx = t.dataset?.tplIdx;
+    if (tplField && tplIdx != null && this._templateChores[Number(tplIdx)]) {
+      let value = t.value;
+      if (tplField === "requires_approval") value = value === "true";
+      this._templateChores[Number(tplIdx)][tplField] = value;
+      return;
+    }
+    // Template dialog chore field changes (selects)
+    const dField = t.dataset?.tplDialogField;
+    const dIdx = t.dataset?.tplDialogIdx;
+    if (dField && dIdx != null && this._dialog?.data?.chores?.[Number(dIdx)]) {
+      this._dialog.data.chores[Number(dIdx)][dField] = t.value;
+      return;
+    }
+    if (!this._dialog) return;
+    if (!t.dataset.field) return;
     let value;
     if (t.type === "checkbox" || t.tagName === "HA-SWITCH") value = t.checked;
     else if (t.type === "number") value = (t.value === "" ? null : Number(t.value));
@@ -981,6 +1041,7 @@ class TaskMatePanel extends HTMLElement {
           </div>
         </div>
         ${this._dialog ? this._renderDialog() : ""}
+        ${this._renderSaveTemplateDialog()}
       </div>
     `;
     if (existingToast) this.appendChild(existingToast);
@@ -996,6 +1057,7 @@ class TaskMatePanel extends HTMLElement {
       penalties: (this._state.penalties || []).length,
       bonuses:   (this._state.bonuses || []).length,
       groups:    (this._state.task_groups || []).length,
+      templates: (this._state.templates || []).length,
     } : {};
     return [
       { head: "Today", items: [
@@ -1008,6 +1070,7 @@ class TaskMatePanel extends HTMLElement {
         { id: "penalties", label: "Penalties", icon: "mdi:alert-circle-outline" },
         { id: "bonuses",   label: "Bonuses",   icon: "mdi:flash-outline" },
         { id: "groups",    label: "Groups",    icon: "mdi:layers-outline" },
+        { id: "templates", label: "Templates", icon: "mdi:clipboard-list-outline" },
       ]},
       { head: "System", items: [
         { id: "settings", label: "Settings", icon: "mdi:cog-outline" },
@@ -1132,6 +1195,7 @@ class TaskMatePanel extends HTMLElement {
       case "penalties": return this._renderPenBonTab("penalty");
       case "bonuses":   return this._renderPenBonTab("bonus");
       case "groups":    return this._renderGroupsTab();
+      case "templates": return this._renderTemplatesTab();
       case "settings":  return this._renderSettingsTab();
       default:          return `<div class="tm-card">Unknown tab</div>`;
     }
@@ -1351,6 +1415,8 @@ class TaskMatePanel extends HTMLElement {
         <h2 class="tm-toolbar-title">Chores <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox("Filter chores…") : ""}
         <button class="tm-btn" data-act="bulk-add-chore">＋＋ Bulk add</button>
+        <button class="tm-btn" data-act="tpl-add-from">📋 From template</button>
+        <button class="tm-btn" data-act="tpl-save-from">💾 Save as template</button>
         <button class="tm-btn tm-btn-raised" data-act="add-chore">＋ Add chore</button>
       </div>
       ${all.length === 0 ? this._emptyState("📋", "No chores yet", "Add a chore — it'll show on the assigned children's cards.", "add-chore", "+ Add chore") :
@@ -1534,6 +1600,301 @@ class TaskMatePanel extends HTMLElement {
     `;
   }
 
+  // -- Templates tab ---------------------------------------------------------
+  _renderTemplatesTab() {
+    if (this._templateView === "picker") return this._renderTemplatePicker();
+    if (this._templateView === "preview") return this._renderTemplatePreview();
+    return this._renderTemplateManagement();
+  }
+
+  _renderTemplateManagement() {
+    const templates = this._state.templates || [];
+    const custom = templates.filter(t => !t.builtin);
+    const builtin = templates.filter(t => t.builtin);
+    return `
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">Templates <span class="tm-toolbar-count">${templates.length}</span></h2>
+        <span style="flex:1"></span>
+        <button class="tm-btn tm-btn-raised" data-act="tpl-create">＋ Create template</button>
+      </div>
+      ${custom.length > 0 ? `
+        <div class="tm-section-divider">Custom templates</div>
+        ${custom.map(t => this._renderManageTemplateCard(t, false)).join("")}
+      ` : ""}
+      <div class="tm-section-divider">${custom.length > 0 ? "Built-in templates" : "Built-in template packs"}</div>
+      ${builtin.map(t => this._renderManageTemplateCard(t, true)).join("")}
+    `;
+  }
+
+  _renderManageTemplateCard(tpl, locked) {
+    const count = (tpl.chores || []).length;
+    const pts = (tpl.chores || []).reduce((s, c) => s + (c.points || 0), 0);
+    return `
+      <div class="tm-manage-tpl ${locked ? "tm-manage-tpl-locked" : ""}">
+        <div class="tm-tpl-icon"><ha-icon icon="${this._esc(tpl.icon || "mdi:clipboard-list")}"></ha-icon></div>
+        <div class="tm-manage-tpl-info">
+          <div class="tm-manage-tpl-name">${this._esc(tpl.name)}${locked ? ' <span class="tm-text-vfaint" style="font-size:12px">🔒</span>' : ""}</div>
+          <div class="tm-meta">${count} chore${count !== 1 ? "s" : ""} · ${pts} pts total</div>
+        </div>
+        <div class="tm-row-actions">
+          ${locked ? "" : `<button class="tm-btn tm-btn-sm" data-act="tpl-edit" data-id="${this._esc(tpl.id)}">Edit</button>`}
+          ${locked ? "" : `<button class="tm-btn tm-btn-sm tm-btn-danger" data-act="tpl-delete" data-id="${this._esc(tpl.id)}">Delete</button>`}
+        </div>
+      </div>
+    `;
+  }
+
+  _renderTemplatePicker() {
+    const templates = this._state.templates || [];
+    const builtin = templates.filter(t => t.builtin);
+    const custom = templates.filter(t => !t.builtin);
+    return `
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">Add from Template</h2>
+        <span style="flex:1"></span>
+        <button class="tm-btn" data-act="tpl-back">Cancel</button>
+      </div>
+      <div class="tm-section-divider">Built-in packs</div>
+      <div class="tm-grid">
+        ${builtin.map(t => this._renderTemplatePickerCard(t)).join("")}
+      </div>
+      ${custom.length > 0 ? `
+        <div class="tm-section-divider">Custom packs</div>
+        <div class="tm-grid">
+          ${custom.map(t => this._renderTemplatePickerCard(t)).join("")}
+        </div>
+      ` : ""}
+    `;
+  }
+
+  _renderTemplatePickerCard(tpl) {
+    const count = (tpl.chores || []).length;
+    const pts = (tpl.chores || []).reduce((s, c) => s + (c.points || 0), 0);
+    return `
+      <div class="tm-card tm-tpl-picker-card" data-act="tpl-select" data-id="${this._esc(tpl.id)}" style="margin-bottom:0">
+        <div class="tm-tpl-picker-head">
+          <div class="tm-tpl-icon"><ha-icon icon="${this._esc(tpl.icon || "mdi:clipboard-list")}"></ha-icon></div>
+          <div style="flex:1">
+            <div class="tm-tpl-picker-name">${this._esc(tpl.name)}</div>
+            <div class="tm-meta">${count} chore${count !== 1 ? "s" : ""} · ${pts} pts total</div>
+          </div>
+          <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}">${tpl.builtin ? "Built-in" : "Custom"}</span>
+        </div>
+        <div class="tm-tpl-chore-pills">
+          ${(tpl.chores || []).map(c => `<span class="tm-tpl-chore-pill">${this._esc(c.name)}</span>`).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  _renderTemplatePreview() {
+    const tpl = this._templateSelected;
+    if (!tpl) return "";
+    const chores = this._templateChores;
+    const totalPts = chores.reduce((s, c) => s + (c.points || 0), 0);
+    return `
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">${this._esc(tpl.name)}</h2>
+        <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}" style="margin-left:8px">${tpl.builtin ? "Built-in" : "Custom"}</span>
+        <span style="flex:1"></span>
+        <button class="tm-btn" data-act="tpl-back">← Back</button>
+      </div>
+      <p class="tm-meta" style="margin-bottom:16px">Review and customise each chore before creating. Expand to edit all fields, or remove with ✕.</p>
+      ${chores.map((c, i) => this._renderTemplateChoreCard(c, i)).join("")}
+      ${chores.length > 0 ? `
+        <div class="tm-tpl-confirm-bar">
+          <div><strong>${chores.length} chore${chores.length !== 1 ? "s" : ""}</strong> will be created · ${totalPts} pts total</div>
+          <button class="tm-btn tm-btn-raised" data-act="tpl-apply">Create ${chores.length} chore${chores.length !== 1 ? "s" : ""}</button>
+        </div>
+      ` : `<div class="tm-card tm-empty"><p>All chores removed — go back and pick a different template.</p></div>`}
+    `;
+  }
+
+  _renderTemplateChoreCard(chore, idx) {
+    const expanded = chore._expanded;
+    const schedLabel = (chore.due_days || []).length === 0 ? "Daily" : (chore.due_days || []).map(d => d.slice(0, 3)).join(", ");
+    return `
+      <div class="tm-tpl-preview-card">
+        <div class="tm-tpl-preview-header" data-act="tpl-toggle-expand" data-idx="${idx}">
+          <span class="tm-tpl-expand ${expanded ? "open" : ""}">▶</span>
+          <span class="tm-tpl-preview-name">${this._esc(chore.name)}</span>
+          <span class="tm-tpl-preview-summary">
+            <span>${chore.points || 0} pt${(chore.points || 0) !== 1 ? "s" : ""}</span>
+            <span>${schedLabel}</span>
+            <span>${this._esc(chore.time_category || "anytime")}</span>
+          </span>
+          <button class="tm-tpl-remove" data-act="tpl-remove-chore" data-idx="${idx}" title="Remove from batch">✕</button>
+        </div>
+        ${expanded ? `
+          <div class="tm-tpl-preview-body">
+            <div class="tm-field-row">
+              <div class="tm-field"><label>Name</label><input type="text" data-tpl-field="name" data-tpl-idx="${idx}" value="${this._esc(chore.name)}"></div>
+              <div class="tm-field"><label>Points</label><input type="number" data-tpl-field="points" data-tpl-idx="${idx}" value="${chore.points || 0}" min="0"></div>
+            </div>
+            <div class="tm-field-row">
+              <div class="tm-field"><label>Time category</label>
+                <select data-tpl-field="time_category" data-tpl-idx="${idx}">
+                  ${TIME_CATEGORIES.map(t => `<option value="${t.v}" ${chore.time_category === t.v ? "selected" : ""}>${t.l}</option>`).join("")}
+                </select>
+              </div>
+              <div class="tm-field"><label>Assignment mode</label>
+                <select data-tpl-field="assignment_mode" data-tpl-idx="${idx}">
+                  ${ASSIGNMENT_MODES.map(m => `<option value="${m.v}" ${chore.assignment_mode === m.v ? "selected" : ""}>${m.l.split(" — ")[0]}</option>`).join("")}
+                </select>
+              </div>
+            </div>
+            <div class="tm-field" style="margin-bottom:12px"><label>Schedule (days)</label>
+              <div class="tm-day-pills">
+                ${DAYS.map(d => `<span class="tm-day-pill ${(chore.due_days || []).includes(d.v) ? "active" : ""}" data-act="tpl-toggle-day" data-idx="${idx}" data-day="${d.v}">${d.l}</span>`).join("")}
+              </div>
+            </div>
+            <div class="tm-field-row">
+              <div class="tm-field"><label>Requires approval</label>
+                <select data-tpl-field="requires_approval" data-tpl-idx="${idx}">
+                  <option value="false" ${!chore.requires_approval ? "selected" : ""}>No</option>
+                  <option value="true" ${chore.requires_approval ? "selected" : ""}>Yes</option>
+                </select>
+              </div>
+              <div class="tm-field"><label>Daily limit</label>
+                <input type="number" data-tpl-field="daily_limit" data-tpl-idx="${idx}" value="${chore.daily_limit || 1}" min="1">
+              </div>
+            </div>
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }
+
+  _renderSaveTemplateDialog() {
+    if (!this._saveTemplateDialog) return "";
+    const chores = this._state.chores || [];
+    return `
+      <div class="tm-scrim" data-act="scrim">
+        <div class="tm-dialog">
+          <div class="tm-dialog-head">
+            <h2>Save as Template</h2>
+            <button class="tm-icon-btn" data-act="tpl-save-cancel">✕</button>
+          </div>
+          <div class="tm-dialog-body">
+            <div class="tm-field" style="margin-bottom:14px"><label>Template name</label><input type="text" data-field="tpl_save_name" placeholder="e.g. My morning pack"></div>
+            <div class="tm-field" style="margin-bottom:14px"><label>Icon (MDI)</label><input type="text" data-field="tpl_save_icon" placeholder="mdi:clipboard-list" value="mdi:clipboard-list"></div>
+            <label class="tm-field-label" style="display:block;margin-bottom:8px">Select chores to include</label>
+            <div class="tm-tpl-checklist">
+              ${chores.map(c => `
+                <label class="tm-tpl-check-row">
+                  <input type="checkbox" data-tpl-chore-check="${this._esc(c.id)}">
+                  <span>${this._esc(c.name)}</span>
+                  <span class="tm-text-muted" style="margin-left:auto">${c.points} pts</span>
+                </label>
+              `).join("")}
+            </div>
+          </div>
+          <div class="tm-dialog-foot">
+            <button class="tm-btn" data-act="tpl-save-cancel">Cancel</button>
+            <button class="tm-btn tm-btn-raised" data-act="tpl-save-confirm">Save template</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  _selectTemplate(templateId) {
+    const templates = this._state.templates || [];
+    const tpl = templates.find(t => t.id === templateId);
+    if (!tpl) return;
+    this._templateSelected = tpl;
+    this._templateChores = (tpl.chores || []).map(c => ({ ...c, _expanded: false }));
+    this._templateView = "preview";
+    this._render();
+  }
+
+  async _doApplyTemplate() {
+    const chores = this._templateChores.map(c => {
+      const { _expanded, ...rest } = c;
+      return rest;
+    });
+    if (chores.length === 0) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/templates/apply", chores });
+    if (ok) {
+      this._showToast("success", `Created ${chores.length} chore${chores.length !== 1 ? "s" : ""}`);
+      this._templateView = null;
+      this._templateSelected = null;
+      this._templateChores = [];
+      await this._fetchState();
+      this._activeTab = "chores";
+      this._render();
+    } else {
+      this._showToast("error", err || "Failed to apply template");
+    }
+  }
+
+  async _doSaveFromChores() {
+    const name = this.querySelector('[data-field="tpl_save_name"]')?.value?.trim();
+    const icon = this.querySelector('[data-field="tpl_save_icon"]')?.value?.trim() || "mdi:clipboard-list";
+    const checkboxes = this.querySelectorAll('[data-tpl-chore-check]:checked');
+    const chore_ids = Array.from(checkboxes).map(cb => cb.dataset.tplChoreCheck);
+    if (!name || chore_ids.length === 0) {
+      this._showToast("error", "Enter a name and select at least one chore");
+      return;
+    }
+    const { ok, err } = await this._callWS({ type: "taskmate/templates/save_from_chores", chore_ids, name, icon });
+    if (ok) {
+      this._showToast("success", `Template "${name}" saved`);
+      this._saveTemplateDialog = false;
+      await this._fetchState();
+      this._render();
+    } else {
+      this._showToast("error", err || "Failed to save template");
+    }
+  }
+
+  async _confirmDeleteTemplate(templateId) {
+    const templates = this._state.templates || [];
+    const tpl = templates.find(t => t.id === templateId);
+    if (!tpl) return;
+    if (!confirm(`Delete template "${tpl.name}"? This cannot be undone.`)) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/templates/delete", template_id: templateId });
+    if (ok) {
+      this._showToast("success", "Template deleted");
+      await this._fetchState();
+    } else {
+      this._showToast("error", err || "Failed to delete");
+    }
+  }
+
+  _openCreateTemplateDialog() {
+    this._openDialog({
+      kind: "create-template",
+      data: { name: "", icon: "mdi:clipboard-list", chores: [{ name: "", points: 5, time_category: "anytime", schedule_mode: "specific_days", due_days: [], requires_approval: false, assignment_mode: "everyone", daily_limit: 1, completion_sound: "coin" }] },
+    });
+  }
+
+  _openEditTemplateDialog(templateId) {
+    const templates = this._state.templates || [];
+    const tpl = templates.find(t => t.id === templateId);
+    if (!tpl) return;
+    this._openDialog({
+      kind: "edit-template",
+      data: { template_id: templateId, name: tpl.name, icon: tpl.icon || "mdi:clipboard-list", chores: (tpl.chores || []).map(c => ({ ...c })) },
+    });
+  }
+
+  async _doSaveCreatedTemplate() {
+    const d = this._dialog?.data;
+    if (!d || !d.name?.trim() || !d.chores?.length) { this._showToast("error", "Name and at least one chore required"); return; }
+    const { ok, err } = await this._callWS({ type: "taskmate/templates/create", name: d.name.trim(), icon: d.icon || "mdi:clipboard-list", chores: d.chores });
+    if (ok) { this._showToast("success", `Template "${d.name}" created`); this._closeDialog(true); await this._fetchState(); }
+    else { this._showToast("error", err || "Failed to create template"); }
+  }
+
+  async _doSaveEditedTemplate() {
+    const d = this._dialog?.data;
+    if (!d || !d.template_id || !d.name?.trim()) { this._showToast("error", "Name required"); return; }
+    const { ok, err } = await this._callWS({ type: "taskmate/templates/update", template_id: d.template_id, name: d.name.trim(), icon: d.icon || "mdi:clipboard-list", chores: d.chores || [] });
+    if (ok) { this._showToast("success", "Template updated"); this._closeDialog(true); await this._fetchState(); }
+    else { this._showToast("error", err || "Failed to update"); }
+  }
+
   // -- Settings tab ------------------------------------------------------
   _renderSettingsTab() {
     const s = this._state.settings || {};
@@ -1639,7 +2000,62 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "apply-bonus")   return this._renderApplyDialog("bonus");
     if (this._dialog.kind === "bulk-chore")    return this._renderBulkChoreDialog();
     if (this._dialog.kind === "reorder")       return this._renderReorderDialog();
+    if (this._dialog.kind === "create-template" || this._dialog.kind === "edit-template") return this._renderCreateEditTemplateDialog();
     return "";
+  }
+
+  _renderCreateEditTemplateDialog() {
+    const d = this._dialog.data;
+    const isEdit = this._dialog.kind === "edit-template";
+    return `
+      <div class="tm-scrim" data-act="scrim">
+        <div class="tm-dialog" style="max-width:680px">
+          <div class="tm-dialog-head">
+            <h2>${isEdit ? "Edit" : "Create"} Template</h2>
+            <button class="tm-icon-btn" data-act="close-dialog">✕</button>
+          </div>
+          <div class="tm-dialog-body">
+            <div class="tm-field-row" style="margin-bottom:16px">
+              <div class="tm-field"><label>Name</label><input type="text" data-field="name" value="${this._esc(d.name)}"></div>
+              <div class="tm-field"><label>Icon (MDI)</label><input type="text" data-field="icon" value="${this._esc(d.icon)}"></div>
+            </div>
+            <label class="tm-field-label" style="display:block;margin-bottom:8px">Chores in this template</label>
+            ${(d.chores || []).map((c, i) => `
+              <div class="tm-tpl-preview-card" style="margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 14px">
+                  <span style="font-weight:600;flex:1">${this._esc(c.name || "(unnamed)")}</span>
+                  <span class="tm-meta">${c.points || 0} pts</span>
+                  <button class="tm-tpl-remove" data-act="tpl-dialog-remove-chore" data-idx="${i}">✕</button>
+                </div>
+                <div style="padding:0 14px 12px;border-top:1px solid var(--tm-border-soft)">
+                  <div class="tm-field-row" style="margin-top:10px">
+                    <div class="tm-field"><label>Name</label><input type="text" data-tpl-dialog-field="name" data-tpl-dialog-idx="${i}" value="${this._esc(c.name)}"></div>
+                    <div class="tm-field"><label>Points</label><input type="number" data-tpl-dialog-field="points" data-tpl-dialog-idx="${i}" value="${c.points || 0}" min="0"></div>
+                  </div>
+                  <div class="tm-field-row">
+                    <div class="tm-field"><label>Time category</label>
+                      <select data-tpl-dialog-field="time_category" data-tpl-dialog-idx="${i}">
+                        ${TIME_CATEGORIES.map(t => `<option value="${t.v}" ${c.time_category === t.v ? "selected" : ""}>${t.l}</option>`).join("")}
+                      </select>
+                    </div>
+                    <div class="tm-field"><label>Schedule</label>
+                      <select data-tpl-dialog-field="schedule_mode" data-tpl-dialog-idx="${i}">
+                        ${SCHEDULE_MODES.map(s => `<option value="${s.v}" ${c.schedule_mode === s.v ? "selected" : ""}>${s.l}</option>`).join("")}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `).join("")}
+            <button class="tm-btn" data-act="tpl-dialog-add-chore" style="margin-top:8px">+ Add chore</button>
+          </div>
+          <div class="tm-dialog-foot">
+            <button class="tm-btn" data-act="close-dialog">Cancel</button>
+            <button class="tm-btn tm-btn-raised" data-act="${isEdit ? "tpl-save-edited" : "tpl-save-created"}">${isEdit ? "Save Changes" : "Create Template"}</button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   _renderChildDialog() {
@@ -3092,6 +3508,86 @@ class TaskMatePanel extends HTMLElement {
       @keyframes tm-toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translateX(-50%); } }
       .tm-toast-ok  { background: var(--tm-positive); color: var(--text-primary-color, #fff); }
       .tm-toast-err { background: var(--tm-danger); color: var(--text-primary-color, #fff); }
+
+      /* Templates */
+      .tm-section-divider {
+        display: flex; align-items: center; gap: 12px;
+        margin: 20px 0 14px; font-size: 11.5px; font-weight: 600;
+        color: var(--tm-text-faint); text-transform: uppercase; letter-spacing: 0.04em;
+      }
+      .tm-section-divider::after { content: ''; flex: 1; height: 1px; background: var(--tm-border); }
+      .tm-tpl-icon {
+        width: 40px; height: 40px; border-radius: 10px;
+        background: var(--tm-accent-soft); border: 1px solid var(--tm-border);
+        display: grid; place-items: center; flex-shrink: 0;
+        color: var(--tm-accent); --mdc-icon-size: 20px;
+      }
+      .tm-tpl-picker-card { cursor: pointer; display: flex; flex-direction: column; gap: 10px; }
+      .tm-tpl-picker-card:hover { border-color: var(--tm-accent); background: var(--tm-accent-soft); }
+      .tm-tpl-picker-head { display: flex; align-items: center; gap: 12px; }
+      .tm-tpl-picker-name { font-size: 15px; font-weight: 600; }
+      .tm-tpl-chore-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+      .tm-tpl-chore-pill {
+        font-size: 11px; padding: 2px 8px;
+        background: var(--tm-surface-2); border-radius: 999px;
+        color: var(--tm-text-muted); border: 1px solid var(--tm-border-soft);
+      }
+      .tm-manage-tpl {
+        display: flex; align-items: center; gap: 14px;
+        padding: 14px 18px; background: var(--tm-surface-0);
+        border: 1px solid var(--tm-border); border-radius: var(--tm-radius-lg);
+        margin-bottom: 10px; transition: all 0.15s;
+      }
+      .tm-manage-tpl:hover { border-color: var(--tm-border-strong); box-shadow: var(--tm-shadow-sm); }
+      .tm-manage-tpl-locked { opacity: 0.65; }
+      .tm-manage-tpl-locked:hover { border-color: var(--tm-border); box-shadow: none; }
+      .tm-manage-tpl-info { flex: 1; }
+      .tm-manage-tpl-name { font-size: 14px; font-weight: 600; }
+      .tm-tpl-preview-card {
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-lg); overflow: hidden; margin-bottom: 10px;
+      }
+      .tm-tpl-preview-card:hover { border-color: var(--tm-border-strong); }
+      .tm-tpl-preview-header {
+        display: flex; align-items: center; gap: 12px;
+        padding: 12px 16px; cursor: pointer;
+      }
+      .tm-tpl-preview-header:hover { background: var(--tm-surface-hover); }
+      .tm-tpl-expand { font-size: 11px; color: var(--tm-text-faint); transition: transform 0.2s; }
+      .tm-tpl-expand.open { transform: rotate(90deg); }
+      .tm-tpl-preview-name { font-size: 14px; font-weight: 600; flex: 1; }
+      .tm-tpl-preview-summary { font-size: 12px; color: var(--tm-text-muted); display: flex; gap: 12px; }
+      .tm-tpl-remove {
+        width: 26px; height: 26px; border: none; background: transparent;
+        border-radius: var(--tm-radius-sm); color: var(--tm-text-faint);
+        cursor: pointer; display: grid; place-items: center; font-size: 14px;
+      }
+      .tm-tpl-remove:hover { background: var(--tm-danger-soft); color: var(--tm-danger); }
+      .tm-tpl-preview-body { padding: 14px 16px; border-top: 1px solid var(--tm-border-soft); }
+      .tm-tpl-confirm-bar {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        padding: 16px 18px; margin-top: 16px;
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-lg);
+      }
+      .tm-tpl-confirm-bar div { font-size: 13px; color: var(--tm-text-muted); }
+      .tm-tpl-confirm-bar strong { color: var(--tm-text); }
+      .tm-tpl-checklist { max-height: 320px; overflow-y: auto; }
+      .tm-tpl-check-row {
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 0; border-bottom: 1px solid var(--tm-border-soft);
+        font-size: 13px; cursor: pointer;
+      }
+      .tm-tpl-check-row:last-child { border-bottom: none; }
+      .tm-tpl-check-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--tm-accent); }
+      .tm-day-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+      .tm-day-pill {
+        padding: 5px 12px; border: 1px solid var(--tm-border); border-radius: 999px;
+        font-size: 12px; font-weight: 500; cursor: pointer;
+        background: var(--tm-surface-0); color: var(--tm-text-muted); transition: all 0.1s;
+        user-select: none;
+      }
+      .tm-day-pill.active { background: var(--tm-accent); color: var(--text-primary-color, #fff); border-color: var(--tm-accent); }
 
       /* ===== Mobile / narrow ===== */
       @media (max-width: 900px) {
