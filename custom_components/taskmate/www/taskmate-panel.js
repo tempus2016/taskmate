@@ -506,6 +506,13 @@ class TaskMatePanel extends HTMLElement {
     this._dialog.data[t.dataset.field] = v == null ? "" : v;
   }
 
+  _syncIconPickers() {
+    if (!this._dialog) return;
+    this.querySelectorAll("ha-icon-picker[data-field]").forEach(el => {
+      if (el.value != null) this._dialog.data[el.dataset.field] = el.value;
+    });
+  }
+
   _onKeyDown(e) {
     if (e.key === "Escape") {
       if (this._inlineRename) { this._inlineRename = null; this._render(); return; }
@@ -639,6 +646,7 @@ class TaskMatePanel extends HTMLElement {
   }
 
   async _doSaveChild() {
+    this._syncIconPickers();
     const d = this._dialog.data;
     if (!d.name || !d.name.trim()) { this._showToast("err", "Name is required"); return; }
     const wasAdd = this._dialog.mode === "add";
@@ -869,6 +877,7 @@ class TaskMatePanel extends HTMLElement {
   }
 
   async _doSaveReward() {
+    this._syncIconPickers();
     const d = this._dialog.data;
     if (!d.name || !d.name.trim()) { this._showToast("err", "Name is required"); return; }
     const wasAdd = this._dialog.mode === "add";
@@ -907,6 +916,7 @@ class TaskMatePanel extends HTMLElement {
   }
 
   async _doSavePenBon(kind) {
+    this._syncIconPickers();
     const d = this._dialog.data;
     if (!d.name || !d.name.trim()) { this._showToast("err", "Name is required"); return; }
     if (!d.points || d.points < 1) { this._showToast("err", "Points must be 1 or higher"); return; }
