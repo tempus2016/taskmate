@@ -2449,7 +2449,7 @@ class TaskMatePanel extends HTMLElement {
   _renderReorderDialog() {
     const d = this._dialog.data;
     const choreById = Object.fromEntries((this._state.chores || []).map(c => [c.id, c]));
-    return this._dialogShell(this._t("panel.reorder_title", {name: d.name})),
+    return this._dialogShell(this._t("panel.reorder_title", {name: d.name}),
       `<p class="tm-meta">${this._t("panel.reorder_hint")}</p>
        <div class="tm-reorder-list">
          ${(d.order || []).map(id => {
