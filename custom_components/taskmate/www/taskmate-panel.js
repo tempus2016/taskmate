@@ -2145,7 +2145,7 @@ class TaskMatePanel extends HTMLElement {
         this._select("Task type", "task_type", d.task_type || "standard", [
           { v: "standard", l: "Standard — fixed points on completion" },
           { v: "timed", l: "Timed — points per minute" },
-        ]),
+        ], "", true),
         isTimedTask ? `<div class="tm-field-row">
           ${this._field("Points per window", "timed_rate_points", d.timed_rate_points || 10, "number")}
           ${this._field("Window (minutes)", "timed_rate_minutes", d.timed_rate_minutes || 5, "number")}

@@ -2386,7 +2386,13 @@ class TaskMateChildCard extends LitElement {
     const celebratingChore = (attrs.chores || []).find(
       c => c.id === this._celebrating
     );
-    const points = celebratingChore?.points || 0;
+    const completions = attrs.todays_completions || [];
+    const latestCompletion = completions.filter(
+      c => c.chore_id === this._celebrating && c.child_id === this.config.child_id
+    ).pop();
+    const points = (latestCompletion && latestCompletion.points != null)
+      ? latestCompletion.points
+      : (celebratingChore?.points || 0);
 
     return html`
       <div class="celebration-overlay" @click="${this._closeCelebration}">
