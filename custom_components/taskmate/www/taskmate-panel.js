@@ -751,6 +751,8 @@ class TaskMatePanel extends HTMLElement {
   _openChoreDialog(id) {
     const blank = {
       name: "", description: "", points: 10,
+      task_type: "standard",
+      timed_rate_points: 10, timed_rate_minutes: 5, timed_max_daily_minutes: 0,
       assigned_to: [], requires_approval: true,
       time_category: "anytime", completion_sound: "coin", daily_limit: 1,
       claim_allowance_minutes: 0,

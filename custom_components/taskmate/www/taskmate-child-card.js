@@ -2208,6 +2208,7 @@ class TaskMateChildCard extends LitElement {
     const handleStop = (e) => {
       e.stopPropagation();
       if (isLoading) return;
+      this._celebrationPoints = earnedPoints;
       this._loading = { ...this._loading, [`timed_${chore.id}`]: true };
       this.hass.callService('taskmate', 'stop_timed_task', {
         chore_id: chore.id, child_id: child.id
@@ -2217,7 +2218,7 @@ class TaskMateChildCard extends LitElement {
         this._playSound(sound);
         this._celebrating = chore.id;
         this._launchConfetti();
-        setTimeout(() => { this._celebrating = null; this.requestUpdate(); }, 2000);
+        setTimeout(() => { this._celebrating = null; this._celebrationPoints = null; this.requestUpdate(); }, 2000);
       }).catch(() => {
         this._loading = { ...this._loading, [`timed_${chore.id}`]: false };
       });
@@ -2390,9 +2391,11 @@ class TaskMateChildCard extends LitElement {
     const latestCompletion = completions.filter(
       c => c.chore_id === this._celebrating && c.child_id === this.config.child_id
     ).pop();
-    const points = (latestCompletion && latestCompletion.points != null)
-      ? latestCompletion.points
-      : (celebratingChore?.points || 0);
+    const points = (this._celebrationPoints != null)
+      ? this._celebrationPoints
+      : (latestCompletion && latestCompletion.points != null)
+        ? latestCompletion.points
+        : (celebratingChore?.points || 0);
 
     return html`
       <div class="celebration-overlay" @click="${this._closeCelebration}">

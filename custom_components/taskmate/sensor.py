@@ -1018,17 +1018,26 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
             child = self.coordinator.get_child(comp.child_id)
             chore = self.coordinator.get_chore(comp.chore_id)
             if child and chore:
-                completion_details.append({
+                pts = chore.points
+                timed_secs = getattr(comp, "timed_duration_seconds", 0) or 0
+                if timed_secs > 0 and getattr(chore, "task_type", "") == "timed":
+                    rate_seconds = chore.timed_rate_minutes * 60
+                    if rate_seconds > 0:
+                        pts = (timed_secs // rate_seconds) * chore.timed_rate_points
+                detail = {
                     "completion_id": comp.id,
                     "type": "chore",
                     "child_name": child.name,
                     "child_id": child.id,
                     "chore_name": chore.name,
                     "chore_id": chore.id,
-                    "points": chore.points,
+                    "points": pts,
                     "time_category": chore.time_category,
                     "completed_at": comp.completed_at.isoformat(),
-                })
+                }
+                if timed_secs > 0:
+                    detail["timed_duration_seconds"] = timed_secs
+                completion_details.append(detail)
 
         reward_details = []
         for claim in pending_rewards:
