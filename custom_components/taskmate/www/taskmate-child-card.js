@@ -1250,14 +1250,14 @@ class TaskMateChildCard extends LitElement {
         justify-content: center;
         gap: 12px;
         padding: 10px 16px;
-        background: rgba(0, 0, 0, 0.03);
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.03));
         border-radius: 14px;
       }
       .timer-counter {
         font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
         font-size: 2rem;
         font-weight: 700;
-        color: var(--primary-text-color, #2c3e50);
+        color: var(--primary-text-color);
         letter-spacing: 0.05em;
         min-width: 100px;
         text-align: center;
@@ -1352,13 +1352,13 @@ class TaskMateChildCard extends LitElement {
         align-items: center;
         gap: 8px;
         font-size: 0.75rem;
-        color: var(--secondary-text-color, #7f8c8d);
+        color: var(--secondary-text-color);
         padding: 0 4px;
       }
       .cap-track {
         flex: 1;
         height: 6px;
-        background: rgba(0, 0, 0, 0.06);
+        background: var(--divider-color, rgba(0, 0, 0, 0.06));
         border-radius: 3px;
         overflow: hidden;
       }
