@@ -2448,16 +2448,14 @@ class TaskMatePanel extends HTMLElement {
   _select(label, name, value, options, hint = "", rerender = false) {
     return `
       <div class="tm-field">
-        <ha-select
-          label="${this._esc(label)}"
+        <span class="tm-field-label">${this._esc(label)}</span>
+        <select
+          class="tm-select"
           data-field="${name}"
-          data-value="${this._esc(value || "")}"
           ${rerender ? 'data-rerender="true"' : ""}
-          fixedMenuPosition
-          naturalMenuWidth
         >
-          ${options.map(o => `<mwc-list-item value="${this._esc(o.v)}" ${String(o.v) === String(value) ? "selected activated" : ""}>${this._esc(o.l)}</mwc-list-item>`).join("")}
-        </ha-select>
+          ${options.map(o => `<option value="${this._esc(o.v)}" ${String(o.v) === String(value) ? "selected" : ""}>${this._esc(o.l)}</option>`).join("")}
+        </select>
         ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
       </div>`;
   }
@@ -3314,6 +3312,25 @@ class TaskMatePanel extends HTMLElement {
       .tm-field ha-textfield, .tm-field ha-select {
         display: block; width: 100%;
       }
+      .tm-select {
+        width: 100%; box-sizing: border-box;
+        background: var(--tm-surface-0);
+        border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm);
+        padding: 10px 12px; padding-right: 32px;
+        color: var(--tm-text);
+        font-size: 13px; font-family: inherit;
+        cursor: pointer;
+        appearance: none; -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%23888' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        box-shadow: var(--tm-shadow-xs);
+        transition: all 0.1s var(--tm-easing);
+      }
+      .tm-select:hover { border-color: var(--tm-border-strong); }
+      .tm-select:focus { outline: 0; border-color: var(--tm-accent); box-shadow: var(--tm-shadow-focus); }
+      .tm-select option { background: var(--tm-surface-0); color: var(--tm-text); }
       .tm-textarea {
         width: 100%;
         background: var(--tm-surface-0);
