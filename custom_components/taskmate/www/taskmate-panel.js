@@ -1,15 +1,17 @@
 /**
  * TaskMate admin panel — sidebar entry at /taskmate-admin.
  *
- * v3.6.1 — HA-native styling:
- *   - All custom --tm-* tokens now map to HA theme variables
- *     (--primary-color, --card-background-color, etc.).
- *   - Dark mode handled automatically via HA vars (no .dark override).
- *   - Shadows, radii, fonts follow HA defaults.
- *   - Entity picker dropdown uses theme-aware colors.
+ * HA-native styling:
+ *   - All custom --tm-* tokens now map to HA theme variables.
+ *   - Dark mode handled automatically via HA vars.
+ *   - Version extracted from resource URL (?v=x.x.x), same as cards.
  */
 
-const PANEL_VERSION = "3.6.1";
+const PANEL_VERSION = (() => {
+  try { return new URL(import.meta.url).searchParams.get("v") || "?"; } catch (_) {}
+  const el = document.querySelector('script[src*="/taskmate-panel.js"]');
+  return el ? new URLSearchParams(el.src.split("?")[1] || "").get("v") || "?" : "?";
+})();
 
 const TABS = [
   { id: "children",  label: "Children" },
@@ -1018,7 +1020,7 @@ class TaskMatePanel extends HTMLElement {
       const v = el.getAttribute("data-value") || "";
       if (el.value !== v) el.value = v;
     });
-    this.querySelectorAll("ha-select[data-value]").forEach(el => {
+    this.querySelectorAll("ha-select[data-value], select[data-value]").forEach(el => {
       const v = el.getAttribute("data-value") || "";
       if (el.value !== v) el.value = v;
     });
@@ -1957,9 +1959,9 @@ class TaskMatePanel extends HTMLElement {
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">Streak reset<small>What happens when a day is missed</small></div>
-              <ha-select data-setting="streak_reset_mode" data-value="${this._esc(s.streak_reset_mode || "reset")}" fixedMenuPosition naturalMenuWidth>
-                ${STREAK_MODES.map(m => `<mwc-list-item value="${m.v}" ${m.v === (s.streak_reset_mode || "reset") ? "selected activated" : ""}>${this._esc(m.l)}</mwc-list-item>`).join("")}
-              </ha-select>
+              <select class="tm-select" data-setting="streak_reset_mode">
+                ${STREAK_MODES.map(m => `<option value="${m.v}" ${m.v === (s.streak_reset_mode || "reset") ? "selected" : ""}>${this._esc(m.l)}</option>`).join("")}
+              </select>
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">Weekend multiplier<small>Bonus on Sat/Sun (1.0 = off)</small></div>
@@ -2033,9 +2035,9 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-section-body">
             <div class="tm-setting-row">
               <div class="tm-setting-label">Notify service<small>Used for parent approval pings</small></div>
-              <ha-select data-setting="notify_service" data-value="${this._esc(s.notify_service || "")}" fixedMenuPosition naturalMenuWidth>
-                ${notifyOptions.map(o => `<mwc-list-item value="${this._esc(o.v)}" ${o.v === (s.notify_service || "") ? "selected activated" : ""}>${this._esc(o.l)}</mwc-list-item>`).join("")}
-              </ha-select>
+              <select class="tm-select" data-setting="notify_service">
+                ${notifyOptions.map(o => `<option value="${this._esc(o.v)}" ${o.v === (s.notify_service || "") ? "selected" : ""}>${this._esc(o.l)}</option>`).join("")}
+              </select>
             </div>
           </div>
         </div>
@@ -3288,7 +3290,6 @@ class TaskMatePanel extends HTMLElement {
         background: var(--tm-surface-0);
         border: 1px solid var(--tm-border);
         border-radius: var(--tm-radius-lg);
-        overflow: hidden;
         box-shadow: var(--tm-shadow-xs);
       }
       .tm-section-head {
@@ -3307,7 +3308,8 @@ class TaskMatePanel extends HTMLElement {
       .tm-setting-label { color: var(--tm-text); font-size: 13px; font-weight: 500; }
       .tm-setting-label small { display: block; color: var(--tm-text-faint); font-weight: 400; font-size: 12px; margin-top: 2px; }
       .tm-setting-row ha-textfield,
-      .tm-setting-row ha-select {
+      .tm-setting-row ha-select,
+      .tm-setting-row select.tm-select {
         max-width: 360px;
       }
       .tm-time-pair {
