@@ -149,7 +149,7 @@ class TaskMatePanel extends HTMLElement {
       this._fetchState();
     }
     if (!this._rendered) this._render();
-    this._bindHaPickers();
+    this._bindHaPickers(false);
   }
   get hass() { return this._hass; }
   set narrow(_v) {}
@@ -992,13 +992,16 @@ class TaskMatePanel extends HTMLElement {
   }
 
   // ---- HA picker binding -----------------------------------------------
-  _bindHaPickers() {
+  _bindHaPickers(syncValues = true) {
     if (!this._hass) return;
     this.querySelectorAll("ha-icon-picker").forEach(el => {
       el.hass = this._hass;
-      const v = el.getAttribute("data-current") || "";
-      if (el.value !== v) el.value = v;
+      if (syncValues) {
+        const v = el.getAttribute("data-current") || "";
+        if (el.value !== v) el.value = v;
+      }
     });
+    if (!syncValues) return;
     this.querySelectorAll("ha-textfield[data-value]").forEach(el => {
       const v = el.getAttribute("data-value") || "";
       if (el.value !== v) el.value = v;
