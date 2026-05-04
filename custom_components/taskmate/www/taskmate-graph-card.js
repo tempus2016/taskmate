@@ -279,7 +279,7 @@ class TaskMateGraphCard extends LitElement {
         child.id, dateRange, allCompletions, allTransactions, chorePointsMap, tz
       );
       const cumulativePoints = this._buildCumulative(dailyPoints);
-      const careerPoints = this._buildCareerSeries(child, careerHistory[child.id] || [], dateRange);
+      const careerPoints = this._buildCareerSeries(child, careerHistory[child.id] || [], dateRange, allCompletions, allTransactions, chorePointsMap, tz);
       return { child, color, dailyPoints, cumulativePoints, careerPoints };
     });
 
@@ -623,29 +623,39 @@ class TaskMateGraphCard extends LitElement {
     return dailyPoints.map(v => { running += v; return running; });
   }
 
-  _buildCareerSeries(child, history, dateRange) {
+  _buildCareerSeries(child, history, dateRange, completions, transactions, chorePointsMap, tz) {
     const historyMap = {};
     (history || []).forEach(h => { historyMap[h.date] = h.score; });
-    let lastKnown = child.career_score || 0;
-    // Walk backwards through history to find the earliest known value
-    // then walk forward with carry-forward
-    const earliest = dateRange[0];
-    for (let i = history.length - 1; i >= 0; i--) {
-      if (history[i].date <= earliest) {
-        lastKnown = history[i].score;
-        break;
+    const historyDatesInRange = dateRange.filter(d => d in historyMap).length;
+
+    if (historyDatesInRange >= Math.min(dateRange.length * 0.5, 7)) {
+      let lastKnown = child.career_score || 0;
+      const earliest = dateRange[0];
+      for (let i = history.length - 1; i >= 0; i--) {
+        if (history[i].date <= earliest) { lastKnown = history[i].score; break; }
       }
+      if (history.length > 0 && history[0].date > earliest) {
+        lastKnown = history[0].score;
+      }
+      let carry = lastKnown;
+      return dateRange.map(d => { if (d in historyMap) carry = historyMap[d]; return carry; });
     }
-    // If no history before the range, use the first history entry in range or current score
-    if (history.length > 0 && history[0].date > earliest) {
-      // Carry back from the earliest known history point
-      lastKnown = history[0].score;
-    }
-    let carry = lastKnown;
-    return dateRange.map(d => {
-      if (d in historyMap) carry = historyMap[d];
-      return carry;
+
+    const byDay = {};
+    dateRange.forEach(d => { byDay[d] = 0; });
+    (completions || []).filter(c => c.child_id === child.id).forEach(c => {
+      const day = new Date(c.completed_at).toLocaleDateString("en-CA", { timeZone: tz });
+      if (day in byDay) byDay[day] += c.points !== undefined ? c.points : (chorePointsMap[c.chore_id] || 0);
     });
+    (transactions || []).filter(t => t.child_id === child.id).forEach(t => {
+      const day = new Date(t.created_at).toLocaleDateString("en-CA", { timeZone: tz });
+      if (day in byDay) byDay[day] += t.points || 0;
+    });
+    const dailyNets = dateRange.map(d => byDay[d]);
+    const totalNet = dailyNets.reduce((a, b) => a + b, 0);
+    const startScore = (child.career_score || 0) - totalNet;
+    let running = startScore;
+    return dailyNets.map(v => { running += v; return running; });
   }
 
   _niceMax(val) {
