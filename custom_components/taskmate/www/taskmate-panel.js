@@ -1350,6 +1350,13 @@ class TaskMatePanel extends HTMLElement {
               if (c.bonus_subtask_id && chore) {
                 const sub = (chore.bonus_subtasks || []).find(b => b.id === c.bonus_subtask_id);
                 if (sub) { choreName = `${chore.name} › ${sub.name}`; chorePoints = sub.points; }
+              } else if (chore && chore.task_type === "timed" && (c.timed_duration_seconds || 0) > 0) {
+                // Timed chores accrue points by elapsed-time rate, so the actual
+                // earned points can be lower than chore.points. Mirror sensor.py.
+                const rateSeconds = (chore.timed_rate_minutes || 0) * 60;
+                if (rateSeconds > 0) {
+                  chorePoints = Math.floor(c.timed_duration_seconds / rateSeconds) * (chore.timed_rate_points || 0);
+                }
               }
               return `
                 <div class="tm-approval-item">
