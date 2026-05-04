@@ -1029,6 +1029,8 @@ class TaskMatePanel extends HTMLElement {
   _render() {
     this._rendered = true;
     const existingToast = this.querySelector(".tm-toast");
+    const dialogBody = this.querySelector(".tm-dialog-body");
+    const savedScroll = dialogBody ? dialogBody.scrollTop : 0;
     this.innerHTML = `
       ${this._styles()}
       <div class="tm-shell">
@@ -1049,6 +1051,10 @@ class TaskMatePanel extends HTMLElement {
     `;
     if (existingToast) this.appendChild(existingToast);
     this._bindHaPickers();
+    if (savedScroll) {
+      const newBody = this.querySelector(".tm-dialog-body");
+      if (newBody) newBody.scrollTop = savedScroll;
+    }
   }
 
   _sidebarGroups() {
@@ -2422,12 +2428,13 @@ class TaskMatePanel extends HTMLElement {
   _field(label, name, value, type = "text", hint = "") {
     return `
       <div class="tm-field">
-        <ha-textfield
-          label="${this._esc(label)}"
+        <span class="tm-field-label">${this._esc(label)}</span>
+        <input
+          class="tm-input"
           data-field="${name}"
-          data-value="${this._esc(value == null ? "" : value)}"
-          ${type === "number" ? 'type="number"' : ''}
-        ></ha-textfield>
+          value="${this._esc(value == null ? "" : value)}"
+          ${type === "number" ? 'type="number"' : 'type="text"'}
+        >
         ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
       </div>`;
   }
@@ -2435,12 +2442,13 @@ class TaskMatePanel extends HTMLElement {
   _dateField(label, name, value, hint = "") {
     return `
       <div class="tm-field">
-        <ha-textfield
-          label="${this._esc(label)}"
+        <span class="tm-field-label">${this._esc(label)}</span>
+        <input
+          class="tm-input"
           data-field="${name}"
-          data-value="${this._esc(value || "")}"
+          value="${this._esc(value || "")}"
           type="date"
-        ></ha-textfield>
+        >
         ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
       </div>`;
   }
@@ -3312,24 +3320,28 @@ class TaskMatePanel extends HTMLElement {
       .tm-field ha-textfield, .tm-field ha-select {
         display: block; width: 100%;
       }
-      .tm-select {
+      .tm-input, .tm-select {
         width: 100%; box-sizing: border-box;
         background: var(--tm-surface-0);
         border: 1px solid var(--tm-border);
         border-radius: var(--tm-radius-sm);
-        padding: 10px 12px; padding-right: 32px;
+        padding: 10px 12px;
         color: var(--tm-text);
         font-size: 13px; font-family: inherit;
-        cursor: pointer;
-        appearance: none; -webkit-appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%23888' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 10px center;
         box-shadow: var(--tm-shadow-xs);
         transition: all 0.1s var(--tm-easing);
       }
-      .tm-select:hover { border-color: var(--tm-border-strong); }
-      .tm-select:focus { outline: 0; border-color: var(--tm-accent); box-shadow: var(--tm-shadow-focus); }
+      .tm-input:hover, .tm-select:hover { border-color: var(--tm-border-strong); }
+      .tm-input:focus, .tm-select:focus { outline: 0; border-color: var(--tm-accent); box-shadow: var(--tm-shadow-focus); }
+      .tm-input::placeholder { color: var(--tm-text-vfaint); }
+      .tm-select {
+        cursor: pointer;
+        appearance: none; -webkit-appearance: none;
+        padding-right: 32px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%23888' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+      }
       .tm-select option { background: var(--tm-surface-0); color: var(--tm-text); }
       .tm-textarea {
         width: 100%;
