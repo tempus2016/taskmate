@@ -1222,7 +1222,7 @@ class TaskMateChildCard extends LitElement {
         gap: 12px;
         box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
         border: 3px solid var(--fun-cyan);
-        background: color-mix(in srgb, var(--fun-cyan) 8%, white);
+        background: color-mix(in srgb, var(--fun-cyan) 10%, var(--card-background-color, #fff));
         transition: transform 0.15s ease, box-shadow 0.15s ease;
         -webkit-user-select: none;
         user-select: none;
