@@ -286,6 +286,11 @@ def _build_todays_completions(common: dict) -> list[dict]:
         else:
             display_name = matched_chore.name if matched_chore else ""
             display_points = matched_chore.points if matched_chore else 0
+        timed_secs = getattr(comp, "timed_duration_seconds", 0) or 0
+        if timed_secs > 0 and matched_chore and getattr(matched_chore, "task_type", "") == "timed":
+            rate_seconds = matched_chore.timed_rate_minutes * 60
+            if rate_seconds > 0:
+                display_points = (timed_secs // rate_seconds) * matched_chore.timed_rate_points
         rec = {
             "completion_id": comp.id,
             "chore_id": comp.chore_id,
@@ -297,7 +302,6 @@ def _build_todays_completions(common: dict) -> list[dict]:
             "completed_at": comp.completed_at.isoformat() if hasattr(comp.completed_at, 'isoformat') else str(comp.completed_at),
             "bonus_subtask_id": bonus_subtask_id,
         }
-        timed_secs = getattr(comp, "timed_duration_seconds", 0) or 0
         if timed_secs > 0:
             rec["timed_duration_seconds"] = timed_secs
         out.append(rec)
