@@ -24,20 +24,35 @@ _LOGGER = logging.getLogger(__name__)
 class CalendarMixin:
     """Mixin providing calendar projection and event publishing logic."""
 
-    # time_category -> (start_time, end_time). None means "anytime" -> all-day event.
-    _TIME_CATEGORY_WINDOWS: dict[str, tuple[time, time] | None] = {
-        "morning":   (time(6, 0),  time(12, 0)),
-        "afternoon": (time(12, 0), time(17, 0)),
-        "evening":   (time(17, 0), time(21, 0)),
-        "night":     (time(21, 0), time(23, 59)),
-        "anytime":   None,
+    _DEFAULT_TIME_BOUNDARIES: dict[str, tuple[str, str]] = {
+        "morning":   ("06:00", "12:00"),
+        "afternoon": ("12:00", "17:00"),
+        "evening":   ("17:00", "21:00"),
+        "night":     ("21:00", "23:59"),
     }
 
     _SCHEDULE_DOW = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 
+    def _get_time_boundaries(self) -> dict[str, tuple[time, time] | None]:
+        """Build time boundaries from storage settings with defaults."""
+        result: dict[str, tuple[time, time] | None] = {"anytime": None}
+        for cat, (def_start, def_end) in self._DEFAULT_TIME_BOUNDARIES.items():
+            start_str = self.storage.get_setting(f"time_{cat}_start", def_start)
+            end_str = self.storage.get_setting(f"time_{cat}_end", def_end)
+            try:
+                sh, sm = (int(x) for x in start_str.split(":"))
+                eh, em = (int(x) for x in end_str.split(":"))
+                result[cat] = (time(sh, sm), time(eh, em))
+            except (ValueError, TypeError):
+                sh, sm = (int(x) for x in def_start.split(":"))
+                eh, em = (int(x) for x in def_end.split(":"))
+                result[cat] = (time(sh, sm), time(eh, em))
+        return result
+
     def _time_category_window(self, category: str, today: date) -> tuple[datetime, datetime] | None:
         """Return (start, end) datetimes for a time_category, or None for all-day."""
-        window = self._TIME_CATEGORY_WINDOWS.get(category or "anytime")
+        boundaries = self._get_time_boundaries()
+        window = boundaries.get(category or "anytime")
         if window is None:
             return None
         start_t, end_t = window

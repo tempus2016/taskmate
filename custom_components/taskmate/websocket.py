@@ -736,6 +736,10 @@ _SUBKEY_SETTINGS = {
     "weekend_multiplier", "streak_milestones_enabled", "perfect_week_enabled",
     "perfect_week_bonus", "streak_milestones",
     "notify_service", "calendar_projection_days",
+    "time_morning_start", "time_morning_end",
+    "time_afternoon_start", "time_afternoon_end",
+    "time_evening_start", "time_evening_end",
+    "time_night_start", "time_night_end",
 }
 
 @websocket_api.websocket_command({
@@ -751,6 +755,14 @@ _SUBKEY_SETTINGS = {
     vol.Optional("streak_milestones"): str,
     vol.Optional("notify_service"): str,
     vol.Optional("calendar_projection_days"): vol.All(int, vol.Range(min=1, max=90)),
+    vol.Optional("time_morning_start"): vol.Match(r"^\d{2}:\d{2}$"),
+    vol.Optional("time_morning_end"): vol.Match(r"^\d{2}:\d{2}$"),
+    vol.Optional("time_afternoon_start"): vol.Match(r"^\d{2}:\d{2}$"),
+    vol.Optional("time_afternoon_end"): vol.Match(r"^\d{2}:\d{2}$"),
+    vol.Optional("time_evening_start"): vol.Match(r"^\d{2}:\d{2}$"),
+    vol.Optional("time_evening_end"): vol.Match(r"^\d{2}:\d{2}$"),
+    vol.Optional("time_night_start"): vol.Match(r"^\d{2}:\d{2}$"),
+    vol.Optional("time_night_end"): vol.Match(r"^\d{2}:\d{2}$"),
 })
 @websocket_api.async_response
 @_admin_only
