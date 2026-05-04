@@ -1810,32 +1810,48 @@ class TaskMateChildCard extends LitElement {
     return this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
 
-  // Returns the current time period name based on HA-timezone-aware hour.
-  // morning: 0–11, afternoon: 12–16, evening: 17–20, night: 21–23
+  _getTimeBoundaries() {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
+      || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    const tb = attrs.time_boundaries || {};
+    return {
+      morning:   [this._parseHHMM(tb.morning_start, 6, 0),   this._parseHHMM(tb.morning_end, 12, 0)],
+      afternoon: [this._parseHHMM(tb.afternoon_start, 12, 0), this._parseHHMM(tb.afternoon_end, 17, 0)],
+      evening:   [this._parseHHMM(tb.evening_start, 17, 0),   this._parseHHMM(tb.evening_end, 21, 0)],
+      night:     [this._parseHHMM(tb.night_start, 21, 0),     this._parseHHMM(tb.night_end, 23, 59)],
+    };
+  }
+
+  _parseHHMM(str, defH, defM) {
+    if (!str) return defH + defM / 60;
+    const [h, m] = str.split(':').map(Number);
+    if (isNaN(h)) return defH + defM / 60;
+    return h + (m || 0) / 60;
+  }
+
   _getCurrentTimePeriod() {
     if (this.config.debug_time_period) return this.config.debug_time_period;
     const tz = this._getTimezone();
-    const hourStr = new Intl.DateTimeFormat('en-US', {
-      timeZone: tz,
-      hour: 'numeric',
-      hour12: false,
-    }).format(new Date());
-    const hour = parseInt(hourStr, 10);
-    if (hour < 12) return 'morning';
-    if (hour < 17) return 'afternoon';
-    if (hour < 21) return 'evening';
-    return 'night';
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, hour: 'numeric', minute: 'numeric', hour12: false,
+    }).formatToParts(new Date());
+    let hour = parseInt(parts.find(p => p.type === 'hour')?.value, 10);
+    const minute = parseInt(parts.find(p => p.type === 'minute')?.value, 10) || 0;
+    if (isNaN(hour)) hour = 0;
+    if (hour === 24) hour = 0;
+    const now = hour + minute / 60;
+    const b = this._getTimeBoundaries();
+    if (now >= b.night[0])     return 'night';
+    if (now >= b.evening[0])   return 'evening';
+    if (now >= b.afternoon[0]) return 'afternoon';
+    return 'morning';
   }
 
-  // Period hour bounds [startHour, endHour). Night caps at 24 (midnight).
   _getPeriodHours(period) {
-    switch (period) {
-      case 'morning': return [0, 12];
-      case 'afternoon': return [12, 17];
-      case 'evening': return [17, 21];
-      case 'night': return [21, 24];
-      default: return null;
-    }
+    const b = this._getTimeBoundaries();
+    const range = b[period];
+    if (!range) return null;
+    return [range[0], range[1]];
   }
 
   // Current {hour, minute} in HA timezone. Honours debug_time_period by
@@ -1843,7 +1859,7 @@ class TaskMateChildCard extends LitElement {
   _getCurrentHourMinute() {
     if (this.config.debug_time_period) {
       const hours = this._getPeriodHours(this.config.debug_time_period);
-      if (hours) return { hour: hours[0], minute: 0 };
+      if (hours) return { hour: Math.floor(hours[0]), minute: Math.round((hours[0] % 1) * 60) };
     }
     const tz = this._getTimezone();
     const parts = new Intl.DateTimeFormat('en-US', {
@@ -2047,7 +2063,7 @@ class TaskMateChildCard extends LitElement {
       ? (this._getPeriodHours(chore.time_category)?.[0] ?? null)
       : null;
     const lockedUntilLabel = isLockedPreview && periodStartHour !== null
-      ? this._t('child.chore_locked_until', { time: `${String(periodStartHour).padStart(2, '0')}:00` })
+      ? this._t('child.chore_locked_until', { time: `${String(Math.floor(periodStartHour)).padStart(2, '0')}:${String(Math.round((periodStartHour % 1) * 60)).padStart(2, '0')}` })
       : '';
     const handleRowClick = () => {
       if (isLoading) return;

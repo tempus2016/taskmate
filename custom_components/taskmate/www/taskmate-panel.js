@@ -1961,6 +1961,44 @@ class TaskMatePanel extends HTMLElement {
         </div>
 
         <div class="tm-section">
+          <div class="tm-section-head"><div><h3>Time-of-day boundaries</h3><p class="tm-meta">When each time period starts and ends (HH:MM, 24-hour).</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Morning<small>Default 06:00 – 12:00</small></div>
+              <div class="tm-time-pair">
+                <ha-textfield type="time" data-setting="time_morning_start" data-value="${s.time_morning_start || "06:00"}"></ha-textfield>
+                <span>–</span>
+                <ha-textfield type="time" data-setting="time_morning_end" data-value="${s.time_morning_end || "12:00"}"></ha-textfield>
+              </div>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Afternoon<small>Default 12:00 – 17:00</small></div>
+              <div class="tm-time-pair">
+                <ha-textfield type="time" data-setting="time_afternoon_start" data-value="${s.time_afternoon_start || "12:00"}"></ha-textfield>
+                <span>–</span>
+                <ha-textfield type="time" data-setting="time_afternoon_end" data-value="${s.time_afternoon_end || "17:00"}"></ha-textfield>
+              </div>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Evening<small>Default 17:00 – 21:00</small></div>
+              <div class="tm-time-pair">
+                <ha-textfield type="time" data-setting="time_evening_start" data-value="${s.time_evening_start || "17:00"}"></ha-textfield>
+                <span>–</span>
+                <ha-textfield type="time" data-setting="time_evening_end" data-value="${s.time_evening_end || "21:00"}"></ha-textfield>
+              </div>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">Night<small>Default 21:00 – 23:59</small></div>
+              <div class="tm-time-pair">
+                <ha-textfield type="time" data-setting="time_night_start" data-value="${s.time_night_start || "21:00"}"></ha-textfield>
+                <span>–</span>
+                <ha-textfield type="time" data-setting="time_night_end" data-value="${s.time_night_end || "23:59"}"></ha-textfield>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
           <div class="tm-section-head"><div><h3>Bonuses</h3></div></div>
           <div class="tm-section-body">
             <div class="tm-setting-row">
@@ -3260,6 +3298,11 @@ class TaskMatePanel extends HTMLElement {
       .tm-setting-row ha-select {
         max-width: 360px;
       }
+      .tm-time-pair {
+        display: flex; align-items: center; gap: 8px;
+      }
+      .tm-time-pair ha-textfield { max-width: 130px; }
+      .tm-time-pair span { color: var(--tm-text-faint); }
       .tm-settings-foot {
         display: flex; justify-content: flex-end;
         padding-top: 8px;

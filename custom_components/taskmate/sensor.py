@@ -653,6 +653,17 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
         today_dow = dt_util.now().strftime("%A").lower()
         settings = data.get("settings", {})
 
+        time_boundaries = {
+            "morning_start": settings.get("time_morning_start", "06:00"),
+            "morning_end": settings.get("time_morning_end", "12:00"),
+            "afternoon_start": settings.get("time_afternoon_start", "12:00"),
+            "afternoon_end": settings.get("time_afternoon_end", "17:00"),
+            "evening_start": settings.get("time_evening_start", "17:00"),
+            "evening_end": settings.get("time_evening_end", "21:00"),
+            "night_start": settings.get("time_night_start", "21:00"),
+            "night_end": settings.get("time_night_end", "23:59"),
+        }
+
         return {
             "today_day_of_week": today_dow,
             "streak_reset_mode": settings.get("streak_reset_mode", "reset"),
@@ -671,6 +682,7 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "points_name": data.get("points_name", "Stars"),
             "points_icon": data.get("points_icon", "mdi:star"),
             "children": _build_children_summary(common),
+            "time_boundaries": time_boundaries,
         }
 
 
