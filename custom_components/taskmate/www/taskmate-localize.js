@@ -32,9 +32,9 @@ async function _loadLocale(lang) {
       if (!resp.ok) throw new Error(resp.status);
       const data = await resp.json();
       _cache[lang] = data;
+      _refreshTaskMateCards();
       return data;
     } catch {
-      // Cache the failure so we don't retry on every render cycle
       _cache[lang] = null;
       return null;
     } finally {
@@ -119,31 +119,31 @@ async function loadTranslations(hass) {
   ]);
 }
 
+// Walk the DOM across shadow roots and trigger a re-render on TaskMate cards.
+// Called after locale files load so cards pick up the new translations.
+function _refreshTaskMateCards() {
+  const stack = [document];
+  while (stack.length) {
+    const node = stack.pop();
+    if (!node) continue;
+    if (node.tagName && node.tagName.startsWith('TASKMATE-')) {
+      if (typeof node.requestUpdate === 'function') {
+        try { node.requestUpdate(); } catch (_e) { /* ignore */ }
+      }
+    }
+    if (node.shadowRoot) stack.push(node.shadowRoot);
+    const children = node.children;
+    if (children) {
+      for (let i = 0; i < children.length; i++) stack.push(children[i]);
+    }
+  }
+}
+
 // Expose globally so cards can access without ES module imports
 window.__taskmate_localize = localize;
 window.__taskmate_loadTranslations = loadTranslations;
 
-// Cold-cache fix: any TaskMate cards that mounted before this module loaded
-// rendered raw translation keys ("common.today" instead of "Today"). Walk
-// the DOM across shadow roots and trigger a re-render now that the
-// localizer is defined.
-(function _refreshTaskMateCards() {
-  function walk() {
-    const stack = [document];
-    while (stack.length) {
-      const node = stack.pop();
-      if (!node) continue;
-      if (node.tagName && node.tagName.startsWith('TASKMATE-')) {
-        if (typeof node.requestUpdate === 'function') {
-          try { node.requestUpdate(); } catch (_e) { /* ignore */ }
-        }
-      }
-      if (node.shadowRoot) stack.push(node.shadowRoot);
-      const children = node.children;
-      if (children) {
-        for (let i = 0; i < children.length; i++) stack.push(children[i]);
-      }
-    }
-  }
-  queueMicrotask(walk);
-})();
+// Pre-load the fallback locale so translations are ready as soon as possible.
+// Cards that render before this completes will show raw keys momentarily,
+// then _loadLocale calls _refreshTaskMateCards to re-render them.
+_loadLocale(_FALLBACK);
