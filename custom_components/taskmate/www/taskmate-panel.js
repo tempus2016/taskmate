@@ -581,7 +581,7 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _confirmDelete(kind, id) {
-    const labels = { child: "Child", chore: "Chore", reward: "Reward", penalty: "Penalty", bonus: "Bonus", group: "Group" };
+    const labels = { child: this._t("panel.entity_child"), chore: this._t("panel.entity_chore"), reward: this._t("panel.entity_reward"), penalty: this._t("panel.entity_penalty"), bonus: this._t("panel.entity_bonus"), group: this._t("panel.entity_group") };
     const collectionKey = { child: "children", chore: "chores", reward: "rewards", penalty: "penalties", bonus: "bonuses", group: "task_groups" }[kind];
     const item = (this._state[collectionKey] || []).find(x => x.id === id);
     if (!item) return;
@@ -944,7 +944,7 @@ class TaskMatePanel extends HTMLElement {
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
     this._closeDialog(true);
     await this._fetchState();
-    this._showToast("ok", `${wasAdd ? "Added" : "Updated"} ${kind}`);
+    this._showToast("ok", this._t(`panel.toast_${wasAdd ? "added" : "updated"}_${kind}`));
   }
 
   _openApplyDialog(kind, id) {
@@ -960,7 +960,7 @@ class TaskMatePanel extends HTMLElement {
     if (!ok) { this._showToast("err", this._t("panel.toast_apply_failed", {error: err})); return; }
     this._closeDialog(true);
     await this._fetchState();
-    this._showToast("ok", kind === "penalty" ? "Penalty applied" : "Bonus applied");
+    this._showToast("ok", this._t(kind === "penalty" ? "panel.toast_penalty_applied" : "panel.toast_bonus_applied"));
   }
 
   // ---- Task groups -----------------------------------------------------
@@ -1235,7 +1235,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-search-wrap">
         <ha-icon icon="mdi:magnify" class="tm-search-icon"></ha-icon>
         <input class="tm-search" placeholder="${this._esc(placeholder)}" data-filter="true" value="${this._esc(this._filter)}">
-        ${this._filter ? `<button class="tm-search-clear" data-act="clear-filter" title="Clear">✕</button>` : ""}
+        ${this._filter ? `<button class="tm-search-clear" data-act="clear-filter" title="${this._t("panel.tooltip_clear")}">✕</button>` : ""}
       </div>
     `;
   }
@@ -1453,7 +1453,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr>
-              <th>${this._t("panel.chore_table_name")}</th><th>${this._t("panel.chore_table_points")}</th><th>${this._t("panel.chore_table_assigned")}</th><th>${this._t("panel.chore_table_schedule")}</th><th>${this._t("panel.chore_table_approval")}</th><th></th>
+              <th>${this._t("panel.chore_table_name")}</th><th>${this._t("panel.chore_table_points")}</th><th>${this._t("panel.chore_table_period")}</th><th>${this._t("panel.chore_table_assigned")}</th><th>${this._t("panel.chore_table_schedule")}</th><th>${this._t("panel.chore_table_approval")}</th><th></th>
             </tr></thead>
             <tbody>
               ${chores.map(c => this._renderChoreRow(c, childById)).join("")}
@@ -1480,13 +1480,14 @@ class TaskMatePanel extends HTMLElement {
       ? `<span class="tm-pill tm-pill-${c.assignment_mode}">${c.assignment_mode}</span>` : "";
     const nameCell = renaming
       ? `<input class="tm-inline-input" type="text" data-field="_inlineRename" value="${this._esc(this._inlineRename.value)}" autofocus>
-         <button class="tm-icon-btn" data-act="rename-chore-commit" title="Save">✓</button>
-         <button class="tm-icon-btn" data-act="rename-chore-cancel" title="Cancel">✕</button>`
-      : `<strong data-rename="chore" data-id="${this._esc(c.id)}" title="Double-click to rename">${this._esc(c.name)}</strong>${c.enabled === false ? ` <span class="tm-pill">${this._t("panel.common_disabled")}</span>` : ""}`;
+         <button class="tm-icon-btn" data-act="rename-chore-commit" title="${this._t("panel.tooltip_save")}">✓</button>
+         <button class="tm-icon-btn" data-act="rename-chore-cancel" title="${this._t("panel.tooltip_cancel")}">✕</button>`
+      : `<strong data-rename="chore" data-id="${this._esc(c.id)}" title="${this._t("panel.tooltip_rename")}">${this._esc(c.name)}</strong>${c.enabled === false ? ` <span class="tm-pill">${this._t("panel.common_disabled")}</span>` : ""}`;
     return `
       <tr class="tm-row ${c.enabled === false ? "tm-row-disabled" : ""}">
         <td>${nameCell}</td>
         <td><strong class="tm-numeric">${c.points}</strong></td>
+        <td><span class="tm-pill">${this._t("panel.time_" + (c.time_category || "anytime"))}</span></td>
         <td>${assignedNames} ${modeBadge}</td>
         <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span></td>
         <td>${c.requires_approval ? `<span class='tm-yes'>${this._t("panel.common_yes")}</span>` : `<span class='tm-no'>${this._t("panel.common_no")}</span>`}</td>
@@ -1528,7 +1529,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-child-head">
           <div class="tm-avatar tm-avatar-reward">${this._mdi(r.icon || "mdi:gift")}</div>
           <div class="tm-child-name">
-            <h3>${this._esc(r.name)} ${r.is_jackpot ? `<span class="tm-pill tm-pill-jackpot">🏆 Jackpot</span>` : ""} ${r.pool_enabled ? `<span class="tm-pill tm-pill-pool">Pool</span>` : ""}</h3>
+            <h3>${this._esc(r.name)} ${r.is_jackpot ? `<span class="tm-pill tm-pill-jackpot">🏆 ${this._t("panel.reward_badge_jackpot")}</span>` : ""} ${r.pool_enabled ? `<span class="tm-pill tm-pill-pool">${this._t("panel.reward_badge_pool")}</span>` : ""}</h3>
             <div class="tm-meta">${this._esc(r.description || "")}</div>
           </div>
         </div>
@@ -1650,7 +1651,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-section-divider">${this._t("panel.template_custom_templates")}</div>
         ${custom.map(t => this._renderManageTemplateCard(t, false)).join("")}
       ` : ""}
-      <div class="tm-section-divider">${custom.length > 0 ? "Built-in templates" : "Built-in template packs"}</div>
+      <div class="tm-section-divider">${custom.length > 0 ? this._t("panel.template_builtin_templates") : this._t("panel.template_builtin_packs")}</div>
       ${builtin.map(t => this._renderManageTemplateCard(t, true)).join("")}
     `;
   }
@@ -1707,7 +1708,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-tpl-picker-name">${this._esc(tpl.name)}</div>
             <div class="tm-meta">${this._t("panel.template_pts_total", {count, points: pts})}</div>
           </div>
-          <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}">${tpl.builtin ? "Built-in" : "Custom"}</span>
+          <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}">${tpl.builtin ? this._t("panel.template_builtin") : this._t("panel.template_custom")}</span>
         </div>
         <div class="tm-tpl-chore-pills">
           ${(tpl.chores || []).map(c => `<span class="tm-tpl-chore-pill">${this._esc(c.name)}</span>`).join("")}
@@ -1724,7 +1725,7 @@ class TaskMatePanel extends HTMLElement {
     return `
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">${this._esc(tpl.name)}</h2>
-        <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}" style="margin-left:8px">${tpl.builtin ? "Built-in" : "Custom"}</span>
+        <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}" style="margin-left:8px">${tpl.builtin ? this._t("panel.template_builtin") : this._t("panel.template_custom")}</span>
         <span style="flex:1"></span>
         <button class="tm-btn" data-act="tpl-back">${this._t("panel.btn_back")}</button>
       </div>
@@ -1741,18 +1742,18 @@ class TaskMatePanel extends HTMLElement {
 
   _renderTemplateChoreCard(chore, idx) {
     const expanded = chore._expanded;
-    const schedLabel = (chore.due_days || []).length === 0 ? "Daily" : (chore.due_days || []).map(d => d.slice(0, 3)).join(", ");
+    const schedLabel = (chore.due_days || []).length === 0 ? this._t("panel.common_daily") : (chore.due_days || []).map(d => d.slice(0, 3)).join(", ");
     return `
       <div class="tm-tpl-preview-card">
         <div class="tm-tpl-preview-header" data-act="tpl-toggle-expand" data-idx="${idx}">
           <span class="tm-tpl-expand ${expanded ? "open" : ""}">▶</span>
           <span class="tm-tpl-preview-name">${this._esc(chore.name)}</span>
           <span class="tm-tpl-preview-summary">
-            <span>${chore.points || 0} pt${(chore.points || 0) !== 1 ? "s" : ""}</span>
+            <span>${this._t("panel.pts_display", {count: chore.points || 0})}</span>
             <span>${schedLabel}</span>
             <span>${this._esc(chore.time_category || "anytime")}</span>
           </span>
-          <button class="tm-tpl-remove" data-act="tpl-remove-chore" data-idx="${idx}" title="Remove from batch">✕</button>
+          <button class="tm-tpl-remove" data-act="tpl-remove-chore" data-idx="${idx}" title="${this._t("panel.tooltip_remove_batch")}">✕</button>
         </div>
         ${expanded ? `
           <div class="tm-tpl-preview-body">
@@ -1813,7 +1814,7 @@ class TaskMatePanel extends HTMLElement {
                 <label class="tm-tpl-check-row">
                   <input type="checkbox" data-tpl-chore-check="${this._esc(c.id)}">
                   <span>${this._esc(c.name)}</span>
-                  <span class="tm-text-muted" style="margin-left:auto">${c.points} pts</span>
+                  <span class="tm-text-muted" style="margin-left:auto">${this._t("panel.pts_display", {count: c.points})}</span>
                 </label>
               `).join("")}
             </div>
@@ -1947,7 +1948,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-section-body">
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_points_name_label")}<small>${this._t("panel.settings_points_name_hint")}</small></div>
-              <ha-textfield data-setting="points_name" data-value="${this._esc(s.points_name || "Stars")}" placeholder="Stars"></ha-textfield>
+              <ha-textfield data-setting="points_name" data-value="${this._esc(s.points_name || this._t("panel.settings_points_default"))}" placeholder="${this._t("panel.settings_points_default")}"></ha-textfield>
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_points_icon_label")}<small>${this._t("panel.settings_points_icon_hint")}</small></div>
@@ -2090,8 +2091,8 @@ class TaskMatePanel extends HTMLElement {
             ${(d.chores || []).map((c, i) => `
               <div class="tm-tpl-preview-card" style="margin-bottom:8px">
                 <div style="display:flex;align-items:center;gap:10px;padding:10px 14px">
-                  <span style="font-weight:600;flex:1">${this._esc(c.name || "(unnamed)")}</span>
-                  <span class="tm-meta">${c.points || 0} pts</span>
+                  <span style="font-weight:600;flex:1">${this._esc(c.name || this._t("panel.template_unnamed"))}</span>
+                  <span class="tm-meta">${this._t("panel.pts_display", {count: c.points || 0})}</span>
                   <button class="tm-tpl-remove" data-act="tpl-dialog-remove-chore" data-idx="${i}">✕</button>
                 </div>
                 <div style="padding:0 14px 12px;border-top:1px solid var(--tm-border-soft)">
@@ -2238,7 +2239,7 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-field-row" style="align-items:flex-end;gap:6px;margin-bottom:6px">
                 <div class="tm-field" style="flex:2;margin:0"><input class="tm-input" placeholder="${this._t("panel.chore_subtask_name_placeholder")}" value="${this._esc(b.name)}" data-field="bonus_subtasks[${idx}].name"></div>
                 <div class="tm-field" style="flex:0 0 70px;margin:0"><input class="tm-input" type="number" min="0" placeholder="${this._t("panel.chore_subtask_points_placeholder")}" value="${b.points}" data-field="bonus_subtasks[${idx}].points"></div>
-                <button type="button" class="tm-btn tm-btn-icon" data-act="remove-bonus-subtask" data-idx="${idx}" title="Remove" style="padding:6px 10px">✕</button>
+                <button type="button" class="tm-btn tm-btn-icon" data-act="remove-bonus-subtask" data-idx="${idx}" title="${this._t("panel.tooltip_remove")}" style="padding:6px 10px">✕</button>
               </div>
             `).join("")}
             <button type="button" class="tm-btn" data-act="add-bonus-subtask" style="margin-top:4px">${this._t("panel.btn_add_bonus_subtask")}</button>
@@ -2284,8 +2285,8 @@ class TaskMatePanel extends HTMLElement {
         this._field(this._t("panel.chore_name_label"), "name", d.name, "text"),
         this._field(this._t("panel.chore_description_label"), "description", d.description, "text"),
         `<div class="tm-field-row">
-          ${this._field(`Cost (${pointsName})`, "cost", d.cost, "number")}
-          ${this._iconPickerField("Icon", "icon", d.icon)}
+          ${this._field(this._t("panel.reward_cost_label", {points_name: pointsName}), "cost", d.cost, "number")}
+          ${this._iconPickerField(this._t("panel.reward_icon_label"), "icon", d.icon)}
         </div>`,
         children.length > 0 ? `
           <div class="tm-field">
@@ -2323,8 +2324,8 @@ class TaskMatePanel extends HTMLElement {
         this._field(this._t("panel.chore_name_label"), "name", d.name, "text"),
         this._field(this._t("panel.chore_description_label"), "description", d.description, "text"),
         `<div class="tm-field-row">
-          ${this._field(`Points to ${isPenalty ? "deduct" : "award"}`, "points", d.points, "number")}
-          ${this._iconPickerField("Icon", "icon", d.icon)}
+          ${this._field(this._t(isPenalty ? "panel.penbon_points_deduct" : "panel.penbon_points_award"), "points", d.points, "number")}
+          ${this._iconPickerField(this._t("panel.reward_icon_label"), "icon", d.icon)}
         </div>`,
         children.length > 0 ? `
           <div class="tm-field">
@@ -2475,7 +2476,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-dialog">
           <header class="tm-dialog-head">
             <h2>${this._esc(title)}</h2>
-            <button class="tm-icon-btn" data-act="close-dialog" title="Close">&times;</button>
+            <button class="tm-icon-btn" data-act="close-dialog" title="${this._t("panel.tooltip_close")}">&times;</button>
           </header>
           <div class="tm-dialog-body">${body}</div>
           <footer class="tm-dialog-foot">${footer}</footer>
@@ -2570,7 +2571,7 @@ class TaskMatePanel extends HTMLElement {
             ? `<div class="tm-ep-selected">
                 <ha-icon icon="${this._esc(icon)}" class="tm-ep-selected-icon"></ha-icon>
                 <span class="tm-ep-selected-text">${this._esc(friendly || value)}</span>
-                <button type="button" class="tm-entity-clear" data-act="clear-field" data-field="${name}" title="Clear">✕</button>
+                <button type="button" class="tm-entity-clear" data-act="clear-field" data-field="${name}" title="${this._t("panel.tooltip_clear")}">✕</button>
               </div>`
             : `<div class="tm-ep-search-wrap">
                 <ha-icon icon="mdi:magnify" class="tm-ep-search-icon"></ha-icon>
