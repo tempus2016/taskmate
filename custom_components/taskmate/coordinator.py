@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import logging
 from typing import Any
 
@@ -54,6 +54,7 @@ class TaskMateCoordinator(
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""
         await self.storage.async_load()
+        await self._async_backfill_career_history()
         await self._async_stop_stale_timed_sessions()
         await self.async_refresh()
         # Schedule midnight streak check at 00:00:05
@@ -70,6 +71,66 @@ class TaskMateCoordinator(
         self._unsub_availability = self.hass.bus.async_listen(
             "state_changed", self._availability_state_changed
         )
+
+    async def _async_backfill_career_history(self) -> None:
+        """Backfill career_score_history from completions and transactions.
+
+        Runs once on startup for children whose history is sparse (fewer than
+        7 entries). Uses all stored completions and transactions — not the
+        capped sensor attributes — so coverage matches the 90-day retention.
+        """
+        children = self.storage.get_children()
+        if not children:
+            return
+
+        needs_save = False
+        completions = self.storage.get_completions()
+        transactions = self.storage.get_points_transactions()
+        chore_lookup = {ch.id: ch for ch in self.storage.get_chores()}
+
+        for child in children:
+            existing = self.storage.get_career_score_history(child.id)
+            if len(existing) >= 7:
+                continue
+
+            daily_net: dict[str, int] = {}
+            for comp in completions:
+                if comp.child_id != child.id or not comp.approved:
+                    continue
+                day = comp.completed_at.date().isoformat()
+                pts = comp.points_awarded
+                if not pts:
+                    chore = chore_lookup.get(comp.chore_id)
+                    pts = chore.points if chore else 0
+                daily_net[day] = daily_net.get(day, 0) + pts
+
+            for txn in transactions:
+                if txn.child_id != child.id:
+                    continue
+                day = txn.created_at.date().isoformat()
+                daily_net[day] = daily_net.get(day, 0) + txn.points
+
+            if not daily_net:
+                continue
+
+            sorted_days = sorted(daily_net.keys())
+            total_net = sum(daily_net.values())
+            start_score = (child.career_score or 0) - total_net
+
+            running = start_score
+            for day in sorted_days:
+                running += daily_net[day]
+                self.storage.append_career_score_snapshot(
+                    child.id, day, running
+                )
+            needs_save = True
+            _LOGGER.info(
+                "Backfilled %d career history entries for %s",
+                len(sorted_days), child.name,
+            )
+
+        if needs_save:
+            await self.storage.async_save()
 
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator and clean up listeners."""
