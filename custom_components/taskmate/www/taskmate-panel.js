@@ -2354,7 +2354,7 @@ class TaskMatePanel extends HTMLElement {
     const eligible = (item.assigned_to || []).length === 0
       ? children
       : children.filter(c => (item.assigned_to || []).includes(c.id));
-    return this._dialogShell(isPenalty ? this._t("panel.dialog_apply_penalty", {name: item.name}) : this._t("panel.dialog_apply_bonus", {name: item.name})),
+    return this._dialogShell(isPenalty ? this._t("panel.dialog_apply_penalty", {name: item.name}) : this._t("panel.dialog_apply_bonus", {name: item.name}),
       `<p>${isPenalty ? this._t("panel.penalty_apply_text", {points: item.points}) : this._t("panel.bonus_apply_text", {points: item.points})}</p>
        ${eligible.length === 0 ? `<p class="tm-meta">${this._t("panel.penbon_no_eligible", {kind})}</p>` : `
         <div class="tm-chip-row" style="margin-top: 12px;">
