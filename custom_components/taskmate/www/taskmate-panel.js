@@ -1758,35 +1758,35 @@ class TaskMatePanel extends HTMLElement {
         ${expanded ? `
           <div class="tm-tpl-preview-body">
             <div class="tm-field-row">
-              <div class="tm-field"><label>${this._t("panel.common_name")}</label><input type="text" data-tpl-field="name" data-tpl-idx="${idx}" value="${this._esc(chore.name)}"></div>
-              <div class="tm-field"><label>${this._t("panel.common_points")}</label><input type="number" data-tpl-field="points" data-tpl-idx="${idx}" value="${chore.points || 0}" min="0"></div>
+              <div class="tm-field"><span class="tm-field-label">${this._t("panel.common_name")}</span><input class="tm-input" type="text" data-tpl-field="name" data-tpl-idx="${idx}" value="${this._esc(chore.name)}"></div>
+              <div class="tm-field"><span class="tm-field-label">${this._t("panel.common_points")}</span><input class="tm-input" type="number" data-tpl-field="points" data-tpl-idx="${idx}" value="${chore.points || 0}" min="0"></div>
             </div>
             <div class="tm-field-row">
-              <div class="tm-field"><label>${this._t("panel.chore_time_category_label")}</label>
-                <select data-tpl-field="time_category" data-tpl-idx="${idx}">
+              <div class="tm-field"><span class="tm-field-label">${this._t("panel.chore_time_category_label")}</span>
+                <select class="tm-select" data-tpl-field="time_category" data-tpl-idx="${idx}">
                   ${TIME_CATEGORIES.map(t => `<option value="${t.v}" ${chore.time_category === t.v ? "selected" : ""}>${this._t(t.lk)}</option>`).join("")}
                 </select>
               </div>
-              <div class="tm-field"><label>${this._t("panel.template_assignment_mode_label")}</label>
-                <select data-tpl-field="assignment_mode" data-tpl-idx="${idx}">
+              <div class="tm-field"><span class="tm-field-label">${this._t("panel.template_assignment_mode_label")}</span>
+                <select class="tm-select" data-tpl-field="assignment_mode" data-tpl-idx="${idx}">
                   ${ASSIGNMENT_MODES.map(m => `<option value="${m.v}" ${chore.assignment_mode === m.v ? "selected" : ""}>${this._t(m.lk).split(" — ")[0]}</option>`).join("")}
                 </select>
               </div>
             </div>
-            <div class="tm-field" style="margin-bottom:12px"><label>${this._t("panel.template_schedule_days_label")}</label>
+            <div class="tm-field" style="margin-bottom:12px"><span class="tm-field-label">${this._t("panel.template_schedule_days_label")}</span>
               <div class="tm-day-pills">
                 ${DAYS.map(d => `<span class="tm-day-pill ${(chore.due_days || []).includes(d.v) ? "active" : ""}" data-act="tpl-toggle-day" data-idx="${idx}" data-day="${d.v}">${this._t(d.lk)}</span>`).join("")}
               </div>
             </div>
             <div class="tm-field-row">
-              <div class="tm-field"><label>${this._t("panel.template_requires_approval_label")}</label>
-                <select data-tpl-field="requires_approval" data-tpl-idx="${idx}">
+              <div class="tm-field"><span class="tm-field-label">${this._t("panel.template_requires_approval_label")}</span>
+                <select class="tm-select" data-tpl-field="requires_approval" data-tpl-idx="${idx}">
                   <option value="false" ${!chore.requires_approval ? "selected" : ""}>${this._t("panel.template_requires_approval_no")}</option>
                   <option value="true" ${chore.requires_approval ? "selected" : ""}>${this._t("panel.template_requires_approval_yes")}</option>
                 </select>
               </div>
-              <div class="tm-field"><label>${this._t("panel.template_daily_limit_label")}</label>
-                <input type="number" data-tpl-field="daily_limit" data-tpl-idx="${idx}" value="${chore.daily_limit || 1}" min="1">
+              <div class="tm-field"><span class="tm-field-label">${this._t("panel.template_daily_limit_label")}</span>
+                <input class="tm-input" type="number" data-tpl-field="daily_limit" data-tpl-idx="${idx}" value="${chore.daily_limit || 1}" min="1">
               </div>
             </div>
           </div>
@@ -1806,8 +1806,8 @@ class TaskMatePanel extends HTMLElement {
             <button class="tm-icon-btn" data-act="tpl-save-cancel">✕</button>
           </div>
           <div class="tm-dialog-body">
-            <div class="tm-field" style="margin-bottom:14px"><label>${this._t("panel.template_save_name_label")}</label><input type="text" data-field="tpl_save_name" placeholder="${this._t("panel.template_save_name_placeholder")}"></div>
-            <div class="tm-field" style="margin-bottom:14px"><label>${this._t("panel.template_save_icon_label")}</label><input type="text" data-field="tpl_save_icon" placeholder="mdi:clipboard-list" value="mdi:clipboard-list"></div>
+            <div class="tm-field" style="margin-bottom:14px"><span class="tm-field-label">${this._t("panel.template_save_name_label")}</span><input class="tm-input" type="text" data-field="tpl_save_name" placeholder="${this._t("panel.template_save_name_placeholder")}"></div>
+            <div class="tm-field" style="margin-bottom:14px"><span class="tm-field-label">${this._t("panel.template_save_icon_label")}</span><input class="tm-input" type="text" data-field="tpl_save_icon" placeholder="mdi:clipboard-list" value="mdi:clipboard-list"></div>
             <label class="tm-field-label" style="display:block;margin-bottom:8px">${this._t("panel.template_save_select_chores")}</label>
             <div class="tm-tpl-checklist">
               ${chores.map(c => `
@@ -2084,8 +2084,8 @@ class TaskMatePanel extends HTMLElement {
           </div>
           <div class="tm-dialog-body">
             <div class="tm-field-row" style="margin-bottom:16px">
-              <div class="tm-field"><label>${this._t("panel.template_name_label")}</label><input type="text" data-field="name" value="${this._esc(d.name)}"></div>
-              <div class="tm-field"><label>${this._t("panel.template_icon_label")}</label><input type="text" data-field="icon" value="${this._esc(d.icon)}"></div>
+              <div class="tm-field"><span class="tm-field-label">${this._t("panel.template_name_label")}</span><input class="tm-input" type="text" data-field="name" value="${this._esc(d.name)}"></div>
+              <div class="tm-field"><span class="tm-field-label">${this._t("panel.template_icon_label")}</span><input class="tm-input" type="text" data-field="icon" value="${this._esc(d.icon)}"></div>
             </div>
             <label class="tm-field-label" style="display:block;margin-bottom:8px">${this._t("panel.template_chores_in_template")}</label>
             ${(d.chores || []).map((c, i) => `
@@ -2097,17 +2097,17 @@ class TaskMatePanel extends HTMLElement {
                 </div>
                 <div style="padding:0 14px 12px;border-top:1px solid var(--tm-border-soft)">
                   <div class="tm-field-row" style="margin-top:10px">
-                    <div class="tm-field"><label>${this._t("panel.common_name")}</label><input type="text" data-tpl-dialog-field="name" data-tpl-dialog-idx="${i}" value="${this._esc(c.name)}"></div>
-                    <div class="tm-field"><label>${this._t("panel.common_points")}</label><input type="number" data-tpl-dialog-field="points" data-tpl-dialog-idx="${i}" value="${c.points || 0}" min="0"></div>
+                    <div class="tm-field"><span class="tm-field-label">${this._t("panel.common_name")}</span><input class="tm-input" type="text" data-tpl-dialog-field="name" data-tpl-dialog-idx="${i}" value="${this._esc(c.name)}"></div>
+                    <div class="tm-field"><span class="tm-field-label">${this._t("panel.common_points")}</span><input class="tm-input" type="number" data-tpl-dialog-field="points" data-tpl-dialog-idx="${i}" value="${c.points || 0}" min="0"></div>
                   </div>
                   <div class="tm-field-row">
-                    <div class="tm-field"><label>${this._t("panel.chore_time_category_label")}</label>
-                      <select data-tpl-dialog-field="time_category" data-tpl-dialog-idx="${i}">
+                    <div class="tm-field"><span class="tm-field-label">${this._t("panel.chore_time_category_label")}</span>
+                      <select class="tm-select" data-tpl-dialog-field="time_category" data-tpl-dialog-idx="${i}">
                         ${TIME_CATEGORIES.map(t => `<option value="${t.v}" ${c.time_category === t.v ? "selected" : ""}>${this._t(t.lk)}</option>`).join("")}
                       </select>
                     </div>
-                    <div class="tm-field"><label>${this._t("panel.template_schedule_label")}</label>
-                      <select data-tpl-dialog-field="schedule_mode" data-tpl-dialog-idx="${i}">
+                    <div class="tm-field"><span class="tm-field-label">${this._t("panel.template_schedule_label")}</span>
+                      <select class="tm-select" data-tpl-dialog-field="schedule_mode" data-tpl-dialog-idx="${i}">
                         ${SCHEDULE_MODES.map(s => `<option value="${s.v}" ${c.schedule_mode === s.v ? "selected" : ""}>${this._t(s.lk)}</option>`).join("")}
                       </select>
                     </div>
