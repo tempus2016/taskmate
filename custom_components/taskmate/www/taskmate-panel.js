@@ -1,7 +1,7 @@
 /**
  * TaskMate admin panel — sidebar entry at /taskmate-admin.
  *
- * v3.6.0 — HA-native styling:
+ * v3.6.1 — HA-native styling:
  *   - All custom --tm-* tokens now map to HA theme variables
  *     (--primary-color, --card-background-color, etc.).
  *   - Dark mode handled automatically via HA vars (no .dark override).
@@ -9,7 +9,7 @@
  *   - Entity picker dropdown uses theme-aware colors.
  */
 
-const PANEL_VERSION = "3.6.0";
+const PANEL_VERSION = "3.6.1";
 
 const TABS = [
   { id: "children",  label: "Children" },
