@@ -2869,6 +2869,7 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-search {
         width: 100%;
+        box-sizing: border-box;
         background: var(--tm-surface-0);
         border: 1px solid var(--tm-border);
         border-radius: var(--tm-radius-sm);
