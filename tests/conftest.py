@@ -169,6 +169,7 @@ sys.modules.update(
         "homeassistant.config_entries": MagicMock(),
         "homeassistant.const": MagicMock(),
         "homeassistant.helpers": MagicMock(),
+        "homeassistant.helpers.service": MagicMock(),
         "homeassistant.helpers.storage": _ha_storage_mod,
         "homeassistant.helpers.event": _ha_event,
         "homeassistant.helpers.update_coordinator": _ha_coordinator,
