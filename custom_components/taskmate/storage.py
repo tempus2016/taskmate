@@ -30,7 +30,8 @@ class TaskMateStorage:
     async def async_load(self) -> dict[str, Any]:
         """Load data from storage."""
         data = await self._store.async_load()
-        if data is None:
+        is_fresh = data is None
+        if is_fresh:
             data = {
                 "children": [],
                 "chores": [],
@@ -40,6 +41,8 @@ class TaskMateStorage:
                 "points_transactions": [],
                 "pool_allocations": [],
                 "task_groups": [],
+                "badges": [],
+                "awarded_badges": [],
                 "points_name": "Stars",
                 "points_icon": "mdi:star",
                 "last_completed": {},
@@ -77,6 +80,9 @@ class TaskMateStorage:
         # Ensure awarded_badges store exists (migration for achievement badges feature)
         if "awarded_badges" not in self._data:
             self._data["awarded_badges"] = []
+
+        # Badge migration / seeding
+        self._seed_builtin_badges(is_fresh=is_fresh)
 
         # Run data migrations
         await self._migrate_assigned_to_child_ids()
@@ -516,6 +522,29 @@ class TaskMateStorage:
             if a.get("child_id") == child_id and a.get("badge_id") == badge_id:
                 return True
         return False
+
+    def _seed_builtin_badges(self, *, is_fresh: bool) -> None:
+        """Seed the built-in badge catalogue.
+
+        On fresh install (is_fresh=True): add all built-ins and set the
+        backfill_pending flag so existing kid state can be retro-awarded silently.
+        On existing install (is_fresh=False): add only built-ins missing from
+        storage; preserve parent customisations; do not set backfill flag.
+        Idempotent.
+        """
+        from .coord_badges import BUILTIN_CATALOGUE
+
+        existing = self._data.get("badges", [])
+        existing_ids = {b.get("id") for b in existing}
+
+        for builtin in BUILTIN_CATALOGUE:
+            if builtin.id not in existing_ids:
+                existing.append(builtin.to_dict())
+
+        self._data["badges"] = existing
+
+        if is_fresh:
+            self._data["badges_backfill_pending"] = True
 
     # Task groups management
     def get_task_groups(self) -> list[TaskGroup]:

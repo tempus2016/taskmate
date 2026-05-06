@@ -107,3 +107,46 @@ class TestBadgeStorage:
         remaining = storage.get_awarded_badges()
         assert len(remaining) == 1
         assert remaining[0].child_id == "other"
+
+
+from custom_components.taskmate.coord_badges import BUILTIN_CATALOGUE
+
+
+class TestCatalogueSeeding:
+    def test_seed_fresh_adds_all_builtins_and_sets_flag(self, storage):
+        # Fresh install: badges key absent before seeding
+        storage._data = {}
+        storage._seed_builtin_badges(is_fresh=True)
+        ids = {b.id for b in storage.get_badges()}
+        assert ids == {b.id for b in BUILTIN_CATALOGUE}
+        assert storage._data.get("badges_backfill_pending") is True
+
+    def test_seed_existing_adds_missing_only_no_flag(self, storage):
+        # Existing install: badges key present (may be empty)
+        storage._data["badges"] = []
+        storage._seed_builtin_badges(is_fresh=False)
+        # All 15 added because none were present
+        assert len(storage.get_badges()) == len(BUILTIN_CATALOGUE)
+        # No backfill flag (this is not a fresh install)
+        assert storage._data.get("badges_backfill_pending") is not True
+
+    def test_seed_preserves_parent_customisations(self, storage):
+        # Parent edited point_bonus on the first built-in
+        first = BUILTIN_CATALOGUE[0]
+        custom = first.to_dict()
+        custom["point_bonus"] = 999
+        storage._data["badges"] = [custom]
+        storage._seed_builtin_badges(is_fresh=False)
+        # Customisation preserved
+        kept = next(b for b in storage.get_badges() if b.id == first.id)
+        assert kept.point_bonus == 999
+        # Other 14 added
+        assert len(storage.get_badges()) == len(BUILTIN_CATALOGUE)
+
+    def test_seed_idempotent(self, storage):
+        storage._data = {}
+        storage._seed_builtin_badges(is_fresh=True)
+        first_count = len(storage.get_badges())
+        storage._seed_builtin_badges(is_fresh=False)
+        second_count = len(storage.get_badges())
+        assert first_count == second_count
