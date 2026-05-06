@@ -1,7 +1,7 @@
 """Tests for badge dataclasses."""
 from __future__ import annotations
 
-from custom_components.taskmate.models import Badge, BadgeCriterion
+from custom_components.taskmate.models import AwardedBadge, Badge, BadgeCriterion
 
 
 class TestBadgeCriterion:
@@ -43,3 +43,24 @@ class TestBadge:
         assert len(round_trip.criteria) == 1
         assert round_trip.criteria[0].metric == "total_points"
         assert round_trip.builtin is True
+
+
+class TestAwardedBadge:
+    def test_defaults(self):
+        a = AwardedBadge(child_id="c1", badge_id="b1")
+        assert a.manually_awarded is False
+        assert a.silent is False
+        assert a.bonus_credited == 0
+
+    def test_round_trip(self):
+        a = AwardedBadge(
+            child_id="c1",
+            badge_id="b1",
+            manually_awarded=True,
+            silent=False,
+            bonus_credited=50,
+        )
+        round_trip = AwardedBadge.from_dict(a.to_dict())
+        assert round_trip.child_id == "c1"
+        assert round_trip.bonus_credited == 50
+        assert round_trip.manually_awarded is True

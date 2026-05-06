@@ -688,6 +688,43 @@ class Badge:
 
 
 @dataclass
+class AwardedBadge:
+    """A badge earn record for a specific child."""
+
+    child_id: str
+    badge_id: str
+    earned_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    manually_awarded: bool = False
+    silent: bool = False  # True = retroactive backfill; suppresses notify + bonus
+    bonus_credited: int = 0  # actual point_bonus credited at earn time
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "AwardedBadge":
+        earned_at = parse_datetime(data.get("earned_at"))
+        return cls(
+            id=data.get("id", generate_id()),
+            child_id=data.get("child_id", ""),
+            badge_id=data.get("badge_id", ""),
+            earned_at=earned_at or datetime.now(timezone.utc),
+            manually_awarded=bool(data.get("manually_awarded", False)),
+            silent=bool(data.get("silent", False)),
+            bonus_credited=int(data.get("bonus_credited", 0) or 0),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "child_id": self.child_id,
+            "badge_id": self.badge_id,
+            "earned_at": format_datetime(self.earned_at),
+            "manually_awarded": self.manually_awarded,
+            "silent": self.silent,
+            "bonus_credited": self.bonus_credited,
+        }
+
+
+@dataclass
 class TaskGroup:
     """Groups chores so assignments stay coordinated across them.
 
