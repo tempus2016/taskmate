@@ -4,8 +4,8 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 from datetime import datetime, timezone
 
-from custom_components.taskmate.coord_badges import BUILTIN_CATALOGUE, resolve_metric
-from custom_components.taskmate.models import Badge, Child, RewardClaim
+from custom_components.taskmate.coord_badges import BUILTIN_CATALOGUE, resolve_metric, TRIGGER_METRICS, badge_relevant_to_trigger
+from custom_components.taskmate.models import Badge, BadgeCriterion, Child, RewardClaim
 
 
 class TestBuiltinCatalogue:
@@ -109,3 +109,43 @@ class TestResolveMetric:
         storage = MagicMock()
         child = self._child()
         assert resolve_metric("nonsense", child, storage) == 0
+
+
+class TestTriggerMap:
+    def test_trigger_metrics_complete(self):
+        assert "total_chores" in TRIGGER_METRICS["chore_completed"]
+        assert "first_chore" in TRIGGER_METRICS["chore_completed"]
+        assert "total_points" in TRIGGER_METRICS["points_changed"]
+        assert "total_rewards" in TRIGGER_METRICS["reward_redeemed"]
+        assert "first_reward" in TRIGGER_METRICS["reward_redeemed"]
+        assert "current_streak" in TRIGGER_METRICS["streak_updated"]
+        assert "best_streak" in TRIGGER_METRICS["streak_updated"]
+        assert "perfect_weeks" in TRIGGER_METRICS["perfect_week"]
+
+    def test_manual_trigger_includes_all(self):
+        b = Badge(name="x", criteria=[BadgeCriterion("total_points", ">=", 5)])
+        assert badge_relevant_to_trigger(b, "manual") is True
+
+    def test_chore_trigger_skips_points_only_badge(self):
+        b = Badge(name="x", criteria=[BadgeCriterion("total_points", ">=", 100)])
+        assert badge_relevant_to_trigger(b, "chore_completed") is False
+
+    def test_chore_trigger_matches_chore_badge(self):
+        b = Badge(name="x", criteria=[BadgeCriterion("total_chores", ">=", 10)])
+        assert badge_relevant_to_trigger(b, "chore_completed") is True
+
+    def test_chore_trigger_matches_compound_badge(self):
+        b = Badge(name="x", criteria=[
+            BadgeCriterion("total_chores", ">=", 10),
+            BadgeCriterion("total_points", ">=", 100),
+        ])
+        assert badge_relevant_to_trigger(b, "chore_completed") is True
+
+    def test_no_criteria_only_matches_manual(self):
+        b = Badge(name="x", criteria=[])
+        assert badge_relevant_to_trigger(b, "chore_completed") is False
+        assert badge_relevant_to_trigger(b, "manual") is True
+
+    def test_unknown_trigger_no_match(self):
+        b = Badge(name="x", criteria=[BadgeCriterion("total_points", ">=", 5)])
+        assert badge_relevant_to_trigger(b, "made_up") is False

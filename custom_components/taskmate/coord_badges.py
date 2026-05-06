@@ -88,3 +88,26 @@ def resolve_metric(metric: str, child: Child, storage) -> int:
             return 1 if approved_count >= 1 else 0
         return approved_count
     return 0
+
+
+TRIGGER_METRICS: dict[str, set[str]] = {
+    "chore_completed": {"total_chores", "first_chore"},
+    "points_changed": {"total_points"},
+    "reward_redeemed": {"total_rewards", "first_reward"},
+    "streak_updated": {"current_streak", "best_streak"},
+    "perfect_week": {"perfect_weeks"},
+}
+
+
+def badge_relevant_to_trigger(badge: Badge, trigger: str) -> bool:
+    """Return True if any of the badge's criteria reference a metric in the trigger's set.
+
+    'manual' trigger always returns True (re-evaluates everything).
+    Badges with no criteria are manual-award-only and never auto-fire.
+    """
+    if trigger == "manual":
+        return True
+    if not badge.criteria:
+        return False
+    relevant = TRIGGER_METRICS.get(trigger, set())
+    return any(c.metric in relevant for c in badge.criteria)
