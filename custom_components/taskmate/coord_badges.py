@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 
-from .models import Badge, BadgeCriterion
+from .models import Badge, BadgeCriterion, Child
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,3 +63,28 @@ BUILTIN_CATALOGUE: list[Badge] = [
     _b("10_perfect_weeks", "10 Perfect Weeks", "Achieve 10 perfect weeks",
        "mdi:rainbow", "platinum", 250, "perfect_weeks", 10),
 ]
+
+
+def resolve_metric(metric: str, child: Child, storage) -> int:
+    """Resolve a metric value for a child. Returns int (0 for unknown metrics)."""
+    if metric == "total_points":
+        return int(child.total_points_earned or 0)
+    if metric == "total_chores":
+        return int(child.total_chores_completed or 0)
+    if metric == "current_streak":
+        return int(child.current_streak or 0)
+    if metric == "best_streak":
+        return int(child.best_streak or 0)
+    if metric == "perfect_weeks":
+        return len(child.awarded_perfect_weeks or [])
+    if metric == "first_chore":
+        return 1 if (child.total_chores_completed or 0) >= 1 else 0
+    if metric in ("total_rewards", "first_reward"):
+        approved_count = sum(
+            1 for c in storage.get_reward_claims()
+            if c.child_id == child.id and c.approved
+        )
+        if metric == "first_reward":
+            return 1 if approved_count >= 1 else 0
+        return approved_count
+    return 0
