@@ -580,6 +580,26 @@ class Bonus:
 
 
 @dataclass
+class BadgeCriterion:
+    """A single threshold rule used by Badge evaluation."""
+
+    metric: str
+    operator: str = ">="
+    value: int = 0
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "BadgeCriterion":
+        return cls(
+            metric=data.get("metric", ""),
+            operator=data.get("operator", ">="),
+            value=int(data.get("value", 0) or 0),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"metric": self.metric, "operator": self.operator, "value": self.value}
+
+
+@dataclass
 class PointsTransaction:
     """Represents a manual points adjustment (add or remove)."""
 
