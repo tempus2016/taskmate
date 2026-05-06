@@ -633,6 +633,61 @@ class PointsTransaction:
 
 
 @dataclass
+class Badge:
+    """An achievement badge definition (built-in or custom)."""
+
+    name: str
+    description: str = ""
+    icon: str = "mdi:trophy"
+    tier: str = "bronze"  # "bronze" | "silver" | "gold" | "platinum"
+    point_bonus: int = 0
+    criteria: list[BadgeCriterion] = field(default_factory=list)
+    combinator: str = "AND"  # reserved; v1 always AND
+    assigned_to: list[str] = field(default_factory=list)  # empty = all kids
+    builtin: bool = False
+    enabled: bool = True
+    notify_on_earn: bool = True
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Badge":
+        created_at = parse_datetime(data.get("created_at"))
+        return cls(
+            id=data.get("id", generate_id()),
+            name=data.get("name", ""),
+            description=data.get("description", ""),
+            icon=data.get("icon", "mdi:trophy"),
+            tier=data.get("tier", "bronze"),
+            point_bonus=int(data.get("point_bonus", 0) or 0),
+            criteria=[BadgeCriterion.from_dict(c) for c in data.get("criteria", [])],
+            combinator=data.get("combinator", "AND"),
+            assigned_to=list(data.get("assigned_to", [])),
+            builtin=bool(data.get("builtin", False)),
+            enabled=bool(data.get("enabled", True)),
+            notify_on_earn=bool(data.get("notify_on_earn", True)),
+            created_at=created_at or datetime.now(timezone.utc),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "icon": self.icon,
+            "tier": self.tier,
+            "point_bonus": self.point_bonus,
+            "criteria": [c.to_dict() for c in self.criteria],
+            "combinator": self.combinator,
+            "assigned_to": self.assigned_to,
+            "builtin": self.builtin,
+            "enabled": self.enabled,
+            "notify_on_earn": self.notify_on_earn,
+            "created_at": format_datetime(self.created_at),
+        }
+
+
+@dataclass
 class TaskGroup:
     """Groups chores so assignments stay coordinated across them.
 
