@@ -28,9 +28,14 @@
 - [Chore Scheduling](#chore-scheduling)
 - [Dynamic Chore Visibility](#dynamic-chore-visibility)
 - [Bonus Points System](#bonus-points-system)
+- [Notifications](#notifications)
 - [Penalties](#penalties)
+- [Timed Tasks](#timed-tasks)
+- [Task Groups](#task-groups)
+- [Pool Mode (Savings Jars)](#pool-mode-savings-jars)
 - [Dashboard Cards](#dashboard-cards)
 - [Services](#services)
+- [Jackpot Rewards](#jackpot-rewards)
 - [Completion Sounds](#completion-sounds)
 - [Finding IDs](#finding-ids)
 - [Troubleshooting](#troubleshooting)
@@ -99,6 +104,14 @@ Click **Configure** on the TaskMate integration card to access:
   <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/settingsPage.png" alt="Settings Menu" width="500">
 </p>
  
+### Admin Panel
+
+After installing TaskMate, a **TaskMate** entry appears in the HA sidebar. This is a full management dashboard where you can create and edit children, chores, rewards, penalties, bonuses, task groups, and settings — all in one place. It also handles chore and reward approvals.
+
+The admin panel is fully translated in all 8 supported languages and updates in real time via WebSocket.
+
+See the [Admin Panel wiki page](https://github.com/tempus2016/taskmate/wiki/Admin-Panel) for details.
+
 ### Add Cards to Your Dashboard
  
 Lovelace resources are registered automatically on startup — no manual setup needed.
@@ -342,6 +355,46 @@ data:
   penalty_id: abc12345    # see Finding IDs
   child_id: a8c8376a
 ```
+
+---
+
+## Timed Tasks
+
+Duration-based chores where children earn points based on how long they spend on an activity — ideal for reading, practising instruments, or homework.
+
+1. Set a chore's **Task Type** to `timed` in the admin panel
+2. Configure the rate (e.g. 10 points per 5 minutes) and optional daily cap
+3. The child starts, pauses, and stops a timer on their card
+4. Points are calculated as `floor(total_seconds / (rate_minutes × 60)) × rate_points`
+
+Services: `taskmate.start_timed_task`, `taskmate.pause_timed_task`, `taskmate.stop_timed_task`
+
+See the [Timed Tasks wiki page](https://github.com/tempus2016/taskmate/wiki/Timed-Tasks) for full details.
+
+---
+
+## Task Groups
+
+Coordinate related rotation-mode chores so they're assigned to the same child (sticky) or spread across different children (spread). For example, a "Dinner Duties" group ensures that the child who sets the table also clears it.
+
+- **Sticky** — all chores in the group follow the leader chore's assignment
+- **Spread** — chores in the group are assigned to different children
+
+Manage groups via the admin panel or the `taskmate.add_task_group` / `taskmate.update_task_group` / `taskmate.remove_task_group` services.
+
+See the [Task Groups wiki page](https://github.com/tempus2016/taskmate/wiki/Task-Groups) for full details.
+
+---
+
+## Pool Mode (Savings Jars)
+
+Children can save up for expensive rewards over time by depositing points into a dedicated savings pool. Points are locked once deposited — there is no withdrawal.
+
+- Enable pool mode per reward in the admin panel
+- Children deposit points via the Rewards Card or `taskmate.allocate_points_to_pool`
+- Once the pool reaches the reward cost, the child can claim it
+
+See the [Pool Mode wiki page](https://github.com/tempus2016/taskmate/wiki/Pool-Mode-(Savings-Jars)) for full details.
 
 ---
 
@@ -654,6 +707,24 @@ title: Bonuses
 header_color: "#27ae60"
 ```
 
+**Managing Bonuses via Services:**
+
+```yaml
+# Create a bonus
+service: taskmate.add_bonus
+data:
+  name: "Helped a sibling"
+  points: 15
+  description: "Voluntary help without being asked"   # optional
+  icon: mdi:hand-heart                                # optional
+
+# Apply a bonus to a child
+service: taskmate.apply_bonus
+data:
+  bonus_id: abc12345    # see Finding IDs
+  child_id: a8c8376a
+```
+
 ---
 
 ### Points Display Card
@@ -689,25 +760,82 @@ header_color: "#3498db"
 ## Services
  
 TaskMate exposes services you can call from automations, scripts, or Developer Tools.
- 
+
+> **v3.7.0+:** All entity ID fields (`child_id`, `chore_id`, `reward_id`, etc.) now show as **dropdown selectors** in the HA automation editor with entity names as labels. You can still type raw hex IDs if you prefer.
+
+### Chore Services
+
 | Service | Parameters | Description |
 |---------|-----------|-------------|
 | `taskmate.complete_chore` | `chore_id`, `child_id` | Mark a chore as completed |
 | `taskmate.approve_chore` | `completion_id` | Approve a pending chore completion |
 | `taskmate.reject_chore` | `completion_id` | Reject a pending chore completion |
+| `taskmate.add_chore` | `name`, `points`\*, `assigned_to`\*, `time_category`\*, `one_shot`\*, `requires_approval`\* | Create a chore dynamically |
+| `taskmate.skip_chore` | `chore_id` | Skip today's assigned child in a rotation chore |
+| `taskmate.set_chore_manual_start` | `chore_id`, `child_id` | Override which child starts the rotation |
+| `taskmate.complete_bonus_subtask` | `chore_id`, `bonus_subtask_id`, `child_id` | Complete a bonus subtask within a chore |
+
+### Timed Task Services
+
+| Service | Parameters | Description |
+|---------|-----------|-------------|
+| `taskmate.start_timed_task` | `chore_id`, `child_id` | Start or resume a timed task timer |
+| `taskmate.pause_timed_task` | `chore_id`, `child_id` | Pause a running timed task |
+| `taskmate.stop_timed_task` | `chore_id`, `child_id` | Stop timer and submit for approval |
+
+### Reward Services
+
+| Service | Parameters | Description |
+|---------|-----------|-------------|
 | `taskmate.claim_reward` | `reward_id`, `child_id` | Create a pending reward claim |
 | `taskmate.approve_reward` | `claim_id` | Approve a reward claim (deducts points) |
 | `taskmate.reject_reward` | `claim_id` | Reject a reward claim |
-| `taskmate.add_points` | `child_id`, `points`, `reason` | Manually add points to a child |
-| `taskmate.remove_points` | `child_id`, `points`, `reason` | Manually remove points from a child |
-| `taskmate.set_chore_order` | `child_id`, `chore_order` | Set the chore display order for a child |
-| `taskmate.add_penalty` | `name`, `points`, `description`\*, `icon`\* | Create a new penalty definition |
-| `taskmate.update_penalty` | `penalty_id`, `name`\*, `points`\*, `description`\*, `icon`\* | Update an existing penalty |
+| `taskmate.allocate_points_to_pool` | `child_id`, `reward_id`, `points` | Deposit points into a reward's savings pool |
+
+### Points Services
+
+| Service | Parameters | Description |
+|---------|-----------|-------------|
+| `taskmate.add_points` | `child_id`, `points`, `reason`\* | Manually add points to a child |
+| `taskmate.remove_points` | `child_id`, `points`, `reason`\* | Manually remove points from a child |
+
+### Penalty Services
+
+| Service | Parameters | Description |
+|---------|-----------|-------------|
+| `taskmate.add_penalty` | `name`, `points`, `description`\*, `icon`\*, `assigned_to`\* | Create a new penalty definition |
+| `taskmate.update_penalty` | `penalty_id`, `name`\*, `points`\*, `description`\*, `icon`\*, `assigned_to`\* | Update an existing penalty |
 | `taskmate.remove_penalty` | `penalty_id` | Delete a penalty definition |
 | `taskmate.apply_penalty` | `penalty_id`, `child_id` | Apply a penalty — deducts points immediately |
 
+### Bonus Services
+
+| Service | Parameters | Description |
+|---------|-----------|-------------|
+| `taskmate.add_bonus` | `name`, `points`, `description`\*, `icon`\*, `assigned_to`\* | Create a new bonus definition |
+| `taskmate.update_bonus` | `bonus_id`, `name`\*, `points`\*, `description`\*, `icon`\*, `assigned_to`\* | Update an existing bonus |
+| `taskmate.remove_bonus` | `bonus_id` | Delete a bonus definition |
+| `taskmate.apply_bonus` | `bonus_id`, `child_id` | Apply a bonus — awards points immediately |
+
+### Task Group Services
+
+| Service | Parameters | Description |
+|---------|-----------|-------------|
+| `taskmate.add_task_group` | `name`, `policy`, `chore_ids`\* | Create a task group (sticky or spread) |
+| `taskmate.update_task_group` | `group_id`, `name`\*, `policy`\*, `chore_ids`\* | Update a task group |
+| `taskmate.remove_task_group` | `group_id` | Delete a task group |
+
+### Other Services
+
+| Service | Parameters | Description |
+|---------|-----------|-------------|
+| `taskmate.set_chore_order` | `child_id`, `chore_order` | Set the chore display order for a child |
+| `taskmate.preview_sound` | `sound` | Preview a completion sound in the browser |
+
 \* optional
- 
+
+See the [Services wiki page](https://github.com/tempus2016/taskmate/wiki/Services) for full parameter details, examples, and side effects.
+
 **Example — award bonus points from an automation:**
  
 ```yaml
@@ -750,15 +878,23 @@ Priority order: **chore-level sound** → **card `default_sound`** → `coin`
  
 ## Finding IDs
  
-Several card options require a `child_id` or `reward_id`. The easiest way to find these:
- 
+Several card options and service calls require a `child_id`, `chore_id`, `reward_id`, etc.
+
+### Method 1 — Show IDs Toggle (easiest)
+
+Open the **TaskMate Admin Panel** (sidebar) → **Settings** tab → flip **Show IDs**. Every entity card/row across all tabs displays its hex ID in a monospace badge with a click-to-copy button.
+
+### Method 2 — Automation Editor Dropdowns
+
+Since v3.7.0, all entity ID fields in the HA automation editor and Developer Tools → Services show as **dropdown selectors** with entity names. You can pick "Noah" instead of typing `ef19c56175c14bd9` — no need to look up the ID at all.
+
+### Method 3 — Sensor Attributes
+
 1. Go to **Developer Tools** → **States**
-2. Find `sensor.taskmate_overview`
-3. Click the entity to expand its attributes
-4. Look in the `children` array for `id` values
-5. For reward IDs, look at `sensor.taskmate_rewards` → `rewards` array
- 
-Alternatively, IDs are visible in the URL when editing a child or reward in the TaskMate configuration UI.
+2. Find `sensor.taskmate_overview` → `children` array for child IDs
+3. Find `sensor.taskmate_chores` → `chores` array for chore IDs
+4. Find `sensor.taskmate_rewards` → `rewards` array for reward IDs
+5. Find `sensor.taskmate_incentives` → `penalties` / `bonuses` arrays for penalty/bonus IDs
 
 ## Sensors Exposed
 
