@@ -341,6 +341,10 @@ class RewardsMixin:
                 self.storage.update_reward_claim(claim)
                 await self.storage.async_save()
                 await self.async_refresh()
+
+                if getattr(self, "badges", None):
+                    await self.badges.evaluate_for_child(claim.child_id, "reward_redeemed")
+
                 return
         _LOGGER.warning("Reward claim %s not found for approval", claim_id)
 

@@ -83,6 +83,9 @@ class PointsMixin:
                 )
                 self.storage.add_points_transaction(transaction)
                 changed = True
+
+                if getattr(self, "badges", None):
+                    await self.badges.evaluate_for_child(child.id, "perfect_week")
                 _LOGGER.info(
                     "Perfect week bonus (%d pts) awarded to %s for week of %s",
                     perfect_week_bonus, child.name, week_key,
