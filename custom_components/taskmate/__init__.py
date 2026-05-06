@@ -1,13 +1,18 @@
 """TaskMate - Family Chore Manager for Home Assistant."""
 from __future__ import annotations
 
+import copy
 import logging
+from pathlib import Path
+
+import yaml
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, callback
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.service import async_set_service_schema
 
 from .const import (
     ATTR_BONUS_ASSIGNED_TO,
@@ -127,6 +132,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await _async_register_services(hass)
         hass.data[DOMAIN][SERVICES_REGISTERED] = True
 
+    _async_update_service_descriptions(hass)
+    coordinator.async_add_listener(
+        lambda: _async_update_service_descriptions(hass)
+    )
+
     return True
 
 
@@ -156,6 +166,60 @@ def _get_coordinator(hass: HomeAssistant) -> TaskMateCoordinator | None:
         if key != SERVICES_REGISTERED and isinstance(value, TaskMateCoordinator):
             return value
     return None
+
+
+_DYNAMIC_SELECTOR_FIELDS: dict[str, str] = {
+    "child_id": "get_children",
+    "chore_id": "get_chores",
+    "reward_id": "get_rewards",
+    "penalty_id": "get_penalties",
+    "bonus_id": "get_bonuses",
+    "group_id": "get_task_groups",
+}
+
+_BASE_SERVICE_DESCRIPTIONS: dict | None = None
+
+
+def _load_base_descriptions() -> dict:
+    """Load and cache the static services.yaml descriptions."""
+    global _BASE_SERVICE_DESCRIPTIONS
+    if _BASE_SERVICE_DESCRIPTIONS is None:
+        path = Path(__file__).parent / "services.yaml"
+        with open(path, encoding="utf-8") as fh:
+            _BASE_SERVICE_DESCRIPTIONS = yaml.safe_load(fh) or {}
+    return _BASE_SERVICE_DESCRIPTIONS
+
+
+@callback
+def _async_update_service_descriptions(hass: HomeAssistant) -> None:
+    """Patch service descriptions with dynamic select options from storage."""
+    coordinator = _get_coordinator(hass)
+    if not coordinator:
+        return
+
+    options: dict[str, list[dict[str, str]]] = {}
+    for field, getter in _DYNAMIC_SELECTOR_FIELDS.items():
+        entities = getattr(coordinator.storage, getter)()
+        options[field] = [{"label": e.name, "value": e.id} for e in entities]
+
+    base = _load_base_descriptions()
+
+    for service_name, service_desc in base.items():
+        fields = service_desc.get("fields", {})
+        if not any(f in _DYNAMIC_SELECTOR_FIELDS for f in fields):
+            continue
+
+        patched = copy.deepcopy(service_desc)
+        for field_name, field_desc in patched.get("fields", {}).items():
+            if field_name in options and options[field_name]:
+                field_desc["selector"] = {
+                    "select": {
+                        "options": options[field_name],
+                        "custom_value": True,
+                    }
+                }
+
+        async_set_service_schema(hass, DOMAIN, service_name, patched)
 
 
 async def _async_register_services(hass: HomeAssistant) -> None:
