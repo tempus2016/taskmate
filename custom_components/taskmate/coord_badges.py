@@ -194,3 +194,77 @@ class BadgeCoordinator:
             await self.storage.async_save()
 
         return new_awards
+
+    async def award_manually(self, child_id: str, badge_id: str):
+        """Manually award a badge to a child via parent action."""
+        from .models import AwardedBadge
+
+        child = self.storage.get_child(child_id)
+        badge = self.storage.get_badge(badge_id)
+        if child is None or badge is None:
+            return None
+        if self.storage.has_awarded(child_id, badge_id):
+            return None
+
+        bonus = badge.point_bonus
+        award = AwardedBadge(
+            child_id=child_id,
+            badge_id=badge_id,
+            manually_awarded=True,
+            silent=False,
+            bonus_credited=bonus,
+        )
+        self.storage.add_awarded_badge(award)
+        if bonus > 0:
+            await self.points_coord.add_points(
+                child_id, bonus, reason=f"Badge: {badge.name}",
+            )
+        self.hass.bus.async_fire(
+            "taskmate_badge_earned",
+            {
+                "child_id": child_id,
+                "badge_id": badge_id,
+                "awarded_id": award.id,
+                "name": badge.name,
+                "icon": badge.icon,
+                "tier": badge.tier,
+                "point_bonus": bonus,
+            },
+        )
+        await self.storage.async_save()
+        return award
+
+    async def revoke(self, awarded_id: str) -> bool:
+        """Revoke an awarded badge; reverse bonus_credited if > 0."""
+        matching = [
+            a for a in self.storage.get_awarded_badges() if a.id == awarded_id
+        ]
+        if not matching:
+            return False
+        award = matching[0]
+        badge = self.storage.get_badge(award.badge_id)
+        badge_name = badge.name if badge else "(removed)"
+
+        self.storage.remove_awarded_badge(awarded_id)
+        if award.bonus_credited > 0:
+            await self.points_coord.remove_points(
+                award.child_id,
+                award.bonus_credited,
+                reason=f"Badge revoked: {badge_name}",
+            )
+        await self.storage.async_save()
+        return True
+
+    async def rebuild_all(self) -> int:
+        """Re-evaluate all enabled badges across all children, silently.
+
+        Used by rebuild_badges service and one-time backfill.
+        Returns total count of new silent awards.
+        """
+        total = 0
+        for child in self.storage.get_children():
+            new_awards = await self.evaluate_for_child(
+                child.id, "manual", silent=True,
+            )
+            total += len(new_awards)
+        return total

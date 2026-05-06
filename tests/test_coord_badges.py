@@ -350,3 +350,75 @@ class TestEvaluationCore:
         self._setup(coord, child_kwargs={"total_points_earned": 5000}, badges=[b])
         awards = await coord.evaluate_for_child("c1", "points_changed")
         assert awards == []
+
+
+class TestManualOps:
+    async def test_award_manually_creates_award(self, coord):
+        from custom_components.taskmate.models import Child
+        child = Child(name="Mia")
+        child.id = "c1"
+        coord.storage.get_child.return_value = child
+        b = Badge(name="Custom", point_bonus=30)
+        b.id = "b1"
+        coord.storage.get_badge.return_value = b
+        coord.storage.has_awarded.return_value = False
+
+        award = await coord.award_manually("c1", "b1")
+        assert award is not None
+        assert award.manually_awarded is True
+        assert award.bonus_credited == 30
+        coord.points_coord.add_points.assert_awaited_once()
+
+    async def test_award_manually_blocks_double(self, coord):
+        coord.storage.has_awarded.return_value = True
+        coord.storage.get_badge.return_value = Badge(name="x")
+        from custom_components.taskmate.models import Child
+        child = Child(name="Mia"); child.id = "c1"
+        coord.storage.get_child.return_value = child
+        award = await coord.award_manually("c1", "b1")
+        assert award is None
+
+    async def test_award_manually_missing_badge_returns_none(self, coord):
+        from custom_components.taskmate.models import Child
+        child = Child(name="Mia"); child.id = "c1"
+        coord.storage.get_child.return_value = child
+        coord.storage.get_badge.return_value = None
+        award = await coord.award_manually("c1", "missing")
+        assert award is None
+
+    async def test_revoke_with_bonus_credited_reverses_points(self, coord):
+        from custom_components.taskmate.models import AwardedBadge
+        a = AwardedBadge(child_id="c1", badge_id="b1", bonus_credited=50)
+        coord.storage.get_awarded_badges.return_value = [a]
+        coord.storage.get_badge.return_value = Badge(name="X")
+
+        result = await coord.revoke(a.id)
+        assert result is True
+        coord.storage.remove_awarded_badge.assert_called_once_with(a.id)
+        coord.points_coord.remove_points.assert_awaited_once()
+
+    async def test_revoke_zero_bonus_no_points_change(self, coord):
+        from custom_components.taskmate.models import AwardedBadge
+        a = AwardedBadge(child_id="c1", badge_id="b1", bonus_credited=0)
+        coord.storage.get_awarded_badges.return_value = [a]
+        coord.storage.get_badge.return_value = Badge(name="X")
+
+        await coord.revoke(a.id)
+        coord.points_coord.remove_points.assert_not_awaited()
+
+    async def test_revoke_missing_returns_false(self, coord):
+        coord.storage.get_awarded_badges.return_value = []
+        result = await coord.revoke("nothing-here")
+        assert result is False
+
+    async def test_rebuild_walks_all_children_silently(self, coord):
+        from custom_components.taskmate.models import Child
+        c1 = Child(name="Mia"); c1.id = "c1"
+        c2 = Child(name="Leo"); c2.id = "c2"
+        coord.storage.get_children.return_value = [c1, c2]
+        coord.storage.get_child.side_effect = lambda i: {"c1": c1, "c2": c2}.get(i)
+        coord.storage.get_badges.return_value = []
+
+        total = await coord.rebuild_all()
+        assert total == 0
+        assert coord.storage.get_child.call_count == 2
