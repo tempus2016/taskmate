@@ -149,3 +149,30 @@ class TestTriggerMap:
     def test_unknown_trigger_no_match(self):
         b = Badge(name="x", criteria=[BadgeCriterion("total_points", ">=", 5)])
         assert badge_relevant_to_trigger(b, "made_up") is False
+
+
+import pytest
+from unittest.mock import AsyncMock, MagicMock
+from custom_components.taskmate.coord_badges import BadgeCoordinator
+
+
+@pytest.fixture
+def coord():
+    hass = MagicMock()
+    hass.bus = MagicMock()
+    hass.bus.async_fire = MagicMock()
+    hass.services = MagicMock()
+    hass.services.async_call = AsyncMock()
+    storage = MagicMock()
+    storage.async_save = AsyncMock()
+    points_coord = MagicMock()
+    points_coord.add_points = AsyncMock()
+    points_coord.remove_points = AsyncMock()
+    return BadgeCoordinator(hass, storage, points_coord)
+
+
+class TestBadgeCoordinatorBasic:
+    async def test_evaluate_no_child_returns_empty(self, coord):
+        coord.storage.get_child.return_value = None
+        result = await coord.evaluate_for_child("missing", "chore_completed")
+        assert result == []

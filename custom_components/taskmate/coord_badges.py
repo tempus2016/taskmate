@@ -111,3 +111,35 @@ def badge_relevant_to_trigger(badge: Badge, trigger: str) -> bool:
         return False
     relevant = TRIGGER_METRICS.get(trigger, set())
     return any(c.metric in relevant for c in badge.criteria)
+
+
+class BadgeCoordinator:
+    """Evaluates badge criteria and emits awards."""
+
+    def __init__(self, hass, storage, points_coord) -> None:
+        self.hass = hass
+        self.storage = storage
+        self.points_coord = points_coord
+
+    async def evaluate_for_child(
+        self,
+        child_id: str,
+        trigger: str,
+        *,
+        silent: bool = False,
+    ) -> list:
+        """Evaluate all enabled badges for this child given a trigger event.
+
+        Returns the list of newly-created AwardedBadge instances.
+        Set silent=True for retroactive backfill (suppresses notifications,
+        events, and point bonuses).
+        """
+        from .models import AwardedBadge
+
+        child = self.storage.get_child(child_id)
+        if child is None:
+            return []
+
+        new_awards: list[AwardedBadge] = []
+        # Implementation continues in Task 10 — for now return empty
+        return new_awards
