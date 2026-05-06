@@ -176,3 +176,177 @@ class TestBadgeCoordinatorBasic:
         coord.storage.get_child.return_value = None
         result = await coord.evaluate_for_child("missing", "chore_completed")
         assert result == []
+
+
+class TestEvaluationCore:
+    def _setup(self, coord, child_kwargs=None, badges=None, awarded=None):
+        from custom_components.taskmate.models import Child
+        kwargs = {
+            "name": "Mia",
+            "total_points_earned": 0,
+            "total_chores_completed": 0,
+            "current_streak": 0,
+            "best_streak": 0,
+            "awarded_perfect_weeks": [],
+        }
+        if child_kwargs:
+            kwargs.update(child_kwargs)
+        child = Child(**kwargs)
+        child.id = "c1"
+        coord.storage.get_child.return_value = child
+        coord.storage.get_badges.return_value = badges or []
+        coord.storage.get_reward_claims.return_value = []
+        coord.storage.has_awarded.side_effect = lambda cid, bid: any(
+            a.child_id == cid and a.badge_id == bid for a in (awarded or [])
+        )
+        coord.storage.get_awarded_badges_for_child.return_value = awarded or []
+        return child
+
+    async def test_passing_criterion_creates_award(self, coord):
+        b = Badge(
+            name="100 Points",
+            criteria=[BadgeCriterion("total_points", ">=", 100)],
+        )
+        b.id = "b1"
+        self._setup(coord, child_kwargs={"total_points_earned": 150}, badges=[b])
+
+        awards = await coord.evaluate_for_child("c1", "points_changed")
+        assert len(awards) == 1
+        assert awards[0].badge_id == "b1"
+        assert awards[0].child_id == "c1"
+        assert awards[0].silent is False
+        coord.storage.add_awarded_badge.assert_called_once()
+
+    async def test_failing_criterion_no_award(self, coord):
+        b = Badge(
+            name="100 Points",
+            criteria=[BadgeCriterion("total_points", ">=", 100)],
+        )
+        b.id = "b1"
+        self._setup(coord, child_kwargs={"total_points_earned": 50}, badges=[b])
+
+        awards = await coord.evaluate_for_child("c1", "points_changed")
+        assert awards == []
+
+    async def test_already_awarded_no_double_award(self, coord):
+        from custom_components.taskmate.models import AwardedBadge
+        b = Badge(
+            name="100 Points",
+            criteria=[BadgeCriterion("total_points", ">=", 100)],
+        )
+        b.id = "b1"
+        prior = AwardedBadge(child_id="c1", badge_id="b1")
+        self._setup(
+            coord,
+            child_kwargs={"total_points_earned": 150},
+            badges=[b],
+            awarded=[prior],
+        )
+        awards = await coord.evaluate_for_child("c1", "points_changed")
+        assert awards == []
+
+    async def test_disabled_badge_skipped(self, coord):
+        b = Badge(
+            name="100 Points",
+            criteria=[BadgeCriterion("total_points", ">=", 100)],
+            enabled=False,
+        )
+        b.id = "b1"
+        self._setup(coord, child_kwargs={"total_points_earned": 150}, badges=[b])
+        awards = await coord.evaluate_for_child("c1", "points_changed")
+        assert awards == []
+
+    async def test_assigned_to_filter(self, coord):
+        b = Badge(
+            name="100 Points",
+            criteria=[BadgeCriterion("total_points", ">=", 100)],
+            assigned_to=["c2"],
+        )
+        b.id = "b1"
+        self._setup(coord, child_kwargs={"total_points_earned": 150}, badges=[b])
+        awards = await coord.evaluate_for_child("c1", "points_changed")
+        assert awards == []
+
+    async def test_and_criteria_all_must_pass(self, coord):
+        b = Badge(
+            name="Two Conditions",
+            criteria=[
+                BadgeCriterion("total_chores", ">=", 50),
+                BadgeCriterion("current_streak", ">=", 7),
+            ],
+        )
+        b.id = "b1"
+        self._setup(
+            coord,
+            child_kwargs={"total_chores_completed": 100, "current_streak": 5},
+            badges=[b],
+        )
+        awards = await coord.evaluate_for_child("c1", "manual")
+        assert awards == []
+
+        self._setup(
+            coord,
+            child_kwargs={"total_chores_completed": 100, "current_streak": 10},
+            badges=[b],
+        )
+        awards = await coord.evaluate_for_child("c1", "manual")
+        assert len(awards) == 1
+
+    async def test_trigger_optimisation_skips_irrelevant(self, coord):
+        b = Badge(
+            name="100 Points",
+            criteria=[BadgeCriterion("total_points", ">=", 100)],
+        )
+        b.id = "b1"
+        self._setup(coord, child_kwargs={"total_points_earned": 150}, badges=[b])
+        awards = await coord.evaluate_for_child("c1", "chore_completed")
+        assert awards == []
+
+    async def test_point_bonus_credited_via_points_coord(self, coord):
+        b = Badge(
+            name="With Bonus",
+            criteria=[BadgeCriterion("total_points", ">=", 100)],
+            point_bonus=50,
+        )
+        b.id = "b1"
+        self._setup(coord, child_kwargs={"total_points_earned": 150}, badges=[b])
+        awards = await coord.evaluate_for_child("c1", "points_changed")
+        assert awards[0].bonus_credited == 50
+        coord.points_coord.add_points.assert_awaited_once()
+        call = coord.points_coord.add_points.call_args
+        assert "Badge: With Bonus" in str(call)
+
+    async def test_silent_award_skips_bonus_and_event(self, coord):
+        b = Badge(
+            name="With Bonus",
+            criteria=[BadgeCriterion("total_points", ">=", 100)],
+            point_bonus=50,
+        )
+        b.id = "b1"
+        self._setup(coord, child_kwargs={"total_points_earned": 150}, badges=[b])
+        awards = await coord.evaluate_for_child("c1", "manual", silent=True)
+        assert len(awards) == 1
+        assert awards[0].silent is True
+        assert awards[0].bonus_credited == 0
+        coord.points_coord.add_points.assert_not_awaited()
+        coord.hass.bus.async_fire.assert_not_called()
+
+    async def test_event_fired_on_normal_award(self, coord):
+        b = Badge(
+            name="100 Points",
+            criteria=[BadgeCriterion("total_points", ">=", 100)],
+        )
+        b.id = "b1"
+        self._setup(coord, child_kwargs={"total_points_earned": 150}, badges=[b])
+        await coord.evaluate_for_child("c1", "points_changed")
+        coord.hass.bus.async_fire.assert_called_once()
+        event_name = coord.hass.bus.async_fire.call_args[0][0]
+        assert event_name == "taskmate_badge_earned"
+
+    async def test_manual_only_badge_does_not_auto_fire(self, coord):
+        # Empty criteria = manual-only; never fires from any auto trigger
+        b = Badge(name="Manual Only", criteria=[])
+        b.id = "b1"
+        self._setup(coord, child_kwargs={"total_points_earned": 5000}, badges=[b])
+        awards = await coord.evaluate_for_child("c1", "points_changed")
+        assert awards == []

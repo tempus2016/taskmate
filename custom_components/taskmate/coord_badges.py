@@ -141,5 +141,56 @@ class BadgeCoordinator:
             return []
 
         new_awards: list[AwardedBadge] = []
-        # Implementation continues in Task 10 — for now return empty
+
+        for badge in self.storage.get_badges():
+            if not badge.enabled:
+                continue
+            if badge.assigned_to and child_id not in badge.assigned_to:
+                continue
+            if not badge_relevant_to_trigger(badge, trigger):
+                continue
+            if self.storage.has_awarded(child_id, badge.id):
+                continue
+            if not badge.criteria:
+                continue
+            all_pass = all(
+                resolve_metric(c.metric, child, self.storage) >= c.value
+                for c in badge.criteria
+            )
+            if not all_pass:
+                continue
+
+            bonus = 0 if silent else badge.point_bonus
+            award = AwardedBadge(
+                child_id=child_id,
+                badge_id=badge.id,
+                silent=silent,
+                bonus_credited=bonus,
+            )
+            self.storage.add_awarded_badge(award)
+            new_awards.append(award)
+
+            if not silent:
+                if bonus > 0:
+                    await self.points_coord.add_points(
+                        child_id,
+                        bonus,
+                        reason=f"Badge: {badge.name}",
+                    )
+                self.hass.bus.async_fire(
+                    "taskmate_badge_earned",
+                    {
+                        "child_id": child_id,
+                        "badge_id": badge.id,
+                        "awarded_id": award.id,
+                        "name": badge.name,
+                        "icon": badge.icon,
+                        "tier": badge.tier,
+                        "point_bonus": bonus,
+                    },
+                )
+
+        if new_awards:
+            await self.storage.async_save()
+
         return new_awards
