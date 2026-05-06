@@ -652,3 +652,143 @@ stop_timed_task:
       required: true
       selector:
         text:
+
+add_badge:
+  name: Add Badge
+  description: Create a custom badge.
+  fields:
+    name:
+      name: Name
+      required: true
+      example: "Holiday Helper"
+      selector:
+        text:
+    description:
+      name: Description
+      example: "Earned for big effort during school holidays"
+      selector:
+        text:
+    icon:
+      name: Icon
+      example: "mdi:beach"
+      selector:
+        icon:
+    tier:
+      name: Tier
+      default: bronze
+      selector:
+        select:
+          options:
+            - bronze
+            - silver
+            - gold
+            - platinum
+    point_bonus:
+      name: Point bonus
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 1000
+          step: 1
+          mode: box
+    criteria:
+      name: Criteria
+      description: "List of {metric, operator, value} dicts. Empty = manual-award only."
+      selector:
+        object:
+    assigned_to:
+      name: Assigned to
+      description: "List of child IDs (empty = all)"
+      selector:
+        object:
+    notify_on_earn:
+      name: Notify on earn
+      default: true
+      selector:
+        boolean:
+
+update_badge:
+  name: Update Badge
+  description: Update an existing badge. For built-ins, only point_bonus, tier, assigned_to, enabled, notify_on_earn are editable.
+  fields:
+    badge_id:
+      name: Badge ID
+      required: true
+      selector:
+        text:
+    name:
+      selector:
+        text:
+    description:
+      selector:
+        text:
+    icon:
+      selector:
+        icon:
+    tier:
+      selector:
+        select:
+          options:
+            - bronze
+            - silver
+            - gold
+            - platinum
+    point_bonus:
+      selector:
+        number:
+          min: 0
+          max: 1000
+          step: 1
+          mode: box
+    criteria:
+      selector:
+        object:
+    assigned_to:
+      selector:
+        object:
+    enabled:
+      selector:
+        boolean:
+    notify_on_earn:
+      selector:
+        boolean:
+
+remove_badge:
+  name: Remove Badge
+  description: Remove a custom badge. Built-ins cannot be removed.
+  fields:
+    badge_id:
+      name: Badge ID
+      required: true
+      selector:
+        text:
+
+award_badge_manually:
+  name: Award Badge Manually
+  description: Manually award a badge to a child.
+  fields:
+    badge_id:
+      name: Badge ID
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      required: true
+      selector:
+        text:
+
+revoke_badge:
+  name: Revoke Badge
+  description: Revoke an awarded badge. If a point bonus was credited, it is reversed.
+  fields:
+    awarded_badge_id:
+      name: Awarded Badge ID
+      required: true
+      selector:
+        text:
+
+rebuild_badges:
+  name: Rebuild Badges
+  description: Re-evaluate all badges across all children silently (no notifications, no point bonuses).

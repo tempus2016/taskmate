@@ -15,6 +15,17 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_set_service_schema
 
 from .const import (
+    ATTR_AWARDED_BADGE_ID,
+    ATTR_BADGE_ASSIGNED_TO,
+    ATTR_BADGE_CRITERIA,
+    ATTR_BADGE_DESCRIPTION,
+    ATTR_BADGE_ENABLED,
+    ATTR_BADGE_ICON,
+    ATTR_BADGE_ID,
+    ATTR_BADGE_NAME,
+    ATTR_BADGE_NOTIFY_ON_EARN,
+    ATTR_BADGE_POINT_BONUS,
+    ATTR_BADGE_TIER,
     ATTR_BONUS_ASSIGNED_TO,
     ATTR_BONUS_DESCRIPTION,
     ATTR_BONUS_ICON,
@@ -82,6 +93,7 @@ from .const import (
 )
 from .coordinator import TaskMateCoordinator
 from .frontend import async_register_cards, async_register_frontend
+from .models import Badge, BadgeCriterion
 from .panel import async_register_panel
 from .websocket import async_register_websocket_commands
 
@@ -556,6 +568,116 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             schedule_mode=schedule_mode,
         )
 
+    async def handle_add_badge(call: ServiceCall) -> None:
+        """Handle the add_badge service call (custom only)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        criteria_data = call.data.get(ATTR_BADGE_CRITERIA, []) or []
+        criteria = [BadgeCriterion.from_dict(c) for c in criteria_data]
+        badge = Badge(
+            name=call.data[ATTR_BADGE_NAME],
+            description=call.data.get(ATTR_BADGE_DESCRIPTION, ""),
+            icon=call.data.get(ATTR_BADGE_ICON, "mdi:trophy"),
+            tier=call.data.get(ATTR_BADGE_TIER, "bronze"),
+            point_bonus=int(call.data.get(ATTR_BADGE_POINT_BONUS, 0) or 0),
+            criteria=criteria,
+            assigned_to=list(call.data.get(ATTR_BADGE_ASSIGNED_TO, []) or []),
+            notify_on_earn=bool(call.data.get(ATTR_BADGE_NOTIFY_ON_EARN, True)),
+            builtin=False,
+        )
+        coordinator.storage.add_badge(badge)
+        await coordinator.storage.async_save()
+        await coordinator.async_refresh()
+
+    async def handle_update_badge(call: ServiceCall) -> None:
+        """Handle the update_badge service call.
+
+        Built-ins: only point_bonus / tier / assigned_to / enabled / notify_on_earn editable.
+        Custom: all fields editable.
+        """
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        badge_id = call.data[ATTR_BADGE_ID]
+        existing = coordinator.storage.get_badge(badge_id)
+        if not existing:
+            _LOGGER.error("Badge %s not found", badge_id)
+            return
+
+        if existing.builtin:
+            existing.point_bonus = int(call.data.get(ATTR_BADGE_POINT_BONUS, existing.point_bonus) or 0)
+            existing.tier = call.data.get(ATTR_BADGE_TIER, existing.tier)
+            existing.assigned_to = list(call.data.get(ATTR_BADGE_ASSIGNED_TO, existing.assigned_to) or [])
+            existing.enabled = bool(call.data.get(ATTR_BADGE_ENABLED, existing.enabled))
+            existing.notify_on_earn = bool(call.data.get(ATTR_BADGE_NOTIFY_ON_EARN, existing.notify_on_earn))
+        else:
+            existing.name = call.data.get(ATTR_BADGE_NAME, existing.name)
+            existing.description = call.data.get(ATTR_BADGE_DESCRIPTION, existing.description)
+            existing.icon = call.data.get(ATTR_BADGE_ICON, existing.icon)
+            existing.tier = call.data.get(ATTR_BADGE_TIER, existing.tier)
+            existing.point_bonus = int(call.data.get(ATTR_BADGE_POINT_BONUS, existing.point_bonus) or 0)
+            if ATTR_BADGE_CRITERIA in call.data:
+                existing.criteria = [BadgeCriterion.from_dict(c) for c in (call.data[ATTR_BADGE_CRITERIA] or [])]
+            existing.assigned_to = list(call.data.get(ATTR_BADGE_ASSIGNED_TO, existing.assigned_to) or [])
+            existing.enabled = bool(call.data.get(ATTR_BADGE_ENABLED, existing.enabled))
+            existing.notify_on_earn = bool(call.data.get(ATTR_BADGE_NOTIFY_ON_EARN, existing.notify_on_earn))
+
+        coordinator.storage.update_badge(existing)
+        await coordinator.storage.async_save()
+        await coordinator.async_refresh()
+
+    async def handle_remove_badge(call: ServiceCall) -> None:
+        """Handle the remove_badge service call (custom only — built-ins protected)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        badge_id = call.data[ATTR_BADGE_ID]
+        existing = coordinator.storage.get_badge(badge_id)
+        if not existing:
+            _LOGGER.error("Badge %s not found", badge_id)
+            return
+        if existing.builtin:
+            _LOGGER.warning("Refusing to remove built-in badge %s", badge_id)
+            return
+        coordinator.storage.remove_badge(badge_id)
+        await coordinator.storage.async_save()
+        await coordinator.async_refresh()
+
+    async def handle_award_badge_manually(call: ServiceCall) -> None:
+        """Handle the award_badge_manually service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.badges.award_manually(
+            call.data[ATTR_CHILD_ID],
+            call.data[ATTR_BADGE_ID],
+        )
+        await coordinator.async_refresh()
+
+    async def handle_revoke_badge(call: ServiceCall) -> None:
+        """Handle the revoke_badge service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.badges.revoke(call.data[ATTR_AWARDED_BADGE_ID])
+        await coordinator.async_refresh()
+
+    async def handle_rebuild_badges(call: ServiceCall) -> None:
+        """Handle the rebuild_badges service call (silent retroactive sweep)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        count = await coordinator.badges.rebuild_all()
+        _LOGGER.info("rebuild_badges awarded %d retroactive badges", count)
+        await coordinator.async_refresh()
+
     # Register all services
     hass.services.async_register(
         DOMAIN,
@@ -887,6 +1009,71 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         schema=vol.Schema({vol.Required(CONF_TASK_GROUP_ID): cv.string}),
     )
 
+    hass.services.async_register(
+        DOMAIN,
+        "add_badge",
+        handle_add_badge,
+        schema=vol.Schema({
+            vol.Required(ATTR_BADGE_NAME): cv.string,
+            vol.Optional(ATTR_BADGE_DESCRIPTION, default=""): cv.string,
+            vol.Optional(ATTR_BADGE_ICON, default="mdi:trophy"): cv.string,
+            vol.Optional(ATTR_BADGE_TIER, default="bronze"): vol.In(["bronze", "silver", "gold", "platinum"]),
+            vol.Optional(ATTR_BADGE_POINT_BONUS, default=0): vol.Coerce(int),
+            vol.Optional(ATTR_BADGE_CRITERIA, default=[]): list,
+            vol.Optional(ATTR_BADGE_ASSIGNED_TO, default=[]): vol.All(cv.ensure_list, [cv.string]),
+            vol.Optional(ATTR_BADGE_NOTIFY_ON_EARN, default=True): cv.boolean,
+        }),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "update_badge",
+        handle_update_badge,
+        schema=vol.Schema({
+            vol.Required(ATTR_BADGE_ID): cv.string,
+            vol.Optional(ATTR_BADGE_NAME): cv.string,
+            vol.Optional(ATTR_BADGE_DESCRIPTION): cv.string,
+            vol.Optional(ATTR_BADGE_ICON): cv.string,
+            vol.Optional(ATTR_BADGE_TIER): vol.In(["bronze", "silver", "gold", "platinum"]),
+            vol.Optional(ATTR_BADGE_POINT_BONUS): vol.Coerce(int),
+            vol.Optional(ATTR_BADGE_CRITERIA): list,
+            vol.Optional(ATTR_BADGE_ASSIGNED_TO): vol.All(cv.ensure_list, [cv.string]),
+            vol.Optional(ATTR_BADGE_ENABLED): cv.boolean,
+            vol.Optional(ATTR_BADGE_NOTIFY_ON_EARN): cv.boolean,
+        }),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "remove_badge",
+        handle_remove_badge,
+        schema=vol.Schema({vol.Required(ATTR_BADGE_ID): cv.string}),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "award_badge_manually",
+        handle_award_badge_manually,
+        schema=vol.Schema({
+            vol.Required(ATTR_BADGE_ID): cv.string,
+            vol.Required(ATTR_CHILD_ID): cv.string,
+        }),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "revoke_badge",
+        handle_revoke_badge,
+        schema=vol.Schema({vol.Required(ATTR_AWARDED_BADGE_ID): cv.string}),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        "rebuild_badges",
+        handle_rebuild_badges,
+        schema=vol.Schema({}),
+    )
+
 
 def _async_unregister_services(hass: HomeAssistant) -> None:
     """Unregister TaskMate services."""
@@ -920,6 +1107,12 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_START_TIMED_TASK,
         SERVICE_PAUSE_TIMED_TASK,
         SERVICE_STOP_TIMED_TASK,
+        "add_badge",
+        "update_badge",
+        "remove_badge",
+        "award_badge_manually",
+        "revoke_badge",
+        "rebuild_badges",
     ]
     for service in services:
         hass.services.async_remove(DOMAIN, service)
