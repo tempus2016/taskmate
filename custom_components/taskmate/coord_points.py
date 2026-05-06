@@ -168,6 +168,11 @@ class PointsMixin:
         await self.storage.async_save()
         await self.async_refresh()
 
+        # Trigger badge evaluation. Skip if this credit came from awarding a badge bonus
+        # itself, otherwise we'd recurse back into evaluate_for_child.
+        if getattr(self, "badges", None) and not (reason or "").startswith("Badge"):
+            await self.badges.evaluate_for_child(child_id, "points_changed")
+
     async def async_remove_points(self, child_id: str, points: int, reason: str = "") -> None:
         """Remove points from a child (penalty)."""
         child = self.get_child(child_id)
@@ -192,6 +197,11 @@ class PointsMixin:
         self.storage.add_points_transaction(transaction)
         await self.storage.async_save()
         await self.async_refresh()
+
+        # Trigger badge evaluation. Skip if this deduction came from a badge revoke
+        # path (reason starts with "Badge") to avoid recursion.
+        if getattr(self, "badges", None) and not (reason or "").startswith("Badge"):
+            await self.badges.evaluate_for_child(child_id, "points_changed")
 
     # ── Bonus points constants ────────────────────────────────────────────────
     DEFAULT_STREAK_MILESTONES = "3:5, 7:10, 14:20, 30:50, 60:100, 100:200"
