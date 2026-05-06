@@ -56,6 +56,11 @@ class TaskMateCoordinator(
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""
         await self.storage.async_load()
+        # Achievement badges: silent retroactive backfill on first install
+        if self.storage._data.get("badges_backfill_pending"):
+            await self.badges.rebuild_all()
+            self.storage._data.pop("badges_backfill_pending", None)
+            await self.storage.async_save()
         await self._async_backfill_career_history()
         await self._async_stop_stale_timed_sessions()
         await self.async_refresh()

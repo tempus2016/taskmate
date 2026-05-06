@@ -150,3 +150,16 @@ class TestCatalogueSeeding:
         storage._seed_builtin_badges(is_fresh=False)
         second_count = len(storage.get_badges())
         assert first_count == second_count
+
+
+class TestBackfillFlagLifecycle:
+    def test_backfill_flag_is_set_on_fresh_seed(self, storage):
+        storage._data = {}
+        storage._seed_builtin_badges(is_fresh=True)
+        assert storage._data.get("badges_backfill_pending") is True
+
+    def test_backfill_flag_can_be_popped(self, storage):
+        storage._data = {"badges_backfill_pending": True, "badges": [], "awarded_badges": []}
+        # Simulate the coordinator clearing it after rebuild_all
+        storage._data.pop("badges_backfill_pending", None)
+        assert "badges_backfill_pending" not in storage._data
