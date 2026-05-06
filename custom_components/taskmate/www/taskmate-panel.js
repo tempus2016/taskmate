@@ -223,6 +223,38 @@ class TaskMatePanel extends HTMLElement {
     return fn ? fn(this._hass, key, params) : key;
   }
 
+  // Transaction reasons are stored in English in the DB (e.g. "Penalty: Messy room").
+  // Mirror the activity-card mapping so panel views render in the user's language.
+  _translateReason(reason) {
+    if (!reason) return reason;
+    const prefixMap = [
+      ['Allocated to pool:', 'activity.reason_allocated_to_pool'],
+      ['Pool refund (reward expired):', 'activity.reason_pool_refund_expired'],
+      ['Pool refund (reward sold out):', 'activity.reason_pool_refund_sold_out'],
+      ['Pool refund (reward cost reduced):', 'activity.reason_pool_refund_cost_reduced'],
+      ['Penalty:', 'activity.reason_penalty'],
+      ['Bonus:', 'activity.reason_bonus'],
+    ];
+    for (const [prefix, key] of prefixMap) {
+      if (reason.startsWith(prefix)) {
+        const name = reason.slice(prefix.length).trim();
+        return this._t(key, { name });
+      }
+    }
+    if (reason.startsWith('Perfect week bonus!')) {
+      return this._t('activity.reason_perfect_week');
+    }
+    const weekendMatch = reason.match(/^Weekend bonus \(×(\d+)\)$/);
+    if (weekendMatch) {
+      return this._t('activity.reason_weekend_bonus', { multiplier: weekendMatch[1] });
+    }
+    const streakMatch = reason.match(/^Streak milestone bonus \((\d+) day streak!\)$/);
+    if (streakMatch) {
+      return this._t('activity.reason_streak_milestone', { days: streakMatch[1] });
+    }
+    return reason;
+  }
+
   // ---- state -----------------------------------------------------------
   async _fetchState(_attempt = 0) {
     if (!this._hass) return;
@@ -1008,7 +1040,7 @@ class TaskMatePanel extends HTMLElement {
     const { ok, err, res } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
     await this._fetchState();
-    this._showToast("ok", `Saved (${(res && res.updated || []).length} field${(res && res.updated || []).length === 1 ? "" : "s"})`);
+    this._showToast("ok", this._t("panel.toast_settings_saved", {count: (res && res.updated || []).length}));
   }
 
   // ---- HA picker binding -----------------------------------------------
@@ -1320,7 +1352,7 @@ class TaskMatePanel extends HTMLElement {
     transactions.forEach(t => events.push({
       ts: t.created_at, kind: "manual",
       child: (childById[t.child_id] || {}).name || "?",
-      label: t.reason || (t.points >= 0 ? this._t("panel.activity_manual_addition") : this._t("panel.activity_manual_deduction")),
+      label: this._translateReason(t.reason) || (t.points >= 0 ? this._t("panel.activity_manual_addition") : this._t("panel.activity_manual_deduction")),
       points: t.points,
     }));
     events.sort((a, b) => (b.ts || "").localeCompare(a.ts || ""));
@@ -1345,7 +1377,7 @@ class TaskMatePanel extends HTMLElement {
             ${pendingCompletions.map(c => {
               const chore = choreById[c.chore_id];
               const child = childById[c.child_id];
-              let choreName = (chore && chore.name) || "(deleted chore)";
+              let choreName = (chore && chore.name) || this._t("panel.activity_deleted_chore");
               let chorePoints = chore ? chore.points : 0;
               if (c.bonus_subtask_id && chore) {
                 const sub = (chore.bonus_subtasks || []).find(b => b.id === c.bonus_subtask_id);
@@ -1415,7 +1447,7 @@ class TaskMatePanel extends HTMLElement {
       <!-- Audit log -->
       <div class="tm-card">
         <h3 class="tm-section-title">${this._t("panel.activity_audit_log")}
-          <span class="tm-pill">${transactions.length} transaction${transactions.length === 1 ? "" : "s"}</span>
+          <span class="tm-pill">${this._t(transactions.length === 1 ? "panel.activity_transaction_count" : "panel.activity_transaction_count_plural", {count: transactions.length})}</span>
         </h3>
         ${transactions.length === 0 ? `<p class="tm-meta">${this._t("panel.activity_no_points_transactions")}</p>` : `
           <div class="tm-table-wrap">
@@ -1429,7 +1461,7 @@ class TaskMatePanel extends HTMLElement {
                       <td class="tm-meta">${this._esc(this._timeAgo(t.created_at))}</td>
                       <td>${this._esc((child && child.name) || "?")}</td>
                       <td><strong class="tm-numeric ${t.points >= 0 ? 'tm-pos' : 'tm-neg'}">${t.points >= 0 ? '+' : ''}${t.points}</strong></td>
-                      <td>${this._esc(t.reason || "—")}</td>
+                      <td>${this._esc(this._translateReason(t.reason) || "—")}</td>
                     </tr>
                   `;
                 }).join("")}
@@ -1481,10 +1513,10 @@ class TaskMatePanel extends HTMLElement {
       ? this._labelOf(RECURRENCES, c.recurrence) + (c.recurrence_day && c.recurrence_day !== "any_day" ? ` · ${c.recurrence_day}` : "")
       : c.schedule_mode === "one_shot"
       ? this._t("panel.common_one_shot")
-      : ((c.due_days || []).length === 0 ? this._t("panel.common_daily") : (c.due_days || []).map(d => d.slice(0, 3)).join(" · "));
+      : ((c.due_days || []).length === 0 ? this._t("panel.common_daily") : (c.due_days || []).map(d => this._labelOf(DAYS, d)).join(" · "));
     const schedClass = c.schedule_mode === "recurring" ? "tm-pill-accent" : c.schedule_mode === "one_shot" ? "tm-pill-warn" : "tm-pill-success";
     const modeBadge = c.assignment_mode && c.assignment_mode !== "everyone"
-      ? `<span class="tm-pill tm-pill-${c.assignment_mode}">${c.assignment_mode}</span>` : "";
+      ? `<span class="tm-pill tm-pill-${c.assignment_mode}">${this._t(`panel.assign_${c.assignment_mode}_short`)}</span>` : "";
     const nameCell = renaming
       ? `<input class="tm-inline-input" type="text" data-field="_inlineRename" value="${this._esc(this._inlineRename.value)}" autofocus>
          <button class="tm-icon-btn" data-act="rename-chore-commit" title="${this._t("panel.tooltip_save")}">✓</button>
@@ -1619,7 +1651,7 @@ class TaskMatePanel extends HTMLElement {
                 <div class="tm-avatar"><ha-icon icon="${g.policy === 'sticky' ? 'mdi:link-variant' : 'mdi:arrow-split-horizontal'}"></ha-icon></div>
                 <div class="tm-child-name">
                   <h3>${this._esc(g.name)}</h3>
-                  <div class="tm-meta"><span class="tm-pill tm-pill-${g.policy}">${g.policy}</span> · ${this._t("panel.group_chore_count", {count: (g.chore_ids || []).length})}</div>
+                  <div class="tm-meta"><span class="tm-pill tm-pill-${g.policy}">${this._t(`panel.group_policy_${g.policy}_short`)}</span> · ${this._t("panel.group_chore_count", {count: (g.chore_ids || []).length})}</div>
                 </div>
               </div>
               <ul class="tm-group-list">
