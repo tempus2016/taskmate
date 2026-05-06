@@ -127,6 +127,7 @@ class TaskMatePanel extends HTMLElement {
     this._onDrop = this._onDrop.bind(this);
     this._onVisibilityChange = this._onVisibilityChange.bind(this);
     this._lastConnected = null;
+    this._showIds = localStorage.getItem("taskmate-show-ids") === "true";
   }
 
   set hass(value) {
@@ -348,6 +349,7 @@ class TaskMatePanel extends HTMLElement {
     }
     if (act === "retry")        { this._fetchState(); return; }
     if (act === "switch-to-activity") { this._activeTab = "activity"; this._render(); return; }
+    if (act === "copy-id") { navigator.clipboard.writeText(t.dataset.id).then(() => this._showToast("ok", this._t("panel.toast_copied"))); return; }
 
     // Children
     if (act === "add-child")    { this._openChildDialog(null); return; }
@@ -512,6 +514,12 @@ class TaskMatePanel extends HTMLElement {
   _onChange(e) {
     const t = e.target;
     if (!t.dataset) return;
+    if (t.dataset.local === "show-ids") {
+      this._showIds = t.checked;
+      localStorage.setItem("taskmate-show-ids", this._showIds);
+      this._render();
+      return;
+    }
     // Template preview chore field changes (selects)
     const tplField = t.dataset?.tplField;
     const tplIdx = t.dataset?.tplIdx;
@@ -1306,6 +1314,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-avatar">${this._mdi(child.avatar)}</div>
           <div class="tm-child-name">
             <h3>${this._esc(child.name || this._t("panel.child_unnamed"))}</h3>
+            ${this._idBadge(child.id)}
             <div class="tm-meta">${child.availability_entity ? `<code>${this._esc(child.availability_entity)}</code>${child.availability_inverted ? ` <em>${this._t("panel.child_inverted")}</em>` : ""}` : `${this._t("panel.child_no_availability")}`}${child.unavailability_entity ? ` · ${this._t("panel.child_busy_label")} <code>${this._esc(child.unavailability_entity)}</code>` : ""}</div>
           </div>
         </div>
@@ -1521,7 +1530,7 @@ class TaskMatePanel extends HTMLElement {
       ? `<input class="tm-inline-input" type="text" data-field="_inlineRename" value="${this._esc(this._inlineRename.value)}" autofocus>
          <button class="tm-icon-btn" data-act="rename-chore-commit" title="${this._t("panel.tooltip_save")}">✓</button>
          <button class="tm-icon-btn" data-act="rename-chore-cancel" title="${this._t("panel.tooltip_cancel")}">✕</button>`
-      : `<strong data-rename="chore" data-id="${this._esc(c.id)}" title="${this._t("panel.tooltip_rename")}">${this._esc(c.name)}</strong>${c.enabled === false ? ` <span class="tm-pill">${this._t("panel.common_disabled")}</span>` : ""}`;
+      : `<strong data-rename="chore" data-id="${this._esc(c.id)}" title="${this._t("panel.tooltip_rename")}">${this._esc(c.name)}</strong>${c.enabled === false ? ` <span class="tm-pill">${this._t("panel.common_disabled")}</span>` : ""}${this._idBadge(c.id)}`;
     return `
       <tr class="tm-row ${c.enabled === false ? "tm-row-disabled" : ""}">
         <td>${nameCell}</td>
@@ -1569,6 +1578,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-avatar tm-avatar-reward">${this._mdi(r.icon || "mdi:gift")}</div>
           <div class="tm-child-name">
             <h3>${this._esc(r.name)} ${r.is_jackpot ? `<span class="tm-pill tm-pill-jackpot">🏆 ${this._t("panel.reward_badge_jackpot")}</span>` : ""} ${r.pool_enabled ? `<span class="tm-pill tm-pill-pool">${this._t("panel.reward_badge_pool")}</span>` : ""}</h3>
+            ${this._idBadge(r.id)}
             <div class="tm-meta">${this._esc(r.description || "")}</div>
           </div>
         </div>
@@ -1613,7 +1623,7 @@ class TaskMatePanel extends HTMLElement {
                   : this._esc((item.assigned_to || []).map(id => (childById[id] && childById[id].name) || "?").join(", "));
                 return `
                   <tr class="tm-row">
-                    <td><span class="tm-row-icon">${this._mdi(item.icon)}</span><strong>${this._esc(item.name)}</strong>${item.description ? `<div class="tm-meta">${this._esc(item.description)}</div>` : ""}</td>
+                    <td><span class="tm-row-icon">${this._mdi(item.icon)}</span><strong>${this._esc(item.name)}</strong>${this._idBadge(item.id)}${item.description ? `<div class="tm-meta">${this._esc(item.description)}</div>` : ""}</td>
                     <td><strong class="tm-numeric ${kind === "penalty" ? "tm-neg" : "tm-pos"}">${kind === "penalty" ? "−" : "+"}${item.points}</strong></td>
                     <td>${assignedNames}</td>
                     <td class="tm-row-actions">
@@ -1651,6 +1661,7 @@ class TaskMatePanel extends HTMLElement {
                 <div class="tm-avatar"><ha-icon icon="${g.policy === 'sticky' ? 'mdi:link-variant' : 'mdi:arrow-split-horizontal'}"></ha-icon></div>
                 <div class="tm-child-name">
                   <h3>${this._esc(g.name)}</h3>
+                  ${this._idBadge(g.id)}
                   <div class="tm-meta"><span class="tm-pill tm-pill-${g.policy}">${this._t(`panel.group_policy_${g.policy}_short`)}</span> · ${this._t("panel.group_chore_count", {count: (g.chore_ids || []).length})}</div>
                 </div>
               </div>
@@ -2084,6 +2095,16 @@ class TaskMatePanel extends HTMLElement {
               <select class="tm-select" data-setting="notify_service">
                 ${notifyOptions.map(o => `<option value="${this._esc(o.v)}" ${o.v === (s.notify_service || "") ? "selected" : ""}>${this._esc(o.l)}</option>`).join("")}
               </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.settings_show_ids_label")}</h3><p class="tm-meta">${this._t("panel.settings_show_ids_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_show_ids_label")}</div>
+              <ha-switch ${this._showIds ? "checked" : ""} data-local="show-ids"></ha-switch>
             </div>
           </div>
         </div>
@@ -2687,6 +2708,11 @@ class TaskMatePanel extends HTMLElement {
     `;
   }
 
+  _idBadge(id) {
+    if (!this._showIds || !id) return "";
+    return `<span class="tm-id-badge"><code>${this._esc(id)}</code><button class="tm-id-copy" data-act="copy-id" data-id="${this._esc(id)}" title="${this._t("panel.toast_copied")}"><ha-icon icon="mdi:content-copy"></ha-icon></button></span>`;
+  }
+
   _labelOf(arr, val) {
     const item = arr.find(x => x.v === val);
     if (!item) return val || "";
@@ -3239,6 +3265,26 @@ class TaskMatePanel extends HTMLElement {
         content: ""; width: 5px; height: 5px; border-radius: 50%;
         background: currentColor;
       }
+
+      /* ID badge (Show IDs toggle) */
+      .tm-id-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        margin-top: 2px;
+      }
+      .tm-id-badge code {
+        font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+        font-size: 10.5px; color: var(--tm-text-faint);
+        background: var(--tm-surface-2); padding: 1px 6px;
+        border-radius: 4px; user-select: all;
+      }
+      .tm-id-copy {
+        background: none; border: none; cursor: pointer;
+        padding: 2px; border-radius: 4px;
+        color: var(--tm-text-faint); display: inline-flex; align-items: center;
+        transition: color 0.15s;
+      }
+      .tm-id-copy:hover { color: var(--tm-accent); }
+      .tm-id-copy ha-icon { --mdc-icon-size: 14px; }
 
       /* Reward extras */
       .tm-reward-card { display: flex; flex-direction: column; gap: 12px; margin-bottom: 0; }
