@@ -27,21 +27,21 @@ const TABS = [
 ];
 
 const BADGE_METRICS = [
-  { v: "total_points",  l: "Total points" },
-  { v: "total_chores",  l: "Total chores" },
-  { v: "total_rewards", l: "Total rewards" },
-  { v: "current_streak", l: "Current streak" },
-  { v: "best_streak",   l: "Best streak" },
-  { v: "perfect_weeks", l: "Perfect weeks" },
-  { v: "first_chore",   l: "First chore (bool)" },
-  { v: "first_reward",  l: "First reward (bool)" },
+  { v: "total_points",  lk: "badge.metric_total_points" },
+  { v: "total_chores",  lk: "badge.metric_total_chores" },
+  { v: "total_rewards", lk: "badge.metric_total_rewards" },
+  { v: "current_streak", lk: "badge.metric_current_streak" },
+  { v: "best_streak",   lk: "badge.metric_best_streak" },
+  { v: "perfect_weeks", lk: "badge.metric_perfect_weeks" },
+  { v: "first_chore",   lk: "badge.metric_first_chore" },
+  { v: "first_reward",  lk: "badge.metric_first_reward" },
 ];
 const BADGE_BOOL_METRICS = ["first_chore", "first_reward"];
 const BADGE_TIERS = [
-  { v: "bronze",   l: "Bronze" },
-  { v: "silver",   l: "Silver" },
-  { v: "gold",     l: "Gold" },
-  { v: "platinum", l: "Platinum" },
+  { v: "bronze",   lk: "badge.tier_bronze" },
+  { v: "silver",   lk: "badge.tier_silver" },
+  { v: "gold",     lk: "badge.tier_gold" },
+  { v: "platinum", lk: "badge.tier_platinum" },
 ];
 
 const TIME_CATEGORIES = [
@@ -1670,14 +1670,14 @@ class TaskMatePanel extends HTMLElement {
     const catalogueCount = allBadges.filter(b => b.builtin).length;
     const customCount = allBadges.filter(b => !b.builtin).length;
     const subTabs = [
-      { id: "catalogue", label: `Catalogue (${catalogueCount})` },
-      { id: "custom",    label: `Custom (${customCount})` },
-      { id: "history",   label: "History" },
+      { id: "catalogue", label: this._t("panel.badge_subtab_catalogue", { count: catalogueCount }) },
+      { id: "custom",    label: this._t("panel.badge_subtab_custom", { count: customCount }) },
+      { id: "history",   label: this._t("panel.badge_subtab_history") },
     ];
     return `
       <div class="tm-toolbar">
-        <h2 class="tm-toolbar-title">Badges <span class="tm-toolbar-count">${allBadges.length}</span></h2>
-        ${sub === "custom" ? `<button class="tm-btn tm-btn-raised" data-act="add-badge">+ Add custom badge</button>` : ""}
+        <h2 class="tm-toolbar-title">${this._t("panel.badge_tab_title")} <span class="tm-toolbar-count">${allBadges.length}</span></h2>
+        ${sub === "custom" ? `<button class="tm-btn tm-btn-raised" data-act="add-badge">${this._t("panel.badge_add_btn")}</button>` : ""}
       </div>
       <div class="tm-badge-subtabs">
         ${subTabs.map(s => `<button class="tm-badge-subtab${sub === s.id ? " tm-badge-subtab-active" : ""}" data-act="badges-subtab" data-sub="${s.id}">${this._esc(s.label)}</button>`).join("")}
@@ -1693,37 +1693,37 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _criteriaLabel(criteria) {
-    if (!criteria || !criteria.length) return "Manual award only";
+    if (!criteria || !criteria.length) return this._t("badge.manual_award_only");
     return criteria.map(c => `${c.metric} ≥ ${c.value}`).join(" AND ");
   }
 
   _renderBadgeCatalogueTab(allBadges) {
     const builtins = allBadges.filter(b => b.builtin);
-    if (!builtins.length) return `<div class="tm-card tm-empty"><p>No built-in badges found.</p></div>`;
+    if (!builtins.length) return `<div class="tm-card tm-empty"><p>${this._t("panel.badge_empty_catalogue")}</p></div>`;
     return `
       <div class="tm-table-wrap">
         <table class="tm-table">
-          <thead><tr><th>Badge</th><th>Tier</th><th>Criteria</th><th>Bonus</th><th>Enabled</th><th></th></tr></thead>
+          <thead><tr><th>${this._t("panel.badge_table_badge")}</th><th>${this._t("panel.badge_table_tier")}</th><th>${this._t("panel.badge_table_criteria")}</th><th>${this._t("panel.badge_table_bonus")}</th><th>${this._t("panel.badge_table_enabled")}</th><th></th></tr></thead>
           <tbody>
             ${builtins.map(b => `
               <tr class="tm-row tm-badge-row ${this._tierClass(b.tier)}">
                 <td>
                   <div class="tm-badge-icon-sm">${this._mdi(b.icon)}</div>
                   <span style="margin-left:8px"><strong>${this._esc(b.name)}</strong>
-                  <span class="tm-pill" style="background:var(--tm-surface-2);font-size:10px;margin-left:4px">Built-in</span></span>
+                  <span class="tm-pill" style="background:var(--tm-surface-2);font-size:10px;margin-left:4px">${this._t("panel.badge_builtin_pill")}</span></span>
                   ${b.description ? `<div class="tm-meta">${this._esc(b.description)}</div>` : ""}
                 </td>
-                <td><span class="tm-badge-tier-label">${this._esc(b.tier || "bronze")}</span></td>
+                <td><span class="tm-badge-tier-label">${this._t("badge.tier_" + (b.tier || "bronze"))}</span></td>
                 <td><code class="tm-badge-criteria">${this._esc(this._criteriaLabel(b.criteria))}</code></td>
                 <td><strong class="${b.point_bonus ? "tm-pos" : "tm-text-muted"}">${b.point_bonus ? `+${b.point_bonus}` : "—"}</strong></td>
                 <td>
                   <button class="tm-badge-toggle${b.enabled !== false ? " tm-badge-toggle-on" : ""}"
                     data-act="toggle-badge-enabled" data-id="${this._esc(b.id)}" data-enabled="${b.enabled !== false}"
-                    title="${b.enabled !== false ? "Disable" : "Enable"}">
+                    title="${b.enabled !== false ? this._t("panel.badge_toggle_disable") : this._t("panel.badge_toggle_enable")}">
                   </button>
                 </td>
                 <td class="tm-row-actions">
-                  <button class="tm-icon-btn" data-act="edit-badge" data-id="${this._esc(b.id)}" title="Edit">✏</button>
+                  <button class="tm-icon-btn" data-act="edit-badge" data-id="${this._esc(b.id)}" title="${this._t("panel.badge_edit_btn")}">✏</button>
                 </td>
               </tr>
             `).join("")}
@@ -1738,14 +1738,14 @@ class TaskMatePanel extends HTMLElement {
     if (!customs.length) return `
       <div class="tm-card tm-empty" style="text-align:center;padding:32px">
         <p style="font-size:24px;margin-bottom:8px">🏅</p>
-        <p style="font-weight:600;margin-bottom:4px">No custom badges yet</p>
-        <p class="tm-meta" style="margin-bottom:16px">Create your own badges with custom criteria or for manual awarding.</p>
-        <button class="tm-btn tm-btn-raised" data-act="add-badge">+ Add custom badge</button>
+        <p style="font-weight:600;margin-bottom:4px">${this._t("panel.badge_empty_custom_title")}</p>
+        <p class="tm-meta" style="margin-bottom:16px">${this._t("panel.badge_empty_custom_desc")}</p>
+        <button class="tm-btn tm-btn-raised" data-act="add-badge">${this._t("panel.badge_add_btn")}</button>
       </div>`;
     return `
       <div class="tm-table-wrap">
         <table class="tm-table">
-          <thead><tr><th>Badge</th><th>Tier</th><th>Criteria</th><th>Bonus</th><th>Enabled</th><th></th></tr></thead>
+          <thead><tr><th>${this._t("panel.badge_table_badge")}</th><th>${this._t("panel.badge_table_tier")}</th><th>${this._t("panel.badge_table_criteria")}</th><th>${this._t("panel.badge_table_bonus")}</th><th>${this._t("panel.badge_table_enabled")}</th><th></th></tr></thead>
           <tbody>
             ${customs.map(b => `
               <tr class="tm-row tm-badge-row ${this._tierClass(b.tier)}">
@@ -1754,19 +1754,19 @@ class TaskMatePanel extends HTMLElement {
                   <span style="margin-left:8px"><strong>${this._esc(b.name)}</strong></span>
                   ${b.description ? `<div class="tm-meta">${this._esc(b.description)}</div>` : ""}
                 </td>
-                <td><span class="tm-badge-tier-label">${this._esc(b.tier || "bronze")}</span></td>
+                <td><span class="tm-badge-tier-label">${this._t("badge.tier_" + (b.tier || "bronze"))}</span></td>
                 <td><code class="tm-badge-criteria">${this._esc(this._criteriaLabel(b.criteria))}</code></td>
                 <td><strong class="${b.point_bonus ? "tm-pos" : "tm-text-muted"}">${b.point_bonus ? `+${b.point_bonus}` : "—"}</strong></td>
                 <td>
                   <button class="tm-badge-toggle${b.enabled !== false ? " tm-badge-toggle-on" : ""}"
                     data-act="toggle-badge-enabled" data-id="${this._esc(b.id)}" data-enabled="${b.enabled !== false}"
-                    title="${b.enabled !== false ? "Disable" : "Enable"}">
+                    title="${b.enabled !== false ? this._t("panel.badge_toggle_disable") : this._t("panel.badge_toggle_enable")}">
                   </button>
                 </td>
                 <td class="tm-row-actions">
-                  <button class="tm-btn tm-btn-sm" data-act="award-badge" data-id="${this._esc(b.id)}">Award</button>
-                  <button class="tm-icon-btn" data-act="edit-badge" data-id="${this._esc(b.id)}" title="Edit">✏</button>
-                  <button class="tm-icon-btn" data-act="delete-badge" data-id="${this._esc(b.id)}" title="Delete">🗑</button>
+                  <button class="tm-btn tm-btn-sm" data-act="award-badge" data-id="${this._esc(b.id)}">${this._t("panel.badge_award_btn")}</button>
+                  <button class="tm-icon-btn" data-act="edit-badge" data-id="${this._esc(b.id)}" title="${this._t("panel.badge_edit_btn")}">✏</button>
+                  <button class="tm-icon-btn" data-act="delete-badge" data-id="${this._esc(b.id)}" title="${this._t("panel.badge_delete_btn")}">🗑</button>
                 </td>
               </tr>
             `).join("")}
@@ -1780,21 +1780,21 @@ class TaskMatePanel extends HTMLElement {
     const awards = (this._state.awarded_badges || []).slice().sort((a, b) => (b.earned_at || "").localeCompare(a.earned_at || ""));
     const badgeById = Object.fromEntries((this._state.badges || []).map(b => [b.id, b]));
     const childById = Object.fromEntries((this._state.children || []).map(c => [c.id, c]));
-    const rebuildBtn = `<button class="tm-btn" data-act="rebuild-badges" title="Re-evaluate all badges silently (no notifications)">Rebuild Badges</button>`;
+    const rebuildBtn = `<button class="tm-btn" data-act="rebuild-badges" title="${this._t("panel.badge_rebuild_tooltip")}">${this._t("panel.badge_rebuild_btn")}</button>`;
     if (!awards.length) return `
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px">${rebuildBtn}</div>
-      <div class="tm-card tm-empty"><p>No badges have been awarded yet.</p></div>`;
+      <div class="tm-card tm-empty"><p>${this._t("panel.badge_empty_history")}</p></div>`;
     return `
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px">${rebuildBtn}</div>
       <div class="tm-table-wrap">
         <table class="tm-table">
-          <thead><tr><th>Badge</th><th>Child</th><th>When</th><th>Source</th><th></th></tr></thead>
+          <thead><tr><th>${this._t("panel.badge_table_badge")}</th><th>${this._t("panel.badge_table_child")}</th><th>${this._t("panel.badge_table_when")}</th><th>${this._t("panel.badge_table_source")}</th><th></th></tr></thead>
           <tbody>
             ${awards.map(a => {
               const badge = badgeById[a.badge_id] || {};
               const child = childById[a.child_id] || {};
               const tierCls = this._tierClass(badge.tier || "bronze");
-              const srcLabel = a.silent ? "SILENT" : a.manually_awarded ? "MANUAL" : "AUTO";
+              const srcLabel = a.silent ? this._t("badge.source_silent") : a.manually_awarded ? this._t("badge.source_manual") : this._t("badge.source_auto");
               const srcCls = a.silent ? "tm-badge-src-silent" : a.manually_awarded ? "tm-badge-src-manual" : "tm-badge-src-auto";
               const when = a.earned_at ? new Date(a.earned_at).toLocaleString() : "—";
               return `
@@ -1807,7 +1807,7 @@ class TaskMatePanel extends HTMLElement {
                   <td class="tm-meta">${this._esc(when)}</td>
                   <td><span class="tm-badge-src ${srcCls}">${srcLabel}</span></td>
                   <td class="tm-row-actions">
-                    <button class="tm-btn tm-btn-sm tm-btn-danger" data-act="revoke-badge" data-id="${this._esc(a.id)}" data-name="${this._esc(badge.name || "badge")}">Revoke</button>
+                    <button class="tm-btn tm-btn-sm tm-btn-danger" data-act="revoke-badge" data-id="${this._esc(a.id)}" data-name="${this._esc(badge.name || "badge")}">${this._t("panel.badge_revoke_btn")}</button>
                   </td>
                 </tr>
               `;
@@ -1833,11 +1833,11 @@ class TaskMatePanel extends HTMLElement {
   async _doSaveBadge() {
     this._syncIconPickers();
     const d = this._dialog.data;
-    if (!d.name || !d.name.trim()) { this._showToast("err", "Name is required"); return; }
+    if (!d.name || !d.name.trim()) { this._showToast("err", this._t("panel.toast_badge_name_required")); return; }
     // validate criteria values
     for (const c of (d.criteria || [])) {
       if (!BADGE_BOOL_METRICS.includes(c.metric) && (!c.value || Number(c.value) < 1)) {
-        this._showToast("err", "Criterion value must be ≥ 1"); return;
+        this._showToast("err", this._t("panel.toast_badge_criterion_invalid")); return;
       }
     }
     const wasAdd = this._dialog.mode === "add";
@@ -1861,25 +1861,25 @@ class TaskMatePanel extends HTMLElement {
     } else {
       ({ ok, err } = await this._callService("update_badge", { badge_id: d.id, ...base }));
     }
-    if (!ok) { this._showToast("err", `Save failed: ${err}`); return; }
+    if (!ok) { this._showToast("err", this._t("panel.toast_badge_save_failed", { error: err })); return; }
     this._closeDialog(true);
     await this._fetchState();
-    this._showToast("ok", wasAdd ? "Badge added" : "Badge updated");
+    this._showToast("ok", wasAdd ? this._t("panel.toast_badge_added") : this._t("panel.toast_badge_updated"));
   }
 
   async _confirmDeleteBadge(id) {
     const b = (this._state.badges || []).find(x => x.id === id);
     if (!b) return;
-    if (!confirm(`Delete badge "${b.name}"? This cannot be undone.`)) return;
+    if (!confirm(this._t("panel.badge_confirm_delete", { name: b.name }))) return;
     const { ok, err } = await this._callService("remove_badge", { badge_id: id });
-    if (!ok) { this._showToast("err", `Delete failed: ${err}`); return; }
+    if (!ok) { this._showToast("err", this._t("panel.toast_badge_delete_failed", { error: err })); return; }
     await this._fetchState();
-    this._showToast("ok", "Badge deleted");
+    this._showToast("ok", this._t("panel.toast_badge_deleted"));
   }
 
   async _doToggleBadgeEnabled(id, currentlyEnabled) {
     const { ok, err } = await this._callService("update_badge", { badge_id: id, enabled: !currentlyEnabled });
-    if (!ok) { this._showToast("err", `Update failed: ${err}`); return; }
+    if (!ok) { this._showToast("err", this._t("panel.toast_badge_update_failed", { error: err })); return; }
     await this._fetchState();
   }
 
@@ -1890,28 +1890,28 @@ class TaskMatePanel extends HTMLElement {
   }
 
   async _doAwardBadge(badgeId, childId) {
-    if (!childId) { this._showToast("err", "Select a child"); return; }
+    if (!childId) { this._showToast("err", this._t("panel.toast_badge_select_child")); return; }
     const { ok, err } = await this._callService("award_badge_manually", { badge_id: badgeId, child_id: childId });
-    if (!ok) { this._showToast("err", `Award failed: ${err}`); return; }
+    if (!ok) { this._showToast("err", this._t("panel.toast_badge_award_failed", { error: err })); return; }
     this._closeDialog(true);
     await this._fetchState();
-    this._showToast("ok", "Badge awarded");
+    this._showToast("ok", this._t("panel.toast_badge_awarded"));
   }
 
   async _doRevokeBadge(awardedBadgeId, badgeName) {
-    if (!confirm(`Revoke badge "${badgeName}"? Any point bonus will be reversed.`)) return;
+    if (!confirm(this._t("panel.badge_confirm_revoke", { name: badgeName }))) return;
     const { ok, err } = await this._callService("revoke_badge", { awarded_badge_id: awardedBadgeId });
-    if (!ok) { this._showToast("err", `Revoke failed: ${err}`); return; }
+    if (!ok) { this._showToast("err", this._t("panel.toast_badge_revoke_failed", { error: err })); return; }
     await this._fetchState();
-    this._showToast("ok", "Badge revoked");
+    this._showToast("ok", this._t("panel.toast_badge_revoked"));
   }
 
   async _doRebuildBadges() {
-    if (!confirm("Run a silent retroactive badge sweep across all children? No notifications or point bonuses will be sent.")) return;
+    if (!confirm(this._t("panel.badge_confirm_rebuild"))) return;
     const { ok, err } = await this._callService("rebuild_badges", {});
-    if (!ok) { this._showToast("err", `Rebuild failed: ${err}`); return; }
+    if (!ok) { this._showToast("err", this._t("panel.toast_badge_rebuild_failed", { error: err })); return; }
     await this._fetchState();
-    this._showToast("ok", "Badges rebuilt");
+    this._showToast("ok", this._t("panel.toast_badge_rebuilt"));
   }
 
   async _callService(service, data = {}) {
@@ -1928,24 +1928,24 @@ class TaskMatePanel extends HTMLElement {
     const d = this._dialog.data;
     const isBuiltin = !!d.builtin;
     const children = this._state.children || [];
-    const title = this._dialog.mode === "add" ? "Add Custom Badge" : `Edit Badge — ${d.name}`;
+    const title = this._dialog.mode === "add" ? this._t("panel.badge_dialog_add_title") : this._t("panel.badge_dialog_edit_title", { name: d.name });
     const criteria = d.criteria || [];
     return this._dialogShell(title,
       [
-        isBuiltin ? `<div class="tm-field"><span class="tm-pill" style="background:var(--tm-surface-2)">Built-in — only point bonus, tier, assigned to, and notify can be changed</span></div>` : "",
-        !isBuiltin ? this._field("Name", "name", d.name, "text") : "",
-        !isBuiltin ? this._field("Description", "description", d.description, "text") : "",
+        isBuiltin ? `<div class="tm-field"><span class="tm-pill" style="background:var(--tm-surface-2)">${this._t("panel.badge_builtin_hint")}</span></div>` : "",
+        !isBuiltin ? this._field(this._t("panel.badge_name_label"), "name", d.name, "text") : "",
+        !isBuiltin ? this._field(this._t("panel.badge_description_label"), "description", d.description, "text") : "",
         `<div class="tm-field-row">
           ${!isBuiltin ? this._iconPickerField("Icon", "icon", d.icon) : ""}
-          ${this._select("Tier", "tier", d.tier || "bronze", BADGE_TIERS)}
+          ${this._select(this._t("panel.badge_tier_label"), "tier", d.tier || "bronze", BADGE_TIERS)}
         </div>`,
         `<div class="tm-field-row">
-          ${this._field("Point Bonus", "point_bonus", d.point_bonus || 0, "number")}
-          ${this._select("Notify on Earn", "notify_on_earn", d.notify_on_earn !== false ? "true" : "false", [{ v: "true", l: "Yes" }, { v: "false", l: "No" }])}
+          ${this._field(this._t("panel.badge_bonus_label"), "point_bonus", d.point_bonus || 0, "number")}
+          ${this._select(this._t("panel.badge_notify_label"), "notify_on_earn", d.notify_on_earn !== false ? "true" : "false", [{ v: "true", l: this._t("panel.badge_notify_yes") }, { v: "false", l: this._t("panel.badge_notify_no") }])}
         </div>`,
         children.length > 0 ? `
           <div class="tm-field">
-            <span class="tm-field-label">Assigned to</span>
+            <span class="tm-field-label">${this._t("panel.badge_assigned_label")}</span>
             <div class="tm-chip-row">
               ${children.map(c => `
                 <button type="button" class="tm-chip-btn ${(d.assigned_to || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="badge-toggle-assigned" data-id="${this._esc(c.id)}">
@@ -1953,50 +1953,50 @@ class TaskMatePanel extends HTMLElement {
                 </button>
               `).join("")}
             </div>
-            <span class="tm-field-hint">Leave all unselected for all children</span>
+            <span class="tm-field-hint">${this._t("panel.badge_assigned_hint")}</span>
           </div>
         ` : "",
         !isBuiltin ? `
           <div class="tm-field">
-            <span class="tm-field-label">Criteria — Award when ALL are true</span>
+            <span class="tm-field-label">${this._t("panel.badge_criteria_label")}</span>
             <div class="tm-badge-criteria-block">
-              ${criteria.length === 0 ? `<p class="tm-field-hint" style="margin:0 0 8px">No criteria — this badge will be manual-award only.</p>` : ""}
+              ${criteria.length === 0 ? `<p class="tm-field-hint" style="margin:0 0 8px">${this._t("panel.badge_no_criteria_hint")}</p>` : ""}
               ${criteria.map((c, idx) => {
                 const isBool = BADGE_BOOL_METRICS.includes(c.metric);
                 return `
                   <div class="tm-badge-criterion-row">
                     <select class="tm-select" data-badge-criterion-field="metric" data-badge-criterion-idx="${idx}">
-                      ${BADGE_METRICS.map(m => `<option value="${m.v}"${c.metric === m.v ? " selected" : ""}>${m.l}</option>`).join("")}
+                      ${BADGE_METRICS.map(m => `<option value="${m.v}"${c.metric === m.v ? " selected" : ""}>${this._t(m.lk)}</option>`).join("")}
                     </select>
                     <span class="tm-badge-op">≥</span>
                     ${isBool ? `<span class="tm-field-hint" style="flex:1">true</span>` : `<input class="tm-input" type="number" min="1" value="${c.value || 1}" data-badge-criterion-field="value" data-badge-criterion-idx="${idx}">`}
-                    <button type="button" class="tm-icon-btn" data-act="badge-remove-criterion" data-idx="${idx}" title="Remove">✕</button>
+                    <button type="button" class="tm-icon-btn" data-act="badge-remove-criterion" data-idx="${idx}" title="${this._t("panel.badge_remove_criterion_btn")}">✕</button>
                   </div>
                 `;
               }).join("")}
-              <button type="button" class="tm-btn" data-act="badge-add-criterion" style="margin-top:6px;width:100%;border-style:dashed">+ Add criterion</button>
+              <button type="button" class="tm-btn" data-act="badge-add-criterion" style="margin-top:6px;width:100%;border-style:dashed">${this._t("panel.badge_add_criterion_btn")}</button>
             </div>
           </div>
         ` : "",
       ].join(""),
-      `<button class="tm-btn" data-act="close-dialog">Cancel</button>
-       <button class="tm-btn tm-btn-raised" data-act="save-badge">Save badge</button>`
+      `<button class="tm-btn" data-act="close-dialog">${this._t("panel.badge_cancel_btn")}</button>
+       <button class="tm-btn tm-btn-raised" data-act="save-badge">${this._t("panel.badge_save_btn")}</button>`
     );
   }
 
   _renderAwardDialog() {
     const d = this._dialog.data;
     const children = this._state.children || [];
-    return this._dialogShell(`Award "${d.badge_name}"`,
+    return this._dialogShell(this._t("panel.badge_dialog_award_title", { name: d.badge_name }),
       `<div class="tm-field">
-        <span class="tm-field-label">Award to</span>
+        <span class="tm-field-label">${this._t("panel.badge_award_to_label")}</span>
         <select class="tm-select" data-field="child_id">
-          <option value="">— Select child —</option>
+          <option value="">${this._t("panel.badge_award_select_child")}</option>
           ${children.map(c => `<option value="${this._esc(c.id)}">${this._esc(c.name)}</option>`).join("")}
         </select>
       </div>`,
-      `<button class="tm-btn" data-act="close-dialog">Cancel</button>
-       <button class="tm-btn tm-btn-raised" data-act="do-award-badge" data-id="${this._esc(d.badge_id)}">Award</button>`
+      `<button class="tm-btn" data-act="close-dialog">${this._t("panel.badge_cancel_btn")}</button>
+       <button class="tm-btn tm-btn-raised" data-act="do-award-badge" data-id="${this._esc(d.badge_id)}">${this._t("panel.badge_award_btn")}</button>`
     );
   }
 
