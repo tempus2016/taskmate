@@ -457,6 +457,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "award-badge")  { this._openAwardDialog(t.dataset.id); return; }
     if (act === "do-award-badge") { this._doAwardBadge(t.dataset.id, this._dialog?.data?.child_id || ""); return; }
     if (act === "revoke-badge") { this._doRevokeBadge(t.dataset.id, t.dataset.name); return; }
+    if (act === "rebuild-badges") { this._doRebuildBadges(); return; }
     if (act === "badge-add-criterion") { if (this._dialog?.data?.criteria) { this._dialog.data.criteria.push({ metric: "total_points", operator: ">=", value: 1 }); this._render(); } return; }
     if (act === "badge-remove-criterion") { if (this._dialog?.data?.criteria) { this._dialog.data.criteria.splice(Number(t.dataset.idx), 1); this._render(); } return; }
     if (act === "badge-toggle-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
@@ -1779,8 +1780,12 @@ class TaskMatePanel extends HTMLElement {
     const awards = (this._state.awarded_badges || []).slice().sort((a, b) => (b.earned_at || "").localeCompare(a.earned_at || ""));
     const badgeById = Object.fromEntries((this._state.badges || []).map(b => [b.id, b]));
     const childById = Object.fromEntries((this._state.children || []).map(c => [c.id, c]));
-    if (!awards.length) return `<div class="tm-card tm-empty"><p>No badges have been awarded yet.</p></div>`;
+    const rebuildBtn = `<button class="tm-btn" data-act="rebuild-badges" title="Re-evaluate all badges silently (no notifications)">Rebuild Badges</button>`;
+    if (!awards.length) return `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">${rebuildBtn}</div>
+      <div class="tm-card tm-empty"><p>No badges have been awarded yet.</p></div>`;
     return `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">${rebuildBtn}</div>
       <div class="tm-table-wrap">
         <table class="tm-table">
           <thead><tr><th>Badge</th><th>Child</th><th>When</th><th>Source</th><th></th></tr></thead>
@@ -1899,6 +1904,14 @@ class TaskMatePanel extends HTMLElement {
     if (!ok) { this._showToast("err", `Revoke failed: ${err}`); return; }
     await this._fetchState();
     this._showToast("ok", "Badge revoked");
+  }
+
+  async _doRebuildBadges() {
+    if (!confirm("Run a silent retroactive badge sweep across all children? No notifications or point bonuses will be sent.")) return;
+    const { ok, err } = await this._callService("rebuild_badges", {});
+    if (!ok) { this._showToast("err", `Rebuild failed: ${err}`); return; }
+    await this._fetchState();
+    this._showToast("ok", "Badges rebuilt");
   }
 
   async _callService(service, data = {}) {
