@@ -1412,7 +1412,7 @@ class TaskMatePanel extends HTMLElement {
     const events = [];
     completions.filter(c => c.approved).forEach(c => events.push({
       ts: c.approved_at || c.completed_at, kind: "completion",
-      child: (childById[c.child_id] || {}).name || "?",
+      child: c.child_id === "__parent__" ? "Parent" : ((childById[c.child_id] || {}).name || "?"),
       label: `${this._t("panel.activity_completed_chore", {name: (choreById[c.chore_id] || {}).name || this._t("panel.activity_deleted_chore")})}`,
       points: c.points_awarded,
     }));
