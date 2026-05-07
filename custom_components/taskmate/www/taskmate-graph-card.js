@@ -35,7 +35,9 @@ class TaskMateGraphCard extends LitElement {
 
   shouldUpdate(changedProps) {
     if (changedProps.has("hass")) {
-      return window.__taskmate_hasChanged(changedProps.get("hass"), this.hass, this.config?.entity);
+      return window.__taskmate_hasChanged
+        ? window.__taskmate_hasChanged(changedProps.get("hass"), this.hass, this.config?.entity)
+        : true;
     }
     return true;
   }
