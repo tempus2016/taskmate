@@ -1091,6 +1091,16 @@ class TaskMatePanel extends HTMLElement {
     const existingToast = this.querySelector(".tm-toast");
     const dialogBody = this.querySelector(".tm-dialog-body");
     const savedScroll = dialogBody ? dialogBody.scrollTop : 0;
+    // Snapshot open <details class="tm-advanced"> sections so they survive re-render.
+    if (this._dialog) {
+      const openSet = this._dialog._openAdvanced instanceof Set ? this._dialog._openAdvanced : new Set();
+      this.querySelectorAll("details.tm-advanced[data-section]").forEach(el => {
+        const key = el.dataset.section;
+        if (!key) return;
+        if (el.open) openSet.add(key); else openSet.delete(key);
+      });
+      this._dialog._openAdvanced = openSet;
+    }
     this.innerHTML = `
       ${this._styles()}
       <div class="tm-shell">
@@ -2291,7 +2301,7 @@ class TaskMatePanel extends HTMLElement {
             <span class="tm-field-hint">${this._t("panel.chore_group_hint", {name: this._esc(memberInGroup.name), policy: memberInGroup.policy})}</span>
           </div>
         ` : "",
-        `<details class="tm-advanced">
+        `<details class="tm-advanced" data-section="bonus_subtasks"${this._dialog._openAdvanced?.has("bonus_subtasks") ? " open" : ""}>
           <summary>${this._t("panel.chore_advanced_bonus_subtasks")}</summary>
           <div>
             <span class="tm-field-hint" style="margin-bottom:8px;display:block">${this._t("panel.chore_advanced_bonus_subtasks_hint")}</span>
@@ -2305,7 +2315,7 @@ class TaskMatePanel extends HTMLElement {
             <button type="button" class="tm-btn" data-act="add-bonus-subtask" style="margin-top:4px">${this._t("panel.btn_add_bonus_subtask")}</button>
           </div>
         </details>`,
-        `<details class="tm-advanced">
+        `<details class="tm-advanced" data-section="visibility"${this._dialog._openAdvanced?.has("visibility") ? " open" : ""}>
           <summary>${this._t("panel.chore_advanced_visibility")}</summary>
           <div>
             ${this._entityPickerField(this._t("panel.chore_vis_entity_label"), "visibility_entity", d.visibility_entity, ["binary_sensor", "sensor", "switch", "input_boolean", "input_select"],
