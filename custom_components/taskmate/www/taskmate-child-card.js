@@ -1630,8 +1630,8 @@ class TaskMateChildCard extends LitElement {
         </div>
 
         ${showBadges ? html`
-          <div class="badge-strip" @click=${() => this._openBadgesView()} title="Tap to view all badges">
-            <span class="badge-strip-label">${this._t('badges.label') || 'Badges'}</span>
+          <div class="badge-strip" @click=${() => this._openBadgesView()} title="${this._t('badges.label')}">
+            <span class="badge-strip-label">${this._t('badges.label')}</span>
             ${earnedBadges.slice(0, 5).map(b => html`
               <div class="badge-mini tier-${b.tier} ${this._justEarnedBadge && String(this._justEarnedBadge) === String(b.id) ? 'just-earned' : ''}"
                 style="--t: ${this._tierColor(b.tier)}">

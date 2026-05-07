@@ -307,8 +307,7 @@ class TaskMateBadgesCard extends LitElement {
   }
 
   _tierLabel(tier) {
-    const labels = { bronze: "Bronze", silver: "Silver", gold: "Gold", platinum: "Platinum" };
-    return labels[tier] || tier;
+    return this._t("badge.tier_" + (tier || "bronze"));
   }
 
   _formatDate(iso) {
@@ -325,7 +324,7 @@ class TaskMateBadgesCard extends LitElement {
 
     const entity = this.hass.states[this.config.entity];
     if (!entity) {
-      return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this.config.entity} not found</div></div></ha-card>`;
+      return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('badges.entity_not_found', { entity: this.config.entity })}</div></div></ha-card>`;
     }
     if (entity.state === "unavailable" || entity.state === "unknown") {
       return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.unavailable')}</div></div></ha-card>`;
@@ -343,11 +342,11 @@ class TaskMateBadgesCard extends LitElement {
     const filteredLocked = filter === "all" ? available : available.filter(b => b.tier === filter);
 
     const latestEarned = earned.length > 0 ? earned[0] : null;
-    const countLabel = earned.length > 0
-      ? `${earned.length} of ${totalBadges} earned${latestEarned ? ` · Latest: ${latestEarned.name}` : ""}`
-      : `0 of ${totalBadges} earned`;
+    const countLabel = earned.length > 0 && latestEarned
+      ? this._t("badges.count_label_latest", { earned: earned.length, total: totalBadges, latest: latestEarned.name })
+      : this._t("badges.count_label", { earned: earned.length, total: totalBadges });
 
-    const title = this.config.title || (childName ? `${childName}'s Badges` : "Badges");
+    const title = this.config.title || (childName ? this._t("badges.title_with_name", { name: childName }) : this._t("badges.default_title"));
 
     return html`
       <ha-card>
@@ -364,11 +363,11 @@ class TaskMateBadgesCard extends LitElement {
           <select class="badges-filter"
             .value=${filter}
             @change=${(e) => { this._filterTier = e.target.value; }}>
-            <option value="all">All tiers</option>
-            <option value="bronze">Bronze</option>
-            <option value="silver">Silver</option>
-            <option value="gold">Gold</option>
-            <option value="platinum">Platinum</option>
+            <option value="all">${this._t("badges.all_tiers")}</option>
+            <option value="bronze">${this._t("badge.tier_bronze")}</option>
+            <option value="silver">${this._t("badge.tier_silver")}</option>
+            <option value="gold">${this._t("badge.tier_gold")}</option>
+            <option value="platinum">${this._t("badge.tier_platinum")}</option>
           </select>
         </div>
 
@@ -390,7 +389,7 @@ class TaskMateBadgesCard extends LitElement {
         </div>
         <div class="badge-tier">${this._tierLabel(b.tier)}</div>
         <div class="badge-name">${b.name}</div>
-        <div class="badge-meta">Earned ${this._formatDate(b.earned_at)}</div>
+        <div class="badge-meta">${this._t("badge.earned_date", { date: this._formatDate(b.earned_at) })}</div>
       </div>
     `;
   }
