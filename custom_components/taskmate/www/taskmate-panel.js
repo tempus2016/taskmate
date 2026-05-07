@@ -4189,6 +4189,9 @@ class TaskMatePanel extends HTMLElement {
       .tm-badge-subtab:hover { color: var(--tm-text); }
       .tm-badge-subtab-active { color: var(--tm-accent); border-bottom-color: var(--tm-accent); }
 
+      .tm-badge-row td { vertical-align: top; }
+      .tm-badge-row td:nth-last-child(-n+2) { vertical-align: middle; }
+
       /* tier colour token */
       .tm-badge-tier-bronze   { --badge-t: #cd7f32; }
       .tm-badge-tier-silver   { --badge-t: #c0c0c0; }
