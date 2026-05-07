@@ -192,6 +192,8 @@ class BadgeCoordinator:
 
         if new_awards:
             await self.storage.async_save()
+            if not silent:
+                await self._dispatch_notifications(new_awards)
 
         return new_awards
 
@@ -231,6 +233,7 @@ class BadgeCoordinator:
                 "point_bonus": bonus,
             },
         )
+        await self._dispatch_notifications([award])
         await self.storage.async_save()
         return award
 
@@ -268,3 +271,75 @@ class BadgeCoordinator:
             )
             total += len(new_awards)
         return total
+
+    async def _dispatch_notifications(self, awards: list) -> None:
+        """Send persistent + (optional) push notifications for non-silent awards.
+
+        Suppressed when:
+        - silent=True awards (filtered upstream)
+        - badge.notify_on_earn = False
+
+        Multi-batching: when 3+ awards happen in one evaluation pass, condense into
+        a single combined notification.
+        """
+        notifiable: list[tuple] = []
+        for a in awards:
+            if a.silent:
+                continue
+            badge = self.storage.get_badge(a.badge_id)
+            if not badge or not badge.notify_on_earn:
+                continue
+            child = self.storage.get_child(a.child_id)
+            child_name = child.name if child else "Child"
+            notifiable.append((a, badge, child_name))
+
+        if not notifiable:
+            return
+
+        if len(notifiable) >= 3:
+            names = ", ".join(b.name for _, b, _ in notifiable)
+            first_child = notifiable[0][2]
+            message = f"{first_child} earned {len(notifiable)} new badges: {names}"
+            notif_id = f"taskmate_badges_batch_{notifiable[0][0].id}"
+            await self._fire_notification(message, notif_id)
+        else:
+            for award, badge, child_name in notifiable:
+                bonus_str = f" (+{award.bonus_credited} pts)" if award.bonus_credited > 0 else ""
+                message = f"{child_name} earned the {badge.name} badge!{bonus_str}"
+                notif_id = f"taskmate_badge_{award.id}"
+                await self._fire_notification(message, notif_id)
+
+    async def _fire_notification(self, message: str, notification_id: str) -> None:
+        """Shared helper: persistent_notification.create + optional notify.* service.
+
+        Mirrors the approval-notification pattern from coord_points._async_fire_approval_notification.
+        """
+        self.hass.async_create_task(
+            self.hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": "TaskMate",
+                    "message": message,
+                    "notification_id": notification_id,
+                },
+                blocking=False,
+            )
+        )
+
+        notify_service = self.storage.get_setting("notify_service", "") if hasattr(self.storage, "get_setting") else ""
+        if notify_service:
+            domain, service = (
+                notify_service.split(".", 1) if "." in notify_service
+                else ("notify", notify_service)
+            )
+            if domain != "notify":
+                return
+            self.hass.async_create_task(
+                self.hass.services.async_call(
+                    "notify",
+                    service,
+                    {"title": "TaskMate", "message": message},
+                    blocking=False,
+                )
+            )

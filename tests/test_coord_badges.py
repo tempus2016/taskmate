@@ -422,3 +422,89 @@ class TestManualOps:
         total = await coord.rebuild_all()
         assert total == 0
         assert coord.storage.get_child.call_count == 2
+
+
+class TestNotifications:
+    async def test_single_award_fires_persistent_notification(self, coord):
+        b = Badge(
+            name="One",
+            criteria=[BadgeCriterion("total_points", ">=", 10)],
+        )
+        b.id = "b1"
+        from custom_components.taskmate.models import Child
+        child = Child(name="Mia", total_points_earned=20)
+        child.id = "c1"
+        coord.storage.get_child.return_value = child
+        coord.storage.get_badge.return_value = b
+        coord.storage.get_badges.return_value = [b]
+        coord.storage.get_reward_claims.return_value = []
+        coord.storage.has_awarded.return_value = False
+        coord.storage.get_awarded_badges_for_child.return_value = []
+        coord.storage.get_setting = MagicMock(return_value="")
+
+        await coord.evaluate_for_child("c1", "points_changed")
+        # persistent_notification was called via async_create_task
+        assert coord.hass.async_create_task.called
+
+    async def test_silent_award_no_notification(self, coord):
+        b = Badge(
+            name="One",
+            criteria=[BadgeCriterion("total_points", ">=", 10)],
+        )
+        b.id = "b1"
+        from custom_components.taskmate.models import Child
+        child = Child(name="Mia", total_points_earned=20); child.id = "c1"
+        coord.storage.get_child.return_value = child
+        coord.storage.get_badge.return_value = b
+        coord.storage.get_badges.return_value = [b]
+        coord.storage.get_reward_claims.return_value = []
+        coord.storage.has_awarded.return_value = False
+        coord.storage.get_awarded_badges_for_child.return_value = []
+        coord.storage.get_setting = MagicMock(return_value="")
+
+        await coord.evaluate_for_child("c1", "manual", silent=True)
+        # No notification call (silent path)
+        coord.hass.async_create_task.assert_not_called()
+
+    async def test_notify_on_earn_false_suppresses_notification(self, coord):
+        b = Badge(
+            name="Quiet",
+            criteria=[BadgeCriterion("total_points", ">=", 10)],
+            notify_on_earn=False,
+        )
+        b.id = "b1"
+        from custom_components.taskmate.models import Child
+        child = Child(name="Mia", total_points_earned=20); child.id = "c1"
+        coord.storage.get_child.return_value = child
+        coord.storage.get_badge.return_value = b
+        coord.storage.get_badges.return_value = [b]
+        coord.storage.get_reward_claims.return_value = []
+        coord.storage.has_awarded.return_value = False
+        coord.storage.get_awarded_badges_for_child.return_value = []
+        coord.storage.get_setting = MagicMock(return_value="")
+
+        await coord.evaluate_for_child("c1", "points_changed")
+        coord.hass.async_create_task.assert_not_called()
+
+    async def test_3_plus_awards_in_one_pass_batched(self, coord):
+        # Three badges all pass at once
+        from custom_components.taskmate.models import Child
+        b1 = Badge(name="A", criteria=[BadgeCriterion("total_points", ">=", 10)]); b1.id = "b1"
+        b2 = Badge(name="B", criteria=[BadgeCriterion("total_points", ">=", 20)]); b2.id = "b2"
+        b3 = Badge(name="C", criteria=[BadgeCriterion("total_points", ">=", 30)]); b3.id = "b3"
+
+        child = Child(name="Mia", total_points_earned=100); child.id = "c1"
+        coord.storage.get_child.return_value = child
+        # get_badge will be called for each notification dispatch — return matching badge
+        def _get_badge(bid):
+            return {"b1": b1, "b2": b2, "b3": b3}.get(bid)
+        coord.storage.get_badge.side_effect = _get_badge
+        coord.storage.get_badges.return_value = [b1, b2, b3]
+        coord.storage.get_reward_claims.return_value = []
+        coord.storage.has_awarded.return_value = False
+        coord.storage.get_awarded_badges_for_child.return_value = []
+        coord.storage.get_setting = MagicMock(return_value="")
+
+        await coord.evaluate_for_child("c1", "points_changed")
+        # Single batched notification, not 3
+        assert coord.hass.async_create_task.call_count == 1
