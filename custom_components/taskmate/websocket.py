@@ -97,6 +97,7 @@ WS_APPROVE_REWARD: Final      = "taskmate/approve_reward"
 WS_REJECT_REWARD: Final       = "taskmate/reject_reward"
 WS_SET_CHORE_ORDER: Final     = "taskmate/set_chore_order"
 WS_ADD_CHORES_BULK: Final     = "taskmate/add_chores_bulk"
+WS_PARENT_COMPLETE_CHORE: Final = "taskmate/parent_complete_chore"
 
 # Templates
 WS_TEMPLATES_LIST: Final       = "taskmate/templates/list"
@@ -167,6 +168,21 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
     completions = list(data.get("completions", []))
     reward_claims = list(data.get("reward_claims", []))
     transactions = list(data.get("points_transactions", []))
+
+    # Compute which chores are currently due for at least one child (parent can complete)
+    parent_completable = {}
+    children = coordinator.storage.get_children()
+    for chore_dict in data.get("chores", []):
+        chore = coordinator.get_chore(chore_dict.get("id", ""))
+        if not chore or not getattr(chore, "enabled", True):
+            continue
+        if getattr(chore, "schedule_mode", "specific_days") == "one_shot":
+            continue
+        for child in children:
+            if coordinator.is_chore_available_for_child(chore, child.id):
+                parent_completable[chore.id] = True
+                break
+
     return {
         "version": "2",
         "children":         list(data.get("children", [])),
@@ -191,6 +207,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
             "points_icon":       data.get("points_icon", "mdi:star"),
             **(data.get("settings", {}) or {}),
         },
+        "parent_completable": parent_completable,
     }
 
 
@@ -853,6 +870,17 @@ async def _ws_reject_reward(hass, connection, msg, coordinator):
 
 
 @websocket_api.websocket_command({
+    vol.Required("type"): WS_PARENT_COMPLETE_CHORE,
+    vol.Required("chore_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_parent_complete_chore(hass, connection, msg, coordinator):
+    await coordinator.async_parent_complete_chore(msg["chore_id"])
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({
     vol.Required("type"): WS_SET_CHORE_ORDER,
     vol.Required("child_id"): str,
     vol.Required("chore_order"): [str],
@@ -1036,6 +1064,7 @@ _COMMANDS = (
     _ws_update_settings,
     _ws_complete_bonus_subtask,
     _ws_approve_chore, _ws_reject_chore, _ws_approve_reward, _ws_reject_reward,
+    _ws_parent_complete_chore,
     _ws_set_chore_order, _ws_add_chores_bulk,
     _ws_templates_list, _ws_templates_get, _ws_templates_apply,
     _ws_templates_save_from, _ws_templates_create, _ws_templates_update,
