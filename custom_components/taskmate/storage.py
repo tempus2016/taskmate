@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
-from .models import Badge, BadgeCriterion, AwardedBadge, Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction, TaskGroup, TimedSession
+from .models import Badge, AwardedBadge, Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction, TaskGroup, TimedSession
 
 _LOGGER = logging.getLogger(__name__)
 

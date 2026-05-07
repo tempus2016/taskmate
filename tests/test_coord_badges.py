@@ -1,11 +1,12 @@
 """Tests for coord_badges."""
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+import pytest
+from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime, timezone
 
-from custom_components.taskmate.coord_badges import BUILTIN_CATALOGUE, resolve_metric, TRIGGER_METRICS, badge_relevant_to_trigger
-from custom_components.taskmate.models import Badge, BadgeCriterion, Child, RewardClaim
+from custom_components.taskmate.coord_badges import BUILTIN_CATALOGUE, BadgeCoordinator, resolve_metric, TRIGGER_METRICS, badge_relevant_to_trigger
+from custom_components.taskmate.models import AwardedBadge, Badge, BadgeCriterion, Child, RewardClaim
 
 
 class TestBuiltinCatalogue:
@@ -151,11 +152,6 @@ class TestTriggerMap:
         assert badge_relevant_to_trigger(b, "made_up") is False
 
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock
-from custom_components.taskmate.coord_badges import BadgeCoordinator
-
-
 @pytest.fixture
 def coord():
     hass = MagicMock()
@@ -180,7 +176,6 @@ class TestBadgeCoordinatorBasic:
 
 class TestEvaluationCore:
     def _setup(self, coord, child_kwargs=None, badges=None, awarded=None):
-        from custom_components.taskmate.models import Child
         kwargs = {
             "name": "Mia",
             "total_points_earned": 0,
@@ -229,7 +224,6 @@ class TestEvaluationCore:
         assert awards == []
 
     async def test_already_awarded_no_double_award(self, coord):
-        from custom_components.taskmate.models import AwardedBadge
         b = Badge(
             name="100 Points",
             criteria=[BadgeCriterion("total_points", ">=", 100)],
@@ -354,7 +348,6 @@ class TestEvaluationCore:
 
 class TestManualOps:
     async def test_award_manually_creates_award(self, coord):
-        from custom_components.taskmate.models import Child
         child = Child(name="Mia")
         child.id = "c1"
         coord.storage.get_child.return_value = child
@@ -372,22 +365,21 @@ class TestManualOps:
     async def test_award_manually_blocks_double(self, coord):
         coord.storage.has_awarded.return_value = True
         coord.storage.get_badge.return_value = Badge(name="x")
-        from custom_components.taskmate.models import Child
-        child = Child(name="Mia"); child.id = "c1"
+        child = Child(name="Mia")
+        child.id = "c1"
         coord.storage.get_child.return_value = child
         award = await coord.award_manually("c1", "b1")
         assert award is None
 
     async def test_award_manually_missing_badge_returns_none(self, coord):
-        from custom_components.taskmate.models import Child
-        child = Child(name="Mia"); child.id = "c1"
+        child = Child(name="Mia")
+        child.id = "c1"
         coord.storage.get_child.return_value = child
         coord.storage.get_badge.return_value = None
         award = await coord.award_manually("c1", "missing")
         assert award is None
 
     async def test_revoke_with_bonus_credited_reverses_points(self, coord):
-        from custom_components.taskmate.models import AwardedBadge
         a = AwardedBadge(child_id="c1", badge_id="b1", bonus_credited=50)
         coord.storage.get_awarded_badges.return_value = [a]
         coord.storage.get_badge.return_value = Badge(name="X")
@@ -398,7 +390,6 @@ class TestManualOps:
         coord.points_coord.remove_points.assert_awaited_once()
 
     async def test_revoke_zero_bonus_no_points_change(self, coord):
-        from custom_components.taskmate.models import AwardedBadge
         a = AwardedBadge(child_id="c1", badge_id="b1", bonus_credited=0)
         coord.storage.get_awarded_badges.return_value = [a]
         coord.storage.get_badge.return_value = Badge(name="X")
@@ -412,9 +403,10 @@ class TestManualOps:
         assert result is False
 
     async def test_rebuild_walks_all_children_silently(self, coord):
-        from custom_components.taskmate.models import Child
-        c1 = Child(name="Mia"); c1.id = "c1"
-        c2 = Child(name="Leo"); c2.id = "c2"
+        c1 = Child(name="Mia")
+        c1.id = "c1"
+        c2 = Child(name="Leo")
+        c2.id = "c2"
         coord.storage.get_children.return_value = [c1, c2]
         coord.storage.get_child.side_effect = lambda i: {"c1": c1, "c2": c2}.get(i)
         coord.storage.get_badges.return_value = []
@@ -431,7 +423,6 @@ class TestNotifications:
             criteria=[BadgeCriterion("total_points", ">=", 10)],
         )
         b.id = "b1"
-        from custom_components.taskmate.models import Child
         child = Child(name="Mia", total_points_earned=20)
         child.id = "c1"
         coord.storage.get_child.return_value = child
@@ -452,8 +443,8 @@ class TestNotifications:
             criteria=[BadgeCriterion("total_points", ">=", 10)],
         )
         b.id = "b1"
-        from custom_components.taskmate.models import Child
-        child = Child(name="Mia", total_points_earned=20); child.id = "c1"
+        child = Child(name="Mia", total_points_earned=20)
+        child.id = "c1"
         coord.storage.get_child.return_value = child
         coord.storage.get_badge.return_value = b
         coord.storage.get_badges.return_value = [b]
@@ -463,7 +454,6 @@ class TestNotifications:
         coord.storage.get_setting = MagicMock(return_value="")
 
         await coord.evaluate_for_child("c1", "manual", silent=True)
-        # No notification call (silent path)
         coord.hass.async_create_task.assert_not_called()
 
     async def test_notify_on_earn_false_suppresses_notification(self, coord):
@@ -473,8 +463,8 @@ class TestNotifications:
             notify_on_earn=False,
         )
         b.id = "b1"
-        from custom_components.taskmate.models import Child
-        child = Child(name="Mia", total_points_earned=20); child.id = "c1"
+        child = Child(name="Mia", total_points_earned=20)
+        child.id = "c1"
         coord.storage.get_child.return_value = child
         coord.storage.get_badge.return_value = b
         coord.storage.get_badges.return_value = [b]
@@ -487,13 +477,15 @@ class TestNotifications:
         coord.hass.async_create_task.assert_not_called()
 
     async def test_3_plus_awards_in_one_pass_batched(self, coord):
-        # Three badges all pass at once
-        from custom_components.taskmate.models import Child
-        b1 = Badge(name="A", criteria=[BadgeCriterion("total_points", ">=", 10)]); b1.id = "b1"
-        b2 = Badge(name="B", criteria=[BadgeCriterion("total_points", ">=", 20)]); b2.id = "b2"
-        b3 = Badge(name="C", criteria=[BadgeCriterion("total_points", ">=", 30)]); b3.id = "b3"
+        b1 = Badge(name="A", criteria=[BadgeCriterion("total_points", ">=", 10)])
+        b1.id = "b1"
+        b2 = Badge(name="B", criteria=[BadgeCriterion("total_points", ">=", 20)])
+        b2.id = "b2"
+        b3 = Badge(name="C", criteria=[BadgeCriterion("total_points", ">=", 30)])
+        b3.id = "b3"
 
-        child = Child(name="Mia", total_points_earned=100); child.id = "c1"
+        child = Child(name="Mia", total_points_earned=100)
+        child.id = "c1"
         coord.storage.get_child.return_value = child
         # get_badge will be called for each notification dispatch — return matching badge
         def _get_badge(bid):
