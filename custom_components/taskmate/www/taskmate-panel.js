@@ -458,9 +458,9 @@ class TaskMatePanel extends HTMLElement {
     if (act === "do-award-badge") { this._doAwardBadge(t.dataset.id, this._dialog?.data?.child_id || ""); return; }
     if (act === "revoke-badge") { this._doRevokeBadge(t.dataset.id, t.dataset.name); return; }
     if (act === "rebuild-badges") { this._doRebuildBadges(); return; }
-    if (act === "badge-add-criterion") { if (this._dialog?.data?.criteria) { this._dialog.data.criteria.push({ metric: "total_points", operator: ">=", value: 1 }); this._render(); } return; }
-    if (act === "badge-remove-criterion") { if (this._dialog?.data?.criteria) { this._dialog.data.criteria.splice(Number(t.dataset.idx), 1); this._render(); } return; }
-    if (act === "badge-toggle-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
+    if (act === "badge-add-criterion") { e.preventDefault(); this._syncIconPickers(); if (this._dialog?.data?.criteria) { this._dialog.data.criteria.push({ metric: "total_points", operator: ">=", value: 1 }); this._render(); } return; }
+    if (act === "badge-remove-criterion") { e.preventDefault(); this._syncIconPickers(); if (this._dialog?.data?.criteria) { this._dialog.data.criteria.splice(Number(t.dataset.idx), 1); this._render(); } return; }
+    if (act === "badge-toggle-assigned") { e.preventDefault(); this._syncIconPickers(); this._toggleArrayField("assigned_to", t.dataset.id); return; }
 
     // Settings
     if (act === "save-settings") { this._doSaveSettings(); return; }
