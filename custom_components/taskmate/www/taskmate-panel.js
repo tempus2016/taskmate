@@ -1603,10 +1603,10 @@ class TaskMatePanel extends HTMLElement {
         <td>${assignedNames} ${modeBadge}</td>
         <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span></td>
         <td>${c.requires_approval ? `<span class='tm-yes'>${this._t("panel.common_yes")}</span>` : `<span class='tm-no'>${this._t("panel.common_no")}</span>`}</td>
-        <td class="tm-row-actions">
+        <td class="tm-row-actions"><div>
           <button class="tm-icon-btn" data-act="edit-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_edit")}">✏</button>
           <button class="tm-icon-btn" data-act="delete-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_delete")}">🗑</button>
-        </td>
+        </div></td>
       </tr>
     `;
   }
@@ -1722,9 +1722,9 @@ class TaskMatePanel extends HTMLElement {
                     title="${b.enabled !== false ? this._t("panel.badge_toggle_disable") : this._t("panel.badge_toggle_enable")}">
                   </button>
                 </td>
-                <td class="tm-row-actions">
+                <td class="tm-row-actions"><div>
                   <button class="tm-icon-btn" data-act="edit-badge" data-id="${this._esc(b.id)}" title="${this._t("panel.badge_edit_btn")}">✏</button>
-                </td>
+                </div></td>
               </tr>
             `).join("")}
           </tbody>
@@ -1763,11 +1763,11 @@ class TaskMatePanel extends HTMLElement {
                     title="${b.enabled !== false ? this._t("panel.badge_toggle_disable") : this._t("panel.badge_toggle_enable")}">
                   </button>
                 </td>
-                <td class="tm-row-actions">
+                <td class="tm-row-actions"><div>
                   <button class="tm-btn tm-btn-sm" data-act="award-badge" data-id="${this._esc(b.id)}">${this._t("panel.badge_award_btn")}</button>
                   <button class="tm-icon-btn" data-act="edit-badge" data-id="${this._esc(b.id)}" title="${this._t("panel.badge_edit_btn")}">✏</button>
                   <button class="tm-icon-btn" data-act="delete-badge" data-id="${this._esc(b.id)}" title="${this._t("panel.badge_delete_btn")}">🗑</button>
-                </td>
+                </div></td>
               </tr>
             `).join("")}
           </tbody>
@@ -1806,9 +1806,9 @@ class TaskMatePanel extends HTMLElement {
                   <td><strong style="color:var(--tm-accent)">${this._esc(child.name || a.child_id)}</strong></td>
                   <td class="tm-meta">${this._esc(when)}</td>
                   <td><span class="tm-badge-src ${srcCls}">${srcLabel}</span></td>
-                  <td class="tm-row-actions">
+                  <td class="tm-row-actions"><div>
                     <button class="tm-btn tm-btn-sm tm-btn-danger" data-act="revoke-badge" data-id="${this._esc(a.id)}" data-name="${this._esc(badge.name || "badge")}">${this._t("panel.badge_revoke_btn")}</button>
-                  </td>
+                  </div></td>
                 </tr>
               `;
             }).join("")}
@@ -2027,11 +2027,11 @@ class TaskMatePanel extends HTMLElement {
                     <td><span class="tm-row-icon">${this._mdi(item.icon)}</span><strong>${this._esc(item.name)}</strong>${this._idBadge(item.id)}${item.description ? `<div class="tm-meta">${this._esc(item.description)}</div>` : ""}</td>
                     <td><strong class="tm-numeric ${kind === "penalty" ? "tm-neg" : "tm-pos"}">${kind === "penalty" ? "−" : "+"}${item.points}</strong></td>
                     <td>${assignedNames}</td>
-                    <td class="tm-row-actions">
+                    <td class="tm-row-actions"><div>
                       <button class="tm-btn tm-btn-sm" data-act="apply-${kind}" data-id="${this._esc(item.id)}">${this._t("panel.btn_apply")}</button>
                       <button class="tm-icon-btn" data-act="edit-${kind}" data-id="${this._esc(item.id)}" title="${this._t("panel.btn_edit")}">✏</button>
                       <button class="tm-icon-btn" data-act="delete-${kind}" data-id="${this._esc(item.id)}" title="${this._t("panel.btn_delete")}">🗑</button>
-                    </td>
+                    </div></td>
                   </tr>
                 `;
               }).join("")}
@@ -3623,7 +3623,8 @@ class TaskMatePanel extends HTMLElement {
       .tm-row:hover { background: var(--tm-surface-hover); }
       .tm-row-disabled { opacity: 0.5; }
       .tm-row-icon { display: inline-flex; vertical-align: middle; margin-right: 10px; opacity: 0.7; --mdc-icon-size: 18px; color: var(--tm-text-muted); }
-      .tm-row-actions { text-align: right; white-space: nowrap; display: flex; gap: 4px; justify-content: flex-end; align-items: center; }
+      .tm-row-actions { text-align: right; white-space: nowrap; }
+      .tm-row-actions > div { display: inline-flex; gap: 4px; align-items: center; }
       .tm-numeric { font-feature-settings: "tnum"; }
       .tm-yes { color: var(--tm-positive); font-weight: 500; }
       .tm-no  { color: var(--tm-text-faint); }
