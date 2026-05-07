@@ -32,6 +32,8 @@ class TaskMateChildCard extends LitElement {
       _celebrating: { type: String },
       _confetti: { type: Array },
       _optimisticCompletions: { type: Object },
+      _earnedBadges: { type: Array },
+      _justEarnedBadge: { type: String },
     };
   }
 
@@ -55,11 +57,22 @@ class TaskMateChildCard extends LitElement {
     // Timer intervals for live counters (timed tasks)
     this._timerInterval = null;
     this._timerTick = 0;
+    // Badge strip state
+    this._earnedBadges = [];
+    this._justEarnedBadge = null;
+    this._badgeEventUnsub = null;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._subscribeBadgeEvents();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this._stopTimerTick();
+    this._badgeEventUnsub?.();
+    this._badgeEventUnsub = null;
   }
 
   updated(changedProperties) {
@@ -85,6 +98,39 @@ class TaskMateChildCard extends LitElement {
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
+  }
+
+  _subscribeBadgeEvents() {
+    if (!this.hass?.connection) return;
+    this.hass.connection.subscribeEvents((event) => {
+      const data = event.data || {};
+      const configChild = this.config?.child_id;
+      if (configChild && data.child_id && String(data.child_id) !== String(configChild)) return;
+      if (data.badge_id) {
+        this._justEarnedBadge = String(data.badge_id);
+        this.requestUpdate();
+        setTimeout(() => { this._justEarnedBadge = null; this.requestUpdate(); }, 1800);
+      }
+    }, "taskmate_badge_earned").then(unsub => {
+      this._badgeEventUnsub = unsub;
+    }).catch(() => {});
+  }
+
+  _tierColor(tier) {
+    return {
+      bronze: '#cd7f32',
+      silver: '#c0c0c0',
+      gold: '#f1c40f',
+      platinum: '#67e8f9',
+    }[tier] || '#888';
+  }
+
+  _openBadgesView() {
+    const slug = this.config?.child_id
+      ? String(this.config.child_id).toLowerCase().replace(/\s+/g, '_')
+      : '';
+    window.history.pushState(null, '', `/taskmate-admin?section=badges${slug ? '&child=' + slug : ''}`);
+    window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
   /**
@@ -1376,6 +1422,48 @@ class TaskMateChildCard extends LitElement {
         white-space: nowrap;
       }
       .cap-label.near-cap { color: var(--fun-red); font-weight: 700; }
+
+      /* ── Badge strip ── */
+      .badge-strip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      }
+      .badge-strip:hover { background: var(--secondary-background-color, rgba(0,0,0,0.03)); }
+      .badge-strip-label {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        margin-right: 2px;
+        white-space: nowrap;
+      }
+      .badge-mini {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        --mdc-icon-size: 16px;
+        color: #1a1a1a;
+        border: 2px solid var(--t);
+        background: var(--t);
+        flex-shrink: 0;
+      }
+      .badge-mini.just-earned { animation: badge-earn-pulse 1.6s ease-out; }
+      @keyframes badge-earn-pulse {
+        0%   { transform: scale(0.6); }
+        50%  { transform: scale(1.15); box-shadow: 0 0 0 12px rgba(255,255,255,0.0); }
+        100% { transform: scale(1); }
+      }
+      .badge-strip-more {
+        font-size: 11px;
+        color: var(--primary-color);
+        margin-left: 2px;
+        white-space: nowrap;
+      }
     `;
   }
 
@@ -1395,6 +1483,7 @@ class TaskMateChildCard extends LitElement {
       elapsed_time_mode: "dim",      // "dim" | "hide" | "show" — chores whose time period has passed without completion
       show_countdown: true,          // Show midnight reset countdown below section title
       show_due_days_only: true,      // Whether to apply due_days filtering at all
+      show_badges: true,             // Show badge strip between points and chores
             header_color: '#9b59b6',
     ...config,
     };
@@ -1485,6 +1574,13 @@ class TaskMateChildCard extends LitElement {
     // Avatar now in children array directly
     const avatar = child.avatar || "mdi:account-circle";
 
+    // Resolve badges sensor entity for this child
+    const childSlug = String(this.config.child_id).toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    const badgesEntityId = `sensor.taskmate_badges_${childSlug}`;
+    const badgesEntity = this.hass.states[badgesEntityId];
+    const earnedBadges = (badgesEntity?.attributes?.earned) || [];
+    const showBadges = this.config.show_badges !== false && earnedBadges.length > 0;
+
     // Get pending points for this child
     const pendingPoints = child.pending_points || 0;
 
@@ -1532,6 +1628,19 @@ class TaskMateChildCard extends LitElement {
             </div>
           </div>
         </div>
+
+        ${showBadges ? html`
+          <div class="badge-strip" @click=${() => this._openBadgesView()} title="Tap to view all badges">
+            <span class="badge-strip-label">${this._t('badges.label') || 'Badges'}</span>
+            ${earnedBadges.slice(0, 5).map(b => html`
+              <div class="badge-mini tier-${b.tier} ${this._justEarnedBadge && String(this._justEarnedBadge) === String(b.id) ? 'just-earned' : ''}"
+                style="--t: ${this._tierColor(b.tier)}">
+                <ha-icon icon="${b.icon || 'mdi:medal'}"></ha-icon>
+              </div>
+            `)}
+            ${earnedBadges.length > 5 ? html`<span class="badge-strip-more">+${earnedBadges.length - 5} →</span>` : ''}
+          </div>
+        ` : ''}
 
         <div class="chores-container">
           ${childChores.length === 0
