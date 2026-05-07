@@ -22,6 +22,7 @@ class TaskMateRewardsCard extends LitElement {
       config: { type: Object },
       _loading: { type: Object },
       _selectedChildId: { type: String },
+      _pendingClaim: { type: Object },
     };
   }
 
@@ -36,6 +37,7 @@ class TaskMateRewardsCard extends LitElement {
     super();
     this._loading = {};
     this._selectedChildId = null;
+    this._pendingClaim = null;
   }
 
   _t(key, params) {
@@ -795,6 +797,107 @@ class TaskMateRewardsCard extends LitElement {
         font-style: italic;
         margin-top: 4px;
       }
+
+      .confirm-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      .confirm-dialog {
+        background: var(--card-background-color, #fff);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 320px;
+        width: 90%;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .confirm-dialog .dialog-icon {
+        display: flex;
+        justify-content: center;
+        --mdc-icon-size: 48px;
+        color: var(--reward-purple);
+      }
+      .confirm-dialog .dialog-title {
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        text-align: center;
+      }
+      .confirm-dialog .dialog-body {
+        font-size: 0.9rem;
+        color: var(--secondary-text-color);
+        text-align: center;
+        line-height: 1.5;
+      }
+      .confirm-dialog .dialog-buttons {
+        display: flex;
+        gap: 10px;
+      }
+      .confirm-dialog button {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      .confirm-dialog button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      .confirm-dialog button:active {
+        transform: scale(0.97);
+      }
+      .confirm-dialog .btn-cancel {
+        background: var(--secondary-background-color, #f5f5f5);
+        color: var(--primary-text-color);
+      }
+      .confirm-dialog .btn-confirm {
+        background: linear-gradient(135deg, var(--reward-purple) 0%, var(--reward-purple-light) 100%);
+        color: white;
+      }
+      .dialog-points-summary {
+        background: var(--secondary-background-color, #f5f5f5);
+        border-radius: 8px;
+        padding: 10px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 0.9rem;
+        text-align: left;
+      }
+      .dialog-points-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--primary-text-color);
+      }
+      .dialog-points-row.cost {
+        color: var(--secondary-text-color);
+        border-top: 1px solid var(--divider-color, #e0e0e0);
+        padding-top: 6px;
+      }
+      .dialog-points-row.remaining {
+        font-weight: 700;
+        border-top: 1px solid var(--divider-color, #e0e0e0);
+        padding-top: 6px;
+        color: var(--reward-purple);
+      }
+      .points-val {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        font-weight: 600;
+      }
     `;
   }
 
@@ -912,6 +1015,56 @@ class TaskMateRewardsCard extends LitElement {
             : sortedRewards.map((reward) => this._renderRewardRow(reward, pointsIcon, pointsName, childMap, children))}
         </div>
       </ha-card>
+
+      ${this._pendingClaim ? html`
+        <div class="confirm-overlay" @click="${this._cancelClaim}">
+          <div class="confirm-dialog" @click="${(e) => e.stopPropagation()}">
+            <ha-icon class="dialog-icon" icon="mdi:gift-outline"></ha-icon>
+            <div class="dialog-title">${this._t('rewards.confirm_title')}</div>
+            <div class="dialog-body">
+              ${(() => {
+                const r = this._pendingClaim;
+                const child = r._child;
+                const currentPoints = child ? (typeof child.spendable_balance === 'number' ? child.spendable_balance : (child.points || 0)) : null;
+                const cost = r.cost;
+                const remaining = currentPoints !== null ? currentPoints - cost : null;
+                return html`
+                  <div style="margin-bottom: 12px;">${this._t('rewards.confirm_body', { name: r.name })}</div>
+                  ${currentPoints !== null ? html`
+                    <div class="dialog-points-summary">
+                      <div class="dialog-points-row">
+                        <span>${this._t('rewards.confirm_your_points', { name: pointsName })}</span>
+                        <span class="points-val">
+                          <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
+                          ${currentPoints}
+                        </span>
+                      </div>
+                      <div class="dialog-points-row cost">
+                        <span>${this._t('rewards.confirm_cost')}</span>
+                        <span class="points-val">
+                          <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
+                          −${cost}
+                        </span>
+                      </div>
+                      <div class="dialog-points-row remaining">
+                        <span>${this._t('rewards.confirm_remaining')}</span>
+                        <span class="points-val">
+                          <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
+                          ${remaining}
+                        </span>
+                      </div>
+                    </div>
+                  ` : ''}
+                `;
+              })()}
+            </div>
+            <div class="dialog-buttons">
+              <button class="btn-cancel" @click="${this._cancelClaim}">${this._t('common.cancel')}</button>
+              <button class="btn-confirm" @click="${this._confirmClaim}">${this._t('rewards.confirm_claim_btn')}</button>
+            </div>
+          </div>
+        </div>
+      ` : ""}
     `;
   }
 
@@ -1097,7 +1250,7 @@ class TaskMateRewardsCard extends LitElement {
             <button
               class="claim-btn ${!canAfford ? 'cant-afford' : ''}"
               ?disabled="${!canAfford || isLoading}"
-              @click="${(e) => { e.stopPropagation(); this._handleClaim(reward, relevantChild); }}"
+              @click="${(e) => { e.stopPropagation(); this._promptClaim(reward, relevantChild); }}"
               title="${canAfford ? this._t('rewards.claim_reward') : this._t('rewards.not_enough_points')}"
             >
               <ha-icon icon="${isLoading ? 'mdi:loading' : rewardIcon}"></ha-icon>
@@ -1180,6 +1333,23 @@ class TaskMateRewardsCard extends LitElement {
     return this._t('rewards.deposit_points', { amount: amt });
   }
 
+  _promptClaim(reward, child) {
+    if (!child || !reward) return;
+    this._pendingClaim = { ...reward, _child: child };
+  }
+
+  _cancelClaim() {
+    this._pendingClaim = null;
+  }
+
+  async _confirmClaim() {
+    const pending = this._pendingClaim;
+    if (!pending) return;
+    const child = pending._child;
+    this._pendingClaim = null;
+    return this._handleClaim(pending, child);
+  }
+
   async _handleClaim(reward, child) {
     if (!child || !reward) return;
     this._loading = { ...this._loading, [reward.id]: true };
@@ -1246,9 +1416,7 @@ class TaskMateRewardsCard extends LitElement {
   }
 
   async _handleRedeem(reward, child) {
-    // "Redeem" is implemented via the existing claim_reward service — the coordinator
-    // detects pool-mode automatically based on the allocation record.
-    return this._handleClaim(reward, child);
+    return this._promptClaim(reward, child);
   }
 
   _renderRegularProgress(currentStars, cost, percentage, pointsIcon) {
