@@ -184,6 +184,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "reward_claims":        reward_claims,
         "pending_reward_claims": [c for c in reward_claims if not c.get("approved")],
         "points_transactions":  transactions[-100:],   # most recent 100 for audit log
+        "badges":        list(data.get("badges", [])),
+        "awarded_badges": list(data.get("awarded_badges", [])),
         "settings": {
             "points_name":       data.get("points_name", "Stars"),
             "points_icon":       data.get("points_icon", "mdi:star"),

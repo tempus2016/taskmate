@@ -30,6 +30,7 @@
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Penalties](#penalties)
+- [Achievement Badges](#achievement-badges)
 - [Timed Tasks](#timed-tasks)
 - [Task Groups](#task-groups)
 - [Pool Mode (Savings Jars)](#pool-mode-savings-jars)
@@ -355,6 +356,94 @@ data:
   penalty_id: abc12345    # see Finding IDs
   child_id: a8c8376a
 ```
+
+---
+
+## Achievement Badges
+
+Milestone-based recognition layered on top of the existing chores / streak / reward systems. 15 built-in badges across four tiers (Bronze / Silver / Gold / Platinum), plus full support for parent-created custom badges with multi-criterion AND rules.
+
+### Built-in Catalogue
+
+| Tier | Examples |
+|---|---|
+| Bronze | First Chore, First Reward, 100 Points, 10 Chores Completed |
+| Silver | 500 Points, 50 Chores, 3-Day Streak, First Perfect Week |
+| Gold | 1000 Points, 100 Chores, 7-Day Streak, 5 Perfect Weeks |
+| Platinum | 5000 Points, 30-Day Streak, 10 Perfect Weeks |
+
+Built-ins can be enabled / disabled and have their `point_bonus`, tier, assignment, and notify-on-earn edited. Their criteria, name, description, and icon are frozen so installs stay consistent.
+
+### Custom Badges
+
+Define your own with any combination of metric thresholds (AND-evaluated):
+
+- `total_points` ≥ N
+- `total_chores` ≥ N
+- `total_rewards` ≥ N
+- `current_streak` ≥ N
+- `best_streak` ≥ N
+- `perfect_weeks` ≥ N
+- `first_chore` (1 = earned on first completion)
+- `first_reward` (1 = earned on first reward claim)
+
+Empty criteria = manual-award only (parent presses "Award to..." to grant it).
+
+### Display
+
+- **`taskmate-badges-card`** — full grid view per child. Earned tiles in tier colour, locked tiles greyed with progress bars showing closest-criterion completion percentage.
+- **`taskmate-child-card`** — inline strip of up to 5 most-recently-earned badges below the points readout (auto-hidden when zero earned). Tap → opens the admin panel's badges section. Disable with `show_badges: false`.
+- **Admin panel — Badges section** — Catalogue / Custom / Award History tabs. Award History shows AUTO / MANUAL / SILENT source pills and supports one-click revoke (auto-reverses any point bonus credited).
+
+### Sensor
+
+Each child gets `sensor.taskmate_badges_<slug>`:
+- State: count of earned badges
+- Attributes: `earned[]` (with `earned_at`, `tier`, etc.), `available[]` (with `progress_pct`), `total_badges`
+
+### Retroactive Backfill
+
+On first install of v3.8.0, existing kids get badges silently retroactive-awarded for milestones they've already passed (e.g. a kid with 200 points instantly has the "100 Points" badge). Silent backfill never fires notifications and never credits `point_bonus` — the feature works on day one without point inflation.
+
+The `taskmate.rebuild_badges` service re-runs this sweep on demand (e.g. after enabling a previously-disabled built-in).
+
+### Notifications
+
+Persistent HA notification + optional mobile push when a badge auto-earns. Per-badge `notify_on_earn` toggle (default true). When 3+ badges earn in a single evaluation, notifications batch into a single combined message.
+
+### Services
+
+```yaml
+# Add a custom badge
+service: taskmate.add_badge
+data:
+  name: "Holiday Helper"
+  description: "Earned for big effort during school holidays"
+  icon: mdi:beach
+  tier: silver
+  point_bonus: 30
+  criteria:
+    - { metric: total_chores, operator: ">=", value: 20 }
+    - { metric: current_streak, operator: ">=", value: 3 }
+  assigned_to: [c1, c2]            # empty = all kids
+  notify_on_earn: true
+
+# Manually award a badge
+service: taskmate.award_badge_manually
+data:
+  badge_id: abc12345
+  child_id: a8c8376a
+
+# Revoke an awarded badge (reverses any point_bonus that was credited)
+service: taskmate.revoke_badge
+data:
+  awarded_badge_id: xyz98765       # see the panel's Award History tab
+
+# Re-evaluate all badges across all children silently
+service: taskmate.rebuild_badges
+```
+
+Other services: `taskmate.update_badge`, `taskmate.remove_badge` (custom only — built-ins protected).
 
 ---
 

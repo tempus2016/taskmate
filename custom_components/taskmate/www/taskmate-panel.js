@@ -21,8 +21,27 @@ const TABS = [
   { id: "penalties", lk: "panel.tab_penalties" },
   { id: "bonuses",   lk: "panel.tab_bonuses" },
   { id: "groups",    lk: "panel.tab_groups" },
+  { id: "badges",    lk: "panel.tab_badges" },
   { id: "templates", lk: "panel.tab_templates" },
   { id: "settings",  lk: "panel.tab_settings", label: "⚙" },
+];
+
+const BADGE_METRICS = [
+  { v: "total_points",  l: "Total points" },
+  { v: "total_chores",  l: "Total chores" },
+  { v: "total_rewards", l: "Total rewards" },
+  { v: "current_streak", l: "Current streak" },
+  { v: "best_streak",   l: "Best streak" },
+  { v: "perfect_weeks", l: "Perfect weeks" },
+  { v: "first_chore",   l: "First chore (bool)" },
+  { v: "first_reward",  l: "First reward (bool)" },
+];
+const BADGE_BOOL_METRICS = ["first_chore", "first_reward"];
+const BADGE_TIERS = [
+  { v: "bronze",   l: "Bronze" },
+  { v: "silver",   l: "Silver" },
+  { v: "gold",     l: "Gold" },
+  { v: "platinum", l: "Platinum" },
 ];
 
 const TIME_CATEGORIES = [
@@ -114,6 +133,7 @@ class TaskMatePanel extends HTMLElement {
     this._templateSelected = null;   // selected template object
     this._templateChores = [];       // editable chores for preview step
     this._saveTemplateDialog = false; // "save as template" dialog state
+    this._badgesSubTab = "catalogue"; // "catalogue" | "custom" | "history"
     this._rendered = false;
     this._onFocusIn = this._onFocusIn.bind(this);
     this._onClick = this._onClick.bind(this);
@@ -427,6 +447,21 @@ class TaskMatePanel extends HTMLElement {
     if (act === "save-group")   { this._doSaveGroup(); return; }
     if (act === "toggle-group-chore") { this._toggleArrayField("chore_ids", t.dataset.id); return; }
 
+    // Badges
+    if (act === "badges-subtab") { this._badgesSubTab = t.dataset.sub; this._render(); return; }
+    if (act === "add-badge")    { this._openBadgeDialog(null); return; }
+    if (act === "edit-badge")   { this._openBadgeDialog(t.dataset.id); return; }
+    if (act === "delete-badge") { this._confirmDeleteBadge(t.dataset.id); return; }
+    if (act === "save-badge")   { this._doSaveBadge(); return; }
+    if (act === "toggle-badge-enabled") { this._doToggleBadgeEnabled(t.dataset.id, t.dataset.enabled === "true"); return; }
+    if (act === "award-badge")  { this._openAwardDialog(t.dataset.id); return; }
+    if (act === "do-award-badge") { this._doAwardBadge(t.dataset.id, this._dialog?.data?.child_id || ""); return; }
+    if (act === "revoke-badge") { this._doRevokeBadge(t.dataset.id, t.dataset.name); return; }
+    if (act === "rebuild-badges") { this._doRebuildBadges(); return; }
+    if (act === "badge-add-criterion") { if (this._dialog?.data?.criteria) { this._dialog.data.criteria.push({ metric: "total_points", operator: ">=", value: 1 }); this._render(); } return; }
+    if (act === "badge-remove-criterion") { if (this._dialog?.data?.criteria) { this._dialog.data.criteria.splice(Number(t.dataset.idx), 1); this._render(); } return; }
+    if (act === "badge-toggle-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
+
     // Settings
     if (act === "save-settings") { this._doSaveSettings(); return; }
 
@@ -494,6 +529,15 @@ class TaskMatePanel extends HTMLElement {
       this._dialog.data.chores[Number(dIdx)][dField] = value;
       return;
     }
+    // Badge criterion field edits
+    const bcField = t.dataset?.badgeCriterionField;
+    const bcIdx = t.dataset?.badgeCriterionIdx;
+    if (bcField && bcIdx != null && this._dialog?.data?.criteria?.[Number(bcIdx)]) {
+      const val = (t.type === "number") ? (t.value === "" ? 1 : Number(t.value)) : t.value;
+      this._dialog.data.criteria[Number(bcIdx)][bcField] = val;
+      if (bcField === "metric") this._render(); // re-render to show/hide value input for bool metrics
+      return;
+    }
     // Dialog field
     if (this._dialog && t.dataset.field) {
       const field = t.dataset.field;
@@ -518,6 +562,14 @@ class TaskMatePanel extends HTMLElement {
       this._showIds = t.checked;
       localStorage.setItem("taskmate-show-ids", this._showIds);
       this._render();
+      return;
+    }
+    // Badge criterion select changes
+    const bcField2 = t.dataset?.badgeCriterionField;
+    const bcIdx2 = t.dataset?.badgeCriterionIdx;
+    if (bcField2 && bcIdx2 != null && this._dialog?.data?.criteria?.[Number(bcIdx2)]) {
+      this._dialog.data.criteria[Number(bcIdx2)][bcField2] = t.value;
+      if (bcField2 === "metric") this._render();
       return;
     }
     // Template preview chore field changes (selects)
@@ -1149,6 +1201,7 @@ class TaskMatePanel extends HTMLElement {
         { id: "penalties", label: this._t("panel.tab_penalties"), icon: "mdi:alert-circle-outline" },
         { id: "bonuses",   label: this._t("panel.tab_bonuses"),   icon: "mdi:flash-outline" },
         { id: "groups",    label: this._t("panel.tab_groups"),    icon: "mdi:layers-outline" },
+        { id: "badges",    label: "Badges",                        icon: "mdi:medal-outline" },
         { id: "templates", label: this._t("panel.tab_templates"), icon: "mdi:clipboard-list-outline" },
       ]},
       { head: this._t("panel.nav_system"), items: [
@@ -1274,6 +1327,7 @@ class TaskMatePanel extends HTMLElement {
       case "penalties": return this._renderPenBonTab("penalty");
       case "bonuses":   return this._renderPenBonTab("bonus");
       case "groups":    return this._renderGroupsTab();
+      case "badges":    return this._renderBadgesTab();
       case "templates": return this._renderTemplatesTab();
       case "settings":  return this._renderSettingsTab();
       default:          return `<div class="tm-card">${this._t("panel.tab_unknown")}</div>`;
@@ -1607,6 +1661,343 @@ class TaskMatePanel extends HTMLElement {
         </div>
       </article>
     `;
+  }
+
+  // -- Badges tab --------------------------------------------------------
+  _renderBadgesTab() {
+    const allBadges = this._state.badges || [];
+    const sub = this._badgesSubTab || "catalogue";
+    const catalogueCount = allBadges.filter(b => b.builtin).length;
+    const customCount = allBadges.filter(b => !b.builtin).length;
+    const subTabs = [
+      { id: "catalogue", label: `Catalogue (${catalogueCount})` },
+      { id: "custom",    label: `Custom (${customCount})` },
+      { id: "history",   label: "History" },
+    ];
+    return `
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">Badges <span class="tm-toolbar-count">${allBadges.length}</span></h2>
+        ${sub === "custom" ? `<button class="tm-btn tm-btn-raised" data-act="add-badge">+ Add custom badge</button>` : ""}
+      </div>
+      <div class="tm-badge-subtabs">
+        ${subTabs.map(s => `<button class="tm-badge-subtab${sub === s.id ? " tm-badge-subtab-active" : ""}" data-act="badges-subtab" data-sub="${s.id}">${this._esc(s.label)}</button>`).join("")}
+      </div>
+      ${sub === "catalogue" ? this._renderBadgeCatalogueTab(allBadges) : ""}
+      ${sub === "custom"    ? this._renderBadgeCustomTab(allBadges) : ""}
+      ${sub === "history"   ? this._renderBadgeHistoryTab() : ""}
+    `;
+  }
+
+  _tierClass(tier) {
+    return `tm-badge-tier-${(tier || "bronze").toLowerCase()}`;
+  }
+
+  _criteriaLabel(criteria) {
+    if (!criteria || !criteria.length) return "Manual award only";
+    return criteria.map(c => `${c.metric} ≥ ${c.value}`).join(" AND ");
+  }
+
+  _renderBadgeCatalogueTab(allBadges) {
+    const builtins = allBadges.filter(b => b.builtin);
+    if (!builtins.length) return `<div class="tm-card tm-empty"><p>No built-in badges found.</p></div>`;
+    return `
+      <div class="tm-table-wrap">
+        <table class="tm-table">
+          <thead><tr><th>Badge</th><th>Tier</th><th>Criteria</th><th>Bonus</th><th>Enabled</th><th></th></tr></thead>
+          <tbody>
+            ${builtins.map(b => `
+              <tr class="tm-row tm-badge-row ${this._tierClass(b.tier)}">
+                <td>
+                  <div class="tm-badge-icon-sm">${this._mdi(b.icon)}</div>
+                  <span style="margin-left:8px"><strong>${this._esc(b.name)}</strong>
+                  <span class="tm-pill" style="background:var(--tm-surface-2);font-size:10px;margin-left:4px">Built-in</span></span>
+                  ${b.description ? `<div class="tm-meta">${this._esc(b.description)}</div>` : ""}
+                </td>
+                <td><span class="tm-badge-tier-label">${this._esc(b.tier || "bronze")}</span></td>
+                <td><code class="tm-badge-criteria">${this._esc(this._criteriaLabel(b.criteria))}</code></td>
+                <td><strong class="${b.point_bonus ? "tm-pos" : "tm-text-muted"}">${b.point_bonus ? `+${b.point_bonus}` : "—"}</strong></td>
+                <td>
+                  <button class="tm-badge-toggle${b.enabled !== false ? " tm-badge-toggle-on" : ""}"
+                    data-act="toggle-badge-enabled" data-id="${this._esc(b.id)}" data-enabled="${b.enabled !== false}"
+                    title="${b.enabled !== false ? "Disable" : "Enable"}">
+                  </button>
+                </td>
+                <td class="tm-row-actions">
+                  <button class="tm-icon-btn" data-act="edit-badge" data-id="${this._esc(b.id)}" title="Edit">✏</button>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  _renderBadgeCustomTab(allBadges) {
+    const customs = allBadges.filter(b => !b.builtin);
+    if (!customs.length) return `
+      <div class="tm-card tm-empty" style="text-align:center;padding:32px">
+        <p style="font-size:24px;margin-bottom:8px">🏅</p>
+        <p style="font-weight:600;margin-bottom:4px">No custom badges yet</p>
+        <p class="tm-meta" style="margin-bottom:16px">Create your own badges with custom criteria or for manual awarding.</p>
+        <button class="tm-btn tm-btn-raised" data-act="add-badge">+ Add custom badge</button>
+      </div>`;
+    return `
+      <div class="tm-table-wrap">
+        <table class="tm-table">
+          <thead><tr><th>Badge</th><th>Tier</th><th>Criteria</th><th>Bonus</th><th>Enabled</th><th></th></tr></thead>
+          <tbody>
+            ${customs.map(b => `
+              <tr class="tm-row tm-badge-row ${this._tierClass(b.tier)}">
+                <td>
+                  <div class="tm-badge-icon-sm">${this._mdi(b.icon || "mdi:medal")}</div>
+                  <span style="margin-left:8px"><strong>${this._esc(b.name)}</strong></span>
+                  ${b.description ? `<div class="tm-meta">${this._esc(b.description)}</div>` : ""}
+                </td>
+                <td><span class="tm-badge-tier-label">${this._esc(b.tier || "bronze")}</span></td>
+                <td><code class="tm-badge-criteria">${this._esc(this._criteriaLabel(b.criteria))}</code></td>
+                <td><strong class="${b.point_bonus ? "tm-pos" : "tm-text-muted"}">${b.point_bonus ? `+${b.point_bonus}` : "—"}</strong></td>
+                <td>
+                  <button class="tm-badge-toggle${b.enabled !== false ? " tm-badge-toggle-on" : ""}"
+                    data-act="toggle-badge-enabled" data-id="${this._esc(b.id)}" data-enabled="${b.enabled !== false}"
+                    title="${b.enabled !== false ? "Disable" : "Enable"}">
+                  </button>
+                </td>
+                <td class="tm-row-actions">
+                  <button class="tm-btn tm-btn-sm" data-act="award-badge" data-id="${this._esc(b.id)}">Award</button>
+                  <button class="tm-icon-btn" data-act="edit-badge" data-id="${this._esc(b.id)}" title="Edit">✏</button>
+                  <button class="tm-icon-btn" data-act="delete-badge" data-id="${this._esc(b.id)}" title="Delete">🗑</button>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  _renderBadgeHistoryTab() {
+    const awards = (this._state.awarded_badges || []).slice().sort((a, b) => (b.earned_at || "").localeCompare(a.earned_at || ""));
+    const badgeById = Object.fromEntries((this._state.badges || []).map(b => [b.id, b]));
+    const childById = Object.fromEntries((this._state.children || []).map(c => [c.id, c]));
+    const rebuildBtn = `<button class="tm-btn" data-act="rebuild-badges" title="Re-evaluate all badges silently (no notifications)">Rebuild Badges</button>`;
+    if (!awards.length) return `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">${rebuildBtn}</div>
+      <div class="tm-card tm-empty"><p>No badges have been awarded yet.</p></div>`;
+    return `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">${rebuildBtn}</div>
+      <div class="tm-table-wrap">
+        <table class="tm-table">
+          <thead><tr><th>Badge</th><th>Child</th><th>When</th><th>Source</th><th></th></tr></thead>
+          <tbody>
+            ${awards.map(a => {
+              const badge = badgeById[a.badge_id] || {};
+              const child = childById[a.child_id] || {};
+              const tierCls = this._tierClass(badge.tier || "bronze");
+              const srcLabel = a.silent ? "SILENT" : a.manually_awarded ? "MANUAL" : "AUTO";
+              const srcCls = a.silent ? "tm-badge-src-silent" : a.manually_awarded ? "tm-badge-src-manual" : "tm-badge-src-auto";
+              const when = a.earned_at ? new Date(a.earned_at).toLocaleString() : "—";
+              return `
+                <tr class="tm-row tm-badge-row ${tierCls}">
+                  <td>
+                    <div class="tm-badge-icon-sm">${this._mdi(badge.icon || "mdi:medal")}</div>
+                    <span style="margin-left:8px"><strong>${this._esc(badge.name || a.badge_id)}</strong></span>
+                  </td>
+                  <td><strong style="color:var(--tm-accent)">${this._esc(child.name || a.child_id)}</strong></td>
+                  <td class="tm-meta">${this._esc(when)}</td>
+                  <td><span class="tm-badge-src ${srcCls}">${srcLabel}</span></td>
+                  <td class="tm-row-actions">
+                    <button class="tm-btn tm-btn-sm tm-btn-danger" data-act="revoke-badge" data-id="${this._esc(a.id)}" data-name="${this._esc(badge.name || "badge")}">Revoke</button>
+                  </td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // Badge dialog open/save/delete
+  _openBadgeDialog(id) {
+    const blank = { name: "", description: "", icon: "mdi:medal", tier: "bronze", point_bonus: 0, notify_on_earn: true, assigned_to: [], criteria: [], builtin: false };
+    if (id) {
+      const b = (this._state.badges || []).find(x => x.id === id);
+      if (!b) return;
+      this._openDialog({ kind: "badge", mode: "edit", data: { ...blank, ...b, assigned_to: [...(b.assigned_to || [])], criteria: (b.criteria || []).map(c => ({ ...c })) } });
+    } else {
+      this._openDialog({ kind: "badge", mode: "add", data: { ...blank } });
+    }
+  }
+
+  async _doSaveBadge() {
+    this._syncIconPickers();
+    const d = this._dialog.data;
+    if (!d.name || !d.name.trim()) { this._showToast("err", "Name is required"); return; }
+    // validate criteria values
+    for (const c of (d.criteria || [])) {
+      if (!BADGE_BOOL_METRICS.includes(c.metric) && (!c.value || Number(c.value) < 1)) {
+        this._showToast("err", "Criterion value must be ≥ 1"); return;
+      }
+    }
+    const wasAdd = this._dialog.mode === "add";
+    const base = {
+      name: d.name.trim(),
+      description: d.description || "",
+      icon: d.icon || "mdi:medal",
+      tier: d.tier || "bronze",
+      point_bonus: Number(d.point_bonus) || 0,
+      notify_on_earn: d.notify_on_earn !== false && d.notify_on_earn !== "false",
+      assigned_to: d.assigned_to || [],
+      criteria: (d.criteria || []).map(c => ({
+        metric: c.metric,
+        operator: ">=",
+        value: BADGE_BOOL_METRICS.includes(c.metric) ? 1 : Number(c.value),
+      })),
+    };
+    let ok, err;
+    if (wasAdd) {
+      ({ ok, err } = await this._callService("add_badge", base));
+    } else {
+      ({ ok, err } = await this._callService("update_badge", { badge_id: d.id, ...base }));
+    }
+    if (!ok) { this._showToast("err", `Save failed: ${err}`); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", wasAdd ? "Badge added" : "Badge updated");
+  }
+
+  async _confirmDeleteBadge(id) {
+    const b = (this._state.badges || []).find(x => x.id === id);
+    if (!b) return;
+    if (!confirm(`Delete badge "${b.name}"? This cannot be undone.`)) return;
+    const { ok, err } = await this._callService("remove_badge", { badge_id: id });
+    if (!ok) { this._showToast("err", `Delete failed: ${err}`); return; }
+    await this._fetchState();
+    this._showToast("ok", "Badge deleted");
+  }
+
+  async _doToggleBadgeEnabled(id, currentlyEnabled) {
+    const { ok, err } = await this._callService("update_badge", { badge_id: id, enabled: !currentlyEnabled });
+    if (!ok) { this._showToast("err", `Update failed: ${err}`); return; }
+    await this._fetchState();
+  }
+
+  _openAwardDialog(badgeId) {
+    const b = (this._state.badges || []).find(x => x.id === badgeId);
+    if (!b) return;
+    this._openDialog({ kind: "award-badge", mode: "award", data: { badge_id: badgeId, badge_name: b.name, child_id: "" } });
+  }
+
+  async _doAwardBadge(badgeId, childId) {
+    if (!childId) { this._showToast("err", "Select a child"); return; }
+    const { ok, err } = await this._callService("award_badge_manually", { badge_id: badgeId, child_id: childId });
+    if (!ok) { this._showToast("err", `Award failed: ${err}`); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", "Badge awarded");
+  }
+
+  async _doRevokeBadge(awardedBadgeId, badgeName) {
+    if (!confirm(`Revoke badge "${badgeName}"? Any point bonus will be reversed.`)) return;
+    const { ok, err } = await this._callService("revoke_badge", { awarded_badge_id: awardedBadgeId });
+    if (!ok) { this._showToast("err", `Revoke failed: ${err}`); return; }
+    await this._fetchState();
+    this._showToast("ok", "Badge revoked");
+  }
+
+  async _doRebuildBadges() {
+    if (!confirm("Run a silent retroactive badge sweep across all children? No notifications or point bonuses will be sent.")) return;
+    const { ok, err } = await this._callService("rebuild_badges", {});
+    if (!ok) { this._showToast("err", `Rebuild failed: ${err}`); return; }
+    await this._fetchState();
+    this._showToast("ok", "Badges rebuilt");
+  }
+
+  async _callService(service, data = {}) {
+    try {
+      await this._hass.callService("taskmate", service, data);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, err: (err && err.message) || String(err) };
+    }
+  }
+
+  // Badge dialog renders
+  _renderBadgeDialog() {
+    const d = this._dialog.data;
+    const isBuiltin = !!d.builtin;
+    const children = this._state.children || [];
+    const title = this._dialog.mode === "add" ? "Add Custom Badge" : `Edit Badge — ${d.name}`;
+    const criteria = d.criteria || [];
+    return this._dialogShell(title,
+      [
+        isBuiltin ? `<div class="tm-field"><span class="tm-pill" style="background:var(--tm-surface-2)">Built-in — only point bonus, tier, assigned to, and notify can be changed</span></div>` : "",
+        !isBuiltin ? this._field("Name", "name", d.name, "text") : "",
+        !isBuiltin ? this._field("Description", "description", d.description, "text") : "",
+        `<div class="tm-field-row">
+          ${!isBuiltin ? this._iconPickerField("Icon", "icon", d.icon) : ""}
+          ${this._select("Tier", "tier", d.tier || "bronze", BADGE_TIERS)}
+        </div>`,
+        `<div class="tm-field-row">
+          ${this._field("Point Bonus", "point_bonus", d.point_bonus || 0, "number")}
+          ${this._select("Notify on Earn", "notify_on_earn", d.notify_on_earn !== false ? "true" : "false", [{ v: "true", l: "Yes" }, { v: "false", l: "No" }])}
+        </div>`,
+        children.length > 0 ? `
+          <div class="tm-field">
+            <span class="tm-field-label">Assigned to</span>
+            <div class="tm-chip-row">
+              ${children.map(c => `
+                <button type="button" class="tm-chip-btn ${(d.assigned_to || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="badge-toggle-assigned" data-id="${this._esc(c.id)}">
+                  ${this._esc(c.name)}
+                </button>
+              `).join("")}
+            </div>
+            <span class="tm-field-hint">Leave all unselected for all children</span>
+          </div>
+        ` : "",
+        !isBuiltin ? `
+          <div class="tm-field">
+            <span class="tm-field-label">Criteria — Award when ALL are true</span>
+            <div class="tm-badge-criteria-block">
+              ${criteria.length === 0 ? `<p class="tm-field-hint" style="margin:0 0 8px">No criteria — this badge will be manual-award only.</p>` : ""}
+              ${criteria.map((c, idx) => {
+                const isBool = BADGE_BOOL_METRICS.includes(c.metric);
+                return `
+                  <div class="tm-badge-criterion-row">
+                    <select class="tm-select" data-badge-criterion-field="metric" data-badge-criterion-idx="${idx}">
+                      ${BADGE_METRICS.map(m => `<option value="${m.v}"${c.metric === m.v ? " selected" : ""}>${m.l}</option>`).join("")}
+                    </select>
+                    <span class="tm-badge-op">≥</span>
+                    ${isBool ? `<span class="tm-field-hint" style="flex:1">true</span>` : `<input class="tm-input" type="number" min="1" value="${c.value || 1}" data-badge-criterion-field="value" data-badge-criterion-idx="${idx}">`}
+                    <button type="button" class="tm-icon-btn" data-act="badge-remove-criterion" data-idx="${idx}" title="Remove">✕</button>
+                  </div>
+                `;
+              }).join("")}
+              <button type="button" class="tm-btn" data-act="badge-add-criterion" style="margin-top:6px;width:100%;border-style:dashed">+ Add criterion</button>
+            </div>
+          </div>
+        ` : "",
+      ].join(""),
+      `<button class="tm-btn" data-act="close-dialog">Cancel</button>
+       <button class="tm-btn tm-btn-raised" data-act="save-badge">Save badge</button>`
+    );
+  }
+
+  _renderAwardDialog() {
+    const d = this._dialog.data;
+    const children = this._state.children || [];
+    return this._dialogShell(`Award "${d.badge_name}"`,
+      `<div class="tm-field">
+        <span class="tm-field-label">Award to</span>
+        <select class="tm-select" data-field="child_id">
+          <option value="">— Select child —</option>
+          ${children.map(c => `<option value="${this._esc(c.id)}">${this._esc(c.name)}</option>`).join("")}
+        </select>
+      </div>`,
+      `<button class="tm-btn" data-act="close-dialog">Cancel</button>
+       <button class="tm-btn tm-btn-raised" data-act="do-award-badge" data-id="${this._esc(d.badge_id)}">Award</button>`
+    );
   }
 
   // -- Penalties / Bonuses tab -------------------------------------------
@@ -2139,6 +2530,8 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "bulk-chore")    return this._renderBulkChoreDialog();
     if (this._dialog.kind === "reorder")       return this._renderReorderDialog();
     if (this._dialog.kind === "create-template" || this._dialog.kind === "edit-template") return this._renderCreateEditTemplateDialog();
+    if (this._dialog.kind === "badge")       return this._renderBadgeDialog();
+    if (this._dialog.kind === "award-badge") return this._renderAwardDialog();
     return "";
   }
 
@@ -3781,6 +4174,71 @@ class TaskMatePanel extends HTMLElement {
         user-select: none;
       }
       .tm-day-pill.active { background: var(--tm-accent); color: var(--text-primary-color, #fff); border-color: var(--tm-accent); }
+
+      /* ===== Badges ===== */
+      .tm-badge-subtabs {
+        display: flex; gap: 2px; border-bottom: 1px solid var(--tm-border);
+        margin-bottom: 16px;
+      }
+      .tm-badge-subtab {
+        padding: 9px 14px; font-size: 13px; font-weight: 500;
+        color: var(--tm-text-muted); background: transparent; border: 0;
+        border-bottom: 2px solid transparent; margin-bottom: -1px;
+        cursor: pointer; font-family: inherit; transition: color 0.1s;
+      }
+      .tm-badge-subtab:hover { color: var(--tm-text); }
+      .tm-badge-subtab-active { color: var(--tm-accent); border-bottom-color: var(--tm-accent); }
+
+      /* tier colour token */
+      .tm-badge-tier-bronze   { --badge-t: #cd7f32; }
+      .tm-badge-tier-silver   { --badge-t: #c0c0c0; }
+      .tm-badge-tier-gold     { --badge-t: #f1c40f; }
+      .tm-badge-tier-platinum { --badge-t: #67e8f9; }
+
+      .tm-badge-icon-sm {
+        width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+        background: var(--badge-t, #cd7f32);
+        display: inline-flex; align-items: center; justify-content: center;
+        color: #1a1a1a; --mdc-icon-size: 18px; vertical-align: middle;
+      }
+      .tm-badge-tier-label {
+        font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 1px; color: var(--badge-t, #cd7f32);
+      }
+      .tm-badge-criteria {
+        font-family: ui-monospace, monospace; font-size: 11.5px;
+        color: var(--tm-text-muted); white-space: nowrap;
+      }
+      .tm-badge-toggle {
+        width: 36px; height: 20px; border-radius: 999px;
+        background: var(--tm-border-strong); border: 0; cursor: pointer;
+        position: relative; transition: background 0.15s; flex-shrink: 0;
+      }
+      .tm-badge-toggle::after {
+        content: ""; position: absolute; top: 2px; left: 2px;
+        width: 16px; height: 16px; border-radius: 50%;
+        background: #fff; transition: transform 0.15s;
+      }
+      .tm-badge-toggle-on { background: var(--tm-accent); }
+      .tm-badge-toggle-on::after { transform: translateX(16px); }
+
+      .tm-badge-src {
+        font-size: 10px; font-weight: 700; padding: 2px 8px;
+        border-radius: 999px; background: var(--tm-surface-2); color: var(--tm-text-muted);
+      }
+      .tm-badge-src-manual { background: #3a2a1a; color: #f1c40f; }
+      .tm-badge-src-silent  { background: var(--tm-surface-2); color: var(--tm-text-faint); }
+      .tm-badge-src-auto    { background: var(--tm-accent-soft); color: var(--tm-accent-text); }
+
+      .tm-badge-criteria-block {
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm); padding: 12px; margin-top: 6px;
+      }
+      .tm-badge-criterion-row {
+        display: grid; grid-template-columns: 1.4fr 30px 0.8fr 28px;
+        gap: 6px; align-items: center; margin-bottom: 8px;
+      }
+      .tm-badge-op { font-size: 16px; text-align: center; color: var(--tm-text-muted); }
 
       /* ===== Mobile / narrow ===== */
       @media (max-width: 900px) {

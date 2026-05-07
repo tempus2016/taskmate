@@ -286,6 +286,19 @@ ATTR_CHORE_ONE_SHOT: Final = "one_shot"
 ATTR_CHORE_REQUIRES_APPROVAL: Final = "requires_approval"
 ATTR_BONUS_SUBTASK_ID: Final = "bonus_subtask_id"
 
+# Badge attributes
+ATTR_BADGE_ID: Final = "badge_id"
+ATTR_BADGE_NAME: Final = "name"
+ATTR_BADGE_DESCRIPTION: Final = "description"
+ATTR_BADGE_ICON: Final = "icon"
+ATTR_BADGE_TIER: Final = "tier"
+ATTR_BADGE_POINT_BONUS: Final = "point_bonus"
+ATTR_BADGE_CRITERIA: Final = "criteria"
+ATTR_BADGE_ASSIGNED_TO: Final = "assigned_to"
+ATTR_BADGE_NOTIFY_ON_EARN: Final = "notify_on_earn"
+ATTR_BADGE_ENABLED: Final = "enabled"
+ATTR_AWARDED_BADGE_ID: Final = "awarded_badge_id"
+
 # States
 STATE_PENDING: Final = "pending"
 STATE_AWAITING_APPROVAL: Final = "awaiting_approval"

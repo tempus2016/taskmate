@@ -13,6 +13,7 @@ from homeassistant.util import dt as dt_util  # noqa: F401 — used by tests as 
 
 from .const import DOMAIN
 from .coord_assignments import AssignmentsMixin
+from .coord_badges import BadgeCoordinator
 from .coord_calendar import CalendarMixin
 from .coord_chores import ChoresMixin
 from .coord_points import PointsMixin
@@ -46,6 +47,7 @@ class TaskMateCoordinator(
             update_interval=timedelta(seconds=30),
         )
         self.storage = TaskMateStorage(hass, entry_id)
+        self.badges = BadgeCoordinator(hass, self.storage, self)
         self.entry_id = entry_id
         self._unsub_midnight: Callable[[], None] | None = None
         self._unsub_prune: Callable[[], None] | None = None
@@ -54,6 +56,11 @@ class TaskMateCoordinator(
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""
         await self.storage.async_load()
+        # Achievement badges: silent retroactive backfill on first install
+        if self.storage._data.get("badges_backfill_pending"):
+            await self.badges.rebuild_all()
+            self.storage._data.pop("badges_backfill_pending", None)
+            await self.storage.async_save()
         await self._async_backfill_career_history()
         await self._async_stop_stale_timed_sessions()
         await self.async_refresh()

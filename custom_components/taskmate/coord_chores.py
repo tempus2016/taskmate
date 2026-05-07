@@ -401,6 +401,11 @@ class ChoresMixin:
             await self._async_notify_pending_approval(child.name, chore.name, chore.points)
 
         await self.async_refresh()
+
+        # Trigger badge evaluation for auto-approved chores (no parent sign-off needed)
+        if not chore.requires_approval and getattr(self, "badges", None):
+            await self.badges.evaluate_for_child(child_id, "manual")
+
         return completion
 
     async def async_complete_bonus_subtask(
@@ -514,6 +519,10 @@ class ChoresMixin:
 
                     await self.storage.async_save()
                     await self.async_refresh()
+
+                    # Trigger badge evaluation after approval awards points/chore count/streak
+                    if getattr(self, "badges", None):
+                        await self.badges.evaluate_for_child(completion.child_id, "manual")
                 else:
                     _LOGGER.warning(
                         "Cannot approve completion %s: chore (%s) or child (%s) not found",

@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
-from .models import Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction, TaskGroup, TimedSession
+from .models import Badge, BadgeCriterion, AwardedBadge, Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction, TaskGroup, TimedSession
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +30,8 @@ class TaskMateStorage:
     async def async_load(self) -> dict[str, Any]:
         """Load data from storage."""
         data = await self._store.async_load()
-        if data is None:
+        is_fresh = data is None
+        if is_fresh:
             data = {
                 "children": [],
                 "chores": [],
@@ -40,6 +41,8 @@ class TaskMateStorage:
                 "points_transactions": [],
                 "pool_allocations": [],
                 "task_groups": [],
+                "badges": [],
+                "awarded_badges": [],
                 "points_name": "Stars",
                 "points_icon": "mdi:star",
                 "last_completed": {},
@@ -69,6 +72,17 @@ class TaskMateStorage:
         # Ensure templates store exists
         if "templates" not in self._data:
             self._data["templates"] = []
+
+        # Ensure badges store exists (migration for achievement badges feature)
+        if "badges" not in self._data:
+            self._data["badges"] = []
+
+        # Ensure awarded_badges store exists (migration for achievement badges feature)
+        if "awarded_badges" not in self._data:
+            self._data["awarded_badges"] = []
+
+        # Badge migration / seeding
+        self._seed_builtin_badges(is_fresh=is_fresh)
 
         # Run data migrations
         await self._migrate_assigned_to_child_ids()
@@ -247,10 +261,11 @@ class TaskMateStorage:
         self.add_child(child)
 
     def remove_child(self, child_id: str) -> None:
-        """Remove a child."""
+        """Remove a child and cascade-delete their awarded badges."""
         self._data["children"] = [
             c for c in self._data.get("children", []) if c.get("id") != child_id
         ]
+        self.remove_awards_for_child(child_id)
 
     # Chores management
     def get_chores(self) -> list[Chore]:
@@ -437,6 +452,99 @@ class TaskMateStorage:
         self._data["bonuses"] = [
             b for b in self._data.get("bonuses", []) if b.get("id") != bonus_id
         ]
+
+    # Badges management
+    def get_badges(self) -> list[Badge]:
+        """Get all badges."""
+        return [Badge.from_dict(b) for b in self._data.get("badges", [])]
+
+    def get_badge(self, badge_id: str) -> Badge | None:
+        """Get a badge by ID."""
+        for b in self._data.get("badges", []):
+            if b.get("id") == badge_id:
+                return Badge.from_dict(b)
+        return None
+
+    def add_badge(self, badge: Badge) -> None:
+        """Add a new badge."""
+        self._data.setdefault("badges", []).append(badge.to_dict())
+
+    def update_badge(self, badge: Badge) -> None:
+        """Update an existing badge."""
+        badges = self._data.get("badges", [])
+        for i, b in enumerate(badges):
+            if b.get("id") == badge.id:
+                badges[i] = badge.to_dict()
+                return
+        badges.append(badge.to_dict())
+
+    def remove_badge(self, badge_id: str) -> None:
+        """Remove a badge and cascade-delete its awards."""
+        self._data["badges"] = [
+            b for b in self._data.get("badges", []) if b.get("id") != badge_id
+        ]
+        self.remove_awards_for_badge(badge_id)
+
+    # Awarded badges management
+    def get_awarded_badges(self) -> list[AwardedBadge]:
+        """Get all awarded badges."""
+        return [AwardedBadge.from_dict(a) for a in self._data.get("awarded_badges", [])]
+
+    def get_awarded_badges_for_child(self, child_id: str) -> list[AwardedBadge]:
+        """Get awarded badges for a specific child."""
+        return [a for a in self.get_awarded_badges() if a.child_id == child_id]
+
+    def add_awarded_badge(self, awarded: AwardedBadge) -> None:
+        """Add an awarded-badge record."""
+        self._data.setdefault("awarded_badges", []).append(awarded.to_dict())
+
+    def remove_awarded_badge(self, awarded_id: str) -> None:
+        """Remove an awarded-badge record by id."""
+        self._data["awarded_badges"] = [
+            a for a in self._data.get("awarded_badges", []) if a.get("id") != awarded_id
+        ]
+
+    def remove_awards_for_badge(self, badge_id: str) -> None:
+        """Cascade-delete all awards referencing a badge id."""
+        self._data["awarded_badges"] = [
+            a for a in self._data.get("awarded_badges", []) if a.get("badge_id") != badge_id
+        ]
+
+    def remove_awards_for_child(self, child_id: str) -> None:
+        """Cascade-delete all awards for a child id."""
+        self._data["awarded_badges"] = [
+            a for a in self._data.get("awarded_badges", []) if a.get("child_id") != child_id
+        ]
+
+    def has_awarded(self, child_id: str, badge_id: str) -> bool:
+        """Check whether the child has already earned this badge."""
+        for a in self._data.get("awarded_badges", []):
+            if a.get("child_id") == child_id and a.get("badge_id") == badge_id:
+                return True
+        return False
+
+    def _seed_builtin_badges(self, *, is_fresh: bool) -> None:
+        """Seed the built-in badge catalogue.
+
+        On fresh install (is_fresh=True): add all built-ins and set the
+        backfill_pending flag so existing kid state can be retro-awarded silently.
+        On existing install (is_fresh=False): add only built-ins missing from
+        storage; preserve parent customisations; do not set backfill flag.
+        Idempotent.
+        """
+        from .coord_badges import BUILTIN_CATALOGUE
+
+        existing = self._data.get("badges", [])
+        existing_ids = {b.get("id") for b in existing}
+
+        for builtin in BUILTIN_CATALOGUE:
+            if builtin.id not in existing_ids:
+                existing.append(builtin.to_dict())
+
+        self._data["badges"] = existing
+
+        if is_fresh:
+            self._data["badges_backfill_pending"] = True
 
     # Task groups management
     def get_task_groups(self) -> list[TaskGroup]:

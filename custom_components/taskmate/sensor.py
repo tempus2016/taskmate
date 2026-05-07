@@ -566,6 +566,7 @@ async def async_setup_entry(
     for child in coordinator.data.get("children", []):
         entities.append(ChildPointsSensor(coordinator, entry, child))
         entities.append(ChildStatsSensor(coordinator, entry, child))
+        entities.append(ChildBadgesSensor(coordinator, entry, child))
         tracked_child_ids.add(child.id)
 
     # Add pending approvals sensor
@@ -583,6 +584,7 @@ async def async_setup_entry(
             if child.id not in tracked_child_ids:
                 new_entities.append(ChildPointsSensor(coordinator, entry, child))
                 new_entities.append(ChildStatsSensor(coordinator, entry, child))
+                new_entities.append(ChildBadgesSensor(coordinator, entry, child))
                 tracked_child_ids.add(child.id)
 
         if new_entities:
@@ -994,6 +996,95 @@ class ChildStatsSensor(TaskMateBaseSensor):
             "total_penalties_received": child.total_penalties_received,
             "assigned_chores": [{"id": c.id, "name": c.name, "points": c.points, "time_category": c.time_category} for c in assigned_chores],
             "chore_order": child.chore_order,
+        }
+
+
+class ChildBadgesSensor(TaskMateBaseSensor):
+    """Sensor exposing a child's earned and available badges."""
+
+    _attr_icon = "mdi:trophy-award"
+
+    def __init__(
+        self,
+        coordinator: TaskMateCoordinator,
+        entry: ConfigEntry,
+        child: Child,
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self.child_id = child.id
+        self._attr_unique_id = f"{entry.entry_id}_{child.id}_badges"
+        self._attr_name = f"{child.name} Badges"
+
+    @property
+    def native_value(self) -> int:
+        """Number of badges earned by this child."""
+        return len(
+            self.coordinator.storage.get_awarded_badges_for_child(self.child_id)
+        )
+
+    @property
+    def native_unit_of_measurement(self) -> str:
+        return "badges"
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        from .coord_badges import resolve_metric
+
+        storage = self.coordinator.storage
+        child = storage.get_child(self.child_id)
+        if child is None:
+            return {"earned": [], "available": [], "total_badges": 0}
+
+        all_badges = [b for b in storage.get_badges() if b.enabled]
+        applicable = [
+            b for b in all_badges
+            if not b.assigned_to or self.child_id in b.assigned_to
+        ]
+
+        awarded_records = storage.get_awarded_badges_for_child(self.child_id)
+        record_by_id = {a.badge_id: a for a in awarded_records}
+
+        earned: list[dict] = []
+        available: list[dict] = []
+        for b in applicable:
+            if b.id in record_by_id:
+                rec = record_by_id[b.id]
+                earned.append({
+                    "badge_id": b.id,
+                    "name": b.name,
+                    "icon": b.icon,
+                    "tier": b.tier,
+                    "earned_at": rec.earned_at.isoformat() if rec.earned_at else None,
+                    "manually_awarded": rec.manually_awarded,
+                    "silent": rec.silent,
+                })
+            else:
+                if not b.criteria:
+                    progress_pct = 0
+                else:
+                    pcts = []
+                    for c in b.criteria:
+                        cur = resolve_metric(c.metric, child, storage)
+                        target = max(c.value, 1)
+                        pcts.append(min(100, int(100 * cur / target)))
+                    progress_pct = min(pcts) if pcts else 0
+                available.append({
+                    "badge_id": b.id,
+                    "name": b.name,
+                    "icon": b.icon,
+                    "tier": b.tier,
+                    "progress_pct": progress_pct,
+                    "criteria_summary": ", ".join(
+                        f"{c.metric} >= {c.value}" for c in b.criteria
+                    ),
+                })
+
+        earned.sort(key=lambda e: e.get("earned_at") or "", reverse=True)
+
+        return {
+            "earned": earned,
+            "available": available,
+            "total_badges": len(applicable),
         }
 
 

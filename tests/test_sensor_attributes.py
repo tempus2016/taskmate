@@ -318,3 +318,71 @@ def test_common_context_rebuilds_when_data_identity_changes():
     coord.data = dict(coord.data)
     after = sensor_module._compute_common(coord)
     assert before is not after
+
+
+class _MockEntry:
+    entry_id = "test_entry"
+
+
+from custom_components.taskmate.models import Badge, BadgeCriterion, AwardedBadge
+from custom_components.taskmate.sensor import ChildBadgesSensor
+
+
+class TestChildBadgesSensor:
+    def _coordinator_for(self, child, badges, awarded):
+        coord = MagicMock()
+        coord.storage.get_child.return_value = child
+        coord.storage.get_badges.return_value = badges
+        coord.storage.get_awarded_badges_for_child.return_value = awarded
+        coord.storage.get_reward_claims.return_value = []
+        coord.get_child = lambda cid: child if (child and child.id == cid) else None
+        return coord
+
+    def test_state_is_earned_count(self, hass):
+        child = Child(name="Mia"); child.id = "c1"
+        b1 = Badge(name="A"); b1.id = "b1"
+        b2 = Badge(name="B"); b2.id = "b2"
+        awarded = [
+            AwardedBadge(child_id="c1", badge_id="b1"),
+            AwardedBadge(child_id="c1", badge_id="b2"),
+        ]
+        coord = self._coordinator_for(child, [b1, b2], awarded)
+        sensor = ChildBadgesSensor(coord, _MockEntry(), child)
+        assert sensor.native_value == 2
+
+    def test_attrs_include_earned_and_available(self, hass):
+        child = Child(name="Mia", total_chores_completed=5); child.id = "c1"
+        earned = Badge(name="Earned"); earned.id = "earned"
+        locked = Badge(
+            name="Locked",
+            criteria=[BadgeCriterion("total_chores", ">=", 10)],
+        ); locked.id = "locked"
+        awarded = [AwardedBadge(child_id="c1", badge_id="earned")]
+        coord = self._coordinator_for(child, [earned, locked], awarded)
+        sensor = ChildBadgesSensor(coord, _MockEntry(), child)
+        attrs = sensor.extra_state_attributes
+        assert attrs["total_badges"] == 2
+        assert len(attrs["earned"]) == 1
+        assert attrs["earned"][0]["badge_id"] == "earned"
+        assert len(attrs["available"]) == 1
+        assert attrs["available"][0]["badge_id"] == "locked"
+        # Progress 5/10 = 50%
+        assert attrs["available"][0]["progress_pct"] == 50
+
+    def test_excludes_disabled_badges(self, hass):
+        child = Child(name="Mia"); child.id = "c1"
+        disabled = Badge(name="Disabled", enabled=False); disabled.id = "x"
+        coord = self._coordinator_for(child, [disabled], [])
+        sensor = ChildBadgesSensor(coord, _MockEntry(), child)
+        attrs = sensor.extra_state_attributes
+        assert attrs["total_badges"] == 0
+
+    def test_filters_by_assigned_to(self, hass):
+        child = Child(name="Mia"); child.id = "c1"
+        not_for_me = Badge(name="Other", assigned_to=["c2"]); not_for_me.id = "x"
+        for_all = Badge(name="All"); for_all.id = "y"
+        coord = self._coordinator_for(child, [not_for_me, for_all], [])
+        sensor = ChildBadgesSensor(coord, _MockEntry(), child)
+        attrs = sensor.extra_state_attributes
+        assert attrs["total_badges"] == 1
+        assert attrs["available"][0]["badge_id"] == "y"
