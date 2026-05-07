@@ -1842,7 +1842,7 @@ class TaskMatePanel extends HTMLElement {
       icon: d.icon || "mdi:medal",
       tier: d.tier || "bronze",
       point_bonus: Number(d.point_bonus) || 0,
-      notify_on_earn: d.notify_on_earn !== false,
+      notify_on_earn: d.notify_on_earn !== false && d.notify_on_earn !== "false",
       assigned_to: d.assigned_to || [],
       criteria: (d.criteria || []).map(c => ({
         metric: c.metric,
@@ -1928,7 +1928,7 @@ class TaskMatePanel extends HTMLElement {
         </div>`,
         `<div class="tm-field-row">
           ${this._field("Point Bonus", "point_bonus", d.point_bonus || 0, "number")}
-          ${this._switch("Notify on Earn", "notify_on_earn", d.notify_on_earn !== false)}
+          ${this._select("Notify on Earn", "notify_on_earn", d.notify_on_earn !== false ? "true" : "false", [{ v: "true", l: "Yes" }, { v: "false", l: "No" }])}
         </div>`,
         children.length > 0 ? `
           <div class="tm-field">
@@ -1974,7 +1974,7 @@ class TaskMatePanel extends HTMLElement {
   _renderAwardDialog() {
     const d = this._dialog.data;
     const children = this._state.children || [];
-    return this._dialogShell(`Award "${this._esc(d.badge_name)}"`,
+    return this._dialogShell(`Award "${d.badge_name}"`,
       `<div class="tm-field">
         <span class="tm-field-label">Award to</span>
         <select class="tm-select" data-field="child_id">
