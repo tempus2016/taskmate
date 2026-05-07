@@ -242,6 +242,12 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
             record["timed_rate_points"] = getattr(c, 'timed_rate_points', 10)
             record["timed_rate_minutes"] = getattr(c, 'timed_rate_minutes', 5)
             record["timed_max_daily_minutes"] = getattr(c, 'timed_max_daily_minutes', 0)
+        bonus_subtasks = getattr(c, 'bonus_subtasks', [])
+        if bonus_subtasks:
+            record["bonus_subtasks"] = [
+                {"id": b.id, "name": b.name, "points": b.points}
+                for b in bonus_subtasks
+            ]
         chores_list.append(record)
     return chores_list
 
