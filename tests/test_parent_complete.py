@@ -70,7 +70,7 @@ class TestParentCompleteChore:
             ))
 
         with patch.object(_mod.dt_util, "now", return_value=now):
-            result = run(coord.async_parent_complete_chore(chore.id))
+            run(coord.async_parent_complete_chore(chore.id))
 
         completions = storage.get_completions()
         assert len(completions) == 1
