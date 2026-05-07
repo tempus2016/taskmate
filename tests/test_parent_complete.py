@@ -199,3 +199,59 @@ class TestParentCompleteChore:
         bob_lc = storage.get_last_completed(chore.id, bob.id)
         assert alice_lc.get("current") == now.isoformat()
         assert bob_lc.get("current") == now.isoformat()
+
+
+class TestParentCompleteIntegration:
+    """Full lifecycle: parent completes → chore becomes unavailable → next cycle it returns."""
+
+    def test_chore_returns_after_recurrence_window(self):
+        coord, storage, _mod = _make_system()
+        now = _now(2024, 3, 20)  # Wednesday
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            child = run(coord.async_add_child("Alice"))
+            chore = run(coord.async_add_chore(
+                "Weekly clean", points=10, requires_approval=False,
+                schedule_mode="recurring", recurrence="weekly",
+                assigned_to=[child.id],
+            ))
+
+        # Parent completes it
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_parent_complete_chore(chore.id))
+
+        # Same day: not available
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            assert coord.is_chore_available_for_child(chore, child.id) is False
+
+        # 6 days later: still not available
+        six_days = _now(2024, 3, 26)
+        with patch.object(_mod.dt_util, "now", return_value=six_days):
+            assert coord.is_chore_available_for_child(chore, child.id) is False
+
+        # 7 days later: available again
+        seven_days = _now(2024, 3, 27)
+        with patch.object(_mod.dt_util, "now", return_value=seven_days):
+            assert coord.is_chore_available_for_child(chore, child.id) is True
+
+    def test_parent_complete_does_not_change_rotation_pointer(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            alice = run(coord.async_add_child("Alice"))
+            bob = run(coord.async_add_child("Bob"))
+            chore = run(coord.async_add_chore(
+                "Alternating chore", points=5, requires_approval=False,
+                schedule_mode="recurring", recurrence="weekly",
+                assigned_to=[alice.id, bob.id],
+                assignment_mode="alternating",
+            ))
+
+        original_pointer = chore.assignment_current_child_id
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_parent_complete_chore(chore.id))
+
+        updated_chore = storage.get_chore(chore.id)
+        assert updated_chore.assignment_current_child_id == original_pointer
