@@ -408,6 +408,54 @@ class ChoresMixin:
 
         return completion
 
+    async def async_parent_complete_chore(self, chore_id: str) -> ChoreCompletion:
+        """Mark a chore as completed by the parent — zero points, advances recurrence."""
+        chore = self.get_chore(chore_id)
+        if not chore:
+            raise ValueError(f"Chore {chore_id} not found")
+
+        if not getattr(chore, 'enabled', True):
+            raise ValueError(f"Chore '{chore.name}' is disabled")
+
+        schedule_mode = getattr(chore, 'schedule_mode', 'specific_days')
+        if schedule_mode == 'one_shot':
+            raise ValueError(
+                f"Chore '{chore.name}' is a one-shot chore and cannot be parent-completed"
+            )
+
+        now = dt_util.now()
+
+        # Determine child pool — empty assigned_to means all children
+        assigned = getattr(chore, 'assigned_to', []) or []
+        if assigned:
+            child_ids = list(assigned)
+        else:
+            child_ids = [c.id for c in self.storage.get_children()]
+
+        if not child_ids:
+            raise ValueError(f"Chore '{chore.name}' has no children to suppress")
+
+        completion = ChoreCompletion(
+            chore_id=chore_id,
+            child_id="__parent__",
+            completed_at=now,
+            approved=True,
+            approved_at=now,
+            points_awarded=0,
+        )
+
+        self.storage.add_completion(completion)
+
+        # Update last_completed for ALL children in the pool so the chore
+        # disappears from their views until the next recurrence window.
+        for cid in child_ids:
+            self.storage.set_last_completed(chore_id, cid, now.isoformat())
+
+        await self.storage.async_save()
+        await self.async_refresh()
+
+        return completion
+
     async def async_complete_bonus_subtask(
         self, chore_id: str, bonus_subtask_id: str, child_id: str
     ) -> ChoreCompletion:
