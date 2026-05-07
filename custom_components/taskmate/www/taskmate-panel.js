@@ -135,6 +135,9 @@ class TaskMatePanel extends HTMLElement {
     this._saveTemplateDialog = false; // "save as template" dialog state
     this._badgesSubTab = "catalogue"; // "catalogue" | "custom" | "history"
     this._rendered = false;
+    this._shellReady = false;
+    this._zoneCache = {};
+    this._cachedStyles = null;
     this._onFocusIn = this._onFocusIn.bind(this);
     this._onClick = this._onClick.bind(this);
     this._onDblClick = this._onDblClick.bind(this);
@@ -1150,10 +1153,52 @@ class TaskMatePanel extends HTMLElement {
   // ---- rendering -------------------------------------------------------
   _render() {
     this._rendered = true;
-    const existingToast = this.querySelector(".tm-toast");
-    const dialogBody = this.querySelector(".tm-dialog-body");
-    const savedScroll = dialogBody ? dialogBody.scrollTop : 0;
-    // Snapshot open <details class="tm-advanced"> sections so they survive re-render.
+
+    if (!this._shellReady) {
+      if (!this._cachedStyles) {
+        this._cachedStyles = this._styles();
+      }
+      const existingToast = this.querySelector(".tm-toast");
+      this.innerHTML = `
+        ${this._cachedStyles}
+        <div class="tm-shell">
+          <div data-zone="sidebar">${this._sidebar()}</div>
+          <div class="tm-main">
+            <div data-zone="topbar">${this._topbar()}</div>
+            <div data-zone="mtabs">${this._mobileTabs()}</div>
+            <div data-zone="approval">${this._approvalBanner()}</div>
+            <div class="tm-body">
+              <div class="tm-body-inner" data-zone="body">${this._renderBody()}</div>
+            </div>
+          </div>
+          <div data-zone="dialog">${this._dialog ? this._renderDialog() : ""}</div>
+          <div data-zone="tpl">${this._renderSaveTemplateDialog()}</div>
+        </div>
+      `;
+      if (existingToast) this.appendChild(existingToast);
+      this._shellReady = true;
+      this._zoneCache = {};
+      this._bindHaPickers();
+      return;
+    }
+
+    const zones = {
+      sidebar:  this._sidebar(),
+      topbar:   this._topbar(),
+      mtabs:    this._mobileTabs(),
+      approval: this._approvalBanner(),
+      body:     this._renderBody(),
+      dialog:   this._dialog ? this._renderDialog() : "",
+      tpl:      this._renderSaveTemplateDialog(),
+    };
+
+    const dialogZone = this.querySelector('[data-zone="dialog"]');
+    let savedScroll = 0;
+    if (dialogZone) {
+      const dialogBody = dialogZone.querySelector(".tm-dialog-body");
+      savedScroll = dialogBody ? dialogBody.scrollTop : 0;
+    }
+
     if (this._dialog) {
       const openSet = this._dialog._openAdvanced instanceof Set ? this._dialog._openAdvanced : new Set();
       this.querySelectorAll("details.tm-advanced[data-section]").forEach(el => {
@@ -1163,28 +1208,23 @@ class TaskMatePanel extends HTMLElement {
       });
       this._dialog._openAdvanced = openSet;
     }
-    this.innerHTML = `
-      ${this._styles()}
-      <div class="tm-shell">
-        ${this._sidebar()}
-        <div class="tm-main">
-          ${this._topbar()}
-          ${this._mobileTabs()}
-          ${this._approvalBanner()}
-          <div class="tm-body">
-            <div class="tm-body-inner">
-              ${this._renderBody()}
-            </div>
-          </div>
-        </div>
-        ${this._dialog ? this._renderDialog() : ""}
-        ${this._renderSaveTemplateDialog()}
-      </div>
-    `;
-    if (existingToast) this.appendChild(existingToast);
-    this._bindHaPickers();
+
+    let anyChanged = false;
+    for (const [name, html] of Object.entries(zones)) {
+      if (this._zoneCache[name] === html) continue;
+      this._zoneCache[name] = html;
+      const el = this.querySelector(`[data-zone="${name}"]`);
+      if (!el) { this._shellReady = false; this._render(); return; }
+      el.innerHTML = html;
+      anyChanged = true;
+    }
+
+    if (anyChanged) {
+      this._bindHaPickers();
+    }
+
     if (savedScroll) {
-      const newBody = this.querySelector(".tm-dialog-body");
+      const newBody = dialogZone && dialogZone.querySelector(".tm-dialog-body");
       if (newBody) newBody.scrollTop = savedScroll;
     }
   }

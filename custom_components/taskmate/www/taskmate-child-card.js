@@ -1753,7 +1753,7 @@ class TaskMateChildCard extends LitElement {
           const dailyLimit = chore.daily_limit || 1;
           const allTodayCompletions = attrs.todays_completions || [];
           const poolCompletionsToday = allTodayCompletions.filter(
-            comp => comp.chore_id === chore.id && poolSet.has(String(comp.child_id))
+            comp => comp.chore_id === chore.id && (poolSet.has(String(comp.child_id)) || comp.child_id === "__parent__")
           ).length;
           if (poolCompletionsToday >= dailyLimit) {
             isAssignedToChild = false;
@@ -2111,7 +2111,7 @@ class TaskMateChildCard extends LitElement {
     // Check how many times this chore was completed today by this child
     // Both pending (awaiting approval) AND approved completions count toward the daily limit
     const childCompletionsToday = todaysCompletions.filter(
-      (comp) => comp.chore_id === chore.id && comp.child_id === child.id && !comp.bonus_subtask_id
+      (comp) => comp.chore_id === chore.id && (comp.child_id === child.id || comp.child_id === "__parent__") && !comp.bonus_subtask_id
     );
     let completionsToday = childCompletionsToday.length;
     const dailyLimit = chore.daily_limit || 1;
@@ -2404,7 +2404,7 @@ class TaskMateChildCard extends LitElement {
 
     // Check if parent chore is completed today (including optimistic)
     const parentCompletions = todaysCompletions.filter(
-      c => c.chore_id === chore.id && c.child_id === child.id && !c.bonus_subtask_id
+      c => c.chore_id === chore.id && (c.child_id === child.id || c.child_id === "__parent__") && !c.bonus_subtask_id
     );
     const optimisticKey = `${chore.id}_${child.id}`;
     const hasOptimistic = this._optimisticCompletions && this._optimisticCompletions[optimisticKey];
