@@ -438,16 +438,26 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
     child_lookup = common["child_lookup"]
     chore_lookup = common["chore_lookup"]
     recent = sorted(common["all_completions"], key=lambda c: c.completed_at, reverse=True)[:limit]
-    return [{
-        "completion_id": comp.id,
-        "chore_id": comp.chore_id,
-        "child_id": comp.child_id,
-        "child_name": child_lookup[comp.child_id].name if comp.child_id in child_lookup else "",
-        "chore_name": chore_lookup[comp.chore_id].name if comp.chore_id in chore_lookup else "",
-        "points": chore_lookup[comp.chore_id].points if comp.chore_id in chore_lookup else 0,
-        "approved": comp.approved,
-        "completed_at": comp.completed_at.isoformat() if hasattr(comp.completed_at, 'isoformat') else str(comp.completed_at),
-    } for comp in recent]
+    out = []
+    for comp in recent:
+        matched_chore = chore_lookup.get(comp.chore_id)
+        display_points = matched_chore.points if matched_chore else 0
+        timed_secs = getattr(comp, "timed_duration_seconds", 0) or 0
+        if timed_secs > 0 and matched_chore and getattr(matched_chore, "task_type", "") == "timed":
+            rate_seconds = matched_chore.timed_rate_minutes * 60
+            if rate_seconds > 0:
+                display_points = (timed_secs // rate_seconds) * matched_chore.timed_rate_points
+        out.append({
+            "completion_id": comp.id,
+            "chore_id": comp.chore_id,
+            "child_id": comp.child_id,
+            "child_name": child_lookup[comp.child_id].name if comp.child_id in child_lookup else "",
+            "chore_name": matched_chore.name if matched_chore else "",
+            "points": display_points,
+            "approved": comp.approved,
+            "completed_at": comp.completed_at.isoformat() if hasattr(comp.completed_at, 'isoformat') else str(comp.completed_at),
+        })
+    return out
 
 
 def _build_recent_transactions(common: dict, limit: int = 20) -> list[dict]:
