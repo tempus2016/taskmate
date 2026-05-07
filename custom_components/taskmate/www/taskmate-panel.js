@@ -1170,9 +1170,9 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-body">
               <div class="tm-body-inner" data-zone="body">${this._renderBody()}</div>
             </div>
+            <div data-zone="dialog">${this._dialog ? this._renderDialog() : ""}</div>
+            <div data-zone="tpl">${this._renderSaveTemplateDialog()}</div>
           </div>
-          <div data-zone="dialog">${this._dialog ? this._renderDialog() : ""}</div>
-          <div data-zone="tpl">${this._renderSaveTemplateDialog()}</div>
         </div>
       `;
       if (existingToast) this.appendChild(existingToast);
@@ -3264,6 +3264,7 @@ class TaskMatePanel extends HTMLElement {
         overflow: hidden;
       }
       .tm-main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+      .tm-shell > [data-zone], .tm-main > [data-zone] { display: contents; }
 
       /* ===== Sidebar ===== */
       .tm-sidebar {
