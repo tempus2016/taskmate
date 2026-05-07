@@ -383,6 +383,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "add-chore")    { this._openChoreDialog(null); return; }
     if (act === "edit-chore")   { this._openChoreDialog(t.dataset.id); return; }
     if (act === "delete-chore") { this._confirmDelete("chore", t.dataset.id); return; }
+    if (act === "parent-complete-chore") { this._doParentComplete(t.dataset.id); return; }
     if (act === "save-chore")   { this._doSaveChore(); return; }
     if (act === "bulk-add-chore") { this._openBulkAddDialog(); return; }
     if (act === "save-bulk-chores") { this._doSaveBulkChores(); return; }
@@ -705,6 +706,15 @@ class TaskMatePanel extends HTMLElement {
     if (!ok) { this._showToast("err", this._t("panel.toast_delete_failed", {error: err})); return; }
     await this._fetchState();
     this._showToast("ok", this._t("panel.toast_deleted"));
+  }
+
+  // ---- Parent complete --------------------------------------------------
+  async _doParentComplete(choreId) {
+    if (!confirm("Mark this chore as completed by parent? No points will be awarded.")) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/parent_complete_chore", chore_id: choreId });
+    if (!ok) { this._showToast("err", "Failed: " + err); return; }
+    await this._fetchState();
+    this._showToast("ok", "Marked as parent completed");
   }
 
   // ---- Approvals -------------------------------------------------------
@@ -1604,6 +1614,7 @@ class TaskMatePanel extends HTMLElement {
         <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span></td>
         <td>${c.requires_approval ? `<span class='tm-yes'>${this._t("panel.common_yes")}</span>` : `<span class='tm-no'>${this._t("panel.common_no")}</span>`}</td>
         <td class="tm-row-actions"><div>
+          ${this._state.parent_completable && this._state.parent_completable[c.id] ? `<button type="button" class="tm-icon-btn" data-act="parent-complete-chore" data-id="${this._esc(c.id)}" title="Parent did it (no points)">👤✓</button>` : ""}
           <button type="button" class="tm-icon-btn" data-act="edit-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_edit")}">✏</button>
           <button type="button" class="tm-icon-btn" data-act="delete-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_delete")}">🗑</button>
         </div></td>
