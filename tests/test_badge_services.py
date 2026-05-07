@@ -3,13 +3,13 @@ from __future__ import annotations
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from custom_components.taskmate.models import Badge, BadgeCriterion, AwardedBadge
+from custom_components.taskmate.coord_badges import BadgeCoordinator
+from custom_components.taskmate.models import Badge, BadgeCriterion, AwardedBadge, Child
 
 
 @pytest.fixture
 def coord_with_badges():
     """A coordinator-like object exposing storage + badges as the service handlers see it."""
-    from custom_components.taskmate.coord_badges import BadgeCoordinator
     hass = MagicMock()
     hass.bus = MagicMock()
     hass.bus.async_fire = MagicMock()
@@ -44,8 +44,8 @@ class TestBadgeServiceHelpers:
 
     async def test_award_manually_uses_coord(self, coord_with_badges):
         coord = coord_with_badges
-        from custom_components.taskmate.models import Child
-        child = Child(name="Mia"); child.id = "c1"
+        child = Child(name="Mia")
+        child.id = "c1"
         coord.storage.get_child.return_value = child
         b = Badge(name="X", point_bonus=10)
         b.id = "b1"

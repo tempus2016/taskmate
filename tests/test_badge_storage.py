@@ -5,6 +5,7 @@ import pytest
 from unittest.mock import MagicMock
 
 from custom_components.taskmate.models import Badge, BadgeCriterion, AwardedBadge, Child
+from custom_components.taskmate.coord_badges import BUILTIN_CATALOGUE
 from custom_components.taskmate.storage import TaskMateStorage
 
 
@@ -107,9 +108,6 @@ class TestBadgeStorage:
         remaining = storage.get_awarded_badges()
         assert len(remaining) == 1
         assert remaining[0].child_id == "other"
-
-
-from custom_components.taskmate.coord_badges import BUILTIN_CATALOGUE
 
 
 class TestCatalogueSeeding:
