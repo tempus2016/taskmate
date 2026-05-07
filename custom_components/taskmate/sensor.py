@@ -204,6 +204,9 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         daily_limit = getattr(c, 'daily_limit', 1)
         if daily_limit != 1:
             record["daily_limit"] = daily_limit
+        claim_allowance_minutes = getattr(c, 'claim_allowance_minutes', 0) or 0
+        if claim_allowance_minutes:
+            record["claim_allowance_minutes"] = claim_allowance_minutes
         due_days = getattr(c, 'due_days', []) or []
         if due_days:
             record["due_days"] = due_days
