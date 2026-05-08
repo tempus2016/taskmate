@@ -829,6 +829,12 @@ class ChoresMixin:
         await self.storage.async_save()
         await self.async_refresh()
 
+    async def async_set_global_chore_order(self, chore_order: list[str]) -> None:
+        """Set the global chore display order."""
+        self.storage.set_chore_display_order(chore_order)
+        await self.storage.async_save()
+        await self.async_refresh()
+
     # Task group operations
 
     def get_task_groups(self):

@@ -380,7 +380,8 @@ class TaskMatePanel extends HTMLElement {
     if (act === "delete-child") { this._confirmDelete("child", t.dataset.id); return; }
     if (act === "save-child")   { this._doSaveChild(); return; }
     if (act === "reorder-chores-for-child") { this._openReorderDialog(t.dataset.id); return; }
-    if (act === "save-chore-order") { this._doSaveChoreOrder(); return; }
+    if (act === "save-chore-order") { this._dialog && this._dialog.data && this._dialog.data.global ? this._doSaveGlobalChoreOrder() : this._doSaveChoreOrder(); return; }
+    if (act === "reorder-chores-global") { this._openGlobalReorderDialog(); return; }
 
     // Chores
     if (act === "add-chore")    { this._openChoreDialog(null); return; }
@@ -807,6 +808,28 @@ class TaskMatePanel extends HTMLElement {
     const { ok, err } = await this._callWS({
       type: "taskmate/set_chore_order",
       child_id: d.child_id,
+      chore_order: d.order || [],
+    });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.toast_order_saved"));
+  }
+
+  // ---- Global chore reorder ---------------------------------------------
+  _openGlobalReorderDialog() {
+    const allChores = this._state.chores || [];
+    if (allChores.length < 2) return;
+    const existingOrder = (this._state.chore_display_order || []).filter(id => allChores.find(c => c.id === id));
+    const missing = allChores.map(c => c.id).filter(id => !existingOrder.includes(id));
+    const order = [...existingOrder, ...missing];
+    this._openDialog({ kind: "reorder", mode: "edit", data: { global: true, order, name: this._t("panel.tab_chores") } });
+  }
+
+  async _doSaveGlobalChoreOrder() {
+    const d = this._dialog.data;
+    const { ok, err } = await this._callWS({
+      type: "taskmate/set_global_chore_order",
       chore_order: d.order || [],
     });
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
@@ -1608,14 +1631,27 @@ class TaskMatePanel extends HTMLElement {
   }
 
   // -- Chores tab --------------------------------------------------------
+  _sortChoresByDisplayOrder(chores) {
+    const order = this._state.chore_display_order || [];
+    if (!order.length) return chores;
+    const idx = Object.fromEntries(order.map((id, i) => [id, i]));
+    return [...chores].sort((a, b) => {
+      const ai = idx[a.id] ?? Number.MAX_SAFE_INTEGER;
+      const bi = idx[b.id] ?? Number.MAX_SAFE_INTEGER;
+      return ai - bi;
+    });
+  }
+
   _renderChoresTab() {
-    const all = this._state.chores || [];
+    const raw = this._state.chores || [];
+    const all = this._sortChoresByDisplayOrder(raw);
     const chores = this._filterByName(all);
     const childById = Object.fromEntries((this._state.children || []).map(c => [c.id, c]));
     return `
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">${this._t("panel.chore_title")} <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox(this._t("panel.search_chores")) : ""}
+        <button type="button" class="tm-btn" data-act="reorder-chores-global">${this._t("panel.btn_reorder_chores")}</button>
         <button type="button" class="tm-btn" data-act="bulk-add-chore">${this._t("panel.btn_bulk_add")}</button>
         <button type="button" class="tm-btn" data-act="tpl-add-from">${this._t("panel.btn_from_template")}</button>
         <button type="button" class="tm-btn" data-act="tpl-save-from">${this._t("panel.btn_save_as_template")}</button>
@@ -3006,8 +3042,10 @@ class TaskMatePanel extends HTMLElement {
   _renderReorderDialog() {
     const d = this._dialog.data;
     const choreById = Object.fromEntries((this._state.chores || []).map(c => [c.id, c]));
-    return this._dialogShell(this._t("panel.reorder_title", {name: d.name}),
-      `<p class="tm-meta">${this._t("panel.reorder_hint")}</p>
+    const title = d.global ? this._t("panel.reorder_global_title") : this._t("panel.reorder_title", {name: d.name});
+    const hint = d.global ? this._t("panel.reorder_global_hint") : this._t("panel.reorder_hint");
+    return this._dialogShell(title,
+      `<p class="tm-meta">${hint}</p>
        <div class="tm-reorder-list">
          ${(d.order || []).map(id => {
            const c = choreById[id];
