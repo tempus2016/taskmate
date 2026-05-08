@@ -370,6 +370,8 @@
   "panel.assign_everyone": "Todos — toda criança atribuída vê a tarefa",
   "panel.assign_random": "Aleatório — sorteia uma criança atribuída por dia",
   "panel.assign_random_short": "Aleatório",
+  "panel.assign_unassigned": "Não atribuído — nenhuma criança vê esta tarefa",
+  "panel.assign_unassigned_short": "Não atribuído",
   "panel.badge_add_btn": "+ Adicionar conquista personalizada",
   "panel.badge_add_criterion_btn": "+ Adicionar critério",
   "panel.badge_assigned_hint": "Deixe todos desmarcados para todas as crianças",

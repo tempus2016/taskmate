@@ -370,6 +370,8 @@
   "panel.assign_everyone": "Everyone — every assigned child sees the chore",
   "panel.assign_random": "Random — pick one assigned child each day",
   "panel.assign_random_short": "Random",
+  "panel.assign_unassigned": "Unassigned — no child sees this chore",
+  "panel.assign_unassigned_short": "Unassigned",
   "panel.badge_add_btn": "+ Add custom badge",
   "panel.badge_add_criterion_btn": "+ Add criterion",
   "panel.badge_assigned_hint": "Leave all unselected for all children",

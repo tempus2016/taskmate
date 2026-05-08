@@ -370,6 +370,8 @@
   "panel.assign_everyone": "Alle — alle tildelte barn ser oppgaven",
   "panel.assign_random": "Tilfeldig — velger ett tildelt barn hver dag",
   "panel.assign_random_short": "Tilfeldig",
+  "panel.assign_unassigned": "Ikke tildelt — ingen barn ser denne oppgaven",
+  "panel.assign_unassigned_short": "Ikke tildelt",
   "panel.badge_add_btn": "+ Legg til egendefinert merke",
   "panel.badge_add_criterion_btn": "+ Legg til kriterium",
   "panel.badge_assigned_hint": "La alle stå uvalgt for alle barn",

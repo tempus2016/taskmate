@@ -77,6 +77,7 @@ const ASSIGNMENT_MODES = [
   { v: "alternating", lk: "panel.assign_alternating" },
   { v: "random",      lk: "panel.assign_random" },
   { v: "balanced",    lk: "panel.assign_balanced" },
+  { v: "unassigned",  lk: "panel.assign_unassigned" },
 ];
 
 const VISIBILITY_OPS = [
@@ -794,7 +795,7 @@ class TaskMatePanel extends HTMLElement {
     const child = (this._state.children || []).find(c => c.id === child_id);
     if (!child) return;
     const childChores = (this._state.chores || []).filter(c =>
-      (c.assigned_to || []).length === 0 || (c.assigned_to || []).includes(child_id)
+      c.assignment_mode !== "unassigned" && ((c.assigned_to || []).length === 0 || (c.assigned_to || []).includes(child_id))
     );
     // Use the child's stored chore_order if present, else fall back to the chore list order.
     const existingOrder = (child.chore_order || []).filter(id => childChores.find(c => c.id === id));
@@ -1678,7 +1679,9 @@ class TaskMatePanel extends HTMLElement {
     const renaming = this._inlineRename && this._inlineRename.kind === "chore" && this._inlineRename.id === c.id;
     const isRotation = ["alternating", "random", "balanced"].includes(c.assignment_mode);
     const curChild = c.assignment_current_child_id || "";
-    const assignedNames = (c.assigned_to || []).length === 0
+    const assignedNames = c.assignment_mode === "unassigned"
+      ? `<span class="tm-text-muted">${this._t("panel.assign_unassigned_short")}</span>`
+      : (c.assigned_to || []).length === 0
       ? `<span class="tm-text-muted">${this._t("panel.common_all_children")}</span>`
       : this._esc((c.assigned_to || []).map(id => (childById[id] && childById[id].name) || "?").join(", "));
     const currentName = isRotation && curChild && childById[curChild]
@@ -2745,6 +2748,7 @@ class TaskMatePanel extends HTMLElement {
     const showSpecificDays = d.schedule_mode === "specific_days";
     const showRecurring    = d.schedule_mode === "recurring";
     const showRotation     = ["alternating", "random", "balanced"].includes(d.assignment_mode);
+    const isUnassigned     = d.assignment_mode === "unassigned";
     const calendarEntities = Object.keys((this._hass && this._hass.states) || {})
       .filter(id => id.startsWith("calendar."))
       .sort();
@@ -2770,7 +2774,9 @@ class TaskMatePanel extends HTMLElement {
           ${this._field(this._t("panel.chore_points_label"), "points", d.points, "number")}
           ${this._field(this._t("panel.chore_daily_limit_label"), "daily_limit", d.daily_limit, "number")}
         </div>`,
-        children.length > 0 ? `
+        this._select(this._t("panel.chore_assignment_mode_label"), "assignment_mode", d.assignment_mode, ASSIGNMENT_MODES,
+          this._t("panel.chore_assignment_mode_hint"), true),
+        !isUnassigned ? (children.length > 0 ? `
           <div class="tm-field">
             <span class="tm-field-label">${this._t("panel.chore_assign_label")}</span>
             <div class="tm-chip-row">
@@ -2782,9 +2788,7 @@ class TaskMatePanel extends HTMLElement {
             </div>
             <span class="tm-field-hint">${this._t("panel.chore_assign_hint")}</span>
           </div>
-        ` : `<div class="tm-field"><span class="tm-field-hint">${this._t("panel.chore_assign_no_children")}</span></div>`,
-        this._select(this._t("panel.chore_assignment_mode_label"), "assignment_mode", d.assignment_mode, ASSIGNMENT_MODES,
-          this._t("panel.chore_assignment_mode_hint"), true),
+        ` : `<div class="tm-field"><span class="tm-field-hint">${this._t("panel.chore_assign_no_children")}</span></div>`) : "",
         showRotation && children.length > 0 ? this._select(
           this._t("panel.chore_rotation_label"), "manual_start_child_id", d.manual_start_child_id,
           [{ v: "", l: this._t("panel.chore_rotation_no_override") }, ...children.map(c => ({ v: c.id, l: c.name }))],
@@ -3798,6 +3802,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-pill-spread  { background: var(--tm-positive-soft); color: var(--tm-positive);    border-color: var(--tm-positive-border); }
       .tm-pill-jackpot { background: var(--tm-gold-soft);     color: var(--tm-gold);        border-color: color-mix(in srgb, var(--tm-gold), transparent 75%); }
       .tm-pill-alternating, .tm-pill-random, .tm-pill-balanced { background: var(--tm-accent-soft); color: var(--tm-accent-text); border-color: var(--tm-accent-border); }
+      .tm-pill-unassigned { background: var(--tm-muted-bg, #f0f0f0); color: var(--tm-text-muted); border-color: var(--tm-border); }
       .tm-pill-dot::before {
         content: ""; width: 5px; height: 5px; border-radius: 50%;
         background: currentColor;

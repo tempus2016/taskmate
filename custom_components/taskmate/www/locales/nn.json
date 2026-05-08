@@ -370,6 +370,8 @@
   "panel.assign_everyone": "Alle — kvart tildelt born ser oppgåva",
   "panel.assign_random": "Tilfeldig — vel eitt tildelt born kvar dag",
   "panel.assign_random_short": "Tilfeldig",
+  "panel.assign_unassigned": "Ikkje tildelt — ingen born ser denne oppgåva",
+  "panel.assign_unassigned_short": "Ikkje tildelt",
   "panel.badge_add_btn": "+ Legg til eigendefinert merke",
   "panel.badge_add_criterion_btn": "+ Legg til kriterium",
   "panel.badge_assigned_hint": "La alle stå uvalde for alle born",

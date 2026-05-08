@@ -1553,7 +1553,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
         """Return select options for chores that can legally join a group."""
         options = []
         for c in self.coordinator.storage.get_chores():
-            if getattr(c, "assignment_mode", "everyone") == "everyone":
+            if getattr(c, "assignment_mode", "everyone") in ("everyone", "unassigned"):
                 continue
             options.append(selector.SelectOptionDict(value=c.id, label=f"{c.name} ({c.assignment_mode})"))
         return options

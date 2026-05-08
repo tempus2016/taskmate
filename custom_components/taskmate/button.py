@@ -35,7 +35,8 @@ async def async_setup_entry(
     for child in children:
         # Chore completion buttons
         for chore in chores:
-            # Only create button if chore is assigned to this child or all children
+            if getattr(chore, "assignment_mode", "everyone") == "unassigned":
+                continue
             if not chore.assigned_to or child.id in chore.assigned_to:
                 entities.append(
                     CompleteChoreButton(coordinator, entry, child, chore)
@@ -69,6 +70,8 @@ async def async_setup_entry(
 
         for child in current_children:
             for chore in current_chores:
+                if getattr(chore, "assignment_mode", "everyone") == "unassigned":
+                    continue
                 if not chore.assigned_to or child.id in chore.assigned_to:
                     key = f"{child.id}_{chore.id}_complete"
                     if key not in tracked_combos:

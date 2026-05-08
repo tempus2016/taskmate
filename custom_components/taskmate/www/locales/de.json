@@ -370,6 +370,8 @@
   "panel.assign_everyone": "Alle — jedes zugewiesene Kind sieht die Aufgabe",
   "panel.assign_random": "Zufällig — wählt jeden Tag ein zugewiesenes Kind",
   "panel.assign_random_short": "Zufällig",
+  "panel.assign_unassigned": "Nicht zugewiesen — kein Kind sieht diese Aufgabe",
+  "panel.assign_unassigned_short": "Nicht zugewiesen",
   "panel.badge_add_btn": "+ Eigenes Abzeichen erstellen",
   "panel.badge_add_criterion_btn": "+ Kriterium hinzufügen",
   "panel.badge_assigned_hint": "Keine Auswahl = alle Kinder",

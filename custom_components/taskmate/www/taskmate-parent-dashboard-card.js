@@ -405,7 +405,7 @@ class TaskMateParentDashboardCard extends LitElement {
     const pointsName = attrs.points_name || this._t('common.points');
     const totalPending = pendingCompletions.length + pendingRewardClaims.length;
 
-    const rotationChores = chores.filter(c => (c.assignment_mode || 'everyone') !== 'everyone');
+    const rotationChores = chores.filter(c => ['alternating', 'random', 'balanced'].includes(c.assignment_mode || 'everyone'));
 
     const tabs = [
       { id: "overview", label: this._t('dashboard.tab_overview'), icon: "mdi:view-dashboard" },
