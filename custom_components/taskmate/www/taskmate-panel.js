@@ -152,6 +152,18 @@ class TaskMatePanel extends HTMLElement {
     this._onVisibilityChange = this._onVisibilityChange.bind(this);
     this._lastConnected = null;
     this._showIds = localStorage.getItem("taskmate-show-ids") === "true";
+    this._ensureHaComponents();
+  }
+
+  async _ensureHaComponents() {
+    if (customElements.get("ha-textfield")) return;
+    try { await window.loadCardHelpers?.(); } catch (_) {}
+    await Promise.all([
+      customElements.whenDefined("ha-textfield").catch(() => {}),
+      customElements.whenDefined("ha-switch").catch(() => {}),
+      customElements.whenDefined("ha-icon-picker").catch(() => {}),
+    ]);
+    if (this._rendered) this._render();
   }
 
   set hass(value) {
