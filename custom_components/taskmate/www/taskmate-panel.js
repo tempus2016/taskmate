@@ -1666,7 +1666,7 @@ class TaskMatePanel extends HTMLElement {
     return `
       <tr class="tm-row ${c.enabled === false ? "tm-row-disabled" : ""}">
         <td>${nameCell}</td>
-        <td><strong class="tm-numeric">${c.points}</strong></td>
+        <td><strong class="tm-numeric">${c.task_type === "timed" ? `${c.timed_rate_points || 0}/${c.timed_rate_minutes || 1} min` : c.points}</strong></td>
         <td><span class="tm-pill">${this._t("panel.time_" + (c.time_category || "anytime"))}</span></td>
         <td>${assignedNames} ${modeBadge}</td>
         <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span></td>
