@@ -723,7 +723,8 @@ class TaskMatePanel extends HTMLElement {
 
   // ---- Skip chore --------------------------------------------------------
   async _doSkipChore(choreId) {
-    if (!confirm(this._t("panel.skip_chore_confirm"))) return;
+    const s = this._state.settings || {};
+    if (s.skip_confirmation_enabled !== false && !confirm(this._t("panel.skip_chore_confirm"))) return;
     const { ok, err } = await this._callService("skip_chore", { chore_id: choreId });
     if (!ok) { this._showToast("err", this._t("panel.toast_skip_failed", { error: err })); return; }
     await this._fetchState();
@@ -2546,6 +2547,16 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_perfect_week_bonus_label")}<small>${this._t("panel.settings_perfect_week_bonus_hint")}</small></div>
               <ha-textfield type="number" min="0" data-setting="perfect_week_bonus" data-value="${s.perfect_week_bonus || 50}"></ha-textfield>
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.settings_chore_rotation_title")}</h3></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_skip_confirm_label")}<small>${this._t("panel.settings_skip_confirm_hint")}</small></div>
+              <ha-switch data-setting="skip_confirmation_enabled" ${s.skip_confirmation_enabled !== false ? "checked" : ""}></ha-switch>
             </div>
           </div>
         </div>
