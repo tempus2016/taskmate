@@ -402,6 +402,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "delete-chore") { this._confirmDelete("chore", t.dataset.id); return; }
     if (act === "parent-complete-chore") { this._doParentComplete(t.dataset.id); return; }
     if (act === "skip-chore") { this._doSkipChore(t.dataset.id); return; }
+    if (act === "toggle-chore-active") { this._doToggleChoreActive(t.dataset.id); return; }
     if (act === "save-chore")   { this._doSaveChore(); return; }
     if (act === "bulk-add-chore") { this._openBulkAddDialog(); return; }
     if (act === "save-bulk-chores") { this._doSaveBulkChores(); return; }
@@ -743,6 +744,16 @@ class TaskMatePanel extends HTMLElement {
     if (!ok) { this._showToast("err", this._t("panel.toast_skip_failed", { error: err })); return; }
     await this._fetchState();
     this._showToast("ok", this._t("panel.toast_skip_done"));
+  }
+
+  async _doToggleChoreActive(choreId) {
+    const chore = (this._state.chores || []).find(c => c.id === choreId);
+    if (!chore) return;
+    const newEnabled = chore.enabled === false;
+    const { ok, err } = await this._callWS({ type: "taskmate/update_chore", chore_id: choreId, enabled: newEnabled });
+    if (!ok) { this._showToast("err", this._t("panel.toast_toggle_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", newEnabled ? this._t("panel.toast_chore_activated") : this._t("panel.toast_chore_deactivated"));
   }
 
   // ---- Approvals -------------------------------------------------------
@@ -1724,6 +1735,7 @@ class TaskMatePanel extends HTMLElement {
         <td class="tm-row-actions"><div>
           ${this._state.parent_completable && this._state.parent_completable[c.id] ? `<button type="button" class="tm-icon-btn" data-act="parent-complete-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.parent_complete_tooltip")}">👤✓</button>` : ""}
           ${["alternating", "random", "balanced"].includes(c.assignment_mode) ? `<button type="button" class="tm-icon-btn" data-act="skip-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_skip_chore")}">⏭</button>` : ""}
+          <button type="button" class="tm-icon-btn" data-act="toggle-chore-active" data-id="${this._esc(c.id)}" title="${c.enabled === false ? this._t("panel.btn_activate_chore") : this._t("panel.btn_deactivate_chore")}">${c.enabled === false ? "▶" : "⏸"}</button>
           <button type="button" class="tm-icon-btn" data-act="edit-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_edit")}">✏</button>
           <button type="button" class="tm-icon-btn" data-act="delete-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_delete")}">🗑</button>
         </div></td>
