@@ -169,19 +169,14 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
     reward_claims = list(data.get("reward_claims", []))
     transactions = list(data.get("points_transactions", []))
 
-    # Compute which chores are currently due for at least one child (parent can complete)
     parent_completable = {}
-    children = coordinator.storage.get_children()
     for chore_dict in data.get("chores", []):
         chore = coordinator.get_chore(chore_dict.get("id", ""))
         if not chore or not getattr(chore, "enabled", True):
             continue
         if getattr(chore, "schedule_mode", "specific_days") == "one_shot":
             continue
-        for child in children:
-            if coordinator.is_chore_available_for_child(chore, child.id):
-                parent_completable[chore.id] = True
-                break
+        parent_completable[chore.id] = True
 
     return {
         "version": "2",
