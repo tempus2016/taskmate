@@ -162,8 +162,8 @@ def coord():
     storage = MagicMock()
     storage.async_save = AsyncMock()
     points_coord = MagicMock()
-    points_coord.add_points = AsyncMock()
-    points_coord.remove_points = AsyncMock()
+    points_coord.async_add_points = AsyncMock()
+    points_coord.async_remove_points = AsyncMock()
     return BadgeCoordinator(hass, storage, points_coord)
 
 
@@ -306,8 +306,8 @@ class TestEvaluationCore:
         self._setup(coord, child_kwargs={"total_points_earned": 150}, badges=[b])
         awards = await coord.evaluate_for_child("c1", "points_changed")
         assert awards[0].bonus_credited == 50
-        coord.points_coord.add_points.assert_awaited_once()
-        call = coord.points_coord.add_points.call_args
+        coord.points_coord.async_add_points.assert_awaited_once()
+        call = coord.points_coord.async_add_points.call_args
         assert "Badge: With Bonus" in str(call)
 
     async def test_silent_award_skips_bonus_and_event(self, coord):
@@ -322,7 +322,7 @@ class TestEvaluationCore:
         assert len(awards) == 1
         assert awards[0].silent is True
         assert awards[0].bonus_credited == 0
-        coord.points_coord.add_points.assert_not_awaited()
+        coord.points_coord.async_add_points.assert_not_awaited()
         coord.hass.bus.async_fire.assert_not_called()
 
     async def test_event_fired_on_normal_award(self, coord):
@@ -360,7 +360,7 @@ class TestManualOps:
         assert award is not None
         assert award.manually_awarded is True
         assert award.bonus_credited == 30
-        coord.points_coord.add_points.assert_awaited_once()
+        coord.points_coord.async_add_points.assert_awaited_once()
 
     async def test_award_manually_blocks_double(self, coord):
         coord.storage.has_awarded.return_value = True
@@ -387,7 +387,7 @@ class TestManualOps:
         result = await coord.revoke(a.id)
         assert result is True
         coord.storage.remove_awarded_badge.assert_called_once_with(a.id)
-        coord.points_coord.remove_points.assert_awaited_once()
+        coord.points_coord.async_remove_points.assert_awaited_once()
 
     async def test_revoke_zero_bonus_no_points_change(self, coord):
         a = AwardedBadge(child_id="c1", badge_id="b1", bonus_credited=0)
@@ -395,7 +395,7 @@ class TestManualOps:
         coord.storage.get_badge.return_value = Badge(name="X")
 
         await coord.revoke(a.id)
-        coord.points_coord.remove_points.assert_not_awaited()
+        coord.points_coord.async_remove_points.assert_not_awaited()
 
     async def test_revoke_missing_returns_false(self, coord):
         coord.storage.get_awarded_badges.return_value = []
