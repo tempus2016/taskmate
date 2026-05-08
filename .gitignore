@@ -28,4 +28,5 @@ dev/config/.cloud/
 !dev/config/.storage/lovelace_dashboards
 !dev/config/.storage/lovelace.test_dashboard
 !dev/config/.storage/choremander.*
+docs/
 .DS_Store
