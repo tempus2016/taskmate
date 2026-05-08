@@ -846,7 +846,7 @@ class TestSkipChore:
             return
         raise AssertionError("Expected ValueError for single-child pool skip")
 
-    def test_skip_is_noop_past_pool_size(self):
+    def test_skip_cycles_through_unassigned_and_back(self):
         a, b = Child(name="A"), Child(name="B")
         coord = _coord([a, b])
         chore = Chore(
@@ -857,11 +857,27 @@ class TestSkipChore:
         )
         coord.storage.add_chore(chore)
         dt_util_mock._now = dt.datetime(2026, 4, 20, 12, 0, tzinfo=UTC)
-        run_async(coord.async_skip_chore(chore.id))  # 0 → 1 (B)
-        # Second skip would wrap to A, same as original — clamp at pool-1.
-        run_async(coord.async_skip_chore(chore.id))  # still 1
+
+        # A is the initial assignee.
+        assert coord._compute_active_children(chore, date(2026, 4, 20)) == [a.id]
+
+        # Skip 1: A → B
+        run_async(coord.async_skip_chore(chore.id))
         updated = coord.storage.get_chore(chore.id)
         assert updated.skip_count == 1
+        assert updated.assignment_current_child_id == b.id
+
+        # Skip 2: B → unassigned
+        run_async(coord.async_skip_chore(chore.id))
+        updated = coord.storage.get_chore(chore.id)
+        assert updated.skip_count == 2
+        assert updated.assignment_current_child_id == ""
+
+        # Skip 3: unassigned → back to A
+        run_async(coord.async_skip_chore(chore.id))
+        updated = coord.storage.get_chore(chore.id)
+        assert updated.skip_count == 0
+        assert updated.assignment_current_child_id == a.id
 
     def test_skip_affects_random_mode(self):
         a, b = Child(name="A"), Child(name="B")
