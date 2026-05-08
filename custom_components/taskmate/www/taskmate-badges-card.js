@@ -82,10 +82,16 @@ class TaskMateBadgesCard extends LitElement {
     return css`
       :host {
         display: block;
-        --t-bronze:   #cd7f32;
-        --t-silver:   #c0c0c0;
-        --t-gold:     #f1c40f;
-        --t-platinum: #67e8f9;
+        --t-bronze:   #e08a3c;
+        --t-silver:   #a8b8c8;
+        --t-gold:     #ffc107;
+        --t-platinum: #4dd9e8;
+
+        --t-bronze-bg:   linear-gradient(135deg, #fdf0e4 0%, #f9dfc2 100%);
+        --t-silver-bg:   linear-gradient(135deg, #f0f3f7 0%, #dce4ec 100%);
+        --t-gold-bg:     linear-gradient(135deg, #fffde6 0%, #fff3b0 100%);
+        --t-platinum-bg: linear-gradient(135deg, #e8fbfd 0%, #c4f0f6 100%);
+        --t-locked-bg:   linear-gradient(135deg, #f8f9fa 0%, #eef0f2 100%);
       }
 
       ha-card { overflow: hidden; }
@@ -95,8 +101,8 @@ class TaskMateBadgesCard extends LitElement {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 16px 18px 14px;
-        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+        padding: 18px 20px 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         gap: 12px;
       }
 
@@ -109,22 +115,23 @@ class TaskMateBadgesCard extends LitElement {
       }
 
       .child-avatar {
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
-        background: var(--primary-color, #1a3a5c);
+        background: rgba(255,255,255,0.25);
+        border: 2px solid rgba(255,255,255,0.5);
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        --mdc-icon-size: 24px;
+        --mdc-icon-size: 26px;
         color: white;
       }
 
       .badges-title {
-        font-size: 1.05rem;
-        font-weight: 600;
-        color: var(--primary-text-color);
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #fff;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -132,94 +139,132 @@ class TaskMateBadgesCard extends LitElement {
 
       .badges-count {
         font-size: 0.75rem;
-        color: var(--secondary-text-color);
-        margin-top: 1px;
+        color: rgba(255,255,255,0.8);
+        margin-top: 2px;
       }
 
       .badges-filter {
-        background: var(--card-background-color, #fff);
-        border: 1px solid var(--divider-color, #e0e0e0);
-        color: var(--primary-text-color);
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.35);
+        color: #fff;
         padding: 6px 10px;
-        border-radius: 6px;
+        border-radius: 20px;
         font-size: 0.75rem;
+        font-weight: 600;
         flex-shrink: 0;
         cursor: pointer;
+        backdrop-filter: blur(4px);
+      }
+
+      .badges-filter option {
+        color: var(--primary-text-color, #333);
+        background: var(--card-background-color, #fff);
       }
 
       /* ── Grid ── */
       .badge-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 12px;
-        padding: 16px;
+        gap: 14px;
+        padding: 18px;
       }
 
       /* ── Tier colour helpers ── */
-      .tier-bronze  { --t: var(--t-bronze);   --t-glow: rgba(205,127,50,0.25); }
-      .tier-silver  { --t: var(--t-silver);   --t-glow: rgba(192,192,192,0.25); }
-      .tier-gold    { --t: var(--t-gold);     --t-glow: rgba(241,196,15,0.30); }
-      .tier-platinum{ --t: var(--t-platinum); --t-glow: rgba(103,232,249,0.30); }
+      .tier-bronze   { --t: var(--t-bronze);   --t-glow: rgba(224,138,60,0.35);  --t-bg: var(--t-bronze-bg); }
+      .tier-silver   { --t: var(--t-silver);   --t-glow: rgba(168,184,200,0.35); --t-bg: var(--t-silver-bg); }
+      .tier-gold     { --t: var(--t-gold);     --t-glow: rgba(255,193,7,0.40);   --t-bg: var(--t-gold-bg); }
+      .tier-platinum { --t: var(--t-platinum);  --t-glow: rgba(77,217,232,0.40);  --t-bg: var(--t-platinum-bg); }
 
       /* ── Badge tile ── */
       .badge {
-        background: var(--secondary-background-color, #f5f5f5);
-        border-radius: 12px;
-        padding: 14px 10px;
+        background: var(--t-locked-bg);
+        border-radius: 16px;
+        padding: 18px 12px 14px;
         text-align: center;
         position: relative;
-        transition: transform 0.15s;
-        border: 2px solid var(--divider-color, #e0e0e0);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 2px dashed var(--divider-color, #d0d5db);
       }
 
       .badge.earned {
-        border-color: var(--t);
-        box-shadow: 0 0 0 1px var(--t-glow), 0 4px 12px var(--t-glow);
+        background: var(--t-bg);
+        border: 2.5px solid var(--t);
+        border-style: solid;
+        box-shadow: 0 4px 16px var(--t-glow), 0 1px 3px rgba(0,0,0,0.06);
       }
 
-      .badge.earned:hover { transform: translateY(-2px); }
-      .badge.locked { opacity: 0.55; }
+      .badge.earned:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 8px 24px var(--t-glow), 0 2px 6px rgba(0,0,0,0.08);
+      }
+
+      .badge.locked {
+        opacity: 0.5;
+        filter: grayscale(0.3);
+      }
+
+      .badge.locked:hover {
+        opacity: 0.65;
+        transform: scale(1.02);
+      }
 
       .badge.just-earned {
-        animation: earn-pulse 1.6s ease-out;
+        animation: earn-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), earn-shimmer 1.5s ease-out 0.6s;
       }
 
-      @keyframes earn-pulse {
-        0%   { transform: scale(0.6); box-shadow: 0 0 0 0 var(--t-glow, rgba(255,255,255,0.1)); }
-        50%  { transform: scale(1.08); box-shadow: 0 0 0 16px var(--t-glow, rgba(255,255,255,0.1)); }
-        100% { transform: scale(1); box-shadow: 0 0 0 1px var(--t-glow), 0 4px 12px var(--t-glow); }
+      @keyframes earn-pop {
+        0%   { transform: scale(0.3) rotate(-8deg); opacity: 0; }
+        60%  { transform: scale(1.12) rotate(2deg); opacity: 1; }
+        100% { transform: scale(1) rotate(0deg); }
+      }
+
+      @keyframes earn-shimmer {
+        0%   { box-shadow: 0 0 0 0 var(--t-glow), 0 4px 16px var(--t-glow); }
+        50%  { box-shadow: 0 0 0 12px transparent, 0 4px 24px var(--t-glow); }
+        100% { box-shadow: 0 4px 16px var(--t-glow), 0 1px 3px rgba(0,0,0,0.06); }
       }
 
       .badge-icon {
-        width: 52px;
-        height: 52px;
-        margin: 0 auto 8px;
+        width: 58px;
+        height: 58px;
+        margin: 0 auto 10px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        --mdc-icon-size: 28px;
+        --mdc-icon-size: 30px;
         background: var(--divider-color, #e0e0e0);
         color: var(--secondary-text-color);
+        transition: transform 0.2s ease;
       }
 
       .badge.earned .badge-icon {
         background: var(--t);
-        color: #1a1a1a;
+        color: #fff;
+        box-shadow: 0 3px 10px var(--t-glow);
+      }
+
+      .badge.earned:hover .badge-icon {
+        transform: scale(1.1) rotate(-5deg);
+      }
+
+      .tier-gold.earned .badge-icon,
+      .tier-bronze.earned .badge-icon {
+        color: #2d2000;
       }
 
       .badge-tier {
         font-size: 0.6rem;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        font-weight: 700;
+        letter-spacing: 1.2px;
+        font-weight: 800;
         color: var(--t, var(--secondary-text-color));
         margin-bottom: 4px;
       }
 
       .badge-name {
-        font-size: 0.8rem;
-        font-weight: 600;
+        font-size: 0.82rem;
+        font-weight: 700;
         color: var(--primary-text-color);
         margin-bottom: 3px;
         line-height: 1.25;
@@ -231,41 +276,53 @@ class TaskMateBadgesCard extends LitElement {
         font-size: 0.65rem;
         color: var(--secondary-text-color);
         margin-bottom: 6px;
+        font-weight: 500;
       }
 
-      .badge.earned .badge-meta { color: var(--t); }
+      .badge.earned .badge-meta {
+        color: var(--t);
+        font-weight: 600;
+      }
 
       .badge-progress {
-        height: 4px;
+        height: 7px;
         background: var(--divider-color, #ddd);
-        border-radius: 2px;
+        border-radius: 4px;
         overflow: hidden;
-        margin-top: 6px;
+        margin-top: 8px;
       }
 
       .badge-progress-fill {
         height: 100%;
-        background: var(--t);
-        border-radius: 2px;
-        transition: width 0.4s ease;
+        background: linear-gradient(90deg, var(--t), color-mix(in srgb, var(--t), white 25%));
+        border-radius: 4px;
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       .badge-progress-label {
-        font-size: 0.62rem;
+        font-size: 0.65rem;
         color: var(--secondary-text-color);
-        margin-top: 3px;
+        margin-top: 4px;
+        font-weight: 600;
       }
 
       .badge-bonus {
         position: absolute;
-        top: 6px;
-        right: 6px;
-        background: var(--t);
-        color: #1a1a1a;
-        font-size: 0.62rem;
-        font-weight: 700;
-        padding: 2px 5px;
+        top: -4px;
+        right: -4px;
+        background: linear-gradient(135deg, var(--t), color-mix(in srgb, var(--t), black 15%));
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 3px 7px;
         border-radius: 999px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        z-index: 1;
+      }
+
+      .tier-gold .badge-bonus,
+      .tier-bronze .badge-bonus {
+        color: #2d2000;
       }
 
       /* ── Empty / error states ── */
