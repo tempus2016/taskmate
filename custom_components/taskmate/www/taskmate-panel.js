@@ -1640,9 +1640,16 @@ class TaskMatePanel extends HTMLElement {
 
   _renderChoreRow(c, childById) {
     const renaming = this._inlineRename && this._inlineRename.kind === "chore" && this._inlineRename.id === c.id;
+    const isRotation = ["alternating", "random", "balanced"].includes(c.assignment_mode);
+    const curChild = c.assignment_current_child_id || "";
     const assignedNames = (c.assigned_to || []).length === 0
       ? `<span class="tm-text-muted">${this._t("panel.common_all_children")}</span>`
-      : this._esc((c.assigned_to || []).map(id => (childById[id] && childById[id].name) || "?").join(", "));
+      : isRotation && curChild
+        ? (c.assigned_to || []).map(id => {
+            const n = this._esc((childById[id] && childById[id].name) || "?");
+            return id === curChild ? `<strong class="tm-current-assignee">${n}</strong>` : `<span class="tm-text-muted">${n}</span>`;
+          }).join(", ")
+        : this._esc((c.assigned_to || []).map(id => (childById[id] && childById[id].name) || "?").join(", "));
     const schedLabel = c.schedule_mode === "recurring"
       ? this._labelOf(RECURRENCES, c.recurrence) + (c.recurrence_day && c.recurrence_day !== "any_day" ? ` · ${this._labelOf(DAYS, c.recurrence_day)}` : "")
       : c.schedule_mode === "one_shot"
@@ -3704,6 +3711,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-no  { color: var(--tm-text-faint); }
       .tm-neg { color: var(--tm-danger); }
       .tm-pos { color: var(--tm-positive); }
+      .tm-current-assignee { color: var(--tm-accent); font-weight: 600; }
       .tm-cost { color: var(--tm-gold); }
       .tm-table-hint { margin-top: 8px; font-size: 11px; }
 
