@@ -246,16 +246,23 @@ class ChoresMixin:
             chore.skip_date = today_iso
             chore.skip_count = 0
 
-        # Clamp: a full pool's worth of skips returns to the original child, so
-        # anything beyond pool_size-1 is a no-op.
-        if chore.skip_count >= len(pool) - 1:
-            return chore
-        chore.skip_count += 1
+        # Cyclical: A → B → … → unassigned → back to A.
+        # skip_count < pool_size  → advance to next child
+        # skip_count == pool_size → unassigned (no child today)
+        # skip_count >  pool_size → reset to 0, back to original assignee
+        if chore.skip_count >= len(pool):
+            chore.skip_count = 0
+        else:
+            chore.skip_count += 1
 
-        # Recompute with the group-aware map so sticky followers shift too.
         self.storage.update_chore(chore)
-        daily = self._compute_daily_assignments(today)
-        chore.assignment_current_child_id = daily.get(chore_id, "")
+
+        if chore.skip_count == len(pool):
+            chore.assignment_current_child_id = ""
+        else:
+            daily = self._compute_daily_assignments(today)
+            chore.assignment_current_child_id = daily.get(chore_id, "")
+
         self.storage.update_chore(chore)
 
         # Propagate to sticky followers (their cached current_child_id shifts
