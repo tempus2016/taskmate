@@ -1633,7 +1633,7 @@ class TaskMatePanel extends HTMLElement {
       ? `<span class="tm-text-muted">${this._t("panel.common_all_children")}</span>`
       : this._esc((c.assigned_to || []).map(id => (childById[id] && childById[id].name) || "?").join(", "));
     const schedLabel = c.schedule_mode === "recurring"
-      ? this._labelOf(RECURRENCES, c.recurrence) + (c.recurrence_day && c.recurrence_day !== "any_day" ? ` · ${c.recurrence_day}` : "")
+      ? this._labelOf(RECURRENCES, c.recurrence) + (c.recurrence_day && c.recurrence_day !== "any_day" ? ` · ${this._labelOf(DAYS, c.recurrence_day)}` : "")
       : c.schedule_mode === "one_shot"
       ? this._t("panel.common_one_shot")
       : ((c.due_days || []).length === 0 ? this._t("panel.common_daily") : (c.due_days || []).map(d => this._labelOf(DAYS, d)).join(" · "));
@@ -2244,7 +2244,7 @@ class TaskMatePanel extends HTMLElement {
 
   _renderTemplateChoreCard(chore, idx) {
     const expanded = chore._expanded;
-    const schedLabel = (chore.due_days || []).length === 0 ? this._t("panel.common_daily") : (chore.due_days || []).map(d => d.slice(0, 3)).join(", ");
+    const schedLabel = (chore.due_days || []).length === 0 ? this._t("panel.common_daily") : (chore.due_days || []).map(d => this._labelOf(DAYS, d)).join(", ");
     return `
       <div class="tm-tpl-preview-card">
         <div class="tm-tpl-preview-header" data-act="tpl-toggle-expand" data-idx="${idx}">
