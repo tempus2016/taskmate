@@ -1678,14 +1678,15 @@ class TaskMatePanel extends HTMLElement {
     const renaming = this._inlineRename && this._inlineRename.kind === "chore" && this._inlineRename.id === c.id;
     const isRotation = ["alternating", "random", "balanced"].includes(c.assignment_mode);
     const curChild = c.assignment_current_child_id || "";
-    const assignedNames = (c.assigned_to || []).length === 0
-      ? `<span class="tm-text-muted">${this._t("panel.common_all_children")}</span>`
-      : isRotation && curChild
-        ? (c.assigned_to || []).map(id => {
-            const n = this._esc((childById[id] && childById[id].name) || "?");
-            return id === curChild ? `<strong class="tm-current-assignee">${n}</strong>` : `<span class="tm-text-muted">${n}</span>`;
-          }).join(", ")
-        : this._esc((c.assigned_to || []).map(id => (childById[id] && childById[id].name) || "?").join(", "));
+    const pool = (c.assigned_to || []).length > 0 ? c.assigned_to : Object.keys(childById);
+    const assignedNames = isRotation && curChild
+      ? pool.map(id => {
+          const n = this._esc((childById[id] && childById[id].name) || "?");
+          return id === curChild ? `<strong class="tm-current-assignee">${n}</strong>` : `<span class="tm-text-muted">${n}</span>`;
+        }).join(", ")
+      : (c.assigned_to || []).length === 0
+        ? `<span class="tm-text-muted">${this._t("panel.common_all_children")}</span>`
+        : this._esc(pool.map(id => (childById[id] && childById[id].name) || "?").join(", "));
     const schedLabel = c.schedule_mode === "recurring"
       ? this._labelOf(RECURRENCES, c.recurrence) + (c.recurrence_day && c.recurrence_day !== "any_day" ? ` · ${this._labelOf(DAYS, c.recurrence_day)}` : "")
       : c.schedule_mode === "one_shot"
