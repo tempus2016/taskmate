@@ -370,6 +370,8 @@
   "panel.assign_everyone": "Tous — chaque enfant assigné voit la tâche",
   "panel.assign_random": "Aléatoire — choisir un enfant assigné chaque jour",
   "panel.assign_random_short": "Aléatoire",
+  "panel.assign_unassigned": "Non attribué — aucun enfant ne voit cette tâche",
+  "panel.assign_unassigned_short": "Non attribué",
   "panel.badge_add_btn": "+ Ajouter un badge personnalisé",
   "panel.badge_add_criterion_btn": "+ Ajouter un critère",
   "panel.badge_assigned_hint": "Ne rien sélectionner pour tous les enfants",

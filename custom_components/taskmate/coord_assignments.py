@@ -245,6 +245,9 @@ class AssignmentsMixin:
         mode = getattr(chore, "assignment_mode", "everyone")
         require_availability = getattr(chore, "require_availability", False)
 
+        if mode == "unassigned":
+            return []
+
         if mode not in ("alternating", "random", "balanced"):
             assigned = list(chore.assigned_to or [])
             if require_availability and assigned:
