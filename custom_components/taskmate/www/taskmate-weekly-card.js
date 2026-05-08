@@ -292,7 +292,7 @@ class TaskMateWeeklyCard extends LitElement {
     let children = attrs.children || [];
     const chores = attrs.chores || [];
     const pointsIcon = attrs.points_icon || "mdi:star";
-    const pointsName = attrs.points_name || "Stars";
+    const pointsName = attrs.points_name || this._t("common.stars");
 
     // Use recent_completions (last 50 all-time) for full week view
     let allCompletions = [...(attrs.recent_completions || attrs.todays_completions || [])];

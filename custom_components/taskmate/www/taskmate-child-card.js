@@ -2281,8 +2281,8 @@ class TaskMateChildCard extends LitElement {
 
     // Rate display
     const rateLabel = chore.timed_rate_minutes === 1
-      ? `${ratePoints} pts/min`
-      : `${ratePoints} pts/${chore.timed_rate_minutes} min`;
+      ? `${ratePoints} ${this._t('child.pts_per_min')}`
+      : `${ratePoints} ${this._t('child.pts_per_n_min', {count: chore.timed_rate_minutes})}`;
 
     // Daily cap info
     const maxMin = chore.timed_max_daily_minutes || 0;
@@ -2390,7 +2390,7 @@ class TaskMateChildCard extends LitElement {
 
         ${maxMin > 0 ? html`
           <div class="daily-cap-bar">
-            <span class="cap-label ${nearCap ? 'near-cap' : ''}">${usedMin} / ${maxMin} min</span>
+            <span class="cap-label ${nearCap ? 'near-cap' : ''}">${this._t('child.timed_cap_label', {used: usedMin, max: maxMin})}</span>
             <div class="cap-track">
               <div class="cap-fill ${nearCap ? 'warning' : ''}" style="width: ${capPct}%"></div>
             </div>
@@ -2433,7 +2433,7 @@ class TaskMateChildCard extends LitElement {
           role="button"
           tabindex="${bonusDone ? '-1' : '0'}"
           @click="${handleClick}"
-          title="${bonusDone ? this._t('child.click_to_undo') : 'Bonus: ' + subtask.name}"
+          title="${bonusDone ? this._t('child.click_to_undo') : this._t('child.bonus_tooltip', {name: subtask.name})}"
         >
           <div class="chore-info">
             <div class="chore-number-wrapper">
@@ -2446,7 +2446,7 @@ class TaskMateChildCard extends LitElement {
               <div class="chore-points">
                 <ha-icon icon="${pointsIcon}"></ha-icon>
                 +${subtask.points}
-                <span class="bonus-label">BONUS</span>
+                <span class="bonus-label">${this._t('child.bonus_label')}</span>
               </div>
             </div>
           </div>

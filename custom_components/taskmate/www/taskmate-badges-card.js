@@ -426,8 +426,12 @@ class TaskMateBadgesCardEditor extends LitElement {
     return { hass: { type: Object }, config: { type: Object } };
   }
   setConfig(config) { this.config = config; }
+  _t(key, params) {
+    const fn = window.__taskmate_localize;
+    return fn ? fn(this.hass, key, params) : key;
+  }
   render() {
-    return html`<p style="padding:12px;color:var(--secondary-text-color)">Configure via YAML: set <code>entity</code> to your badges sensor (e.g. <code>sensor.taskmate_badges_mia</code>).</p>`;
+    return html`<p style="padding:12px;color:var(--secondary-text-color)">${this._t('badges.editor_help')}</p>`;
   }
 }
 

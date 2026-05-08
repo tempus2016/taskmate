@@ -646,7 +646,7 @@ class TaskMatePointsCard extends LitElement {
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     const children = attrs.children || [];
     const pointsIcon = attrs.points_icon || "mdi:star";
-    const pointsName = attrs.points_name || "Stars";
+    const pointsName = attrs.points_name || this._t("common.stars");
 
     const headerStyle = this.config.header_color
       ? `--taskmate-header-bg: ${this.config.header_color};`
@@ -840,7 +840,7 @@ class TaskMatePointsCard extends LitElement {
     this.requestUpdate();
 
     const entity = this.hass.states[this.config.entity];
-    const pointsName = entity?.attributes?.points_name || 'points';
+    const pointsName = entity?.attributes?.points_name || this._t('common.points');
     const service = action === 'add' ? 'add_points' : 'remove_points';
 
     try {
@@ -933,7 +933,7 @@ class TaskMatePointsCard extends LitElement {
 
       // Get points name from entity
       const entity = this.hass.states[this.config.entity];
-      const pointsName = entity?.attributes?.points_name || "points";
+      const pointsName = entity?.attributes?.points_name || this._t("common.points");
       const pointsLabel = points === 1 ? pointsName.replace(/s$/, "") : pointsName;
 
       const message =

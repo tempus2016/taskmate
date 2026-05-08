@@ -380,7 +380,7 @@ class TaskMatePenaltiesCard extends LitElement {
   }
 
   _getPointsName() {
-    return this._getAttrs().points_name || "Stars";
+    return this._getAttrs().points_name || this._t("common.stars");
   }
 
   _getVisiblePenalties() {

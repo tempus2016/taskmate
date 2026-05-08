@@ -13,7 +13,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 const RANK_COLOURS = ["#f1c40f", "#bdc3c7", "#cd7f32", "#9b59b6", "#3498db"];
-const RANK_LABELS = ["🥇", "🥈", "🥉", "4th", "5th"];
+const RANK_LABELS = ["🥇", "🥈", "🥉"];
 
 class TaskMateLeaderboardCard extends LitElement {
   static get properties() {
@@ -337,7 +337,7 @@ class TaskMateLeaderboardCard extends LitElement {
       <div class="rank-row ${rankClass}">
         ${rankEmoji
           ? html`<div class="rank-badge">${rankEmoji}</div>`
-          : html`<div class="rank-number">${rankNum}</div>`}
+          : html`<div class="rank-number">${this._t('leaderboard.ordinal_' + rankNum)}</div>`}
 
         <div class="child-avatar" style="background: linear-gradient(135deg, ${avatarColour} 0%, ${avatarColour}cc 100%);">
           <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
