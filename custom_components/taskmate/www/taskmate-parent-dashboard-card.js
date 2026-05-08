@@ -803,12 +803,6 @@ class TaskMateParentDashboardCard extends LitElement {
 
   async _handleSkip(choreId) {
     const key = `skip_${choreId}`;
-    // Guard rail: ask before skipping — this affects today's rotation only,
-    // but parents often tap it by mistake.
-    if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
-      const prompt = this._t('dashboard.rotation_skip_confirm', {}, "Skip today's assignee for this chore?");
-      if (!window.confirm(prompt)) return;
-    }
     this._loading = { ...this._loading, [key]: true };
     this.requestUpdate();
     try {
