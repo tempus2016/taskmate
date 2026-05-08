@@ -17,6 +17,7 @@
  *   show_rank      — show rank medal in multi/cumulative modes (default: true)
  *   animate        — animate number on load (default: true)
  *   header_color   — hex colour for the card header (default: #9b59b6)
+ *   primary_display — current_points | career_score  (default: current_points)
  *
  * Version: 1.0.0
  */
@@ -258,6 +259,18 @@ class TaskMatePointsDisplayCard extends LitElement {
         100% { transform: rotate(360deg) scale(1); }
       }
 
+      /* Secondary metric line */
+      .secondary-info {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--secondary-text-color);
+        margin-top: 8px;
+      }
+      .secondary-info .secondary-value {
+        font-weight: 700;
+        color: var(--primary-text-color);
+      }
+
       /* Stats row under big number */
       .stats-row {
         display: flex;
@@ -492,6 +505,7 @@ class TaskMatePointsDisplayCard extends LitElement {
     if (!config.entity) throw new Error("TaskMate Points Display: 'entity' is required.");
     this.config = {
       mode: "single",
+      primary_display: "current_points",
       show_streak: true,
       show_weekly: true,
       show_rank: true,
@@ -518,8 +532,32 @@ class TaskMatePointsDisplayCard extends LitElement {
     return s ? getChildren(s) : [];
   }
 
+  _isCareerMode() {
+    return this.config.primary_display === "career_score";
+  }
+
+  _primaryValue(child) {
+    return this._isCareerMode() ? (child.career_score || 0) : (child.points || 0);
+  }
+
+  _secondaryValue(child) {
+    return this._isCareerMode() ? (child.points || 0) : (child.career_score || 0);
+  }
+
+  _primaryLabel() {
+    return this._isCareerMode()
+      ? this._t("points_display.career_score_label")
+      : this._t("points_display.total_points");
+  }
+
+  _secondaryLabel() {
+    return this._isCareerMode()
+      ? this._t("points_display.current_points_label")
+      : this._t("points_display.career_score_label");
+  }
+
   _rankedChildren() {
-    return [...this._allChildren()].sort((a, b) => (b.points || 0) - (a.points || 0));
+    return [...this._allChildren()].sort((a, b) => this._primaryValue(b) - this._primaryValue(a));
   }
 
   _singleChild() {
@@ -557,7 +595,8 @@ class TaskMatePointsDisplayCard extends LitElement {
 
     const children = this._allChildren();
     const colour   = CHILD_COLOURS[children.indexOf(child) % CHILD_COLOURS.length];
-    const pts      = child.points || 0;
+    const primary  = this._primaryValue(child);
+    const secondary = this._secondaryValue(child);
     const weekly   = weeklyPoints(child);
     const streak   = child.streak || 0;
     const rank     = this._rankedChildren().findIndex(c => c.id === child.id) + 1;
@@ -570,9 +609,12 @@ class TaskMatePointsDisplayCard extends LitElement {
         </div>
 
         <div class="big-points">
-          <div class="points-label">${this._t("points_display.total_points")}</div>
+          <div class="points-label">${this._primaryLabel()}</div>
           <div class="points-number" style="color:${colour}">
-            <span class="points-star">\u2B50</span>${pts.toLocaleString()}
+            <span class="points-star">\u2B50</span>${primary.toLocaleString()}
+          </div>
+          <div class="secondary-info">
+            ${this._secondaryLabel()}: <span class="secondary-value">${secondary.toLocaleString()}</span>
           </div>
         </div>
 
@@ -621,11 +663,12 @@ class TaskMatePointsDisplayCard extends LitElement {
     return html`
       <div class="multi-grid">
         ${ranked.map((child, idx) => {
-          const colour  = CHILD_COLOURS[this._allChildren().indexOf(child) % CHILD_COLOURS.length];
-          const pts     = child.points || 0;
-          const weekly  = weeklyPoints(child);
-          const streak  = child.streak || 0;
-          const isTop   = idx === 0;
+          const colour    = CHILD_COLOURS[this._allChildren().indexOf(child) % CHILD_COLOURS.length];
+          const primary   = this._primaryValue(child);
+          const secondary = this._secondaryValue(child);
+          const weekly    = weeklyPoints(child);
+          const streak    = child.streak || 0;
+          const isTop     = idx === 0;
           return html`
             <div class="child-tile ${isTop ? "top-child" : ""}"
                  style="${isTop ? `border-color:${colour};` : ""}">
@@ -634,9 +677,14 @@ class TaskMatePointsDisplayCard extends LitElement {
               ${childAvatar(child, colour)}
               <div class="child-name">${child.name}</div>
               <div class="tile-points" style="color:${colour}">
-                <span class="tile-star">\u2B50</span>${pts.toLocaleString()}
+                <span class="tile-star">\u2B50</span>${primary.toLocaleString()}
               </div>
-              <div class="tile-label">${this._t("points_display.points_label")}</div>
+              <div class="tile-label">${this._isCareerMode()
+                ? this._t("points_display.career_score_label")
+                : this._t("points_display.points_label")}</div>
+              <div class="secondary-info">
+                ${this._secondaryLabel()}: <span class="secondary-value">${secondary.toLocaleString()}</span>
+              </div>
               ${this.config.show_weekly ? html`
                 <div class="tile-weekly">${this._t("points_display.weekly_plus", { count: weekly })}</div>` : ""}
               ${this.config.show_streak ? html`
@@ -658,7 +706,8 @@ class TaskMatePointsDisplayCard extends LitElement {
       </div>`;
     }
 
-    const total  = ranked.reduce((s, c) => s + (c.points || 0), 0);
+    const total     = ranked.reduce((s, c) => s + this._primaryValue(c), 0);
+    const secTotal  = ranked.reduce((s, c) => s + this._secondaryValue(c), 0);
 
     return html`
       <div class="cumulative-wrap">
@@ -667,15 +716,19 @@ class TaskMatePointsDisplayCard extends LitElement {
           <div class="points-number" style="color:${this.config.header_color || DEFAULT_HEADER}">
             <span class="points-star">\u{1F31F}</span>${total.toLocaleString()}
           </div>
+          <div class="secondary-info">
+            ${this._secondaryLabel()}: <span class="secondary-value">${secTotal.toLocaleString()}</span>
+          </div>
           <div class="family-label">${this._t("points_display.family_subtitle", { count: ranked.length })}</div>
         </div>
 
         <div class="divider-label">${this._t("points_display.individual_scores")}</div>
 
         ${ranked.map((child, idx) => {
-          const colour = CHILD_COLOURS[this._allChildren().indexOf(child) % CHILD_COLOURS.length];
-          const pts    = child.points || 0;
-          const pct    = total > 0 ? Math.round((pts / total) * 100) : 0;
+          const colour    = CHILD_COLOURS[this._allChildren().indexOf(child) % CHILD_COLOURS.length];
+          const primary   = this._primaryValue(child);
+          const secondary = this._secondaryValue(child);
+          const pct       = total > 0 ? Math.round((primary / total) * 100) : 0;
           return html`
             <div class="cumul-row">
               ${childAvatar(child, colour)}
@@ -683,8 +736,11 @@ class TaskMatePointsDisplayCard extends LitElement {
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
                   <span class="child-name">${child.name}</span>
                   <span class="cumul-points" style="color:${colour}">
-                    <span class="cumul-star">\u2B50</span>${pts.toLocaleString()}
+                    <span class="cumul-star">\u2B50</span>${primary.toLocaleString()}
                   </span>
+                </div>
+                <div class="secondary-info" style="margin-top:0;margin-bottom:4px;">
+                  ${this._secondaryLabel()}: <span class="secondary-value">${secondary.toLocaleString()}</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
                   <div class="cumul-bar-wrap" style="flex:1;">
@@ -814,6 +870,18 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
           },
         },
       },
+      {
+        name: 'primary_display',
+        selector: {
+          select: {
+            options: [
+              { value: 'current_points', label: this._t('points_display.editor.primary_current_points') },
+              { value: 'career_score', label: this._t('points_display.editor.primary_career_score') },
+            ],
+            mode: 'dropdown',
+          },
+        },
+      },
     ];
 
     if (mode === 'single') {
@@ -844,6 +912,7 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
       entity: this._t('points_display.editor.entity_label'),
       title: this._t('common.editor.card_title'),
       mode: this._t('points_display.editor.mode_label'),
+      primary_display: this._t('points_display.editor.primary_display'),
       child_id: this._t('points_display.editor.child_label'),
       show_weekly: this._t('points_display.editor.show_weekly'),
       show_streak: this._t('points_display.editor.show_streak'),
@@ -861,6 +930,7 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
       entity: this.config.entity || '',
       title: this.config.title || '',
       mode,
+      primary_display: this.config.primary_display || 'current_points',
       child_id: this.config.child_id || '',
       show_weekly: this.config.show_weekly !== false,
       show_streak: this.config.show_streak !== false,
@@ -918,6 +988,8 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
       if (value === '' || value === null || value === undefined) {
         delete newConfig[key];
       } else if (key === 'mode' && value === 'single') {
+        delete newConfig[key];
+      } else if (key === 'primary_display' && value === 'current_points') {
         delete newConfig[key];
       } else if ((key === 'show_weekly' || key === 'show_streak' || key === 'show_rank') && value === true) {
         delete newConfig[key];
