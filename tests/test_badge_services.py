@@ -19,8 +19,8 @@ def coord_with_badges():
     storage.async_save = AsyncMock()
     storage._data = {"badges": [], "awarded_badges": [], "children": []}
     points_coord = MagicMock()
-    points_coord.add_points = AsyncMock()
-    points_coord.remove_points = AsyncMock()
+    points_coord.async_add_points = AsyncMock()
+    points_coord.async_remove_points = AsyncMock()
     badges = BadgeCoordinator(hass, storage, points_coord)
     coord = MagicMock()
     coord.storage = storage

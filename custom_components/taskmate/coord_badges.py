@@ -172,7 +172,7 @@ class BadgeCoordinator:
 
             if not silent:
                 if bonus > 0:
-                    await self.points_coord.add_points(
+                    await self.points_coord.async_add_points(
                         child_id,
                         bonus,
                         reason=f"Badge: {badge.name}",
@@ -218,7 +218,7 @@ class BadgeCoordinator:
         )
         self.storage.add_awarded_badge(award)
         if bonus > 0:
-            await self.points_coord.add_points(
+            await self.points_coord.async_add_points(
                 child_id, bonus, reason=f"Badge: {badge.name}",
             )
         self.hass.bus.async_fire(
@@ -250,7 +250,7 @@ class BadgeCoordinator:
 
         self.storage.remove_awarded_badge(awarded_id)
         if award.bonus_credited > 0:
-            await self.points_coord.remove_points(
+            await self.points_coord.async_remove_points(
                 award.child_id,
                 award.bonus_credited,
                 reason=f"Badge revoked: {badge_name}",
