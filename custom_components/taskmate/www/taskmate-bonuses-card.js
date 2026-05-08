@@ -824,7 +824,7 @@ window.customCards.push({
   type: "taskmate-bonuses-card",
   name: "TaskMate Bonuses",
   description: "Apply point-awarding bonuses to children",
-  preview: false,
+  preview: true,
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM

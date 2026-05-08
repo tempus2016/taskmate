@@ -822,7 +822,7 @@ window.customCards.push({
   type: "taskmate-penalties-card",
   name: "TaskMate Penalties",
   description: "Apply point-deduction penalties to children",
-  preview: false,
+  preview: true,
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM

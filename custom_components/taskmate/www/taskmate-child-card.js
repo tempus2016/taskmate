@@ -1528,7 +1528,8 @@ class TaskMateChildCard extends LitElement {
     // Get child info
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     const children = attrs.children || [];
-    const child = children.find(c => c.id === this.config.child_id);
+    const child = children.find(c => c.id === this.config.child_id)
+      || (!this.config.child_id && children[0]);
 
     if (!child) {
       return html`

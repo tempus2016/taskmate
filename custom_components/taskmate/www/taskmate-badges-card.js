@@ -303,7 +303,7 @@ class TaskMateBadgesCard extends LitElement {
 
   static getConfigElement() { return document.createElement("taskmate-badges-card-editor"); }
   static getStubConfig() {
-    return { entity: "sensor.taskmate_badges_child" };
+    return { entity: "sensor.taskmate_overview" };
   }
 
   _tierLabel(tier) {
@@ -331,9 +331,15 @@ class TaskMateBadgesCard extends LitElement {
     }
 
     const attrs = entity.attributes || {};
-    const earned = attrs.earned || [];
-    const available = attrs.available || [];
-    const childName = attrs.child_name || attrs.name || "";
+    const isPreview = !attrs.earned && !attrs.available;
+    const earned = isPreview
+      ? [{ id: "s1", name: "Early Bird", icon: "mdi:weather-sunny", tier: "gold", point_bonus: 10, earned_at: new Date().toISOString() },
+         { id: "s2", name: "Streak Star", icon: "mdi:fire", tier: "silver", point_bonus: 5, earned_at: new Date().toISOString() }]
+      : (attrs.earned || []);
+    const available = isPreview
+      ? [{ id: "s3", name: "Helping Hand", icon: "mdi:hand-heart", tier: "bronze", point_bonus: 5, progress_pct: 60, progress_label: "3 / 5" }]
+      : (attrs.available || []);
+    const childName = isPreview ? "Child" : (attrs.child_name || attrs.name || "");
     const childAvatar = attrs.child_avatar || "mdi:account-circle";
     const totalBadges = attrs.total_badges || (earned.length + available.length);
 
@@ -443,7 +449,7 @@ window.customCards.push({
   type: "taskmate-badges-card",
   name: "TaskMate Badges",
   description: "Achievement badge grid for a single child",
-  preview: false,
+  preview: true,
 });
 
 const _tmBadgesVersion = new URLSearchParams(

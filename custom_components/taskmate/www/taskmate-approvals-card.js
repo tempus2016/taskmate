@@ -343,7 +343,7 @@ class TaskMateApprovalsCard extends LitElement {
 
   static getStubConfig() {
     return {
-      entity: "sensor.pending_approvals",
+      entity: "sensor.taskmate_overview",
       title: "Pending Approvals",
     };
   }
