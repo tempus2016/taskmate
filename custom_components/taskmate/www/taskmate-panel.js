@@ -715,11 +715,11 @@ class TaskMatePanel extends HTMLElement {
 
   // ---- Parent complete --------------------------------------------------
   async _doParentComplete(choreId) {
-    if (!confirm("Mark this chore as completed by parent? No points will be awarded.")) return;
+    if (!confirm(this._t("panel.parent_complete_confirm"))) return;
     const { ok, err } = await this._callWS({ type: "taskmate/parent_complete_chore", chore_id: choreId });
-    if (!ok) { this._showToast("err", "Failed: " + err); return; }
+    if (!ok) { this._showToast("err", this._t("panel.parent_complete_failed", {error: err})); return; }
     await this._fetchState();
-    this._showToast("ok", "Marked as parent completed");
+    this._showToast("ok", this._t("panel.parent_complete_success"));
   }
 
   // ---- Skip chore --------------------------------------------------------
@@ -1285,7 +1285,7 @@ class TaskMatePanel extends HTMLElement {
         { id: "penalties", label: this._t("panel.tab_penalties"), icon: "mdi:alert-circle-outline" },
         { id: "bonuses",   label: this._t("panel.tab_bonuses"),   icon: "mdi:flash-outline" },
         { id: "groups",    label: this._t("panel.tab_groups"),    icon: "mdi:layers-outline" },
-        { id: "badges",    label: "Badges",                        icon: "mdi:medal-outline" },
+        { id: "badges",    label: this._t("panel.tab_badges"),     icon: "mdi:medal-outline" },
         { id: "templates", label: this._t("panel.tab_templates"), icon: "mdi:clipboard-list-outline" },
       ]},
       { head: this._t("panel.nav_system"), items: [
@@ -1347,7 +1347,7 @@ class TaskMatePanel extends HTMLElement {
           <strong>${this._esc(crumbLabel)}</strong>
         </div>
         ${pendingCount > 0 && this._activeTab !== "activity" ? `
-          <button type="button" class="tm-approval-pill" data-act="switch-to-activity" title="${pendingCount} pending — click to review">
+          <button type="button" class="tm-approval-pill" data-act="switch-to-activity" title="${this._t("panel.pending_tooltip", {count: pendingCount})}">
             <span class="tm-approval-dot"></span>
             ${this._t("panel.topbar_pending", {count: pendingCount})}
           </button>
@@ -1438,7 +1438,7 @@ class TaskMatePanel extends HTMLElement {
   _renderChildrenTab() {
     const all = this._state.children || [];
     const children = this._filterByName(all);
-    const pointsName = this._state.settings.points_name || "points";
+    const pointsName = this._state.settings.points_name || this._t("common.points");
     return `
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">${this._t("panel.child_title")} <span class="tm-toolbar-count">${all.length}</span></h2>
@@ -1708,7 +1708,7 @@ class TaskMatePanel extends HTMLElement {
         <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span></td>
         <td>${c.requires_approval ? `<span class='tm-yes'>${this._t("panel.common_yes")}</span>` : `<span class='tm-no'>${this._t("panel.common_no")}</span>`}</td>
         <td class="tm-row-actions"><div>
-          ${this._state.parent_completable && this._state.parent_completable[c.id] ? `<button type="button" class="tm-icon-btn" data-act="parent-complete-chore" data-id="${this._esc(c.id)}" title="Parent did it (no points)">👤✓</button>` : ""}
+          ${this._state.parent_completable && this._state.parent_completable[c.id] ? `<button type="button" class="tm-icon-btn" data-act="parent-complete-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.parent_complete_tooltip")}">👤✓</button>` : ""}
           ${["alternating", "random", "balanced"].includes(c.assignment_mode) ? `<button type="button" class="tm-icon-btn" data-act="skip-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_skip_chore")}">⏭</button>` : ""}
           <button type="button" class="tm-icon-btn" data-act="edit-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_edit")}">✏</button>
           <button type="button" class="tm-icon-btn" data-act="delete-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_delete")}">🗑</button>
@@ -1721,7 +1721,7 @@ class TaskMatePanel extends HTMLElement {
   _renderRewardsTab() {
     const all = this._state.rewards || [];
     const rewards = this._filterByName(all);
-    const pointsName = this._state.settings.points_name || "points";
+    const pointsName = this._state.settings.points_name || this._t("common.points");
     return `
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">${this._t("panel.reward_title")} <span class="tm-toolbar-count">${all.length}</span></h2>
@@ -2056,7 +2056,7 @@ class TaskMatePanel extends HTMLElement {
         !isBuiltin ? this._field(this._t("panel.badge_name_label"), "name", d.name, "text") : "",
         !isBuiltin ? this._field(this._t("panel.badge_description_label"), "description", d.description, "text") : "",
         `<div class="tm-field-row">
-          ${!isBuiltin ? this._iconPickerField("Icon", "icon", d.icon) : ""}
+          ${!isBuiltin ? this._iconPickerField(this._t("panel.badge_icon_label"), "icon", d.icon) : ""}
           ${this._select(this._t("panel.badge_tier_label"), "tier", d.tier || "bronze", BADGE_TIERS)}
         </div>`,
         `<div class="tm-field-row">
@@ -2872,7 +2872,7 @@ class TaskMatePanel extends HTMLElement {
   _renderRewardDialog() {
     const d = this._dialog.data;
     const children = this._state.children || [];
-    const pointsName = this._state.settings.points_name || "points";
+    const pointsName = this._state.settings.points_name || this._t("common.points");
     return this._dialogShell(this._dialog.mode === "add" ? this._t("panel.dialog_add_reward") : this._t("panel.dialog_edit_reward"),
       [
         this._field(this._t("panel.chore_name_label"), "name", d.name, "text"),

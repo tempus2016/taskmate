@@ -402,7 +402,7 @@ class TaskMateParentDashboardCard extends LitElement {
     const pendingCompletions = completions.filter(c => !c.approved);
     const pendingRewardClaims = attrs.pending_reward_claims || [];
     const pointsIcon = attrs.points_icon || "mdi:star";
-    const pointsName = attrs.points_name || "Points";
+    const pointsName = attrs.points_name || this._t('common.points');
     const totalPending = pendingCompletions.length + pendingRewardClaims.length;
 
     const rotationChores = chores.filter(c => (c.assignment_mode || 'everyone') !== 'everyone');
@@ -491,7 +491,7 @@ class TaskMateParentDashboardCard extends LitElement {
               <div class="timed-session-row">
                 <ha-icon icon="mdi:timer-outline" style="color: ${s.state === 'running' ? '#2ecc71' : '#e67e22'};"></ha-icon>
                 <span><strong>${sChild.name}</strong> — ${sChore.name} (${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')})</span>
-                ${s.state === 'paused' ? html`<span class="paused-tag">PAUSED</span>` : ''}
+                ${s.state === 'paused' ? html`<span class="paused-tag">${this._t('dashboard.paused_tag')}</span>` : ''}
               </div>
             `;
           })}

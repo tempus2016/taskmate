@@ -420,7 +420,7 @@ class TaskMateRewardProgressCard extends LitElement {
     const rewards = attrs.rewards || [];
     const children = attrs.children || [];
     const pointsIcon = attrs.points_icon || "mdi:star";
-    const pointsName = attrs.points_name || "Points";
+    const pointsName = attrs.points_name || this._t("common.points");
 
     // Pick reward
     let reward = this.config.reward_id

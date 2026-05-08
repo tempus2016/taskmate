@@ -957,7 +957,7 @@ class TaskMateRewardsCard extends LitElement {
     const allRewards = attrs.rewards || [];
     const children = attrs.children || [];
     const pointsIcon = attrs.points_icon || "mdi:star";
-    const pointsName = attrs.points_name || "Stars";
+    const pointsName = attrs.points_name || this._t("common.stars");
 
     // Filter rewards based on child_id if configured
     let rewards = allRewards;

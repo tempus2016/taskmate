@@ -316,7 +316,7 @@ class TaskMateOverviewCard extends LitElement {
     const chorePointsMap = {};
     chores.forEach(ch => { chorePointsMap[ch.id] = ch.points || 0; });
     const pointsIcon = attrs.points_icon || "mdi:star";
-    const pointsName = attrs.points_name || "Stars";
+    const pointsName = attrs.points_name || this._t("common.stars");
 
     // Pending approvals — from approvals entity if configured, else from completions
     let pendingApprovals = 0;

@@ -431,7 +431,7 @@ class TaskMateApprovalsCard extends LitElement {
       <div class="day-group">
         <div class="day-header">
           <ha-icon icon="mdi:gift-outline" style="--mdc-icon-size: 18px; vertical-align: -3px; margin-right: 6px;"></ha-icon>
-          ${this._t('approvals.reward_claims_section') || 'Reward claims'}
+          ${this._t('approvals.reward_claims_section')}
         </div>
         ${claims.map((claim) => this._renderClaimItem(claim))}
       </div>
@@ -722,7 +722,7 @@ class TaskMateApprovalsCard extends LitElement {
             ${completion.timed_duration_seconds > 0 ? html`
               <span class="duration-badge">
                 <ha-icon icon="mdi:timer-outline"></ha-icon>
-                ${Math.floor(completion.timed_duration_seconds / 60)} min
+                ${this._t('approvals.timed_duration', {count: Math.floor(completion.timed_duration_seconds / 60)})}
               </span>
             ` : ''}
             <span class="points-badge">
