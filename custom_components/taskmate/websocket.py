@@ -34,6 +34,10 @@ Task groups:
     taskmate/update_task_group  — group_id + any of the above
     taskmate/remove_task_group  — group_id
 
+Ordering:
+    taskmate/set_chore_order        — child_id + chore_order (per-child)
+    taskmate/set_global_chore_order — chore_order (admin panel display order)
+
 Settings:
     taskmate/update_settings    — partial dict of {points_name, points_icon, history_days, streak_reset_mode, ...}
 
@@ -96,6 +100,7 @@ WS_REJECT_CHORE: Final        = "taskmate/reject_chore"
 WS_APPROVE_REWARD: Final      = "taskmate/approve_reward"
 WS_REJECT_REWARD: Final       = "taskmate/reject_reward"
 WS_SET_CHORE_ORDER: Final     = "taskmate/set_chore_order"
+WS_SET_GLOBAL_CHORE_ORDER: Final = "taskmate/set_global_chore_order"
 WS_ADD_CHORES_BULK: Final     = "taskmate/add_chores_bulk"
 WS_PARENT_COMPLETE_CHORE: Final = "taskmate/parent_complete_chore"
 
@@ -182,6 +187,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "version": "2",
         "children":         list(data.get("children", [])),
         "chores":           list(data.get("chores", [])),
+        "chore_display_order": list(data.get("chore_display_order", [])),
         "rewards":          list(data.get("rewards", [])),
         "penalties":        list(data.get("penalties", [])),
         "bonuses":          list(data.get("bonuses", [])),
@@ -889,6 +895,17 @@ async def _ws_set_chore_order(hass, connection, msg, coordinator):
 
 
 @websocket_api.websocket_command({
+    vol.Required("type"): WS_SET_GLOBAL_CHORE_ORDER,
+    vol.Required("chore_order"): [str],
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_set_global_chore_order(hass, connection, msg, coordinator):
+    await coordinator.async_set_global_chore_order(list(msg["chore_order"]))
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({
     vol.Required("type"): WS_ADD_CHORES_BULK,
     vol.Required("chore_names"): [str],
     vol.Optional("points"): vol.All(int, vol.Range(min=0)),
@@ -1061,7 +1078,7 @@ _COMMANDS = (
     _ws_complete_bonus_subtask,
     _ws_approve_chore, _ws_reject_chore, _ws_approve_reward, _ws_reject_reward,
     _ws_parent_complete_chore,
-    _ws_set_chore_order, _ws_add_chores_bulk,
+    _ws_set_chore_order, _ws_set_global_chore_order, _ws_add_chores_bulk,
     _ws_templates_list, _ws_templates_get, _ws_templates_apply,
     _ws_templates_save_from, _ws_templates_create, _ws_templates_update,
     _ws_templates_delete,

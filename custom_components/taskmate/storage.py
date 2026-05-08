@@ -81,6 +81,10 @@ class TaskMateStorage:
         if "awarded_badges" not in self._data:
             self._data["awarded_badges"] = []
 
+        # Ensure chore_display_order store exists (global admin ordering)
+        if "chore_display_order" not in self._data:
+            self._data["chore_display_order"] = []
+
         # Badge migration / seeding
         self._seed_builtin_badges(is_fresh=is_fresh)
 
@@ -299,6 +303,17 @@ class TaskMateStorage:
         self._data["chores"] = [
             c for c in self._data.get("chores", []) if c.get("id") != chore_id
         ]
+        order = self._data.get("chore_display_order", [])
+        if chore_id in order:
+            order.remove(chore_id)
+
+    def get_chore_display_order(self) -> list[str]:
+        """Get the global chore display order."""
+        return list(self._data.get("chore_display_order", []))
+
+    def set_chore_display_order(self, order: list[str]) -> None:
+        """Set the global chore display order."""
+        self._data["chore_display_order"] = list(order)
 
     # Rewards management
     def get_rewards(self) -> list[Reward]:
