@@ -1764,7 +1764,21 @@ class TaskMatePanel extends HTMLElement {
 
   _criteriaLabel(criteria) {
     if (!criteria || !criteria.length) return this._t("badge.manual_award_only");
-    return criteria.map(c => `${c.metric} ≥ ${c.value}`).join(" AND ");
+    return criteria.map(c => `${this._t("badge.criteria_" + c.metric)} ${c.operator} ${c.value}`).join(` ${this._t("badge.criteria_and")} `);
+  }
+
+  _badgeName(b) {
+    if (!b.builtin) return b.name;
+    const key = "badge.name_" + b.id.replace("builtin.", "");
+    const t = this._t(key);
+    return t !== key ? t : b.name;
+  }
+
+  _badgeDesc(b) {
+    if (!b.builtin) return b.description || "";
+    const key = "badge.desc_" + b.id.replace("builtin.", "");
+    const t = this._t(key);
+    return t !== key ? t : (b.description || "");
   }
 
   _renderBadgeCatalogueTab(allBadges) {
@@ -1779,9 +1793,9 @@ class TaskMatePanel extends HTMLElement {
               <tr class="tm-row tm-badge-row ${this._tierClass(b.tier)}">
                 <td>
                   <div class="tm-badge-icon-sm">${this._mdi(b.icon)}</div>
-                  <span style="margin-left:8px"><strong>${this._esc(b.name)}</strong>
+                  <span style="margin-left:8px"><strong>${this._esc(this._badgeName(b))}</strong>
                   <span class="tm-pill" style="background:var(--tm-surface-2);font-size:10px;margin-left:4px">${this._t("panel.badge_builtin_pill")}</span></span>
-                  ${b.description ? `<div class="tm-meta">${this._esc(b.description)}</div>` : ""}
+                  ${this._badgeDesc(b) ? `<div class="tm-meta">${this._esc(this._badgeDesc(b))}</div>` : ""}
                 </td>
                 <td><span class="tm-badge-tier-label">${this._t("badge.tier_" + (b.tier || "bronze"))}</span></td>
                 <td><code class="tm-badge-criteria">${this._esc(this._criteriaLabel(b.criteria))}</code></td>
@@ -1871,13 +1885,13 @@ class TaskMatePanel extends HTMLElement {
                 <tr class="tm-row tm-badge-row ${tierCls}">
                   <td>
                     <div class="tm-badge-icon-sm">${this._mdi(badge.icon || "mdi:medal")}</div>
-                    <span style="margin-left:8px"><strong>${this._esc(badge.name || a.badge_id)}</strong></span>
+                    <span style="margin-left:8px"><strong>${this._esc(this._badgeName(badge) || a.badge_id)}</strong></span>
                   </td>
                   <td><strong style="color:var(--tm-accent)">${this._esc(child.name || a.child_id)}</strong></td>
                   <td class="tm-meta">${this._esc(when)}</td>
                   <td><span class="tm-badge-src ${srcCls}">${srcLabel}</span></td>
                   <td class="tm-row-actions"><div>
-                    <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="revoke-badge" data-id="${this._esc(a.id)}" data-name="${this._esc(badge.name || "badge")}">${this._t("panel.badge_revoke_btn")}</button>
+                    <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="revoke-badge" data-id="${this._esc(a.id)}" data-name="${this._esc(this._badgeName(badge) || "badge")}">${this._t("panel.badge_revoke_btn")}</button>
                   </div></td>
                 </tr>
               `;
