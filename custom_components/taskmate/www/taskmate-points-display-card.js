@@ -519,6 +519,10 @@ class TaskMatePointsDisplayCard extends LitElement {
     return document.createElement("taskmate-points-display-card-editor");
   }
 
+  static getStubConfig() {
+    return { entity: "sensor.taskmate_overview", mode: "multi" };
+  }
+
   getCardSize() { return 3; }
 
   /* ── Data helpers ───────────────────────────────────────────────────── */
