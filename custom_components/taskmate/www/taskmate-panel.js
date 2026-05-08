@@ -1662,7 +1662,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr>
-              <th>${this._t("panel.chore_table_name")}</th><th>${this._t("panel.chore_table_points")}</th><th>${this._t("panel.chore_table_period")}</th><th>${this._t("panel.chore_table_assigned")}</th><th>${this._t("panel.chore_table_schedule")}</th><th>${this._t("panel.chore_table_approval")}</th><th></th>
+              <th>${this._t("panel.chore_table_name")}</th><th>${this._t("panel.chore_table_points")}</th><th>${this._t("panel.chore_table_period")}</th><th>${this._t("panel.chore_table_assigned")}</th><th>${this._t("panel.chore_table_current")}</th><th>${this._t("panel.chore_table_schedule")}</th><th>${this._t("panel.chore_table_approval")}</th><th></th>
             </tr></thead>
             <tbody>
               ${chores.map(c => this._renderChoreRow(c, childById)).join("")}
@@ -1678,15 +1678,12 @@ class TaskMatePanel extends HTMLElement {
     const renaming = this._inlineRename && this._inlineRename.kind === "chore" && this._inlineRename.id === c.id;
     const isRotation = ["alternating", "random", "balanced"].includes(c.assignment_mode);
     const curChild = c.assignment_current_child_id || "";
-    const pool = (c.assigned_to || []).length > 0 ? c.assigned_to : Object.keys(childById);
-    const assignedNames = isRotation && curChild
-      ? pool.map(id => {
-          const n = this._esc((childById[id] && childById[id].name) || "?");
-          return id === curChild ? `<strong class="tm-current-assignee">${n}</strong>` : `<span class="tm-text-muted">${n}</span>`;
-        }).join(", ")
-      : (c.assigned_to || []).length === 0
-        ? `<span class="tm-text-muted">${this._t("panel.common_all_children")}</span>`
-        : this._esc(pool.map(id => (childById[id] && childById[id].name) || "?").join(", "));
+    const assignedNames = (c.assigned_to || []).length === 0
+      ? `<span class="tm-text-muted">${this._t("panel.common_all_children")}</span>`
+      : this._esc((c.assigned_to || []).map(id => (childById[id] && childById[id].name) || "?").join(", "));
+    const currentName = isRotation && curChild && childById[curChild]
+      ? `<strong>${this._esc(childById[curChild].name)}</strong>`
+      : isRotation ? `<span class="tm-text-muted">—</span>` : "";
     const schedLabel = c.schedule_mode === "recurring"
       ? this._labelOf(RECURRENCES, c.recurrence) + (c.recurrence_day && c.recurrence_day !== "any_day" ? ` · ${this._labelOf(DAYS, c.recurrence_day)}` : "")
       : c.schedule_mode === "one_shot"
@@ -1706,6 +1703,7 @@ class TaskMatePanel extends HTMLElement {
         <td><strong class="tm-numeric">${c.task_type === "timed" ? `${c.timed_rate_points || 0}/${c.timed_rate_minutes || 1} min` : c.points}</strong></td>
         <td><span class="tm-pill">${this._t("panel.time_" + (c.time_category || "anytime"))}</span></td>
         <td>${assignedNames} ${modeBadge}</td>
+        <td>${currentName}</td>
         <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span></td>
         <td>${c.requires_approval ? `<span class='tm-yes'>${this._t("panel.common_yes")}</span>` : `<span class='tm-no'>${this._t("panel.common_no")}</span>`}</td>
         <td class="tm-row-actions"><div>
