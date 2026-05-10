@@ -54,3 +54,50 @@ async def test_async_reload_schedules_cancels_old_and_re_registers(coord, hass):
         await coord.async_setup_schedules()
 
     assert len(cancelled) == 3
+
+
+@pytest.mark.asyncio
+async def test_bedtime_skips_when_no_outstanding_chores(coord, hass):
+    from datetime import datetime
+    child = Child(name="M", notify_service="notify.m")
+    coord.storage._data.setdefault("children", []).append(child.to_dict())
+    # No chores assigned to this child → no outstanding work
+    coord.fire = AsyncMock()
+    cb = coord._make_bedtime_callback(child.id)
+    await cb(datetime.now())
+    coord.fire.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_streak_at_risk_skips_when_completed_today(coord, hass):
+    from datetime import datetime
+    from homeassistant.util import dt as dt_util
+    today = dt_util.now().date().isoformat()
+    child = Child(name="M", current_streak=5, last_completion_date=today)
+    coord.storage._data.setdefault("children", []).append(child.to_dict())
+    coord.fire = AsyncMock()
+    await coord._streak_at_risk_callback(datetime.now())
+    coord.fire.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_streak_at_risk_skips_when_streak_below_two(coord, hass):
+    from datetime import datetime
+    child = Child(name="M", current_streak=1)
+    coord.storage._data.setdefault("children", []).append(child.to_dict())
+    coord.fire = AsyncMock()
+    await coord._streak_at_risk_callback(datetime.now())
+    coord.fire.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_streak_at_risk_fires_when_streak_active_and_not_extended(coord, hass):
+    from datetime import datetime
+    child = Child(name="M", current_streak=5, last_completion_date="2024-01-01")
+    coord.storage._data.setdefault("children", []).append(child.to_dict())
+    coord.fire = AsyncMock()
+    await coord._streak_at_risk_callback(datetime.now())
+    coord.fire.assert_called_once()
+    args, kwargs = coord.fire.call_args
+    assert args[0] == "streak_at_risk"
+    assert args[1]["streak"] == 5

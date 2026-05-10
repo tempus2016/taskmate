@@ -578,6 +578,17 @@ class ChoresMixin:
                     # Trigger badge evaluation after approval awards points/chore count/streak
                     if getattr(self, "badges", None):
                         await self.badges.evaluate_for_child(completion.child_id, "manual")
+
+                    # All-chores-done celebration — fire once per child per day
+                    today_iso = dt_util.now().date().isoformat()
+                    flag_key = f"all_done_{child.id}_{today_iso}"
+                    flags = self.storage._data.setdefault("all_done_flags", {})
+                    if flag_key not in flags and not self.notifications._has_outstanding_chores_today(child.id):
+                        flags[flag_key] = True
+                        await self.notifications.fire(
+                            "all_chores_done",
+                            {"child_name": child.name, "child_id": child.id},
+                        )
                 else:
                     _LOGGER.warning(
                         "Cannot approve completion %s: chore (%s) or child (%s) not found",
