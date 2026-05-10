@@ -52,10 +52,13 @@ def _make_system(now=None):
     storage._data = {}
     run(storage.async_load())
 
+    from custom_components.taskmate.coord_notifications import NotificationCoordinator
+
     coord = object.__new__(TaskMateCoordinator)
     coord.hass = hass
     coord.data = {}
     coord.storage = storage
+    coord.notifications = NotificationCoordinator(hass, storage)
     coord._unsub_midnight = None
     coord._unsub_prune = None
     coord._unsub_availability = None

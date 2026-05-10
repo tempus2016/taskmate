@@ -100,3 +100,32 @@ async def test_unknown_type_is_logged_and_ignored(coord, hass, caplog):
     hass.services.async_call.assert_not_called()
     hass.bus.async_fire.assert_not_called()
     assert "Unknown notification type" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_pending_chore_approval_dispatches_actionable(coord, hass):
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(p)
+    # Defaults already include this type with master ON post-migration; routes
+    # are seeded from the migration helper. Re-seed for the test:
+    coord.storage.set_notification_master("pending_chore_approval", True)
+    coord.storage.set_notification_route(
+        "pending_chore_approval", p.id, NotificationRoute(enabled=True),
+    )
+
+    await coord.fire(
+        "pending_chore_approval",
+        {
+            "entry_id": "completion-123",
+            "child_name": "Maria", "chore_name": "Bin",
+            "points": 10, "points_name": "Stars",
+        },
+    )
+
+    notify_calls = [c for c in hass.services.async_call.call_args_list if c[0][0] == "notify"]
+    assert len(notify_calls) == 1
+    data = notify_calls[0][0][2]["data"]
+    assert {"action": "TASKMATE_APPROVE_completion-123", "title": "Approve"} in data["actions"]
+    assert {"action": "TASKMATE_REJECT_completion-123",  "title": "Reject"} in data["actions"]

@@ -405,7 +405,7 @@ class ChoresMixin:
 
         # Fire approval notification if chore requires parent sign-off
         if chore.requires_approval:
-            await self._async_notify_pending_approval(child.name, chore.name, chore.points)
+            await self._async_notify_pending_approval(child.name, chore.name, chore.points, completion_id=completion.id)
 
         await self.async_refresh()
 
@@ -530,7 +530,7 @@ class ChoresMixin:
 
         if chore.requires_approval:
             await self._async_notify_pending_approval(
-                child.name, f"{chore.name} › {subtask.name}", subtask.points
+                child.name, f"{chore.name} › {subtask.name}", subtask.points, completion_id=completion.id
             )
 
         await self.async_refresh()

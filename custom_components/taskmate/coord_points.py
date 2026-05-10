@@ -485,18 +485,19 @@ class PointsMixin:
         await self.async_add_points(child_id, bonus.points, reason=f"Bonus: {bonus.name}")
 
     async def _async_notify_pending_approval(
-        self, child_name: str, chore_name: str, points: int
+        self, child_name: str, chore_name: str, points: int,
+        completion_id: str | None = None,
     ) -> None:
-        """Fire a persistent notification and optional notify service when a chore needs approval."""
-        points_name = self.storage.get_points_name()
-        message = (
-            f"{child_name} completed '{chore_name}' (+{points} {points_name}) "
-            f"and is waiting for your approval."
+        await self.notifications.fire(
+            "pending_chore_approval",
+            {
+                "entry_id": completion_id,
+                "child_name": child_name,
+                "chore_name": chore_name,
+                "points": points,
+                "points_name": self.storage.get_points_name(),
+            },
         )
-        notification_id = (
-            f"taskmate_approval_{child_name}_{chore_name}".replace(" ", "_").lower()
-        )
-        await self._async_fire_approval_notification(message, notification_id)
 
     async def _async_notify_pending_reward_claim(
         self, child_name: str, reward_name: str, cost: int
