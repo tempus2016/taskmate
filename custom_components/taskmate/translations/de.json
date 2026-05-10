@@ -874,6 +874,12 @@
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "child_stats": {
+        "unit_of_measurement": "Aufgaben"
+      }
+    }
   }
 }
-
