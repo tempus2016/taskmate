@@ -80,6 +80,7 @@ class TaskMateCoordinator(
         self._unsub_availability = self.hass.bus.async_listen(
             "state_changed", self._availability_state_changed
         )
+        await self.notifications.async_setup_schedules()
 
     async def _async_backfill_career_history(self) -> None:
         """Backfill career_score_history from completions and transactions.
