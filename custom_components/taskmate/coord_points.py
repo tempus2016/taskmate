@@ -500,58 +500,16 @@ class PointsMixin:
         )
 
     async def _async_notify_pending_reward_claim(
-        self, child_name: str, reward_name: str, cost: int
+        self, child_name: str, reward_name: str, cost: int,
+        claim_id: str | None = None,
     ) -> None:
-        """Fire a persistent notification and optional notify service when a reward claim needs approval."""
-        points_name = self.storage.get_points_name()
-        message = (
-            f"{child_name} claimed '{reward_name}' ({cost} {points_name}) "
-            f"and is waiting for your approval."
+        await self.notifications.fire(
+            "pending_reward_claim",
+            {
+                "entry_id": claim_id,
+                "child_name": child_name,
+                "reward_name": reward_name,
+                "cost": cost,
+                "points_name": self.storage.get_points_name(),
+            },
         )
-        notification_id = (
-            f"taskmate_reward_claim_{child_name}_{reward_name}".replace(" ", "_").lower()
-        )
-        await self._async_fire_approval_notification(message, notification_id)
-
-    async def _async_fire_approval_notification(
-        self, message: str, notification_id: str
-    ) -> None:
-        """Shared helper: create a persistent notification and (optionally) call a notify.* service."""
-        self.hass.async_create_task(
-            self.hass.services.async_call(
-                "persistent_notification",
-                "create",
-                {
-                    "title": "TaskMate — Approval Needed",
-                    "message": message,
-                    "notification_id": notification_id,
-                },
-                blocking=False,
-            )
-        )
-
-        notify_service = self.storage.get_setting("notify_service", "")
-        if notify_service:
-            domain, service = (
-                notify_service.split(".", 1) if "." in notify_service
-                else ("notify", notify_service)
-            )
-            # Only allow notify domain to prevent arbitrary service invocation
-            if domain != "notify":
-                _LOGGER.warning(
-                    "TaskMate: notify_service must use the 'notify' domain, got '%s'",
-                    domain,
-                )
-            else:
-                try:
-                    await self.hass.services.async_call(
-                        domain,
-                        service,
-                        {"title": "TaskMate ✅", "message": message},
-                        blocking=False,
-                    )
-                except Exception as err:  # noqa: BLE001
-                    _LOGGER.warning(
-                        "TaskMate: failed to send notification via %s: %s",
-                        notify_service, err
-                    )
