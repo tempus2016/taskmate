@@ -113,6 +113,18 @@ WS_TEMPLATES_CREATE: Final     = "taskmate/templates/create"
 WS_TEMPLATES_UPDATE: Final     = "taskmate/templates/update"
 WS_TEMPLATES_DELETE: Final     = "taskmate/templates/delete"
 
+# Notifications
+WS_NOTIF_GET_STATE: Final          = "taskmate/notifications/get_state"
+WS_NOTIF_SET_MASTER: Final         = "taskmate/notifications/set_master_enabled"
+WS_NOTIF_SET_ROUTE: Final          = "taskmate/notifications/set_route"
+WS_NOTIF_SET_CHILD_NOTIFY: Final   = "taskmate/notifications/set_child_notify"
+WS_NOTIF_UPSERT_PARENT: Final      = "taskmate/notifications/upsert_parent"
+WS_NOTIF_DELETE_PARENT: Final      = "taskmate/notifications/delete_parent"
+WS_NOTIF_UPSERT_CUSTOM: Final      = "taskmate/notifications/upsert_custom"
+WS_NOTIF_DELETE_CUSTOM: Final      = "taskmate/notifications/delete_custom"
+WS_NOTIF_LIST_NOTIFY: Final        = "taskmate/notifications/list_notify_services"
+WS_NOTIF_SET_STREAK_CUTOFF: Final  = "taskmate/notifications/set_streak_cutoff"
+
 
 def _get_coordinator(hass: HomeAssistant) -> TaskMateCoordinator | None:
     for value in hass.data.get(DOMAIN, {}).values():
@@ -1063,6 +1075,205 @@ async def _ws_templates_delete(hass, connection, msg, coordinator):
 
 
 # ---------------------------------------------------------------------------
+# Notifications
+# ---------------------------------------------------------------------------
+
+@websocket_api.websocket_command({vol.Required("type"): WS_NOTIF_GET_STATE})
+@websocket_api.async_response
+async def ws_notif_get_state(hass, connection, msg):
+    from .coord_notifications import NOTIFICATION_TYPES
+    c = _get_coordinator(hass)
+    if c is None:
+        connection.send_error(msg["id"], "no_coordinator", "TaskMate not loaded")
+        return
+    state = {
+        "recipients": {
+            "children": [
+                {
+                    "id": f"child:{ch.id}",
+                    "name": ch.name,
+                    "notify_service": ch.notify_service,
+                }
+                for ch in c.storage.get_children()
+            ],
+            "parents": [p.to_dict() for p in c.storage.get_parent_recipients()],
+        },
+        "types": [
+            {
+                "id": t.id,
+                "audience": t.audience,
+                "time_gated": t.time_gated,
+                "per_recipient_time": t.per_recipient_time,
+                "actionable": t.actionable,
+                "default_enabled": t.default_enabled,
+            }
+            for t in NOTIFICATION_TYPES
+        ],
+        "config": {
+            tid: cfg.to_dict()
+            for tid, cfg in c.storage.get_all_notification_configs().items()
+        },
+        "custom": [n.to_dict() for n in c.storage.get_custom_notifications()],
+        "settings": {
+            "streak_at_risk_cutoff_time": c.storage.get_streak_at_risk_cutoff(),
+        },
+    }
+    connection.send_result(msg["id"], state)
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_NOTIF_SET_MASTER,
+    vol.Required("type_id"): str,
+    vol.Required("enabled"): bool,
+})
+@websocket_api.async_response
+async def ws_notif_set_master(hass, connection, msg):
+    c = _get_coordinator(hass)
+    await c.notifications.set_master_enabled(msg["type_id"], msg["enabled"])
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_NOTIF_SET_ROUTE,
+    vol.Required("type_id"): str,
+    vol.Required("recipient_id"): str,
+    vol.Required("enabled"): bool,
+    vol.Optional("time"): vol.Any(str, None),
+})
+@websocket_api.async_response
+async def ws_notif_set_route(hass, connection, msg):
+    from .models import NotificationRoute
+    c = _get_coordinator(hass)
+    route = NotificationRoute(enabled=msg["enabled"], time=msg.get("time"))
+    await c.notifications.set_route(msg["type_id"], msg["recipient_id"], route)
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_NOTIF_SET_CHILD_NOTIFY,
+    vol.Required("child_id"): str,
+    vol.Required("notify_service"): vol.Any(str, None),
+})
+@websocket_api.async_response
+async def ws_notif_set_child_notify(hass, connection, msg):
+    c = _get_coordinator(hass)
+    child = c.storage.get_child(msg["child_id"])
+    if child is None:
+        connection.send_error(msg["id"], "not_found", "Child not found")
+        return
+    child.notify_service = msg["notify_service"] or None
+    c.storage.update_child(child)
+    await c.storage.async_save()
+    await c.notifications.async_setup_schedules()
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_NOTIF_UPSERT_PARENT,
+    vol.Optional("parent_id"): str,
+    vol.Required("name"): str,
+    vol.Required("notify_service"): str,
+    vol.Optional("enabled", default=True): bool,
+})
+@websocket_api.async_response
+async def ws_notif_upsert_parent(hass, connection, msg):
+    from .models import ParentRecipient
+    c = _get_coordinator(hass)
+    p_id = msg.get("parent_id")
+    if p_id:
+        existing = next(
+            (p for p in c.storage.get_parent_recipients() if p.id == p_id), None
+        )
+        if existing is None:
+            connection.send_error(msg["id"], "not_found", "Parent not found")
+            return
+        existing.name = msg["name"]
+        existing.notify_service = msg["notify_service"]
+        existing.enabled = msg["enabled"]
+        await c.notifications.upsert_parent(existing)
+        connection.send_result(msg["id"], existing.to_dict())
+    else:
+        p = ParentRecipient(
+            name=msg["name"],
+            notify_service=msg["notify_service"],
+            enabled=msg["enabled"],
+        )
+        await c.notifications.upsert_parent(p)
+        connection.send_result(msg["id"], p.to_dict())
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_NOTIF_DELETE_PARENT,
+    vol.Required("parent_id"): str,
+})
+@websocket_api.async_response
+async def ws_notif_delete_parent(hass, connection, msg):
+    c = _get_coordinator(hass)
+    await c.notifications.delete_parent(msg["parent_id"])
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_NOTIF_UPSERT_CUSTOM,
+    vol.Optional("custom_id"): str,
+    vol.Required("name"): str,
+    vol.Required("message_template"): str,
+    vol.Required("time"): str,
+    vol.Optional("day_mask", default=0b1111111): int,
+    vol.Optional("recipient_ids", default=list): list,
+    vol.Optional("enabled", default=True): bool,
+})
+@websocket_api.async_response
+async def ws_notif_upsert_custom(hass, connection, msg):
+    from .models import CustomNotification
+    c = _get_coordinator(hass)
+    n = CustomNotification.from_dict({
+        "id": msg.get("custom_id"),
+        "name": msg["name"],
+        "message_template": msg["message_template"],
+        "time": msg["time"],
+        "day_mask": int(msg["day_mask"]),
+        "recipient_ids": list(msg["recipient_ids"]),
+        "enabled": bool(msg["enabled"]),
+    })
+    await c.notifications.upsert_custom(n)
+    connection.send_result(msg["id"], n.to_dict())
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_NOTIF_DELETE_CUSTOM,
+    vol.Required("custom_id"): str,
+})
+@websocket_api.async_response
+async def ws_notif_delete_custom(hass, connection, msg):
+    c = _get_coordinator(hass)
+    await c.notifications.delete_custom(msg["custom_id"])
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({vol.Required("type"): WS_NOTIF_LIST_NOTIFY})
+@websocket_api.async_response
+async def ws_notif_list_notify(hass, connection, msg):
+    services = [
+        f"notify.{name}"
+        for name in hass.services.async_services().get("notify", {})
+    ]
+    services.sort()
+    connection.send_result(msg["id"], services)
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_NOTIF_SET_STREAK_CUTOFF,
+    vol.Required("time"): str,
+})
+@websocket_api.async_response
+async def ws_notif_set_streak_cutoff(hass, connection, msg):
+    c = _get_coordinator(hass)
+    await c.notifications.set_streak_cutoff(msg["time"])
+    connection.send_result(msg["id"], {"ok": True})
+
+
+# ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
 
@@ -1082,6 +1293,11 @@ _COMMANDS = (
     _ws_templates_list, _ws_templates_get, _ws_templates_apply,
     _ws_templates_save_from, _ws_templates_create, _ws_templates_update,
     _ws_templates_delete,
+    ws_notif_get_state, ws_notif_set_master, ws_notif_set_route,
+    ws_notif_set_child_notify,
+    ws_notif_upsert_parent, ws_notif_delete_parent,
+    ws_notif_upsert_custom, ws_notif_delete_custom,
+    ws_notif_list_notify, ws_notif_set_streak_cutoff,
 )
 
 
