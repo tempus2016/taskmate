@@ -879,6 +879,9 @@
     "sensor": {
       "child_stats": {
         "unit_of_measurement": "Aufgaben"
+      },
+      "child_badges": {
+        "unit_of_measurement": "Abzeichen"
       }
     }
   }

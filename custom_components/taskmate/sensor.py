@@ -1003,6 +1003,7 @@ class ChildBadgesSensor(TaskMateBaseSensor):
     """Sensor exposing a child's earned and available badges."""
 
     _attr_icon = "mdi:trophy-award"
+    _attr_translation_key = "child_badges"
 
     def __init__(
         self,
@@ -1021,10 +1022,6 @@ class ChildBadgesSensor(TaskMateBaseSensor):
         return len(
             self.coordinator.storage.get_awarded_badges_for_child(self.child_id)
         )
-
-    @property
-    def native_unit_of_measurement(self) -> str:
-        return "badges"
 
     @property
     def extra_state_attributes(self) -> dict:
