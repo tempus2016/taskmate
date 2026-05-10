@@ -84,6 +84,16 @@ class PointsMixin:
                 self.storage.add_points_transaction(transaction)
                 changed = True
 
+                self.hass.bus.async_fire(
+                    "taskmate_perfect_week",
+                    {
+                        "child_id": child.id,
+                        "week_key": week_key,
+                        "bonus": perfect_week_bonus,
+                        "timestamp": dt_util.now().isoformat(),
+                    },
+                )
+
                 if getattr(self, "badges", None):
                     await self.badges.evaluate_for_child(child.id, "perfect_week")
                 _LOGGER.info(
@@ -327,6 +337,16 @@ class PointsMixin:
 
             if child.current_streak > (child.best_streak or 0):
                 child.best_streak = child.current_streak
+
+            self.hass.bus.async_fire(
+                "taskmate_streak_updated",
+                {
+                    "child_id": child.id,
+                    "current_streak": child.current_streak,
+                    "best_streak": child.best_streak,
+                    "timestamp": dt_util.now().isoformat(),
+                },
+            )
 
         # ── Streak milestone bonus ──────────────────────────────────────────
         milestones_enabled = self.storage.get_setting("streak_milestones_enabled", "true") == "true"

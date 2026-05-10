@@ -391,6 +391,18 @@ class ChoresMixin:
 
         self.storage.add_completion(completion)
 
+        self.hass.bus.async_fire(
+            "taskmate_chore_completed",
+            {
+                "child_id": child.id,
+                "child_name": child.name,
+                "chore_id": chore.id,
+                "chore_name": chore.name,
+                "points": chore.points,
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
+
         # Update last_completed store (window starts at completion time, midnight-rounded)
         self.storage.set_last_completed(chore_id, child_id, now.isoformat())
 
@@ -564,6 +576,16 @@ class ChoresMixin:
                     completion.approved_at = dt_util.now()
                     completion.points_awarded = total_awarded
                     self.storage.update_completion(completion)
+
+                    self.hass.bus.async_fire(
+                        "taskmate_chore_approved",
+                        {
+                            "child_id": completion.child_id,
+                            "chore_id": completion.chore_id,
+                            "completion_id": completion.id,
+                            "timestamp": dt_util.now().isoformat(),
+                        },
+                    )
 
                     # One-shot: disable for this child on approval (parent completions only)
                     if not is_bonus and getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
