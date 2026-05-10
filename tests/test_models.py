@@ -573,3 +573,75 @@ class TestPoolAllocationModel:
         pa = PoolAllocation.from_dict(legacy)
         assert pa.allocated_points == 0
         assert pa.id == "legacy"
+
+
+# ---------------------------------------------------------------------------
+# Child notify_service field
+# ---------------------------------------------------------------------------
+
+
+def test_child_notify_service_round_trip():
+    c = Child(name="Maria", notify_service="notify.mobile_app_marias_tablet")
+    assert c.notify_service == "notify.mobile_app_marias_tablet"
+    restored = Child.from_dict(c.to_dict())
+    assert restored.notify_service == "notify.mobile_app_marias_tablet"
+
+
+def test_child_notify_service_defaults_none():
+    c = Child(name="Maria")
+    assert c.notify_service is None
+    restored = Child.from_dict(c.to_dict())
+    assert restored.notify_service is None
+
+
+# ---------------------------------------------------------------------------
+# Notification dataclasses
+# ---------------------------------------------------------------------------
+
+
+def test_parent_recipient_round_trip():
+    from custom_components.taskmate.models import ParentRecipient
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    assert p.id.startswith("parent:")
+    assert p.enabled is True
+    restored = ParentRecipient.from_dict(p.to_dict())
+    assert restored.id == p.id
+    assert restored.name == "John"
+    assert restored.notify_service == "notify.mobile_app_johns_iphone"
+
+
+def test_notification_route_round_trip():
+    from custom_components.taskmate.models import NotificationRoute
+    r = NotificationRoute(enabled=True, time="19:30")
+    d = r.to_dict()
+    assert d == {"enabled": True, "time": "19:30"}
+    assert NotificationRoute.from_dict(d) == r
+    assert NotificationRoute.from_dict({"enabled": False}).time is None
+
+
+def test_notification_config_round_trip():
+    from custom_components.taskmate.models import NotificationConfig, NotificationRoute
+    cfg = NotificationConfig(
+        type_id="bedtime_reminder",
+        master_enabled=True,
+        routes={"child:abc": NotificationRoute(enabled=True, time="19:30")},
+    )
+    restored = NotificationConfig.from_dict(cfg.to_dict())
+    assert restored.master_enabled is True
+    assert restored.routes["child:abc"].time == "19:30"
+
+
+def test_custom_notification_round_trip():
+    from custom_components.taskmate.models import CustomNotification
+    n = CustomNotification(
+        name="Brush teeth",
+        message_template="Time to brush, {child_name}!",
+        time="20:30",
+        day_mask=0b1111111,
+        recipient_ids=["child:abc", "parent:xyz"],
+    )
+    assert n.id  # uuid
+    restored = CustomNotification.from_dict(n.to_dict())
+    assert restored.id == n.id
+    assert restored.day_mask == 0b1111111
+    assert restored.recipient_ids == ["child:abc", "parent:xyz"]
