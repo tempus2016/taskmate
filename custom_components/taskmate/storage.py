@@ -9,7 +9,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
-from .models import Badge, AwardedBadge, Bonus, Child, Chore, ChoreCompletion, Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction, TaskGroup, TimedSession
+from .models import (
+    Badge, AwardedBadge, Bonus, Child, Chore, ChoreCompletion,
+    CustomNotification, NotificationConfig, NotificationRoute, ParentRecipient,
+    Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction,
+    TaskGroup, TimedSession,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -84,6 +89,17 @@ class TaskMateStorage:
         # Ensure chore_display_order store exists (global admin ordering)
         if "chore_display_order" not in self._data:
             self._data["chore_display_order"] = []
+
+        # Notifications overhaul (v3.9.0)
+        if "parent_recipients" not in self._data:
+            self._data["parent_recipients"] = []
+        if "notification_config" not in self._data:
+            self._data["notification_config"] = {}
+        if "custom_notifications" not in self._data:
+            self._data["custom_notifications"] = []
+        if "notifications_migration_done" not in self._data:
+            self._run_notifications_migration()
+            self._data["notifications_migration_done"] = True
 
         # Badge migration / seeding
         self._seed_builtin_badges(is_fresh=is_fresh)
@@ -560,6 +576,113 @@ class TaskMateStorage:
 
         if is_fresh:
             self._data["badges_backfill_pending"] = True
+
+    def _run_notifications_migration(self) -> None:
+        """Seed parent_recipients + notification_config from legacy notify_service.
+
+        Idempotent: a guard flag is written by the caller in async_load.
+        """
+        legacy = (self._data.get("settings", {}) or {}).get("notify_service", "")
+        parents: list[dict] = []
+        existing_parents = self._data.setdefault("parent_recipients", [])
+        existing_services = {r.get("notify_service") for r in existing_parents}
+        if legacy and legacy not in existing_services:
+            seeded = ParentRecipient(name="Parent", notify_service=legacy)
+            parents.append(seeded.to_dict())
+        existing_parents.extend(parents)
+
+        # Defaults: previously-active types ON (preserves existing behaviour);
+        # new types OFF (no surprise pings on upgrade).
+        defaults_on = {"pending_chore_approval", "pending_reward_claim", "badge_earned"}
+        defaults_off = {"bedtime_reminder", "streak_at_risk", "all_chores_done"}
+        nc = self._data.setdefault("notification_config", {})
+        seeded_parent_id = parents[0]["id"] if parents else None
+
+        for tid in defaults_on:
+            cfg = NotificationConfig(
+                type_id=tid,
+                master_enabled=True,
+                routes={
+                    seeded_parent_id: NotificationRoute(enabled=True)
+                } if seeded_parent_id else {},
+            )
+            nc[tid] = cfg.to_dict()
+
+        for tid in defaults_off:
+            nc[tid] = NotificationConfig(type_id=tid, master_enabled=False).to_dict()
+
+    # --- parent recipients ---
+    def get_parent_recipients(self) -> list[ParentRecipient]:
+        return [ParentRecipient.from_dict(d) for d in self._data.get("parent_recipients", [])]
+
+    def upsert_parent_recipient(self, p: ParentRecipient) -> None:
+        rows = self._data.setdefault("parent_recipients", [])
+        for i, row in enumerate(rows):
+            if row.get("id") == p.id:
+                rows[i] = p.to_dict()
+                return
+        rows.append(p.to_dict())
+
+    def delete_parent_recipient(self, parent_id: str) -> None:
+        self._data["parent_recipients"] = [
+            r for r in self._data.get("parent_recipients", [])
+            if r.get("id") != parent_id
+        ]
+
+    # --- notification config ---
+    def get_notification_config(self, type_id: str) -> NotificationConfig:
+        raw = (self._data.get("notification_config", {}) or {}).get(type_id)
+        if not raw:
+            return NotificationConfig(type_id=type_id)
+        return NotificationConfig.from_dict(raw)
+
+    def set_notification_master(self, type_id: str, enabled: bool) -> None:
+        cfg = self.get_notification_config(type_id)
+        cfg.master_enabled = enabled
+        self._data.setdefault("notification_config", {})[type_id] = cfg.to_dict()
+
+    def set_notification_route(
+        self, type_id: str, recipient_id: str, route: NotificationRoute
+    ) -> None:
+        cfg = self.get_notification_config(type_id)
+        cfg.routes[recipient_id] = route
+        self._data.setdefault("notification_config", {})[type_id] = cfg.to_dict()
+
+    def get_all_notification_configs(self) -> dict[str, NotificationConfig]:
+        return {
+            tid: NotificationConfig.from_dict(raw)
+            for tid, raw in (self._data.get("notification_config", {}) or {}).items()
+        }
+
+    # --- custom notifications ---
+    def get_custom_notifications(self) -> list[CustomNotification]:
+        return [
+            CustomNotification.from_dict(d)
+            for d in self._data.get("custom_notifications", [])
+        ]
+
+    def upsert_custom_notification(self, n: CustomNotification) -> None:
+        rows = self._data.setdefault("custom_notifications", [])
+        for i, row in enumerate(rows):
+            if row.get("id") == n.id:
+                rows[i] = n.to_dict()
+                return
+        rows.append(n.to_dict())
+
+    def delete_custom_notification(self, custom_id: str) -> None:
+        self._data["custom_notifications"] = [
+            r for r in self._data.get("custom_notifications", [])
+            if r.get("id") != custom_id
+        ]
+
+    # --- streak-at-risk cutoff ---
+    def get_streak_at_risk_cutoff(self) -> str:
+        return (self._data.get("settings", {}) or {}).get(
+            "streak_at_risk_cutoff_time", "20:00"
+        )
+
+    def set_streak_at_risk_cutoff(self, hhmm: str) -> None:
+        self._data.setdefault("settings", {})["streak_at_risk_cutoff_time"] = hhmm
 
     # Task groups management
     def get_task_groups(self) -> list[TaskGroup]:
