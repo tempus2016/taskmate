@@ -933,6 +933,8 @@ class ChildPointsSensor(TaskMateBaseSensor):
 class ChildStatsSensor(TaskMateBaseSensor):
     """Sensor for a child's statistics."""
 
+    _attr_translation_key = "child_stats"
+
     def __init__(
         self,
         coordinator: TaskMateCoordinator,
@@ -951,11 +953,6 @@ class ChildStatsSensor(TaskMateBaseSensor):
         """Return the child's total chores completed."""
         child = self.coordinator.get_child(self.child_id)
         return child.total_chores_completed if child else 0
-
-    @property
-    def native_unit_of_measurement(self) -> str:
-        """Return the unit of measurement."""
-        return "chores"
 
     @property
     def icon(self) -> str:
