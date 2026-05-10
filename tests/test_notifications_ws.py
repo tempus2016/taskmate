@@ -26,7 +26,6 @@ async def setup(hass):
 
 @pytest.mark.asyncio
 async def test_get_state_returns_full_snapshot(setup, hass):
-    coord = setup
     connection = MagicMock()
     msg = {"id": 1, "type": "taskmate/notifications/get_state"}
     await ws.ws_notif_get_state(hass, connection, msg)

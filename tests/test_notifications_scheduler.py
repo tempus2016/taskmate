@@ -7,7 +7,7 @@ import pytest
 
 from custom_components.taskmate.coord_notifications import NotificationCoordinator
 from custom_components.taskmate.models import (
-    Child, NotificationRoute, ParentRecipient,
+    Child, NotificationRoute,
 )
 from custom_components.taskmate.storage import TaskMateStorage
 
