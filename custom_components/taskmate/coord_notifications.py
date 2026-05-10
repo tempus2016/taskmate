@@ -66,6 +66,7 @@ class NotificationCoordinator:
         self.hass = hass
         self.storage = storage
         self._scheduled_unsubs: list = []     # cancellation handles for time triggers
+        self.coordinator: Any = None
 
     async def fire(self, type_id: str, context: dict[str, Any]) -> None:
         """Dispatch a notification of the given type with the given context."""
@@ -161,6 +162,38 @@ class NotificationCoordinator:
         payload = dict(context)
         payload["recipients"] = recipients
         self.hass.bus.async_fire(f"taskmate_{type_id}", payload)
+
+    async def handle_mobile_action(self, event) -> None:
+        """Route TASKMATE_APPROVE_<id> / TASKMATE_REJECT_<id> mobile actions."""
+        action = (event.data or {}).get("action", "")
+        if not action.startswith("TASKMATE_"):
+            return
+        coordinator = getattr(self, "coordinator", None)
+        if coordinator is None:
+            return
+
+        if action.startswith("TASKMATE_APPROVE_"):
+            entry_id = action[len("TASKMATE_APPROVE_"):]
+            try:
+                await coordinator.async_approve_chore(entry_id)
+                return
+            except (ValueError, KeyError):
+                pass
+            try:
+                await coordinator.async_approve_reward(entry_id)
+            except (ValueError, KeyError):
+                _LOGGER.info("Mobile action %s — entry not found", action)
+        elif action.startswith("TASKMATE_REJECT_"):
+            entry_id = action[len("TASKMATE_REJECT_"):]
+            try:
+                await coordinator.async_reject_chore(entry_id)
+                return
+            except (ValueError, KeyError):
+                pass
+            try:
+                await coordinator.async_reject_reward(entry_id)
+            except (ValueError, KeyError):
+                _LOGGER.info("Mobile action %s — entry not found", action)
 
     # ------------------------------------------------------------------
     # Scheduler — time-gated callbacks

@@ -125,6 +125,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
+    @callback
+    def _on_mobile_action(event):
+        hass.async_create_task(coordinator.notifications.handle_mobile_action(event))
+
+    coordinator._unsub_mobile_action = hass.bus.async_listen(
+        "mobile_app_notification_action", _on_mobile_action,
+    )
+
     # Register frontend static paths
     await async_register_frontend(hass)
 
@@ -156,6 +164,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     coordinator = hass.data[DOMAIN].get(entry.entry_id)
     if coordinator:
+        if hasattr(coordinator, "_unsub_mobile_action") and coordinator._unsub_mobile_action:
+            coordinator._unsub_mobile_action()
         await coordinator.async_shutdown()
 
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
