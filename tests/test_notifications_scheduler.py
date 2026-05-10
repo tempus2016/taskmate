@@ -101,3 +101,45 @@ async def test_streak_at_risk_fires_when_streak_active_and_not_extended(coord, h
     args, kwargs = coord.fire.call_args
     assert args[0] == "streak_at_risk"
     assert args[1]["streak"] == 5
+
+
+@pytest.mark.asyncio
+async def test_custom_skips_when_day_mask_excludes_today(coord, hass, monkeypatch):
+    from datetime import datetime
+    from custom_components.taskmate.models import CustomNotification
+    # day_mask=0 means no day enabled
+    n = CustomNotification(
+        name="X", message_template="hi", time="20:00",
+        day_mask=0, recipient_ids=["child:abc"],
+    )
+    coord.storage.upsert_custom_notification(n)
+
+    hass.services.async_call = AsyncMock()
+    cb = coord._make_custom_callback(n.id)
+    await cb(datetime.now())
+    hass.services.async_call.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_custom_fires_when_today_bit_set(coord, hass):
+    from datetime import datetime
+    from custom_components.taskmate.models import CustomNotification
+    from homeassistant.util import dt as dt_util
+    today_bit = 1 << dt_util.now().date().weekday()
+
+    child = Child(name="M", notify_service="notify.m")
+    coord.storage._data.setdefault("children", []).append(child.to_dict())
+
+    n = CustomNotification(
+        name="X", message_template="hi {child_name}", time="20:00",
+        day_mask=today_bit, recipient_ids=[f"child:{child.id}"],
+    )
+    coord.storage.upsert_custom_notification(n)
+
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    cb = coord._make_custom_callback(n.id)
+    await cb(datetime.now())
+    notify_calls = [c for c in hass.services.async_call.call_args_list if c[0][0] == "notify"]
+    assert len(notify_calls) == 1
+    assert "M" in notify_calls[0][0][2]["message"]

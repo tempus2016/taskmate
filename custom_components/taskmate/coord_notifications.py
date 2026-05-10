@@ -284,6 +284,46 @@ class NotificationCoordinator:
             )
         return _cb
 
+    # ------------------------------------------------------------------
+    # CRUD wrappers — persist + reload schedules as needed
+    # ------------------------------------------------------------------
+
+    async def upsert_custom(self, n) -> None:
+        self.storage.upsert_custom_notification(n)
+        await self.storage.async_save()
+        await self.async_setup_schedules()
+
+    async def delete_custom(self, custom_id: str) -> None:
+        self.storage.delete_custom_notification(custom_id)
+        await self.storage.async_save()
+        await self.async_setup_schedules()
+
+    async def upsert_parent(self, p) -> None:
+        self.storage.upsert_parent_recipient(p)
+        await self.storage.async_save()
+
+    async def delete_parent(self, parent_id: str) -> None:
+        self.storage.delete_parent_recipient(parent_id)
+        await self.storage.async_save()
+        await self.async_setup_schedules()  # in case routes referenced this id
+
+    async def set_route(self, type_id: str, recipient_id: str, route) -> None:
+        self.storage.set_notification_route(type_id, recipient_id, route)
+        await self.storage.async_save()
+        if NOTIFICATION_TYPES_BY_ID.get(type_id) and NOTIFICATION_TYPES_BY_ID[type_id].time_gated:
+            await self.async_setup_schedules()
+
+    async def set_master_enabled(self, type_id: str, enabled: bool) -> None:
+        self.storage.set_notification_master(type_id, enabled)
+        await self.storage.async_save()
+        if NOTIFICATION_TYPES_BY_ID.get(type_id) and NOTIFICATION_TYPES_BY_ID[type_id].time_gated:
+            await self.async_setup_schedules()
+
+    async def set_streak_cutoff(self, hhmm: str) -> None:
+        self.storage.set_streak_at_risk_cutoff(hhmm)
+        await self.storage.async_save()
+        await self.async_setup_schedules()
+
     def _has_outstanding_chores_today(self, child_id: str) -> bool:
         """Returns True if the child has at least one chore assigned today
         that has no approved/pending completion yet."""
