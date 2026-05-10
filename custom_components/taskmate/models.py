@@ -761,3 +761,116 @@ class TaskGroup:
             "chore_ids": self.chore_ids,
             "id": self.id,
         }
+
+
+@dataclass
+class ParentRecipient:
+    """A configured parent notification target."""
+
+    name: str
+    notify_service: str
+    enabled: bool = True
+    id: str = field(default_factory=lambda: f"parent:{generate_id()}")
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ParentRecipient:
+        rid = data.get("id") or f"parent:{generate_id()}"
+        return cls(
+            name=data.get("name", ""),
+            notify_service=data.get("notify_service", ""),
+            enabled=bool(data.get("enabled", True)),
+            id=rid,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "notify_service": self.notify_service,
+            "enabled": self.enabled,
+        }
+
+
+@dataclass
+class NotificationRoute:
+    """Per-recipient notification settings inside a NotificationConfig."""
+
+    enabled: bool = False
+    time: str | None = None  # "HH:MM" — only meaningful for per-recipient-time types
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> NotificationRoute:
+        return cls(
+            enabled=bool(data.get("enabled", False)),
+            time=data.get("time"),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"enabled": self.enabled}
+        if self.time is not None:
+            d["time"] = self.time
+        return d
+
+
+@dataclass
+class NotificationConfig:
+    """Stored configuration for one notification type."""
+
+    type_id: str
+    master_enabled: bool = False
+    routes: dict[str, NotificationRoute] = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> NotificationConfig:
+        raw_routes = data.get("routes", {}) or {}
+        return cls(
+            type_id=data.get("type_id", ""),
+            master_enabled=bool(data.get("master_enabled", False)),
+            routes={
+                rid: NotificationRoute.from_dict(rdata)
+                for rid, rdata in raw_routes.items()
+            },
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "type_id": self.type_id,
+            "master_enabled": self.master_enabled,
+            "routes": {rid: r.to_dict() for rid, r in self.routes.items()},
+        }
+
+
+@dataclass
+class CustomNotification:
+    """Parent-defined scheduled reminder."""
+
+    name: str
+    message_template: str
+    time: str                         # "HH:MM"
+    day_mask: int = 0b1111111         # bit0=Mon … bit6=Sun
+    recipient_ids: list[str] = field(default_factory=list)
+    enabled: bool = True
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> CustomNotification:
+        return cls(
+            name=data.get("name", ""),
+            message_template=data.get("message_template", ""),
+            time=data.get("time", "20:00"),
+            day_mask=int(data.get("day_mask", 0b1111111)),
+            recipient_ids=list(data.get("recipient_ids", [])),
+            enabled=bool(data.get("enabled", True)),
+            id=data.get("id") or generate_id(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "message_template": self.message_template,
+            "time": self.time,
+            "day_mask": self.day_mask,
+            "recipient_ids": list(self.recipient_ids),
+            "enabled": self.enabled,
+        }
