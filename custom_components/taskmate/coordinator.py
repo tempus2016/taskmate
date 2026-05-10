@@ -167,6 +167,14 @@ class TaskMateCoordinator(
         # Check for perfect week bonus every Monday at midnight
         if now.weekday() == 0:
             self.hass.async_create_task(self._async_check_perfect_week())
+        # Prune all-chores-done daily flags older than today
+        today = dt_util.now().date().isoformat()
+        flags = self.storage._data.get("all_done_flags", {})
+        for key in list(flags.keys()):
+            # Keys are "all_done_<child_id>_<isodate>"
+            if not key.endswith(today):
+                flags.pop(key, None)
+        self.hass.async_create_task(self.storage.async_save())
 
     @callback
     def _async_scheduled_prune(self, now: datetime) -> None:
