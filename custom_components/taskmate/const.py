@@ -334,3 +334,11 @@ DEFAULT_COMPLETION_SOUND: Final = "coin"
 
 # Chore keys (sound-related)
 CONF_CHORE_COMPLETION_SOUND: Final = "completion_sound"
+
+# --- Notification type IDs (v3.9.0) ---
+NOTIF_TYPE_BEDTIME_REMINDER:        Final = "bedtime_reminder"
+NOTIF_TYPE_STREAK_AT_RISK:          Final = "streak_at_risk"
+NOTIF_TYPE_ALL_CHORES_DONE:         Final = "all_chores_done"
+NOTIF_TYPE_BADGE_EARNED:            Final = "badge_earned"
+NOTIF_TYPE_PENDING_CHORE_APPROVAL:  Final = "pending_chore_approval"
+NOTIF_TYPE_PENDING_REWARD_CLAIM:    Final = "pending_reward_claim"

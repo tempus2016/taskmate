@@ -14,6 +14,7 @@ from homeassistant.util import dt as dt_util  # noqa: F401 — used by tests as 
 from .const import DOMAIN
 from .coord_assignments import AssignmentsMixin
 from .coord_badges import BadgeCoordinator
+from .coord_notifications import NotificationCoordinator
 from .coord_calendar import CalendarMixin
 from .coord_chores import ChoresMixin
 from .coord_points import PointsMixin
@@ -48,6 +49,7 @@ class TaskMateCoordinator(
         )
         self.storage = TaskMateStorage(hass, entry_id)
         self.badges = BadgeCoordinator(hass, self.storage, self)
+        self.notifications = NotificationCoordinator(hass, self.storage)
         self.entry_id = entry_id
         self._unsub_midnight: Callable[[], None] | None = None
         self._unsub_prune: Callable[[], None] | None = None
