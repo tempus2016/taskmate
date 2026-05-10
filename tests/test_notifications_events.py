@@ -6,7 +6,6 @@ import datetime as dt
 from datetime import timezone
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.storage import TaskMateStorage
