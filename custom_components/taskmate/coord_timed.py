@@ -138,7 +138,7 @@ class TimedMixin:
 
         if chore.requires_approval:
             await self._async_notify_pending_approval(
-                child.name, chore.name, pts,
+                child.name, chore.name, pts, completion_id=completion.id,
             )
 
         await self.async_refresh()

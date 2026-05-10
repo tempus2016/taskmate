@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.event import async_track_time_change
 
 from .const import (
     NOTIF_TYPE_ALL_CHORES_DONE,
@@ -65,6 +66,7 @@ class NotificationCoordinator:
         self.hass = hass
         self.storage = storage
         self._scheduled_unsubs: list = []     # cancellation handles for time triggers
+        self.coordinator: Any = None
 
     async def fire(self, type_id: str, context: dict[str, Any]) -> None:
         """Dispatch a notification of the given type with the given context."""
@@ -160,3 +162,217 @@ class NotificationCoordinator:
         payload = dict(context)
         payload["recipients"] = recipients
         self.hass.bus.async_fire(f"taskmate_{type_id}", payload)
+
+    async def handle_mobile_action(self, event) -> None:
+        """Route TASKMATE_APPROVE_<id> / TASKMATE_REJECT_<id> mobile actions."""
+        action = (event.data or {}).get("action", "")
+        if not action.startswith("TASKMATE_"):
+            return
+        coordinator = getattr(self, "coordinator", None)
+        if coordinator is None:
+            return
+
+        if action.startswith("TASKMATE_APPROVE_"):
+            entry_id = action[len("TASKMATE_APPROVE_"):]
+            try:
+                await coordinator.async_approve_chore(entry_id)
+                return
+            except (ValueError, KeyError):
+                pass
+            try:
+                await coordinator.async_approve_reward(entry_id)
+            except (ValueError, KeyError):
+                _LOGGER.info("Mobile action %s — entry not found", action)
+        elif action.startswith("TASKMATE_REJECT_"):
+            entry_id = action[len("TASKMATE_REJECT_"):]
+            try:
+                await coordinator.async_reject_chore(entry_id)
+                return
+            except (ValueError, KeyError):
+                pass
+            try:
+                await coordinator.async_reject_reward(entry_id)
+            except (ValueError, KeyError):
+                _LOGGER.info("Mobile action %s — entry not found", action)
+
+    # ------------------------------------------------------------------
+    # Scheduler — time-gated callbacks
+    # ------------------------------------------------------------------
+
+    async def async_setup_schedules(self) -> None:
+        """Cancel any existing time callbacks and register fresh ones from current config.
+
+        Call this on startup AND after any config change that affects schedules
+        (e.g. bedtime time edited, custom notification time edited, master toggled).
+        """
+        for unsub in self._scheduled_unsubs:
+            try:
+                unsub()
+            except Exception:  # noqa: BLE001
+                pass
+        self._scheduled_unsubs = []
+
+        # Bedtime — per-child time
+        cfg = self.storage.get_notification_config("bedtime_reminder")
+        if cfg.master_enabled:
+            for recipient_id, route in cfg.routes.items():
+                if not route.enabled or not route.time:
+                    continue
+                if not recipient_id.startswith("child:"):
+                    continue
+                child_id = recipient_id.split(":", 1)[1]
+                self._register_at(
+                    route.time,
+                    self._make_bedtime_callback(child_id),
+                )
+
+        # Streak at risk — global cutoff time, fire once per child
+        cfg = self.storage.get_notification_config("streak_at_risk")
+        if cfg.master_enabled:
+            cutoff = self.storage.get_streak_at_risk_cutoff()
+            self._register_at(cutoff, self._streak_at_risk_callback)
+
+        # Custom — per-row time
+        for custom in self.storage.get_custom_notifications():
+            if not custom.enabled:
+                continue
+            self._register_at(
+                custom.time,
+                self._make_custom_callback(custom.id),
+            )
+
+    def _register_at(self, hhmm: str, callback) -> None:
+        try:
+            hour, minute = map(int, hhmm.split(":", 1))
+        except (ValueError, AttributeError):
+            _LOGGER.warning("Invalid time %r — skipping schedule", hhmm)
+            return
+        unsub = async_track_time_change(
+            self.hass, callback, hour=hour, minute=minute, second=0,
+        )
+        self._scheduled_unsubs.append(unsub)
+
+    def _make_bedtime_callback(self, child_id: str):
+        async def _cb(now):
+            child = self.storage.get_child(child_id)
+            if child is None:
+                return
+            if not self._has_outstanding_chores_today(child_id):
+                return
+            await self.fire(
+                "bedtime_reminder",
+                {"child_name": child.name, "child_id": child_id},
+            )
+        return _cb
+
+    async def _streak_at_risk_callback(self, now) -> None:
+        from homeassistant.util import dt as dt_util
+        today = dt_util.now().date().isoformat()
+        for child in self.storage.get_children():
+            if (child.current_streak or 0) < 2:
+                continue
+            if child.last_completion_date == today:
+                continue
+            await self.fire(
+                "streak_at_risk",
+                {
+                    "child_name": child.name,
+                    "child_id": child.id,
+                    "streak": child.current_streak,
+                },
+            )
+
+    def _make_custom_callback(self, custom_id: str):
+        async def _cb(now):
+            from homeassistant.util import dt as dt_util
+            n = next(
+                (c for c in self.storage.get_custom_notifications() if c.id == custom_id),
+                None,
+            )
+            if n is None or not n.enabled:
+                return
+            today_bit = 1 << dt_util.now().date().weekday()  # Mon=0
+            if not (n.day_mask & today_bit):
+                return
+            for recipient_id in n.recipient_ids:
+                notify_service = self._resolve_notify_service(recipient_id)
+                if not notify_service:
+                    continue
+                child_name = ""
+                if recipient_id.startswith("child:"):
+                    child = self.storage.get_child(recipient_id.split(":", 1)[1])
+                    child_name = child.name if child else ""
+                message = n.message_template.format_map(
+                    _SafeDict({"child_name": child_name, "time": n.time}),
+                )
+                service_name = notify_service.split(".", 1)[1] if "." in notify_service else notify_service
+                await self.hass.services.async_call(
+                    "notify", service_name,
+                    {"title": "TaskMate", "message": message},
+                    blocking=False,
+                )
+            self.hass.bus.async_fire(
+                "taskmate_custom_notification",
+                {"id": n.id, "name": n.name, "recipients": n.recipient_ids},
+            )
+        return _cb
+
+    # ------------------------------------------------------------------
+    # CRUD wrappers — persist + reload schedules as needed
+    # ------------------------------------------------------------------
+
+    async def upsert_custom(self, n) -> None:
+        self.storage.upsert_custom_notification(n)
+        await self.storage.async_save()
+        await self.async_setup_schedules()
+
+    async def delete_custom(self, custom_id: str) -> None:
+        self.storage.delete_custom_notification(custom_id)
+        await self.storage.async_save()
+        await self.async_setup_schedules()
+
+    async def upsert_parent(self, p) -> None:
+        self.storage.upsert_parent_recipient(p)
+        await self.storage.async_save()
+
+    async def delete_parent(self, parent_id: str) -> None:
+        self.storage.delete_parent_recipient(parent_id)
+        await self.storage.async_save()
+        await self.async_setup_schedules()  # in case routes referenced this id
+
+    async def set_route(self, type_id: str, recipient_id: str, route) -> None:
+        self.storage.set_notification_route(type_id, recipient_id, route)
+        await self.storage.async_save()
+        if NOTIFICATION_TYPES_BY_ID.get(type_id) and NOTIFICATION_TYPES_BY_ID[type_id].time_gated:
+            await self.async_setup_schedules()
+
+    async def set_master_enabled(self, type_id: str, enabled: bool) -> None:
+        self.storage.set_notification_master(type_id, enabled)
+        await self.storage.async_save()
+        if NOTIFICATION_TYPES_BY_ID.get(type_id) and NOTIFICATION_TYPES_BY_ID[type_id].time_gated:
+            await self.async_setup_schedules()
+
+    async def set_streak_cutoff(self, hhmm: str) -> None:
+        self.storage.set_streak_at_risk_cutoff(hhmm)
+        await self.storage.async_save()
+        await self.async_setup_schedules()
+
+    def _has_outstanding_chores_today(self, child_id: str) -> bool:
+        """Returns True if the child has at least one chore assigned today
+        that has no approved/pending completion yet."""
+        from homeassistant.util import dt as dt_util
+        today = dt_util.now().date()
+        chores = self.storage.get_chores()
+        completions = self.storage.get_completions()
+        completed_today = {
+            c.chore_id for c in completions
+            if c.child_id == child_id
+            and dt_util.as_local(c.completed_at).date() == today
+        }
+        for chore in chores:
+            if not chore.assigned_to or child_id not in chore.assigned_to:
+                continue
+            if chore.id in completed_today:
+                continue
+            return True
+        return False

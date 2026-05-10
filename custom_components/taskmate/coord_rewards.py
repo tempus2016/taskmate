@@ -263,10 +263,22 @@ class RewardsMixin:
         )
 
         self.storage.add_reward_claim(claim)
+
+        self.hass.bus.async_fire(
+            "taskmate_reward_claimed",
+            {
+                "child_id": child.id,
+                "reward_id": reward.id,
+                "claim_id": claim.id,
+                "cost": reward.cost,
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
+
         await self.storage.async_save()
         await self.async_refresh()
         await self._async_notify_pending_reward_claim(
-            child.name, reward.name, reward.cost
+            child.name, reward.name, reward.cost, claim_id=claim.id,
         )
         return claim
 

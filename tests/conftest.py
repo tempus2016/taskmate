@@ -88,6 +88,29 @@ _ha_storage_mod = MagicMock()
 _ha_storage_mod.Store = FakeStore
 
 
+# ── homeassistant.components.websocket_api ───────────────────────────────────
+# Decorators must be pass-throughs so handler functions remain awaitable in tests.
+
+def _ws_command_decorator(schema):
+    """Return the handler unchanged — schema is ignored in tests."""
+    return lambda f: f
+
+
+def _ws_async_response(f):
+    """Pass-through — no wrapping needed in tests."""
+    return f
+
+
+_ha_websocket_api = MagicMock()
+_ha_websocket_api.websocket_command = _ws_command_decorator
+_ha_websocket_api.async_response = _ws_async_response
+_ha_websocket_api.async_register_command = MagicMock()
+
+_ha_websocket_api_const = MagicMock()
+_ha_websocket_api_const.ERR_UNAUTHORIZED = "unauthorized"
+_ha_websocket_api.const = _ha_websocket_api_const
+
+
 # ── homeassistant.helpers.event ─────────────────────────────────────────────
 
 _ha_event = MagicMock()
@@ -162,6 +185,12 @@ _ha_util.dt = dt_util_mock  # `from homeassistant.util import dt` resolves here
 
 # ── Register all stubs ───────────────────────────────────────────────────────
 
+# Build an explicit components mock so we can pin .websocket_api on it.
+# If homeassistant.components is a plain MagicMock(), attribute access
+# auto-generates a new MagicMock instead of returning our stub.
+_ha_components = MagicMock()
+_ha_components.websocket_api = _ha_websocket_api
+
 sys.modules.update(
     {
         "homeassistant": MagicMock(),
@@ -176,9 +205,10 @@ sys.modules.update(
         "homeassistant.helpers.config_validation": MagicMock(),
         "homeassistant.helpers.entity": _ha_helpers_entity,
         "homeassistant.helpers.entity_platform": _ha_helpers_entity_platform,
-        "homeassistant.components": MagicMock(),
+        "homeassistant.components": _ha_components,
         "homeassistant.components.sensor": _ha_components_sensor,
         "homeassistant.components.binary_sensor": _ha_components_binary_sensor,
+        "homeassistant.components.websocket_api": _ha_websocket_api,
         "homeassistant.util": _ha_util,
         "homeassistant.util.dt": dt_util_mock,
         # Stub the frontend sub-module so __init__.py's relative import succeeds

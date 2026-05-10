@@ -48,8 +48,8 @@ class TaskMateCoordinator(
             update_interval=timedelta(seconds=30),
         )
         self.storage = TaskMateStorage(hass, entry_id)
-        self.badges = BadgeCoordinator(hass, self.storage, self)
         self.notifications = NotificationCoordinator(hass, self.storage)
+        self.badges = BadgeCoordinator(hass, self.storage, self, self.notifications)
         self.entry_id = entry_id
         self._unsub_midnight: Callable[[], None] | None = None
         self._unsub_prune: Callable[[], None] | None = None
@@ -58,6 +58,7 @@ class TaskMateCoordinator(
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""
         await self.storage.async_load()
+        self.notifications.coordinator = self
         # Achievement badges: silent retroactive backfill on first install
         if self.storage._data.get("badges_backfill_pending"):
             await self.badges.rebuild_all()
@@ -80,6 +81,7 @@ class TaskMateCoordinator(
         self._unsub_availability = self.hass.bus.async_listen(
             "state_changed", self._availability_state_changed
         )
+        await self.notifications.async_setup_schedules()
 
     async def _async_backfill_career_history(self) -> None:
         """Backfill career_score_history from completions and transactions.
@@ -165,6 +167,14 @@ class TaskMateCoordinator(
         # Check for perfect week bonus every Monday at midnight
         if now.weekday() == 0:
             self.hass.async_create_task(self._async_check_perfect_week())
+        # Prune all-chores-done daily flags older than today
+        today = dt_util.now().date().isoformat()
+        flags = self.storage._data.get("all_done_flags", {})
+        for key in list(flags.keys()):
+            # Keys are "all_done_<child_id>_<isodate>"
+            if not key.endswith(today):
+                flags.pop(key, None)
+        self.hass.async_create_task(self.storage.async_save())
 
     @callback
     def _async_scheduled_prune(self, now: datetime) -> None:

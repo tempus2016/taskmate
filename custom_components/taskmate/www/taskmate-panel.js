@@ -22,8 +22,9 @@ const TABS = [
   { id: "bonuses",   lk: "panel.tab_bonuses" },
   { id: "groups",    lk: "panel.tab_groups" },
   { id: "badges",    lk: "panel.tab_badges" },
-  { id: "templates", lk: "panel.tab_templates" },
-  { id: "settings",  lk: "panel.tab_settings", label: "⚙" },
+  { id: "templates",     lk: "panel.tab_templates" },
+  { id: "notifications", lk: "panel.tab_notifications" },
+  { id: "settings",      lk: "panel.tab_settings", label: "⚙" },
 ];
 
 const BADGE_METRICS = [
@@ -310,10 +311,19 @@ class TaskMatePanel extends HTMLElement {
       }
       this._error = (err && err.message) || String(err);
       this._state = null;
-    } finally {
-      this._loading = false;
-      this._render();
     }
+    // Fetch notifications state separately — failure here must not abort
+    // the main state load or its retry logic.
+    try {
+      this._notifState = await this._hass.callWS({ type: "taskmate/notifications/get_state" });
+      this._notifyServices = await this._hass.callWS({ type: "taskmate/notifications/list_notify_services" });
+    } catch (e) {
+      console.warn("TaskMate notifications state fetch failed", e);
+      this._notifState = null;
+      this._notifyServices = [];
+    }
+    this._loading = false;
+    this._render();
   }
 
   async _callWS(payload) {
@@ -482,6 +492,23 @@ class TaskMatePanel extends HTMLElement {
     if (act === "badge-remove-criterion") { this._syncIconPickers(); if (this._dialog?.data?.criteria) { this._dialog.data.criteria.splice(Number(t.dataset.idx), 1); this._render(); } return; }
     if (act === "badge-toggle-assigned") { this._syncIconPickers(); this._toggleArrayField("assigned_to", t.dataset.id); return; }
 
+    // Notifications tab
+    if (act === "notif-set-master")       { this._notifSetMaster(t.dataset.typeId, t.checked); return; }
+    if (act === "notif-set-route")        { this._notifSetRoute(t.dataset.typeId, t.dataset.recipientId, t.checked, t.dataset.time || null); return; }
+    if (act === "notif-set-route-time")   { /* handled in _onChange */ return; }
+    if (act === "notif-set-child-notify") { /* handled in _onChange */ return; }
+    if (act === "notif-set-parent-notify"){ /* handled in _onChange */ return; }
+    if (act === "notif-rename-parent")    { /* handled in _onChange */ return; }
+    if (act === "notif-set-streak-cutoff"){ /* handled in _onChange */ return; }
+    if (act === "notif-add-parent")       { this._notifAddParent(); return; }
+    if (act === "notif-delete-parent")    { this._notifDeleteParent(t.dataset.parentId); return; }
+    if (act === "notif-add-custom")       { this._notifAddCustom(); return; }
+    if (act === "notif-delete-custom")    { this._notifDeleteCustom(t.dataset.customId); return; }
+    if (act === "notif-update-custom")    { /* handled in _onChange */ return; }
+    if (act === "notif-toggle-custom")    { this._notifToggleCustom(t.dataset.customId, t.checked); return; }
+    if (act === "notif-toggle-day")       { this._notifToggleDay(t.dataset.customId, Number(t.dataset.day), t.checked); return; }
+    if (act === "notif-toggle-recipient") { this._notifToggleRecipient(t.dataset.customId, t.dataset.recipientId); return; }
+
     // Settings
     if (act === "save-settings") { this._doSaveSettings(); return; }
 
@@ -582,6 +609,33 @@ class TaskMatePanel extends HTMLElement {
       this._showIds = t.checked;
       localStorage.setItem("taskmate-show-ids", this._showIds);
       this._render();
+      return;
+    }
+    // Notifications tab change-driven actions
+    if (t.dataset.act === "notif-set-route-time") {
+      this._notifSetRoute(t.dataset.typeId, t.dataset.recipientId, true, t.value || null);
+      return;
+    }
+    if (t.dataset.act === "notif-set-child-notify") {
+      this._notifSetChildNotify(t.dataset.childId, t.value);
+      return;
+    }
+    if (t.dataset.act === "notif-set-parent-notify") {
+      const p = (this._notifState && this._notifState.recipients && this._notifState.recipients.parents || []).find(x => x.id === t.dataset.parentId);
+      if (p) this._notifUpsertParent({ ...p, notify_service: t.value });
+      return;
+    }
+    if (t.dataset.act === "notif-rename-parent") {
+      const p = (this._notifState && this._notifState.recipients && this._notifState.recipients.parents || []).find(x => x.id === t.dataset.parentId);
+      if (p) this._notifUpsertParent({ ...p, name: t.value });
+      return;
+    }
+    if (t.dataset.act === "notif-set-streak-cutoff") {
+      this._notifSetStreakCutoff(t.value);
+      return;
+    }
+    if (t.dataset.act === "notif-update-custom") {
+      this._notifUpdateCustomField(t.dataset.customId, t.dataset.field, t.value);
       return;
     }
     // Badge criterion select changes
@@ -1174,6 +1228,99 @@ class TaskMatePanel extends HTMLElement {
     this._showToast("ok", this._t("panel.toast_settings_saved", {count: (res && res.updated || []).length}));
   }
 
+  // ---- Notifications WS helpers ----------------------------------------
+  async _notifSetMaster(typeId, enabled) {
+    await this._callWS({ type: "taskmate/notifications/set_master_enabled", type_id: typeId, enabled });
+    await this._fetchState();
+  }
+
+  async _notifSetRoute(typeId, recipientId, enabled, time) {
+    await this._callWS({ type: "taskmate/notifications/set_route", type_id: typeId, recipient_id: recipientId, enabled, time });
+    await this._fetchState();
+  }
+
+  async _notifSetChildNotify(childId, notifyService) {
+    await this._callWS({ type: "taskmate/notifications/set_child_notify", child_id: childId, notify_service: notifyService || null });
+    await this._fetchState();
+  }
+
+  async _notifSetStreakCutoff(time) {
+    await this._callWS({ type: "taskmate/notifications/set_streak_cutoff", time });
+    await this._fetchState();
+  }
+
+  async _notifUpsertParent(p) {
+    const payload = { type: "taskmate/notifications/upsert_parent", name: p.name, notify_service: p.notify_service, enabled: p.enabled !== false };
+    if (p.id) payload.parent_id = p.id;
+    await this._callWS(payload);
+    await this._fetchState();
+  }
+
+  async _notifAddParent() {
+    const first = (this._notifyServices || [])[0] || "";
+    await this._notifUpsertParent({ name: this._t("panel.notif_default_parent_name"), notify_service: first, enabled: true });
+  }
+
+  async _notifDeleteParent(parentId) {
+    await this._callWS({ type: "taskmate/notifications/delete_parent", parent_id: parentId });
+    await this._fetchState();
+  }
+
+  async _notifUpsertCustom(n) {
+    const payload = {
+      type: "taskmate/notifications/upsert_custom",
+      name: n.name, message_template: n.message_template, time: n.time,
+      day_mask: n.day_mask, recipient_ids: n.recipient_ids, enabled: n.enabled,
+    };
+    if (n.id) payload.custom_id = n.id;
+    await this._callWS(payload);
+    await this._fetchState();
+  }
+
+  async _notifAddCustom() {
+    await this._notifUpsertCustom({
+      name: this._t("panel.notif_default_custom_name"),
+      message_template: this._t("panel.notif_default_custom_message"),
+      time: "20:00",
+      day_mask: 0b1111111,
+      recipient_ids: [],
+      enabled: true,
+    });
+  }
+
+  async _notifDeleteCustom(customId) {
+    await this._callWS({ type: "taskmate/notifications/delete_custom", custom_id: customId });
+    await this._fetchState();
+  }
+
+  async _notifToggleCustom(customId, enabled) {
+    const n = (this._notifState && this._notifState.custom || []).find(x => x.id === customId);
+    if (!n) return;
+    await this._notifUpsertCustom({ ...n, enabled });
+  }
+
+  async _notifToggleDay(customId, dayIdx, isOn) {
+    const n = (this._notifState && this._notifState.custom || []).find(x => x.id === customId);
+    if (!n) return;
+    const bit = 1 << dayIdx;
+    const newMask = isOn ? (n.day_mask | bit) : (n.day_mask & ~bit);
+    await this._notifUpsertCustom({ ...n, day_mask: newMask });
+  }
+
+  async _notifToggleRecipient(customId, recipientId) {
+    const n = (this._notifState && this._notifState.custom || []).find(x => x.id === customId);
+    if (!n) return;
+    const has = n.recipient_ids.includes(recipientId);
+    const newIds = has ? n.recipient_ids.filter(x => x !== recipientId) : [...n.recipient_ids, recipientId];
+    await this._notifUpsertCustom({ ...n, recipient_ids: newIds });
+  }
+
+  async _notifUpdateCustomField(customId, field, value) {
+    const n = (this._notifState && this._notifState.custom || []).find(x => x.id === customId);
+    if (!n) return;
+    await this._notifUpsertCustom({ ...n, [field]: value });
+  }
+
   // ---- HA picker binding -----------------------------------------------
   _bindHaPickers(syncValues = true) {
     if (!this._hass) return;
@@ -1436,8 +1583,9 @@ class TaskMatePanel extends HTMLElement {
       case "bonuses":   return this._renderPenBonTab("bonus");
       case "groups":    return this._renderGroupsTab();
       case "badges":    return this._renderBadgesTab();
-      case "templates": return this._renderTemplatesTab();
-      case "settings":  return this._renderSettingsTab();
+      case "templates":     return this._renderTemplatesTab();
+      case "notifications": return this._renderNotificationsTab();
+      case "settings":      return this._renderSettingsTab();
       default:          return `<div class="tm-card">${this._t("panel.tab_unknown")}</div>`;
     }
   }
@@ -2668,6 +2816,184 @@ class TaskMatePanel extends HTMLElement {
 
         <div class="tm-settings-foot">
           <button type="button" class="tm-btn tm-btn-raised" data-act="save-settings">${this._t("panel.btn_save_settings")}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // -- Notifications tab -------------------------------------------------
+  _renderNotificationsTab() {
+    if (!this._notifState) {
+      return `<div class="tm-card tm-empty"><p>${this._t("panel.notif_loading")}</p></div>`;
+    }
+    const ns = this._notifState;
+    const services = this._notifyServices || [];
+
+    // Build full recipient list (children + parents) used by matrix columns + chip picker
+    const recipients = [
+      ...ns.recipients.children.map(c => ({ id: c.id, name: c.name, kind: "child", notify_service: c.notify_service })),
+      ...ns.recipients.parents.map(p => ({ id: p.id, name: p.name, kind: "parent", notify_service: p.notify_service, enabled: p.enabled })),
+    ];
+
+    return `
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">${this._t("panel.notif_tab_title")}</h2>
+      </div>
+
+      ${this._renderNotifRecipientsSection(ns, services)}
+      ${this._renderNotifMatrixSection(ns, recipients)}
+      ${this._renderNotifCustomSection(ns, recipients)}
+
+      <div class="tm-card tm-meta" style="margin-top:16px;border-left:3px solid var(--tm-accent,#4fc3f7);">
+        <strong>${this._t("panel.notif_power_user_note_title")}:</strong>
+        ${this._t("panel.notif_power_user_note_body")}
+      </div>
+    `;
+  }
+
+  _renderNotifRecipientsSection(ns, services) {
+    const optTags = (selected) => {
+      const opts = [`<option value=""${!selected ? " selected" : ""}>${this._t("panel.notif_none")}</option>`];
+      for (const s of services) opts.push(`<option value="${this._esc(s)}"${s === selected ? " selected" : ""}>${this._esc(s)}</option>`);
+      return opts.join("");
+    };
+    return `
+      <div class="tm-card" style="margin-bottom:16px">
+        <h3>${this._t("panel.notif_section_recipients")}</h3>
+        <p class="tm-meta">${this._t("panel.notif_section_recipients_desc")}</p>
+        <div class="tm-grid-2">
+          <div>
+            <h4>${this._t("panel.notif_recipients_children")}</h4>
+            ${ns.recipients.children.map(c => `
+              <div class="tm-row" style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--tm-border,#3a3a3a)">
+                <div style="flex:1"><strong>${this._esc(c.name)}</strong></div>
+                <select data-act="notif-set-child-notify" data-child-id="${this._esc(c.id.replace(/^child:/, ""))}">
+                  ${optTags(c.notify_service)}
+                </select>
+              </div>
+            `).join("")}
+          </div>
+          <div>
+            <h4>${this._t("panel.notif_recipients_parents")}</h4>
+            ${ns.recipients.parents.map(p => `
+              <div class="tm-row" style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--tm-border,#3a3a3a)">
+                <input type="text" value="${this._esc(p.name)}" data-act="notif-rename-parent" data-parent-id="${this._esc(p.id)}" style="flex:1;background:transparent;border:none;color:inherit;font-size:14px;font-weight:500">
+                <select data-act="notif-set-parent-notify" data-parent-id="${this._esc(p.id)}">
+                  ${optTags(p.notify_service)}
+                </select>
+                <button type="button" class="tm-icon-btn" data-act="notif-delete-parent" data-parent-id="${this._esc(p.id)}" title="${this._t("panel.notif_remove_parent")}">×</button>
+              </div>
+            `).join("")}
+            <button type="button" class="tm-btn" data-act="notif-add-parent" style="margin-top:10px;width:100%">+ ${this._t("panel.notif_add_parent")}</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  _renderNotifMatrixSection(ns, recipients) {
+    return `
+      <div class="tm-card" style="margin-bottom:16px">
+        <h3>${this._t("panel.notif_section_matrix")}</h3>
+        <p class="tm-meta">${this._t("panel.notif_section_matrix_desc")}</p>
+        <div class="tm-table-wrap">
+          <table class="tm-table">
+            <thead>
+              <tr>
+                <th style="min-width:280px">${this._t("panel.notif_matrix_col_notification")}</th>
+                ${recipients.map(r => `<th style="text-align:center;min-width:80px">${this._esc(r.name)}</th>`).join("")}
+              </tr>
+            </thead>
+            <tbody>
+              ${ns.types.map(t => this._renderNotifMatrixRow(t, ns.config[t.id] || { master_enabled: false, routes: {} }, recipients, ns.settings)).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  _renderNotifMatrixRow(t, c, recipients, settings) {
+    const active = !!c.master_enabled;
+    return `
+      <tr class="${active ? "" : "tm-row-disabled"}">
+        <td>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <input type="checkbox" data-act="notif-set-master" data-type-id="${this._esc(t.id)}" ${active ? "checked" : ""}>
+            <div>
+              <strong>${this._t("notification." + t.id + ".name")}</strong>
+              <div class="tm-meta">${this._t("notification." + t.id + ".description")}</div>
+              ${t.id === "streak_at_risk" ? `
+                <div class="tm-meta" style="margin-top:6px">
+                  ${this._t("panel.notif_streak_cutoff_label")}:
+                  <input type="time" value="${this._esc(settings.streak_at_risk_cutoff_time || "20:00")}" data-act="notif-set-streak-cutoff">
+                </div>
+              ` : ""}
+            </div>
+          </div>
+        </td>
+        ${recipients.map(r => this._renderNotifMatrixCell(t, c, r)).join("")}
+      </tr>
+    `;
+  }
+
+  _renderNotifMatrixCell(t, c, r) {
+    const valid =
+      t.audience === "both" ||
+      (t.audience === "child" && r.kind === "child") ||
+      (t.audience === "parent" && r.kind === "parent");
+    if (!valid) return `<td style="text-align:center;color:var(--tm-text-muted,#666)">—</td>`;
+    const route = c.routes[r.id] || { enabled: false, time: null };
+    return `
+      <td style="text-align:center">
+        <input type="checkbox" data-act="notif-set-route" data-type-id="${this._esc(t.id)}" data-recipient-id="${this._esc(r.id)}" data-time="${this._esc(route.time || "")}" ${route.enabled ? "checked" : ""} ${c.master_enabled ? "" : "disabled"}>
+        ${t.per_recipient_time ? `
+          <input type="time" data-act="notif-set-route-time" data-type-id="${this._esc(t.id)}" data-recipient-id="${this._esc(r.id)}" value="${this._esc(route.time || "20:00")}" ${(c.master_enabled && route.enabled) ? "" : "disabled"} style="display:block;margin:4px auto 0;width:80px">
+        ` : ""}
+      </td>
+    `;
+  }
+
+  _renderNotifCustomSection(ns, recipients) {
+    return `
+      <div class="tm-card" style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3>${this._t("panel.notif_section_custom")}</h3>
+          <button type="button" class="tm-btn tm-btn-raised" data-act="notif-add-custom">+ ${this._t("panel.notif_add_custom")}</button>
+        </div>
+        <p class="tm-meta">${this._t("panel.notif_section_custom_desc")}</p>
+        ${(ns.custom || []).length === 0 ? `<div class="tm-empty"><p>${this._t("panel.notif_custom_empty")}</p></div>` : ""}
+        ${(ns.custom || []).map(n => this._renderNotifCustomCard(n, recipients)).join("")}
+      </div>
+    `;
+  }
+
+  _renderNotifCustomCard(n, recipients) {
+    const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    return `
+      <div class="tm-card" style="margin-top:10px;background:var(--tm-surface-2,#1f1f1f)">
+        <div style="display:grid;grid-template-columns:1fr 100px 50px 32px;gap:10px;align-items:center;margin-bottom:8px">
+          <input type="text" value="${this._esc(n.name)}" data-act="notif-update-custom" data-custom-id="${this._esc(n.id)}" data-field="name" placeholder="${this._t("panel.notif_custom_name_placeholder")}">
+          <input type="time" value="${this._esc(n.time)}" data-act="notif-update-custom" data-custom-id="${this._esc(n.id)}" data-field="time">
+          <input type="checkbox" data-act="notif-toggle-custom" data-custom-id="${this._esc(n.id)}" ${n.enabled ? "checked" : ""}>
+          <button type="button" class="tm-icon-btn" data-act="notif-delete-custom" data-custom-id="${this._esc(n.id)}">×</button>
+        </div>
+        <input type="text" value="${this._esc(n.message_template)}" data-act="notif-update-custom" data-custom-id="${this._esc(n.id)}" data-field="message_template" placeholder="${this._t("panel.notif_custom_message_placeholder")}" style="width:100%;margin-bottom:8px">
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+          ${days.map((d, i) => `
+            <label class="tm-pill" style="cursor:pointer;background:${(n.day_mask & (1 << i)) ? "var(--tm-accent-bg,#1a3a5c)" : "var(--tm-surface,#2a2a2a)"};border:1px solid ${(n.day_mask & (1 << i)) ? "var(--tm-accent,#4fc3f7)" : "var(--tm-border,#3a3a3a)"};color:${(n.day_mask & (1 << i)) ? "var(--tm-accent,#4fc3f7)" : "inherit"};padding:4px 10px;border-radius:6px;font-size:11px">
+              <input type="checkbox" data-act="notif-toggle-day" data-custom-id="${this._esc(n.id)}" data-day="${i}" ${(n.day_mask & (1 << i)) ? "checked" : ""} style="display:none">
+              ${this._t("panel.notif_day_" + d.toLowerCase())}
+            </label>
+          `).join("")}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${recipients.map(r => `
+            <span class="tm-pill" style="cursor:pointer;background:${n.recipient_ids.includes(r.id) ? "var(--tm-accent-bg,#1a3a5c)" : "var(--tm-surface,#2a2a2a)"};border:1px solid ${n.recipient_ids.includes(r.id) ? "var(--tm-accent,#4fc3f7)" : "var(--tm-border,#3a3a3a)"};color:${n.recipient_ids.includes(r.id) ? "var(--tm-accent,#4fc3f7)" : "inherit"};padding:4px 10px;border-radius:999px;font-size:11px"
+                  data-act="notif-toggle-recipient" data-custom-id="${this._esc(n.id)}" data-recipient-id="${this._esc(r.id)}">
+              ${this._esc(r.name)}
+            </span>
+          `).join("")}
         </div>
       </div>
     `;

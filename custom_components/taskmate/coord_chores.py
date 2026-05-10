@@ -391,6 +391,18 @@ class ChoresMixin:
 
         self.storage.add_completion(completion)
 
+        self.hass.bus.async_fire(
+            "taskmate_chore_completed",
+            {
+                "child_id": child.id,
+                "child_name": child.name,
+                "chore_id": chore.id,
+                "chore_name": chore.name,
+                "points": chore.points,
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
+
         # Update last_completed store (window starts at completion time, midnight-rounded)
         self.storage.set_last_completed(chore_id, child_id, now.isoformat())
 
@@ -405,7 +417,7 @@ class ChoresMixin:
 
         # Fire approval notification if chore requires parent sign-off
         if chore.requires_approval:
-            await self._async_notify_pending_approval(child.name, chore.name, chore.points)
+            await self._async_notify_pending_approval(child.name, chore.name, chore.points, completion_id=completion.id)
 
         await self.async_refresh()
 
@@ -530,7 +542,7 @@ class ChoresMixin:
 
         if chore.requires_approval:
             await self._async_notify_pending_approval(
-                child.name, f"{chore.name} › {subtask.name}", subtask.points
+                child.name, f"{chore.name} › {subtask.name}", subtask.points, completion_id=completion.id
             )
 
         await self.async_refresh()
@@ -565,6 +577,16 @@ class ChoresMixin:
                     completion.points_awarded = total_awarded
                     self.storage.update_completion(completion)
 
+                    self.hass.bus.async_fire(
+                        "taskmate_chore_approved",
+                        {
+                            "child_id": completion.child_id,
+                            "chore_id": completion.chore_id,
+                            "completion_id": completion.id,
+                            "timestamp": dt_util.now().isoformat(),
+                        },
+                    )
+
                     # One-shot: disable for this child on approval (parent completions only)
                     if not is_bonus and getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
                         if completion.child_id not in chore.disabled_for:
@@ -578,6 +600,17 @@ class ChoresMixin:
                     # Trigger badge evaluation after approval awards points/chore count/streak
                     if getattr(self, "badges", None):
                         await self.badges.evaluate_for_child(completion.child_id, "manual")
+
+                    # All-chores-done celebration — fire once per child per day
+                    today_iso = dt_util.now().date().isoformat()
+                    flag_key = f"all_done_{child.id}_{today_iso}"
+                    flags = self.storage._data.setdefault("all_done_flags", {})
+                    if flag_key not in flags and not self.notifications._has_outstanding_chores_today(child.id):
+                        flags[flag_key] = True
+                        await self.notifications.fire(
+                            "all_chores_done",
+                            {"child_name": child.name, "child_id": child.id},
+                        )
                 else:
                     _LOGGER.warning(
                         "Cannot approve completion %s: chore (%s) or child (%s) not found",
