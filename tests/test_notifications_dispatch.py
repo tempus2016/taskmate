@@ -5,12 +5,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from custom_components.taskmate.coord_notifications import (
-    NOTIFICATION_TYPES_BY_ID, NotificationCoordinator,
-)
-from custom_components.taskmate.models import (
-    Child, NotificationRoute, ParentRecipient,
-)
+from custom_components.taskmate.coord_notifications import NotificationCoordinator
+from custom_components.taskmate.models import NotificationRoute, ParentRecipient
 from custom_components.taskmate.storage import TaskMateStorage
 
 
