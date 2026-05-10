@@ -25,8 +25,6 @@ from .const import (
     NOTIF_TYPE_PENDING_REWARD_CLAIM,
     NOTIF_TYPE_STREAK_AT_RISK,
 )
-from .models import NotificationRoute
-
 _LOGGER = logging.getLogger(__name__)
 
 
