@@ -417,7 +417,24 @@ class TestManualOps:
 
 
 class TestNotifications:
-    async def test_single_award_fires_persistent_notification(self, coord):
+    def _coord_with_notifications(self):
+        """Return a BadgeCoordinator with a mock notifications object injected."""
+        hass = MagicMock()
+        hass.bus = MagicMock()
+        hass.bus.async_fire = MagicMock()
+        hass.services = MagicMock()
+        hass.services.async_call = AsyncMock()
+        storage = MagicMock()
+        storage.async_save = AsyncMock()
+        points_coord = MagicMock()
+        points_coord.async_add_points = AsyncMock()
+        points_coord.async_remove_points = AsyncMock()
+        notifications = MagicMock()
+        notifications.fire = AsyncMock()
+        return BadgeCoordinator(hass, storage, points_coord, notifications)
+
+    async def test_single_award_fires_dispatcher(self):
+        coord = self._coord_with_notifications()
         b = Badge(
             name="One",
             criteria=[BadgeCriterion("total_points", ">=", 10)],
@@ -431,13 +448,16 @@ class TestNotifications:
         coord.storage.get_reward_claims.return_value = []
         coord.storage.has_awarded.return_value = False
         coord.storage.get_awarded_badges_for_child.return_value = []
-        coord.storage.get_setting = MagicMock(return_value="")
 
         await coord.evaluate_for_child("c1", "points_changed")
-        # persistent_notification was called via async_create_task
-        assert coord.hass.async_create_task.called
+        coord.notifications.fire.assert_awaited_once()
+        call_args = coord.notifications.fire.call_args
+        assert call_args[0][0] == "badge_earned"
+        assert call_args[0][1]["child_name"] == "Mia"
+        assert call_args[0][1]["badge_name"] == "One"
 
-    async def test_silent_award_no_notification(self, coord):
+    async def test_silent_award_no_notification(self):
+        coord = self._coord_with_notifications()
         b = Badge(
             name="One",
             criteria=[BadgeCriterion("total_points", ">=", 10)],
@@ -451,12 +471,12 @@ class TestNotifications:
         coord.storage.get_reward_claims.return_value = []
         coord.storage.has_awarded.return_value = False
         coord.storage.get_awarded_badges_for_child.return_value = []
-        coord.storage.get_setting = MagicMock(return_value="")
 
         await coord.evaluate_for_child("c1", "manual", silent=True)
-        coord.hass.async_create_task.assert_not_called()
+        coord.notifications.fire.assert_not_awaited()
 
-    async def test_notify_on_earn_false_suppresses_notification(self, coord):
+    async def test_notify_on_earn_false_suppresses_notification(self):
+        coord = self._coord_with_notifications()
         b = Badge(
             name="Quiet",
             criteria=[BadgeCriterion("total_points", ">=", 10)],
@@ -471,12 +491,12 @@ class TestNotifications:
         coord.storage.get_reward_claims.return_value = []
         coord.storage.has_awarded.return_value = False
         coord.storage.get_awarded_badges_for_child.return_value = []
-        coord.storage.get_setting = MagicMock(return_value="")
 
         await coord.evaluate_for_child("c1", "points_changed")
-        coord.hass.async_create_task.assert_not_called()
+        coord.notifications.fire.assert_not_awaited()
 
-    async def test_3_plus_awards_in_one_pass_batched(self, coord):
+    async def test_3_plus_awards_in_one_pass_combined_per_child(self):
+        coord = self._coord_with_notifications()
         b1 = Badge(name="A", criteria=[BadgeCriterion("total_points", ">=", 10)])
         b1.id = "b1"
         b2 = Badge(name="B", criteria=[BadgeCriterion("total_points", ">=", 20)])
@@ -487,7 +507,6 @@ class TestNotifications:
         child = Child(name="Mia", total_points_earned=100)
         child.id = "c1"
         coord.storage.get_child.return_value = child
-        # get_badge will be called for each notification dispatch — return matching badge
         def _get_badge(bid):
             return {"b1": b1, "b2": b2, "b3": b3}.get(bid)
         coord.storage.get_badge.side_effect = _get_badge
@@ -495,8 +514,12 @@ class TestNotifications:
         coord.storage.get_reward_claims.return_value = []
         coord.storage.has_awarded.return_value = False
         coord.storage.get_awarded_badges_for_child.return_value = []
-        coord.storage.get_setting = MagicMock(return_value="")
 
         await coord.evaluate_for_child("c1", "points_changed")
-        # Single batched notification, not 3
-        assert coord.hass.async_create_task.call_count == 1
+        # One fire() call per child (all three badges combined into one message)
+        coord.notifications.fire.assert_awaited_once()
+        call_args = coord.notifications.fire.call_args
+        assert call_args[0][0] == "badge_earned"
+        assert "A" in call_args[0][1]["badge_name"]
+        assert "B" in call_args[0][1]["badge_name"]
+        assert "C" in call_args[0][1]["badge_name"]

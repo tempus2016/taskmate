@@ -48,8 +48,8 @@ class TaskMateCoordinator(
             update_interval=timedelta(seconds=30),
         )
         self.storage = TaskMateStorage(hass, entry_id)
-        self.badges = BadgeCoordinator(hass, self.storage, self)
         self.notifications = NotificationCoordinator(hass, self.storage)
+        self.badges = BadgeCoordinator(hass, self.storage, self, self.notifications)
         self.entry_id = entry_id
         self._unsub_midnight: Callable[[], None] | None = None
         self._unsub_prune: Callable[[], None] | None = None
