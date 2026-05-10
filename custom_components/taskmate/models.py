@@ -143,6 +143,7 @@ class Child:
     unavailability_entity: str = ""  # Second HA entity; _AVAILABLE_STATES = child is busy
     career_score: int = 0
     total_penalties_received: int = 0
+    notify_service: str | None = None
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -167,6 +168,7 @@ class Child:
             unavailability_entity=data.get("unavailability_entity", ""),
             career_score=data.get("career_score", 0),
             total_penalties_received=data.get("total_penalties_received", 0),
+            notify_service=data.get("notify_service", None),
             id=data.get("id", generate_id()),
         )
 
@@ -191,6 +193,7 @@ class Child:
             "unavailability_entity": self.unavailability_entity,
             "career_score": self.career_score,
             "total_penalties_received": self.total_penalties_received,
+            "notify_service": self.notify_service,
             "id": self.id,
         }
 

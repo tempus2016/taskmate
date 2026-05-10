@@ -573,3 +573,22 @@ class TestPoolAllocationModel:
         pa = PoolAllocation.from_dict(legacy)
         assert pa.allocated_points == 0
         assert pa.id == "legacy"
+
+
+# ---------------------------------------------------------------------------
+# Child notify_service field
+# ---------------------------------------------------------------------------
+
+
+def test_child_notify_service_round_trip():
+    c = Child(name="Maria", notify_service="notify.mobile_app_marias_tablet")
+    assert c.notify_service == "notify.mobile_app_marias_tablet"
+    restored = Child.from_dict(c.to_dict())
+    assert restored.notify_service == "notify.mobile_app_marias_tablet"
+
+
+def test_child_notify_service_defaults_none():
+    c = Child(name="Maria")
+    assert c.notify_service is None
+    restored = Child.from_dict(c.to_dict())
+    assert restored.notify_service is None
