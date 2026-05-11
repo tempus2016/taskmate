@@ -761,6 +761,7 @@
   "panel.notif_recipients_parents": "Parents",
   "panel.notif_remove_parent": "Remove",
   "panel.notif_section_custom": "Custom scheduled notifications",
+  "panel.notif_unnamed_recipient": "(unnamed)",
   "panel.notif_section_custom_desc": "Add your own timed reminders. For event-driven notifications, listen to the taskmate_* events on the Home Assistant bus.",
   "panel.notif_section_matrix": "Built-in notifications",
   "panel.notif_section_matrix_desc": "Toggle per recipient. The switch on the left disables the whole row globally. Cells marked — aren't valid for that recipient.",
