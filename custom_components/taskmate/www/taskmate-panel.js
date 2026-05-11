@@ -395,6 +395,7 @@ class TaskMatePanel extends HTMLElement {
     }
     if (act === "retry")        { this._fetchState(); return; }
     if (act === "switch-to-activity") { this._activeTab = "activity"; this._render(); return; }
+    if (act === "toggle-ha-menu") { this.dispatchEvent(new CustomEvent("hass-toggle-menu", { bubbles: true, composed: true })); return; }
     if (act === "copy-id") { navigator.clipboard.writeText(t.dataset.id).then(() => this._showToast("ok", this._t("panel.toast_copied"))); return; }
 
     // Children
@@ -1514,6 +1515,9 @@ class TaskMatePanel extends HTMLElement {
       : 0;
     return `
       <div class="tm-topbar">
+        <button type="button" class="tm-menu-btn" data-act="toggle-ha-menu" aria-label="Menu">
+          <ha-icon icon="mdi:menu"></ha-icon>
+        </button>
         <div class="tm-crumbs">
           <span class="tm-crumbs-root">TaskMate</span>
           <span class="tm-crumbs-sep">/</span>
@@ -3814,6 +3818,19 @@ class TaskMatePanel extends HTMLElement {
         background: var(--tm-surface-0);
         flex-shrink: 0;
       }
+      .tm-menu-btn {
+        display: none;
+        background: transparent;
+        border: 0;
+        color: var(--tm-text);
+        padding: 6px;
+        margin-left: -6px;
+        border-radius: 8px;
+        cursor: pointer;
+        align-items: center; justify-content: center;
+      }
+      .tm-menu-btn:hover { background: var(--tm-surface-2); }
+      .tm-menu-btn ha-icon { --mdc-icon-size: 22px; }
       .tm-crumbs {
         display: flex; align-items: center; gap: 8px;
         font-size: 13px;
@@ -4737,6 +4754,8 @@ class TaskMatePanel extends HTMLElement {
       @media (max-width: 900px) {
         .tm-shell { grid-template-columns: 1fr; }
         .tm-sidebar { display: none; }
+        .tm-menu-btn { display: inline-flex; }
+        .tm-topbar { padding: 0 12px; }
         .tm-mobile-tabs {
           display: flex;
           overflow-x: auto;
