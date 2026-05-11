@@ -1461,6 +1461,7 @@ class TaskMatePanel extends HTMLElement {
         { id: "templates", label: this._t("panel.tab_templates"), icon: "mdi:clipboard-list-outline" },
       ]},
       { head: this._t("panel.nav_system"), items: [
+        { id: "notifications", label: this._t("panel.tab_notifications"), icon: "mdi:bell-outline" },
         { id: "settings", label: this._t("panel.tab_settings"), icon: "mdi:cog-outline" },
       ]},
     ].map(g => ({
