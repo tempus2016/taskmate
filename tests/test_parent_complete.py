@@ -234,7 +234,11 @@ class TestParentCompleteIntegration:
         with patch.object(_mod.dt_util, "now", return_value=seven_days):
             assert coord.is_chore_available_for_child(chore, child.id) is True
 
-    def test_parent_complete_does_not_change_rotation_pointer(self):
+    def test_parent_complete_clears_rotation_pointer_today(self):
+        """For rotation-mode chores, parent_complete should clear today's
+        cached current assignee so the chore stops pointing at the original
+        child. The next midnight refresh recomputes the pointer normally.
+        """
         coord, storage, _mod = _make_system()
         now = _now()
 
@@ -247,11 +251,57 @@ class TestParentCompleteIntegration:
                 assigned_to=[alice.id, bob.id],
                 assignment_mode="alternating",
             ))
-
-        original_pointer = chore.assignment_current_child_id
+            chore.assignment_current_child_id = alice.id
+            storage.update_chore(chore)
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_parent_complete_chore(chore.id))
 
         updated_chore = storage.get_chore(chore.id)
-        assert updated_chore.assignment_current_child_id == original_pointer
+        assert updated_chore.assignment_current_child_id == ""
+
+    def test_parent_complete_preserves_everyone_mode_pointer(self):
+        """Everyone-mode chores don't use the assignment_current_child_id
+        cache. Make sure parent_complete leaves it untouched (still empty)
+        and doesn't error.
+        """
+        coord, storage, _mod = _make_system()
+        now = _now()
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_add_child("Alice"))
+            chore = run(coord.async_add_chore(
+                "Brush teeth", points=2, requires_approval=False,
+                schedule_mode="recurring", recurrence="daily",
+                assigned_to=[],  # everyone
+            ))
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_parent_complete_chore(chore.id))
+
+        updated_chore = storage.get_chore(chore.id)
+        assert updated_chore.assignment_current_child_id == ""
+
+    def test_parent_complete_counts_toward_rotation_done_today(self):
+        """A `__parent__` completion fills today's quota for the rotation
+        pool, so `_is_rotation_done_today` returns True afterwards.
+        """
+        coord, storage, _mod = _make_system()
+        now = _now()
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            alice = run(coord.async_add_child("Alice"))
+            bob = run(coord.async_add_child("Bob"))
+            chore = run(coord.async_add_chore(
+                "Bins", points=5, requires_approval=False,
+                schedule_mode="recurring", recurrence="weekly",
+                assigned_to=[alice.id, bob.id],
+                assignment_mode="alternating",
+            ))
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            assert coord._is_rotation_done_today(chore) is False
+            run(coord.async_parent_complete_chore(chore.id))
+            # Re-fetch since parent_complete may have mutated the chore.
+            chore = storage.get_chore(chore.id)
+            assert coord._is_rotation_done_today(chore) is True

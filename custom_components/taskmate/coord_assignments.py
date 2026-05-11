@@ -443,7 +443,10 @@ class AssignmentsMixin:
         for comp in self.storage.get_completions():
             if comp.chore_id != chore.id:
                 continue
-            if comp.child_id not in pool:
+            # A parent-completion (`__parent__`) covers the whole rotation
+            # for today, so it counts toward the daily quota even though the
+            # sentinel id isn't in the pool.
+            if comp.child_id not in pool and comp.child_id != "__parent__":
                 continue
             comp_dt = comp.completed_at
             try:
