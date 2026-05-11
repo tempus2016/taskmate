@@ -1386,6 +1386,7 @@ class TaskMatePanel extends HTMLElement {
       this._shellReady = true;
       this._zoneCache = {};
       this._bindHaPickers();
+      this._scrollActiveMobileTabIntoView();
       return;
     }
 
@@ -1405,6 +1406,10 @@ class TaskMatePanel extends HTMLElement {
       const dialogBody = dialogZone.querySelector(".tm-dialog-body");
       savedScroll = dialogBody ? dialogBody.scrollTop : 0;
     }
+
+    const mtabsZone = this.querySelector('[data-zone="mtabs"]');
+    const existingMtabs = mtabsZone ? mtabsZone.querySelector(".tm-mobile-tabs") : null;
+    const savedMtabsScroll = existingMtabs ? existingMtabs.scrollLeft : 0;
 
     if (this._dialog) {
       const openSet = this._dialog._openAdvanced instanceof Set ? this._dialog._openAdvanced : new Set();
@@ -1433,6 +1438,26 @@ class TaskMatePanel extends HTMLElement {
     if (savedScroll) {
       const newBody = dialogZone && dialogZone.querySelector(".tm-dialog-body");
       if (newBody) newBody.scrollTop = savedScroll;
+    }
+
+    if (savedMtabsScroll) {
+      const newMtabs = this.querySelector(".tm-mobile-tabs");
+      if (newMtabs) newMtabs.scrollLeft = savedMtabsScroll;
+    }
+
+    this._scrollActiveMobileTabIntoView();
+  }
+
+  _scrollActiveMobileTabIntoView() {
+    const nav = this.querySelector(".tm-mobile-tabs");
+    if (!nav) return;
+    const active = nav.querySelector(".tm-mtab-active");
+    if (!active) return;
+    const navRect = nav.getBoundingClientRect();
+    const btnRect = active.getBoundingClientRect();
+    if (btnRect.left < navRect.left || btnRect.right > navRect.right) {
+      const target = active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2;
+      nav.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
     }
   }
 
@@ -2977,29 +3002,37 @@ class TaskMatePanel extends HTMLElement {
   _renderNotifCustomCard(n, recipients) {
     const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
     return `
-      <div class="tm-card" style="margin-top:10px;background:var(--tm-surface-2,#1f1f1f)">
-        <div style="display:grid;grid-template-columns:1fr 100px 50px 32px;gap:10px;align-items:center;margin-bottom:8px">
-          <input type="text" value="${this._esc(n.name)}" data-act="notif-update-custom" data-custom-id="${this._esc(n.id)}" data-field="name" placeholder="${this._t("panel.notif_custom_name_placeholder")}">
-          <input type="time" value="${this._esc(n.time)}" data-act="notif-update-custom" data-custom-id="${this._esc(n.id)}" data-field="time">
+      <div class="tm-notif-custom-card">
+        <div class="tm-notif-custom-row">
+          <input type="text" class="tm-input" value="${this._esc(n.name)}" data-act="notif-update-custom" data-custom-id="${this._esc(n.id)}" data-field="name" placeholder="${this._t("panel.notif_custom_name_placeholder")}">
+          <input type="time" class="tm-input" value="${this._esc(n.time)}" data-act="notif-update-custom" data-custom-id="${this._esc(n.id)}" data-field="time">
           <input type="checkbox" data-act="notif-toggle-custom" data-custom-id="${this._esc(n.id)}" ${n.enabled ? "checked" : ""}>
-          <button type="button" class="tm-icon-btn" data-act="notif-delete-custom" data-custom-id="${this._esc(n.id)}">×</button>
+          <button type="button" class="tm-icon-btn" data-act="notif-delete-custom" data-custom-id="${this._esc(n.id)}" aria-label="${this._t("panel.btn_delete")}">×</button>
         </div>
-        <input type="text" value="${this._esc(n.message_template)}" data-act="notif-update-custom" data-custom-id="${this._esc(n.id)}" data-field="message_template" placeholder="${this._t("panel.notif_custom_message_placeholder")}" style="width:100%;margin-bottom:8px">
-        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-          ${days.map((d, i) => `
-            <label class="tm-pill" style="cursor:pointer;background:${(n.day_mask & (1 << i)) ? "var(--tm-accent-bg,#1a3a5c)" : "var(--tm-surface,#2a2a2a)"};border:1px solid ${(n.day_mask & (1 << i)) ? "var(--tm-accent,#4fc3f7)" : "var(--tm-border,#3a3a3a)"};color:${(n.day_mask & (1 << i)) ? "var(--tm-accent,#4fc3f7)" : "inherit"};padding:4px 10px;border-radius:6px;font-size:11px">
-              <input type="checkbox" data-act="notif-toggle-day" data-custom-id="${this._esc(n.id)}" data-day="${i}" ${(n.day_mask & (1 << i)) ? "checked" : ""} style="display:none">
-              ${this._t("panel.notif_day_" + d.toLowerCase())}
-            </label>
-          `).join("")}
+        <input type="text" class="tm-input tm-notif-custom-msg" value="${this._esc(n.message_template)}" data-act="notif-update-custom" data-custom-id="${this._esc(n.id)}" data-field="message_template" placeholder="${this._t("panel.notif_custom_message_placeholder")}">
+        <div class="tm-notif-toggle-group">
+          ${days.map((d, i) => {
+            const on = !!(n.day_mask & (1 << i));
+            return `
+              <label class="tm-notif-toggle tm-notif-toggle-day ${on ? "tm-notif-toggle-on" : ""}">
+                <input type="checkbox" data-act="notif-toggle-day" data-custom-id="${this._esc(n.id)}" data-day="${i}" ${on ? "checked" : ""}>
+                <span>${this._t("panel.notif_day_" + d.toLowerCase())}</span>
+              </label>
+            `;
+          }).join("")}
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          ${recipients.map(r => `
-            <span class="tm-pill" style="cursor:pointer;background:${n.recipient_ids.includes(r.id) ? "var(--tm-accent-bg,#1a3a5c)" : "var(--tm-surface,#2a2a2a)"};border:1px solid ${n.recipient_ids.includes(r.id) ? "var(--tm-accent,#4fc3f7)" : "var(--tm-border,#3a3a3a)"};color:${n.recipient_ids.includes(r.id) ? "var(--tm-accent,#4fc3f7)" : "inherit"};padding:4px 10px;border-radius:999px;font-size:11px"
-                  data-act="notif-toggle-recipient" data-custom-id="${this._esc(n.id)}" data-recipient-id="${this._esc(r.id)}">
-              ${this._esc(r.name)}
-            </span>
-          `).join("")}
+        <div class="tm-notif-toggle-group">
+          ${recipients.map(r => {
+            const on = n.recipient_ids.includes(r.id);
+            const name = (r.name && r.name.trim()) || this._t("panel.notif_unnamed_recipient");
+            return `
+              <button type="button" class="tm-notif-toggle tm-notif-toggle-pill ${on ? "tm-notif-toggle-on" : ""}"
+                      data-act="notif-toggle-recipient" data-custom-id="${this._esc(n.id)}" data-recipient-id="${this._esc(r.id)}"
+                      aria-pressed="${on ? "true" : "false"}">
+                ${this._esc(name)}
+              </button>
+            `;
+          }).join("")}
         </div>
       </div>
     `;
@@ -4750,6 +4783,65 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-badge-op { font-size: 16px; text-align: center; color: var(--tm-text-muted); }
 
+      /* ===== Notifications: custom card buttons ===== */
+      .tm-notif-custom-card {
+        margin-top: 10px;
+        padding: 14px;
+        background: var(--tm-surface-1);
+        border: 1px solid var(--tm-border);
+        border-radius: 10px;
+      }
+      .tm-notif-custom-row {
+        display: grid;
+        grid-template-columns: 1fr 110px 40px 32px;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .tm-notif-custom-msg { width: 100%; margin-bottom: 12px; }
+      .tm-notif-toggle-group {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+      }
+      .tm-notif-toggle-group:last-child { margin-bottom: 0; }
+      .tm-notif-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 7px 14px;
+        font-size: 12.5px;
+        font-weight: 500;
+        font-family: inherit;
+        line-height: 1.2;
+        background: var(--tm-surface-0);
+        color: var(--tm-text);
+        border: 1px solid var(--tm-border);
+        transition: background 0.12s var(--tm-easing), color 0.12s var(--tm-easing), border-color 0.12s var(--tm-easing);
+        user-select: none;
+      }
+      .tm-notif-toggle:hover {
+        background: var(--tm-accent-soft);
+        border-color: var(--tm-accent);
+        color: var(--tm-accent-text);
+      }
+      .tm-notif-toggle input[type="checkbox"] { display: none; }
+      .tm-notif-toggle-day { border-radius: var(--tm-radius-sm); min-width: 46px; }
+      .tm-notif-toggle-pill { border-radius: 999px; }
+      .tm-notif-toggle-on {
+        background: var(--tm-accent);
+        color: var(--text-primary-color, #fff);
+        border-color: var(--tm-accent);
+      }
+      .tm-notif-toggle-on:hover {
+        background: var(--tm-accent);
+        color: var(--text-primary-color, #fff);
+        border-color: var(--tm-accent);
+        filter: brightness(1.1);
+      }
+
       /* ===== Mobile / narrow ===== */
       @media (max-width: 900px) {
         .tm-shell { grid-template-columns: 1fr; }
@@ -4759,6 +4851,9 @@ class TaskMatePanel extends HTMLElement {
         .tm-mobile-tabs {
           display: flex;
           overflow-x: auto;
+          overflow-y: hidden;
+          overscroll-behavior: contain;
+          touch-action: pan-x;
           scrollbar-width: none;
           padding: 0 12px;
           background: var(--tm-surface-0);
