@@ -470,6 +470,14 @@ class ChoresMixin:
         for cid in child_ids:
             self.storage.set_last_completed(chore_id, cid, now.isoformat())
 
+        # Clear today's cached current assignee for rotation-mode chores so
+        # the "Current" column / child-stats card stops pointing at the
+        # original child. The pointer recomputes at the next midnight refresh.
+        if getattr(chore, "assignment_mode", "everyone") != "everyone":
+            if getattr(chore, "assignment_current_child_id", ""):
+                chore.assignment_current_child_id = ""
+                self.storage.update_chore(chore)
+
         await self.storage.async_save()
         await self.async_refresh()
 
