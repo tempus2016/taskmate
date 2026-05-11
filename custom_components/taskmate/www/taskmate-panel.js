@@ -1213,9 +1213,10 @@ class TaskMatePanel extends HTMLElement {
     const payload = { type: "taskmate/update_settings" };
     fields.forEach(el => {
       const name = el.dataset.setting;
+      const declaredType = el.getAttribute("type") || el.type;
       let v;
-      if (el.type === "checkbox" || el.tagName === "HA-SWITCH") v = el.checked;
-      else if (el.type === "number") v = el.value === "" ? undefined : Number(el.value);
+      if (declaredType === "checkbox" || el.tagName === "HA-SWITCH") v = el.checked;
+      else if (declaredType === "number") v = el.value === "" ? undefined : Number(el.value);
       else v = el.value;
       if (v !== undefined) payload[name] = v;
     });
