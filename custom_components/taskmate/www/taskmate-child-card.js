@@ -1756,7 +1756,7 @@ class TaskMateChildCard extends LitElement {
           const dailyLimit = chore.daily_limit || 1;
           const allTodayCompletions = attrs.todays_completions || [];
           const poolCompletionsToday = allTodayCompletions.filter(
-            comp => comp.chore_id === chore.id && (poolSet.has(String(comp.child_id)) || comp.child_id === "__parent__")
+            comp => comp.chore_id === chore.id && (poolSet.has(String(comp.child_id)) || comp.child_id === "__parent__") && !comp.bonus_subtask_id
           ).length;
           if (poolCompletionsToday >= dailyLimit) {
             isAssignedToChild = false;
