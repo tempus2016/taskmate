@@ -2875,8 +2875,8 @@ class TaskMatePanel extends HTMLElement {
       ${this._renderNotifMatrixSection(ns, recipients)}
       ${this._renderNotifCustomSection(ns, recipients)}
 
-      <div class="tm-card tm-meta" style="margin-top:16px;border-left:3px solid var(--tm-accent,#4fc3f7);">
-        <strong>${this._t("panel.notif_power_user_note_title")}:</strong>
+      <div class="tm-notif-info-box">
+        <strong>${this._t("panel.notif_power_user_note_title")}</strong>
         ${this._t("panel.notif_power_user_note_body")}
       </div>
     `;
@@ -2898,7 +2898,7 @@ class TaskMatePanel extends HTMLElement {
             ${ns.recipients.children.map(c => `
               <div class="tm-row" style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--tm-border,#3a3a3a)">
                 <div style="flex:1"><strong>${this._esc(c.name)}</strong></div>
-                <select data-act="notif-set-child-notify" data-child-id="${this._esc(c.id.replace(/^child:/, ""))}">
+                <select class="tm-notif-select" data-act="notif-set-child-notify" data-child-id="${this._esc(c.id.replace(/^child:/, ""))}">
                   ${optTags(c.notify_service)}
                 </select>
               </div>
@@ -2909,7 +2909,7 @@ class TaskMatePanel extends HTMLElement {
             ${ns.recipients.parents.map(p => `
               <div class="tm-row" style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--tm-border,#3a3a3a)">
                 <input type="text" value="${this._esc(p.name)}" data-act="notif-rename-parent" data-parent-id="${this._esc(p.id)}" style="flex:1;background:transparent;border:none;color:inherit;font-size:14px;font-weight:500">
-                <select data-act="notif-set-parent-notify" data-parent-id="${this._esc(p.id)}">
+                <select class="tm-notif-select" data-act="notif-set-parent-notify" data-parent-id="${this._esc(p.id)}">
                   ${optTags(p.notify_service)}
                 </select>
                 <button type="button" class="tm-icon-btn" data-act="notif-delete-parent" data-parent-id="${this._esc(p.id)}" title="${this._t("panel.notif_remove_parent")}">×</button>
@@ -2950,14 +2950,14 @@ class TaskMatePanel extends HTMLElement {
       <tr class="${active ? "" : "tm-row-disabled"}">
         <td>
           <div style="display:flex;gap:10px;align-items:flex-start">
-            <input type="checkbox" data-act="notif-set-master" data-type-id="${this._esc(t.id)}" ${active ? "checked" : ""}>
+            <input type="checkbox" class="tm-notif-switch" data-act="notif-set-master" data-type-id="${this._esc(t.id)}" ${active ? "checked" : ""}>
             <div>
               <strong>${this._t("notification." + t.id + ".name")}</strong>
               <div class="tm-meta">${this._t("notification." + t.id + ".description")}</div>
               ${t.id === "streak_at_risk" ? `
-                <div class="tm-meta" style="margin-top:6px">
-                  ${this._t("panel.notif_streak_cutoff_label")}:
-                  <input type="time" value="${this._esc(settings.streak_at_risk_cutoff_time || "20:00")}" data-act="notif-set-streak-cutoff">
+                <div class="tm-meta" style="margin-top:6px;display:flex;align-items:center;gap:8px">
+                  ${this._t("panel.notif_streak_cutoff_label")}
+                  <input type="time" class="tm-notif-time-input" value="${this._esc(settings.streak_at_risk_cutoff_time || "20:00")}" data-act="notif-set-streak-cutoff" style="display:inline;margin:0;width:90px">
                 </div>
               ` : ""}
             </div>
@@ -2973,13 +2973,13 @@ class TaskMatePanel extends HTMLElement {
       t.audience === "both" ||
       (t.audience === "child" && r.kind === "child") ||
       (t.audience === "parent" && r.kind === "parent");
-    if (!valid) return `<td style="text-align:center;color:var(--tm-text-muted,#666)">—</td>`;
+    if (!valid) return `<td class="tm-notif-matrix-cell" style="color:var(--tm-text-muted,#666)">—</td>`;
     const route = c.routes[r.id] || { enabled: false, time: null };
     return `
-      <td style="text-align:center">
-        <input type="checkbox" data-act="notif-set-route" data-type-id="${this._esc(t.id)}" data-recipient-id="${this._esc(r.id)}" data-time="${this._esc(route.time || "")}" ${route.enabled ? "checked" : ""} ${c.master_enabled ? "" : "disabled"}>
+      <td class="tm-notif-matrix-cell">
+        <input type="checkbox" class="tm-notif-switch" data-act="notif-set-route" data-type-id="${this._esc(t.id)}" data-recipient-id="${this._esc(r.id)}" data-time="${this._esc(route.time || "")}" ${route.enabled ? "checked" : ""} ${c.master_enabled ? "" : "disabled"}>
         ${t.per_recipient_time ? `
-          <input type="time" data-act="notif-set-route-time" data-type-id="${this._esc(t.id)}" data-recipient-id="${this._esc(r.id)}" value="${this._esc(route.time || "20:00")}" ${(c.master_enabled && route.enabled) ? "" : "disabled"} style="display:block;margin:4px auto 0;width:80px">
+          <input type="time" class="tm-notif-time-input" data-act="notif-set-route-time" data-type-id="${this._esc(t.id)}" data-recipient-id="${this._esc(r.id)}" value="${this._esc(route.time || "20:00")}" ${(c.master_enabled && route.enabled) ? "" : "disabled"}>
         ` : ""}
       </td>
     `;
@@ -3006,8 +3006,8 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-notif-custom-row">
           <input type="text" class="tm-input" value="${this._esc(n.name)}" data-act="notif-update-custom" data-custom-id="${this._esc(n.id)}" data-field="name" placeholder="${this._t("panel.notif_custom_name_placeholder")}">
           <input type="time" class="tm-input" value="${this._esc(n.time)}" data-act="notif-update-custom" data-custom-id="${this._esc(n.id)}" data-field="time">
-          <input type="checkbox" data-act="notif-toggle-custom" data-custom-id="${this._esc(n.id)}" ${n.enabled ? "checked" : ""}>
-          <button type="button" class="tm-icon-btn" data-act="notif-delete-custom" data-custom-id="${this._esc(n.id)}" aria-label="${this._t("panel.btn_delete")}">×</button>
+          <input type="checkbox" class="tm-notif-switch" data-act="notif-toggle-custom" data-custom-id="${this._esc(n.id)}" ${n.enabled ? "checked" : ""}>
+          <button type="button" class="tm-notif-delete" data-act="notif-delete-custom" data-custom-id="${this._esc(n.id)}" aria-label="${this._t("panel.btn_delete")}">×</button>
         </div>
         <input type="text" class="tm-input tm-notif-custom-msg" value="${this._esc(n.message_template)}" data-act="notif-update-custom" data-custom-id="${this._esc(n.id)}" data-field="message_template" placeholder="${this._t("panel.notif_custom_message_placeholder")}">
         <div class="tm-notif-toggle-group">
@@ -4793,7 +4793,7 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-notif-custom-row {
         display: grid;
-        grid-template-columns: 1fr 110px 40px 32px;
+        grid-template-columns: 1fr 110px 42px 32px;
         gap: 10px;
         align-items: center;
         margin-bottom: 10px;
@@ -4840,6 +4840,81 @@ class TaskMatePanel extends HTMLElement {
         color: var(--text-primary-color, #fff);
         border-color: var(--tm-accent);
         filter: brightness(1.1);
+      }
+
+      /* Notification toggle switches (CSS-only on native checkbox) */
+      .tm-notif-switch {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 38px; height: 22px;
+        background: var(--tm-border-strong);
+        border: none; border-radius: 999px;
+        cursor: pointer; position: relative;
+        transition: background 0.15s;
+        flex-shrink: 0; vertical-align: middle;
+        margin: 0;
+      }
+      .tm-notif-switch::after {
+        content: ""; position: absolute;
+        top: 3px; left: 3px;
+        width: 16px; height: 16px; border-radius: 50%;
+        background: #fff; transition: transform 0.15s;
+      }
+      .tm-notif-switch:checked { background: var(--tm-accent); }
+      .tm-notif-switch:checked::after { transform: translateX(16px); }
+      .tm-notif-switch:disabled { opacity: 0.35; cursor: not-allowed; }
+
+      /* Notification matrix cells */
+      .tm-notif-matrix-cell { text-align: center; vertical-align: middle; }
+      .tm-notif-time-input {
+        display: block; margin: 6px auto 0; width: 86px;
+        font-size: 12px; padding: 5px 6px; text-align: center;
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm); color: var(--tm-text);
+        font-family: inherit; transition: border-color 0.1s;
+      }
+      .tm-notif-time-input:focus {
+        outline: 0; border-color: var(--tm-accent);
+        box-shadow: var(--tm-shadow-focus);
+      }
+      .tm-notif-time-input:disabled { opacity: 0.35; }
+
+      /* Notification recipient selects */
+      .tm-notif-select {
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm); padding: 7px 10px;
+        color: var(--tm-text); font-size: 12.5px; font-family: inherit;
+        cursor: pointer; max-width: 240px; transition: border-color 0.1s;
+      }
+      .tm-notif-select:hover { border-color: var(--tm-border-strong); }
+      .tm-notif-select:focus { outline: 0; border-color: var(--tm-accent); box-shadow: var(--tm-shadow-focus); }
+
+      /* Notification delete button */
+      .tm-notif-delete {
+        width: 30px; height: 30px;
+        border: 1px solid transparent; background: transparent;
+        border-radius: var(--tm-radius-sm);
+        display: grid; place-items: center;
+        color: var(--tm-text-faint); cursor: pointer;
+        font-size: 16px; font-family: inherit;
+        transition: all 0.1s;
+      }
+      .tm-notif-delete:hover {
+        background: var(--tm-danger-soft); color: var(--tm-danger);
+        border-color: var(--tm-danger-soft);
+      }
+
+      /* Power user info box */
+      .tm-notif-info-box {
+        margin-top: 16px; padding: 14px 16px;
+        background: var(--tm-surface-1); border: 1px solid var(--tm-border);
+        border-left: 3px solid var(--tm-accent, #4fc3f7);
+        border-radius: var(--tm-radius-sm);
+        font-size: 12.5px; color: var(--tm-text-muted); line-height: 1.55;
+      }
+      .tm-notif-info-box strong {
+        color: var(--tm-text); display: block;
+        margin-bottom: 4px; font-size: 13px;
       }
 
       /* ===== Mobile / narrow ===== */
