@@ -1759,7 +1759,19 @@ class TaskMateChildCard extends LitElement {
             comp => comp.chore_id === chore.id && (poolSet.has(String(comp.child_id)) || comp.child_id === "__parent__") && !comp.bonus_subtask_id
           ).length;
           if (poolCompletionsToday >= dailyLimit) {
-            isAssignedToChild = false;
+            // Bonus sub-tasks render inside the parent card; if the active
+            // child still has any pending, keep the chore visible so they
+            // remain reachable.
+            const bonusSubtasks = chore.bonus_subtasks || [];
+            const completedBonusIds = new Set(
+              allTodayCompletions
+                .filter(c => c.chore_id === chore.id && String(c.child_id) === activeId && c.bonus_subtask_id)
+                .map(c => c.bonus_subtask_id)
+            );
+            const hasPendingBonus = bonusSubtasks.some(b => b && b.id && !completedBonusIds.has(b.id));
+            if (!hasPendingBonus) {
+              isAssignedToChild = false;
+            }
           }
         }
       }

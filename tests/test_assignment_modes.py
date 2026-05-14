@@ -222,6 +222,72 @@ def test_rotation_chore_clears_for_pool_when_off_rotation_child_completes():
     assert coord.is_chore_available_for_child(chore, a.id) is True
 
 
+def test_rotation_chore_with_pending_bonus_subtasks_stays_visible():
+    """Regression for issue #365: when a rotation chore has bonus sub-tasks,
+    completing the parent fills the daily quota (e.g. 1/1) — but the bonus
+    sub-tasks render inside the parent card and must remain reachable until
+    the active child has completed them. The chore should stay visible while
+    bonus sub-tasks are pending."""
+    from custom_components.taskmate.models import BonusSubTask, ChoreCompletion
+
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    anchor = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(anchor, dt.time(12, 0), tzinfo=UTC)
+    bonus = BonusSubTask(name="Extra wipe-down", points=2)
+    chore = Chore(
+        name="Bins",
+        assigned_to=[a.id, b.id],
+        assignment_mode="alternating",
+        assignment_rotation_anchor=anchor.isoformat(),
+        daily_limit=1,
+        bonus_subtasks=[bonus],
+    )
+    # A is the active child today.
+    assert coord._compute_active_children(chore, anchor) == [a.id]
+    chore.assignment_current_child_id = a.id
+
+    # A completes the parent — daily_limit is filled (1/1) but the bonus
+    # sub-task is still pending, so the chore must stay visible.
+    parent_completion = ChoreCompletion(
+        chore_id=chore.id, child_id=a.id,
+        completed_at=dt_util_mock.now(), approved=True,
+    )
+    coord.storage.get_completions = MagicMock(return_value=[parent_completion])
+    assert coord._is_rotation_done_today(chore) is False
+    assert coord.is_chore_available_for_child(chore, a.id) is True
+
+    # Once A completes the bonus sub-task, the chore is fully done and hides.
+    bonus_completion = ChoreCompletion(
+        chore_id=chore.id, child_id=a.id,
+        completed_at=dt_util_mock.now(), approved=True,
+        bonus_subtask_id=bonus.id,
+    )
+    coord.storage.get_completions = MagicMock(
+        return_value=[parent_completion, bonus_completion]
+    )
+    assert coord._is_rotation_done_today(chore) is True
+    assert coord.is_chore_available_for_child(chore, a.id) is False
+
+    # Sanity: a rotation chore *without* bonus sub-tasks still hides as soon
+    # as its quota is met (existing behaviour preserved).
+    chore_no_bonus = Chore(
+        name="Bins (no bonus)",
+        assigned_to=[a.id, b.id],
+        assignment_mode="alternating",
+        assignment_rotation_anchor=anchor.isoformat(),
+        daily_limit=1,
+    )
+    chore_no_bonus.assignment_current_child_id = a.id
+    plain_completion = ChoreCompletion(
+        chore_id=chore_no_bonus.id, child_id=a.id,
+        completed_at=dt_util_mock.now(), approved=True,
+    )
+    coord.storage.get_completions = MagicMock(return_value=[plain_completion])
+    assert coord._is_rotation_done_today(chore_no_bonus) is True
+
+
 def test_everyone_mode_unaffected_by_rotation_done_helper():
     """Everyone-mode chores share no single daily quota across the pool, so
     the helper must not retire them after one child completes."""
