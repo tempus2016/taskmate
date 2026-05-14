@@ -432,6 +432,11 @@ class AssignmentsMixin:
         rotation" and should disappear from every pool member's list — not
         just the child who happened to complete it. Returns False for
         everyone-mode chores since they don't share a single daily quota.
+
+        Exception: bonus sub-tasks render inside the parent chore card, so
+        hiding the chore would also hide any pending bonus sub-tasks. If the
+        active child still has uncompleted bonus sub-tasks for today, keep
+        the chore visible (return False) so they remain reachable.
         """
         if getattr(chore, 'assignment_mode', 'everyone') == 'everyone':
             return False
@@ -439,14 +444,11 @@ class AssignmentsMixin:
         if not pool:
             return False
         today = dt_util.as_local(dt_util.now()).date()
+        active_child_id = getattr(chore, 'assignment_current_child_id', '') or ''
         completions_today = 0
+        completed_bonus_ids_today: set[str] = set()
         for comp in self.storage.get_completions():
             if comp.chore_id != chore.id:
-                continue
-            # A parent-completion (`__parent__`) covers the whole rotation
-            # for today, so it counts toward the daily quota even though the
-            # sentinel id isn't in the pool.
-            if comp.child_id not in pool and comp.child_id != "__parent__":
                 continue
             comp_dt = comp.completed_at
             try:
@@ -455,10 +457,30 @@ class AssignmentsMixin:
                 comp_date = comp_dt.date() if hasattr(comp_dt, 'date') else None
             except (AttributeError, TypeError, ValueError):
                 continue
-            if comp_date == today:
+            if comp_date != today:
+                continue
+            bonus_id = getattr(comp, 'bonus_subtask_id', None)
+            if bonus_id:
+                # Bonus completions don't count toward the parent's daily
+                # quota; track them only to decide whether the active child
+                # still has bonus work pending.
+                if active_child_id and comp.child_id == active_child_id:
+                    completed_bonus_ids_today.add(bonus_id)
+                continue
+            # Parent completions count toward the quota. A `__parent__`
+            # sentinel covers the whole rotation for today.
+            if comp.child_id in pool or comp.child_id == "__parent__":
                 completions_today += 1
         daily_limit = getattr(chore, 'daily_limit', 1) or 1
-        return completions_today >= daily_limit
+        if completions_today < daily_limit:
+            return False
+        bonus_subtasks = getattr(chore, 'bonus_subtasks', None) or []
+        if bonus_subtasks and active_child_id:
+            for bst in bonus_subtasks:
+                bst_id = bst.get('id') if isinstance(bst, dict) else getattr(bst, 'id', None)
+                if bst_id and bst_id not in completed_bonus_ids_today:
+                    return False
+        return True
 
     async def _async_refresh_assignments_and_publish(self) -> None:
         """Recompute today's active child per chore and publish to calendars.
