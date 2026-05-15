@@ -380,6 +380,9 @@ class TaskMateActivityCard extends LitElement {
       max_items: 30,
       child_id: null,
       header_color: '#2471a3',
+      show_filter_chips: true,
+      accent_stripes: true,
+      show_relative_time: true,
       ...config,
     };
   }
@@ -497,7 +500,7 @@ class TaskMateActivityCard extends LitElement {
       <ha-card>
         <style>:host { --taskmate-header-bg: ${headerColor}; }</style>
         ${this._renderHeader(title, filteredEvents.length, unfiltered.length)}
-        ${this._renderFilterBar()}
+        ${this.config.show_filter_chips !== false ? this._renderFilterBar() : ''}
         <div class="feed-container">
           ${filteredEvents.length === 0 ? html`
             <div class="empty-state">
@@ -578,7 +581,7 @@ class TaskMateActivityCard extends LitElement {
 
       return html`
         <div class="activity-item t-${klass}">
-          <div class="event-stripe"></div>
+          ${this.config.accent_stripes !== false ? html`<div class="event-stripe"></div>` : ''}
           <div class="activity-row">
             <div class="activity-icon t-${klass}">
               <ha-icon icon="${icon}"></ha-icon>
@@ -591,7 +594,7 @@ class TaskMateActivityCard extends LitElement {
               </div>
               <div class="activity-meta">
                 <span class="activity-time">${time}</span>
-                <span class="activity-ago">${ago}</span>
+                ${this.config.show_relative_time !== false ? html`<span class="activity-ago">${ago}</span>` : ''}
               </div>
             </div>
             <span class="points-pill ${pillClass}">
@@ -612,7 +615,7 @@ class TaskMateActivityCard extends LitElement {
 
       return html`
         <div class="activity-item t-${itemKlass}">
-          <div class="event-stripe"></div>
+          ${this.config.accent_stripes !== false ? html`<div class="event-stripe"></div>` : ''}
           <div class="activity-row">
             <div class="activity-icon t-${itemKlass}">
               <ha-icon icon="${isPending ? 'mdi:gift-outline' : 'mdi:gift'}"></ha-icon>
@@ -626,7 +629,7 @@ class TaskMateActivityCard extends LitElement {
               </div>
               <div class="activity-meta">
                 <span class="activity-time">${time}</span>
-                <span class="activity-ago">${ago}</span>
+                ${this.config.show_relative_time !== false ? html`<span class="activity-ago">${ago}</span>` : ''}
               </div>
             </div>
             ${pts ? html`
@@ -787,6 +790,9 @@ class TaskMateActivityCardEditor extends LitElement {
         },
       },
       { name: 'max_items', selector: { number: { min: 5, max: 200, mode: 'box' } } },
+      { name: 'show_filter_chips', selector: { boolean: {} } },
+      { name: 'accent_stripes', selector: { boolean: {} } },
+      { name: 'show_relative_time', selector: { boolean: {} } },
     ];
   }
 
@@ -796,6 +802,9 @@ class TaskMateActivityCardEditor extends LitElement {
       title: this._t('common.editor.card_title'),
       child_id: this._t('common.editor.filter_by_child'),
       max_items: this._t('activity.editor.max_items'),
+      show_filter_chips: this._t('activity.editor.show_filter_chips'),
+      accent_stripes: this._t('activity.editor.accent_stripes'),
+      show_relative_time: this._t('activity.editor.show_relative_time'),
     };
     return labels[entry.name] ?? entry.name;
   };
@@ -805,6 +814,9 @@ class TaskMateActivityCardEditor extends LitElement {
       entity: this._t('common.editor.overview_entity_helper'),
       child_id: this._t('activity.editor.filter_child_helper'),
       max_items: this._t('activity.editor.max_items_helper'),
+      show_filter_chips: this._t('activity.editor.show_filter_chips_helper'),
+      accent_stripes: this._t('activity.editor.accent_stripes_helper'),
+      show_relative_time: this._t('activity.editor.show_relative_time_helper'),
     };
     return helpers[entry.name] ?? '';
   };
@@ -816,6 +828,9 @@ class TaskMateActivityCardEditor extends LitElement {
       title: this.config.title || '',
       child_id: this.config.child_id || '__all__',
       max_items: this.config.max_items || 30,
+      show_filter_chips: this.config.show_filter_chips !== false,
+      accent_stripes: this.config.accent_stripes !== false,
+      show_relative_time: this.config.show_relative_time !== false,
     };
     return html`
       <ha-form
@@ -865,6 +880,8 @@ class TaskMateActivityCardEditor extends LitElement {
   _formChanged(e) {
     const newValues = e.detail.value || {};
     const newConfig = { ...this.config };
+    // Booleans whose default is `true` — drop them from config when true to keep YAML minimal.
+    const trueDefaultBooleans = new Set(['show_filter_chips', 'accent_stripes', 'show_relative_time']);
     for (const [key, value] of Object.entries(newValues)) {
       if (
         value === '' || value === null || value === undefined
@@ -872,6 +889,8 @@ class TaskMateActivityCardEditor extends LitElement {
       ) {
         delete newConfig[key];
       } else if (key === 'max_items' && value === 30) {
+        delete newConfig[key];
+      } else if (trueDefaultBooleans.has(key) && value === true) {
         delete newConfig[key];
       } else {
         newConfig[key] = value;
