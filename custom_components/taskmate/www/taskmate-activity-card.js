@@ -95,24 +95,15 @@ class TaskMateActivityCard extends LitElement {
 
       ha-card { overflow: hidden; }
 
-      /* ── Slim header ────────────────────────────────────── */
+      /* ── Coloured header banner ─────────────────────────── */
       .card-header {
-        position: relative;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        padding: 12px 16px 10px;
-        background: var(--card-background-color, #fff);
-        color: var(--primary-text-color);
-        border-bottom: 1px solid var(--divider-color, #ececf2);
-      }
-      .card-header::before {
-        content: "";
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 3px;
+        padding: 14px 18px;
         background: var(--taskmate-header-bg, #2471a3);
+        color: #ffffff;
       }
       .header-content { display: flex; align-items: center; gap: 10px; min-width: 0; }
       .header-icon-chip {
@@ -121,22 +112,22 @@ class TaskMateActivityCard extends LitElement {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: color-mix(in srgb, var(--taskmate-header-bg, #2471a3) 14%, transparent);
-        color: var(--taskmate-header-bg, #2471a3);
+        background: rgba(255, 255, 255, 0.18);
+        color: #ffffff;
         flex-shrink: 0;
       }
       .header-icon-chip ha-icon { --mdc-icon-size: 18px; }
       .header-title {
-        font-size: 1rem;
+        font-size: 1.05rem;
         font-weight: 700;
-        color: var(--primary-text-color);
+        color: #ffffff;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
       .header-meta {
         font-size: 0.78rem;
-        color: var(--secondary-text-color);
+        color: rgba(255, 255, 255, 0.85);
         margin-left: 2px;
         white-space: nowrap;
       }
