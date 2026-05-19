@@ -3683,7 +3683,7 @@ class TaskMatePanel extends HTMLElement {
         --tm-text-vfaint:   var(--disabled-text-color, #bdbdbd);
 
         --tm-accent:        var(--primary-color, #03a9f4);
-        --tm-accent-hover:  var(--primary-color, #03a9f4);
+        --tm-accent-hover:  color-mix(in srgb, var(--primary-color, #03a9f4), #000 14%);
         --tm-accent-press:  var(--primary-color, #03a9f4);
         --tm-accent-soft:   color-mix(in srgb, var(--primary-color, #03a9f4), transparent 90%);
         --tm-accent-border: color-mix(in srgb, var(--primary-color, #03a9f4), transparent 70%);
@@ -3997,7 +3997,9 @@ class TaskMatePanel extends HTMLElement {
         box-shadow: var(--tm-shadow-xs);
       }
       .tm-btn-raised:hover {
-        filter: brightness(1.1);
+        background: var(--tm-accent-hover);
+        border-color: var(--tm-accent-hover);
+        color: var(--text-primary-color, #fff);
         box-shadow: var(--tm-shadow-sm);
       }
       .tm-btn-sm {
@@ -4836,10 +4838,9 @@ class TaskMatePanel extends HTMLElement {
         border-color: var(--tm-accent);
       }
       .tm-notif-toggle-on:hover {
-        background: var(--tm-accent);
+        background: var(--tm-accent-hover);
         color: var(--text-primary-color, #fff);
-        border-color: var(--tm-accent);
-        filter: brightness(1.1);
+        border-color: var(--tm-accent-hover);
       }
 
       /* Notification toggle switches (CSS-only on native checkbox) */
