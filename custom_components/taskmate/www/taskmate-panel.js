@@ -188,7 +188,10 @@ class TaskMatePanel extends HTMLElement {
       this._error = null;
       this._fetchState();
     }
-    if (!this._rendered) this._render();
+    // Render on first hass, or if HA pushed a fresh hass after a reconnect
+    // that completed while the tab was already visible (no visibilitychange
+    // to lean on) and our shell was stripped out in the meantime.
+    if (!this._rendered || !this.querySelector(".tm-shell")) this._render();
     this._bindHaPickers(false);
   }
   get hass() { return this._hass; }
@@ -213,7 +216,10 @@ class TaskMatePanel extends HTMLElement {
       this.classList.toggle("dark", isDark);
       this.classList.toggle("light", !isDark);
     }
-    if (!this._rendered) this._render();
+    // Render if we never have, or if our content was stripped while we were
+    // detached (HA cached us through a connection drop, or SPA nav away/back).
+    // _render's self-heal rebuilds the shell when .tm-shell is missing.
+    if (!this._rendered || !this.querySelector(".tm-shell")) this._render();
   }
   disconnectedCallback() {
     this.removeEventListener("focusin", this._onFocusIn);
@@ -232,8 +238,13 @@ class TaskMatePanel extends HTMLElement {
   _onVisibilityChange() {
     if (document.visibilityState !== "visible") return;
     if (!this._hass) return;
-    // Tab woke up — if we're showing an error or have no state, refetch.
-    if (this._error || !this._state) this._fetchState();
+    // Tab woke up. HA may have stripped our DOM while the socket was down —
+    // repaint cached state immediately if the shell is gone, then always
+    // refetch so returning to the tab shows current data. This mirrors how
+    // Lovelace repaints on reconnect and also clears any staleness from
+    // changes made on another device while the tab was idle.
+    if (!this.querySelector(".tm-shell")) this._render();
+    this._fetchState();
   }
 
   _isHaDark() {
@@ -1360,6 +1371,16 @@ class TaskMatePanel extends HTMLElement {
   // ---- rendering -------------------------------------------------------
   _render() {
     this._rendered = true;
+
+    // Self-heal: HA's partial-panel-resolver removes the panel element from
+    // the DOM while the WS connection is down (e.g. a long-backgrounded tab)
+    // and re-attaches it on reconnect. If our shell was stripped out, force a
+    // full rebuild — otherwise the zone-diff below short-circuits on the
+    // stale _zoneCache and the content area stays blank until a hard reload.
+    if (this._shellReady && !this.querySelector(".tm-shell")) {
+      this._shellReady = false;
+      this._zoneCache = {};
+    }
 
     if (!this._shellReady) {
       if (!this._cachedStyles) {
