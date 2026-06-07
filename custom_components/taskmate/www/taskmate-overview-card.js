@@ -318,13 +318,16 @@ class TaskMateOverviewCard extends LitElement {
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t("common.stars");
 
-    // Pending approvals — from approvals entity if configured, else from completions
+    // Pending approvals — from approvals entity if configured, else from the
+    // full pending list (resolved via companion) so the count keeps including
+    // completions left pending from a previous day; fall back to today's
+    // completions only on older backends.
     let pendingApprovals = 0;
     if (this.config.approvals_entity) {
       const appEntity = this.hass.states[this.config.approvals_entity];
       pendingApprovals = appEntity?.attributes?.chore_completions?.length || 0;
     } else {
-      pendingApprovals = completions.filter(c => !c.approved).length;
+      pendingApprovals = (attrs.chore_completions || completions.filter(c => !c.approved)).length;
     }
 
     // Total points across all children

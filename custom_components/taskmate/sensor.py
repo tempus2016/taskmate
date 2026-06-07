@@ -1122,7 +1122,19 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
             child = self.coordinator.get_child(comp.child_id)
             chore = self.coordinator.get_chore(comp.chore_id)
             if child and chore:
-                pts = chore.points
+                # Bonus sub-task completions carry the sub-task's own name and
+                # points; mirror _build_todays_completions so cards reading this
+                # list render them identically.
+                bonus_subtask_id = getattr(comp, "bonus_subtask_id", "") or ""
+                if bonus_subtask_id:
+                    subtask = next(
+                        (b for b in chore.bonus_subtasks if b.id == bonus_subtask_id), None
+                    )
+                    chore_name = f"{chore.name} › {subtask.name}" if subtask else chore.name
+                    pts = subtask.points if subtask else 0
+                else:
+                    chore_name = chore.name
+                    pts = chore.points
                 timed_secs = getattr(comp, "timed_duration_seconds", 0) or 0
                 if timed_secs > 0 and getattr(chore, "task_type", "") == "timed":
                     rate_seconds = chore.timed_rate_minutes * 60
@@ -1133,11 +1145,12 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                     "type": "chore",
                     "child_name": child.name,
                     "child_id": child.id,
-                    "chore_name": chore.name,
+                    "chore_name": chore_name,
                     "chore_id": chore.id,
                     "points": pts,
                     "time_category": chore.time_category,
                     "completed_at": comp.completed_at.isoformat(),
+                    "bonus_subtask_id": bonus_subtask_id,
                 }
                 if timed_secs > 0:
                     detail["timed_duration_seconds"] = timed_secs

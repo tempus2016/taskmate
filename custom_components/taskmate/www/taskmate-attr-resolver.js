@@ -27,6 +27,10 @@
     "sensor.taskmate_rewards",
     "sensor.taskmate_activity",
     "sensor.taskmate_incentives",
+    // Full pending-approvals lists (chore_completions / reward_claims). These
+    // are NOT filtered to today, so approval cards pointed at the overview
+    // entity can still surface a completion left pending from a previous day.
+    "sensor.pending_approvals",
   ];
 
   function mergedAttributes(hass, primaryEntityId) {

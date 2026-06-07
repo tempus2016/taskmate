@@ -399,7 +399,11 @@ class TaskMateParentDashboardCard extends LitElement {
     const children = attrs.children || [];
     const chores = attrs.chores || [];
     const completions = attrs.todays_completions || [];
-    const pendingCompletions = completions.filter(c => !c.approved);
+    // Pending approvals come from the full pending list (not filtered to
+    // today) so a completion left pending from a previous day still shows an
+    // approve button after a recurring chore resets. `completions` stays
+    // today-only for the overview tab's activity display.
+    const pendingCompletions = attrs.chore_completions || completions.filter(c => !c.approved);
     const pendingRewardClaims = attrs.pending_reward_claims || [];
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t('common.points');

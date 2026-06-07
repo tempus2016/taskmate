@@ -21,6 +21,7 @@ from custom_components.taskmate.models import (
     Badge,
     BadgeCriterion,
     Bonus,
+    BonusSubTask,
     Child,
     Chore,
     ChoreCompletion,
@@ -30,7 +31,7 @@ from custom_components.taskmate.models import (
     Reward,
     RewardClaim,
 )
-from custom_components.taskmate.sensor import ChildBadgesSensor
+from custom_components.taskmate.sensor import ChildBadgesSensor, PendingApprovalsSensor
 
 
 MAX_ATTR_BYTES = 16384  # Home Assistant recorder limit
@@ -397,3 +398,64 @@ class TestChildBadgesSensor:
         attrs = sensor.extra_state_attributes
         assert attrs["total_badges"] == 1
         assert attrs["available"][0]["badge_id"] == "y"
+
+
+class TestPendingApprovalsSensor:
+    """The pending-approvals list is the single source of truth for parent
+    approval surfaces. It must NOT be filtered to today (a completion from a
+    previous day stays pending until approved), and it must describe bonus
+    sub-task completions correctly so cards can render them."""
+
+    def _coord(self, children, chores, pending):
+        coord = MagicMock()
+        coord.data = {
+            "pending_completions": pending,
+            "pending_reward_claims": [],
+        }
+        by_child = {c.id: c for c in children}
+        by_chore = {c.id: c for c in chores}
+        coord.get_child = lambda cid: by_child.get(cid)
+        coord.get_chore = lambda cid: by_chore.get(cid)
+        coord.get_reward = lambda rid: None
+        return coord
+
+    def test_includes_pending_completion_from_previous_day(self, hass):
+        # Daughter completed a daily chore yesterday; today it reset. The
+        # still-unapproved completion must remain in the approvals list so the
+        # parent can still approve it.
+        dt_util_mock._now = dt.datetime(2026, 6, 7, 9, 0, 0, tzinfo=UTC)
+        child = Child(name="Mia")
+        child.id = "c1"
+        chore = Chore(name="Make bed", points=10, requires_approval=True)
+        chore.id = "ch1"
+        yesterday = dt.datetime(2026, 6, 6, 18, 0, 0, tzinfo=UTC)
+        comp = ChoreCompletion(
+            chore_id="ch1", child_id="c1", completed_at=yesterday,
+            approved=False, points_awarded=0, id="comp-yesterday",
+        )
+        coord = self._coord([child], [chore], [comp])
+        sensor = PendingApprovalsSensor(coord, _MockEntry())
+        attrs = sensor.extra_state_attributes
+        ids = [d["completion_id"] for d in attrs["chore_completions"]]
+        assert "comp-yesterday" in ids
+
+    def test_bonus_subtask_completion_named_and_priced_correctly(self, hass):
+        dt_util_mock._now = dt.datetime(2026, 6, 7, 9, 0, 0, tzinfo=UTC)
+        child = Child(name="Mia")
+        child.id = "c1"
+        sub = BonusSubTask(name="Tidy toys", points=3)
+        sub.id = "sub1"
+        chore = Chore(name="Make bed", points=10, bonus_subtasks=[sub])
+        chore.id = "ch1"
+        comp = ChoreCompletion(
+            chore_id="ch1", child_id="c1",
+            completed_at=dt.datetime(2026, 6, 7, 8, 0, 0, tzinfo=UTC),
+            approved=False, points_awarded=0, bonus_subtask_id="sub1",
+            id="comp-bonus",
+        )
+        coord = self._coord([child], [chore], [comp])
+        sensor = PendingApprovalsSensor(coord, _MockEntry())
+        detail = sensor.extra_state_attributes["chore_completions"][0]
+        assert detail["chore_name"] == "Make bed › Tidy toys"
+        assert detail["points"] == 3
+        assert detail["bonus_subtask_id"] == "sub1"
