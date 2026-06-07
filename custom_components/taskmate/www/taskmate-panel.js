@@ -601,7 +601,12 @@ class TaskMatePanel extends HTMLElement {
     // Dialog field
     if (this._dialog && t.dataset.field) {
       const field = t.dataset.field;
-      const value = (t.type === "number") ? (t.value === "" ? null : Number(t.value)) : t.value;
+      // ha-switch / checkbox elements fire `input` on toggle in newer HA; their
+      // `value` is the constant string "on", so read `.checked` instead — otherwise
+      // a switch can never be set false (it always stores a truthy string). Mirrors _onChange.
+      let value;
+      if (t.type === "checkbox" || t.tagName === "HA-SWITCH") value = t.checked;
+      else value = (t.type === "number") ? (t.value === "" ? null : Number(t.value)) : t.value;
       const arrMatch = field.match(/^(\w+)\[(\d+)\]\.(\w+)$/);
       if (arrMatch) {
         const [, arr, idx, prop] = arrMatch;
