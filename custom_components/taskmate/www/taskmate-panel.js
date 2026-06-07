@@ -415,6 +415,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "delete-child") { this._confirmDelete("child", t.dataset.id); return; }
     if (act === "save-child")   { this._doSaveChild(); return; }
     if (act === "reorder-chores-for-child") { this._openReorderDialog(t.dataset.id); return; }
+    if (act === "reorder-move") { this._moveInReorder(t.dataset.dragId, Number(t.dataset.dir)); return; }
     if (act === "save-chore-order") { this._dialog && this._dialog.data && this._dialog.data.global ? this._doSaveGlobalChoreOrder() : this._doSaveChoreOrder(); return; }
     if (act === "reorder-chores-global") { this._openGlobalReorderDialog(); return; }
 
@@ -742,6 +743,21 @@ class TaskMatePanel extends HTMLElement {
     order.splice(toIdx, 0, fromId);
     this._dialog.data.order = order;
     this._reorderDrag = null;
+    this._render();
+  }
+
+  // Up/down buttons — the reliable cross-device path (native HTML5 drag does
+  // not fire on touchscreens, so mobile users reorder via these).
+  _moveInReorder(id, dir) {
+    if (!this._dialog || this._dialog.kind !== "reorder") return;
+    const order = [...(this._dialog.data.order || [])];
+    const from = order.indexOf(id);
+    if (from < 0) return;
+    const to = from + dir;
+    if (to < 0 || to >= order.length) return;
+    order.splice(from, 1);
+    order.splice(to, 0, id);
+    this._dialog.data.order = order;
     this._render();
   }
 
@@ -3460,7 +3476,7 @@ class TaskMatePanel extends HTMLElement {
     return this._dialogShell(title,
       `<p class="tm-meta">${hint}</p>
        <div class="tm-reorder-list">
-         ${(d.order || []).map(id => {
+         ${(d.order || []).map((id, idx, arr) => {
            const c = choreById[id];
            if (!c) return "";
            return `
@@ -3468,6 +3484,10 @@ class TaskMatePanel extends HTMLElement {
                <div class="tm-reorder-handle">⠿</div>
                <div class="tm-reorder-name">${this._esc(c.name)}</div>
                <div class="tm-reorder-points tm-numeric">${c.points}</div>
+               <div class="tm-reorder-moves">
+                 <button type="button" class="tm-reorder-move" data-act="reorder-move" data-dir="-1" data-drag-id="${this._esc(id)}" ${idx === 0 ? "disabled" : ""} title="${this._t("reorder.move_up")}" aria-label="${this._t("reorder.move_up")}">▲</button>
+                 <button type="button" class="tm-reorder-move" data-act="reorder-move" data-dir="1" data-drag-id="${this._esc(id)}" ${idx === arr.length - 1 ? "disabled" : ""} title="${this._t("reorder.move_down")}" aria-label="${this._t("reorder.move_down")}">▼</button>
+               </div>
              </div>
            `;
          }).join("")}
@@ -4645,6 +4665,20 @@ class TaskMatePanel extends HTMLElement {
       .tm-reorder-handle { color: var(--tm-text-faint); cursor: grab; font-size: 18px; user-select: none; }
       .tm-reorder-name { flex: 1; font-size: 13px; font-weight: 500; }
       .tm-reorder-points { color: var(--tm-accent); font-weight: 600; font-size: 13px; }
+      .tm-reorder-moves { display: flex; flex-direction: column; gap: 2px; }
+      .tm-reorder-move {
+        display: flex; align-items: center; justify-content: center;
+        width: 28px; height: 20px; padding: 0;
+        border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm);
+        background: var(--tm-surface-1);
+        color: var(--tm-text);
+        font-size: 10px; line-height: 1;
+        cursor: pointer;
+        transition: all 0.12s var(--tm-easing);
+      }
+      .tm-reorder-move:hover:not(:disabled) { border-color: var(--tm-accent); color: var(--tm-accent); }
+      .tm-reorder-move:disabled { opacity: 0.3; cursor: default; }
 
       /* Toast */
       .tm-toast {
