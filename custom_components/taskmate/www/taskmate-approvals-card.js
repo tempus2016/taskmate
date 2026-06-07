@@ -372,7 +372,12 @@ class TaskMateApprovalsCard extends LitElement {
     // resolve from their new companion sensors when the card is pointed at
     // the overview entity.
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    let completions = entity.attributes.chore_completions;
+    // Prefer the full pending list (chore_completions, resolved from the
+    // pending_approvals companion sensor) so approvals left pending from a
+    // previous day still appear after a recurring chore resets at midnight.
+    // Fall back to today's completions only on older backends that don't
+    // expose chore_completions via the resolver.
+    let completions = attrs.chore_completions;
     if (!completions) {
       completions = (attrs.todays_completions || []).filter(c => !c.approved);
     }
