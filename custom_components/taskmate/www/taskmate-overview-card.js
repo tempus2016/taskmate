@@ -14,6 +14,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 class TaskMateOverviewCard extends LitElement {
   static get properties() {
     return {
@@ -341,7 +343,7 @@ class TaskMateOverviewCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#8e44ad'}; }</style>
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#8e44ad')}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:home-heart"></ha-icon>

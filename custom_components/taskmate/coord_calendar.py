@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from calendar import monthrange
 from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING
 
@@ -130,12 +131,18 @@ class CalendarMixin:
             except ValueError:
                 return False
 
-        if recurrence == "monthly" and recurrence_start:
+        month_steps = {"monthly": 1, "every_3_months": 3, "every_6_months": 6}.get(recurrence)
+        if month_steps and recurrence_start:
             try:
                 anchor = date.fromisoformat(recurrence_start)
                 if day < anchor:
                     return False
-                return day.day == anchor.day
+                months_diff = (day.year - anchor.year) * 12 + (day.month - anchor.month)
+                if months_diff % month_steps != 0:
+                    return False
+                # Clamp the anchor day for shorter months (e.g. 31st → Feb 28th)
+                target_day = min(anchor.day, monthrange(day.year, day.month)[1])
+                return day.day == target_day
             except ValueError:
                 return False
 

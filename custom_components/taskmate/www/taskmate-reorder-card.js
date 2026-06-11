@@ -14,6 +14,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 class TaskMateReorderCard extends LitElement {
   static get properties() {
     return {
@@ -464,14 +466,7 @@ class TaskMateReorderCard extends LitElement {
     if (!entity) return;
 
     if (entity.state === "unavailable" || entity.state === "unknown") {
-      return html`
-        <ha-card>
-          <div class="error-state">
-            <ha-icon icon="mdi:alert-circle"></ha-icon>
-            <div>${this._t('common.unavailable')}</div>
-          </div>
-        </ha-card>
-      `;
+      return;
     }
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
@@ -625,8 +620,9 @@ class TaskMateReorderCard extends LitElement {
     const timeCategories = ["morning", "afternoon", "evening", "night", "anytime"];
     const pointsIcon = attrs.points_icon || "mdi:star";
 
-    const headerStyle = this.config.header_color
-      ? `--taskmate-header-bg: ${this.config.header_color};`
+    const headerColor = _safeColor(this.config.header_color, '');
+    const headerStyle = headerColor
+      ? `--taskmate-header-bg: ${headerColor};`
       : '';
 
     return html`
@@ -806,7 +802,7 @@ class TaskMateReorderCard extends LitElement {
     this.shadowRoot?.querySelectorAll(".chore-item").forEach(i => i.classList.remove("drag-over"));
     const item = el ? el.closest(".chore-item") : null;
     if (item) {
-      const toIndex = parseInt(item.dataset.index);
+      const toIndex = parseInt(item.dataset.index, 10);
       const { index: fromIndex } = this._touchState;
       if (!isNaN(toIndex) && fromIndex !== toIndex) {
         this._swapChores(category, fromIndex, toIndex);

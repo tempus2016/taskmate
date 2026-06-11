@@ -12,6 +12,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 const DAY_NAMES = [
   "monday", "tuesday", "wednesday", "thursday",
   "friday", "saturday", "sunday",
@@ -323,11 +325,18 @@ class TaskMateCalendarCard extends LitElement {
         } catch (e) { return false; }
       }
 
-      if (recurrence === "monthly" && recurrenceStart) {
+      const monthSteps = { monthly: 1, every_3_months: 3, every_6_months: 6 }[recurrence];
+      if (monthSteps && recurrenceStart) {
         try {
           const anchor = new Date(recurrenceStart + "T00:00:00");
           if (dayDate < anchor) return false;
-          return dayDate.getDate() === anchor.getDate();
+          const monthsDiff =
+            (dayDate.getFullYear() - anchor.getFullYear()) * 12 +
+            (dayDate.getMonth() - anchor.getMonth());
+          if (monthsDiff % monthSteps !== 0) return false;
+          // Clamp the anchor day for shorter months (e.g. 31st -> Feb 28th)
+          const lastDay = new Date(dayDate.getFullYear(), dayDate.getMonth() + 1, 0).getDate();
+          return dayDate.getDate() === Math.min(anchor.getDate(), lastDay);
         } catch (e) { return false; }
       }
 
@@ -425,7 +434,7 @@ class TaskMateCalendarCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || "#3498db"}; }</style>
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, "#3498db")}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:calendar-account"></ha-icon>

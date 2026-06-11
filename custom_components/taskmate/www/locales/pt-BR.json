@@ -779,6 +779,7 @@
   "panel.notif_recipients_parents": "Responsáveis",
   "panel.notif_remove_parent": "Remover",
   "panel.notif_section_custom": "Notificações agendadas personalizadas",
+  "panel.notif_unnamed_recipient": "(sem nome)",
   "panel.notif_section_custom_desc": "Adicione seus próprios lembretes temporizados. Para notificações por eventos, escute os eventos taskmate_* no barramento do Home Assistant.",
   "panel.notif_section_matrix": "Notificações integradas",
   "panel.notif_section_matrix_desc": "Ativar/desativar por destinatário. O interruptor à esquerda desativa toda a linha globalmente. Células marcadas com — não são válidas para esse destinatário.",

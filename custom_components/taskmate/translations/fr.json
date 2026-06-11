@@ -492,6 +492,24 @@
         }
       }
     },
+    "complete_bonus_subtask": {
+      "name": "Terminer une sous-tâche bonus",
+      "description": "Terminer une sous-tâche bonus une fois la corvée parente terminée",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la corvée",
+          "description": "L'identifiant de la corvée parente"
+        },
+        "bonus_subtask_id": {
+          "name": "ID de la sous-tâche bonus",
+          "description": "L'identifiant de la sous-tâche bonus à terminer"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant effectuant la sous-tâche bonus"
+        }
+      }
+    },
     "approve_chore": {
       "name": "Approuver une corvée",
       "description": "Approuver une corvée terminée et attribuer les points",
@@ -533,6 +551,24 @@
         "claim_id": {
           "name": "ID de la demande",
           "description": "L'identifiant de la demande de récompense à approuver"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "Allouer des points à la cagnotte",
+      "description": "Déplacer des points du solde disponible d'un enfant vers la cagnotte d'une récompense (verrouillée).",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant effectuant l'allocation"
+        },
+        "reward_id": {
+          "name": "ID de la récompense",
+          "description": "L'identifiant de la cagnotte de récompense où déposer les points"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Nombre de points à allouer (limité par la capacité de la cagnotte et le solde disponible)"
         }
       }
     },
@@ -873,6 +909,170 @@
           "description": "The ID of the group to delete"
         }
       }
+    },
+    "start_timed_task": {
+      "name": "Démarrer une tâche chronométrée",
+      "description": "Démarrer ou reprendre le minuteur d'une tâche chronométrée",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la corvée",
+          "description": "L'identifiant de la corvée chronométrée"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant démarrant le minuteur"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "Mettre en pause une tâche chronométrée",
+      "description": "Mettre en pause le minuteur d'une tâche chronométrée en cours",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la corvée",
+          "description": "L'identifiant de la corvée chronométrée"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant mettant le minuteur en pause"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "Arrêter une tâche chronométrée",
+      "description": "Arrêter le minuteur d'une tâche chronométrée et la soumettre pour approbation",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la corvée",
+          "description": "L'identifiant de la corvée chronométrée"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant arrêtant le minuteur"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "Ajouter un badge",
+      "description": "Créer un badge personnalisé.",
+      "fields": {
+        "name": {
+          "name": "Nom",
+          "description": "Le nom affiché du badge"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Description de la façon d'obtenir le badge"
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Icône du badge (ex. mdi:beach)"
+        },
+        "tier": {
+          "name": "Niveau",
+          "description": "Niveau du badge : bronze, argent, or ou platine"
+        },
+        "point_bonus": {
+          "name": "Bonus de points",
+          "description": "Points crédités à l'enfant lorsque le badge est obtenu"
+        },
+        "criteria": {
+          "name": "Critères",
+          "description": "Liste de dictionnaires {metric, operator, value}. Vide = attribution manuelle uniquement."
+        },
+        "assigned_to": {
+          "name": "Attribué à",
+          "description": "Liste d'identifiants d'enfants (vide = tous)"
+        },
+        "notify_on_earn": {
+          "name": "Notifier à l'obtention",
+          "description": "Envoyer une notification lorsque le badge est obtenu"
+        }
+      }
+    },
+    "update_badge": {
+      "name": "Mettre à jour un badge",
+      "description": "Mettre à jour un badge existant. Pour les badges intégrés, seuls point_bonus, tier, assigned_to, enabled et notify_on_earn sont modifiables.",
+      "fields": {
+        "badge_id": {
+          "name": "ID du badge",
+          "description": "L'identifiant du badge à mettre à jour"
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Nouveau nom affiché du badge"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Nouvelle description du badge"
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Nouvelle icône du badge"
+        },
+        "tier": {
+          "name": "Niveau",
+          "description": "Niveau du badge : bronze, argent, or ou platine"
+        },
+        "point_bonus": {
+          "name": "Bonus de points",
+          "description": "Points crédités à l'enfant lorsque le badge est obtenu"
+        },
+        "criteria": {
+          "name": "Critères",
+          "description": "Liste de dictionnaires {metric, operator, value}. Vide = attribution manuelle uniquement."
+        },
+        "assigned_to": {
+          "name": "Attribué à",
+          "description": "Liste d'identifiants d'enfants (vide = tous)"
+        },
+        "enabled": {
+          "name": "Activé",
+          "description": "Indique si le badge est actif"
+        },
+        "notify_on_earn": {
+          "name": "Notifier à l'obtention",
+          "description": "Envoyer une notification lorsque le badge est obtenu"
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "Supprimer un badge",
+      "description": "Supprimer un badge personnalisé. Les badges intégrés ne peuvent pas être supprimés.",
+      "fields": {
+        "badge_id": {
+          "name": "ID du badge",
+          "description": "L'identifiant du badge à supprimer"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "Attribuer un badge manuellement",
+      "description": "Attribuer manuellement un badge à un enfant.",
+      "fields": {
+        "badge_id": {
+          "name": "ID du badge",
+          "description": "L'identifiant du badge à attribuer"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant recevant le badge"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "Révoquer un badge",
+      "description": "Révoquer un badge attribué. Si un bonus de points a été crédité, il est annulé.",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "ID du badge attribué",
+          "description": "L'identifiant du badge attribué à révoquer"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "Recalculer les badges",
+      "description": "Réévaluer silencieusement tous les badges pour tous les enfants (sans notifications ni bonus de points)."
     }
   },
   "entity": {

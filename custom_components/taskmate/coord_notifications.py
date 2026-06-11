@@ -118,7 +118,12 @@ class NotificationCoordinator:
             NOTIF_TYPE_PENDING_REWARD_CLAIM:   "{child_name} claimed '{reward_name}' ({cost} {points_name}) — awaiting approval.",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
-        return tpl.format_map(_SafeDict(context))
+        try:
+            return tpl.format_map(_SafeDict(context))
+        except (ValueError, IndexError, KeyError):
+            # Malformed user template (e.g. stray '{') — fall back to raw text
+            _LOGGER.warning("Malformed notification template %r, sending raw", tpl)
+            return tpl
 
     async def _send_to(
         self, notify_service: str, message: str,
@@ -302,9 +307,18 @@ class NotificationCoordinator:
                 if recipient_id.startswith("child:"):
                     child = self.storage.get_child(recipient_id.split(":", 1)[1])
                     child_name = child.name if child else ""
-                message = n.message_template.format_map(
-                    _SafeDict({"child_name": child_name, "time": n.time}),
-                )
+                try:
+                    message = n.message_template.format_map(
+                        _SafeDict({"child_name": child_name, "time": n.time}),
+                    )
+                except (ValueError, IndexError, KeyError):
+                    # Malformed user template — send the raw text rather
+                    # than silently dropping the notification
+                    _LOGGER.warning(
+                        "Malformed custom notification template %r, sending raw",
+                        n.message_template,
+                    )
+                    message = n.message_template
                 service_name = notify_service.split(".", 1)[1] if "." in notify_service else notify_service
                 await self.hass.services.async_call(
                     "notify", service_name,

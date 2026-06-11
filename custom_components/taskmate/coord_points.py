@@ -41,7 +41,31 @@ class PointsMixin:
 
         all_completions = self.storage.get_completions()
         children = self.storage.get_children()
+        chores = [c for c in self.storage.get_chores() if getattr(c, "enabled", True)]
         changed = False
+
+        def _required_dates(child_id: str) -> set[str]:
+            """Days last week on which the child had at least one scheduled chore.
+
+            A perfect week shouldn't demand completions on days with nothing
+            due (e.g. weekends for weekday-only chores). Rotation-mode chores
+            are skipped — who was active on a past day can't be reconstructed.
+            """
+            req: set[str] = set()
+            for d_str in last_week_dates:
+                day = date.fromisoformat(d_str)
+                for chore in chores:
+                    assigned = chore.assigned_to or []
+                    if assigned and child_id not in assigned:
+                        continue
+                    if child_id in getattr(chore, "disabled_for", []):
+                        continue
+                    if getattr(chore, "assignment_mode", "everyone") not in ("", "everyone"):
+                        continue
+                    if self._is_chore_scheduled_for_date(chore, day):
+                        req.add(d_str)
+                        break
+            return req
 
         for child in children:
             awarded_weeks = list(getattr(child, 'awarded_perfect_weeks', None) or [])
@@ -64,7 +88,10 @@ class PointsMixin:
                 except (ValueError, TypeError, AttributeError):
                     continue
 
-            if completed_days == last_week_dates:
+            # If no scheduled days can be derived (e.g. rotation-only setups),
+            # fall back to requiring a completion on all 7 days as before
+            required_dates = _required_dates(child.id) or last_week_dates
+            if completed_days >= required_dates:
                 # Perfect week!
                 child.awarded_perfect_weeks = awarded_weeks + [week_key]
                 child.points += perfect_week_bonus

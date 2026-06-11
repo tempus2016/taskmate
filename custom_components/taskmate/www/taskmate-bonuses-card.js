@@ -13,6 +13,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 class TaskMateBonusesCard extends LitElement {
   static get properties() {
     return {
@@ -425,11 +427,17 @@ class TaskMateBonusesCard extends LitElement {
 
   _showToast(msg) {
     this._toast = null;
+    clearTimeout(this._toastTimer);
     // Force re-render with new toast
-    setTimeout(() => {
+    this._toastTimer = setTimeout(() => {
       this._toast = msg;
-      setTimeout(() => { this._toast = null; }, 2700);
+      this._toastTimer = setTimeout(() => { this._toast = null; }, 2700);
     }, 10);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearTimeout(this._toastTimer);
   }
 
   _startEdit(bonus) {
@@ -633,7 +641,7 @@ class TaskMateBonusesCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#2e7d32'}; }</style>
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#2e7d32')}; }</style>
         <div class="card-header">
           <div class="header-left">
             <ha-icon class="header-icon" icon="mdi:star-circle"></ha-icon>

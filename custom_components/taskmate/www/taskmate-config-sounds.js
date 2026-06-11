@@ -599,8 +599,9 @@
     findAndEnhanceSoundSelectors();
     startObserver();
 
-    // Periodic scan to catch dynamically loaded content
-    window._taskmateConfigSoundsPoll = setInterval(findAndEnhanceSoundSelectors, 2000);
+    // Slow periodic scan as a safety net for dynamically loaded content the
+    // MutationObserver doesn't catch (e.g. dialogs rendered outside body's light DOM)
+    window._taskmateConfigSoundsPoll = setInterval(findAndEnhanceSoundSelectors, 10000);
 
     const cleanup = () => {
       if (window._taskmateConfigSoundsPoll) {

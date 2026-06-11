@@ -12,6 +12,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 const RANK_COLOURS = ["#f1c40f", "#bdc3c7", "#cd7f32", "#9b59b6", "#3498db"];
 const RANK_LABELS = ["🥇", "🥈", "🥉"];
 
@@ -280,7 +282,7 @@ class TaskMateLeaderboardCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#b7950b'}; }</style>
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#b7950b')}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:trophy"></ha-icon>
@@ -291,7 +293,7 @@ class TaskMateLeaderboardCard extends LitElement {
         <div class="card-content">
           ${sorted.map((child, idx) => {
             const prevChild = idx > 0 ? sorted[idx - 1] : null;
-            const isTie = prevChild && this._getScore(child, prevChild, sortBy, weeklyPoints);
+            const isTie = prevChild && this._isTie(child, prevChild, sortBy, weeklyPoints);
             return html`
               ${isTie ? html`<div class="tie-line"><span class="tie-label">${this._t('leaderboard.tie')}</span></div>` : ''}
               ${this._renderRankRow(child, idx, sortBy, weeklyPoints, pointsIcon, pointsName)}
@@ -305,7 +307,7 @@ class TaskMateLeaderboardCard extends LitElement {
     `;
   }
 
-  _getScore(a, b, sortBy, weeklyPoints) {
+  _isTie(a, b, sortBy, weeklyPoints) {
     if (sortBy === "streak") return (a.current_streak || 0) === (b.current_streak || 0);
     if (sortBy === "weekly") return (weeklyPoints[a.id] || 0) === (weeklyPoints[b.id] || 0);
     if (sortBy === "career") return (a.career_score || 0) === (b.career_score || 0);
@@ -389,7 +391,7 @@ class TaskMateLeaderboardCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#b7950b'}; }</style>
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#b7950b')}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:trophy"></ha-icon>

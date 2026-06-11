@@ -386,6 +386,10 @@ class TaskMateStorage:
             if c.get("id") == completion.id:
                 completions[i] = completion.to_dict()
                 return
+        _LOGGER.warning(
+            "update_completion: completion %s not found (possibly pruned mid-update)",
+            completion.id,
+        )
 
     def remove_completion(self, completion_id: str) -> None:
         """Remove a completion record."""
@@ -415,6 +419,10 @@ class TaskMateStorage:
             if c.get("id") == claim.id:
                 claims[i] = claim.to_dict()
                 return
+        _LOGGER.warning(
+            "update_reward_claim: claim %s not found (possibly removed mid-update)",
+            claim.id,
+        )
 
     def remove_reward_claim(self, claim_id: str) -> None:
         """Remove a reward claim."""
@@ -984,6 +992,16 @@ class TaskMateStorage:
         """Remove all career score history for a child."""
         history = self._data.get("career_score_history", {})
         history.pop(child_id, None)
+
+    def prune_all_done_flags(self, keep_date: str) -> None:
+        """Drop all-chores-done flags for dates other than keep_date.
+
+        Keys are "all_done_<child_id>_<isodate>".
+        """
+        flags = self._data.get("all_done_flags", {})
+        for key in list(flags):
+            if not key.endswith(keep_date):
+                flags.pop(key, None)
 
     # Template management
     def get_custom_templates(self) -> list[dict]:

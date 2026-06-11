@@ -754,6 +754,7 @@ class TaskMateParentDashboardCard extends LitElement {
   }
 
   async _handleApprove(completionId) {
+    if (this._loading[completionId]) return;
     this._loading = { ...this._loading, [completionId]: true };
     this.requestUpdate();
     try {
@@ -767,6 +768,7 @@ class TaskMateParentDashboardCard extends LitElement {
   }
 
   async _handleReject(completionId) {
+    if (this._loading[completionId]) return;
     this._loading = { ...this._loading, [completionId]: true };
     this.requestUpdate();
     try {
@@ -780,6 +782,7 @@ class TaskMateParentDashboardCard extends LitElement {
   }
 
   async _handleApproveReward(claimId) {
+    if (this._loading[claimId]) return;
     this._loading = { ...this._loading, [claimId]: true };
     this.requestUpdate();
     try {
@@ -793,6 +796,7 @@ class TaskMateParentDashboardCard extends LitElement {
   }
 
   async _handleRejectReward(claimId) {
+    if (this._loading[claimId]) return;
     this._loading = { ...this._loading, [claimId]: true };
     this.requestUpdate();
     try {

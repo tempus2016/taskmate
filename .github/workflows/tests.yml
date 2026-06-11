@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Hassfest validation
-        uses: home-assistant/actions/hassfest@master
+        uses: home-assistant/actions/hassfest@e91ad1948e57189485b9c1ad608af0c303946f89 # master 2026-06-11
 
   test:
     name: Run tests

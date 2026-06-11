@@ -1354,6 +1354,7 @@ class TaskMateRewardsCard extends LitElement {
 
   async _handleClaim(reward, child) {
     if (!child || !reward) return;
+    if (this._loading[reward.id]) return;
     this._loading = { ...this._loading, [reward.id]: true };
     this.requestUpdate();
     try {
@@ -1391,6 +1392,7 @@ class TaskMateRewardsCard extends LitElement {
   async _handleAllocate(reward, child, points) {
     if (!child || !reward) return;
     const key = `${reward.id}_alloc`;
+    if (this._loading[key]) return;
     this._loading = { ...this._loading, [key]: true };
     this.requestUpdate();
     try {

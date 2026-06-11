@@ -859,6 +859,9 @@ class TaskMatePointsCard extends LitElement {
   }
 
   _openDialog(child, action, pointsIcon, pointsName) {
+    if (this._dialogKeyHandler) {
+      document.removeEventListener("keydown", this._dialogKeyHandler);
+    }
     this._dialog = { child, action, pointsIcon, pointsName };
     this._dialogKeyHandler = (e) => {
       if (e.key === "Escape") this._closeDialog();

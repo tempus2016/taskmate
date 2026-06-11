@@ -33,6 +33,8 @@ class TaskMateBadgesCard extends LitElement {
     this._filterTier = "all";
     this._justEarned = null;
     this._unsubscribeEvents = null;
+    this._subscribing = false;
+    this._justEarnedTimeout = null;
   }
 
   connectedCallback() {
@@ -44,24 +46,37 @@ class TaskMateBadgesCard extends LitElement {
     super.disconnectedCallback();
     this._unsubscribeEvents?.();
     this._unsubscribeEvents = null;
+    if (this._justEarnedTimeout) {
+      clearTimeout(this._justEarnedTimeout);
+      this._justEarnedTimeout = null;
+    }
   }
 
   _subscribeEvents() {
     if (!this.hass) return;
+    if (this._unsubscribeEvents || this._subscribing) return;
+    this._subscribing = true;
     this.hass.connection.subscribeEvents((event) => {
       const data = event.data || {};
       if (data.child_id && this.config?.child_id && String(data.child_id) !== String(this.config.child_id)) return;
       if (data.badge_id) {
         this._justEarned = String(data.badge_id);
         this.requestUpdate();
-        setTimeout(() => {
+        this._justEarnedTimeout = setTimeout(() => {
           this._justEarned = null;
           this.requestUpdate();
         }, 1800);
       }
     }, "taskmate_badge_earned").then(unsub => {
+      this._subscribing = false;
+      if (!this.isConnected) {
+        unsub();
+        return;
+      }
       this._unsubscribeEvents = unsub;
-    }).catch(() => {});
+    }).catch(() => {
+      this._subscribing = false;
+    });
   }
 
   shouldUpdate(changedProps) {

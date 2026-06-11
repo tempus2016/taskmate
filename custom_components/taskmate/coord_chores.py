@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from calendar import monthrange
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
@@ -13,6 +14,14 @@ if TYPE_CHECKING:
     pass
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _add_months(d: date, months: int) -> date:
+    """Step a date forward by calendar months, clamping to the month's last day."""
+    month_index = d.month - 1 + months
+    year = d.year + month_index // 12
+    month = month_index % 12 + 1
+    return date(year, month, min(d.day, monthrange(year, month)[1]))
 
 
 class ChoresMixin:
@@ -52,7 +61,11 @@ class ChoresMixin:
             if not created_date:
                 created_date = dt_util.as_local(dt_util.now()).date().isoformat()
 
-        resolved_mode = assignment_mode if assignment_mode in ("everyone", "alternating", "random", "balanced") else "everyone"
+        resolved_mode = (
+            assignment_mode
+            if assignment_mode in ("everyone", "alternating", "random", "balanced", "unassigned")
+            else "everyone"
+        )
         today = dt_util.as_local(dt_util.now()).date()
 
         # Apply manual start: for alternating, reorder pool + reset anchor so the
@@ -313,10 +326,7 @@ class ChoresMixin:
         chore.skip_date = ""
         chore.skip_count = 0
 
-        if mode in ("random", "balanced"):
-            chore.assignment_current_child_id = child_id
-        else:
-            chore.assignment_current_child_id = child_id
+        chore.assignment_current_child_id = child_id
 
         self.storage.update_chore(chore)
         await self.storage.async_save()
@@ -561,6 +571,12 @@ class ChoresMixin:
         completions = self.storage.get_completions()
         for completion in completions:
             if completion.id == completion_id:
+                if completion.approved:
+                    _LOGGER.debug(
+                        "Completion %s already approved, ignoring duplicate approval",
+                        completion_id,
+                    )
+                    return
                 chore = self.get_chore(completion.chore_id)
                 child = self.get_child(completion.child_id)
 
@@ -641,9 +657,31 @@ class ChoresMixin:
                         child.total_points_earned = max(0, child.total_points_earned - completion.points_awarded)
                         child.total_chores_completed = max(0, child.total_chores_completed - 1)
 
-                        # Only reverse streak for parent completions
+                        # Only reverse streak for parent completions, and only
+                        # when this was the child's sole completion that day —
+                        # streaks are day-based, not per-completion
                         if not completion.bonus_subtask_id:
-                            child.current_streak = max(0, child.current_streak - 1)
+                            reject_date = dt_util.as_local(completion.completed_at).date()
+                            other_same_day = any(
+                                c.id != completion.id
+                                and c.child_id == completion.child_id
+                                and not c.bonus_subtask_id
+                                and dt_util.as_local(c.completed_at).date() == reject_date
+                                for c in completions
+                            )
+                            if not other_same_day:
+                                child.current_streak = max(0, child.current_streak - 1)
+                                if getattr(child, "last_completion_date", None) == reject_date.isoformat():
+                                    remaining = [
+                                        dt_util.as_local(c.completed_at).date()
+                                        for c in completions
+                                        if c.id != completion.id
+                                        and c.child_id == completion.child_id
+                                        and not c.bonus_subtask_id
+                                    ]
+                                    child.last_completion_date = (
+                                        max(remaining).isoformat() if remaining else None
+                                    )
 
                         self.storage.update_child(child)
                 break
@@ -770,32 +808,28 @@ class ChoresMixin:
             'every_2_days': 2,
             'weekly': 7,
             'every_2_weeks': 14,
-            'monthly': 30,
-            'every_3_months': 90,
-            'every_6_months': 180,
         }.get(recurrence, 7)
 
         record = self.storage.get_last_completed(chore.id, child_id)
         current_iso = record.get('current')
 
         if not current_iso:
-            # Never completed — apply first_occurrence_mode
-            if first_occurrence_mode == 'wait_for_first_occurrence':
-                if recurrence == 'every_2_days' and recurrence_start:
-                    try:
-                        start_date = date.fromisoformat(recurrence_start)
-                        if start_date > today:
-                            return False
-                    except ValueError:
-                        pass
-                elif recurrence_day:
-                    day_map = {
-                        'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
-                        'friday': 4, 'saturday': 5, 'sunday': 6
-                    }
-                    target_dow = day_map.get(recurrence_day.lower())
-                    if target_dow is not None and today.weekday() != target_dow:
+            # Never completed — a future recurrence anchor always defers
+            # availability, regardless of first_occurrence_mode
+            if recurrence_start:
+                try:
+                    if date.fromisoformat(recurrence_start) > today:
                         return False
+                except ValueError:
+                    pass
+            if first_occurrence_mode == 'wait_for_first_occurrence' and recurrence_day:
+                day_map = {
+                    'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
+                    'friday': 4, 'saturday': 5, 'sunday': 6
+                }
+                target_dow = day_map.get(recurrence_day.lower())
+                if target_dow is not None and today.weekday() != target_dow:
+                    return False
             return True
 
         try:
@@ -825,6 +859,13 @@ class ChoresMixin:
             target_dow = day_map.get(recurrence_day.lower())
             if target_dow is not None and today.weekday() != target_dow:
                 return False
+
+        # Month-based recurrences use real calendar months so availability
+        # matches the calendar projection (a "monthly" chore re-opens on the
+        # same day next month, not after a fixed 30 days)
+        month_steps = {'monthly': 1, 'every_3_months': 3, 'every_6_months': 6}.get(recurrence)
+        if month_steps:
+            return today >= _add_months(last_dt, month_steps)
 
         days_since = (today - last_dt).days
         return days_since >= window_days

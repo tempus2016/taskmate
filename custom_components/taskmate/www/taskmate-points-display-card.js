@@ -44,15 +44,17 @@ function getChildren(state) {
   return state.attributes.children || [];
 }
 
-function weeklyPoints(child) {
-  const today = new Date();
+function weeklyPoints(child, tz) {
+  const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+  const today = new Date(todayKey + "T12:00:00"); // noon avoids DST edge cases
   const monday = new Date(today);
   monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-  monday.setHours(0, 0, 0, 0);
+  const mondayKey = monday.toLocaleDateString("en-CA");
 
   const history = child.history || [];
   return history
-    .filter(e => e.approved && new Date(e.timestamp) >= monday)
+    .filter(e => e.approved
+      && new Date(e.timestamp).toLocaleDateString("en-CA", { timeZone: tz }) >= mondayKey)
     .reduce((s, e) => s + (e.points || 0), 0);
 }
 
@@ -601,7 +603,8 @@ class TaskMatePointsDisplayCard extends LitElement {
     const colour   = CHILD_COLOURS[children.indexOf(child) % CHILD_COLOURS.length];
     const primary  = this._primaryValue(child);
     const secondary = this._secondaryValue(child);
-    const weekly   = weeklyPoints(child);
+    const tz       = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const weekly   = weeklyPoints(child, tz);
     const streak   = child.streak || 0;
     const rank     = this._rankedChildren().findIndex(c => c.id === child.id) + 1;
 
@@ -664,13 +667,15 @@ class TaskMatePointsDisplayCard extends LitElement {
       </div>`;
     }
 
+    const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     return html`
       <div class="multi-grid">
         ${ranked.map((child, idx) => {
           const colour    = CHILD_COLOURS[this._allChildren().indexOf(child) % CHILD_COLOURS.length];
           const primary   = this._primaryValue(child);
           const secondary = this._secondaryValue(child);
-          const weekly    = weeklyPoints(child);
+          const weekly    = weeklyPoints(child, tz);
           const streak    = child.streak || 0;
           const isTop     = idx === 0;
           return html`

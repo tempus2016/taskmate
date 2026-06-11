@@ -779,6 +779,7 @@
   "panel.notif_recipients_parents": "Foresatte",
   "panel.notif_remove_parent": "Fjern",
   "panel.notif_section_custom": "Egendefinerte planlagte varsler",
+  "panel.notif_unnamed_recipient": "(uten navn)",
   "panel.notif_section_custom_desc": "Legg til egne tidsstyrte påminnelser. For hendelsesdrevne varsler, lytt til taskmate_*-hendelsene på Home Assistant-bussen.",
   "panel.notif_section_matrix": "Innebygde varsler",
   "panel.notif_section_matrix_desc": "Slå av/på per mottaker. Bryteren til venstre deaktiverer hele raden globalt. Celler merket med — er ikke gyldige for den mottakeren.",

@@ -492,6 +492,24 @@
         }
       }
     },
+    "complete_bonus_subtask": {
+      "name": "Fullfør bonus-deloppgåve",
+      "description": "Fullfør ei bonus-deloppgåve etter at hovudoppgåva er fullført",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgåve-ID",
+          "description": "ID-en til hovudoppgåva"
+        },
+        "bonus_subtask_id": {
+          "name": "Bonus-deloppgåve-ID",
+          "description": "ID-en til bonus-deloppgåva som skal fullførast"
+        },
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som fullfører bonus-deloppgåva"
+        }
+      }
+    },
     "approve_chore": {
       "name": "Godkjenn oppgåve",
       "description": "Godkjenn ei fullført oppgåve og tildel poeng",
@@ -533,6 +551,24 @@
         "claim_id": {
           "name": "Krav-ID",
           "description": "ID-en til løningskravet som skal godkjennast"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "Tildel poeng til sparegris",
+      "description": "Flytt poeng frå den disponible saldoen til eit born inn i sparegrisen til ei løning (låst).",
+      "fields": {
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som gjer tildelinga"
+        },
+        "reward_id": {
+          "name": "Lønings-ID",
+          "description": "ID-en til sparegrisen til løninga det skal setjast inn i"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Tal poeng å tildele (avgrensa av kapasiteten til sparegrisen og disponibel saldo)"
         }
       }
     },
@@ -873,6 +909,170 @@
           "description": "The ID of the group to delete"
         }
       }
+    },
+    "start_timed_task": {
+      "name": "Start tidsstyrt oppgåve",
+      "description": "Start eller hald fram timeren på ei tidsstyrt oppgåve",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgåve-ID",
+          "description": "ID-en til den tidsstyrte oppgåva"
+        },
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som startar timeren"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "Set tidsstyrt oppgåve på pause",
+      "description": "Set timeren på ei tidsstyrt oppgåve på pause",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgåve-ID",
+          "description": "ID-en til den tidsstyrte oppgåva"
+        },
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som pausar timeren"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "Stopp tidsstyrt oppgåve",
+      "description": "Stopp timeren på ei tidsstyrt oppgåve og send inn til godkjenning",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgåve-ID",
+          "description": "ID-en til den tidsstyrte oppgåva"
+        },
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som stoppar timeren"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "Legg til merke",
+      "description": "Opprett eit eigendefinert merke.",
+      "fields": {
+        "name": {
+          "name": "Namn",
+          "description": "Visingsnamnet til merket"
+        },
+        "description": {
+          "name": "Skildring",
+          "description": "Skildring av korleis merket vert oppnådd"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Ikon for merket (t.d. mdi:beach)"
+        },
+        "tier": {
+          "name": "Nivå",
+          "description": "Nivået til merket: bronse, sølv, gull eller platina"
+        },
+        "point_bonus": {
+          "name": "Poengbonus",
+          "description": "Poeng som vert krediterte bornet når merket vert oppnådd"
+        },
+        "criteria": {
+          "name": "Kriterium",
+          "description": "Liste med {metric, operator, value}-oppføringar. Tom = berre manuell tildeling."
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Liste med born-ID-ar (tom = alle)"
+        },
+        "notify_on_earn": {
+          "name": "Varsle ved oppnåing",
+          "description": "Send eit varsel når merket vert oppnådd"
+        }
+      }
+    },
+    "update_badge": {
+      "name": "Oppdater merke",
+      "description": "Oppdater eit eksisterande merke. For innebygde merke kan berre point_bonus, tier, assigned_to, enabled og notify_on_earn redigerast.",
+      "fields": {
+        "badge_id": {
+          "name": "Merke-ID",
+          "description": "ID-en til merket som skal oppdaterast"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Nytt visingsnamn for merket"
+        },
+        "description": {
+          "name": "Skildring",
+          "description": "Ny skildring av merket"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Nytt ikon for merket"
+        },
+        "tier": {
+          "name": "Nivå",
+          "description": "Nivået til merket: bronse, sølv, gull eller platina"
+        },
+        "point_bonus": {
+          "name": "Poengbonus",
+          "description": "Poeng som vert krediterte bornet når merket vert oppnådd"
+        },
+        "criteria": {
+          "name": "Kriterium",
+          "description": "Liste med {metric, operator, value}-oppføringar. Tom = berre manuell tildeling."
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Liste med born-ID-ar (tom = alle)"
+        },
+        "enabled": {
+          "name": "Aktivert",
+          "description": "Om merket er aktivt"
+        },
+        "notify_on_earn": {
+          "name": "Varsle ved oppnåing",
+          "description": "Send eit varsel når merket vert oppnådd"
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "Fjern merke",
+      "description": "Fjern eit eigendefinert merke. Innebygde merke kan ikkje fjernast.",
+      "fields": {
+        "badge_id": {
+          "name": "Merke-ID",
+          "description": "ID-en til merket som skal fjernast"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "Tildel merke manuelt",
+      "description": "Tildel eit merke manuelt til eit born.",
+      "fields": {
+        "badge_id": {
+          "name": "Merke-ID",
+          "description": "ID-en til merket som skal tildelast"
+        },
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som tek imot merket"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "Tilbakekall merke",
+      "description": "Tilbakekall eit tildelt merke. Om ein poengbonus vart kreditert, vert han reversert.",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "Tildelt merke-ID",
+          "description": "ID-en til det tildelte merket som skal tilbakekallast"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "Bygg opp att merke",
+      "description": "Reevaluer alle merke for alle born i det stille (ingen varsel, ingen poengbonusar)."
     }
   },
   "entity": {
