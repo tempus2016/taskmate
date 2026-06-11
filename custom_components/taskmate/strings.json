@@ -979,7 +979,7 @@
         },
         "criteria": {
           "name": "Criteria",
-          "description": "List of {metric, operator, value} dicts. Empty = manual-award only."
+          "description": "List of metric / operator / value dicts. Empty = manual-award only."
         },
         "assigned_to": {
           "name": "Assigned to",
@@ -1021,7 +1021,7 @@
         },
         "criteria": {
           "name": "Criteria",
-          "description": "List of {metric, operator, value} dicts. Empty = manual-award only."
+          "description": "List of metric / operator / value dicts. Empty = manual-award only."
         },
         "assigned_to": {
           "name": "Assigned to",

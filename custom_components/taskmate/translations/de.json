@@ -978,7 +978,7 @@
         },
         "criteria": {
           "name": "Kriterien",
-          "description": "Liste von {metric, operator, value}-Einträgen. Leer = nur manuelle Vergabe."
+          "description": "Liste von metric / operator / value-Einträgen. Leer = nur manuelle Vergabe."
         },
         "assigned_to": {
           "name": "Zugewiesen an",
@@ -1020,7 +1020,7 @@
         },
         "criteria": {
           "name": "Kriterien",
-          "description": "Liste von {metric, operator, value}-Einträgen. Leer = nur manuelle Vergabe."
+          "description": "Liste von metric / operator / value-Einträgen. Leer = nur manuelle Vergabe."
         },
         "assigned_to": {
           "name": "Zugewiesen an",

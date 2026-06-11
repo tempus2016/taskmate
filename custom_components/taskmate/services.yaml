@@ -694,7 +694,7 @@ add_badge:
           mode: box
     criteria:
       name: Criteria
-      description: "List of {metric, operator, value} dicts. Empty = manual-award only."
+      description: "List of metric / operator / value dicts. Empty = manual-award only."
       selector:
         object:
     assigned_to:

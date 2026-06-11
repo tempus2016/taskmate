@@ -978,7 +978,7 @@
         },
         "criteria": {
           "name": "Critérios",
-          "description": "Lista de dicionários {metric, operator, value}. Vazio = apenas atribuição manual."
+          "description": "Lista de dicionários metric / operator / value. Vazio = apenas atribuição manual."
         },
         "assigned_to": {
           "name": "Atribuída a",
@@ -1020,7 +1020,7 @@
         },
         "criteria": {
           "name": "Critérios",
-          "description": "Lista de dicionários {metric, operator, value}. Vazio = apenas atribuição manual."
+          "description": "Lista de dicionários metric / operator / value. Vazio = apenas atribuição manual."
         },
         "assigned_to": {
           "name": "Atribuída a",

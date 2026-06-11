@@ -978,7 +978,7 @@
         },
         "criteria": {
           "name": "Critères",
-          "description": "Liste de dictionnaires {metric, operator, value}. Vide = attribution manuelle uniquement."
+          "description": "Liste de dictionnaires metric / operator / value. Vide = attribution manuelle uniquement."
         },
         "assigned_to": {
           "name": "Attribué à",
@@ -1020,7 +1020,7 @@
         },
         "criteria": {
           "name": "Critères",
-          "description": "Liste de dictionnaires {metric, operator, value}. Vide = attribution manuelle uniquement."
+          "description": "Liste de dictionnaires metric / operator / value. Vide = attribution manuelle uniquement."
         },
         "assigned_to": {
           "name": "Attribué à",
