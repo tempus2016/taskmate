@@ -488,7 +488,7 @@ class TaskMateReorderCard extends LitElement {
       const childChores = this._getChoresForChild(chores, child.id);
 
       const newLocalOrder = {};
-      const timeCategories = ["morning", "afternoon", "evening", "night", "anytime"];
+      const timeCategories = this._getTimeCategories();
 
       for (const category of timeCategories) {
         const categoryChores = childChores.filter(
@@ -544,7 +544,30 @@ class TaskMateReorderCard extends LitElement {
     });
   }
 
+  // User-defined periods from the overview sensor; legacy fixed four when
+  // the integration hasn't published time_periods yet.
+  _getTimePeriods() {
+    const entity = this.hass?.states?.[this.config?.entity];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
+      || entity?.attributes || {};
+    if (Array.isArray(attrs.time_periods) && attrs.time_periods.length) {
+      return attrs.time_periods.filter(p => p && p.id);
+    }
+    return [
+      { id: "morning",   label: "", icon: "mdi:weather-sunset-up" },
+      { id: "afternoon", label: "", icon: "mdi:weather-sunny" },
+      { id: "evening",   label: "", icon: "mdi:weather-sunset-down" },
+      { id: "night",     label: "", icon: "mdi:weather-night" },
+    ];
+  }
+
+  _getTimeCategories() {
+    return [...this._getTimePeriods().map(p => p.id), "anytime"];
+  }
+
   _getTimeCategoryIcon(category) {
+    const period = this._getTimePeriods().find(p => p.id === category);
+    if (period && period.icon) return period.icon;
     const icons = {
       morning: "mdi:weather-sunset-up",
       afternoon: "mdi:weather-sunny",
@@ -556,6 +579,8 @@ class TaskMateReorderCard extends LitElement {
   }
 
   _getTimeCategoryLabel(category) {
+    const period = this._getTimePeriods().find(p => p.id === category);
+    if (period && period.label) return period.label;
     const keys = {
       morning: 'common.morning',
       afternoon: 'common.afternoon',
@@ -622,7 +647,7 @@ class TaskMateReorderCard extends LitElement {
       `;
     }
 
-    const timeCategories = ["morning", "afternoon", "evening", "night", "anytime"];
+    const timeCategories = this._getTimeCategories();
     const pointsIcon = attrs.points_icon || "mdi:star";
 
     const headerStyle = this.config.header_color
@@ -855,7 +880,7 @@ class TaskMateReorderCard extends LitElement {
 
     try {
       // Combine all category orders into a single flat array
-      const timeCategories = ["morning", "afternoon", "evening", "night", "anytime"];
+      const timeCategories = this._getTimeCategories();
       const fullOrder = [];
 
       for (const category of timeCategories) {

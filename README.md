@@ -527,7 +527,7 @@ Kid-friendly chore completion. The entire row is tappable — no small targets. 
 type: custom:taskmate-child-card
 entity: sensor.taskmate_overview
 child_id: a8c8376a            # required — see Finding IDs
-time_category: anytime        # morning | afternoon | evening | night | anytime | all
+time_category: anytime        # any period id (built-in or custom) | anytime | all
 due_days_mode: hide           # hide | dim | show — chores not scheduled today
 recurrence_done_mode: dim     # dim | hide | show — recurring chores waiting to reset
 elapsed_time_mode: dim        # dim | hide | show — time-of-day chores whose period has passed
@@ -538,7 +538,9 @@ undo_sound: undo              # sound when undoing
 header_color: "#9b59b6"
 ```
 
-**`elapsed_time_mode`** — controls what happens to morning/afternoon/evening/night chores once that time window has passed without completion. Set to `dim` (default) to grey them out and make them non-interactive, `hide` to remove them entirely, or `show` to leave them active. Chores set to `Anytime` are never affected. Chores that were completed still show with their green done style regardless.
+**`elapsed_time_mode`** — controls what happens to time-of-day chores once that time window has passed without completion. Set to `dim` (default) to grey them out and make them non-interactive, `hide` to remove them entirely, or `show` to leave them active. Chores set to `Anytime` are never affected. Chores that were completed still show with their green done style regardless.
+
+Time-of-day periods are fully customisable in **Settings → Time-of-day boundaries** in the TaskMate admin panel: rename the built-in four, change their hours and icons, or add as many of your own (school run, bedtime, …) as you like. Periods can't overlap; gaps between them fall back to Anytime, and a period that still has chores assigned can't be deleted until they're reassigned. A chore's or card's `time_category` accepts any period id.
  
 ---
  

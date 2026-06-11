@@ -125,6 +125,18 @@ TIME_CATEGORY_ICONS: Final = {
     "anytime": "mdi:clock-outline",
 }
 
+# Default user-editable time-of-day periods. "anytime" is implicit (all-day,
+# always available) and never appears in this list. An empty label means
+# "use the translated built-in name for this id".
+DEFAULT_TIME_PERIODS: Final = [
+    {"id": "morning",   "label": "", "start": "06:00", "end": "12:00", "icon": "mdi:weather-sunny"},
+    {"id": "afternoon", "label": "", "start": "12:00", "end": "17:00", "icon": "mdi:white-balance-sunny"},
+    {"id": "evening",   "label": "", "start": "17:00", "end": "21:00", "icon": "mdi:weather-sunset"},
+    {"id": "night",     "label": "", "start": "21:00", "end": "23:59", "icon": "mdi:weather-night"},
+]
+
+MAX_TIME_PERIODS: Final = 24
+
 # Avatar options
 AVATAR_OPTIONS: Final = [
     # Basic faces

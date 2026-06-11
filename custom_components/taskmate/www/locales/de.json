@@ -735,7 +735,7 @@
   "panel.settings_streak_milestones_label": "Serien-Meilensteine",
   "panel.settings_streak_reset_hint": "Was passiert, wenn ein Tag ausgelassen wird",
   "panel.settings_streak_reset_label": "Serien-Zurücksetzung",
-  "panel.settings_time_boundaries_hint": "Wann jede Tageszeit beginnt und endet (HH:MM, 24-Stunden-Format).",
+  "panel.settings_time_boundaries_hint": "Wann jeder Tagesabschnitt beginnt und endet (HH:MM, 24-Stunden). Eigene Abschnitte hinzufügen; Lücken fallen auf „Jederzeit“ zurück.",
   "panel.settings_time_boundaries_title": "Tageszeitgrenzen",
   "panel.settings_title": "Einstellungen",
   "panel.settings_weekend_multiplier_hint": "Bonus an Sa/So (1,0 = aus)",
@@ -1176,5 +1176,17 @@
   "notification.pending_reward_claim.description": "Wird an Eltern gesendet, wenn ein Kind eine Belohnung einlöst. Tippe auf Genehmigen oder Ablehnen in der Benachrichtigung.",
   "notification.pending_reward_claim.name": "Belohnung wartet auf Genehmigung",
   "notification.streak_at_risk.description": "Wird ausgelöst, wenn eine aktive Serie heute noch nicht verlängert wurde.",
-  "notification.streak_at_risk.name": "Serie in Gefahr"
+  "notification.streak_at_risk.name": "Serie in Gefahr",
+  "panel.tp_label_placeholder": "Name des Abschnitts",
+  "panel.tp_add_period": "Abschnitt hinzufügen",
+  "panel.tp_reset_defaults": "Auf Standard zurücksetzen",
+  "panel.tp_delete_title": "Abschnitt löschen",
+  "panel.tp_in_use_title": "Von {count} Aufgabe(n) verwendet — vor dem Löschen neu zuweisen",
+  "panel.tp_in_use_hint": "Von {count} Aufgabe(n) verwendet. Weise sie einem anderen Abschnitt zu, um diesen zu löschen.",
+  "panel.tp_anytime_hint": "Immer verfügbar, ganztägig. Integriert und nicht entfernbar.",
+  "panel.tp_err_label_required": "Jeder eigene Abschnitt braucht einen Namen.",
+  "panel.tp_err_time_required": "Lege Start- und Endzeit für „{name}“ fest.",
+  "panel.tp_err_order": "„{name}“ muss beginnen, bevor er endet.",
+  "panel.tp_err_empty": "Füge mindestens einen Tagesabschnitt hinzu.",
+  "panel.tp_err_overlap": "„{a}“ überschneidet sich mit „{b}“ — Abschnitte dürfen sich nicht überlappen."
 }

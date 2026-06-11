@@ -735,7 +735,7 @@
   "panel.settings_streak_milestones_label": "Jalons de série",
   "panel.settings_streak_reset_hint": "Ce qui se passe quand un jour est manqué",
   "panel.settings_streak_reset_label": "Réinitialisation de série",
-  "panel.settings_time_boundaries_hint": "Quand chaque période commence et se termine (HH:MM, 24h).",
+  "panel.settings_time_boundaries_hint": "Quand chaque période de la journée commence et se termine (HH:MM, 24 h). Ajoutez vos propres périodes ; les trous retombent sur « À tout moment ».",
   "panel.settings_time_boundaries_title": "Limites horaires",
   "panel.settings_title": "Paramètres",
   "panel.settings_weekend_multiplier_hint": "Bonus le Sam/Dim (1.0 = désactivé)",
@@ -1176,5 +1176,17 @@
   "notification.pending_reward_claim.description": "Envoyé aux parents quand un enfant échange une récompense. Appuyez sur Approuver ou Rejeter depuis la notification.",
   "notification.pending_reward_claim.name": "Réclamation de récompense en attente",
   "notification.streak_at_risk.description": "Se déclenche quand une série active n'a pas encore été prolongée aujourd'hui.",
-  "notification.streak_at_risk.name": "Série en danger"
+  "notification.streak_at_risk.name": "Série en danger",
+  "panel.tp_label_placeholder": "Nom de la période",
+  "panel.tp_add_period": "Ajouter une période",
+  "panel.tp_reset_defaults": "Réinitialiser",
+  "panel.tp_delete_title": "Supprimer la période",
+  "panel.tp_in_use_title": "Utilisée par {count} corvée(s) — réassignez-les avant de supprimer",
+  "panel.tp_in_use_hint": "Utilisée par {count} corvée(s). Réassignez-les à une autre période pour pouvoir la supprimer.",
+  "panel.tp_anytime_hint": "Toujours disponible, toute la journée. Intégrée et non supprimable.",
+  "panel.tp_err_label_required": "Chaque période personnalisée doit avoir un nom.",
+  "panel.tp_err_time_required": "Définissez une heure de début et de fin pour « {name} ».",
+  "panel.tp_err_order": "« {name} » doit commencer avant de se terminer.",
+  "panel.tp_err_empty": "Ajoutez au moins une période.",
+  "panel.tp_err_overlap": "« {a} » chevauche « {b} » — les périodes ne peuvent pas se chevaucher."
 }

@@ -735,7 +735,7 @@
   "panel.settings_streak_milestones_label": "Marcos de sequência",
   "panel.settings_streak_reset_hint": "O que acontece quando um dia é falhado",
   "panel.settings_streak_reset_label": "Reinício de sequência",
-  "panel.settings_time_boundaries_hint": "Quando cada período do dia começa e termina (HH:MM, 24 horas).",
+  "panel.settings_time_boundaries_hint": "Quando cada período do dia começa e termina (HH:MM, 24 horas). Adicione os seus próprios períodos; intervalos vazios passam para “A qualquer hora”.",
   "panel.settings_time_boundaries_title": "Limites dos períodos do dia",
   "panel.settings_title": "Definições",
   "panel.settings_weekend_multiplier_hint": "Bónus ao Sáb/Dom (1.0 = desligado)",
@@ -1176,5 +1176,17 @@
   "notification.pending_reward_claim.description": "Enviado aos encarregados quando uma criança resgata uma recompensa. Toque em Aprovar ou Rejeitar na notificação.",
   "notification.pending_reward_claim.name": "Pedido de recompensa pendente",
   "notification.streak_at_risk.description": "Disparado quando uma sequência ativa ainda não foi prolongada hoje.",
-  "notification.streak_at_risk.name": "Sequência em risco"
+  "notification.streak_at_risk.name": "Sequência em risco",
+  "panel.tp_label_placeholder": "Nome do período",
+  "panel.tp_add_period": "Adicionar período",
+  "panel.tp_reset_defaults": "Repor predefinições",
+  "panel.tp_delete_title": "Eliminar período",
+  "panel.tp_in_use_title": "Usado por {count} tarefa(s) — reatribua-as antes de eliminar",
+  "panel.tp_in_use_hint": "Usado por {count} tarefa(s). Reatribua-as a outro período para o eliminar.",
+  "panel.tp_anytime_hint": "Sempre disponível, o dia todo. Integrado e não removível.",
+  "panel.tp_err_label_required": "Cada período personalizado precisa de um nome.",
+  "panel.tp_err_time_required": "Defina hora de início e fim para “{name}”.",
+  "panel.tp_err_order": "“{name}” tem de começar antes de terminar.",
+  "panel.tp_err_empty": "Adicione pelo menos um período.",
+  "panel.tp_err_overlap": "“{a}” sobrepõe-se a “{b}” — os períodos não podem sobrepor-se."
 }

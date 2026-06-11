@@ -735,7 +735,7 @@
   "panel.settings_streak_milestones_label": "Streak milestones",
   "panel.settings_streak_reset_hint": "What happens when a day is missed",
   "panel.settings_streak_reset_label": "Streak reset",
-  "panel.settings_time_boundaries_hint": "When each time period starts and ends (HH:MM, 24-hour).",
+  "panel.settings_time_boundaries_hint": "When each time period starts and ends (HH:MM, 24-hour). Add your own periods; gaps between periods fall back to Anytime.",
   "panel.settings_time_boundaries_title": "Time-of-day boundaries",
   "panel.settings_title": "Settings",
   "panel.settings_weekend_multiplier_hint": "Bonus on Sat/Sun (1.0 = off)",
@@ -1177,5 +1177,17 @@
   "notification.pending_reward_claim.description": "Sent to parents when a child redeems a reward. Tap Approve or Reject from the notification.",
   "notification.pending_reward_claim.name": "Pending reward claim",
   "notification.streak_at_risk.description": "Fires when an active streak hasn't been extended yet today.",
-  "notification.streak_at_risk.name": "Streak at risk"
+  "notification.streak_at_risk.name": "Streak at risk",
+  "panel.tp_label_placeholder": "Period name",
+  "panel.tp_add_period": "Add period",
+  "panel.tp_reset_defaults": "Reset to defaults",
+  "panel.tp_delete_title": "Delete period",
+  "panel.tp_in_use_title": "Used by {count} chore(s) — reassign them before deleting",
+  "panel.tp_in_use_hint": "Used by {count} chore(s). Reassign them to another period to delete this one.",
+  "panel.tp_anytime_hint": "Always available, all day. Built-in and cannot be removed.",
+  "panel.tp_err_label_required": "Every custom period needs a name.",
+  "panel.tp_err_time_required": "Set a start and end time for “{name}”.",
+  "panel.tp_err_order": "“{name}” must start before it ends.",
+  "panel.tp_err_empty": "Add at least one time period.",
+  "panel.tp_err_overlap": "“{a}” overlaps “{b}” — periods cannot overlap."
 }

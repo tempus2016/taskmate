@@ -1893,6 +1893,8 @@ class TaskMateChildCard extends LitElement {
   }
 
   _getTimeCategoryIcon(category) {
+    const period = this._getTimePeriods().find(p => p.id === category);
+    if (period) return period.icon;
     const icons = {
       morning: "mdi:weather-sunset-up",
       afternoon: "mdi:weather-sunny",
@@ -1905,6 +1907,8 @@ class TaskMateChildCard extends LitElement {
   }
 
   _getTimeCategoryLabel(category) {
+    const period = this._getTimePeriods().find(p => p.id === category);
+    if (period && period.label) return period.label;
     const keyMap = {
       morning: 'common.morning',
       afternoon: 'common.afternoon',
@@ -1918,6 +1922,8 @@ class TaskMateChildCard extends LitElement {
 
   _getDynamicTitle() {
     const category = this.config.time_category;
+    const period = this._getTimePeriods().find(p => p.id === category);
+    if (period && period.label) return period.label;
     const keyMap = {
       morning: 'child.morning_chores',
       afternoon: 'child.afternoon_chores',
@@ -1934,16 +1940,37 @@ class TaskMateChildCard extends LitElement {
     return this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
 
-  _getTimeBoundaries() {
+  // Ordered list of user-defined periods: [{id, label, icon, start, end}]
+  // with start/end as decimal hours. Falls back to the legacy fixed four
+  // when the integration hasn't published time_periods yet.
+  _getTimePeriods() {
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
       || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    if (Array.isArray(attrs.time_periods) && attrs.time_periods.length) {
+      return attrs.time_periods
+        .filter(p => p && p.id)
+        .map(p => ({
+          id: p.id,
+          label: p.label || "",
+          icon: p.icon || "mdi:clock-outline",
+          start: this._parseHHMM(p.start, 0, 0),
+          end: this._parseHHMM(p.end, 23, 59),
+        }))
+        .sort((a, b) => a.start - b.start);
+    }
     const tb = attrs.time_boundaries || {};
-    return {
-      morning:   [this._parseHHMM(tb.morning_start, 6, 0),   this._parseHHMM(tb.morning_end, 12, 0)],
-      afternoon: [this._parseHHMM(tb.afternoon_start, 12, 0), this._parseHHMM(tb.afternoon_end, 17, 0)],
-      evening:   [this._parseHHMM(tb.evening_start, 17, 0),   this._parseHHMM(tb.evening_end, 21, 0)],
-      night:     [this._parseHHMM(tb.night_start, 21, 0),     this._parseHHMM(tb.night_end, 23, 59)],
-    };
+    return [
+      { id: "morning",   label: "", icon: "mdi:weather-sunset-up",   start: this._parseHHMM(tb.morning_start, 6, 0),    end: this._parseHHMM(tb.morning_end, 12, 0) },
+      { id: "afternoon", label: "", icon: "mdi:weather-sunny",       start: this._parseHHMM(tb.afternoon_start, 12, 0), end: this._parseHHMM(tb.afternoon_end, 17, 0) },
+      { id: "evening",   label: "", icon: "mdi:weather-sunset-down", start: this._parseHHMM(tb.evening_start, 17, 0),   end: this._parseHHMM(tb.evening_end, 21, 0) },
+      { id: "night",     label: "", icon: "mdi:weather-night",       start: this._parseHHMM(tb.night_start, 21, 0),     end: this._parseHHMM(tb.night_end, 23, 59) },
+    ];
+  }
+
+  _getTimeBoundaries() {
+    const boundaries = {};
+    for (const p of this._getTimePeriods()) boundaries[p.id] = [p.start, p.end];
+    return boundaries;
   }
 
   _parseHHMM(str, defH, defM) {
@@ -1964,11 +1991,13 @@ class TaskMateChildCard extends LitElement {
     if (isNaN(hour)) hour = 0;
     if (hour === 24) hour = 0;
     const now = hour + minute / 60;
-    const b = this._getTimeBoundaries();
-    if (now >= b.night[0])     return 'night';
-    if (now >= b.evening[0])   return 'evening';
-    if (now >= b.afternoon[0]) return 'afternoon';
-    return 'morning';
+    const periods = this._getTimePeriods();
+    for (let i = periods.length - 1; i >= 0; i--) {
+      if (now >= periods[i].start) return periods[i].id;
+    }
+    // Before the first period starts (e.g. 02:00) we treat it as the first
+    // period of the day, matching the legacy pre-morning behaviour.
+    return periods[0]?.id || 'morning';
   }
 
   _getPeriodHours(period) {
@@ -2002,7 +2031,7 @@ class TaskMateChildCard extends LitElement {
   _isChorePreviewLocked(chore) {
     const cat = chore?.time_category;
     if (!cat || cat === 'anytime') return false;
-    const order = ['morning', 'afternoon', 'evening', 'night'];
+    const order = this._getTimePeriods().map(p => p.id);
     const choreIndex = order.indexOf(cat);
     const currentIndex = order.indexOf(this._getCurrentTimePeriod());
     if (choreIndex < 0 || currentIndex < 0) return false;
@@ -2035,11 +2064,12 @@ class TaskMateChildCard extends LitElement {
       ? choreOrCategory
       : choreOrCategory?.time_category;
     if (!cat || cat === 'anytime') return false;
-    const order = { morning: 0, afternoon: 1, evening: 2, night: 3 };
+    const order = {};
+    this._getTimePeriods().forEach((p, i) => { order[p.id] = i; });
     const choreIndex = order[cat];
     if (choreIndex === undefined) return false;
     const currentIndex = order[this._getCurrentTimePeriod()];
-    if (currentIndex <= choreIndex) return false;
+    if (currentIndex === undefined || currentIndex <= choreIndex) return false;
     if (typeof choreOrCategory === 'object' && this._isChoreInClaimWindow(choreOrCategory)) {
       return false;
     }
@@ -2875,6 +2905,27 @@ class TaskMateChildCardEditor extends LitElement {
     this.config = config;
   }
 
+  _timeCategoryEditorOptions(overviewEntity) {
+    const builtinLabels = {
+      morning: this._t('child.editor.time_category_morning'),
+      afternoon: this._t('child.editor.time_category_afternoon'),
+      evening: this._t('child.editor.time_category_evening'),
+      night: this._t('child.editor.time_category_night'),
+    };
+    const periods = overviewEntity?.attributes?.time_periods;
+    const periodOptions = Array.isArray(periods) && periods.length
+      ? periods.filter(p => p && p.id).map(p => ({
+          value: p.id,
+          label: p.label || builtinLabels[p.id] || p.id,
+        }))
+      : Object.entries(builtinLabels).map(([value, label]) => ({ value, label }));
+    return [
+      ...periodOptions,
+      { value: 'anytime', label: this._t('child.editor.time_category_anytime') },
+      { value: 'all', label: this._t('child.editor.time_category_all') },
+    ];
+  }
+
   _buildSchema() {
     const overviewEntity = this.config?.entity
       ? this.hass?.states?.[this.config.entity]
@@ -2899,14 +2950,7 @@ class TaskMateChildCardEditor extends LitElement {
         name: 'time_category',
         selector: {
           select: {
-            options: [
-              { value: 'morning', label: this._t('child.editor.time_category_morning') },
-              { value: 'afternoon', label: this._t('child.editor.time_category_afternoon') },
-              { value: 'evening', label: this._t('child.editor.time_category_evening') },
-              { value: 'night', label: this._t('child.editor.time_category_night') },
-              { value: 'anytime', label: this._t('child.editor.time_category_anytime') },
-              { value: 'all', label: this._t('child.editor.time_category_all') },
-            ],
+            options: this._timeCategoryEditorOptions(overviewEntity),
             mode: 'dropdown',
           },
         },
