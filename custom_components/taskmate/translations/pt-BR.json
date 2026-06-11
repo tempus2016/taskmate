@@ -492,6 +492,24 @@
         }
       }
     },
+    "complete_bonus_subtask": {
+      "name": "Concluir subtarefa bônus",
+      "description": "Concluir uma subtarefa bônus depois que a tarefa principal for concluída",
+      "fields": {
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "O ID da tarefa principal"
+        },
+        "bonus_subtask_id": {
+          "name": "ID da subtarefa bônus",
+          "description": "O ID da subtarefa bônus a concluir"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que conclui a subtarefa bônus"
+        }
+      }
+    },
     "approve_chore": {
       "name": "Aprovar tarefa",
       "description": "Aprovar uma tarefa concluída e atribuir pontos",
@@ -533,6 +551,24 @@
         "claim_id": {
           "name": "ID do pedido",
           "description": "O ID do pedido de recompensa a aprovar"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "Alocar pontos ao cofrinho",
+      "description": "Mover pontos do saldo disponível de uma criança para o cofrinho de uma recompensa (bloqueado).",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que faz a alocação"
+        },
+        "reward_id": {
+          "name": "ID da recompensa",
+          "description": "O ID do cofrinho da recompensa onde depositar"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "Número de pontos a alocar (limitado pela capacidade do cofrinho e pelo saldo disponível)"
         }
       }
     },
@@ -873,6 +909,170 @@
           "description": "The ID of the group to delete"
         }
       }
+    },
+    "start_timed_task": {
+      "name": "Iniciar tarefa cronometrada",
+      "description": "Iniciar ou retomar o cronômetro de uma tarefa cronometrada",
+      "fields": {
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "O ID da tarefa cronometrada"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que inicia o cronômetro"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "Pausar tarefa cronometrada",
+      "description": "Pausar o cronômetro de uma tarefa cronometrada em andamento",
+      "fields": {
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "O ID da tarefa cronometrada"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que pausa o cronômetro"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "Parar tarefa cronometrada",
+      "description": "Parar o cronômetro de uma tarefa cronometrada e enviar para aprovação",
+      "fields": {
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "O ID da tarefa cronometrada"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que para o cronômetro"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "Adicionar conquista",
+      "description": "Criar uma conquista personalizada.",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "O nome de exibição da conquista"
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Descrição de como a conquista é ganha"
+        },
+        "icon": {
+          "name": "Ícone",
+          "description": "Ícone da conquista (ex.: mdi:beach)"
+        },
+        "tier": {
+          "name": "Nível",
+          "description": "Nível da conquista: bronze, prata, ouro ou platina"
+        },
+        "point_bonus": {
+          "name": "Bônus de pontos",
+          "description": "Pontos creditados à criança quando a conquista é ganha"
+        },
+        "criteria": {
+          "name": "Critérios",
+          "description": "Lista de dicionários {metric, operator, value}. Vazio = apenas atribuição manual."
+        },
+        "assigned_to": {
+          "name": "Atribuída a",
+          "description": "Lista de IDs de crianças (vazio = todas)"
+        },
+        "notify_on_earn": {
+          "name": "Notificar ao ganhar",
+          "description": "Enviar uma notificação quando a conquista é ganha"
+        }
+      }
+    },
+    "update_badge": {
+      "name": "Atualizar conquista",
+      "description": "Atualizar uma conquista existente. Para as integradas, apenas point_bonus, tier, assigned_to, enabled e notify_on_earn são editáveis.",
+      "fields": {
+        "badge_id": {
+          "name": "ID da conquista",
+          "description": "O ID da conquista a atualizar"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Novo nome de exibição da conquista"
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Nova descrição da conquista"
+        },
+        "icon": {
+          "name": "Ícone",
+          "description": "Novo ícone da conquista"
+        },
+        "tier": {
+          "name": "Nível",
+          "description": "Nível da conquista: bronze, prata, ouro ou platina"
+        },
+        "point_bonus": {
+          "name": "Bônus de pontos",
+          "description": "Pontos creditados à criança quando a conquista é ganha"
+        },
+        "criteria": {
+          "name": "Critérios",
+          "description": "Lista de dicionários {metric, operator, value}. Vazio = apenas atribuição manual."
+        },
+        "assigned_to": {
+          "name": "Atribuída a",
+          "description": "Lista de IDs de crianças (vazio = todas)"
+        },
+        "enabled": {
+          "name": "Ativada",
+          "description": "Se a conquista está ativa"
+        },
+        "notify_on_earn": {
+          "name": "Notificar ao ganhar",
+          "description": "Enviar uma notificação quando a conquista é ganha"
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "Remover conquista",
+      "description": "Remover uma conquista personalizada. As integradas não podem ser removidas.",
+      "fields": {
+        "badge_id": {
+          "name": "ID da conquista",
+          "description": "O ID da conquista a remover"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "Atribuir conquista manualmente",
+      "description": "Atribuir manualmente uma conquista a uma criança.",
+      "fields": {
+        "badge_id": {
+          "name": "ID da conquista",
+          "description": "O ID da conquista a atribuir"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que recebe a conquista"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "Revogar conquista",
+      "description": "Revogar uma conquista atribuída. Se um bônus de pontos foi creditado, ele é revertido.",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "ID da conquista atribuída",
+          "description": "O ID da conquista atribuída a revogar"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "Reconstruir conquistas",
+      "description": "Reavaliar todas as conquistas de todas as crianças silenciosamente (sem notificações nem bônus de pontos)."
     }
   },
   "entity": {

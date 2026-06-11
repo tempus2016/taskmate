@@ -14,6 +14,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 // Child colors — matches the streak/jackpot palette
 const CHILD_COLORS = [
   { line: "#9b59b6", fill: "rgba(155,89,182,0.15)" },
@@ -302,7 +304,7 @@ class TaskMateGraphCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#d35400'}; }</style>
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#d35400')}; }</style>
         <div class="card-header">
           <div class="header-left">
             <ha-icon class="header-icon" icon="mdi:chart-line"></ha-icon>
@@ -381,8 +383,14 @@ class TaskMateGraphCard extends LitElement {
     `;
   }
 
-  updated() {
-    this._drawCanvas();
+  updated(changedProps) {
+    if (
+      changedProps.has("hass")
+      || changedProps.has("config")
+      || changedProps.has("_mode")
+    ) {
+      this._drawCanvas();
+    }
   }
 
   _drawCanvas() {
@@ -584,11 +592,12 @@ class TaskMateGraphCard extends LitElement {
 
   _buildDateRange(days, tz) {
     const range = [];
-    const today = new Date();
+    const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+    const today = new Date(todayKey + "T12:00:00"); // noon avoids DST edge cases
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      range.push(d.toLocaleDateString("en-CA", { timeZone: tz }));
+      range.push(d.toLocaleDateString("en-CA"));
     }
     return range;
   }

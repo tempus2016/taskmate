@@ -14,6 +14,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 class TaskMateStreakCard extends LitElement {
   static get properties() {
     return {
@@ -260,7 +262,7 @@ class TaskMateStreakCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#e74c3c'}; }</style>
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#e74c3c')}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:fire"></ha-icon>
@@ -340,11 +342,12 @@ class TaskMateStreakCard extends LitElement {
 
     // Walk backwards from today counting consecutive days
     let streak = 0;
-    const today = new Date();
+    const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+    const today = new Date(todayKey + "T12:00:00"); // noon avoids DST edge cases
     for (let i = 0; i < 365; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const key = d.toLocaleDateString("en-CA", { timeZone: tz });
+      const key = d.toLocaleDateString("en-CA");
       if (daysWithCompletion.has(key)) {
         streak++;
       } else {
@@ -364,13 +367,13 @@ class TaskMateStreakCard extends LitElement {
     });
 
     const dots = [];
-    const today = new Date();
-    const todayKey = today.toLocaleDateString("en-CA", { timeZone: tz });
+    const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+    const today = new Date(todayKey + "T12:00:00"); // noon avoids DST edge cases
 
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const key = d.toLocaleDateString("en-CA", { timeZone: tz });
+      const key = d.toLocaleDateString("en-CA");
       const active = daysWithCompletion.has(key);
       const isToday = key === todayKey;
       dots.push({

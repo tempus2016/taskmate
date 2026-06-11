@@ -1,10 +1,13 @@
 """Data models for TaskMate integration."""
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 import uuid
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def generate_id() -> str:
@@ -35,6 +38,7 @@ def parse_datetime(value: str | datetime | None) -> datetime | None:
         try:
             dt = datetime.fromisoformat(value)
         except (ValueError, TypeError):
+            _LOGGER.warning("Could not parse stored datetime %r", value)
             return None
         if dt.tzinfo is None:
             return dt.replace(tzinfo=timezone.utc)
@@ -529,7 +533,8 @@ class Penalty:
         return cls(
             id=data.get("id", generate_id()),
             name=data.get("name", ""),
-            points=data.get("points", 0),
+            # Always positive — a negative value would *grant* points on use
+            points=max(0, int(data.get("points", 0) or 0)),
             description=data.get("description", ""),
             icon=data.get("icon", "mdi:alert-circle-outline"),
             assigned_to=list(data.get("assigned_to", [])),
@@ -564,7 +569,8 @@ class Bonus:
         return cls(
             id=data.get("id", generate_id()),
             name=data.get("name", ""),
-            points=data.get("points", 0),
+            # Always positive — a negative value would *deduct* points on use
+            points=max(0, int(data.get("points", 0) or 0)),
             description=data.get("description", ""),
             icon=data.get("icon", "mdi:star-circle-outline"),
             assigned_to=list(data.get("assigned_to", [])),

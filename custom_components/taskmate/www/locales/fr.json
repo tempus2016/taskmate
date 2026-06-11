@@ -779,6 +779,7 @@
   "panel.notif_recipients_parents": "Parents",
   "panel.notif_remove_parent": "Supprimer",
   "panel.notif_section_custom": "Notifications planifiées personnalisées",
+  "panel.notif_unnamed_recipient": "(sans nom)",
   "panel.notif_section_custom_desc": "Ajoutez vos propres rappels minutés. Pour les notifications déclenchées par des événements, écoutez les événements taskmate_* sur le bus Home Assistant.",
   "panel.notif_section_matrix": "Notifications intégrées",
   "panel.notif_section_matrix_desc": "Basculer par destinataire. Le commutateur à gauche désactive toute la ligne globalement. Les cellules marquées — ne sont pas valides pour ce destinataire.",

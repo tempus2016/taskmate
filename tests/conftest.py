@@ -111,6 +111,19 @@ _ha_websocket_api_const.ERR_UNAUTHORIZED = "unauthorized"
 _ha_websocket_api.const = _ha_websocket_api_const
 
 
+# ── homeassistant.exceptions ────────────────────────────────────────────────
+
+class FakeUnauthorized(Exception):
+    """Stand-in for homeassistant.exceptions.Unauthorized."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args)
+
+
+_ha_exceptions = MagicMock()
+_ha_exceptions.Unauthorized = FakeUnauthorized
+
+
 # ── homeassistant.helpers.event ─────────────────────────────────────────────
 
 _ha_event = MagicMock()
@@ -172,6 +185,9 @@ class _DtUtilMock:
     def now(self) -> _dt.datetime:
         return self._now
 
+    def start_of_local_day(self) -> _dt.datetime:
+        return self._now.replace(hour=0, minute=0, second=0, microsecond=0)
+
     @staticmethod
     def as_local(dt: _dt.datetime) -> _dt.datetime:
         return dt  # treat everything as UTC in tests
@@ -197,6 +213,7 @@ sys.modules.update(
         "homeassistant.core": _ha_core,
         "homeassistant.config_entries": MagicMock(),
         "homeassistant.const": MagicMock(),
+        "homeassistant.exceptions": _ha_exceptions,
         "homeassistant.helpers": MagicMock(),
         "homeassistant.helpers.service": MagicMock(),
         "homeassistant.helpers.storage": _ha_storage_mod,

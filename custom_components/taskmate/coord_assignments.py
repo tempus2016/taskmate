@@ -477,7 +477,7 @@ class AssignmentsMixin:
         bonus_subtasks = getattr(chore, 'bonus_subtasks', None) or []
         if bonus_subtasks and active_child_id:
             for bst in bonus_subtasks:
-                bst_id = bst.get('id') if isinstance(bst, dict) else getattr(bst, 'id', None)
+                bst_id = getattr(bst, 'id', None)
                 if bst_id and bst_id not in completed_bonus_ids_today:
                     return False
         return True

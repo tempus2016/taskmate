@@ -14,6 +14,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 class TaskMateWeeklyCard extends LitElement {
   static get properties() {
     return {
@@ -356,7 +358,7 @@ class TaskMateWeeklyCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#27ae60'}; }</style>
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#27ae60')}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:calendar-week"></ha-icon>
@@ -447,7 +449,8 @@ class TaskMateWeeklyCard extends LitElement {
   }
 
   _getWeekDays(tz) {
-    const today = new Date();
+    const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+    const today = new Date(todayKey + "T12:00:00"); // noon avoids DST edge cases
     const todayDay = today.getDay(); // 0=Sun
     // Start week on Monday
     const mondayOffset = (todayDay === 0 ? -6 : 1 - todayDay);
@@ -464,7 +467,7 @@ class TaskMateWeeklyCard extends LitElement {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
       days.push({
-        key: d.toLocaleDateString("en-CA", { timeZone: tz }),
+        key: d.toLocaleDateString("en-CA"),
         short: shortNames[i],
         date: d,
       });

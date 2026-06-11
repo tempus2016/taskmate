@@ -779,6 +779,7 @@
   "panel.notif_recipients_parents": "Eltern",
   "panel.notif_remove_parent": "Entfernen",
   "panel.notif_section_custom": "Benutzerdefinierte geplante Benachrichtigungen",
+  "panel.notif_unnamed_recipient": "(unbenannt)",
   "panel.notif_section_custom_desc": "Füge eigene zeitgesteuerte Erinnerungen hinzu. Für ereignisgesteuerte Benachrichtigungen höre auf die taskmate_*-Ereignisse auf dem Home Assistant Bus.",
   "panel.notif_section_matrix": "Integrierte Benachrichtigungen",
   "panel.notif_section_matrix_desc": "Pro Empfänger umschalten. Der Schalter links deaktiviert die gesamte Zeile global. Mit — markierte Zellen sind für diesen Empfänger nicht gültig.",

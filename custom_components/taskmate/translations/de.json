@@ -492,6 +492,24 @@
         }
       }
     },
+    "complete_bonus_subtask": {
+      "name": "Bonus-Unteraufgabe erledigen",
+      "description": "Erledigen Sie eine Bonus-Unteraufgabe, nachdem die übergeordnete Aufgabe abgeschlossen wurde",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID der übergeordneten Aufgabe"
+        },
+        "bonus_subtask_id": {
+          "name": "Bonus-Unteraufgaben-ID",
+          "description": "Die ID der zu erledigenden Bonus-Unteraufgabe"
+        },
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, das die Bonus-Unteraufgabe erledigt"
+        }
+      }
+    },
     "approve_chore": {
       "name": "Genehmigen Sie die Aufgabe",
       "description": "Genehmigen Sie eine erledigte Aufgabe und vergeben Sie Punkte",
@@ -533,6 +551,24 @@
         "claim_id": {
           "name": "Anspruchs-ID",
           "description": "Die ID des zu genehmigenden Prämienanspruchs"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "Punkte dem Pool zuweisen",
+      "description": "Verschieben Sie Punkte vom ausgebbaren Guthaben eines Kindes in den Sparpool einer Belohnung (gesperrt).",
+      "fields": {
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, das die Zuweisung vornimmt"
+        },
+        "reward_id": {
+          "name": "Prämien-ID",
+          "description": "Die ID des Belohnungs-Pools, in den eingezahlt werden soll"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Anzahl der zuzuweisenden Punkte (begrenzt durch Poolkapazität und ausgebbares Guthaben)"
         }
       }
     },
@@ -873,6 +909,170 @@
           "description": "Die ID der zu löschenden Gruppe"
         }
       }
+    },
+    "start_timed_task": {
+      "name": "Zeitbasierte Aufgabe starten",
+      "description": "Starten Sie den Timer einer zeitbasierten Aufgabe oder setzen Sie ihn fort",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID der zeitbasierten Aufgabe"
+        },
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, das den Timer startet"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "Zeitbasierte Aufgabe pausieren",
+      "description": "Pausieren Sie den laufenden Timer einer zeitbasierten Aufgabe",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID der zeitbasierten Aufgabe"
+        },
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, das den Timer pausiert"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "Zeitbasierte Aufgabe stoppen",
+      "description": "Stoppen Sie den Timer einer zeitbasierten Aufgabe und reichen Sie sie zur Genehmigung ein",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID der zeitbasierten Aufgabe"
+        },
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, das den Timer stoppt"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "Abzeichen hinzufügen",
+      "description": "Erstellen Sie ein eigenes Abzeichen.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Der Anzeigename des Abzeichens"
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Beschreibung, wie das Abzeichen verdient wird"
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Symbol für das Abzeichen (z. B. mdi:beach)"
+        },
+        "tier": {
+          "name": "Stufe",
+          "description": "Stufe des Abzeichens: Bronze, Silber, Gold oder Platin"
+        },
+        "point_bonus": {
+          "name": "Punktebonus",
+          "description": "Punkte, die dem Kind gutgeschrieben werden, wenn es das Abzeichen verdient"
+        },
+        "criteria": {
+          "name": "Kriterien",
+          "description": "Liste von {metric, operator, value}-Einträgen. Leer = nur manuelle Vergabe."
+        },
+        "assigned_to": {
+          "name": "Zugewiesen an",
+          "description": "Liste von Kinder-IDs (leer = alle)"
+        },
+        "notify_on_earn": {
+          "name": "Benachrichtigung beim Verdienen",
+          "description": "Senden Sie eine Benachrichtigung, wenn das Abzeichen verdient wird"
+        }
+      }
+    },
+    "update_badge": {
+      "name": "Abzeichen aktualisieren",
+      "description": "Aktualisieren Sie ein vorhandenes Abzeichen. Bei integrierten Abzeichen sind nur point_bonus, tier, assigned_to, enabled und notify_on_earn bearbeitbar.",
+      "fields": {
+        "badge_id": {
+          "name": "Abzeichen-ID",
+          "description": "Die ID des zu aktualisierenden Abzeichens"
+        },
+        "name": {
+          "name": "Name",
+          "description": "Neuer Anzeigename des Abzeichens"
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Neue Beschreibung des Abzeichens"
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Neues Symbol für das Abzeichen"
+        },
+        "tier": {
+          "name": "Stufe",
+          "description": "Stufe des Abzeichens: Bronze, Silber, Gold oder Platin"
+        },
+        "point_bonus": {
+          "name": "Punktebonus",
+          "description": "Punkte, die dem Kind gutgeschrieben werden, wenn es das Abzeichen verdient"
+        },
+        "criteria": {
+          "name": "Kriterien",
+          "description": "Liste von {metric, operator, value}-Einträgen. Leer = nur manuelle Vergabe."
+        },
+        "assigned_to": {
+          "name": "Zugewiesen an",
+          "description": "Liste von Kinder-IDs (leer = alle)"
+        },
+        "enabled": {
+          "name": "Aktiviert",
+          "description": "Ob das Abzeichen aktiv ist"
+        },
+        "notify_on_earn": {
+          "name": "Benachrichtigung beim Verdienen",
+          "description": "Senden Sie eine Benachrichtigung, wenn das Abzeichen verdient wird"
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "Abzeichen entfernen",
+      "description": "Entfernen Sie ein eigenes Abzeichen. Integrierte Abzeichen können nicht entfernt werden.",
+      "fields": {
+        "badge_id": {
+          "name": "Abzeichen-ID",
+          "description": "Die ID des zu entfernenden Abzeichens"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "Abzeichen manuell vergeben",
+      "description": "Vergeben Sie ein Abzeichen manuell an ein Kind.",
+      "fields": {
+        "badge_id": {
+          "name": "Abzeichen-ID",
+          "description": "Die ID des zu vergebenden Abzeichens"
+        },
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, das das Abzeichen erhält"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "Abzeichen widerrufen",
+      "description": "Widerrufen Sie ein vergebenes Abzeichen. Wenn ein Punktebonus gutgeschrieben wurde, wird er rückgängig gemacht.",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "ID des vergebenen Abzeichens",
+          "description": "Die ID des vergebenen Abzeichens, das widerrufen werden soll"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "Abzeichen neu berechnen",
+      "description": "Bewerten Sie alle Abzeichen für alle Kinder im Hintergrund neu (keine Benachrichtigungen, keine Punkteboni)."
     }
   },
   "entity": {

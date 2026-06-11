@@ -9,7 +9,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.util import dt as dt_util  # noqa: F401 — used by tests as patch target
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coord_assignments import AssignmentsMixin
@@ -157,24 +157,36 @@ class TaskMateCoordinator(
 
     @callback
     def _async_midnight_streak_check(self, now: datetime) -> None:
-        """Scheduled callback at midnight to check and reset streaks if needed."""
-        self.hass.async_create_task(self._async_check_streaks())
-        self.hass.async_create_task(self._async_expire_one_shot_chores())
-        self.hass.async_create_task(self._async_expire_rewards())
-        self.hass.async_create_task(self._async_stop_stale_timed_sessions())
-        # Rotate assignment_current_child_id and publish today's events to every configured calendar
-        self.hass.async_create_task(self._async_refresh_assignments_and_publish())
+        """Scheduled callback at midnight to run all daily maintenance."""
+        self.hass.async_create_task(self._async_run_midnight_maintenance(now))
+
+    async def _async_run_midnight_maintenance(self, now: datetime) -> None:
+        """Run the midnight maintenance steps sequentially.
+
+        A single task (rather than one task per step) so the read-modify-write
+        steps on shared storage can't interleave and overwrite each other's
+        saves. One step failing must not stop the rest.
+        """
+        steps = [
+            self._async_check_streaks,
+            self._async_expire_one_shot_chores,
+            self._async_expire_rewards,
+            self._async_stop_stale_timed_sessions,
+            # Rotate assignment_current_child_id and publish today's events
+            # to every configured calendar
+            self._async_refresh_assignments_and_publish,
+        ]
         # Check for perfect week bonus every Monday at midnight
         if now.weekday() == 0:
-            self.hass.async_create_task(self._async_check_perfect_week())
+            steps.append(self._async_check_perfect_week)
+        for step in steps:
+            try:
+                await step()
+            except Exception:  # noqa: BLE001
+                _LOGGER.exception("Midnight maintenance step %s failed", step.__name__)
         # Prune all-chores-done daily flags older than today
-        today = dt_util.now().date().isoformat()
-        flags = self.storage._data.get("all_done_flags", {})
-        for key in list(flags.keys()):
-            # Keys are "all_done_<child_id>_<isodate>"
-            if not key.endswith(today):
-                flags.pop(key, None)
-        self.hass.async_create_task(self.storage.async_save())
+        self.storage.prune_all_done_flags(dt_util.now().date().isoformat())
+        await self.storage.async_save()
 
     @callback
     def _async_scheduled_prune(self, now: datetime) -> None:

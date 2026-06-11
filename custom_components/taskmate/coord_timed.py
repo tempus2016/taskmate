@@ -174,10 +174,11 @@ class TimedMixin:
                 self.storage.remove_timed_session(session.id)
                 continue
 
-            # Close any open segment at midnight
+            # Close any open segment at midnight (tz-aware so it can be
+            # subtracted from the tz-aware segment start)
             if session.segments and session.segments[-1].get("end") is None:
-                midnight_str = f"{today}T00:00:00"
-                session.segments[-1]["end"] = midnight_str
+                midnight = dt_util.start_of_local_day()
+                session.segments[-1]["end"] = midnight.isoformat()
 
             total_seconds = self._calc_session_seconds(session)
             if chore.timed_max_daily_minutes > 0:

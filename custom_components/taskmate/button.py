@@ -52,6 +52,8 @@ async def async_setup_entry(
     tracked_combos: set[str] = set()
     for child in children:
         for chore in chores:
+            if getattr(chore, "assignment_mode", "everyone") == "unassigned":
+                continue
             if not chore.assigned_to or child.id in chore.assigned_to:
                 tracked_combos.add(f"{child.id}_{chore.id}_complete")
         for reward in rewards:
@@ -247,49 +249,3 @@ class ClaimRewardButton(TaskMateBaseButton):
             await self.coordinator.async_claim_reward(self.reward_id, self.child_id)
         except ValueError as err:
             _LOGGER.error("Failed to claim reward: %s", err)
-
-
-class ApproveChoreButton(TaskMateBaseButton):
-    """Button to approve a chore completion."""
-
-    def __init__(
-        self,
-        coordinator: TaskMateCoordinator,
-        entry: ConfigEntry,
-        completion_id: str,
-        child_name: str,
-        chore_name: str,
-    ) -> None:
-        """Initialize the button."""
-        super().__init__(coordinator, entry)
-        self.completion_id = completion_id
-        self._attr_unique_id = f"{entry.entry_id}_{completion_id}_approve"
-        self._attr_name = f"Approve: {child_name} - {chore_name}"
-        self._attr_icon = "mdi:check-circle"
-
-    async def async_press(self) -> None:
-        """Handle the button press."""
-        await self.coordinator.async_approve_chore(self.completion_id)
-
-
-class RejectChoreButton(TaskMateBaseButton):
-    """Button to reject a chore completion."""
-
-    def __init__(
-        self,
-        coordinator: TaskMateCoordinator,
-        entry: ConfigEntry,
-        completion_id: str,
-        child_name: str,
-        chore_name: str,
-    ) -> None:
-        """Initialize the button."""
-        super().__init__(coordinator, entry)
-        self.completion_id = completion_id
-        self._attr_unique_id = f"{entry.entry_id}_{completion_id}_reject"
-        self._attr_name = f"Reject: {child_name} - {chore_name}"
-        self._attr_icon = "mdi:close-circle"
-
-    async def async_press(self) -> None:
-        """Handle the button press."""
-        await self.coordinator.async_reject_chore(self.completion_id)

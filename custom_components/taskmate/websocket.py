@@ -160,20 +160,11 @@ def _admin_only(handler):
 # Validators / coercers
 # ---------------------------------------------------------------------------
 
-_str_list = vol.All(vol.Any([str], None), lambda v: list(v or []))
-
-
 def _opt_str(v: Any) -> str:
     """Coerce optional string field to stripped str (or empty)."""
     if v is None:
         return ""
     return str(v).strip()
-
-
-def _opt_int(v: Any) -> int | None:
-    if v is None or v == "":
-        return None
-    return int(v)
 
 
 # ---------------------------------------------------------------------------
@@ -188,12 +179,12 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
 
     parent_completable = {}
     for chore_dict in data.get("chores", []):
-        chore = coordinator.get_chore(chore_dict.get("id", ""))
-        if not chore or not getattr(chore, "enabled", True):
+        chore_id = chore_dict.get("id")
+        if not chore_id or not chore_dict.get("enabled", True):
             continue
-        if getattr(chore, "schedule_mode", "specific_days") == "one_shot":
+        if chore_dict.get("schedule_mode", "specific_days") == "one_shot":
             continue
-        parent_completable[chore.id] = True
+        parent_completable[chore_id] = True
 
     return {
         "version": "2",
@@ -1080,12 +1071,10 @@ async def _ws_templates_delete(hass, connection, msg, coordinator):
 
 @websocket_api.websocket_command({vol.Required("type"): WS_NOTIF_GET_STATE})
 @websocket_api.async_response
-async def ws_notif_get_state(hass, connection, msg):
+@_admin_only
+async def ws_notif_get_state(hass, connection, msg, coordinator):
     from .coord_notifications import NOTIFICATION_TYPES
-    c = _get_coordinator(hass)
-    if c is None:
-        connection.send_error(msg["id"], "no_coordinator", "TaskMate not loaded")
-        return
+    c = coordinator
     state = {
         "recipients": {
             "children": [
@@ -1127,9 +1116,9 @@ async def ws_notif_get_state(hass, connection, msg):
     vol.Required("enabled"): bool,
 })
 @websocket_api.async_response
-async def ws_notif_set_master(hass, connection, msg):
-    c = _get_coordinator(hass)
-    await c.notifications.set_master_enabled(msg["type_id"], msg["enabled"])
+@_admin_only
+async def ws_notif_set_master(hass, connection, msg, coordinator):
+    await coordinator.notifications.set_master_enabled(msg["type_id"], msg["enabled"])
     connection.send_result(msg["id"], {"ok": True})
 
 
@@ -1141,11 +1130,11 @@ async def ws_notif_set_master(hass, connection, msg):
     vol.Optional("time"): vol.Any(str, None),
 })
 @websocket_api.async_response
-async def ws_notif_set_route(hass, connection, msg):
+@_admin_only
+async def ws_notif_set_route(hass, connection, msg, coordinator):
     from .models import NotificationRoute
-    c = _get_coordinator(hass)
     route = NotificationRoute(enabled=msg["enabled"], time=msg.get("time"))
-    await c.notifications.set_route(msg["type_id"], msg["recipient_id"], route)
+    await coordinator.notifications.set_route(msg["type_id"], msg["recipient_id"], route)
     connection.send_result(msg["id"], {"ok": True})
 
 
@@ -1155,8 +1144,9 @@ async def ws_notif_set_route(hass, connection, msg):
     vol.Required("notify_service"): vol.Any(str, None),
 })
 @websocket_api.async_response
-async def ws_notif_set_child_notify(hass, connection, msg):
-    c = _get_coordinator(hass)
+@_admin_only
+async def ws_notif_set_child_notify(hass, connection, msg, coordinator):
+    c = coordinator
     child = c.storage.get_child(msg["child_id"])
     if child is None:
         connection.send_error(msg["id"], "not_found", "Child not found")
@@ -1176,9 +1166,10 @@ async def ws_notif_set_child_notify(hass, connection, msg):
     vol.Optional("enabled", default=True): bool,
 })
 @websocket_api.async_response
-async def ws_notif_upsert_parent(hass, connection, msg):
+@_admin_only
+async def ws_notif_upsert_parent(hass, connection, msg, coordinator):
     from .models import ParentRecipient
-    c = _get_coordinator(hass)
+    c = coordinator
     p_id = msg.get("parent_id")
     if p_id:
         existing = next(
@@ -1207,9 +1198,9 @@ async def ws_notif_upsert_parent(hass, connection, msg):
     vol.Required("parent_id"): str,
 })
 @websocket_api.async_response
-async def ws_notif_delete_parent(hass, connection, msg):
-    c = _get_coordinator(hass)
-    await c.notifications.delete_parent(msg["parent_id"])
+@_admin_only
+async def ws_notif_delete_parent(hass, connection, msg, coordinator):
+    await coordinator.notifications.delete_parent(msg["parent_id"])
     connection.send_result(msg["id"], {"ok": True})
 
 
@@ -1224,9 +1215,10 @@ async def ws_notif_delete_parent(hass, connection, msg):
     vol.Optional("enabled", default=True): bool,
 })
 @websocket_api.async_response
-async def ws_notif_upsert_custom(hass, connection, msg):
+@_admin_only
+async def ws_notif_upsert_custom(hass, connection, msg, coordinator):
     from .models import CustomNotification
-    c = _get_coordinator(hass)
+    c = coordinator
     n = CustomNotification.from_dict({
         "id": msg.get("custom_id"),
         "name": msg["name"],
@@ -1245,15 +1237,16 @@ async def ws_notif_upsert_custom(hass, connection, msg):
     vol.Required("custom_id"): str,
 })
 @websocket_api.async_response
-async def ws_notif_delete_custom(hass, connection, msg):
-    c = _get_coordinator(hass)
-    await c.notifications.delete_custom(msg["custom_id"])
+@_admin_only
+async def ws_notif_delete_custom(hass, connection, msg, coordinator):
+    await coordinator.notifications.delete_custom(msg["custom_id"])
     connection.send_result(msg["id"], {"ok": True})
 
 
 @websocket_api.websocket_command({vol.Required("type"): WS_NOTIF_LIST_NOTIFY})
 @websocket_api.async_response
-async def ws_notif_list_notify(hass, connection, msg):
+@_admin_only
+async def ws_notif_list_notify(hass, connection, msg, coordinator):
     services = [
         f"notify.{name}"
         for name in hass.services.async_services().get("notify", {})
@@ -1267,9 +1260,9 @@ async def ws_notif_list_notify(hass, connection, msg):
     vol.Required("time"): str,
 })
 @websocket_api.async_response
-async def ws_notif_set_streak_cutoff(hass, connection, msg):
-    c = _get_coordinator(hass)
-    await c.notifications.set_streak_cutoff(msg["time"])
+@_admin_only
+async def ws_notif_set_streak_cutoff(hass, connection, msg, coordinator):
+    await coordinator.notifications.set_streak_cutoff(msg["time"])
     connection.send_result(msg["id"], {"ok": True})
 
 

@@ -501,6 +501,7 @@ class TaskMateApprovalsCard extends LitElement {
   }
 
   async _callClaimService(service, claimId) {
+    if (this._loading[claimId]) return;
     this._loading = { ...this._loading, [claimId]: true };
     this.requestUpdate();
     try {
@@ -759,6 +760,7 @@ class TaskMateApprovalsCard extends LitElement {
   }
 
   async _callService(service, completionId) {
+    if (this._loading[completionId]) return;
     this._loading = { ...this._loading, [completionId]: true };
     this.requestUpdate();
 

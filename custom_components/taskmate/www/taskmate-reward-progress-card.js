@@ -12,6 +12,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 class TaskMateRewardProgressCard extends LitElement {
   static get properties() {
     return { hass: { type: Object }, config: { type: Object } };
@@ -461,8 +463,9 @@ class TaskMateRewardProgressCard extends LitElement {
       availabilityClass = 'badge-expiring-soon';
     }
 
-    const headerStyle = this.config.header_color
-      ? `--taskmate-header-bg: ${this.config.header_color};`
+    const headerColor = _safeColor(this.config.header_color, '');
+    const headerStyle = headerColor
+      ? `--taskmate-header-bg: ${headerColor};`
       : '';
 
     return html`

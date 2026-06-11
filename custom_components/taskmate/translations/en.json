@@ -492,6 +492,24 @@
         }
       }
     },
+    "complete_bonus_subtask": {
+      "name": "Complete Bonus Sub-task",
+      "description": "Complete a bonus sub-task after the parent chore is done",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the parent chore"
+        },
+        "bonus_subtask_id": {
+          "name": "Bonus Sub-task ID",
+          "description": "The ID of the bonus sub-task to complete"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child completing the bonus sub-task"
+        }
+      }
+    },
     "approve_chore": {
       "name": "Approve Chore",
       "description": "Approve a completed chore and award points",
@@ -533,6 +551,24 @@
         "claim_id": {
           "name": "Claim ID",
           "description": "The ID of the reward claim to approve"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "Allocate Points to Pool",
+      "description": "Move points from a child's spendable balance into a reward's savings pool (locked).",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child making the allocation"
+        },
+        "reward_id": {
+          "name": "Reward ID",
+          "description": "The ID of the reward pool to deposit into"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Number of points to allocate (capped at pool capacity and spendable balance)"
         }
       }
     },
@@ -873,6 +909,170 @@
           "description": "The ID of the group to delete"
         }
       }
+    },
+    "start_timed_task": {
+      "name": "Start Timed Task",
+      "description": "Start or resume the timer on a timed task",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the timed chore"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child starting the timer"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "Pause Timed Task",
+      "description": "Pause a running timed task timer",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the timed chore"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child pausing the timer"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "Stop Timed Task",
+      "description": "Stop a timed task timer and submit for approval",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the timed chore"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child stopping the timer"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "Add Badge",
+      "description": "Create a custom badge.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "The display name of the badge"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Description of how the badge is earned"
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "Icon for the badge (e.g. mdi:beach)"
+        },
+        "tier": {
+          "name": "Tier",
+          "description": "Badge tier: bronze, silver, gold or platinum"
+        },
+        "point_bonus": {
+          "name": "Point bonus",
+          "description": "Points credited to the child when the badge is earned"
+        },
+        "criteria": {
+          "name": "Criteria",
+          "description": "List of {metric, operator, value} dicts. Empty = manual-award only."
+        },
+        "assigned_to": {
+          "name": "Assigned to",
+          "description": "List of child IDs (empty = all)"
+        },
+        "notify_on_earn": {
+          "name": "Notify on earn",
+          "description": "Send a notification when the badge is earned"
+        }
+      }
+    },
+    "update_badge": {
+      "name": "Update Badge",
+      "description": "Update an existing badge. For built-ins, only point_bonus, tier, assigned_to, enabled, notify_on_earn are editable.",
+      "fields": {
+        "badge_id": {
+          "name": "Badge ID",
+          "description": "The ID of the badge to update"
+        },
+        "name": {
+          "name": "Name",
+          "description": "New display name of the badge"
+        },
+        "description": {
+          "name": "Description",
+          "description": "New description of the badge"
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "New icon for the badge"
+        },
+        "tier": {
+          "name": "Tier",
+          "description": "Badge tier: bronze, silver, gold or platinum"
+        },
+        "point_bonus": {
+          "name": "Point bonus",
+          "description": "Points credited to the child when the badge is earned"
+        },
+        "criteria": {
+          "name": "Criteria",
+          "description": "List of {metric, operator, value} dicts. Empty = manual-award only."
+        },
+        "assigned_to": {
+          "name": "Assigned to",
+          "description": "List of child IDs (empty = all)"
+        },
+        "enabled": {
+          "name": "Enabled",
+          "description": "Whether the badge is active"
+        },
+        "notify_on_earn": {
+          "name": "Notify on earn",
+          "description": "Send a notification when the badge is earned"
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "Remove Badge",
+      "description": "Remove a custom badge. Built-ins cannot be removed.",
+      "fields": {
+        "badge_id": {
+          "name": "Badge ID",
+          "description": "The ID of the badge to remove"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "Award Badge Manually",
+      "description": "Manually award a badge to a child.",
+      "fields": {
+        "badge_id": {
+          "name": "Badge ID",
+          "description": "The ID of the badge to award"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child receiving the badge"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "Revoke Badge",
+      "description": "Revoke an awarded badge. If a point bonus was credited, it is reversed.",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "Awarded Badge ID",
+          "description": "The ID of the awarded badge record to revoke"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "Rebuild Badges",
+      "description": "Re-evaluate all badges across all children silently (no notifications, no point bonuses)."
     }
   },
   "entity": {

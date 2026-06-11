@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import logging
+from functools import wraps
 from pathlib import Path
 
 import yaml
@@ -10,6 +11,7 @@ import yaml
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.exceptions import Unauthorized
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_set_service_schema
@@ -171,9 +173,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         hass.data[DOMAIN].pop(entry.entry_id)
 
-        # If no more entries, unregister services
+        # If no more entries, unregister services. Count only coordinator
+        # instances — hass.data[DOMAIN] also holds bookkeeping flags.
         remaining_entries = [
-            key for key in hass.data[DOMAIN].keys() if key != SERVICES_REGISTERED
+            value for value in hass.data[DOMAIN].values()
+            if isinstance(value, TaskMateCoordinator)
         ]
         if not remaining_entries:
             _async_unregister_services(hass)
@@ -224,6 +228,14 @@ def _async_update_service_descriptions(hass: HomeAssistant) -> None:
         entities = getattr(coordinator.storage, getter)()
         options[field] = [{"label": e.name, "value": e.id} for e in entities]
 
+    # Re-registering schemas deep-copies every dynamic service description;
+    # skip the whole pass when the option sets haven't changed since last time.
+    fingerprint = repr(options)
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    if domain_data.get("_service_desc_fingerprint") == fingerprint:
+        return
+    domain_data["_service_desc_fingerprint"] = fingerprint
+
     base = _load_base_descriptions()
 
     for service_name, service_desc in base.items():
@@ -246,6 +258,22 @@ def _async_update_service_descriptions(hass: HomeAssistant) -> None:
 
 async def _async_register_services(hass: HomeAssistant) -> None:
     """Register TaskMate services."""
+
+    def _admin(handler):
+        """Require an admin user for parent-privileged services.
+
+        Calls without a user context (automations, scripts, schedules) pass
+        through; user-initiated calls must come from an admin, matching the
+        admin gate on the panel's WebSocket commands.
+        """
+        @wraps(handler)
+        async def wrapped(call: ServiceCall) -> None:
+            if call.context.user_id:
+                user = await hass.auth.async_get_user(call.context.user_id)
+                if user is None or not user.is_admin:
+                    raise Unauthorized(context=call.context)
+            await handler(call)
+        return wrapped
 
     async def handle_complete_chore(call: ServiceCall) -> None:
         """Handle the complete_chore service call."""
@@ -753,7 +781,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_APPROVE_CHORE,
-        handle_approve_chore,
+        _admin(handle_approve_chore),
         schema=vol.Schema(
             {
                 vol.Required("completion_id"): cv.string,
@@ -764,7 +792,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_REJECT_CHORE,
-        handle_reject_chore,
+        _admin(handle_reject_chore),
         schema=vol.Schema(
             {
                 vol.Required("completion_id"): cv.string,
@@ -787,14 +815,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_REJECT_REWARD,
-        handle_reject_reward,
+        _admin(handle_reject_reward),
         schema=vol.Schema({ vol.Required("claim_id"): cv.string }),
     )
 
     hass.services.async_register(
         DOMAIN,
         SERVICE_APPROVE_REWARD,
-        handle_approve_reward,
+        _admin(handle_approve_reward),
         schema=vol.Schema(
             {
                 vol.Required("claim_id"): cv.string,
@@ -818,7 +846,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_ADD_POINTS,
-        handle_add_points,
+        _admin(handle_add_points),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHILD_ID): cv.string,
@@ -831,7 +859,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_REMOVE_POINTS,
-        handle_remove_points,
+        _admin(handle_remove_points),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHILD_ID): cv.string,
@@ -859,7 +887,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_SET_CHORE_ORDER,
-        handle_set_chore_order,
+        _admin(handle_set_chore_order),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHILD_ID): cv.string,
@@ -872,7 +900,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_ADD_PENALTY,
-        handle_add_penalty,
+        _admin(handle_add_penalty),
         schema=vol.Schema({
             vol.Required(ATTR_PENALTY_NAME): cv.string,
             vol.Required(ATTR_PENALTY_POINTS): cv.positive_int,
@@ -885,7 +913,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_UPDATE_PENALTY,
-        handle_update_penalty,
+        _admin(handle_update_penalty),
         schema=vol.Schema({
             vol.Required(ATTR_PENALTY_ID): cv.string,
             vol.Optional(ATTR_PENALTY_NAME): cv.string,
@@ -899,14 +927,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_REMOVE_PENALTY,
-        handle_remove_penalty,
+        _admin(handle_remove_penalty),
         schema=vol.Schema({vol.Required(ATTR_PENALTY_ID): cv.string}),
     )
 
     hass.services.async_register(
         DOMAIN,
         SERVICE_APPLY_PENALTY,
-        handle_apply_penalty,
+        _admin(handle_apply_penalty),
         schema=vol.Schema({
             vol.Required(ATTR_PENALTY_ID): cv.string,
             vol.Required(ATTR_CHILD_ID): cv.string,
@@ -916,7 +944,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_ADD_BONUS,
-        handle_add_bonus,
+        _admin(handle_add_bonus),
         schema=vol.Schema({
             vol.Required(ATTR_BONUS_NAME): cv.string,
             vol.Required(ATTR_BONUS_POINTS): cv.positive_int,
@@ -929,7 +957,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_UPDATE_BONUS,
-        handle_update_bonus,
+        _admin(handle_update_bonus),
         schema=vol.Schema({
             vol.Required(ATTR_BONUS_ID): cv.string,
             vol.Optional(ATTR_BONUS_NAME): cv.string,
@@ -943,14 +971,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_REMOVE_BONUS,
-        handle_remove_bonus,
+        _admin(handle_remove_bonus),
         schema=vol.Schema({vol.Required(ATTR_BONUS_ID): cv.string}),
     )
 
     hass.services.async_register(
         DOMAIN,
         SERVICE_APPLY_BONUS,
-        handle_apply_bonus,
+        _admin(handle_apply_bonus),
         schema=vol.Schema({
             vol.Required(ATTR_BONUS_ID): cv.string,
             vol.Required(ATTR_CHILD_ID): cv.string,
@@ -960,7 +988,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_ADD_CHORE,
-        handle_add_chore,
+        _admin(handle_add_chore),
         schema=vol.Schema({
             vol.Required(ATTR_CHORE_NAME): cv.string,
             vol.Optional(ATTR_CHORE_DESCRIPTION, default=""): cv.string,
@@ -975,14 +1003,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_SKIP_CHORE,
-        handle_skip_chore,
+        _admin(handle_skip_chore),
         schema=vol.Schema({vol.Required(ATTR_CHORE_ID): cv.string}),
     )
 
     hass.services.async_register(
         DOMAIN,
         SERVICE_SET_CHORE_MANUAL_START,
-        handle_set_chore_manual_start,
+        _admin(handle_set_chore_manual_start),
         schema=vol.Schema({
             vol.Required(ATTR_CHORE_ID): cv.string,
             vol.Required(ATTR_CHILD_ID): cv.string,
@@ -992,7 +1020,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_ADD_TASK_GROUP,
-        handle_add_task_group,
+        _admin(handle_add_task_group),
         schema=vol.Schema({
             vol.Required(CONF_TASK_GROUP_NAME): cv.string,
             vol.Required(CONF_TASK_GROUP_POLICY): vol.In(TASK_GROUP_POLICIES),
@@ -1003,7 +1031,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_UPDATE_TASK_GROUP,
-        handle_update_task_group,
+        _admin(handle_update_task_group),
         schema=vol.Schema({
             vol.Required(CONF_TASK_GROUP_ID): cv.string,
             vol.Optional(CONF_TASK_GROUP_NAME): cv.string,
@@ -1015,14 +1043,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_REMOVE_TASK_GROUP,
-        handle_remove_task_group,
+        _admin(handle_remove_task_group),
         schema=vol.Schema({vol.Required(CONF_TASK_GROUP_ID): cv.string}),
     )
 
     hass.services.async_register(
         DOMAIN,
         "add_badge",
-        handle_add_badge,
+        _admin(handle_add_badge),
         schema=vol.Schema({
             vol.Required(ATTR_BADGE_NAME): cv.string,
             vol.Optional(ATTR_BADGE_DESCRIPTION, default=""): cv.string,
@@ -1038,7 +1066,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         "update_badge",
-        handle_update_badge,
+        _admin(handle_update_badge),
         schema=vol.Schema({
             vol.Required(ATTR_BADGE_ID): cv.string,
             vol.Optional(ATTR_BADGE_NAME): cv.string,
@@ -1056,14 +1084,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         "remove_badge",
-        handle_remove_badge,
+        _admin(handle_remove_badge),
         schema=vol.Schema({vol.Required(ATTR_BADGE_ID): cv.string}),
     )
 
     hass.services.async_register(
         DOMAIN,
         "award_badge_manually",
-        handle_award_badge_manually,
+        _admin(handle_award_badge_manually),
         schema=vol.Schema({
             vol.Required(ATTR_BADGE_ID): cv.string,
             vol.Required(ATTR_CHILD_ID): cv.string,
@@ -1073,14 +1101,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         "revoke_badge",
-        handle_revoke_badge,
+        _admin(handle_revoke_badge),
         schema=vol.Schema({vol.Required(ATTR_AWARDED_BADGE_ID): cv.string}),
     )
 
     hass.services.async_register(
         DOMAIN,
         "rebuild_badges",
-        handle_rebuild_badges,
+        _admin(handle_rebuild_badges),
         schema=vol.Schema({}),
     )
 

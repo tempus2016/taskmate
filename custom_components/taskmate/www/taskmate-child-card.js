@@ -75,6 +75,10 @@ class TaskMateChildCard extends LitElement {
     this._stopTimerTick();
     this._badgeEventUnsub?.();
     this._badgeEventUnsub = null;
+    if (this._audioContext) {
+      this._audioContext.close().catch(() => {});
+      this._audioContext = null;
+    }
   }
 
   updated(changedProperties) {
@@ -103,6 +107,7 @@ class TaskMateChildCard extends LitElement {
   }
 
   _subscribeBadgeEvents() {
+    if (this._badgeEventUnsub) return;
     if (!this.hass?.connection) return;
     this.hass.connection.subscribeEvents((event) => {
       const data = event.data || {};
@@ -114,6 +119,10 @@ class TaskMateChildCard extends LitElement {
         setTimeout(() => { this._justEarnedBadge = null; this.requestUpdate(); }, 1800);
       }
     }, "taskmate_badge_earned").then(unsub => {
+      if (!this.isConnected) {
+        unsub();
+        return;
+      }
       this._badgeEventUnsub = unsub;
     }).catch(() => {});
   }

@@ -13,6 +13,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 class TaskMateActivityCard extends LitElement {
   static get properties() {
     return {
@@ -478,7 +480,7 @@ class TaskMateActivityCard extends LitElement {
       : unfiltered.filter(e => this._eventBucket(e) === this._filter);
 
     const title = this.config.title || this._t('activity.default_title');
-    const headerColor = this.config.header_color || '#2471a3';
+    const headerColor = _safeColor(this.config.header_color, '#2471a3');
 
     if (unfiltered.length === 0) {
       return html`

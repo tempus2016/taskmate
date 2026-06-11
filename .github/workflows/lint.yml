@@ -24,7 +24,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install ruff
-        run: python -m pip install --upgrade pip ruff
+        run: python -m pip install --upgrade pip "ruff==0.15.12"
 
       - name: Run ruff
         run: ruff check custom_components/taskmate tests
