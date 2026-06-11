@@ -978,7 +978,7 @@
         },
         "criteria": {
           "name": "Kriterier",
-          "description": "Liste med {metric, operator, value}-oppføringer. Tom = kun manuell tildeling."
+          "description": "Liste med metric / operator / value-oppføringer. Tom = kun manuell tildeling."
         },
         "assigned_to": {
           "name": "Tildelt til",
@@ -1020,7 +1020,7 @@
         },
         "criteria": {
           "name": "Kriterier",
-          "description": "Liste med {metric, operator, value}-oppføringer. Tom = kun manuell tildeling."
+          "description": "Liste med metric / operator / value-oppføringer. Tom = kun manuell tildeling."
         },
         "assigned_to": {
           "name": "Tildelt til",
