@@ -678,16 +678,19 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
         today_dow = dt_util.now().strftime("%A").lower()
         settings = data.get("settings", {})
 
-        time_boundaries = {
-            "morning_start": settings.get("time_morning_start", "06:00"),
-            "morning_end": settings.get("time_morning_end", "12:00"),
-            "afternoon_start": settings.get("time_afternoon_start", "12:00"),
-            "afternoon_end": settings.get("time_afternoon_end", "17:00"),
-            "evening_start": settings.get("time_evening_start", "17:00"),
-            "evening_end": settings.get("time_evening_end", "21:00"),
-            "night_start": settings.get("time_night_start", "21:00"),
-            "night_end": settings.get("time_night_end", "23:59"),
+        time_periods = self.coordinator.get_time_periods()
+        period_by_id = {p["id"]: p for p in time_periods}
+
+        # Legacy shape kept for cards that still read the four fixed keys.
+        legacy_defaults = {
+            "morning": ("06:00", "12:00"), "afternoon": ("12:00", "17:00"),
+            "evening": ("17:00", "21:00"), "night": ("21:00", "23:59"),
         }
+        time_boundaries = {}
+        for cat, (def_start, def_end) in legacy_defaults.items():
+            period = period_by_id.get(cat)
+            time_boundaries[f"{cat}_start"] = period["start"] if period else def_start
+            time_boundaries[f"{cat}_end"] = period["end"] if period else def_end
 
         return {
             "today_day_of_week": today_dow,
@@ -708,6 +711,7 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "points_icon": data.get("points_icon", "mdi:star"),
             "children": _build_children_summary(common),
             "time_boundaries": time_boundaries,
+            "time_periods": time_periods,
         }
 
 

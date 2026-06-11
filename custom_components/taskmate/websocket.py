@@ -47,6 +47,7 @@ TaskMate's existing business logic (refunds, cleanup, recompute) runs.
 from __future__ import annotations
 
 import logging
+import re
 from functools import wraps
 from typing import Any, Final
 
@@ -54,7 +55,7 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .const import DEFAULT_TIME_PERIODS, DOMAIN, MAX_TIME_PERIODS, TIME_CATEGORY_ICONS
 from .coordinator import TaskMateCoordinator
 from .models import BonusSubTask, Reward
 
@@ -765,6 +766,89 @@ _SUBKEY_SETTINGS = {
     "time_night_start", "time_night_end",
 }
 
+
+def _slugify_period_id(label: str, taken: set[str]) -> str:
+    """Derive a stable, unique slug id from a period label."""
+    base = re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_") or "period"
+    if base == "anytime":
+        base = "period"
+    slug = base
+    n = 2
+    while slug in taken:
+        slug = f"{base}_{n}"
+        n += 1
+    return slug
+
+
+def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, str | None]:
+    """Normalize and validate a time_periods payload.
+
+    Returns (periods, None) on success or (None, error_message) on failure.
+    Enforces: HH:MM times, start < end, non-empty labels for custom periods,
+    unique ids, non-overlapping when sorted by start, and block-on-delete for
+    periods still referenced by chores.
+    """
+    if not isinstance(raw, list) or not raw:
+        return None, "time_periods must be a non-empty list"
+    if len(raw) > MAX_TIME_PERIODS:
+        return None, f"too many periods (max {MAX_TIME_PERIODS})"
+
+    builtin_ids = {p["id"] for p in DEFAULT_TIME_PERIODS}
+    time_re = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+    periods: list[dict] = []
+    ids: set[str] = {"anytime"}
+
+    for entry in raw:
+        if not isinstance(entry, dict):
+            return None, "each period must be an object"
+        label = str(entry.get("label") or "").strip()[:60]
+        pid = str(entry.get("id") or "").strip()
+        if pid and pid != "anytime" and pid in ids:
+            return None, f"duplicate period id: {pid}"
+        if not pid or pid == "anytime":
+            pid = _slugify_period_id(label, ids)
+        if not label and pid not in builtin_ids:
+            return None, "every custom period needs a name"
+        start = str(entry.get("start") or "")
+        end = str(entry.get("end") or "")
+        if not time_re.match(start) or not time_re.match(end):
+            return None, f"invalid time for period '{label or pid}' (use HH:MM)"
+        if start >= end:
+            return None, f"period '{label or pid}' must start before it ends"
+        ids.add(pid)
+        periods.append({
+            "id": pid,
+            "label": label,
+            "start": start,
+            "end": end,
+            "icon": str(entry.get("icon") or "").strip()[:120]
+                    or TIME_CATEGORY_ICONS.get(pid, "mdi:clock-outline"),
+        })
+
+    periods.sort(key=lambda p: p["start"])
+    for prev, cur in zip(periods, periods[1:]):
+        if cur["start"] < prev["end"]:
+            return None, (
+                f"'{cur['label'] or cur['id']}' overlaps "
+                f"'{prev['label'] or prev['id']}' — periods cannot overlap"
+            )
+
+    removed = {p["id"] for p in coordinator.get_time_periods()} - {p["id"] for p in periods}
+    if removed:
+        in_use = sorted({
+            chore.name or chore.id
+            for chore in coordinator.storage.get_chores()
+            if chore.time_category in removed
+        })
+        if in_use:
+            return None, (
+                "cannot delete a period still used by chores: "
+                + ", ".join(in_use[:10])
+                + ("…" if len(in_use) > 10 else "")
+            )
+
+    return periods, None
+
 @websocket_api.websocket_command({
     vol.Required("type"): WS_UPDATE_SETTINGS,
     vol.Optional("points_name"): vol.All(str, vol.Length(min=1, max=120)),
@@ -787,14 +871,22 @@ _SUBKEY_SETTINGS = {
     vol.Optional("time_evening_end"): vol.Match(r"^\d{2}:\d{2}$"),
     vol.Optional("time_night_start"): vol.Match(r"^\d{2}:\d{2}$"),
     vol.Optional("time_night_end"): vol.Match(r"^\d{2}:\d{2}$"),
+    vol.Optional("time_periods"): list,
 })
 @websocket_api.async_response
 @_admin_only
 async def _ws_update_settings(hass, connection, msg, coordinator):
     storage = coordinator.storage
     changed = []
+    if "time_periods" in msg:
+        periods, err = _validate_time_periods(msg["time_periods"], coordinator)
+        if err:
+            connection.send_error(msg["id"], "invalid_time_periods", err)
+            return
+        storage.set_setting("time_periods", periods)
+        changed.append("time_periods")
     for k, v in msg.items():
-        if k in {"id", "type"}:
+        if k in {"id", "type", "time_periods"}:
             continue
         if k == "points_name":
             storage.set_points_name(v.strip())

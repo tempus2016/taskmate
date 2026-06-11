@@ -11,8 +11,10 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     DEFAULT_CALENDAR_PROJECTION_DAYS,
+    DEFAULT_TIME_PERIODS,
     MAX_CALENDAR_PROJECTION_DAYS,
     MIN_CALENDAR_PROJECTION_DAYS,
+    TIME_CATEGORY_ICONS,
 )
 from .models import Chore
 
@@ -25,29 +27,70 @@ _LOGGER = logging.getLogger(__name__)
 class CalendarMixin:
     """Mixin providing calendar projection and event publishing logic."""
 
-    _DEFAULT_TIME_BOUNDARIES: dict[str, tuple[str, str]] = {
-        "morning":   ("06:00", "12:00"),
-        "afternoon": ("12:00", "17:00"),
-        "evening":   ("17:00", "21:00"),
-        "night":     ("21:00", "23:59"),
-    }
-
     _SCHEDULE_DOW = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 
+    @staticmethod
+    def _parse_hhmm(value: str) -> time | None:
+        """Parse an HH:MM string, returning None when invalid."""
+        try:
+            h, m = (int(x) for x in str(value).split(":"))
+            return time(h, m)
+        except (ValueError, TypeError):
+            return None
+
+    def get_time_periods(self) -> list[dict]:
+        """Resolve the user-defined time-of-day periods, ordered by start.
+
+        Fallback chain: `time_periods` setting → legacy `time_<cat>_start/end`
+        keys → DEFAULT_TIME_PERIODS. "anytime" is implicit and never listed.
+        """
+        raw = self.storage.get_setting("time_periods", None)
+        if isinstance(raw, list) and raw:
+            periods = []
+            for entry in raw:
+                if not isinstance(entry, dict):
+                    continue
+                start = self._parse_hhmm(entry.get("start"))
+                end = self._parse_hhmm(entry.get("end"))
+                pid = str(entry.get("id") or "").strip()
+                if not pid or pid == "anytime" or start is None or end is None:
+                    continue
+                periods.append({
+                    "id": pid,
+                    "label": str(entry.get("label") or "").strip(),
+                    "start": start.strftime("%H:%M"),
+                    "end": end.strftime("%H:%M"),
+                    "icon": str(entry.get("icon") or "") or TIME_CATEGORY_ICONS.get(pid, "mdi:clock-outline"),
+                })
+            if periods:
+                return sorted(periods, key=lambda p: p["start"])
+
+        # Legacy flat keys (pre-time_periods installs); these already default
+        # to the built-in boundaries, so this also covers fresh installs.
+        periods = []
+        for default in DEFAULT_TIME_PERIODS:
+            pid = default["id"]
+            start_str = self.storage.get_setting(f"time_{pid}_start", default["start"])
+            end_str = self.storage.get_setting(f"time_{pid}_end", default["end"])
+            start = self._parse_hhmm(start_str) or self._parse_hhmm(default["start"])
+            end = self._parse_hhmm(end_str) or self._parse_hhmm(default["end"])
+            periods.append({
+                "id": pid,
+                "label": "",
+                "start": start.strftime("%H:%M"),
+                "end": end.strftime("%H:%M"),
+                "icon": default["icon"],
+            })
+        return sorted(periods, key=lambda p: p["start"])
+
     def _get_time_boundaries(self) -> dict[str, tuple[time, time] | None]:
-        """Build time boundaries from storage settings with defaults."""
+        """Build time boundaries from the resolved periods."""
         result: dict[str, tuple[time, time] | None] = {"anytime": None}
-        for cat, (def_start, def_end) in self._DEFAULT_TIME_BOUNDARIES.items():
-            start_str = self.storage.get_setting(f"time_{cat}_start", def_start)
-            end_str = self.storage.get_setting(f"time_{cat}_end", def_end)
-            try:
-                sh, sm = (int(x) for x in start_str.split(":"))
-                eh, em = (int(x) for x in end_str.split(":"))
-                result[cat] = (time(sh, sm), time(eh, em))
-            except (ValueError, TypeError):
-                sh, sm = (int(x) for x in def_start.split(":"))
-                eh, em = (int(x) for x in def_end.split(":"))
-                result[cat] = (time(sh, sm), time(eh, em))
+        for period in self.get_time_periods():
+            result[period["id"]] = (
+                self._parse_hhmm(period["start"]),
+                self._parse_hhmm(period["end"]),
+            )
         return result
 
     def _time_category_window(self, category: str, today: date) -> tuple[datetime, datetime] | None:

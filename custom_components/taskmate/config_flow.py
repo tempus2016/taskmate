@@ -29,7 +29,6 @@ from .const import (
     RECURRENCE_OPTIONS,
     REWARD_ICON_OPTIONS,
     TASK_GROUP_POLICIES,
-    TIME_CATEGORIES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -129,6 +128,18 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
                 "TaskMate coordinator is not available for this config entry yet"
             )
         return domain_data[entry_id]
+
+    def _time_category_options(self) -> list[selector.SelectOptionDict]:
+        """Dropdown options built from the user-defined time periods."""
+        options = [
+            selector.SelectOptionDict(
+                value=p["id"],
+                label=p["label"] or p["id"].replace("_", " ").title(),
+            )
+            for p in self.coordinator.get_time_periods()
+        ]
+        options.append(selector.SelectOptionDict(value="anytime", label="Anytime"))
+        return options
 
     async def _async_get_user_language(self) -> str:
         """Get the current user's language from their HA profile."""
@@ -465,8 +476,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Required("time_category", default="anytime"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
-                    options=list(TIME_CATEGORIES),
-                    translation_key="time_category",
+                    options=self._time_category_options(),
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
@@ -736,8 +746,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Required("time_category", default="anytime"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
-                    options=list(TIME_CATEGORIES),
-                    translation_key="time_category",
+                    options=self._time_category_options(),
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
@@ -907,8 +916,7 @@ class TaskMateOptionsFlow(config_entries.OptionsFlow):
             ),
             vol.Required("time_category", default=chore.time_category): selector.SelectSelector(
                 selector.SelectSelectorConfig(
-                    options=list(TIME_CATEGORIES),
-                    translation_key="time_category",
+                    options=self._time_category_options(),
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),

@@ -627,7 +627,26 @@ class TaskMateApprovalsCard extends LitElement {
     }
   }
 
+  // User-defined periods from the overview sensor; legacy fixed four when
+  // the integration hasn't published time_periods yet.
+  _getTimePeriods() {
+    const entity = this.hass?.states?.[this.config?.entity];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
+      || entity?.attributes || {};
+    if (Array.isArray(attrs.time_periods) && attrs.time_periods.length) {
+      return attrs.time_periods.filter(p => p && p.id);
+    }
+    return [
+      { id: "morning",   label: "", icon: "mdi:weather-sunset-up" },
+      { id: "afternoon", label: "", icon: "mdi:weather-sunny" },
+      { id: "evening",   label: "", icon: "mdi:weather-sunset-down" },
+      { id: "night",     label: "", icon: "mdi:weather-night" },
+    ];
+  }
+
   _getTimeCategoryIcon(category) {
+    const period = this._getTimePeriods().find(p => p.id === category);
+    if (period && period.icon) return period.icon;
     const icons = {
       morning: "mdi:weather-sunset-up",
       afternoon: "mdi:weather-sunny",
@@ -639,6 +658,8 @@ class TaskMateApprovalsCard extends LitElement {
   }
 
   _getTimeCategoryLabel(category) {
+    const period = this._getTimePeriods().find(p => p.id === category);
+    if (period && period.label) return period.label;
     const keyMap = {
       morning: 'common.morning',
       afternoon: 'common.afternoon',
@@ -650,14 +671,10 @@ class TaskMateApprovalsCard extends LitElement {
   }
 
   _getTimeCategoryOrder(category) {
-    const order = {
-      morning: 0,
-      afternoon: 1,
-      evening: 2,
-      night: 3,
-      anytime: 4,
-    };
-    return order[category] !== undefined ? order[category] : 5;
+    const ids = this._getTimePeriods().map(p => p.id);
+    const idx = ids.indexOf(category);
+    if (idx >= 0) return idx;
+    return category === "anytime" ? ids.length : ids.length + 1;
   }
 
   _renderEmptyState() {

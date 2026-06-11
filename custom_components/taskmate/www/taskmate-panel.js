@@ -45,14 +45,6 @@ const BADGE_TIERS = [
   { v: "platinum", lk: "badge.tier_platinum" },
 ];
 
-const TIME_CATEGORIES = [
-  { v: "anytime",   lk: "panel.time_anytime" },
-  { v: "morning",   lk: "panel.time_morning" },
-  { v: "afternoon", lk: "panel.time_afternoon" },
-  { v: "evening",   lk: "panel.time_evening" },
-  { v: "night",     lk: "panel.time_night" },
-];
-
 const SCHEDULE_MODES = [
   { v: "specific_days", lk: "panel.schedule_specific_days" },
   { v: "recurring",     lk: "panel.schedule_recurring" },
@@ -125,6 +117,7 @@ class TaskMatePanel extends HTMLElement {
     this._state = null;
     this._error = null;
     this._loading = false;
+    this._timePeriodsDraft = null;  // local edit state for the period editor
     this._activeTab = "children";
     this._dialog = null;
     this._dialogInitialHash = null;  // for confirm-on-leave
@@ -525,6 +518,25 @@ class TaskMatePanel extends HTMLElement {
     // Settings
     if (act === "save-settings") { this._doSaveSettings(); return; }
 
+    // Time-of-day period editor
+    if (act === "tp-add") {
+      this._syncTimePeriodInputs();
+      this._timePeriodsDraft.push({ id: "", label: "", start: "", end: "", icon: "mdi:clock-outline" });
+      this._render();
+      return;
+    }
+    if (act === "tp-remove") {
+      this._syncTimePeriodInputs();
+      this._timePeriodsDraft.splice(Number(t.dataset.idx), 1);
+      this._render();
+      return;
+    }
+    if (act === "tp-reset") {
+      this._timePeriodsDraft = this._defaultTimePeriods();
+      this._render();
+      return;
+    }
+
     // Activity / approvals
     if (act === "approve-chore")  { this._doApprove("chore", t.dataset.id); return; }
     if (act === "reject-chore")   { this._doReject("chore", t.dataset.id); return; }
@@ -568,6 +580,13 @@ class TaskMatePanel extends HTMLElement {
     // Inline rename input
     if (t.dataset.field === "_inlineRename") {
       this._inlineRename.value = t.value;
+      return;
+    }
+    // Time-of-day period editor field edits
+    const tpField = t.dataset?.tpField;
+    const tpIdx = t.dataset?.tpIdx;
+    if (tpField && tpIdx != null && this._timePeriodsDraft?.[Number(tpIdx)]) {
+      this._timePeriodsDraft[Number(tpIdx)][tpField] = t.value;
       return;
     }
     // Template preview chore field edits
@@ -627,6 +646,11 @@ class TaskMatePanel extends HTMLElement {
       this._showIds = t.checked;
       localStorage.setItem("taskmate-show-ids", this._showIds);
       this._render();
+      return;
+    }
+    // Time-of-day period editor (time inputs fire change on blur)
+    if (t.dataset?.tpField && t.dataset.tpIdx != null && this._timePeriodsDraft?.[Number(t.dataset.tpIdx)]) {
+      this._timePeriodsDraft[Number(t.dataset.tpIdx)][t.dataset.tpField] = t.value;
       return;
     }
     // Notifications tab change-driven actions
@@ -691,8 +715,14 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _onValueChanged(e) {
-    if (!this._dialog) return;
     const t = e.target;
+    // Period editor icon pickers live outside any dialog
+    if (t.dataset?.tpField && t.dataset.tpIdx != null && this._timePeriodsDraft?.[Number(t.dataset.tpIdx)]) {
+      const val = e.detail && "value" in e.detail ? e.detail.value : t.value;
+      this._timePeriodsDraft[Number(t.dataset.tpIdx)][t.dataset.tpField] = val == null ? "" : val;
+      return;
+    }
+    if (!this._dialog) return;
     if (!t.dataset || !t.dataset.field) return;
     const v = e.detail && "value" in e.detail ? e.detail.value : t.value;
     this._dialog.data[t.dataset.field] = v == null ? "" : v;
@@ -1238,6 +1268,132 @@ class TaskMatePanel extends HTMLElement {
     this._showToast("ok", wasAdd ? this._t("panel.toast_group_added") : this._t("panel.toast_group_updated"));
   }
 
+  // ---- Time-of-day periods ----------------------------------------------
+  _defaultTimePeriods() {
+    return [
+      { id: "morning",   label: "", start: "06:00", end: "12:00", icon: "mdi:weather-sunny" },
+      { id: "afternoon", label: "", start: "12:00", end: "17:00", icon: "mdi:white-balance-sunny" },
+      { id: "evening",   label: "", start: "17:00", end: "21:00", icon: "mdi:weather-sunset" },
+      { id: "night",     label: "", start: "21:00", end: "23:59", icon: "mdi:weather-night" },
+    ];
+  }
+
+  // Saved periods, falling back to the legacy flat keys / built-in defaults
+  // for installs that haven't saved through the new editor yet.
+  _effectiveTimePeriods() {
+    const s = (this._state && this._state.settings) || {};
+    if (Array.isArray(s.time_periods) && s.time_periods.length) {
+      return s.time_periods.map(p => ({ ...p }));
+    }
+    return this._defaultTimePeriods().map(p => ({
+      ...p,
+      start: s[`time_${p.id}_start`] || p.start,
+      end: s[`time_${p.id}_end`] || p.end,
+    }));
+  }
+
+  _isBuiltinPeriod(id) {
+    return ["morning", "afternoon", "evening", "night"].includes(id);
+  }
+
+  _timePeriodLabel(p) {
+    if (p.label) return p.label;
+    return this._isBuiltinPeriod(p.id) ? this._t(`panel.time_${p.id}`) : (p.id || "");
+  }
+
+  _timeCategoryOptions() {
+    const opts = [{ v: "anytime", l: this._t("panel.time_anytime") }];
+    for (const p of this._effectiveTimePeriods()) opts.push({ v: p.id, l: this._timePeriodLabel(p) });
+    return opts;
+  }
+
+  _timeCategoryLabel(cat) {
+    const c = cat || "anytime";
+    if (c === "anytime") return this._t("panel.time_anytime");
+    const p = this._effectiveTimePeriods().find(x => x.id === c);
+    return p ? this._timePeriodLabel(p) : c;
+  }
+
+  _renderTimePeriodsSection() {
+    if (!this._timePeriodsDraft) this._timePeriodsDraft = this._effectiveTimePeriods();
+    const inUse = {};
+    (this._state.chores || []).forEach(c => {
+      const tc = c.time_category;
+      if (tc && tc !== "anytime") inUse[tc] = (inUse[tc] || 0) + 1;
+    });
+    const rows = this._timePeriodsDraft.map((p, i) => {
+      const used = p.id ? inUse[p.id] || 0 : 0;
+      const placeholder = this._isBuiltinPeriod(p.id) ? this._t(`panel.time_${p.id}`) : this._t("panel.tp_label_placeholder");
+      return `
+            <div class="tm-setting-row tm-period-row">
+              <ha-icon-picker data-tp-field="icon" data-tp-idx="${i}" data-current="${this._esc(p.icon || "mdi:clock-outline")}"></ha-icon-picker>
+              <ha-textfield data-tp-field="label" data-tp-idx="${i}" data-value="${this._esc(p.label || "")}" placeholder="${this._esc(placeholder)}"></ha-textfield>
+              <div class="tm-time-pair">
+                <ha-textfield type="time" data-tp-field="start" data-tp-idx="${i}" data-value="${this._esc(p.start || "")}"></ha-textfield>
+                <span>–</span>
+                <ha-textfield type="time" data-tp-field="end" data-tp-idx="${i}" data-value="${this._esc(p.end || "")}"></ha-textfield>
+              </div>
+              ${used
+                ? `<button type="button" class="tm-icon-btn tm-period-del" disabled title="${this._esc(this._t("panel.tp_in_use_title", { count: used }))}"><ha-icon icon="mdi:lock-outline"></ha-icon></button>`
+                : `<button type="button" class="tm-icon-btn tm-period-del" data-act="tp-remove" data-idx="${i}" title="${this._esc(this._t("panel.tp_delete_title"))}"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>`}
+              ${used ? `<div class="tm-period-inuse">${this._esc(this._t("panel.tp_in_use_hint", { count: used }))}</div>` : ""}
+            </div>`;
+    }).join("");
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.settings_time_boundaries_title")}</h3><p class="tm-meta">${this._t("panel.settings_time_boundaries_hint")}</p></div></div>
+          <div class="tm-section-body">
+            ${rows}
+            <div class="tm-setting-row tm-period-row tm-period-anytime">
+              <ha-icon icon="mdi:clock-outline"></ha-icon>
+              <div class="tm-setting-label">${this._t("panel.time_anytime")}<small>${this._t("panel.tp_anytime_hint")}</small></div>
+            </div>
+            <div class="tm-period-actions">
+              <button type="button" class="tm-btn" data-act="tp-add"><ha-icon icon="mdi:plus"></ha-icon> ${this._t("panel.tp_add_period")}</button>
+              <button type="button" class="tm-btn" data-act="tp-reset">${this._t("panel.tp_reset_defaults")}</button>
+            </div>
+          </div>
+        </div>`;
+  }
+
+  // Pull current editor input values into the draft. Inputs also stream into
+  // the draft via input/value-changed events; this is the safety net before
+  // any re-render or save.
+  _syncTimePeriodInputs() {
+    if (!this._timePeriodsDraft) return;
+    this.querySelectorAll("[data-tp-field]").forEach(el => {
+      const idx = Number(el.dataset.tpIdx);
+      const field = el.dataset.tpField;
+      if (this._timePeriodsDraft[idx] && el.value != null) {
+        this._timePeriodsDraft[idx][field] = el.value;
+      }
+    });
+  }
+
+  _validateTimePeriodsDraft() {
+    const periods = [];
+    for (const p of this._timePeriodsDraft) {
+      const label = (p.label || "").trim();
+      const id = (p.id || "").trim();
+      const name = label || (this._isBuiltinPeriod(id) ? this._t(`panel.time_${id}`) : id);
+      if (!label && !this._isBuiltinPeriod(id)) return { error: this._t("panel.tp_err_label_required") };
+      if (!/^\d{2}:\d{2}$/.test(p.start || "") || !/^\d{2}:\d{2}$/.test(p.end || "")) {
+        return { error: this._t("panel.tp_err_time_required", { name }) };
+      }
+      if (p.start >= p.end) return { error: this._t("panel.tp_err_order", { name }) };
+      periods.push({ id, label, start: p.start, end: p.end, icon: p.icon || "" });
+    }
+    if (!periods.length) return { error: this._t("panel.tp_err_empty") };
+    periods.sort((a, b) => (a.start < b.start ? -1 : 1));
+    for (let i = 1; i < periods.length; i++) {
+      if (periods[i].start < periods[i - 1].end) {
+        const nameOf = (q) => q.label || (this._isBuiltinPeriod(q.id) ? this._t(`panel.time_${q.id}`) : q.id);
+        return { error: this._t("panel.tp_err_overlap", { a: nameOf(periods[i]), b: nameOf(periods[i - 1]) }) };
+      }
+    }
+    return { periods };
+  }
+
   // ---- Settings --------------------------------------------------------
   async _doSaveSettings() {
     const root = this.querySelector(".tm-settings");
@@ -1256,8 +1412,15 @@ class TaskMatePanel extends HTMLElement {
     root.querySelectorAll("ha-icon-picker[data-setting]").forEach(el => {
       payload[el.dataset.setting] = el.value || "";
     });
+    if (this._timePeriodsDraft) {
+      this._syncTimePeriodInputs();
+      const { periods, error } = this._validateTimePeriodsDraft();
+      if (error) { this._showToast("err", error); return; }
+      payload.time_periods = periods;
+    }
     const { ok, err, res } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
+    this._timePeriodsDraft = null;  // rebuild from saved state on next render
     await this._fetchState();
     this._showToast("ok", this._t("panel.toast_settings_saved", {count: (res && res.updated || []).length}));
   }
@@ -1948,7 +2111,7 @@ class TaskMatePanel extends HTMLElement {
       <tr class="tm-row ${c.enabled === false ? "tm-row-disabled" : ""}">
         <td>${nameCell}</td>
         <td><strong class="tm-numeric">${c.task_type === "timed" ? `${c.timed_rate_points || 0}/${c.timed_rate_minutes || 1} min` : c.points}</strong></td>
-        <td><span class="tm-pill">${this._t("panel.time_" + (c.time_category || "anytime"))}</span></td>
+        <td><span class="tm-pill">${this._esc(this._timeCategoryLabel(c.time_category))}</span></td>
         <td>${assignedNames} ${modeBadge}</td>
         <td>${currentName}</td>
         <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span></td>
@@ -2569,7 +2732,7 @@ class TaskMatePanel extends HTMLElement {
           <span class="tm-tpl-preview-summary">
             <span>${this._t("panel.pts_display", {count: chore.points || 0})}</span>
             <span>${schedLabel}</span>
-            <span>${this._esc(chore.time_category || "anytime")}</span>
+            <span>${this._esc(this._timeCategoryLabel(chore.time_category))}</span>
           </span>
           <button type="button" class="tm-tpl-remove" data-act="tpl-remove-chore" data-idx="${idx}" title="${this._t("panel.tooltip_remove_batch")}">✕</button>
         </div>
@@ -2582,7 +2745,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-field-row">
               <div class="tm-field"><span class="tm-field-label">${this._t("panel.chore_time_category_label")}</span>
                 <select class="tm-select" data-tpl-field="time_category" data-tpl-idx="${idx}">
-                  ${TIME_CATEGORIES.map(t => `<option value="${t.v}" ${chore.time_category === t.v ? "selected" : ""}>${this._t(t.lk)}</option>`).join("")}
+                  ${this._timeCategoryOptions().map(t => `<option value="${this._esc(t.v)}" ${chore.time_category === t.v ? "selected" : ""}>${this._esc(t.l)}</option>`).join("")}
                 </select>
               </div>
               <div class="tm-field"><span class="tm-field-label">${this._t("panel.template_assignment_mode_label")}</span>
@@ -2799,43 +2962,7 @@ class TaskMatePanel extends HTMLElement {
           </div>
         </div>
 
-        <div class="tm-section">
-          <div class="tm-section-head"><div><h3>${this._t("panel.settings_time_boundaries_title")}</h3><p class="tm-meta">${this._t("panel.settings_time_boundaries_hint")}</p></div></div>
-          <div class="tm-section-body">
-            <div class="tm-setting-row">
-              <div class="tm-setting-label">${this._t("panel.settings_morning_label")}<small>${this._t("panel.settings_morning_hint")}</small></div>
-              <div class="tm-time-pair">
-                <ha-textfield type="time" data-setting="time_morning_start" data-value="${s.time_morning_start || "06:00"}"></ha-textfield>
-                <span>–</span>
-                <ha-textfield type="time" data-setting="time_morning_end" data-value="${s.time_morning_end || "12:00"}"></ha-textfield>
-              </div>
-            </div>
-            <div class="tm-setting-row">
-              <div class="tm-setting-label">${this._t("panel.settings_afternoon_label")}<small>${this._t("panel.settings_afternoon_hint")}</small></div>
-              <div class="tm-time-pair">
-                <ha-textfield type="time" data-setting="time_afternoon_start" data-value="${s.time_afternoon_start || "12:00"}"></ha-textfield>
-                <span>–</span>
-                <ha-textfield type="time" data-setting="time_afternoon_end" data-value="${s.time_afternoon_end || "17:00"}"></ha-textfield>
-              </div>
-            </div>
-            <div class="tm-setting-row">
-              <div class="tm-setting-label">${this._t("panel.settings_evening_label")}<small>${this._t("panel.settings_evening_hint")}</small></div>
-              <div class="tm-time-pair">
-                <ha-textfield type="time" data-setting="time_evening_start" data-value="${s.time_evening_start || "17:00"}"></ha-textfield>
-                <span>–</span>
-                <ha-textfield type="time" data-setting="time_evening_end" data-value="${s.time_evening_end || "21:00"}"></ha-textfield>
-              </div>
-            </div>
-            <div class="tm-setting-row">
-              <div class="tm-setting-label">${this._t("panel.settings_night_label")}<small>${this._t("panel.settings_night_hint")}</small></div>
-              <div class="tm-time-pair">
-                <ha-textfield type="time" data-setting="time_night_start" data-value="${s.time_night_start || "21:00"}"></ha-textfield>
-                <span>–</span>
-                <ha-textfield type="time" data-setting="time_night_end" data-value="${s.time_night_end || "23:59"}"></ha-textfield>
-              </div>
-            </div>
-          </div>
-        </div>
+        ${this._renderTimePeriodsSection()}
 
         <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.settings_bonuses_title")}</h3></div></div>
@@ -3129,7 +3256,7 @@ class TaskMatePanel extends HTMLElement {
                   <div class="tm-field-row">
                     <div class="tm-field"><span class="tm-field-label">${this._t("panel.chore_time_category_label")}</span>
                       <select class="tm-select" data-tpl-dialog-field="time_category" data-tpl-dialog-idx="${i}">
-                        ${TIME_CATEGORIES.map(t => `<option value="${t.v}" ${c.time_category === t.v ? "selected" : ""}>${this._t(t.lk)}</option>`).join("")}
+                        ${this._timeCategoryOptions().map(t => `<option value="${this._esc(t.v)}" ${c.time_category === t.v ? "selected" : ""}>${this._esc(t.l)}</option>`).join("")}
                       </select>
                     </div>
                     <div class="tm-field"><span class="tm-field-label">${this._t("panel.template_schedule_label")}</span>
@@ -3225,7 +3352,7 @@ class TaskMatePanel extends HTMLElement {
           [{ v: "", l: this._t("panel.chore_rotation_no_override") }, ...children.map(c => ({ v: c.id, l: c.name }))],
           this._t("panel.chore_rotation_hint")
         ) : "",
-        this._select(this._t("panel.chore_time_category_label"), "time_category", d.time_category, TIME_CATEGORIES),
+        this._select(this._t("panel.chore_time_category_label"), "time_category", d.time_category, this._timeCategoryOptions()),
         this._field(this._t("panel.chore_claim_allowance_label"), "claim_allowance_minutes", d.claim_allowance_minutes, "number",
           this._t("panel.chore_claim_allowance_hint")),
         this._select(this._t("panel.chore_schedule_mode_label"), "schedule_mode", d.schedule_mode, SCHEDULE_MODES, "", true),
@@ -3453,7 +3580,7 @@ class TaskMatePanel extends HTMLElement {
             <span class="tm-field-hint">${this._t("panel.bulk_leave_empty_hint")}</span>
           </div>
         ` : "",
-        this._select(this._t("panel.chore_time_category_label"), "time_category", d.time_category, TIME_CATEGORIES),
+        this._select(this._t("panel.chore_time_category_label"), "time_category", d.time_category, this._timeCategoryOptions()),
         this._select(this._t("panel.chore_schedule_mode_label"), "schedule_mode", d.schedule_mode, SCHEDULE_MODES, "", true),
         d.schedule_mode === "specific_days" ? `
           <div class="tm-field">
@@ -4402,6 +4529,36 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-time-pair ha-textfield { max-width: 130px; }
       .tm-time-pair span { color: var(--tm-text-faint); }
+      .tm-period-row {
+        grid-template-columns: 56px minmax(140px, 1fr) auto 36px;
+        gap: 12px;
+      }
+      .tm-period-row ha-icon-picker { max-width: 56px; }
+      .tm-period-row > ha-textfield { max-width: none; }
+      .tm-period-del {
+        color: var(--tm-text-faint);
+      }
+      .tm-period-del:not([disabled]):hover { color: var(--error-color, #d9434f); }
+      .tm-period-del[disabled] { opacity: .5; cursor: not-allowed; }
+      .tm-period-inuse {
+        grid-column: 1 / -1;
+        font-size: 12px; color: var(--tm-text-faint);
+        margin-top: -6px;
+      }
+      .tm-period-anytime {
+        grid-template-columns: 56px 1fr;
+        color: var(--tm-text-faint);
+      }
+      .tm-period-anytime ha-icon { margin: 0 auto; }
+      .tm-period-actions {
+        display: flex; gap: 10px;
+        padding: 14px 20px;
+        border-top: 1px solid var(--tm-border-soft);
+      }
+      @media (max-width: 700px) {
+        .tm-period-row { grid-template-columns: 48px 1fr 36px; }
+        .tm-period-row .tm-time-pair { grid-column: 1 / -1; }
+      }
       .tm-settings-foot {
         display: flex; justify-content: flex-end;
         padding-top: 8px;

@@ -735,7 +735,7 @@
   "panel.settings_streak_milestones_label": "Rekkjemilepælar",
   "panel.settings_streak_reset_hint": "Kva som skjer når ein dag vert missa",
   "panel.settings_streak_reset_label": "Rekkjenullstilling",
-  "panel.settings_time_boundaries_hint": "Når kvar tidsperiode startar og sluttar (TT:MM, 24-timars).",
+  "panel.settings_time_boundaries_hint": "Når kvar tidsperiode startar og sluttar (HH:MM, 24-timars). Legg til eigne periodar; hol fell tilbake til «Når som helst».",
   "panel.settings_time_boundaries_title": "Tidspunkt-grenser",
   "panel.settings_title": "Innstillingar",
   "panel.settings_weekend_multiplier_hint": "Bonus på lau/sun (1.0 = av)",
@@ -1177,5 +1177,17 @@
   "notification.pending_reward_claim.description": "Vert sendt til føresette når eit born løyser inn ein premie. Trykk Godkjenn eller Avvis frå varselet.",
   "notification.pending_reward_claim.name": "Premiekrav ventar",
   "notification.streak_at_risk.description": "Vert utløyst når ei aktiv rekkje ikkje er vorte forlenga i dag enno.",
-  "notification.streak_at_risk.name": "Rekkje i fare"
+  "notification.streak_at_risk.name": "Rekkje i fare",
+  "panel.tp_label_placeholder": "Periodenamn",
+  "panel.tp_add_period": "Legg til periode",
+  "panel.tp_reset_defaults": "Tilbakestill til standard",
+  "panel.tp_delete_title": "Slett periode",
+  "panel.tp_in_use_title": "Brukt av {count} oppgåve(r) — tilordna dei på nytt før sletting",
+  "panel.tp_in_use_hint": "Brukt av {count} oppgåve(r). Tilordna dei til ein annan periode for å slette denne.",
+  "panel.tp_anytime_hint": "Alltid tilgjengeleg, heile dagen. Innebygd og kan ikkje fjernast.",
+  "panel.tp_err_label_required": "Kvar eigendefinert periode treng eit namn.",
+  "panel.tp_err_time_required": "Set start- og sluttid for «{name}».",
+  "panel.tp_err_order": "«{name}» må starte før han sluttar.",
+  "panel.tp_err_empty": "Legg til minst éin tidsperiode.",
+  "panel.tp_err_overlap": "«{a}» overlappar «{b}» — periodar kan ikkje overlappe."
 }
