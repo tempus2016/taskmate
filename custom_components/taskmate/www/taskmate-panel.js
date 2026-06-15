@@ -1327,11 +1327,11 @@ class TaskMatePanel extends HTMLElement {
       return `
             <div class="tm-setting-row tm-period-row">
               <ha-icon-picker data-tp-field="icon" data-tp-idx="${i}" data-current="${this._esc(p.icon || "mdi:clock-outline")}"></ha-icon-picker>
-              <ha-textfield data-tp-field="label" data-tp-idx="${i}" data-value="${this._esc(p.label || "")}" placeholder="${this._esc(placeholder)}"></ha-textfield>
+              <input type="text" class="tm-input" data-tp-field="label" data-tp-idx="${i}" value="${this._esc(p.label || "")}" placeholder="${this._esc(placeholder)}">
               <div class="tm-time-pair">
-                <ha-textfield type="time" data-tp-field="start" data-tp-idx="${i}" data-value="${this._esc(p.start || "")}"></ha-textfield>
+                <input type="time" class="tm-input" data-tp-field="start" data-tp-idx="${i}" value="${this._esc(p.start || "")}">
                 <span>–</span>
-                <ha-textfield type="time" data-tp-field="end" data-tp-idx="${i}" data-value="${this._esc(p.end || "")}"></ha-textfield>
+                <input type="time" class="tm-input" data-tp-field="end" data-tp-idx="${i}" value="${this._esc(p.end || "")}">
               </div>
               ${used
                 ? `<button type="button" class="tm-icon-btn tm-period-del" disabled title="${this._esc(this._t("panel.tp_in_use_title", { count: used }))}"><ha-icon icon="mdi:lock-outline"></ha-icon></button>`
@@ -4527,14 +4527,14 @@ class TaskMatePanel extends HTMLElement {
       .tm-time-pair {
         display: flex; align-items: center; gap: 8px;
       }
-      .tm-time-pair ha-textfield { max-width: 130px; }
+      .tm-time-pair .tm-input { max-width: 130px; }
       .tm-time-pair span { color: var(--tm-text-faint); }
       .tm-period-row {
         grid-template-columns: 56px minmax(140px, 1fr) auto 36px;
         gap: 12px;
       }
       .tm-period-row ha-icon-picker { max-width: 56px; }
-      .tm-period-row > ha-textfield { max-width: none; }
+      .tm-period-row > .tm-input { max-width: none; }
       .tm-period-del {
         color: var(--tm-text-faint);
       }
