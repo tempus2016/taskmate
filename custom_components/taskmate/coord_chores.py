@@ -346,6 +346,14 @@ class ChoresMixin:
         now = dt_util.now()
         today = dt_util.as_local(now).date()
 
+        # First-come-first-served: the first claim fills the shared quota and
+        # locks the chore for the whole pool. A later child loses the race.
+        if getattr(chore, 'assignment_mode', 'everyone') == 'first_come':
+            if self._is_rotation_done_today(chore):
+                raise ValueError(
+                    f"Chore '{chore.name}' was already completed by another child."
+                )
+
         # Check recurrence window for Mode B chores
         if getattr(chore, 'schedule_mode', 'specific_days') == 'recurring':
             if not self.is_chore_available_for_child(chore, child_id):

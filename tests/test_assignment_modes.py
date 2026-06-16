@@ -1312,3 +1312,28 @@ def test_first_come_excluded_from_daily_assignments_and_cache():
     coord.storage.add_chore(chore)
     # No single assignee is recorded for first_come.
     assert chore.id not in coord._compute_daily_assignments(today)
+
+
+def test_first_come_loser_completion_is_rejected():
+    import pytest
+    from custom_components.taskmate.models import ChoreCompletion
+
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    coord._award_points = AsyncMock(return_value=10)
+    coord.async_refresh = AsyncMock()
+    coord.badges = None
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
+    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id],
+                  assignment_mode="first_come", requires_approval=False)
+    coord.storage.add_chore(chore)
+
+    # A already won (completion on record).
+    winning = ChoreCompletion(chore_id=chore.id, child_id=a.id,
+                              completed_at=dt_util_mock.now(), approved=True)
+    coord.storage.get_completions = MagicMock(return_value=[winning])
+
+    with pytest.raises(ValueError, match="already"):
+        run_async(coord.async_complete_chore(chore.id, b.id))
