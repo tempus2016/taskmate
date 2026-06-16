@@ -33,6 +33,7 @@ from .const import (
     ATTR_BONUS_ICON,
     ATTR_BONUS_ID,
     ATTR_BONUS_NAME,
+    ATTR_AS_PARENT,
     ATTR_BONUS_POINTS,
     ATTR_BONUS_SUBTASK_ID,
     ATTR_CHILD_ID,
@@ -283,7 +284,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             return
         chore_id = call.data[ATTR_CHORE_ID]
         child_id = call.data[ATTR_CHILD_ID]
-        await coordinator.async_complete_chore(chore_id, child_id)
+        as_parent = call.data.get(ATTR_AS_PARENT, False)
+        await coordinator.async_complete_chore(chore_id, child_id, as_parent=as_parent)
 
     async def handle_complete_bonus_subtask(call: ServiceCall) -> None:
         """Handle the complete_bonus_subtask service call."""
@@ -725,6 +727,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             {
                 vol.Required(ATTR_CHORE_ID): cv.string,
                 vol.Required(ATTR_CHILD_ID): cv.string,
+                vol.Optional(ATTR_AS_PARENT, default=False): cv.boolean,
             }
         ),
     )

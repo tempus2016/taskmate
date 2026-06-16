@@ -14,6 +14,13 @@ complete_chore:
       required: true
       selector:
         text:
+    as_parent:
+      name: As parent
+      description: Complete on behalf of the child and award points immediately, bypassing approval.
+      required: false
+      default: false
+      selector:
+        boolean:
 
 complete_bonus_subtask:
   name: Complete Bonus Sub-task
