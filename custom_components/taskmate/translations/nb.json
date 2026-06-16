@@ -461,6 +461,7 @@
         "alternating": "Vekslende — roter mellom de tildelte barna, ett per dag",
         "random": "Tilfeldig — plukk ett tildelt barn tilfeldig hver dag",
         "balanced": "Balansert — fordel dagens balanserte oppgaver jevnt mellom de tildelte barna",
+        "first_come": "Førstemann til mølla — første barn som fullfører den vinner; skjules for de andre",
         "unassigned": "Ikke tildelt — ingen barn ser denne oppgaven"
       }
     },

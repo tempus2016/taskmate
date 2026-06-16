@@ -63,7 +63,7 @@ class ChoresMixin:
 
         resolved_mode = (
             assignment_mode
-            if assignment_mode in ("everyone", "alternating", "random", "balanced", "unassigned")
+            if assignment_mode in ("everyone", "alternating", "random", "balanced", "first_come", "unassigned")
             else "everyone"
         )
         today = dt_util.as_local(dt_util.now()).date()
@@ -103,7 +103,7 @@ class ChoresMixin:
         )
         # Cache today's active child so the card can show it immediately
         active = self._compute_active_children(chore, today)
-        if active and chore.assignment_mode != "everyone":
+        if active and chore.assignment_mode not in ("everyone", "first_come"):
             chore.assignment_current_child_id = active[0]
         # For random/balanced manual-start, override today's cached child so
         # the parent sees the chosen child immediately.
@@ -345,6 +345,14 @@ class ChoresMixin:
 
         now = dt_util.now()
         today = dt_util.as_local(now).date()
+
+        # First-come-first-served: the first claim fills the shared quota and
+        # locks the chore for the whole pool. A later child loses the race.
+        if getattr(chore, 'assignment_mode', 'everyone') == 'first_come':
+            if self._is_rotation_done_today(chore):
+                raise ValueError(
+                    f"Chore '{chore.name}' was already completed by another child."
+                )
 
         # Check recurrence window for Mode B chores
         if getattr(chore, 'schedule_mode', 'specific_days') == 'recurring':

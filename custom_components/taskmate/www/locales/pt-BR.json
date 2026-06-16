@@ -385,6 +385,8 @@
   "panel.assign_alternating_short": "Alternado",
   "panel.assign_balanced": "Equilibrado — divide as tarefas do dia igualmente entre as crianças",
   "panel.assign_balanced_short": "Equilibrado",
+  "panel.assign_first_come": "Quem chega primeiro — a primeira criança a terminar ganha; some para as demais",
+  "panel.assign_first_come_short": "Quem chega primeiro",
   "panel.assign_everyone": "Todos — toda criança atribuída vê a tarefa",
   "panel.assign_random": "Aleatório — sorteia uma criança atribuída por dia",
   "panel.assign_random_short": "Aleatório",

@@ -461,6 +461,7 @@
         "alternating": "Alternance — rotation entre les enfants assignés, un par jour",
         "random": "Aléatoire — un enfant assigné choisi au hasard chaque jour",
         "balanced": "Équilibré — répartit les tâches équilibrées du jour équitablement entre les enfants assignés",
+        "first_come": "Premier arrivé, premier servi — le premier enfant à la terminer gagne ; masquée pour les autres",
         "unassigned": "Non attribué — aucun enfant ne voit cette tâche"
       }
     },

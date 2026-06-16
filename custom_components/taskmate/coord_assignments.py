@@ -248,6 +248,14 @@ class AssignmentsMixin:
         if mode == "unassigned":
             return []
 
+        if mode == "first_come":
+            # Competitive: every child in the resolved pool sees it until the
+            # first completion fills the shared quota (see _is_rotation_done_today).
+            pool = self._chore_assignment_pool(chore)
+            if require_availability:
+                return [cid for cid in pool if self._is_child_available(cid)]
+            return pool
+
         if mode not in ("alternating", "random", "balanced"):
             assigned = list(chore.assigned_to or [])
             if require_availability and assigned:
@@ -322,7 +330,7 @@ class AssignmentsMixin:
         result: dict[str, str] = {}
         for chore in chores:
             mode = getattr(chore, "assignment_mode", "everyone")
-            if mode == "everyone":
+            if mode in ("everyone", "first_come"):
                 continue
             active = self._compute_active_children(chore, today)
             if active:
@@ -351,7 +359,7 @@ class AssignmentsMixin:
             follower = chore_by_id.get(follower_id)
             if not follower:
                 continue
-            if getattr(follower, "assignment_mode", "everyone") == "everyone":
+            if getattr(follower, "assignment_mode", "everyone") in ("everyone", "first_come"):
                 continue
             pool = self._chore_assignment_pool(follower)
             if leader_child in pool:
@@ -371,7 +379,7 @@ class AssignmentsMixin:
             chore = chore_by_id.get(chore_id)
             if not chore:
                 continue
-            if getattr(chore, "assignment_mode", "everyone") == "everyone":
+            if getattr(chore, "assignment_mode", "everyone") in ("everyone", "first_come"):
                 continue
             pool = self._chore_assignment_pool(chore)
             if not pool:
@@ -471,7 +479,11 @@ class AssignmentsMixin:
             # sentinel covers the whole rotation for today.
             if comp.child_id in pool or comp.child_id == "__parent__":
                 completions_today += 1
-        daily_limit = getattr(chore, 'daily_limit', 1) or 1
+        # first_come is a single-winner race: clamp any mis-configured quota to 1.
+        if getattr(chore, 'assignment_mode', 'everyone') == 'first_come':
+            daily_limit = 1
+        else:
+            daily_limit = getattr(chore, 'daily_limit', 1) or 1
         if completions_today < daily_limit:
             return False
         bonus_subtasks = getattr(chore, 'bonus_subtasks', None) or []

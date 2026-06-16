@@ -385,6 +385,8 @@
   "panel.assign_alternating_short": "Alternerende",
   "panel.assign_balanced": "Balansert — fordeler dagens oppgaver jevnt mellom barna",
   "panel.assign_balanced_short": "Balansert",
+  "panel.assign_first_come": "Førstemann til mølla — første barn som fullfører vinner; skjules for de andre",
+  "panel.assign_first_come_short": "Førstemann",
   "panel.assign_everyone": "Alle — alle tildelte barn ser oppgaven",
   "panel.assign_random": "Tilfeldig — velger ett tildelt barn hver dag",
   "panel.assign_random_short": "Tilfeldig",

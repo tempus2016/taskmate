@@ -70,6 +70,7 @@ const ASSIGNMENT_MODES = [
   { v: "alternating", lk: "panel.assign_alternating" },
   { v: "random",      lk: "panel.assign_random" },
   { v: "balanced",    lk: "panel.assign_balanced" },
+  { v: "first_come",  lk: "panel.assign_first_come" },
   { v: "unassigned",  lk: "panel.assign_unassigned" },
 ];
 
@@ -3330,7 +3331,7 @@ class TaskMatePanel extends HTMLElement {
           ${this._field(this._t("panel.chore_daily_limit_label"), "daily_limit", d.daily_limit, "number")}
         </div>` : `<div class="tm-field-row">
           ${this._field(this._t("panel.chore_points_label"), "points", d.points, "number")}
-          ${this._field(this._t("panel.chore_daily_limit_label"), "daily_limit", d.daily_limit, "number")}
+          ${d.assignment_mode === "first_come" ? "" : this._field(this._t("panel.chore_daily_limit_label"), "daily_limit", d.daily_limit, "number")}
         </div>`,
         this._select(this._t("panel.chore_assignment_mode_label"), "assignment_mode", d.assignment_mode, ASSIGNMENT_MODES,
           this._t("panel.chore_assignment_mode_hint"), true),
@@ -3525,7 +3526,7 @@ class TaskMatePanel extends HTMLElement {
 
   _renderGroupDialog() {
     const d = this._dialog.data;
-    const chores = (this._state.chores || []).filter(c => c.assignment_mode && c.assignment_mode !== "everyone");
+    const chores = (this._state.chores || []).filter(c => c.assignment_mode && !["everyone", "first_come"].includes(c.assignment_mode));
     return this._dialogShell(this._dialog.mode === "add" ? this._t("panel.dialog_add_group") : this._t("panel.dialog_edit_group"),
       [
         this._field(this._t("panel.common_name"), "name", d.name, "text"),
@@ -4379,6 +4380,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-pill-spread  { background: var(--tm-positive-soft); color: var(--tm-positive);    border-color: var(--tm-positive-border); }
       .tm-pill-jackpot { background: var(--tm-gold-soft);     color: var(--tm-gold);        border-color: color-mix(in srgb, var(--tm-gold), transparent 75%); }
       .tm-pill-alternating, .tm-pill-random, .tm-pill-balanced { background: var(--tm-accent-soft); color: var(--tm-accent-text); border-color: var(--tm-accent-border); }
+      .tm-pill-first_come { background: var(--tm-gold-soft); color: var(--tm-gold); border-color: color-mix(in srgb, var(--tm-gold), transparent 75%); }
       .tm-pill-unassigned { background: var(--tm-muted-bg, #f0f0f0); color: var(--tm-text-muted); border-color: var(--tm-border); }
       .tm-pill-dot::before {
         content: ""; width: 5px; height: 5px; border-radius: 50%;

@@ -1211,3 +1211,129 @@ class TestRemoveChoreFromGroups:
         assert len(groups) == 1
         assert c1.id not in groups[0].chore_ids
         assert c2.id in groups[0].chore_ids
+
+
+# ---------------------------------------------------------------------------
+# first_come (first come, first served) mode — issue #401
+# ---------------------------------------------------------------------------
+
+
+def test_add_chore_accepts_first_come_mode():
+    """async_add_chore must preserve first_come (not silently fall back to everyone)."""
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    coord.storage.get_completions = MagicMock(return_value=[])
+    dt_util_mock._now = dt.datetime.combine(date(2026, 4, 20), dt.time(9, 0), tzinfo=UTC)
+
+    chore = run_async(coord.async_add_chore(name="Feed cat", assigned_to=[a.id, b.id],
+                                            assignment_mode="first_come"))
+    assert chore.assignment_mode == "first_come"
+    # first_come has no single active child cached.
+    assert chore.assignment_current_child_id == ""
+
+
+def test_first_come_visible_to_whole_pool_until_claimed():
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    coord.storage.get_completions = MagicMock(return_value=[])
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
+
+    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id], assignment_mode="first_come")
+    assert sorted(coord._compute_active_children(chore, today)) == sorted([a.id, b.id])
+    assert coord.is_chore_available_for_child(chore, a.id) is True
+    assert coord.is_chore_available_for_child(chore, b.id) is True
+
+
+def test_first_come_empty_assigned_means_all_children():
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    coord.storage.get_completions = MagicMock(return_value=[])
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
+
+    chore = Chore(name="Feed cat", assigned_to=[], assignment_mode="first_come")
+    assert sorted(coord._compute_active_children(chore, today)) == sorted([a.id, b.id])
+
+
+def test_first_come_first_claim_hides_for_others_and_reopens_on_reject():
+    from custom_components.taskmate.models import ChoreCompletion
+
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
+    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id], assignment_mode="first_come")
+
+    # A claims (pending approval -- approved=False still fills the quota).
+    claim = ChoreCompletion(chore_id=chore.id, child_id=a.id,
+                            completed_at=dt_util_mock.now(), approved=False)
+    coord.storage.get_completions = MagicMock(return_value=[claim])
+    assert coord._is_rotation_done_today(chore) is True
+    assert coord.is_chore_available_for_child(chore, a.id) is False
+    assert coord.is_chore_available_for_child(chore, b.id) is False
+
+    # Parent rejects -> completion removed -> reopens for the whole pool.
+    coord.storage.get_completions = MagicMock(return_value=[])
+    assert coord._is_rotation_done_today(chore) is False
+    assert coord.is_chore_available_for_child(chore, a.id) is True
+    assert coord.is_chore_available_for_child(chore, b.id) is True
+
+
+def test_first_come_clamps_quota_to_one_winner():
+    from custom_components.taskmate.models import ChoreCompletion
+
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
+    # Even if daily_limit is mis-set to 2, first_come allows only one winner.
+    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id],
+                  assignment_mode="first_come", daily_limit=2)
+    claim = ChoreCompletion(chore_id=chore.id, child_id=a.id,
+                            completed_at=dt_util_mock.now(), approved=True)
+    coord.storage.get_completions = MagicMock(return_value=[claim])
+    assert coord._is_rotation_done_today(chore) is True
+
+
+def test_first_come_excluded_from_daily_assignments_and_cache():
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    coord.storage.get_completions = MagicMock(return_value=[])
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
+    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id], assignment_mode="first_come")
+    coord.storage.add_chore(chore)
+    # No single assignee is recorded for first_come.
+    assert chore.id not in coord._compute_daily_assignments(today)
+
+
+def test_first_come_loser_completion_is_rejected():
+    import pytest
+    from custom_components.taskmate.models import ChoreCompletion
+
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    coord._award_points = AsyncMock(return_value=10)
+    coord.async_refresh = AsyncMock()
+    coord.badges = None
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
+    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id],
+                  assignment_mode="first_come", requires_approval=False)
+    coord.storage.add_chore(chore)
+
+    # A already won (completion on record).
+    winning = ChoreCompletion(chore_id=chore.id, child_id=a.id,
+                              completed_at=dt_util_mock.now(), approved=True)
+    coord.storage.get_completions = MagicMock(return_value=[winning])
+
+    with pytest.raises(ValueError, match="already"):
+        run_async(coord.async_complete_chore(chore.id, b.id))

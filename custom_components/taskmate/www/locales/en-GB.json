@@ -385,6 +385,8 @@
   "panel.assign_alternating_short": "Alternating",
   "panel.assign_balanced": "Balanced — split today's chores evenly across children",
   "panel.assign_balanced_short": "Balanced",
+  "panel.assign_first_come": "First come — first child to finish wins; it hides for the rest",
+  "panel.assign_first_come_short": "First come",
   "panel.assign_everyone": "Everyone — every assigned child sees the chore",
   "panel.assign_random": "Random — pick one assigned child each day",
   "panel.assign_random_short": "Random",
