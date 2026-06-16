@@ -1211,3 +1211,23 @@ class TestRemoveChoreFromGroups:
         assert len(groups) == 1
         assert c1.id not in groups[0].chore_ids
         assert c2.id in groups[0].chore_ids
+
+
+# ---------------------------------------------------------------------------
+# first_come (first come, first served) mode — issue #401
+# ---------------------------------------------------------------------------
+
+
+def test_add_chore_accepts_first_come_mode():
+    """async_add_chore must preserve first_come (not silently fall back to everyone)."""
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    coord.storage.get_completions = MagicMock(return_value=[])
+    dt_util_mock._now = dt.datetime.combine(date(2026, 4, 20), dt.time(9, 0), tzinfo=UTC)
+
+    chore = run_async(coord.async_add_chore(name="Feed cat", assigned_to=[a.id, b.id],
+                                            assignment_mode="first_come"))
+    assert chore.assignment_mode == "first_come"
+    # first_come has no single active child cached.
+    assert chore.assignment_current_child_id == ""
