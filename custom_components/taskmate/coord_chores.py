@@ -333,8 +333,13 @@ class ChoresMixin:
         await self.async_refresh()
         return chore
 
-    async def async_complete_chore(self, chore_id: str, child_id: str) -> ChoreCompletion:
-        """Mark a chore as completed by a child."""
+    async def async_complete_chore(self, chore_id: str, child_id: str, as_parent: bool = False) -> ChoreCompletion:
+        """Mark a chore as completed by a child.
+
+        When ``as_parent`` is True the completion auto-approves (the parent is the
+        approver) and points are awarded immediately, even for approval-required
+        chores. All eligibility validations below still apply.
+        """
         chore = self.get_chore(chore_id)
         if not chore:
             raise ValueError(f"Chore {chore_id} not found")
@@ -393,15 +398,17 @@ class ChoresMixin:
                 f"Already completed {todays_completions_count} time(s) today (limit: {daily_limit})"
             )
 
+        auto_approve = as_parent or not chore.requires_approval
+
         completion = ChoreCompletion(
             chore_id=chore_id,
             child_id=child_id,
             completed_at=now,
-            approved=not chore.requires_approval,
-            points_awarded=chore.points if not chore.requires_approval else 0,
+            approved=auto_approve,
+            points_awarded=chore.points if auto_approve else 0,
         )
 
-        if not chore.requires_approval:
+        if auto_approve:
             total_awarded = await self._award_points(child, chore.points)
             completion.approved = True
             completion.approved_at = dt_util.now()
@@ -424,8 +431,8 @@ class ChoresMixin:
         # Update last_completed store (window starts at completion time, midnight-rounded)
         self.storage.set_last_completed(chore_id, child_id, now.isoformat())
 
-        # One-shot: if auto-approved (no approval needed), disable for this child immediately
-        if getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot' and not chore.requires_approval:
+        # One-shot: if auto-approved, disable for this child immediately
+        if getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot' and auto_approve:
             if child_id not in chore.disabled_for:
                 chore.disabled_for.append(child_id)
             self._check_one_shot_fully_disabled(chore)
@@ -433,14 +440,14 @@ class ChoresMixin:
 
         await self.storage.async_save()
 
-        # Fire approval notification if chore requires parent sign-off
-        if chore.requires_approval:
+        # Fire approval notification only if it stays pending
+        if not auto_approve:
             await self._async_notify_pending_approval(child.name, chore.name, chore.points, completion_id=completion.id)
 
         await self.async_refresh()
 
-        # Trigger badge evaluation for auto-approved chores (no parent sign-off needed)
-        if not chore.requires_approval and getattr(self, "badges", None):
+        # Trigger badge evaluation for anything that auto-approved
+        if auto_approve and getattr(self, "badges", None):
             await self.badges.evaluate_for_child(child_id, "manual")
 
         return completion
