@@ -1299,3 +1299,16 @@ def test_first_come_clamps_quota_to_one_winner():
                             completed_at=dt_util_mock.now(), approved=True)
     coord.storage.get_completions = MagicMock(return_value=[claim])
     assert coord._is_rotation_done_today(chore) is True
+
+
+def test_first_come_excluded_from_daily_assignments_and_cache():
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    coord.storage.get_completions = MagicMock(return_value=[])
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
+    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id], assignment_mode="first_come")
+    coord.storage.add_chore(chore)
+    # No single assignee is recorded for first_come.
+    assert chore.id not in coord._compute_daily_assignments(today)

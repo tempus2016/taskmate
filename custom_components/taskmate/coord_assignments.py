@@ -330,7 +330,7 @@ class AssignmentsMixin:
         result: dict[str, str] = {}
         for chore in chores:
             mode = getattr(chore, "assignment_mode", "everyone")
-            if mode == "everyone":
+            if mode in ("everyone", "first_come"):
                 continue
             active = self._compute_active_children(chore, today)
             if active:
@@ -359,7 +359,7 @@ class AssignmentsMixin:
             follower = chore_by_id.get(follower_id)
             if not follower:
                 continue
-            if getattr(follower, "assignment_mode", "everyone") == "everyone":
+            if getattr(follower, "assignment_mode", "everyone") in ("everyone", "first_come"):
                 continue
             pool = self._chore_assignment_pool(follower)
             if leader_child in pool:
@@ -379,7 +379,7 @@ class AssignmentsMixin:
             chore = chore_by_id.get(chore_id)
             if not chore:
                 continue
-            if getattr(chore, "assignment_mode", "everyone") == "everyone":
+            if getattr(chore, "assignment_mode", "everyone") in ("everyone", "first_come"):
                 continue
             pool = self._chore_assignment_pool(chore)
             if not pool:
