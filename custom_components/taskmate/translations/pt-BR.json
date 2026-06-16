@@ -461,6 +461,7 @@
         "alternating": "Alternado — alterna entre as crianças atribuídas, uma por dia",
         "random": "Aleatório — escolhe aleatoriamente uma criança atribuída por dia",
         "balanced": "Equilibrado — divide as tarefas equilibradas do dia igualmente entre as crianças atribuídas",
+        "first_come": "Quem chega primeiro — a primeira criança a concluir ganha; some para as demais",
         "unassigned": "Não atribuído — nenhuma criança vê esta tarefa"
       }
     },

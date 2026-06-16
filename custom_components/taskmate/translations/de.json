@@ -461,6 +461,7 @@
         "alternating": "Abwechselnd – wechseln Sie durch die zugewiesenen Kinder, eines pro Tag",
         "random": "Zufällig – Wählen Sie jeden Tag zufällig ein zugewiesenes Kind aus",
         "balanced": "Ausgewogen – Verteilen Sie die heutigen ausgeglichenen Aufgaben gleichmäßig auf die zugewiesenen Kinder",
+        "first_come": "Wer zuerst kommt, mahlt zuerst — das erste Kind, das sie erledigt, gewinnt; bei den anderen ausgeblendet",
         "unassigned": "Nicht zugewiesen — kein Kind sieht diese Aufgabe"
       }
     },
