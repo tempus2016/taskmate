@@ -1231,3 +1231,29 @@ def test_add_chore_accepts_first_come_mode():
     assert chore.assignment_mode == "first_come"
     # first_come has no single active child cached.
     assert chore.assignment_current_child_id == ""
+
+
+def test_first_come_visible_to_whole_pool_until_claimed():
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    coord.storage.get_completions = MagicMock(return_value=[])
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
+
+    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id], assignment_mode="first_come")
+    assert sorted(coord._compute_active_children(chore, today)) == sorted([a.id, b.id])
+    assert coord.is_chore_available_for_child(chore, a.id) is True
+    assert coord.is_chore_available_for_child(chore, b.id) is True
+
+
+def test_first_come_empty_assigned_means_all_children():
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    coord.storage.get_completions = MagicMock(return_value=[])
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
+
+    chore = Chore(name="Feed cat", assigned_to=[], assignment_mode="first_come")
+    assert sorted(coord._compute_active_children(chore, today)) == sorted([a.id, b.id])

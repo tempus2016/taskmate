@@ -248,6 +248,14 @@ class AssignmentsMixin:
         if mode == "unassigned":
             return []
 
+        if mode == "first_come":
+            # Competitive: every child in the resolved pool sees it until the
+            # first completion fills the shared quota (see _is_rotation_done_today).
+            pool = self._chore_assignment_pool(chore)
+            if require_availability:
+                return [cid for cid in pool if self._is_child_available(cid)]
+            return pool
+
         if mode not in ("alternating", "random", "balanced"):
             assigned = list(chore.assigned_to or [])
             if require_availability and assigned:
