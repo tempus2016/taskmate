@@ -1257,3 +1257,45 @@ def test_first_come_empty_assigned_means_all_children():
 
     chore = Chore(name="Feed cat", assigned_to=[], assignment_mode="first_come")
     assert sorted(coord._compute_active_children(chore, today)) == sorted([a.id, b.id])
+
+
+def test_first_come_first_claim_hides_for_others_and_reopens_on_reject():
+    from custom_components.taskmate.models import ChoreCompletion
+
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
+    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id], assignment_mode="first_come")
+
+    # A claims (pending approval -- approved=False still fills the quota).
+    claim = ChoreCompletion(chore_id=chore.id, child_id=a.id,
+                            completed_at=dt_util_mock.now(), approved=False)
+    coord.storage.get_completions = MagicMock(return_value=[claim])
+    assert coord._is_rotation_done_today(chore) is True
+    assert coord.is_chore_available_for_child(chore, a.id) is False
+    assert coord.is_chore_available_for_child(chore, b.id) is False
+
+    # Parent rejects -> completion removed -> reopens for the whole pool.
+    coord.storage.get_completions = MagicMock(return_value=[])
+    assert coord._is_rotation_done_today(chore) is False
+    assert coord.is_chore_available_for_child(chore, a.id) is True
+    assert coord.is_chore_available_for_child(chore, b.id) is True
+
+
+def test_first_come_clamps_quota_to_one_winner():
+    from custom_components.taskmate.models import ChoreCompletion
+
+    a, b = Child(name="A"), Child(name="B")
+    coord = _coord([a, b])
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    today = date(2026, 4, 20)
+    dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
+    # Even if daily_limit is mis-set to 2, first_come allows only one winner.
+    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id],
+                  assignment_mode="first_come", daily_limit=2)
+    claim = ChoreCompletion(chore_id=chore.id, child_id=a.id,
+                            completed_at=dt_util_mock.now(), approved=True)
+    coord.storage.get_completions = MagicMock(return_value=[claim])
+    assert coord._is_rotation_done_today(chore) is True

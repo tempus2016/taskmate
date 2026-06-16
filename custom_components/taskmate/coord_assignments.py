@@ -479,7 +479,11 @@ class AssignmentsMixin:
             # sentinel covers the whole rotation for today.
             if comp.child_id in pool or comp.child_id == "__parent__":
                 completions_today += 1
-        daily_limit = getattr(chore, 'daily_limit', 1) or 1
+        # first_come is a single-winner race: clamp any mis-configured quota to 1.
+        if getattr(chore, 'assignment_mode', 'everyone') == 'first_come':
+            daily_limit = 1
+        else:
+            daily_limit = getattr(chore, 'daily_limit', 1) or 1
         if completions_today < daily_limit:
             return False
         bonus_subtasks = getattr(chore, 'bonus_subtasks', None) or []
