@@ -253,6 +253,7 @@
   "common.editor.overview_entity_helper": "The TaskMate overview sensor entity",
   "common.entity": "Entity",
   "common.entity_not_found": "Entity not found: {entity}",
+  "common.error": "Error",
   "common.evening": "Evening",
   "common.goal": "Goal",
   "common.morning": "Morning",

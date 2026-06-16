@@ -21,7 +21,15 @@ class TaskMateOverviewCard extends LitElement {
     return {
       hass: { type: Object },
       config: { type: Object },
+      _loading: { type: Object },
+      _expanded: { type: Object },
     };
+  }
+
+  constructor() {
+    super();
+    this._loading = {};
+    this._expanded = {};
   }
 
   shouldUpdate(changedProps) {
@@ -281,6 +289,20 @@ class TaskMateOverviewCard extends LitElement {
 
       .error-state { color: var(--error-color, #f44336); }
       .error-state ha-icon, .empty-state ha-icon { --mdc-icon-size: 48px; margin-bottom: 12px; }
+
+      /* Complete on behalf (admin) */
+      .tm-outstanding { margin-top: 8px; border-top: 1px dashed var(--divider-color, #e0e0e0); padding-top: 8px; }
+      .tm-outstanding-hdr { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.6; margin-bottom: 6px; }
+      .tm-outstanding-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+      .tm-outstanding-row + .tm-outstanding-row { border-top: 1px solid var(--divider-color, #eee); }
+      .tm-outstanding-name { flex: 1; font-size: 0.9rem; }
+      .tm-outstanding-pts { opacity: 0.6; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 2px; }
+      .btn-complete-behalf { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; border: none; cursor: pointer; background: #2e9e5b; color: #fff; font: 600 0.75rem/1 inherit; padding: 6px 10px; border-radius: 8px; }
+      .btn-complete-behalf:hover { background: #27894e; }
+      .btn-complete-behalf:active { transform: scale(0.96); }
+      .btn-complete-behalf[disabled] { opacity: 0.5; pointer-events: none; }
+      .child-main.tm-expandable { cursor: pointer; }
+      .tm-all-done { font-size: 0.85rem; opacity: 0.6; font-style: italic; padding: 4px 0; }
     `;
   }
 
@@ -433,12 +455,22 @@ class TaskMateOverviewCard extends LitElement {
     // Pending approvals for this child
     const childPending = childCompletions.filter(c => !c.approved).length;
 
+    const isAdmin = !!(this.hass && this.hass.user && this.hass.user.is_admin);
+    const outstanding = childChores.filter(c => {
+      const doneToday = completions.filter(
+        x => x.child_id === child.id && x.chore_id === c.id && !x.bonus_subtask_id
+      ).length;
+      return doneToday < (c.daily_limit || 1);
+    });
+    const isOpen = !!this._expanded[child.id];
+
     return html`
       <div class="child-tile">
         <div class="child-avatar">
           <ha-icon icon="${avatar}"></ha-icon>
         </div>
-        <div class="child-main">
+        <div class="child-main ${isAdmin ? 'tm-expandable' : ''}"
+          @click="${isAdmin ? () => { this._expanded = { ...this._expanded, [child.id]: !isOpen }; this.requestUpdate(); } : null}">
           <div class="child-name-row">
             <span class="child-name">${child.name}</span>
             <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;">
@@ -473,9 +505,59 @@ class TaskMateOverviewCard extends LitElement {
           ` : html`
             <div style="font-size:0.8rem;color:var(--secondary-text-color);opacity:0.7;">${this._t('common.no_chores_today')}</div>
           `}
+          ${isAdmin && isOpen ? html`
+            <div class="tm-outstanding" @click="${(e) => e.stopPropagation()}">
+              <div class="tm-outstanding-hdr">${this._t('common.complete_on_behalf_heading')}</div>
+              ${outstanding.length === 0 ? html`
+                <div class="tm-all-done">${this._t('common.complete_on_behalf_all_done')}</div>
+              ` : outstanding.map(c => {
+                const key = `behalf_${child.id}_${c.id}`;
+                const loading = !!(this._loading && this._loading[key]);
+                return html`
+                  <div class="tm-outstanding-row">
+                    <span class="tm-outstanding-name">${c.name}</span>
+                    <span class="tm-outstanding-pts">
+                      <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>${c.points}
+                    </span>
+                    <button class="btn-complete-behalf" ?disabled="${loading}"
+                      title="${this._t('common.complete_on_behalf_tooltip', { name: child.name })}"
+                      @click="${() => this._handleCompleteOnBehalf(c.id, child.id)}">
+                      <ha-icon icon="mdi:check" style="--mdc-icon-size:16px;"></ha-icon>
+                      ${this._t('common.complete_on_behalf')}
+                    </button>
+                  </div>
+                `;
+              })}
+            </div>
+          ` : ''}
         </div>
       </div>
     `;
+  }
+
+  async _handleCompleteOnBehalf(choreId, childId) {
+    const key = `behalf_${childId}_${choreId}`;
+    if (this._loading[key]) return;
+    this._loading = { ...this._loading, [key]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "complete_chore", {
+        chore_id: choreId,
+        child_id: childId,
+        as_parent: true,
+      });
+    } catch (e) {
+      if (this.hass && this.hass.callService) {
+        this.hass.callService("persistent_notification", "create", {
+          title: this._t('common.error'),
+          message: String(e && e.message ? e.message : e),
+          notification_id: `taskmate_overview_behalf_${key}`,
+        });
+      }
+    } finally {
+      this._loading = { ...this._loading, [key]: false };
+      this.requestUpdate();
+    }
   }
 }
 
