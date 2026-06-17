@@ -155,6 +155,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await _async_register_services(hass)
         hass.data[DOMAIN][SERVICES_REGISTERED] = True
 
+    # Pre-load services.yaml off the event loop so the @callback below
+    # never has to do blocking disk I/O.
+    await hass.async_add_executor_job(_load_base_descriptions)
+
     _async_update_service_descriptions(hass)
     coordinator.async_add_listener(
         lambda: _async_update_service_descriptions(hass)
