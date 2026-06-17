@@ -2286,7 +2286,7 @@ class TaskMateChildCard extends LitElement {
             ` : ''}
             <div class="chore-points">
               <ha-icon icon="${pointsIcon}"></ha-icon>
-              +${chore.points}
+              +${chore.effective_points ?? chore.points}
               ${dailyLimit > 1 ? html`<span style="font-size: 0.8em; opacity: 0.7;">(${completionsToday}/${dailyLimit})</span>` : ''}
             </div>
           </div>

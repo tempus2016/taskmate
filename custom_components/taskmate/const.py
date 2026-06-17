@@ -350,6 +350,16 @@ DEFAULT_COMPLETION_SOUND: Final = "coin"
 # Chore keys (sound-related)
 CONF_CHORE_COMPLETION_SOUND: Final = "completion_sound"
 
+# --- Chore difficulty tiers ---
+# Each chore carries a difficulty tier; the points it awards are the base
+# points multiplied by the tier's multiplier. "medium" is the neutral baseline
+# (×1.0) so chores that predate this feature (which default to medium) keep
+# their exact award value. Multipliers are configurable via the settings
+# "difficulty_multiplier_<tier>" keys.
+DIFFICULTY_TIERS: Final = ("easy", "medium", "hard")
+DEFAULT_DIFFICULTY: Final = "medium"
+DEFAULT_DIFFICULTY_MULTIPLIERS: Final = {"easy": 0.5, "medium": 1.0, "hard": 2.0}
+
 # --- Notification type IDs (v3.9.0) ---
 NOTIF_TYPE_BEDTIME_REMINDER:        Final = "bedtime_reminder"
 NOTIF_TYPE_STREAK_AT_RISK:          Final = "streak_at_risk"

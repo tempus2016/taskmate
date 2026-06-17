@@ -657,6 +657,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             assigned_to=call.data.get(ATTR_CHORE_ASSIGNED_TO, []),
             time_category=call.data.get(ATTR_CHORE_TIME_CATEGORY, "anytime"),
             requires_approval=call.data.get(ATTR_CHORE_REQUIRES_APPROVAL, True),
+            difficulty=call.data.get("difficulty", "medium"),
             schedule_mode=schedule_mode,
         )
 

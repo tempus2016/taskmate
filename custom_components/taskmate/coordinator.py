@@ -55,6 +55,34 @@ class TaskMateCoordinator(
         self._unsub_prune: Callable[[], None] | None = None
         self._unsub_availability: Callable[[], None] | None = None
 
+    def difficulty_multiplier(self, tier: str) -> float:
+        """Return the points multiplier for a difficulty tier.
+
+        Unknown tiers fall back to the neutral "medium" baseline (×1.0).
+        Per-tier multipliers are configurable via the
+        ``difficulty_multiplier_<tier>`` settings keys.
+        """
+        from .const import DEFAULT_DIFFICULTY, DEFAULT_DIFFICULTY_MULTIPLIERS
+
+        resolved = tier if tier in DEFAULT_DIFFICULTY_MULTIPLIERS else DEFAULT_DIFFICULTY
+        default = DEFAULT_DIFFICULTY_MULTIPLIERS[resolved]
+        try:
+            return float(
+                self.storage.get_setting(
+                    f"difficulty_multiplier_{resolved}", str(default)
+                )
+            )
+        except (ValueError, TypeError):
+            return default
+
+    def effective_chore_points(self, chore) -> int:
+        """Base chore points scaled by its difficulty multiplier (never negative)."""
+        from .const import DEFAULT_DIFFICULTY
+
+        base = int(getattr(chore, "points", 0) or 0)
+        tier = getattr(chore, "difficulty", DEFAULT_DIFFICULTY) or DEFAULT_DIFFICULTY
+        return max(0, round(base * self.difficulty_multiplier(tier)))
+
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""
         await self.storage.async_load()

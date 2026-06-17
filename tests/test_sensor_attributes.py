@@ -215,6 +215,8 @@ def _stress_coordinator():
     }
     coord.is_pool_mode_claim = MagicMock(return_value=False)
     coord.is_chore_available_for_child = MagicMock(return_value=True)
+    # Medium-difficulty chores award their base points (×1.0 baseline).
+    coord.effective_chore_points = MagicMock(side_effect=lambda c: c.points)
     coord.storage = MagicMock()
     coord.storage.get_last_completed = MagicMock(return_value={"current": "2026-04-20T08:00:00Z"})
     return coord
