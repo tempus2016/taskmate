@@ -46,8 +46,15 @@ CARDS: Final = [
 ]
 
 # JS modules loaded on every HA frontend page (config flow sound preview).
+# taskmate-localize.js is ALSO listed in CARDS (Lovelace resources) so it loads
+# early on dashboards; it must be here too because the admin panel (panel.py) is
+# a panel_custom page, not a Lovelace dashboard, and never loads Lovelace
+# resources — without this the panel renders raw i18n keys. Double-loading is a
+# no-op: the module is keyed by URL (loaded once) and only assigns idempotent
+# window.__taskmate_localize globals.
 GLOBAL_MODULES: Final = [
     "taskmate-config-sounds.js",
+    "taskmate-localize.js",
 ]
 
 # Track if frontend is registered
