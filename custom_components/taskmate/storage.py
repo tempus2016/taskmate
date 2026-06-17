@@ -10,7 +10,7 @@ from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
 from .models import (
-    Badge, AwardedBadge, Bonus, Child, Chore, ChoreCompletion,
+    Badge, AwardedBadge, Bonus, Challenge, Child, Chore, ChoreCompletion,
     CustomNotification, NotificationConfig, NotificationRoute, ParentRecipient,
     Penalty, PoolAllocation, Quest, Reward, RewardClaim, PointsTransaction,
     TaskGroup, TimedSession,
@@ -841,6 +841,47 @@ class TaskMateStorage:
         for child_map in self.get_quest_progress().values():
             child_map.pop(child_id, None)
 
+    # ── Challenges (daily / weekly) ──────────────────────────────────────
+    def get_challenges(self) -> list[Challenge]:
+        return [Challenge.from_dict(c) for c in self._data.get("challenges", [])]
+
+    def get_challenge(self, challenge_id: str) -> Challenge | None:
+        for c in self._data.get("challenges", []):
+            if c.get("id") == challenge_id:
+                return Challenge.from_dict(c)
+        return None
+
+    def add_challenge(self, challenge: Challenge) -> None:
+        self._data.setdefault("challenges", []).append(challenge.to_dict())
+
+    def update_challenge(self, challenge: Challenge) -> None:
+        items = self._data.get("challenges", [])
+        for i, c in enumerate(items):
+            if c.get("id") == challenge.id:
+                items[i] = challenge.to_dict()
+                return
+        self.add_challenge(challenge)
+
+    def remove_challenge(self, challenge_id: str) -> None:
+        self._data["challenges"] = [
+            c for c in self._data.get("challenges", []) if c.get("id") != challenge_id
+        ]
+        self._data.get("challenge_progress", {}).pop(challenge_id, None)
+
+    def get_challenge_progress(self) -> dict:
+        """All challenge progress: {challenge_id: {child_id: {period, awarded}}}."""
+        return self._data.setdefault("challenge_progress", {})
+
+    def get_challenge_child_progress(self, challenge_id: str, child_id: str) -> dict:
+        return self.get_challenge_progress().setdefault(challenge_id, {}).get(child_id, {})
+
+    def set_challenge_child_progress(self, challenge_id: str, child_id: str, progress: dict) -> None:
+        self.get_challenge_progress().setdefault(challenge_id, {})[child_id] = progress
+
+    def remove_challenge_progress_for_child(self, child_id: str) -> None:
+        for child_map in self.get_challenge_progress().values():
+            child_map.pop(child_id, None)
+
     # ── Backup / restore ─────────────────────────────────────────────────
     def export_data(self) -> dict:
         """Return a deep copy of the full stored data (for backup/export)."""
@@ -861,7 +902,7 @@ class TaskMateStorage:
             "children", "chores", "rewards", "penalties", "bonuses",
             "task_groups", "completions", "reward_claims", "points_transactions",
             "pool_allocations", "badges", "awarded_badges", "parent_recipients",
-            "audit_log", "timed_sessions", "quests",
+            "audit_log", "timed_sessions", "quests", "challenges",
         )
         for k in list_keys:
             if not isinstance(self._data.get(k), list):
@@ -870,6 +911,8 @@ class TaskMateStorage:
             self._data["settings"] = {}
         if not isinstance(self._data.get("quest_progress"), dict):
             self._data["quest_progress"] = {}
+        if not isinstance(self._data.get("challenge_progress"), dict):
+            self._data["challenge_progress"] = {}
 
     def replace_completions(self, completions: list[ChoreCompletion]) -> None:
         """Replace all completions with the given list."""

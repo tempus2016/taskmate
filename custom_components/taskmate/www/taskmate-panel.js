@@ -22,6 +22,7 @@ const TABS = [
   { id: "bonuses",   lk: "panel.tab_bonuses" },
   { id: "groups",    lk: "panel.tab_groups" },
   { id: "quests",    lk: "panel.tab_quests" },
+  { id: "challenges", lk: "panel.tab_challenges" },
   { id: "badges",    lk: "panel.tab_badges" },
   { id: "templates",     lk: "panel.tab_templates" },
   { id: "notifications", lk: "panel.tab_notifications" },
@@ -473,6 +474,13 @@ class TaskMatePanel extends HTMLElement {
     if (act === "toggle-quest-step") { this._toggleArrayField("steps", t.dataset.id); return; }
     if (act === "quest-step-move") { this._moveQuestStep(Number(t.dataset.idx), t.dataset.dir); return; }
 
+    // Challenges (daily / weekly)
+    if (act === "add-challenge")    { this._openChallengeDialog(null); return; }
+    if (act === "edit-challenge")   { this._openChallengeDialog(t.dataset.id); return; }
+    if (act === "delete-challenge") { this._confirmDelete("challenge", t.dataset.id); return; }
+    if (act === "save-challenge")   { this._doSaveChallenge(); return; }
+    if (act === "toggle-challenge-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
+
     // Avatar unlockables
     if (act === "manage-avatars")     { this._openAvatarCatalogDialog(); return; }
     if (act === "avatar-add-row")     { this._avatarAddRow(); return; }
@@ -897,8 +905,8 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _confirmDelete(kind, id) {
-    const labels = { child: this._t("panel.entity_child"), chore: this._t("panel.entity_chore"), reward: this._t("panel.entity_reward"), penalty: this._t("panel.entity_penalty"), bonus: this._t("panel.entity_bonus"), group: this._t("panel.entity_group"), quest: this._t("panel.entity_quest") };
-    const collectionKey = { child: "children", chore: "chores", reward: "rewards", penalty: "penalties", bonus: "bonuses", group: "task_groups", quest: "quests" }[kind];
+    const labels = { child: this._t("panel.entity_child"), chore: this._t("panel.entity_chore"), reward: this._t("panel.entity_reward"), penalty: this._t("panel.entity_penalty"), bonus: this._t("panel.entity_bonus"), group: this._t("panel.entity_group"), quest: this._t("panel.entity_quest"), challenge: this._t("panel.entity_challenge") };
+    const collectionKey = { child: "children", chore: "chores", reward: "rewards", penalty: "penalties", bonus: "bonuses", group: "task_groups", quest: "quests", challenge: "challenges" }[kind];
     const item = (this._state[collectionKey] || []).find(x => x.id === id);
     if (!item) return;
     const extraWarn = kind === "child"
@@ -921,11 +929,12 @@ class TaskMatePanel extends HTMLElement {
       bonus:   "taskmate/remove_bonus",
       group:   "taskmate/remove_task_group",
       quest:   "taskmate/delete_quest",
+      challenge: "taskmate/delete_challenge",
     }[kind];
     const idField = {
       child: "child_id", chore: "chore_id", reward: "reward_id",
       penalty: "penalty_id", bonus: "bonus_id", group: "group_id",
-      quest: "quest_id",
+      quest: "quest_id", challenge: "challenge_id",
     }[kind];
     const { ok, err } = await this._callWS({ type: wsType, [idField]: id });
     if (!ok) { this._showToast("err", this._t("panel.toast_delete_failed", {error: err})); return; }
@@ -1372,6 +1381,91 @@ class TaskMatePanel extends HTMLElement {
     this._closeDialog(true);
     await this._fetchState();
     this._showToast("ok", wasAdd ? this._t("panel.toast_quest_added") : this._t("panel.toast_quest_updated"));
+  }
+
+  // ---- Challenges (daily / weekly) -------------------------------------
+  _openChallengeDialog(id) {
+    const blank = { name: "", description: "", icon: "mdi:trophy-outline",
+      scope: "daily", metric: "chores", target: 3, bonus_points: 15,
+      assigned_to: [], active: true };
+    if (id) {
+      const c = (this._state.challenges || []).find(x => x.id === id);
+      if (!c) return;
+      this._openDialog({ kind: "challenge", mode: "edit", data: {
+        ...blank, ...c, assigned_to: [...(c.assigned_to || [])],
+      } });
+    } else {
+      this._openDialog({ kind: "challenge", mode: "add", data: blank });
+    }
+  }
+
+  async _doSaveChallenge() {
+    this._syncIconPickers();
+    const d = this._dialog.data;
+    if (!d.name || !d.name.trim()) { this._showToast("err", this._t("panel.toast_name_required")); return; }
+    const target = Math.max(1, Number(d.target) || 0);
+    const wasAdd = this._dialog.mode === "add";
+    const base = {
+      name: d.name.trim(),
+      description: d.description || "",
+      icon: d.icon || "mdi:trophy-outline",
+      scope: d.scope || "daily",
+      metric: d.metric || "chores",
+      target,
+      bonus_points: Math.max(0, Number(d.bonus_points) || 0),
+      assigned_to: d.assigned_to || [],
+      active: d.active !== false,
+    };
+    const payload = wasAdd ? { type: "taskmate/create_challenge", ...base } : { type: "taskmate/update_challenge", challenge_id: d.id, ...base };
+    const { ok, err } = await this._callWS(payload);
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", wasAdd ? this._t("panel.toast_challenge_added") : this._t("panel.toast_challenge_updated"));
+  }
+
+  _renderChallengeDialog() {
+    const d = this._dialog.data;
+    const children = this._state.children || [];
+    const pointsName = this._state.settings.points_name || this._t("common.points");
+    return this._dialogShell(this._dialog.mode === "add" ? this._t("panel.dialog_add_challenge") : this._t("panel.dialog_edit_challenge"),
+      [
+        this._field(this._t("panel.chore_name_label"), "name", d.name, "text"),
+        this._field(this._t("panel.chore_description_label"), "description", d.description, "text"),
+        `<div class="tm-field-row">
+          ${this._select(this._t("panel.challenge_scope_label"), "scope", d.scope || "daily", [
+            { v: "daily", l: this._t("panel.challenge_scope_daily") },
+            { v: "weekly", l: this._t("panel.challenge_scope_weekly") },
+          ])}
+          ${this._select(this._t("panel.challenge_metric_label"), "metric", d.metric || "chores", [
+            { v: "chores", l: this._t("panel.challenge_metric_chores") },
+            { v: "points", l: this._t("panel.challenge_metric_points", {points_name: pointsName}) },
+          ])}
+        </div>`,
+        `<div class="tm-field-row">
+          ${this._field(this._t("panel.challenge_target_label"), "target", d.target, "number", this._t("panel.challenge_target_hint"))}
+          ${this._field(this._t("panel.quest_bonus_label", {points_name: pointsName}), "bonus_points", d.bonus_points, "number")}
+        </div>`,
+        this._iconPickerField(this._t("panel.reward_icon_label"), "icon", d.icon),
+        children.length > 0 ? `
+          <div class="tm-field">
+            <span class="tm-field-label">${this._t("panel.quest_assigned_label")}</span>
+            <div class="tm-chip-row">
+              ${children.map(c => `
+                <button type="button" class="tm-chip-btn ${(d.assigned_to || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="toggle-challenge-assigned" data-id="${this._esc(c.id)}">
+                  ${this._esc(c.name)}
+                </button>
+              `).join("")}
+            </div>
+            <span class="tm-field-hint">${this._t("panel.quest_assigned_hint")}</span>
+          </div>
+        ` : "",
+        this._switch(this._t("panel.quest_active_label"), "active", d.active !== false,
+          this._t("panel.quest_active_hint")),
+      ].join(""),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-challenge">${this._t("panel.btn_save")}</button>`
+    );
   }
 
   // ---- Avatar unlockables ----------------------------------------------
@@ -2012,6 +2106,7 @@ class TaskMatePanel extends HTMLElement {
         { id: "bonuses",   label: this._t("panel.tab_bonuses"),   icon: "mdi:flash-outline" },
         { id: "groups",    label: this._t("panel.tab_groups"),    icon: "mdi:layers-outline" },
         { id: "quests",    label: this._t("panel.tab_quests"),    icon: "mdi:map-marker-path" },
+        { id: "challenges", label: this._t("panel.tab_challenges"), icon: "mdi:trophy-outline" },
         { id: "badges",    label: this._t("panel.tab_badges"),     icon: "mdi:medal-outline" },
         { id: "templates", label: this._t("panel.tab_templates"), icon: "mdi:clipboard-list-outline" },
       ]},
@@ -2143,6 +2238,7 @@ class TaskMatePanel extends HTMLElement {
       case "bonuses":   return this._renderPenBonTab("bonus");
       case "groups":    return this._renderGroupsTab();
       case "quests":    return this._renderQuestsTab();
+      case "challenges": return this._renderChallengesTab();
       case "badges":    return this._renderBadgesTab();
       case "templates":     return this._renderTemplatesTab();
       case "notifications": return this._renderNotificationsTab();
@@ -2603,6 +2699,62 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-card-foot">
           <button type="button" class="tm-btn tm-btn-sm" data-act="edit-quest" data-id="${this._esc(q.id)}">${this._t("panel.btn_edit")}</button>
           <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-quest" data-id="${this._esc(q.id)}">${this._t("panel.btn_delete")}</button>
+        </div>
+      </article>
+    `;
+  }
+
+  // -- Challenges tab ----------------------------------------------------
+  _renderChallengesTab() {
+    const all = this._state.challenges || [];
+    const challenges = this._filterByName(all);
+    const pointsName = this._state.settings.points_name || this._t("common.points");
+    return `
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">${this._t("panel.challenge_title")} <span class="tm-toolbar-count">${all.length}</span></h2>
+        ${all.length > 0 ? this._searchBox(this._t("panel.search_challenges")) : ""}
+        <button type="button" class="tm-btn tm-btn-raised" data-act="add-challenge">${this._t("panel.btn_add_challenge")}</button>
+      </div>
+      ${all.length === 0 ? this._emptyState("🏆", this._t("panel.empty_challenges_title"), this._t("panel.empty_challenges_copy"), "add-challenge", this._t("panel.btn_add_challenge")) :
+        challenges.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_challenges").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
+        <div class="tm-grid">
+          ${challenges.map(c => this._renderChallengeCard(c, pointsName)).join("")}
+          <button type="button" class="tm-add-tile" data-act="add-challenge"><span class="tm-add-plus">＋</span>${this._t("panel.challenge_add_tile")}</button>
+        </div>
+      `}
+    `;
+  }
+
+  _renderChallengeCard(c, pointsName) {
+    const children = this._state.children || [];
+    const assigned = (c.assigned_to && c.assigned_to.length)
+      ? children.filter(ch => c.assigned_to.includes(ch.id)).map(ch => ch.name)
+      : [this._t("panel.quest_all_children")];
+    const scopeLabel = c.scope === "weekly" ? this._t("panel.challenge_scope_weekly") : this._t("panel.challenge_scope_daily");
+    const metricLabel = c.metric === "points"
+      ? this._t("panel.challenge_metric_points", {points_name: pointsName})
+      : this._t("panel.challenge_metric_chores");
+    return `
+      <article class="tm-card tm-quest-card${c.active ? "" : " tm-quest-inactive"}">
+        <div class="tm-child-head">
+          <div class="tm-avatar">${this._mdi(c.icon || "mdi:trophy-outline")}</div>
+          <div class="tm-child-name">
+            <h3>${this._esc(c.name)}
+              <span class="tm-pill">${this._esc(scopeLabel)}</span>
+              ${c.active ? "" : `<span class="tm-pill tm-pill-muted">${this._t("panel.quest_badge_inactive")}</span>`}
+            </h3>
+            ${this._idBadge(c.id)}
+            <div class="tm-meta">${this._esc(c.description || "")}</div>
+          </div>
+        </div>
+        <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr;">
+          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${c.target}</div><div class="tm-stat-label">${this._esc(metricLabel)}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(c.bonus_points || 0)}</div><div class="tm-stat-label">${this._t("panel.quest_stat_bonus", {points_name: pointsName})}</div></div>
+        </div>
+        <div class="tm-meta">${this._t("panel.quest_assigned_to")}: ${this._esc(assigned.join(", "))}</div>
+        <div class="tm-card-foot">
+          <button type="button" class="tm-btn tm-btn-sm" data-act="edit-challenge" data-id="${this._esc(c.id)}">${this._t("panel.btn_edit")}</button>
+          <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-challenge" data-id="${this._esc(c.id)}">${this._t("panel.btn_delete")}</button>
         </div>
       </article>
     `;
@@ -3892,6 +4044,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "group")        return this._renderGroupDialog();
     if (this._dialog.kind === "quest")        return this._renderQuestDialog();
     if (this._dialog.kind === "avatar-catalog") return this._renderAvatarCatalogDialog();
+    if (this._dialog.kind === "challenge")    return this._renderChallengeDialog();
     if (this._dialog.kind === "apply-penalty") return this._renderApplyDialog("penalty");
     if (this._dialog.kind === "apply-bonus")   return this._renderApplyDialog("bonus");
     if (this._dialog.kind === "bulk-chore")    return this._renderBulkChoreDialog();

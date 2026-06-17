@@ -490,6 +490,57 @@ class Quest:
 
 
 @dataclass
+class Challenge:
+    """A time-boxed, metric-based challenge that refreshes each period.
+
+    Within each period (``daily`` or ``weekly``) a child works toward a
+    ``target`` of a ``metric`` (chores completed or points earned). Hitting the
+    target awards ``bonus_points`` once; progress and the award reset
+    automatically when the period rolls over.
+    """
+
+    name: str
+    description: str = ""
+    icon: str = "mdi:trophy-outline"
+    scope: str = "daily"          # daily | weekly
+    metric: str = "chores"        # chores | points
+    target: int = 3
+    bonus_points: int = 15
+    assigned_to: list[str] = field(default_factory=list)  # child IDs; empty = all
+    active: bool = True
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Challenge:
+        return cls(
+            name=data.get("name", ""),
+            description=data.get("description", ""),
+            icon=data.get("icon", "mdi:trophy-outline"),
+            scope=data.get("scope", "daily"),
+            metric=data.get("metric", "chores"),
+            target=int(data.get("target", 3) or 0),
+            bonus_points=int(data.get("bonus_points", 15) or 0),
+            assigned_to=list(data.get("assigned_to", [])),
+            active=bool(data.get("active", True)),
+            id=data.get("id", generate_id()),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "icon": self.icon,
+            "scope": self.scope,
+            "metric": self.metric,
+            "target": self.target,
+            "bonus_points": self.bonus_points,
+            "assigned_to": self.assigned_to,
+            "active": self.active,
+            "id": self.id,
+        }
+
+
+@dataclass
 class ChoreCompletion:
     """Represents a chore completion record."""
 
