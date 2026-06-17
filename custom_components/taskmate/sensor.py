@@ -171,6 +171,35 @@ def _build_children_summary(common: dict) -> list[dict]:
     return summary
 
 
+def _build_templates_summary(coordinator: TaskMateCoordinator) -> list[dict]:
+    """Compact template list (id, name, icon, chore count) for the Templates card."""
+    out = []
+    for tpl in coordinator.get_all_templates():
+        out.append({
+            "id": tpl.get("id", ""),
+            "name": tpl.get("name", ""),
+            "icon": tpl.get("icon", "mdi:clipboard-list"),
+            "chore_count": len(tpl.get("chores", []) or []),
+            "builtin": bool(tpl.get("builtin", str(tpl.get("id", "")).startswith("builtin"))),
+        })
+    return out
+
+
+def _build_custom_reminders(coordinator: TaskMateCoordinator) -> list[dict]:
+    """Compact list of custom scheduled reminders for the Reminders card."""
+    out = []
+    for n in coordinator.storage.get_custom_notifications():
+        out.append({
+            "id": n.id,
+            "name": n.name,
+            "time": n.time,
+            "day_mask": n.day_mask,
+            "enabled": n.enabled,
+        })
+    # Soonest first by time-of-day.
+    return sorted(out, key=lambda r: r.get("time") or "99:99")
+
+
 def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[dict]:
     """Build the chores list, omitting rarely-used / empty fields.
 
@@ -725,6 +754,8 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "vacation_name": active_vacation.get("name", "") if active_vacation else "",
             "vacation_end": active_vacation.get("end", "") if active_vacation else "",
             "vacation_periods": self.coordinator.get_vacation_periods(),
+            "templates": _build_templates_summary(self.coordinator),
+            "custom_reminders": _build_custom_reminders(self.coordinator),
         }
 
 
