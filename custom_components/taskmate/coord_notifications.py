@@ -27,6 +27,7 @@ from .const import (
     NOTIF_TYPE_STREAK_AT_RISK,
     NOTIF_TYPE_STREAK_MILESTONE,
     NOTIF_TYPE_LEVEL_UP,
+    NOTIF_TYPE_WEEKLY_DIGEST,
 )
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_PENDING_REWARD_CLAIM,   "parent", False, False, True,  True),
     NotificationTypeMeta(NOTIF_TYPE_STREAK_MILESTONE,       "both",   False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_LEVEL_UP,               "both",   False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_WEEKLY_DIGEST,          "parent", False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {
@@ -161,6 +163,7 @@ class NotificationCoordinator:
             NOTIF_TYPE_PENDING_REWARD_CLAIM:   "{child_name} claimed '{reward_name}' ({cost} {points_name}) — awaiting approval.",
             NOTIF_TYPE_STREAK_MILESTONE:       "{child_name} hit a {days}-day streak — +{points} {points_name}!",
             NOTIF_TYPE_LEVEL_UP:               "{child_name} reached level {level}! 🎉",
+            NOTIF_TYPE_WEEKLY_DIGEST:          "TaskMate weekly digest:\n{summary}",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:
