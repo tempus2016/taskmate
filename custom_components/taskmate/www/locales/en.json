@@ -1251,5 +1251,12 @@
   "panel.settings_surprise_params_hint": "Daily chance per child, and the random points range awarded on a hit.",
   "panel.settings_surprise_chance": "Chance %",
   "panel.settings_surprise_min": "Min pts",
-  "panel.settings_surprise_max": "Max pts"
+  "panel.settings_surprise_max": "Max pts",
+  "panel.reward_restock_label": "Auto-restock",
+  "panel.reward_restock_hint": "Periodically reset this reward's stock back to a set amount.",
+  "panel.reward_restock_amount": "Restock to",
+  "panel.reward_restock_period": "Restock every",
+  "panel.reward_restock_daily": "Day",
+  "panel.reward_restock_weekly": "Week (Mon)",
+  "panel.reward_restock_monthly": "Month (1st)"
 }
