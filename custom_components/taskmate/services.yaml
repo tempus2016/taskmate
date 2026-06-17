@@ -89,6 +89,29 @@ test_notification:
       selector:
         text:
 
+gift_points:
+  name: Gift Points
+  description: Transfer spendable points from one child to another (parent-controlled).
+  fields:
+    from_child_id:
+      name: From child ID
+      required: true
+      selector:
+        text:
+    to_child_id:
+      name: To child ID
+      required: true
+      selector:
+        text:
+    points:
+      name: Points
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 10000
+          mode: box
+
 claim_reward:
   name: Claim Reward
   description: Child claims a reward using their points

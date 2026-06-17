@@ -142,6 +142,9 @@ WS_CLONE_CHORE: Final = "taskmate/clone_chore"
 # Bulk chore operations
 WS_BULK_CHORE_ACTION: Final = "taskmate/bulk_chore_action"
 
+# Inter-child gifting
+WS_GIFT_POINTS: Final = "taskmate/gift_points"
+
 # Backup / restore
 WS_CONFIG_EXPORT: Final = "taskmate/config/export"
 WS_CONFIG_IMPORT: Final = "taskmate/config/import"
@@ -1594,6 +1597,19 @@ async def _ws_bulk_chore_action(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"count": count})
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_GIFT_POINTS,
+    vol.Required("from_child_id"): str,
+    vol.Required("to_child_id"): str,
+    vol.Required("points"): vol.All(int, vol.Range(min=1)),
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_gift_points(hass, connection, msg, coordinator):
+    await coordinator.async_gift_points(msg["from_child_id"], msg["to_child_id"], msg["points"])
+    connection.send_result(msg["id"], {"ok": True})
+
+
 @websocket_api.websocket_command({vol.Required("type"): WS_CONFIG_EXPORT})
 @websocket_api.async_response
 @_admin_only
@@ -1621,7 +1637,7 @@ _COMMANDS = (
     _ws_audit_list, _ws_audit_clear, _ws_undo_transaction,
     _ws_add_child, _ws_update_child, _ws_remove_child, _ws_list_ha_users,
     _ws_add_chore, _ws_update_chore, _ws_remove_chore, _ws_clone_chore,
-    _ws_bulk_chore_action,
+    _ws_bulk_chore_action, _ws_gift_points,
     _ws_config_export, _ws_config_import,
     _ws_add_reward, _ws_update_reward, _ws_remove_reward,
     _ws_add_penalty, _ws_update_penalty, _ws_remove_penalty, _ws_apply_penalty,

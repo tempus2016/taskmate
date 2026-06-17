@@ -302,6 +302,46 @@ class PointsMixin:
         await self.storage.async_save()
         await self.async_refresh()
 
+    async def async_gift_points(self, from_child_id: str, to_child_id: str, points: int) -> None:
+        """Transfer spendable points from one child to another (parent-controlled).
+
+        Moves spendable balance only — neither child's career score / earned
+        total changes (the recipient didn't earn it). Logged on both sides.
+        """
+        points = int(points)
+        if points <= 0:
+            raise ValueError("Gift amount must be positive")
+        if from_child_id == to_child_id:
+            raise ValueError("Cannot gift to the same child")
+        sender = self.get_child(from_child_id)
+        recipient = self.get_child(to_child_id)
+        if not sender or not recipient:
+            raise ValueError("Sender or recipient not found")
+        if (sender.points or 0) < points:
+            raise ValueError(
+                f"Not enough points: {sender.name} has {sender.points}, gift {points}"
+            )
+        now = dt_util.now()
+        sender.points -= points
+        recipient.points += points
+        self.storage.update_child(sender)
+        self.storage.update_child(recipient)
+        self.storage.add_points_transaction(PointsTransaction(
+            child_id=sender.id, points=-points,
+            reason=f"Gift to {recipient.name}", created_at=now,
+        ))
+        self.storage.add_points_transaction(PointsTransaction(
+            child_id=recipient.id, points=points,
+            reason=f"Gift from {sender.name}", created_at=now,
+        ))
+        self.hass.bus.async_fire("taskmate_points_gifted", {
+            "from_child_id": sender.id, "from_child_name": sender.name,
+            "to_child_id": recipient.id, "to_child_name": recipient.name,
+            "points": points, "timestamp": now.isoformat(),
+        })
+        await self.storage.async_save()
+        await self.async_refresh()
+
     async def _async_decay_points(self) -> None:
         """Periodically decay each child's spendable points (anti-hoarding).
 
