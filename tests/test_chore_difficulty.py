@@ -7,7 +7,6 @@ exact award value. The multiplier per tier is configurable via settings
 """
 from __future__ import annotations
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
