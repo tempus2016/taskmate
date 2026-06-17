@@ -44,7 +44,6 @@ CARDS: Final = [
     "taskmate-points-display-card.js",
     "taskmate-calendar-card.js",
     "taskmate-task-groups-card.js",
-    "taskmate-templates-card.js",
     "taskmate-reminders-card.js",
 ]
 
