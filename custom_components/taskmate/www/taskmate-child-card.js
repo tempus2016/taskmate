@@ -34,6 +34,7 @@ class TaskMateChildCard extends LitElement {
       _optimisticCompletions: { type: Object },
       _earnedBadges: { type: Array },
       _justEarnedBadge: { type: String },
+      _avatarPickerOpen: { type: Boolean },
     };
   }
 
@@ -142,6 +143,46 @@ class TaskMateChildCard extends LitElement {
       : '';
     window.history.pushState(null, '', `/taskmate-admin?section=badges${slug ? '&child=' + slug : ''}`);
     window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
+  _toggleAvatarPicker() {
+    this._avatarPickerOpen = !this._avatarPickerOpen;
+    this.requestUpdate();
+  }
+
+  _renderAvatarPicker(child, options) {
+    return html`
+      <div class="avatar-picker">
+        ${options.map(o => html`
+          <button class="avatar-opt ${o.unlocked ? '' : 'locked'} ${o.icon === child.avatar ? 'current' : ''}"
+                  ?disabled=${!o.unlocked}
+                  title="${o.unlocked ? (o.label || '') : (this._t('child.avatar_locked') + (o.requirement ? ' — ' + o.requirement : ''))}"
+                  @click=${o.unlocked ? () => this._chooseAvatar(child, o.icon) : null}>
+            <ha-icon icon="${o.unlocked ? o.icon : 'mdi:lock'}"></ha-icon>
+            ${o.label ? html`<span>${o.label}</span>` : ''}
+          </button>
+        `)}
+      </div>
+    `;
+  }
+
+  async _chooseAvatar(child, icon) {
+    this._avatarPickerOpen = false;
+    this.requestUpdate();
+    if (icon === child.avatar) return;
+    try {
+      await this.hass.callService('taskmate', 'choose_avatar', {
+        child_id: this.config.child_id,
+        icon,
+      });
+    } catch (err) {
+      if (this.hass.callService) {
+        this.hass.callService('persistent_notification', 'create', {
+          title: 'TaskMate',
+          message: this._t('child.avatar_change_failed'),
+        });
+      }
+    }
   }
 
   /**
@@ -546,6 +587,31 @@ class TaskMateChildCard extends LitElement {
         --mdc-icon-size: 30px;
         color: white;
       }
+
+      .avatar-clickable { cursor: pointer; position: relative; }
+      .avatar-edit-dot {
+        position: absolute; bottom: -2px; right: -2px;
+        width: 18px; height: 18px; border-radius: 50%;
+        background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center;
+      }
+      .avatar-edit-dot ha-icon { --mdc-icon-size: 12px; color: white; }
+      .avatar-picker {
+        position: absolute; z-index: 20; margin-top: 56px;
+        background: var(--card-background-color, #fff);
+        border: 1px solid var(--divider-color, rgba(0,0,0,0.12));
+        border-radius: 12px; padding: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 280px;
+      }
+      .avatar-opt {
+        display: flex; flex-direction: column; align-items: center; gap: 2px;
+        border: 1px solid var(--divider-color, rgba(0,0,0,0.12)); border-radius: 10px;
+        background: var(--secondary-background-color, #f5f5f5);
+        padding: 8px 4px; cursor: pointer; color: var(--primary-text-color, #222);
+        font-size: 10px; line-height: 1.1;
+      }
+      .avatar-opt ha-icon { --mdc-icon-size: 24px; color: var(--primary-text-color, #222); }
+      .avatar-opt.current { border-color: var(--primary-color, #9b59b6); box-shadow: 0 0 0 2px var(--primary-color, #9b59b6) inset; }
+      .avatar-opt.locked { opacity: 0.45; cursor: not-allowed; }
 
       .child-name-container {
         min-width: 0;
@@ -1653,9 +1719,20 @@ class TaskMateChildCard extends LitElement {
         <style>:host { --taskmate-header-bg: ${this.config.header_color || '#9b59b6'}; }</style>
         <div class="card-header">
           <div class="header-left">
-            <div class="avatar-container">
-              <ha-icon icon="${avatar}"></ha-icon>
-            </div>
+            ${(() => {
+              const opts = child.avatar_options || [];
+              const unlocked = opts.filter(o => o.unlocked);
+              const canChange = this.config.allow_avatar_change !== false && unlocked.length > 1;
+              return html`
+                <div class="avatar-container ${canChange ? 'avatar-clickable' : ''}"
+                     @click=${canChange ? () => this._toggleAvatarPicker() : null}
+                     title="${canChange ? this._t('child.avatar_change') : ''}">
+                  <ha-icon icon="${avatar}"></ha-icon>
+                  ${canChange ? html`<span class="avatar-edit-dot"><ha-icon icon="mdi:pencil"></ha-icon></span>` : ''}
+                </div>
+                ${canChange && this._avatarPickerOpen ? this._renderAvatarPicker(child, opts) : ''}
+              `;
+            })()}
             <div class="child-name-container">
               <div class="child-name">${child.name}</div>
               ${child.level ? html`

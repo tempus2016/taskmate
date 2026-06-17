@@ -84,6 +84,7 @@ from .const import (
     SERVICE_TEST_NOTIFICATION,
     SERVICE_GIFT_POINTS,
     SERVICE_REQUEST_SWAP,
+    SERVICE_CHOOSE_AVATAR,
     SERVICE_SET_CHORE_ORDER,
     SERVICE_UPDATE_BONUS,
     SERVICE_UPDATE_PENALTY,
@@ -439,6 +440,16 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         requester_id = call.data["requester_id"]
         await _async_require_linked_child(hass, call, coordinator, requester_id)
         await coordinator.async_request_swap(call.data["chore_id"], requester_id)
+
+    async def handle_choose_avatar(call: ServiceCall) -> None:
+        """A child switches to an avatar they've unlocked."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        child_id = call.data[ATTR_CHILD_ID]
+        await _async_require_linked_child(hass, call, coordinator, child_id)
+        await coordinator.async_set_avatar(child_id, call.data["icon"], enforce_unlock=True)
 
     async def handle_reject_reward(call: ServiceCall) -> None:
         """Handle the reject_reward service call."""
@@ -953,6 +964,18 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN,
+        SERVICE_CHOOSE_AVATAR,
+        handle_choose_avatar,
+        schema=vol.Schema(
+            {
+                vol.Required(ATTR_CHILD_ID): cv.string,
+                vol.Required("icon"): cv.string,
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
         SERVICE_CLAIM_REWARD,
         handle_claim_reward,
         schema=vol.Schema(
@@ -1275,6 +1298,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_TEST_NOTIFICATION,
         SERVICE_GIFT_POINTS,
         SERVICE_REQUEST_SWAP,
+        SERVICE_CHOOSE_AVATAR,
         SERVICE_CLAIM_REWARD,
         SERVICE_APPROVE_REWARD,
         SERVICE_REJECT_REWARD,

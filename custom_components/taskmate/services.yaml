@@ -127,6 +127,22 @@ request_swap:
       selector:
         text:
 
+choose_avatar:
+  name: Choose Avatar
+  description: A child switches to an avatar they have unlocked.
+  fields:
+    child_id:
+      name: Child ID
+      required: true
+      selector:
+        text:
+    icon:
+      name: Avatar icon
+      description: The mdi icon of an unlocked catalogue avatar (e.g. mdi:rocket-launch).
+      required: true
+      selector:
+        text:
+
 claim_reward:
   name: Claim Reward
   description: Child claims a reward using their points

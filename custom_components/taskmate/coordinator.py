@@ -14,6 +14,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coord_assignments import AssignmentsMixin
+from .coord_avatars import AvatarsMixin
 from .coord_badges import BadgeCoordinator
 from .coord_notifications import NotificationCoordinator
 from .coord_calendar import CalendarMixin
@@ -35,6 +36,7 @@ class TaskMateCoordinator(
     RewardsMixin,
     PointsMixin,
     QuestsMixin,
+    AvatarsMixin,
     TimedMixin,
     CalendarMixin,
     TemplatesMixin,

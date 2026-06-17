@@ -473,6 +473,12 @@ class TaskMatePanel extends HTMLElement {
     if (act === "toggle-quest-step") { this._toggleArrayField("steps", t.dataset.id); return; }
     if (act === "quest-step-move") { this._moveQuestStep(Number(t.dataset.idx), t.dataset.dir); return; }
 
+    // Avatar unlockables
+    if (act === "manage-avatars")     { this._openAvatarCatalogDialog(); return; }
+    if (act === "avatar-add-row")     { this._avatarAddRow(); return; }
+    if (act === "avatar-del-row")     { this._avatarDelRow(Number(t.dataset.idx)); return; }
+    if (act === "save-avatar-catalog") { this._doSaveAvatarCatalog(); return; }
+
     // Penalties
     if (act === "add-penalty")    { this._openPenBonDialog("penalty", null); return; }
     if (act === "edit-penalty")   { this._openPenBonDialog("penalty", t.dataset.id); return; }
@@ -1366,6 +1372,50 @@ class TaskMatePanel extends HTMLElement {
     this._closeDialog(true);
     await this._fetchState();
     this._showToast("ok", wasAdd ? this._t("panel.toast_quest_added") : this._t("panel.toast_quest_updated"));
+  }
+
+  // ---- Avatar unlockables ----------------------------------------------
+  _openAvatarCatalogDialog() {
+    const cat = (this._state.avatar_catalog || []).map(a => ({
+      id: a.id || a.icon, label: a.label || "", icon: a.icon || "mdi:account-circle",
+      unlock_type: a.unlock_type || "free", unlock_value: Number(a.unlock_value) || 0,
+    }));
+    this._openDialog({ kind: "avatar-catalog", mode: "edit", data: { catalog: cat } });
+  }
+
+  _avatarAddRow() {
+    if (!this._dialog || !this._dialog.data) return;
+    this._dialog.data.catalog = [...(this._dialog.data.catalog || []), {
+      id: "", label: "", icon: "mdi:account-circle", unlock_type: "free", unlock_value: 0,
+    }];
+    this._render();
+  }
+
+  _avatarDelRow(idx) {
+    if (!this._dialog || !this._dialog.data) return;
+    const arr = [...(this._dialog.data.catalog || [])];
+    if (idx < 0 || idx >= arr.length) return;
+    arr.splice(idx, 1);
+    this._dialog.data.catalog = arr;
+    this._render();
+  }
+
+  async _doSaveAvatarCatalog() {
+    this._syncIconPickers();
+    const cat = (this._dialog.data.catalog || [])
+      .filter(a => (a.icon || "").trim())
+      .map(a => ({
+        id: (a.id || a.icon).trim(),
+        label: (a.label || "").trim(),
+        icon: a.icon.trim(),
+        unlock_type: a.unlock_type || "free",
+        unlock_value: Math.max(0, Number(a.unlock_value) || 0),
+      }));
+    const { ok, err } = await this._callWS({ type: "taskmate/update_avatar_catalog", catalog: cat });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.toast_avatars_saved"));
   }
 
   // ---- Penalties / Bonuses ---------------------------------------------
@@ -3511,6 +3561,16 @@ class TaskMatePanel extends HTMLElement {
         </div>
 
         <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.settings_avatars_title")}</h3></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_avatars_label")}<small>${this._t("panel.settings_avatars_hint", {count: (this._state.avatar_catalog || []).length})}</small></div>
+              <button type="button" class="tm-btn" data-act="manage-avatars">${this._t("panel.settings_avatars_btn")}</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.settings_chore_rotation_title")}</h3></div></div>
           <div class="tm-section-body">
             <div class="tm-setting-row">
@@ -3831,6 +3891,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "bonus")        return this._renderPenBonDialog("bonus");
     if (this._dialog.kind === "group")        return this._renderGroupDialog();
     if (this._dialog.kind === "quest")        return this._renderQuestDialog();
+    if (this._dialog.kind === "avatar-catalog") return this._renderAvatarCatalogDialog();
     if (this._dialog.kind === "apply-penalty") return this._renderApplyDialog("penalty");
     if (this._dialog.kind === "apply-bonus")   return this._renderApplyDialog("bonus");
     if (this._dialog.kind === "bulk-chore")    return this._renderBulkChoreDialog();
@@ -4111,6 +4172,39 @@ class TaskMatePanel extends HTMLElement {
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-reward">${this._t("panel.btn_save")}</button>`
+    );
+  }
+
+  _renderAvatarCatalogDialog() {
+    const rows = (this._dialog.data.catalog || []);
+    const typeOpts = [
+      { v: "free",   l: this._t("panel.avatar_unlock_free") },
+      { v: "level",  l: this._t("panel.avatar_unlock_level") },
+      { v: "points", l: this._t("panel.avatar_unlock_points") },
+      { v: "streak", l: this._t("panel.avatar_unlock_streak") },
+    ];
+    const rowHtml = rows.map((a, i) => `
+      <div class="tm-avatar-row">
+        <div class="tm-avatar-row-icon">${this._mdi(a.icon || "mdi:account-circle")}</div>
+        <div class="tm-avatar-row-fields">
+          <input class="tm-input" type="text" data-field="catalog[${i}].label" value="${this._esc(a.label || "")}" placeholder="${this._t("panel.avatar_label_ph")}">
+          <input class="tm-input" type="text" data-field="catalog[${i}].icon" value="${this._esc(a.icon || "")}" placeholder="mdi:rocket-launch">
+          <select class="tm-select" data-field="catalog[${i}].unlock_type">
+            ${typeOpts.map(o => `<option value="${o.v}" ${(a.unlock_type || "free") === o.v ? "selected" : ""}>${this._esc(o.l)}</option>`).join("")}
+          </select>
+          <input class="tm-input" type="number" min="0" data-field="catalog[${i}].unlock_value" value="${Number(a.unlock_value) || 0}" ${(a.unlock_type || "free") === "free" ? "disabled" : ""}>
+        </div>
+        <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="avatar-del-row" data-idx="${i}">✕</button>
+      </div>
+    `).join("");
+    return this._dialogShell(this._t("panel.avatar_dialog_title"),
+      [
+        `<p class="tm-field-hint">${this._t("panel.avatar_dialog_hint")}</p>`,
+        rows.length ? `<div class="tm-avatar-rows">${rowHtml}</div>` : `<div class="tm-meta">${this._t("panel.avatar_empty")}</div>`,
+        `<button type="button" class="tm-btn tm-btn-sm" data-act="avatar-add-row" style="margin-top:10px;">＋ ${this._t("panel.avatar_add_row")}</button>`,
+      ].join(""),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-avatar-catalog">${this._t("panel.btn_save")}</button>`
     );
   }
 
@@ -5105,6 +5199,11 @@ class TaskMatePanel extends HTMLElement {
       .tm-quest-step-row { display: flex; align-items: center; gap: 8px; }
       .tm-quest-step-num { width: 22px; height: 22px; flex: 0 0 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--tm-accent-soft); color: var(--tm-accent-text); font-size: 12px; font-weight: 600; }
       .tm-quest-step-name { flex: 1; font-size: 13px; }
+      .tm-avatar-rows { display: flex; flex-direction: column; gap: 10px; }
+      .tm-avatar-row { display: flex; align-items: center; gap: 8px; }
+      .tm-avatar-row-icon { flex: 0 0 32px; font-size: 24px; color: var(--tm-accent-text); }
+      .tm-avatar-row-fields { flex: 1; display: grid; grid-template-columns: 1.2fr 1.2fr 1fr 0.7fr; gap: 6px; }
+      @media (max-width: 600px) { .tm-avatar-row-fields { grid-template-columns: 1fr 1fr; } }
       .tm-pill-alternating, .tm-pill-random, .tm-pill-balanced { background: var(--tm-accent-soft); color: var(--tm-accent-text); border-color: var(--tm-accent-border); }
       .tm-pill-first_come { background: var(--tm-gold-soft); color: var(--tm-gold); border-color: color-mix(in srgb, var(--tm-gold), transparent 75%); }
       .tm-pill-unassigned { background: var(--tm-muted-bg, #f0f0f0); color: var(--tm-text-muted); border-color: var(--tm-border); }
