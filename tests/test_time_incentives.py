@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.models import Chore
