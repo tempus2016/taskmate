@@ -172,6 +172,7 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
             "career_score": getattr(c, 'career_score', 0) or 0,
             "total_penalties_received": getattr(c, 'total_penalties_received', 0) or 0,
             "quests": coordinator.quest_progress_for_child(c.id),
+            "avatar_options": coordinator.avatar_options_for_child(c),
         })
     return summary
 

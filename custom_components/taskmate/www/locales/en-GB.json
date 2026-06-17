@@ -1360,5 +1360,22 @@
   "panel.quest_active_hint": "Inactive quests don't track progress or award bonuses.",
   "panel.quest_need_step": "Add at least one step.",
   "panel.toast_quest_added": "Quest added",
-  "panel.toast_quest_updated": "Quest updated"
+  "panel.toast_quest_updated": "Quest updated",
+  "panel.settings_avatars_title": "Avatar unlockables",
+  "panel.settings_avatars_label": "Manage avatars",
+  "panel.settings_avatars_hint": "{count} avatars in the catalogue. Children unlock avatars by reaching levels, points or streaks, then pick their own.",
+  "panel.settings_avatars_btn": "Manage avatars",
+  "panel.avatar_dialog_title": "Avatar catalogue",
+  "panel.avatar_dialog_hint": "Define the avatars children can earn. Each row needs an mdi icon and an unlock requirement. Children can switch to any avatar they've unlocked.",
+  "panel.avatar_empty": "No avatars yet — add one below.",
+  "panel.avatar_add_row": "Add avatar",
+  "panel.avatar_label_ph": "Name (e.g. Rocket)",
+  "panel.avatar_unlock_free": "Always available",
+  "panel.avatar_unlock_level": "Reach level",
+  "panel.avatar_unlock_points": "Total points earned",
+  "panel.avatar_unlock_streak": "Best streak (days)",
+  "panel.toast_avatars_saved": "Avatars saved",
+  "child.avatar_change": "Change your avatar",
+  "child.avatar_locked": "Locked",
+  "child.avatar_change_failed": "Could not change avatar."
 }

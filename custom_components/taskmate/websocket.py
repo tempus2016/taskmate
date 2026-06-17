@@ -94,6 +94,9 @@ WS_CREATE_QUEST: Final        = "taskmate/create_quest"
 WS_UPDATE_QUEST: Final        = "taskmate/update_quest"
 WS_DELETE_QUEST: Final        = "taskmate/delete_quest"
 
+WS_UPDATE_AVATAR_CATALOG: Final = "taskmate/update_avatar_catalog"
+WS_SET_CHILD_AVATAR: Final      = "taskmate/set_child_avatar"
+
 WS_ADD_TASK_GROUP: Final      = "taskmate/add_task_group"
 WS_UPDATE_TASK_GROUP: Final   = "taskmate/update_task_group"
 WS_REMOVE_TASK_GROUP: Final   = "taskmate/remove_task_group"
@@ -276,6 +279,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "task_groups":      list(data.get("task_groups", [])),
         "quests":           list(data.get("quests", [])),
         "quest_progress":   dict(data.get("quest_progress", {}) or {}),
+        "avatar_catalog":   coordinator.avatar_catalog(),
         "pool_allocations": list(data.get("pool_allocations", [])),
         "timed_sessions":   list(data.get("timed_sessions", [])),
         "templates":        coordinator.get_all_templates(),
@@ -731,6 +735,44 @@ async def _ws_delete_quest(hass, connection, msg, coordinator):
         connection.send_error(msg["id"], "not_found", str(err))
         return
     connection.send_result(msg["id"], {"id": msg["quest_id"]})
+
+
+# ---------------------------------------------------------------------------
+# Avatar unlockables
+# ---------------------------------------------------------------------------
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_UPDATE_AVATAR_CATALOG,
+    vol.Required("catalog"): [{
+        vol.Optional("id"): str,
+        vol.Optional("label"): str,
+        vol.Required("icon"): str,
+        vol.Optional("unlock_type"): vol.In(["free", "level", "points", "streak"]),
+        vol.Optional("unlock_value"): vol.All(vol.Coerce(int), vol.Range(min=0, max=1000000)),
+    }],
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_update_avatar_catalog(hass, connection, msg, coordinator):
+    await coordinator.async_update_avatar_catalog(list(msg["catalog"]))
+    connection.send_result(msg["id"], {"count": len(msg["catalog"])})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_SET_CHILD_AVATAR,
+    vol.Required("child_id"): str,
+    vol.Required("icon"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_set_child_avatar(hass, connection, msg, coordinator):
+    # Admin (panel) may set any catalogue avatar; unlock gate is for children.
+    try:
+        await coordinator.async_set_avatar(msg["child_id"], msg["icon"], enforce_unlock=False)
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], {"id": msg["child_id"]})
 
 
 # ---------------------------------------------------------------------------
@@ -1778,6 +1820,7 @@ _COMMANDS = (
     _ws_config_export, _ws_config_import,
     _ws_add_reward, _ws_update_reward, _ws_remove_reward,
     _ws_create_quest, _ws_update_quest, _ws_delete_quest,
+    _ws_update_avatar_catalog, _ws_set_child_avatar,
     _ws_add_penalty, _ws_update_penalty, _ws_remove_penalty, _ws_apply_penalty,
     _ws_add_bonus, _ws_update_bonus, _ws_remove_bonus, _ws_apply_bonus,
     _ws_add_task_group, _ws_update_task_group, _ws_remove_task_group,
