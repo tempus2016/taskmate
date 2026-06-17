@@ -1297,5 +1297,9 @@
   "panel.settings_spendcap_enabled_hint": "Limit how many points each child can spend on rewards per period.",
   "panel.settings_spendcap_params_label": "Spending cap settings",
   "panel.settings_spendcap_params_hint": "Max points spendable per period (0 = no limit).",
-  "panel.settings_spendcap_amount": "Cap (pts)"
+  "panel.settings_spendcap_amount": "Cap (pts)",
+  "panel.settings_interest_enabled_label": "Savings interest",
+  "panel.settings_interest_enabled_hint": "Periodically pay each child interest on their spendable balance (rewards saving).",
+  "panel.settings_interest_params_label": "Savings interest settings",
+  "panel.settings_interest_params_hint": "Interest rate applied to the balance, and how often."
 }

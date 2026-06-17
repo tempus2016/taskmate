@@ -330,6 +330,7 @@ class TaskMateCoordinator(
             self._async_restock_rewards,
             self._async_expire_rewards,
             self._async_decay_points,
+            self._async_apply_interest,
             self._async_stop_stale_timed_sessions,
             # Rotate assignment_current_child_id and publish today's events
             # to every configured calendar
