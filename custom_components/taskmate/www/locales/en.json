@@ -1244,5 +1244,12 @@
   "panel.tp_err_time_required": "Set a start and end time for “{name}”.",
   "panel.tp_err_order": "“{name}” must start before it ends.",
   "panel.tp_err_empty": "Add at least one time period.",
-  "panel.tp_err_overlap": "“{a}” overlaps “{b}” — periods cannot overlap."
+  "panel.tp_err_overlap": "“{a}” overlaps “{b}” — periods cannot overlap.",
+  "panel.settings_surprise_enabled_label": "Surprise bonuses",
+  "panel.settings_surprise_enabled_hint": "Give each child a daily random chance of a surprise points bonus (rolled at 16:00).",
+  "panel.settings_surprise_params_label": "Surprise bonus settings",
+  "panel.settings_surprise_params_hint": "Daily chance per child, and the random points range awarded on a hit.",
+  "panel.settings_surprise_chance": "Chance %",
+  "panel.settings_surprise_min": "Min pts",
+  "panel.settings_surprise_max": "Max pts"
 }
