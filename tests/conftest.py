@@ -120,8 +120,16 @@ class FakeUnauthorized(Exception):
         super().__init__(*args)
 
 
+class FakeServiceValidationError(Exception):
+    """Stand-in for homeassistant.exceptions.ServiceValidationError."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args)
+
+
 _ha_exceptions = MagicMock()
 _ha_exceptions.Unauthorized = FakeUnauthorized
+_ha_exceptions.ServiceValidationError = FakeServiceValidationError
 
 
 # ── homeassistant.helpers.event ─────────────────────────────────────────────
