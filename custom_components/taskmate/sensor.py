@@ -136,7 +136,7 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
     return common
 
 
-def _build_children_summary(common: dict) -> list[dict]:
+def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> list[dict]:
     """Build compact per-child summary used on the overview sensor."""
     children = common["children"]
     pending = common["pending_points_by_child"]
@@ -145,7 +145,11 @@ def _build_children_summary(common: dict) -> list[dict]:
     summary = []
     for c in children:
         committed_amount = committed.get(c.id, 0)
+        lvl = coordinator.level_info(c)
         summary.append({
+            "level": lvl["level"],
+            "level_progress": lvl["progress"],
+            "level_target": lvl["target"],
             "id": c.id,
             "name": c.name,
             "points": c.points,
@@ -718,7 +722,7 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "total_pending_completions": len(common["pending_completions"]),
             "points_name": data.get("points_name", "Stars"),
             "points_icon": data.get("points_icon", "mdi:star"),
-            "children": _build_children_summary(common),
+            "children": _build_children_summary(self.coordinator, common),
             "time_boundaries": time_boundaries,
             "time_periods": time_periods,
             "vacation_active": active_vacation is not None,

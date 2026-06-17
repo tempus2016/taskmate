@@ -217,6 +217,10 @@ def _stress_coordinator():
     coord.is_chore_available_for_child = MagicMock(return_value=True)
     # Medium-difficulty chores award their base points (×1.0 baseline).
     coord.effective_chore_points = MagicMock(side_effect=lambda c: c.points)
+    coord.level_info = MagicMock(side_effect=lambda c: {
+        "level": (c.total_points_earned or 0) // 100 + 1,
+        "progress": (c.total_points_earned or 0) % 100, "target": 100,
+    })
     coord.storage = MagicMock()
     coord.storage.get_last_completed = MagicMock(return_value={"current": "2026-04-20T08:00:00Z"})
     return coord
@@ -255,7 +259,7 @@ def test_overview_slice_under_limit():
         "total_pending_completions": len(common["pending_completions"]),
         "points_name": "Stars",
         "points_icon": "mdi:star",
-        "children": sensor_module._build_children_summary(common),
+        "children": sensor_module._build_children_summary(coord, common),
     }
     _assert_slice_under_limit("taskmate_overview", scalars)
 

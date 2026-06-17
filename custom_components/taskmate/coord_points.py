@@ -214,6 +214,7 @@ class PointsMixin:
         child.points += points
         child.total_points_earned += points
         child.career_score = child.total_points_earned - child.total_penalties_received
+        await self._maybe_level_up(child)
         self.storage.update_child(child)
         self.storage.append_career_score_snapshot(
             child_id, date.today().isoformat(), child.career_score
@@ -301,6 +302,47 @@ class PointsMixin:
         self.storage.remove_points_transaction(transaction_id)
         await self.storage.async_save()
         await self.async_refresh()
+
+    # ── Levels / XP ──────────────────────────────────────────────────────
+    def _xp_per_level(self) -> int:
+        try:
+            v = int(float(self.storage.get_setting("level_xp_step", "100")))
+        except (ValueError, TypeError):
+            v = 100
+        return max(1, v)
+
+    def level_for_xp(self, xp: int) -> int:
+        """Level derived from cumulative earned points (XP). Level 1 at 0 XP."""
+        return max(1, int(xp or 0) // self._xp_per_level() + 1)
+
+    def level_info(self, child) -> dict:
+        """{level, progress, target} for a child's current XP."""
+        step = self._xp_per_level()
+        xp = int(getattr(child, "total_points_earned", 0) or 0)
+        lvl = xp // step + 1
+        return {"level": lvl, "progress": xp - (lvl - 1) * step, "target": step}
+
+    async def _maybe_level_up(self, child) -> None:
+        """Sync child.level to its XP; fire level-up events on an increase.
+
+        Does not save — the caller persists ``child`` afterwards.
+        """
+        new = self.level_for_xp(getattr(child, "total_points_earned", 0))
+        old = getattr(child, "level", 1) or 1
+        if new == old:
+            return
+        child.level = new
+        if new < old:
+            return  # earned total dropped (e.g. undo); resync quietly
+        for lvl in range(old + 1, new + 1):
+            self.hass.bus.async_fire("taskmate_level_up", {
+                "child_id": child.id, "child_name": child.name,
+                "level": lvl, "timestamp": dt_util.now().isoformat(),
+            })
+            if getattr(self, "notifications", None):
+                await self.notifications.fire("level_up", {
+                    "child_name": child.name, "child_id": child.id, "level": lvl,
+                })
 
     async def async_gift_points(self, from_child_id: str, to_child_id: str, points: int) -> None:
         """Transfer spendable points from one child to another (parent-controlled).
@@ -571,6 +613,7 @@ class PointsMixin:
         self.storage.append_career_score_snapshot(
             child.id, effective_date.isoformat(), child.career_score
         )
+        await self._maybe_level_up(child)
         self.storage.update_child(child)
 
         # Notify on each newly reached streak milestone (off by default; opt-in).

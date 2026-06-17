@@ -2078,6 +2078,7 @@ class TaskMatePanel extends HTMLElement {
         </div>
         <div class="tm-stats-row">
           <div class="tm-stat tm-stat-highlight"><div class="tm-stat-value">${this._fmtNum(child.points || 0)}</div><div class="tm-stat-label">${this._esc(pointsName)}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.level || 1)}</div><div class="tm-stat-label">${this._t("panel.child_stat_level")}</div></div>
           <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.total_points_earned || 0)}</div><div class="tm-stat-label">${this._t("panel.child_stat_earned")}</div></div>
           <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.total_chores_completed || 0)}</div><div class="tm-stat-label">${this._t("panel.child_stat_done")}</div></div>
         </div>
@@ -3277,6 +3278,10 @@ class TaskMatePanel extends HTMLElement {
                   </select>
                 </label>
               </div>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_level_step_label")}<small>${this._t("panel.settings_level_step_hint")}</small></div>
+              <input type="number" class="tm-input" min="1" data-setting="level_xp_step" value="${s.level_xp_step || 100}">
             </div>
           </div>
         </div>
