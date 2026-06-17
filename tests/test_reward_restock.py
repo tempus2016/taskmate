@@ -29,7 +29,6 @@ def _coord(rewards):
 
 
 def _run_on(coord, date_obj):
-    import custom_components.taskmate.coord_rewards as mod
     fake = MagicMock()
     fake.now.return_value = dt.datetime(date_obj.year, date_obj.month, date_obj.day, 0, 5)
     with patch.dict("sys.modules"):
