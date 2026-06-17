@@ -1244,10 +1244,5 @@
   "panel.notif_test_sent": "Test sendt til {count} mottaker(e) + vedvarende varsel",
   "panel.toast_chore_cloned": "Gjøremål duplisert",
   "notification.streak_milestone.description": "Feirer hver nye seriemilepæl et barn når (av som standard).",
-  "notification.streak_milestone.name": "Seriemilepæl",
-  "task_groups.title": "Oppgavegrupper",
-  "task_groups.empty": "Ingen oppgavegrupper konfigurert.",
-  "task_groups.no_chores": "Ingen gjøremål i denne gruppen.",
-  "task_groups.policy_sticky": "Fast",
-  "task_groups.policy_spread": "Fordelt"
+  "notification.streak_milestone.name": "Seriemilepæl"
 }
