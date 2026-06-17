@@ -99,6 +99,24 @@ TRIGGER_METRICS: dict[str, set[str]] = {
 }
 
 
+def criterion_met(value: int, operator: str, threshold: int) -> bool:
+    """Evaluate a single badge criterion. Unknown operators default to >=."""
+    op = operator or ">="
+    if op == ">=":
+        return value >= threshold
+    if op == "==":
+        return value == threshold
+    if op == "<=":
+        return value <= threshold
+    if op == ">":
+        return value > threshold
+    if op == "<":
+        return value < threshold
+    if op == "!=":
+        return value != threshold
+    return value >= threshold
+
+
 def badge_relevant_to_trigger(badge: Badge, trigger: str) -> bool:
     """Return True if any of the badge's criteria reference a metric in the trigger's set.
 
@@ -154,11 +172,13 @@ class BadgeCoordinator:
                 continue
             if not badge.criteria:
                 continue
-            all_pass = all(
-                resolve_metric(c.metric, child, self.storage) >= c.value
+            results = [
+                criterion_met(resolve_metric(c.metric, child, self.storage), c.operator, c.value)
                 for c in badge.criteria
-            )
-            if not all_pass:
+            ]
+            combinator = (getattr(badge, "combinator", "AND") or "AND").upper()
+            passed = any(results) if combinator == "OR" else all(results)
+            if not passed:
                 continue
 
             bonus = 0 if silent else badge.point_bonus

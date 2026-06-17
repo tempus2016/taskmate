@@ -523,3 +523,70 @@ class TestNotifications:
         assert "A" in call_args[0][1]["badge_name"]
         assert "B" in call_args[0][1]["badge_name"]
         assert "C" in call_args[0][1]["badge_name"]
+
+
+# --- v4.0: badge operators + AND/OR combinator -----------------------------
+from custom_components.taskmate.coord_badges import criterion_met
+
+
+class TestCriterionMet:
+    def test_gte(self):
+        assert criterion_met(5, ">=", 5) and not criterion_met(4, ">=", 5)
+
+    def test_eq(self):
+        assert criterion_met(7, "==", 7) and not criterion_met(8, "==", 7)
+
+    def test_lte(self):
+        assert criterion_met(3, "<=", 5) and not criterion_met(6, "<=", 5)
+
+    def test_gt_lt(self):
+        assert criterion_met(6, ">", 5) and criterion_met(4, "<", 5)
+        assert not criterion_met(5, ">", 5) and not criterion_met(5, "<", 5)
+
+    def test_ne(self):
+        assert criterion_met(4, "!=", 5) and not criterion_met(5, "!=", 5)
+
+    def test_unknown_defaults_gte(self):
+        assert criterion_met(5, "??", 5)
+
+
+class TestCombinatorEval:
+    def _setup(self, coord, child_kwargs, badges):
+        kwargs = {"name": "Mia", "total_points_earned": 0, "total_chores_completed": 0,
+                  "current_streak": 0, "best_streak": 0, "awarded_perfect_weeks": []}
+        kwargs.update(child_kwargs)
+        child = Child(**kwargs)
+        child.id = "c1"
+        coord.storage.get_child.return_value = child
+        coord.storage.get_badges.return_value = badges
+        coord.storage.get_reward_claims.return_value = []
+        coord.storage.has_awarded.side_effect = lambda cid, bid: False
+        coord.storage.get_awarded_badges_for_child.return_value = []
+
+    async def test_and_requires_all(self, coord):
+        b = Badge(name="AND", combinator="AND", criteria=[
+            BadgeCriterion("total_points", ">=", 100),
+            BadgeCriterion("total_chores", ">=", 50),
+        ])
+        b.id = "b1"
+        self._setup(coord, {"total_points_earned": 150, "total_chores_completed": 10}, [b])
+        assert await coord.evaluate_for_child("c1", "manual") == []
+
+    async def test_or_awards_on_any(self, coord):
+        b = Badge(name="OR", combinator="OR", criteria=[
+            BadgeCriterion("total_points", ">=", 100),
+            BadgeCriterion("total_chores", ">=", 50),
+        ])
+        b.id = "b1"
+        self._setup(coord, {"total_points_earned": 150, "total_chores_completed": 10}, [b])
+        awards = await coord.evaluate_for_child("c1", "manual")
+        assert len(awards) == 1
+
+    async def test_operator_eq_in_eval(self, coord):
+        b = Badge(name="exactly 7", combinator="AND",
+                  criteria=[BadgeCriterion("current_streak", "==", 7)])
+        b.id = "b1"
+        self._setup(coord, {"current_streak": 7}, [b])
+        assert len(await coord.evaluate_for_child("c1", "manual")) == 1
+        self._setup(coord, {"current_streak": 8}, [b])
+        assert await coord.evaluate_for_child("c1", "manual") == []

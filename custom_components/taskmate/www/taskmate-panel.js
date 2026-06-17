@@ -39,6 +39,8 @@ const BADGE_METRICS = [
   { v: "first_reward",  lk: "badge.metric_first_reward" },
 ];
 const BADGE_BOOL_METRICS = ["first_chore", "first_reward"];
+const BADGE_OPERATORS = ["≥", "=", "≤", ">", "<", "≠"];
+const BADGE_OP_VALUES = { "≥": ">=", "=": "==", "≤": "<=", ">": ">", "<": "<", "≠": "!=" };
 const BADGE_TIERS = [
   { v: "bronze",   lk: "badge.tier_bronze" },
   { v: "silver",   lk: "badge.tier_silver" },
@@ -2300,9 +2302,10 @@ class TaskMatePanel extends HTMLElement {
     return `tm-badge-tier-${(tier || "bronze").toLowerCase()}`;
   }
 
-  _criteriaLabel(criteria) {
+  _criteriaLabel(criteria, combinator = "AND") {
     if (!criteria || !criteria.length) return this._t("badge.manual_award_only");
-    return criteria.map(c => `${this._t("badge.criteria_" + c.metric)} ${c.operator} ${c.value}`).join(` ${this._t("badge.criteria_and")} `);
+    const joinKey = combinator === "OR" ? "badge.criteria_or" : "badge.criteria_and";
+    return criteria.map(c => `${this._t("badge.criteria_" + c.metric)} ${c.operator} ${c.value}`).join(` ${this._t(joinKey)} `);
   }
 
   _badgeName(b) {
@@ -2336,7 +2339,7 @@ class TaskMatePanel extends HTMLElement {
                   ${this._badgeDesc(b) ? `<div class="tm-meta">${this._esc(this._badgeDesc(b))}</div>` : ""}
                 </td>
                 <td><span class="tm-badge-tier-label">${this._t("badge.tier_" + (b.tier || "bronze"))}</span></td>
-                <td><code class="tm-badge-criteria">${this._esc(this._criteriaLabel(b.criteria))}</code></td>
+                <td><code class="tm-badge-criteria">${this._esc(this._criteriaLabel(b.criteria, b.combinator))}</code></td>
                 <td><strong class="${b.point_bonus ? "tm-pos" : "tm-text-muted"}">${b.point_bonus ? `+${b.point_bonus}` : "—"}</strong></td>
                 <td>
                   <button type="button" class="tm-badge-toggle${b.enabled !== false ? " tm-badge-toggle-on" : ""}"
@@ -2377,7 +2380,7 @@ class TaskMatePanel extends HTMLElement {
                   ${b.description ? `<div class="tm-meta">${this._esc(b.description)}</div>` : ""}
                 </td>
                 <td><span class="tm-badge-tier-label">${this._t("badge.tier_" + (b.tier || "bronze"))}</span></td>
-                <td><code class="tm-badge-criteria">${this._esc(this._criteriaLabel(b.criteria))}</code></td>
+                <td><code class="tm-badge-criteria">${this._esc(this._criteriaLabel(b.criteria, b.combinator))}</code></td>
                 <td><strong class="${b.point_bonus ? "tm-pos" : "tm-text-muted"}">${b.point_bonus ? `+${b.point_bonus}` : "—"}</strong></td>
                 <td>
                   <button type="button" class="tm-badge-toggle${b.enabled !== false ? " tm-badge-toggle-on" : ""}"
@@ -2473,9 +2476,10 @@ class TaskMatePanel extends HTMLElement {
       assigned_to: d.assigned_to || [],
       criteria: (d.criteria || []).map(c => ({
         metric: c.metric,
-        operator: ">=",
+        operator: BADGE_BOOL_METRICS.includes(c.metric) ? ">=" : (c.operator || ">="),
         value: BADGE_BOOL_METRICS.includes(c.metric) ? 1 : Number(c.value),
       })),
+      combinator: d.combinator === "OR" ? "OR" : "AND",
     };
     let ok, err;
     if (wasAdd) {
@@ -2590,13 +2594,25 @@ class TaskMatePanel extends HTMLElement {
                     <select class="tm-select" data-badge-criterion-field="metric" data-badge-criterion-idx="${idx}">
                       ${BADGE_METRICS.map(m => `<option value="${m.v}"${c.metric === m.v ? " selected" : ""}>${this._t(m.lk)}</option>`).join("")}
                     </select>
-                    <span class="tm-badge-op">≥</span>
-                    ${isBool ? `<span class="tm-field-hint" style="flex:1">true</span>` : `<input class="tm-input" type="number" min="1" value="${c.value || 1}" data-badge-criterion-field="value" data-badge-criterion-idx="${idx}">`}
+                    ${isBool ? `<span class="tm-badge-op">=</span>` : `
+                    <select class="tm-select tm-badge-op-select" data-badge-criterion-field="operator" data-badge-criterion-idx="${idx}">
+                      ${BADGE_OPERATORS.map(sym => { const v = BADGE_OP_VALUES[sym]; return `<option value="${v}"${(c.operator || ">=") === v ? " selected" : ""}>${sym}</option>`; }).join("")}
+                    </select>`}
+                    ${isBool ? `<span class="tm-field-hint" style="flex:1">true</span>` : `<input class="tm-input" type="number" min="0" value="${c.value || 1}" data-badge-criterion-field="value" data-badge-criterion-idx="${idx}">`}
                     <button type="button" class="tm-icon-btn" data-act="badge-remove-criterion" data-idx="${idx}" title="${this._t("panel.badge_remove_criterion_btn")}">✕</button>
                   </div>
                 `;
               }).join("")}
               <button type="button" class="tm-btn" data-act="badge-add-criterion" style="margin-top:6px;width:100%;border-style:dashed">${this._t("panel.badge_add_criterion_btn")}</button>
+              ${criteria.length >= 2 ? `
+                <div class="tm-badge-combinator">
+                  <span class="tm-field-hint">${this._t("panel.badge_combinator_label")}</span>
+                  <select class="tm-select" data-field="combinator">
+                    <option value="AND"${(d.combinator || "AND") !== "OR" ? " selected" : ""}>${this._t("panel.badge_combinator_all")}</option>
+                    <option value="OR"${d.combinator === "OR" ? " selected" : ""}>${this._t("panel.badge_combinator_any")}</option>
+                  </select>
+                </div>
+              ` : ""}
             </div>
           </div>
         ` : "",

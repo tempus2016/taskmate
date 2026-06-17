@@ -19,6 +19,7 @@ from homeassistant.helpers.service import async_set_service_schema
 from .const import (
     ATTR_AWARDED_BADGE_ID,
     ATTR_BADGE_ASSIGNED_TO,
+    ATTR_BADGE_COMBINATOR,
     ATTR_BADGE_CRITERIA,
     ATTR_BADGE_DESCRIPTION,
     ATTR_BADGE_ENABLED,
@@ -676,6 +677,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             tier=call.data.get(ATTR_BADGE_TIER, "bronze"),
             point_bonus=int(call.data.get(ATTR_BADGE_POINT_BONUS, 0) or 0),
             criteria=criteria,
+            combinator="OR" if str(call.data.get(ATTR_BADGE_COMBINATOR, "AND")).upper() == "OR" else "AND",
             assigned_to=list(call.data.get(ATTR_BADGE_ASSIGNED_TO, []) or []),
             notify_on_earn=bool(call.data.get(ATTR_BADGE_NOTIFY_ON_EARN, True)),
             builtin=False,
@@ -714,6 +716,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             existing.point_bonus = int(call.data.get(ATTR_BADGE_POINT_BONUS, existing.point_bonus) or 0)
             if ATTR_BADGE_CRITERIA in call.data:
                 existing.criteria = [BadgeCriterion.from_dict(c) for c in (call.data[ATTR_BADGE_CRITERIA] or [])]
+            if ATTR_BADGE_COMBINATOR in call.data:
+                existing.combinator = "OR" if str(call.data[ATTR_BADGE_COMBINATOR]).upper() == "OR" else "AND"
             existing.assigned_to = list(call.data.get(ATTR_BADGE_ASSIGNED_TO, existing.assigned_to) or [])
             existing.enabled = bool(call.data.get(ATTR_BADGE_ENABLED, existing.enabled))
             existing.notify_on_earn = bool(call.data.get(ATTR_BADGE_NOTIFY_ON_EARN, existing.notify_on_earn))
