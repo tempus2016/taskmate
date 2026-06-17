@@ -712,9 +712,18 @@ add_badge:
           mode: box
     criteria:
       name: Criteria
-      description: "List of metric / operator / value dicts. Empty = manual-award only."
+      description: "List of metric / operator / value dicts (operator one of >=, ==, <=, >, <, !=). Empty = manual-award only."
       selector:
         object:
+    combinator:
+      name: Combinator
+      description: "How multiple criteria combine: AND (all must pass) or OR (any). Default AND."
+      default: AND
+      selector:
+        select:
+          options:
+            - AND
+            - OR
     assigned_to:
       name: Assigned to
       description: "List of child IDs (empty = all)"
@@ -762,6 +771,12 @@ update_badge:
     criteria:
       selector:
         object:
+    combinator:
+      selector:
+        select:
+          options:
+            - AND
+            - OR
     assigned_to:
       selector:
         object:
