@@ -48,6 +48,7 @@ from __future__ import annotations
 
 import logging
 import re
+from datetime import date
 from functools import wraps
 from typing import Any, Final
 
@@ -883,6 +884,46 @@ def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, s
 
     return periods, None
 
+
+MAX_VACATION_PERIODS: Final = 50
+
+
+def _validate_vacation_periods(raw: list) -> tuple[list[dict] | None, str | None]:
+    """Normalise and validate a vacation_periods payload.
+
+    Returns (periods, None) on success or (None, error_message) on failure.
+    An empty list is valid (clears all vacations). Each entry needs valid ISO
+    start/end dates; start/end are swapped if reversed; ids are generated when
+    missing. Returns periods sorted by start.
+    """
+    if not isinstance(raw, list):
+        return None, "vacation_periods must be a list"
+    if len(raw) > MAX_VACATION_PERIODS:
+        return None, f"too many vacation periods (max {MAX_VACATION_PERIODS})"
+    periods: list[dict] = []
+    taken: set[str] = set()
+    for entry in raw:
+        if not isinstance(entry, dict):
+            return None, "each vacation period must be an object"
+        try:
+            start = date.fromisoformat(str(entry.get("start")))
+            end = date.fromisoformat(str(entry.get("end")))
+        except (TypeError, ValueError):
+            return None, "each vacation period needs valid start and end dates (YYYY-MM-DD)"
+        if end < start:
+            start, end = end, start
+        pid = str(entry.get("id") or "").strip()
+        if not pid or pid in taken:
+            pid = f"{start.isoformat()}_{len(periods)}"
+        taken.add(pid)
+        periods.append({
+            "id": pid,
+            "name": str(entry.get("name") or "").strip(),
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+        })
+    return sorted(periods, key=lambda p: p["start"]), None
+
 @websocket_api.websocket_command({
     vol.Required("type"): WS_UPDATE_SETTINGS,
     vol.Optional("points_name"): vol.All(str, vol.Length(min=1, max=120)),
@@ -909,6 +950,7 @@ def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, s
     vol.Optional("time_night_start"): vol.Match(r"^\d{2}:\d{2}$"),
     vol.Optional("time_night_end"): vol.Match(r"^\d{2}:\d{2}$"),
     vol.Optional("time_periods"): list,
+    vol.Optional("vacation_periods"): list,
 })
 @websocket_api.async_response
 @_admin_only
@@ -922,8 +964,15 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
             return
         storage.set_setting("time_periods", periods)
         changed.append("time_periods")
+    if "vacation_periods" in msg:
+        vacations, verr = _validate_vacation_periods(msg["vacation_periods"])
+        if verr:
+            connection.send_error(msg["id"], "invalid_vacation_periods", verr)
+            return
+        storage.set_setting("vacation_periods", vacations)
+        changed.append("vacation_periods")
     for k, v in msg.items():
-        if k in {"id", "type", "time_periods"}:
+        if k in {"id", "type", "time_periods", "vacation_periods"}:
             continue
         if k == "points_name":
             storage.set_points_name(v.strip())

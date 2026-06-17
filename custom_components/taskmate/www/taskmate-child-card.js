@@ -1443,6 +1443,18 @@ class TaskMateChildCard extends LitElement {
         cursor: pointer;
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
       }
+      .vacation-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #ffe9b3, #ffd27f);
+        color: #6b4e00;
+        font-weight: 700;
+        font-size: 1rem;
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      }
+      .vacation-banner ha-icon { --mdc-icon-size: 24px; }
       .badge-strip:hover { background: var(--secondary-background-color, rgba(0,0,0,0.03)); }
       .badge-strip-label {
         font-size: 11px;
@@ -1640,6 +1652,13 @@ class TaskMateChildCard extends LitElement {
             </div>
           </div>
         </div>
+
+        ${attrs.vacation_active ? html`
+          <div class="vacation-banner">
+            <ha-icon icon="mdi:palm-tree"></ha-icon>
+            <span>${this._t('child.on_vacation')}${attrs.vacation_name ? ` · ${attrs.vacation_name}` : ''}</span>
+          </div>
+        ` : ''}
 
         ${showBadges ? html`
           <div class="badge-strip" @click=${() => this._openBadgesView()} title="${this._t('badges.label')}">

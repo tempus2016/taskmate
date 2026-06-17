@@ -688,6 +688,7 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
 
         time_periods = self.coordinator.get_time_periods()
         period_by_id = {p["id"]: p for p in time_periods}
+        active_vacation = self.coordinator.active_vacation()
 
         # Legacy shape kept for cards that still read the four fixed keys.
         legacy_defaults = {
@@ -720,6 +721,10 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "children": _build_children_summary(common),
             "time_boundaries": time_boundaries,
             "time_periods": time_periods,
+            "vacation_active": active_vacation is not None,
+            "vacation_name": active_vacation.get("name", "") if active_vacation else "",
+            "vacation_end": active_vacation.get("end", "") if active_vacation else "",
+            "vacation_periods": self.coordinator.get_vacation_periods(),
         }
 
 
@@ -754,11 +759,15 @@ class TaskMateChoresSensor(_CachedAttrsSensor):
             }
             for g in self.coordinator.storage.get_task_groups()
         ]
+        active_vacation = self.coordinator.active_vacation()
         return {
             "chores": _build_chores_list(self.coordinator, common),
             "todays_completions": _build_todays_completions(common),
             "task_groups": task_groups,
             "active_timed_sessions": _build_active_timed_sessions(self.coordinator),
+            "vacation_active": active_vacation is not None,
+            "vacation_name": active_vacation.get("name", "") if active_vacation else "",
+            "vacation_end": active_vacation.get("end", "") if active_vacation else "",
         }
 
 

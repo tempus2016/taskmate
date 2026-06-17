@@ -132,6 +132,24 @@ class PointsMixin:
             await self.storage.async_save()
             await self.async_refresh()
 
+    def _streak_breaks_after_gap(self, last_date_str: str, today: date) -> bool:
+        """True if a genuine (non-vacation) expected day was missed.
+
+        Walks each day strictly between the last completion and today; if any
+        is not a vacation day the child missed it and the streak breaks.
+        Days inside a vacation period are forgiven.
+        """
+        try:
+            last_date = date.fromisoformat(last_date_str)
+        except (TypeError, ValueError):
+            return False
+        d = last_date + timedelta(days=1)
+        while d < today:
+            if not self.is_vacation_day(d):
+                return True
+            d += timedelta(days=1)
+        return False
+
     async def _async_check_streaks(self) -> None:
         """Check all children's streaks and reset/pause if they missed yesterday.
 
@@ -140,9 +158,11 @@ class PointsMixin:
         - "pause": streak is preserved but not incremented until they complete again
         """
         today = dt_util.now().date()
-        yesterday = today - timedelta(days=1)
-        yesterday_str = yesterday.isoformat()
-        today_str = today.isoformat()
+
+        # Vacation / pause mode: freeze streaks entirely while away — no resets
+        # or pauses happen on a vacation day.
+        if self.is_vacation_day(today):
+            return
 
         streak_mode = self.storage.get_setting("streak_reset_mode", "reset")
 
@@ -154,11 +174,12 @@ class PointsMixin:
             if last_date_str is None:
                 continue  # No completions yet, nothing to do
 
-            # If last completion was today or yesterday, streak is fine
-            if last_date_str in (yesterday_str, today_str):
+            # Streak is fine unless a genuine, non-vacation day was missed
+            # between the last completion and today.
+            if not self._streak_breaks_after_gap(last_date_str, today):
                 continue
 
-            # They missed a day
+            # They missed a (non-vacation) day
             if (child.current_streak or 0) > 0:
                 if streak_mode == "pause":
                     # Preserve the streak value but mark it as paused
