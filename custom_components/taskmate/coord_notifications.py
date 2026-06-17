@@ -25,6 +25,7 @@ from .const import (
     NOTIF_TYPE_PENDING_CHORE_APPROVAL,
     NOTIF_TYPE_PENDING_REWARD_CLAIM,
     NOTIF_TYPE_STREAK_AT_RISK,
+    NOTIF_TYPE_STREAK_MILESTONE,
 )
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,6 +51,7 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_BADGE_EARNED,           "both",   False, False, False, True),
     NotificationTypeMeta(NOTIF_TYPE_PENDING_CHORE_APPROVAL, "parent", False, False, True,  True),
     NotificationTypeMeta(NOTIF_TYPE_PENDING_REWARD_CLAIM,   "parent", False, False, True,  True),
+    NotificationTypeMeta(NOTIF_TYPE_STREAK_MILESTONE,       "both",   False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {
@@ -120,6 +122,7 @@ class NotificationCoordinator:
             NOTIF_TYPE_BADGE_EARNED:           "{child_name} earned the {badge_name} badge!",
             NOTIF_TYPE_PENDING_CHORE_APPROVAL: "{child_name} completed '{chore_name}' (+{points} {points_name}) — awaiting approval.",
             NOTIF_TYPE_PENDING_REWARD_CLAIM:   "{child_name} claimed '{reward_name}' ({cost} {points_name}) — awaiting approval.",
+            NOTIF_TYPE_STREAK_MILESTONE:       "{child_name} hit a {days}-day streak — +{points} {points_name}!",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:

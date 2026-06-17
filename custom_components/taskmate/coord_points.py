@@ -397,6 +397,7 @@ class PointsMixin:
             )
 
         # ── Streak milestone bonus ──────────────────────────────────────────
+        reached_milestones: list[tuple[int, int]] = []
         milestones_enabled = self.storage.get_setting("streak_milestones_enabled", "true") == "true"
         if not skip_streak and milestones_enabled and child.current_streak > 0:
             # Parse custom milestone config
@@ -418,6 +419,7 @@ class PointsMixin:
                 if child.current_streak >= days and days not in achieved:
                     milestone_bonus += bonus_pts
                     achieved.add(days)
+                    reached_milestones.append((days, bonus_pts))
                     _LOGGER.info(
                         "Streak milestone %d days reached for %s: +%d bonus",
                         days, child.name, bonus_pts,
@@ -441,6 +443,22 @@ class PointsMixin:
             child.id, effective_date.isoformat(), child.career_score
         )
         self.storage.update_child(child)
+
+        # Notify on each newly reached streak milestone (off by default; opt-in).
+        if reached_milestones and getattr(self, "notifications", None):
+            points_name = self.storage.get_points_name()
+            for days, bonus_pts in reached_milestones:
+                await self.notifications.fire(
+                    "streak_milestone",
+                    {
+                        "child_name": child.name,
+                        "child_id": child.id,
+                        "days": days,
+                        "streak": child.current_streak,
+                        "points": bonus_pts,
+                        "points_name": points_name,
+                    },
+                )
         return total_points
 
     async def async_prune_history(self, days: int = 90) -> None:
