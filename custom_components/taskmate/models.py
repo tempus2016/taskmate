@@ -149,6 +149,7 @@ class Child:
     total_penalties_received: int = 0
     notify_service: str | None = None
     linked_user_id: str = ""  # HA user id; when set, only that user (or an admin) may self-serve as this child
+    level: int = 1  # cached XP level (derived from total_points_earned)
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -175,6 +176,7 @@ class Child:
             total_penalties_received=data.get("total_penalties_received", 0),
             notify_service=data.get("notify_service", None),
             linked_user_id=data.get("linked_user_id", ""),
+            level=int(data.get("level", 1) or 1),
             id=data.get("id", generate_id()),
         )
 
@@ -201,6 +203,7 @@ class Child:
             "total_penalties_received": self.total_penalties_received,
             "notify_service": self.notify_service,
             "linked_user_id": self.linked_user_id,
+            "level": self.level,
             "id": self.id,
         }
 

@@ -1286,5 +1286,10 @@
   "panel.gift_send": "Send gift",
   "panel.gift_sent": "Points gifted",
   "panel.gift_err_same": "Pick two different children.",
-  "panel.gift_err_amount": "Enter an amount of at least 1."
+  "panel.gift_err_amount": "Enter an amount of at least 1.",
+  "panel.settings_level_step_label": "XP per level",
+  "panel.settings_level_step_hint": "Earned points needed to advance one level (XP = lifetime earned points).",
+  "panel.child_stat_level": "Level",
+  "notification.level_up.name": "Level up",
+  "notification.level_up.description": "Celebrates when a child reaches a new XP level (off by default)."
 }
