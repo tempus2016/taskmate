@@ -241,6 +241,11 @@ class Chore:
     disabled_for: list[str] = field(default_factory=list)  # Child IDs this chore is disabled for
     created_date: str = ""  # ISO date for one-shot expiry, e.g. "2026-04-16"
     expires_on: str = ""  # optional ISO end date; chore auto-disables the day after
+    # Time-of-day incentive: when due_time (HH:MM) is set, a completion at/before
+    # it earns +early_bonus, after it loses late_penalty (applied to the award).
+    due_time: str = ""
+    early_bonus: int = 0
+    late_penalty: int = 0
     # Dynamic assignment (sibling rotation)
     assignment_mode: str = "everyone"  # everyone | alternating | random
     assignment_rotation_anchor: str = ""  # ISO date; day-0 of the rotation for alternating
@@ -298,6 +303,9 @@ class Chore:
             disabled_for=list(data.get("disabled_for", [])),
             created_date=data.get("created_date", ""),
             expires_on=data.get("expires_on", ""),
+            due_time=data.get("due_time", ""),
+            early_bonus=int(data.get("early_bonus", 0) or 0),
+            late_penalty=int(data.get("late_penalty", 0) or 0),
             assignment_mode=data.get("assignment_mode", "everyone"),
             assignment_rotation_anchor=data.get("assignment_rotation_anchor", ""),
             assignment_current_child_id=data.get("assignment_current_child_id", ""),
@@ -346,6 +354,9 @@ class Chore:
             "disabled_for": self.disabled_for,
             "created_date": self.created_date,
             "expires_on": self.expires_on,
+            "due_time": self.due_time,
+            "early_bonus": self.early_bonus,
+            "late_penalty": self.late_penalty,
             "assignment_mode": self.assignment_mode,
             "assignment_rotation_anchor": self.assignment_rotation_anchor,
             "assignment_current_child_id": self.assignment_current_child_id,

@@ -1301,5 +1301,9 @@
   "panel.settings_interest_enabled_label": "Savings interest",
   "panel.settings_interest_enabled_hint": "Periodically pay each child interest on their spendable balance (rewards saving).",
   "panel.settings_interest_params_label": "Savings interest settings",
-  "panel.settings_interest_params_hint": "Interest rate applied to the balance, and how often."
+  "panel.settings_interest_params_hint": "Interest rate applied to the balance, and how often.",
+  "panel.chore_due_time_label": "Due time (optional)",
+  "panel.chore_due_time_hint": "Completions at/before this time earn the early bonus; after it lose the late penalty.",
+  "panel.chore_early_bonus_label": "Early bonus",
+  "panel.chore_late_penalty_label": "Late penalty"
 }
