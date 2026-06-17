@@ -197,6 +197,14 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
             "enabled": getattr(c, 'enabled', True),
             "assignment_mode": getattr(c, 'assignment_mode', 'everyone'),
         }
+        # Difficulty tier + the points it actually awards. Emitted only when
+        # non-default (medium / ×1.0) so simple chores stay compact.
+        difficulty = getattr(c, 'difficulty', 'medium') or 'medium'
+        if difficulty != 'medium':
+            record["difficulty"] = difficulty
+        effective_points = coordinator.effective_chore_points(c)
+        if effective_points != c.points:
+            record["effective_points"] = effective_points
         # Optional fields — emit only when non-default to save bytes.
         description = getattr(c, 'description', '') or ''
         if description:

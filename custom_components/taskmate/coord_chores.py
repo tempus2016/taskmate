@@ -38,6 +38,7 @@ class ChoresMixin:
         claim_allowance_minutes: int = 0,
         daily_limit: int = 1,
         completion_sound: str = "coin",
+        difficulty: str = "medium",
         schedule_mode: str = "specific_days",
         due_days: list[str] | None = None,
         recurrence: str = "weekly",
@@ -86,6 +87,7 @@ class ChoresMixin:
             claim_allowance_minutes=max(0, int(claim_allowance_minutes or 0)),
             daily_limit=daily_limit,
             completion_sound=completion_sound,
+            difficulty=difficulty if difficulty in ("easy", "medium", "hard") else "medium",
             schedule_mode=schedule_mode,
             due_days=due_days or [],
             recurrence=recurrence,
@@ -424,17 +426,18 @@ class ChoresMixin:
             return None
 
         auto_approve = as_parent or not chore.requires_approval
+        effective_points = self.effective_chore_points(chore)
 
         completion = ChoreCompletion(
             chore_id=chore_id,
             child_id=child_id,
             completed_at=now,
             approved=auto_approve,
-            points_awarded=chore.points if auto_approve else 0,
+            points_awarded=effective_points if auto_approve else 0,
         )
 
         if auto_approve:
-            total_awarded = await self._award_points(child, chore.points)
+            total_awarded = await self._award_points(child, effective_points)
             completion.approved = True
             completion.approved_at = dt_util.now()
             completion.points_awarded = total_awarded
@@ -448,7 +451,8 @@ class ChoresMixin:
                 "child_name": child.name,
                 "chore_id": chore.id,
                 "chore_name": chore.name,
-                "points": chore.points,
+                "points": effective_points,
+                "difficulty": getattr(chore, "difficulty", "medium"),
                 "timestamp": dt_util.now().isoformat(),
             },
         )
@@ -632,7 +636,7 @@ class ChoresMixin:
                         rate_seconds = chore.timed_rate_minutes * 60
                         pts = (completion.timed_duration_seconds // rate_seconds) * chore.timed_rate_points if rate_seconds > 0 else 0
                     else:
-                        pts = chore.points
+                        pts = self.effective_chore_points(chore)
                     total_awarded = await self._award_points(
                         child, pts, completion_date=comp_date, skip_streak=is_bonus
                     )

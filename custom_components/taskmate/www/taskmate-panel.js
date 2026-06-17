@@ -4536,6 +4536,9 @@ class TaskMatePanel extends HTMLElement {
       .tm-setting-row:first-child { border-top: 0; }
       .tm-setting-label { color: var(--tm-text); font-size: 13px; font-weight: 500; }
       .tm-setting-label small { display: block; color: var(--tm-text-faint); font-weight: 400; font-size: 12px; margin-top: 2px; }
+      .tm-difficulty-mults { display: flex; gap: 12px; flex-wrap: wrap; }
+      .tm-difficulty-mults label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--tm-text-faint); }
+      .tm-difficulty-mults .tm-input { width: 90px; }
       .tm-setting-row ha-textfield,
       .tm-setting-row ha-select,
       .tm-setting-row input.tm-input,

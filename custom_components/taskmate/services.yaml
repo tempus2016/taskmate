@@ -496,6 +496,17 @@ add_chore:
             - evening
             - night
             - anytime
+    difficulty:
+      name: Difficulty
+      description: Difficulty tier; scales awarded points by the tier multiplier (medium = ×1.0 baseline)
+      required: false
+      default: medium
+      selector:
+        select:
+          options:
+            - easy
+            - medium
+            - hard
     one_shot:
       name: One-Shot
       description: If true, this is a one-time chore that expires after being completed or at the end of the day
