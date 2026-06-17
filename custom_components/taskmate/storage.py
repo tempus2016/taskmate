@@ -751,6 +751,22 @@ class TaskMateStorage:
         if len(self._data["points_transactions"]) > 200:
             self._data["points_transactions"] = self._data["points_transactions"][-200:]
 
+    # ── Admin audit log ──────────────────────────────────────────────────
+    def get_audit_log(self) -> list[dict]:
+        """Return admin audit entries, newest first."""
+        return list(reversed(self._data.get("audit_log", [])))
+
+    def add_audit_entry(self, entry: dict) -> None:
+        """Append an admin audit entry, capping the log at 500 (oldest dropped)."""
+        log = self._data.setdefault("audit_log", [])
+        log.append(entry)
+        if len(log) > 500:
+            del log[:-500]
+
+    def clear_audit_log(self) -> None:
+        """Remove all audit entries."""
+        self._data["audit_log"] = []
+
     def replace_completions(self, completions: list[ChoreCompletion]) -> None:
         """Replace all completions with the given list."""
         self._data["completions"] = [c.to_dict() for c in completions]
