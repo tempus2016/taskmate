@@ -127,6 +127,7 @@ WS_NOTIF_UPSERT_CUSTOM: Final      = "taskmate/notifications/upsert_custom"
 WS_NOTIF_DELETE_CUSTOM: Final      = "taskmate/notifications/delete_custom"
 WS_NOTIF_LIST_NOTIFY: Final        = "taskmate/notifications/list_notify_services"
 WS_NOTIF_SET_STREAK_CUTOFF: Final  = "taskmate/notifications/set_streak_cutoff"
+WS_NOTIF_SEND_TEST: Final          = "taskmate/notifications/send_test"
 
 # Admin audit log
 WS_AUDIT_LIST: Final  = "taskmate/audit/list"
@@ -1500,6 +1501,17 @@ async def ws_notif_set_streak_cutoff(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"ok": True})
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_NOTIF_SEND_TEST,
+    vol.Required("type_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def ws_notif_send_test(hass, connection, msg, coordinator):
+    sent = await coordinator.notifications.send_test(msg["type_id"])
+    connection.send_result(msg["id"], {"sent": sent})
+
+
 # ---------------------------------------------------------------------------
 # Admin audit log
 # ---------------------------------------------------------------------------
@@ -1567,7 +1579,7 @@ _COMMANDS = (
     ws_notif_set_child_notify,
     ws_notif_upsert_parent, ws_notif_delete_parent,
     ws_notif_upsert_custom, ws_notif_delete_custom,
-    ws_notif_list_notify, ws_notif_set_streak_cutoff,
+    ws_notif_list_notify, ws_notif_set_streak_cutoff, ws_notif_send_test,
 )
 
 

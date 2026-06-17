@@ -506,6 +506,7 @@ class TaskMatePanel extends HTMLElement {
 
     // Notifications tab
     if (act === "notif-set-master")       { this._notifSetMaster(t.dataset.typeId, t.checked); return; }
+    if (act === "notif-send-test")        { this._doSendTestNotif(t.dataset.typeId); return; }
     if (act === "notif-set-route")        { this._notifSetRoute(t.dataset.typeId, t.dataset.recipientId, t.checked, t.dataset.time || null); return; }
     if (act === "notif-set-route-time")   { /* handled in _onChange */ return; }
     if (act === "notif-set-child-notify") { /* handled in _onChange */ return; }
@@ -1534,6 +1535,13 @@ class TaskMatePanel extends HTMLElement {
   async _notifSetMaster(typeId, enabled) {
     await this._callWS({ type: "taskmate/notifications/set_master_enabled", type_id: typeId, enabled });
     await this._fetchState();
+  }
+
+  async _doSendTestNotif(typeId) {
+    const { ok, err, res } = await this._callWS({ type: "taskmate/notifications/send_test", type_id: typeId });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    const count = (res && res.sent || []).length;
+    this._showToast("ok", this._t("panel.notif_test_sent", { count }));
   }
 
   async _notifSetRoute(typeId, recipientId, enabled, time) {
@@ -3303,6 +3311,11 @@ class TaskMatePanel extends HTMLElement {
                   <input type="time" class="tm-notif-time-input" value="${this._esc(settings.streak_at_risk_cutoff_time || "20:00")}" data-act="notif-set-streak-cutoff" style="display:inline;margin:0;width:90px">
                 </div>
               ` : ""}
+              <div style="margin-top:6px">
+                <button type="button" class="tm-btn" data-act="notif-send-test" data-type-id="${this._esc(t.id)}" style="padding:2px 10px;font-size:12px">
+                  <ha-icon icon="mdi:send" style="--mdc-icon-size:14px"></ha-icon> ${this._t("panel.notif_send_test")}
+                </button>
+              </div>
             </div>
           </div>
         </td>
