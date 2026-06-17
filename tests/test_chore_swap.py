@@ -21,7 +21,9 @@ def run(coro):
 def _coord(chore, children):
     by_id = {c.id: c for c in children}
     coord = object.__new__(TaskMateCoordinator)
-    coord.hass = MagicMock(); coord.hass.bus = MagicMock(); coord.hass.bus.async_fire = MagicMock()
+    coord.hass = MagicMock()
+    coord.hass.bus = MagicMock()
+    coord.hass.bus.async_fire = MagicMock()
     reqs = []
     storage = MagicMock()
     storage.get_chore = MagicMock(return_value=chore)

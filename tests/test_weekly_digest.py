@@ -26,7 +26,8 @@ def _coord(children, completions):
     storage.get_completions = MagicMock(return_value=completions)
     storage.get_points_name = MagicMock(return_value="Stars")
     coord.storage = storage
-    coord.notifications = MagicMock(); coord.notifications.fire = AsyncMock()
+    coord.notifications = MagicMock()
+    coord.notifications.fire = AsyncMock()
     return coord
 
 
