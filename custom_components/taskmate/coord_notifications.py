@@ -101,6 +101,41 @@ class NotificationCoordinator:
         await self._fire_persistent_notification(type_id, message)
         self._fire_bus_event(type_id, context, recipients_fired)
 
+    async def send_test(self, type_id: str) -> list[str]:
+        """Send a sample notification of ``type_id`` to its enabled routes.
+
+        Ignores ``master_enabled`` (so a route can be verified before going live),
+        prefixes the message with "[TEST] ", and does not emit a bus event.
+        Returns the recipient ids that were sent to.
+        """
+        meta = NOTIFICATION_TYPES_BY_ID.get(type_id)
+        if meta is None:
+            raise ValueError(f"Unknown notification type {type_id}")
+        ctx = {
+            "child_name": "Alex",
+            "chore_name": "Tidy room",
+            "reward_name": "Movie night",
+            "badge_name": "Star Helper",
+            "points": 10,
+            "cost": 50,
+            "streak": 7,
+            "days": 7,
+            "points_name": self.storage.get_points_name(),
+        }
+        message = "[TEST] " + self._render_template(meta, ctx)
+        cfg = self.storage.get_notification_config(type_id)
+        sent: list[str] = []
+        for recipient_id, route in cfg.routes.items():
+            if not route.enabled:
+                continue
+            notify_service = self._resolve_notify_service(recipient_id)
+            if not notify_service:
+                continue
+            await self._send_to(notify_service, message, meta, ctx)
+            sent.append(recipient_id)
+        await self._fire_persistent_notification(type_id, message)
+        return sent
+
     def _resolve_notify_service(self, recipient_id: str) -> str:
         if recipient_id.startswith("child:"):
             child_id = recipient_id.split(":", 1)[1]

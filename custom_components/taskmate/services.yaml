@@ -78,6 +78,17 @@ undo_transaction:
       selector:
         text:
 
+test_notification:
+  name: Test Notification
+  description: Send a sample notification of the given type to its enabled recipients (ignores the master on/off so routing can be verified).
+  fields:
+    type_id:
+      name: Notification type
+      description: "Notification type id, e.g. pending_chore_approval, badge_earned, streak_milestone"
+      required: true
+      selector:
+        text:
+
 claim_reward:
   name: Claim Reward
   description: Child claims a reward using their points

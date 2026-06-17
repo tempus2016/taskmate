@@ -828,6 +828,8 @@
   "panel.notif_section_recipients": "Recipients",
   "panel.notif_section_recipients_desc": "Map each child and parent to a Home Assistant notify service. Leave blank to skip notifications for that person.",
   "panel.notif_streak_cutoff_label": "Cutoff",
+  "panel.notif_send_test": "Send test",
+  "panel.notif_test_sent": "Test sent to {count} recipient(s) + persistent notification",
   "panel.notif_tab_title": "Notifications",
   "panel.template_assignment_mode_label": "Assignment mode",
   "panel.template_builtin": "Built-in",
