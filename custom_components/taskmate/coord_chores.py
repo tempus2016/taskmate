@@ -120,6 +120,20 @@ class ChoresMixin:
         await self.async_refresh()
         return chore
 
+    def _apply_time_adjustment(self, chore, base: int, completed_at) -> int:
+        """Apply a chore's early-bonus / late-penalty based on completion time."""
+        due = getattr(chore, "due_time", "") or ""
+        if not due:
+            return base
+        try:
+            dh, dm = (int(x) for x in due.split(":"))
+        except (ValueError, AttributeError):
+            return base
+        t = dt_util.as_local(completed_at)
+        if (t.hour * 60 + t.minute) <= (dh * 60 + dm):
+            return base + int(getattr(chore, "early_bonus", 0) or 0)
+        return max(0, base - int(getattr(chore, "late_penalty", 0) or 0))
+
     async def async_clone_chore(self, chore_id: str) -> Chore:
         """Duplicate an existing chore (config only), returning the new chore.
 
@@ -501,7 +515,9 @@ class ChoresMixin:
             return None
 
         auto_approve = as_parent or not chore.requires_approval
-        effective_points = self.effective_chore_points(chore)
+        effective_points = self._apply_time_adjustment(
+            chore, self.effective_chore_points(chore), now
+        )
 
         completion = ChoreCompletion(
             chore_id=chore_id,
@@ -711,7 +727,9 @@ class ChoresMixin:
                         rate_seconds = chore.timed_rate_minutes * 60
                         pts = (completion.timed_duration_seconds // rate_seconds) * chore.timed_rate_points if rate_seconds > 0 else 0
                     else:
-                        pts = self.effective_chore_points(chore)
+                        pts = self._apply_time_adjustment(
+                            chore, self.effective_chore_points(chore), completion.completed_at
+                        )
                     total_awarded = await self._award_points(
                         child, pts, completion_date=comp_date, skip_streak=is_bonus
                     )
