@@ -24,6 +24,7 @@ const TABS = [
   { id: "badges",    lk: "panel.tab_badges" },
   { id: "templates",     lk: "panel.tab_templates" },
   { id: "notifications", lk: "panel.tab_notifications" },
+  { id: "audit",         lk: "panel.tab_audit" },
   { id: "settings",      lk: "panel.tab_settings", label: "⚙" },
 ];
 
@@ -519,6 +520,9 @@ class TaskMatePanel extends HTMLElement {
 
     // Settings
     if (act === "save-settings") { this._doSaveSettings(); return; }
+
+    // Audit log
+    if (act === "audit-clear") { this._doClearAudit(); return; }
 
     // Time-of-day period editor
     if (act === "tp-add") {
@@ -1908,6 +1912,7 @@ class TaskMatePanel extends HTMLElement {
       case "badges":    return this._renderBadgesTab();
       case "templates":     return this._renderTemplatesTab();
       case "notifications": return this._renderNotificationsTab();
+      case "audit":         return this._renderAuditTab();
       case "settings":      return this._renderSettingsTab();
       default:          return `<div class="tm-card">${this._t("panel.tab_unknown")}</div>`;
     }
@@ -2991,6 +2996,46 @@ class TaskMatePanel extends HTMLElement {
     const { ok, err } = await this._callWS({ type: "taskmate/templates/update", template_id: d.template_id, name: d.name.trim(), icon: d.icon || "mdi:clipboard-list", chores: d.chores || [] });
     if (ok) { this._showToast("success", this._t("panel.toast_template_updated")); this._closeDialog(true); await this._fetchState(); }
     else { this._showToast("error", err || this._t("panel.toast_template_failed_update")); }
+  }
+
+  // -- Audit tab ---------------------------------------------------------
+  async _doClearAudit() {
+    if (!confirm(this._t("panel.audit_clear_confirm"))) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/audit/clear" });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.audit_cleared"));
+  }
+
+  _renderAuditTab() {
+    const entries = this._state.audit_log || [];
+    const rows = entries.map(a => {
+      let when = a.ts || "";
+      try { if (a.ts) when = new Date(a.ts).toLocaleString(); } catch (e) {}
+      return `
+            <div class="tm-audit-row">
+              <div class="tm-audit-when">${this._esc(when)}</div>
+              <div class="tm-audit-user">${this._esc(a.user_name || a.user_id || "—")}</div>
+              <div class="tm-audit-action">${this._esc(a.action || "")}</div>
+              <div class="tm-audit-target">${this._esc(a.target || "")}</div>
+            </div>`;
+    }).join("");
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head">
+            <div><h3>${this._t("panel.tab_audit")}</h3><p class="tm-meta">${this._t("panel.audit_hint")}</p></div>
+            ${entries.length ? `<button type="button" class="tm-btn" data-act="audit-clear"><ha-icon icon="mdi:trash-can-outline"></ha-icon> ${this._t("panel.audit_clear")}</button>` : ""}
+          </div>
+          <div class="tm-section-body">
+            ${entries.length ? `
+              <div class="tm-audit-row tm-audit-head">
+                <div>${this._t("panel.audit_when")}</div><div>${this._t("panel.audit_user")}</div>
+                <div>${this._t("panel.audit_action")}</div><div>${this._t("panel.audit_target")}</div>
+              </div>
+              ${rows}
+            ` : `<div class="tm-meta" style="padding: 8px 0;">${this._t("panel.audit_empty")}</div>`}
+          </div>
+        </div>`;
   }
 
   // -- Settings tab ------------------------------------------------------
@@ -4640,6 +4685,22 @@ class TaskMatePanel extends HTMLElement {
         gap: 12px;
       }
       .tm-vacation-row > .tm-input { max-width: none; }
+      .tm-audit-row {
+        display: grid;
+        grid-template-columns: 180px 130px 180px 1fr;
+        gap: 12px;
+        padding: 8px 20px;
+        border-top: 1px solid var(--tm-border-soft);
+        font-size: 13px;
+      }
+      .tm-audit-row:first-child { border-top: 0; }
+      .tm-audit-head { font-weight: 600; color: var(--tm-text-faint); }
+      .tm-audit-when, .tm-audit-user { color: var(--tm-text-faint); }
+      .tm-audit-action { font-family: var(--code-font-family, monospace); }
+      @media (max-width: 700px) {
+        .tm-audit-row { grid-template-columns: 1fr 1fr; }
+        .tm-audit-head { display: none; }
+      }
       .tm-period-del {
         color: var(--tm-text-faint);
       }

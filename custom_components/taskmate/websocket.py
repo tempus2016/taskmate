@@ -128,6 +128,41 @@ WS_NOTIF_DELETE_CUSTOM: Final      = "taskmate/notifications/delete_custom"
 WS_NOTIF_LIST_NOTIFY: Final        = "taskmate/notifications/list_notify_services"
 WS_NOTIF_SET_STREAK_CUTOFF: Final  = "taskmate/notifications/set_streak_cutoff"
 
+# Admin audit log
+WS_AUDIT_LIST: Final  = "taskmate/audit/list"
+WS_AUDIT_CLEAR: Final = "taskmate/audit/clear"
+
+# Read-only / audit-management commands that should NOT themselves be audited.
+# Everything else routed through @_admin_only mutates state and is logged.
+_AUDIT_EXCLUDE: Final = {
+    WS_GET_STATE, WS_NOTIF_GET_STATE, WS_NOTIF_LIST_NOTIFY,
+    WS_TEMPLATES_LIST, WS_TEMPLATES_GET, WS_AUDIT_LIST, WS_AUDIT_CLEAR,
+}
+
+
+def _audit_target(coordinator, msg: dict) -> str:
+    """Best-effort human-readable target for an admin action from its payload."""
+    name = msg.get("name")
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+    for key, getter in (
+        ("chore_id", coordinator.get_chore),
+        ("child_id", coordinator.get_child),
+        ("reward_id", coordinator.get_reward),
+    ):
+        val = msg.get(key)
+        if val:
+            obj = getter(val)
+            return getattr(obj, "name", None) or str(val)
+    for key in (
+        "penalty_id", "bonus_id", "badge_id", "group_id", "template_id",
+        "completion_id", "claim_id", "parent_id", "custom_id",
+        "awarded_badge_id", "type_id",
+    ):
+        if msg.get(key):
+            return str(msg[key])
+    return ""
+
 
 def _get_coordinator(hass: HomeAssistant) -> TaskMateCoordinator | None:
     for value in hass.data.get(DOMAIN, {}).values():
@@ -156,6 +191,20 @@ def _admin_only(handler):
         except Exception as err:  # noqa: BLE001
             _LOGGER.exception("WS handler %s failed", msg.get("type"))
             connection.send_error(msg["id"], "handler_failed", str(err))
+        else:
+            # Record successful mutating commands in the admin audit log.
+            mtype = msg.get("type", "")
+            if mtype not in _AUDIT_EXCLUDE:
+                try:
+                    user = connection.user
+                    await coordinator.async_record_audit(
+                        getattr(user, "id", ""),
+                        getattr(user, "name", "") or "",
+                        mtype.split("taskmate/", 1)[-1],
+                        _audit_target(coordinator, msg),
+                    )
+                except Exception:  # noqa: BLE001
+                    _LOGGER.debug("audit record failed for %s", msg.get("type"), exc_info=True)
     return wrapper
 
 
@@ -209,6 +258,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "points_transactions":  transactions[-100:],   # most recent 100 for audit log
         "badges":        list(data.get("badges", [])),
         "awarded_badges": list(data.get("awarded_badges", [])),
+        "audit_log":     coordinator.storage.get_audit_log()[:100],  # newest 100 for the panel
         "settings": {
             "points_name":       data.get("points_name", "Stars"),
             "points_icon":       data.get("points_icon", "mdi:star"),
@@ -1445,11 +1495,32 @@ async def ws_notif_set_streak_cutoff(hass, connection, msg, coordinator):
 
 
 # ---------------------------------------------------------------------------
+# Admin audit log
+# ---------------------------------------------------------------------------
+
+@websocket_api.websocket_command({vol.Required("type"): WS_AUDIT_LIST})
+@websocket_api.async_response
+@_admin_only
+async def _ws_audit_list(hass, connection, msg, coordinator):
+    connection.send_result(msg["id"], {"entries": coordinator.storage.get_audit_log()})
+
+
+@websocket_api.websocket_command({vol.Required("type"): WS_AUDIT_CLEAR})
+@websocket_api.async_response
+@_admin_only
+async def _ws_audit_clear(hass, connection, msg, coordinator):
+    coordinator.storage.clear_audit_log()
+    await coordinator.storage.async_save()
+    connection.send_result(msg["id"], {"cleared": True})
+
+
+# ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
 
 _COMMANDS = (
     _ws_get_state,
+    _ws_audit_list, _ws_audit_clear,
     _ws_add_child, _ws_update_child, _ws_remove_child, _ws_list_ha_users,
     _ws_add_chore, _ws_update_chore, _ws_remove_chore,
     _ws_add_reward, _ws_update_reward, _ws_remove_reward,

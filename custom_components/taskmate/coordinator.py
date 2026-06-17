@@ -128,6 +128,23 @@ class TaskMateCoordinator(
         """True if ``on`` (default today) falls within any vacation period."""
         return self.active_vacation(on) is not None
 
+    # ── Admin audit log ──────────────────────────────────────────────────
+    async def async_record_audit(
+        self, user_id: str, user_name: str, action: str, target: str = ""
+    ) -> None:
+        """Record an admin config action in the audit log and persist it."""
+        from .models import generate_id
+
+        self.storage.add_audit_entry({
+            "id": generate_id(),
+            "ts": dt_util.now().isoformat(),
+            "user_id": user_id or "",
+            "user_name": user_name or "",
+            "action": action,
+            "target": target or "",
+        })
+        await self.storage.async_save()
+
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""
         await self.storage.async_load()
