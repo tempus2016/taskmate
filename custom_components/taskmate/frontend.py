@@ -44,7 +44,6 @@ CARDS: Final = [
     "taskmate-points-display-card.js",
     "taskmate-calendar-card.js",
     "taskmate-task-groups-card.js",
-    "taskmate-reminders-card.js",
 ]
 
 # JS modules loaded on every HA frontend page (config flow sound preview).

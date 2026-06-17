@@ -1249,18 +1249,5 @@
   "task_groups.empty": "Ingen oppgåvegrupper konfigurerte.",
   "task_groups.no_chores": "Ingen gjeremål i denne gruppa.",
   "task_groups.policy_sticky": "Fast",
-  "task_groups.policy_spread": "Fordelt",
-  "reminders.title": "Påminningar",
-  "reminders.empty": "Ingen påminningar sette.",
-  "reminders.every_day": "Kvar dag",
-  "reminders.weekdays": "Kvardagar",
-  "reminders.weekends": "Helg",
-  "reminders.never": "Aldri",
-  "reminders.day_mon": "Man",
-  "reminders.day_tue": "Tys",
-  "reminders.day_wed": "Ons",
-  "reminders.day_thu": "Tor",
-  "reminders.day_fri": "Fre",
-  "reminders.day_sat": "Lau",
-  "reminders.day_sun": "Sun"
+  "task_groups.policy_spread": "Fordelt"
 }
