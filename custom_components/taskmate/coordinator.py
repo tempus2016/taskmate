@@ -56,6 +56,7 @@ class TaskMateCoordinator(
         self._unsub_prune: Callable[[], None] | None = None
         self._unsub_availability: Callable[[], None] | None = None
         self._unsub_surprise: Callable[[], None] | None = None
+        self._unsub_weekly: Callable[[], None] | None = None
 
     def difficulty_multiplier(self, tier: str) -> float:
         """Return the points multiplier for a difficulty tier.
@@ -195,7 +196,48 @@ class TaskMateCoordinator(
         self._unsub_surprise = async_track_time_change(
             self.hass, self._async_surprise_bonus_check, hour=16, minute=0, second=0
         )
+        # Weekly digest — fired Sundays at 18:00 (opt-in)
+        self._unsub_weekly = async_track_time_change(
+            self.hass, self._async_weekly_digest_check, hour=18, minute=0, second=0
+        )
         await self.notifications.async_setup_schedules()
+
+    @callback
+    def _async_weekly_digest_check(self, now: datetime) -> None:
+        """Daily 18:00 callback; only fires the digest on Sundays."""
+        if now.weekday() != 6:  # Sunday
+            return
+        self.hass.async_create_task(self._async_send_weekly_digest())
+
+    async def _async_send_weekly_digest(self) -> None:
+        """Build and send the weekly digest to parents (opt-in)."""
+        summary = self._build_weekly_digest()
+        if not summary:
+            return
+        await self.notifications.fire("weekly_digest", {"summary": summary})
+
+    def _build_weekly_digest(self) -> str:
+        """One line per child: chores done + points earned this week."""
+        today = dt_util.now().date()
+        week_start = today - timedelta(days=today.weekday())
+        children = self.storage.get_children()
+        if not children:
+            return ""
+        done: dict[str, int] = {}
+        earned: dict[str, int] = {}
+        for comp in self.storage.get_completions():
+            if not comp.approved or comp.bonus_subtask_id:
+                continue
+            if dt_util.as_local(comp.completed_at).date() < week_start:
+                continue
+            done[comp.child_id] = done.get(comp.child_id, 0) + 1
+            earned[comp.child_id] = earned.get(comp.child_id, 0) + (comp.points_awarded or 0)
+        pts = self.storage.get_points_name()
+        lines = [
+            f"• {c.name}: {done.get(c.id, 0)} chores, {earned.get(c.id, 0)} {pts} earned"
+            for c in children
+        ]
+        return "\n".join(lines)
 
     @callback
     def _async_surprise_bonus_check(self, now: datetime) -> None:
@@ -310,6 +352,9 @@ class TaskMateCoordinator(
         if self._unsub_surprise:
             self._unsub_surprise()
             self._unsub_surprise = None
+        if self._unsub_weekly:
+            self._unsub_weekly()
+            self._unsub_weekly = None
 
     @callback
     def _async_midnight_streak_check(self, now: datetime) -> None:
