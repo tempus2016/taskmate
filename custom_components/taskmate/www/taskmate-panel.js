@@ -894,7 +894,8 @@ class TaskMatePanel extends HTMLElement {
   }
 
   // ---- Children --------------------------------------------------------
-  _openChildDialog(id) {
+  async _openChildDialog(id) {
+    await this._ensureHaUsers();
     if (id) {
       const c = (this._state.children || []).find(x => x.id === id);
       if (!c) return;
@@ -903,13 +904,21 @@ class TaskMatePanel extends HTMLElement {
         availability_entity: c.availability_entity || "",
         availability_inverted: !!c.availability_inverted,
         unavailability_entity: c.unavailability_entity || "",
+        linked_user_id: c.linked_user_id || "",
       } });
     } else {
       this._openDialog({ kind: "child", mode: "add", data: {
         name: "", avatar: "mdi:account-circle", availability_entity: "",
         availability_inverted: false, unavailability_entity: "",
+        linked_user_id: "",
       } });
     }
+  }
+
+  async _ensureHaUsers() {
+    if (this._haUsers) return;
+    const { ok, res } = await this._callWS({ type: "taskmate/list_ha_users" });
+    this._haUsers = (ok && res && Array.isArray(res.users)) ? res.users : [];
   }
 
   async _doSaveChild() {
@@ -920,10 +929,10 @@ class TaskMatePanel extends HTMLElement {
     const payload = wasAdd
       ? { type: "taskmate/add_child", name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
-          unavailability_entity: d.unavailability_entity || "" }
+          unavailability_entity: d.unavailability_entity || "", linked_user_id: d.linked_user_id || "" }
       : { type: "taskmate/update_child", child_id: d.id, name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
-          unavailability_entity: d.unavailability_entity || "" };
+          unavailability_entity: d.unavailability_entity || "", linked_user_id: d.linked_user_id || "" };
     const { ok, err } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
     this._closeDialog(true);
@@ -1855,7 +1864,7 @@ class TaskMatePanel extends HTMLElement {
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-child">${this._t("panel.btn_add_child")}</button>
       </div>
       ${all.length === 0 ? this._emptyState("👨‍👩‍👧‍👦", this._t("panel.empty_children_title"), this._t("panel.empty_children_copy"), "add-child", this._t("panel.btn_add_child")) :
-        children.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_children").toLowerCase(), filter: this._filter})}</p></div>` : `
+        children.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_children").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
         <div class="tm-grid">
           ${children.map(c => this._renderChildCard(c, pointsName)).join("")}
           <button type="button" class="tm-add-tile" data-act="add-child"><span class="tm-add-plus">＋</span>${this._t("panel.child_add_tile")}</button>
@@ -2067,7 +2076,7 @@ class TaskMatePanel extends HTMLElement {
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-chore">${this._t("panel.btn_add_chore")}</button>
       </div>
       ${all.length === 0 ? this._emptyState("📋", this._t("panel.empty_chores_title"), this._t("panel.empty_chores_copy"), "add-chore", this._t("panel.btn_add_chore")) :
-        chores.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_chores").toLowerCase(), filter: this._filter})}</p></div>` : `
+        chores.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_chores").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr>
@@ -2140,7 +2149,7 @@ class TaskMatePanel extends HTMLElement {
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-reward">${this._t("panel.btn_add_reward")}</button>
       </div>
       ${all.length === 0 ? this._emptyState("🎁", this._t("panel.empty_rewards_title"), this._t("panel.empty_rewards_copy", {points_name: pointsName.toLowerCase()}), "add-reward", this._t("panel.btn_add_reward")) :
-        rewards.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_rewards").toLowerCase(), filter: this._filter})}</p></div>` : `
+        rewards.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_rewards").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
         <div class="tm-grid">
           ${rewards.map(r => this._renderRewardCard(r, pointsName)).join("")}
           <button type="button" class="tm-add-tile" data-act="add-reward"><span class="tm-add-plus">＋</span>${this._t("panel.reward_add_tile")}</button>
@@ -2544,7 +2553,7 @@ class TaskMatePanel extends HTMLElement {
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-${kind}">${labels.add}</button>
       </div>
       ${allItems.length === 0 ? this._emptyState(labels.icon, kind === "penalty" ? this._t("panel.penalty_empty_title") : this._t("panel.bonus_empty_title"), kind === "penalty" ? this._t("panel.penalty_empty_description") : this._t("panel.bonus_empty_description"), `add-${kind}`, labels.add) :
-        items.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: labels.plural.toLowerCase(), filter: this._filter})}</p></div>` : `
+        items.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: labels.plural.toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr><th>${this._t("panel.penbon_table_name")}</th><th>${this._t("panel.penbon_table_points")}</th><th>${this._t("panel.penbon_table_assigned")}</th><th></th></tr></thead>
@@ -2585,7 +2594,7 @@ class TaskMatePanel extends HTMLElement {
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-group">${this._t("panel.btn_add_group")}</button>
       </div>
       ${all.length === 0 ? this._emptyState("🔗", this._t("panel.empty_groups_title"), this._t("panel.empty_groups_copy"), "add-group", this._t("panel.btn_add_group")) :
-        groups.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_groups").toLowerCase(), filter: this._filter})}</p></div>` : `
+        groups.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_groups").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
         <div class="tm-grid">
           ${groups.map(g => `
             <article class="tm-card">
@@ -2930,7 +2939,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-section-body">
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_points_name_label")}<small>${this._t("panel.settings_points_name_hint")}</small></div>
-              <ha-textfield data-setting="points_name" data-value="${this._esc(s.points_name || this._t("panel.settings_points_default"))}" placeholder="${this._t("panel.settings_points_default")}"></ha-textfield>
+              <input type="text" class="tm-input" data-setting="points_name" value="${this._esc(s.points_name || this._t("panel.settings_points_default"))}" placeholder="${this._esc(this._t("panel.settings_points_default"))}">
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_points_icon_label")}<small>${this._t("panel.settings_points_icon_hint")}</small></div>
@@ -2944,7 +2953,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-section-body">
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_retention_label")}<small>${this._t("panel.settings_retention_hint")}</small></div>
-              <ha-textfield type="number" min="30" max="365" data-setting="history_days" data-value="${s.history_days || 90}"></ha-textfield>
+              <input type="number" class="tm-input" min="30" max="365" data-setting="history_days" value="${s.history_days || 90}">
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_streak_reset_label")}<small>${this._t("panel.settings_streak_reset_hint")}</small></div>
@@ -2954,11 +2963,11 @@ class TaskMatePanel extends HTMLElement {
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_weekend_multiplier_label")}<small>${this._t("panel.settings_weekend_multiplier_hint")}</small></div>
-              <ha-textfield type="number" step="0.1" min="1" max="5" data-setting="weekend_multiplier" data-value="${s.weekend_multiplier || 1.0}"></ha-textfield>
+              <input type="number" class="tm-input" step="0.1" min="1" max="5" data-setting="weekend_multiplier" value="${s.weekend_multiplier || 1.0}">
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_calendar_projection_label")}<small>${this._t("panel.settings_calendar_projection_hint")}</small></div>
-              <ha-textfield type="number" min="1" max="90" data-setting="calendar_projection_days" data-value="${s.calendar_projection_days || 14}"></ha-textfield>
+              <input type="number" class="tm-input" min="1" max="90" data-setting="calendar_projection_days" value="${s.calendar_projection_days || 14}">
             </div>
           </div>
         </div>
@@ -2978,7 +2987,7 @@ class TaskMatePanel extends HTMLElement {
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_perfect_week_bonus_label")}<small>${this._t("panel.settings_perfect_week_bonus_hint")}</small></div>
-              <ha-textfield type="number" min="0" data-setting="perfect_week_bonus" data-value="${s.perfect_week_bonus || 50}"></ha-textfield>
+              <input type="number" class="tm-input" min="0" data-setting="perfect_week_bonus" value="${s.perfect_week_bonus || 50}">
             </div>
           </div>
         </div>
@@ -3293,6 +3302,12 @@ class TaskMatePanel extends HTMLElement {
           this._t("panel.child_invert_hint")) : "",
         this._entityPickerField(this._t("panel.child_unavailability_label"), "unavailability_entity", d.unavailability_entity, ["binary_sensor", "sensor", "input_boolean", "person", "calendar"],
           this._t("panel.child_unavailability_hint")),
+        this._select(
+          this._t("panel.child_link_user_label"), "linked_user_id", d.linked_user_id || "",
+          [{ v: "", l: this._t("panel.child_link_user_none") }].concat(
+            (this._haUsers || []).map(u => ({ v: u.id, l: u.is_admin ? `${u.name} (admin)` : u.name }))
+          ),
+          this._t("panel.child_link_user_hint")),
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-child">${this._t("panel.btn_save")}</button>`
@@ -4523,6 +4538,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-setting-label small { display: block; color: var(--tm-text-faint); font-weight: 400; font-size: 12px; margin-top: 2px; }
       .tm-setting-row ha-textfield,
       .tm-setting-row ha-select,
+      .tm-setting-row input.tm-input,
       .tm-setting-row select.tm-select {
         max-width: 360px;
       }

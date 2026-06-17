@@ -111,9 +111,10 @@ class TimedMixin:
             max_seconds = chore.timed_max_daily_minutes * 60
             total_seconds = min(total_seconds, max_seconds)
 
-        # Calculate points
+        # Calculate points. Guard against a mis-configured zero rate, which
+        # would otherwise raise ZeroDivisionError and wedge the session.
         rate_seconds = chore.timed_rate_minutes * 60
-        pts = (total_seconds // rate_seconds) * chore.timed_rate_points
+        pts = (total_seconds // rate_seconds) * chore.timed_rate_points if rate_seconds > 0 else 0
 
         completion = ChoreCompletion(
             chore_id=chore_id,
@@ -185,7 +186,7 @@ class TimedMixin:
                 total_seconds = min(total_seconds, chore.timed_max_daily_minutes * 60)
 
             rate_seconds = chore.timed_rate_minutes * 60
-            pts = (total_seconds // rate_seconds) * chore.timed_rate_points
+            pts = (total_seconds // rate_seconds) * chore.timed_rate_points if rate_seconds > 0 else 0
 
             if total_seconds > 0:
                 completion = ChoreCompletion(

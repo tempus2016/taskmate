@@ -333,12 +333,18 @@ class ChoresMixin:
         await self.async_refresh()
         return chore
 
-    async def async_complete_chore(self, chore_id: str, child_id: str, as_parent: bool = False) -> ChoreCompletion:
+    async def async_complete_chore(self, chore_id: str, child_id: str, as_parent: bool = False) -> ChoreCompletion | None:
         """Mark a chore as completed by a child.
 
         When ``as_parent`` is True the completion auto-approves (the parent is the
         approver) and points are awarded immediately, even for approval-required
         chores. All eligibility validations below still apply.
+
+        Expected "soft" rejections (daily limit reached, first-come race lost,
+        rotation not-your-turn / already done today, chore not available yet) are
+        normal control flow — they log at debug and return ``None`` rather than
+        raising, so they don't spam the HA log at ERROR. Only genuinely bad input
+        (unknown chore/child) raises.
         """
         chore = self.get_chore(chore_id)
         if not chore:
@@ -351,29 +357,47 @@ class ChoresMixin:
         now = dt_util.now()
         today = dt_util.as_local(now).date()
 
-        # First-come-first-served: the first claim fills the shared quota and
-        # locks the chore for the whole pool. A later child loses the race.
-        if getattr(chore, 'assignment_mode', 'everyone') == 'first_come':
+        # Rotation modes (first_come / alternating / random / balanced) share a
+        # SINGLE daily quota across the whole pool. Enforce it here at completion
+        # time, not just in the card UI — otherwise a caller can award every pool
+        # member by completing the chore once per child_id (one call each).
+        assignment_mode = getattr(chore, 'assignment_mode', 'everyone')
+        if assignment_mode != 'everyone':
             if self._is_rotation_done_today(chore):
-                raise ValueError(
-                    f"Chore '{chore.name}' was already completed by another child."
+                _LOGGER.debug(
+                    "complete_chore no-op: '%s' already completed today (rotation quota filled)",
+                    chore.name,
                 )
+                return None
+            # A child may only complete the chore when they are today's active
+            # assignee. Parents (as_parent) may complete on behalf of any pool
+            # member — e.g. ticking it off for the off-rotation child. first_come
+            # keeps its competitive semantics (every pool member may race).
+            if not as_parent and assignment_mode != 'first_come':
+                if child_id not in self._compute_active_children(chore):
+                    _LOGGER.debug(
+                        "complete_chore no-op: '%s' not assigned to %s today",
+                        chore.name, child.name,
+                    )
+                    return None
 
         # Check recurrence window for Mode B chores
         if getattr(chore, 'schedule_mode', 'specific_days') == 'recurring':
             if not self.is_chore_available_for_child(chore, child_id):
-                recurrence = getattr(chore, 'recurrence', 'weekly')
-                raise ValueError(
-                    f"Chore '{chore.name}' is not available yet. "
-                    f"Recurrence: {recurrence.replace('_', ' ')}."
+                _LOGGER.debug(
+                    "complete_chore no-op: '%s' not available yet (recurrence window)",
+                    chore.name,
                 )
+                return None
 
         # Check availability for one-shot chores
         if getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
             if not self.is_chore_available_for_child(chore, child_id):
-                raise ValueError(
-                    f"Chore '{chore.name}' is not available (one-shot chore already completed or expired)."
+                _LOGGER.debug(
+                    "complete_chore no-op: '%s' not available (one-shot done or expired)",
+                    chore.name,
                 )
+                return None
 
         # Check daily limit (only count parent completions, not bonus sub-tasks)
         all_completions = self.storage.get_completions()
@@ -393,10 +417,11 @@ class ChoresMixin:
 
         daily_limit = getattr(chore, 'daily_limit', 1)
         if todays_completions_count >= daily_limit:
-            raise ValueError(
-                f"Daily limit reached for chore '{chore.name}'. "
-                f"Already completed {todays_completions_count} time(s) today (limit: {daily_limit})"
+            _LOGGER.debug(
+                "complete_chore no-op: daily limit reached for '%s' (%d/%d today)",
+                chore.name, todays_completions_count, daily_limit,
             )
+            return None
 
         auto_approve = as_parent or not chore.requires_approval
 
@@ -605,7 +630,7 @@ class ChoresMixin:
                         pts = subtask.points if subtask else 0
                     elif completion.timed_duration_seconds > 0 and chore.task_type == "timed":
                         rate_seconds = chore.timed_rate_minutes * 60
-                        pts = (completion.timed_duration_seconds // rate_seconds) * chore.timed_rate_points
+                        pts = (completion.timed_duration_seconds // rate_seconds) * chore.timed_rate_points if rate_seconds > 0 else 0
                     else:
                         pts = chore.points
                     total_awarded = await self._award_points(

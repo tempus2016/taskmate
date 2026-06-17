@@ -223,6 +223,7 @@ class TaskMateCoordinator(
         availability_entity: str = "",
         availability_inverted: bool = False,
         unavailability_entity: str = "",
+        linked_user_id: str = "",
     ) -> Child:
         """Add a new child."""
         child = Child(
@@ -231,6 +232,7 @@ class TaskMateCoordinator(
             availability_entity=availability_entity,
             availability_inverted=availability_inverted,
             unavailability_entity=unavailability_entity,
+            linked_user_id=linked_user_id,
         )
         self.storage.add_child(child)
         await self.storage.async_save()

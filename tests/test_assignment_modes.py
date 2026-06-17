@@ -1315,7 +1315,6 @@ def test_first_come_excluded_from_daily_assignments_and_cache():
 
 
 def test_first_come_loser_completion_is_rejected():
-    import pytest
     from custom_components.taskmate.models import ChoreCompletion
 
     a, b = Child(name="A"), Child(name="B")
@@ -1335,5 +1334,8 @@ def test_first_come_loser_completion_is_rejected():
                               completed_at=dt_util_mock.now(), approved=True)
     coord.storage.get_completions = MagicMock(return_value=[winning])
 
-    with pytest.raises(ValueError, match="already"):
-        run_async(coord.async_complete_chore(chore.id, b.id))
+    # The race loser is a soft rejection: silent no-op (returns None), no points
+    # awarded — not an ERROR-logged exception.
+    result = run_async(coord.async_complete_chore(chore.id, b.id))
+    assert result is None
+    coord._award_points.assert_not_called()
