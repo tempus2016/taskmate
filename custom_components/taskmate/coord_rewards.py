@@ -282,6 +282,43 @@ class RewardsMixin:
         )
         return claim
 
+    def _spend_period_start(self) -> date:
+        today = dt_util.now().date()
+        period = self.storage.get_setting("spend_cap_period", "weekly")
+        if period == "monthly":
+            return today.replace(day=1)
+        from datetime import timedelta
+        return today - timedelta(days=today.weekday())  # Monday of this week
+
+    def _spent_in_period(self, child_id: str) -> int:
+        """Total reward cost a child has had approved in the current cap period."""
+        start = self._spend_period_start()
+        reward_cost = {r.id: r.cost for r in self.storage.get_rewards()}
+        total = 0
+        for claim in self.storage.get_reward_claims():
+            if claim.child_id != child_id or not claim.approved:
+                continue
+            when = claim.approved_at or claim.claimed_at
+            if when and dt_util.as_local(when).date() >= start:
+                total += reward_cost.get(claim.reward_id, 0)
+        return total
+
+    def _enforce_spend_cap(self, child_id: str, cost: int) -> None:
+        """Raise if approving a `cost` spend would exceed the per-period cap."""
+        enabled = self.storage.get_setting("spend_cap_enabled", False)
+        if not (enabled is True or str(enabled).lower() == "true"):
+            return
+        try:
+            cap = int(float(self.storage.get_setting("spend_cap_amount", "0")))
+        except (ValueError, TypeError):
+            cap = 0
+        if cap <= 0:
+            return
+        if self._spent_in_period(child_id) + cost > cap:
+            raise ValueError(
+                f"Spending cap reached: {cap} per period already used"
+            )
+
     async def async_approve_reward(self, claim_id: str) -> None:
         """Approve a reward claim and deduct points from the child.
 
@@ -303,6 +340,9 @@ class RewardsMixin:
 
                 # Cost is always static
                 effective_cost = reward.cost
+
+                # Spending cap: block approval if it would exceed the per-period budget.
+                self._enforce_spend_cap(claim.child_id, effective_cost)
 
                 # Detect pool mode: either a direct allocation, or a filled jackpot pool.
                 pool_alloc = self.storage.get_pool_allocation(claim.child_id, claim.reward_id)

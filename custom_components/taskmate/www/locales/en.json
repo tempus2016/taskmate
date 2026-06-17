@@ -1292,5 +1292,10 @@
   "panel.child_stat_level": "Level",
   "notification.level_up.name": "Level up",
   "notification.level_up.description": "Celebrates when a child reaches a new XP level (off by default).",
-  "child.level_label": "Lvl {level}"
+  "child.level_label": "Lvl {level}",
+  "panel.settings_spendcap_enabled_label": "Spending cap",
+  "panel.settings_spendcap_enabled_hint": "Limit how many points each child can spend on rewards per period.",
+  "panel.settings_spendcap_params_label": "Spending cap settings",
+  "panel.settings_spendcap_params_hint": "Max points spendable per period (0 = no limit).",
+  "panel.settings_spendcap_amount": "Cap (pts)"
 }
