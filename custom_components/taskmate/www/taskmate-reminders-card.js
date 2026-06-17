@@ -47,7 +47,7 @@ class TaskMateRemindersCard extends LitElement {
 
   getCardSize() { return 3; }
 
-  static getStubConfig() { return { entity: "sensor.taskmate_overall_stats" }; }
+  static getStubConfig() { return { entity: "sensor.taskmate_overview" }; }
 
   render() {
     if (!this.hass || !this.config) return html``;
