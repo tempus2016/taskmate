@@ -326,6 +326,7 @@ class TaskMateCoordinator(
         steps = [
             self._async_check_streaks,
             self._async_expire_one_shot_chores,
+            self._async_expire_dated_chores,
             self._async_restock_rewards,
             self._async_expire_rewards,
             self._async_stop_stale_timed_sessions,
