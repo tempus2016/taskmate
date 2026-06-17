@@ -28,6 +28,10 @@ from .const import (
 )
 _LOGGER = logging.getLogger(__name__)
 
+# Appended to actionable notifications sent to non-mobile_app backends, which
+# silently ignore tap actions. Gives those recipients a way to act.
+_APPROVE_IN_PANEL_HINT = "Open the TaskMate panel to approve or reject."
+
 
 @dataclass(frozen=True)
 class NotificationTypeMeta:
@@ -140,13 +144,19 @@ class NotificationCoordinator:
         data: dict[str, Any] = {"title": "TaskMate", "message": message}
         if meta.actionable:
             entry_id = context.get("entry_id")
-            if entry_id:
-                data["data"] = {
-                    "actions": [
-                        {"action": f"TASKMATE_APPROVE_{entry_id}", "title": "Approve"},
-                        {"action": f"TASKMATE_REJECT_{entry_id}",  "title": "Reject"},
-                    ]
-                }
+            # Tap actions only render on the HA mobile app. Other backends
+            # (Telegram, email, SMS, persistent, …) ignore them, so instead of
+            # sending dead buttons we append a hint pointing to the panel.
+            if service.startswith("mobile_app"):
+                if entry_id:
+                    data["data"] = {
+                        "actions": [
+                            {"action": f"TASKMATE_APPROVE_{entry_id}", "title": "Approve"},
+                            {"action": f"TASKMATE_REJECT_{entry_id}",  "title": "Reject"},
+                        ]
+                    }
+            else:
+                data["message"] = f"{message} {_APPROVE_IN_PANEL_HINT}"
         try:
             await self.hass.services.async_call(domain, service, data, blocking=False)
         except Exception as err:  # noqa: BLE001
