@@ -120,6 +120,47 @@ class ChoresMixin:
         await self.async_refresh()
         return chore
 
+    async def async_clone_chore(self, chore_id: str) -> Chore:
+        """Duplicate an existing chore (config only), returning the new chore.
+
+        The clone copies every configuration field but gets a fresh id, a
+        "(copy)" name, fresh bonus-subtask ids, and a clean runtime state
+        (no skip/assignment/calendar-publish carry-over, enabled, nothing
+        disabled-for).
+        """
+        source = self.get_chore(chore_id)
+        if not source:
+            raise ValueError(f"Chore {chore_id} not found")
+
+        data = source.to_dict()
+        data.pop("id", None)
+        for sub in data.get("bonus_subtasks", []) or []:
+            sub.pop("id", None)  # fresh ids for the copied subtasks
+        # Reset per-run / ephemeral state so the clone starts clean.
+        data["assignment_current_child_id"] = ""
+        data["skip_date"] = ""
+        data["skip_count"] = 0
+        data["publish_calendar_published_dates"] = []
+        data["disabled_for"] = []
+        data["enabled"] = True
+
+        today = dt_util.as_local(dt_util.now()).date()
+        if data.get("schedule_mode") == "one_shot":
+            data["created_date"] = today.isoformat()
+
+        clone = Chore.from_dict(data)
+        clone.name = f"{source.name} (copy)"
+
+        self.storage.add_chore(clone)
+        # Cache today's active child so the card shows it immediately.
+        active = self._compute_active_children(clone, today)
+        if active and clone.assignment_mode not in ("everyone", "first_come"):
+            clone.assignment_current_child_id = active[0]
+        await self._publish_chore_to_calendars(clone, today)
+        await self.storage.async_save()
+        await self.async_refresh()
+        return clone
+
     async def async_add_chores_bulk(
         self,
         chore_names: list[str],

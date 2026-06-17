@@ -135,6 +135,9 @@ WS_AUDIT_CLEAR: Final = "taskmate/audit/clear"
 # Undo / retract
 WS_UNDO_TRANSACTION: Final = "taskmate/undo_transaction"
 
+# Clone / duplicate
+WS_CLONE_CHORE: Final = "taskmate/clone_chore"
+
 # Read-only / audit-management commands that should NOT themselves be audited.
 # Everything else routed through @_admin_only mutates state and is logged.
 _AUDIT_EXCLUDE: Final = {
@@ -1528,6 +1531,17 @@ async def _ws_undo_transaction(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"undone": msg["transaction_id"]})
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_CLONE_CHORE,
+    vol.Required("chore_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_clone_chore(hass, connection, msg, coordinator):
+    clone = await coordinator.async_clone_chore(msg["chore_id"])
+    connection.send_result(msg["id"], {"id": clone.id})
+
+
 # ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
@@ -1536,7 +1550,7 @@ _COMMANDS = (
     _ws_get_state,
     _ws_audit_list, _ws_audit_clear, _ws_undo_transaction,
     _ws_add_child, _ws_update_child, _ws_remove_child, _ws_list_ha_users,
-    _ws_add_chore, _ws_update_chore, _ws_remove_chore,
+    _ws_add_chore, _ws_update_chore, _ws_remove_chore, _ws_clone_chore,
     _ws_add_reward, _ws_update_reward, _ws_remove_reward,
     _ws_add_penalty, _ws_update_penalty, _ws_remove_penalty, _ws_apply_penalty,
     _ws_add_bonus, _ws_update_bonus, _ws_remove_bonus, _ws_apply_bonus,
