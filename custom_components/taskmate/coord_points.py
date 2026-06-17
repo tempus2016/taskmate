@@ -123,6 +123,11 @@ class PointsMixin:
 
                 if getattr(self, "badges", None):
                     await self.badges.evaluate_for_child(child.id, "perfect_week")
+                await self._celebrate(
+                    child, "perfect_week",
+                    f"{child.name} earned a perfect week — +{perfect_week_bonus}!",
+                    tier=3, extra={"bonus": perfect_week_bonus},
+                )
                 _LOGGER.info(
                     "Perfect week bonus (%d pts) awarded to %s for week of %s",
                     perfect_week_bonus, child.name, week_key,
@@ -322,6 +327,51 @@ class PointsMixin:
         lvl = xp // step + 1
         return {"level": lvl, "progress": xp - (lvl - 1) * step, "target": step}
 
+    async def _celebrate(
+        self, child, kind: str, message: str, tier: int = 1, extra: dict | None = None
+    ) -> None:
+        """Central celebration funnel for notable moments.
+
+        Always fires a single ``taskmate_celebration`` event carrying a ``tier``
+        (1=small, 2=medium, 3=epic) so one automation can scale its reaction
+        (lights, sound, TTS) to the size of the moment. Also fires the opt-in
+        ``celebration`` notification when enabled and the moment meets the
+        configured minimum tier.
+        """
+        payload = {
+            "child_id": child.id,
+            "child_name": child.name,
+            "kind": kind,
+            "tier": int(tier),
+            "message": message,
+            "timestamp": dt_util.now().isoformat(),
+        }
+        if extra:
+            payload.update(extra)
+        self.hass.bus.async_fire("taskmate_celebration", payload)
+
+        if not getattr(self, "notifications", None):
+            return
+        enabled = self.storage.get_setting("celebration_notify", False)
+        if not (enabled is True or str(enabled).lower() == "true"):
+            return
+        try:
+            min_tier = int(self.storage.get_setting("celebration_notify_min_tier", "2"))
+        except (ValueError, TypeError):
+            min_tier = 2
+        if int(tier) < min_tier:
+            return
+        await self.notifications.fire(
+            "celebration",
+            {
+                "child_name": child.name,
+                "child_id": child.id,
+                "kind": kind,
+                "tier": int(tier),
+                "message": message,
+            },
+        )
+
     async def _maybe_level_up(self, child) -> None:
         """Sync child.level to its XP; fire level-up events on an increase.
 
@@ -343,6 +393,10 @@ class PointsMixin:
                 await self.notifications.fire("level_up", {
                     "child_name": child.name, "child_id": child.id, "level": lvl,
                 })
+            await self._celebrate(
+                child, "level_up", f"{child.name} reached level {lvl}!",
+                tier=3 if lvl % 5 == 0 else 2, extra={"level": lvl},
+            )
 
     async def async_gift_points(self, from_child_id: str, to_child_id: str, points: int) -> None:
         """Transfer spendable points from one child to another (parent-controlled).
@@ -672,6 +726,13 @@ class PointsMixin:
                         "points_name": points_name,
                     },
                 )
+        # A big streak is a celebration moment too — epic at 30+ days.
+        for days, _bonus_pts in reached_milestones:
+            await self._celebrate(
+                child, "streak_milestone",
+                f"{child.name} hit a {days}-day streak!",
+                tier=3 if days >= 30 else 2, extra={"days": days},
+            )
         return total_points
 
     async def async_prune_history(self, days: int = 90) -> None:

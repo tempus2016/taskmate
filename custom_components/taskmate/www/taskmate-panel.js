@@ -3368,6 +3368,18 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-setting-label">${this._t("panel.settings_perfect_week_bonus_label")}<small>${this._t("panel.settings_perfect_week_bonus_hint")}</small></div>
               <input type="number" class="tm-input" min="0" data-setting="perfect_week_bonus" value="${s.perfect_week_bonus || 50}">
             </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_celebration_notify_label")}<small>${this._t("panel.settings_celebration_notify_hint")}</small></div>
+              <ha-switch data-setting="celebration_notify" ${s.celebration_notify ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_celebration_tier_label")}<small>${this._t("panel.settings_celebration_tier_hint")}</small></div>
+              <select class="tm-select" data-setting="celebration_notify_min_tier">
+                <option value="1" ${String(s.celebration_notify_min_tier ?? 2) === "1" ? "selected" : ""}>${this._t("panel.settings_celebration_tier_1")}</option>
+                <option value="2" ${String(s.celebration_notify_min_tier ?? 2) === "2" ? "selected" : ""}>${this._t("panel.settings_celebration_tier_2")}</option>
+                <option value="3" ${String(s.celebration_notify_min_tier ?? 2) === "3" ? "selected" : ""}>${this._t("panel.settings_celebration_tier_3")}</option>
+              </select>
+            </div>
           </div>
         </div>
 
