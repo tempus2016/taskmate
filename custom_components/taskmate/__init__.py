@@ -261,22 +261,27 @@ def _async_update_service_descriptions(hass: HomeAssistant) -> None:
         async_set_service_schema(hass, DOMAIN, service_name, patched)
 
 
+async def _async_require_admin(hass: HomeAssistant, call: ServiceCall) -> None:
+    """Reject user-initiated service calls that aren't from an admin.
+
+    Calls without a user context (automations, scripts, schedules) pass
+    through; user-initiated calls must come from an admin, matching the
+    admin gate on the panel's WebSocket commands.
+    """
+    if call.context.user_id:
+        user = await hass.auth.async_get_user(call.context.user_id)
+        if user is None or not user.is_admin:
+            raise Unauthorized(context=call.context)
+
+
 async def _async_register_services(hass: HomeAssistant) -> None:
     """Register TaskMate services."""
 
     def _admin(handler):
-        """Require an admin user for parent-privileged services.
-
-        Calls without a user context (automations, scripts, schedules) pass
-        through; user-initiated calls must come from an admin, matching the
-        admin gate on the panel's WebSocket commands.
-        """
+        """Wrap a service handler so only admins (or context-less calls) run it."""
         @wraps(handler)
         async def wrapped(call: ServiceCall) -> None:
-            if call.context.user_id:
-                user = await hass.auth.async_get_user(call.context.user_id)
-                if user is None or not user.is_admin:
-                    raise Unauthorized(context=call.context)
+            await _async_require_admin(hass, call)
             await handler(call)
         return wrapped
 
@@ -289,6 +294,12 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         chore_id = call.data[ATTR_CHORE_ID]
         child_id = call.data[ATTR_CHILD_ID]
         as_parent = call.data.get(ATTR_AS_PARENT, False)
+        if as_parent:
+            # Completing on behalf of a child (auto-approve + instant award) is a
+            # parent privilege. Enforce it on the backend, not just by hiding the
+            # control in the UI — the service is callable by any authenticated
+            # user. Normal child self-completion (as_parent omitted) stays open.
+            await _async_require_admin(hass, call)
         try:
             await coordinator.async_complete_chore(chore_id, child_id, as_parent=as_parent)
         except ValueError as err:
