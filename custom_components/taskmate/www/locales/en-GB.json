@@ -1216,6 +1216,8 @@
   "notification.pending_reward_claim.name": "Pending reward claim",
   "notification.streak_at_risk.description": "Fires when an active streak hasn't been extended yet today.",
   "notification.streak_at_risk.name": "Streak at risk",
+  "notification.streak_milestone.description": "Celebrates each new streak milestone a child reaches (off by default).",
+  "notification.streak_milestone.name": "Streak milestone",
   "panel.tp_label_placeholder": "Period name",
   "panel.tp_add_period": "Add period",
   "panel.tp_reset_defaults": "Reset to defaults",
