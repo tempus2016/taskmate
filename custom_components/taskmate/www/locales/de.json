@@ -1301,6 +1301,7 @@
   "panel.settings_interest_enabled_label": "Sparzinsen",
   "panel.settings_interest_enabled_hint": "Zahlt jedem Kind regelmäßig Zinsen auf sein verfügbares Guthaben (belohnt Sparen).",
   "panel.settings_interest_params_label": "Einstellungen für Sparzinsen",
+  "panel.settings_interest_percent": "Zinsen %",
   "panel.settings_interest_params_hint": "Zinssatz auf das Guthaben und wie oft.",
   "panel.chore_due_time_label": "Fälligkeitszeit (optional)",
   "panel.chore_due_time_hint": "Erledigungen bis zu dieser Zeit erhalten den Frühbonus; danach den Verspätungsabzug.",
