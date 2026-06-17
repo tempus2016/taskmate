@@ -563,6 +563,12 @@ class PointsMixin:
         if not child:
             raise ValueError(f"Child {child_id} not found")
         await self.async_remove_points(child_id, penalty.points, reason=f"Penalty: {penalty.name}")
+        self.hass.bus.async_fire("taskmate_penalty_applied", {
+            "child_id": child.id, "child_name": child.name,
+            "penalty_id": penalty.id, "penalty_name": penalty.name,
+            "points": penalty.points,
+            "timestamp": dt_util.now().isoformat(),
+        })
 
     # Bonus operations
     async def async_add_bonus(
@@ -607,6 +613,12 @@ class PointsMixin:
         if not child:
             raise ValueError(f"Child {child_id} not found")
         await self.async_add_points(child_id, bonus.points, reason=f"Bonus: {bonus.name}")
+        self.hass.bus.async_fire("taskmate_bonus_applied", {
+            "child_id": child.id, "child_name": child.name,
+            "bonus_id": bonus.id, "bonus_name": bonus.name,
+            "points": bonus.points,
+            "timestamp": dt_util.now().isoformat(),
+        })
 
     async def _async_notify_pending_approval(
         self, child_name: str, chore_name: str, points: int,

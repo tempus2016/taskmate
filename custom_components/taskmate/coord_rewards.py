@@ -354,6 +354,13 @@ class RewardsMixin:
                 await self.storage.async_save()
                 await self.async_refresh()
 
+                self.hass.bus.async_fire("taskmate_reward_approved", {
+                    "child_id": child.id, "child_name": child.name,
+                    "reward_id": reward.id, "reward_name": reward.name,
+                    "cost": effective_cost,
+                    "timestamp": dt_util.now().isoformat(),
+                })
+
                 if getattr(self, "badges", None):
                     await self.badges.evaluate_for_child(claim.child_id, "reward_redeemed")
 
@@ -362,9 +369,20 @@ class RewardsMixin:
 
     async def async_reject_reward(self, claim_id: str) -> None:
         """Reject a reward claim — no refund needed as points were never deducted."""
+        claim = next((c for c in self.storage.get_reward_claims() if c.id == claim_id), None)
         self.storage.remove_reward_claim(claim_id)
         await self.storage.async_save()
         await self.async_refresh()
+        if claim:
+            reward = self.get_reward(claim.reward_id)
+            child = self.get_child(claim.child_id)
+            self.hass.bus.async_fire("taskmate_reward_rejected", {
+                "child_id": claim.child_id,
+                "child_name": getattr(child, "name", ""),
+                "reward_id": claim.reward_id,
+                "reward_name": getattr(reward, "name", ""),
+                "timestamp": dt_util.now().isoformat(),
+            })
 
     async def async_allocate_points_to_pool(
         self, child_id: str, reward_id: str, points: int

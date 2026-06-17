@@ -815,6 +815,18 @@ class ChoresMixin:
         await self.storage.async_save()
         await self.async_refresh()
 
+        if target_completion:
+            child = self.get_child(target_completion.child_id)
+            chore = self.get_chore(target_completion.chore_id)
+            self.hass.bus.async_fire("taskmate_chore_rejected", {
+                "child_id": target_completion.child_id,
+                "child_name": getattr(child, "name", ""),
+                "chore_id": target_completion.chore_id,
+                "chore_name": getattr(chore, "name", ""),
+                "completion_id": completion_id,
+                "timestamp": dt_util.now().isoformat(),
+            })
+
     def _check_one_shot_fully_disabled(self, chore) -> None:
         """Check if a one-shot chore should be fully disabled (all children done)."""
         if chore.assigned_to:
