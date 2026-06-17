@@ -11,7 +11,7 @@ import yaml
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
-from homeassistant.exceptions import Unauthorized
+from homeassistant.exceptions import ServiceValidationError, Unauthorized
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_set_service_schema
@@ -155,6 +155,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await _async_register_services(hass)
         hass.data[DOMAIN][SERVICES_REGISTERED] = True
 
+    # Pre-load services.yaml off the event loop so the @callback below
+    # never has to do blocking disk I/O.
+    await hass.async_add_executor_job(_load_base_descriptions)
+
     _async_update_service_descriptions(hass)
     coordinator.async_add_listener(
         lambda: _async_update_service_descriptions(hass)
@@ -285,7 +289,13 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         chore_id = call.data[ATTR_CHORE_ID]
         child_id = call.data[ATTR_CHILD_ID]
         as_parent = call.data.get(ATTR_AS_PARENT, False)
-        await coordinator.async_complete_chore(chore_id, child_id, as_parent=as_parent)
+        try:
+            await coordinator.async_complete_chore(chore_id, child_id, as_parent=as_parent)
+        except ValueError as err:
+            # Expected, user-facing conditions (e.g. a first_come race loser:
+            # "already completed by another child") must surface as a clean
+            # validation error, not an unhandled 500 + traceback.
+            raise ServiceValidationError(str(err)) from err
 
     async def handle_complete_bonus_subtask(call: ServiceCall) -> None:
         """Handle the complete_bonus_subtask service call."""
