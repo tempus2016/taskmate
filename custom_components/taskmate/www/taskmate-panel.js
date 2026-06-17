@@ -420,6 +420,7 @@ class TaskMatePanel extends HTMLElement {
     // Chores
     if (act === "add-chore")    { this._openChoreDialog(null); return; }
     if (act === "edit-chore")   { this._openChoreDialog(t.dataset.id); return; }
+    if (act === "clone-chore")  { this._doCloneChore(t.dataset.id); return; }
     if (act === "delete-chore") { this._confirmDelete("chore", t.dataset.id); return; }
     if (act === "parent-complete-chore") { this._doParentComplete(t.dataset.id); return; }
     if (act === "skip-chore") { this._doSkipChore(t.dataset.id); return; }
@@ -1090,6 +1091,14 @@ class TaskMatePanel extends HTMLElement {
   }
 
   // ---- Chores ----------------------------------------------------------
+  async _doCloneChore(id) {
+    if (!id) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/clone_chore", chore_id: id });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.toast_chore_cloned"));
+  }
+
   _openChoreDialog(id) {
     const blank = {
       name: "", description: "", points: 10,
@@ -2220,6 +2229,7 @@ class TaskMatePanel extends HTMLElement {
           ${["alternating", "random", "balanced"].includes(c.assignment_mode) ? `<button type="button" class="tm-icon-btn" data-act="skip-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_skip_chore")}">⏭</button>` : ""}
           <button type="button" class="tm-icon-btn" data-act="toggle-chore-active" data-id="${this._esc(c.id)}" title="${c.enabled === false ? this._t("panel.btn_activate_chore") : this._t("panel.btn_deactivate_chore")}">${c.enabled === false ? "▶" : "⏸"}</button>
           <button type="button" class="tm-icon-btn" data-act="edit-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_edit")}">✏</button>
+          <button type="button" class="tm-icon-btn" data-act="clone-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_clone_chore")}">⧉</button>
           <button type="button" class="tm-icon-btn" data-act="delete-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_delete")}">🗑</button>
         </div></td>
       </tr>
