@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import logging
 from typing import Any
 
@@ -82,6 +82,51 @@ class TaskMateCoordinator(
         base = int(getattr(chore, "points", 0) or 0)
         tier = getattr(chore, "difficulty", DEFAULT_DIFFICULTY) or DEFAULT_DIFFICULTY
         return max(0, round(base * self.difficulty_multiplier(tier)))
+
+    # ── Vacation / pause mode ────────────────────────────────────────────
+    # A vacation period is a date range during which chores are hidden/paused
+    # and streaks are frozen (missed days inside a vacation never break a
+    # streak). Stored as the "vacation_periods" setting: a list of
+    # {"id", "name", "start", "end"} with inclusive ISO "YYYY-MM-DD" bounds.
+
+    def get_vacation_periods(self) -> list[dict]:
+        """Return the configured vacation periods (validated, sorted by start)."""
+        raw = self.storage.get_setting("vacation_periods", None)
+        if not isinstance(raw, list):
+            return []
+        periods = []
+        for entry in raw:
+            if not isinstance(entry, dict):
+                continue
+            try:
+                start = date.fromisoformat(str(entry.get("start")))
+                end = date.fromisoformat(str(entry.get("end")))
+            except (TypeError, ValueError):
+                continue
+            if end < start:
+                start, end = end, start
+            periods.append({
+                "id": str(entry.get("id") or "").strip() or start.isoformat(),
+                "name": str(entry.get("name") or "").strip(),
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+            })
+        return sorted(periods, key=lambda p: p["start"])
+
+    def active_vacation(self, on: date | None = None) -> dict | None:
+        """Return the vacation period covering ``on`` (default today), or None."""
+        day = on or dt_util.now().date()
+        for p in self.get_vacation_periods():
+            try:
+                if date.fromisoformat(p["start"]) <= day <= date.fromisoformat(p["end"]):
+                    return p
+            except (TypeError, ValueError):
+                continue
+        return None
+
+    def is_vacation_day(self, on: date | None = None) -> bool:
+        """True if ``on`` (default today) falls within any vacation period."""
+        return self.active_vacation(on) is not None
 
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""

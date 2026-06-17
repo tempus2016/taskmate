@@ -119,6 +119,7 @@ class TaskMatePanel extends HTMLElement {
     this._error = null;
     this._loading = false;
     this._timePeriodsDraft = null;  // local edit state for the period editor
+    this._vacationDraft = null;     // local edit state for the vacation editor
     this._activeTab = "children";
     this._dialog = null;
     this._dialogInitialHash = null;  // for confirm-on-leave
@@ -538,6 +539,20 @@ class TaskMatePanel extends HTMLElement {
       return;
     }
 
+    // Vacation / pause-mode editor
+    if (act === "vac-add") {
+      this._syncVacationInputs();
+      this._vacationDraft.push({ id: "", name: "", start: "", end: "" });
+      this._render();
+      return;
+    }
+    if (act === "vac-remove") {
+      this._syncVacationInputs();
+      this._vacationDraft.splice(Number(t.dataset.idx), 1);
+      this._render();
+      return;
+    }
+
     // Activity / approvals
     if (act === "approve-chore")  { this._doApprove("chore", t.dataset.id); return; }
     if (act === "reject-chore")   { this._doReject("chore", t.dataset.id); return; }
@@ -588,6 +603,13 @@ class TaskMatePanel extends HTMLElement {
     const tpIdx = t.dataset?.tpIdx;
     if (tpField && tpIdx != null && this._timePeriodsDraft?.[Number(tpIdx)]) {
       this._timePeriodsDraft[Number(tpIdx)][tpField] = t.value;
+      return;
+    }
+    // Vacation editor field edits
+    const vacField = t.dataset?.vacField;
+    const vacIdx = t.dataset?.vacIdx;
+    if (vacField && vacIdx != null && this._vacationDraft?.[Number(vacIdx)]) {
+      this._vacationDraft[Number(vacIdx)][vacField] = t.value;
       return;
     }
     // Template preview chore field edits
@@ -652,6 +674,11 @@ class TaskMatePanel extends HTMLElement {
     // Time-of-day period editor (time inputs fire change on blur)
     if (t.dataset?.tpField && t.dataset.tpIdx != null && this._timePeriodsDraft?.[Number(t.dataset.tpIdx)]) {
       this._timePeriodsDraft[Number(t.dataset.tpIdx)][t.dataset.tpField] = t.value;
+      return;
+    }
+    // Vacation editor (date inputs fire change on blur)
+    if (t.dataset?.vacField && t.dataset.vacIdx != null && this._vacationDraft?.[Number(t.dataset.vacIdx)]) {
+      this._vacationDraft[Number(t.dataset.vacIdx)][t.dataset.vacField] = t.value;
       return;
     }
     // Notifications tab change-driven actions
@@ -1380,6 +1407,42 @@ class TaskMatePanel extends HTMLElement {
     });
   }
 
+  _renderVacationSection() {
+    if (!this._vacationDraft) {
+      const saved = (this._state?.settings?.vacation_periods) || [];
+      this._vacationDraft = saved.map(p => ({ id: p.id || "", name: p.name || "", start: p.start || "", end: p.end || "" }));
+    }
+    const rows = this._vacationDraft.map((p, i) => `
+            <div class="tm-setting-row tm-vacation-row">
+              <input type="text" class="tm-input" data-vac-field="name" data-vac-idx="${i}" value="${this._esc(p.name || "")}" placeholder="${this._esc(this._t("panel.vacation_name_placeholder"))}">
+              <div class="tm-time-pair">
+                <input type="date" class="tm-input" data-vac-field="start" data-vac-idx="${i}" value="${this._esc(p.start || "")}">
+                <span>–</span>
+                <input type="date" class="tm-input" data-vac-field="end" data-vac-idx="${i}" value="${this._esc(p.end || "")}">
+              </div>
+              <button type="button" class="tm-icon-btn tm-period-del" data-act="vac-remove" data-idx="${i}" title="${this._esc(this._t("panel.vacation_delete_title"))}"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
+            </div>`).join("");
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.settings_vacation_title")}</h3><p class="tm-meta">${this._t("panel.settings_vacation_hint")}</p></div></div>
+          <div class="tm-section-body">
+            ${rows || `<div class="tm-meta" style="padding: 4px 0 8px;">${this._t("panel.vacation_none")}</div>`}
+            <div class="tm-period-actions">
+              <button type="button" class="tm-btn" data-act="vac-add"><ha-icon icon="mdi:plus"></ha-icon> ${this._t("panel.vacation_add")}</button>
+            </div>
+          </div>
+        </div>`;
+  }
+
+  _syncVacationInputs() {
+    if (!this._vacationDraft) return;
+    this.querySelectorAll("[data-vac-field]").forEach(el => {
+      const idx = Number(el.dataset.vacIdx);
+      const field = el.dataset.vacField;
+      if (this._vacationDraft[idx] && el.value != null) this._vacationDraft[idx][field] = el.value;
+    });
+  }
+
   _validateTimePeriodsDraft() {
     const periods = [];
     for (const p of this._timePeriodsDraft) {
@@ -1428,9 +1491,23 @@ class TaskMatePanel extends HTMLElement {
       if (error) { this._showToast("err", error); return; }
       payload.time_periods = periods;
     }
+    if (this._vacationDraft) {
+      this._syncVacationInputs();
+      const vacs = [];
+      for (const p of this._vacationDraft) {
+        const name = (p.name || "").trim();
+        const start = p.start || "";
+        const end = p.end || "";
+        if (!start && !end && !name) continue;  // skip wholly-empty rows
+        if (!start || !end) { this._showToast("err", this._t("panel.vacation_dates_required")); return; }
+        vacs.push({ ...(p.id ? { id: p.id } : {}), name, start, end });
+      }
+      payload.vacation_periods = vacs;
+    }
     const { ok, err, res } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
     this._timePeriodsDraft = null;  // rebuild from saved state on next render
+    this._vacationDraft = null;
     await this._fetchState();
     this._showToast("ok", this._t("panel.toast_settings_saved", {count: (res && res.updated || []).length}));
   }
@@ -2973,6 +3050,8 @@ class TaskMatePanel extends HTMLElement {
         </div>
 
         ${this._renderTimePeriodsSection()}
+
+        ${this._renderVacationSection()}
 
         <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.settings_bonuses_title")}</h3></div></div>
@@ -4556,6 +4635,11 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-period-row ha-icon-picker { max-width: 56px; }
       .tm-period-row > .tm-input { max-width: none; }
+      .tm-vacation-row {
+        grid-template-columns: minmax(140px, 1fr) auto 36px;
+        gap: 12px;
+      }
+      .tm-vacation-row > .tm-input { max-width: none; }
       .tm-period-del {
         color: var(--tm-text-faint);
       }

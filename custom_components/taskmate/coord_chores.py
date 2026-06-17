@@ -796,6 +796,10 @@ class ChoresMixin:
         Both modes also check visibility_entity if configured.
         """
 
+        # Vacation / pause mode: while away, all chores are paused for everyone.
+        if self.is_vacation_day():
+            return False
+
         # Check if chore is globally disabled (soft-disabled one-shot chores)
         if not getattr(chore, 'enabled', True):
             return False
