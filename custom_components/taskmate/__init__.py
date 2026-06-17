@@ -280,6 +280,27 @@ async def _async_require_admin(hass: HomeAssistant, call: ServiceCall) -> None:
             raise Unauthorized(context=call.context)
 
 
+def _safe(handler):
+    """Surface coordinator validation errors as clean service errors.
+
+    Coordinator methods raise ``ValueError`` for bad or rejected input (unknown
+    id, locked avatar, insufficient balance, swap not allowed, ...). Left
+    unhandled those reach the caller as an unhandled error + a full traceback in
+    the log. Re-raise as ``ServiceValidationError`` so a frontend/WebSocket
+    caller (the cards, the admin panel, Dev Tools) gets a clean failure result
+    with the human-readable message and no traceback is logged.
+    ``ServiceValidationError`` is not a ``ValueError``, so a handler that already
+    raises it (e.g. complete_chore) passes through untouched.
+    """
+    @wraps(handler)
+    async def wrapped(call: ServiceCall) -> None:
+        try:
+            await handler(call)
+        except ValueError as err:
+            raise ServiceValidationError(str(err)) from err
+    return wrapped
+
+
 async def _async_require_linked_child(
     hass: HomeAssistant, call: ServiceCall, coordinator, child_id: str
 ) -> None:
@@ -311,7 +332,10 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         async def wrapped(call: ServiceCall) -> None:
             await _async_require_admin(hass, call)
             await handler(call)
-        return wrapped
+        # Compose with _safe so admin handlers also convert coordinator
+        # ValueErrors into clean validation errors. The admin gate raises
+        # Unauthorized (not ValueError), so it is unaffected and still 401s.
+        return _safe(wrapped)
 
     async def handle_complete_chore(call: ServiceCall) -> None:
         """Handle the complete_chore service call."""
@@ -847,7 +871,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_COMPLETE_BONUS_SUBTASK,
-        handle_complete_bonus_subtask,
+        _safe(handle_complete_bonus_subtask),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHORE_ID): cv.string,
@@ -860,7 +884,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_START_TIMED_TASK,
-        handle_start_timed_task,
+        _safe(handle_start_timed_task),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHORE_ID): cv.string,
@@ -872,7 +896,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_PAUSE_TIMED_TASK,
-        handle_pause_timed_task,
+        _safe(handle_pause_timed_task),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHORE_ID): cv.string,
@@ -884,7 +908,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_STOP_TIMED_TASK,
-        handle_stop_timed_task,
+        _safe(handle_stop_timed_task),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHORE_ID): cv.string,
@@ -953,7 +977,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_REQUEST_SWAP,
-        handle_request_swap,
+        _safe(handle_request_swap),
         schema=vol.Schema(
             {
                 vol.Required("chore_id"): cv.string,
@@ -965,7 +989,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_CHOOSE_AVATAR,
-        handle_choose_avatar,
+        _safe(handle_choose_avatar),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHILD_ID): cv.string,
@@ -977,7 +1001,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_CLAIM_REWARD,
-        handle_claim_reward,
+        _safe(handle_claim_reward),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_REWARD_ID): cv.string,
@@ -1007,7 +1031,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_ALLOCATE_POINTS_TO_POOL,
-        handle_allocate_points_to_pool,
+        _safe(handle_allocate_points_to_pool),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHILD_ID): cv.string,
@@ -1046,7 +1070,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_PREVIEW_SOUND,
-        handle_preview_sound,
+        _safe(handle_preview_sound),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_SOUND): vol.In([
