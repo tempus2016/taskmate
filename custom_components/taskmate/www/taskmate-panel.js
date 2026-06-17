@@ -3194,6 +3194,18 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-setting-label">${this._t("panel.settings_calendar_projection_label")}<small>${this._t("panel.settings_calendar_projection_hint")}</small></div>
               <input type="number" class="tm-input" min="1" max="90" data-setting="calendar_projection_days" value="${s.calendar_projection_days || 14}">
             </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_surprise_enabled_label")}<small>${this._t("panel.settings_surprise_enabled_hint")}</small></div>
+              <ha-switch data-setting="surprise_bonus_enabled" ${s.surprise_bonus_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_surprise_params_label")}<small>${this._t("panel.settings_surprise_params_hint")}</small></div>
+              <div class="tm-difficulty-mults">
+                <label>${this._t("panel.settings_surprise_chance")}<input type="number" class="tm-input" step="1" min="0" max="100" data-setting="surprise_bonus_chance" value="${s.surprise_bonus_chance ?? 15}"></label>
+                <label>${this._t("panel.settings_surprise_min")}<input type="number" class="tm-input" step="1" min="0" data-setting="surprise_bonus_min" value="${s.surprise_bonus_min ?? 5}"></label>
+                <label>${this._t("panel.settings_surprise_max")}<input type="number" class="tm-input" step="1" min="0" data-setting="surprise_bonus_max" value="${s.surprise_bonus_max ?? 20}"></label>
+              </div>
+            </div>
           </div>
         </div>
 

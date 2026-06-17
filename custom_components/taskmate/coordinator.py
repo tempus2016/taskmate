@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import date, datetime, timedelta
 import logging
+import random
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
@@ -54,6 +55,7 @@ class TaskMateCoordinator(
         self._unsub_midnight: Callable[[], None] | None = None
         self._unsub_prune: Callable[[], None] | None = None
         self._unsub_availability: Callable[[], None] | None = None
+        self._unsub_surprise: Callable[[], None] | None = None
 
     def difficulty_multiplier(self, tier: str) -> float:
         """Return the points multiplier for a difficulty tier.
@@ -189,7 +191,50 @@ class TaskMateCoordinator(
         self._unsub_availability = self.hass.bus.async_listen(
             "state_changed", self._availability_state_changed
         )
+        # Surprise-bonus daily roll at 16:00 (opt-in; no-op unless enabled)
+        self._unsub_surprise = async_track_time_change(
+            self.hass, self._async_surprise_bonus_check, hour=16, minute=0, second=0
+        )
         await self.notifications.async_setup_schedules()
+
+    @callback
+    def _async_surprise_bonus_check(self, now: datetime) -> None:
+        """Scheduled callback — roll the daily surprise bonus."""
+        self.hass.async_create_task(self._async_run_surprise_bonus())
+
+    async def _async_run_surprise_bonus(self) -> None:
+        """Each enabled day, give each child a random chance at a surprise bonus.
+
+        Opt-in via the ``surprise_bonus_enabled`` setting. Per child, rolls
+        ``surprise_bonus_chance`` percent; on a hit awards a random amount in
+        [min, max], logged as a normal points transaction, and fires a
+        ``taskmate_surprise_bonus`` event for automations.
+        """
+        enabled = self.storage.get_setting("surprise_bonus_enabled", False)
+        if not (enabled is True or str(enabled).lower() == "true"):
+            return
+        try:
+            chance = float(self.storage.get_setting("surprise_bonus_chance", "15"))
+        except (ValueError, TypeError):
+            chance = 15.0
+        try:
+            lo = int(float(self.storage.get_setting("surprise_bonus_min", "5")))
+            hi = int(float(self.storage.get_setting("surprise_bonus_max", "20")))
+        except (ValueError, TypeError):
+            lo, hi = 5, 20
+        if hi < lo:
+            lo, hi = hi, lo
+        for child in self.storage.get_children():
+            if random.random() * 100.0 >= chance:
+                continue
+            pts = random.randint(lo, hi)
+            if pts <= 0:
+                continue
+            await self.async_add_points(child.id, pts, reason="Surprise bonus 🎉")
+            self.hass.bus.async_fire("taskmate_surprise_bonus", {
+                "child_id": child.id, "child_name": child.name,
+                "points": pts, "timestamp": dt_util.now().isoformat(),
+            })
 
     async def _async_backfill_career_history(self) -> None:
         """Backfill career_score_history from completions and transactions.
@@ -262,6 +307,9 @@ class TaskMateCoordinator(
         if self._unsub_availability:
             self._unsub_availability()
             self._unsub_availability = None
+        if self._unsub_surprise:
+            self._unsub_surprise()
+            self._unsub_surprise = None
 
     @callback
     def _async_midnight_streak_check(self, now: datetime) -> None:
