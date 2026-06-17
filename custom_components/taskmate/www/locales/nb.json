@@ -1301,6 +1301,7 @@
   "panel.settings_interest_enabled_label": "Sparerente",
   "panel.settings_interest_enabled_hint": "Betal jevnlig hvert barn rente på den disponible saldoen (belønner sparing).",
   "panel.settings_interest_params_label": "Innstillinger for sparerente",
+  "panel.settings_interest_percent": "Rente %",
   "panel.settings_interest_params_hint": "Rentesats på saldoen, og hvor ofte.",
   "panel.chore_due_time_label": "Forfallstid (valgfritt)",
   "panel.chore_due_time_hint": "Fullføringer ved/før dette tidspunktet får tidligbonusen; etterpå mister de forsinkelsesstraffen.",

@@ -1301,6 +1301,7 @@
   "panel.settings_interest_enabled_label": "Intérêts d'épargne",
   "panel.settings_interest_enabled_hint": "Verse régulièrement des intérêts à chaque enfant sur son solde disponible (récompense l'épargne).",
   "panel.settings_interest_params_label": "Réglages des intérêts d'épargne",
+  "panel.settings_interest_percent": "Intérêts %",
   "panel.settings_interest_params_hint": "Taux d'intérêt appliqué au solde et fréquence.",
   "panel.chore_due_time_label": "Heure limite (facultatif)",
   "panel.chore_due_time_hint": "Les réalisations avant cette heure obtiennent le bonus d'avance ; après, la pénalité de retard.",

@@ -99,6 +99,8 @@ from .const import (
     CONF_TASK_GROUP_CHORE_IDS,
     TASK_GROUP_POLICIES,
     TIME_CATEGORIES,
+    DIFFICULTY_TIERS,
+    DEFAULT_DIFFICULTY,
 )
 from .coordinator import TaskMateCoordinator
 from .frontend import async_register_cards, async_register_frontend
@@ -1193,6 +1195,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             vol.Optional(ATTR_CHORE_POINTS, default=10): cv.positive_int,
             vol.Optional(ATTR_CHORE_ASSIGNED_TO, default=[]): vol.All(cv.ensure_list, [cv.string]),
             vol.Optional(ATTR_CHORE_TIME_CATEGORY, default="anytime"): vol.In(TIME_CATEGORIES),
+            vol.Optional("difficulty", default=DEFAULT_DIFFICULTY): vol.In(DIFFICULTY_TIERS),
             vol.Optional(ATTR_CHORE_ONE_SHOT, default=False): cv.boolean,
             vol.Optional(ATTR_CHORE_REQUIRES_APPROVAL, default=True): cv.boolean,
         }),

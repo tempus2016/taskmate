@@ -21,6 +21,12 @@ complete_chore:
       default: false
       selector:
         boolean:
+    photo_url:
+      name: Photo URL
+      description: Optional URL or path to a photo submitted as evidence for the completion (e.g. a camera snapshot). Shown to the parent during approval.
+      required: false
+      selector:
+        text:
 
 complete_bonus_subtask:
   name: Complete Bonus Sub-task

@@ -1301,6 +1301,7 @@
   "panel.settings_interest_enabled_label": "Sparerente",
   "panel.settings_interest_enabled_hint": "Betal jamleg kvart barn rente på den disponible saldoen (belønnar sparing).",
   "panel.settings_interest_params_label": "Innstillingar for sparerente",
+  "panel.settings_interest_percent": "Rente %",
   "panel.settings_interest_params_hint": "Rentesats på saldoen, og kor ofte.",
   "panel.chore_due_time_label": "Forfallstid (valfritt)",
   "panel.chore_due_time_hint": "Fullføringar ved/før dette tidspunktet får tidlegbonusen; etterpå misser dei forseinkingsstraffa.",

@@ -3666,7 +3666,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_interest_params_label")}<small>${this._t("panel.settings_interest_params_hint")}</small></div>
               <div class="tm-difficulty-mults">
-                <label>${this._t("panel.settings_decay_percent")}<input type="number" class="tm-input" step="1" min="0" max="100" data-setting="interest_percent" value="${s.interest_percent ?? 5}"></label>
+                <label>${this._t("panel.settings_interest_percent")}<input type="number" class="tm-input" step="1" min="0" max="100" data-setting="interest_percent" value="${s.interest_percent ?? 5}"></label>
                 <label>${this._t("panel.settings_decay_period")}
                   <select class="tm-select" data-setting="interest_period">
                     <option value="weekly" ${(s.interest_period || "weekly") === "weekly" ? "selected" : ""}>${this._t("panel.reward_restock_weekly")}</option>

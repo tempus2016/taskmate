@@ -1301,6 +1301,7 @@
   "panel.settings_interest_enabled_label": "Juros de poupança",
   "panel.settings_interest_enabled_hint": "Paga periodicamente juros a cada criança sobre o saldo disponível (recompensa a poupança).",
   "panel.settings_interest_params_label": "Configurações dos juros de poupança",
+  "panel.settings_interest_percent": "Juros %",
   "panel.settings_interest_params_hint": "Taxa de juros aplicada ao saldo e com que frequência.",
   "panel.chore_due_time_label": "Hora limite (opcional)",
   "panel.chore_due_time_hint": "Conclusões até esta hora ganham o bónus de antecipação; depois, a penalização por atraso.",
