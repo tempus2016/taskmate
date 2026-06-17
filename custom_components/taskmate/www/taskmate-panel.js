@@ -3283,6 +3283,22 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-setting-label">${this._t("panel.settings_level_step_label")}<small>${this._t("panel.settings_level_step_hint")}</small></div>
               <input type="number" class="tm-input" min="1" data-setting="level_xp_step" value="${s.level_xp_step || 100}">
             </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_spendcap_enabled_label")}<small>${this._t("panel.settings_spendcap_enabled_hint")}</small></div>
+              <ha-switch data-setting="spend_cap_enabled" ${s.spend_cap_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_spendcap_params_label")}<small>${this._t("panel.settings_spendcap_params_hint")}</small></div>
+              <div class="tm-difficulty-mults">
+                <label>${this._t("panel.settings_spendcap_amount")}<input type="number" class="tm-input" step="1" min="0" data-setting="spend_cap_amount" value="${s.spend_cap_amount ?? 0}"></label>
+                <label>${this._t("panel.settings_decay_period")}
+                  <select class="tm-select" data-setting="spend_cap_period">
+                    <option value="weekly" ${s.spend_cap_period === "weekly" ? "selected" : ""}>${this._t("panel.reward_restock_weekly")}</option>
+                    <option value="monthly" ${(s.spend_cap_period || "weekly") === "monthly" ? "selected" : ""}>${this._t("panel.reward_restock_monthly")}</option>
+                  </select>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
