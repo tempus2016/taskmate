@@ -823,6 +823,10 @@ class ChoresMixin:
                     if not is_bonus and hasattr(self, "_async_advance_quests"):
                         await self._async_advance_quests(completion.child_id, completion.chore_id)
 
+                    # Evaluate daily/weekly challenges (parent completions only)
+                    if not is_bonus and hasattr(self, "_async_evaluate_challenges"):
+                        await self._async_evaluate_challenges(completion.child_id)
+
                     # All-chores-done celebration — fire once per child per day
                     today_iso = dt_util.now().date().isoformat()
                     flag_key = f"all_done_{child.id}_{today_iso}"

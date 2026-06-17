@@ -15,6 +15,7 @@ from homeassistant.util import dt as dt_util
 from .const import DOMAIN
 from .coord_assignments import AssignmentsMixin
 from .coord_avatars import AvatarsMixin
+from .coord_challenges import ChallengesMixin
 from .coord_badges import BadgeCoordinator
 from .coord_notifications import NotificationCoordinator
 from .coord_calendar import CalendarMixin
@@ -37,6 +38,7 @@ class TaskMateCoordinator(
     PointsMixin,
     QuestsMixin,
     AvatarsMixin,
+    ChallengesMixin,
     TimedMixin,
     CalendarMixin,
     TemplatesMixin,
@@ -464,6 +466,7 @@ class TaskMateCoordinator(
         self.storage.remove_pool_allocations_for_child(child_id)
         self.storage.remove_career_score_history_for_child(child_id)
         self.storage.remove_quest_progress_for_child(child_id)
+        self.storage.remove_challenge_progress_for_child(child_id)
         # Remove child from chore assigned_to lists
         for chore in self.storage.get_chores():
             if child_id in chore.assigned_to:
