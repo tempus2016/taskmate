@@ -1277,5 +1277,14 @@
   "panel.settings_decay_params_label": "Points decay settings",
   "panel.settings_decay_params_hint": "How much of the balance to remove, and how often.",
   "panel.settings_decay_percent": "Decay %",
-  "panel.settings_decay_period": "Every"
+  "panel.settings_decay_period": "Every",
+  "panel.gift_btn": "Gift points",
+  "panel.gift_dialog_title": "Gift points",
+  "panel.gift_from": "From",
+  "panel.gift_to": "To",
+  "panel.gift_amount": "Amount",
+  "panel.gift_send": "Send gift",
+  "panel.gift_sent": "Points gifted",
+  "panel.gift_err_same": "Pick two different children.",
+  "panel.gift_err_amount": "Enter an amount of at least 1."
 }

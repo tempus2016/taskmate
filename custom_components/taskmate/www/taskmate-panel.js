@@ -411,6 +411,8 @@ class TaskMatePanel extends HTMLElement {
 
     // Children
     if (act === "add-child")    { this._openChildDialog(null); return; }
+    if (act === "gift-points")  { this._openGiftDialog(); return; }
+    if (act === "save-gift")    { this._doGiftPoints(); return; }
     if (act === "edit-child")   { this._openChildDialog(t.dataset.id); return; }
     if (act === "delete-child") { this._confirmDelete("child", t.dataset.id); return; }
     if (act === "save-child")   { this._doSaveChild(); return; }
@@ -2050,6 +2052,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">${this._t("panel.child_title")} <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox(this._t("panel.search_children")) : ""}
+        ${all.length >= 2 ? `<button type="button" class="tm-btn" data-act="gift-points">${this._t("panel.gift_btn")}</button>` : ""}
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-child">${this._t("panel.btn_add_child")}</button>
       </div>
       ${all.length === 0 ? this._emptyState("👨‍👩‍👧‍👦", this._t("panel.empty_children_title"), this._t("panel.empty_children_copy"), "add-child", this._t("panel.btn_add_child")) :
@@ -3542,7 +3545,40 @@ class TaskMatePanel extends HTMLElement {
   }
 
   // -- Dialogs -----------------------------------------------------------
+  _openGiftDialog() {
+    const children = this._state.children || [];
+    if (children.length < 2) return;
+    this._openDialog({ kind: "gift", data: { from: children[0].id, to: children[1].id, points: 10 } });
+  }
+
+  _renderGiftDialog() {
+    const d = this._dialog.data;
+    const opts = (this._state.children || []).map(c => ({ v: c.id, l: c.name }));
+    return this._dialogShell(this._t("panel.gift_dialog_title"),
+      [
+        this._select(this._t("panel.gift_from"), "from", d.from, opts),
+        this._select(this._t("panel.gift_to"), "to", d.to, opts),
+        this._field(this._t("panel.gift_amount"), "points", d.points, "number"),
+      ].join(""),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-gift">${this._t("panel.gift_send")}</button>`
+    );
+  }
+
+  async _doGiftPoints() {
+    const d = this._dialog.data;
+    const pts = Number(d.points) || 0;
+    if (!d.from || !d.to || d.from === d.to) { this._showToast("err", this._t("panel.gift_err_same")); return; }
+    if (pts < 1) { this._showToast("err", this._t("panel.gift_err_amount")); return; }
+    const { ok, err } = await this._callWS({ type: "taskmate/gift_points", from_child_id: d.from, to_child_id: d.to, points: pts });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.gift_sent"));
+  }
+
   _renderDialog() {
+    if (this._dialog.kind === "gift")         return this._renderGiftDialog();
     if (this._dialog.kind === "child")        return this._renderChildDialog();
     if (this._dialog.kind === "chore")        return this._renderChoreDialog();
     if (this._dialog.kind === "reward")       return this._renderRewardDialog();
