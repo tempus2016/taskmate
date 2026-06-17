@@ -1291,5 +1291,6 @@
   "panel.settings_level_step_hint": "Earned points needed to advance one level (XP = lifetime earned points).",
   "panel.child_stat_level": "Level",
   "notification.level_up.name": "Level up",
-  "notification.level_up.description": "Celebrates when a child reaches a new XP level (off by default)."
+  "notification.level_up.description": "Celebrates when a child reaches a new XP level (off by default).",
+  "child.level_label": "Lvl {level}"
 }

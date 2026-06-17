@@ -561,6 +561,36 @@ class TaskMateChildCard extends LitElement {
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+      .child-level {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .level-badge {
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: .03em;
+        color: white;
+        background: rgba(255, 255, 255, 0.25);
+        padding: 1px 8px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .level-xp-track {
+        flex: 1;
+        max-width: 90px;
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.25);
+        overflow: hidden;
+      }
+      .level-xp-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: white;
+        transition: width 0.4s ease;
+      }
 
       /* Points pill — right side of header, compact like overview card */
       .points-display {
@@ -1628,6 +1658,14 @@ class TaskMateChildCard extends LitElement {
             </div>
             <div class="child-name-container">
               <div class="child-name">${child.name}</div>
+              ${child.level ? html`
+                <div class="child-level" title="${child.level_progress || 0} / ${child.level_target || 100} XP">
+                  <span class="level-badge">${this._t('child.level_label', { level: child.level })}</span>
+                  <div class="level-xp-track">
+                    <div class="level-xp-fill" style="width: ${Math.max(0, Math.min(100, Math.round(((child.level_progress || 0) / (child.level_target || 100)) * 100)))}%"></div>
+                  </div>
+                </div>
+              ` : ''}
             </div>
           </div>
           <div class="points-display">
