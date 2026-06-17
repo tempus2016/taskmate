@@ -1115,6 +1115,7 @@ class TaskMatePanel extends HTMLElement {
       timed_rate_points: 10, timed_rate_minutes: 5, timed_max_daily_minutes: 0,
       assigned_to: [], requires_approval: true,
       time_category: "anytime", completion_sound: "coin", daily_limit: 1,
+      difficulty: "medium",
       claim_allowance_minutes: 0,
       schedule_mode: "specific_days",
       due_days: [], recurrence: "weekly", recurrence_day: "", recurrence_start: "",
@@ -1157,6 +1158,7 @@ class TaskMatePanel extends HTMLElement {
       time_category: d.time_category || "anytime",
       claim_allowance_minutes: Math.max(0, Number(d.claim_allowance_minutes) || 0),
       completion_sound: d.completion_sound || "coin",
+      difficulty: d.difficulty || "medium",
       daily_limit: Number(d.daily_limit) || 1,
       schedule_mode: d.schedule_mode || "specific_days",
       due_days: d.due_days || [],
@@ -3181,6 +3183,14 @@ class TaskMatePanel extends HTMLElement {
               <input type="number" class="tm-input" step="0.1" min="1" max="5" data-setting="weekend_multiplier" value="${s.weekend_multiplier || 1.0}">
             </div>
             <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_difficulty_multipliers_label")}<small>${this._t("panel.settings_difficulty_multipliers_hint")}</small></div>
+              <div class="tm-difficulty-mults">
+                <label>${this._t("panel.difficulty_easy")}<input type="number" class="tm-input" step="0.1" min="0" max="10" data-setting="difficulty_multiplier_easy" value="${s.difficulty_multiplier_easy ?? 0.5}"></label>
+                <label>${this._t("panel.difficulty_medium")}<input type="number" class="tm-input" step="0.1" min="0" max="10" data-setting="difficulty_multiplier_medium" value="${s.difficulty_multiplier_medium ?? 1.0}"></label>
+                <label>${this._t("panel.difficulty_hard")}<input type="number" class="tm-input" step="0.1" min="0" max="10" data-setting="difficulty_multiplier_hard" value="${s.difficulty_multiplier_hard ?? 2.0}"></label>
+              </div>
+            </div>
+            <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_calendar_projection_label")}<small>${this._t("panel.settings_calendar_projection_hint")}</small></div>
               <input type="number" class="tm-input" min="1" max="90" data-setting="calendar_projection_days" value="${s.calendar_projection_days || 14}">
             </div>
@@ -3626,6 +3636,11 @@ class TaskMatePanel extends HTMLElement {
           </div>
         ` : "",
         this._select(this._t("panel.chore_completion_sound_label"), "completion_sound", d.completion_sound, COMPLETION_SOUNDS.map(s => ({ v: s, l: s }))),
+        this._select(this._t("panel.chore_difficulty_label"), "difficulty", d.difficulty || "medium", [
+          { v: "easy", l: this._t("panel.difficulty_easy") },
+          { v: "medium", l: this._t("panel.difficulty_medium") },
+          { v: "hard", l: this._t("panel.difficulty_hard") },
+        ]),
         this._switch(this._t("panel.chore_approval_label"), "requires_approval", d.requires_approval),
         this._switch(this._t("panel.chore_require_availability"), "require_availability", d.require_availability,
           this._t("panel.chore_require_availability_hint")),
@@ -3842,6 +3857,11 @@ class TaskMatePanel extends HTMLElement {
           </div>
         ` : "",
         this._select(this._t("panel.chore_completion_sound_label"), "completion_sound", d.completion_sound, COMPLETION_SOUNDS.map(s => ({ v: s, l: s }))),
+        this._select(this._t("panel.chore_difficulty_label"), "difficulty", d.difficulty || "medium", [
+          { v: "easy", l: this._t("panel.difficulty_easy") },
+          { v: "medium", l: this._t("panel.difficulty_medium") },
+          { v: "hard", l: this._t("panel.difficulty_hard") },
+        ]),
         this._switch(this._t("panel.chore_approval_label"), "requires_approval", d.requires_approval),
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
