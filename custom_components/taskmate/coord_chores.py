@@ -829,6 +829,10 @@ class ChoresMixin:
                             "all_chores_done",
                             {"child_name": child.name, "child_id": child.id},
                         )
+                        await self._celebrate(
+                            child, "all_chores_done",
+                            f"{child.name} finished every chore today!", tier=1,
+                        )
                 else:
                     _LOGGER.warning(
                         "Cannot approve completion %s: chore (%s) or child (%s) not found",

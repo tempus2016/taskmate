@@ -1320,5 +1320,14 @@
   "panel.swap_request_text": "{child} wants to do “{chore}” today",
   "panel.swap_from": "currently {name}",
   "notification.weekly_digest.name": "Weekly digest",
-  "notification.weekly_digest.description": "A Sunday-evening summary of each child's week (chores + points). Off by default."
+  "notification.weekly_digest.description": "A Sunday-evening summary of each child's week (chores + points). Off by default.",
+  "panel.settings_celebration_notify_label": "Celebration notifications",
+  "panel.settings_celebration_notify_hint": "Send a notification for big celebration moments (level-ups, streak milestones, perfect weeks). Off by default.",
+  "panel.settings_celebration_tier_label": "Minimum celebration size",
+  "panel.settings_celebration_tier_hint": "Only notify for moments at or above this size. Every celebration still fires a taskmate_celebration event for automations.",
+  "panel.settings_celebration_tier_1": "All (small and up)",
+  "panel.settings_celebration_tier_2": "Medium and up",
+  "panel.settings_celebration_tier_3": "Epic only",
+  "notification.celebration.name": "Celebration",
+  "notification.celebration.description": "Big celebration moments — level-ups, streak milestones and perfect weeks. Off by default."
 }
