@@ -776,6 +776,28 @@ class TaskMateStorage:
         """Remove all audit entries."""
         self._data["audit_log"] = []
 
+    # ── Chore swap requests ──────────────────────────────────────────────
+    def get_swap_requests(self) -> list[dict]:
+        return list(self._data.get("swap_requests", []))
+
+    def add_swap_request(self, req: dict) -> None:
+        self._data.setdefault("swap_requests", []).append(req)
+
+    def update_swap_request(self, req_id: str, **changes) -> bool:
+        for r in self._data.get("swap_requests", []):
+            if r.get("id") == req_id:
+                r.update(changes)
+                return True
+        return False
+
+    def remove_swap_request(self, req_id: str) -> bool:
+        reqs = self._data.get("swap_requests", [])
+        for i, r in enumerate(reqs):
+            if r.get("id") == req_id:
+                del reqs[i]
+                return True
+        return False
+
     # ── Backup / restore ─────────────────────────────────────────────────
     def export_data(self) -> dict:
         """Return a deep copy of the full stored data (for backup/export)."""

@@ -1308,5 +1308,15 @@
   "panel.chore_late_penalty_label": "Late penalty",
   "panel.chore_require_photo_label": "Require photo proof",
   "panel.chore_require_photo_hint": "Completions must be parent-approved; an evidence photo (if provided) shows in approvals.",
-  "panel.activity_view_photo": "View photo"
+  "panel.activity_view_photo": "View photo",
+  "panel.swap_btn": "Request swap",
+  "panel.swap_dialog_title": "Swap: {chore}",
+  "panel.swap_requester": "Give today's turn to",
+  "panel.swap_create": "Request swap",
+  "panel.swap_pick_child": "Pick a child.",
+  "panel.swap_requested": "Swap requested",
+  "panel.swap_approved": "Swap approved",
+  "panel.swap_rejected": "Swap rejected",
+  "panel.swap_request_text": "{child} wants to do “{chore}” today",
+  "panel.swap_from": "currently {name}"
 }

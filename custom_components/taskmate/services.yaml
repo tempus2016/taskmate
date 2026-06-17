@@ -112,6 +112,21 @@ gift_points:
           max: 10000
           mode: box
 
+request_swap:
+  name: Request Chore Swap
+  description: A child requests to take over today's rotation assignment of a chore (pending parent approval).
+  fields:
+    chore_id:
+      name: Chore ID
+      required: true
+      selector:
+        text:
+    requester_id:
+      name: Requester child ID
+      required: true
+      selector:
+        text:
+
 claim_reward:
   name: Claim Reward
   description: Child claims a reward using their points

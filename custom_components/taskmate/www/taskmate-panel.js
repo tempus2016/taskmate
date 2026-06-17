@@ -425,6 +425,10 @@ class TaskMatePanel extends HTMLElement {
     if (act === "add-chore")    { this._openChoreDialog(null); return; }
     if (act === "edit-chore")   { this._openChoreDialog(t.dataset.id); return; }
     if (act === "clone-chore")  { this._doCloneChore(t.dataset.id); return; }
+    if (act === "request-swap") { this._openSwapDialog(t.dataset.id); return; }
+    if (act === "save-swap")    { this._doRequestSwap(); return; }
+    if (act === "approve-swap") { this._doSwap("approve", t.dataset.id); return; }
+    if (act === "reject-swap")  { this._doSwap("reject", t.dataset.id); return; }
     if (act === "bulk-toggle")  { this._bulkMode = !this._bulkMode; this._bulkSel.clear(); this._render(); return; }
     if (act === "bulk-enable")  { this._doBulk("enable"); return; }
     if (act === "bulk-disable") { this._doBulk("disable"); return; }
@@ -2101,6 +2105,7 @@ class TaskMatePanel extends HTMLElement {
   _renderActivityTab() {
     const pendingCompletions = this._state.pending_completions || [];
     const pendingClaims      = this._state.pending_reward_claims || [];
+    const pendingSwaps       = this._state.swap_requests || [];
     const transactions       = this._state.points_transactions || [];
     const completions        = this._state.completions || [];
     const claims             = this._state.reward_claims || [];
@@ -2140,11 +2145,11 @@ class TaskMatePanel extends HTMLElement {
       <!-- Pending approvals -->
       <div class="tm-card">
         <h3 class="tm-section-title">${this._t("panel.activity_pending_approvals")}
-          ${(pendingCompletions.length + pendingClaims.length) > 0
-            ? `<span class="tm-pill tm-pill-warn">${pendingCompletions.length + pendingClaims.length}</span>`
+          ${(pendingCompletions.length + pendingClaims.length + pendingSwaps.length) > 0
+            ? `<span class="tm-pill tm-pill-warn">${pendingCompletions.length + pendingClaims.length + pendingSwaps.length}</span>`
             : `<span class="tm-pill tm-pill-success">${this._t("panel.activity_pending_all_clear")}</span>`}
         </h3>
-        ${pendingCompletions.length === 0 && pendingClaims.length === 0 ? `
+        ${pendingCompletions.length === 0 && pendingClaims.length === 0 && pendingSwaps.length === 0 ? `
           <p class="tm-meta">${this._t("panel.activity_no_items")}</p>
         ` : `
           <div class="tm-approval-list">
@@ -2192,6 +2197,24 @@ class TaskMatePanel extends HTMLElement {
                   <div class="tm-approval-actions">
                     <button type="button" class="tm-btn tm-btn-sm" data-act="reject-reward" data-id="${this._esc(c.id)}">${this._t("panel.activity_reject")}</button>
                     <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="approve-reward" data-id="${this._esc(c.id)}">${this._t("panel.activity_approve")}</button>
+                  </div>
+                </div>
+              `;
+            }).join("")}
+            ${pendingSwaps.map(sw => {
+              const chore = choreById[sw.chore_id];
+              const req = childById[sw.requester_id];
+              const from = childById[sw.from_child_id];
+              return `
+                <div class="tm-approval-item">
+                  <div class="tm-approval-icon"><ha-icon icon="mdi:swap-horizontal"></ha-icon></div>
+                  <div class="tm-approval-body">
+                    <div class="tm-approval-line">${this._t("panel.swap_request_text", {child: this._esc((req && req.name) || "?"), chore: this._esc((chore && chore.name) || "?")})}</div>
+                    <div class="tm-meta">${from ? this._t("panel.swap_from", {name: this._esc(from.name)}) + " · " : ""}${this._timeAgo(sw.created_at)}</div>
+                  </div>
+                  <div class="tm-approval-actions">
+                    <button type="button" class="tm-btn tm-btn-sm" data-act="reject-swap" data-id="${this._esc(sw.id)}">${this._t("panel.activity_reject")}</button>
+                    <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="approve-swap" data-id="${this._esc(sw.id)}">${this._t("panel.activity_approve")}</button>
                   </div>
                 </div>
               `;
@@ -2346,6 +2369,7 @@ class TaskMatePanel extends HTMLElement {
         <td class="tm-row-actions"><div>
           ${this._state.parent_completable && this._state.parent_completable[c.id] ? `<button type="button" class="tm-icon-btn" data-act="parent-complete-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.parent_complete_tooltip")}">👤✓</button>` : ""}
           ${["alternating", "random", "balanced"].includes(c.assignment_mode) ? `<button type="button" class="tm-icon-btn" data-act="skip-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_skip_chore")}">⏭</button>` : ""}
+          ${["alternating", "random", "balanced", "first_come"].includes(c.assignment_mode) ? `<button type="button" class="tm-icon-btn" data-act="request-swap" data-id="${this._esc(c.id)}" title="${this._t("panel.swap_btn")}">⇄</button>` : ""}
           <button type="button" class="tm-icon-btn" data-act="toggle-chore-active" data-id="${this._esc(c.id)}" title="${c.enabled === false ? this._t("panel.btn_activate_chore") : this._t("panel.btn_deactivate_chore")}">${c.enabled === false ? "▶" : "⏸"}</button>
           <button type="button" class="tm-icon-btn" data-act="edit-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_edit")}">✏</button>
           <button type="button" class="tm-icon-btn" data-act="clone-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_clone_chore")}">⧉</button>
@@ -3621,7 +3645,45 @@ class TaskMatePanel extends HTMLElement {
     this._showToast("ok", this._t("panel.gift_sent"));
   }
 
+  _openSwapDialog(choreId) {
+    const c = (this._state.chores || []).find(x => x.id === choreId);
+    if (!c) return;
+    const cur = c.assignment_current_child_id || "";
+    const opts = (this._state.children || []).filter(ch => ch.id !== cur);
+    this._openDialog({ kind: "swap", data: { chore_id: choreId, chore_name: c.name, requester: (opts[0] && opts[0].id) || "" } });
+  }
+
+  _renderSwapDialog() {
+    const d = this._dialog.data;
+    const c = (this._state.chores || []).find(x => x.id === d.chore_id) || {};
+    const cur = c.assignment_current_child_id || "";
+    const opts = (this._state.children || []).filter(ch => ch.id !== cur).map(ch => ({ v: ch.id, l: ch.name }));
+    return this._dialogShell(this._t("panel.swap_dialog_title", { chore: d.chore_name }),
+      this._select(this._t("panel.swap_requester"), "requester", d.requester, opts),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-swap">${this._t("panel.swap_create")}</button>`
+    );
+  }
+
+  async _doRequestSwap() {
+    const d = this._dialog.data;
+    if (!d.requester) { this._showToast("err", this._t("panel.swap_pick_child")); return; }
+    const { ok, err } = await this._callWS({ type: "taskmate/request_swap", chore_id: d.chore_id, requester_id: d.requester });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._closeDialog(true); await this._fetchState();
+    this._showToast("ok", this._t("panel.swap_requested"));
+  }
+
+  async _doSwap(action, reqId) {
+    const type = action === "approve" ? "taskmate/approve_swap" : "taskmate/reject_swap";
+    const { ok, err } = await this._callWS({ type, request_id: reqId });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t(action === "approve" ? "panel.swap_approved" : "panel.swap_rejected"));
+  }
+
   _renderDialog() {
+    if (this._dialog.kind === "swap")         return this._renderSwapDialog();
     if (this._dialog.kind === "gift")         return this._renderGiftDialog();
     if (this._dialog.kind === "child")        return this._renderChildDialog();
     if (this._dialog.kind === "chore")        return this._renderChoreDialog();

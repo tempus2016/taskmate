@@ -83,6 +83,7 @@ from .const import (
     SERVICE_UNDO_TRANSACTION,
     SERVICE_TEST_NOTIFICATION,
     SERVICE_GIFT_POINTS,
+    SERVICE_REQUEST_SWAP,
     SERVICE_SET_CHORE_ORDER,
     SERVICE_UPDATE_BONUS,
     SERVICE_UPDATE_PENALTY,
@@ -428,6 +429,16 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         await coordinator.async_gift_points(
             call.data["from_child_id"], call.data["to_child_id"], call.data["points"],
         )
+
+    async def handle_request_swap(call: ServiceCall) -> None:
+        """A child requests to take over today's rotation assignment of a chore."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        requester_id = call.data["requester_id"]
+        await _async_require_linked_child(hass, call, coordinator, requester_id)
+        await coordinator.async_request_swap(call.data["chore_id"], requester_id)
 
     async def handle_reject_reward(call: ServiceCall) -> None:
         """Handle the reject_reward service call."""
@@ -930,6 +941,18 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN,
+        SERVICE_REQUEST_SWAP,
+        handle_request_swap,
+        schema=vol.Schema(
+            {
+                vol.Required("chore_id"): cv.string,
+                vol.Required("requester_id"): cv.string,
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
         SERVICE_CLAIM_REWARD,
         handle_claim_reward,
         schema=vol.Schema(
@@ -1251,6 +1274,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_UNDO_TRANSACTION,
         SERVICE_TEST_NOTIFICATION,
         SERVICE_GIFT_POINTS,
+        SERVICE_REQUEST_SWAP,
         SERVICE_CLAIM_REWARD,
         SERVICE_APPROVE_REWARD,
         SERVICE_REJECT_REWARD,

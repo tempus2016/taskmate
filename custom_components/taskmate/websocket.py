@@ -145,6 +145,11 @@ WS_BULK_CHORE_ACTION: Final = "taskmate/bulk_chore_action"
 # Inter-child gifting
 WS_GIFT_POINTS: Final = "taskmate/gift_points"
 
+# Sibling chore swaps
+WS_REQUEST_SWAP: Final = "taskmate/request_swap"
+WS_APPROVE_SWAP: Final = "taskmate/approve_swap"
+WS_REJECT_SWAP: Final = "taskmate/reject_swap"
+
 # Backup / restore
 WS_CONFIG_EXPORT: Final = "taskmate/config/export"
 WS_CONFIG_IMPORT: Final = "taskmate/config/import"
@@ -277,6 +282,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "badges":        list(data.get("badges", [])),
         "awarded_badges": list(data.get("awarded_badges", [])),
         "audit_log":     coordinator.storage.get_audit_log()[:100],  # newest 100 for the panel
+        "swap_requests": [r for r in coordinator.storage.get_swap_requests() if r.get("status") == "pending"],
         "settings": {
             "points_name":       data.get("points_name", "Stars"),
             "points_icon":       data.get("points_icon", "mdi:star"),
@@ -1625,6 +1631,40 @@ async def _ws_gift_points(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"ok": True})
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_REQUEST_SWAP,
+    vol.Required("chore_id"): str,
+    vol.Required("requester_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_request_swap(hass, connection, msg, coordinator):
+    rid = await coordinator.async_request_swap(msg["chore_id"], msg["requester_id"])
+    connection.send_result(msg["id"], {"id": rid})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_APPROVE_SWAP,
+    vol.Required("request_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_approve_swap(hass, connection, msg, coordinator):
+    await coordinator.async_approve_swap(msg["request_id"])
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_REJECT_SWAP,
+    vol.Required("request_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_reject_swap(hass, connection, msg, coordinator):
+    await coordinator.async_reject_swap(msg["request_id"])
+    connection.send_result(msg["id"], {"ok": True})
+
+
 @websocket_api.websocket_command({vol.Required("type"): WS_CONFIG_EXPORT})
 @websocket_api.async_response
 @_admin_only
@@ -1653,6 +1693,7 @@ _COMMANDS = (
     _ws_add_child, _ws_update_child, _ws_remove_child, _ws_list_ha_users,
     _ws_add_chore, _ws_update_chore, _ws_remove_chore, _ws_clone_chore,
     _ws_bulk_chore_action, _ws_gift_points,
+    _ws_request_swap, _ws_approve_swap, _ws_reject_swap,
     _ws_config_export, _ws_config_import,
     _ws_add_reward, _ws_update_reward, _ws_remove_reward,
     _ws_add_penalty, _ws_update_penalty, _ws_remove_penalty, _ws_apply_penalty,
