@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime, timezone
 
-from custom_components.taskmate.coord_badges import BUILTIN_CATALOGUE, BadgeCoordinator, resolve_metric, TRIGGER_METRICS, badge_relevant_to_trigger
+from custom_components.taskmate.coord_badges import BUILTIN_CATALOGUE, BadgeCoordinator, resolve_metric, TRIGGER_METRICS, badge_relevant_to_trigger, criterion_met
 from custom_components.taskmate.models import AwardedBadge, Badge, BadgeCriterion, Child, RewardClaim
 
 
@@ -526,9 +526,6 @@ class TestNotifications:
 
 
 # --- v4.0: badge operators + AND/OR combinator -----------------------------
-from custom_components.taskmate.coord_badges import criterion_met
-
-
 class TestCriterionMet:
     def test_gte(self):
         assert criterion_met(5, ">=", 5) and not criterion_met(4, ">=", 5)
