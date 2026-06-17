@@ -21,6 +21,7 @@ const TABS = [
   { id: "penalties", lk: "panel.tab_penalties" },
   { id: "bonuses",   lk: "panel.tab_bonuses" },
   { id: "groups",    lk: "panel.tab_groups" },
+  { id: "quests",    lk: "panel.tab_quests" },
   { id: "badges",    lk: "panel.tab_badges" },
   { id: "templates",     lk: "panel.tab_templates" },
   { id: "notifications", lk: "panel.tab_notifications" },
@@ -463,6 +464,15 @@ class TaskMatePanel extends HTMLElement {
     if (act === "save-reward")   { this._doSaveReward(); return; }
     if (act === "toggle-reward-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
 
+    // Quests (chore chains)
+    if (act === "add-quest")    { this._openQuestDialog(null); return; }
+    if (act === "edit-quest")   { this._openQuestDialog(t.dataset.id); return; }
+    if (act === "delete-quest") { this._confirmDelete("quest", t.dataset.id); return; }
+    if (act === "save-quest")   { this._doSaveQuest(); return; }
+    if (act === "toggle-quest-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
+    if (act === "toggle-quest-step") { this._toggleArrayField("steps", t.dataset.id); return; }
+    if (act === "quest-step-move") { this._moveQuestStep(Number(t.dataset.idx), t.dataset.dir); return; }
+
     // Penalties
     if (act === "add-penalty")    { this._openPenBonDialog("penalty", null); return; }
     if (act === "edit-penalty")   { this._openPenBonDialog("penalty", t.dataset.id); return; }
@@ -881,8 +891,8 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _confirmDelete(kind, id) {
-    const labels = { child: this._t("panel.entity_child"), chore: this._t("panel.entity_chore"), reward: this._t("panel.entity_reward"), penalty: this._t("panel.entity_penalty"), bonus: this._t("panel.entity_bonus"), group: this._t("panel.entity_group") };
-    const collectionKey = { child: "children", chore: "chores", reward: "rewards", penalty: "penalties", bonus: "bonuses", group: "task_groups" }[kind];
+    const labels = { child: this._t("panel.entity_child"), chore: this._t("panel.entity_chore"), reward: this._t("panel.entity_reward"), penalty: this._t("panel.entity_penalty"), bonus: this._t("panel.entity_bonus"), group: this._t("panel.entity_group"), quest: this._t("panel.entity_quest") };
+    const collectionKey = { child: "children", chore: "chores", reward: "rewards", penalty: "penalties", bonus: "bonuses", group: "task_groups", quest: "quests" }[kind];
     const item = (this._state[collectionKey] || []).find(x => x.id === id);
     if (!item) return;
     const extraWarn = kind === "child"
@@ -904,10 +914,12 @@ class TaskMatePanel extends HTMLElement {
       penalty: "taskmate/remove_penalty",
       bonus:   "taskmate/remove_bonus",
       group:   "taskmate/remove_task_group",
+      quest:   "taskmate/delete_quest",
     }[kind];
     const idField = {
       child: "child_id", chore: "chore_id", reward: "reward_id",
       penalty: "penalty_id", bonus: "bonus_id", group: "group_id",
+      quest: "quest_id",
     }[kind];
     const { ok, err } = await this._callWS({ type: wsType, [idField]: id });
     if (!ok) { this._showToast("err", this._t("panel.toast_delete_failed", {error: err})); return; }
@@ -1303,6 +1315,57 @@ class TaskMatePanel extends HTMLElement {
     this._closeDialog(true);
     await this._fetchState();
     this._showToast("ok", wasAdd ? this._t("panel.toast_reward_added") : this._t("panel.toast_reward_updated"));
+  }
+
+  // ---- Quests (chore chains) -------------------------------------------
+  _openQuestDialog(id) {
+    const blank = { name: "", description: "", icon: "mdi:map-marker-path",
+      steps: [], bonus_points: 25, assigned_to: [], repeatable: false, active: true };
+    if (id) {
+      const q = (this._state.quests || []).find(x => x.id === id);
+      if (!q) return;
+      this._openDialog({ kind: "quest", mode: "edit", data: {
+        ...blank, ...q,
+        steps: [...(q.steps || [])],
+        assigned_to: [...(q.assigned_to || [])],
+      } });
+    } else {
+      this._openDialog({ kind: "quest", mode: "add", data: blank });
+    }
+  }
+
+  _moveQuestStep(idx, dir) {
+    if (!this._dialog || !this._dialog.data) return;
+    const arr = [...(this._dialog.data.steps || [])];
+    const j = dir === "up" ? idx - 1 : idx + 1;
+    if (idx < 0 || idx >= arr.length || j < 0 || j >= arr.length) return;
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    this._dialog.data.steps = arr;
+    this._render();
+  }
+
+  async _doSaveQuest() {
+    this._syncIconPickers();
+    const d = this._dialog.data;
+    if (!d.name || !d.name.trim()) { this._showToast("err", this._t("panel.toast_name_required")); return; }
+    if (!d.steps || d.steps.length === 0) { this._showToast("err", this._t("panel.quest_need_step")); return; }
+    const wasAdd = this._dialog.mode === "add";
+    const base = {
+      name: d.name.trim(),
+      description: d.description || "",
+      icon: d.icon || "mdi:map-marker-path",
+      steps: [...d.steps],
+      bonus_points: Math.max(0, Number(d.bonus_points) || 0),
+      assigned_to: d.assigned_to || [],
+      repeatable: !!d.repeatable,
+      active: d.active !== false,
+    };
+    const payload = wasAdd ? { type: "taskmate/create_quest", ...base } : { type: "taskmate/update_quest", quest_id: d.id, ...base };
+    const { ok, err } = await this._callWS(payload);
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", wasAdd ? this._t("panel.toast_quest_added") : this._t("panel.toast_quest_updated"));
   }
 
   // ---- Penalties / Bonuses ---------------------------------------------
@@ -1898,6 +1961,7 @@ class TaskMatePanel extends HTMLElement {
         { id: "penalties", label: this._t("panel.tab_penalties"), icon: "mdi:alert-circle-outline" },
         { id: "bonuses",   label: this._t("panel.tab_bonuses"),   icon: "mdi:flash-outline" },
         { id: "groups",    label: this._t("panel.tab_groups"),    icon: "mdi:layers-outline" },
+        { id: "quests",    label: this._t("panel.tab_quests"),    icon: "mdi:map-marker-path" },
         { id: "badges",    label: this._t("panel.tab_badges"),     icon: "mdi:medal-outline" },
         { id: "templates", label: this._t("panel.tab_templates"), icon: "mdi:clipboard-list-outline" },
       ]},
@@ -2028,6 +2092,7 @@ class TaskMatePanel extends HTMLElement {
       case "penalties": return this._renderPenBonTab("penalty");
       case "bonuses":   return this._renderPenBonTab("bonus");
       case "groups":    return this._renderGroupsTab();
+      case "quests":    return this._renderQuestsTab();
       case "badges":    return this._renderBadgesTab();
       case "templates":     return this._renderTemplatesTab();
       case "notifications": return this._renderNotificationsTab();
@@ -2426,6 +2491,68 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-card-foot">
           <button type="button" class="tm-btn tm-btn-sm" data-act="edit-reward" data-id="${this._esc(r.id)}">${this._t("panel.btn_edit")}</button>
           <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-reward" data-id="${this._esc(r.id)}">${this._t("panel.btn_delete")}</button>
+        </div>
+      </article>
+    `;
+  }
+
+  // -- Quests tab --------------------------------------------------------
+  _renderQuestsTab() {
+    const all = this._state.quests || [];
+    const quests = this._filterByName(all);
+    const pointsName = this._state.settings.points_name || this._t("common.points");
+    const haveChores = (this._state.chores || []).length > 0;
+    return `
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">${this._t("panel.quest_title")} <span class="tm-toolbar-count">${all.length}</span></h2>
+        ${all.length > 0 ? this._searchBox(this._t("panel.search_quests")) : ""}
+        ${haveChores ? `<button type="button" class="tm-btn tm-btn-raised" data-act="add-quest">${this._t("panel.btn_add_quest")}</button>` : ""}
+      </div>
+      ${!haveChores ? `<div class="tm-card tm-empty"><p>${this._t("panel.quest_need_chores")}</p></div>` :
+        all.length === 0 ? this._emptyState("🗺️", this._t("panel.empty_quests_title"), this._t("panel.empty_quests_copy"), "add-quest", this._t("panel.btn_add_quest")) :
+        quests.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_quests").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
+        <div class="tm-grid">
+          ${quests.map(q => this._renderQuestCard(q, pointsName)).join("")}
+          <button type="button" class="tm-add-tile" data-act="add-quest"><span class="tm-add-plus">＋</span>${this._t("panel.quest_add_tile")}</button>
+        </div>
+      `}
+    `;
+  }
+
+  _renderQuestCard(q, pointsName) {
+    const choreById = {};
+    (this._state.chores || []).forEach(c => { choreById[c.id] = c; });
+    const steps = q.steps || [];
+    const children = this._state.children || [];
+    const assigned = (q.assigned_to && q.assigned_to.length)
+      ? children.filter(c => q.assigned_to.includes(c.id)).map(c => c.name)
+      : [this._t("panel.quest_all_children")];
+    const stepNames = steps.map((sid, i) => {
+      const name = choreById[sid] ? choreById[sid].name : this._t("panel.quest_missing_chore");
+      return `<li>${this._esc(name)}</li>`;
+    }).join("");
+    return `
+      <article class="tm-card tm-quest-card${q.active ? "" : " tm-quest-inactive"}">
+        <div class="tm-child-head">
+          <div class="tm-avatar">${this._mdi(q.icon || "mdi:map-marker-path")}</div>
+          <div class="tm-child-name">
+            <h3>${this._esc(q.name)}
+              ${q.repeatable ? `<span class="tm-pill">${this._t("panel.quest_badge_repeatable")}</span>` : ""}
+              ${q.active ? "" : `<span class="tm-pill tm-pill-muted">${this._t("panel.quest_badge_inactive")}</span>`}
+            </h3>
+            ${this._idBadge(q.id)}
+            <div class="tm-meta">${this._esc(q.description || "")}</div>
+          </div>
+        </div>
+        <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr;">
+          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${steps.length}</div><div class="tm-stat-label">${this._t("panel.quest_stat_steps")}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(q.bonus_points || 0)}</div><div class="tm-stat-label">${this._t("panel.quest_stat_bonus", {points_name: pointsName})}</div></div>
+        </div>
+        <ol class="tm-quest-steps">${stepNames}</ol>
+        <div class="tm-meta">${this._t("panel.quest_assigned_to")}: ${this._esc(assigned.join(", "))}</div>
+        <div class="tm-card-foot">
+          <button type="button" class="tm-btn tm-btn-sm" data-act="edit-quest" data-id="${this._esc(q.id)}">${this._t("panel.btn_edit")}</button>
+          <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-quest" data-id="${this._esc(q.id)}">${this._t("panel.btn_delete")}</button>
         </div>
       </article>
     `;
@@ -3703,6 +3830,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "penalty")      return this._renderPenBonDialog("penalty");
     if (this._dialog.kind === "bonus")        return this._renderPenBonDialog("bonus");
     if (this._dialog.kind === "group")        return this._renderGroupDialog();
+    if (this._dialog.kind === "quest")        return this._renderQuestDialog();
     if (this._dialog.kind === "apply-penalty") return this._renderApplyDialog("penalty");
     if (this._dialog.kind === "apply-bonus")   return this._renderApplyDialog("bonus");
     if (this._dialog.kind === "bulk-chore")    return this._renderBulkChoreDialog();
@@ -3983,6 +4111,67 @@ class TaskMatePanel extends HTMLElement {
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-reward">${this._t("panel.btn_save")}</button>`
+    );
+  }
+
+  _renderQuestDialog() {
+    const d = this._dialog.data;
+    const children = this._state.children || [];
+    const pointsName = this._state.settings.points_name || this._t("common.points");
+    const chores = this._state.chores || [];
+    const choreById = {};
+    chores.forEach(c => { choreById[c.id] = c; });
+    const steps = d.steps || [];
+    // Ordered step list with move/remove controls
+    const stepRows = steps.map((sid, i) => `
+      <div class="tm-quest-step-row">
+        <span class="tm-quest-step-num">${i + 1}</span>
+        <span class="tm-quest-step-name">${this._esc(choreById[sid] ? choreById[sid].name : this._t("panel.quest_missing_chore"))}</span>
+        <button type="button" class="tm-btn tm-btn-sm" data-act="quest-step-move" data-idx="${i}" data-dir="up" ${i === 0 ? "disabled" : ""}>▲</button>
+        <button type="button" class="tm-btn tm-btn-sm" data-act="quest-step-move" data-idx="${i}" data-dir="down" ${i === steps.length - 1 ? "disabled" : ""}>▼</button>
+        <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="toggle-quest-step" data-id="${this._esc(sid)}">✕</button>
+      </div>
+    `).join("");
+    return this._dialogShell(this._dialog.mode === "add" ? this._t("panel.dialog_add_quest") : this._t("panel.dialog_edit_quest"),
+      [
+        this._field(this._t("panel.chore_name_label"), "name", d.name, "text"),
+        this._field(this._t("panel.chore_description_label"), "description", d.description, "text"),
+        `<div class="tm-field-row">
+          ${this._field(this._t("panel.quest_bonus_label", {points_name: pointsName}), "bonus_points", d.bonus_points, "number")}
+          ${this._iconPickerField(this._t("panel.reward_icon_label"), "icon", d.icon)}
+        </div>`,
+        `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.quest_steps_label")}</span>
+          <span class="tm-field-hint">${this._t("panel.quest_steps_hint")}</span>
+          ${steps.length ? `<div class="tm-quest-step-list">${stepRows}</div>` : `<div class="tm-meta">${this._t("panel.quest_no_steps")}</div>`}
+          <div class="tm-chip-row" style="margin-top:8px;">
+            ${chores.map(c => `
+              <button type="button" class="tm-chip-btn ${steps.includes(c.id) ? "tm-chip-on" : ""}" data-act="toggle-quest-step" data-id="${this._esc(c.id)}">
+                ${this._esc(c.name)}
+              </button>
+            `).join("")}
+          </div>
+        </div>`,
+        children.length > 0 ? `
+          <div class="tm-field">
+            <span class="tm-field-label">${this._t("panel.quest_assigned_label")}</span>
+            <div class="tm-chip-row">
+              ${children.map(c => `
+                <button type="button" class="tm-chip-btn ${(d.assigned_to || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="toggle-quest-assigned" data-id="${this._esc(c.id)}">
+                  ${this._esc(c.name)}
+                </button>
+              `).join("")}
+            </div>
+            <span class="tm-field-hint">${this._t("panel.quest_assigned_hint")}</span>
+          </div>
+        ` : "",
+        this._switch(this._t("panel.quest_repeatable_label"), "repeatable", d.repeatable,
+          this._t("panel.quest_repeatable_hint")),
+        this._switch(this._t("panel.quest_active_label"), "active", d.active !== false,
+          this._t("panel.quest_active_hint")),
+      ].join(""),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-quest">${this._t("panel.btn_save")}</button>`
     );
   }
 
@@ -4908,6 +5097,14 @@ class TaskMatePanel extends HTMLElement {
       .tm-pill-sticky  { background: var(--tm-sticky-soft);   color: var(--tm-sticky);      border-color: color-mix(in srgb, var(--tm-sticky), transparent 75%); }
       .tm-pill-spread  { background: var(--tm-positive-soft); color: var(--tm-positive);    border-color: var(--tm-positive-border); }
       .tm-pill-jackpot { background: var(--tm-gold-soft);     color: var(--tm-gold);        border-color: color-mix(in srgb, var(--tm-gold), transparent 75%); }
+      .tm-pill-muted   { background: var(--tm-surface-2);     color: var(--tm-text-muted);  border-color: var(--tm-border); }
+      .tm-quest-inactive { opacity: 0.6; }
+      .tm-quest-steps { margin: 8px 0 4px; padding-left: 20px; color: var(--tm-text); font-size: 13px; }
+      .tm-quest-steps li { margin: 2px 0; }
+      .tm-quest-step-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+      .tm-quest-step-row { display: flex; align-items: center; gap: 8px; }
+      .tm-quest-step-num { width: 22px; height: 22px; flex: 0 0 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--tm-accent-soft); color: var(--tm-accent-text); font-size: 12px; font-weight: 600; }
+      .tm-quest-step-name { flex: 1; font-size: 13px; }
       .tm-pill-alternating, .tm-pill-random, .tm-pill-balanced { background: var(--tm-accent-soft); color: var(--tm-accent-text); border-color: var(--tm-accent-border); }
       .tm-pill-first_come { background: var(--tm-gold-soft); color: var(--tm-gold); border-color: color-mix(in srgb, var(--tm-gold), transparent 75%); }
       .tm-pill-unassigned { background: var(--tm-muted-bg, #f0f0f0); color: var(--tm-text-muted); border-color: var(--tm-border); }

@@ -819,6 +819,10 @@ class ChoresMixin:
                     if getattr(self, "badges", None):
                         await self.badges.evaluate_for_child(completion.child_id, "manual")
 
+                    # Advance any chore-chain quests (parent completions only)
+                    if not is_bonus and hasattr(self, "_async_advance_quests"):
+                        await self._async_advance_quests(completion.child_id, completion.chore_id)
+
                     # All-chores-done celebration — fire once per child per day
                     today_iso = dt_util.now().date().isoformat()
                     flag_key = f"all_done_{child.id}_{today_iso}"

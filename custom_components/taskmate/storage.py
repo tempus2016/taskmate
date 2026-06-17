@@ -12,7 +12,7 @@ from .const import DOMAIN
 from .models import (
     Badge, AwardedBadge, Bonus, Child, Chore, ChoreCompletion,
     CustomNotification, NotificationConfig, NotificationRoute, ParentRecipient,
-    Penalty, PoolAllocation, Reward, RewardClaim, PointsTransaction,
+    Penalty, PoolAllocation, Quest, Reward, RewardClaim, PointsTransaction,
     TaskGroup, TimedSession,
 )
 
@@ -798,6 +798,49 @@ class TaskMateStorage:
                 return True
         return False
 
+    # ── Quests (chore chains) ────────────────────────────────────────────
+    def get_quests(self) -> list[Quest]:
+        return [Quest.from_dict(q) for q in self._data.get("quests", [])]
+
+    def get_quest(self, quest_id: str) -> Quest | None:
+        for q in self._data.get("quests", []):
+            if q.get("id") == quest_id:
+                return Quest.from_dict(q)
+        return None
+
+    def add_quest(self, quest: Quest) -> None:
+        self._data.setdefault("quests", []).append(quest.to_dict())
+
+    def update_quest(self, quest: Quest) -> None:
+        quests = self._data.get("quests", [])
+        for i, q in enumerate(quests):
+            if q.get("id") == quest.id:
+                quests[i] = quest.to_dict()
+                return
+        self.add_quest(quest)
+
+    def remove_quest(self, quest_id: str) -> None:
+        self._data["quests"] = [
+            q for q in self._data.get("quests", []) if q.get("id") != quest_id
+        ]
+        # Drop any progress tracked for this quest
+        prog = self._data.get("quest_progress", {})
+        prog.pop(quest_id, None)
+
+    def get_quest_progress(self) -> dict:
+        """All quest progress: {quest_id: {child_id: {step, completed_count, last_completed}}}."""
+        return self._data.setdefault("quest_progress", {})
+
+    def get_quest_child_progress(self, quest_id: str, child_id: str) -> dict:
+        return self.get_quest_progress().setdefault(quest_id, {}).get(child_id, {})
+
+    def set_quest_child_progress(self, quest_id: str, child_id: str, progress: dict) -> None:
+        self.get_quest_progress().setdefault(quest_id, {})[child_id] = progress
+
+    def remove_quest_progress_for_child(self, child_id: str) -> None:
+        for child_map in self.get_quest_progress().values():
+            child_map.pop(child_id, None)
+
     # ── Backup / restore ─────────────────────────────────────────────────
     def export_data(self) -> dict:
         """Return a deep copy of the full stored data (for backup/export)."""
@@ -818,13 +861,15 @@ class TaskMateStorage:
             "children", "chores", "rewards", "penalties", "bonuses",
             "task_groups", "completions", "reward_claims", "points_transactions",
             "pool_allocations", "badges", "awarded_badges", "parent_recipients",
-            "audit_log", "timed_sessions",
+            "audit_log", "timed_sessions", "quests",
         )
         for k in list_keys:
             if not isinstance(self._data.get(k), list):
                 self._data[k] = []
         if not isinstance(self._data.get("settings"), dict):
             self._data["settings"] = {}
+        if not isinstance(self._data.get("quest_progress"), dict):
+            self._data["quest_progress"] = {}
 
     def replace_completions(self, completions: list[ChoreCompletion]) -> None:
         """Replace all completions with the given list."""
