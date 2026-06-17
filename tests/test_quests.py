@@ -40,7 +40,8 @@ def _coord(quests, child):
     coord._progress = progress
     coord.get_child = MagicMock(return_value=child)
     coord.async_refresh = AsyncMock()
-    coord.notifications = MagicMock(); coord.notifications.fire = AsyncMock()
+    coord.notifications = MagicMock()
+    coord.notifications.fire = AsyncMock()
     # Stub level-up so _complete_quest's optional hook is a no-op
     coord._maybe_level_up = AsyncMock()
     return coord
