@@ -274,6 +274,7 @@ EVENT_PREVIEW_SOUND: Final = "taskmate_preview_sound"
 # Attributes
 ATTR_CHILD_ID: Final = "child_id"
 ATTR_CHORE_ID: Final = "chore_id"
+ATTR_AS_PARENT: Final = "as_parent"
 ATTR_REWARD_ID: Final = "reward_id"
 ATTR_POINTS: Final = "points"
 ATTR_REASON: Final = "reason"

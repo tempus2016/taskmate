@@ -19,6 +19,7 @@ class TaskMateParentDashboardCard extends LitElement {
       config: { type: Object },
       _loading: { type: Object },
       _activeSection: { type: String },
+      _expanded: { type: Object },
     };
   }
 
@@ -40,6 +41,7 @@ class TaskMateParentDashboardCard extends LitElement {
     super();
     this._loading = {};
     this._activeSection = "overview";
+    this._expanded = {};
   }
 
   static get styles() {
@@ -329,6 +331,20 @@ class TaskMateParentDashboardCard extends LitElement {
       .btn-add:hover, .btn-remove:hover { transform: scale(1.1); }
       .btn-add ha-icon, .btn-remove ha-icon { --mdc-icon-size: 16px; }
 
+      /* ── Complete on behalf (admin) ── */
+      .tm-outstanding { margin-top: 8px; border-top: 1px dashed var(--divider-color, #e0e0e0); padding-top: 8px; }
+      .tm-outstanding-hdr { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.6; margin-bottom: 6px; }
+      .tm-outstanding-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+      .tm-outstanding-row + .tm-outstanding-row { border-top: 1px solid var(--divider-color, #eee); }
+      .tm-outstanding-name { flex: 1; font-size: 0.9rem; }
+      .tm-outstanding-pts { opacity: 0.6; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 2px; }
+      .btn-complete-behalf { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; border: none; cursor: pointer; background: #2e9e5b; color: #fff; font: 600 0.75rem/1 inherit; padding: 6px 10px; border-radius: 8px; }
+      .btn-complete-behalf:hover { background: #27894e; }
+      .btn-complete-behalf:active { transform: scale(0.96); }
+      .btn-complete-behalf[disabled] { opacity: 0.5; pointer-events: none; }
+      .child-tile.tm-expandable .child-tile-main { cursor: pointer; }
+      .tm-all-done { font-size: 0.85rem; opacity: 0.6; font-style: italic; padding: 4px 0; }
+
       /* ── Empty state ── */
       .empty-section {
         display: flex; flex-direction: column; align-items: center;
@@ -533,12 +549,22 @@ class TaskMateParentDashboardCard extends LitElement {
         const isComplete = total > 0 && approved >= total;
         const cls = isComplete ? "complete" : pct > 0 ? "partial" : "none";
 
+        const isAdmin = !!(this.hass && this.hass.user && this.hass.user.is_admin);
+        const outstanding = childChores.filter(c => {
+          const doneToday = completions.filter(
+            x => x.child_id === child.id && x.chore_id === c.id && !x.bonus_subtask_id
+          ).length;
+          return doneToday < (c.daily_limit || 1);
+        });
+        const isOpen = !!this._expanded[child.id];
+
         return html`
-          <div class="child-tile">
+          <div class="child-tile ${isAdmin ? 'tm-expandable' : ''}">
             <div class="child-avatar">
               <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
             </div>
-            <div class="child-tile-main">
+            <div class="child-tile-main"
+              @click="${isAdmin ? () => { this._expanded = { ...this._expanded, [child.id]: !isOpen }; this.requestUpdate(); } : null}">
               <div class="child-tile-header">
                 <span class="child-tile-name">${child.name}</span>
                 <span class="points-pill">
@@ -552,6 +578,31 @@ class TaskMateParentDashboardCard extends LitElement {
                 </div>
                 <span class="progress-label">${approved}/${total}</span>
               </div>
+              ${isAdmin && isOpen ? html`
+                <div class="tm-outstanding" @click="${(e) => e.stopPropagation()}">
+                  <div class="tm-outstanding-hdr">${this._t('common.complete_on_behalf_heading')}</div>
+                  ${outstanding.length === 0 ? html`
+                    <div class="tm-all-done">${this._t('common.complete_on_behalf_all_done')}</div>
+                  ` : outstanding.map(c => {
+                    const key = `behalf_${child.id}_${c.id}`;
+                    const loading = !!this._loading[key];
+                    return html`
+                      <div class="tm-outstanding-row">
+                        <span class="tm-outstanding-name">${c.name}</span>
+                        <span class="tm-outstanding-pts">
+                          <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>${c.points}
+                        </span>
+                        <button class="btn-complete-behalf" ?disabled="${loading}"
+                          title="${this._t('common.complete_on_behalf_tooltip', { name: child.name })}"
+                          @click="${() => this._handleCompleteOnBehalf(c.id, child.id)}">
+                          <ha-icon icon="mdi:check" style="--mdc-icon-size:16px;"></ha-icon>
+                          ${this._t('common.complete_on_behalf')}
+                        </button>
+                      </div>
+                    `;
+                  })}
+                </div>
+              ` : ''}
             </div>
           </div>
         `;
@@ -835,6 +886,25 @@ class TaskMateParentDashboardCard extends LitElement {
       });
     } catch (e) {
       this._notifyServiceError(service, e, `taskmate_dashboard_points_${key}`);
+    } finally {
+      this._loading = { ...this._loading, [key]: false };
+      this.requestUpdate();
+    }
+  }
+
+  async _handleCompleteOnBehalf(choreId, childId) {
+    const key = `behalf_${childId}_${choreId}`;
+    if (this._loading[key]) return;
+    this._loading = { ...this._loading, [key]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "complete_chore", {
+        chore_id: choreId,
+        child_id: childId,
+        as_parent: true,
+      });
+    } catch (e) {
+      this._notifyServiceError("complete_chore", e, `taskmate_dashboard_behalf_${key}`);
     } finally {
       this._loading = { ...this._loading, [key]: false };
       this.requestUpdate();
