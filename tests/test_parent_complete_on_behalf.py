@@ -6,8 +6,6 @@ import datetime as dt
 from datetime import timezone
 from unittest.mock import AsyncMock, patch
 
-import pytest
-
 from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.storage import TaskMateStorage
 
@@ -103,8 +101,10 @@ class TestCompleteOnBehalf:
                 schedule_mode="specific_days", assigned_to=[child.id],
             ))
             run(coord.async_complete_chore(chore.id, child.id, as_parent=True))
-            with pytest.raises(ValueError, match="Daily limit"):
-                run(coord.async_complete_chore(chore.id, child.id, as_parent=True))
+            # Daily limit reached is a soft rejection even via as_parent: no-op.
+            result = run(coord.async_complete_chore(chore.id, child.id, as_parent=True))
+            assert result is None
+            assert len(storage.get_completions()) == 1
 
     def test_as_parent_one_shot_auto_disables_child(self):
         coord, storage, _mod = _make_system()

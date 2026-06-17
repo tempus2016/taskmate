@@ -274,6 +274,28 @@ async def _async_require_admin(hass: HomeAssistant, call: ServiceCall) -> None:
             raise Unauthorized(context=call.context)
 
 
+async def _async_require_linked_child(
+    hass: HomeAssistant, call: ServiceCall, coordinator, child_id: str
+) -> None:
+    """Restrict a child's self-service call to that child's linked HA user.
+
+    Opt-in: only enforced when the child has a ``linked_user_id`` set. Children
+    with no link keep the default open/kiosk behaviour (any user, e.g. a shared
+    tablet). Admins and context-less calls (automations, scripts) always pass.
+    """
+    user_id = call.context.user_id
+    if not user_id:
+        return
+    child = coordinator.get_child(child_id)
+    linked = getattr(child, "linked_user_id", "") if child else ""
+    if not linked or linked == user_id:
+        return
+    user = await hass.auth.async_get_user(user_id)
+    if user is not None and user.is_admin:
+        return
+    raise Unauthorized(context=call.context)
+
+
 async def _async_register_services(hass: HomeAssistant) -> None:
     """Register TaskMate services."""
 
@@ -300,12 +322,15 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             # control in the UI — the service is callable by any authenticated
             # user. Normal child self-completion (as_parent omitted) stays open.
             await _async_require_admin(hass, call)
+        else:
+            await _async_require_linked_child(hass, call, coordinator, child_id)
         try:
             await coordinator.async_complete_chore(chore_id, child_id, as_parent=as_parent)
         except ValueError as err:
-            # Expected, user-facing conditions (e.g. a first_come race loser:
-            # "already completed by another child") must surface as a clean
-            # validation error, not an unhandled 500 + traceback.
+            # Only genuinely bad input (unknown chore/child) raises now — expected
+            # soft rejections (daily limit, race lost, not-your-turn) are silent
+            # no-ops inside the coordinator. Surface real errors as a clean
+            # validation error rather than an unhandled 500 + traceback.
             raise ServiceValidationError(str(err)) from err
 
     async def handle_complete_bonus_subtask(call: ServiceCall) -> None:
@@ -317,6 +342,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         chore_id = call.data[ATTR_CHORE_ID]
         bonus_subtask_id = call.data[ATTR_BONUS_SUBTASK_ID]
         child_id = call.data[ATTR_CHILD_ID]
+        await _async_require_linked_child(hass, call, coordinator, child_id)
         await coordinator.async_complete_bonus_subtask(chore_id, bonus_subtask_id, child_id)
 
     async def handle_start_timed_task(call: ServiceCall) -> None:
@@ -325,6 +351,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         if not coordinator:
             _LOGGER.error("No TaskMate coordinator available")
             return
+        await _async_require_linked_child(hass, call, coordinator, call.data[ATTR_CHILD_ID])
         await coordinator.async_start_timed_task(
             call.data[ATTR_CHORE_ID], call.data[ATTR_CHILD_ID]
         )
@@ -335,6 +362,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         if not coordinator:
             _LOGGER.error("No TaskMate coordinator available")
             return
+        await _async_require_linked_child(hass, call, coordinator, call.data[ATTR_CHILD_ID])
         await coordinator.async_pause_timed_task(
             call.data[ATTR_CHORE_ID], call.data[ATTR_CHILD_ID]
         )
@@ -345,6 +373,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         if not coordinator:
             _LOGGER.error("No TaskMate coordinator available")
             return
+        await _async_require_linked_child(hass, call, coordinator, call.data[ATTR_CHILD_ID])
         await coordinator.async_stop_timed_task(
             call.data[ATTR_CHORE_ID], call.data[ATTR_CHILD_ID]
         )
@@ -384,6 +413,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             return
         reward_id = call.data[ATTR_REWARD_ID]
         child_id = call.data[ATTR_CHILD_ID]
+        await _async_require_linked_child(hass, call, coordinator, child_id)
         await coordinator.async_claim_reward(reward_id, child_id)
 
     async def handle_approve_reward(call: ServiceCall) -> None:
@@ -404,6 +434,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         child_id = call.data[ATTR_CHILD_ID]
         reward_id = call.data[ATTR_REWARD_ID]
         points = call.data[ATTR_POINTS]
+        await _async_require_linked_child(hass, call, coordinator, child_id)
         await coordinator.async_allocate_points_to_pool(child_id, reward_id, points)
 
     async def handle_add_points(call: ServiceCall) -> None:

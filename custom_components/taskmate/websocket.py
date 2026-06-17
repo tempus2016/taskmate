@@ -69,6 +69,7 @@ WS_GET_STATE: Final           = "taskmate/get_state"
 WS_ADD_CHILD: Final           = "taskmate/add_child"
 WS_UPDATE_CHILD: Final        = "taskmate/update_child"
 WS_REMOVE_CHILD: Final        = "taskmate/remove_child"
+WS_LIST_HA_USERS: Final       = "taskmate/list_ha_users"
 
 WS_ADD_CHORE: Final           = "taskmate/add_chore"
 WS_UPDATE_CHORE: Final        = "taskmate/update_chore"
@@ -234,6 +235,7 @@ async def _ws_get_state(hass, connection, msg, coordinator):
     vol.Optional("availability_entity", default=""): str,
     vol.Optional("availability_inverted", default=False): bool,
     vol.Optional("unavailability_entity", default=""): str,
+    vol.Optional("linked_user_id", default=""): str,
 })
 @websocket_api.async_response
 @_admin_only
@@ -244,6 +246,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         availability_entity=_opt_str(msg.get("availability_entity")),
         availability_inverted=bool(msg.get("availability_inverted", False)),
         unavailability_entity=_opt_str(msg.get("unavailability_entity")),
+        linked_user_id=_opt_str(msg.get("linked_user_id")),
     )
     connection.send_result(msg["id"], {"id": child.id})
 
@@ -256,6 +259,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
     vol.Optional("availability_entity"): str,
     vol.Optional("availability_inverted"): bool,
     vol.Optional("unavailability_entity"): str,
+    vol.Optional("linked_user_id"): str,
 })
 @websocket_api.async_response
 @_admin_only
@@ -274,6 +278,8 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.availability_inverted = bool(msg["availability_inverted"])
     if "unavailability_entity" in msg:
         existing.unavailability_entity = _opt_str(msg["unavailability_entity"])
+    if "linked_user_id" in msg:
+        existing.linked_user_id = _opt_str(msg["linked_user_id"])
     await coordinator.async_update_child(existing)
     connection.send_result(msg["id"], {"id": existing.id})
 
@@ -290,6 +296,27 @@ async def _ws_remove_child(hass, connection, msg, coordinator):
         return
     await coordinator.async_remove_child(msg["child_id"])
     connection.send_result(msg["id"], {"id": msg["child_id"]})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_LIST_HA_USERS,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_list_ha_users(hass, connection, msg, coordinator):
+    """Return selectable HA users for linking a child to an account.
+
+    Admin-only — it exposes account names. Excludes system-generated accounts
+    (e.g. Supervisor, Home Assistant Content) and inactive users.
+    """
+    users = await hass.auth.async_get_users()
+    result = [
+        {"id": u.id, "name": u.name or "(unnamed user)", "is_admin": bool(u.is_admin)}
+        for u in users
+        if u.is_active and not u.system_generated
+    ]
+    result.sort(key=lambda x: x["name"].lower())
+    connection.send_result(msg["id"], {"users": result})
 
 
 # ---------------------------------------------------------------------------
@@ -1364,7 +1391,7 @@ async def ws_notif_set_streak_cutoff(hass, connection, msg, coordinator):
 
 _COMMANDS = (
     _ws_get_state,
-    _ws_add_child, _ws_update_child, _ws_remove_child,
+    _ws_add_child, _ws_update_child, _ws_remove_child, _ws_list_ha_users,
     _ws_add_chore, _ws_update_chore, _ws_remove_chore,
     _ws_add_reward, _ws_update_reward, _ws_remove_reward,
     _ws_add_penalty, _ws_update_penalty, _ws_remove_penalty, _ws_apply_penalty,

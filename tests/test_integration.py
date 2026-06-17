@@ -134,9 +134,12 @@ class TestFullChoreLifecycle:
             ))
             run(coord.async_complete_chore(chore.id, child.id))
 
-        with pytest.raises(ValueError, match="Daily limit"):
-            with patch.object(_mod.dt_util, "now", return_value=now):
-                run(coord.async_complete_chore(chore.id, child.id))
+        # Hitting the daily limit is an expected soft rejection: silent no-op
+        # (returns None), with no second completion recorded.
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            result = run(coord.async_complete_chore(chore.id, child.id))
+        assert result is None
+        assert len(storage.get_completions()) == 1
 
     def test_streak_increments_across_days(self):
         coord, storage, _mod = _make_system()
@@ -316,9 +319,11 @@ class TestOneShotChoreLifecycle:
         updated_chore = storage.get_chore(chore.id)
         assert child.id in updated_chore.disabled_for
 
-        with pytest.raises(ValueError, match="not available"):
-            with patch.object(_mod.dt_util, "now", return_value=now):
-                run(coord.async_complete_chore(chore.id, child.id))
+        # One-shot already done is an expected soft rejection: silent no-op.
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            result = run(coord.async_complete_chore(chore.id, child.id))
+        assert result is None
+        assert len(storage.get_completions()) == 1
 
 
 class TestRemoveChildCascade:
