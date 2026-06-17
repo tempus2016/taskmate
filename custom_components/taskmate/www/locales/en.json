@@ -1258,5 +1258,7 @@
   "panel.reward_restock_period": "Restock every",
   "panel.reward_restock_daily": "Day",
   "panel.reward_restock_weekly": "Week (Mon)",
-  "panel.reward_restock_monthly": "Month (1st)"
+  "panel.reward_restock_monthly": "Month (1st)",
+  "panel.chore_expires_label": "Expiry date (optional)",
+  "panel.chore_expires_hint": "After this date the chore auto-disables. Leave blank for no expiry."
 }

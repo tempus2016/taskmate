@@ -1125,6 +1125,7 @@ class TaskMatePanel extends HTMLElement {
       require_availability: false,
       visibility_entity: "", visibility_state: "on", visibility_operator: "none",
       enabled: true,
+      expires_on: "",
       publish_calendar_entities: [],
       bonus_subtasks: [],
     };
@@ -1173,6 +1174,7 @@ class TaskMatePanel extends HTMLElement {
       visibility_state: d.visibility_state || "on",
       visibility_operator: d.visibility_operator || "none",
       enabled: d.enabled !== false,
+      expires_on: (d.expires_on || "").trim(),
       publish_calendar_entities: d.publish_calendar_entities || [],
       bonus_subtasks: (d.bonus_subtasks || []).filter(b => b.name && b.name.trim()).map(b => ({
         name: b.name.trim(), points: Number(b.points) || 5,
@@ -3657,6 +3659,7 @@ class TaskMatePanel extends HTMLElement {
           { v: "medium", l: this._t("panel.difficulty_medium") },
           { v: "hard", l: this._t("panel.difficulty_hard") },
         ]),
+        this._dateField(this._t("panel.chore_expires_label"), "expires_on", d.expires_on, this._t("panel.chore_expires_hint")),
         this._switch(this._t("panel.chore_approval_label"), "requires_approval", d.requires_approval),
         this._switch(this._t("panel.chore_require_availability"), "require_availability", d.require_availability,
           this._t("panel.chore_require_availability_hint")),
@@ -3888,6 +3891,7 @@ class TaskMatePanel extends HTMLElement {
           { v: "medium", l: this._t("panel.difficulty_medium") },
           { v: "hard", l: this._t("panel.difficulty_hard") },
         ]),
+        this._dateField(this._t("panel.chore_expires_label"), "expires_on", d.expires_on, this._t("panel.chore_expires_hint")),
         this._switch(this._t("panel.chore_approval_label"), "requires_approval", d.requires_approval),
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>

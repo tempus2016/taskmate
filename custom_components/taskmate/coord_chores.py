@@ -971,6 +971,31 @@ class ChoresMixin:
         days_since = (today - last_dt).days
         return days_since >= window_days
 
+    async def _async_expire_dated_chores(self) -> None:
+        """Soft-disable any enabled chore whose expires_on date has passed."""
+        today = dt_util.as_local(dt_util.now()).date()
+        changed = False
+        for chore in self.storage.get_chores():
+            if not getattr(chore, "enabled", True):
+                continue
+            expires_on = getattr(chore, "expires_on", "")
+            if not expires_on:
+                continue
+            try:
+                if date.fromisoformat(expires_on) < today:
+                    chore.enabled = False
+                    self.storage.update_chore(chore)
+                    changed = True
+                    _LOGGER.info(
+                        "Chore '%s' expired (expires_on %s, today %s)",
+                        chore.name, expires_on, today.isoformat(),
+                    )
+            except ValueError:
+                continue
+        if changed:
+            await self.storage.async_save()
+            await self.async_refresh()
+
     async def _async_expire_one_shot_chores(self) -> None:
         """Soft-disable one-shot chores whose created_date is before today."""
 
