@@ -302,6 +302,57 @@ class PointsMixin:
         await self.storage.async_save()
         await self.async_refresh()
 
+    async def _async_decay_points(self) -> None:
+        """Periodically decay each child's spendable points (anti-hoarding).
+
+        Opt-in via ``points_decay_enabled``. On the period boundary
+        (weekly=Mon, monthly=1st) reduces each child's ``points`` by
+        ``points_decay_percent`` and logs it. Does not touch career score —
+        decay is a spendable-balance reduction, not a penalty.
+        """
+        enabled = self.storage.get_setting("points_decay_enabled", False)
+        if not (enabled is True or str(enabled).lower() == "true"):
+            return
+        try:
+            pct = float(self.storage.get_setting("points_decay_percent", "10"))
+        except (ValueError, TypeError):
+            pct = 10.0
+        if pct <= 0:
+            return
+        period = self.storage.get_setting("points_decay_period", "monthly")
+        today = dt_util.now().date()
+        due = (
+            (period == "weekly" and today.weekday() == 0)
+            or (period == "monthly" and today.day == 1)
+        )
+        if not due:
+            return
+        if self.storage.get_setting("points_decay_last", "") == today.isoformat():
+            return
+        now = dt_util.now()
+        changed = False
+        for child in self.storage.get_children():
+            if (child.points or 0) <= 0:
+                continue
+            loss = round(child.points * pct / 100.0)
+            if loss <= 0:
+                continue
+            child.points = max(0, child.points - loss)
+            self.storage.update_child(child)
+            self.storage.add_points_transaction(PointsTransaction(
+                child_id=child.id, points=-loss,
+                reason=f"Points decay (-{pct:.0f}%)", created_at=now,
+            ))
+            self.hass.bus.async_fire("taskmate_points_decay", {
+                "child_id": child.id, "child_name": child.name,
+                "points": loss, "timestamp": now.isoformat(),
+            })
+            changed = True
+        self.storage.set_setting("points_decay_last", today.isoformat())
+        if changed:
+            await self.storage.async_save()
+            await self.async_refresh()
+
     # ── Bonus points constants ────────────────────────────────────────────────
     DEFAULT_STREAK_MILESTONES = "3:5, 7:10, 14:20, 30:50, 60:100, 100:200"
 

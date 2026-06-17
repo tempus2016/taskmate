@@ -1271,5 +1271,11 @@
   "panel.bulk_apply": "Apply",
   "panel.bulk_pick_target": "Pick who to reassign to first.",
   "panel.bulk_delete_confirm": "Delete {count} chore(s)? This cannot be undone.",
-  "panel.bulk_done_toast": "{count} chore(s) updated"
+  "panel.bulk_done_toast": "{count} chore(s) updated",
+  "panel.settings_decay_enabled_label": "Points decay",
+  "panel.settings_decay_enabled_hint": "Periodically shrink each child's spendable balance to discourage hoarding.",
+  "panel.settings_decay_params_label": "Points decay settings",
+  "panel.settings_decay_params_hint": "How much of the balance to remove, and how often.",
+  "panel.settings_decay_percent": "Decay %",
+  "panel.settings_decay_period": "Every"
 }

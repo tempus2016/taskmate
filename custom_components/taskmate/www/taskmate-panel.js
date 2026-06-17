@@ -3259,6 +3259,22 @@ class TaskMatePanel extends HTMLElement {
                 <label>${this._t("panel.settings_surprise_max")}<input type="number" class="tm-input" step="1" min="0" data-setting="surprise_bonus_max" value="${s.surprise_bonus_max ?? 20}"></label>
               </div>
             </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_decay_enabled_label")}<small>${this._t("panel.settings_decay_enabled_hint")}</small></div>
+              <ha-switch data-setting="points_decay_enabled" ${s.points_decay_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_decay_params_label")}<small>${this._t("panel.settings_decay_params_hint")}</small></div>
+              <div class="tm-difficulty-mults">
+                <label>${this._t("panel.settings_decay_percent")}<input type="number" class="tm-input" step="1" min="0" max="100" data-setting="points_decay_percent" value="${s.points_decay_percent ?? 10}"></label>
+                <label>${this._t("panel.settings_decay_period")}
+                  <select class="tm-select" data-setting="points_decay_period">
+                    <option value="weekly" ${s.points_decay_period === "weekly" ? "selected" : ""}>${this._t("panel.reward_restock_weekly")}</option>
+                    <option value="monthly" ${(s.points_decay_period || "monthly") === "monthly" ? "selected" : ""}>${this._t("panel.reward_restock_monthly")}</option>
+                  </select>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
