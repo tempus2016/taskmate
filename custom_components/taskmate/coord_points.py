@@ -435,6 +435,47 @@ class PointsMixin:
             await self.storage.async_save()
             await self.async_refresh()
 
+    async def _async_apply_interest(self) -> None:
+        """Pay periodic interest on each child's spendable balance (savings reward).
+
+        Opt-in via ``interest_enabled``. On the period boundary (weekly=Mon,
+        monthly=1st) credits ``interest_percent`` of the current balance via the
+        normal points path (counts as earned, so it also feeds XP).
+        """
+        enabled = self.storage.get_setting("interest_enabled", False)
+        if not (enabled is True or str(enabled).lower() == "true"):
+            return
+        try:
+            pct = float(self.storage.get_setting("interest_percent", "5"))
+        except (ValueError, TypeError):
+            pct = 5.0
+        if pct <= 0:
+            return
+        period = self.storage.get_setting("interest_period", "weekly")
+        today = dt_util.now().date()
+        due = (
+            (period == "weekly" and today.weekday() == 0)
+            or (period == "monthly" and today.day == 1)
+        )
+        if not due:
+            return
+        if self.storage.get_setting("interest_last", "") == today.isoformat():
+            return
+        for child in self.storage.get_children():
+            bal = child.points or 0
+            if bal <= 0:
+                continue
+            interest = round(bal * pct / 100.0)
+            if interest <= 0:
+                continue
+            await self.async_add_points(child.id, interest, reason=f"Savings interest (+{pct:.0f}%)")
+            self.hass.bus.async_fire("taskmate_interest_paid", {
+                "child_id": child.id, "child_name": child.name,
+                "points": interest, "timestamp": dt_util.now().isoformat(),
+            })
+        self.storage.set_setting("interest_last", today.isoformat())
+        await self.storage.async_save()
+
     # ── Bonus points constants ────────────────────────────────────────────────
     DEFAULT_STREAK_MILESTONES = "3:5, 7:10, 14:20, 30:50, 60:100, 100:200"
 
