@@ -1455,7 +1455,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.settings_vacation_title")}</h3><p class="tm-meta">${this._t("panel.settings_vacation_hint")}</p></div></div>
           <div class="tm-section-body">
-            ${rows || `<div class="tm-meta" style="padding: 4px 0 8px;">${this._t("panel.vacation_none")}</div>`}
+            ${rows || `<div class="tm-meta" style="padding: 4px 20px 8px;">${this._t("panel.vacation_none")}</div>`}
             <div class="tm-period-actions">
               <button type="button" class="tm-btn" data-act="vac-add"><ha-icon icon="mdi:plus"></ha-icon> ${this._t("panel.vacation_add")}</button>
             </div>
