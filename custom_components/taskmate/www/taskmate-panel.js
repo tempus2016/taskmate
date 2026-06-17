@@ -1161,6 +1161,7 @@ class TaskMatePanel extends HTMLElement {
       enabled: true,
       expires_on: "",
       due_time: "", early_bonus: 0, late_penalty: 0,
+      require_photo: false,
       publish_calendar_entities: [],
       bonus_subtasks: [],
     };
@@ -1213,6 +1214,7 @@ class TaskMatePanel extends HTMLElement {
       due_time: (d.due_time || "").trim(),
       early_bonus: Math.max(0, Number(d.early_bonus) || 0),
       late_penalty: Math.max(0, Number(d.late_penalty) || 0),
+      require_photo: !!d.require_photo,
       publish_calendar_entities: d.publish_calendar_entities || [],
       bonus_subtasks: (d.bonus_subtasks || []).filter(b => b.name && b.name.trim()).map(b => ({
         name: b.name.trim(), points: Number(b.points) || 5,
@@ -2165,6 +2167,7 @@ class TaskMatePanel extends HTMLElement {
               return `
                 <div class="tm-approval-item">
                   <div class="tm-approval-icon"><ha-icon icon="${c.bonus_subtask_id ? 'mdi:star-plus' : 'mdi:checkbox-marked-circle-outline'}"></ha-icon></div>
+                  ${c.photo_url ? `<a class="tm-approval-photo" href="${this._esc(c.photo_url)}" target="_blank" rel="noopener" title="${this._t("panel.activity_view_photo")}"><img src="${this._esc(c.photo_url)}" alt="" loading="lazy"></a>` : ""}
                   <div class="tm-approval-body">
                     <div class="tm-approval-line">${this._t("panel.activity_completed_text", {child: this._esc((child && child.name) || "?"), chore: this._esc(choreName)})}</div>
                     <div class="tm-meta">${this._timeAgo(c.completed_at)} · ${chorePoints} ${this._t("panel.activity_points")}</div>
@@ -3806,6 +3809,8 @@ class TaskMatePanel extends HTMLElement {
           ${this._field(this._t("panel.chore_late_penalty_label"), "late_penalty", d.late_penalty, "number")}
         </div>`,
         this._switch(this._t("panel.chore_approval_label"), "requires_approval", d.requires_approval),
+        this._switch(this._t("panel.chore_require_photo_label"), "require_photo", d.require_photo,
+          this._t("panel.chore_require_photo_hint")),
         this._switch(this._t("panel.chore_require_availability"), "require_availability", d.require_availability,
           this._t("panel.chore_require_availability_hint")),
         memberInGroup ? `
@@ -4043,6 +4048,8 @@ class TaskMatePanel extends HTMLElement {
           ${this._field(this._t("panel.chore_late_penalty_label"), "late_penalty", d.late_penalty, "number")}
         </div>`,
         this._switch(this._t("panel.chore_approval_label"), "requires_approval", d.requires_approval),
+        this._switch(this._t("panel.chore_require_photo_label"), "require_photo", d.require_photo,
+          this._t("panel.chore_require_photo_hint")),
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-bulk-chores">${this._t("panel.btn_create_chores")}</button>`
@@ -4921,6 +4928,7 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-approval-icon ha-icon { --mdc-icon-size: 20px; }
       .tm-approval-body { flex: 1; min-width: 0; }
+      .tm-approval-photo img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; display: block; }
       .tm-approval-line { font-size: 13px; }
       .tm-approval-actions { display: flex; gap: 6px; flex-shrink: 0; }
 

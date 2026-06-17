@@ -329,7 +329,10 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         else:
             await _async_require_linked_child(hass, call, coordinator, child_id)
         try:
-            await coordinator.async_complete_chore(chore_id, child_id, as_parent=as_parent)
+            await coordinator.async_complete_chore(
+                chore_id, child_id, as_parent=as_parent,
+                photo_url=call.data.get("photo_url", ""),
+            )
         except ValueError as err:
             # Only genuinely bad input (unknown chore/child) raises now — expected
             # soft rejections (daily limit, race lost, not-your-turn) are silent
@@ -814,6 +817,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Required(ATTR_CHORE_ID): cv.string,
                 vol.Required(ATTR_CHILD_ID): cv.string,
                 vol.Optional(ATTR_AS_PARENT, default=False): cv.boolean,
+                vol.Optional("photo_url"): cv.string,
             }
         ),
     )

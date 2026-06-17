@@ -246,6 +246,7 @@ class Chore:
     due_time: str = ""
     early_bonus: int = 0
     late_penalty: int = 0
+    require_photo: bool = False  # require an evidence photo; forces parent approval
     # Dynamic assignment (sibling rotation)
     assignment_mode: str = "everyone"  # everyone | alternating | random
     assignment_rotation_anchor: str = ""  # ISO date; day-0 of the rotation for alternating
@@ -306,6 +307,7 @@ class Chore:
             due_time=data.get("due_time", ""),
             early_bonus=int(data.get("early_bonus", 0) or 0),
             late_penalty=int(data.get("late_penalty", 0) or 0),
+            require_photo=data.get("require_photo", False),
             assignment_mode=data.get("assignment_mode", "everyone"),
             assignment_rotation_anchor=data.get("assignment_rotation_anchor", ""),
             assignment_current_child_id=data.get("assignment_current_child_id", ""),
@@ -357,6 +359,7 @@ class Chore:
             "due_time": self.due_time,
             "early_bonus": self.early_bonus,
             "late_penalty": self.late_penalty,
+            "require_photo": self.require_photo,
             "assignment_mode": self.assignment_mode,
             "assignment_rotation_anchor": self.assignment_rotation_anchor,
             "assignment_current_child_id": self.assignment_current_child_id,
@@ -450,6 +453,7 @@ class ChoreCompletion:
     points_awarded: int = 0
     bonus_subtask_id: str = ""  # Non-empty = this completion is for a bonus sub-task
     timed_duration_seconds: int = 0
+    photo_url: str = ""  # optional evidence photo (URL/path) attached at completion
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -467,6 +471,7 @@ class ChoreCompletion:
             points_awarded=data.get("points_awarded", 0),
             bonus_subtask_id=data.get("bonus_subtask_id", ""),
             timed_duration_seconds=data.get("timed_duration_seconds", 0),
+            photo_url=data.get("photo_url", ""),
             id=data.get("id", generate_id()),
         )
 
@@ -481,6 +486,7 @@ class ChoreCompletion:
             "points_awarded": self.points_awarded,
             "bonus_subtask_id": self.bonus_subtask_id,
             "timed_duration_seconds": self.timed_duration_seconds,
+            "photo_url": self.photo_url,
             "id": self.id,
         }
 

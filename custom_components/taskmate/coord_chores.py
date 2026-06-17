@@ -424,7 +424,7 @@ class ChoresMixin:
         await self.async_refresh()
         return chore
 
-    async def async_complete_chore(self, chore_id: str, child_id: str, as_parent: bool = False) -> ChoreCompletion | None:
+    async def async_complete_chore(self, chore_id: str, child_id: str, as_parent: bool = False, photo_url: str = "") -> ChoreCompletion | None:
         """Mark a chore as completed by a child.
 
         When ``as_parent`` is True the completion auto-approves (the parent is the
@@ -514,7 +514,10 @@ class ChoresMixin:
             )
             return None
 
-        auto_approve = as_parent or not chore.requires_approval
+        # A photo-required chore always goes through parent approval (unless a
+        # parent is completing on behalf), so the evidence gets reviewed.
+        requires_photo = bool(getattr(chore, "require_photo", False))
+        auto_approve = as_parent or (not chore.requires_approval and not requires_photo)
         effective_points = self._apply_time_adjustment(
             chore, self.effective_chore_points(chore), now
         )
@@ -525,6 +528,7 @@ class ChoresMixin:
             completed_at=now,
             approved=auto_approve,
             points_awarded=effective_points if auto_approve else 0,
+            photo_url=photo_url or "",
         )
 
         if auto_approve:
