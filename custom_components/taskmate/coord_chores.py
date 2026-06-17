@@ -161,6 +161,40 @@ class ChoresMixin:
         await self.async_refresh()
         return clone
 
+    async def async_bulk_chore_action(
+        self, action: str, chore_ids: list[str], assigned_to: list[str] | None = None
+    ) -> int:
+        """Apply a bulk action to several chores at once. Returns count affected.
+
+        action: "delete" | "enable" | "disable" | "reassign".
+        """
+        ids = list(dict.fromkeys(chore_ids or []))
+        if not ids:
+            return 0
+        if action not in ("delete", "enable", "disable", "reassign"):
+            raise ValueError(f"Unknown bulk action {action}")
+        count = 0
+        for cid in ids:
+            chore = self.storage.get_chore(cid)
+            if not chore:
+                continue
+            if action == "delete":
+                self.storage.remove_chore(cid)
+            elif action == "enable":
+                chore.enabled = True
+                chore.disabled_for = []
+                self.storage.update_chore(chore)
+            elif action == "disable":
+                chore.enabled = False
+                self.storage.update_chore(chore)
+            elif action == "reassign":
+                chore.assigned_to = list(assigned_to or [])
+                self.storage.update_chore(chore)
+            count += 1
+        await self.storage.async_save()
+        await self.async_refresh()
+        return count
+
     async def async_add_chores_bulk(
         self,
         chore_names: list[str],

@@ -123,6 +123,8 @@ class TaskMatePanel extends HTMLElement {
     this._loading = false;
     this._timePeriodsDraft = null;  // local edit state for the period editor
     this._vacationDraft = null;     // local edit state for the vacation editor
+    this._bulkMode = false;         // chores multi-select mode
+    this._bulkSel = new Set();      // selected chore ids for bulk actions
     this._activeTab = "children";
     this._dialog = null;
     this._dialogInitialHash = null;  // for confirm-on-leave
@@ -421,6 +423,16 @@ class TaskMatePanel extends HTMLElement {
     if (act === "add-chore")    { this._openChoreDialog(null); return; }
     if (act === "edit-chore")   { this._openChoreDialog(t.dataset.id); return; }
     if (act === "clone-chore")  { this._doCloneChore(t.dataset.id); return; }
+    if (act === "bulk-toggle")  { this._bulkMode = !this._bulkMode; this._bulkSel.clear(); this._render(); return; }
+    if (act === "bulk-enable")  { this._doBulk("enable"); return; }
+    if (act === "bulk-disable") { this._doBulk("disable"); return; }
+    if (act === "bulk-delete")  { this._doBulk("delete"); return; }
+    if (act === "bulk-reassign") {
+      const sel = this.querySelector("[data-role='bulk-reassign']");
+      const v = sel ? sel.value : "";
+      if (!v) { this._showToast("err", this._t("panel.bulk_pick_target")); return; }
+      this._doBulk("reassign", v === "__all__" ? [] : [v]); return;
+    }
     if (act === "delete-chore") { this._confirmDelete("chore", t.dataset.id); return; }
     if (act === "parent-complete-chore") { this._doParentComplete(t.dataset.id); return; }
     if (act === "skip-chore") { this._doSkipChore(t.dataset.id); return; }
@@ -678,6 +690,12 @@ class TaskMatePanel extends HTMLElement {
   _onChange(e) {
     const t = e.target;
     if (!t.dataset) return;
+    if (t.dataset.act === "bulk-toggle-row") {
+      const id = t.dataset.id;
+      if (t.checked) this._bulkSel.add(id); else this._bulkSel.delete(id);
+      this._render();
+      return;
+    }
     if (t.dataset.role === "config-import-file") {
       const file = t.files && t.files[0];
       t.value = "";  // allow re-selecting the same file later
@@ -1100,6 +1118,20 @@ class TaskMatePanel extends HTMLElement {
   }
 
   // ---- Chores ----------------------------------------------------------
+  async _doBulk(action, assigned_to) {
+    const ids = [...this._bulkSel];
+    if (!ids.length) return;
+    if (action === "delete" && !confirm(this._t("panel.bulk_delete_confirm", { count: ids.length }))) return;
+    const payload = { type: "taskmate/bulk_chore_action", action, chore_ids: ids };
+    if (action === "reassign") payload.assigned_to = assigned_to || [];
+    const { ok, err, res } = await this._callWS(payload);
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._bulkSel.clear();
+    this._bulkMode = false;
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.bulk_done_toast", { count: (res && res.count) || ids.length }));
+  }
+
   async _doCloneChore(id) {
     if (!id) return;
     const { ok, err } = await this._callWS({ type: "taskmate/clone_chore", chore_id: id });
@@ -2232,14 +2264,28 @@ class TaskMatePanel extends HTMLElement {
         <button type="button" class="tm-btn" data-act="bulk-add-chore">${this._t("panel.btn_bulk_add")}</button>
         <button type="button" class="tm-btn" data-act="tpl-add-from">${this._t("panel.btn_from_template")}</button>
         <button type="button" class="tm-btn" data-act="tpl-save-from">${this._t("panel.btn_save_as_template")}</button>
+        ${all.length > 0 ? `<button type="button" class="tm-btn ${this._bulkMode ? "tm-btn-on" : ""}" data-act="bulk-toggle">${this._bulkMode ? this._t("panel.bulk_done") : this._t("panel.bulk_select")}</button>` : ""}
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-chore">${this._t("panel.btn_add_chore")}</button>
       </div>
+      ${this._bulkMode && all.length > 0 ? `
+        <div class="tm-bulk-bar">
+          <span class="tm-bulk-count">${this._t("panel.bulk_selected", { count: this._bulkSel.size })}</span>
+          <button type="button" class="tm-btn" data-act="bulk-enable" ${this._bulkSel.size ? "" : "disabled"}>${this._t("panel.bulk_enable")}</button>
+          <button type="button" class="tm-btn" data-act="bulk-disable" ${this._bulkSel.size ? "" : "disabled"}>${this._t("panel.bulk_disable")}</button>
+          <button type="button" class="tm-btn" data-act="bulk-delete" ${this._bulkSel.size ? "" : "disabled"}>${this._t("panel.bulk_delete")}</button>
+          <select class="tm-select" data-role="bulk-reassign">
+            <option value="">${this._t("panel.bulk_reassign_to")}</option>
+            <option value="__all__">${this._t("panel.common_all_children")}</option>
+            ${(this._state.children || []).map(c => `<option value="${this._esc(c.id)}">${this._esc(c.name)}</option>`).join("")}
+          </select>
+          <button type="button" class="tm-btn" data-act="bulk-reassign" ${this._bulkSel.size ? "" : "disabled"}>${this._t("panel.bulk_apply")}</button>
+        </div>` : ""}
       ${all.length === 0 ? this._emptyState("📋", this._t("panel.empty_chores_title"), this._t("panel.empty_chores_copy"), "add-chore", this._t("panel.btn_add_chore")) :
         chores.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_chores").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr>
-              <th>${this._t("panel.chore_table_name")}</th><th>${this._t("panel.chore_table_points")}</th><th>${this._t("panel.chore_table_period")}</th><th>${this._t("panel.chore_table_assigned")}</th><th>${this._t("panel.chore_table_current")}</th><th>${this._t("panel.chore_table_schedule")}</th><th>${this._t("panel.chore_table_approval")}</th><th></th>
+              ${this._bulkMode ? "<th></th>" : ""}<th>${this._t("panel.chore_table_name")}</th><th>${this._t("panel.chore_table_points")}</th><th>${this._t("panel.chore_table_period")}</th><th>${this._t("panel.chore_table_assigned")}</th><th>${this._t("panel.chore_table_current")}</th><th>${this._t("panel.chore_table_schedule")}</th><th>${this._t("panel.chore_table_approval")}</th><th></th>
             </tr></thead>
             <tbody>
               ${chores.map(c => this._renderChoreRow(c, childById)).join("")}
@@ -2278,6 +2324,7 @@ class TaskMatePanel extends HTMLElement {
       : `<strong data-rename="chore" data-id="${this._esc(c.id)}" title="${this._t("panel.tooltip_rename")}">${this._esc(c.name)}</strong>${c.enabled === false ? ` <span class="tm-pill">${this._t("panel.common_disabled")}</span>` : ""}${this._idBadge(c.id)}`;
     return `
       <tr class="tm-row ${c.enabled === false ? "tm-row-disabled" : ""}">
+        ${this._bulkMode ? `<td><input type="checkbox" data-act="bulk-toggle-row" data-id="${this._esc(c.id)}" ${this._bulkSel.has(c.id) ? "checked" : ""}></td>` : ""}
         <td>${nameCell}</td>
         <td><strong class="tm-numeric">${c.task_type === "timed" ? `${c.timed_rate_points || 0}/${c.timed_rate_minutes || 1} min` : c.points}</strong></td>
         <td><span class="tm-pill">${this._esc(this._timeCategoryLabel(c.time_category))}</span></td>
@@ -4844,6 +4891,14 @@ class TaskMatePanel extends HTMLElement {
         gap: 12px;
       }
       .tm-vacation-row > .tm-input { max-width: none; }
+      .tm-bulk-bar {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        padding: 10px 16px; margin: 0 0 10px;
+        background: var(--secondary-background-color, #f1f1f1);
+        border-radius: 10px;
+      }
+      .tm-bulk-count { font-weight: 600; margin-right: auto; }
+      .tm-btn-on { background: var(--primary-color, #5b8def); color: #fff; }
       .tm-audit-row {
         display: grid;
         grid-template-columns: 180px 130px 180px 1fr;
