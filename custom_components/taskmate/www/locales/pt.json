@@ -1249,18 +1249,5 @@
   "task_groups.empty": "Sem grupos de tarefas configurados.",
   "task_groups.no_chores": "Sem tarefas neste grupo.",
   "task_groups.policy_sticky": "Fixo",
-  "task_groups.policy_spread": "Distribuído",
-  "reminders.title": "Lembretes",
-  "reminders.empty": "Sem lembretes definidos.",
-  "reminders.every_day": "Todos os dias",
-  "reminders.weekdays": "Dias úteis",
-  "reminders.weekends": "Fim de semana",
-  "reminders.never": "Nunca",
-  "reminders.day_mon": "Seg",
-  "reminders.day_tue": "Ter",
-  "reminders.day_wed": "Qua",
-  "reminders.day_thu": "Qui",
-  "reminders.day_fri": "Sex",
-  "reminders.day_sat": "Sáb",
-  "reminders.day_sun": "Dom"
+  "task_groups.policy_spread": "Distribuído"
 }

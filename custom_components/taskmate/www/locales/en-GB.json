@@ -1249,18 +1249,5 @@
   "task_groups.empty": "No task groups configured.",
   "task_groups.no_chores": "No chores in this group.",
   "task_groups.policy_sticky": "Sticky",
-  "task_groups.policy_spread": "Spread",
-  "reminders.title": "Reminders",
-  "reminders.empty": "No reminders set.",
-  "reminders.every_day": "Every day",
-  "reminders.weekdays": "Weekdays",
-  "reminders.weekends": "Weekends",
-  "reminders.never": "Never",
-  "reminders.day_mon": "Mon",
-  "reminders.day_tue": "Tue",
-  "reminders.day_wed": "Wed",
-  "reminders.day_thu": "Thu",
-  "reminders.day_fri": "Fri",
-  "reminders.day_sat": "Sat",
-  "reminders.day_sun": "Sun"
+  "task_groups.policy_spread": "Spread"
 }

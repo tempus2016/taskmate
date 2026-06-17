@@ -1249,18 +1249,5 @@
   "task_groups.empty": "Aucun groupe de tâches configuré.",
   "task_groups.no_chores": "Aucune tâche dans ce groupe.",
   "task_groups.policy_sticky": "Constant",
-  "task_groups.policy_spread": "Réparti",
-  "reminders.title": "Rappels",
-  "reminders.empty": "Aucun rappel défini.",
-  "reminders.every_day": "Tous les jours",
-  "reminders.weekdays": "En semaine",
-  "reminders.weekends": "Week-end",
-  "reminders.never": "Jamais",
-  "reminders.day_mon": "Lun",
-  "reminders.day_tue": "Mar",
-  "reminders.day_wed": "Mer",
-  "reminders.day_thu": "Jeu",
-  "reminders.day_fri": "Ven",
-  "reminders.day_sat": "Sam",
-  "reminders.day_sun": "Dim"
+  "task_groups.policy_spread": "Réparti"
 }
