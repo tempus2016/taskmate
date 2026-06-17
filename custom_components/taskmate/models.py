@@ -370,6 +370,11 @@ class Reward:
     pool_enabled: bool = False  # If True, this reward uses pool-mode (savings jar) semantics
     quantity: int | None = None  # Remaining stock; None means unlimited
     expires_at: str | None = None  # ISO "YYYY-MM-DD"; None means no deadline
+    # Auto-restock: periodically reset `quantity` back to restock_amount.
+    restock_enabled: bool = False
+    restock_amount: int = 0
+    restock_period: str = "weekly"  # daily | weekly (Mon) | monthly (1st)
+    restock_last: str = ""  # ISO date this reward was last restocked
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -389,6 +394,10 @@ class Reward:
             pool_enabled=data.get("pool_enabled", False),
             quantity=quantity,
             expires_at=expires_at,
+            restock_enabled=data.get("restock_enabled", False),
+            restock_amount=int(data.get("restock_amount", 0) or 0),
+            restock_period=data.get("restock_period", "weekly"),
+            restock_last=data.get("restock_last", ""),
             id=data.get("id", generate_id()),
         )
 
@@ -404,6 +413,10 @@ class Reward:
             "pool_enabled": self.pool_enabled,
             "quantity": self.quantity,
             "expires_at": self.expires_at,
+            "restock_enabled": self.restock_enabled,
+            "restock_amount": self.restock_amount,
+            "restock_period": self.restock_period,
+            "restock_last": self.restock_last,
             "id": self.id,
         }
 

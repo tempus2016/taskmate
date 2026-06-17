@@ -1215,7 +1215,8 @@ class TaskMatePanel extends HTMLElement {
   _openRewardDialog(id) {
     const blank = { name: "", description: "", cost: 50, icon: "mdi:gift",
       assigned_to: [], is_jackpot: false, pool_enabled: false,
-      quantity_str: "", expires_at: "" };
+      quantity_str: "", expires_at: "",
+      restock_enabled: false, restock_amount: 0, restock_period: "weekly" };
     if (id) {
       const r = (this._state.rewards || []).find(x => x.id === id);
       if (!r) return;
@@ -1246,6 +1247,9 @@ class TaskMatePanel extends HTMLElement {
       pool_enabled: !!d.pool_enabled,
       quantity: qty,
       expires_at: (d.expires_at || "").trim() || null,
+      restock_enabled: !!d.restock_enabled,
+      restock_amount: Math.max(0, Number(d.restock_amount) || 0),
+      restock_period: d.restock_period || "weekly",
     };
     const payload = wasAdd ? { type: "taskmate/add_reward", ...base } : { type: "taskmate/update_reward", reward_id: d.id, ...base };
     const { ok, err } = await this._callWS(payload);
@@ -3738,6 +3742,16 @@ class TaskMatePanel extends HTMLElement {
         `<div class="tm-field-row">
           ${this._field(this._t("panel.reward_quantity_label"), "quantity_str", d.quantity_str, "text", this._t("panel.reward_quantity_hint"))}
           ${this._dateField(this._t("panel.reward_expires_label"), "expires_at", d.expires_at, this._t("panel.reward_expires_hint"))}
+        </div>`,
+        this._switch(this._t("panel.reward_restock_label"), "restock_enabled", d.restock_enabled,
+          this._t("panel.reward_restock_hint")),
+        `<div class="tm-field-row">
+          ${this._field(this._t("panel.reward_restock_amount"), "restock_amount", d.restock_amount, "number")}
+          ${this._select(this._t("panel.reward_restock_period"), "restock_period", d.restock_period || "weekly", [
+            { v: "daily", l: this._t("panel.reward_restock_daily") },
+            { v: "weekly", l: this._t("panel.reward_restock_weekly") },
+            { v: "monthly", l: this._t("panel.reward_restock_monthly") },
+          ])}
         </div>`,
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>

@@ -545,7 +545,8 @@ async def _ws_remove_chore(hass, connection, msg, coordinator):
 # ---------------------------------------------------------------------------
 
 _REWARD_FIELDS = {"name", "cost", "description", "icon", "assigned_to",
-                  "is_jackpot", "pool_enabled", "quantity", "expires_at"}
+                  "is_jackpot", "pool_enabled", "quantity", "expires_at",
+                  "restock_enabled", "restock_amount", "restock_period"}
 
 
 def _reward_payload_schema(*, require_name: bool):
@@ -561,6 +562,9 @@ def _reward_payload_schema(*, require_name: bool):
         vol.Optional("pool_enabled"): bool,
         vol.Optional("quantity"): vol.Any(None, vol.All(int, vol.Range(min=0))),
         vol.Optional("expires_at"): vol.Any(None, str),
+        vol.Optional("restock_enabled"): bool,
+        vol.Optional("restock_amount"): vol.All(int, vol.Range(min=0, max=10000)),
+        vol.Optional("restock_period"): vol.In(["daily", "weekly", "monthly"]),
     }
 
 
@@ -583,6 +587,9 @@ async def _ws_add_reward(hass, connection, msg, coordinator):
         pool_enabled=msg.get("pool_enabled", False),
         quantity=msg.get("quantity"),
         expires_at=msg.get("expires_at") or None,
+        restock_enabled=msg.get("restock_enabled", False),
+        restock_amount=msg.get("restock_amount", 0),
+        restock_period=msg.get("restock_period", "weekly"),
     )
     coordinator.storage.add_reward(reward)
     await coordinator.storage.async_save()

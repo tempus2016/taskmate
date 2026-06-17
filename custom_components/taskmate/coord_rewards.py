@@ -467,6 +467,40 @@ class RewardsMixin:
         await self.async_refresh()
         return allocation
 
+    async def _async_restock_rewards(self) -> None:
+        """Refill `quantity` to restock_amount on the period boundary.
+
+        daily → every day; weekly → Mondays; monthly → the 1st. A
+        ``restock_last`` stamp guards against restocking twice in a day.
+        """
+        from homeassistant.util import dt as dt_util
+        today = dt_util.now().date()
+        today_iso = today.isoformat()
+        changed = False
+        for reward in self.storage.get_rewards():
+            if not getattr(reward, "restock_enabled", False):
+                continue
+            if int(getattr(reward, "restock_amount", 0) or 0) <= 0:
+                continue
+            if getattr(reward, "restock_last", "") == today_iso:
+                continue
+            period = getattr(reward, "restock_period", "weekly")
+            due = (
+                period == "daily"
+                or (period == "weekly" and today.weekday() == 0)
+                or (period == "monthly" and today.day == 1)
+            )
+            if not due:
+                continue
+            reward.quantity = int(reward.restock_amount)
+            reward.restock_last = today_iso
+            self.storage.update_reward(reward)
+            changed = True
+            _LOGGER.info("Restocked reward '%s' to %d", reward.name, reward.quantity)
+        if changed:
+            await self.storage.async_save()
+            await self.async_refresh()
+
     async def _async_expire_rewards(self) -> None:
         """Refund pool allocations on any reward whose expires_at is past.
 
