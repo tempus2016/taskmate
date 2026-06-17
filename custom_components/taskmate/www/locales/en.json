@@ -1260,5 +1260,16 @@
   "panel.reward_restock_weekly": "Week (Mon)",
   "panel.reward_restock_monthly": "Month (1st)",
   "panel.chore_expires_label": "Expiry date (optional)",
-  "panel.chore_expires_hint": "After this date the chore auto-disables. Leave blank for no expiry."
+  "panel.chore_expires_hint": "After this date the chore auto-disables. Leave blank for no expiry.",
+  "panel.bulk_select": "Select",
+  "panel.bulk_done": "Done",
+  "panel.bulk_selected": "{count} selected",
+  "panel.bulk_enable": "Enable",
+  "panel.bulk_disable": "Disable",
+  "panel.bulk_delete": "Delete",
+  "panel.bulk_reassign_to": "Reassign to…",
+  "panel.bulk_apply": "Apply",
+  "panel.bulk_pick_target": "Pick who to reassign to first.",
+  "panel.bulk_delete_confirm": "Delete {count} chore(s)? This cannot be undone.",
+  "panel.bulk_done_toast": "{count} chore(s) updated"
 }

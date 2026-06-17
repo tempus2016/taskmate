@@ -139,6 +139,9 @@ WS_UNDO_TRANSACTION: Final = "taskmate/undo_transaction"
 # Clone / duplicate
 WS_CLONE_CHORE: Final = "taskmate/clone_chore"
 
+# Bulk chore operations
+WS_BULK_CHORE_ACTION: Final = "taskmate/bulk_chore_action"
+
 # Backup / restore
 WS_CONFIG_EXPORT: Final = "taskmate/config/export"
 WS_CONFIG_IMPORT: Final = "taskmate/config/import"
@@ -1572,6 +1575,21 @@ async def _ws_clone_chore(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": clone.id})
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_BULK_CHORE_ACTION,
+    vol.Required("action"): vol.In(["delete", "enable", "disable", "reassign"]),
+    vol.Required("chore_ids"): [str],
+    vol.Optional("assigned_to"): [str],
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_bulk_chore_action(hass, connection, msg, coordinator):
+    count = await coordinator.async_bulk_chore_action(
+        msg["action"], msg["chore_ids"], msg.get("assigned_to"),
+    )
+    connection.send_result(msg["id"], {"count": count})
+
+
 @websocket_api.websocket_command({vol.Required("type"): WS_CONFIG_EXPORT})
 @websocket_api.async_response
 @_admin_only
@@ -1599,6 +1617,7 @@ _COMMANDS = (
     _ws_audit_list, _ws_audit_clear, _ws_undo_transaction,
     _ws_add_child, _ws_update_child, _ws_remove_child, _ws_list_ha_users,
     _ws_add_chore, _ws_update_chore, _ws_remove_chore, _ws_clone_chore,
+    _ws_bulk_chore_action,
     _ws_config_export, _ws_config_import,
     _ws_add_reward, _ws_update_reward, _ws_remove_reward,
     _ws_add_penalty, _ws_update_penalty, _ws_remove_penalty, _ws_apply_penalty,
