@@ -132,6 +132,9 @@ WS_NOTIF_SET_STREAK_CUTOFF: Final  = "taskmate/notifications/set_streak_cutoff"
 WS_AUDIT_LIST: Final  = "taskmate/audit/list"
 WS_AUDIT_CLEAR: Final = "taskmate/audit/clear"
 
+# Undo / retract
+WS_UNDO_TRANSACTION: Final = "taskmate/undo_transaction"
+
 # Read-only / audit-management commands that should NOT themselves be audited.
 # Everything else routed through @_admin_only mutates state and is logged.
 _AUDIT_EXCLUDE: Final = {
@@ -157,7 +160,7 @@ def _audit_target(coordinator, msg: dict) -> str:
     for key in (
         "penalty_id", "bonus_id", "badge_id", "group_id", "template_id",
         "completion_id", "claim_id", "parent_id", "custom_id",
-        "awarded_badge_id", "type_id",
+        "awarded_badge_id", "type_id", "transaction_id",
     ):
         if msg.get(key):
             return str(msg[key])
@@ -1514,13 +1517,24 @@ async def _ws_audit_clear(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"cleared": True})
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_UNDO_TRANSACTION,
+    vol.Required("transaction_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_undo_transaction(hass, connection, msg, coordinator):
+    await coordinator.async_undo_transaction(msg["transaction_id"])
+    connection.send_result(msg["id"], {"undone": msg["transaction_id"]})
+
+
 # ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
 
 _COMMANDS = (
     _ws_get_state,
-    _ws_audit_list, _ws_audit_clear,
+    _ws_audit_list, _ws_audit_clear, _ws_undo_transaction,
     _ws_add_child, _ws_update_child, _ws_remove_child, _ws_list_ha_users,
     _ws_add_chore, _ws_update_chore, _ws_remove_chore,
     _ws_add_reward, _ws_update_reward, _ws_remove_reward,

@@ -751,6 +751,15 @@ class TaskMateStorage:
         if len(self._data["points_transactions"]) > 200:
             self._data["points_transactions"] = self._data["points_transactions"][-200:]
 
+    def remove_points_transaction(self, transaction_id: str) -> bool:
+        """Remove a points transaction by id. Returns True if one was removed."""
+        txns = self._data.get("points_transactions", [])
+        for i, t in enumerate(txns):
+            if t.get("id") == transaction_id:
+                del txns[i]
+                return True
+        return False
+
     # ── Admin audit log ──────────────────────────────────────────────────
     def get_audit_log(self) -> list[dict]:
         """Return admin audit entries, newest first."""

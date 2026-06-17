@@ -80,6 +80,7 @@ from .const import (
     SERVICE_REMOVE_BONUS,
     SERVICE_REMOVE_PENALTY,
     SERVICE_REMOVE_POINTS,
+    SERVICE_UNDO_TRANSACTION,
     SERVICE_SET_CHORE_ORDER,
     SERVICE_UPDATE_BONUS,
     SERVICE_UPDATE_PENALTY,
@@ -396,6 +397,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             return
         completion_id = call.data["completion_id"]
         await coordinator.async_reject_chore(completion_id)
+
+    async def handle_undo_transaction(call: ServiceCall) -> None:
+        """Handle the undo_transaction service call (reverse a penalty/bonus)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_undo_transaction(call.data["transaction_id"])
 
     async def handle_reject_reward(call: ServiceCall) -> None:
         """Handle the reject_reward service call."""
@@ -862,6 +871,17 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN,
+        SERVICE_UNDO_TRANSACTION,
+        _admin(handle_undo_transaction),
+        schema=vol.Schema(
+            {
+                vol.Required("transaction_id"): cv.string,
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
         SERVICE_CLAIM_REWARD,
         handle_claim_reward,
         schema=vol.Schema(
@@ -1180,6 +1200,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_COMPLETE_BONUS_SUBTASK,
         SERVICE_APPROVE_CHORE,
         SERVICE_REJECT_CHORE,
+        SERVICE_UNDO_TRANSACTION,
         SERVICE_CLAIM_REWARD,
         SERVICE_APPROVE_REWARD,
         SERVICE_REJECT_REWARD,

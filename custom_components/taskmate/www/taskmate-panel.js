@@ -526,6 +526,9 @@ class TaskMatePanel extends HTMLElement {
     // Audit log
     if (act === "audit-clear") { this._doClearAudit(); return; }
 
+    // Undo a points transaction (penalty / bonus)
+    if (act === "undo-tx") { this._doUndoTransaction(t.dataset.id); return; }
+
     // Time-of-day period editor
     if (act === "tp-add") {
       this._syncTimePeriodInputs();
@@ -2111,16 +2114,18 @@ class TaskMatePanel extends HTMLElement {
         ${transactions.length === 0 ? `<p class="tm-meta">${this._t("panel.activity_no_points_transactions")}</p>` : `
           <div class="tm-table-wrap">
             <table class="tm-table">
-              <thead><tr><th>${this._t("panel.activity_table_when")}</th><th>${this._t("panel.activity_table_child")}</th><th>${this._t("panel.activity_table_points")}</th><th>${this._t("panel.activity_table_reason")}</th></tr></thead>
+              <thead><tr><th>${this._t("panel.activity_table_when")}</th><th>${this._t("panel.activity_table_child")}</th><th>${this._t("panel.activity_table_points")}</th><th>${this._t("panel.activity_table_reason")}</th><th></th></tr></thead>
               <tbody>
                 ${[...transactions].reverse().map(t => {
                   const child = childById[t.child_id];
+                  const undoable = typeof t.reason === "string" && (t.reason.startsWith("Penalty: ") || t.reason.startsWith("Bonus: "));
                   return `
                     <tr class="tm-row">
                       <td class="tm-meta">${this._esc(this._timeAgo(t.created_at))}</td>
                       <td>${this._esc((child && child.name) || "?")}</td>
                       <td><strong class="tm-numeric ${t.points >= 0 ? 'tm-pos' : 'tm-neg'}">${t.points >= 0 ? '+' : ''}${t.points}</strong></td>
                       <td>${this._esc(this._translateReason(t.reason) || "—")}</td>
+                      <td>${undoable ? `<button type="button" class="tm-icon-btn" data-act="undo-tx" data-id="${this._esc(t.id)}" title="${this._esc(this._t("panel.activity_undo"))}"><ha-icon icon="mdi:undo-variant"></ha-icon></button>` : ""}</td>
                     </tr>
                   `;
                 }).join("")}
@@ -3012,6 +3017,15 @@ class TaskMatePanel extends HTMLElement {
     const { ok, err } = await this._callWS({ type: "taskmate/templates/update", template_id: d.template_id, name: d.name.trim(), icon: d.icon || "mdi:clipboard-list", chores: d.chores || [] });
     if (ok) { this._showToast("success", this._t("panel.toast_template_updated")); this._closeDialog(true); await this._fetchState(); }
     else { this._showToast("error", err || this._t("panel.toast_template_failed_update")); }
+  }
+
+  async _doUndoTransaction(id) {
+    if (!id) return;
+    if (!confirm(this._t("panel.activity_undo_confirm"))) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/undo_transaction", transaction_id: id });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.activity_undone"));
   }
 
   // -- Audit tab ---------------------------------------------------------
