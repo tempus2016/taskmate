@@ -67,6 +67,17 @@ reject_chore:
       selector:
         text:
 
+undo_transaction:
+  name: Undo Transaction
+  description: Reverse a previously applied penalty or bonus by its points-transaction ID. Only Penalty/Bonus transactions can be undone.
+  fields:
+    transaction_id:
+      name: Transaction ID
+      description: The ID of the points transaction to reverse
+      required: true
+      selector:
+        text:
+
 claim_reward:
   name: Claim Reward
   description: Child claims a reward using their points

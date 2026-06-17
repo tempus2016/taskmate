@@ -264,6 +264,44 @@ class PointsMixin:
         if getattr(self, "badges", None) and not (reason or "").startswith("Badge"):
             await self.badges.evaluate_for_child(child_id, "points_changed")
 
+    async def async_undo_transaction(self, transaction_id: str) -> None:
+        """Reverse a previously applied penalty or bonus.
+
+        Only ``Penalty: …`` and ``Bonus: …`` transactions are reversible — these
+        are the discrete admin "apply" actions with a well-defined inverse.
+        Pool / weekend / milestone / completion transactions are left alone
+        because reversing them in isolation would desync related state.
+        """
+        target = next(
+            (t for t in self.storage.get_points_transactions() if t.id == transaction_id),
+            None,
+        )
+        if not target:
+            raise ValueError(f"Transaction {transaction_id} not found")
+        reason = target.reason or ""
+        is_penalty = reason.startswith("Penalty: ")
+        is_bonus = reason.startswith("Bonus: ")
+        if not (is_penalty or is_bonus):
+            raise ValueError("Only applied penalties and bonuses can be undone")
+        child = self.get_child(target.child_id)
+        if not child:
+            raise ValueError(f"Child {target.child_id} not found")
+
+        pts = target.points  # signed: penalty < 0, bonus > 0
+        child.points = max(0, child.points - pts)
+        if is_penalty:
+            child.total_penalties_received = max(0, child.total_penalties_received - abs(pts))
+        else:
+            child.total_points_earned = max(0, child.total_points_earned - pts)
+        child.career_score = child.total_points_earned - child.total_penalties_received
+        self.storage.update_child(child)
+        self.storage.append_career_score_snapshot(
+            child.id, dt_util.now().date().isoformat(), child.career_score
+        )
+        self.storage.remove_points_transaction(transaction_id)
+        await self.storage.async_save()
+        await self.async_refresh()
+
     # ── Bonus points constants ────────────────────────────────────────────────
     DEFAULT_STREAK_MILESTONES = "3:5, 7:10, 14:20, 30:50, 60:100, 100:200"
 
