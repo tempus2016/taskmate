@@ -1244,10 +1244,5 @@
   "panel.notif_test_sent": "Test envoyé à {count} destinataire(s) + notification persistante",
   "panel.toast_chore_cloned": "Tâche dupliquée",
   "notification.streak_milestone.description": "Célèbre chaque nouveau palier de série atteint par un enfant (désactivé par défaut).",
-  "notification.streak_milestone.name": "Palier de série",
-  "task_groups.title": "Groupes de tâches",
-  "task_groups.empty": "Aucun groupe de tâches configuré.",
-  "task_groups.no_chores": "Aucune tâche dans ce groupe.",
-  "task_groups.policy_sticky": "Constant",
-  "task_groups.policy_spread": "Réparti"
+  "notification.streak_milestone.name": "Palier de série"
 }
