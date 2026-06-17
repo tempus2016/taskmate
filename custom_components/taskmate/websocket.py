@@ -90,6 +90,10 @@ WS_UPDATE_BONUS: Final        = "taskmate/update_bonus"
 WS_REMOVE_BONUS: Final        = "taskmate/remove_bonus"
 WS_APPLY_BONUS: Final         = "taskmate/apply_bonus"
 
+WS_CREATE_QUEST: Final        = "taskmate/create_quest"
+WS_UPDATE_QUEST: Final        = "taskmate/update_quest"
+WS_DELETE_QUEST: Final        = "taskmate/delete_quest"
+
 WS_ADD_TASK_GROUP: Final      = "taskmate/add_task_group"
 WS_UPDATE_TASK_GROUP: Final   = "taskmate/update_task_group"
 WS_REMOVE_TASK_GROUP: Final   = "taskmate/remove_task_group"
@@ -270,6 +274,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "penalties":        list(data.get("penalties", [])),
         "bonuses":          list(data.get("bonuses", [])),
         "task_groups":      list(data.get("task_groups", [])),
+        "quests":           list(data.get("quests", [])),
+        "quest_progress":   dict(data.get("quest_progress", {}) or {}),
         "pool_allocations": list(data.get("pool_allocations", [])),
         "timed_sessions":   list(data.get("timed_sessions", [])),
         "templates":        coordinator.get_all_templates(),
@@ -653,6 +659,78 @@ async def _ws_remove_reward(hass, connection, msg, coordinator):
         return
     await coordinator.async_remove_reward(msg["reward_id"])
     connection.send_result(msg["id"], {"id": msg["reward_id"]})
+
+
+# ---------------------------------------------------------------------------
+# Quests (chore chains)
+# ---------------------------------------------------------------------------
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_CREATE_QUEST,
+    vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+    vol.Optional("description", default=""): str,
+    vol.Optional("icon", default="mdi:map-marker-path"): str,
+    vol.Required("steps"): vol.All([str], vol.Length(min=1)),
+    vol.Optional("bonus_points", default=25): vol.All(int, vol.Range(min=0, max=1000000)),
+    vol.Optional("assigned_to", default=[]): [str],
+    vol.Optional("repeatable", default=False): bool,
+    vol.Optional("active", default=True): bool,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_create_quest(hass, connection, msg, coordinator):
+    quest_id = await coordinator.async_create_quest(
+        name=msg["name"].strip(),
+        description=msg.get("description", ""),
+        icon=msg.get("icon", "mdi:map-marker-path"),
+        steps=list(msg["steps"]),
+        bonus_points=msg.get("bonus_points", 25),
+        assigned_to=list(msg.get("assigned_to", []) or []),
+        repeatable=msg.get("repeatable", False),
+        active=msg.get("active", True),
+    )
+    connection.send_result(msg["id"], {"id": quest_id})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_UPDATE_QUEST,
+    vol.Required("quest_id"): str,
+    vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
+    vol.Optional("description"): str,
+    vol.Optional("icon"): str,
+    vol.Optional("steps"): vol.All([str], vol.Length(min=1)),
+    vol.Optional("bonus_points"): vol.All(int, vol.Range(min=0, max=1000000)),
+    vol.Optional("assigned_to"): [str],
+    vol.Optional("repeatable"): bool,
+    vol.Optional("active"): bool,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_update_quest(hass, connection, msg, coordinator):
+    fields = {k: v for k, v in msg.items() if k not in ("id", "type", "quest_id")}
+    if "name" in fields and fields["name"]:
+        fields["name"] = fields["name"].strip()
+    try:
+        await coordinator.async_update_quest(msg["quest_id"], **fields)
+    except ValueError as err:
+        connection.send_error(msg["id"], "not_found", str(err))
+        return
+    connection.send_result(msg["id"], {"id": msg["quest_id"]})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_DELETE_QUEST,
+    vol.Required("quest_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_delete_quest(hass, connection, msg, coordinator):
+    try:
+        await coordinator.async_delete_quest(msg["quest_id"])
+    except ValueError as err:
+        connection.send_error(msg["id"], "not_found", str(err))
+        return
+    connection.send_result(msg["id"], {"id": msg["quest_id"]})
 
 
 # ---------------------------------------------------------------------------
@@ -1699,6 +1777,7 @@ _COMMANDS = (
     _ws_request_swap, _ws_approve_swap, _ws_reject_swap,
     _ws_config_export, _ws_config_import,
     _ws_add_reward, _ws_update_reward, _ws_remove_reward,
+    _ws_create_quest, _ws_update_quest, _ws_delete_quest,
     _ws_add_penalty, _ws_update_penalty, _ws_remove_penalty, _ws_apply_penalty,
     _ws_add_bonus, _ws_update_bonus, _ws_remove_bonus, _ws_apply_bonus,
     _ws_add_task_group, _ws_update_task_group, _ws_remove_task_group,

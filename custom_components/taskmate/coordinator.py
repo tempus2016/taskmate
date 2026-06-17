@@ -19,6 +19,7 @@ from .coord_notifications import NotificationCoordinator
 from .coord_calendar import CalendarMixin
 from .coord_chores import ChoresMixin
 from .coord_points import PointsMixin
+from .coord_quests import QuestsMixin
 from .coord_rewards import RewardsMixin
 from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
@@ -33,6 +34,7 @@ class TaskMateCoordinator(
     AssignmentsMixin,
     RewardsMixin,
     PointsMixin,
+    QuestsMixin,
     TimedMixin,
     CalendarMixin,
     TemplatesMixin,
@@ -459,6 +461,7 @@ class TaskMateCoordinator(
         self.storage.remove_last_completed_for_child(child_id)
         self.storage.remove_pool_allocations_for_child(child_id)
         self.storage.remove_career_score_history_for_child(child_id)
+        self.storage.remove_quest_progress_for_child(child_id)
         # Remove child from chore assigned_to lists
         for chore in self.storage.get_chores():
             if child_id in chore.assigned_to:

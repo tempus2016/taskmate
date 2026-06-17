@@ -442,6 +442,54 @@ class Reward:
 
 
 @dataclass
+class Quest:
+    """A chore chain: an ordered sequence of chores that awards a bonus.
+
+    A child advances one step each time they complete (and have approved) the
+    chore at their current step. Finishing the final step awards
+    ``bonus_points``. If ``repeatable`` the child's progress resets so they can
+    run the chain again; otherwise it stays complete.
+    """
+
+    name: str
+    description: str = ""
+    icon: str = "mdi:map-marker-path"
+    steps: list[str] = field(default_factory=list)   # ordered chore IDs
+    bonus_points: int = 25
+    assigned_to: list[str] = field(default_factory=list)  # child IDs; empty = all
+    repeatable: bool = False
+    active: bool = True
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Quest:
+        return cls(
+            name=data.get("name", ""),
+            description=data.get("description", ""),
+            icon=data.get("icon", "mdi:map-marker-path"),
+            steps=[str(s) for s in data.get("steps", [])],
+            bonus_points=int(data.get("bonus_points", 25) or 0),
+            assigned_to=list(data.get("assigned_to", [])),
+            repeatable=bool(data.get("repeatable", False)),
+            active=bool(data.get("active", True)),
+            id=data.get("id", generate_id()),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "icon": self.icon,
+            "steps": self.steps,
+            "bonus_points": self.bonus_points,
+            "assigned_to": self.assigned_to,
+            "repeatable": self.repeatable,
+            "active": self.active,
+            "id": self.id,
+        }
+
+
+@dataclass
 class ChoreCompletion:
     """Represents a chore completion record."""
 
