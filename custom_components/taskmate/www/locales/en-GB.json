@@ -1305,5 +1305,8 @@
   "panel.chore_due_time_label": "Due time (optional)",
   "panel.chore_due_time_hint": "Completions at/before this time earn the early bonus; after it lose the late penalty.",
   "panel.chore_early_bonus_label": "Early bonus",
-  "panel.chore_late_penalty_label": "Late penalty"
+  "panel.chore_late_penalty_label": "Late penalty",
+  "panel.chore_require_photo_label": "Require photo proof",
+  "panel.chore_require_photo_hint": "Completions must be parent-approved; an evidence photo (if provided) shows in approvals.",
+  "panel.activity_view_photo": "View photo"
 }
