@@ -120,6 +120,59 @@ class ChoresMixin:
         await self.async_refresh()
         return chore
 
+    # ── Sibling chore swaps ──────────────────────────────────────────────
+    async def async_request_swap(self, chore_id: str, requester_id: str) -> str:
+        """A child requests to take over today's rotation assignment of a chore."""
+        from .models import generate_id
+        chore = self.get_chore(chore_id)
+        if not chore:
+            raise ValueError(f"Chore {chore_id} not found")
+        if getattr(chore, "assignment_mode", "everyone") in ("everyone", "unassigned"):
+            raise ValueError("Only rotation chores can be swapped")
+        requester = self.get_child(requester_id)
+        if not requester:
+            raise ValueError(f"Child {requester_id} not found")
+        current = getattr(chore, "assignment_current_child_id", "") or ""
+        if current == requester_id:
+            raise ValueError("Chore is already assigned to that child today")
+        req = {
+            "id": generate_id(),
+            "chore_id": chore_id,
+            "requester_id": requester_id,
+            "from_child_id": current,
+            "created_at": dt_util.now().isoformat(),
+            "status": "pending",
+        }
+        self.storage.add_swap_request(req)
+        await self.storage.async_save()
+        await self.async_refresh()
+        return req["id"]
+
+    async def async_approve_swap(self, req_id: str) -> None:
+        """Approve a swap — reassign today's chore to the requester."""
+        req = next((r for r in self.storage.get_swap_requests()
+                    if r.get("id") == req_id and r.get("status") == "pending"), None)
+        if not req:
+            raise ValueError(f"Swap request {req_id} not found")
+        chore = self.get_chore(req["chore_id"])
+        if chore:
+            chore.assignment_current_child_id = req["requester_id"]
+            self.storage.update_chore(chore)
+        self.storage.update_swap_request(req_id, status="approved")
+        self.hass.bus.async_fire("taskmate_swap_approved", {
+            "chore_id": req["chore_id"], "requester_id": req["requester_id"],
+            "from_child_id": req.get("from_child_id", ""),
+            "timestamp": dt_util.now().isoformat(),
+        })
+        await self.storage.async_save()
+        await self.async_refresh()
+
+    async def async_reject_swap(self, req_id: str) -> None:
+        """Reject (and remove) a pending swap request."""
+        self.storage.remove_swap_request(req_id)
+        await self.storage.async_save()
+        await self.async_refresh()
+
     def _apply_time_adjustment(self, chore, base: int, completed_at) -> int:
         """Apply a chore's early-bonus / late-penalty based on completion time."""
         due = getattr(chore, "due_time", "") or ""
