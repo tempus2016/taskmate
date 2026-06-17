@@ -44,7 +44,8 @@ def _coord(challenges, child, completions):
     coord._progress = progress
     coord.get_child = MagicMock(return_value=child)
     coord.async_refresh = AsyncMock()
-    coord.notifications = MagicMock(); coord.notifications.fire = AsyncMock()
+    coord.notifications = MagicMock()
+    coord.notifications.fire = AsyncMock()
     coord._maybe_level_up = AsyncMock()
     return coord
 
