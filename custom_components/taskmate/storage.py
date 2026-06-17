@@ -776,6 +776,34 @@ class TaskMateStorage:
         """Remove all audit entries."""
         self._data["audit_log"] = []
 
+    # ── Backup / restore ─────────────────────────────────────────────────
+    def export_data(self) -> dict:
+        """Return a deep copy of the full stored data (for backup/export)."""
+        import copy
+        return copy.deepcopy(self._data)
+
+    def import_data(self, data: dict) -> None:
+        """Replace all stored data with ``data`` (restore from a backup).
+
+        Core collection keys are ensured so downstream readers never KeyError on
+        a partial import.
+        """
+        import copy
+        if not isinstance(data, dict):
+            raise ValueError("import data must be an object")
+        self._data = copy.deepcopy(data)
+        list_keys = (
+            "children", "chores", "rewards", "penalties", "bonuses",
+            "task_groups", "completions", "reward_claims", "points_transactions",
+            "pool_allocations", "badges", "awarded_badges", "parent_recipients",
+            "audit_log", "timed_sessions",
+        )
+        for k in list_keys:
+            if not isinstance(self._data.get(k), list):
+                self._data[k] = []
+        if not isinstance(self._data.get("settings"), dict):
+            self._data["settings"] = {}
+
     def replace_completions(self, completions: list[ChoreCompletion]) -> None:
         """Replace all completions with the given list."""
         self._data["completions"] = [c.to_dict() for c in completions]

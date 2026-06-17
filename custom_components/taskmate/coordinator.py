@@ -128,6 +128,24 @@ class TaskMateCoordinator(
         """True if ``on`` (default today) falls within any vacation period."""
         return self.active_vacation(on) is not None
 
+    # ── Backup / restore ─────────────────────────────────────────────────
+    EXPORT_VERSION = 1
+
+    def export_config(self) -> dict:
+        """Return a portable backup of all TaskMate data."""
+        return {
+            "taskmate_export_version": self.EXPORT_VERSION,
+            "data": self.storage.export_data(),
+        }
+
+    async def async_import_config(self, payload: dict) -> None:
+        """Restore TaskMate data from an export payload (full replace)."""
+        if not isinstance(payload, dict) or not isinstance(payload.get("data"), dict):
+            raise ValueError("Invalid TaskMate export payload")
+        self.storage.import_data(payload["data"])
+        await self.storage.async_save()
+        await self.async_refresh()
+
     # ── Admin audit log ──────────────────────────────────────────────────
     async def async_record_audit(
         self, user_id: str, user_name: str, action: str, target: str = ""

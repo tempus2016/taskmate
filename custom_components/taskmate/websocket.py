@@ -139,11 +139,16 @@ WS_UNDO_TRANSACTION: Final = "taskmate/undo_transaction"
 # Clone / duplicate
 WS_CLONE_CHORE: Final = "taskmate/clone_chore"
 
+# Backup / restore
+WS_CONFIG_EXPORT: Final = "taskmate/config/export"
+WS_CONFIG_IMPORT: Final = "taskmate/config/import"
+
 # Read-only / audit-management commands that should NOT themselves be audited.
 # Everything else routed through @_admin_only mutates state and is logged.
 _AUDIT_EXCLUDE: Final = {
     WS_GET_STATE, WS_NOTIF_GET_STATE, WS_NOTIF_LIST_NOTIFY,
     WS_TEMPLATES_LIST, WS_TEMPLATES_GET, WS_AUDIT_LIST, WS_AUDIT_CLEAR,
+    WS_CONFIG_EXPORT,
 }
 
 
@@ -1554,6 +1559,24 @@ async def _ws_clone_chore(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": clone.id})
 
 
+@websocket_api.websocket_command({vol.Required("type"): WS_CONFIG_EXPORT})
+@websocket_api.async_response
+@_admin_only
+async def _ws_config_export(hass, connection, msg, coordinator):
+    connection.send_result(msg["id"], coordinator.export_config())
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_CONFIG_IMPORT,
+    vol.Required("payload"): dict,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_config_import(hass, connection, msg, coordinator):
+    await coordinator.async_import_config(msg["payload"])
+    connection.send_result(msg["id"], {"imported": True})
+
+
 # ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
@@ -1563,6 +1586,7 @@ _COMMANDS = (
     _ws_audit_list, _ws_audit_clear, _ws_undo_transaction,
     _ws_add_child, _ws_update_child, _ws_remove_child, _ws_list_ha_users,
     _ws_add_chore, _ws_update_chore, _ws_remove_chore, _ws_clone_chore,
+    _ws_config_export, _ws_config_import,
     _ws_add_reward, _ws_update_reward, _ws_remove_reward,
     _ws_add_penalty, _ws_update_penalty, _ws_remove_penalty, _ws_apply_penalty,
     _ws_add_bonus, _ws_update_bonus, _ws_remove_bonus, _ws_apply_bonus,

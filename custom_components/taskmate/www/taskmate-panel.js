@@ -524,6 +524,8 @@ class TaskMatePanel extends HTMLElement {
 
     // Settings
     if (act === "save-settings") { this._doSaveSettings(); return; }
+    if (act === "config-export") { this._doExportConfig(); return; }
+    if (act === "config-import") { this.querySelector("[data-role='config-import-file']")?.click(); return; }
 
     // Audit log
     if (act === "audit-clear") { this._doClearAudit(); return; }
@@ -676,6 +678,12 @@ class TaskMatePanel extends HTMLElement {
   _onChange(e) {
     const t = e.target;
     if (!t.dataset) return;
+    if (t.dataset.role === "config-import-file") {
+      const file = t.files && t.files[0];
+      t.value = "";  // allow re-selecting the same file later
+      if (file) this._doImportConfig(file);
+      return;
+    }
     if (t.dataset.local === "show-ids") {
       this._showIds = t.checked;
       localStorage.setItem("taskmate-show-ids", this._showIds);
@@ -1484,6 +1492,43 @@ class TaskMatePanel extends HTMLElement {
       }
     }
     return { periods };
+  }
+
+  // ---- Backup / restore ------------------------------------------------
+  async _doExportConfig() {
+    const { ok, err, res } = await this._callWS({ type: "taskmate/config/export" });
+    if (!ok || !res) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    try {
+      const blob = new Blob([JSON.stringify(res, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "taskmate-backup.json";
+      a.click();
+      URL.revokeObjectURL(url);
+      this._showToast("ok", this._t("panel.backup_exported"));
+    } catch (e) {
+      this._showToast("err", String(e));
+    }
+  }
+
+  async _doImportConfig(file) {
+    let payload;
+    try {
+      payload = JSON.parse(await file.text());
+    } catch (e) {
+      this._showToast("err", this._t("panel.backup_import_bad_file"));
+      return;
+    }
+    if (!payload || typeof payload !== "object" || !payload.data) {
+      this._showToast("err", this._t("panel.backup_import_bad_file"));
+      return;
+    }
+    if (!confirm(this._t("panel.backup_import_confirm"))) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/config/import", payload });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.backup_imported"));
   }
 
   // ---- Settings --------------------------------------------------------
@@ -3192,6 +3237,17 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_show_ids_label")}</div>
               <ha-switch ${this._showIds ? "checked" : ""} data-local="show-ids"></ha-switch>
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.backup_title")}</h3><p class="tm-meta">${this._t("panel.backup_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-period-actions">
+              <button type="button" class="tm-btn" data-act="config-export"><ha-icon icon="mdi:download"></ha-icon> ${this._t("panel.backup_export")}</button>
+              <button type="button" class="tm-btn" data-act="config-import"><ha-icon icon="mdi:upload"></ha-icon> ${this._t("panel.backup_import")}</button>
+              <input type="file" accept="application/json,.json" data-role="config-import-file" style="display:none">
             </div>
           </div>
         </div>
