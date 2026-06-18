@@ -17,6 +17,7 @@ from homeassistant.util import dt as dt_util
 
 import logging
 
+from . import photos
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
 from .models import Child
@@ -115,6 +116,7 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
 
     common = {
         "data_id": data_id,
+        "hass": coordinator.hass,
         "data": data,
         "children": children,
         "chores": chores,
@@ -330,6 +332,11 @@ def _build_todays_completions(common: dict) -> list[dict]:
         }
         if timed_secs > 0:
             rec["timed_duration_seconds"] = timed_secs
+        # Sign the evidence photo so a card's <img> (which carries no bearer
+        # token) can load it from the auth-gated serve view.
+        photo = getattr(comp, "photo_url", "") or ""
+        if photo:
+            rec["photo_url"] = photos.sign_photo_url(common["hass"], photo)
         out.append(rec)
     return out
 
@@ -1184,6 +1191,11 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                 }
                 if timed_secs > 0:
                     detail["timed_duration_seconds"] = timed_secs
+                photo = getattr(comp, "photo_url", "") or ""
+                if photo:
+                    detail["photo_url"] = photos.sign_photo_url(
+                        self.coordinator.hass, photo
+                    )
                 completion_details.append(detail)
 
         reward_details = []

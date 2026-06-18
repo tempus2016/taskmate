@@ -199,6 +199,8 @@ class TaskMateParentDashboardCard extends LitElement {
       .approval-child-avatar ha-icon { --mdc-icon-size: 22px; color: white; }
 
       .approval-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+      .approval-photo { display: inline-block; margin-top: 4px; line-height: 0; }
+      .approval-photo img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid var(--divider-color, #e0e0e0); }
 
       .approval-chore {
         font-size: 0.9rem; font-weight: 600;
@@ -707,6 +709,12 @@ class TaskMateParentDashboardCard extends LitElement {
                   +${comp.points || chore?.points || 0}
                 </span>
               </div>
+              ${comp.photo_url ? html`
+                <a class="approval-photo" href="${comp.photo_url}" target="_blank" rel="noopener"
+                   title="${this._t('approvals.view_photo') || 'View photo'}">
+                  <img src="${comp.photo_url}" alt="" loading="lazy">
+                </a>
+              ` : ''}
             </div>
             <div class="approval-actions">
               <button class="btn-approve" @click="${() => this._handleApprove(comp.completion_id)}" title="${this._t('common.approve')}" aria-label="${this._t('common.approve')}">
