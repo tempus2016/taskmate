@@ -30,6 +30,8 @@ from .const import (
     NOTIF_TYPE_WEEKLY_DIGEST,
     NOTIF_TYPE_CELEBRATION,
 )
+from .models import NotificationRoute
+
 _LOGGER = logging.getLogger(__name__)
 
 # Appended to actionable notifications sent to non-mobile_app backends, which
@@ -104,7 +106,13 @@ class NotificationCoordinator:
             await self._send_to(notify_service, message, meta, context)
             recipients_fired.append(recipient_id)
 
-        await self._fire_persistent_notification(type_id, message)
+        # NOTE: deliberately no unconditional persistent_notification here.
+        # persistent_notification is instance-wide (visible to every HA user,
+        # including a child on a kiosk), so firing it for every notification
+        # leaked parent-audience messages ("… awaiting approval") to the child
+        # who just completed the chore. A persistent notification now happens
+        # only when a recipient is explicitly routed to notify.persistent_
+        # notification, flowing through _send_to like any other channel.
         self._fire_bus_event(type_id, context, recipients_fired)
 
     async def send_test(self, type_id: str) -> list[str]:
@@ -406,8 +414,34 @@ class NotificationCoordinator:
         await self.storage.async_save()
         await self.async_setup_schedules()
 
+    def ensure_parent_default_routes(self) -> bool:
+        """Subscribe enabled parents to default-on parent-audience types.
+
+        A parent-audience type (e.g. pending_chore_approval) is useless without
+        a parent route — and adding a parent recipient previously left those
+        routes empty, so no one was notified. Fills ONLY types whose routes are
+        still empty, so it never overrides routing the user set or cleared.
+        Returns True if anything changed (caller is responsible for saving).
+        """
+        parents = [p for p in self.storage.get_parent_recipients() if p.enabled]
+        if not parents:
+            return False
+        changed = False
+        for meta in NOTIFICATION_TYPES:
+            if not meta.default_enabled or meta.audience not in ("parent", "both"):
+                continue
+            if self.storage.get_notification_config(meta.id).routes:
+                continue  # already configured — leave it alone
+            for p in parents:
+                self.storage.set_notification_route(
+                    meta.id, p.id, NotificationRoute(enabled=True)
+                )
+                changed = True
+        return changed
+
     async def upsert_parent(self, p) -> None:
         self.storage.upsert_parent_recipient(p)
+        self.ensure_parent_default_routes()
         await self.storage.async_save()
 
     async def delete_parent(self, parent_id: str) -> None:

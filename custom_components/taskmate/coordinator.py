@@ -176,6 +176,11 @@ class TaskMateCoordinator(
         """Initialize the coordinator."""
         await self.storage.async_load()
         self.notifications.coordinator = self
+        # Wire existing parent recipients to default-on parent-audience types
+        # that have no routes yet (e.g. a parent added after the one-time seed),
+        # so pending-approval notifications actually reach a parent.
+        if self.notifications.ensure_parent_default_routes():
+            await self.storage.async_save()
         # Achievement badges: silent retroactive backfill on first install
         if self.storage._data.get("badges_backfill_pending"):
             await self.badges.rebuild_all()
