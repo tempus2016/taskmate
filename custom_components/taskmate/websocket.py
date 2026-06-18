@@ -56,6 +56,7 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant
 
+from . import photos
 from .const import DEFAULT_TIME_PERIODS, DOMAIN, MAX_TIME_PERIODS, TIME_CATEGORY_ICONS
 from .coordinator import TaskMateCoordinator
 from .models import BonusSubTask, Reward
@@ -260,6 +261,15 @@ def _opt_str(v: Any) -> str:
 def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
     data = coordinator.storage.data
     completions = list(data.get("completions", []))
+    # Sign evidence-photo URLs so the admin panel can render thumbnails and
+    # open/save the full image — a plain <img>/navigation request carries no
+    # bearer token, so the auth-gated serve view would 401. Copy each dict so
+    # the expiring signed URL is never written back into storage.
+    completions = [
+        {**c, "photo_url": photos.sign_photo_url(coordinator.hass, c["photo_url"])}
+        if c.get("photo_url") else c
+        for c in completions
+    ]
     reward_claims = list(data.get("reward_claims", []))
     transactions = list(data.get("points_transactions", []))
 

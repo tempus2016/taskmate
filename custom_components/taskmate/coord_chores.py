@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
 
+from . import photos
 from .models import Chore, ChoreCompletion
 
 if TYPE_CHECKING:
@@ -570,6 +571,13 @@ class ChoresMixin:
         # A photo-required chore always goes through parent approval (unless a
         # parent is completing on behalf), so the evidence gets reviewed.
         requires_photo = bool(getattr(chore, "require_photo", False))
+        # A child cannot complete a photo-required chore without attaching a photo.
+        # Enforced here (not just in the card) so the per-chore button entity,
+        # automations and Dev Tools can't bypass it. Parents-on-behalf are exempt
+        # — they are the reviewer. ValueError is surfaced as a clean
+        # ServiceValidationError by the service layer.
+        if requires_photo and not as_parent and not (photo_url or "").strip():
+            raise ValueError("This chore requires a photo as evidence.")
         auto_approve = as_parent or (not chore.requires_approval and not requires_photo)
         effective_points = self._apply_time_adjustment(
             chore, self.effective_chore_points(chore), now
@@ -933,6 +941,10 @@ class ChoresMixin:
                     self.storage.update_chore(chore)
 
         self.storage.remove_completion(completion_id)
+        # The completion record is gone, so its evidence photo is now orphaned —
+        # delete it (best-effort; foreign/blank URLs are ignored).
+        if target_completion and getattr(target_completion, "photo_url", ""):
+            await photos.async_delete_photo(self.hass, target_completion.photo_url)
         await self.storage.async_save()
         await self.async_refresh()
 

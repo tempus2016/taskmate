@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
 
+from . import photos
 from .models import Bonus, Child, Penalty, PointsTransaction
 
 if TYPE_CHECKING:
@@ -748,8 +749,15 @@ class PointsMixin:
         ]
 
         if len(to_keep) < before:
+            kept_ids = {c.id for c in to_keep}
             self.storage.replace_completions(to_keep)
             await self.storage.async_save()
+            # Delete evidence photos belonging to the pruned completions so the
+            # photos dir doesn't grow forever (best-effort; foreign/blank URLs
+            # are ignored by async_delete_photo).
+            for c in all_completions:
+                if c.id not in kept_ids and getattr(c, "photo_url", ""):
+                    await photos.async_delete_photo(self.hass, c.photo_url)
             await self.async_refresh()
             _LOGGER.info(
                 "Pruned %d completions older than %d days",

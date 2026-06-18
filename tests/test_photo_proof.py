@@ -4,6 +4,8 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.models import Child, Chore, ChoreCompletion
 
@@ -68,6 +70,27 @@ def test_photo_stored_on_completion():
     assert coord._added[0].photo_url == "http://x/snap.png"
 
 
+def test_photo_required_blocks_completion_without_photo():
+    # require_photo=True, child completing with no photo -> hard rejection (ValueError),
+    # NOT a silent pending completion. This is the server-side guard mirroring the card.
+    chore = Chore(name="Room", requires_approval=False, require_photo=True,
+                  assignment_mode="everyone", id="ch1")
+    coord = _coord(chore, Child(name="Mia", id="c1"))
+    with pytest.raises(ValueError):
+        run(coord.async_complete_chore("ch1", "c1"))
+    assert coord._added == []
+
+
+def test_photo_required_blocks_blank_photo():
+    # A whitespace-only photo_url is treated as no photo.
+    chore = Chore(name="Room", requires_approval=False, require_photo=True,
+                  assignment_mode="everyone", id="ch1")
+    coord = _coord(chore, Child(name="Mia", id="c1"))
+    with pytest.raises(ValueError):
+        run(coord.async_complete_chore("ch1", "c1", photo_url="   "))
+    assert coord._added == []
+
+
 def test_parent_can_still_autocomplete_photo_chore():
     chore = Chore(name="Room", requires_approval=False, require_photo=True,
                   assignment_mode="everyone", id="ch1")
@@ -75,6 +98,49 @@ def test_parent_can_still_autocomplete_photo_chore():
     run(coord.async_complete_chore("ch1", "c1", as_parent=True))
     assert coord._added[0].approved is True
     coord._award_points.assert_awaited_once()
+
+
+def test_prune_deletes_orphaned_evidence_photos(monkeypatch):
+    # Pruning old, approved completions must also delete their evidence photos so
+    # the photos dir doesn't grow forever. Kept/pending completions keep theirs.
+    import datetime as _dt
+
+    from custom_components.taskmate import coord_points
+    from homeassistant.util import dt as dt_util
+
+    deleted = []
+    monkeypatch.setattr(
+        coord_points.photos, "async_delete_photo",
+        AsyncMock(side_effect=lambda hass, url: deleted.append(url)),
+    )
+
+    # Derive dates from the (mockable, order-sensitive) stubbed clock so this
+    # test doesn't depend on the global mock's current value.
+    now = dt_util.now()
+    old_with_photo = ChoreCompletion(
+        chore_id="a", child_id="c", completed_at=now - _dt.timedelta(days=200),
+        approved=True, photo_url="/api/taskmate/photo/" + "a" * 32 + ".jpg")
+    old_no_photo = ChoreCompletion(
+        chore_id="b", child_id="c", completed_at=now - _dt.timedelta(days=200),
+        approved=True, photo_url="")
+    recent = ChoreCompletion(
+        chore_id="d", child_id="c", completed_at=now - _dt.timedelta(days=1),
+        approved=True, photo_url="/api/taskmate/photo/" + "b" * 32 + ".jpg")
+
+    coord = object.__new__(TaskMateCoordinator)
+    coord.hass = MagicMock()
+    storage = MagicMock()
+    storage.get_completions = MagicMock(
+        return_value=[old_with_photo, old_no_photo, recent])
+    storage.replace_completions = MagicMock()
+    storage.async_save = AsyncMock()
+    coord.storage = storage
+    coord.async_refresh = AsyncMock()
+
+    run(coord.async_prune_history(days=90))
+
+    # Only the pruned (old) photo is deleted; the recent one survives.
+    assert deleted == ["/api/taskmate/photo/" + "a" * 32 + ".jpg"]
 
 
 def test_completion_photo_round_trips():
