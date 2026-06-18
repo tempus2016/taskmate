@@ -960,6 +960,50 @@ class TaskMateChildCard extends LitElement {
         margin-top: 1px;
       }
 
+      .difficulty-badge {
+        display: inline-block;
+        align-self: flex-start;
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: capitalize;
+        padding: 1px 8px;
+        border-radius: 9px;
+        margin-top: 2px;
+      }
+      .difficulty-easy { background: rgba(76, 175, 80, 0.16); color: #2e7d32; }
+      .difficulty-hard { background: rgba(244, 67, 54, 0.16); color: #c62828; }
+      .difficulty-medium { background: rgba(255, 152, 0, 0.16); color: #ef6c00; }
+
+      .swap-section { margin-top: 14px; }
+      .swap-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 12px;
+        border: 1px dashed var(--divider-color, #e0e0e0);
+        border-radius: 12px;
+        margin-bottom: 6px;
+      }
+      .swap-info { min-width: 0; }
+      .swap-info .chore-name { font-size: 1rem; }
+      .swap-info .chore-points { font-size: 0.8rem; opacity: 0.8; }
+      .swap-btn {
+        flex-shrink: 0;
+        border: none;
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-weight: 600;
+        cursor: pointer;
+        background: var(--primary-color, #9b59b6);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .swap-btn[disabled] { opacity: 0.6; cursor: default; }
+      .swap-btn.requested { background: var(--success-color, #4caf50); }
+
       .chore-points {
         display: flex;
         align-items: center;
@@ -1885,6 +1929,8 @@ class TaskMateChildCard extends LitElement {
               `}
         </div>
 
+        ${this._renderSwappable(allChores, child, pointsIcon)}
+
         ${this._celebrating ? this._renderCelebration() : ""}
         ${this._confetti.length > 0 ? this._renderConfetti() : ""}
         ${this._renderPhotoCapture()}
@@ -1908,6 +1954,73 @@ class TaskMateChildCard extends LitElement {
         ` : ""}
       </ha-card>
     `;
+  }
+
+  _renderSwappable(allChores, child, pointsIcon) {
+    // Rotation chores whose turn belongs to another child today, that this
+    // child is in the pool for — the child can ask a parent to swap them in.
+    if (this.config.show_swaps === false) return "";
+    // "Rotation" chores = single-assignee rotating modes. Mirror the backend
+    // (async_request_swap): everything except everyone/unassigned is swappable.
+    // We only surface ones currently assigned to another child today that this
+    // child is in the pool for.
+    const swappable = (allChores || []).filter(c =>
+      !["everyone", "unassigned"].includes(c.assignment_mode || "everyone") &&
+      c.enabled !== false &&
+      c.assignment_current_child_id &&
+      c.assignment_current_child_id !== child.id &&
+      (!Array.isArray(c.assigned_to) || c.assigned_to.length === 0 || c.assigned_to.includes(child.id))
+    );
+    if (swappable.length === 0) return "";
+    if (!this._swapRequested) this._swapRequested = new Set();
+    return html`
+      <div class="swap-section">
+        <div class="section-title">
+          <ha-icon icon="mdi:swap-horizontal"></ha-icon>
+          <span class="section-title-text">${this._t('child.swap_section_title') || 'Take over a chore'}</span>
+        </div>
+        ${swappable.map(c => {
+          const key = `swap_${c.id}`;
+          const loading = this._loading[key];
+          const requested = this._swapRequested.has(c.id);
+          return html`
+            <div class="swap-row">
+              <div class="swap-info">
+                <div class="chore-name">${c.name}</div>
+                <div class="chore-points"><ha-icon icon="${pointsIcon}"></ha-icon>+${c.effective_points ?? c.points}</div>
+              </div>
+              <button class="swap-btn ${requested ? 'requested' : ''}"
+                      ?disabled=${loading || requested}
+                      @click=${() => this._handleRequestSwap(c, child)}>
+                ${requested
+                  ? html`<ha-icon icon="mdi:check"></ha-icon> ${this._t('child.swap_requested') || 'Requested'}`
+                  : (this._t('child.swap_request') || 'Request')}
+              </button>
+            </div>
+          `;
+        })}
+      </div>
+    `;
+  }
+
+  async _handleRequestSwap(chore, child) {
+    const key = `swap_${chore.id}`;
+    if (this._loading[key]) return;
+    this._loading = { ...this._loading, [key]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService('taskmate', 'request_swap', {
+        chore_id: chore.id,
+        requester_id: child.id,
+      });
+      if (!this._swapRequested) this._swapRequested = new Set();
+      this._swapRequested.add(chore.id);
+    } catch (error) {
+      console.error('Failed to request swap:', error);
+    } finally {
+      this._loading = { ...this._loading, [key]: false };
+      this.requestUpdate();
+    }
   }
 
   _filterAndSortChores(chores, child) {
@@ -2481,6 +2594,7 @@ class TaskMateChildCard extends LitElement {
           </div>
           <div class="chore-details">
             <div class="chore-name">${chore.name}</div>
+            ${chore.difficulty ? html`<span class="difficulty-badge difficulty-${chore.difficulty}">${this._t('child.difficulty_' + chore.difficulty) || chore.difficulty}</span>` : ''}
             ${this.config.show_description && chore.description ? html`
               <div class="chore-description">${chore.description}</div>
             ` : ''}
