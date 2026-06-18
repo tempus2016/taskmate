@@ -211,6 +211,7 @@
   "child.error_complete": "Algo correu mal: {message}",
   "child.error_title": "Oops!",
   "child.error_undo": "Não foi possível desfazer: {message}",
+  "child.undo_not_allowed": "Só os pais podem desfazer uma tarefa concluída.",
   "child.evening_chores": "Tarefas da Noite",
   "child.morning_chores": "Tarefas da Manhã",
   "child.night_chores": "Tarefas da Madrugada",

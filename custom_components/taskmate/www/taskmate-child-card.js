@@ -3122,9 +3122,34 @@ class TaskMateChildCard extends LitElement {
     `;
   }
 
+  /** Show a brief, friendly popup (HA snackbar) instead of a raw error. */
+  _notifyUndo(message) {
+    this.dispatchEvent(new CustomEvent("hass-notification", {
+      detail: { message },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  /** True if an error from reject_chore is an authorization/admin rejection. */
+  _isUnauthorized(error) {
+    const text = `${error?.message || ""} ${error?.code || ""}`.toLowerCase();
+    return text.includes("unauthorized") || text.includes("not authorized");
+  }
+
   async _handleUndo(chore, child, childCompletionsToday) {
     // Check if already loading for this chore (prevent double-clicks during loading)
     if (this._loading[chore.id]) {
+      return;
+    }
+
+    // Undoing a completion removes already-awarded points, so it is parent-only
+    // (this mirrors the admin gate on the reject_chore service). For a non-admin
+    // user the call always fails with a raw "Unauthorized" — HA shows its own
+    // snackbar and we used to add an error notification on top. Short-circuit
+    // with one clear, friendly message and never fire the doomed call.
+    if (this.hass.user && !this.hass.user.is_admin) {
+      this._notifyUndo(this._t("child.undo_not_allowed"));
       return;
     }
 
@@ -3171,14 +3196,14 @@ class TaskMateChildCard extends LitElement {
     } catch (error) {
       console.error("Failed to undo chore completion:", error);
 
-      // Show error notification
-      if (this.hass.callService) {
-        this.hass.callService("persistent_notification", "create", {
-          title: this._t('child.error_title'),
-          message: this._t('child.error_undo', { message: error.message }),
-          notification_id: `taskmate_undo_error_${chore.id}`,
-        });
-      }
+      // Fallback for the rare case an undo still fails (e.g. a parent hit a
+      // genuine error). Show a single transient popup, not a sticky bell
+      // notification. An auth rejection gets the same friendly wording as the
+      // pre-check above.
+      const message = this._isUnauthorized(error)
+        ? this._t("child.undo_not_allowed")
+        : this._t("child.error_undo", { message: error?.message || "" });
+      this._notifyUndo(message);
     } finally {
       this._loading = { ...this._loading, [chore.id]: false };
       this.requestUpdate();

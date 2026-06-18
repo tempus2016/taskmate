@@ -211,6 +211,7 @@
   "child.error_complete": "Etwas ist schief gelaufen: {message}",
   "child.error_title": "Hoppla!",
   "child.error_undo": "Konnte nicht rückgängig gemacht werden: {message}",
+  "child.undo_not_allowed": "Nur Eltern können eine erledigte Aufgabe rückgängig machen.",
   "child.evening_chores": "Abendliche Aufgaben",
   "child.morning_chores": "Morgenaufgaben",
   "child.night_chores": "Nachtaufgaben",

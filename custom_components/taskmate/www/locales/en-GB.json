@@ -224,6 +224,7 @@
   "child.error_complete": "Something went wrong: {message}",
   "child.error_title": "Oops!",
   "child.error_undo": "Couldn't undo: {message}",
+  "child.undo_not_allowed": "Only a parent can undo a completed chore.",
   "child.evening_chores": "Evening Chores",
   "child.morning_chores": "Morning Chores",
   "child.night_chores": "Night Chores",

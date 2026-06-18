@@ -211,6 +211,7 @@
   "child.error_complete": "Noko gjekk gale: {message}",
   "child.error_title": "Oops!",
   "child.error_undo": "Kunne ikkje angre: {message}",
+  "child.undo_not_allowed": "Berre ein forelder kan angra ei fullført oppgåve.",
   "child.evening_chores": "Kveldsoppgåver",
   "child.morning_chores": "Morgonoppgåver",
   "child.night_chores": "Nattoppgåver",

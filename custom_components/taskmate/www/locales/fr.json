@@ -211,6 +211,7 @@
   "child.error_complete": "Un problème est survenu : {message}",
   "child.error_title": "Oups !",
   "child.error_undo": "Impossible d'annuler : {message}",
+  "child.undo_not_allowed": "Seul un parent peut annuler une tâche terminée.",
   "child.evening_chores": "Tâches du soir",
   "child.morning_chores": "Tâches du matin",
   "child.night_chores": "Tâches de la nuit",
