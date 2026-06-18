@@ -228,6 +228,8 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         requires_approval = getattr(c, 'requires_approval', True)
         if not requires_approval:
             record["requires_approval"] = False
+        if getattr(c, 'require_photo', False):
+            record["require_photo"] = True
         recurrence = getattr(c, 'recurrence', 'weekly')
         if recurrence != 'weekly':
             record["recurrence"] = recurrence

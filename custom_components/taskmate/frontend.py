@@ -45,6 +45,17 @@ CARDS: Final = [
     "taskmate-calendar-card.js",
 ]
 
+# Cards that USED to ship but were removed. Their files no longer exist, so any
+# Lovelace resource still registered for them 404s on every dashboard load for
+# users upgrading from a version that had them. We deregister these by EXACT
+# URL only (never a heuristic diff — that once wiped every resource, which is
+# why blanket stale-cleanup was removed from async_register_cards).
+RETIRED_CARDS: Final = [
+    "taskmate-task-groups-card.js",  # removed #452
+    "taskmate-templates-card.js",    # removed #448
+    "taskmate-reminders-card.js",    # removed #450
+]
+
 # JS modules loaded on every HA frontend page (config flow sound preview).
 # taskmate-localize.js is ALSO listed in CARDS (Lovelace resources) so it loads
 # early on dashboards; it must be here too because the admin panel (panel.py) is
@@ -92,6 +103,10 @@ async def async_register_frontend(hass: HomeAssistant) -> None:
     )
 
     _LOGGER.debug("Registered static path: %s -> %s", URL_BASE, www_path)
+
+    # Authenticated upload/serve endpoints for chore evidence photos.
+    from .http_photos import async_register_photo_views
+    async_register_photo_views(hass)
 
     # Register global JS modules (loaded on all pages, including config flow)
     version = await _async_get_version(hass)
@@ -191,6 +206,27 @@ async def async_register_cards(hass: HomeAssistant) -> None:
                     )
                 else:
                     _LOGGER.debug("TaskMate: resource up to date: %s", versioned_url)
+
+        # Deregister retired cards by EXACT URL match only. This is the one
+        # delete we allow: each target is a specific /taskmate/<file>.js that no
+        # longer exists, looked up in the existing map we already built. No
+        # diffing of "unexpected" URLs, so it cannot cascade into deleting live
+        # resources the way the old blanket cleanup did.
+        if hasattr(resources, "async_delete_item"):
+            for retired in RETIRED_CARDS:
+                item = existing.get(f"{URL_BASE}/{retired}")
+                if item is None:
+                    continue
+                try:
+                    await resources.async_delete_item(item["id"])
+                    _LOGGER.info(
+                        "TaskMate: removed retired resource: %s", item.get("url")
+                    )
+                except (AttributeError, KeyError, TypeError, OSError) as err:
+                    _LOGGER.warning(
+                        "TaskMate: could not remove retired resource %s: %s",
+                        item.get("url"), err,
+                    )
 
     except (AttributeError, KeyError, TypeError, OSError) as err:
         _LOGGER.error("TaskMate: error managing Lovelace resources: %s", err)
