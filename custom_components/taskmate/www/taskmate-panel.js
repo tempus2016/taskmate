@@ -5280,7 +5280,12 @@ class TaskMatePanel extends HTMLElement {
         background: var(--tm-surface-0);
         border: 1px solid var(--tm-border);
         border-radius: var(--tm-radius-lg);
-        overflow: hidden;
+        /* Scroll horizontally on narrow screens so wide tables (e.g. Chores)
+           stay usable and the action buttons remain reachable, instead of being
+           clipped by the rounded container. */
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
         box-shadow: var(--tm-shadow-xs);
       }
       .tm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -5289,6 +5294,9 @@ class TaskMatePanel extends HTMLElement {
         padding: 11px 16px;
         border-bottom: 1px solid var(--tm-border-soft);
         vertical-align: middle;
+        /* Keep columns at their natural width so the table overflows (and the
+           wrap scrolls) on small devices rather than squashing cells. */
+        white-space: nowrap;
       }
       .tm-table th {
         color: var(--tm-text-faint);

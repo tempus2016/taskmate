@@ -161,6 +161,19 @@ class TaskMateApprovalsCard extends LitElement {
         text-overflow: ellipsis;
       }
 
+      .approval-photo {
+        display: inline-block;
+        margin-top: 4px;
+        line-height: 0;
+      }
+      .approval-photo img {
+        width: 48px;
+        height: 48px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+      }
+
       .item-details {
         display: flex;
         align-items: center;
@@ -753,6 +766,12 @@ class TaskMateApprovalsCard extends LitElement {
               ${completion.points}
             </span>
           </div>
+          ${completion.photo_url ? html`
+            <a class="approval-photo" href="${completion.photo_url}" target="_blank" rel="noopener"
+               title="${this._t('approvals.view_photo') || 'View photo'}">
+              <img src="${completion.photo_url}" alt="" loading="lazy">
+            </a>
+          ` : ''}
         </div>
         <div class="action-buttons right">
           <button
