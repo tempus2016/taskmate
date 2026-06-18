@@ -35,6 +35,7 @@ class TaskMateChildCard extends LitElement {
       _earnedBadges: { type: Array },
       _justEarnedBadge: { type: String },
       _avatarPickerOpen: { type: Boolean },
+      _photoCapture: { type: Object },
     };
   }
 
@@ -1196,6 +1197,74 @@ class TaskMateChildCard extends LitElement {
         animation: fade-in 0.3s ease;
       }
 
+      /* ── Photo-evidence badge on chore rows ── */
+      .photo-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: var(--fun-orange); color: #fff;
+        font-size: 0.66rem; font-weight: 700;
+        border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+      }
+
+      /* ── Photo-evidence capture overlay ── */
+      .photo-overlay {
+        position: fixed; inset: 0; background: rgba(20, 20, 30, 0.72);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 10000; padding: 18px; animation: fade-in 0.2s ease;
+      }
+      .photo-sheet {
+        background: var(--card-background-color, #fff);
+        border-radius: 22px; width: 100%; max-width: 330px;
+        padding: 20px 18px 18px; text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        animation: pop-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+      .photo-title { font-size: 1.15rem; font-weight: 800; color: var(--fun-purple); }
+      .photo-for { font-size: 0.85rem; color: var(--secondary-text-color, #6b7280); margin: 2px 0 16px; }
+      .photo-dropzone {
+        border: 2px dashed var(--fun-purple); border-radius: 16px;
+        padding: 26px 14px; cursor: pointer;
+        background: color-mix(in srgb, var(--fun-purple) 6%, var(--card-background-color, #fff));
+      }
+      .photo-dropzone-icon { font-size: 2.6rem; line-height: 1; }
+      .photo-dropzone-label { margin-top: 8px; font-weight: 700; color: var(--fun-purple); }
+      .photo-dropzone-hint { font-size: 0.72rem; color: var(--secondary-text-color, #6b7280); margin-top: 4px; }
+      .photo-preview {
+        position: relative; border-radius: 14px; overflow: hidden;
+        background: #000; aspect-ratio: 4 / 3;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .photo-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .photo-size-tag {
+        position: absolute; bottom: 8px; right: 8px;
+        background: rgba(0, 0, 0, 0.6); color: #fff;
+        font-size: 0.66rem; padding: 3px 8px; border-radius: 999px;
+      }
+      .photo-btn-row { display: flex; gap: 10px; margin-top: 16px; }
+      .photo-btn {
+        flex: 1; border: none; border-radius: 14px; padding: 13px 10px;
+        font-weight: 800; font-size: 0.95rem; cursor: pointer;
+      }
+      .photo-btn.ghost { background: var(--secondary-background-color, #f5f5f5); color: var(--primary-text-color, #33373d); }
+      .photo-btn.primary { background: var(--fun-green); color: #fff; }
+      .photo-cancel {
+        background: none; border: none; cursor: pointer;
+        color: var(--secondary-text-color, #9aa0a6); font-size: 0.85rem;
+        margin-top: 10px; width: 100%; padding: 4px;
+      }
+      .photo-error {
+        background: color-mix(in srgb, var(--fun-red) 12%, var(--card-background-color, #fff));
+        color: var(--fun-red); border-radius: 12px; padding: 10px;
+        font-size: 0.82rem; font-weight: 600; margin-top: 12px;
+      }
+      .photo-uploading { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 18px 0; }
+      .photo-uploading-label { font-weight: 700; color: var(--fun-purple); }
+      .photo-spinner {
+        width: 42px; height: 42px; border-radius: 50%;
+        border: 4px solid var(--secondary-background-color, #eee);
+        border-top-color: var(--fun-purple); animation: photo-spin 1s linear infinite;
+      }
+      @keyframes photo-spin { to { transform: rotate(360deg); } }
+
       @keyframes fade-in {
         from { opacity: 0; }
         to { opacity: 1; }
@@ -1818,6 +1887,9 @@ class TaskMateChildCard extends LitElement {
 
         ${this._celebrating ? this._renderCelebration() : ""}
         ${this._confetti.length > 0 ? this._renderConfetti() : ""}
+        ${this._renderPhotoCapture()}
+        <input type="file" id="tm-photo-input" accept="image/*" capture="environment"
+               style="display:none" @change="${this._onPhotoSelected}">
 
         ${this.config.debug === true ? html`
           <!-- DEBUG PANEL -->
@@ -2423,6 +2495,11 @@ class TaskMateChildCard extends LitElement {
               +${chore.effective_points ?? chore.points}
               ${dailyLimit > 1 ? html`<span style="font-size: 0.8em; opacity: 0.7;">(${completionsToday}/${dailyLimit})</span>` : ''}
             </div>
+            ${chore.require_photo && !isCompletedForToday ? html`
+              <div class="recurrence-label">
+                <span class="photo-badge">📷 ${this._t('child.photo_needed')}</span>
+              </div>
+            ` : ''}
           </div>
         </div>
         <div class="chore-checkbox">
@@ -2731,12 +2808,20 @@ class TaskMateChildCard extends LitElement {
     `;
   }
 
-  async _handleComplete(chore, child) {
+  async _handleComplete(chore, child, photoUrl = null) {
     const key = `${chore.id}_${child.id}`;
     const dailyLimit = chore.daily_limit || 1;
 
     // Check if already loading for this chore (prevent double-clicks during loading)
     if (this._loading[chore.id]) {
+      return;
+    }
+
+    // Photo-evidence chores can't be completed with a plain tap — open the
+    // capture overlay first. The overlay uploads the photo and then calls back
+    // into this method with a photoUrl, which takes the service path below.
+    if (chore.require_photo && !photoUrl) {
+      this._openPhotoCapture(chore, child);
       return;
     }
 
@@ -2784,14 +2869,18 @@ class TaskMateChildCard extends LitElement {
       // state-trigger automations on button.taskmate_<child>_complete_<chore>
       // fire. Falls back to the service call if the entity isn't registered
       // yet (e.g. right after HA restart).
-      const buttonEntityId = window.__taskmate_find_button
-        && window.__taskmate_find_button(this.hass, child.id, "complete", chore.id);
+      // A photo-evidence completion MUST go through the service so it can carry
+      // photo_url — a button-entity press cannot. Other chores prefer the button
+      // entity so HA state-trigger automations fire.
+      const buttonEntityId = photoUrl ? null : (window.__taskmate_find_button
+        && window.__taskmate_find_button(this.hass, child.id, "complete", chore.id));
       if (buttonEntityId) {
         await this.hass.callService("button", "press", { entity_id: buttonEntityId });
       } else {
         await this.hass.callService("taskmate", "complete_chore", {
           chore_id: chore.id,
           child_id: child.id,
+          ...(photoUrl ? { photo_url: photoUrl } : {}),
         });
       }
 
@@ -2857,6 +2946,180 @@ class TaskMateChildCard extends LitElement {
       this._loading = { ...this._loading, [chore.id]: false };
       this.requestUpdate();
     }
+  }
+
+  // ── Photo-evidence capture ────────────────────────────────────────────────
+
+  _openPhotoCapture(chore, child) {
+    this._photoCapture = {
+      chore, child, step: "pick", previewUrl: "", blob: null,
+      sizeKb: 0, error: "",
+    };
+    this.requestUpdate();
+    // Open the picker straight away (still inside the user's tap gesture).
+    this.updateComplete.then(() => this._triggerPhotoPicker());
+  }
+
+  _triggerPhotoPicker() {
+    const input = this.renderRoot && this.renderRoot.querySelector("#tm-photo-input");
+    if (input) {
+      input.value = "";
+      input.click();
+    }
+  }
+
+  _onPhotoSelected(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file || !this._photoCapture) return;
+    if (!file.type || !file.type.startsWith("image/")) {
+      this._photoCapture = { ...this._photoCapture, step: "pick",
+        error: this._t("child.photo_not_image") };
+      this.requestUpdate();
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const max = 1280;
+      let { width, height } = img;
+      if (width > max || height > max) {
+        const scale = Math.min(max / width, max / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => {
+        if (!blob || !this._photoCapture) {
+          this._photoCapture = { ...this._photoCapture, step: "pick",
+            error: this._t("child.photo_process_failed") };
+          this.requestUpdate();
+          return;
+        }
+        if (this._photoCapture.previewUrl) URL.revokeObjectURL(this._photoCapture.previewUrl);
+        this._photoCapture = {
+          ...this._photoCapture, step: "preview", blob,
+          previewUrl: URL.createObjectURL(blob),
+          sizeKb: Math.round(blob.size / 1024), error: "",
+        };
+        this.requestUpdate();
+      }, "image/jpeg", 0.8);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      this._photoCapture = { ...this._photoCapture, step: "pick",
+        error: this._t("child.photo_process_failed") };
+      this.requestUpdate();
+    };
+    img.src = url;
+  }
+
+  async _confirmPhoto() {
+    const cap = this._photoCapture;
+    if (!cap || !cap.blob) return;
+    this._photoCapture = { ...cap, step: "uploading", error: "" };
+    this.requestUpdate();
+
+    try {
+      const fd = new FormData();
+      fd.append("file", cap.blob, "evidence.jpg");
+      const token = this.hass && this.hass.auth && this.hass.auth.data
+        && this.hass.auth.data.access_token;
+      const resp = await fetch("/api/taskmate/photo", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      if (!resp.ok) throw new Error(`upload failed (${resp.status})`);
+      const { photo_url: photoUrl } = await resp.json();
+      if (!photoUrl) throw new Error("no photo_url in response");
+
+      const { chore, child } = cap;
+      this._closePhotoCapture();
+      await this._handleComplete(chore, child, photoUrl);
+    } catch (err) {
+      // Keep the overlay open on the preview so the child can retry.
+      if (this._photoCapture) {
+        this._photoCapture = { ...this._photoCapture, step: "preview",
+          error: this._t("child.photo_upload_failed") };
+        this.requestUpdate();
+      }
+    }
+  }
+
+  _retakePhoto() {
+    if (!this._photoCapture) return;
+    if (this._photoCapture.previewUrl) URL.revokeObjectURL(this._photoCapture.previewUrl);
+    this._photoCapture = { ...this._photoCapture, step: "pick",
+      previewUrl: "", blob: null, sizeKb: 0, error: "" };
+    this.requestUpdate();
+    this._triggerPhotoPicker();
+  }
+
+  _closePhotoCapture() {
+    if (this._photoCapture && this._photoCapture.previewUrl) {
+      URL.revokeObjectURL(this._photoCapture.previewUrl);
+    }
+    this._photoCapture = null;
+    this.requestUpdate();
+  }
+
+  _renderPhotoCapture() {
+    const cap = this._photoCapture;
+    if (!cap) return "";
+    const chore = cap.chore || {};
+    const stop = (e) => e.stopPropagation();
+    return html`
+      <div class="photo-overlay" @click="${() => this._closePhotoCapture()}">
+        <div class="photo-sheet" @click="${stop}">
+          <div class="photo-title">📷 ${this._t("child.photo_required_title")}</div>
+          <div class="photo-for">${chore.name || ""}</div>
+
+          ${cap.step === "pick" ? html`
+            <div class="photo-dropzone" @click="${() => this._triggerPhotoPicker()}">
+              <div class="photo-dropzone-icon">📸</div>
+              <div class="photo-dropzone-label">${this._t("child.photo_take")}</div>
+              <div class="photo-dropzone-hint">${this._t("child.photo_hint")}</div>
+            </div>
+            ${cap.error ? html`<div class="photo-error">${cap.error}</div>` : ""}
+            <button class="photo-cancel" @click="${() => this._closePhotoCapture()}">
+              ${this._t("child.photo_cancel")}
+            </button>
+          ` : ""}
+
+          ${cap.step === "preview" ? html`
+            <div class="photo-preview">
+              <img src="${cap.previewUrl}" alt="">
+              <span class="photo-size-tag">~${cap.sizeKb} KB</span>
+            </div>
+            <div class="photo-btn-row">
+              <button class="photo-btn ghost" @click="${() => this._retakePhoto()}">
+                ↺ ${this._t("child.photo_retake")}
+              </button>
+              <button class="photo-btn primary" @click="${() => this._confirmPhoto()}">
+                ✓ ${this._t("child.photo_confirm")}
+              </button>
+            </div>
+            ${cap.error ? html`<div class="photo-error">${cap.error}</div>` : ""}
+            <button class="photo-cancel" @click="${() => this._closePhotoCapture()}">
+              ${this._t("child.photo_cancel")}
+            </button>
+          ` : ""}
+
+          ${cap.step === "uploading" ? html`
+            <div class="photo-uploading">
+              <div class="photo-spinner"></div>
+              <div class="photo-uploading-label">${this._t("child.photo_uploading")}</div>
+            </div>
+          ` : ""}
+        </div>
+      </div>
+    `;
   }
 
   async _handleUndo(chore, child, childCompletionsToday) {
