@@ -145,6 +145,7 @@ class Child:
     availability_entity: str = ""  # HA entity id; empty = always available
     availability_inverted: bool = False  # When True, _AVAILABLE_STATES means UNAVAILABLE
     unavailability_entity: str = ""  # Second HA entity; _AVAILABLE_STATES = child is busy
+    pause_streak_when_unavailable: bool = False  # Freeze streak + hide chores while this child's availability sensor says away (may be a calendar.* entity)
     career_score: int = 0
     total_penalties_received: int = 0
     notify_service: str | None = None
@@ -172,6 +173,7 @@ class Child:
             availability_entity=data.get("availability_entity", ""),
             availability_inverted=data.get("availability_inverted", False),
             unavailability_entity=data.get("unavailability_entity", ""),
+            pause_streak_when_unavailable=data.get("pause_streak_when_unavailable", False),
             career_score=data.get("career_score", 0),
             total_penalties_received=data.get("total_penalties_received", 0),
             notify_service=data.get("notify_service", None),
@@ -199,6 +201,7 @@ class Child:
             "availability_entity": self.availability_entity,
             "availability_inverted": self.availability_inverted,
             "unavailability_entity": self.unavailability_entity,
+            "pause_streak_when_unavailable": self.pause_streak_when_unavailable,
             "career_score": self.career_score,
             "total_penalties_received": self.total_penalties_received,
             "notify_service": self.notify_service,

@@ -384,8 +384,8 @@ class TaskMatePanel extends HTMLElement {
     if (epSelected && !e.target.closest(".tm-entity-clear")) {
       const picker = epSelected.closest(".tm-ep");
       const field = picker?.dataset?.epField;
-      if (field && this._dialog?.data) {
-        this._dialog.data[field] = "";
+      if (field) {
+        this._setEntityField(field, "");
         this._render();
         requestAnimationFrame(() => {
           const input = this.querySelector(`.tm-ep[data-ep-field="${field}"] .tm-ep-input`);
@@ -400,8 +400,8 @@ class TaskMatePanel extends HTMLElement {
 
     if (act === "tab")          { this._activeTab = t.dataset.tab; this._filter = ""; this._render(); return; }
     if (act === "close-dialog") { this._closeDialog(); return; }
-    if (act === "clear-field") { if (this._dialog?.data) { this._dialog.data[t.dataset.field] = ""; this._render(); } return; }
-    if (act === "pick-entity") { if (this._dialog?.data) { this._dialog.data[t.dataset.field] = t.dataset.value; this._closeEntityDropdown(); this._render(); } return; }
+    if (act === "clear-field") { this._setEntityField(t.dataset.field, ""); this._render(); return; }
+    if (act === "pick-entity") { this._setEntityField(t.dataset.field, t.dataset.value); this._closeEntityDropdown(); this._render(); return; }
     if (act === "scrim") {
       if (e.target === this.querySelector(".tm-scrim")) this._closeDialog();
       return;
@@ -1001,12 +1001,14 @@ class TaskMatePanel extends HTMLElement {
         availability_entity: c.availability_entity || "",
         availability_inverted: !!c.availability_inverted,
         unavailability_entity: c.unavailability_entity || "",
+        pause_streak_when_unavailable: !!c.pause_streak_when_unavailable,
         linked_user_id: c.linked_user_id || "",
       } });
     } else {
       this._openDialog({ kind: "child", mode: "add", data: {
         name: "", avatar: "mdi:account-circle", availability_entity: "",
         availability_inverted: false, unavailability_entity: "",
+        pause_streak_when_unavailable: false,
         linked_user_id: "",
       } });
     }
@@ -1026,10 +1028,12 @@ class TaskMatePanel extends HTMLElement {
     const payload = wasAdd
       ? { type: "taskmate/add_child", name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
-          unavailability_entity: d.unavailability_entity || "", linked_user_id: d.linked_user_id || "" }
+          unavailability_entity: d.unavailability_entity || "",
+          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "" }
       : { type: "taskmate/update_child", child_id: d.id, name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
-          unavailability_entity: d.unavailability_entity || "", linked_user_id: d.linked_user_id || "" };
+          unavailability_entity: d.unavailability_entity || "",
+          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "" };
     const { ok, err } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
     this._closeDialog(true);
@@ -1708,6 +1712,8 @@ class TaskMatePanel extends HTMLElement {
               </div>
               <button type="button" class="tm-icon-btn tm-period-del" data-act="vac-remove" data-idx="${i}" title="${this._esc(this._t("panel.vacation_delete_title"))}"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
             </div>`).join("");
+    const calValue = this._settingsEntityDraft?.vacation_calendar
+      ?? this._state?.settings?.vacation_calendar ?? "";
     return `
         <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.settings_vacation_title")}</h3><p class="tm-meta">${this._t("panel.settings_vacation_hint")}</p></div></div>
@@ -1715,6 +1721,9 @@ class TaskMatePanel extends HTMLElement {
             ${rows || `<div class="tm-meta" style="padding: 4px 20px 8px;">${this._t("panel.vacation_none")}</div>`}
             <div class="tm-period-actions">
               <button type="button" class="tm-btn" data-act="vac-add"><ha-icon icon="mdi:plus"></ha-icon> ${this._t("panel.vacation_add")}</button>
+            </div>
+            <div style="padding: 12px 20px 4px;">
+              ${this._entityPickerField(this._t("panel.vacation_calendar_label"), "vacation_calendar", calValue, ["calendar"], this._t("panel.vacation_calendar_hint"))}
             </div>
           </div>
         </div>`;
@@ -1808,6 +1817,9 @@ class TaskMatePanel extends HTMLElement {
     root.querySelectorAll("ha-icon-picker[data-setting]").forEach(el => {
       payload[el.dataset.setting] = el.value || "";
     });
+    if (this._settingsEntityDraft) {
+      Object.assign(payload, this._settingsEntityDraft);
+    }
     if (this._timePeriodsDraft) {
       this._syncTimePeriodInputs();
       const { periods, error } = this._validateTimePeriodsDraft();
@@ -1831,6 +1843,7 @@ class TaskMatePanel extends HTMLElement {
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
     this._timePeriodsDraft = null;  // rebuild from saved state on next render
     this._vacationDraft = null;
+    this._settingsEntityDraft = null;
     await this._fetchState();
     this._showToast("ok", this._t("panel.toast_settings_saved", {count: (res && res.updated || []).length}));
   }
@@ -4112,6 +4125,7 @@ class TaskMatePanel extends HTMLElement {
   _renderChildDialog() {
     const d = this._dialog.data;
     const hasAvail = !!(d.availability_entity && d.availability_entity.trim());
+    const hasAway = hasAvail || !!(d.unavailability_entity && d.unavailability_entity.trim());
     return this._dialogShell(this._dialog.mode === "add" ? this._t("panel.dialog_add_child") : this._t("panel.dialog_edit_child"),
       [
         this._field(this._t("panel.child_name_label"), "name", d.name, "text", this._t("panel.child_name_placeholder")),
@@ -4122,6 +4136,8 @@ class TaskMatePanel extends HTMLElement {
           this._t("panel.child_invert_hint")) : "",
         this._entityPickerField(this._t("panel.child_unavailability_label"), "unavailability_entity", d.unavailability_entity, ["binary_sensor", "sensor", "input_boolean", "person", "calendar"],
           this._t("panel.child_unavailability_hint")),
+        hasAway ? this._switch(this._t("panel.child_pause_streak_label"), "pause_streak_when_unavailable", d.pause_streak_when_unavailable,
+          this._t("panel.child_pause_streak_hint")) : "",
         this._select(
           this._t("panel.child_link_user_label"), "linked_user_id", d.linked_user_id || "",
           [{ v: "", l: this._t("panel.child_link_user_none") }].concat(
@@ -4684,6 +4700,13 @@ class TaskMatePanel extends HTMLElement {
       input_select: "mdi:form-dropdown",
     };
     return map[domain] || "mdi:puzzle";
+  }
+
+  // Route an entity-picker change to the open dialog, or to the settings-page
+  // entity draft when no dialog is open (settings entity pickers).
+  _setEntityField(field, value) {
+    if (this._dialog?.data) { this._dialog.data[field] = value; }
+    else { (this._settingsEntityDraft = this._settingsEntityDraft || {})[field] = value; }
   }
 
   _entityPickerField(label, name, value, domains, hint = "") {

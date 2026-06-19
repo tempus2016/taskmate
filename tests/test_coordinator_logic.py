@@ -67,9 +67,12 @@ def _make_coord(
     _children = children or []
     _completions = completions or []
 
+    _by_id = {c.id: c for c in _children}
+
     storage = MagicMock()
     storage.get_setting = MagicMock(side_effect=lambda k, d="": _settings.get(k, d))
     storage.get_children = MagicMock(return_value=_children)
+    storage.get_child = MagicMock(side_effect=lambda cid: _by_id.get(cid))
     storage.get_completions = MagicMock(return_value=_completions)
     storage.update_child = MagicMock()
     storage.add_points_transaction = MagicMock()

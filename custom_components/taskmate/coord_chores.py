@@ -982,8 +982,10 @@ class ChoresMixin:
         Both modes also check visibility_entity if configured.
         """
 
-        # Vacation / pause mode: while away, all chores are paused for everyone.
-        if self.is_vacation_day():
+        # Vacation / pause mode: while away, all chores are hidden. Covers the
+        # global static range, the family vacation calendar, and this child's
+        # own availability sensor (per-child vacation).
+        if self._is_child_on_vacation(self.storage.get_child(child_id)):
             return False
 
         # Check if chore is globally disabled (soft-disabled one-shot chores)

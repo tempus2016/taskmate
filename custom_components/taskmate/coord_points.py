@@ -165,17 +165,23 @@ class PointsMixin:
         """
         today = dt_util.now().date()
 
-        # Vacation / pause mode: freeze streaks entirely while away — no resets
-        # or pauses happen on a vacation day.
-        if self.is_vacation_day(today):
-            return
-
         streak_mode = self.storage.get_setting("streak_reset_mode", "reset")
 
         children = self.storage.get_children()
         changed = False
 
         for child in children:
+            # Frozen while away — static vacation range, the global family
+            # calendar, or this child's own availability sensor. Mark the streak
+            # paused so it resumes intact on return in BOTH reset and pause
+            # modes (the resume path in _award_points honours streak_paused).
+            if self._is_child_on_vacation(child, today):
+                if (child.current_streak or 0) > 0 and not getattr(child, "streak_paused", False):
+                    child.streak_paused = True
+                    self.storage.update_child(child)
+                    changed = True
+                continue
+
             last_date_str = getattr(child, "last_completion_date", None)
             if last_date_str is None:
                 continue  # No completions yet, nothing to do
@@ -187,15 +193,13 @@ class PointsMixin:
 
             # They missed a (non-vacation) day
             if (child.current_streak or 0) > 0:
-                if streak_mode == "pause":
-                    # Preserve the streak value but mark it as paused
-                    # We do this by leaving current_streak as-is — _award_points
-                    # will NOT increment it (gap detected) but won't reset either
-                    # We need a flag so _award_points knows to resume not reset
+                # A streak already marked paused (e.g. frozen during an absence)
+                # resumes rather than resets, even in reset mode.
+                if streak_mode == "pause" or getattr(child, "streak_paused", False):
                     child.streak_paused = True
                     _LOGGER.info(
-                        "Streak paused for %s (last completion: %s, mode=pause)",
-                        child.name, last_date_str
+                        "Streak paused for %s (last completion: %s, mode=%s)",
+                        child.name, last_date_str, streak_mode
                     )
                 else:
                     # Default: reset to 0

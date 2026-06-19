@@ -169,6 +169,7 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
             "avatar": getattr(c, 'avatar', 'mdi:account-circle') or 'mdi:account-circle',
             "last_completion_date": getattr(c, 'last_completion_date', None),
             "streak_paused": getattr(c, 'streak_paused', False),
+            "on_vacation": coordinator._is_child_on_vacation(c),
             "streak_milestones_achieved": getattr(c, 'streak_milestones_achieved', None) or [],
             "awarded_perfect_weeks": getattr(c, 'awarded_perfect_weeks', None) or [],
             "career_score": getattr(c, 'career_score', 0) or 0,

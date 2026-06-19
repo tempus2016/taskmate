@@ -137,6 +137,40 @@ class TaskMateCoordinator(
         """True if ``on`` (default today) falls within any vacation period."""
         return self.active_vacation(on) is not None
 
+    def _vacation_calendar_active(self) -> bool:
+        """True if the global family vacation calendar entity currently has an
+        active event. The ``vacation_calendar`` setting holds a ``calendar.*``
+        (or any on/off) entity id; empty = disabled. Fail-open: a missing or
+        broken entity does not freeze anyone.
+        """
+        entity_id = (self.storage.get_setting("vacation_calendar", "") or "").strip()
+        if not entity_id:
+            return False
+        return self._read_entity_active(entity_id) is True
+
+    def _is_child_on_vacation(self, child, on: date | None = None) -> bool:
+        """True when ``child`` should be treated as away (streak frozen, chores
+        hidden) on ``on`` (default today). Three stacking sources, OR'd:
+
+          1. a global static ``vacation_periods`` range covers the day;
+          2. the global ``vacation_calendar`` entity has an active event now;
+          3. this child opted in (``pause_streak_when_unavailable``) and their
+             own availability/unavailability sensor — which may be a
+             ``calendar.*`` entity — currently reports them away.
+
+        Sources 2 and 3 are evaluated live (current entity state); source 1 is
+        historical date math. ``child`` may be ``None`` (callers that only have
+        a global context), in which case only sources 1 and 2 apply.
+        """
+        if self.is_vacation_day(on):
+            return True
+        if self._vacation_calendar_active():
+            return True
+        if child is not None and getattr(child, "pause_streak_when_unavailable", False):
+            if not self._is_child_available(child.id):
+                return True
+        return False
+
     # ── Backup / restore ─────────────────────────────────────────────────
     EXPORT_VERSION = 1
 
@@ -439,6 +473,7 @@ class TaskMateCoordinator(
         availability_entity: str = "",
         availability_inverted: bool = False,
         unavailability_entity: str = "",
+        pause_streak_when_unavailable: bool = False,
         linked_user_id: str = "",
     ) -> Child:
         """Add a new child."""
@@ -448,6 +483,7 @@ class TaskMateCoordinator(
             availability_entity=availability_entity,
             availability_inverted=availability_inverted,
             unavailability_entity=unavailability_entity,
+            pause_streak_when_unavailable=pause_streak_when_unavailable,
             linked_user_id=linked_user_id,
         )
         self.storage.add_child(child)
