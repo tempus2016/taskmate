@@ -339,6 +339,7 @@ async def _ws_get_state(hass, connection, msg, coordinator):
     vol.Optional("availability_entity", default=""): str,
     vol.Optional("availability_inverted", default=False): bool,
     vol.Optional("unavailability_entity", default=""): str,
+    vol.Optional("pause_streak_when_unavailable", default=False): bool,
     vol.Optional("linked_user_id", default=""): str,
 })
 @websocket_api.async_response
@@ -350,6 +351,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         availability_entity=_opt_str(msg.get("availability_entity")),
         availability_inverted=bool(msg.get("availability_inverted", False)),
         unavailability_entity=_opt_str(msg.get("unavailability_entity")),
+        pause_streak_when_unavailable=bool(msg.get("pause_streak_when_unavailable", False)),
         linked_user_id=_opt_str(msg.get("linked_user_id")),
     )
     connection.send_result(msg["id"], {"id": child.id})
@@ -363,6 +365,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
     vol.Optional("availability_entity"): str,
     vol.Optional("availability_inverted"): bool,
     vol.Optional("unavailability_entity"): str,
+    vol.Optional("pause_streak_when_unavailable"): bool,
     vol.Optional("linked_user_id"): str,
 })
 @websocket_api.async_response
@@ -382,6 +385,8 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.availability_inverted = bool(msg["availability_inverted"])
     if "unavailability_entity" in msg:
         existing.unavailability_entity = _opt_str(msg["unavailability_entity"])
+    if "pause_streak_when_unavailable" in msg:
+        existing.pause_streak_when_unavailable = bool(msg["pause_streak_when_unavailable"])
     if "linked_user_id" in msg:
         existing.linked_user_id = _opt_str(msg["linked_user_id"])
     await coordinator.async_update_child(existing)
@@ -1098,6 +1103,7 @@ _SUBKEY_SETTINGS = {
     "interest_enabled", "interest_period", "interest_percent",
     "celebration_notify", "celebration_notify_min_tier",
     "notify_service", "calendar_projection_days", "skip_confirmation_enabled",
+    "vacation_calendar",
     "time_morning_start", "time_morning_end",
     "time_afternoon_start", "time_afternoon_end",
     "time_evening_start", "time_evening_end",
@@ -1260,6 +1266,7 @@ def _validate_vacation_periods(raw: list) -> tuple[list[dict] | None, str | None
     vol.Optional("streak_milestones"): str,
     vol.Optional("notify_service"): str,
     vol.Optional("calendar_projection_days"): vol.All(int, vol.Range(min=1, max=90)),
+    vol.Optional("vacation_calendar"): str,
     vol.Optional("time_morning_start"): vol.Match(r"^\d{2}:\d{2}$"),
     vol.Optional("time_morning_end"): vol.Match(r"^\d{2}:\d{2}$"),
     vol.Optional("time_afternoon_start"): vol.Match(r"^\d{2}:\d{2}$"),

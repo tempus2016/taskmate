@@ -122,10 +122,11 @@ class TestStreakCheckFreezes:
     def test_no_reset_on_vacation_day(self):
         child = Child(name="A", current_streak=5, last_completion_date="2026-07-05")
         coord = _make_coord({"vacation_periods": VAC, "streak_reset_mode": "reset"}, [child])
-        # 2026-07-15 is inside the vacation -> streak frozen, untouched.
+        # 2026-07-15 is inside the vacation -> streak frozen (value preserved) and
+        # marked paused so it resumes intact on return, even in reset mode.
         self._run_check(coord, dt.datetime(2026, 7, 15, 0, 0, 5, tzinfo=UTC))
         assert child.current_streak == 5
-        coord.storage.update_child.assert_not_called()
+        assert child.streak_paused is True
 
     def test_reset_resumes_after_vacation_if_normal_day_missed(self):
         child = Child(name="A", current_streak=5, last_completion_date="2026-07-05")
