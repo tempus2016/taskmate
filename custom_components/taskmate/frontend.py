@@ -25,6 +25,7 @@ URL_BASE: Final = "/taskmate"
 CARDS: Final = [
     "taskmate-attr-resolver.js",
     "taskmate-localize.js",
+    "taskmate-design.js",
     "taskmate-badges-card.js",
     "taskmate-child-card.js",
     "taskmate-rewards-card.js",
