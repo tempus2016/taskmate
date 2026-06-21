@@ -262,6 +262,39 @@ class TaskMateApprovalsCard extends LitElement {
         color: white;
       }
 
+      /* Mandatory-miss review actions (#532) */
+      .action-button.penalty {
+        background: var(--fun-red, #e74c3c);
+        color: white;
+      }
+
+      .action-button.postpone {
+        background: var(--fun-orange, #e67e22);
+        color: white;
+      }
+
+      .action-button.dismiss {
+        background: var(--fun-green, #2ecc71);
+        color: white;
+      }
+
+      .approval-item.mandatory {
+        border-left: 5px solid var(--fun-red, #e74c3c);
+      }
+
+      .approval-item.mandatory .penalty-note {
+        display: block;
+        margin-top: 2px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--fun-red, #e74c3c);
+      }
+
+      .approval-item.mandatory .penalty-note.none {
+        color: var(--secondary-text-color, #888);
+        font-weight: 600;
+      }
+
       .action-button ha-icon {
         --mdi-icon-size: 20px;
       }
@@ -405,7 +438,10 @@ class TaskMateApprovalsCard extends LitElement {
       [];
     const filteredClaims = this._filterClaimsByChild(rewardClaims);
 
-    const totalPending = filteredCompletions.length + filteredClaims.length;
+    // Missed mandatory chores awaiting parent review (#532)
+    const misses = this._filterMissesByChild(attrs.mandatory_misses || []);
+
+    const totalPending = filteredCompletions.length + filteredClaims.length + misses.length;
 
     return html`
       <ha-card>
@@ -422,6 +458,7 @@ class TaskMateApprovalsCard extends LitElement {
           ${totalPending === 0
             ? this._renderEmptyState()
             : html`
+                ${misses.length > 0 ? this._renderMandatoryMisses(misses) : ''}
                 ${filteredClaims.length > 0 ? this._renderRewardClaims(filteredClaims) : ''}
                 ${filteredCompletions.length > 0 ? this._renderApprovals(groupedByDay) : ''}
               `}
@@ -533,6 +570,116 @@ class TaskMateApprovalsCard extends LitElement {
       }
     } finally {
       this._loading = { ...this._loading, [claimId]: false };
+      this.requestUpdate();
+    }
+  }
+
+  // ---- mandatory-miss review (#532) ------------------------------------
+  _filterMissesByChild(misses) {
+    if (!this.config.child_id) return misses;
+    return misses.filter((m) => m.child_id === this.config.child_id);
+  }
+
+  _renderMandatoryMisses(misses) {
+    return html`
+      <div class="day-group">
+        <div class="day-header">
+          <ha-icon icon="mdi:alert-octagon-outline" style="--mdc-icon-size: 18px; vertical-align: -3px; margin-right: 6px;"></ha-icon>
+          ${this._t('approvals.mandatory_section')}
+        </div>
+        ${misses.map((miss) => this._renderMissItem(miss))}
+      </div>
+    `;
+  }
+
+  _renderMissItem(miss) {
+    const missId = miss.id;
+    const isLoading = this._loading[missId];
+    const choreName = miss.chore_name || '';
+    const childName = miss.child_name || '';
+    const penalty = miss.penalty_points ?? 0;
+
+    return html`
+      <div class="approval-item mandatory ${isLoading ? 'loading' : ''}">
+        <div class="item-info">
+          <span class="chore-name">
+            <ha-icon icon="mdi:alert-circle-outline" style="--mdc-icon-size: 16px; vertical-align: -3px; margin-right: 4px;"></ha-icon>
+            ${choreName}
+          </span>
+          <div class="item-details">
+            <span class="child-name">
+              <ha-icon icon="mdi:account"></ha-icon>
+              ${childName}
+            </span>
+          </div>
+          ${penalty > 0
+            ? html`<span class="penalty-note">${this._t('approvals.penalty_points', { points: penalty })}</span>`
+            : html`<span class="penalty-note none">${this._t('approvals.no_penalty')}</span>`}
+        </div>
+        <div class="action-buttons right">
+          ${penalty > 0 ? html`
+            <button
+              class="action-button penalty ${isLoading ? 'loading' : ''}"
+              @click="${() => this._handleApplyPenalty(missId)}"
+              title="${this._t('approvals.apply_penalty')}"
+              ?disabled="${isLoading}"
+            >
+              <ha-icon icon="mdi:alert-circle"></ha-icon>
+            </button>
+          ` : ''}
+          <button
+            class="action-button postpone ${isLoading ? 'loading' : ''}"
+            @click="${() => this._handlePostpone(missId)}"
+            title="${this._t('approvals.postpone')}"
+            ?disabled="${isLoading}"
+          >
+            <ha-icon icon="mdi:clock-plus-outline"></ha-icon>
+          </button>
+          <button
+            class="action-button dismiss ${isLoading ? 'loading' : ''}"
+            @click="${() => this._handleDismiss(missId)}"
+            title="${this._t('approvals.dismiss')}"
+            ?disabled="${isLoading}"
+          >
+            <ha-icon icon="mdi:check"></ha-icon>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  async _handleApplyPenalty(missId) {
+    await this._callMissService('apply_mandatory_penalty', missId);
+  }
+
+  async _handlePostpone(missId) {
+    await this._callMissService('postpone_mandatory_chore', missId);
+  }
+
+  async _handleDismiss(missId) {
+    await this._callMissService('dismiss_mandatory_chore', missId);
+  }
+
+  async _callMissService(service, missId) {
+    if (this._loading[missId]) return;
+    this._loading = { ...this._loading, [missId]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService('taskmate', service, { miss_id: missId });
+    } catch (error) {
+      console.error(`Failed to call ${service}:`, error);
+      if (this.hass.callService) {
+        this.hass.callService('persistent_notification', 'create', {
+          title: this._t('approvals.error_title'),
+          message: this._t('approvals.error_failed_service', {
+            service: service.replace(/_/g, ' '),
+            message: error.message,
+          }),
+          notification_id: `taskmate_error_${missId}`,
+        });
+      }
+    } finally {
+      this._loading = { ...this._loading, [missId]: false };
       this.requestUpdate();
     }
   }
