@@ -18,12 +18,19 @@
 (function () {
   const IDS = ["classic", "playroom", "console", "cleanpro"];
 
-  // Token blocks mirror docs/design/redesigns/taskmate-redesigns.html
-  // (.dir-a / .dir-b / .dir-c) with the --tmd- prefix.
-  const TOKENS = `
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&family=Manrope:wght@500;600;700;800&display=swap');
+  // Fonts must be loaded at the document level (an @import inside a shadow
+  // stylesheet is honoured, but loading once globally avoids N duplicate fetches).
+  const FONT_IMPORT =
+    "@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&family=Manrope:wght@500;600;700;800&display=swap');";
 
-[data-tm-design="playroom"]{
+  // Design tokens. IMPORTANT: these are :host-scoped so they can be applied
+  // INSIDE each card's shadow root. A document-level [data-tm-design] rule
+  // cannot reach a card host nested in HA's shadow trees, but :host() matches
+  // the host carrying the attribute wherever it lives. Custom properties then
+  // inherit down into the card's shadow DOM. Tokens mirror
+  // docs/design/redesigns/taskmate-redesigns.html (.dir-a / .dir-b / .dir-c).
+  const TOKENS = `
+:host([data-tm-design="playroom"]){
   --tmd-bg:#FFF7EC;--tmd-surface:#FFFFFF;--tmd-surface-2:#FFF0DB;--tmd-border:#F0DFC4;
   --tmd-text:#3A2E26;--tmd-dim:#9C8676;
   --tmd-accent:#7C5CE6;--tmd-accent2:#FFC23C;--tmd-good:#36C58E;--tmd-warn:#FFB020;--tmd-bad:#FF6B6B;--tmd-gold:#FFC23C;
@@ -31,7 +38,7 @@
   --tmd-font-display:"Baloo 2",cursive;--tmd-font-body:"Nunito",sans-serif;--tmd-font-mono:"Baloo 2",cursive;
   --tmd-c1:#FF6B6B;--tmd-c2:#4ECDC4;--tmd-c3:#FFB020;--tmd-c4:#6C8DFF;--tmd-c5:#C77DFF;--tmd-c6:#45D483;
 }
-[data-tm-design="console"]{
+:host([data-tm-design="console"]){
   --tmd-bg:#0E1320;--tmd-surface:#161D2E;--tmd-surface-2:#1E2740;--tmd-border:#2A3550;
   --tmd-text:#EAF0FF;--tmd-dim:#8A97B8;
   --tmd-accent:#3DDBFF;--tmd-accent2:#FF4D9D;--tmd-good:#4BE08B;--tmd-warn:#FFCB45;--tmd-bad:#FF5A7A;--tmd-gold:#FFCB45;
@@ -39,7 +46,7 @@
   --tmd-font-display:"Space Grotesk",sans-serif;--tmd-font-body:"Inter",sans-serif;--tmd-font-mono:"JetBrains Mono",monospace;
   --tmd-c1:#3DDBFF;--tmd-c2:#FF4D9D;--tmd-c3:#FFCB45;--tmd-c4:#7C5CFF;--tmd-c5:#4BE08B;--tmd-c6:#FF8A3D;
 }
-[data-tm-design="cleanpro"]{
+:host([data-tm-design="cleanpro"]){
   --tmd-bg:#F6F7F9;--tmd-surface:#FFFFFF;--tmd-surface-2:#F1F3F6;--tmd-border:#E5E8EC;
   --tmd-text:#1A2230;--tmd-dim:#6B7585;
   --tmd-accent:#4F6BED;--tmd-accent2:#0FB5A8;--tmd-good:#16A36B;--tmd-warn:#E0A100;--tmd-bad:#DC4C4C;--tmd-gold:#E0A100;
@@ -48,11 +55,30 @@
   --tmd-c1:#4F6BED;--tmd-c2:#0FB5A8;--tmd-c3:#E0A100;--tmd-c4:#7A5AF0;--tmd-c5:#E0567A;--tmd-c6:#2BA84A;
 }`;
 
-  if (!document.getElementById("taskmate-design-tokens")) {
+  if (!document.getElementById("taskmate-design-fonts")) {
     const styleEl = document.createElement("style");
-    styleEl.id = "taskmate-design-tokens";
-    styleEl.textContent = TOKENS;
+    styleEl.id = "taskmate-design-fonts";
+    styleEl.textContent = FONT_IMPORT;
     document.head.appendChild(styleEl);
+  }
+
+  /**
+   * The design tokens as a Lit CSSResult, for a card to include in its own
+   * `static get styles()` so the :host token rules live inside the card's
+   * shadow root (where they actually apply). Built lazily so the Lit `css`
+   * tag — borrowed from HA's own card base — is resolved after HA has loaded.
+   */
+  let _tokenStyles = null;
+  function styles() {
+    if (_tokenStyles) return _tokenStyles;
+    const base = customElements.get("hui-masonry-view") || customElements.get("hui-view");
+    if (!base) return null;
+    const css = Object.getPrototypeOf(base).prototype.css;
+    if (!css) return null;
+    const arr = [TOKENS];
+    arr.raw = [TOKENS]; // satisfy css() implementations that read strings.raw
+    try { _tokenStyles = css(arr); } catch (_e) { _tokenStyles = null; }
+    return _tokenStyles;
   }
 
   /**
@@ -94,5 +120,5 @@
     ];
   }
 
-  window.__taskmate_design = { IDS, resolve, editorOptions };
+  window.__taskmate_design = { IDS, resolve, editorOptions, styles };
 })();

@@ -109,7 +109,7 @@ class TaskMatePointsDisplayCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host { display: block; }
       ha-card { overflow: hidden; font-family: inherit; }
 
@@ -600,6 +600,9 @@ class TaskMatePointsDisplayCard extends LitElement {
       .cumul-head { justify-content: space-between; margin-bottom: 6px; }
       .cumul-name { font-weight: 700; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
