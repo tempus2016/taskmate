@@ -65,6 +65,7 @@ class TaskMateCoordinator(
         self._unsub_availability: Callable[[], None] | None = None
         self._unsub_surprise: Callable[[], None] | None = None
         self._unsub_weekly: Callable[[], None] | None = None
+        self._unsub_mandatory: list[Callable[[], None]] = []
 
     def difficulty_multiplier(self, tier: str) -> float:
         """Return the points multiplier for a difficulty tier.
@@ -248,6 +249,8 @@ class TaskMateCoordinator(
             self.hass, self._async_weekly_digest_check, hour=18, minute=0, second=0
         )
         await self.notifications.async_setup_schedules()
+        # Mandatory-chore period-end detection (#532)
+        self.arm_mandatory_schedules()
 
     @callback
     def _async_weekly_digest_check(self, now: datetime) -> None:
@@ -402,6 +405,7 @@ class TaskMateCoordinator(
         if self._unsub_weekly:
             self._unsub_weekly()
             self._unsub_weekly = None
+        self.disarm_mandatory_schedules()
 
     @callback
     def _async_midnight_streak_check(self, now: datetime) -> None:
@@ -427,6 +431,8 @@ class TaskMateCoordinator(
             # Rotate assignment_current_child_id and publish today's events
             # to every configured calendar
             self._async_refresh_assignments_and_publish,
+            # Mandatory 'anytime' chores + postpone-map reset (#532)
+            self.async_detect_anytime_mandatory_misses,
         ]
         # Check for perfect week bonus every Monday at midnight
         if now.weekday() == 0:

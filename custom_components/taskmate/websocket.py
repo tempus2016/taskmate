@@ -1314,6 +1314,9 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
             changed.append(k)
     if changed:
         await storage.async_save()
+        # Period boundaries moved → re-arm the mandatory-chore end-of-period checks (#532)
+        if "time_periods" in changed:
+            await coordinator.async_rearm_mandatory_schedules()
         await coordinator.async_refresh()
     connection.send_result(msg["id"], {"updated": changed})
 
