@@ -231,6 +231,13 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         requires_approval = getattr(c, 'requires_approval', True)
         if not requires_approval:
             record["requires_approval"] = False
+        # Mandatory chores (#532): emit only when set so the child card can
+        # show the mandatory styling/badge. penalty rides along when non-zero.
+        if getattr(c, 'mandatory', False):
+            record["mandatory"] = True
+            penalty = getattr(c, 'mandatory_penalty_points', 0) or 0
+            if penalty:
+                record["mandatory_penalty_points"] = penalty
         if getattr(c, 'require_photo', False):
             record["require_photo"] = True
         recurrence = getattr(c, 'recurrence', 'weekly')
