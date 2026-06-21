@@ -312,6 +312,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "settings": {
             "points_name":       data.get("points_name", "Stars"),
             "points_icon":       data.get("points_icon", "mdi:star"),
+            "card_design":       "classic",
             # Difficulty multiplier defaults; overridden by stored values below.
             "difficulty_multiplier_easy":   0.5,
             "difficulty_multiplier_medium": 1.0,
@@ -1094,9 +1095,11 @@ async def _ws_remove_task_group(hass, connection, msg, coordinator):
 
 # Top-level fields stored at storage._data root
 _TOP_LEVEL_SETTINGS = {"points_name", "points_icon"}
+# Allowed values for the global default card-design style (per-card design styles).
+_ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro"}
 # Settings stored under storage._data["settings"][key]
 _SUBKEY_SETTINGS = {
-    "history_days", "streak_reset_mode",
+    "history_days", "streak_reset_mode", "card_design",
     "weekend_multiplier", "streak_milestones_enabled", "perfect_week_enabled",
     "perfect_week_bonus", "streak_milestones",
     "difficulty_multiplier_easy", "difficulty_multiplier_medium", "difficulty_multiplier_hard",
@@ -1311,6 +1314,8 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
             storage.set_points_icon(v or "mdi:star")
             changed.append(k)
         elif k in _SUBKEY_SETTINGS:
+            if k == "card_design" and v not in _ALLOWED_CARD_DESIGNS:
+                continue
             storage.set_setting(k, v)
             changed.append(k)
     if changed:
