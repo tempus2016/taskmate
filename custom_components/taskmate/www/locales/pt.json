@@ -1,4 +1,12 @@
 {
+  "common.design.field_label": "Design do cartão",
+  "common.design.use_global": "Usar predefinição global",
+  "common.design.classic": "Clássico",
+  "common.design.playroom": "Playroom",
+  "common.design.console": "Console",
+  "common.design.cleanpro": "Clean Pro",
+  "panel.settings_card_design_label": "Design de cartão predefinido",
+  "panel.settings_card_design_hint": "O estilo que os novos cartões usam, salvo substituição por cartão.",
   "activity.a_chore": "uma tarefa",
   "activity.a_reward": "uma recompensa",
   "activity.awaiting_approval": "aguardando aprovação",

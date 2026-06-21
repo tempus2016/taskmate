@@ -1,4 +1,12 @@
 {
+  "common.design.field_label": "Kortdesign",
+  "common.design.use_global": "Bruk global standard",
+  "common.design.classic": "Klassisk",
+  "common.design.playroom": "Playroom",
+  "common.design.console": "Console",
+  "common.design.cleanpro": "Clean Pro",
+  "panel.settings_card_design_label": "Standard kortdesign",
+  "panel.settings_card_design_hint": "Stilen nye kort brukar med mindre den blir overstyrt per kort.",
   "activity.a_chore": "ei oppgåve",
   "activity.a_reward": "ei løning",
   "activity.awaiting_approval": "ventar på godkjenning",

@@ -1,4 +1,12 @@
 {
+  "common.design.field_label": "Design do card",
+  "common.design.use_global": "Usar padrão global",
+  "common.design.classic": "Clássico",
+  "common.design.playroom": "Playroom",
+  "common.design.console": "Console",
+  "common.design.cleanpro": "Clean Pro",
+  "panel.settings_card_design_label": "Design de card padrão",
+  "panel.settings_card_design_hint": "O estilo que novos cards usam, a menos que substituído por card.",
   "activity.a_chore": "uma tarefa",
   "activity.a_reward": "uma recompensa",
   "activity.awaiting_approval": "aguardando aprovação",

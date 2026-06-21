@@ -1,4 +1,12 @@
 {
+  "common.design.field_label": "Design de carte",
+  "common.design.use_global": "Utiliser la valeur par défaut globale",
+  "common.design.classic": "Classique",
+  "common.design.playroom": "Playroom",
+  "common.design.console": "Console",
+  "common.design.cleanpro": "Clean Pro",
+  "panel.settings_card_design_label": "Design de carte par défaut",
+  "panel.settings_card_design_hint": "Le style des nouvelles cartes, sauf remplacement par carte.",
   "activity.a_chore": "une tâche",
   "activity.a_reward": "une récompense",
   "activity.awaiting_approval": "en attente d'approbation",
