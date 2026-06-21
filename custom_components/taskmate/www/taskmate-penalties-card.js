@@ -68,7 +68,7 @@ class TaskMatePenaltiesCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
         --penalty-red: #e74c3c;
@@ -350,7 +350,81 @@ class TaskMatePenaltiesCard extends LitElement {
       @keyframes toast-out {
         to { opacity: 0; transform: translateX(-50%) translateY(8px); }
       }
+
+      /* ══════════════════════════════════════════════════════════════════
+         DESIGNED STYLES (playroom / console / cleanpro)
+         Shared .tmd kit + tokens come from taskmate-design.js styles().
+         Only card-specific layout classes live here.
+      ══════════════════════════════════════════════════════════════════ */
+
+      /* Child tab strip */
+      .d-tabs { display: flex; gap: 8px; margin-bottom: 13px; align-items: center;
+                overflow-x: auto; scrollbar-width: none; }
+      .d-tabs::-webkit-scrollbar { display: none; }
+      .d-tab { display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 4px;
+               border-radius: 999px; font-weight: 800; font-size: 13px; cursor: pointer;
+               white-space: nowrap; color: var(--tmd-text);
+               background: color-mix(in srgb, var(--ac, var(--tmd-accent)) 16%, transparent);
+               border: 1px solid transparent; }
+      .d-tab .av { box-shadow: none; }
+      .d-tab.off { background: transparent; border-color: transparent; padding: 0; opacity: .6; }
+      .d-tab.off .av { opacity: .6; }
+      :host([data-tm-design="console"]) .d-tab { border-radius: 8px; font-size: 12px; font-weight: 700;
+               background: var(--tmd-surface-2); border-color: color-mix(in srgb, var(--ac, var(--tmd-accent)) 60%, transparent); }
+      :host([data-tm-design="cleanpro"]) .d-tab { border-radius: 9px; font-size: 12.5px; font-weight: 700;
+               background: var(--tmd-surface-2); border-color: var(--tmd-accent); }
+
+      /* Playroom rows */
+      .d-pl-list { display: flex; flex-direction: column; gap: 10px; }
+      .d-pl-row { display: flex; align-items: center; gap: 10px; background: var(--tmd-surface-2);
+                  border-radius: 18px; padding: 11px; }
+      .d-ic { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center;
+              font-size: 20px; flex: none; }
+      .d-ic ha-icon { --mdc-icon-size: 22px; color: var(--tmd-text); }
+      .d-pl-row .d-ic { background: color-mix(in srgb, var(--d-accent) 16%, transparent); }
+      .d-name { flex: 1; min-width: 0; font-weight: 800; font-size: 14px;
+                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .d-pts { font-family: var(--tmd-font-display); font-weight: 800; font-size: 19px;
+               color: var(--d-accent); flex: none; }
+
+      /* Console rows */
+      .d-cn-row { display: flex; align-items: center; gap: 10px; background: var(--tmd-surface-2);
+                  border-radius: 9px; padding: 10px; margin-top: 9px;
+                  border: 1px solid color-mix(in srgb, var(--d-accent) 38%, var(--tmd-border));
+                  box-shadow: 0 0 14px color-mix(in srgb, var(--d-accent) 22%, transparent); }
+      .d-cn-row:first-of-type { margin-top: 0; }
+      .d-cn-ic { font-size: 18px; flex: none; }
+      .d-cn-ic ha-icon { --mdc-icon-size: 20px; color: var(--tmd-text); }
+      .d-cn-mid { flex: 1; min-width: 0; }
+      .d-cn-name { font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .d-cn-sub { font-size: 10px; }
+      .d-cn-pts { font-size: 18px; color: var(--d-accent);
+                  text-shadow: 0 0 10px color-mix(in srgb, var(--d-accent) 60%, transparent); flex: none; }
+
+      /* Clean Pro rows */
+      .d-cp-row { display: flex; align-items: center; gap: 11px; padding: 10px 0; }
+      .d-cp-ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+                 font-size: 17px; background: var(--tmd-surface-2); flex: none; }
+      .d-cp-ic ha-icon { --mdc-icon-size: 18px; color: var(--tmd-text); }
+      .d-cp-name { flex: 1; min-width: 0; font-weight: 600; font-size: 13.5px;
+                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .d-cp-pts { font-size: 14px; color: var(--d-accent); flex: none; }
+
+      /* Designed inline edit / new form */
+      .d-form { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
+                border-radius: var(--tmd-radius-sm); padding: 12px; display: flex;
+                flex-direction: column; gap: 10px; margin: 10px 0 4px; }
+      .d-form .form-field input { background: var(--tmd-surface); color: var(--tmd-text);
+                border: 1px solid var(--tmd-border); }
+      .d-form .form-field label { color: var(--tmd-dim); }
+      .d-form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+      .d-add { width: 100%; justify-content: center; }
+      .d-edit-actions { display: flex; gap: 6px; flex: none; }
+      .d-foot { text-align: center; font-size: 12px; color: var(--tmd-dim); padding-top: 8px; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   _getState() {
@@ -633,6 +707,12 @@ class TaskMatePenaltiesCard extends LitElement {
   render() {
     if (!this.hass || !this.config) return html``;
 
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity || "sensor.taskmate_overview")
+      : "classic";
+    this.setAttribute("data-tm-design", design);
+    if (design !== "classic") return this._renderDesigned(design);
+
     const penalties = this._getPenalties();
     const visible = this._getVisiblePenalties();
     const child = this._getSelectedChild();
@@ -691,6 +771,215 @@ class TaskMatePenaltiesCard extends LitElement {
       ${this._toast ? html`<div class="toast">${this._toast}</div>` : ""}
     `;
   }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns/frag/15-penalties.html.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _av(child, tone, size) {
+    const a = child.avatar || "";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${child.name}">`
+        : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  _renderDesignTabs(design) {
+    const children = this._getChildren();
+    if (children.length <= 1) return "";
+    const selected = this._getSelectedChild();
+    const avSize = design === "playroom" ? 28 : 24;
+    const offSize = design === "playroom" ? 30 : 26;
+    return html`
+      <div class="d-tabs">
+        ${children.map((c, i) => {
+          const tone = this._designTone(i);
+          const isSel = selected?.id === c.id;
+          return isSel
+            ? html`<div class="d-tab" style="--ac:${tone}" @click=${() => this._selectChild(c.id)}>
+                ${this._av(c, tone, avSize)}${c.name}</div>`
+            : html`<div class="d-tab off" title="${c.name}" @click=${() => this._selectChild(c.id)}>
+                ${this._av(c, tone, offSize)}</div>`;
+        })}
+      </div>`;
+  }
+
+  _designIcon(p) {
+    const icon = p.icon || "mdi:alert-circle-outline";
+    return icon.startsWith("mdi:")
+      ? html`<ha-icon icon="${icon}"></ha-icon>`
+      : html`${icon}`;
+  }
+
+  _designApplyBtn(p, klass) {
+    const child = this._getSelectedChild();
+    const isLoading = this._loading[p.id];
+    return html`
+      <button class="btn ${klass}" ?disabled=${isLoading || !child}
+              @click=${() => this._applyPenalty(p)}>
+        ${isLoading
+          ? html`<ha-icon icon="mdi:loading" class="spin"></ha-icon>`
+          : this._t('common.apply')}
+      </button>`;
+  }
+
+  _designEditActions(p) {
+    return html`
+      <div class="d-edit-actions">
+        <button class="btn ghost sm" title="${this._t('penalties.btn_edit_title')}"
+                aria-label="${this._t('penalties.btn_edit_title')}" @click=${() => this._startEdit(p)}>
+          <ha-icon icon="mdi:pencil"></ha-icon>
+        </button>
+        <button class="btn ghost sm" title="${this._t('penalties.btn_delete_title')}"
+                aria-label="${this._t('penalties.btn_delete_title')}" @click=${() => this._deletePenalty(p.id)}>
+          <ha-icon icon="mdi:trash-can-outline"></ha-icon>
+        </button>
+      </div>`;
+  }
+
+  _renderDesignForm(model, onField, onCancel, onSave, saveLabel) {
+    return html`
+      <div class="d-form">
+        <div class="form-row">
+          <div class="form-field" style="flex:2">
+            <label>${this._t('penalties.form_name_label')}</label>
+            <input type="text" placeholder="${this._t('penalties.form_name_placeholder')}" .value=${model.name || ""}
+              @input=${e => onField('name', e.target.value)} />
+          </div>
+          <div class="form-field" style="flex:1">
+            <label>${this._t('penalties.form_points_label')}</label>
+            <input type="number" min="1" placeholder="10" .value=${model.points || ""}
+              @input=${e => onField('points', e.target.value)} />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>${this._t('penalties.form_icon_label')}</label>
+            <input type="text" .value=${model.icon || "mdi:alert-circle-outline"}
+              @input=${e => onField('icon', e.target.value)} />
+          </div>
+        </div>
+        <div class="form-row full">
+          <div class="form-field">
+            <label>${this._t('penalties.form_description_label')}</label>
+            <input type="text" placeholder="${this._t('penalties.form_description_placeholder')}" .value=${model.description || ""}
+              @input=${e => onField('description', e.target.value)} />
+          </div>
+        </div>
+        <div class="d-form-actions">
+          <button class="btn ghost sm" @click=${onCancel}>${this._t('common.cancel')}</button>
+          <button class="btn sm" @click=${onSave}>${saveLabel}</button>
+        </div>
+      </div>`;
+  }
+
+  _renderDesignedRow(p, design) {
+    const isEditing = this._editingPenalty?.id === p.id;
+    const accent = "var(--tmd-bad)";
+    const pv = `−${Math.abs(p.points)}`;
+
+    let row;
+    if (design === "playroom") {
+      row = html`
+        <div class="d-pl-row" style="--d-accent:${accent}" data-penalty-id="${p.id}">
+          <div class="d-ic">${this._designIcon(p)}</div>
+          <div class="d-name">${p.name}</div>
+          <div class="d-pts">${pv}</div>
+          ${this._editMode ? this._designEditActions(p) : this._designApplyBtn(p, "bad")}
+        </div>`;
+    } else if (design === "console") {
+      const pointsName = this._getPointsName();
+      row = html`
+        <div class="d-cn-row" style="--d-accent:${accent}" data-penalty-id="${p.id}">
+          <div class="d-cn-ic">${this._designIcon(p)}</div>
+          <div class="d-cn-mid">
+            <div class="d-cn-name">${p.name}</div>
+            <div class="num muted d-cn-sub">${pv} ${pointsName}${p.description ? html` · ${p.description}` : ""}</div>
+          </div>
+          <div class="num d-cn-pts">${pv}</div>
+          ${this._editMode ? this._designEditActions(p) : this._designApplyBtn(p, "bad sm")}
+        </div>`;
+    } else {
+      row = html`
+        <div class="d-cp-row" style="--d-accent:${accent}" data-penalty-id="${p.id}">
+          <div class="d-cp-ic">${this._designIcon(p)}</div>
+          <div class="d-cp-name">${p.name}</div>
+          <div class="num d-cp-pts">${pv}</div>
+          ${this._editMode ? this._designEditActions(p) : this._designApplyBtn(p, "sm ghost")}
+        </div>`;
+    }
+
+    const divider = design === "cleanpro" ? html`<div class="divide" style="margin:0"></div>` : "";
+    const editForm = isEditing
+      ? this._renderDesignForm(
+          this._editingPenalty,
+          (k, v) => { this._editingPenalty = { ...this._editingPenalty, [k]: v }; },
+          () => this._cancelEdit(),
+          () => this._saveEdit(),
+          this._t('common.save'))
+      : "";
+    return html`${row}${divider}${editForm}`;
+  }
+
+  _renderDesigned(design) {
+    const hd = _safeColor(this.config.header_color, '#c0392b');
+    const penalties = this._getPenalties();
+    const visible = this._getVisiblePenalties();
+    const child = this._getSelectedChild();
+    const tone = this._designTone(0);
+
+    const icon = design === "console" ? "▼" : design === "cleanpro" ? "－" : "⚠️";
+
+    const header = html`
+      <div class="tmd-hd" style="--ac:${tone}">
+        <span class="ic">${icon}</span>
+        <span class="tt">${this.config.title || this._t('penalties.default_title')}${
+          penalties.length ? html`<small>${penalties.length}</small>` : ""}</span>
+        <button class="btn ghost sm" style="margin-left:auto"
+                title="${this._t('penalties.manage_title')}"
+                @click=${() => { this._editMode = !this._editMode; this._editingPenalty = null; this._showNewForm = false; }}>
+          <ha-icon icon="mdi:pencil"></ha-icon>
+        </button>
+      </div>`;
+
+    const rows = design === "playroom"
+      ? html`<div class="d-pl-list">${visible.map(p => this._renderDesignedRow(p, design))}</div>`
+      : html`${visible.map(p => this._renderDesignedRow(p, design))}`;
+
+    const body = html`
+      ${this._renderDesignTabs(design)}
+      ${visible.length === 0 && !this._showNewForm
+        ? html`<div class="tmd-empty">${this._t('penalties.empty_title')}</div>`
+        : rows}
+      ${this._editMode
+        ? (this._showNewForm
+            ? this._renderDesignForm(
+                this._newForm,
+                (k, v) => { this._newForm = { ...this._newForm, [k]: v }; },
+                () => { this._showNewForm = false; },
+                () => this._saveNew(),
+                this._t('penalties.add_penalty'))
+            : html`<button class="btn ghost sm d-add" style="margin-top:11px"
+                          @click=${this._openNewForm}>
+                <ha-icon icon="mdi:plus"></ha-icon> ${this._t('penalties.new_penalty')}
+              </button>`)
+        : ""}
+      ${child && !this._editMode
+        ? html`<div class="d-foot">${this._t('penalties.applying_to', { childName: child.name, points: child.points, pointsName: this._getPointsName() })}</div>`
+        : ""}`;
+
+    return html`
+      <ha-card class="tmd" style="--hd:${hd}">
+        ${header}
+        <div class="tmd-bd">${body}</div>
+      </ha-card>
+      ${this._toast ? html`<div class="toast">${this._toast}</div>` : ""}`;
+  }
 }
 
 class TaskMatePenaltiesCardEditor extends LitElement {
@@ -731,6 +1020,17 @@ class TaskMatePenaltiesCardEditor extends LitElement {
     return [
       { name: 'entity', selector: { entity: { domain: 'sensor' } } },
       { name: 'title', selector: { text: {} } },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
     ];
   }
 
@@ -738,6 +1038,7 @@ class TaskMatePenaltiesCardEditor extends LitElement {
     const labels = {
       entity: this._t('common.editor.overview_entity'),
       title: this._t('common.editor.card_title'),
+      card_design: this._t('common.design.field_label'),
     };
     return labels[entry.name] ?? entry.name;
   };
@@ -754,6 +1055,7 @@ class TaskMatePenaltiesCardEditor extends LitElement {
     const data = {
       entity: this.config.entity || '',
       title: this.config.title || '',
+      card_design: this.config.card_design || 'global',
     };
     return html`
       <div class="info-note">
@@ -809,6 +1111,7 @@ class TaskMatePenaltiesCardEditor extends LitElement {
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
       if (value === '' || value === null || value === undefined) delete newConfig[key];
+      else if (key === 'card_design' && value === 'global') delete newConfig[key];
       else newConfig[key] = value;
     }
     this._fire(newConfig);

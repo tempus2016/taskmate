@@ -34,7 +34,7 @@ class TaskMateRewardProgressCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host { display: block; }
 
       ha-card { overflow: hidden; }
@@ -392,7 +392,43 @@ class TaskMateRewardProgressCard extends LitElement {
         .big-progress-bar { height: 18px; border-radius: 9px; }
         .child-progress-block { padding: 12px; }
       }
+
+      /* ── Designed (playroom / console / cleanpro) — shared .tmd kit comes
+         from taskmate-design.js styles(); only card-specific layout below. ── */
+      .rp-wrap { text-align: center; }
+      .rp-hero-emoji { font-size: 60px; line-height: 1; margin: 4px 0;
+                       filter: drop-shadow(0 6px 10px rgba(0,0,0,.15)); }
+      .rp-hero-icon { width: 84px; height: 84px; border-radius: 50%; margin: 4px auto;
+                      display: grid; place-items: center; background: var(--tmd-accent);
+                      box-shadow: var(--tmd-shadow); }
+      .rp-hero-icon ha-icon { --mdc-icon-size: 46px; color: #fff; }
+      :host([data-tm-design="console"]) .rp-hero-emoji {
+        filter: drop-shadow(0 0 18px color-mix(in srgb, var(--tmd-accent) 70%, transparent)); }
+      .rp-name { font-size: 24px; color: var(--tmd-accent); }
+      .rp-cost { margin-top: 8px; background: var(--tmd-gold); color: #3a2e26;
+                 border-color: transparent; font-weight: 800; }
+      .rp-bar { height: 24px; margin-top: 16px; }
+      .rp-pct { color: var(--tmd-accent); }
+      .rp-pct-c { font-size: 38px; margin-top: 12px; }
+      .rp-need-c { font-weight: 800; font-size: 15px; margin-top: 2px; }
+      .rp-stat { justify-content: space-between; margin-top: 10px; }
+      .rp-stat .rp-pct { font-size: 34px; }
+      .rp-stat-r { text-align: right; }
+      .rp-frac { font-size: 18px; }
+      .rp-need { font-size: 12px; }
+      .rp-kids { grid-template-columns: repeat(var(--n, 3), 1fr); gap: 9px; margin-top: 16px; }
+      .rp-kid { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
+                border-radius: var(--tmd-radius-sm); padding: 10px; display: flex;
+                flex-direction: column; align-items: center; gap: 4px; }
+      .rp-kid .av { margin: 0 auto 2px; }
+      .rp-kid-pts { font-size: 20px; color: var(--tmd-accent); }
+      .rp-kid-pts span { font-size: 12px; margin-left: 1px; }
+      .rp-kid-name { font-size: 12px; font-weight: 800; }
+      .rp-kid-bar { width: 100%; height: 7px; margin-top: 3px; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -413,6 +449,12 @@ class TaskMateRewardProgressCard extends LitElement {
 
   render() {
     if (!this.hass || !this.config) return html``;
+
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      : "classic";
+    this.setAttribute("data-tm-design", design);
+    if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
     if (!entity) return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div></ha-card>`;
@@ -626,6 +668,118 @@ class TaskMateRewardProgressCard extends LitElement {
       </div>
     `;
   }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns (§card-reward-progress). Wall display
+     for ONE reward, FIXED cost only.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _av(child, tone, size) {
+    const a = (child && child.avatar) || "";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${child.name}">`
+        : ((child && child.name) || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  _renderDesigned(design) {
+    const hd = _safeColor(this.config.header_color, '#00897b');
+    const wrap = (body, icon) => html`
+      <ha-card class="tmd" style="--hd:${hd}">
+        <div class="tmd-hd">
+          <span class="ic">🎯</span>
+          <span class="tt">${this.config.title || this._t('reward_progress.default_title')}<small>${this._t('common.goal')}</small></span>
+        </div>
+        <div class="tmd-bd">${body}</div>
+      </ha-card>`;
+
+    const entity = this.hass.states[this.config.entity];
+    if (!entity) return wrap(html`<div class="tmd-empty">${this._t('common.entity_not_found', { entity: this.config.entity })}</div>`);
+    if (entity.state === "unavailable" || entity.state === "unknown")
+      return wrap(html`<div class="tmd-empty">${this._t('reward_progress.unavailable')}</div>`);
+
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const rewards = attrs.rewards || [];
+    const children = attrs.children || [];
+    const pointsName = attrs.points_name || this._t("common.points");
+
+    let reward = this.config.reward_id
+      ? rewards.find(r => r.id === this.config.reward_id)
+      : rewards[0];
+    if (!reward) return wrap(html`<div class="tmd-empty">${this._t('reward_progress.no_rewards')}</div>`);
+
+    let showChildren = children;
+    if (this.config.child_id) showChildren = children.filter(c => c.id === this.config.child_id);
+    if (reward.assigned_to?.length) showChildren = showChildren.filter(c => reward.assigned_to.includes(c.id));
+    if (!showChildren.length) showChildren = children;
+
+    const isJackpot = reward.is_jackpot;
+    let cost, have, contributors;
+    if (isJackpot) {
+      cost = reward.calculated_costs ? (Object.values(reward.calculated_costs)[0] ?? reward.cost) : reward.cost;
+      have = showChildren.reduce((s, c) => s + (c.points || 0), 0);
+      contributors = showChildren.map((c, i) => ({ child: c, points: c.points || 0, tone: this._designTone(i) }));
+    } else {
+      const ref = showChildren[0];
+      cost = (ref && reward.calculated_costs?.[ref.id]) ?? reward.cost;
+      contributors = showChildren.map((c, i) => ({
+        child: c, points: c.points || 0, tone: this._designTone(i),
+        cost: reward.calculated_costs?.[c.id] ?? reward.cost,
+      }));
+      have = contributors.length === 1 ? contributors[0].points
+        : contributors.reduce((s, c) => s + c.points, 0);
+      if (contributors.length === 1) cost = contributors[0].cost;
+    }
+    const pct = cost > 0 ? Math.min(100, Math.round((have / cost) * 100)) : 0;
+    const remaining = Math.max(0, cost - have);
+
+    return wrap(html`${this._designBody(reward, design, cost, have, pct, remaining, contributors, pointsName)}`);
+  }
+
+  _designBody(reward, design, cost, have, pct, remaining, contributors, pointsName) {
+    const icon = reward.icon || "mdi:gift";
+    const isIcon = typeof icon === "string" && icon.startsWith("mdi:");
+    const hero = isIcon
+      ? html`<div class="rp-hero-icon"><ha-icon icon="${icon}"></ha-icon></div>`
+      : html`<div class="rp-hero-emoji">${icon}</div>`;
+
+    return html`
+      <div class="rp-wrap">
+        ${hero}
+        <div class="big rp-name">${reward.name}</div>
+        <div class="chip rp-cost">⭐ ${cost} ${pointsName}</div>
+        <div class="bar rp-bar"><i style="width:${pct}%;${pct >= 100 ? 'background:var(--tmd-good)' : ''}"></i></div>
+        ${design === "cleanpro"
+          ? html`<div class="row rp-stat">
+              <div class="big rp-pct">${pct}%</div>
+              <div class="rp-stat-r">
+                <div class="num rp-frac">${have} / ${cost}</div>
+                <div class="muted rp-need">${this._t('reward_progress.more_needed', { amount: remaining })}</div>
+              </div>
+            </div>`
+          : html`
+            <div class="big rp-pct rp-pct-c">${pct}%</div>
+            <div class="rp-need rp-need-c">${remaining > 0
+              ? this._t('reward_progress.more_needed', { amount: remaining })
+              : this._t('reward_progress.ready_to_claim')}</div>`}
+
+        <div class="grid rp-kids" style="--n:${contributors.length}">
+          ${contributors.map((c) => html`
+            <div class="rp-kid" style="--ac:${c.tone}">
+              ${this._av(c.child, c.tone, 36)}
+              <div class="big rp-kid-pts">${c.points}<span>⭐</span></div>
+              <div class="rp-kid-name">${c.child.name}</div>
+              ${design === "cleanpro" && !reward.is_jackpot && c.cost > 0
+                ? html`<div class="bar rp-kid-bar"><i style="width:${Math.min(100, Math.round((c.points / c.cost) * 100))}%;background:${c.tone}"></i></div>` : ''}
+            </div>`)}
+        </div>
+      </div>`;
+  }
 }
 
 class TaskMateRewardProgressCardEditor extends LitElement {
@@ -691,6 +845,17 @@ class TaskMateRewardProgressCardEditor extends LitElement {
           },
         },
       },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
     ];
   }
 
@@ -700,6 +865,7 @@ class TaskMateRewardProgressCardEditor extends LitElement {
       title: this._t('common.editor.card_title'),
       reward_id: this._t('reward_progress.editor.reward_to_display'),
       child_id: this._t('common.editor.filter_by_child'),
+      card_design: this._t('common.design.field_label'),
     };
     return labels[entry.name] ?? entry.name;
   };
@@ -720,6 +886,7 @@ class TaskMateRewardProgressCardEditor extends LitElement {
       title: this.config.title || '',
       reward_id: this.config.reward_id || '',
       child_id: this.config.child_id || '',
+      card_design: this.config.card_design || 'global',
     };
     return html`
       <ha-form
@@ -771,6 +938,7 @@ class TaskMateRewardProgressCardEditor extends LitElement {
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
       if (value === '' || value === null || value === undefined) delete newConfig[key];
+      else if (key === 'card_design' && value === 'global') delete newConfig[key];
       else newConfig[key] = value;
     }
     this.dispatchEvent(new CustomEvent('config-changed', {

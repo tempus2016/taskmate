@@ -48,7 +48,7 @@ class TaskMateRewardsCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
         --reward-purple: #9b59b6;
@@ -900,7 +900,43 @@ class TaskMateRewardsCard extends LitElement {
         gap: 2px;
         font-weight: 600;
       }
+
+      /* ── Designed (playroom / console / cleanpro) — shared .tmd kit comes
+         from taskmate-design.js styles(); only card-specific layout below. ── */
+      .rw-list { display: flex; flex-direction: column; gap: 11px; }
+      .rw-sel { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
+                border-radius: var(--tmd-radius-sm); padding: 9px 12px; }
+      .rw-sel-name { flex: 1; min-width: 0; font-weight: 800; }
+      .rw-card { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
+                 border-radius: var(--tmd-radius-sm); padding: 13px; display: flex;
+                 flex-direction: column; gap: 9px; }
+      .rw-card.rw-unavail { opacity: 0.55; }
+      .rw-jackpot { border: 2px dashed var(--tmd-accent);
+                    background: color-mix(in srgb, var(--tmd-accent) 9%, var(--tmd-surface-2)); }
+      .rw-top { align-items: flex-start; }
+      .rw-emoji { font-size: 28px; line-height: 1; flex: none; }
+      .rw-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+      .rw-name { font-weight: 800; font-size: 15px; }
+      .rw-desc { font-size: 12px; }
+      .rw-avail { align-self: flex-start; font-size: 11px; }
+      .rw-avail-warn { background: color-mix(in srgb, var(--tmd-warn) 16%, transparent);
+                       color: var(--tmd-warn); }
+      .rw-avail-bad { background: color-mix(in srgb, var(--tmd-bad) 16%, transparent);
+                      color: var(--tmd-bad); }
+      .rw-cost { flex: none; align-self: flex-start; background: var(--tmd-gold);
+                 color: #3a2e26; border-color: transparent; font-weight: 800; }
+      .rw-pool-bar { height: 14px; display: flex; gap: 0; padding: 0; }
+      .rw-pool-bar > i { border-radius: 0; }
+      .rw-pool-foot { flex-wrap: wrap; gap: 6px; }
+      .rw-contrib { gap: 5px; font-size: 11px; }
+      .rw-foot { gap: 8px; }
+      .rw-status { font-size: 12px; }
+      .rw-status-good { color: var(--tmd-good); font-weight: 800; }
+      .rw-pool-btns { gap: 6px; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -939,6 +975,12 @@ class TaskMateRewardsCard extends LitElement {
     if (!this.hass || !this.config) {
       return html``;
     }
+
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      : "classic";
+    this.setAttribute("data-tm-design", design);
+    if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
 
@@ -1508,6 +1550,343 @@ class TaskMateRewardsCard extends LitElement {
       </div>
     `;
   }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns (§card-rewards). FIXED COSTS ONLY —
+     never any dynamic/surge pricing. All existing claim/pool/confirm logic is
+     preserved: designed buttons call the SAME handlers as classic.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _av(child, tone, size) {
+    const a = (child && child.avatar) || "";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${child.name}">`
+        : ((child && child.name) || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  /**
+   * Compute all per-reward display data once, mirroring the classic
+   * _renderRewardRow calculations. FIXED COST is reward.cost (via
+   * _getDisplayCost — static only). Returns everything the designed rows need.
+   */
+  _rewardData(reward, children) {
+    const assignedTo = reward.assigned_to || [];
+    const isJackpot = reward.is_jackpot || false;
+    const cardForcesPool = this.config.enable_pool_mode === true;
+    const enablePoolMode = cardForcesPool || reward.pool_enabled === true;
+    const displayCost = this._getDisplayCost(reward, children);
+
+    const relevantChildren = assignedTo.length === 0
+      ? children
+      : children.filter(c => assignedTo.includes(c.id));
+
+    const childId = this.config?.child_id || this._selectedChildId;
+    const relevantChild = childId
+      ? children.find(c => c.id === childId)
+      : relevantChildren[0];
+
+    const poolAllocations = reward.pool_allocations || {};
+    const jackpotPoolTotal = typeof reward.jackpot_pool_total === 'number' ? reward.jackpot_pool_total : 0;
+
+    let currentStars = 0;
+    const childContributions = [];
+
+    if (isJackpot) {
+      const sharePerChild = relevantChildren.length > 0
+        ? Math.round(displayCost / relevantChildren.length)
+        : displayCost;
+      relevantChildren.forEach((child, index) => {
+        const points = enablePoolMode
+          ? (poolAllocations[child.id] || 0)
+          : (child.points || 0);
+        currentStars += points;
+        childContributions.push({
+          name: child.name,
+          child,
+          points,
+          tone: this._designTone(index),
+        });
+      });
+    } else if (enablePoolMode) {
+      currentStars = childId ? (poolAllocations[childId] || 0) : 0;
+    } else if (this.config.child_id) {
+      const fc = children.find(c => c.id === this.config.child_id);
+      currentStars = fc ? (fc.points || 0) : 0;
+    } else if (relevantChildren.length > 0) {
+      currentStars = relevantChildren[0].points || 0;
+    }
+
+    const percentage = displayCost > 0 ? Math.min((currentStars / displayCost) * 100, 100) : 0;
+
+    const pcAttrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
+      || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    const pendingClaims = pcAttrs.pending_reward_claims || [];
+    const hasPendingClaim = pendingClaims.some(c =>
+      c.reward_id === reward.id && (!childId || c.child_id === childId)
+    );
+
+    const spendable = relevantChild
+      ? (typeof relevantChild.spendable_balance === 'number'
+          ? relevantChild.spendable_balance
+          : (relevantChild.points || 0) - (relevantChild.committed_points || 0))
+      : 0;
+    const poolFull = enablePoolMode && (
+      isJackpot ? jackpotPoolTotal >= displayCost : currentStars >= displayCost
+    );
+
+    const committedPoints = relevantChild?.committed_points || 0;
+    const availablePoints = (relevantChild?.points || 0) - committedPoints;
+    const canAfford = !!relevantChild && availablePoints >= displayCost;
+
+    const isSoldOut = reward.is_sold_out === true;
+    const isExpired = reward.is_expired === true;
+    const isUnavailable = isSoldOut || isExpired;
+    const daysUntilExpiry = (typeof reward.days_until_expiry === 'number')
+      ? reward.days_until_expiry : null;
+
+    return {
+      reward, isJackpot, enablePoolMode, displayCost, relevantChildren, relevantChild,
+      childId, currentStars, childContributions, percentage, hasPendingClaim,
+      spendable, poolFull, canAfford, isSoldOut, isExpired, isUnavailable, daysUntilExpiry,
+      showClaim: !enablePoolMode && !hasPendingClaim && childId && !isUnavailable,
+      showPoolControls: enablePoolMode && childId && !hasPendingClaim && !isUnavailable,
+    };
+  }
+
+  /** Designed availability chip label/tone for a reward, or null. */
+  _designAvail(d) {
+    if (d.isExpired) return { label: this._t('rewards.expired'), tone: 'muted' };
+    if (d.isSoldOut) return { label: this._t('rewards.sold_out'), tone: 'muted' };
+    if (typeof d.reward.quantity === 'number' && d.reward.quantity > 0 && d.reward.quantity <= 3) {
+      return { label: this._t('rewards.only_n_left', { count: d.reward.quantity }), tone: 'bad' };
+    }
+    if (typeof d.daysUntilExpiry === 'number' && d.daysUntilExpiry >= 0 && d.daysUntilExpiry <= 7) {
+      const label = d.daysUntilExpiry === 0
+        ? this._t('rewards.expires_today')
+        : (d.daysUntilExpiry === 1
+            ? this._t('rewards.expires_in_days', { count: d.daysUntilExpiry })
+            : this._t('rewards.expires_in_days_plural', { count: d.daysUntilExpiry }));
+      return { label, tone: 'warn' };
+    }
+    return null;
+  }
+
+  _renderDesigned(design) {
+    const entity = this.hass.states[this.config.entity];
+    const hd = this.config.header_color || '#e67e22';
+
+    if (!entity) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${this._designHeader(0, hd)}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div>
+      </ha-card>`;
+    }
+
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const allRewards = attrs.rewards || [];
+    const children = attrs.children || [];
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    const pointsName = attrs.points_name || this._t("common.stars");
+
+    let rewards = allRewards;
+    if (this.config.child_id) {
+      rewards = allRewards.filter((reward) => {
+        const assignedTo = reward.assigned_to || [];
+        return assignedTo.length === 0 || assignedTo.includes(this.config.child_id);
+      });
+    }
+
+    const sortedRewards = [...rewards].sort((a, b) => {
+      if (a.is_jackpot && !b.is_jackpot) return -1;
+      if (!a.is_jackpot && b.is_jackpot) return 1;
+      return this._getDisplayCost(a, children) - this._getDisplayCost(b, children);
+    });
+
+    const cardForcesPool = this.config.enable_pool_mode === true;
+    const activeChildId = this.config.child_id || this._selectedChildId;
+    const activeChild = activeChildId ? children.find((c) => c.id === activeChildId) : null;
+    const anyPoolReward = sortedRewards.some((r) => cardForcesPool || r.pool_enabled === true);
+
+    const header = this._designHeader(rewards.length, hd);
+
+    const body = sortedRewards.length === 0
+      ? html`<div class="tmd-empty">${this._t('rewards.empty_title')}<br>${this._t('rewards.empty_subtitle')}</div>`
+      : html`
+        ${(anyPoolReward && activeChild) || activeChild
+          ? this._designChildSelector(activeChild, pointsIcon, pointsName, design)
+          : ''}
+        <div class="rw-list">
+          ${sortedRewards.map((r) => this._designRewardRow(r, children, pointsIcon, pointsName, design))}
+        </div>`;
+
+    return html`
+      <ha-card class="tmd" style="--hd:${hd}">
+        ${header}
+        <div class="tmd-bd">${body}</div>
+      </ha-card>
+      ${this._renderConfirmDialog(pointsIcon, pointsName)}
+    `;
+  }
+
+  _designHeader(count, hd) {
+    return html`
+      <div class="tmd-hd">
+        <span class="ic">🎁</span>
+        <span class="tt">${this.config.title || this._t('rewards.default_title')}${count
+          ? html`<small>${count === 1
+              ? this._t('rewards.reward_count_singular', { count })
+              : this._t('rewards.reward_count_plural', { count })}</small>` : ''}</span>
+      </div>`;
+  }
+
+  _designChildSelector(child, pointsIcon, pointsName, design) {
+    const spendable = typeof child.spendable_balance === 'number'
+      ? child.spendable_balance : (child.points || 0);
+    return html`
+      <div class="row rw-sel" style="--ac:${this._designTone(0)}">
+        ${this._av(child, this._designTone(0), 38)}
+        <div class="rw-sel-name">${child.name}</div>
+        <span class="chip soft">
+          <span style="color:var(--tmd-gold)">⭐</span>
+          ${this._t('rewards.spendable_balance')}: ${spendable}
+        </span>
+      </div>`;
+  }
+
+  _designRewardRow(reward, children, pointsIcon, pointsName, design) {
+    const d = this._rewardData(reward, children);
+    const tone = this._designTone((reward.id || reward.name || '').length);
+    const isLoading = this._loading[reward.id];
+    const avail = this._designAvail(d);
+    const emoji = "🎁";
+
+    const costBadge = html`<span class="chip rw-cost">⭐ ${d.displayCost} ${pointsName}</span>`;
+
+    const bar = d.isJackpot
+      ? html`<div class="bar rw-pool-bar">
+          ${d.childContributions.map((c) => {
+            const w = d.displayCost > 0 ? Math.min((c.points / d.displayCost) * 100, 100) : 0;
+            return html`<i style="width:${w}%;background:${c.tone}"></i>`;
+          })}
+        </div>`
+      : html`<div class="bar"><i style="width:${d.percentage}%;${d.canAfford ? 'background:var(--tmd-good)' : ''}"></i></div>`;
+
+    const claimBtn = d.showClaim
+      ? html`<button class="btn sm ${d.canAfford ? 'good' : ''}"
+          ?disabled="${!d.canAfford || isLoading}"
+          @click="${(e) => { e.stopPropagation(); this._promptClaim(reward, d.relevantChild); }}"
+          title="${d.canAfford ? this._t('rewards.claim_reward') : this._t('rewards.not_enough_points')}"
+        >${this._t('rewards.claim_reward')}</button>`
+      : '';
+
+    const poolControls = d.showPoolControls
+      ? (d.poolFull
+        ? html`<button class="btn sm good"
+            ?disabled="${isLoading}"
+            @click="${(e) => { e.stopPropagation(); this._handleRedeem(reward, d.relevantChild); }}"
+          >${this._t('rewards.redeem')}</button>`
+        : html`<span class="row rw-pool-btns">
+            ${[1, 5, 10].map((amt) => {
+              const disabled = !d.relevantChild || d.spendable < amt || this._loading[`${reward.id}_alloc`];
+              return html`<button class="btn sm ${amt === 10 ? '' : 'ghost'}"
+                ?disabled="${disabled}"
+                title="${this._depositTooltip({ child: d.relevantChild, spendable: d.spendable, amt, isAllocLoading: this._loading[`${reward.id}_alloc`] })}"
+                @click="${(e) => { e.stopPropagation(); this._handleAllocate(reward, d.relevantChild, amt); }}"
+              >+${amt}</button>`;
+            })}
+          </span>`)
+      : '';
+
+    const statusLine = d.hasPendingClaim
+      ? html`<span class="muted rw-status">⏳ ${this._t('rewards.awaiting_approval')}</span>`
+      : d.canAfford && d.showClaim
+        ? html`<span class="rw-status rw-status-good">${this._t('reward_progress.ready_to_claim')}</span>`
+        : html`<span class="muted rw-status">${d.currentStars} / ${d.displayCost}</span>`;
+
+    return html`
+      <div class="rw-card ${d.isJackpot ? 'rw-jackpot' : ''} ${d.isUnavailable ? 'rw-unavail' : ''}"
+           style="--ac:${tone}">
+        <div class="row rw-top">
+          <span class="rw-emoji">${emoji}</span>
+          <div class="rw-info">
+            <div class="rw-name">${reward.name}</div>
+            ${reward.description ? html`<div class="muted rw-desc">${reward.description}</div>` : ''}
+            ${avail ? html`<span class="chip soft rw-avail rw-avail-${avail.tone}">${avail.label}</span>` : ''}
+          </div>
+          ${costBadge}
+        </div>
+        ${bar}
+        ${d.isJackpot ? html`
+          <div class="row rw-pool-foot">
+            ${d.childContributions.map((c) => html`
+              <span class="chip rw-contrib">${this._av(c.child, c.tone, 16)} ${c.points}</span>`)}
+          </div>` : ''}
+        <div class="row rw-foot">
+          ${statusLine}
+          <span style="flex:1"></span>
+          ${claimBtn}${poolControls}
+        </div>
+      </div>`;
+  }
+
+  /** The confirm dialog markup, shared by classic + designed paths. */
+  _renderConfirmDialog(pointsIcon, pointsName) {
+    if (!this._pendingClaim) return '';
+    return html`
+      <div class="confirm-overlay" @click="${this._cancelClaim}">
+        <div class="confirm-dialog" @click="${(e) => e.stopPropagation()}">
+          <ha-icon class="dialog-icon" icon="mdi:gift-outline"></ha-icon>
+          <div class="dialog-title">${this._t('rewards.confirm_title')}</div>
+          <div class="dialog-body">
+            ${(() => {
+              const r = this._pendingClaim;
+              const child = r._child;
+              const currentPoints = child ? (typeof child.spendable_balance === 'number' ? child.spendable_balance : (child.points || 0)) : null;
+              const cost = r.cost;
+              const remaining = currentPoints !== null ? currentPoints - cost : null;
+              return html`
+                <div style="margin-bottom: 12px;">${this._t('rewards.confirm_body', { name: r.name })}</div>
+                ${currentPoints !== null ? html`
+                  <div class="dialog-points-summary">
+                    <div class="dialog-points-row">
+                      <span>${this._t('rewards.confirm_your_points', { name: pointsName })}</span>
+                      <span class="points-val">
+                        <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
+                        ${currentPoints}
+                      </span>
+                    </div>
+                    <div class="dialog-points-row cost">
+                      <span>${this._t('rewards.confirm_cost')}</span>
+                      <span class="points-val">
+                        <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
+                        −${cost}
+                      </span>
+                    </div>
+                    <div class="dialog-points-row remaining">
+                      <span>${this._t('rewards.confirm_remaining')}</span>
+                      <span class="points-val">
+                        <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
+                        ${remaining}
+                      </span>
+                    </div>
+                  </div>
+                ` : ''}
+              `;
+            })()}
+          </div>
+          <div class="dialog-buttons">
+            <button class="btn-cancel" @click="${this._cancelClaim}">${this._t('common.cancel')}</button>
+            <button class="btn-confirm" @click="${this._confirmClaim}">${this._t('rewards.confirm_claim_btn')}</button>
+          </div>
+        </div>
+      </div>`;
+  }
 }
 
 // Card Editor for visual configuration in Lovelace UI
@@ -1635,6 +2014,17 @@ class TaskMateRewardsCardEditor extends LitElement {
         selector: { select: { options: childOptions, mode: 'dropdown' } },
       },
       {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
+      {
         name: 'show_child_badges',
         selector: { boolean: {} },
       },
@@ -1650,6 +2040,7 @@ class TaskMateRewardsCardEditor extends LitElement {
       entity: this._t('rewards.editor.entity'),
       title: this._t('rewards.editor.title'),
       child_id: this._t('rewards.editor.filter_by_child'),
+      card_design: this._t('common.design.field_label'),
       show_child_badges: this._t('rewards.editor.show_child_badges'),
       enable_pool_mode: this._t('rewards.editor.enable_pool_mode'),
     };
@@ -1676,6 +2067,7 @@ class TaskMateRewardsCardEditor extends LitElement {
       entity: this.config.entity || '',
       title: this.config.title || '',
       child_id: this.config.child_id || '__all__',
+      card_design: this.config.card_design || 'global',
       show_child_badges: this.config.show_child_badges !== false,
       enable_pool_mode: this.config.enable_pool_mode === true,
     };
@@ -1734,6 +2126,8 @@ class TaskMateRewardsCardEditor extends LitElement {
         value === '' || value === null || value === undefined
         || (key === 'child_id' && value === '__all__')
       ) {
+        delete newConfig[key];
+      } else if (key === 'card_design' && value === 'global') {
         delete newConfig[key];
       } else if (key === 'show_child_badges' && value === true) {
         // Default is true — omit to keep config minimal

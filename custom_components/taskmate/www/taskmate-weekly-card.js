@@ -39,7 +39,7 @@ class TaskMateWeeklyCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
         --wk-purple: #9b59b6;
@@ -259,7 +259,48 @@ class TaskMateWeeklyCard extends LitElement {
 
       .error-state { color: var(--error-color, #f44336); }
       .error-state ha-icon, .empty-state ha-icon { --mdc-icon-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+
+      /* Shared .tmd kit + design tokens are provided by taskmate-design.js styles(). */
+
+      /* Weekly — designed stat grid (playroom/console/cleanpro) */
+      .wk-d-stats { display: grid; gap: 9px; }
+      .wk-d-stats.g4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+      .wk-d-stats.g2 { grid-template-columns: 1fr 1fr; }
+      .wk-pl-stat { background: var(--tmd-surface-2); border-radius: 16px; padding: 11px; text-align: center; }
+      .wk-pl-stat .v { font-family: var(--tmd-font-display); font-weight: 800; font-size: 24px; line-height: 1; color: var(--tmd-accent); }
+      .wk-pl-stat .k { font-size: 11px; font-weight: 800; margin-top: 4px; }
+
+      /* Weekly — chart wrap */
+      .wk-chart-pl { background: var(--tmd-surface-2); border-radius: 18px; padding: 13px; margin-top: 11px; }
+      .wk-chart-cn { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border); border-radius: 8px; padding: 12px; margin-top: 9px; }
+      .wk-chart-cp { margin-top: 14px; }
+      .wk-chart-title { font-weight: 800; font-size: 13px; margin-bottom: 10px; }
+      .wk-chart-title.cn { font-family: var(--tmd-font-mono); font-size: 11px; margin-bottom: 10px; color: var(--tmd-dim); text-transform: uppercase; letter-spacing: .04em; }
+      .wk-chart-title.cp { font-size: 12px; margin-bottom: 10px; color: var(--tmd-dim); font-weight: 600; }
+      .wk-bars { display: flex; align-items: flex-end; gap: 7px; }
+      .wk-bars.cn { gap: 6px; height: 92px; }
+      .wk-bars.pl { gap: 7px; height: 96px; }
+      .wk-bars.cp { gap: 8px; height: 84px; }
+      .wk-bcol { flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+      .wk-bcol .lbl { font-size: 10px; font-weight: 800; margin-top: 5px; }
+      .wk-bcol .lbl.cn { font-family: var(--tmd-font-mono); font-size: 9px; color: var(--tmd-dim); font-weight: 600; }
+      .wk-bcol .lbl.cp { font-size: 10px; color: var(--tmd-dim); font-weight: 600; }
+      .wk-bcol .val { font-size: 9px; font-weight: 700; color: var(--tmd-dim); min-height: 12px; }
+      .wk-fill { border-radius: 8px 8px 4px 4px; min-height: 3px; background: var(--tmd-accent); }
+      .wk-fill.today { background: var(--tmd-good); }
+      .wk-fill.cn { border-radius: 3px; background: linear-gradient(180deg, var(--tmd-accent), color-mix(in srgb, var(--tmd-accent) 50%, var(--tmd-accent2))); box-shadow: 0 0 10px color-mix(in srgb, var(--tmd-accent) 50%, transparent); }
+      .wk-fill.cn.today { background: linear-gradient(180deg, var(--tmd-accent2), var(--tmd-accent)); box-shadow: 0 0 14px color-mix(in srgb, var(--tmd-accent2) 60%, transparent); }
+      .wk-fill.cp { border-radius: 4px; background: var(--tmd-accent); }
+      .wk-fill.cp.today { background: var(--tmd-accent2); }
+
+      /* Weekly — per-child rows */
+      .wk-kids { display: grid; gap: 8px; margin-top: 11px; }
+      .wk-kids .name { flex: 1; min-width: 0; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .wk-kids.cp .name { font-weight: 600; font-size: 13px; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -288,6 +329,12 @@ class TaskMateWeeklyCard extends LitElement {
     if (entity.state === "unavailable" || entity.state === "unknown") {
       return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.unavailable')}</div></div></ha-card>`;
     }
+
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      : "classic";
+    this.setAttribute("data-tm-design", design);
+    if (design !== "classic") return this._renderDesigned(design, entity);
 
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
@@ -448,6 +495,188 @@ class TaskMateWeeklyCard extends LitElement {
     `;
   }
 
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns/frag/10-weekly.html.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _av(child, tone, size) {
+    const a = child.avatar || "";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${child.name}">`
+        : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  _weekData(entity, tz) {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    let children = attrs.children || [];
+    const chores = attrs.chores || [];
+    const pointsName = attrs.points_name || this._t("common.stars");
+    const rewardsClaimed = (attrs.rewards_claimed || attrs.recent_rewards || []);
+
+    let allCompletions = [...(attrs.recent_completions || attrs.todays_completions || [])];
+    const seen = new Set();
+    allCompletions = allCompletions.filter(comp => {
+      if (seen.has(comp.completion_id)) return false;
+      seen.add(comp.completion_id); return true;
+    });
+
+    if (this.config.child_id) {
+      children = children.filter(c => c.id === this.config.child_id);
+      allCompletions = allCompletions.filter(c => c.child_id === this.config.child_id);
+    }
+
+    const weekDays = this._getWeekDays(tz);
+    const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+
+    const chorePointsMap = {};
+    chores.forEach(ch => { chorePointsMap[ch.id] = ch.points || 0; });
+
+    const weekCompletions = allCompletions.filter(c => {
+      if (!c.completed_at) return false;
+      const day = new Date(c.completed_at).toLocaleDateString("en-CA", { timeZone: tz });
+      return weekDays.some(d => d.key === day);
+    });
+    const approved = weekCompletions.filter(c => c.approved);
+    const ptsOf = (c) => (c.points !== undefined ? c.points : (chorePointsMap[c.chore_id] || 0));
+
+    const weekPoints = approved.reduce((s, c) => s + ptsOf(c), 0);
+    const weekChores = approved.length;
+    const daysActive = new Set(approved.map(c =>
+      new Date(c.completed_at).toLocaleDateString("en-CA", { timeZone: tz })
+    )).size;
+
+    // Rewards claimed this week
+    let weekRewards = 0;
+    rewardsClaimed.forEach(r => {
+      const ts = r.claimed_at || r.timestamp || r.completed_at;
+      if (!ts) return;
+      const day = new Date(ts).toLocaleDateString("en-CA", { timeZone: tz });
+      if (this.config.child_id && r.child_id && r.child_id !== this.config.child_id) return;
+      if (weekDays.some(d => d.key === day)) weekRewards += 1;
+    });
+
+    // Points per day for the chart
+    const pointsByDay = {};
+    approved.forEach(c => {
+      const day = new Date(c.completed_at).toLocaleDateString("en-CA", { timeZone: tz });
+      pointsByDay[day] = (pointsByDay[day] || 0) + ptsOf(c);
+    });
+    const maxPts = Math.max(1, ...weekDays.map(d => pointsByDay[d.key] || 0));
+
+    // Per-child weekly totals
+    const kids = children.map(child => {
+      const cc = approved.filter(c => c.child_id === child.id);
+      return { child, points: cc.reduce((s, c) => s + ptsOf(c), 0) };
+    }).sort((a, b) => b.points - a.points);
+
+    return { weekDays, todayKey, pointsByDay, maxPts, weekPoints, weekChores, daysActive, weekRewards, pointsName, kids };
+  }
+
+  _renderDesigned(design, entity) {
+    const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const hd = _safeColor(this.config.header_color, "#27ae60");
+    const d = this._weekData(entity, tz);
+    const weekLabel = this._getWeekLabel(d.weekDays, tz);
+    const title = this.config.title || this._t("weekly.default_title");
+
+    const icon = design === "playroom" ? "📅" : design === "console" ? "▦" : "▤";
+    const header = html`
+      <div class="tmd-hd">
+        <span class="ic">${icon}</span>
+        <span class="tt">${title}<small>${weekLabel}</small></span>
+        ${design === "console"
+          ? html`<span class="pill">${d.weekPoints} ${d.pointsName}</span>` : ""}
+      </div>`;
+
+    const stats = [
+      { k: this._t("weekly.stat_days_active"), v: `${d.daysActive}/7` },
+      { k: d.pointsName, v: d.weekPoints },
+      { k: this._t("weekly.stat_rewards"), v: d.weekRewards },
+      { k: this._t("weekly.stat_chores"), v: d.weekChores },
+    ];
+
+    const cnLike = design !== "playroom"; // console + cleanpro use the .stat kit tile
+    const statsBlock = cnLike
+      ? html`<div class="wk-d-stats g4">
+          ${stats.map(s => html`
+            <div class="stat">
+              <div class="k">${s.k}</div>
+              <div class="v ${design === "console" ? "num" : ""}"
+                style="${design === "console" ? "color:var(--tmd-accent)" : ""}">${s.v}</div>
+            </div>`)}
+        </div>`
+      : html`<div class="wk-d-stats g2">
+          ${stats.map(s => html`
+            <div class="wk-pl-stat"><div class="v">${s.v}</div><div class="k">${s.k}</div></div>`)}
+        </div>`;
+
+    const chart = this._wkChart(design, d);
+    const kids = this._wkKids(design, d);
+
+    return html`<ha-card class="tmd" style="--hd:${hd}">
+      ${header}
+      <div class="tmd-bd">
+        ${statsBlock}
+        ${chart}
+        ${kids}
+      </div>
+    </ha-card>`;
+  }
+
+  _wkChart(design, d) {
+    const wrapClass = design === "playroom" ? "wk-chart-pl" : design === "console" ? "wk-chart-cn" : "wk-chart-cp";
+    const titleClass = design === "playroom" ? "" : design === "console" ? "cn" : "cp";
+    const barsClass = design === "playroom" ? "pl" : design === "console" ? "cn" : "cp";
+    const lblMode = design === "console" ? "cn" : design === "cleanpro" ? "cp" : "";
+    return html`
+      <div class="${wrapClass}">
+        <div class="wk-chart-title ${titleClass}">${this._t("weekly.section_points_per_day")}</div>
+        <div class="wk-bars ${barsClass}">
+          ${d.weekDays.map(day => {
+            const pts = d.pointsByDay[day.key] || 0;
+            const isToday = day.key === d.todayKey;
+            const isFuture = day.key > d.todayKey;
+            const pct = isFuture ? 0 : Math.round((pts / d.maxPts) * 100);
+            const h = isFuture ? 3 : Math.max(pts > 0 ? 8 : 3, pct);
+            return html`
+              <div class="wk-bcol">
+                ${design === "playroom" ? html`<span class="val">${!isFuture && pts > 0 ? pts : ""}</span>` : ""}
+                <div class="wk-fill ${barsClass} ${isToday ? "today" : ""}" style="height:${h}%"></div>
+                <span class="lbl ${lblMode}">${design === "console" ? day.short.toUpperCase() : day.short}</span>
+              </div>`;
+          })}
+        </div>
+      </div>`;
+  }
+
+  _wkKids(design, d) {
+    if (!d.kids.length) return "";
+    const wrapClass = design === "cleanpro" ? "wk-kids cp" : "wk-kids";
+    const valColor = design === "cleanpro" ? "var(--tmd-good)" : "var(--tmd-accent)";
+    const av = design === "playroom" ? 34 : design === "console" ? 30 : 28;
+    return html`
+      ${design === "cleanpro" ? html`<div class="divide"></div>` : ""}
+      <div class="${wrapClass}">
+        ${d.kids.map((r, i) => {
+          const tone = this._designTone(i);
+          return html`
+            <div class="row" style="--ac:${tone}">
+              ${this._av(r.child, tone, av)}
+              <div class="name">${r.child.name}</div>
+              ${design === "playroom"
+                ? html`<div class="chip soft">+${r.points} ⭐</div>`
+                : html`<div class="num" style="color:${valColor}">+${r.points}</div>`}
+            </div>`;
+        })}
+      </div>`;
+  }
+
   _getWeekDays(tz) {
     const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: tz });
     const today = new Date(todayKey + "T12:00:00"); // noon avoids DST edge cases
@@ -534,6 +763,17 @@ class TaskMateWeeklyCardEditor extends LitElement {
           },
         },
       },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
     ];
   }
 
@@ -542,6 +782,7 @@ class TaskMateWeeklyCardEditor extends LitElement {
       entity: this._t('common.editor.overview_entity'),
       title: this._t('weekly.editor.title'),
       child_id: this._t('common.editor.filter_by_child'),
+      card_design: this._t('common.design.field_label'),
     };
     return labels[entry.name] ?? entry.name;
   };
@@ -560,6 +801,7 @@ class TaskMateWeeklyCardEditor extends LitElement {
       entity: this.config.entity || '',
       title: this.config.title || '',
       child_id: this.config.child_id || '__all__',
+      card_design: this.config.card_design || 'global',
     };
     return html`
       <ha-form
@@ -613,6 +855,7 @@ class TaskMateWeeklyCardEditor extends LitElement {
       if (
         value === '' || value === null || value === undefined
         || (key === 'child_id' && value === '__all__')
+        || (key === 'card_design' && value === 'global')
       ) {
         delete newConfig[key];
       } else {

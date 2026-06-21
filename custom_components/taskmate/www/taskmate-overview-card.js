@@ -47,7 +47,7 @@ class TaskMateOverviewCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
         --ov-purple: #9b59b6;
@@ -303,7 +303,54 @@ class TaskMateOverviewCard extends LitElement {
       .btn-complete-behalf[disabled] { opacity: 0.5; pointer-events: none; }
       .child-main.tm-expandable { cursor: pointer; }
       .tm-all-done { font-size: 0.85rem; opacity: 0.6; font-style: italic; padding: 4px 0; }
+
+      /* Shared .tmd kit + design tokens are provided by taskmate-design.js styles(). */
+
+      /* Overview — pending-approvals callout */
+      .ov-alert { display: flex; align-items: center; gap: 11px; border-radius: 16px; padding: 11px 13px; margin-bottom: 12px;
+                  background: color-mix(in srgb, var(--tmd-bad) 16%, transparent); }
+      .ov-alert.cn { border: 1px solid var(--tmd-bad); border-radius: 8px; padding: 10px 12px;
+                     background: color-mix(in srgb, var(--tmd-bad) 18%, transparent); }
+      .ov-alert.cp { border: 1px solid color-mix(in srgb, var(--tmd-bad) 35%, transparent); border-radius: var(--tmd-radius-sm);
+                     padding: 10px 12px; background: color-mix(in srgb, var(--tmd-bad) 9%, transparent); }
+      .ov-alert .emoji { font-size: 22px; line-height: 1; flex: none; }
+      .ov-alert .mid { flex: 1; min-width: 0; }
+      .ov-alert .ttl { font-weight: 800; color: var(--tmd-bad); }
+      .ov-alert.cn .ttl { font-family: var(--tmd-font-mono); font-size: 13px; }
+      .ov-alert.cp .ttl { font-weight: 600; }
+      .ov-alert .sub { font-size: 12px; }
+      .ov-alert.cn .sub { font-family: var(--tmd-font-mono); font-size: 10px; }
+      .ov-alert .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tmd-bad); flex: none; }
+
+      /* Overview — children grid */
+      .ov-kids { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .ov-kid { text-align: center; padding: 11px; border-radius: 16px; background: var(--tmd-surface-2); }
+      .ov-kid.cn { border: 1px solid var(--tmd-border); border-radius: 10px; }
+      .ov-kid.cp { border: 1px solid var(--tmd-border); border-radius: var(--tmd-radius-sm); }
+      .ov-kid .pts { font-family: var(--tmd-font-display); font-weight: 800; font-size: 20px; line-height: 1; color: var(--tmd-accent); }
+      .ov-kid .pts.num { font-family: var(--tmd-font-mono); font-size: 18px; }
+      .ov-kid .nm { font-weight: 800; font-size: 12.5px; margin-top: 3px; }
+      .ov-kid .nm.cn { font-family: var(--tmd-font-mono); font-size: 9px; color: var(--tmd-dim); letter-spacing: .06em; font-weight: 600; }
+      .ov-kid .nm.cp { font-weight: 600; font-size: 12px; color: var(--tmd-dim); }
+      .ov-kid .bar { margin-top: 7px; }
+      .ov-kid.cn .bar { height: 7px; }
+      .ov-kid.cp .bar { height: 6px; }
+
+      /* Overview — today summary */
+      .ov-today { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px;
+                  border-radius: 16px; padding: 11px 13px; background: var(--tmd-surface-2); }
+      .ov-today.cn { border: 1px solid var(--tmd-border); border-radius: 10px; }
+      .ov-today.cp { background: transparent; padding: 0; margin-top: 0; }
+      .ov-today .lbl { font-weight: 800; }
+      .ov-today.cn .lbl { font-family: var(--tmd-font-mono); font-size: 11px; letter-spacing: .06em; color: var(--tmd-dim); font-weight: 600; }
+      .ov-today.cp .lbl { font-weight: 600; font-size: 12.5px; color: var(--tmd-dim); }
+      .ov-today .val { font-family: var(--tmd-font-display); font-weight: 800; font-size: 18px; color: var(--tmd-accent); }
+      .ov-today.cn .val { font-family: var(--tmd-font-mono); color: var(--tmd-accent2); }
+      .ov-today.cp .val { font-family: var(--tmd-font-mono); font-size: 15px; font-weight: 700; color: var(--tmd-text); }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -332,6 +379,12 @@ class TaskMateOverviewCard extends LitElement {
     if (entity.state === "unavailable" || entity.state === "unknown") {
       return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.unavailable')}</div></div></ha-card>`;
     }
+
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      : "classic";
+    this.setAttribute("data-tm-design", design);
+    if (design !== "classic") return this._renderDesigned(design, entity);
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     const children = attrs.children || [];
@@ -408,6 +461,173 @@ class TaskMateOverviewCard extends LitElement {
         </div>
       </ha-card>
     `;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns/frag/13-overview.html.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _av(child, tone, size) {
+    const a = child.avatar || "";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${child.name}">`
+        : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  /** Per-child today progress, mirroring the classic tile filtering exactly. */
+  _childProgress(child, chores, completions, attrs) {
+    const todayDow = attrs.today_day_of_week ||
+      new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    const availability = attrs.chore_availability || {};
+    const childChores = chores.filter(c => {
+      const at = Array.isArray(c.assigned_to) ? c.assigned_to.map(String) : [];
+      const assigned = at.length === 0 || at.includes(String(child.id));
+      if (!assigned) return false;
+      if (c.schedule_mode !== 'recurring') {
+        const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
+        if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
+      }
+      if (c.schedule_mode === 'recurring') {
+        const perChild = availability[c.id];
+        if (perChild && perChild[child.id] === false) return false;
+      }
+      return true;
+    });
+    const childChoreIds = new Set(childChores.map(c => c.id));
+    const childCompletions = completions.filter(c => c.child_id === child.id);
+    const completed = childCompletions.filter(c => c.approved && childChoreIds.has(c.chore_id)).length;
+    const total = childChores.length;
+    const pct = total > 0 ? Math.min(Math.round((completed / total) * 100), 100) : 0;
+    return { completed, total, pct };
+  }
+
+  _renderDesigned(design, entity) {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const children = attrs.children || [];
+    const chores = attrs.chores || [];
+    const completions = [...(attrs.todays_completions || [])];
+    const hd = _safeColor(this.config.header_color, "#8e44ad");
+
+    if (children.length === 0) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${this._ovHeader(design)}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.no_children')}</div></div>
+      </ha-card>`;
+    }
+
+    let pendingApprovals = 0;
+    if (this.config.approvals_entity) {
+      const appEntity = this.hass.states[this.config.approvals_entity];
+      pendingApprovals = appEntity?.attributes?.chore_completions?.length || 0;
+    } else {
+      pendingApprovals = (attrs.chore_completions || completions.filter(c => !c.approved)).length;
+    }
+
+    // Aggregate today's progress across all children
+    let doneTotal = 0;
+    let choreTotal = 0;
+    const kids = children.map((child, i) => {
+      const p = this._childProgress(child, chores, completions, attrs);
+      doneTotal += p.completed;
+      choreTotal += p.total;
+      return { child, points: child.points || 0, pct: p.pct, tone: this._designTone(i) };
+    });
+    const overallPct = choreTotal > 0 ? Math.round((doneTotal / choreTotal) * 100) : 0;
+
+    return html`<ha-card class="tmd" style="--hd:${hd}">
+      ${this._ovHeader(design, pendingApprovals)}
+      <div class="tmd-bd">
+        ${pendingApprovals > 0 ? this._ovAlert(design, pendingApprovals) : ""}
+        <div class="ov-kids">
+          ${kids.map((k) => this._ovKid(design, k))}
+        </div>
+        ${this._ovToday(design, doneTotal, choreTotal, overallPct)}
+      </div>
+    </ha-card>`;
+  }
+
+  _ovHeader(design, pending) {
+    const icon = design === "playroom" ? "👀" : design === "console" ? "◉" : "◳";
+    const sub = design === "console"
+      ? this._t("overview.designed.sub_console")
+      : design === "cleanpro"
+        ? this._t("overview.designed.sub_cleanpro")
+        : this._t("overview.designed.sub_playroom");
+    return html`
+      <div class="tmd-hd">
+        <span class="ic">${icon}</span>
+        <span class="tt">${this.config.title}<small>${sub}</small></span>
+        ${design === "console" && pending > 0
+          ? html`<span class="cnt">${pending}</span>` : ""}
+      </div>`;
+  }
+
+  _ovAlert(design, pending) {
+    if (design === "console") {
+      return html`
+        <div class="ov-alert cn">
+          <span class="emoji">⚠</span>
+          <div class="mid">
+            <div class="ttl num">${this._t("overview.designed.pending_review", { count: pending })}</div>
+            <div class="sub muted num">${this._t("overview.designed.action_required")}</div>
+          </div>
+        </div>`;
+    }
+    if (design === "cleanpro") {
+      return html`
+        <div class="ov-alert cp">
+          <span class="dot"></span>
+          <div class="mid"><span class="ttl">${this._t("overview.designed.approvals_waiting", { count: pending })}</span></div>
+          <button class="btn sm" style="background:var(--tmd-bad)">${this._t("overview.designed.review")}</button>
+        </div>`;
+    }
+    return html`
+      <div class="ov-alert">
+        <span class="emoji">🔔</span>
+        <div class="mid">
+          <div class="ttl">${this._t("overview.designed.waiting_for_you", { count: pending })}</div>
+          <div class="sub muted">${this._t("overview.designed.tap_to_check")}</div>
+        </div>
+        <span class="cnt">${pending}</span>
+      </div>`;
+  }
+
+  _ovKid(design, k) {
+    const cls = design === "console" ? "cn" : design === "cleanpro" ? "cp" : "";
+    const nameUpper = design === "console" ? `${k.child.name.toUpperCase()} · ${k.pct}%` : k.child.name;
+    return html`
+      <div class="ov-kid ${cls}" style="--ac:${k.tone}">
+        ${this._av(k.child, k.tone, design === "console" ? 34 : design === "cleanpro" ? 38 : 42)}
+        <div class="pts ${design === "console" ? "num" : ""}">${k.points.toLocaleString()}</div>
+        <div class="nm ${cls}">${nameUpper}</div>
+        <div class="bar"><i style="width:${k.pct}%"></i></div>
+      </div>`;
+  }
+
+  _ovToday(design, done, total, pct) {
+    const cls = design === "console" ? "cn" : design === "cleanpro" ? "cp" : "";
+    if (design === "cleanpro") {
+      return html`
+        <div class="divide"></div>
+        <div class="ov-today cp">
+          <span class="lbl">${this._t("overview.designed.todays_progress")}</span>
+          <span class="val num">${this._t("overview.designed.progress_detail", { done, total, pct })}</span>
+        </div>`;
+    }
+    const lbl = design === "console"
+      ? this._t("overview.designed.daily_completion")
+      : html`🌟 ${this._t("overview.designed.todays_progress")}`;
+    return html`
+      <div class="ov-today ${cls}">
+        <span class="lbl">${lbl}</span>
+        <span class="val">${done} / ${total}</span>
+      </div>`;
   }
 
   _renderChildTile(child, chores, completions, pointsIcon, pointsName) {
@@ -599,6 +819,17 @@ class TaskMateOverviewCardEditor extends LitElement {
       { name: 'entity', selector: { entity: { domain: 'sensor' } } },
       { name: 'title', selector: { text: {} } },
       { name: 'approvals_entity', selector: { entity: { domain: 'sensor' } } },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
     ];
   }
 
@@ -607,6 +838,7 @@ class TaskMateOverviewCardEditor extends LitElement {
       entity: this._t('overview.editor.entity_label'),
       title: this._t('overview.editor.title_label'),
       approvals_entity: this._t('overview.editor.approvals_entity_label'),
+      card_design: this._t('common.design.field_label'),
     };
     return labels[entry.name] ?? entry.name;
   };
@@ -625,6 +857,7 @@ class TaskMateOverviewCardEditor extends LitElement {
       entity: this.config.entity || '',
       title: this.config.title || '',
       approvals_entity: this.config.approvals_entity || '',
+      card_design: this.config.card_design || 'global',
     };
     return html`
       <ha-form
@@ -676,6 +909,7 @@ class TaskMateOverviewCardEditor extends LitElement {
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
       if (value === '' || value === null || value === undefined) delete newConfig[key];
+      else if (key === 'card_design' && value === 'global') delete newConfig[key];
       else newConfig[key] = value;
     }
     this.dispatchEvent(new CustomEvent('config-changed', {

@@ -39,7 +39,7 @@ class TaskMateStreakCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
         --str-purple: #9b59b6;
@@ -214,7 +214,43 @@ class TaskMateStreakCard extends LitElement {
 
       .error-state { color: var(--error-color, #f44336); }
       .error-state ha-icon, .empty-state ha-icon { --mdc-icon-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+
+      /* ── Designed layouts (playroom / console / cleanpro) ── */
+      /* Shared .tmd kit + tokens come from taskmate-design.js styles(). */
+
+      .sk-grid { display: flex; flex-direction: column; gap: 11px; }
+      .sk-tile { background: var(--tmd-surface-2); border-radius: 18px; padding: 12px; }
+      .sk-name { font-weight: 800; font-size: 14px; }
+      .sk-sub { font-size: 12px; }
+      .sk-count { font-size: 26px; color: var(--tmd-accent); }
+      .sk-dots { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
+      .sk-dot { width: 15px; height: 15px; border-radius: 50%; background: var(--tmd-border); }
+      .sk-dot.on { background: var(--tmd-good); }
+      .sk-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+      /* Console */
+      .sk-grid-cn { display: flex; flex-direction: column; gap: 9px; }
+      .sk-tile-cn { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
+                    border-radius: 10px; padding: 11px; }
+      .sk-combo-label { font-size: 10px; }
+      .sk-combo { font-size: 24px; color: var(--tmd-accent); }
+      .sk-segs { display: flex; gap: 4px; margin-top: 9px; }
+      .sk-seg { flex: 1; height: 8px; border-radius: 2px; background: #0b1424; }
+      .sk-seg.on { background: var(--tmd-accent);
+                   box-shadow: 0 0 8px color-mix(in srgb, var(--tmd-accent) 70%, transparent); }
+      .sk-badges-cn { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+
+      /* Clean Pro */
+      .sk-grid-cp { display: flex; flex-direction: column; gap: 13px; }
+      .sk-row-cp .num { font-size: 17px; }
+      .sk-segs-cp { display: flex; gap: 5px; margin-top: 8px; }
+      .sk-seg-cp { flex: 1; height: 9px; border-radius: 3px; background: var(--tmd-surface-2); }
+      .sk-seg-cp.on { background: var(--tmd-good); }
+      .sk-badges-cp { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -236,6 +272,12 @@ class TaskMateStreakCard extends LitElement {
 
   render() {
     if (!this.hass || !this.config) return html``;
+
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      : "classic";
+    this.setAttribute("data-tm-design", design);
+    if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
     if (!entity) {
@@ -410,6 +452,178 @@ class TaskMateStreakCard extends LitElement {
     const nextLocked = milestones.find(m => !m.earned);
     return nextLocked ? [...earned, nextLocked] : earned;
   }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns/frag/05-streak.html.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _av(child, tone, size) {
+    const a = child.avatar || "";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${child.name}">`
+        : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  _streakEmoji(streak) {
+    return streak >= 14 ? "🔥🔥" : streak >= 7 ? "🔥" : streak >= 3 ? "⚡" : streak >= 1 ? "✨" : "💤";
+  }
+
+  _designHeader(hd, design, onFire) {
+    const title = this.config.title || this._t('streak.default_title');
+    const sub =
+      design === "playroom" ? this._t('streak.day_streak') :
+      design === "console"  ? this._t('streak.achievements') :
+                              "";
+    return html`
+      <div class="tmd-hd">
+        <span class="ic">🔥</span>
+        <span class="tt">${title}${sub ? html`<small>${sub}</small>` : ""}</span>
+        ${design === "console" && onFire
+          ? html`<span class="pill">${this._t('common.d_streak', { count: onFire })}</span>` : ""}
+      </div>`;
+  }
+
+  _streakData(child, completions, chores, entity_ref) {
+    const childCompletions = completions.filter(c => c.child_id === child.id);
+    const streak = child.current_streak !== undefined
+      ? child.current_streak
+      : this._calculateStreak(childCompletions, chores, child.id);
+    const daysShown = this.config.streak_days_shown || 14;
+    const dayDots = this._buildDayDots(childCompletions, chores, child.id, daysShown);
+    const achievements = this._getAchievements(child, childCompletions, streak, entity_ref);
+    return { streak, dayDots, achievements };
+  }
+
+  _renderDesigned(design) {
+    const entity = this.hass.states[this.config.entity];
+    const hd = _safeColor(this.config.header_color, '#e74c3c');
+
+    if (!entity) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${this._designHeader(hd, design, 0)}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div>
+      </ha-card>`;
+    }
+    if (entity.state === "unavailable" || entity.state === "unknown") {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${this._designHeader(hd, design, 0)}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.unavailable')}</div></div>
+      </ha-card>`;
+    }
+
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    let children = attrs.children || [];
+    const completions = [...(attrs.recent_completions || attrs.todays_completions || [])];
+    const chores = attrs.chores || [];
+
+    if (this.config.child_id) {
+      children = children.filter(c => c.id === this.config.child_id);
+    }
+
+    const rows = children.map((child, idx) => ({
+      child,
+      tone: this._designTone(idx),
+      ...this._streakData(child, completions, chores, entity),
+    }));
+
+    const onFire = rows.filter(r => r.streak >= 7).length;
+    const header = this._designHeader(hd, design, onFire);
+
+    if (rows.length === 0) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${header}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.no_children')}</div></div>
+      </ha-card>`;
+    }
+
+    const body =
+      design === "playroom" ? this._skPlayroom(rows) :
+      design === "console"  ? this._skConsole(rows) :
+                              this._skCleanpro(rows);
+
+    return html`<ha-card class="tmd" style="--hd:${hd}">${header}<div class="tmd-bd">${body}</div></ha-card>`;
+  }
+
+  _earnedBadges(achievements) {
+    return achievements.filter(a => a.earned);
+  }
+
+  _skPlayroom(rows) {
+    return html`
+      <div class="sk-grid">
+        ${rows.map((r) => html`
+          <div class="sk-tile" style="--ac:${r.tone}">
+            <div class="row">
+              ${this._av(r.child, r.tone, 42)}
+              <div style="flex:1;min-width:0">
+                <div class="sk-name">${r.child.name}</div>
+                <div class="muted sk-sub">${this._t('streak.day_streak')}</div>
+              </div>
+              <div class="big sk-count">${r.streak} ${this._streakEmoji(r.streak)}</div>
+            </div>
+            <div class="sk-dots">
+              ${r.dayDots.map((d) => html`<i class="sk-dot ${d.cssClass !== "inactive" ? "on" : ""}" title="${d.label}"></i>`)}
+            </div>
+            ${this._earnedBadges(r.achievements).length ? html`
+              <div class="sk-badges">
+                ${this._earnedBadges(r.achievements).map((a) => html`<span class="chip soft">${a.emoji} ${a.name}</span>`)}
+              </div>` : ""}
+          </div>`)}
+      </div>`;
+  }
+
+  _skConsole(rows) {
+    return html`
+      <div class="sk-grid-cn">
+        ${rows.map((r) => html`
+          <div class="sk-tile-cn" style="--ac:${r.tone}">
+            <div class="row">
+              ${this._av(r.child, r.tone, 36)}
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700">${r.child.name}</div>
+                <div class="muted sk-combo-label">${this._t('streak.achievements')}</div>
+              </div>
+              <div class="num sk-combo">x${r.streak} ${this._streakEmoji(r.streak)}</div>
+            </div>
+            <div class="sk-segs">
+              ${r.dayDots.map((d) => html`<i class="sk-seg ${d.cssClass !== "inactive" ? "on" : ""}"></i>`)}
+            </div>
+            ${this._earnedBadges(r.achievements).length ? html`
+              <div class="sk-badges-cn">
+                ${this._earnedBadges(r.achievements).map((a) => html`<span class="chip">${a.emoji} ${a.name}</span>`)}
+              </div>` : ""}
+          </div>`)}
+      </div>`;
+  }
+
+  _skCleanpro(rows) {
+    const tone = (streak) => streak >= 7 ? "var(--tmd-good)" : streak >= 3 ? "var(--tmd-warn)" : "var(--tmd-dim)";
+    return html`
+      <div class="sk-grid-cp">
+        ${rows.map((r, i) => html`
+          ${i > 0 ? html`<div class="divide" style="margin:0"></div>` : ""}
+          <div class="sk-row-cp" style="--ac:${r.tone}">
+            <div class="row">
+              ${this._av(r.child, r.tone, 34)}
+              <div style="flex:1;min-width:0"><div style="font-weight:600">${r.child.name}</div></div>
+              <div class="num" style="color:${tone(r.streak)}">${this._streakEmoji(r.streak)} ${this._t('common.d_streak', { count: r.streak })}</div>
+            </div>
+            <div class="sk-segs-cp">
+              ${r.dayDots.map((d) => html`<i class="sk-seg-cp ${d.cssClass !== "inactive" ? "on" : ""}"></i>`)}
+            </div>
+            ${this._earnedBadges(r.achievements).length ? html`
+              <div class="sk-badges-cp">
+                ${this._earnedBadges(r.achievements).map((a) => html`<span class="chip"><span style="color:var(--tmd-accent)">●</span> ${a.name}</span>`)}
+              </div>` : ""}
+          </div>`)}
+      </div>`;
+  }
 }
 
 // Card Editor
@@ -464,6 +678,17 @@ class TaskMateStreakCardEditor extends LitElement {
         },
       },
       { name: 'streak_days_shown', selector: { number: { min: 1, max: 100, mode: 'box' } } },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
     ];
   }
 
@@ -473,6 +698,7 @@ class TaskMateStreakCardEditor extends LitElement {
       title: this._t('streak.editor.title'),
       child_id: this._t('common.editor.filter_by_child'),
       streak_days_shown: this._t('streak.editor.days_shown'),
+      card_design: this._t('common.design.field_label'),
     };
     return labels[entry.name] ?? entry.name;
   };
@@ -493,6 +719,7 @@ class TaskMateStreakCardEditor extends LitElement {
       title: this.config.title || '',
       child_id: this.config.child_id || '__all__',
       streak_days_shown: this.config.streak_days_shown || 14,
+      card_design: this.config.card_design || 'global',
     };
     return html`
       <ha-form
@@ -549,6 +776,8 @@ class TaskMateStreakCardEditor extends LitElement {
       ) {
         delete newConfig[key];
       } else if (key === 'streak_days_shown' && value === 14) {
+        delete newConfig[key];
+      } else if (key === 'card_design' && value === 'global') {
         delete newConfig[key];
       } else {
         newConfig[key] = value;
