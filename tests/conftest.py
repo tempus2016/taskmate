@@ -172,6 +172,27 @@ class _FakeDeviceInfo(dict):
         super().__init__(**kwargs)
 
 
+class _FakeCalendarEntity:
+    pass
+
+
+class _FakeCalendarEvent:
+    """Minimal stand-in storing the fields calendar.py sets / tests read."""
+
+    def __init__(self, start, end, summary, description=None, **kwargs):
+        self.start = start
+        self.end = end
+        self.summary = summary
+        self.description = description
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
+_ha_components_calendar = MagicMock()
+_ha_components_calendar.CalendarEntity = _FakeCalendarEntity
+_ha_components_calendar.CalendarEvent = _FakeCalendarEvent
+
+
 _ha_helpers_entity = MagicMock()
 _ha_helpers_entity.DeviceInfo = _FakeDeviceInfo
 
@@ -189,6 +210,7 @@ class _DtUtilMock:
     """Controllable drop-in for homeassistant.util.dt."""
 
     _now: _dt.datetime = _DEFAULT_NOW
+    DEFAULT_TIME_ZONE = _UTC
 
     def now(self) -> _dt.datetime:
         return self._now
@@ -214,6 +236,7 @@ _ha_util.dt = dt_util_mock  # `from homeassistant.util import dt` resolves here
 # auto-generates a new MagicMock instead of returning our stub.
 _ha_components = MagicMock()
 _ha_components.websocket_api = _ha_websocket_api
+_ha_components.calendar = _ha_components_calendar
 
 sys.modules.update(
     {
@@ -233,6 +256,7 @@ sys.modules.update(
         "homeassistant.components": _ha_components,
         "homeassistant.components.sensor": _ha_components_sensor,
         "homeassistant.components.binary_sensor": _ha_components_binary_sensor,
+        "homeassistant.components.calendar": _ha_components_calendar,
         "homeassistant.components.websocket_api": _ha_websocket_api,
         "homeassistant.util": _ha_util,
         "homeassistant.util.dt": dt_util_mock,
