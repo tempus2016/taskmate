@@ -303,6 +303,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "pending_completions":  [c for c in completions if not c.get("approved")],
         "reward_claims":        reward_claims,
         "pending_reward_claims": [c for c in reward_claims if not c.get("approved")],
+        "mandatory_misses":     coordinator.mandatory_misses_state(),  # missed mandatory chores awaiting review (#532)
         "points_transactions":  transactions[-100:],   # most recent 100 for audit log
         "badges":        list(data.get("badges", [])),
         "awarded_badges": list(data.get("awarded_badges", [])),

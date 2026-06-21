@@ -66,6 +66,7 @@ from .const import (
     SERVICE_ALLOCATE_POINTS_TO_POOL,
     SERVICE_APPLY_BONUS,
     SERVICE_APPLY_PENALTY,
+    SERVICE_APPLY_MANDATORY_PENALTY,
     SERVICE_APPROVE_CHORE,
     SERVICE_APPROVE_REWARD,
     SERVICE_CLAIM_REWARD,
@@ -76,6 +77,8 @@ from .const import (
     SERVICE_PAUSE_TIMED_TASK,
     SERVICE_STOP_TIMED_TASK,
     SERVICE_PREVIEW_SOUND,
+    SERVICE_DISMISS_MANDATORY_CHORE,
+    SERVICE_POSTPONE_MANDATORY_CHORE,
     SERVICE_REJECT_CHORE,
     SERVICE_UNDO_CHORE_APPROVAL,
     SERVICE_REMOVE_BONUS,
@@ -431,6 +434,30 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             return
         completion_id = call.data["completion_id"]
         await coordinator.async_reject_chore(completion_id)
+
+    async def handle_apply_mandatory_penalty(call: ServiceCall) -> None:
+        """Handle apply_mandatory_penalty (deduct penalty for a missed mandatory chore)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_apply_mandatory_penalty(call.data["miss_id"])
+
+    async def handle_postpone_mandatory_chore(call: ServiceCall) -> None:
+        """Handle postpone_mandatory_chore (give a missed mandatory chore another period)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_postpone_mandatory_chore(call.data["miss_id"])
+
+    async def handle_dismiss_mandatory_chore(call: ServiceCall) -> None:
+        """Handle dismiss_mandatory_chore (clear a missed mandatory chore, no penalty)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_dismiss_mandatory_chore(call.data["miss_id"])
 
     async def handle_undo_transaction(call: ServiceCall) -> None:
         """Handle undo_transaction (reverse a penalty/bonus/manual/gift)."""
@@ -948,6 +975,20 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Required("completion_id"): cv.string,
             }
         ),
+    )
+
+    _miss_schema = vol.Schema({vol.Required("miss_id"): cv.string})
+    hass.services.async_register(
+        DOMAIN, SERVICE_APPLY_MANDATORY_PENALTY,
+        _admin(handle_apply_mandatory_penalty), schema=_miss_schema,
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_POSTPONE_MANDATORY_CHORE,
+        _admin(handle_postpone_mandatory_chore), schema=_miss_schema,
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_DISMISS_MANDATORY_CHORE,
+        _admin(handle_dismiss_mandatory_chore), schema=_miss_schema,
     )
 
     hass.services.async_register(
