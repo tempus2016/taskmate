@@ -179,6 +179,26 @@
         }
       }
     },
+    "undo_chore_approval": {
+      "name": "Undo Chore Approval",
+      "description": "Reverse an accidental chore approval — removes the awarded points and returns the completion to pending so it can be approved again.",
+      "fields": {
+        "completion_id": {
+          "name": "Completion ID",
+          "description": "The ID of the approved chore completion to revert to pending"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "Undo Transaction",
+      "description": "Reverse a points transaction by its ID — penalties, bonuses, manual add/remove adjustments and gifts (both legs). Automatic transactions (weekend/streak/perfect-week bonuses, pool moves, decay, interest) can't be undone.",
+      "fields": {
+        "transaction_id": {
+          "name": "Transaction ID",
+          "description": "The ID of the points transaction to reverse"
+        }
+      }
+    },
     "claim_reward": {
       "name": "Claim Reward",
       "description": "Child claims a reward using their points",

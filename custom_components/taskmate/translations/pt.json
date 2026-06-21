@@ -180,6 +180,26 @@
         }
       }
     },
+    "undo_chore_approval": {
+      "name": "Anular aprovação de tarefa",
+      "description": "Anular a aprovação acidental de uma tarefa — remove os pontos atribuídos e devolve a conclusão a pendente para que possa ser aprovada novamente.",
+      "fields": {
+        "completion_id": {
+          "name": "ID de conclusão",
+          "description": "O ID da conclusão de tarefa aprovada a repor como pendente"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "Anular transação",
+      "description": "Anular uma transação de pontos pelo seu ID — penalizações, bónus, ajustes manuais (adicionar/remover) e presentes (ambas as partes). As transações automáticas (bónus de fim de semana/sequência/semana perfeita, movimentos do mealheiro, desvalorização, juros) não podem ser anuladas.",
+      "fields": {
+        "transaction_id": {
+          "name": "ID da transação",
+          "description": "O ID da transação de pontos a reverter"
+        }
+      }
+    },
     "claim_reward": {
       "name": "Reclamar recompensa",
       "description": "A criança reclama uma recompensa usando os seus pontos",

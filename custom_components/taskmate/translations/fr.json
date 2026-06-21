@@ -180,6 +180,26 @@
         }
       }
     },
+    "undo_chore_approval": {
+      "name": "Annuler l'approbation d'une tâche",
+      "description": "Annuler l'approbation accidentelle d'une tâche — retire les points attribués et remet la réalisation en attente afin qu'elle puisse être approuvée à nouveau.",
+      "fields": {
+        "completion_id": {
+          "name": "ID de réalisation",
+          "description": "L'ID de la réalisation de tâche approuvée à remettre en attente"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "Annuler une transaction",
+      "description": "Annuler une transaction de points via son ID — pénalités, bonus, ajustements manuels (ajout/retrait) et cadeaux (les deux volets). Les transactions automatiques (bonus de week-end/série/semaine parfaite, mouvements de cagnotte, dépréciation, intérêts) ne peuvent pas être annulées.",
+      "fields": {
+        "transaction_id": {
+          "name": "ID de transaction",
+          "description": "L'ID de la transaction de points à annuler"
+        }
+      }
+    },
     "claim_reward": {
       "name": "Réclamer une récompense",
       "description": "L'enfant réclame une récompense en utilisant ses points",

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from homeassistant.util import dt as dt_util
 
 from . import photos
-from .models import Bonus, Child, Penalty, PointsTransaction
+from .models import Bonus, Child, Penalty, PointsTransaction, generate_id
 
 if TYPE_CHECKING:
     pass
@@ -275,35 +275,73 @@ class PointsMixin:
         if getattr(self, "badges", None) and not (reason or "").startswith("Badge"):
             await self.badges.evaluate_for_child(child_id, "points_changed")
 
-    async def async_undo_transaction(self, transaction_id: str) -> None:
-        """Reverse a previously applied penalty or bonus.
+    # Reason prefixes for *derived* transactions — automatic consequences of
+    # other actions. Reversing one in isolation would desync related state, so
+    # undo refuses them. NOTE: this is a deny-list because manual add/remove
+    # carry arbitrary (or empty) reasons and can't be told apart from free-text
+    # by an allow-list. Any NEW derived transaction reason added elsewhere in
+    # this file MUST be added here, or it will become wrongly undoable.
+    _UNDO_DENY_PREFIXES = (
+        "Weekend bonus",
+        "Streak milestone bonus",
+        "Perfect week bonus",
+        "Allocated to pool:",
+        "Pool refund",
+        "Points decay",
+        "Savings interest",
+        "Badge",
+    )
 
-        Only ``Penalty: …`` and ``Bonus: …`` transactions are reversible — these
-        are the discrete admin "apply" actions with a well-defined inverse.
-        Pool / weekend / milestone / completion transactions are left alone
-        because reversing them in isolation would desync related state.
+    async def async_undo_transaction(self, transaction_id: str) -> None:
+        """Reverse a discrete points transaction (the inverse of an admin action).
+
+        Reversible: penalties, bonuses, manual add/remove adjustments, and gifts
+        (both legs, via ``link_id``). Refused: derived/automatic transactions
+        (see ``_UNDO_DENY_PREFIXES``) — reversing them alone would desync state.
         """
-        target = next(
-            (t for t in self.storage.get_points_transactions() if t.id == transaction_id),
-            None,
-        )
+        txns = self.storage.get_points_transactions()
+        target = next((t for t in txns if t.id == transaction_id), None)
         if not target:
             raise ValueError(f"Transaction {transaction_id} not found")
         reason = target.reason or ""
-        is_penalty = reason.startswith("Penalty: ")
-        is_bonus = reason.startswith("Bonus: ")
-        if not (is_penalty or is_bonus):
-            raise ValueError("Only applied penalties and bonuses can be undone")
+
+        if reason.startswith(self._UNDO_DENY_PREFIXES):
+            raise ValueError("This action can't be undone")
+
+        # Gifts move spendable balance between two children — reverse every leg
+        # sharing the gift's link_id (neither child's earned/penalty totals
+        # changed at gift time, so only `points` is adjusted).
+        if reason.startswith("Gift to ") or reason.startswith("Gift from "):
+            link_id = getattr(target, "link_id", "") or ""
+            if not link_id:
+                raise ValueError(
+                    "This gift predates undo support and can't be reversed automatically."
+                )
+            for leg in [t for t in txns if (getattr(t, "link_id", "") or "") == link_id]:
+                leg_child = self.get_child(leg.child_id)
+                if leg_child:
+                    leg_child.points = max(0, leg_child.points - leg.points)
+                    self.storage.update_child(leg_child)
+                self.storage.remove_points_transaction(leg.id)
+            await self.storage.async_save()
+            await self.async_refresh()
+            return
+
         child = self.get_child(target.child_id)
         if not child:
             raise ValueError(f"Child {target.child_id} not found")
 
-        pts = target.points  # signed: penalty < 0, bonus > 0
+        pts = target.points  # signed: removals < 0, additions > 0
+        is_penalty = reason.startswith("Penalty: ")
         child.points = max(0, child.points - pts)
         if is_penalty:
+            # Penalty removed points AND raised total_penalties_received.
             child.total_penalties_received = max(0, child.total_penalties_received - abs(pts))
-        else:
+        elif pts > 0:
+            # Bonus / manual add raised total_points_earned alongside points.
             child.total_points_earned = max(0, child.total_points_earned - pts)
+        # else: a plain (non-penalty) manual removal only touched spendable
+        # points, so nothing else to reverse.
         child.career_score = child.total_points_earned - child.total_penalties_received
         self.storage.update_child(child)
         self.storage.append_career_score_snapshot(
@@ -427,13 +465,15 @@ class PointsMixin:
         recipient.points += points
         self.storage.update_child(sender)
         self.storage.update_child(recipient)
+        # Shared link_id so undo can reverse both legs together.
+        gift_link = generate_id()
         self.storage.add_points_transaction(PointsTransaction(
             child_id=sender.id, points=-points,
-            reason=f"Gift to {recipient.name}", created_at=now,
+            reason=f"Gift to {recipient.name}", created_at=now, link_id=gift_link,
         ))
         self.storage.add_points_transaction(PointsTransaction(
             child_id=recipient.id, points=points,
-            reason=f"Gift from {sender.name}", created_at=now,
+            reason=f"Gift from {sender.name}", created_at=now, link_id=gift_link,
         ))
         self.hass.bus.async_fire("taskmate_points_gifted", {
             "from_child_id": sender.id, "from_child_name": sender.name,

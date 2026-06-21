@@ -180,6 +180,26 @@
         }
       }
     },
+    "undo_chore_approval": {
+      "name": "Aufgabengenehmigung rückgängig machen",
+      "description": "Eine versehentliche Aufgabengenehmigung rückgängig machen — entfernt die vergebenen Punkte und setzt die Erledigung zurück auf ausstehend, sodass sie erneut genehmigt werden kann.",
+      "fields": {
+        "completion_id": {
+          "name": "Erledigungs-ID",
+          "description": "Die ID der genehmigten Aufgabenerledigung, die auf ausstehend zurückgesetzt werden soll"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "Transaktion rückgängig machen",
+      "description": "Eine Punktetransaktion anhand ihrer ID rückgängig machen — Strafen, Boni, manuelle Anpassungen (Hinzufügen/Entfernen) und Geschenke (beide Seiten). Automatische Transaktionen (Wochenend-/Serien-/Perfekte-Woche-Boni, Sparglas-Buchungen, Verfall, Zinsen) können nicht rückgängig gemacht werden.",
+      "fields": {
+        "transaction_id": {
+          "name": "Transaktions-ID",
+          "description": "Die ID der rückgängig zu machenden Punktetransaktion"
+        }
+      }
+    },
     "claim_reward": {
       "name": "Fordern Sie eine Belohnung an",
       "description": "Das Kind erhält mit seinen Punkten eine Belohnung",

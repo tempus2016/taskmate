@@ -857,88 +857,104 @@ class ChoresMixin:
                 return
         _LOGGER.warning("Completion %s not found for approval", completion_id)
 
+    def _reverse_completion_awards(self, target_completion, completions) -> list:
+        """Reverse every point/streak/counter award granted by an approved completion.
+
+        Shared by ``async_reject_chore`` (which then deletes the record) and
+        ``async_undo_chore_approval`` (which reverts it to pending). Performs the
+        child-stat reversal, the bonus-subtask cascade, the recurrence-window
+        reset and one-shot re-enable, and **returns the cascaded bonus-subtask
+        completions** so the caller can dispose of them as it sees fit. It does
+        NOT remove or modify the completion records themselves.
+        """
+        completion = target_completion
+        if completion.points_awarded > 0:
+            child = self.get_child(completion.child_id)
+            if child:
+                child.points = max(0, child.points - completion.points_awarded)
+                child.total_points_earned = max(0, child.total_points_earned - completion.points_awarded)
+                child.total_chores_completed = max(0, child.total_chores_completed - 1)
+
+                # Only reverse streak for parent completions, and only
+                # when this was the child's sole completion that day —
+                # streaks are day-based, not per-completion
+                if not completion.bonus_subtask_id:
+                    reject_date = dt_util.as_local(completion.completed_at).date()
+                    other_same_day = any(
+                        c.id != completion.id
+                        and c.child_id == completion.child_id
+                        and not c.bonus_subtask_id
+                        and dt_util.as_local(c.completed_at).date() == reject_date
+                        for c in completions
+                    )
+                    if not other_same_day:
+                        child.current_streak = max(0, child.current_streak - 1)
+                        if getattr(child, "last_completion_date", None) == reject_date.isoformat():
+                            remaining = [
+                                dt_util.as_local(c.completed_at).date()
+                                for c in completions
+                                if c.id != completion.id
+                                and c.child_id == completion.child_id
+                                and not c.bonus_subtask_id
+                            ]
+                            child.last_completion_date = (
+                                max(remaining).isoformat() if remaining else None
+                            )
+
+                self.storage.update_child(child)
+
+        bonus_completions: list = []
+        is_parent = not target_completion.bonus_subtask_id
+        if is_parent:
+            # Cascade: reverse any bonus sub-task completions for the same
+            # chore/child on the same day (caller disposes of the records).
+            comp_date = dt_util.as_local(target_completion.completed_at).date()
+            bonus_completions = [
+                c for c in completions
+                if c.chore_id == target_completion.chore_id
+                and c.child_id == target_completion.child_id
+                and c.bonus_subtask_id
+                and c.id != target_completion.id
+                and dt_util.as_local(c.completed_at).date() == comp_date
+            ]
+            if bonus_completions:
+                child = self.get_child(target_completion.child_id)
+                for bc in bonus_completions:
+                    if bc.points_awarded > 0 and child:
+                        child.points = max(0, child.points - bc.points_awarded)
+                        child.total_points_earned = max(0, child.total_points_earned - bc.points_awarded)
+                        child.total_chores_completed = max(0, child.total_chores_completed - 1)
+                if child:
+                    self.storage.update_child(child)
+
+            # Undo last_completed store so recurrence window resets correctly
+            self.storage.undo_last_completed(
+                target_completion.chore_id, target_completion.child_id
+            )
+
+            # One-shot: re-enable for this child
+            chore = self.get_chore(target_completion.chore_id)
+            if chore and getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
+                if target_completion.child_id in chore.disabled_for:
+                    chore.disabled_for.remove(target_completion.child_id)
+                chore.enabled = True
+                self.storage.update_chore(chore)
+
+        return bonus_completions
+
     async def async_reject_chore(self, completion_id: str) -> None:
         """Reject a chore completion and fully reverse all awards if already granted."""
         completions = self.storage.get_completions()
-        target_completion = None
-        for completion in completions:
-            if completion.id == completion_id:
-                target_completion = completion
-                if completion.points_awarded > 0:
-                    child = self.get_child(completion.child_id)
-                    if child:
-                        child.points = max(0, child.points - completion.points_awarded)
-                        child.total_points_earned = max(0, child.total_points_earned - completion.points_awarded)
-                        child.total_chores_completed = max(0, child.total_chores_completed - 1)
-
-                        # Only reverse streak for parent completions, and only
-                        # when this was the child's sole completion that day —
-                        # streaks are day-based, not per-completion
-                        if not completion.bonus_subtask_id:
-                            reject_date = dt_util.as_local(completion.completed_at).date()
-                            other_same_day = any(
-                                c.id != completion.id
-                                and c.child_id == completion.child_id
-                                and not c.bonus_subtask_id
-                                and dt_util.as_local(c.completed_at).date() == reject_date
-                                for c in completions
-                            )
-                            if not other_same_day:
-                                child.current_streak = max(0, child.current_streak - 1)
-                                if getattr(child, "last_completion_date", None) == reject_date.isoformat():
-                                    remaining = [
-                                        dt_util.as_local(c.completed_at).date()
-                                        for c in completions
-                                        if c.id != completion.id
-                                        and c.child_id == completion.child_id
-                                        and not c.bonus_subtask_id
-                                    ]
-                                    child.last_completion_date = (
-                                        max(remaining).isoformat() if remaining else None
-                                    )
-
-                        self.storage.update_child(child)
-                break
+        target_completion = next(
+            (c for c in completions if c.id == completion_id), None
+        )
 
         if target_completion:
-            is_parent = not target_completion.bonus_subtask_id
-
-            # Cascade: if rejecting a parent completion, also reverse any bonus sub-task
-            # completions for the same chore/child on the same day
-            if is_parent:
-                comp_date = dt_util.as_local(target_completion.completed_at).date()
-                bonus_completions = [
-                    c for c in completions
-                    if c.chore_id == target_completion.chore_id
-                    and c.child_id == target_completion.child_id
-                    and c.bonus_subtask_id
-                    and c.id != completion_id
-                    and dt_util.as_local(c.completed_at).date() == comp_date
-                ]
-                if bonus_completions:
-                    child = self.get_child(target_completion.child_id)
-                    for bc in bonus_completions:
-                        if bc.points_awarded > 0 and child:
-                            child.points = max(0, child.points - bc.points_awarded)
-                            child.total_points_earned = max(0, child.total_points_earned - bc.points_awarded)
-                            child.total_chores_completed = max(0, child.total_chores_completed - 1)
-                        self.storage.remove_completion(bc.id)
-                    if child:
-                        self.storage.update_child(child)
-
-            # Undo last_completed store so recurrence window resets correctly (parent only)
-            if is_parent:
-                self.storage.undo_last_completed(
-                    target_completion.chore_id, target_completion.child_id
-                )
-
-                # One-shot: re-enable for this child on rejection
-                chore = self.get_chore(target_completion.chore_id)
-                if chore and getattr(chore, 'schedule_mode', 'specific_days') == 'one_shot':
-                    if target_completion.child_id in chore.disabled_for:
-                        chore.disabled_for.remove(target_completion.child_id)
-                    chore.enabled = True
-                    self.storage.update_chore(chore)
+            bonus_completions = self._reverse_completion_awards(
+                target_completion, completions
+            )
+            for bc in bonus_completions:
+                self.storage.remove_completion(bc.id)
 
         self.storage.remove_completion(completion_id)
         # The completion record is gone, so its evidence photo is now orphaned —
@@ -959,6 +975,49 @@ class ChoresMixin:
                 "completion_id": completion_id,
                 "timestamp": dt_util.now().isoformat(),
             })
+
+    async def async_undo_chore_approval(self, completion_id: str) -> None:
+        """Undo an accidental approval: reverse the awards and return the
+        completion to *pending* so it re-enters the approval queue.
+
+        Distinct from reject (which deletes the child's submission): undo treats
+        the completion as still valid, just not-yet-approved. It does NOT notify
+        the child — it is a parent correcting their own slip. Derived
+        weekend/streak bonuses and earned badges are not separately reversed
+        (same limitation as reject — see audit ERR-3).
+        """
+        completions = self.storage.get_completions()
+        target = next((c for c in completions if c.id == completion_id), None)
+        if not target:
+            raise ValueError(f"Completion {completion_id} not found")
+        if not target.approved:
+            raise ValueError("Completion is not approved; nothing to undo")
+
+        bonus_completions = self._reverse_completion_awards(target, completions)
+        for bc in bonus_completions:
+            bc.approved = False
+            bc.approved_at = None
+            bc.points_awarded = 0
+            self.storage.update_completion(bc)
+
+        target.approved = False
+        target.approved_at = None
+        target.points_awarded = 0
+        self.storage.update_completion(target)
+
+        await self.storage.async_save()
+        await self.async_refresh()
+
+        child = self.get_child(target.child_id)
+        chore = self.get_chore(target.chore_id)
+        self.hass.bus.async_fire("taskmate_chore_approval_undone", {
+            "child_id": target.child_id,
+            "child_name": getattr(child, "name", ""),
+            "chore_id": target.chore_id,
+            "chore_name": getattr(chore, "name", ""),
+            "completion_id": completion_id,
+            "timestamp": dt_util.now().isoformat(),
+        })
 
     def _check_one_shot_fully_disabled(self, chore) -> None:
         """Check if a one-shot chore should be fully disabled (all children done)."""

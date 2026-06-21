@@ -77,6 +77,7 @@ from .const import (
     SERVICE_STOP_TIMED_TASK,
     SERVICE_PREVIEW_SOUND,
     SERVICE_REJECT_CHORE,
+    SERVICE_UNDO_CHORE_APPROVAL,
     SERVICE_REMOVE_BONUS,
     SERVICE_REMOVE_PENALTY,
     SERVICE_REMOVE_POINTS,
@@ -432,12 +433,20 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         await coordinator.async_reject_chore(completion_id)
 
     async def handle_undo_transaction(call: ServiceCall) -> None:
-        """Handle the undo_transaction service call (reverse a penalty/bonus)."""
+        """Handle undo_transaction (reverse a penalty/bonus/manual/gift)."""
         coordinator = _get_coordinator(hass)
         if not coordinator:
             _LOGGER.error("No TaskMate coordinator available")
             return
         await coordinator.async_undo_transaction(call.data["transaction_id"])
+
+    async def handle_undo_chore_approval(call: ServiceCall) -> None:
+        """Handle undo_chore_approval (revert an approved completion to pending)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_undo_chore_approval(call.data["completion_id"])
 
     async def handle_test_notification(call: ServiceCall) -> None:
         """Send a sample notification of the given type to its enabled routes."""
@@ -954,6 +963,17 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN,
+        SERVICE_UNDO_CHORE_APPROVAL,
+        _admin(handle_undo_chore_approval),
+        schema=vol.Schema(
+            {
+                vol.Required("completion_id"): cv.string,
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
         SERVICE_TEST_NOTIFICATION,
         _admin(handle_test_notification),
         schema=vol.Schema(
@@ -1322,6 +1342,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_APPROVE_CHORE,
         SERVICE_REJECT_CHORE,
         SERVICE_UNDO_TRANSACTION,
+        SERVICE_UNDO_CHORE_APPROVAL,
         SERVICE_TEST_NOTIFICATION,
         SERVICE_GIFT_POINTS,
         SERVICE_REQUEST_SWAP,
