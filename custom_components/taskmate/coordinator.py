@@ -433,6 +433,7 @@ class TaskMateCoordinator(
             self._async_refresh_assignments_and_publish,
             # Mandatory 'anytime' chores + postpone-map reset (#532)
             self.async_detect_anytime_mandatory_misses,
+            self.async_prune_orphan_misses,
         ]
         # Check for perfect week bonus every Monday at midnight
         if now.weekday() == 0:
