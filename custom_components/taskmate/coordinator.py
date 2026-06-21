@@ -20,6 +20,7 @@ from .coord_badges import BadgeCoordinator
 from .coord_notifications import NotificationCoordinator
 from .coord_calendar import CalendarMixin
 from .coord_chores import ChoresMixin
+from .coord_mandatory import MandatoryMixin
 from .coord_points import PointsMixin
 from .coord_quests import QuestsMixin
 from .coord_rewards import RewardsMixin
@@ -33,6 +34,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class TaskMateCoordinator(
     ChoresMixin,
+    MandatoryMixin,
     AssignmentsMixin,
     RewardsMixin,
     PointsMixin,
