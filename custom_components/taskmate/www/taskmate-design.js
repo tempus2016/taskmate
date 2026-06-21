@@ -55,6 +55,50 @@
   --tmd-c1:#4F6BED;--tmd-c2:#0FB5A8;--tmd-c3:#E0A100;--tmd-c4:#7A5AF0;--tmd-c5:#E0567A;--tmd-c6:#2BA84A;
 }`;
 
+  // Shared component kit, themed by the tokens above. Every designed card
+  // consumes these via __taskmate_design.styles() and adds only its own layout
+  // classes. Headers stay FULL-COLOUR (var(--hd)) in every style per house rule.
+  const KIT = `
+.tmd{overflow:hidden;font-family:var(--tmd-font-body);color:var(--tmd-text);background:var(--tmd-surface);border-radius:var(--tmd-radius);box-shadow:var(--tmd-shadow)}
+.tmd-hd{display:flex;align-items:center;gap:11px;padding:13px 15px;background:var(--hd,var(--tmd-accent));color:#fff}
+:host([data-tm-design="playroom"]) .tmd-hd{background:linear-gradient(135deg,var(--hd,var(--tmd-accent)),color-mix(in srgb,var(--hd,var(--tmd-accent)) 72%,#fff))}
+.tmd-hd .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.22);font-size:17px;flex:none}
+.tmd-hd .tt{font-family:var(--tmd-font-display);font-weight:800;font-size:16px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tmd-hd .tt small{display:block;font-family:var(--tmd-font-body);font-weight:600;font-size:11px;opacity:.85;margin-top:1px}
+.tmd-hd .pill{margin-left:auto;font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.25);text-transform:capitalize}
+.tmd-hd .cnt{margin-left:auto;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--tmd-bad);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center}
+.tmd-bd{padding:15px}
+.tmd-empty{text-align:center;padding:26px 12px;color:var(--tmd-dim);font-size:.9rem}
+.av{width:var(--av,42px);height:var(--av,42px);border-radius:50%;flex:none;display:grid;place-items:center;font-family:var(--tmd-font-display);font-weight:800;color:#fff;font-size:calc(var(--av,42px)*.4);background:var(--ac,var(--tmd-accent));box-shadow:0 2px 6px rgba(0,0,0,.18);overflow:hidden}
+:host([data-tm-design="console"]) .av{box-shadow:0 0 0 1px color-mix(in srgb,var(--ac,var(--tmd-accent)) 70%,transparent),0 0 14px color-mix(in srgb,var(--ac,var(--tmd-accent)) 35%,transparent)}
+.av ha-icon{--mdc-icon-size:calc(var(--av,42px)*.55);color:#fff}
+.av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--tmd-surface-2);color:var(--tmd-text);border:1px solid var(--tmd-border)}
+.chip.soft{background:color-mix(in srgb,var(--tmd-accent) 14%,transparent);border-color:transparent;color:var(--tmd-accent)}
+.num{font-family:var(--tmd-font-mono);font-weight:800;letter-spacing:-.01em}
+.big{font-family:var(--tmd-font-display);font-weight:800;line-height:1}
+.bar{height:10px;border-radius:999px;background:var(--tmd-surface-2);overflow:hidden;border:1px solid var(--tmd-border)}
+.bar>i{display:block;height:100%;border-radius:999px;background:var(--tmd-accent)}
+:host([data-tm-design="console"]) .bar{background:#0b1424}
+:host([data-tm-design="console"]) .bar>i{background:linear-gradient(90deg,var(--tmd-accent),var(--tmd-accent2));box-shadow:0 0 12px color-mix(in srgb,var(--tmd-accent) 60%,transparent)}
+.row{display:flex;align-items:center;gap:10px}
+.muted{color:var(--tmd-dim)}
+.divide{height:1px;background:var(--tmd-border);margin:12px 0}
+.lead{color:var(--tmd-accent)}
+.lead-dot{color:var(--tmd-gold)}
+.btn{font:inherit;font-family:var(--tmd-font-display);font-weight:800;font-size:13.5px;border:0;cursor:pointer;padding:9px 14px;border-radius:var(--tmd-radius-sm);background:var(--tmd-accent);color:#fff;display:inline-flex;align-items:center;gap:6px}
+:host([data-tm-design="console"]) .btn{color:#06101c;background:linear-gradient(135deg,var(--tmd-accent),color-mix(in srgb,var(--tmd-accent) 60%,var(--tmd-accent2)));box-shadow:0 0 14px color-mix(in srgb,var(--tmd-accent) 45%,transparent)}
+.btn.ghost{background:var(--tmd-surface-2);color:var(--tmd-text);border:1px solid var(--tmd-border)}
+:host([data-tm-design="console"]) .btn.ghost{box-shadow:none}
+.btn.good{background:var(--tmd-good);color:#06301f}
+.btn.bad{background:var(--tmd-bad);color:#3a0d0d}
+.btn.round{border-radius:50%;width:38px;height:38px;padding:0;justify-content:center;font-size:18px}
+.btn.sm{padding:6px 10px;font-size:12.5px}
+.stat{background:var(--tmd-surface-2);border:1px solid var(--tmd-border);border-radius:var(--tmd-radius-sm);padding:10px 11px}
+.stat .k{font-size:11px;font-weight:700;color:var(--tmd-dim);text-transform:uppercase;letter-spacing:.04em}
+.stat .v{font-family:var(--tmd-font-display);font-weight:800;font-size:20px;margin-top:2px}
+.grid{display:grid;gap:10px}`;
+
   if (!document.getElementById("taskmate-design-fonts")) {
     const styleEl = document.createElement("style");
     styleEl.id = "taskmate-design-fonts";
@@ -75,8 +119,9 @@
     if (!base) return null;
     const css = Object.getPrototypeOf(base).prototype.css;
     if (!css) return null;
-    const arr = [TOKENS];
-    arr.raw = [TOKENS]; // satisfy css() implementations that read strings.raw
+    const cssText = TOKENS + "\n" + KIT;
+    const arr = [cssText];
+    arr.raw = [cssText]; // satisfy css() implementations that read strings.raw
     try { _tokenStyles = css(arr); } catch (_e) { _tokenStyles = null; }
     return _tokenStyles;
   }

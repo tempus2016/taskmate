@@ -501,69 +501,13 @@ class TaskMatePointsDisplayCard extends LitElement {
       }
       .empty-state ha-icon { --mdc-icon-size: 40px; opacity: 0.35; display: block; margin: 0 auto 10px; }
 
-      /* ════════ DESIGNED STYLES — shared kit (.tmd*) reused across cards ════════
-         Token contract comes from taskmate-design.js ([data-tm-design] on host).
-         Copy this kit block verbatim into other cards; add card-specific rules below. */
-      .tmd { overflow: hidden; font-family: var(--tmd-font-body); color: var(--tmd-text);
-             background: var(--tmd-surface); border-radius: var(--tmd-radius); box-shadow: var(--tmd-shadow); }
-      .tmd-hd { display: flex; align-items: center; gap: 11px; padding: 13px 15px;
-                background: var(--hd); color: var(--tmd-hd-text); }
-      :host([data-tm-design="playroom"]) .tmd-hd {
-        background: linear-gradient(135deg, var(--hd), color-mix(in srgb, var(--hd) 70%, #fff)); }
-      :host([data-tm-design="console"]) .tmd-hd {
-        background: linear-gradient(180deg, color-mix(in srgb, var(--hd) 26%, #0c1322), #0c1322);
-        color: var(--tmd-text); box-shadow: inset 0 0 0 1px var(--tmd-border), inset 0 3px 0 var(--hd); }
-      .tmd-hd .ic { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center;
-                    background: rgba(255,255,255,0.22); font-size: 17px; flex: none; }
-      :host([data-tm-design="console"]) .tmd-hd .ic {
-        background: color-mix(in srgb, var(--hd) 24%, transparent);
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hd) 60%, transparent); }
-      .tmd-hd .tt { font-family: var(--tmd-font-display); font-weight: 800; font-size: 16px; flex: 1;
-                    min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .tmd-hd .pill { margin-left: auto; font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
-                      background: rgba(255,255,255,0.25); text-transform: capitalize; }
-      :host([data-tm-design="console"]) .tmd-hd .pill {
-        background: color-mix(in srgb, var(--hd) 22%, transparent); color: var(--hd);
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hd) 55%, transparent); }
-      .tmd-bd { padding: 15px; }
-      .tmd-empty { text-align: center; padding: 26px 12px; color: var(--tmd-dim); font-size: 0.9rem; }
-
-      .tmd .av { width: var(--av,42px); height: var(--av,42px); border-radius: 50%; flex: none;
-                 display: grid; place-items: center; font-family: var(--tmd-font-display); font-weight: 800;
-                 color: #fff; font-size: calc(var(--av,42px)*0.4); background: var(--ac,var(--tmd-accent));
-                 box-shadow: 0 2px 6px rgba(0,0,0,0.18); overflow: hidden; }
-      :host([data-tm-design="console"]) .tmd .av {
-        box-shadow: 0 0 0 1px color-mix(in srgb, var(--ac,var(--tmd-accent)) 70%, transparent),
-                    0 0 14px color-mix(in srgb, var(--ac,var(--tmd-accent)) 35%, transparent); }
-      .tmd .av ha-icon { --mdc-icon-size: calc(var(--av,42px)*0.55); color: #fff; }
-      .tmd .av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-
-      .tmd .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700;
-                   padding: 4px 9px; border-radius: 999px; background: var(--tmd-surface-2);
-                   color: var(--tmd-text); border: 1px solid var(--tmd-border); }
-      .tmd .chip.soft { background: color-mix(in srgb, var(--tmd-accent) 14%, transparent);
-                        border-color: transparent; color: var(--tmd-accent); }
-      .tmd .num { font-family: var(--tmd-font-mono); font-weight: 800; letter-spacing: -0.01em; }
-      .tmd .big { font-family: var(--tmd-font-display); font-weight: 800; line-height: 1; }
-      .tmd .bar { height: 10px; border-radius: 999px; background: var(--tmd-surface-2); overflow: hidden;
-                  border: 1px solid var(--tmd-border); }
-      .tmd .bar > i { display: block; height: 100%; border-radius: 999px; background: var(--tmd-accent); }
-      :host([data-tm-design="console"]) .tmd .bar { background: #0b1424; }
-      :host([data-tm-design="console"]) .tmd .bar > i {
-        background: linear-gradient(90deg, var(--tmd-accent), var(--tmd-accent2));
-        box-shadow: 0 0 12px color-mix(in srgb, var(--tmd-accent) 60%, transparent); }
-      .tmd .row { display: flex; align-items: center; gap: 10px; }
-      .tmd .muted { color: var(--tmd-dim); }
-      .tmd .divide { height: 1px; background: var(--tmd-border); margin: 12px 0; }
-      .tmd .lead { color: var(--tmd-accent); }
-      .tmd .lead-dot { color: var(--tmd-gold); }
-      /* ════════ end shared kit ════════ */
+      /* Shared .tmd kit + design tokens are provided by taskmate-design.js styles(). */
 
       /* Points Display — Playroom */
       .pl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 11px; }
-      .pl-tile { background: var(--tmd-surface-2); border-radius: 18px; padding: 14px 12px; text-align: center;
+      .pl-tile { background: var(--tmd-surface-2); border-radius: 18px; padding: 22px 12px 15px; text-align: center;
                  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-      .pl-medal { position: absolute; top: 8px; right: 10px; font-size: 18px; line-height: 1; }
+      .pl-medal { position: absolute; top: 9px; left: 11px; font-size: 16px; line-height: 1; }
       .pl-pts { font-family: var(--tmd-font-display); font-weight: 800; font-size: 1.85rem; line-height: 1;
                 color: var(--tmd-accent); }
       .pl-pts span { font-size: 0.9rem; margin-left: 2px; }
