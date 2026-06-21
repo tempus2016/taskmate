@@ -132,6 +132,9 @@ class TaskMatePanel extends HTMLElement {
     this._dialogInitialHash = null;  // for confirm-on-leave
     this._filter = "";               // per-tab search/filter
     this._inlineRename = null;       // { kind: "chore", id, value }
+    this._rowMenuEl = null;          // floating row-action menu element (chores)
+    this._rowMenuForId = null;       // chore id the open row menu belongs to
+    this._onRowMenuDismiss = null;   // scroll/resize listener while menu open
     this._reorderDrag = null;        // tracks drag state during reorder
     this._templateView = null;       // null | "picker" | "preview"
     this._templateSelected = null;   // selected template object
@@ -235,6 +238,7 @@ class TaskMatePanel extends HTMLElement {
     this.removeEventListener("dragover", this._onDragOver);
     this.removeEventListener("drop", this._onDrop);
     document.removeEventListener("visibilitychange", this._onVisibilityChange);
+    this._closeRowMenu();
   }
 
   _onVisibilityChange() {
@@ -380,6 +384,10 @@ class TaskMatePanel extends HTMLElement {
   // ---- event delegation ------------------------------------------------
   _onClick(e) {
     if (!e.target.closest(".tm-ep")) this._closeEntityDropdown();
+    // Row action menu: dismiss on any click that isn't the kebab toggle itself.
+    // Clicks on a menu item still resolve their action below (e.target's parent
+    // chain stays intact after the menu is detached), then the menu closes.
+    if (this._rowMenuEl && !e.target.closest('[data-act="toggle-row-menu"]')) this._closeRowMenu();
     const epSelected = e.target.closest(".tm-ep-selected");
     if (epSelected && !e.target.closest(".tm-entity-clear")) {
       const picker = epSelected.closest(".tm-ep");
@@ -426,6 +434,7 @@ class TaskMatePanel extends HTMLElement {
     // Chores
     if (act === "add-chore")    { this._openChoreDialog(null); return; }
     if (act === "edit-chore")   { this._openChoreDialog(t.dataset.id); return; }
+    if (act === "toggle-row-menu") { this._toggleRowMenu(t); return; }
     if (act === "clone-chore")  { this._doCloneChore(t.dataset.id); return; }
     if (act === "request-swap") { this._openSwapDialog(t.dataset.id); return; }
     if (act === "save-swap")    { this._doRequestSwap(); return; }
@@ -832,6 +841,7 @@ class TaskMatePanel extends HTMLElement {
 
   _onKeyDown(e) {
     if (e.key === "Escape") {
+      if (this._rowMenuEl) { this._closeRowMenu(); return; }
       if (this._inlineRename) { this._inlineRename = null; this._render(); return; }
       if (this._dialog) { this._closeDialog(); return; }
     }
@@ -1985,6 +1995,9 @@ class TaskMatePanel extends HTMLElement {
   // ---- rendering -------------------------------------------------------
   _render() {
     this._rendered = true;
+    // A re-render rebuilds the rows the floating row menu is anchored to, so
+    // drop any open menu rather than leave it orphaned/mispositioned.
+    if (this._rowMenuEl) this._closeRowMenu();
 
     // Self-heal: HA's partial-panel-resolver removes the panel element from
     // the DOM while the WS connection is down (e.g. a long-backgrounded tab)
@@ -2543,7 +2556,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr>
-              ${this._bulkMode ? "<th></th>" : ""}<th>${this._t("panel.chore_table_name")}</th><th>${this._t("panel.chore_table_points")}</th><th>${this._t("panel.chore_table_period")}</th><th>${this._t("panel.chore_table_assigned")}</th><th>${this._t("panel.chore_table_current")}</th><th>${this._t("panel.chore_table_schedule")}</th><th>${this._t("panel.chore_table_approval")}</th><th></th>
+              ${this._bulkMode ? "<th></th>" : ""}<th class="${this._bulkMode ? "" : "tm-col-sticky"}">${this._t("panel.chore_table_name")}</th><th>${this._t("panel.chore_table_points")}</th><th>${this._t("panel.chore_table_period")}</th><th>${this._t("panel.chore_table_assigned")}</th><th>${this._t("panel.chore_table_current")}</th><th>${this._t("panel.chore_table_schedule")}</th><th>${this._t("panel.chore_table_approval")}</th><th></th>
             </tr></thead>
             <tbody>
               ${chores.map(c => this._renderChoreRow(c, childById)).join("")}
@@ -2583,7 +2596,7 @@ class TaskMatePanel extends HTMLElement {
     return `
       <tr class="tm-row ${c.enabled === false ? "tm-row-disabled" : ""}">
         ${this._bulkMode ? `<td><input type="checkbox" data-act="bulk-toggle-row" data-id="${this._esc(c.id)}" ${this._bulkSel.has(c.id) ? "checked" : ""}></td>` : ""}
-        <td>${nameCell}</td>
+        <td class="${this._bulkMode ? "" : "tm-col-sticky"}">${nameCell}</td>
         <td><strong class="tm-numeric">${c.task_type === "timed" ? `${c.timed_rate_points || 0}/${c.timed_rate_minutes || 1} min` : c.points}</strong></td>
         <td><span class="tm-pill">${this._esc(this._timeCategoryLabel(c.time_category))}</span></td>
         <td>${assignedNames} ${modeBadge}</td>
@@ -2591,13 +2604,8 @@ class TaskMatePanel extends HTMLElement {
         <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span></td>
         <td>${c.requires_approval ? `<span class='tm-yes'>${this._t("panel.common_yes")}</span>` : `<span class='tm-no'>${this._t("panel.common_no")}</span>`}</td>
         <td class="tm-row-actions"><div>
-          ${this._state.parent_completable && this._state.parent_completable[c.id] ? `<button type="button" class="tm-icon-btn" data-act="parent-complete-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.parent_complete_tooltip")}">👤✓</button>` : ""}
-          ${["alternating", "random", "balanced"].includes(c.assignment_mode) ? `<button type="button" class="tm-icon-btn" data-act="skip-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_skip_chore")}">⏭</button>` : ""}
-          ${["alternating", "random", "balanced", "first_come"].includes(c.assignment_mode) ? `<button type="button" class="tm-icon-btn" data-act="request-swap" data-id="${this._esc(c.id)}" title="${this._t("panel.swap_btn")}">⇄</button>` : ""}
-          <button type="button" class="tm-icon-btn" data-act="toggle-chore-active" data-id="${this._esc(c.id)}" title="${c.enabled === false ? this._t("panel.btn_activate_chore") : this._t("panel.btn_deactivate_chore")}">${c.enabled === false ? "▶" : "⏸"}</button>
           <button type="button" class="tm-icon-btn" data-act="edit-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_edit")}">✏</button>
-          <button type="button" class="tm-icon-btn" data-act="clone-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_clone_chore")}">⧉</button>
-          <button type="button" class="tm-icon-btn" data-act="delete-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_delete")}">🗑</button>
+          <button type="button" class="tm-icon-btn" data-act="toggle-row-menu" data-id="${this._esc(c.id)}" title="${this._t("panel.row_menu_more")}" aria-haspopup="menu" aria-label="${this._t("panel.row_menu_more")}">⋮</button>
         </div></td>
       </tr>
     `;
@@ -4786,6 +4794,74 @@ class TaskMatePanel extends HTMLElement {
     if (dd) dd.remove();
   }
 
+  // ---- chore row action menu (kebab) -----------------------------------
+  _toggleRowMenu(btn) {
+    const id = btn.dataset.id;
+    const wasOpen = this._rowMenuEl && this._rowMenuForId === id;
+    this._closeRowMenu();
+    if (!wasOpen) this._openRowMenu(btn, id);
+  }
+
+  _openRowMenu(btn, id) {
+    const c = (this._state.chores || []).find(x => x.id === id);
+    if (!c) return;
+    const esc = this._esc.bind(this);
+    const items = [];
+    if (this._state.parent_completable && this._state.parent_completable[id])
+      items.push({ act: "parent-complete-chore", icon: "👤✓", label: this._t("panel.parent_complete_tooltip") });
+    if (["alternating", "random", "balanced"].includes(c.assignment_mode))
+      items.push({ act: "skip-chore", icon: "⏭", label: this._t("panel.btn_skip_chore") });
+    if (["alternating", "random", "balanced", "first_come"].includes(c.assignment_mode))
+      items.push({ act: "request-swap", icon: "⇄", label: this._t("panel.swap_btn") });
+    items.push({ act: "toggle-chore-active", icon: c.enabled === false ? "▶" : "⏸", label: c.enabled === false ? this._t("panel.btn_activate_chore") : this._t("panel.btn_deactivate_chore") });
+    items.push({ act: "clone-chore", icon: "⧉", label: this._t("panel.btn_clone_chore") });
+    items.push({ act: "delete-chore", icon: "🗑", label: this._t("panel.btn_delete"), danger: true });
+
+    const menu = document.createElement("div");
+    menu.className = "tm-row-menu";
+    menu.setAttribute("role", "menu");
+    menu.style.visibility = "hidden";
+    menu.innerHTML = items.map(it =>
+      `<button type="button" role="menuitem" class="tm-row-menu-item${it.danger ? " tm-row-menu-danger" : ""}" data-act="${it.act}" data-id="${esc(id)}">
+         <span class="tm-row-menu-icon">${it.icon}</span><span>${esc(it.label)}</span>
+       </button>`).join("");
+    this.appendChild(menu);
+
+    // Position fixed at the kebab, right-aligned, flipping up / clamping to viewport.
+    const rect = btn.getBoundingClientRect();
+    const mw = menu.offsetWidth, mh = menu.offsetHeight, gap = 4, pad = 8;
+    let left = rect.right - mw;
+    if (left < pad) left = pad;
+    if (left + mw > window.innerWidth - pad) left = window.innerWidth - pad - mw;
+    let top = rect.bottom + gap;
+    if (top + mh > window.innerHeight - pad) top = Math.max(pad, rect.top - gap - mh);
+    menu.style.left = `${Math.round(left)}px`;
+    menu.style.top = `${Math.round(top)}px`;
+    menu.style.visibility = "visible";
+
+    this._rowMenuEl = menu;
+    this._rowMenuForId = id;
+    btn.setAttribute("aria-expanded", "true");
+    // Detach if the page scrolls or resizes under the (fixed) menu.
+    this._onRowMenuDismiss = () => this._closeRowMenu();
+    window.addEventListener("resize", this._onRowMenuDismiss, true);
+    window.addEventListener("scroll", this._onRowMenuDismiss, true);
+  }
+
+  _closeRowMenu() {
+    if (this._onRowMenuDismiss) {
+      window.removeEventListener("resize", this._onRowMenuDismiss, true);
+      window.removeEventListener("scroll", this._onRowMenuDismiss, true);
+      this._onRowMenuDismiss = null;
+    }
+    if (this._rowMenuEl) { this._rowMenuEl.remove(); this._rowMenuEl = null; }
+    if (this._rowMenuForId) {
+      const btn = this.querySelector(`[data-act="toggle-row-menu"][data-id="${CSS.escape(this._rowMenuForId)}"]`);
+      if (btn) btn.setAttribute("aria-expanded", "false");
+      this._rowMenuForId = null;
+    }
+  }
+
   _emptyState(icon, title, copy, action, label) {
     return `
       <div class="tm-empty">
@@ -5334,7 +5410,45 @@ class TaskMatePanel extends HTMLElement {
       .tm-row-disabled { opacity: 0.5; }
       .tm-row-icon { display: inline-flex; vertical-align: middle; margin-right: 10px; opacity: 0.7; --mdc-icon-size: 18px; color: var(--tm-text-muted); }
       .tm-row-actions { text-align: right; white-space: nowrap; }
-      .tm-row-actions > div { display: inline-flex; gap: 4px; align-items: center; }
+      .tm-row-actions > div { display: inline-flex; gap: 4px; align-items: center; justify-content: flex-end; }
+
+      /* Keep the task-name column visible when a wide table scrolls
+         horizontally (issue #533). Pinned only outside bulk-select mode,
+         where the checkbox column sits to the name's left. */
+      .tm-table th.tm-col-sticky, .tm-table td.tm-col-sticky {
+        position: sticky; left: 0; z-index: 1;
+      }
+      .tm-table td.tm-col-sticky { background: var(--tm-surface-0); }
+      .tm-table th.tm-col-sticky { z-index: 3; }
+      .tm-row:hover td.tm-col-sticky { background: var(--tm-surface-hover); }
+
+      /* Floating kebab (⋮) action menu for chore rows. Rendered fixed at the
+         document root so the table wrap's overflow never clips it. */
+      .tm-row-menu {
+        position: fixed; z-index: 300;
+        min-width: 188px; padding: 4px;
+        background: var(--tm-surface-0);
+        border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius);
+        box-shadow: var(--tm-shadow-lg);
+        animation: tm-row-menu-in 0.1s var(--tm-easing);
+      }
+      @keyframes tm-row-menu-in {
+        from { opacity: 0; transform: translateY(-4px); }
+        to   { opacity: 1; transform: none; }
+      }
+      .tm-row-menu-item {
+        display: flex; align-items: center; gap: 10px; width: 100%;
+        padding: 8px 10px; border: 0; background: transparent;
+        border-radius: var(--tm-radius-sm);
+        color: var(--tm-text); font-family: inherit; font-size: 13px;
+        text-align: left; cursor: pointer; white-space: nowrap;
+        transition: background 0.08s var(--tm-easing);
+      }
+      .tm-row-menu-item:hover { background: var(--tm-surface-hover); }
+      .tm-row-menu-icon { width: 18px; text-align: center; flex-shrink: 0; font-size: 13px; }
+      .tm-row-menu-danger { color: var(--tm-danger); }
+      .tm-row-menu-danger:hover { background: var(--tm-danger-soft); }
       .tm-numeric { font-feature-settings: "tnum"; }
       .tm-yes { color: var(--tm-positive); font-weight: 500; }
       .tm-no  { color: var(--tm-text-faint); }
