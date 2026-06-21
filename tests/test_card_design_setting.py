@@ -33,3 +33,24 @@ def test_snapshot_reflects_stored_card_design():
 
 def test_allowed_card_designs_set():
     assert _ALLOWED_CARD_DESIGNS == {"classic", "playroom", "console", "cleanpro"}
+
+
+def test_overview_sensor_exposes_card_design_default():
+    from unittest.mock import MagicMock
+    from custom_components.taskmate.sensor import TaskMateOverallStatsSensor
+    from .test_sensor_attributes import _stress_coordinator
+
+    coord = _stress_coordinator()
+    attrs = TaskMateOverallStatsSensor(coord, MagicMock())._build_attributes()
+    assert attrs["card_design"] == "classic"
+
+
+def test_overview_sensor_reflects_stored_card_design():
+    from unittest.mock import MagicMock
+    from custom_components.taskmate.sensor import TaskMateOverallStatsSensor
+    from .test_sensor_attributes import _stress_coordinator
+
+    coord = _stress_coordinator()
+    coord.data["settings"] = {**coord.data.get("settings", {}), "card_design": "playroom"}
+    attrs = TaskMateOverallStatsSensor(coord, MagicMock())._build_attributes()
+    assert attrs["card_design"] == "playroom"

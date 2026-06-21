@@ -56,16 +56,30 @@
   }
 
   /**
+   * Global default design. Read the card's own entity first (the overview
+   * sensor exposes card_design at top level); otherwise scan TaskMate sensors
+   * so the default resolves even for cards bound to child-specific entities.
+   */
+  function _globalDesign(hass, entity) {
+    if (!hass || !hass.states) return "classic";
+    const own = hass.states[entity] && hass.states[entity].attributes;
+    if (own && IDS.includes(own.card_design)) return own.card_design;
+    for (const eid in hass.states) {
+      if (eid.indexOf("sensor.taskmate") !== 0) continue;
+      const a = hass.states[eid].attributes;
+      if (a && IDS.includes(a.card_design)) return a.card_design;
+    }
+    return "classic";
+  }
+
+  /**
    * Resolve the active design for a card.
-   * Precedence: per-card config.card_design → global settings.card_design → classic.
+   * Precedence: per-card config.card_design → global default → classic.
    */
   function resolve(hass, config, entity) {
     const perCard = config && config.card_design;
     if (perCard && perCard !== "global" && IDS.includes(perCard)) return perCard;
-    const attrs = hass && hass.states && hass.states[entity]
-      ? hass.states[entity].attributes : null;
-    const g = attrs && attrs.settings ? attrs.settings.card_design : null;
-    return IDS.includes(g) ? g : "classic";
+    return _globalDesign(hass, entity);
   }
 
   /** ha-form select options for a per-card design override (includes "use global"). */
