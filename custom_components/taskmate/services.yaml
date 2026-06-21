@@ -73,6 +73,39 @@ reject_chore:
       selector:
         text:
 
+apply_mandatory_penalty:
+  name: Apply Mandatory Penalty
+  description: Deduct the configured penalty points for a missed mandatory chore and clear the review item.
+  fields:
+    miss_id:
+      name: Miss ID
+      description: The ID of the mandatory-miss review item
+      required: true
+      selector:
+        text:
+
+postpone_mandatory_chore:
+  name: Postpone Mandatory Chore
+  description: Give a missed mandatory chore another period (or tomorrow) without a penalty, and clear the review item.
+  fields:
+    miss_id:
+      name: Miss ID
+      description: The ID of the mandatory-miss review item
+      required: true
+      selector:
+        text:
+
+dismiss_mandatory_chore:
+  name: Dismiss Mandatory Chore
+  description: Clear a missed mandatory chore review item with no penalty.
+  fields:
+    miss_id:
+      name: Miss ID
+      description: The ID of the mandatory-miss review item
+      required: true
+      selector:
+        text:
+
 undo_transaction:
   name: Undo Transaction
   description: Reverse a points transaction by its ID — penalties, bonuses, manual add/remove adjustments and gifts (both legs). Automatic transactions (weekend/streak/perfect-week bonuses, pool moves, decay, interest) can't be undone.

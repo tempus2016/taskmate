@@ -21,6 +21,12 @@ def generate_id() -> str:
     return str(uuid.uuid4()).replace("-", "")[:16]
 
 
+def dt_util_now_iso() -> str:
+    """Current local time as an ISO string (module-level so dataclass defaults can use it)."""
+    from homeassistant.util import dt as dt_util
+    return dt_util.now().isoformat()
+
+
 def parse_datetime(value: str | datetime | None) -> datetime | None:
     """Parse a datetime value, ensuring timezone awareness.
 
@@ -249,6 +255,11 @@ class Chore:
     due_time: str = ""
     early_bonus: int = 0
     late_penalty: int = 0
+    # Mandatory chores (#532): when True, a missed completion at the chore's
+    # time-period end raises a parent review item (Apply Penalty / Postpone /
+    # Dismiss). mandatory_penalty_points is the fixed deduction Apply Penalty applies.
+    mandatory: bool = False
+    mandatory_penalty_points: int = 0
     require_photo: bool = False  # require an evidence photo; forces parent approval
     # Dynamic assignment (sibling rotation)
     assignment_mode: str = "everyone"  # everyone | alternating | random
@@ -310,6 +321,8 @@ class Chore:
             due_time=data.get("due_time", ""),
             early_bonus=int(data.get("early_bonus", 0) or 0),
             late_penalty=int(data.get("late_penalty", 0) or 0),
+            mandatory=bool(data.get("mandatory", False)),
+            mandatory_penalty_points=max(0, int(data.get("mandatory_penalty_points", 0) or 0)),
             require_photo=data.get("require_photo", False),
             assignment_mode=data.get("assignment_mode", "everyone"),
             assignment_rotation_anchor=data.get("assignment_rotation_anchor", ""),
@@ -362,6 +375,8 @@ class Chore:
             "due_time": self.due_time,
             "early_bonus": self.early_bonus,
             "late_penalty": self.late_penalty,
+            "mandatory": self.mandatory,
+            "mandatory_penalty_points": self.mandatory_penalty_points,
             "require_photo": self.require_photo,
             "assignment_mode": self.assignment_mode,
             "assignment_rotation_anchor": self.assignment_rotation_anchor,
@@ -589,6 +604,52 @@ class ChoreCompletion:
             "bonus_subtask_id": self.bonus_subtask_id,
             "timed_duration_seconds": self.timed_duration_seconds,
             "photo_url": self.photo_url,
+            "id": self.id,
+        }
+
+
+@dataclass
+class MandatoryMiss:
+    """A mandatory chore left incomplete when its time-period window closed (#532).
+
+    One per (chore, child, day). Only pending items are persisted; resolving one
+    (penalty/postpone/dismiss) removes it. penalty_points is snapshotted at
+    creation so later edits to the chore don't change an outstanding miss.
+    """
+
+    chore_id: str
+    child_id: str
+    due_date: str          # ISO date the chore was missed
+    period_id: str         # the window that closed ("anytime" for all-day)
+    penalty_points: int = 0
+    postpone_count: int = 0
+    created_at: str = field(default_factory=dt_util_now_iso)
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "MandatoryMiss":
+        """Create a MandatoryMiss from a dictionary."""
+        return cls(
+            chore_id=data.get("chore_id", ""),
+            child_id=data.get("child_id", ""),
+            due_date=data.get("due_date", ""),
+            period_id=data.get("period_id", "anytime"),
+            penalty_points=max(0, int(data.get("penalty_points", 0) or 0)),
+            postpone_count=max(0, int(data.get("postpone_count", 0) or 0)),
+            created_at=data.get("created_at", "") or dt_util_now_iso(),
+            id=data.get("id", generate_id()),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "chore_id": self.chore_id,
+            "child_id": self.child_id,
+            "due_date": self.due_date,
+            "period_id": self.period_id,
+            "penalty_points": self.penalty_points,
+            "postpone_count": self.postpone_count,
+            "created_at": self.created_at,
             "id": self.id,
         }
 

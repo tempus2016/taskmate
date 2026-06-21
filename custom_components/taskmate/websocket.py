@@ -303,6 +303,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "pending_completions":  [c for c in completions if not c.get("approved")],
         "reward_claims":        reward_claims,
         "pending_reward_claims": [c for c in reward_claims if not c.get("approved")],
+        "mandatory_misses":     coordinator.mandatory_misses_state(),  # missed mandatory chores awaiting review (#532)
         "points_transactions":  transactions[-100:],   # most recent 100 for audit log
         "badges":        list(data.get("badges", [])),
         "awarded_badges": list(data.get("awarded_badges", [])),
@@ -443,6 +444,7 @@ _CHORE_EDITABLE_FIELDS = {
     "recurrence_start", "first_occurrence_mode", "visibility_entity",
     "visibility_state", "visibility_operator", "enabled", "expires_on",
     "due_time", "early_bonus", "late_penalty", "require_photo",
+    "mandatory", "mandatory_penalty_points",
     "assignment_mode", "assignment_rotation_anchor", "require_availability",
     "publish_calendar_entities", "bonus_subtasks",
     "task_type", "timed_rate_points", "timed_rate_minutes", "timed_max_daily_minutes",
@@ -477,6 +479,8 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("due_time"): str,
         vol.Optional("early_bonus"): vol.All(int, vol.Range(min=0)),
         vol.Optional("late_penalty"): vol.All(int, vol.Range(min=0)),
+        vol.Optional("mandatory"): bool,
+        vol.Optional("mandatory_penalty_points"): vol.All(int, vol.Range(min=0)),
         vol.Optional("require_photo"): bool,
         vol.Optional("assignment_mode"): vol.In(["everyone", "alternating", "random", "balanced", "first_come", "unassigned"]),
         vol.Optional("assignment_rotation_anchor"): str,
@@ -1311,6 +1315,9 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
             changed.append(k)
     if changed:
         await storage.async_save()
+        # Period boundaries moved → re-arm the mandatory-chore end-of-period checks (#532)
+        if "time_periods" in changed:
+            await coordinator.async_rearm_mandatory_schedules()
         await coordinator.async_refresh()
     connection.send_result(msg["id"], {"updated": changed})
 

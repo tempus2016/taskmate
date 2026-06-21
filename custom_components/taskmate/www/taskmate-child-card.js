@@ -1166,6 +1166,37 @@ class TaskMateChildCard extends LitElement {
         border-left: 3px solid var(--fun-green);
       }
 
+      /* Mandatory chores (#532): red border + tint + left spine + badge. */
+      .chore-card.mandatory {
+        border-color: var(--fun-red) !important;
+        background: color-mix(in srgb, var(--fun-red) 9%, var(--card-background-color, #fff)) !important;
+      }
+      .chore-card.mandatory::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 6px;
+        background: var(--fun-red);
+      }
+      .mandatory-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--fun-red);
+        color: #fff;
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        border-radius: 8px;
+        padding: 2px 7px;
+        margin-left: 8px;
+        vertical-align: middle;
+        white-space: nowrap;
+      }
+
       /* Reset countdown — inline beside section title */
       .reset-countdown {
         display: inline-flex;
@@ -2579,7 +2610,7 @@ class TaskMateChildCard extends LitElement {
 
     return html`
       <div
-        class="chore-card ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence ? "recurrence-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""}"
+        class="chore-card ${chore.mandatory ? "mandatory" : ""} ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence ? "recurrence-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""}"
         role="button"
         tabindex="${isInteractive ? '0' : '-1'}"
         aria-disabled="${isInteractive ? 'false' : 'true'}"
@@ -2593,7 +2624,7 @@ class TaskMateChildCard extends LitElement {
             <div class="chore-number-badge ${colorClass}">${choreNumber}</div>
           </div>
           <div class="chore-details">
-            <div class="chore-name">${chore.name}</div>
+            <div class="chore-name">${chore.name}${chore.mandatory ? html`<span class="mandatory-badge">⚠ ${this._t('child.mandatory')}</span>` : ''}</div>
             ${chore.difficulty ? html`<span class="difficulty-badge difficulty-${chore.difficulty}">${this._t('child.difficulty_' + chore.difficulty) || chore.difficulty}</span>` : ''}
             ${this.config.show_description && chore.description ? html`
               <div class="chore-description">${chore.description}</div>

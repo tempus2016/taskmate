@@ -1215,9 +1215,12 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                     "claimed_at": claim.claimed_at.isoformat(),
                 })
 
+        mandatory_misses = self.coordinator.mandatory_misses_state()
         return {
             "pending_chore_completions": len(pending_completions),
             "pending_reward_claims": len(pending_rewards),
+            "pending_mandatory_misses": len(mandatory_misses),
             "chore_completions": completion_details,
             "reward_claims": reward_details,
+            "mandatory_misses": mandatory_misses,
         }

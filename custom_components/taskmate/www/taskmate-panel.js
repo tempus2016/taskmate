@@ -1206,6 +1206,7 @@ class TaskMatePanel extends HTMLElement {
       enabled: true,
       expires_on: "",
       due_time: "", early_bonus: 0, late_penalty: 0,
+      mandatory: false, mandatory_penalty_points: 0,
       require_photo: false,
       publish_calendar_entities: [],
       bonus_subtasks: [],
@@ -1259,6 +1260,8 @@ class TaskMatePanel extends HTMLElement {
       due_time: (d.due_time || "").trim(),
       early_bonus: Math.max(0, Number(d.early_bonus) || 0),
       late_penalty: Math.max(0, Number(d.late_penalty) || 0),
+      mandatory: !!d.mandatory,
+      mandatory_penalty_points: Math.max(0, Number(d.mandatory_penalty_points) || 0),
       require_photo: !!d.require_photo,
       publish_calendar_entities: d.publish_calendar_entities || [],
       bonus_subtasks: (d.bonus_subtasks || []).filter(b => b.name && b.name.trim()).map(b => ({
@@ -4253,6 +4256,10 @@ class TaskMatePanel extends HTMLElement {
           this._t("panel.chore_require_photo_hint")),
         this._switch(this._t("panel.chore_require_availability"), "require_availability", d.require_availability,
           this._t("panel.chore_require_availability_hint")),
+        this._switch(this._t("panel.chore_mandatory_label"), "mandatory", d.mandatory,
+          this._t("panel.chore_mandatory_hint"), true),
+        d.mandatory ? this._field(this._t("panel.chore_mandatory_penalty_label"), "mandatory_penalty_points",
+          d.mandatory_penalty_points, "number", this._t("panel.chore_mandatory_penalty_hint")) : "",
         memberInGroup ? `
           <div class="tm-field">
             <span class="tm-field-hint">${this._t("panel.chore_group_hint", {name: this._esc(memberInGroup.name), policy: memberInGroup.policy})}</span>
@@ -4677,10 +4684,10 @@ class TaskMatePanel extends HTMLElement {
       </div>`;
   }
 
-  _switch(label, name, checked, hint = "") {
+  _switch(label, name, checked, hint = "", rerender = false) {
     return `
       <div class="tm-check-row">
-        <ha-switch data-field="${name}" ${checked ? "checked" : ""}></ha-switch>
+        <ha-switch data-field="${name}" ${checked ? "checked" : ""} ${rerender ? 'data-rerender="true"' : ""}></ha-switch>
         <div>
           <div class="tm-check-title">${this._esc(label)}</div>
           ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}

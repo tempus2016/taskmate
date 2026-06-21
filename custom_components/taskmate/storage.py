@@ -11,9 +11,9 @@ from homeassistant.helpers.storage import Store
 from .const import DOMAIN
 from .models import (
     Badge, AwardedBadge, Bonus, Challenge, Child, Chore, ChoreCompletion,
-    CustomNotification, NotificationConfig, NotificationRoute, ParentRecipient,
-    Penalty, PoolAllocation, Quest, Reward, RewardClaim, PointsTransaction,
-    TaskGroup, TimedSession,
+    CustomNotification, MandatoryMiss, NotificationConfig, NotificationRoute,
+    ParentRecipient, Penalty, PoolAllocation, Quest, Reward, RewardClaim,
+    PointsTransaction, TaskGroup, TimedSession,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -42,6 +42,7 @@ class TaskMateStorage:
                 "chores": [],
                 "rewards": [],
                 "completions": [],
+                "mandatory_misses": [],
                 "reward_claims": [],
                 "points_transactions": [],
                 "pool_allocations": [],
@@ -396,6 +397,33 @@ class TaskMateStorage:
         self._data["completions"] = [
             c for c in self._data.get("completions", []) if c.get("id") != completion_id
         ]
+
+    # Mandatory-miss management (#532)
+    def get_mandatory_misses(self) -> list[MandatoryMiss]:
+        """Get all pending mandatory-miss review items."""
+        return [MandatoryMiss.from_dict(m) for m in self._data.get("mandatory_misses", [])]
+
+    def add_mandatory_miss(self, miss: MandatoryMiss) -> None:
+        """Add a mandatory-miss item."""
+        self._data.setdefault("mandatory_misses", []).append(miss.to_dict())
+
+    def update_mandatory_miss(self, miss: MandatoryMiss) -> None:
+        """Replace a mandatory-miss item by id."""
+        items = self._data.get("mandatory_misses", [])
+        for i, m in enumerate(items):
+            if m.get("id") == miss.id:
+                items[i] = miss.to_dict()
+                return
+
+    def remove_mandatory_miss(self, miss_id: str) -> None:
+        """Remove a mandatory-miss item by id."""
+        self._data["mandatory_misses"] = [
+            m for m in self._data.get("mandatory_misses", []) if m.get("id") != miss_id
+        ]
+
+    def replace_mandatory_misses(self, misses: list[MandatoryMiss]) -> None:
+        """Replace the whole mandatory-miss collection."""
+        self._data["mandatory_misses"] = [m.to_dict() for m in misses]
 
     # Reward claims management
     def get_reward_claims(self) -> list[RewardClaim]:
@@ -900,7 +928,7 @@ class TaskMateStorage:
         self._data = copy.deepcopy(data)
         list_keys = (
             "children", "chores", "rewards", "penalties", "bonuses",
-            "task_groups", "completions", "reward_claims", "points_transactions",
+            "task_groups", "completions", "mandatory_misses", "reward_claims", "points_transactions",
             "pool_allocations", "badges", "awarded_badges", "parent_recipients",
             "audit_log", "timed_sessions", "quests", "challenges",
         )
