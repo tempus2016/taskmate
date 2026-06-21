@@ -206,6 +206,20 @@ class MandatoryMixin:
         self.disarm_mandatory_schedules()
         self.arm_mandatory_schedules()
 
+    async def async_catchup_mandatory_misses(self) -> None:
+        """On startup, detect misses for any period that already ended today.
+
+        The period-end callbacks only fire going forward, so a restart after a
+        boundary would otherwise miss that period for the rest of the day. The
+        detector's existing-item guard keeps this idempotent.
+        """
+        now = dt_util.now()
+        today = now.date()
+        cur = now.time()
+        for hour, minute, period_id in self._mandatory_period_end_times():
+            if dt_time(hour, minute) <= cur:
+                await self.async_detect_mandatory_misses(period_id, today)
+
     async def async_detect_anytime_mandatory_misses(self) -> None:
         """Midnight: raise misses for incomplete mandatory 'anytime' chores for the
         day that just ended, then prune the postpone override map (new day starts clean)."""

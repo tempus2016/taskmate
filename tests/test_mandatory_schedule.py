@@ -46,3 +46,13 @@ def test_anytime_detection_targets_yesterday_and_clears_overrides():
     assert args[0] == "anytime"
     assert args[1] == dt.date(2026, 6, 20)
     assert c.mandatory_postpone == {}
+
+
+def test_catchup_runs_for_passed_periods_only():
+    c = _coord()
+    c.async_detect_mandatory_misses = AsyncMock(return_value=0)
+    now = dt.datetime(2026, 6, 21, 13, 0)  # 13:00 — morning(12:00) passed; afternoon(17:00)/evening(21:00) ahead
+    with patch("homeassistant.util.dt.now", return_value=now):
+        run(c.async_catchup_mandatory_misses())
+    called_periods = [call.args[0] for call in c.async_detect_mandatory_misses.await_args_list]
+    assert called_periods == ["morning"]

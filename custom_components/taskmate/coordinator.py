@@ -251,6 +251,7 @@ class TaskMateCoordinator(
         await self.notifications.async_setup_schedules()
         # Mandatory-chore period-end detection (#532)
         self.arm_mandatory_schedules()
+        await self.async_catchup_mandatory_misses()
 
     @callback
     def _async_weekly_digest_check(self, now: datetime) -> None:
