@@ -2,8 +2,8 @@
  * TaskMate Activity Feed Card
  * Scrollable timeline of recent events — completions, approvals, points, rewards.
  *
- * Version: 1.1.0
- * Last Updated: 2026-05-15
+ * Version: 1.2.0
+ * Last Updated: 2026-06-21
  */
 
 const LitElement = customElements.get("hui-masonry-view")
@@ -21,12 +21,32 @@ class TaskMateActivityCard extends LitElement {
       hass: { type: Object },
       config: { type: Object },
       _filter: { type: String, state: true },
+      _confirm: { type: Object, state: true },
+      _loading: { type: Object, state: true },
     };
   }
 
   constructor() {
     super();
     this._filter = "all";
+    this._confirm = null;
+    this._loading = {};
+  }
+
+  // Reason prefixes for *derived* (automatic) transactions, which can't be
+  // undone in isolation — mirrors the backend deny-list in coord_points.py.
+  // Everything else (penalty, bonus, gift, manual add/remove) is reversible.
+  static get _UNDO_DENY_PREFIXES() {
+    return [
+      "Weekend bonus", "Streak milestone bonus", "Perfect week bonus",
+      "Allocated to pool:", "Pool refund", "Points decay",
+      "Savings interest", "Badge",
+    ];
+  }
+
+  _txnReversible(reason) {
+    const r = reason || "";
+    return !TaskMateActivityCard._UNDO_DENY_PREFIXES.some(p => r.startsWith(p));
   }
 
   shouldUpdate(changedProps) {
@@ -372,6 +392,32 @@ class TaskMateActivityCard extends LitElement {
         border-top: 1px dashed var(--divider-color, #ececf2);
         opacity: 0.7;
       }
+
+      /* ── Undo button ───────────────────────────────────── */
+      .undo-btn {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        margin-left: 2px;
+        border-radius: 50%;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        background: transparent;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: background 0.12s ease, color 0.12s ease;
+      }
+      .undo-btn:hover {
+        background: var(--secondary-background-color, rgba(0,0,0,0.05));
+        color: var(--primary-text-color);
+      }
+      .undo-btn[disabled] { opacity: 0.4; cursor: default; }
+      .undo-btn ha-icon { --mdc-icon-size: 16px; }
+
+      .undo-confirm-body { font-size: 0.95rem; line-height: 1.4; color: var(--primary-text-color); }
+      .undo-confirm-go { --mdc-theme-primary: var(--error-color, #d9534f); }
     `;
   }
 
@@ -518,6 +564,7 @@ class TaskMateActivityCard extends LitElement {
             <div class="feed-end">${this._t('activity.feed_end')}</div>
           `}
         </div>
+        ${this._renderConfirmDialog()}
       </ha-card>
     `;
   }
@@ -603,6 +650,9 @@ class TaskMateActivityCard extends LitElement {
               ${isAdd ? '+' : '−'}${pts}
               <ha-icon icon="${pointsIcon}"></ha-icon>
             </span>
+            ${this._txnReversible(reason)
+              ? this._renderUndoButton('txn', item.transaction_id, displayReason || reason, childName, pts)
+              : ''}
           </div>
         </div>
       `;
@@ -681,9 +731,81 @@ class TaskMateActivityCard extends LitElement {
               <ha-icon icon="${pointsIcon}"></ha-icon>
             </span>
           ` : ''}
+          ${status === 'approved'
+            ? this._renderUndoButton('chore', item.completion_id, choreName, childName, pts)
+            : ''}
         </div>
       </div>
     `;
+  }
+
+  // ── Undo affordance ──────────────────────────────────────
+  // kind: 'chore' (undo an approval → pending) or 'txn' (reverse a points txn).
+  _renderUndoButton(kind, id, detail, child, points) {
+    if (!id) return '';
+    const loading = !!this._loading[id];
+    const message = kind === 'chore'
+      ? this._t('activity.undo_confirm_chore', { detail, child, points })
+      : this._t('activity.undo_confirm_txn', { detail, child, points });
+    return html`
+      <button
+        class="undo-btn"
+        type="button"
+        title=${this._t('activity.undo')}
+        aria-label=${this._t('activity.undo')}
+        ?disabled=${loading}
+        @click=${() => { this._confirm = { kind, id, message }; }}
+      >
+        <ha-icon icon="mdi:undo-variant"></ha-icon>
+      </button>
+    `;
+  }
+
+  _renderConfirmDialog() {
+    if (!this._confirm) return '';
+    return html`
+      <ha-dialog
+        open
+        .heading=${this._t('activity.undo_confirm_title')}
+        @closed=${() => { this._confirm = null; }}
+      >
+        <div class="undo-confirm-body">${this._confirm.message}</div>
+        <mwc-button slot="secondaryAction" @click=${() => { this._confirm = null; }}>
+          ${this._t('common.cancel')}
+        </mwc-button>
+        <mwc-button slot="primaryAction" class="undo-confirm-go" @click=${() => this._doUndo()}>
+          ${this._t('activity.undo')}
+        </mwc-button>
+      </ha-dialog>
+    `;
+  }
+
+  async _doUndo() {
+    const pending = this._confirm;
+    this._confirm = null;
+    if (!pending) return;
+    const { kind, id } = pending;
+    if (this._loading[id]) return;
+    this._loading = { ...this._loading, [id]: true };
+    this.requestUpdate();
+    try {
+      if (kind === 'chore') {
+        await this.hass.callService('taskmate', 'undo_chore_approval', { completion_id: id });
+      } else {
+        await this.hass.callService('taskmate', 'undo_transaction', { transaction_id: id });
+      }
+    } catch (error) {
+      console.error('TaskMate undo failed:', error);
+      if (this.hass.callService) {
+        this.hass.callService('persistent_notification', 'create', {
+          title: this._t('activity.undo_error_title'),
+          message: this._t('activity.undo_error_body', { message: error.message }),
+          notification_id: `taskmate_undo_error_${id}`,
+        });
+      }
+    } finally {
+      this._loading = { ...this._loading, [id]: false };
+    }
   }
 
   _groupByDay(items) {

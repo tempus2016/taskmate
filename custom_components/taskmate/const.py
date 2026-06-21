@@ -241,6 +241,7 @@ PLATFORMS: Final = ["sensor", "button", "binary_sensor"]
 SERVICE_COMPLETE_CHORE: Final = "complete_chore"
 SERVICE_APPROVE_CHORE: Final = "approve_chore"
 SERVICE_REJECT_CHORE: Final = "reject_chore"
+SERVICE_UNDO_CHORE_APPROVAL: Final = "undo_chore_approval"
 SERVICE_CLAIM_REWARD: Final = "claim_reward"
 SERVICE_APPROVE_REWARD: Final = "approve_reward"
 SERVICE_REJECT_REWARD: Final = "reject_reward"

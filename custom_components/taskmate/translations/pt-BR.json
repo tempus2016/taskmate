@@ -180,6 +180,26 @@
         }
       }
     },
+    "undo_chore_approval": {
+      "name": "Desfazer aprovação de tarefa",
+      "description": "Desfazer a aprovação acidental de uma tarefa — remove os pontos concedidos e retorna a conclusão para pendente para que possa ser aprovada novamente.",
+      "fields": {
+        "completion_id": {
+          "name": "ID de conclusão",
+          "description": "O ID da conclusão de tarefa aprovada a retornar para pendente"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "Desfazer transação",
+      "description": "Desfazer uma transação de pontos pelo seu ID — penalidades, bônus, ajustes manuais (adicionar/remover) e presentes (ambos os lados). Transações automáticas (bônus de fim de semana/sequência/semana perfeita, movimentações do cofrinho, desvalorização, juros) não podem ser desfeitas.",
+      "fields": {
+        "transaction_id": {
+          "name": "ID da transação",
+          "description": "O ID da transação de pontos a reverter"
+        }
+      }
+    },
     "claim_reward": {
       "name": "Reclamar recompensa",
       "description": "A criança reclama uma recompensa usando os seus pontos",

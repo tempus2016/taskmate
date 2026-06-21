@@ -761,6 +761,9 @@ class PointsTransaction:
     reason: str = ""
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     id: str = field(default_factory=generate_id)
+    # Groups transactions that must be reversed together (e.g. both legs of a
+    # gift). Empty for standalone transactions. Pre-upgrade rows load as "".
+    link_id: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PointsTransaction:
@@ -772,6 +775,7 @@ class PointsTransaction:
             reason=data.get("reason", ""),
             created_at=created_at or datetime.now(timezone.utc),
             id=data.get("id", generate_id()),
+            link_id=data.get("link_id", ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -782,6 +786,7 @@ class PointsTransaction:
             "reason": self.reason,
             "created_at": format_datetime(self.created_at),
             "id": self.id,
+            "link_id": self.link_id,
         }
 
 

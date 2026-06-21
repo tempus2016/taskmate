@@ -180,6 +180,26 @@
         }
       }
     },
+    "undo_chore_approval": {
+      "name": "Angre godkjenning av gjeremål",
+      "description": "Angre ei utilsikta godkjenning av eit gjeremål — fjernar dei tildelte poenga og set fullføringa tilbake til ventar, slik at ho kan godkjennast på nytt.",
+      "fields": {
+        "completion_id": {
+          "name": "Fullførings-ID",
+          "description": "ID-en til den godkjende gjeremålsfullføringa som skal setjast tilbake til ventar"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "Angre transaksjon",
+      "description": "Angre ein poengtransaksjon med ID-en — straffer, bonusar, manuelle justeringar (legg til/fjern) og gåver (begge sider). Automatiske transaksjonar (helg-/rekkje-/perfekt veke-bonusar, sparekrukke-rørsler, forfall, renter) kan ikkje angrast.",
+      "fields": {
+        "transaction_id": {
+          "name": "Transaksjons-ID",
+          "description": "ID-en til poengtransaksjonen som skal angrast"
+        }
+      }
+    },
     "claim_reward": {
       "name": "Hent løning",
       "description": "Bornet hentar ei løning med poenga sine",
