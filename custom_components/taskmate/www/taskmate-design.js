@@ -30,7 +30,7 @@
   // inherit down into the card's shadow DOM. Tokens mirror
   // docs/design/redesigns/taskmate-redesigns.html (.dir-a / .dir-b / .dir-c).
   const TOKENS = `
-:host([data-tm-design="playroom"]){
+:host([data-tm-design="playroom"]),[data-tm-design="playroom"]{
   --tmd-bg:#FFF7EC;--tmd-surface:#FFFFFF;--tmd-surface-2:#FFF0DB;--tmd-border:#F0DFC4;
   --tmd-text:#3A2E26;--tmd-dim:#9C8676;
   --tmd-accent:#7C5CE6;--tmd-accent2:#FFC23C;--tmd-good:#36C58E;--tmd-warn:#FFB020;--tmd-bad:#FF6B6B;--tmd-gold:#FFC23C;
@@ -38,7 +38,7 @@
   --tmd-font-display:"Baloo 2",cursive;--tmd-font-body:"Nunito",sans-serif;--tmd-font-mono:"Baloo 2",cursive;
   --tmd-c1:#FF6B6B;--tmd-c2:#4ECDC4;--tmd-c3:#FFB020;--tmd-c4:#6C8DFF;--tmd-c5:#C77DFF;--tmd-c6:#45D483;
 }
-:host([data-tm-design="console"]){
+:host([data-tm-design="console"]),[data-tm-design="console"]{
   --tmd-bg:#0E1320;--tmd-surface:#161D2E;--tmd-surface-2:#1E2740;--tmd-border:#2A3550;
   --tmd-text:#EAF0FF;--tmd-dim:#8A97B8;
   --tmd-accent:#3DDBFF;--tmd-accent2:#FF4D9D;--tmd-good:#4BE08B;--tmd-warn:#FFCB45;--tmd-bad:#FF5A7A;--tmd-gold:#FFCB45;
@@ -46,7 +46,7 @@
   --tmd-font-display:"Space Grotesk",sans-serif;--tmd-font-body:"Inter",sans-serif;--tmd-font-mono:"JetBrains Mono",monospace;
   --tmd-c1:#3DDBFF;--tmd-c2:#FF4D9D;--tmd-c3:#FFCB45;--tmd-c4:#7C5CFF;--tmd-c5:#4BE08B;--tmd-c6:#FF8A3D;
 }
-:host([data-tm-design="cleanpro"]){
+:host([data-tm-design="cleanpro"]),[data-tm-design="cleanpro"]{
   --tmd-bg:#F6F7F9;--tmd-surface:#FFFFFF;--tmd-surface-2:#F1F3F6;--tmd-border:#E5E8EC;
   --tmd-text:#1A2230;--tmd-dim:#6B7585;
   --tmd-accent:#4F6BED;--tmd-accent2:#0FB5A8;--tmd-good:#16A36B;--tmd-warn:#E0A100;--tmd-bad:#DC4C4C;--tmd-gold:#E0A100;
@@ -165,5 +165,10 @@
     ];
   }
 
-  window.__taskmate_design = { IDS, resolve, editorOptions, styles };
+  // Raw token + kit CSS for non-Lit consumers (e.g. the admin panel, which
+  // renders to light DOM). Inject into a <style> and set data-tm-design on a
+  // wrapper element; the [data-tm-design] selector variant applies there.
+  const cssText = TOKENS + "\n" + KIT;
+
+  window.__taskmate_design = { IDS, resolve, editorOptions, styles, cssText, tokensCSS: TOKENS };
 })();

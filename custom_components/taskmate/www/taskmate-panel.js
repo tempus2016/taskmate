@@ -2036,6 +2036,7 @@ class TaskMatePanel extends HTMLElement {
       if (existingToast) this.appendChild(existingToast);
       this._shellReady = true;
       this._zoneCache = {};
+      this._applyDesign();
       this._bindHaPickers();
       this._scrollActiveMobileTabIntoView();
       return;
@@ -2096,7 +2097,25 @@ class TaskMatePanel extends HTMLElement {
       if (newMtabs) newMtabs.scrollLeft = savedMtabsScroll;
     }
 
+    this._applyDesign();
     this._scrollActiveMobileTabIntoView();
+  }
+
+  // Inject the shared design tokens once and stamp the active design on the
+  // shell. Classic carries NO data-tm-design attribute, so the existing look
+  // is unchanged; the [data-tm-design="…"] rules only attach for the other
+  // designs. The panel renders to light DOM, so document-level token rules
+  // reach every element under the shell.
+  _applyDesign() {
+    const d = window.__taskmate_design;
+    // Token variables are injected INSIDE the panel's own <style> via _styles()
+    // (the panel is light DOM but nested in HA's shadow tree, so a document-level
+    // stylesheet can't reach the shell — the vars must live in-scope).
+    const shell = this.querySelector(".tm-shell");
+    if (!shell) return;
+    const design = d ? d.resolve(this._hass, {}, "sensor.taskmate_overview") : "classic";
+    if (design && design !== "classic") shell.setAttribute("data-tm-design", design);
+    else shell.removeAttribute("data-tm-design");
   }
 
   _scrollActiveMobileTabIntoView() {
@@ -3603,6 +3622,12 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-setting-label">${this._t("panel.settings_points_icon_label")}<small>${this._t("panel.settings_points_icon_hint")}</small></div>
               <ha-icon-picker data-setting="points_icon" data-current="${this._esc(s.points_icon || 'mdi:star')}"></ha-icon-picker>
             </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_card_design_label")}<small>${this._t("panel.settings_card_design_hint")}</small></div>
+              <select class="tm-select" data-setting="card_design">
+                ${["classic","playroom","console","cleanpro"].map(v => `<option value="${v}" ${v === (s.card_design || "classic") ? "selected" : ""}>${this._esc(this._t("common.design." + v))}</option>`).join("")}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -4907,7 +4932,12 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _styles() {
+    // Design-token variable definitions, injected IN-SCOPE so they reach the
+    // shadow-nested panel shell (a document stylesheet cannot). The
+    // [data-tm-design="…"] rule matches .tm-shell and defines --tmd-* there.
+    const designTokens = (window.__taskmate_design && window.__taskmate_design.tokensCSS) || "";
     return `<style>
+      ${designTokens}
       taskmate-panel {
         display: block; height: 100%;
 
@@ -6366,6 +6396,134 @@ class TaskMatePanel extends HTMLElement {
         .tm-section-head, .tm-setting-row { padding-left: 16px; padding-right: 16px; }
         .tm-timeline-row { grid-template-columns: 1fr auto; }
         .tm-timeline-time, .tm-timeline-icon { display: none; }
+      }
+
+      /* =====================================================================
+         DESIGNED STYLES (playroom / console / cleanpro)
+         Applied only when .tm-shell carries data-tm-design="<id>". Classic
+         carries no attribute, so every rule above is byte-for-byte unchanged.
+         The panel is driven entirely by --tm-* tokens, so the bulk of the
+         re-skin is a token remap to the shared --tmd-* palette (see
+         taskmate-design.js); a handful of targeted accents below echo the
+         dir-a/dir-b/dir-c treatments from docs/design/redesigns/frag/panel.html
+         for the rail, topbar and chores table. Only var(--tmd-*) tokens used.
+         ===================================================================== */
+      .tm-shell[data-tm-design] {
+        --tm-bg:            var(--tmd-bg);
+        --tm-surface-0:     var(--tmd-surface);
+        --tm-surface-1:     var(--tmd-surface);
+        --tm-surface-2:     var(--tmd-surface-2);
+        --tm-surface-3:     var(--tmd-surface-2);
+        --tm-surface-hover: var(--tmd-surface-2);
+
+        --tm-border:        var(--tmd-border);
+        --tm-border-strong: var(--tmd-border);
+        --tm-border-soft:   var(--tmd-border);
+
+        --tm-text:          var(--tmd-text);
+        --tm-text-muted:    var(--tmd-dim);
+        --tm-text-faint:    var(--tmd-dim);
+        --tm-text-vfaint:   var(--tmd-dim);
+
+        --tm-accent:        var(--tmd-accent);
+        --tm-accent-hover:  color-mix(in srgb, var(--tmd-accent), #000 14%);
+        --tm-accent-press:  var(--tmd-accent);
+        --tm-accent-soft:   color-mix(in srgb, var(--tmd-accent) 14%, transparent);
+        --tm-accent-border: color-mix(in srgb, var(--tmd-accent) 40%, transparent);
+        --tm-accent-text:   var(--tmd-accent);
+        --tm-accent-glow:   color-mix(in srgb, var(--tmd-accent) 28%, transparent);
+
+        --tm-positive:      var(--tmd-good);
+        --tm-positive-soft: color-mix(in srgb, var(--tmd-good) 14%, transparent);
+        --tm-positive-border:color-mix(in srgb, var(--tmd-good) 40%, transparent);
+        --tm-warning:       var(--tmd-warn);
+        --tm-warning-soft:  color-mix(in srgb, var(--tmd-warn) 14%, transparent);
+        --tm-warning-border:color-mix(in srgb, var(--tmd-warn) 40%, transparent);
+        --tm-danger:        var(--tmd-bad);
+        --tm-danger-soft:   color-mix(in srgb, var(--tmd-bad) 14%, transparent);
+        --tm-danger-border: color-mix(in srgb, var(--tmd-bad) 40%, transparent);
+
+        --tm-gold:          var(--tmd-gold);
+        --tm-gold-soft:     color-mix(in srgb, var(--tmd-gold) 14%, transparent);
+        --tm-pool:          var(--tmd-accent2);
+        --tm-pool-soft:     color-mix(in srgb, var(--tmd-accent2) 14%, transparent);
+        --tm-sticky:        var(--tmd-accent);
+        --tm-sticky-soft:   color-mix(in srgb, var(--tmd-accent) 14%, transparent);
+
+        --tm-radius-sm:     var(--tmd-radius-sm);
+        --tm-radius:        var(--tmd-radius);
+        --tm-radius-lg:     var(--tmd-radius);
+
+        --tm-shadow:        var(--tmd-shadow);
+        --tm-shadow-lg:     var(--tmd-shadow);
+
+        background: var(--tmd-bg);
+        color: var(--tmd-text);
+        font-family: var(--tmd-font-body);
+      }
+      .tm-shell[data-tm-design] .tm-body { background: var(--tmd-bg); }
+
+      /* Brand mark: full-colour chip; display font for the wordmark. */
+      .tm-shell[data-tm-design] .tm-brand-mark { color: #fff; }
+      .tm-shell[data-tm-design] .tm-brand-text { font-family: var(--tmd-font-display); font-weight: 800; }
+      .tm-shell[data-tm-design] .tm-brand-text small { font-family: var(--tmd-font-mono); color: var(--tmd-dim); }
+      .tm-shell[data-tm-design] .tm-toolbar-title { font-family: var(--tmd-font-display); }
+
+      /* dir-a · Playroom — warm, rounded; tinted active nav; soft gradient brand. */
+      .tm-shell[data-tm-design="playroom"] .tm-brand-mark {
+        background: linear-gradient(135deg, var(--tmd-accent), var(--tmd-accent2));
+      }
+      .tm-shell[data-tm-design="playroom"] .tm-nav-active {
+        background: color-mix(in srgb, var(--tmd-accent) 14%, transparent);
+        color: var(--tmd-accent);
+      }
+      .tm-shell[data-tm-design="playroom"] .tm-nav-active .tm-nav-icon { color: var(--tmd-accent); }
+      .tm-shell[data-tm-design="playroom"] .tm-btn-raised {
+        background: linear-gradient(135deg, var(--tmd-accent), color-mix(in srgb, var(--tmd-accent) 72%, #fff));
+        border-color: transparent;
+        box-shadow: var(--tmd-shadow);
+        font-family: var(--tmd-font-display);
+      }
+      .tm-shell[data-tm-design="playroom"] .tm-table-wrap { box-shadow: var(--tmd-shadow); }
+      .tm-shell[data-tm-design="playroom"] .tm-row:hover {
+        background: color-mix(in srgb, var(--tmd-accent) 8%, transparent);
+      }
+
+      /* dir-b · Console — dark HUD; glowing accents; mono labels; left-bar active row. */
+      .tm-shell[data-tm-design="console"] .tm-brand-mark {
+        box-shadow: 0 0 14px color-mix(in srgb, var(--tmd-accent) 55%, transparent);
+      }
+      .tm-shell[data-tm-design="console"] .tm-nav-head,
+      .tm-shell[data-tm-design="console"] .tm-table th {
+        text-transform: uppercase; letter-spacing: 0.06em;
+        font-family: var(--tmd-font-mono);
+      }
+      .tm-shell[data-tm-design="console"] .tm-nav-active {
+        background: color-mix(in srgb, var(--tmd-accent) 14%, transparent);
+        color: var(--tmd-accent);
+        box-shadow: inset 2px 0 0 var(--tmd-accent);
+      }
+      .tm-shell[data-tm-design="console"] .tm-nav-active::before { display: none; }
+      .tm-shell[data-tm-design="console"] .tm-nav-active .tm-nav-icon { color: var(--tmd-accent); }
+      .tm-shell[data-tm-design="console"] .tm-btn-raised {
+        background: linear-gradient(135deg, var(--tmd-accent), color-mix(in srgb, var(--tmd-accent) 60%, var(--tmd-accent2)));
+        color: #06101c; border-color: transparent;
+        box-shadow: 0 0 14px color-mix(in srgb, var(--tmd-accent) 45%, transparent);
+        font-family: var(--tmd-font-display);
+      }
+      .tm-shell[data-tm-design="console"] .tm-row:hover {
+        background: color-mix(in srgb, var(--tmd-accent) 12%, transparent);
+        box-shadow: inset 2px 0 0 var(--tmd-accent);
+      }
+
+      /* dir-c · Clean Pro — calm SaaS; quiet borders; subtle accent. */
+      .tm-shell[data-tm-design="cleanpro"] .tm-table-wrap { box-shadow: var(--tmd-shadow); }
+      .tm-shell[data-tm-design="cleanpro"] .tm-btn-raised {
+        font-family: var(--tmd-font-display);
+        box-shadow: var(--tmd-shadow);
+      }
+      .tm-shell[data-tm-design="cleanpro"] .tm-row:hover {
+        background: color-mix(in srgb, var(--tmd-accent) 7%, transparent);
       }
     </style>`;
   }
