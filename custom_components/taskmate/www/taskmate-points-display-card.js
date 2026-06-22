@@ -898,7 +898,8 @@ class TaskMatePointsDisplayCard extends LitElement {
       tone:   this._designTone(this._allChildren().indexOf(child)),
       points: this._primaryValue(child),
       weekly: weeklyPoints(child, tz),
-      streak: child.streak || 0,
+      // Overview summary exposes current_streak (child.streak doesn't exist).
+      streak: child.current_streak ?? child.streak ?? 0,
       pct:    0,
     }));
     const total = rows.reduce((s, r) => s + r.points, 0);

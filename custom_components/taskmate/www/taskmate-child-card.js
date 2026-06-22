@@ -1982,9 +1982,7 @@ class TaskMateChildCard extends LitElement {
     const avatar = child.avatar || "mdi:account-circle";
 
     // Resolve badges sensor entity for this child
-    const childSlug = String(this.config.child_id).toLowerCase().replace(/[^a-z0-9]+/g, '_');
-    const badgesEntityId = `sensor.taskmate_badges_${childSlug}`;
-    const badgesEntity = this.hass.states[badgesEntityId];
+    const badgesEntity = this._resolveBadgesEntity(child);
     const earnedBadges = (badgesEntity?.attributes?.earned) || [];
     const showBadges = this.config.show_badges !== false && earnedBadges.length > 0;
 
@@ -2139,6 +2137,26 @@ class TaskMateChildCard extends LitElement {
      designed mode too. Honours every setConfig + editor option.
   ══════════════════════════════════════════════════════════════════════ */
 
+  // The per-child badges sensor is entity-id'd from the child NAME
+  // ("TaskMate <Name> Badges" → sensor.taskmate_<name>_badges), NOT the
+  // child_id — so resolve it robustly or the badge strip never finds it.
+  _resolveBadgesEntity(child) {
+    if (!this.hass || !child) return null;
+    const slug = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    const nameSlug = slug(child.name);
+    const candidates = [
+      `sensor.taskmate_${nameSlug}_badges`,
+      `sensor.taskmate_badges_${slug(this.config.child_id)}`,
+    ];
+    for (const id of candidates) if (this.hass.states[id]) return this.hass.states[id];
+    if (nameSlug) {
+      for (const eid in this.hass.states) {
+        if (/^sensor\.taskmate_.*_badges$/.test(eid) && eid.includes(nameSlug)) return this.hass.states[eid];
+      }
+    }
+    return null;
+  }
+
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
   _av(child, tone, size) {
@@ -2260,8 +2278,7 @@ class TaskMateChildCard extends LitElement {
     const tone = this._designTone(children.indexOf(child));
 
     // Badge strip (show_badges) — resolve the per-child badges sensor like classic.
-    const childSlug = String(this.config.child_id).toLowerCase().replace(/[^a-z0-9]+/g, "_");
-    const badgesEntity = this.hass.states[`sensor.taskmate_badges_${childSlug}`];
+    const badgesEntity = this._resolveBadgesEntity(child);
     const earnedBadges = (badgesEntity?.attributes?.earned) || [];
     const showBadges = this.config.show_badges !== false && earnedBadges.length > 0;
     const pendingPoints = child.pending_points || 0;
