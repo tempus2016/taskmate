@@ -1240,10 +1240,14 @@ def _validate_vacation_periods(raw: list) -> tuple[list[dict] | None, str | None
         })
     return sorted(periods, key=lambda p: p["start"]), None
 
-@websocket_api.websocket_command({
+# Extracted to a module constant so the accepted settings keys can be unit-tested
+# (the websocket_command decorator does not expose the compiled schema). Every key
+# accepted here must also be routed in _ws_update_settings below.
+_UPDATE_SETTINGS_SCHEMA = {
     vol.Required("type"): WS_UPDATE_SETTINGS,
     vol.Optional("points_name"): vol.All(str, vol.Length(min=1, max=120)),
     vol.Optional("points_icon"): str,
+    vol.Optional("card_design"): vol.In(_ALLOWED_CARD_DESIGNS),
     vol.Optional("history_days"): vol.All(int, vol.Range(min=30, max=365)),
     vol.Optional("streak_reset_mode"): vol.In(["reset", "pause"]),
     vol.Optional("weekend_multiplier"): vol.All(vol.Coerce(float), vol.Range(min=1.0, max=5.0)),
@@ -1284,7 +1288,10 @@ def _validate_vacation_periods(raw: list) -> tuple[list[dict] | None, str | None
     vol.Optional("time_night_end"): vol.Match(r"^\d{2}:\d{2}$"),
     vol.Optional("time_periods"): list,
     vol.Optional("vacation_periods"): list,
-})
+}
+
+
+@websocket_api.websocket_command(_UPDATE_SETTINGS_SCHEMA)
 @websocket_api.async_response
 @_admin_only
 async def _ws_update_settings(hass, connection, msg, coordinator):

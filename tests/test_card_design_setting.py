@@ -54,3 +54,39 @@ def test_overview_sensor_reflects_stored_card_design():
     coord.data["settings"] = {**coord.data.get("settings", {}), "card_design": "playroom"}
     attrs = TaskMateOverallStatsSensor(coord, MagicMock())._build_attributes()
     assert attrs["card_design"] == "playroom"
+
+
+def _settings_schema():
+    """The update_settings websocket schema, wrapped for direct validation."""
+    import voluptuous as vol
+    from custom_components.taskmate.websocket import _UPDATE_SETTINGS_SCHEMA, WS_UPDATE_SETTINGS
+    return vol.Schema(_UPDATE_SETTINGS_SCHEMA, extra=vol.ALLOW_EXTRA), WS_UPDATE_SETTINGS
+
+
+def test_update_settings_schema_accepts_card_design():
+    # Regression: card_design was routed but missing from the WS schema, so the
+    # panel's Save failed with "extra keys not allowed @ data['card_design']".
+    schema, cmd = _settings_schema()
+    for d in ("classic", "playroom", "console", "cleanpro"):
+        schema({"type": cmd, "id": 1, "card_design": d})  # must not raise
+
+
+def test_update_settings_schema_rejects_bad_card_design():
+    import pytest
+    import voluptuous as vol
+    schema, cmd = _settings_schema()
+    with pytest.raises(vol.Invalid):
+        schema({"type": cmd, "id": 1, "card_design": "bogus"})
+
+
+def test_every_routed_setting_is_in_the_schema():
+    # Guards against the exact class of bug: a key handled by _ws_update_settings
+    # (in _SUBKEY_SETTINGS / _TOP_LEVEL_SETTINGS) but absent from the schema, so
+    # voluptuous rejects it before the handler runs.
+    from custom_components.taskmate.websocket import (
+        _UPDATE_SETTINGS_SCHEMA, _SUBKEY_SETTINGS, _TOP_LEVEL_SETTINGS,
+    )
+    schema_keys = {str(k) for k in _UPDATE_SETTINGS_SCHEMA}
+    routed = _SUBKEY_SETTINGS | _TOP_LEVEL_SETTINGS
+    missing = routed - schema_keys
+    assert not missing, f"settings routed but missing from WS schema: {sorted(missing)}"
