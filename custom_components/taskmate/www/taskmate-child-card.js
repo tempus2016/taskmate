@@ -1818,6 +1818,11 @@ class TaskMateChildCard extends LitElement {
         padding-left: 20px;
       }
       .tmd-chore.dimmed, .tmd-quest.dimmed, .tmd-check.dimmed { opacity: 0.5; }
+      /* Clickable done-state chips (tap to undo) */
+      .tmd-undochip { cursor: pointer; font: inherit; font-weight: 800; line-height: 1; }
+      .tmd-undochip:hover { filter: brightness(0.97); }
+      .tmd-undochip[disabled] { opacity: 0.6; cursor: default; }
+      .q-undo { background: var(--tmd-surface-2); color: var(--tmd-dim); border: 1px solid var(--tmd-border); padding: 7px 10px; font-size: 14px; }
 
       /* Designed: pending-points + countdown chips on the header/section */
       .tmd-pending {
@@ -2350,6 +2355,16 @@ class TaskMateChildCard extends LitElement {
       @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
   }
 
+  // Done-state chip is CLICKABLE so a completed chore can be undone (parity
+  // with the classic card, where tapping a done chore undoes it). r.onAct()
+  // calls _handleUndo when the chore is done.
+  _designUndoChip(r, label, cls) {
+    return html`<button class="chip ${cls || "done-chip"} tmd-undochip"
+      ?disabled=${r.loading}
+      title="${this._t("child.tap_to_undo")}"
+      @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
+  }
+
   /** Render a timed chore inside designed mode, reusing the classic timed card +
    *  its full start/pause/stop/celebration/sound/cap logic. */
   _designTimed(r) {
@@ -2374,7 +2389,7 @@ class TaskMateChildCard extends LitElement {
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
-            ? html`<span class="chip done-chip">${this._t("child.done") || "Done"}! 🎉</span>`
+            ? this._designUndoChip(r, html`${this._t("child.done") || "Done"}! 🎉`)
             : this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "DONE"}` : (this._t("child.done") || "DONE"), "good")}
         </div>
         ${this._designBonus(r)}`)}
@@ -2395,7 +2410,9 @@ class TaskMateChildCard extends LitElement {
               : html`<div class="num q-xp">+${r.points} XP</div>`}
             ${this._designChoreMeta(r)}
           </div>
-          ${r.done ? "" : this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "CLAIM"}` : (this._t("child.done") || "CLAIM"))}
+          ${r.done
+            ? this._designUndoChip(r, html`↩`, "q-undo")
+            : this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "CLAIM"}` : (this._t("child.done") || "CLAIM"))}
         </div>
         ${this._designBonus(r)}`)}
     </div>`;
@@ -2413,7 +2430,7 @@ class TaskMateChildCard extends LitElement {
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
-            ? html`<span class="chip c-done">${this._t("child.done") || "Completed"}</span>`
+            ? this._designUndoChip(r, this._t("child.done") || "Completed", "c-done")
             : html`<span class="chip c-pts">+${r.points}</span>
                 ${this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "Done"}` : (this._t("child.done") || "Done"), "sm")}`}
         </div>

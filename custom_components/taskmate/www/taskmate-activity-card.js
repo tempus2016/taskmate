@@ -458,6 +458,20 @@ class TaskMateActivityCard extends LitElement {
          scrollbar sits at the edge, not floating inset by the body padding. */
       .act-pl, .act-cn, .act-cp-rail { max-height: 360px; overflow-y: auto;
         margin-right: -15px; padding-right: 8px; }
+
+      /* Undo confirm overlay (works in classic + designed; no mwc dependency) */
+      .undo-ov { position: fixed; inset: 0; z-index: 99; display: grid; place-items: center;
+        background: rgba(0,0,0,0.45); padding: 16px; }
+      .undo-modal { background: var(--card-background-color, #fff); color: var(--primary-text-color);
+        border-radius: 16px; padding: 18px 18px 14px; max-width: 340px; width: 100%;
+        box-shadow: 0 16px 48px rgba(0,0,0,0.35); }
+      .undo-modal-title { font-weight: 800; font-size: 1.05rem; margin-bottom: 8px; }
+      .undo-modal-body { font-size: 0.92rem; color: var(--secondary-text-color); line-height: 1.45; }
+      .undo-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+      .undo-modal-btn { font: inherit; font-weight: 700; border: 0; cursor: pointer;
+        padding: 9px 16px; border-radius: 10px; }
+      .undo-modal-btn.cancel { background: var(--secondary-background-color, #ececec); color: var(--primary-text-color); }
+      .undo-modal-btn.go { background: var(--error-color, #e74c3c); color: #fff; }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
       ? window.__taskmate_design.styles() : null;
@@ -818,20 +832,23 @@ class TaskMateActivityCard extends LitElement {
 
   _renderConfirmDialog() {
     if (!this._confirm) return '';
+    // Self-contained overlay (not ha-dialog/mwc-button, which can render without
+    // visible action buttons if those components aren't loaded on the page).
     return html`
-      <ha-dialog
-        open
-        .heading=${this._t('activity.undo_confirm_title')}
-        @closed=${() => { this._confirm = null; }}
-      >
-        <div class="undo-confirm-body">${this._confirm.message}</div>
-        <mwc-button slot="secondaryAction" @click=${() => { this._confirm = null; }}>
-          ${this._t('common.cancel')}
-        </mwc-button>
-        <mwc-button slot="primaryAction" class="undo-confirm-go" @click=${() => this._doUndo()}>
-          ${this._t('activity.undo')}
-        </mwc-button>
-      </ha-dialog>
+      <div class="undo-ov" @click=${(e) => { if (e.target.classList.contains('undo-ov')) this._confirm = null; }}>
+        <div class="undo-modal" role="dialog" aria-modal="true">
+          <div class="undo-modal-title">${this._t('activity.undo_confirm_title')}</div>
+          <div class="undo-modal-body">${this._confirm.message}</div>
+          <div class="undo-modal-actions">
+            <button class="undo-modal-btn cancel" @click=${() => { this._confirm = null; }}>
+              ${this._t('common.cancel')}
+            </button>
+            <button class="undo-modal-btn go" @click=${() => this._doUndo()}>
+              ↩ ${this._t('activity.undo')}
+            </button>
+          </div>
+        </div>
+      </div>
     `;
   }
 

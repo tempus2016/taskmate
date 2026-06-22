@@ -1,4 +1,5 @@
 {
+  "child.tap_to_undo": "Tap to undo",
   "common.design.field_label": "Card design",
   "common.design.use_global": "Use global default",
   "common.design.classic": "Classic",

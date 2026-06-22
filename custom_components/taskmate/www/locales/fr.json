@@ -1,4 +1,5 @@
 {
+  "child.tap_to_undo": "Touchez pour annuler",
   "common.design.field_label": "Design de carte",
   "common.design.use_global": "Utiliser la valeur par défaut globale",
   "common.design.classic": "Classique",
