@@ -450,6 +450,12 @@ class TaskMateActivityCard extends LitElement {
         background: color-mix(in srgb, var(--ac, var(--tmd-accent)) 18%, transparent); color: var(--ac, var(--tmd-accent));
         display: grid; place-items: center; font-size: 11px; box-shadow: 0 0 0 3px var(--tmd-surface); }
       .act-cp-head { justify-content: space-between; align-items: flex-start; gap: 10px; }
+      /* Coloured event stripe (honours accent_stripes) */
+      .act-stripe { width: 4px; border-radius: 4px; flex: none; align-self: stretch; }
+      .act-pl-row, .act-cn-row { align-items: stretch; }
+      .act-pl-row > .av, .act-cn-row > .av { align-self: center; }
+      /* Vertical scroll (parity with classic max-height list) */
+      .act-pl, .act-cn, .act-cp-rail { max-height: 360px; overflow-y: auto; }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
       ? window.__taskmate_design.styles() : null;
@@ -558,9 +564,8 @@ class TaskMateActivityCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
@@ -997,16 +1002,24 @@ class TaskMateActivityCard extends LitElement {
     </ha-card>`;
   }
 
+  // ON = relative "time ago", OFF = absolute time (matches the editor hint).
+  _timeLabel(r) { return this.config.show_relative_time !== false ? r.ago : r.time; }
+  _stripe(r) {
+    return this.config.accent_stripes !== false
+      ? html`<div class="act-stripe" style="background:var(--tmd-${r.tone})"></div>` : '';
+  }
+
   _designPlayroom(rows) {
     return html`
       <div class="grid act-pl">
         ${rows.map(r => html`
           <div class="row act-pl-row" style="--ac:var(--tmd-${r.tone})">
+            ${this._stripe(r)}
             <div class="av act-pl-av" style="--av:38px;--ac:var(--tmd-${r.tone})">${r.emoji}</div>
             <div class="act-pl-bub">
               <div class="act-line">${r.text} <span class="num" style="color:var(--tmd-${r.ptsClass})">${r.sign}${r.pts}</span></div>
               <div class="row act-pl-foot">
-                <span class="muted act-ago">${r.ago}</span>
+                <span class="muted act-ago">${this._timeLabel(r)}</span>
                 ${this._designUndoBtn(r.undo, this._t('activity.undo'))}
               </div>
             </div>
@@ -1019,26 +1032,30 @@ class TaskMateActivityCard extends LitElement {
       <div class="grid act-cn">
         ${rows.map(r => html`
           <div class="row act-cn-row" style="--ac:var(--tmd-${r.tone})">
+            ${this._stripe(r)}
             <div class="av" style="--av:26px;--ac:var(--tmd-${r.tone})">${r.emoji}</div>
             <div class="act-cn-mid">${r.plain} <span class="num" style="color:var(--tmd-${r.ptsClass})">${r.sign}${r.pts}</span></div>
             ${this._designUndoBtn(r.undo, this._t('activity.undo'))}
-            <div class="num muted act-cn-time">${r.time}</div>
+            <div class="num muted act-cn-time">${this._timeLabel(r)}</div>
           </div>`)}
       </div>`;
   }
 
   _designCleanpro(rows) {
+    // Clean Pro conveys event colour through the timeline dot; honour
+    // accent_stripes by neutralising the dot when stripes are disabled.
+    const stripes = this.config.accent_stripes !== false;
     return html`
       <div class="act-cp-rail">
         <div class="act-cp-line"></div>
         <div class="grid act-cp">
           ${rows.map(r => html`
             <div class="act-cp-node">
-              <div class="act-cp-dot" style="--ac:var(--tmd-${r.tone})">${r.emoji}</div>
+              <div class="act-cp-dot" style="--ac:${stripes ? `var(--tmd-${r.tone})` : 'var(--tmd-dim)'}">${r.emoji}</div>
               <div class="row act-cp-head">
                 <div>
                   <div class="act-line">${r.text} <span style="color:var(--tmd-${r.ptsClass});font-weight:700">${r.sign}${r.pts}</span></div>
-                  <div class="muted act-ago">${r.ago}</div>
+                  <div class="muted act-ago">${this._timeLabel(r)}</div>
                 </div>
                 ${this._designUndoBtn(r.undo, this._t('activity.undo'))}
               </div>
