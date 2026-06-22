@@ -53,6 +53,22 @@
   --tmd-radius:14px;--tmd-radius-sm:9px;--tmd-shadow:0 1px 2px rgba(16,24,40,.06),0 8px 18px rgba(16,24,40,.06);--tmd-hd-text:#fff;
   --tmd-font-display:"Manrope",sans-serif;--tmd-font-body:"Inter",sans-serif;--tmd-font-mono:"Inter",sans-serif;
   --tmd-c1:#4F6BED;--tmd-c2:#0FB5A8;--tmd-c3:#E0A100;--tmd-c4:#7A5AF0;--tmd-c5:#E0567A;--tmd-c6:#2BA84A;
+}
+
+/* ── Dark-mode variants ──────────────────────────────────────────────────
+   Cards stamp data-tm-dark on the host when HA is in dark mode. Console is a
+   dark HUD already, so it needs no override. Playroom (warm) and Clean Pro
+   (neutral) get darkened surfaces + lifted text; accents/child-colours stay so
+   the identity is preserved. */
+:host([data-tm-design="playroom"][data-tm-dark]),[data-tm-design="playroom"][data-tm-dark]{
+  --tmd-bg:#241A2B;--tmd-surface:#2C2235;--tmd-surface-2:#382B43;--tmd-border:#473754;
+  --tmd-text:#F6ECEF;--tmd-dim:#B6A3B4;--tmd-accent:#A88BFF;
+  --tmd-shadow:0 10px 24px rgba(0,0,0,.45);
+}
+:host([data-tm-design="cleanpro"][data-tm-dark]),[data-tm-design="cleanpro"][data-tm-dark]{
+  --tmd-bg:#0F141A;--tmd-surface:#181D25;--tmd-surface-2:#212733;--tmd-border:#2C3340;
+  --tmd-text:#E6EAF1;--tmd-dim:#97A1B0;--tmd-accent:#6E86F5;--tmd-accent2:#1FC7B8;
+  --tmd-shadow:0 1px 2px rgba(0,0,0,.4),0 8px 18px rgba(0,0,0,.35);
 }`;
 
   // Shared component kit, themed by the tokens above. Every designed card
@@ -153,6 +169,25 @@
     return _globalDesign(hass, entity);
   }
 
+  /** Is Home Assistant currently in dark mode? */
+  function isDark(hass) {
+    return !!(hass && hass.themes && hass.themes.darkMode);
+  }
+
+  /**
+   * Resolve the design AND stamp the host element: data-tm-design + (in dark
+   * mode) data-tm-dark. Cards call this once at the top of render() and branch
+   * on the returned id. Returns "classic" when no design applies.
+   */
+  function apply(el, hass, config, entity) {
+    const design = resolve(hass, config, entity);
+    if (el) {
+      el.setAttribute("data-tm-design", design);
+      el.toggleAttribute("data-tm-dark", design !== "classic" && isDark(hass));
+    }
+    return design;
+  }
+
   /** ha-form select options for a per-card design override (includes "use global"). */
   function editorOptions(t) {
     const label = (k, fallback) => (t ? t("common.design." + k) : fallback);
@@ -170,5 +205,5 @@
   // wrapper element; the [data-tm-design] selector variant applies there.
   const cssText = TOKENS + "\n" + KIT;
 
-  window.__taskmate_design = { IDS, resolve, editorOptions, styles, cssText, tokensCSS: TOKENS };
+  window.__taskmate_design = { IDS, resolve, isDark, apply, editorOptions, styles, cssText, tokensCSS: TOKENS };
 })();
