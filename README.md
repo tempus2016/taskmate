@@ -61,12 +61,13 @@ All data is stored locally in Home Assistant. Nothing leaves your instance.
  
 ### Via HACS (Recommended)
  
-TaskMate is not yet in the HACS default store. Add it as a custom repository:
+TaskMate is a **default HACS integration** — no custom repository needed:
  
-1. Open **HACS** → Integrations → ⋮ menu → **Custom repositories**
-2. Add `https://github.com/tempus2016/taskmate` — category: **Integration**
-3. Search "TaskMate" and click **Download**
-4. **Restart Home Assistant**
+1. Open **HACS** → search **"TaskMate"**
+2. Click **Download**
+3. **Restart Home Assistant**
+ 
+> Already installed TaskMate as a custom repository from before it was accepted into HACS? It keeps working and keeps receiving updates — you can safely remove the custom repository entry, HACS now tracks it by default.
  
 ### Manual
  
@@ -90,27 +91,31 @@ All TaskMate data — children, chores, points, reward claims, completion histor
 ### Add the Integration
  
 1. **Settings** → Devices & Services → **Add Integration** → search "TaskMate"
-2. Choose your points currency name (Stars, Coins, Points, Bucks — whatever motivates your children)
+2. Choose your **points name** (Stars, Coins, Points, Bucks — whatever motivates your children) and an **icon**. Both can be changed later in the panel.
  
-### Configure
+That's the only thing the config flow asks. There is **no "Configure" button** on the integration card — all day-to-day management lives in the TaskMate panel below. (The legacy options/configure flow was removed in v4.0.)
  
-Click **Configure** on the TaskMate integration card to access:
+### The TaskMate Panel
  
-- **Manage Children** — add children, set avatars
-- **Manage Chores** — create and edit chores
-- **Manage Rewards** — create rewards with a fixed point cost
-- **Settings** — bonus points, streak mode, history retention
+After installing, a **TaskMate** entry appears in the Home Assistant sidebar. This is the management hub for everything — open it and you'll find:
+ 
+- **Children** — add children, set avatars, gift points
+- **Chores** — create and edit chores, reorder, bulk-add, save/apply templates
+- **Rewards** — create rewards with a fixed point cost (standard, jackpot, or savings-pool)
+- **Penalties** / **Bonuses** — one-tap point deductions and awards
+- **Groups** — coordinate rotation chores (sticky / spread)
+- **Quests** / **Challenges** — multi-step and time-boxed goals
+- **Badges** — built-in catalogue plus custom achievement badges
+- **Templates** — reusable chore sets
+- **Notifications** — route approval alerts to parent devices and per child
+- **Settings** — points name & icon, **default card design**, history retention, streak mode, weekend multiplier, difficulty multipliers, and the bonus-points system
+ 
+The **Activity** section shows a live feed, and chore/reward approvals are handled right in the panel. It's fully translated in all supported languages and updates in real time via WebSocket.
  
 <p align="center">
-  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/settingsPage.png" alt="Settings Menu" width="500">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/adminPanel.png" alt="TaskMate admin panel" width="700">
 </p>
  
-### Admin Panel
-
-After installing TaskMate, a **TaskMate** entry appears in the HA sidebar. This is a full management dashboard where you can create and edit children, chores, rewards, penalties, bonuses, task groups, and settings — all in one place. It also handles chore and reward approvals.
-
-The admin panel is fully translated in all 8 supported languages and updates in real time via WebSocket.
-
 See the [Admin Panel wiki page](https://github.com/tempus2016/taskmate/wiki/Admin-Panel) for details.
 
 ### Add Cards to Your Dashboard
@@ -245,7 +250,11 @@ When you create or edit a chore, set the **Visibility Entity** (e.g., `binary_se
  
 ## Bonus Points System
  
-All bonus settings live in **Settings → Integrations → TaskMate → Configure → Settings**.
+All bonus settings live in the **Settings** tab of the TaskMate panel (sidebar → TaskMate → Settings).
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/adminSettings.png" alt="TaskMate panel settings" width="700">
+</p>
  
 ### Weekend Points Multiplier
  
@@ -307,19 +316,19 @@ TaskMate can notify parents when a chore requiring approval has been completed.
 When a child completes a chore that has **Requires Approval** turned on:
  
 1. A **persistent notification** is always created in HA — visible in the notification bell in the sidebar
-2. If a **Notification Service** is configured in Settings, a push notification is also sent
+2. If a **notification target** is configured in the panel's Notifications tab, a push notification is also sent
  
 ### Configuring Push Notifications
  
-Go to **Settings → Integrations → TaskMate → Configure → Settings → Notification Service** and enter your notify service:
+Open the **Notifications** tab of the TaskMate panel (sidebar → TaskMate → Notifications). There you can:
  
-```
-notify.mobile_app_your_phone
-```
+- Add one or more **parent notification targets**, each pointing at a notify service such as `notify.mobile_app_your_phone`, with an individual enable toggle
+- Route notifications **per child** to a specific notify service
+- Send a **test notification** to confirm a target works
  
-Leave empty to use persistent notifications only.
+Leave all targets empty to use persistent (in-app) notifications only.
 
-> **Note:** The service must be in the `notify` domain (e.g. `notify.mobile_app_...`). Services from other domains are ignored with a warning in the HA logs.
+> **Note:** Targets must be in the `notify` domain (e.g. `notify.mobile_app_...`). Services from other domains are ignored with a warning in the HA logs.
 
 > **Tip:** Use `binary_sensor.taskmate_has_pending_approvals` in your own automations for more customised notification logic.
  
@@ -490,6 +499,8 @@ See the [Pool Mode wiki page](https://github.com/tempus2016/taskmate/wiki/Pool-M
 ## Dashboard Cards
  
 > **Header colours:** Every card has a configurable `header_color` option in the visual editor, with its own vibrant default. Change it to match your dashboard theme or differentiate kid vs parent cards.
+ 
+> **Design styles (v4.2.0+):** Every card also has a `card_design` option — choose **Classic** (the original look), **Playroom** (warm, rounded, picture-book), **Console** (dark, neon game-HUD), or **Clean Pro** (minimal, flat). Set it per card in the visual editor or in YAML (`card_design: playroom`), or leave it on **Global default** (`card_design: global`) to follow the integration-wide style set in the panel's **Settings → Default card design**. Styles are scoped per card, so you can mix and match across a dashboard.
  
 ### Card Overview
  
@@ -825,9 +836,10 @@ Big, kid-friendly readout of current points. Supports three modes: a single chil
 ```yaml
 type: custom:taskmate-points-display-card
 entity: sensor.taskmate_overview
-mode: single            # single | all | family
+mode: single            # single | multi | cumulative (default: single)
 child_id: a8c8376a      # required when mode: single
 header_color: "#2980b9"
+card_design: global     # global | classic | playroom | console | cleanpro
 ```
 
 ---
@@ -1003,9 +1015,9 @@ the overview sensor and its companion sensors at render time.
 | `sensor.taskmate_rewards` | total rewards | `rewards`, `pending_reward_claims`, `pool_allocations` |
 | `sensor.taskmate_activity` | total completions all-time | `recent_completions` (last 35), `recent_transactions` (last 20) |
 | `sensor.taskmate_incentives` | penalties + bonuses count | `penalties`, `bonuses` |
-| `sensor.pending_approvals` | pending approvals count | `chore_completions`, `reward_claims` (detailed lists) |
-| `sensor.<child>_points` | points for that child | `child_id`, `current_streak`, `best_streak`, `total_*` |
-| `sensor.<child>_stats` | chores completed by that child | `assigned_chores`, streak / totals |
+| `sensor.taskmate_pending_approvals` | pending approvals count | `chore_completions`, `reward_claims` (detailed lists) |
+| `sensor.taskmate_<child>_points` | points for that child | `child_id`, `current_streak`, `best_streak`, `total_*` |
+| `sensor.taskmate_<child>_stats` | chores completed by that child | `assigned_chores`, streak / totals |
 
 Automations that read the old overview attributes (e.g. `sensor.taskmate_overview.attributes.chores`) should instead read from the matching companion sensor listed above.
  
@@ -1019,7 +1031,7 @@ Automations that read the old overview attributes (e.g. `sensor.taskmate_overvie
 - If resources are missing, restart Home Assistant — they are registered automatically on startup
  
 **Cards show "Entity not found"**
-- Make sure you're using `sensor.taskmate_overview` as the entity (not `sensor.pending_approvals`)
+- Make sure you're using `sensor.taskmate_overview` as the entity (not `sensor.taskmate_pending_approvals`)
 - Verify the TaskMate integration is loaded: Settings → Devices & Services → TaskMate
  
 **Chore description not showing**
