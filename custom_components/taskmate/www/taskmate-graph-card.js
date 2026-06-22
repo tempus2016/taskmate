@@ -55,7 +55,7 @@ class TaskMateGraphCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
         --gr-purple: #9b59b6;
@@ -206,7 +206,22 @@ class TaskMateGraphCard extends LitElement {
         .mode-btn { padding: 3px 8px; font-size: 0.7rem; }
         .card-content { padding: 12px; }
       }
+
+      /* ── Designed styles (shared .tmd kit comes from taskmate-design.js) ── */
+      .tmg-chips { gap: 6px; margin-bottom: 11px; }
+      .tmg-plot { margin-bottom: 4px; }
+      .tmg-plot-pl { background: var(--tmd-surface-2); border-radius: 16px; padding: 12px 10px 6px; }
+      .tmg-plot-cn { background: #0b1424; border: 1px solid var(--tmd-border); border-radius: 8px; padding: 12px 10px 6px; }
+      .tmg-plot-cp { padding: 2px 2px 0; }
+      .tmg-xaxis { justify-content: space-between; font-size: 10.5px; font-weight: 600; margin-top: 4px; }
+      .tmg-plot-cn .tmg-xaxis { font-size: 9.5px; }
+      .tmg-legend { gap: 14px; justify-content: center; margin-top: 11px; font-size: 12px; font-weight: 700; flex-wrap: wrap; }
+      .tmg-plot-cp ~ .tmg-legend { justify-content: flex-start; font-weight: 600; }
+      .tmg-dot { font-size: 0.9em; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -227,6 +242,17 @@ class TaskMateGraphCard extends LitElement {
   }
 
   render() {
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config?.entity)
+      : "classic";
+    if (design !== "classic") {
+      try {
+        return this._renderDesigned(design);
+      } catch (e) {
+        console.error("[TaskMateGraph] Designed render error:", e);
+        return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('graph.graph_error', { message: e.message })}</div></div></ha-card>`;
+      }
+    }
     try {
       return this._render();
     } catch(e) {
@@ -351,6 +377,197 @@ class TaskMateGraphCard extends LitElement {
       </ha-card>
       <div class="tooltip" id="graph-tooltip-${this._tooltipId}"></div>
     `;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns/frag/07-graph.html.
+     Reuses the SAME series/data computation as the classic chart.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  // Reuse the classic data pipeline to produce per-child series + the active key.
+  _computeSeries() {
+    const entity = this.hass.states[this.config.entity];
+    const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    let children = attrs.children || [];
+    const pointsName = attrs.points_name || this._t('common.points');
+    const days = Math.max(3, Math.min(90, this.config.days || 14));
+
+    if (this.config.child_id) {
+      children = children.filter(c => c.id === this.config.child_id);
+    }
+
+    const allCompletions = [
+      ...(attrs.recent_completions || attrs.todays_completions || []),
+    ].filter(c => c.approved);
+    const allTransactions = attrs.recent_transactions || [];
+    const chorePointsMap = {};
+    (attrs.chores || []).forEach(ch => { chorePointsMap[ch.id] = ch.points || 0; });
+
+    const dateRange = this._buildDateRange(days, tz);
+    const careerHistory = attrs.career_score_history || {};
+
+    const series = children.map((child, idx) => {
+      const color = CHILD_COLORS[idx % CHILD_COLORS.length];
+      const tone = this._designTone(idx);
+      const dailyPoints = this._buildDailyPoints(child.id, dateRange, allCompletions, allTransactions, chorePointsMap, tz);
+      const cumulativePoints = this._buildCumulative(dailyPoints);
+      const careerPoints = this._buildCareerSeries(child, careerHistory[child.id] || [], dateRange, allCompletions, allTransactions, chorePointsMap, tz);
+      return { child, color, tone, dailyPoints, cumulativePoints, careerPoints };
+    });
+
+    const dataKey = this._mode === "daily" ? "dailyPoints" : this._mode === "career" ? "careerPoints" : "cumulativePoints";
+    return { series, dateRange, dataKey, pointsName };
+  }
+
+  // Build SVG point string for a data array, mapped into a 0..VW × 0..VH box.
+  _svgPoints(data, niceMax, VW, VH) {
+    const n = data.length;
+    return data.map((v, i) => {
+      const x = (i / Math.max(n - 1, 1)) * VW;
+      const y = VH - (Math.max(0, v) / niceMax) * VH;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+  }
+
+  _renderDesigned(design) {
+    if (!this.hass || !this.config) return html``;
+    const hd = _safeColor(this.config.header_color, '#d35400');
+
+    const entity = this.hass.states[this.config.entity];
+    const header = (sub) => html`
+      <div class="tmd-hd">
+        <span class="ic">${design === "console" ? "⌁" : design === "cleanpro" ? "◔" : "📈"}</span>
+        <span class="tt">${this.config.title || this._t('graph.default_title')}${sub ? html`<small>${sub}</small>` : ""}</span>
+        ${design === "console" ? html`<span class="pill">LIVE</span>` : ""}
+      </div>`;
+
+    if (!entity) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">${header()}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div></ha-card>`;
+    }
+    if (entity.state === "unavailable" || entity.state === "unknown") {
+      return html`<ha-card class="tmd" style="--hd:${hd}">${header()}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.unavailable')}</div></div></ha-card>`;
+    }
+
+    const { series, dateRange, dataKey } = this._computeSeries();
+    if (series.length === 0) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">${header()}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.no_children')}</div></div></ha-card>`;
+    }
+
+    // Match classic: surface the active child filter (or "all children") as a subline.
+    const filterLabel = this.config.child_id
+      ? (series[0]?.child?.name || '')
+      : this._t('graph.all_children');
+
+    const hasData = series.some(s => s[dataKey].some(v => v > 0));
+
+    // Mode chips wired to the SAME handler/state as the classic toggle.
+    const chip = (mode, label) => html`
+      <span
+        class="chip ${this._mode === mode ? "soft" : ""}"
+        style="cursor:pointer"
+        @click="${() => { this._mode = mode; this.requestUpdate(); }}"
+      >${label}</span>`;
+    const chips = html`
+      <div class="row tmg-chips">
+        ${chip("daily", this._t('graph.daily'))}
+        ${chip("cumulative", this._t('graph.total'))}
+        ${chip("career", this._t('graph.career_growth'))}
+      </div>`;
+
+    const legend = html`
+      <div class="row tmg-legend">
+        ${series.map(s => html`<span><span class="tmg-dot" style="color:${s.tone}">●</span> ${s.child.name}</span>`)}
+      </div>`;
+
+    const empty = html`<div class="tmd-empty">${this._t('graph.no_data_yet')}</div>`;
+
+    const body =
+      design === "console" ? this._graphConsole(series, dateRange, dataKey, chips, legend, hasData, empty) :
+      design === "cleanpro" ? this._graphCleanpro(series, dateRange, dataKey, chips, legend, hasData, empty) :
+                              this._graphPlayroom(series, dateRange, dataKey, chips, legend, hasData, empty);
+
+    return html`<ha-card class="tmd" style="--hd:${hd}">${header(filterLabel)}<div class="tmd-bd">${body}</div></ha-card>`;
+  }
+
+  // Shared SVG chart builder; per-style flags tweak fills/glow/stroke width.
+  // Built as a string parsed via <template> so the elements get the proper SVG
+  // namespace — nested Lit html`` templates render <polyline> in the XHTML
+  // namespace (zero-size/invisible), and var(--tmd-*) only resolves via `style`
+  // (not as an SVG presentation attribute). Returning the parsed node sidesteps
+  // both: LitElement.prototype.svg isn't exposed by HA's Lit build.
+  _svgChart(series, dataKey, { area, glow, stroke, dash, gridStroke }) {
+    const VW = 280, VH = 115;
+    const allValues = series.flatMap(s => s[dataKey]);
+    const niceMax = this._niceMax(Math.max(1, ...allValues));
+    let inner =
+      `<line x1="0" y1="${VH}" x2="${VW}" y2="${VH}" style="stroke:${gridStroke}" stroke-width="1.5"></line>` +
+      `<line x1="0" y1="${VH * 0.65}" x2="${VW}" y2="${VH * 0.65}" style="stroke:${gridStroke}" stroke-width="1" stroke-dasharray="${dash}"></line>` +
+      `<line x1="0" y1="${VH * 0.3}" x2="${VW}" y2="${VH * 0.3}" style="stroke:${gridStroke}" stroke-width="1" stroke-dasharray="${dash}"></line>`;
+    if (area) {
+      inner += series.map(s => {
+        const pts = this._svgPoints(s[dataKey], niceMax, VW, VH);
+        return `<path d="M${pts} L${VW},${VH} L0,${VH} Z" style="fill:${s.tone};opacity:0.16"></path>`;
+      }).join("");
+    }
+    inner += series.map(s => {
+      const pts = this._svgPoints(s[dataKey], niceMax, VW, VH);
+      return `<polyline points="${pts}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" ` +
+        `style="fill:none;stroke:${s.tone}${glow ? `;filter:drop-shadow(0 0 6px ${s.tone})` : ""}"></polyline>`;
+    }).join("");
+    const tmpl = document.createElement("template");
+    tmpl.innerHTML = `<svg viewBox="0 0 ${VW} ${VH + 15}" width="100%" height="130" preserveAspectRatio="none" style="overflow:visible">${inner}</svg>`;
+    return tmpl.content.firstElementChild;
+  }
+
+  _xAxis(dateRange) {
+    const n = dateRange.length;
+    const every = n <= 7 ? 1 : n <= 14 ? 2 : n <= 31 ? 4 : 7;
+    return html`
+      <div class="row tmg-xaxis muted">
+        ${dateRange.map((d, i) =>
+          (i % every === 0 || i === n - 1)
+            ? html`<span>${this._shortDate(d)}</span>` : "")}
+      </div>`;
+  }
+
+  _graphPlayroom(series, dateRange, dataKey, chips, legend, hasData, empty) {
+    return html`
+      ${chips}
+      ${hasData ? html`
+        <div class="tmg-plot tmg-plot-pl">
+          ${this._svgChart(series, dataKey, { area: true, glow: false, stroke: 3.5, dash: "3 4", gridStroke: "var(--tmd-border)" })}
+          ${this._xAxis(dateRange)}
+        </div>
+        ${series.length > 1 ? legend : ""}` : empty}`;
+  }
+
+  _graphConsole(series, dateRange, dataKey, chips, legend, hasData, empty) {
+    return html`
+      ${chips}
+      ${hasData ? html`
+        <div class="tmg-plot tmg-plot-cn">
+          ${this._svgChart(series, dataKey, { area: false, glow: true, stroke: 2.5, dash: "2 5", gridStroke: "var(--tmd-border)" })}
+          ${this._xAxis(dateRange)}
+        </div>
+        ${series.length > 1 ? html`<div class="num">${legend}</div>` : ""}` : empty}`;
+  }
+
+  _graphCleanpro(series, dateRange, dataKey, chips, legend, hasData, empty) {
+    return html`
+      ${chips}
+      ${hasData ? html`
+        <div class="tmg-plot tmg-plot-cp">
+          ${this._svgChart(series, dataKey, { area: false, glow: false, stroke: 2, dash: "0", gridStroke: "var(--tmd-border)" })}
+          ${this._xAxis(dateRange)}
+        </div>
+        ${series.length > 1 ? html`<div class="divide"></div>${legend}` : ""}` : empty}`;
   }
 
   get _tooltipId() {
@@ -737,6 +954,17 @@ class TaskMateGraphCardEditor extends LitElement {
     return [
       { name: 'entity', selector: { entity: { domain: 'sensor' } } },
       { name: 'title', selector: { text: {} } },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
       { name: 'days', selector: { number: { min: 3, max: 90, mode: 'box' } } },
       {
         name: 'child_id',
@@ -757,6 +985,7 @@ class TaskMateGraphCardEditor extends LitElement {
     const labels = {
       entity: this._t('common.editor.overview_entity'),
       title: this._t('common.editor.card_title'),
+      card_design: this._t('common.design.field_label'),
       days: this._t('graph.editor.days_to_show'),
       child_id: this._t('common.editor.filter_by_child'),
     };
@@ -777,6 +1006,7 @@ class TaskMateGraphCardEditor extends LitElement {
     const data = {
       entity: this.config.entity || '',
       title: this.config.title || '',
+      card_design: this.config.card_design || 'global',
       days: this.config.days || 14,
       child_id: this.config.child_id || '__all__',
     };
@@ -832,6 +1062,7 @@ class TaskMateGraphCardEditor extends LitElement {
       if (
         value === '' || value === null || value === undefined
         || (key === 'child_id' && value === '__all__')
+        || (key === 'card_design' && value === 'global')
       ) {
         delete newConfig[key];
       } else if (key === 'days' && value === 14) {

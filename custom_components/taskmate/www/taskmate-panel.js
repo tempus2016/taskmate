@@ -2036,6 +2036,7 @@ class TaskMatePanel extends HTMLElement {
       if (existingToast) this.appendChild(existingToast);
       this._shellReady = true;
       this._zoneCache = {};
+      this._applyDesign();
       this._bindHaPickers();
       this._scrollActiveMobileTabIntoView();
       return;
@@ -2096,7 +2097,16 @@ class TaskMatePanel extends HTMLElement {
       if (newMtabs) newMtabs.scrollLeft = savedMtabsScroll;
     }
 
+    this._applyDesign();
     this._scrollActiveMobileTabIntoView();
+  }
+
+  // The admin panel intentionally stays CLASSIC regardless of the global card
+  // design (the per-card design styles apply to Lovelace cards only). This
+  // clears any stale attribute so no designed rules can attach.
+  _applyDesign() {
+    const shell = this.querySelector(".tm-shell");
+    if (shell) shell.removeAttribute("data-tm-design");
   }
 
   _scrollActiveMobileTabIntoView() {
@@ -3602,6 +3612,12 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_points_icon_label")}<small>${this._t("panel.settings_points_icon_hint")}</small></div>
               <ha-icon-picker data-setting="points_icon" data-current="${this._esc(s.points_icon || 'mdi:star')}"></ha-icon-picker>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_card_design_label")}<small>${this._t("panel.settings_card_design_hint")}</small></div>
+              <select class="tm-select" data-setting="card_design">
+                ${["classic","playroom","console","cleanpro"].map(v => `<option value="${v}" ${v === (s.card_design || "classic") ? "selected" : ""}>${this._esc(this._t("common.design." + v))}</option>`).join("")}
+              </select>
             </div>
           </div>
         </div>

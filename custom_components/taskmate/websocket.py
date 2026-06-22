@@ -312,6 +312,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "settings": {
             "points_name":       data.get("points_name", "Stars"),
             "points_icon":       data.get("points_icon", "mdi:star"),
+            "card_design":       "classic",
             # Difficulty multiplier defaults; overridden by stored values below.
             "difficulty_multiplier_easy":   0.5,
             "difficulty_multiplier_medium": 1.0,
@@ -1094,9 +1095,11 @@ async def _ws_remove_task_group(hass, connection, msg, coordinator):
 
 # Top-level fields stored at storage._data root
 _TOP_LEVEL_SETTINGS = {"points_name", "points_icon"}
+# Allowed values for the global default card-design style (per-card design styles).
+_ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro"}
 # Settings stored under storage._data["settings"][key]
 _SUBKEY_SETTINGS = {
-    "history_days", "streak_reset_mode",
+    "history_days", "streak_reset_mode", "card_design",
     "weekend_multiplier", "streak_milestones_enabled", "perfect_week_enabled",
     "perfect_week_bonus", "streak_milestones",
     "difficulty_multiplier_easy", "difficulty_multiplier_medium", "difficulty_multiplier_hard",
@@ -1237,10 +1240,14 @@ def _validate_vacation_periods(raw: list) -> tuple[list[dict] | None, str | None
         })
     return sorted(periods, key=lambda p: p["start"]), None
 
-@websocket_api.websocket_command({
+# Extracted to a module constant so the accepted settings keys can be unit-tested
+# (the websocket_command decorator does not expose the compiled schema). Every key
+# accepted here must also be routed in _ws_update_settings below.
+_UPDATE_SETTINGS_SCHEMA = {
     vol.Required("type"): WS_UPDATE_SETTINGS,
     vol.Optional("points_name"): vol.All(str, vol.Length(min=1, max=120)),
     vol.Optional("points_icon"): str,
+    vol.Optional("card_design"): vol.In(_ALLOWED_CARD_DESIGNS),
     vol.Optional("history_days"): vol.All(int, vol.Range(min=30, max=365)),
     vol.Optional("streak_reset_mode"): vol.In(["reset", "pause"]),
     vol.Optional("weekend_multiplier"): vol.All(vol.Coerce(float), vol.Range(min=1.0, max=5.0)),
@@ -1281,7 +1288,10 @@ def _validate_vacation_periods(raw: list) -> tuple[list[dict] | None, str | None
     vol.Optional("time_night_end"): vol.Match(r"^\d{2}:\d{2}$"),
     vol.Optional("time_periods"): list,
     vol.Optional("vacation_periods"): list,
-})
+}
+
+
+@websocket_api.websocket_command(_UPDATE_SETTINGS_SCHEMA)
 @websocket_api.async_response
 @_admin_only
 async def _ws_update_settings(hass, connection, msg, coordinator):
@@ -1311,6 +1321,8 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
             storage.set_points_icon(v or "mdi:star")
             changed.append(k)
         elif k in _SUBKEY_SETTINGS:
+            if k == "card_design" and v not in _ALLOWED_CARD_DESIGNS:
+                continue
             storage.set_setting(k, v)
             changed.append(k)
     if changed:

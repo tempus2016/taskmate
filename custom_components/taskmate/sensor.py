@@ -742,6 +742,8 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "total_pending_completions": len(common["pending_completions"]),
             "points_name": data.get("points_name", "Stars"),
             "points_icon": data.get("points_icon", "mdi:star"),
+            # Global default card-design style; cards read this when no per-card override (#design).
+            "card_design": settings.get("card_design", "classic"),
             "children": _build_children_summary(self.coordinator, common),
             "time_boundaries": time_boundaries,
             "time_periods": time_periods,

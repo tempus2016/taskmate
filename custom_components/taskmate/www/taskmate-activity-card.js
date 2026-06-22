@@ -96,7 +96,7 @@ class TaskMateActivityCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
         --act-purple: #9b59b6;
@@ -418,7 +418,64 @@ class TaskMateActivityCard extends LitElement {
 
       .undo-confirm-body { font-size: 0.95rem; line-height: 1.4; color: var(--primary-text-color); }
       .undo-confirm-go { --mdc-theme-primary: var(--error-color, #d9534f); }
+
+      /* ── Designed styles (playroom / console / cleanpro) ── */
+      .tmd-filters { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 13px; }
+      .tmd-filters .chip { cursor: pointer; }
+      .tmd-undo { padding: 4px 11px; }
+      .act-line { font-weight: 700; font-size: 13.5px; line-height: 1.35; }
+      .act-line .reason { font-weight: 400; color: var(--tmd-dim); }
+      .act-ago { font-size: 11.5px; }
+      .act-rel { opacity: 0.8; }
+
+      /* Playroom — bubbly nodes */
+      .act-pl { gap: 11px; }
+      .act-pl-row { gap: 11px; }
+      .act-pl-av { font-size: 18px; }
+      .act-pl-bub { flex: 1; min-width: 0; background: var(--tmd-surface-2); border-radius: 16px; padding: 10px 12px; }
+      .act-pl-foot { justify-content: space-between; margin-top: 5px; gap: 8px; }
+
+      /* Console — log feel, mono timestamps */
+      .act-cn { gap: 0; }
+      .act-cn-row { gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--tmd-border); }
+      .act-cn-row:last-child { border-bottom: none; }
+      .act-cn-mid { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; }
+      .act-cn-time { font-size: 11px; flex-shrink: 0; text-align: right; line-height: 1.3; white-space: nowrap; }
+
+      /* Clean Pro — connecting rail */
+      .act-cp-rail { position: relative; padding-left: 26px; }
+      .act-cp-line { position: absolute; left: 11px; top: 6px; bottom: 6px; width: 2px; background: var(--tmd-border); }
+      .act-cp { gap: 14px; }
+      .act-cp-node { position: relative; }
+      .act-cp-dot { position: absolute; left: -26px; top: 0; width: 22px; height: 22px; border-radius: 50%;
+        background: color-mix(in srgb, var(--ac, var(--tmd-accent)) 18%, transparent); color: var(--ac, var(--tmd-accent));
+        display: grid; place-items: center; font-size: 11px; line-height: 1; box-shadow: 0 0 0 3px var(--tmd-surface); }
+      .act-cp-head { justify-content: space-between; align-items: flex-start; gap: 10px; }
+      /* Coloured event stripe (honours accent_stripes) — vertically centred with the row */
+      .act-stripe { width: 4px; border-radius: 4px; flex: none; align-self: stretch; }
+      .act-pl-row, .act-cn-row { align-items: center; }
+      /* Vertical scroll (parity with classic) — extend to the card edge so the
+         scrollbar sits at the edge, not floating inset by the body padding. */
+      .act-pl, .act-cn, .act-cp-rail { max-height: 360px; overflow-y: auto;
+        margin-right: -15px; padding-right: 8px; }
+
+      /* Undo confirm overlay (works in classic + designed; no mwc dependency) */
+      .undo-ov { position: fixed; inset: 0; z-index: 99; display: grid; place-items: center;
+        background: rgba(0,0,0,0.45); padding: 16px; }
+      .undo-modal { background: var(--card-background-color, #fff); color: var(--primary-text-color);
+        border-radius: 16px; padding: 18px 18px 14px; max-width: 340px; width: 100%;
+        box-shadow: 0 16px 48px rgba(0,0,0,0.35); }
+      .undo-modal-title { font-weight: 800; font-size: 1.05rem; margin-bottom: 8px; }
+      .undo-modal-body { font-size: 0.92rem; color: var(--secondary-text-color); line-height: 1.45; }
+      .undo-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+      .undo-modal-btn { font: inherit; font-weight: 700; border: 0; cursor: pointer;
+        padding: 9px 16px; border-radius: 10px; }
+      .undo-modal-btn.cancel { background: var(--secondary-background-color, #ececec); color: var(--primary-text-color); }
+      .undo-modal-btn.go { background: var(--error-color, #e74c3c); color: #fff; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -476,17 +533,8 @@ class TaskMateActivityCard extends LitElement {
     return "pending";
   }
 
-  render() {
-    if (!this.hass || !this.config) return html``;
-
-    const entity = this.hass.states[this.config.entity];
-    if (!entity) {
-      return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div></ha-card>`;
-    }
-    if (entity.state === "unavailable" || entity.state === "unknown") {
-      return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.unavailable')}</div></div></ha-card>`;
-    }
-
+  // Shared data prep used by both the classic and designed render paths.
+  _buildEvents(entity) {
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     const pointsIcon = attrs.points_icon || "mdi:star";
     const children = attrs.children || [];
@@ -524,6 +572,27 @@ class TaskMateActivityCard extends LitElement {
     const filteredEvents = this._filter === "all"
       ? unfiltered
       : unfiltered.filter(e => this._eventBucket(e) === this._filter);
+
+    return { childNames, chorePointsMap, pointsIcon, unfiltered, filteredEvents };
+  }
+
+  render() {
+    if (!this.hass || !this.config) return html``;
+
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      : "classic";
+    if (design !== "classic") return this._renderDesigned(design);
+
+    const entity = this.hass.states[this.config.entity];
+    if (!entity) {
+      return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div></ha-card>`;
+    }
+    if (entity.state === "unavailable" || entity.state === "unknown") {
+      return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.unavailable')}</div></div></ha-card>`;
+    }
+
+    const { childNames, chorePointsMap, pointsIcon, unfiltered, filteredEvents } = this._buildEvents(entity);
 
     const title = this.config.title || this._t('activity.default_title');
     const headerColor = _safeColor(this.config.header_color, '#2471a3');
@@ -763,20 +832,23 @@ class TaskMateActivityCard extends LitElement {
 
   _renderConfirmDialog() {
     if (!this._confirm) return '';
+    // Self-contained overlay (not ha-dialog/mwc-button, which can render without
+    // visible action buttons if those components aren't loaded on the page).
     return html`
-      <ha-dialog
-        open
-        .heading=${this._t('activity.undo_confirm_title')}
-        @closed=${() => { this._confirm = null; }}
-      >
-        <div class="undo-confirm-body">${this._confirm.message}</div>
-        <mwc-button slot="secondaryAction" @click=${() => { this._confirm = null; }}>
-          ${this._t('common.cancel')}
-        </mwc-button>
-        <mwc-button slot="primaryAction" class="undo-confirm-go" @click=${() => this._doUndo()}>
-          ${this._t('activity.undo')}
-        </mwc-button>
-      </ha-dialog>
+      <div class="undo-ov" @click=${(e) => { if (e.target.classList.contains('undo-ov')) this._confirm = null; }}>
+        <div class="undo-modal" role="dialog" aria-modal="true">
+          <div class="undo-modal-title">${this._t('activity.undo_confirm_title')}</div>
+          <div class="undo-modal-body">${this._confirm.message}</div>
+          <div class="undo-modal-actions">
+            <button class="undo-modal-btn cancel" @click=${() => { this._confirm = null; }}>
+              ${this._t('common.cancel')}
+            </button>
+            <button class="undo-modal-btn go" @click=${() => this._doUndo()}>
+              ↩ ${this._t('activity.undo')}
+            </button>
+          </div>
+        </div>
+      </div>
     `;
   }
 
@@ -806,6 +878,214 @@ class TaskMateActivityCard extends LitElement {
     } finally {
       this._loading = { ...this._loading, [id]: false };
     }
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns/frag/17-activity.html
+  ══════════════════════════════════════════════════════════════════════ */
+
+  // Normalise a raw event into a descriptor the designed renderers consume.
+  // Preserves the SAME undo affordance/handler used by the classic path.
+  _describeEvent(item, childNames, pointsIcon, chorePointsMap) {
+    const childName = childNames[item.child_id] || item.child_name || this._t('activity.unknown_child');
+    const type = item.type || "chore";
+    const ago = this._formatAgo(new Date(item.completed_at)) || this._formatTime(new Date(item.completed_at));
+    const time = this._formatTime(new Date(item.completed_at));
+
+    if (type === "points_added" || type === "points_removed") {
+      const isAdd = type === "points_added";
+      const pts = Math.abs(item.points || 0);
+      const reason = item.reason || '';
+      const isPenalty = reason.startsWith('Penalty:');
+      const isPoolAllocation = reason.startsWith('Allocated to pool:');
+      const isSpend = !isAdd && !isPenalty && isPoolAllocation;
+      const displayReason = this._translateReason(item.reason);
+      const verb = isAdd ? this._t('activity.received') : isSpend ? this._t('activity.spent') : this._t('activity.lost');
+      const sign = isAdd ? '+' : '−';
+      const tone = isAdd ? 'good' : (isSpend ? 'accent' : 'bad');
+      const emoji = isAdd ? '⭐' : (isPenalty ? '⚠️' : '➖');
+      return {
+        childName, tone, emoji, sign, pts,
+        text: html`<strong>${childName}</strong> ${verb} <strong>${pts}</strong>${item.reason ? html` <span class="reason">— ${displayReason}</span>` : ''}`,
+        plain: `${childName} ${verb} ${pts}`,
+        ago, time,
+        ptsClass: isAdd ? 'good' : (isSpend ? 'accent' : 'bad'),
+        undo: this._txnReversible(reason)
+          ? { kind: 'txn', id: item.transaction_id, detail: displayReason || reason, child: childName, points: pts }
+          : null,
+      };
+    }
+
+    if (type === "reward_claimed" || type === "reward_approved") {
+      const pts = Math.abs(item.points || 0);
+      const isPending = type === "reward_claimed" && !item.approved;
+      const rewardName = item.reward_name || this._t('activity.a_reward');
+      return {
+        childName, tone: 'accent', emoji: '🎁', sign: '−', pts,
+        text: html`<strong>${childName}</strong> ${isPending ? this._t('activity.claimed') : this._t('activity.redeemed')} <strong>${rewardName}</strong>`,
+        plain: `${childName} · ${rewardName}`,
+        ago, time,
+        ptsClass: 'accent',
+        undo: null,
+      };
+    }
+
+    // Chore completion
+    const status = item.approved ? "approved" : item.rejected ? "rejected" : "pending";
+    const choreName = item.chore_name || this._t('activity.a_chore');
+    const pts = item.points !== undefined ? item.points : (chorePointsMap?.[item.chore_id] || 0);
+    const tone = status === 'approved' ? 'good' : status === 'rejected' ? 'bad' : 'warn';
+    const emoji = status === 'approved' ? '✅' : status === 'rejected' ? '❌' : '⏳';
+    return {
+      childName, tone, emoji, sign: '+', pts,
+      text: html`<strong>${childName}</strong> ${this._t('activity.completed')} ${choreName}`,
+      plain: `${childName} · ${choreName}`,
+      ago, time,
+      ptsClass: status === 'approved' ? 'good' : status === 'rejected' ? 'bad' : 'muted',
+      undo: status === 'approved'
+        ? { kind: 'chore', id: item.completion_id, detail: choreName, child: childName, points: pts }
+        : null,
+    };
+  }
+
+  _designUndoBtn(undo, label) {
+    if (!undo || !undo.id) return '';
+    const loading = !!this._loading[undo.id];
+    const message = undo.kind === 'chore'
+      ? this._t('activity.undo_confirm_chore', { detail: undo.detail, child: undo.child, points: undo.points })
+      : this._t('activity.undo_confirm_txn', { detail: undo.detail, child: undo.child, points: undo.points });
+    return html`<button class="btn ghost sm tmd-undo" ?disabled=${loading}
+      @click=${() => { this._confirm = { kind: undo.kind, id: undo.id, message }; }}>↩ ${label}</button>`;
+  }
+
+  _designFilterChips() {
+    const chips = [
+      { id: "all", label: this._t('activity.filter_all') },
+      { id: "chores", label: this._t('activity.filter_chores') },
+      { id: "rewards", label: this._t('activity.filter_rewards') },
+      { id: "adjustments", label: this._t('activity.filter_adjustments') },
+    ];
+    return html`
+      <div class="tmd-filters">
+        ${chips.map(c => html`
+          <button class="chip ${this._filter === c.id ? 'soft' : ''}"
+            @click=${() => this._setFilter(c.id)}>${c.label}</button>`)}
+      </div>`;
+  }
+
+  _renderDesigned(design) {
+    const entity = this.hass.states[this.config.entity];
+    const hd = _safeColor(this.config.header_color, '#16a085');
+    const title = this.config.title || this._t('activity.default_title');
+
+    const header = (sub, pill) => html`
+      <div class="tmd-hd">
+        <span class="ic">📜</span>
+        <span class="tt">${title}${sub ? html`<small>${sub}</small>` : ''}</span>
+        ${pill ? html`<span class="pill">${pill}</span>` : ''}
+      </div>`;
+
+    if (!entity) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">${header()}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div></ha-card>`;
+    }
+    if (entity.state === "unavailable" || entity.state === "unknown") {
+      return html`<ha-card class="tmd" style="--hd:${hd}">${header()}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.unavailable')}</div></div></ha-card>`;
+    }
+
+    const { childNames, chorePointsMap, pointsIcon, unfiltered, filteredEvents } = this._buildEvents(entity);
+
+    if (unfiltered.length === 0) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">${header(this._t('activity.recent_events'))}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('activity.no_activity_yet')}</div></div></ha-card>`;
+    }
+
+    const rows = filteredEvents.map(e => this._describeEvent(e, childNames, pointsIcon, chorePointsMap));
+
+    const sub = design === 'console' ? 'LIVE · STREAM' : this._t('activity.recent_events');
+    const pill = design === 'console' ? this._t('activity.events_count', { count: filteredEvents.length }) : '';
+    const body = html`
+      ${this.config.show_filter_chips !== false ? this._designFilterChips() : ''}
+      ${filteredEvents.length === 0
+        ? html`<div class="tmd-empty">${this._t('activity.no_events_for_filter')}</div>`
+        : design === 'console' ? this._designConsole(rows)
+        : design === 'cleanpro' ? this._designCleanpro(rows)
+        : this._designPlayroom(rows)}`;
+
+    return html`<ha-card class="tmd" style="--hd:${hd}">
+      ${header(sub, pill)}
+      <div class="tmd-bd">${body}</div>
+      ${this._renderConfirmDialog()}
+    </ha-card>`;
+  }
+
+  // Always show the absolute time; when show_relative_time is on, show the
+  // relative "x ago" ALONGSIDE it (matches the classic activity-meta row).
+  _timeMeta(r) {
+    return this.config.show_relative_time !== false
+      ? html`${r.time} <span class="act-rel">· ${r.ago}</span>`
+      : html`${r.time}`;
+  }
+  _stripe(r) {
+    return this.config.accent_stripes !== false
+      ? html`<div class="act-stripe" style="background:var(--tmd-${r.tone})"></div>` : '';
+  }
+
+  _designPlayroom(rows) {
+    return html`
+      <div class="grid act-pl">
+        ${rows.map(r => html`
+          <div class="row act-pl-row" style="--ac:var(--tmd-${r.tone})">
+            ${this._stripe(r)}
+            <div class="av act-pl-av" style="--av:38px;--ac:var(--tmd-${r.tone})">${r.emoji}</div>
+            <div class="act-pl-bub">
+              <div class="act-line">${r.text} <span class="num" style="color:var(--tmd-${r.ptsClass})">${r.sign}${r.pts}</span></div>
+              <div class="row act-pl-foot">
+                <span class="muted act-ago">${this._timeMeta(r)}</span>
+                ${this._designUndoBtn(r.undo, this._t('activity.undo'))}
+              </div>
+            </div>
+          </div>`)}
+      </div>`;
+  }
+
+  _designConsole(rows) {
+    return html`
+      <div class="grid act-cn">
+        ${rows.map(r => html`
+          <div class="row act-cn-row" style="--ac:var(--tmd-${r.tone})">
+            ${this._stripe(r)}
+            <div class="av" style="--av:26px;--ac:var(--tmd-${r.tone})">${r.emoji}</div>
+            <div class="act-cn-mid">${r.plain} <span class="num" style="color:var(--tmd-${r.ptsClass})">${r.sign}${r.pts}</span></div>
+            ${this._designUndoBtn(r.undo, this._t('activity.undo'))}
+            <div class="num muted act-cn-time">${this._timeMeta(r)}</div>
+          </div>`)}
+      </div>`;
+  }
+
+  _designCleanpro(rows) {
+    // Clean Pro conveys event colour through the timeline dot; honour
+    // accent_stripes by neutralising the dot when stripes are disabled.
+    const stripes = this.config.accent_stripes !== false;
+    return html`
+      <div class="act-cp-rail">
+        <div class="act-cp-line"></div>
+        <div class="grid act-cp">
+          ${rows.map(r => html`
+            <div class="act-cp-node">
+              <div class="act-cp-dot" style="--ac:${stripes ? `var(--tmd-${r.tone})` : 'var(--tmd-dim)'}">${r.emoji}</div>
+              <div class="row act-cp-head">
+                <div>
+                  <div class="act-line">${r.text} <span style="color:var(--tmd-${r.ptsClass});font-weight:700">${r.sign}${r.pts}</span></div>
+                  <div class="muted act-ago">${this._timeMeta(r)}</div>
+                </div>
+                ${this._designUndoBtn(r.undo, this._t('activity.undo'))}
+              </div>
+            </div>`)}
+        </div>
+      </div>`;
   }
 
   _groupByDay(items) {
@@ -913,6 +1193,17 @@ class TaskMateActivityCardEditor extends LitElement {
           },
         },
       },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
       { name: 'max_items', selector: { number: { min: 5, max: 200, mode: 'box' } } },
       { name: 'show_filter_chips', selector: { boolean: {} } },
       { name: 'accent_stripes', selector: { boolean: {} } },
@@ -924,6 +1215,7 @@ class TaskMateActivityCardEditor extends LitElement {
     const labels = {
       entity: this._t('common.editor.overview_entity'),
       title: this._t('common.editor.card_title'),
+      card_design: this._t('common.design.field_label'),
       child_id: this._t('common.editor.filter_by_child'),
       max_items: this._t('activity.editor.max_items'),
       show_filter_chips: this._t('activity.editor.show_filter_chips'),
@@ -950,6 +1242,7 @@ class TaskMateActivityCardEditor extends LitElement {
     const data = {
       entity: this.config.entity || '',
       title: this.config.title || '',
+      card_design: this.config.card_design || 'global',
       child_id: this.config.child_id || '__all__',
       max_items: this.config.max_items || 30,
       show_filter_chips: this.config.show_filter_chips !== false,
@@ -1011,6 +1304,8 @@ class TaskMateActivityCardEditor extends LitElement {
         value === '' || value === null || value === undefined
         || (key === 'child_id' && value === '__all__')
       ) {
+        delete newConfig[key];
+      } else if (key === 'card_design' && value === 'global') {
         delete newConfig[key];
       } else if (key === 'max_items' && value === 30) {
         delete newConfig[key];

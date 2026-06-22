@@ -37,7 +37,7 @@ class TaskMateLeaderboardCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host { display: block; }
       ha-card { overflow: hidden; }
 
@@ -223,7 +223,58 @@ class TaskMateLeaderboardCard extends LitElement {
         .rank-name { font-size: 0.95rem; }
         .score-value { font-size: 1.2rem; }
       }
+
+      /* ── Designed layouts (playroom / console / cleanpro) ── */
+      /* Shared .tmd kit + tokens come from taskmate-design.js styles(). */
+
+      /* Playroom — podium */
+      .lb-podium { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 9px; align-items: end; }
+      .lb-pod { background: var(--tmd-surface-2); border-radius: 18px; padding: 12px 8px 11px;
+                text-align: center; }
+      .lb-pod.win { border-radius: 20px; padding: 14px 8px 13px; box-shadow: var(--tmd-shadow); }
+      .lb-pod .medal { font-size: 22px; }
+      .lb-pod.win .medal { font-size: 28px; }
+      .lb-pod .av { margin: 6px auto; }
+      .lb-pod-name { font-weight: 800; font-size: 13px; }
+      .lb-pod.win .lb-pod-name { font-size: 14px; }
+      .lb-pod-score { font-size: 22px; color: var(--tmd-accent); margin-top: 2px; }
+      .lb-pod.win .lb-pod-score { font-size: 28px; }
+      .lb-pod-score span { font-size: 11px; }
+      .lb-pod.win .lb-pod-score span { font-size: 13px; }
+      .lb-list { display: flex; flex-direction: column; gap: 9px; }
+      .lb-list .lb-row { background: var(--tmd-surface-2); border-radius: 18px; padding: 11px 13px; }
+
+      /* Console — ranked ladder */
+      .lb-cn { display: flex; flex-direction: column; gap: 9px; }
+      .lb-cn-row { display: flex; align-items: center; gap: 10px; background: var(--tmd-surface-2);
+                   border: 1px solid var(--tmd-border); border-radius: 10px; padding: 11px; }
+      .lb-cn-row.win { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tmd-gold) 40%, transparent); }
+      .lb-cn-rank { font-size: 20px; width: 30px; color: var(--tmd-dim); }
+      .lb-cn-rank.win { color: var(--tmd-gold); }
+      .lb-cn-mid { flex: 1; min-width: 0; }
+      .lb-cn-name { font-weight: 700; }
+      .lb-cn-meta { font-size: 10px; gap: 8px; margin-top: 5px; }
+      .lb-cn-right { text-align: right; }
+      .lb-cn-score { font-size: 23px; }
+      .lb-cn-score.win { color: var(--tmd-accent); }
+      .lb-cn-unit { font-size: 10px; }
+
+      /* Clean Pro — compact list */
+      .lb-cp { display: flex; flex-direction: column; }
+      .lb-cp-row { display: flex; align-items: center; gap: 10px; padding: 9px 4px; }
+      .lb-cp-rank { width: 26px; justify-content: center; padding: 4px 0; }
+      .lb-cp-rank.win { background: color-mix(in srgb, var(--tmd-gold) 16%, transparent);
+                        border-color: transparent; color: var(--tmd-gold); }
+      .lb-cp-mid { flex: 1; min-width: 0; }
+      .lb-cp-name { font-weight: 600; }
+      .lb-cp-meta { font-size: 11.5px; gap: 10px; margin-top: 2px; }
+      .lb-cp-right { text-align: right; }
+      .lb-cp-score { font-size: 19px; }
+      .lb-cp-unit { font-size: 10.5px; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -247,6 +298,11 @@ class TaskMateLeaderboardCard extends LitElement {
 
   render() {
     if (!this.hass || !this.config) return html``;
+
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      : "classic";
+    if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
     if (!entity) return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div></ha-card>`;
@@ -476,6 +532,203 @@ class TaskMateLeaderboardCard extends LitElement {
 
     return result;
   }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns/frag/04-leaderboard.html.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _av(child, tone, size) {
+    const a = child.avatar || "";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${child.name}">`
+        : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  _renderDesigned(design) {
+    const entity = this.hass.states[this.config.entity];
+    const hd = _safeColor(this.config.header_color, '#b7950b');
+
+    if (!entity) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${this._designHeader(hd, '')}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div>
+      </ha-card>`;
+    }
+    if (entity.state === "unavailable" || entity.state === "unknown") {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${this._designHeader(hd, '')}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.unavailable')}</div></div>
+      </ha-card>`;
+    }
+
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const children = [...(attrs.children || [])];
+    const pointsName = attrs.points_name || this._t('common.points');
+
+    const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const weeklyPoints = this._buildWeeklyPoints(attrs, tz);
+    const sortBy = this.config.sort_by || "points";
+
+    const sortLabels = { points: this._t('leaderboard.sort_all_time_points'), streak: this._t('leaderboard.sort_current_streak'), weekly: this._t('leaderboard.sort_this_week'), career: this._t('leaderboard.sort_career_score') };
+    const periodLabel = sortLabels[sortBy] || sortLabels.points;
+
+    const header = this._designHeader(hd, periodLabel);
+
+    if (children.length === 0) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${header}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.no_children')}</div></div>
+      </ha-card>`;
+    }
+
+    const scoreOf = (c) => {
+      if (sortBy === "streak") return c.current_streak || 0;
+      if (sortBy === "weekly") return weeklyPoints[c.id] || 0;
+      if (sortBy === "career") return c.career_score || 0;
+      return c.points || 0;
+    };
+    const scoreUnit =
+      sortBy === "streak" ? this._t('common.day_streak') :
+      sortBy === "weekly" ? this._t('common.this_week') :
+      sortBy === "career" ? this._t('leaderboard.career_score') :
+      pointsName;
+
+    const sorted = [...children].sort((a, b) => scoreOf(b) - scoreOf(a));
+    const rows = sorted.map((child, idx) => ({
+      child,
+      idx,
+      tone: this._designTone(idx),
+      score: scoreOf(child),
+      streak: child.current_streak || 0,
+      weekly: weeklyPoints[child.id] || 0,
+      points: child.points || 0,
+      career: child.career_score || 0,
+    }));
+
+    const ctx = { sortBy, pointsName };
+    const body =
+      design === "playroom" ? this._lbPlayroom(rows, scoreUnit, ctx) :
+      design === "console"  ? this._lbConsole(rows, scoreUnit, ctx) :
+                              this._lbCleanpro(rows, scoreUnit, ctx);
+
+    return html`<ha-card class="tmd" style="--hd:${hd}">${header}<div class="tmd-bd">${body}</div></ha-card>`;
+  }
+
+  _designHeader(hd, periodLabel) {
+    const title = this.config.title || this._t('leaderboard.default_title');
+    return html`
+      <div class="tmd-hd">
+        <span class="ic">🏆</span>
+        <span class="tt">${title}</span>
+        ${periodLabel ? html`<span class="pill">${periodLabel}</span>` : ""}
+      </div>`;
+  }
+
+  // Mirrors the classic rank-stats: each chip is shown only when its toggle is
+  // on AND it is not the metric currently being ranked (sortBy).
+  _lbMetaChips(r, ctx, cls) {
+    const sortBy = ctx.sortBy;
+    const chips = [];
+    if (this.config.show_streak !== false && sortBy !== "streak") chips.push(html`<span>🔥 ${r.streak}</span>`);
+    if (this.config.show_weekly !== false && sortBy !== "weekly") chips.push(html`<span>📅 ${r.weekly}</span>`);
+    if (sortBy !== "points") chips.push(html`<span>⭐ ${r.points}</span>`);
+    if (this.config.show_career !== false && sortBy !== "career") chips.push(html`<span>🏆 ${r.career}</span>`);
+    if (!chips.length) return "";
+    return html`<div class="row muted ${cls}">${chips}</div>`;
+  }
+
+  _lbMeta(r, ctx) { return this._lbMetaChips(r, ctx, "lb-cn-meta"); }
+
+  _lbPlayroom(rows, scoreUnit, ctx) {
+    const MEDAL = ["🥇", "🥈", "🥉"];
+    if (rows.length >= 3) {
+      const [first, second, third] = rows;
+      const pod = (r, win) => html`
+        <div class="lb-pod ${win ? "win" : ""}" style="--ac:${r.tone}">
+          <div class="medal">${MEDAL[r.idx]}</div>
+          ${this._av(r.child, r.tone, win ? 58 : 46)}
+          <div class="lb-pod-name">${r.child.name}</div>
+          <div class="big lb-pod-score">${r.score.toLocaleString()}<span>⭐</span></div>
+          ${win && this.config.show_streak !== false && r.streak
+            ? html`<div class="chip soft" style="margin-top:7px">🔥 ${this._t('common.d_streak', { count: r.streak })}</div>` : ""}
+        </div>`;
+      return html`
+        <div class="lb-podium">
+          ${pod(second, false)}${pod(first, true)}${pod(third, false)}
+        </div>
+        ${rows.length > 3 ? html`
+          <div class="lb-list" style="margin-top:11px">
+            ${rows.slice(3).map((r) => html`
+              <div class="row lb-row" style="--ac:${r.tone}">
+                <div class="num" style="width:26px">${r.idx + 1}</div>
+                ${this._av(r.child, r.tone, 38)}
+                <div style="flex:1;min-width:0"><div class="lb-pod-name">${r.child.name}</div></div>
+                <div class="big" style="color:var(--tmd-accent)">${r.score.toLocaleString()}</div>
+              </div>`)}
+          </div>` : ""}`;
+    }
+    return html`
+      <div class="lb-list">
+        ${rows.map((r) => html`
+          <div class="row lb-row" style="--ac:${r.tone}">
+            ${r.idx < 3 ? html`<div class="medal" style="font-size:22px">${MEDAL[r.idx]}</div>`
+              : html`<div class="num" style="width:26px">${r.idx + 1}</div>`}
+            ${this._av(r.child, r.tone, 44)}
+            <div style="flex:1;min-width:0">
+              <div class="lb-pod-name">${r.child.name}</div>
+              ${this._lbMeta(r, ctx)}
+            </div>
+            <div class="big" style="font-size:22px;color:var(--tmd-accent)">${r.score.toLocaleString()}</div>
+          </div>`)}
+      </div>`;
+  }
+
+  _lbConsole(rows, scoreUnit, ctx) {
+    const max = Math.max(...rows.map((r) => r.score), 1);
+    return html`
+      <div class="lb-cn">
+        ${rows.map((r) => html`
+          <div class="lb-cn-row ${r.idx === 0 ? "win" : ""}" style="--ac:${r.tone}">
+            <div class="num lb-cn-rank ${r.idx === 0 ? "win" : ""}">#${r.idx + 1}</div>
+            ${this._av(r.child, r.tone, 38)}
+            <div class="lb-cn-mid">
+              <div class="lb-cn-name">${r.child.name}</div>
+              <div class="bar" style="margin-top:6px"><i style="width:${Math.round((r.score / max) * 100)}%"></i></div>
+              ${this._lbMeta(r, ctx)}
+            </div>
+            <div class="lb-cn-right">
+              <div class="num lb-cn-score ${r.idx === 0 ? "win" : ""}">${r.score.toLocaleString()}</div>
+              <div class="muted lb-cn-unit">${scoreUnit}</div>
+            </div>
+          </div>`)}
+      </div>`;
+  }
+
+  _lbCleanpro(rows, scoreUnit, ctx) {
+    return html`
+      <div class="lb-cp">
+        ${rows.map((r, i) => html`
+          ${i > 0 ? html`<div class="divide" style="margin:4px 0"></div>` : ""}
+          <div class="lb-cp-row" style="--ac:${r.tone}">
+            <span class="chip lb-cp-rank ${r.idx === 0 ? "win" : ""}">${r.idx + 1}</span>
+            ${this._av(r.child, r.tone, 36)}
+            <div class="lb-cp-mid">
+              <div class="lb-cp-name">${r.child.name}</div>
+              ${this._lbMetaChips(r, ctx, "lb-cp-meta")}
+            </div>
+            <div class="lb-cp-right">
+              <div class="num lb-cp-score">${r.score.toLocaleString()}</div>
+              <div class="muted lb-cp-unit">${scoreUnit}</div>
+            </div>
+          </div>`)}
+      </div>`;
+  }
 }
 
 class TaskMateLeaderboardCardEditor extends LitElement {
@@ -528,6 +781,17 @@ class TaskMateLeaderboardCardEditor extends LitElement {
           },
         },
       },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
       { name: 'show_streak', selector: { boolean: {} } },
       { name: 'show_weekly', selector: { boolean: {} } },
       { name: 'show_career', selector: { boolean: {} } },
@@ -539,6 +803,7 @@ class TaskMateLeaderboardCardEditor extends LitElement {
       entity: this._t('leaderboard.editor.entity_label'),
       title: this._t('leaderboard.editor.title_label'),
       sort_by: this._t('leaderboard.editor.rank_by_label'),
+      card_design: this._t('common.design.field_label'),
       show_streak: this._t('leaderboard.editor.show_streak'),
       show_weekly: this._t('leaderboard.editor.show_weekly'),
       show_career: this._t('leaderboard.editor.show_career'),
@@ -560,6 +825,7 @@ class TaskMateLeaderboardCardEditor extends LitElement {
       entity: this.config.entity || '',
       title: this.config.title || '',
       sort_by: this.config.sort_by || 'points',
+      card_design: this.config.card_design || 'global',
       show_streak: this.config.show_streak !== false,
       show_weekly: this.config.show_weekly !== false,
       show_career: this.config.show_career !== false,
@@ -616,6 +882,8 @@ class TaskMateLeaderboardCardEditor extends LitElement {
       if (value === '' || value === null || value === undefined) {
         delete newConfig[key];
       } else if ((key === 'show_streak' || key === 'show_weekly' || key === 'show_career') && value === true) {
+        delete newConfig[key];
+      } else if (key === 'card_design' && value === 'global') {
         delete newConfig[key];
       } else if (key === 'sort_by' && value === 'points') {
         delete newConfig[key];

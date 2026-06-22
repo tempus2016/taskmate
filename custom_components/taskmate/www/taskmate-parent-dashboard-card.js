@@ -45,7 +45,7 @@ class TaskMateParentDashboardCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host { display: block; }
       ha-card { overflow: hidden; }
 
@@ -386,7 +386,71 @@ class TaskMateParentDashboardCard extends LitElement {
         .tab-content { padding: 10px; gap: 8px; }
         .approval-item, .claim-item, .quick-points-row, .child-tile { padding: 10px 12px; }
       }
+
+      /* ── Designed styles (playroom / console / cleanpro) ──
+         Shared .tmd kit + tokens come from taskmate-design.js styles().
+         Only card-specific layout classes are declared here. */
+      /* Tab bar */
+      .pd-tabs { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 13px; }
+      .pd-tab { font: inherit; font-family: var(--tmd-font-display); font-weight: 800;
+        font-size: 13px; border: 0; cursor: pointer; padding: 8px 13px; border-radius: 999px;
+        background: var(--tmd-surface-2); color: var(--tmd-text); border: 1px solid var(--tmd-border);
+        display: inline-flex; align-items: center; gap: 6px; }
+      .pd-tab.active { background: var(--tmd-accent); color: #fff; border-color: transparent; }
+      :host([data-tm-design="console"]) .pd-tab.active { color: #06101c;
+        background: linear-gradient(135deg, var(--tmd-accent), color-mix(in srgb,var(--tmd-accent) 60%,var(--tmd-accent2)));
+        box-shadow: 0 0 14px color-mix(in srgb,var(--tmd-accent) 45%,transparent); }
+      .pd-tab .tab-cnt { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+        background: var(--tmd-bad); color: #fff; font-size: 11px; font-weight: 800;
+        display: grid; place-items: center; }
+      .pd-tab.active .tab-cnt { background: rgba(255,255,255,.3); }
+      /* Console tab bar segmented */
+      .pd-tabs-cn { display: flex; gap: 0; background: #0b1424; border: 1px solid var(--tmd-border);
+        border-radius: 8px; padding: 3px; margin-bottom: 13px; }
+      .pd-tab-cn { flex: 1; text-align: center; padding: 7px 4px; border-radius: 6px; border: 0;
+        cursor: pointer; background: transparent; color: var(--tmd-dim);
+        font-family: var(--tmd-font-mono); font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+      .pd-tab-cn.active { background: var(--tmd-surface-2); color: var(--tmd-accent); font-weight: 800; }
+      /* Clean Pro tab bar underline */
+      .pd-tabs-cp { display: flex; gap: 0; border-bottom: 1px solid var(--tmd-border); margin: -2px 0 14px; }
+      .pd-tab-cp { padding: 8px 12px; border: 0; background: transparent; cursor: pointer;
+        font-family: var(--tmd-font-body); font-weight: 700; font-size: 13.5px; color: var(--tmd-dim);
+        border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; align-items: center; gap: 6px; }
+      .pd-tab-cp.active { color: var(--tmd-accent); border-bottom-color: var(--tmd-accent); }
+      .pd-tab-cp .tab-cnt { padding: 1px 7px; border-radius: 999px; background: var(--tmd-bad);
+        color: #fff; font-size: 11px; font-weight: 800; }
+
+      /* Overview rows */
+      .pd-ov-pl { background: var(--tmd-surface-2); border-radius: 18px; padding: 12px; }
+      .pd-ov-pl + .pd-ov-pl { margin-top: 10px; }
+      .pd-ov-cn { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
+        border-radius: 10px; padding: 11px; }
+      .pd-ov-cn + .pd-ov-cn { margin-top: 9px; }
+      .pd-ov-cp { padding: 9px 0; }
+      .pd-name { font-weight: 800; }
+      .pd-name-cp { font-weight: 600; }
+      .pd-sub { font-size: 12.5px; }
+      .pd-pts { font-size: 20px; color: var(--tmd-accent); }
+      .pd-pts-cn { font-family: var(--tmd-font-mono); font-weight: 800; font-size: 18px; color: var(--tmd-accent); }
+      .pd-mini { font-family: var(--tmd-font-mono); font-size: 10px; }
+
+      /* Generic designed item rows (approvals / claims / points) */
+      .pd-item { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
+        border-radius: var(--tmd-radius-sm); padding: 11px; }
+      .pd-item + .pd-item { margin-top: 9px; }
+      .pd-item-title { font-weight: 700; }
+      .pd-item-sub { font-size: 12px; }
+      .pd-acts { display: flex; gap: 6px; flex: none; }
+      .pd-photo { width: 36px; height: 36px; border-radius: 8px; overflow: hidden;
+        background: var(--tmd-surface); border: 1px solid var(--tmd-border); display: grid;
+        place-items: center; font-size: 15px; flex: none; }
+      .pd-photo img { width: 100%; height: 100%; object-fit: cover; }
+      .pd-photo-link { line-height: 0; text-decoration: none; }
+      .pd-gold-soft { color: var(--tmd-gold); }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -408,6 +472,11 @@ class TaskMateParentDashboardCard extends LitElement {
 
   render() {
     if (!this.hass || !this.config) return html``;
+
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      : "classic";
+    if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
     if (!entity) return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div></ha-card>`;
@@ -482,6 +551,338 @@ class TaskMateParentDashboardCard extends LitElement {
         </div>
       </ha-card>
     `;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns/frag/12-parent-dashboard.html.
+     Preserves the tab state machine (_activeSection) and reuses every
+     existing handler.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _av(name, avatar, tone, size) {
+    const a = avatar || "";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${name || ''}">`
+        : (name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  // Per-child today progress (approved / total due today), mirroring the
+  // classic _renderOverview filter logic, for the designed overview tab.
+  _designChildProgress(child, chores, completions, attrs) {
+    const todayDow = attrs.today_day_of_week ||
+      new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    const availability = attrs.chore_availability || {};
+    const childChores = chores.filter(c => {
+      if (c.enabled === false) return false;
+      if ((c.disabled_for || []).includes(child.id)) return false;
+      const at = c.assigned_to || [];
+      const assigned = at.length === 0 || at.includes(child.id);
+      if (!assigned) return false;
+      const perChild = availability[c.id];
+      if (c.schedule_mode === 'one_shot') {
+        if (perChild && perChild[child.id] === false) return false;
+      }
+      if (c.schedule_mode === 'specific_days') {
+        const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
+        if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
+      }
+      if (c.schedule_mode === 'recurring') {
+        if (perChild && perChild[child.id] === false) return false;
+      }
+      return true;
+    });
+    const childChoreIds = new Set(childChores.map(c => c.id));
+    const approved = completions.filter(c => c.child_id === child.id && c.approved && childChoreIds.has(c.chore_id)).length;
+    const total = childChores.length;
+    const pct = total > 0 ? Math.min(100, Math.round((approved / total) * 100)) : 0;
+    return { approved, total, pct };
+  }
+
+  _renderDesigned(design) {
+    const hd = this.config.header_color || '#c0392b';
+    const entity = this.hass.states[this.config.entity];
+
+    if (!entity) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${this._dHeader(hd, 0)}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div>
+      </ha-card>`;
+    }
+    if (entity.state === "unavailable" || entity.state === "unknown") {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${this._dHeader(hd, 0)}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.unavailable')}</div></div>
+      </ha-card>`;
+    }
+
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const children = attrs.children || [];
+    const chores = attrs.chores || [];
+    const completions = attrs.todays_completions || [];
+    const pendingCompletions = attrs.chore_completions || completions.filter(c => !c.approved);
+    const pendingRewardClaims = attrs.pending_reward_claims || [];
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    const pointsName = attrs.points_name || this._t('common.points');
+    const totalPending = pendingCompletions.length + pendingRewardClaims.length;
+
+    const rotationChores = chores.filter(c => ['alternating', 'random', 'balanced'].includes(c.assignment_mode || 'everyone'));
+
+    const tabs = [
+      { id: "overview", label: this._t('dashboard.tab_overview') },
+      { id: "approvals", label: this._t('dashboard.tab_approvals'), count: pendingCompletions.length },
+      { id: "points", label: this._t('dashboard.tab_points') },
+    ];
+    if (rotationChores.length > 0) {
+      tabs.splice(1, 0, { id: "rotation", label: this._t('dashboard.tab_rotation', {}, 'Rotation') });
+    }
+    if (this.config.show_claims) {
+      const insertAt = tabs.findIndex(t => t.id === "points");
+      tabs.splice(insertAt, 0, { id: "claims", label: this._t('dashboard.tab_claims'), count: pendingRewardClaims.length });
+    }
+
+    // Guard: if the active section is no longer present (e.g. rotation/claims
+    // toggled off), fall back to overview.
+    if (!tabs.some(t => t.id === this._activeSection)) this._activeSection = "overview";
+
+    const tabBar =
+      design === "console"  ? this._dTabsConsole(tabs) :
+      design === "cleanpro" ? this._dTabsCleanpro(tabs) :
+                              this._dTabsPlayroom(tabs);
+
+    let body;
+    const sec = this._activeSection;
+    if (sec === "overview") body = this._dOverview(design, children, chores, completions, attrs, pointsIcon);
+    else if (sec === "rotation") body = this._dRotation(design, rotationChores, children, attrs);
+    else if (sec === "approvals") body = this._dApprovals(design, pendingCompletions, children, chores, pointsIcon);
+    else if (sec === "claims") body = this._dClaims(design, pendingRewardClaims, pointsIcon);
+    else if (sec === "points") body = this._dPoints(design, children, pointsIcon, pointsName);
+
+    return html`<ha-card class="tmd" style="--hd:${hd}">
+      ${this._dHeader(hd, totalPending)}
+      <div class="tmd-bd">
+        ${tabBar}
+        ${body}
+      </div>
+    </ha-card>`;
+  }
+
+  _dHeader(hd, count) {
+    const title = this.config.title || this._t('dashboard.default_title');
+    return html`
+      <div class="tmd-hd">
+        <span class="ic">🏠</span>
+        <span class="tt">${title}</span>
+        ${count > 0 ? html`<span class="cnt">${count}</span>` : ""}
+      </div>`;
+  }
+
+  _switchTab(id) { this._activeSection = id; this.requestUpdate(); }
+
+  _dTabsPlayroom(tabs) {
+    return html`
+      <div class="pd-tabs">
+        ${tabs.map(t => html`
+          <button class="pd-tab ${this._activeSection === t.id ? 'active' : ''}"
+            @click="${() => this._switchTab(t.id)}">
+            ${t.label}${t.count ? html`<span class="tab-cnt">${t.count}</span>` : ""}
+          </button>`)}
+      </div>`;
+  }
+
+  _dTabsConsole(tabs) {
+    return html`
+      <div class="pd-tabs-cn">
+        ${tabs.map(t => html`
+          <button class="pd-tab-cn ${this._activeSection === t.id ? 'active' : ''}"
+            @click="${() => this._switchTab(t.id)}">
+            ${(t.label || '').toUpperCase()}${t.count ? html`·${t.count}` : ""}
+          </button>`)}
+      </div>`;
+  }
+
+  _dTabsCleanpro(tabs) {
+    return html`
+      <div class="pd-tabs-cp">
+        ${tabs.map(t => html`
+          <button class="pd-tab-cp ${this._activeSection === t.id ? 'active' : ''}"
+            @click="${() => this._switchTab(t.id)}">
+            ${t.label}${t.count ? html`<span class="tab-cnt">${t.count}</span>` : ""}
+          </button>`)}
+      </div>`;
+  }
+
+  _dEmpty(msg) { return html`<div class="tmd-empty">${msg}</div>`; }
+
+  _dOverview(design, children, chores, completions, attrs, pointsIcon) {
+    if (!children.length) return this._dEmpty(this._t('dashboard.empty_no_children'));
+    return html`${children.map((child, i) => {
+      const tone = this._designTone(i);
+      const { approved, total, pct } = this._designChildProgress(child, chores, completions, attrs);
+      if (design === "console") {
+        return html`
+          <div class="row pd-ov-cn" style="--ac:${tone}">
+            ${this._av(child.name, child.avatar, tone, 34)}
+            <div style="flex:1;min-width:0">
+              <div class="pd-name">${child.name} <span class="muted pd-mini">${approved}/${total}</span></div>
+              <div class="bar" style="margin-top:6px"><i style="width:${pct}%"></i></div>
+            </div>
+            <div class="pd-pts-cn">${child.points}</div>
+          </div>`;
+      }
+      if (design === "cleanpro") {
+        const isAdmin = !!(this.hass && this.hass.user && this.hass.user.is_admin);
+        return html`
+          <div class="row pd-ov-cp" style="--ac:${tone}">
+            ${this._av(child.name, child.avatar, tone, 36)}
+            <div style="flex:1;min-width:0">
+              <div class="row" style="justify-content:space-between">
+                <span class="pd-name-cp">${child.name}</span>
+                <span class="muted" style="font-size:12px">${approved}/${total} · ${child.points} ${this._t('common.points')}</span>
+              </div>
+              <div class="bar" style="margin-top:7px;height:8px"><i style="width:${pct}%"></i></div>
+            </div>
+            ${isAdmin ? html`<button class="btn ghost round sm"
+              title="${this._t('dashboard.tab_points')}"
+              @click="${() => this._switchTab('points')}">+</button>` : ""}
+          </div>
+          ${i < children.length - 1 ? html`<div class="divide" style="margin:0"></div>` : ""}`;
+      }
+      // playroom
+      return html`
+        <div class="pd-ov-pl" style="--ac:${tone}">
+          <div class="row">
+            ${this._av(child.name, child.avatar, tone, 42)}
+            <div style="flex:1;min-width:0">
+              <div class="pd-name">${child.name}</div>
+              <div class="muted pd-sub">${this._t('dashboard.chores_done', { done: approved, total }, `${approved} / ${total} chores done`)}</div>
+            </div>
+            <div class="big pd-pts">${child.points}⭐</div>
+          </div>
+          <div class="bar" style="margin-top:9px"><i style="width:${pct}%"></i></div>
+        </div>`;
+    })}`;
+  }
+
+  _dApprovals(design, pending, children, chores, pointsIcon) {
+    if (!pending.length) return this._dEmpty(this._t('dashboard.empty_approvals'));
+    const childMap = {}; children.forEach(c => { childMap[c.id] = c; });
+    const choreMap = {}; chores.forEach(c => { choreMap[c.id] = c; });
+    return html`${pending.map((comp, i) => {
+      const tone = this._designTone(i);
+      const child = childMap[comp.child_id];
+      const isLoading = !!this._loading[comp.completion_id];
+      const time = comp.completed_at
+        ? new Date(comp.completed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+      const pts = comp.points || choreMap[comp.chore_id]?.points || 0;
+      const photo = comp.photo_url
+        ? html`<a class="pd-photo-link" href="${comp.photo_url}" target="_blank" rel="noopener"
+            title="${this._t('approvals.view_photo') || 'View photo'}"><div class="pd-photo"><img src="${comp.photo_url}" alt=""></div></a>`
+        : "";
+      const acts = html`
+        <button class="btn good sm round" ?disabled="${isLoading}" title="${this._t('common.approve')}"
+          @click="${() => this._handleApprove(comp.completion_id)}">✓</button>
+        <button class="btn bad sm round" ?disabled="${isLoading}" title="${this._t('common.reject')}"
+          @click="${() => this._handleReject(comp.completion_id)}">✕</button>`;
+      return html`
+        <div class="row pd-item ${isLoading ? 'loading' : ''}" style="--ac:${tone}">
+          ${this._av(child?.name || '?', child?.avatar, tone, 36)}
+          <div style="flex:1;min-width:0">
+            <div class="pd-item-title">${comp.chore_name || choreMap[comp.chore_id]?.name || this._t('common.unknown')}</div>
+            <div class="muted pd-item-sub">${child?.name || this._t('common.unknown')}${time ? ` · ${time}` : ""} · +${pts}</div>
+          </div>
+          ${photo}
+          <div class="pd-acts">${acts}</div>
+        </div>`;
+    })}`;
+  }
+
+  _dClaims(design, claims, pointsIcon) {
+    if (!claims.length) return this._dEmpty(this._t('dashboard.empty_claims'));
+    return html`${claims.map((claim, i) => {
+      const tone = this._designTone(i);
+      const isLoading = !!this._loading[claim.claim_id];
+      const time = claim.claimed_at
+        ? new Date(claim.claimed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+      return html`
+        <div class="row pd-item ${isLoading ? 'loading' : ''}" style="--ac:${tone}">
+          <div class="pd-photo"><ha-icon icon="${claim.reward_icon || 'mdi:gift'}"></ha-icon></div>
+          <div style="flex:1;min-width:0">
+            <div class="pd-item-title">${claim.reward_name}</div>
+            <div class="muted pd-item-sub">${claim.child_name}${time ? ` · ${time}` : ""} · ${claim.cost}</div>
+          </div>
+          <div class="pd-acts">
+            <button class="btn good sm round" ?disabled="${isLoading}" title="${this._t('common.approve')}"
+              @click="${() => this._handleApproveReward(claim.claim_id)}">✓</button>
+            <button class="btn bad sm round" ?disabled="${isLoading}" title="${this._t('common.reject')}"
+              @click="${() => this._handleRejectReward(claim.claim_id)}">✕</button>
+          </div>
+        </div>`;
+    })}`;
+  }
+
+  _dRotation(design, rotationChores, children, attrs) {
+    if (!rotationChores.length) {
+      return this._dEmpty(this._t('dashboard.empty_rotation', {}, 'No rotating chores configured'));
+    }
+    const childById = Object.fromEntries((children || []).map(c => [c.id, c]));
+    const groups = attrs.task_groups || [];
+    const groupByChoreId = {};
+    for (const g of groups) for (const cid of (g.chore_ids || [])) groupByChoreId[cid] = g;
+    const unknown = this._t('dashboard.rotation_unassigned', {}, 'Nobody');
+    return html`${rotationChores.map((chore, i) => {
+      const tone = this._designTone(i);
+      const currentChild = childById[chore.assignment_current_child_id || ''];
+      const pool = (chore.assigned_to && chore.assigned_to.length) ? chore.assigned_to : (children || []).map(c => c.id);
+      const group = groupByChoreId[chore.id];
+      const isSticky = group && group.policy === 'sticky';
+      const isStickyFollower = isSticky && group.chore_ids[0] !== chore.id;
+      const skipDisabled = pool.length <= 1 || isStickyFollower;
+      const key = `skip_${chore.id}`;
+      const loading = !!this._loading[key];
+      return html`
+        <div class="row pd-item ${loading ? 'loading' : ''}" style="--ac:${tone}">
+          ${this._av(currentChild?.name || '?', currentChild?.avatar || 'mdi:rotate-3d-variant', tone, 36)}
+          <div style="flex:1;min-width:0">
+            <div class="pd-item-title">${chore.name}</div>
+            <div class="muted pd-item-sub">${currentChild?.name || unknown} · ${chore.assignment_mode}${group ? ` · ${group.policy === 'sticky' ? '🔗' : '🔀'} ${group.name}` : ""}</div>
+          </div>
+          <div class="pd-acts">
+            <button class="btn ghost sm round" ?disabled="${skipDisabled}"
+              title="${this._t('dashboard.rotation_skip_hint', {}, 'Skip current child and move to the next in rotation (today only)')}"
+              @click="${() => this._handleSkip(chore.id)}">⏭</button>
+          </div>
+        </div>`;
+    })}`;
+  }
+
+  _dPoints(design, children, pointsIcon, pointsName) {
+    if (!children.length) return this._dEmpty(this._t('dashboard.empty_no_children'));
+    const amount = this.config.quick_points_amount || 5;
+    return html`${children.map((child, i) => {
+      const tone = this._designTone(i);
+      return html`
+        <div class="row pd-item" style="--ac:${tone}">
+          ${this._av(child.name, child.avatar, tone, 36)}
+          <div style="flex:1;min-width:0">
+            <div class="pd-item-title">${child.name}</div>
+            <div class="muted pd-item-sub">${child.points} ${pointsName}</div>
+          </div>
+          <div class="pd-acts">
+            <button class="btn bad sm round"
+              title="${this._t('dashboard.btn_remove_points_title', { amount, pointsName })}"
+              @click="${() => this._handlePoints(child.id, -amount)}">−</button>
+            <button class="btn good sm round"
+              title="${this._t('dashboard.btn_add_points_title', { amount, pointsName })}"
+              @click="${() => this._handlePoints(child.id, amount)}">+</button>
+          </div>
+        </div>`;
+    })}`;
   }
 
   _renderOverview(children, chores, completions, pointsIcon, pointsName) {
@@ -956,6 +1357,17 @@ class TaskMateParentDashboardCardEditor extends LitElement {
     return [
       { name: 'entity', selector: { entity: { domain: 'sensor' } } },
       { name: 'title', selector: { text: {} } },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
       { name: 'quick_points_amount', selector: { number: { min: 1, max: 100, mode: 'box' } } },
       { name: 'show_claims', selector: { boolean: {} } },
     ];
@@ -965,6 +1377,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
     const labels = {
       entity: this._t('dashboard.editor.entity_label'),
       title: this._t('dashboard.editor.title_label'),
+      card_design: this._t('common.design.field_label'),
       quick_points_amount: this._t('dashboard.editor.quick_points_label'),
       show_claims: this._t('dashboard.editor.show_claims'),
     };
@@ -984,6 +1397,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
     const data = {
       entity: this.config.entity || '',
       title: this.config.title || '',
+      card_design: this.config.card_design || 'global',
       quick_points_amount: this.config.quick_points_amount || 5,
       show_claims: this.config.show_claims !== false,
     };
@@ -1037,6 +1451,8 @@ class TaskMateParentDashboardCardEditor extends LitElement {
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
       if (value === '' || value === null || value === undefined) {
+        delete newConfig[key];
+      } else if (key === 'card_design' && value === 'global') {
         delete newConfig[key];
       } else if (key === 'show_claims' && value === true) {
         delete newConfig[key];

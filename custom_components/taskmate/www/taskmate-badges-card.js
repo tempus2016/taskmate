@@ -18,6 +18,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const DESIGN_HEADER = "#6c5ce7";
+
 class TaskMateBadgesCard extends LitElement {
   static get properties() {
     return {
@@ -94,7 +96,7 @@ class TaskMateBadgesCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
         --t-bronze:   #e08a3c;
@@ -357,7 +359,92 @@ class TaskMateBadgesCard extends LitElement {
         margin-bottom: 12px;
         opacity: 0.5;
       }
+
+      /* ── Designed styles (playroom / console / cleanpro) ── */
+      /* Shared .tmd kit + tokens come from taskmate-design.js styles(). */
+      .bd-filter { gap: 6px; flex-wrap: wrap; margin-bottom: 11px; }
+      .bd-chip { cursor: pointer; }
+      .bd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(82px, 1fr)); gap: 9px; max-height: 360px; overflow-y: auto; }
+      .bd-tile {
+        background: var(--tmd-surface-2);
+        border-radius: 16px;
+        padding: 11px 6px;
+        text-align: center;
+        position: relative;
+      }
+      .bd-tile.locked { opacity: 0.55; }
+      .bd-bonus {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--tmd-good);
+      }
+      .bd-ic {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        margin: 0 auto 6px;
+        display: grid;
+        place-items: center;
+        font-size: 22px;
+        --mdc-icon-size: 24px;
+      }
+      .bd-ic.earned {
+        background: color-mix(in srgb, var(--bt, var(--tmd-accent)) 22%, var(--tmd-surface));
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--bt, var(--tmd-accent)) 55%, transparent);
+        color: var(--bt, var(--tmd-accent));
+      }
+      .bd-ic.locked {
+        background: var(--tmd-surface);
+        box-shadow: inset 0 0 0 2px var(--tmd-border);
+        color: var(--tmd-dim);
+      }
+      .bd-name { font-weight: 800; font-size: 11.5px; }
+      .bd-tile.locked .bd-name { color: var(--tmd-dim); }
+      .bd-date { font-size: 10px; }
+      .bd-prog-label { font-size: 10px; margin-top: 3px; }
+
+      /* Console tile overrides */
+      :host([data-tm-design="console"]) .bd-tile { border-radius: 8px; }
+      :host([data-tm-design="console"]) .bd-tile.earned {
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bt, var(--tmd-accent)) 50%, transparent),
+                    0 0 16px color-mix(in srgb, var(--bt, var(--tmd-accent)) 22%, transparent);
+      }
+      :host([data-tm-design="console"]) .bd-tile.locked {
+        background: #0b1424;
+        border: 1px solid var(--tmd-border);
+        opacity: 1;
+      }
+      :host([data-tm-design="console"]) .bd-ic.earned {
+        background: transparent;
+        box-shadow: inset 0 0 0 1px var(--bt, var(--tmd-accent)),
+                    0 0 14px color-mix(in srgb, var(--bt, var(--tmd-accent)) 55%, transparent);
+      }
+      :host([data-tm-design="console"]) .bd-ic.locked {
+        box-shadow: inset 0 0 0 1px var(--tmd-border);
+      }
+      :host([data-tm-design="console"]) .bd-name { font-weight: 700; font-size: 11px; }
+
+      /* Clean Pro tile overrides */
+      :host([data-tm-design="cleanpro"]) .bd-tile {
+        background: transparent;
+        border: 1px solid var(--tmd-border);
+        border-radius: 11px;
+      }
+      :host([data-tm-design="cleanpro"]) .bd-tile.locked { background: var(--tmd-surface-2); }
+      :host([data-tm-design="cleanpro"]) .bd-ic { width: 40px; height: 40px; font-size: 20px; }
+      :host([data-tm-design="cleanpro"]) .bd-ic.earned {
+        background: color-mix(in srgb, var(--bt, var(--tmd-accent)) 14%, transparent);
+        box-shadow: none;
+      }
+      :host([data-tm-design="cleanpro"]) .bd-ic.locked { box-shadow: none; }
+      :host([data-tm-design="cleanpro"]) .bd-name { font-weight: 600; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -425,6 +512,16 @@ class TaskMateBadgesCard extends LitElement {
       : this._t("badges.count_label", { earned: earned.length, total: totalBadges });
 
     const title = this.config.title || (childName ? this._t("badges.title_with_name", { name: childName }) : this._t("badges.default_title"));
+
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      : "classic";
+    if (design !== "classic") {
+      return this._renderDesigned(design, {
+        title, childName, earned, available, totalBadges,
+        filteredEarned, filteredLocked, filter,
+      });
+    }
 
     return html`
       <ha-card>
@@ -498,7 +595,89 @@ class TaskMateBadgesCard extends LitElement {
   }
 }
 
-// Minimal stub editor so HA doesn't error on getConfigElement
+// Designed-style render methods are added to the prototype below.
+TaskMateBadgesCard.prototype._tierTone = function (tier) {
+  // Map badge tiers onto shared design tokens (kit defines --tmd-gold).
+  switch (tier) {
+    case "platinum": return "var(--tmd-accent)";
+    case "gold":     return "var(--tmd-gold)";
+    case "silver":   return "var(--tmd-dim)";
+    case "bronze":   return "var(--tmd-c6)";
+    default:         return "var(--tmd-accent)";
+  }
+};
+
+TaskMateBadgesCard.prototype._designFilters = function (filter) {
+  const tiers = ["all", "bronze", "silver", "gold", "platinum"];
+  return html`
+    <div class="row bd-filter">
+      ${tiers.map((t) => html`
+        <button class="chip bd-chip ${t === filter ? "soft" : ""}"
+          @click="${() => { this._filterTier = t; this.requestUpdate(); }}">
+          ${t === "all" ? this._t("badges.all_tiers") : this._tierLabel(t)}
+        </button>`)}
+    </div>`;
+};
+
+TaskMateBadgesCard.prototype._designEarnedTile = function (b) {
+  const tone = this._tierTone(b.tier);
+  const a = b.icon || "mdi:medal";
+  const icon = a.startsWith("mdi:")
+    ? html`<ha-icon icon="${a}"></ha-icon>` : a;
+  return html`
+    <div class="bd-tile earned" style="--bt:${tone}">
+      ${b.point_bonus > 0 ? html`<div class="bd-bonus">+${b.point_bonus}</div>` : ""}
+      <div class="bd-ic earned" style="--bt:${tone}">${icon}</div>
+      <div class="bd-name">${b.name}</div>
+      <div class="muted bd-date">${this._formatDate(b.earned_at)}</div>
+    </div>`;
+};
+
+TaskMateBadgesCard.prototype._designLockedTile = function (b) {
+  const tone = this._tierTone(b.tier);
+  const pct = (b.progress_pct != null) ? b.progress_pct
+    : (b.closest_criterion ? Math.min(100, Math.round((b.closest_criterion.current / b.closest_criterion.target) * 100)) : 0);
+  const progressLabel = b.progress_label
+    || (b.closest_criterion ? `${b.closest_criterion.current} / ${b.closest_criterion.target}` : null);
+  const a = b.icon || "mdi:medal-outline";
+  const icon = a.startsWith("mdi:") ? html`<ha-icon icon="${a}"></ha-icon>` : a;
+  return html`
+    <div class="bd-tile locked" style="--bt:${tone}">
+      ${b.point_bonus > 0 ? html`<div class="bd-bonus" style="opacity:0.45">+${b.point_bonus}</div>` : ""}
+      <div class="bd-ic locked">${icon}</div>
+      <div class="bd-name">${b.name}</div>
+      ${progressLabel ? html`
+        <div class="bar" style="height:7px;margin-top:6px"><i style="width:${pct}%"></i></div>
+        <div class="muted bd-prog-label">${progressLabel}</div>` : ""}
+    </div>`;
+};
+
+TaskMateBadgesCard.prototype._renderDesigned = function (design, d) {
+  const hd = this.config.header_color || DESIGN_HEADER;
+  const ic = design === "console" ? "✦" : design === "cleanpro" ? "◈" : "🎖️";
+  const sub = d.childName;
+  const countPill = this._t("badges.count_label", { earned: d.earned.length, total: d.totalBadges });
+
+  return html`
+    <ha-card class="tmd" style="--hd:${hd}">
+      <div class="tmd-hd">
+        <span class="ic">${ic}</span>
+        <span class="tt">${d.title}${sub ? html`<small>${sub}</small>` : ""}</span>
+        <span class="pill">${countPill}</span>
+      </div>
+      <div class="tmd-bd">
+        ${this._designFilters(d.filter)}
+        ${(d.filteredEarned.length + d.filteredLocked.length) === 0
+          ? html`<div class="tmd-empty">${this._t("badges.count_label", { earned: 0, total: d.totalBadges })}</div>`
+          : html`<div class="bd-grid">
+              ${d.filteredEarned.map((b) => this._designEarnedTile(b))}
+              ${d.filteredLocked.map((b) => this._designLockedTile(b))}
+            </div>`}
+      </div>
+    </ha-card>`;
+};
+
+// Editor: entity + per-card design override.
 class TaskMateBadgesCardEditor extends LitElement {
   static get properties() {
     return { hass: { type: Object }, config: { type: Object } };
@@ -508,8 +687,68 @@ class TaskMateBadgesCardEditor extends LitElement {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
   }
+
+  _buildSchema() {
+    return [
+      { name: 'entity', selector: { entity: { domain: 'sensor' } } },
+      { name: 'title', selector: { text: {} } },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
+    ];
+  }
+
+  _computeLabel = (entry) => {
+    const labels = {
+      entity: this._t('common.entity'),
+      title: this._t('common.editor.card_title'),
+      card_design: this._t('common.design.field_label'),
+    };
+    return labels[entry.name] ?? entry.name;
+  };
+
   render() {
-    return html`<p style="padding:12px;color:var(--secondary-text-color)">${this._t('badges.editor_help')}</p>`;
+    if (!this.config) return html``;
+    const data = {
+      entity: this.config.entity || '',
+      title: this.config.title || '',
+      card_design: this.config.card_design || 'global',
+    };
+    return html`
+      <p style="padding:0 0 8px;color:var(--secondary-text-color)">${this._t('badges.editor_help')}</p>
+      <ha-form
+        .hass=${this.hass}
+        .data=${data}
+        .schema=${this._buildSchema()}
+        .computeLabel=${this._computeLabel}
+        @value-changed=${this._formChanged}
+      ></ha-form>
+    `;
+  }
+
+  _formChanged(e) {
+    const newValues = e.detail.value || {};
+    const newConfig = { ...this.config };
+    for (const [key, value] of Object.entries(newValues)) {
+      if (value === '' || value === null || value === undefined) {
+        delete newConfig[key];
+      } else if (key === 'card_design' && value === 'global') {
+        delete newConfig[key];
+      } else {
+        newConfig[key] = value;
+      }
+    }
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: newConfig }, bubbles: true, composed: true,
+    }));
   }
 }
 

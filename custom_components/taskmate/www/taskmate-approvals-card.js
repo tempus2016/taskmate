@@ -39,7 +39,7 @@ class TaskMateApprovalsCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
       }
@@ -365,7 +365,54 @@ class TaskMateApprovalsCard extends LitElement {
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }
+
+      /* ── Designed styles (playroom / console / cleanpro) ──
+         Shared .tmd kit + design tokens come from taskmate-design.js styles().
+         Only card-specific layout classes are declared here. */
+      .ap-group-label { font-weight: 800; font-size: 12px; text-transform: uppercase;
+        letter-spacing: .04em; margin: 4px 0 9px; }
+      .ap-group-label + .ap-group-label { margin-top: 14px; }
+
+      /* Playroom — soft cards */
+      .ap-pl-item { background: var(--tmd-surface-2); border-radius: 18px; padding: 12px; }
+      .ap-pl-item + .ap-pl-item { margin-top: 11px; }
+      .ap-pl-title { font-weight: 800; }
+      .ap-pl-sub { font-size: 12.5px; }
+      .ap-pl-photo { width: 46px; height: 46px; border-radius: 14px; overflow: hidden;
+        display: grid; place-items: center; background: var(--tmd-accent); color: #fff;
+        font-size: 20px; flex: none; }
+      .ap-pl-photo img { width: 100%; height: 100%; object-fit: cover; }
+      .ap-gold { background: var(--tmd-gold); border-color: transparent; color: #3a2e26; }
+
+      /* Console — compact HUD rows */
+      .ap-cn-item { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
+        border-radius: 10px; padding: 11px; }
+      .ap-cn-item + .ap-cn-item { margin-top: 9px; }
+      .ap-cn-title { font-weight: 700; }
+      .ap-cn-sub { font-size: 11px; }
+      .ap-cn-photo { width: 34px; height: 34px; border-radius: 8px; overflow: hidden;
+        background: #0b1424; border: 1px solid var(--tmd-border); display: grid;
+        place-items: center; font-size: 15px; color: var(--tmd-accent); flex: none; }
+      .ap-cn-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+      /* Clean Pro — divided list */
+      .ap-cp-item { padding: 10px 0; }
+      .ap-cp-title { font-weight: 600; }
+      .ap-cp-sub { font-size: 12px; }
+      .ap-cp-photo { width: 32px; height: 32px; border-radius: 8px; overflow: hidden;
+        background: var(--tmd-surface-2); border: 1px solid var(--tmd-border); display: grid;
+        place-items: center; font-size: 14px; flex: none; }
+      .ap-cp-photo img { width: 100%; height: 100%; object-fit: cover; }
+      .ap-gold-soft { color: var(--tmd-gold); }
+
+      .ap-d-photo-link { line-height: 0; text-decoration: none; }
+
+      /* Scrollable list (parity with classic content) */
+      .ap-d-scroll { max-height: 360px; overflow-y: auto; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -398,6 +445,11 @@ class TaskMateApprovalsCard extends LitElement {
     if (!this.hass || !this.config) {
       return html``;
     }
+
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      : "classic";
+    if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
 
@@ -465,6 +517,291 @@ class TaskMateApprovalsCard extends LitElement {
         </div>
       </ha-card>
     `;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns/frag/11-approvals.html.
+     Wraps the SAME data + handlers as the classic path.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _av(name, avatar, tone, size) {
+    const a = avatar || "";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${name || ''}">`
+        : (name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  // Resolve a child's avatar from the overview sensor's children list (the
+  // completion/claim payloads don't carry an avatar field).
+  _childAvatar(childId) {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+      || this.hass?.states?.[this.config.entity]?.attributes || {};
+    const child = (attrs.children || []).find(c => c.id === childId);
+    return child ? child.avatar : null;
+  }
+
+  // Flatten all pending items into a single ordered, day/time-grouped list so
+  // the designed views can render approvals, reward claims and mandatory misses
+  // together while reusing every existing handler.
+  _designItems() {
+    const entity = this.hass.states[this.config.entity];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+
+    let completions = attrs.chore_completions;
+    if (!completions) completions = (attrs.todays_completions || []).filter(c => !c.approved);
+    const filteredCompletions = this._filterByChild(completions);
+
+    const rewardClaims = entity.attributes.reward_claims || attrs.pending_reward_claims || [];
+    const filteredClaims = this._filterClaimsByChild(rewardClaims);
+
+    const misses = this._filterMissesByChild(attrs.mandatory_misses || []);
+
+    const items = [];
+
+    misses.forEach((miss) => {
+      const penalty = miss.penalty_points ?? 0;
+      items.push({
+        kind: "miss",
+        id: miss.id,
+        title: miss.chore_name || "",
+        childName: miss.child_name || "",
+        childId: miss.child_id,
+        points: penalty,
+        penalty,
+        sortTime: 0,
+      });
+    });
+
+    filteredClaims.forEach((claim) => {
+      const claimId = claim.claim_id || claim.id;
+      items.push({
+        kind: "claim",
+        id: claimId,
+        title: claim.reward_name || "",
+        childName: claim.child_name || "",
+        childId: claim.child_id,
+        points: claim.cost ?? 0,
+        icon: claim.reward_icon || "mdi:gift",
+        sortTime: claim.claimed_at ? new Date(claim.claimed_at).getTime() : 1,
+      });
+    });
+
+    filteredCompletions.forEach((c) => {
+      items.push({
+        kind: "completion",
+        completion: c,
+        id: c.completion_id,
+        title: c.chore_name || "",
+        childName: c.child_name || "",
+        childId: c.child_id,
+        points: c.points,
+        photo: c.photo_url || "",
+        completedAt: c.completed_at,
+        timeCategory: c.time_category || "anytime",
+        sortTime: c.completed_at ? new Date(c.completed_at).getTime() : 2,
+      });
+    });
+
+    return items;
+  }
+
+  // Group designed items by day label, then by time-category, mirroring the
+  // classic _groupByDay/_renderTimeCategories ordering. Non-completion items
+  // (misses/claims) bucket under "Today" so they stay visible at the top.
+  _designGrouped(items) {
+    const groups = new Map();
+    const todayLabel = this._t('common.today');
+    items.forEach((it) => {
+      let dayLabel = todayLabel;
+      let cat = "anytime";
+      if (it.kind === "completion" && it.completedAt) {
+        dayLabel = this._getDayLabel(new Date(it.completedAt));
+        cat = it.timeCategory || "anytime";
+      }
+      if (!groups.has(dayLabel)) groups.set(dayLabel, new Map());
+      const cats = groups.get(dayLabel);
+      if (!cats.has(cat)) cats.set(cat, []);
+      cats.get(cat).push(it);
+    });
+    // Build ordered list of { dayLabel, sub, items[] } sections.
+    const sections = [];
+    for (const [dayLabel, cats] of groups) {
+      const ordered = [...cats.entries()].sort(
+        ([a], [b]) => this._getTimeCategoryOrder(a) - this._getTimeCategoryOrder(b)
+      );
+      for (const [cat, list] of ordered) {
+        const sub = cat === "anytime" ? dayLabel : `${dayLabel} · ${this._getTimeCategoryLabel(cat)}`;
+        sections.push({ label: sub, items: list });
+      }
+    }
+    return sections;
+  }
+
+  _renderDesigned(design) {
+    const entity = this.hass.states[this.config.entity];
+    const hd = this.config.header_color || '#27ae60';
+
+    if (!entity) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${this._designHeader(hd, 0)}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div>
+      </ha-card>`;
+    }
+
+    const items = this._designItems();
+    const sections = this._designGrouped(items);
+
+    let body;
+    if (!items.length) {
+      body = html`<div class="tmd-empty">${this._t('approvals.no_pending_approvals')}</div>`;
+    } else {
+      const rowFn =
+        design === "playroom" ? (it, i) => this._apPlayroom(it, i) :
+        design === "console"  ? (it, i) => this._apConsole(it, i) :
+                                (it, i) => this._apCleanpro(it, i);
+      let idx = 0;
+      body = html`<div class="ap-d-scroll">${sections.map((sec) => html`
+        <div class="ap-group-label muted">${sec.label}</div>
+        ${sec.items.map((it) => rowFn(it, idx++))}
+      `)}</div>`;
+    }
+
+    return html`<ha-card class="tmd" style="--hd:${hd}">
+      ${this._designHeader(hd, items.length)}
+      <div class="tmd-bd">${body}</div>
+    </ha-card>`;
+  }
+
+  _designHeader(hd, count) {
+    const title = this.config.title || this._t('approvals.default_title');
+    return html`
+      <div class="tmd-hd">
+        <span class="ic">✅</span>
+        <span class="tt">${title}</span>
+        ${count > 0 ? html`<span class="cnt">${count}</span>` : ""}
+      </div>`;
+  }
+
+  // Approve/reject (or miss-review) buttons wired to the EXISTING handlers,
+  // varying only label/shape per design.
+  _designActions(it, shape) {
+    const isLoading = !!this._loading[it.id];
+    if (it.kind === "completion") {
+      const approve = () => this._handleApprove(it.completion);
+      const reject = () => this._handleReject(it.completion);
+      return this._apActionPair(approve, reject, isLoading, shape);
+    }
+    if (it.kind === "claim") {
+      const approve = () => this._handleApproveReward(it.id);
+      const reject = () => this._handleRejectReward(it.id);
+      return this._apActionPair(approve, reject, isLoading, shape);
+    }
+    // mandatory miss: apply penalty (if any) / postpone / dismiss
+    if (shape === "round") {
+      return html`
+        ${it.penalty > 0 ? html`<button class="btn bad sm round" ?disabled="${isLoading}"
+          title="${this._t('approvals.apply_penalty')}"
+          @click="${() => this._handleApplyPenalty(it.id)}">!</button>` : ""}
+        <button class="btn ghost sm round" ?disabled="${isLoading}"
+          title="${this._t('approvals.postpone')}"
+          @click="${() => this._handlePostpone(it.id)}">⏲</button>
+        <button class="btn good sm round" ?disabled="${isLoading}"
+          title="${this._t('approvals.dismiss')}"
+          @click="${() => this._handleDismiss(it.id)}">✓</button>`;
+    }
+    const sm = shape === "sm" ? "sm" : "";
+    return html`
+      ${it.penalty > 0 ? html`<button class="btn bad ${sm}" ?disabled="${isLoading}"
+        @click="${() => this._handleApplyPenalty(it.id)}">${this._t('approvals.apply_penalty')}</button>` : ""}
+      <button class="btn ghost ${sm}" ?disabled="${isLoading}"
+        @click="${() => this._handlePostpone(it.id)}">${this._t('approvals.postpone')}</button>
+      <button class="btn good ${sm}" ?disabled="${isLoading}"
+        @click="${() => this._handleDismiss(it.id)}">${this._t('approvals.dismiss')}</button>`;
+  }
+
+  _apActionPair(approve, reject, isLoading, shape) {
+    if (shape === "round") {
+      return html`
+        <button class="btn good sm round" ?disabled="${isLoading}"
+          title="${this._t('approvals.approve')}" @click="${approve}">✓</button>
+        <button class="btn bad sm round" ?disabled="${isLoading}"
+          title="${this._t('approvals.reject')}" @click="${reject}">✕</button>`;
+    }
+    if (shape === "ghost") {
+      return html`
+        <button class="btn good sm" ?disabled="${isLoading}" @click="${approve}">${this._t('approvals.approve')}</button>
+        <button class="btn ghost sm" ?disabled="${isLoading}" @click="${reject}">${this._t('approvals.reject')}</button>`;
+    }
+    return html`
+      <button class="btn good" style="flex:1" ?disabled="${isLoading}" @click="${approve}">👍 ${this._t('approvals.approve')}</button>
+      <button class="btn bad" style="flex:1" ?disabled="${isLoading}" @click="${reject}">👎 ${this._t('approvals.reject')}</button>`;
+  }
+
+  _apPhotoDesigned(it, cls, fallback) {
+    if (it.kind !== "completion" || !it.photo) {
+      return it.kind === "claim" && it.icon
+        ? html`<div class="${cls}"><ha-icon icon="${it.icon}"></ha-icon></div>`
+        : "";
+    }
+    return html`<a class="ap-d-photo-link" href="${it.photo}" target="_blank" rel="noopener"
+      title="${this._t('approvals.view_photo') || 'View photo'}"><div class="${cls}"><img src="${it.photo}" alt=""></div></a>`;
+  }
+
+  _apPlayroom(it, i) {
+    const tone = this._designTone(i);
+    return html`
+      <div class="ap-pl-item" style="--ac:${tone}">
+        <div class="row">
+          ${this._av(it.childName, this._childAvatar(it.childId), tone, 40)}
+          <div style="flex:1;min-width:0">
+            <div class="ap-pl-title">${it.title}</div>
+            <div class="muted ap-pl-sub">${it.childName}</div>
+          </div>
+          ${this._apPhotoDesigned(it, "ap-pl-photo")}
+          <div class="chip ap-gold">+${it.points} ⭐</div>
+        </div>
+        <div class="row" style="margin-top:11px;gap:8px">
+          ${this._designActions(it, "full")}
+        </div>
+      </div>`;
+  }
+
+  _apConsole(it, i) {
+    const tone = this._designTone(i);
+    return html`
+      <div class="row ap-cn-item" style="--ac:${tone}">
+        ${this._av(it.childName, this._childAvatar(it.childId), tone, 34)}
+        <div style="flex:1;min-width:0">
+          <div class="ap-cn-title">${it.title}</div>
+          <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()} · +${it.points} XP</div>
+        </div>
+        ${this._apPhotoDesigned(it, "ap-cn-photo")}
+        ${this._designActions(it, "round")}
+      </div>`;
+  }
+
+  _apCleanpro(it, i) {
+    const tone = this._designTone(i);
+    const time = it.completedAt
+      ? new Date(it.completedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : "";
+    return html`
+      <div class="row ap-cp-item" style="--ac:${tone}">
+        ${this._av(it.childName, this._childAvatar(it.childId), tone, 38)}
+        <div style="flex:1;min-width:0">
+          <div class="ap-cp-title">${it.title}</div>
+          <div class="muted ap-cp-sub">${it.childName}${time ? html` · ${time}` : ""}</div>
+        </div>
+        ${this._apPhotoDesigned(it, "ap-cp-photo")}
+        <span class="chip soft ap-gold-soft">+${it.points}</span>
+        ${this._designActions(it, "ghost")}
+      </div>`;
   }
 
   _filterByChild(completions) {
@@ -1026,6 +1363,17 @@ class TaskMateApprovalsCardEditor extends LitElement {
           },
         },
       },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
     ];
   }
 
@@ -1034,6 +1382,7 @@ class TaskMateApprovalsCardEditor extends LitElement {
       entity: this._t('common.entity'),
       title: this._t('common.title'),
       child_id: this._t('approvals.editor.child_id'),
+      card_design: this._t('common.design.field_label'),
     };
     return labels[entry.name] ?? entry.name;
   };
@@ -1052,6 +1401,7 @@ class TaskMateApprovalsCardEditor extends LitElement {
       entity: this.config.entity || '',
       title: this.config.title || '',
       child_id: this.config.child_id || '__all__',
+      card_design: this.config.card_design || 'global',
     };
     return html`
       <ha-form
@@ -1105,6 +1455,7 @@ class TaskMateApprovalsCardEditor extends LitElement {
       if (
         value === '' || value === null || value === undefined
         || (key === 'child_id' && value === '__all__')
+        || (key === 'card_design' && value === 'global')
       ) {
         delete newConfig[key];
       } else {

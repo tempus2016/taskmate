@@ -72,7 +72,7 @@ class TaskMateCalendarCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
         --cal-green: #2ecc71;
@@ -239,7 +239,38 @@ class TaskMateCalendarCard extends LitElement {
       .error-state ha-icon, .empty-state ha-icon {
         --mdc-icon-size: 48px; margin-bottom: 12px; opacity: 0.5;
       }
+
+      /* ── Designed styles (playroom / console / cleanpro) ── */
+      .cal-nav { justify-content: center; gap: 10px; margin-bottom: 13px; }
+      .cal-nav-btn { width: 32px; height: 32px; font-size: 16px; }
+      .cal-nav-cur { cursor: pointer; font-size: 13px; padding: 6px 16px; }
+      .cal-nav-cn { justify-content: space-between; margin-bottom: 12px; }
+      .cal-nav-cn .cal-nav-cur { font-size: 13px; color: var(--tmd-accent); padding: 0; }
+      .cal-grid { gap: 11px; }
+      .cal-head { margin-bottom: 8px; }
+      .cal-name { font-weight: 800; }
+      .cal-chips { gap: 7px; flex-wrap: wrap; }
+      .cal-chip { white-space: nowrap; }
+      .cal-empty-line { font-size: 12px; font-style: italic; }
+      .cal-card-pl { background: var(--tmd-surface-2); border-radius: 18px; padding: 11px 12px; }
+
+      /* Console */
+      .cal-grid-cn { gap: 9px; }
+      .cal-card-cn { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border); border-radius: 8px; padding: 10px 11px; }
+      .cal-head-cn { margin-bottom: 7px; }
+      .cal-name-cn { font-weight: 700; font-size: 12.5px; }
+      .cal-count { margin-left: auto; font-size: 10px; }
+
+      /* Clean Pro */
+      .cal-grid-cp { gap: 0; }
+      .cal-row-cp { align-items: flex-start; padding: 11px 0; border-bottom: 1px solid var(--tmd-border); }
+      .cal-row-cp:last-child { border-bottom: none; }
+      .cal-row-mid { flex: 1; min-width: 0; }
+      .cal-name-cp { font-weight: 600; font-size: 13px; margin-bottom: 5px; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -371,6 +402,11 @@ class TaskMateCalendarCard extends LitElement {
   render() {
     if (!this.hass || !this.config) return html``;
 
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      : "classic";
+    if (design !== "classic") return this._renderDesigned(design);
+
     const entity = this.hass.states[this.config.entity];
     if (!entity) {
       return html`
@@ -469,8 +505,10 @@ class TaskMateCalendarCard extends LitElement {
     `;
   }
 
-  _renderChildBlock(child, day, chores, dayCompletions, pointsIcon, tz) {
-    const rows = [];
+  // Shared per-child chore extraction used by both classic and designed paths.
+  // Returns { items: [{chore, state, stateIcon, rotation}], dueCount, doneCount }.
+  _computeChildChores(child, day, chores, dayCompletions, tz) {
+    const items = [];
     let dueCount = 0;
     let doneCount = 0;
 
@@ -496,10 +534,19 @@ class TaskMateCalendarCard extends LitElement {
       }
       dueCount++;
 
+      items.push({ chore, state, stateIcon, rotation });
+    });
+
+    return { items, dueCount, doneCount };
+  }
+
+  _renderChildBlock(child, day, chores, dayCompletions, pointsIcon, tz) {
+    const { items, dueCount, doneCount } = this._computeChildChores(child, day, chores, dayCompletions, tz);
+    const rows = items.map(({ chore, state, stateIcon, rotation }) => {
       const rotatingClass = rotation === "rotating" ? " rotating" : "";
       const title = `${chore.name}${rotation === "rotating" ? ` · ${this._t("calendar.rotating")}` : ""}`;
 
-      rows.push(html`
+      return html`
         <div class="chore-row ${state}${rotatingClass}" title=${title}>
           <ha-icon class="chore-icon ${state}" icon="${stateIcon}"></ha-icon>
           <span class="chore-name">${chore.name}</span>
@@ -507,7 +554,7 @@ class TaskMateCalendarCard extends LitElement {
             <ha-icon icon="${pointsIcon}"></ha-icon>${chore.points}
           </span>
         </div>
-      `);
+      `;
     });
 
     const summary = dueCount === 0
@@ -528,6 +575,176 @@ class TaskMateCalendarCard extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns/frag/18-calendar.html
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _av(child, tone, size) {
+    const a = child.avatar || "";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${child.name}">`
+        : (child.name || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  _renderDesigned(design) {
+    const hd = _safeColor(this.config.header_color, "#3498db");
+    const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const entity = this.hass.states[this.config.entity];
+
+    const wrap = (sub, pill, body) => html`
+      <ha-card class="tmd" style="--hd:${hd}">
+        <div class="tmd-hd">
+          <span class="ic">📅</span>
+          <span class="tt">${this.config.title || this._t("calendar.default_title")}${sub ? html`<small>${sub}</small>` : ""}</span>
+          ${pill ? html`<span class="pill">${pill}</span>` : ""}
+        </div>
+        <div class="tmd-bd">${body}</div>
+      </ha-card>`;
+
+    if (!entity) {
+      return wrap("", "", html`<div class="tmd-empty">${this._t("common.entity_not_found", { entity: this.config.entity })}</div>`);
+    }
+    if (entity.state === "unavailable" || entity.state === "unknown") {
+      return wrap("", "", html`<div class="tmd-empty">${this._t("common.unavailable")}</div>`);
+    }
+
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    let children = attrs.children || [];
+    const chores = attrs.chores || [];
+    const pointsIcon = attrs.points_icon || "mdi:star";
+    if (this.config.child_id) children = children.filter((c) => c.id === this.config.child_id);
+
+    if (children.length === 0) {
+      return wrap("", "", html`<div class="tmd-empty">${this._t("common.no_children")}</div>`);
+    }
+
+    const day = this._getSelectedDay(tz);
+    const rawCompletions = attrs.recent_completions || attrs.todays_completions || [];
+    const seen = new Set();
+    const dayCompletions = [];
+    rawCompletions.forEach((c) => {
+      const id = c.completion_id || `${c.chore_id}:${c.child_id}:${c.completed_at}`;
+      if (seen.has(id)) return;
+      seen.add(id);
+      if (!c.completed_at) return;
+      if (ymd(new Date(c.completed_at), tz) !== day.key) return;
+      dayCompletions.push(c);
+    });
+
+    const dayLabel = day.date.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+    const dayShort = day.date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    const isToday = day.key === day.todayKey;
+
+    const blocks = children.map((child, i) => {
+      const tone = this._designTone(i);
+      const { items, dueCount, doneCount } = this._computeChildChores(child, day, chores, dayCompletions, tz);
+      return { child, tone, items, dueCount, doneCount };
+    });
+
+    const totalPending = blocks.reduce((s, b) => s + b.items.filter((it) => it.state !== "approved").length, 0);
+
+    const nav = this._designDayNav(design, isToday, dayLabel);
+    const body = html`
+      ${nav}
+      ${design === "console"
+        ? this._calConsole(blocks, pointsIcon)
+        : design === "cleanpro"
+          ? this._calCleanpro(blocks, pointsIcon)
+          : this._calPlayroom(blocks, pointsIcon)}`;
+
+    const sub = isToday ? this._t("common.today") : dayShort;
+    const pill = design === "console" && totalPending
+      ? this._t("calendar.child_summary", { done: 0, total: totalPending }) : "";
+    return wrap(sub, pill, body);
+  }
+
+  _designDayNav(design, isToday, dayLabel) {
+    if (design === "console") {
+      return html`
+        <div class="row cal-nav-cn">
+          <button class="btn ghost sm" @click=${() => this._shiftDay(-1)}>‹ ${this._t("calendar.prev_day")}</button>
+          <span class="num cal-nav-cur" @click=${() => this._resetDay()}>${isToday ? this._t("common.today") : dayLabel}</span>
+          <button class="btn ghost sm" @click=${() => this._shiftDay(1)}>${this._t("calendar.next_day")} ›</button>
+        </div>`;
+    }
+    return html`
+      <div class="row cal-nav">
+        <button class="btn round ghost cal-nav-btn" title=${this._t("calendar.prev_day")} @click=${() => this._shiftDay(-1)}>‹</button>
+        <span class="chip soft cal-nav-cur" @click=${() => this._resetDay()}>${isToday ? this._t("common.today") : dayLabel}</span>
+        <button class="btn round ghost cal-nav-btn" title=${this._t("calendar.next_day")} @click=${() => this._shiftDay(1)}>›</button>
+      </div>`;
+  }
+
+  // state → token colour mapping per spec: done=good, pending=warn, due/unassigned=dim
+  _choreChip(item, glyph) {
+    const map = { approved: "good", pending: "warn" };
+    const tok = map[item.state] || "dim";
+    const dim = item.state === "due";
+    return html`<span class="chip cal-chip ${dim ? "muted" : ""}"
+      style="${dim ? "" : `color:var(--tmd-${tok});background:color-mix(in srgb,var(--tmd-${tok}) 16%,transparent);border-color:transparent`}">${glyph[item.state] || glyph.due} ${item.chore.name}</span>`;
+  }
+
+  _calPlayroom(blocks, pointsIcon) {
+    const glyph = { approved: "✓", pending: "◌", due: "—" };
+    return html`
+      <div class="grid cal-grid">
+        ${blocks.map((b) => html`
+          <div class="cal-card-pl" style="--ac:${b.tone}">
+            <div class="row cal-head">${this._av(b.child, b.tone, 34)}<div class="cal-name">${b.child.name}</div></div>
+            <div class="row cal-chips">
+              ${b.items.length
+                ? b.items.map((it) => this._choreChip(it, glyph))
+                : html`<span class="muted cal-empty-line">${this._t("calendar.no_chores_today")}</span>`}
+            </div>
+          </div>`)}
+      </div>`;
+  }
+
+  _calConsole(blocks, pointsIcon) {
+    const glyph = { approved: "▮", pending: "▯", due: "▢" };
+    return html`
+      <div class="grid cal-grid-cn">
+        ${blocks.map((b) => html`
+          <div class="cal-card-cn" style="--ac:${b.tone}">
+            <div class="row cal-head-cn">
+              ${this._av(b.child, b.tone, 24)}
+              <div class="cal-name-cn">${b.child.name}</div>
+              <span class="num muted cal-count">${b.doneCount}/${b.dueCount}</span>
+            </div>
+            <div class="row cal-chips">
+              ${b.items.length
+                ? b.items.map((it) => this._choreChip(it, glyph))
+                : html`<span class="muted cal-empty-line">${this._t("calendar.no_chores_today")}</span>`}
+            </div>
+          </div>`)}
+      </div>`;
+  }
+
+  _calCleanpro(blocks, pointsIcon) {
+    const glyph = { approved: "●", pending: "○", due: "—" };
+    return html`
+      <div class="grid cal-grid-cp">
+        ${blocks.map((b) => html`
+          <div class="row cal-row-cp" style="--ac:${b.tone}">
+            ${this._av(b.child, b.tone, 32)}
+            <div class="cal-row-mid">
+              <div class="cal-name-cp">${b.child.name}</div>
+              <div class="row cal-chips">
+                ${b.items.length
+                  ? b.items.map((it) => this._choreChip(it, glyph))
+                  : html`<span class="muted cal-empty-line">${this._t("calendar.no_chores_today")}</span>`}
+              </div>
+            </div>
+          </div>`)}
+      </div>`;
   }
 }
 
@@ -571,6 +788,17 @@ class TaskMateCalendarCardEditor extends LitElement {
       { name: "entity", selector: { entity: { domain: "sensor" } } },
       { name: "title", selector: { text: {} } },
       {
+        name: "card_design",
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: "global", label: "Use global default" }],
+            mode: "dropdown",
+          },
+        },
+      },
+      {
         name: "child_id",
         selector: {
           select: {
@@ -589,6 +817,7 @@ class TaskMateCalendarCardEditor extends LitElement {
     const labels = {
       entity: this._t("common.editor.overview_entity"),
       title: this._t("calendar.editor.title"),
+      card_design: this._t("common.design.field_label"),
       child_id: this._t("common.editor.filter_by_child"),
     };
     return labels[entry.name] ?? entry.name;
@@ -607,6 +836,7 @@ class TaskMateCalendarCardEditor extends LitElement {
     const data = {
       entity: this.config.entity || "",
       title: this.config.title || "",
+      card_design: this.config.card_design || "global",
       child_id: this.config.child_id || "__all__",
     };
     return html`
@@ -662,6 +892,8 @@ class TaskMateCalendarCardEditor extends LitElement {
         value === "" || value === null || value === undefined
         || (key === "child_id" && value === "__all__")
       ) {
+        delete newConfig[key];
+      } else if (key === "card_design" && value === "global") {
         delete newConfig[key];
       } else {
         newConfig[key] = value;

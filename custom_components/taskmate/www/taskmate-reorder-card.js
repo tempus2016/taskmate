@@ -49,7 +49,7 @@ class TaskMateReorderCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
       }
@@ -420,7 +420,82 @@ class TaskMateReorderCard extends LitElement {
           height: 32px;
         }
       }
+
+      /* ══════════════════════════════════════════════════════════════════
+         DESIGNED STYLES (playroom / console / cleanpro)
+         Shared .tmd kit + tokens come from taskmate-design.js styles().
+         NOTE: no ha-card { padding } rule — body padding comes from .tmd-bd.
+      ══════════════════════════════════════════════════════════════════ */
+
+      .d-childchip { display: flex; align-items: center; gap: 5px; margin-left: auto;
+                     font-weight: 800; font-size: 12px; color: #fff;
+                     background: rgba(255,255,255,.25); border-radius: 999px;
+                     padding: 3px 10px 3px 3px; white-space: nowrap; }
+      :host([data-tm-design="console"]) .d-childchip { border-radius: 6px; font-weight: 700; font-size: 11px;
+                     background: var(--tmd-surface-2);
+                     border: 1px solid color-mix(in srgb, var(--ac, var(--tmd-accent)) 55%, transparent);
+                     color: var(--tmd-text); }
+      :host([data-tm-design="cleanpro"]) .d-childchip { border-radius: 8px; font-weight: 700; font-size: 12px; }
+      .d-childchip .av { box-shadow: none; }
+
+      .d-save { width: 100%; justify-content: center; margin-bottom: 13px; }
+      .d-save.saving ha-icon { animation: spin 1s linear infinite; }
+
+      .d-cat { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 13px;
+               color: var(--tmd-text); margin: 13px 0 9px; }
+      .d-cat:first-child { margin-top: 0; }
+      .d-cat ha-icon { --mdc-icon-size: 18px; color: var(--tmd-dim); }
+      .d-cat .d-cat-name { flex: 1; min-width: 0; }
+      :host([data-tm-design="console"]) .d-cat .d-cat-name { font-family: var(--tmd-font-mono);
+               letter-spacing: .08em; text-transform: uppercase; font-size: 12px; }
+
+      .d-list { display: flex; flex-direction: column; }
+      :host([data-tm-design="playroom"]) .d-list,
+      :host([data-tm-design="console"]) .d-list { gap: 9px; }
+
+      .d-row { display: flex; align-items: center; gap: 8px; background: var(--tmd-surface-2);
+               border-radius: 16px; padding: 9px 11px; }
+      :host([data-tm-design="console"]) .d-row { border-radius: 8px; padding: 9px;
+               border: 1px solid var(--tmd-border); }
+      :host([data-tm-design="cleanpro"]) .d-row { background: transparent; border-radius: 0;
+               padding: 9px 0; gap: 9px; }
+      .d-row.drag-over { box-shadow: 0 0 0 2px var(--tmd-accent); }
+      .d-row.dragging { opacity: 0.4; }
+
+      .d-handle { cursor: grab; color: var(--tmd-dim); font-size: 18px; line-height: 1;
+                  display: flex; align-items: center; padding: 2px; touch-action: none; }
+      .d-handle:active { cursor: grabbing; }
+
+      .d-num { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+               font-size: 14px; font-weight: 800; flex: none;
+               background: var(--tmd-accent); color: #fff; }
+      :host([data-tm-design="console"]) .d-num { border-radius: 6px; width: 24px; height: 24px;
+               font-family: var(--tmd-font-mono); font-size: 12px;
+               background: color-mix(in srgb, var(--tmd-accent) 22%, transparent); color: var(--tmd-accent);
+               box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tmd-accent) 55%, transparent); }
+      :host([data-tm-design="cleanpro"]) .d-num { width: 24px; height: 24px; border-radius: 7px;
+               background: var(--tmd-surface-2); color: var(--tmd-accent); font-size: 12px; }
+
+      .d-emoji { font-size: 18px; flex: none; }
+      .d-emoji ha-icon { --mdc-icon-size: 20px; color: var(--tmd-text); }
+
+      .d-info { flex: 1; min-width: 0; }
+      .d-row-name { font-weight: 800; font-size: 13.5px; overflow: hidden;
+                    text-overflow: ellipsis; white-space: nowrap; }
+      :host([data-tm-design="console"]) .d-row-name,
+      :host([data-tm-design="cleanpro"]) .d-row-name { font-weight: 600; font-size: 13px; }
+      .d-row-pts { font-size: 11px; color: var(--tmd-dim); }
+      :host([data-tm-design="console"]) .d-row-pts { font-family: var(--tmd-font-mono); font-size: 10px; }
+
+      .d-arrows { display: flex; gap: 4px; flex: none; }
+      .d-arrow { width: 30px; height: 30px; padding: 0; justify-content: center; font-size: 15px; }
+      :host([data-tm-design="console"]) .d-arrow,
+      :host([data-tm-design="cleanpro"]) .d-arrow { width: auto; height: auto; padding: 4px 8px;
+               border-radius: var(--tmd-radius-sm); }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -591,6 +666,11 @@ class TaskMateReorderCard extends LitElement {
       return html``;
     }
 
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      : "classic";
+    if (design !== "classic") return this._renderDesigned(design);
+
     const entity = this.hass.states[this.config.entity];
 
     if (!entity) {
@@ -714,6 +794,160 @@ class TaskMateReorderCard extends LitElement {
     `;
   }
 
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns/frag/16-reorder.html.
+     Reuses every classic handler (drag/touch/_moveChore/_handleSave) so
+     reordering behaviour is identical across designs.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designAv(child, size) {
+    const a = child.avatar || "";
+    const tone = "var(--tmd-c1)";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${child.name}">`
+        : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<span class="av" style="--av:${size}px;--ac:${tone}">${inner}</span>`;
+  }
+
+  _renderDesigned(design) {
+    const hd = _safeColor(this.config.header_color, '#5b7fb9');
+    const entity = this.hass.states[this.config.entity];
+
+    if (!entity) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        <div class="tmd-hd"><span class="ic">⇅</span><span class="tt">${this.config.title || this._t('reorder.default_title')}</span></div>
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div>
+      </ha-card>`;
+    }
+
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const children = attrs.children || [];
+    const child = children.find((c) => c.id === this.config.child_id)
+      || (!this.config.child_id && children[0]);
+
+    const icon = design === "console" ? "≡" : design === "cleanpro" ? "⇅" : "↕️";
+    const sub = design === "console"
+      ? this._t('reorder.default_title')
+      : this._t('reorder.drag_to_reorder');
+
+    if (!child) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        <div class="tmd-hd"><span class="ic">${icon}</span><span class="tt">${this.config.title || this._t('reorder.default_title')}</span></div>
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('reorder.child_not_found', { child_id: this.config.child_id })}</div></div>
+      </ha-card>`;
+    }
+
+    const chores = attrs.chores || [];
+    const childChores = this._getChoresForChild(chores, child.id);
+    const pointsIcon = attrs.points_icon || "mdi:star";
+
+    const header = html`
+      <div class="tmd-hd" style="--ac:var(--tmd-c1)">
+        <span class="ic">${icon}</span>
+        <span class="tt">${this.config.title || this._t('reorder.default_title')}<small>${sub}</small></span>
+        <span class="d-childchip">${this._designAv(child, 22)}${child.name}</span>
+      </div>`;
+
+    if (childChores.length === 0) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${header}
+        <div class="tmd-bd">
+          <div class="tmd-empty">${this._t('reorder.no_chores_assigned')}<br>${this._t('reorder.add_chores_first')}</div>
+        </div>
+      </ha-card>`;
+    }
+
+    const timeCategories = this._getTimeCategories();
+    const saveLabel = this._saving ? this._t('reorder.saving') : this._t('reorder.save_order');
+
+    return html`
+      <ha-card class="tmd" style="--hd:${hd}">
+        ${header}
+        <div class="tmd-bd">
+          <button
+            class="btn ghost d-save ${this._saving ? "saving" : ""}"
+            @click="${this._handleSave}"
+            ?disabled="${this._saving || !this._hasChanges}"
+          >
+            <ha-icon icon="${this._saving ? "mdi:loading" : "mdi:content-save"}"></ha-icon>
+            ${saveLabel}
+          </button>
+          ${this._hasChanges
+            ? html`<div class="d-cat" style="margin-top:0"><span class="muted" style="font-size:12px;font-weight:600">${this._t('reorder.unsaved_changes')}</span></div>`
+            : ""}
+
+          ${timeCategories.map((category) => {
+            const categoryChoreIds = this._localChoreOrder[category] || [];
+            const categoryChores = categoryChoreIds
+              .map((id) => chores.find((c) => c.id === id))
+              .filter((c) => c);
+            const orderedIds = new Set(categoryChoreIds);
+            const missingChores = childChores.filter(
+              (c) => c.time_category === category && !orderedIds.has(c.id)
+            );
+            const allCategoryChores = [...categoryChores, ...missingChores];
+            if (allCategoryChores.length === 0) return "";
+
+            return html`
+              <div class="d-cat">
+                <ha-icon icon="${this._getTimeCategoryIcon(category)}"></ha-icon>
+                <span class="d-cat-name">${this._getTimeCategoryLabel(category)}</span>
+                <span class="chip soft">${allCategoryChores.length}</span>
+              </div>
+              <div class="d-list">
+                ${allCategoryChores.map((chore, index) =>
+                  this._renderDesignedChoreItem(chore, index, allCategoryChores.length, category, pointsIcon)
+                )}
+              </div>`;
+          })}
+        </div>
+      </ha-card>
+    `;
+  }
+
+  _renderDesignedChoreItem(chore, index, total, category, pointsIcon) {
+    const isFirst = index === 0;
+    const isLast = index === total - 1;
+    const choreIcon = chore.icon || "mdi:broom";
+    const emoji = choreIcon.startsWith("mdi:")
+      ? html`<ha-icon icon="${choreIcon}"></ha-icon>`
+      : html`${choreIcon}`;
+
+    return html`
+      <div
+        class="d-row"
+        draggable="true"
+        data-index="${index}"
+        data-category="${category}"
+        @dragstart="${(e) => this._onDragStart(e, category, index)}"
+        @dragover="${(e) => this._onDragOver(e)}"
+        @dragenter="${(e) => this._onDragEnter(e)}"
+        @dragleave="${(e) => this._onDragLeave(e)}"
+        @drop="${(e) => this._onDrop(e, category, index)}"
+        @dragend="${(e) => this._onDragEnd(e)}"
+        @touchstart="${(e) => this._onTouchStart(e, category, index)}"
+        @touchmove="${(e) => this._onTouchMove(e)}"
+        @touchend="${(e) => this._onTouchEnd(e, category)}"
+      >
+        <span class="d-handle" title="${this._t('reorder.drag_to_reorder')}">⋮⋮</span>
+        <span class="d-num">${index + 1}</span>
+        <span class="d-emoji">${emoji}</span>
+        <div class="d-info">
+          <div class="d-row-name">${chore.name}</div>
+          <div class="d-row-pts">+${chore.points} ${this._t('common.points').toLowerCase()}</div>
+        </div>
+        <div class="d-arrows">
+          <button class="btn ghost round d-arrow" @click="${() => this._moveChore(category, index, -1)}"
+                  ?disabled="${isFirst}" title="${this._t('reorder.move_up')}">↑</button>
+          <button class="btn ghost round d-arrow" @click="${() => this._moveChore(category, index, 1)}"
+                  ?disabled="${isLast}" title="${this._t('reorder.move_down')}">↓</button>
+        </div>
+      </div>`;
+  }
+
   _renderChoreItem(chore, index, total, category, pointsIcon) {
     const isFirst = index === 0;
     const isLast = index === total - 1;
@@ -815,8 +1049,9 @@ class TaskMateReorderCard extends LitElement {
     const touch = e.touches[0];
     const el = this.shadowRoot?.elementFromPoint(touch.clientX, touch.clientY);
     if (!el) return;
-    const item = el.closest(".chore-item");
-    this.shadowRoot.querySelectorAll(".chore-item").forEach(i => i.classList.remove("drag-over"));
+    // Classic rows use .chore-item, designed rows use .d-row — match either.
+    const item = el.closest(".chore-item, .d-row");
+    this.shadowRoot.querySelectorAll(".chore-item, .d-row").forEach(i => i.classList.remove("drag-over"));
     if (item) item.classList.add("drag-over");
   }
 
@@ -824,8 +1059,8 @@ class TaskMateReorderCard extends LitElement {
     if (!this._touchState) return;
     const touch = e.changedTouches[0];
     const el = this.shadowRoot?.elementFromPoint(touch.clientX, touch.clientY);
-    this.shadowRoot?.querySelectorAll(".chore-item").forEach(i => i.classList.remove("drag-over"));
-    const item = el ? el.closest(".chore-item") : null;
+    this.shadowRoot?.querySelectorAll(".chore-item, .d-row").forEach(i => i.classList.remove("drag-over"));
+    const item = el ? el.closest(".chore-item, .d-row") : null;
     if (item) {
       const toIndex = parseInt(item.dataset.index, 10);
       const { index: fromIndex } = this._touchState;
@@ -973,6 +1208,17 @@ class TaskMateReorderCardEditor extends LitElement {
         },
       },
       { name: 'title', selector: { text: {} } },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
     ];
   }
 
@@ -981,6 +1227,7 @@ class TaskMateReorderCardEditor extends LitElement {
       entity: this._t('common.editor.overview_entity'),
       child_id: this._t('reorder.editor.child'),
       title: this._t('common.editor.card_title'),
+      card_design: this._t('common.design.field_label'),
     };
     return labels[entry.name] ?? entry.name;
   };
@@ -999,6 +1246,7 @@ class TaskMateReorderCardEditor extends LitElement {
       entity: this.config.entity || '',
       child_id: this.config.child_id || '',
       title: this.config.title || '',
+      card_design: this.config.card_design || 'global',
     };
     return html`
       <ha-form
@@ -1050,6 +1298,7 @@ class TaskMateReorderCardEditor extends LitElement {
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
       if (value === '' || value === null || value === undefined) delete newConfig[key];
+      else if (key === 'card_design' && value === 'global') delete newConfig[key];
       else newConfig[key] = value;
     }
     this.dispatchEvent(new CustomEvent('config-changed', {

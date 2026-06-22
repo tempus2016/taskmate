@@ -25,6 +25,7 @@ URL_BASE: Final = "/taskmate"
 CARDS: Final = [
     "taskmate-attr-resolver.js",
     "taskmate-localize.js",
+    "taskmate-design.js",
     "taskmate-badges-card.js",
     "taskmate-child-card.js",
     "taskmate-rewards-card.js",
@@ -66,6 +67,12 @@ RETIRED_CARDS: Final = [
 GLOBAL_MODULES: Final = [
     "taskmate-config-sounds.js",
     "taskmate-localize.js",
+    # Like localize.js above, the admin panel (a panel_custom page, not a
+    # Lovelace dashboard) never loads Lovelace resources, so the shared design
+    # layer must be loaded globally for window.__taskmate_design to exist when
+    # the panel resolves/stamps its design. Double-loading is a no-op (keyed by
+    # URL, assigns idempotent globals).
+    "taskmate-design.js",
 ]
 
 # Track if frontend is registered

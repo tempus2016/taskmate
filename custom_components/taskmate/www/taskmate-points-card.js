@@ -11,6 +11,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const DESIGN_HEADER = "#8e44ad";
+
 class TaskMatePointsCard extends LitElement {
   static get properties() {
     return {
@@ -44,7 +46,7 @@ class TaskMatePointsCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
         --card-primary-color: var(--primary-color, #5c6bc0);
@@ -586,7 +588,79 @@ class TaskMatePointsCard extends LitElement {
           padding: 20px;
         }
       }
+
+      /* ── Designed styles (playroom / console / cleanpro) ── */
+      /* Shared .tmd kit + tokens come from taskmate-design.js styles(). */
+      .pc-grid { display: flex; flex-direction: column; gap: 10px; }
+      .pc-row {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        background: var(--tmd-surface-2);
+        border-radius: 18px;
+        padding: 11px 13px;
+      }
+      .pc-row.loading { opacity: 0.55; pointer-events: none; }
+      .pc-mid { flex: 1; min-width: 0; }
+      .pc-name { font-weight: 800; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .pc-pts { font-family: var(--tmd-font-display); font-weight: 800; font-size: 22px; line-height: 1; color: var(--tmd-accent); }
+      .pc-pts span { font-size: 12px; margin-left: 2px; }
+      .pc-sub { font-size: 11px; }
+
+      /* Console list variant */
+      .cn-row { border: 1px solid var(--tmd-border); border-radius: 10px; padding: 10px 11px; }
+      .cn-name { font-weight: 700; }
+      .cn-cur { font-size: 11px; }
+
+      /* Clean Pro flat-row variant */
+      .cp-grid { display: flex; flex-direction: column; }
+      .cp-row { background: transparent; border-radius: 0; padding: 11px 2px; }
+      .cp-row + .cp-row { border-top: 1px solid var(--tmd-border); }
+      .cp-name { flex: 1; min-width: 0; font-weight: 600; }
+      .cp-num { width: 46px; text-align: right; font-size: 16px; }
+
+      .pc-quick { gap: 7px; flex-wrap: wrap; }
+      .pc-reason { margin-top: 12px; cursor: pointer; }
+      .pc-reason.con { gap: 8px; }
+
+      /* Per-child quick add/remove chips (all designed styles) */
+      .pc-actions { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; flex-shrink: 0; }
+      .pc-qrow { display: flex; gap: 4px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+      .pc-qchip {
+        font: inherit;
+        font-family: var(--tmd-font-display);
+        font-weight: 800;
+        font-size: 12px;
+        line-height: 1.3;
+        border: 0;
+        cursor: pointer;
+        padding: 4px 9px;
+        min-width: 30px;
+        text-align: center;
+        border-radius: 999px;
+        color: #fff;
+      }
+      .pc-qchip:disabled { opacity: 0.5; cursor: not-allowed; }
+      .pc-qchip.add { background: var(--tmd-good); }
+      .pc-qchip.remove { background: var(--tmd-bad); }
+      :host([data-tm-design="console"]) .pc-qchip.add {
+        color: #06301f;
+        box-shadow: 0 0 10px color-mix(in srgb, var(--tmd-good) 45%, transparent);
+      }
+      :host([data-tm-design="console"]) .pc-qchip.remove {
+        color: #3a0d0d;
+        box-shadow: 0 0 10px color-mix(in srgb, var(--tmd-bad) 45%, transparent);
+      }
+      .pc-qchip.more {
+        background: var(--tmd-surface-2);
+        color: var(--tmd-text);
+        border: 1px solid var(--tmd-border);
+        padding: 4px 8px;
+      }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -648,6 +722,13 @@ class TaskMatePointsCard extends LitElement {
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t("common.stars");
 
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      : "classic";
+    if (design !== "classic") {
+      return this._renderDesigned(design, children, pointsName, pointsIcon);
+    }
+
     const headerStyle = this.config.header_color
       ? `--taskmate-header-bg: ${this.config.header_color};`
       : '';
@@ -684,6 +765,152 @@ class TaskMatePointsCard extends LitElement {
         <div class="submessage">${this._t('points_card.empty_subtitle')}</div>
       </div>
     `;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns (frag/02-points.html).
+     Classic branch above is untouched; these only ADD an alternate render.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _childAvatarValue(child) {
+    const childEntityId = Object.keys(this.hass.states).find(
+      (eid) => this.hass.states[eid].attributes?.child_id === child.id
+    );
+    const childEntity = childEntityId ? this.hass.states[childEntityId] : null;
+    return childEntity?.attributes?.avatar || "mdi:account-circle";
+  }
+
+  _av(child, tone, size) {
+    const a = this._childAvatarValue(child);
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${child.name}">`
+        : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  _renderDesigned(design, children, pointsName, pointsIcon) {
+    const hd = this.config.header_color || DESIGN_HEADER;
+
+    const header = design === "console"
+      ? html`<div class="tmd-hd">
+          <span class="ic">⚡</span>
+          <span class="tt">${this.config.title || this._t('points_card.default_title')}</span>
+          ${children.length ? html`<span class="pill">${children.length}</span>` : ""}
+        </div>`
+      : html`<div class="tmd-hd">
+          <span class="ic">${design === "cleanpro" ? "±" : "✨"}</span>
+          <span class="tt">${this.config.title || this._t('points_card.default_title')}</span>
+        </div>`;
+
+    const body = children.length === 0
+      ? html`<div class="tmd-empty">${this._t('points_card.empty_title')}</div>`
+      : design === "console"  ? this._designConsole(children, pointsName, pointsIcon)
+      : design === "cleanpro" ? this._designCleanpro(children, pointsName, pointsIcon)
+      :                         this._designPlayroom(children, pointsName, pointsIcon);
+
+    return html`
+      <ha-card class="tmd" style="--hd:${hd}">
+        ${header}
+        <div class="tmd-bd">${body}</div>
+        ${this._dialog ? this._renderDialog() : ""}
+        ${this._notification ? this._renderNotification() : ""}
+      </ha-card>`;
+  }
+
+  /**
+   * Per-child quick add/remove buttons, honouring quick_add_amounts,
+   * quick_remove_amounts and show_dialog. Mirrors the classic _renderChildRow
+   * quick-button block (same handlers: _quickAdjust + _openDialog).
+   */
+  _designQuickActions(child, pointsName, pointsIcon, isLoading) {
+    const addAmounts = Array.isArray(this.config.quick_add_amounts)
+      ? this.config.quick_add_amounts : [1, 5, 10];
+    const removeAmounts = Array.isArray(this.config.quick_remove_amounts)
+      ? this.config.quick_remove_amounts : [1, 5, 10];
+    const showDialog = this.config.show_dialog !== false;
+    return html`
+      <div class="pc-actions">
+        <div class="pc-qrow">
+          ${addAmounts.map(amt => html`
+            <button class="pc-qchip add" ?disabled="${isLoading}"
+              @click="${(e) => { e.stopPropagation(); this._quickAdjust(child, 'add', amt); }}"
+              title="${this._t('points_card.quick_add_title', { amount: amt, pointsName })}">+${amt}</button>`)}
+          ${showDialog ? html`
+            <button class="pc-qchip more" ?disabled="${isLoading}"
+              @click="${(e) => { e.stopPropagation(); this._openDialog(child, 'add', pointsIcon, pointsName); }}"
+              title="${this._t('points_card.quick_custom_title')}">⋯</button>` : ""}
+        </div>
+        <div class="pc-qrow">
+          ${removeAmounts.map(amt => html`
+            <button class="pc-qchip remove" ?disabled="${isLoading}"
+              @click="${(e) => { e.stopPropagation(); this._quickAdjust(child, 'remove', amt); }}"
+              title="${this._t('points_card.quick_remove_title', { amount: amt, pointsName })}">−${amt}</button>`)}
+          ${showDialog ? html`
+            <button class="pc-qchip more" ?disabled="${isLoading}"
+              @click="${(e) => { e.stopPropagation(); this._openDialog(child, 'remove', pointsIcon, pointsName); }}"
+              title="${this._t('points_card.quick_custom_title')}">⋯</button>` : ""}
+        </div>
+      </div>`;
+  }
+
+  _designPlayroom(children, pointsName, pointsIcon) {
+    return html`
+      <div class="pc-grid">
+        ${children.map((child, i) => {
+          const tone = this._designTone(i);
+          const isLoading = this._loading[child.id];
+          return html`
+            <div class="pc-row ${isLoading ? "loading" : ""}" style="--ac:${tone}">
+              ${this._av(child, tone, 46)}
+              <div class="pc-mid">
+                <div class="pc-name">${child.name}</div>
+                <div class="pc-pts">${child.points}<span>⭐</span></div>
+              </div>
+              ${this._designQuickActions(child, pointsName, pointsIcon, isLoading)}
+            </div>`;
+        })}
+      </div>`;
+  }
+
+  _designConsole(children, pointsName, pointsIcon) {
+    return html`
+      <div class="pc-grid">
+        ${children.map((child, i) => {
+          const tone = this._designTone(i);
+          const isLoading = this._loading[child.id];
+          return html`
+            <div class="pc-row cn-row ${isLoading ? "loading" : ""}" style="--ac:${tone}">
+              ${this._av(child, tone, 36)}
+              <div class="pc-mid">
+                <div class="cn-name">${child.name}</div>
+                <div class="num muted cn-cur">${(child.points + ' ' + pointsName).toUpperCase()}</div>
+              </div>
+              ${this._designQuickActions(child, pointsName, pointsIcon, isLoading)}
+            </div>`;
+        })}
+      </div>`;
+  }
+
+  _designCleanpro(children, pointsName, pointsIcon) {
+    return html`
+      <div class="pc-grid cp-grid">
+        ${children.map((child, i) => {
+          const tone = this._designTone(i);
+          const isLoading = this._loading[child.id];
+          return html`
+            <div class="pc-row cp-row ${isLoading ? "loading" : ""}" style="--ac:${tone}">
+              ${this._av(child, tone, 38)}
+              <div class="cp-name">${child.name}</div>
+              <div class="num cp-num">${child.points}</div>
+              ${this._designQuickActions(child, pointsName, pointsIcon, isLoading)}
+            </div>`;
+        })}
+      </div>`;
   }
 
   _renderChildRow(child, pointsIcon, pointsName) {
@@ -1015,6 +1242,17 @@ class TaskMatePointsCardEditor extends LitElement {
     return [
       { name: 'entity', selector: { entity: { domain: 'sensor' } } },
       { name: 'title', selector: { text: {} } },
+      {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
       { name: 'quick_add_amounts', selector: { text: {} } },
       { name: 'quick_remove_amounts', selector: { text: {} } },
       { name: 'show_dialog', selector: { boolean: {} } },
@@ -1025,6 +1263,7 @@ class TaskMatePointsCardEditor extends LitElement {
     const labels = {
       entity: this._t('points_card.editor.entity_label'),
       title: this._t('points_card.editor.title_label'),
+      card_design: this._t('common.design.field_label'),
       quick_add_amounts: this._t('points_card.editor.add_buttons_label'),
       quick_remove_amounts: this._t('points_card.editor.remove_buttons_label'),
       show_dialog: this._t('points_card.editor.show_dialog_label'),
@@ -1050,6 +1289,7 @@ class TaskMatePointsCardEditor extends LitElement {
     const data = {
       entity: this.config.entity || '',
       title: this.config.title || '',
+      card_design: this.config.card_design || 'global',
       quick_add_amounts: this._amountsToString(addAmounts),
       quick_remove_amounts: this._amountsToString(removeAmounts),
       show_dialog: this.config.show_dialog !== false,
@@ -1109,6 +1349,8 @@ class TaskMatePointsCardEditor extends LitElement {
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
       if (value === '' || value === null || value === undefined) {
+        delete newConfig[key];
+      } else if (key === 'card_design' && value === 'global') {
         delete newConfig[key];
       } else if (key === 'show_dialog' && value === true) {
         delete newConfig[key];

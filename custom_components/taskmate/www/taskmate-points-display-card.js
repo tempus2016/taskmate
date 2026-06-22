@@ -109,7 +109,7 @@ class TaskMatePointsDisplayCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host { display: block; }
       ha-card { overflow: hidden; font-family: inherit; }
 
@@ -500,7 +500,55 @@ class TaskMatePointsDisplayCard extends LitElement {
         font-size: 0.9rem;
       }
       .empty-state ha-icon { --mdc-icon-size: 40px; opacity: 0.35; display: block; margin: 0 auto 10px; }
+
+      /* Shared .tmd kit + design tokens are provided by taskmate-design.js styles(). */
+
+      /* Points Display — Playroom */
+      .pl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 11px; }
+      .pl-tile { background: var(--tmd-surface-2); border-radius: 18px; padding: 22px 12px 15px; text-align: center;
+                 position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+      .pl-medal { position: absolute; top: 9px; left: 11px; font-size: 16px; line-height: 1; }
+      .pl-pts { font-family: var(--tmd-font-display); font-weight: 800; font-size: 1.85rem; line-height: 1;
+                color: var(--tmd-accent); }
+      .pl-pts span { font-size: 0.9rem; margin-left: 2px; }
+      .pl-name { font-weight: 800; font-size: 0.95rem; }
+      .pl-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+
+      /* Points Display — Console */
+      .cn-list { display: flex; flex-direction: column; gap: 9px; }
+      .cn-row { display: flex; align-items: center; gap: 10px; background: var(--tmd-surface-2);
+                border: 1px solid var(--tmd-border); border-radius: 10px; padding: 11px; }
+      .cn-rank { font-size: 20px; width: 34px; color: var(--tmd-dim); }
+      .cn-mid { flex: 1; min-width: 0; }
+      .cn-name { font-weight: 700; margin-bottom: 6px; }
+      .cn-right { text-align: right; }
+      .cn-pts { font-size: 22px; }
+      .cn-sub { font-size: 10px; }
+
+      /* Points Display — Clean Pro */
+      .cp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 4px; }
+      .cp-tile { text-align: center; padding: 8px 6px; display: flex; flex-direction: column;
+                 align-items: center; gap: 6px; }
+      .cp-pts { font-size: 1.6rem; }
+      .cp-name { font-size: 0.82rem; font-weight: 600; }
+      .cp-rank { background: transparent; }
+      .cp-chips { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+      .cp-total { justify-content: space-between; }
+
+      /* Points Display — Cumulative (designed) */
+      .cumul-total-d { text-align: center; padding: 8px 0 14px; }
+      .cumul-big { font-size: 2.3rem; color: var(--tmd-accent); margin-top: 2px; }
+      .cumul-big-star { font-size: 1rem; }
+      .cumul-list { display: flex; flex-direction: column; gap: 10px; }
+      .cumul-row-d { display: flex; align-items: center; gap: 11px; background: var(--tmd-surface-2);
+                     border: 1px solid var(--tmd-border); border-radius: 14px; padding: 11px; }
+      .cumul-mid { flex: 1; min-width: 0; }
+      .cumul-head { justify-content: space-between; margin-bottom: 6px; }
+      .cumul-name { font-weight: 700; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -768,6 +816,11 @@ class TaskMatePointsDisplayCard extends LitElement {
   /* ── Main render ────────────────────────────────────────────────────── */
 
   render() {
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      : "classic";
+    if (design !== "classic") return this._renderDesigned(design);
+
     const mode  = this.config.mode || "single";
     const title = this.config.title || this._defaultTitle();
 
@@ -795,6 +848,163 @@ class TaskMatePointsDisplayCard extends LitElement {
         </div>
         <div class="card-body">${body}</div>
       </ha-card>`;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns (§card-points-display).
+  ══════════════════════════════════════════════════════════════════════ */
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _av(child, tone, size) {
+    const a = child.avatar || "";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${child.name}">`
+        : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  _renderDesigned(design) {
+    const mode  = this.config.mode || "single";
+    const title = this.config.title || this._defaultTitle();
+    const hd    = this.config.header_color || DEFAULT_HEADER;
+    const tz    = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    let ranked = this._rankedChildren();
+    if (mode === "single") {
+      const c = this._singleChild();
+      ranked = c ? [c] : [];
+    }
+
+    const header = html`
+      <div class="tmd-hd">
+        <span class="ic">⭐</span>
+        <span class="tt">${title}</span>
+        ${mode === "multi" ? html`<span class="pill">${this._t("points_display.mode_multi")}</span>` : ""}
+      </div>`;
+
+    if (!ranked.length) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${header}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t("points_display.empty_no_children")}</div></div>
+      </ha-card>`;
+    }
+
+    const rows = ranked.map((child) => ({
+      child,
+      tone:   this._designTone(this._allChildren().indexOf(child)),
+      points: this._primaryValue(child),
+      weekly: weeklyPoints(child, tz),
+      // Overview summary exposes current_streak (child.streak doesn't exist).
+      streak: child.current_streak ?? child.streak ?? 0,
+      pct:    0,
+    }));
+    const total = rows.reduce((s, r) => s + r.points, 0);
+    rows.forEach((r) => { r.pct = total > 0 ? Math.round((r.points / total) * 100) : 0; });
+    rows.forEach((r, i) => { r.rank = i; });
+
+    const body =
+      mode === "cumulative" ? this._cumulBody(rows, total) :
+      design === "playroom" ? this._designPlayroom(rows) :
+      design === "console"  ? this._designConsole(rows) :
+                              this._designCleanpro(rows, total);
+
+    return html`<ha-card class="tmd" style="--hd:${hd}">${header}<div class="tmd-bd">${body}</div></ha-card>`;
+  }
+
+  _designPlayroom(rows) {
+    const showRank = this.config.show_rank !== false;
+    const showWeekly = this.config.show_weekly !== false;
+    const showStreak = this.config.show_streak !== false;
+    return html`
+      <div class="pl-grid">
+        ${rows.map((r) => html`
+          <div class="pl-tile" style="--ac:${r.tone}">
+            ${showRank && r.rank < 3 ? html`<div class="pl-medal">${RANK_MEDAL[r.rank]}</div>` : ""}
+            ${this._av(r.child, r.tone, 52)}
+            <div class="pl-pts">${r.points.toLocaleString()}<span>⭐</span></div>
+            <div class="pl-name">${r.child.name}</div>
+            ${showWeekly || (showStreak && r.streak) ? html`
+              <div class="pl-chips">
+                ${showWeekly ? html`<div class="chip soft">${this._t("points_display.weekly_plus", { count: r.weekly })}</div>` : ""}
+                ${showStreak && r.streak ? html`<div class="chip soft">\u{1F525} ${r.streak}</div>` : ""}
+              </div>` : ""}
+          </div>`)}
+      </div>`;
+  }
+
+  _designConsole(rows) {
+    const max = Math.max(...rows.map((r) => r.points), 1);
+    const showRank = this.config.show_rank !== false;
+    const showWeekly = this.config.show_weekly !== false;
+    const showStreak = this.config.show_streak !== false;
+    return html`
+      <div class="cn-list">
+        ${rows.map((r) => html`
+          <div class="cn-row" style="--ac:${r.tone}">
+            ${showRank ? html`<div class="num cn-rank ${r.rank === 0 ? "lead" : ""}">#${r.rank + 1}</div>` : ""}
+            ${this._av(r.child, r.tone, 38)}
+            <div class="cn-mid">
+              <div class="cn-name">${r.child.name}</div>
+              <div class="bar"><i style="width:${Math.round((r.points / max) * 100)}%"></i></div>
+            </div>
+            <div class="cn-right">
+              <div class="num cn-pts ${r.rank === 0 ? "lead" : ""}">${r.points.toLocaleString()}</div>
+              <div class="cn-sub muted">XP${showWeekly ? html` · +${r.weekly}` : ""}${showStreak && r.streak ? html` · \u{1F525}${r.streak}` : ""}</div>
+            </div>
+          </div>`)}
+      </div>`;
+  }
+
+  _designCleanpro(rows, total) {
+    const showRank = this.config.show_rank !== false;
+    const showWeekly = this.config.show_weekly !== false;
+    const showStreak = this.config.show_streak !== false;
+    return html`
+      <div class="cp-grid">
+        ${rows.map((r) => html`
+          <div class="cp-tile" style="--ac:${r.tone}">
+            ${this._av(r.child, r.tone, 46)}
+            <div class="big cp-pts">${r.points.toLocaleString()}</div>
+            <div class="cp-name">${r.child.name}</div>
+            <div class="cp-chips">
+              ${showRank ? html`<div class="chip cp-rank">${r.rank === 0
+                ? html`<span class="lead-dot">●</span> ` : ""}#${r.rank + 1}</div>` : ""}
+              ${showWeekly ? html`<div class="chip cp-rank">+${r.weekly}</div>` : ""}
+              ${showStreak && r.streak ? html`<div class="chip cp-rank">\u{1F525} ${r.streak}</div>` : ""}
+            </div>
+          </div>`)}
+      </div>
+      ${rows.length > 1 ? html`
+        <div class="divide"></div>
+        <div class="row cp-total">
+          <span class="muted">${this._t("points_display.combined_family_total")}</span>
+          <span class="num">${total.toLocaleString()} ${this._t("points_display.points_label")}</span>
+        </div>` : ""}`;
+  }
+
+  _cumulBody(rows, total) {
+    return html`
+      <div class="cumul-total-d">
+        <div class="muted">${this._t("points_display.combined_family_total")}</div>
+        <div class="big cumul-big">${total.toLocaleString()} <span class="cumul-big-star">⭐</span></div>
+      </div>
+      <div class="cumul-list">
+        ${rows.map((r) => html`
+          <div class="cumul-row-d" style="--ac:${r.tone}">
+            ${this._av(r.child, r.tone, 40)}
+            <div class="cumul-mid">
+              <div class="row cumul-head">
+                <span class="cumul-name">${r.child.name}</span>
+                <span class="num">${r.points.toLocaleString()}</span>
+              </div>
+              <div class="bar"><i style="width:${r.pct}%"></i></div>
+            </div>
+          </div>`)}
+      </div>`;
   }
 }
 
@@ -880,6 +1090,17 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
         },
       },
       {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
+      {
         name: 'primary_display',
         selector: {
           select: {
@@ -921,6 +1142,7 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
       entity: this._t('points_display.editor.entity_label'),
       title: this._t('common.editor.card_title'),
       mode: this._t('points_display.editor.mode_label'),
+      card_design: this._t('common.design.field_label'),
       primary_display: this._t('points_display.editor.primary_display'),
       child_id: this._t('points_display.editor.child_label'),
       show_weekly: this._t('points_display.editor.show_weekly'),
@@ -939,6 +1161,7 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
       entity: this.config.entity || '',
       title: this.config.title || '',
       mode,
+      card_design: this.config.card_design || 'global',
       primary_display: this.config.primary_display || 'current_points',
       child_id: this.config.child_id || '',
       show_weekly: this.config.show_weekly !== false,
@@ -995,6 +1218,8 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
       if (value === '' || value === null || value === undefined) {
+        delete newConfig[key];
+      } else if (key === 'card_design' && value === 'global') {
         delete newConfig[key];
       } else if (key === 'mode' && value === 'single') {
         delete newConfig[key];

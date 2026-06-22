@@ -536,7 +536,7 @@ class TaskMateChildCard extends LitElement {
   }
 
   static get styles() {
-    return css`
+    const base = css`
       :host {
         display: block;
         --fun-pink: #ff6b9d;
@@ -1727,7 +1727,145 @@ class TaskMateChildCard extends LitElement {
         margin-left: 2px;
         white-space: nowrap;
       }
+
+      /* ══════════════════════════════════════════════════════════════════
+         DESIGNED STYLES (playroom / console / cleanpro)
+         Shared .tmd kit + tokens come from taskmate-design.js styles().
+         Only card-specific layout classes live here.
+         Ported from docs/design/redesigns/frag/03-child.html.
+      ══════════════════════════════════════════════════════════════════ */
+      .tmd-chores { display: grid; gap: 11px; }
+      .tmd-chore {
+        display: flex; align-items: center; gap: 10px;
+        background: var(--tmd-surface-2);
+        border-radius: 18px; padding: 11px 13px;
+      }
+      .tmd-chore .num-badge {
+        width: 30px; height: 30px; border-radius: 12px; flex: none;
+        display: grid; place-items: center;
+        font-family: var(--tmd-font-display); font-weight: 800; color: #fff;
+        background: var(--ac, var(--tmd-accent));
+      }
+      .tmd-chore .ch-emoji { font-size: 22px; flex: none; }
+      .tmd-chore .ch-mid { flex: 1; min-width: 0; }
+      .tmd-chore .ch-name {
+        font-weight: 800; font-size: 15px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .tmd-chore.done .ch-name { text-decoration: line-through; }
+      .tmd-chore.done { opacity: 0.6; }
+      .tmd-chore .done-chip {
+        background: transparent; border-color: transparent; color: var(--tmd-good);
+      }
+
+      /* Console — quest log rows */
+      .tmd-quest {
+        display: flex; align-items: center; gap: 10px;
+        background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
+        border-radius: 8px; padding: 10px 11px;
+      }
+      .tmd-quest .q-num { width: 22px; font-size: 14px; color: var(--tmd-accent); }
+      .tmd-quest .q-emoji { font-size: 19px; flex: none; }
+      .tmd-quest .q-mid { flex: 1; min-width: 0; }
+      .tmd-quest .q-name {
+        font-weight: 700;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .tmd-quest.done { opacity: 0.55; }
+      .tmd-quest.done .q-name { text-decoration: line-through; }
+      .tmd-quest .q-xp { font-size: 11px; color: var(--tmd-gold); }
+      .tmd-quest .q-cleared { font-size: 11px; color: var(--tmd-good); }
+
+      /* Clean Pro — tidy checklist */
+      .tmd-checklist { display: grid; gap: 0; }
+      .tmd-check {
+        display: flex; align-items: center; gap: 10px; padding: 11px 2px;
+      }
+      .tmd-check + .tmd-check { border-top: 1px solid var(--tmd-border); }
+      .tmd-check .c-num {
+        width: 26px; height: 26px; border-radius: 8px; flex: none;
+        display: grid; place-items: center; font-size: 12px;
+        font-family: var(--tmd-font-display); font-weight: 800; color: #fff;
+        background: var(--ac, var(--tmd-accent));
+      }
+      .tmd-check .c-emoji { font-size: 18px; flex: none; }
+      .tmd-check .c-mid { flex: 1; min-width: 0; }
+      .tmd-check .c-name {
+        font-weight: 600;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .tmd-check.done { opacity: 0.55; }
+      .tmd-check.done .c-name { text-decoration: line-through; }
+      .tmd-check .c-pts { background: transparent; }
+      .tmd-check .c-done {
+        background: transparent; border-color: transparent; color: var(--tmd-good);
+      }
+
+      /* Designed: shared chore meta (mandatory / photo / description / dim states) */
+      .tmd-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 3px; }
+      .tmd-tag {
+        display: inline-flex; align-items: center; gap: 3px;
+        font-size: 10.5px; font-weight: 800; line-height: 1;
+        padding: 3px 7px; border-radius: 999px;
+        background: var(--tmd-surface-2); color: var(--tmd-dim);
+        border: 1px solid var(--tmd-border);
+      }
+      .tmd-tag.mandatory { background: color-mix(in srgb, var(--tmd-bad) 16%, transparent); color: var(--tmd-bad); border-color: transparent; }
+      .tmd-tag.photo { background: color-mix(in srgb, var(--tmd-accent) 14%, transparent); color: var(--tmd-accent); border-color: transparent; }
+      .tmd-desc { font-size: 11.5px; color: var(--tmd-dim); margin-top: 3px; white-space: normal; line-height: 1.3; }
+      .tmd-chore.mandatory, .tmd-quest.mandatory, .tmd-check.mandatory {
+        box-shadow: inset 3px 0 0 0 var(--tmd-bad);
+        padding-left: 20px;
+      }
+      .tmd-chore.dimmed, .tmd-quest.dimmed, .tmd-check.dimmed { opacity: 0.5; }
+      /* Clickable done-state chips (tap to undo) */
+      .tmd-undochip { cursor: pointer; font: inherit; font-weight: 800; line-height: 1; }
+      .tmd-undochip:hover { filter: brightness(0.97); }
+      .tmd-undochip[disabled] { opacity: 0.6; cursor: default; }
+      .q-undo { background: var(--tmd-surface-2); color: var(--tmd-dim); border: 1px solid var(--tmd-border); padding: 7px 10px; font-size: 14px; }
+
+      /* Designed: pending-points + countdown chips on the header/section */
+      .tmd-pending {
+        margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+        font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
+        background: rgba(255,255,255,.22); color: #fff;
+      }
+      .tmd-section {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 11px;
+        font-family: var(--tmd-font-display); font-weight: 800; font-size: 14px; color: var(--tmd-text);
+      }
+      .tmd-countdown {
+        margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+        font-size: 11px; font-weight: 700; color: var(--tmd-dim);
+      }
+      .tmd-countdown.soon { color: var(--tmd-warn); }
+
+      /* Designed: badge strip */
+      .tmd-badges {
+        display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+        padding: 9px 11px; margin-bottom: 11px;
+        background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
+        border-radius: var(--tmd-radius-sm); cursor: pointer;
+      }
+      .tmd-badges .lbl { font-size: 11px; font-weight: 800; color: var(--tmd-dim); text-transform: uppercase; letter-spacing: .04em; }
+      .tmd-badge-mini {
+        width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+        background: var(--t, var(--tmd-accent)); color: #fff;
+      }
+      .tmd-badge-mini ha-icon { --mdc-icon-size: 16px; color: #fff; }
+      .tmd-badges .more { font-size: 11px; font-weight: 800; color: var(--tmd-accent); }
+
+      /* Designed: vacation banner + swappable section */
+      .tmd-vacation {
+        display: flex; align-items: center; gap: 7px; padding: 9px 11px; margin-bottom: 11px;
+        background: color-mix(in srgb, var(--tmd-warn) 16%, transparent); color: var(--tmd-warn);
+        border-radius: var(--tmd-radius-sm); font-weight: 700; font-size: 12.5px;
+      }
+      .tmd-swaps { margin-top: 12px; }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 
   setConfig(config) {
@@ -1772,6 +1910,11 @@ class TaskMateChildCard extends LitElement {
     if (!this.hass || !this.config) {
       return html``;
     }
+
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      : "classic";
+    if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
 
@@ -1839,9 +1982,7 @@ class TaskMateChildCard extends LitElement {
     const avatar = child.avatar || "mdi:account-circle";
 
     // Resolve badges sensor entity for this child
-    const childSlug = String(this.config.child_id).toLowerCase().replace(/[^a-z0-9]+/g, '_');
-    const badgesEntityId = `sensor.taskmate_badges_${childSlug}`;
-    const badgesEntity = this.hass.states[badgesEntityId];
+    const badgesEntity = this._resolveBadgesEntity(child);
     const earnedBadges = (badgesEntity?.attributes?.earned) || [];
     const showBadges = this.config.show_badges !== false && earnedBadges.length > 0;
 
@@ -1985,6 +2126,333 @@ class TaskMateChildCard extends LitElement {
         ` : ""}
       </ha-card>
     `;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+     Ported from docs/design/redesigns/frag/03-child.html.
+     Reuses the real chore data + the existing complete/undo handlers, and the
+     classic sub-renderers for timed chores, bonus subtasks, celebration,
+     confetti and photo capture — so sounds/timers/photo/swap/badges all run in
+     designed mode too. Honours every setConfig + editor option.
+  ══════════════════════════════════════════════════════════════════════ */
+
+  // The per-child badges sensor is entity-id'd from the child NAME
+  // ("TaskMate <Name> Badges" → sensor.taskmate_<name>_badges), NOT the
+  // child_id — so resolve it robustly or the badge strip never finds it.
+  _resolveBadgesEntity(child) {
+    if (!this.hass || !child) return null;
+    const slug = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    const nameSlug = slug(child.name);
+    const candidates = [
+      `sensor.taskmate_${nameSlug}_badges`,
+      `sensor.taskmate_badges_${slug(this.config.child_id)}`,
+    ];
+    for (const id of candidates) if (this.hass.states[id]) return this.hass.states[id];
+    if (nameSlug) {
+      for (const eid in this.hass.states) {
+        if (/^sensor\.taskmate_.*_badges$/.test(eid) && eid.includes(nameSlug)) return this.hass.states[eid];
+      }
+    }
+    return null;
+  }
+
+  _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+  _av(child, tone, size) {
+    const a = child.avatar || "";
+    const inner = a.startsWith("mdi:")
+      ? html`<ha-icon icon="${a}"></ha-icon>`
+      : a
+        ? html`<img src="${a}" alt="${child.name}">`
+        : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+  }
+
+  _choreEmoji(chore) {
+    const n = `${chore.name || ""} ${chore.icon || ""}`.toLowerCase();
+    const map = [
+      [/(teeth|brush|tooth)/, "🪥"], [/(bed|sleep)/, "🛏️"],
+      [/(dog|pet|cat|feed)/, "🐶"], [/(tidy|clean|sweep|broom)/, "🧹"],
+      [/(dish|wash|plate)/, "🍽️"], [/(trash|bin|rubbish|garbage)/, "🗑️"],
+      [/(homework|study|read|book)/, "📚"], [/(water|plant|garden)/, "🪴"],
+      [/(laundry|clothes|fold)/, "🧺"], [/(shower|bath)/, "🛁"],
+      [/(cook|food|kitchen)/, "🍳"], [/(toy|play)/, "🧸"],
+      [/(music|practice|piano)/, "🎵"], [/(car|wash)/, "🚗"],
+      [/(exercise|run|sport)/, "🏃"], [/(vacuum)/, "🧽"],
+    ];
+    for (const [re, e] of map) if (re.test(n)) return e;
+    return "⭐";
+  }
+
+  /** Mirror of _renderChoreCard's "completed today" detection, designed branch only. */
+  _isChoreDone(chore, child, todaysCompletions) {
+    const childCompletionsToday = (todaysCompletions || []).filter(
+      (comp) => comp.chore_id === chore.id
+        && (comp.child_id === child.id || comp.child_id === "__parent__")
+        && !comp.bonus_subtask_id
+    );
+    let count = childCompletionsToday.length;
+    const optimisticKey = `${chore.id}_${child.id}`;
+    const opt = this._optimisticCompletions && this._optimisticCompletions[optimisticKey];
+    if (opt) {
+      const actualTs = childCompletionsToday.map(c => c.completed_at ? new Date(c.completed_at).getTime() : 0);
+      const optTs = opt.timestamps || [opt.timestamp || Date.now()];
+      for (const t of optTs) {
+        if (!actualTs.some(a => Math.abs(a - t) < 2000)) count += 1;
+      }
+    }
+    const done = count >= (chore.daily_limit || 1);
+    return { done, completions: childCompletionsToday };
+  }
+
+  _renderDesigned(design) {
+    const entity = this.hass.states[this.config.entity];
+    const hd = this.config.header_color || "#ff7043";
+
+    const header = (title, sub, pill) => html`
+      <div class="tmd-hd">
+        ${pill || ""}
+        <span class="ic">🧒</span>
+        <span class="tt">${title}${sub ? html`<small>${sub}</small>` : ""}</span>
+      </div>`;
+
+    if (!entity) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${header(this._t("common.entity_not_found", { entity: this.config.entity }))}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t("common.entity_not_found", { entity: this.config.entity })}</div></div>
+      </ha-card>`;
+    }
+
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
+    const children = attrs.children || [];
+    const child = children.find(c => c.id === this.config.child_id) || (!this.config.child_id && children[0]);
+
+    if (!child) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${header(this._t("child.child_not_found", { child_id: this.config.child_id }))}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t("child.child_not_found", { child_id: this.config.child_id })}</div></div>
+      </ha-card>`;
+    }
+
+    const allChores = attrs.chores || [];
+    const childChores = this._filterAndSortChores(allChores, child);
+    const allCompletions = attrs.todays_completions || attrs.completions || [];
+    const todaysCompletions = this._filterCompletionsForToday(allCompletions);
+    const pointsIcon = attrs.points_icon || "mdi:star";
+
+    const dueDaysMode = this.config.due_days_mode || "hide";
+    const elapsedTimeMode = this.config.elapsed_time_mode || "dim";
+
+    // Annotate each chore with done-state + handlers, preserving the classic path's logic.
+    const rows = childChores.map((chore, i) => {
+      const { done, completions } = this._isChoreDone(chore, child, todaysCompletions);
+      const loading = !!this._loading[chore.id];
+      const onAct = () => {
+        if (loading) return;
+        if (done) this._handleUndo(chore, child, completions);
+        else this._handleComplete(chore, child);
+      };
+      // Mirror the classic chore card's dim states (due-days "dim" / elapsed "dim" /
+      // locked preview). "hide" modes are already filtered out upstream.
+      const notDueToday = chore._hasDueDays && !chore._isDueToday;
+      const dimmed = !done && (
+        (notDueToday && dueDaysMode === "dim") ||
+        (chore._isTimeElapsed && elapsedTimeMode === "dim") ||
+        chore._isLockedPreview === true
+      );
+      return {
+        chore, child, done, loading, onAct, index: i, dimmed,
+        tone: this._designTone(i),
+        emoji: this._choreEmoji(chore),
+        points: chore.effective_points ?? chore.points,
+        timed: chore.task_type === "timed",
+        mandatory: chore.mandatory === true,
+        photo: chore.require_photo === true,
+        pointsIcon,
+        todaysCompletions,
+      };
+    });
+
+    const remaining = rows.filter(r => !r.done).length;
+    const tone = this._designTone(children.indexOf(child));
+
+    // Badge strip (show_badges) — resolve the per-child badges sensor like classic.
+    const badgesEntity = this._resolveBadgesEntity(child);
+    const earnedBadges = (badgesEntity?.attributes?.earned) || [];
+    const showBadges = this.config.show_badges !== false && earnedBadges.length > 0;
+    const pendingPoints = child.pending_points || 0;
+    const countdown = this.config.show_countdown !== false ? this._getMidnightCountdown() : null;
+
+    const sectionLine = rows.length === 0 ? "" : html`
+      <div class="tmd-section">
+        <span>${this._getDynamicTitle()}</span>
+        ${countdown ? html`<span class="tmd-countdown ${countdown.soon ? "soon" : ""}">
+          <ha-icon icon="mdi:clock-outline"></ha-icon>${countdown.label}</span>` : ""}
+      </div>`;
+
+    const body =
+      design === "playroom" ? this._designPlayroom(child, rows, remaining, tone) :
+      design === "console"  ? this._designConsole(child, rows, remaining, tone) :
+                              this._designCleanpro(child, rows, remaining, tone);
+
+    return html`<ha-card class="tmd" style="--hd:${hd}">
+      ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints, pointsIcon)}
+      <div class="tmd-bd">
+        ${attrs.vacation_active ? html`
+          <div class="tmd-vacation">
+            <ha-icon icon="mdi:palm-tree"></ha-icon>
+            <span>${this._t("child.on_vacation")}${attrs.vacation_name ? ` · ${attrs.vacation_name}` : ""}</span>
+          </div>` : ""}
+        ${showBadges ? html`
+          <div class="tmd-badges" @click=${() => this._openBadgesView()} title="${this._t("badges.label")}">
+            <span class="lbl">${this._t("badges.label")}</span>
+            ${earnedBadges.slice(0, 5).map(b => html`
+              <div class="tmd-badge-mini ${this._justEarnedBadge && String(this._justEarnedBadge) === String(b.id) ? "just-earned" : ""}"
+                style="--t:${this._tierColor(b.tier)}">
+                <ha-icon icon="${b.icon || "mdi:medal"}"></ha-icon>
+              </div>`)}
+            ${earnedBadges.length > 5 ? html`<span class="more">+${earnedBadges.length - 5} →</span>` : ""}
+          </div>` : ""}
+        ${sectionLine}
+        ${body}
+        ${this._renderSwappable(allChores, child, pointsIcon)}
+      </div>
+      ${this._celebrating ? this._renderCelebration() : ""}
+      ${this._confetti.length > 0 ? this._renderConfetti() : ""}
+      ${this._renderPhotoCapture()}
+      <input type="file" id="tm-photo-input" accept="image/*" capture="environment"
+             style="display:none" @change="${this._onPhotoSelected}">
+    </ha-card>`;
+  }
+
+  /** Designed header: avatar/title, remaining pill, pending-points chip. */
+  _designHeaderFull(child, design, remaining, total, tone, pendingPoints, pointsIcon) {
+    const title = design === "console"
+      ? `${(child.name || "").toUpperCase()} · ${this._t("child.todays_chores").toUpperCase()}`
+      : this._t("points_display.single_title", { name: child.name });
+    const sub = design === "console"
+      ? (child.level ? `${this._t("child.level_label", { level: child.level })} · ${remaining} ACTIVE` : `${remaining} ACTIVE`)
+      : design === "cleanpro" ? `${remaining} / ${total}`
+      : `${remaining} · ${this._t("child.todays_chores")}`;
+    return html`
+      <div class="tmd-hd">
+        ${this._av(child, tone, 34)}
+        <span class="tt">${title}<small>${sub}</small></span>
+        ${remaining === 0 && total > 0 ? html`<span class="pill">🎉</span>` : ""}
+        ${pendingPoints > 0 ? html`<span class="tmd-pending">
+          <ha-icon icon="mdi:timer-sand"></ha-icon>+${pendingPoints}</span>` : ""}
+      </div>`;
+  }
+
+  /** Shared meta tags (mandatory / photo / description) for a designed chore row. */
+  _designChoreMeta(r) {
+    const showDesc = this.config.show_description === true && r.chore.description;
+    return html`
+      ${r.mandatory || r.photo ? html`
+        <div class="tmd-meta">
+          ${r.mandatory ? html`<span class="tmd-tag mandatory">⚠ ${this._t("child.mandatory")}</span>` : ""}
+          ${r.photo ? html`<span class="tmd-tag photo">📷 ${this._t("child.photo_needed")}</span>` : ""}
+        </div>` : ""}
+      ${showDesc ? html`<div class="tmd-desc">${r.chore.description}</div>` : ""}`;
+  }
+
+  _designHeader(child, tt, sub, tone, pillText) {
+    return html`
+      <div class="tmd-hd">
+        ${this._av(child, tone, 34)}
+        <span class="tt">${tt}${sub ? html`<small>${sub}</small>` : ""}</span>
+        ${pillText ? html`<span class="pill">${pillText}</span>` : ""}
+      </div>`;
+  }
+
+  _designDoneBtn(r, label, cls) {
+    return html`<button class="btn ${cls || ""}"
+      ?disabled=${r.loading}
+      @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
+  }
+
+  // Done-state chip is CLICKABLE so a completed chore can be undone (parity
+  // with the classic card, where tapping a done chore undoes it). r.onAct()
+  // calls _handleUndo when the chore is done.
+  _designUndoChip(r, label, cls) {
+    return html`<button class="chip ${cls || "done-chip"} tmd-undochip"
+      ?disabled=${r.loading}
+      title="${this._t("child.tap_to_undo")}"
+      @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
+  }
+
+  /** Render a timed chore inside designed mode, reusing the classic timed card +
+   *  its full start/pause/stop/celebration/sound/cap logic. */
+  _designTimed(r) {
+    return this._renderTimedChoreCard(r.chore, r.child, r.pointsIcon, r.todaysCompletions, r.index);
+  }
+
+  /** Bonus subtasks for a designed chore (reuses classic renderer + handlers). */
+  _designBonus(r) {
+    return this._renderBonusSubtasks(r.chore, r.child, r.pointsIcon, r.todaysCompletions);
+  }
+
+  _designPlayroom(child, rows, remaining, tone) {
+    if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
+    return html`<div class="tmd-chores">
+      ${rows.map(r => r.timed ? this._designTimed(r) : html`
+        <div class="tmd-chore ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""}" style="--ac:${r.tone}">
+          <div class="num-badge" style="${r.done ? "--ac:var(--tmd-good)" : ""}">${r.done ? "✓" : r.index + 1}</div>
+          <span class="ch-emoji">${r.emoji}</span>
+          <div class="ch-mid">
+            <div class="ch-name">${r.chore.name}</div>
+            ${r.done ? "" : html`<div class="chip soft" style="margin-top:3px">+${r.points} ⭐</div>`}
+            ${this._designChoreMeta(r)}
+          </div>
+          ${r.done
+            ? this._designUndoChip(r, html`${this._t("child.done") || "Done"}! 🎉`)
+            : this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "DONE"}` : (this._t("child.done") || "DONE"), "good")}
+        </div>
+        ${this._designBonus(r)}`)}
+    </div>`;
+  }
+
+  _designConsole(child, rows, remaining, tone) {
+    if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
+    return html`<div class="grid">
+      ${rows.map(r => r.timed ? this._designTimed(r) : html`
+        <div class="tmd-quest ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""}" style="--ac:${r.tone}">
+          <div class="num q-num" style="${r.done ? "color:var(--tmd-good)" : ""}">${r.done ? "✓" : String(r.index + 1).padStart(2, "0")}</div>
+          <span class="q-emoji">${r.emoji}</span>
+          <div class="q-mid">
+            <div class="q-name">${r.chore.name}</div>
+            ${r.done
+              ? html`<div class="num q-cleared">CLEARED</div>`
+              : html`<div class="num q-xp">+${r.points} XP</div>`}
+            ${this._designChoreMeta(r)}
+          </div>
+          ${r.done
+            ? this._designUndoChip(r, html`↩`, "q-undo")
+            : this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "CLAIM"}` : (this._t("child.done") || "CLAIM"))}
+        </div>
+        ${this._designBonus(r)}`)}
+    </div>`;
+  }
+
+  _designCleanpro(child, rows, remaining, tone) {
+    if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
+    return html`<div class="tmd-checklist">
+      ${rows.map(r => r.timed ? this._designTimed(r) : html`
+        <div class="tmd-check ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""}" style="--ac:${r.tone}">
+          <div class="c-num" style="${r.done ? "--ac:var(--tmd-good)" : ""}">${r.done ? "✓" : r.index + 1}</div>
+          <span class="c-emoji">${r.emoji}</span>
+          <div class="c-mid">
+            <div class="c-name">${r.chore.name}</div>
+            ${this._designChoreMeta(r)}
+          </div>
+          ${r.done
+            ? this._designUndoChip(r, this._t("child.done") || "Completed", "c-done")
+            : html`<span class="chip c-pts">+${r.points}</span>
+                ${this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "Done"}` : (this._t("child.done") || "Done"), "sm")}`}
+        </div>
+        ${this._designBonus(r)}`)}
+    </div>`;
   }
 
   _renderSwappable(allChores, child, pointsIcon) {
@@ -3532,6 +4000,17 @@ class TaskMateChildCardEditor extends LitElement {
         },
       },
       {
+        name: 'card_design',
+        selector: {
+          select: {
+            options: window.__taskmate_design
+              ? window.__taskmate_design.editorOptions(this._t.bind(this))
+              : [{ value: 'global', label: 'Use global default' }],
+            mode: 'dropdown',
+          },
+        },
+      },
+      {
         name: 'due_days_mode',
         selector: {
           select: {
@@ -3581,6 +4060,7 @@ class TaskMateChildCardEditor extends LitElement {
       entity: this._t('common.editor.overview_entity'),
       child_id: this._t('child.editor.child'),
       time_category: this._t('child.editor.time_category'),
+      card_design: this._t('common.design.field_label'),
       due_days_mode: this._t('child.editor.chores_not_due_today'),
       recurrence_done_mode: this._t('child.editor.recurring_when_completed'),
       elapsed_time_mode: this._t('child.editor.missed_time_chores'),
@@ -3610,6 +4090,7 @@ class TaskMateChildCardEditor extends LitElement {
       entity: this.config.entity || '',
       child_id: this.config.child_id || '',
       time_category: this.config.time_category || 'morning',
+      card_design: this.config.card_design || 'global',
       due_days_mode: this.config.due_days_mode || 'hide',
       recurrence_done_mode: this.config.recurrence_done_mode || 'dim',
       elapsed_time_mode: this.config.elapsed_time_mode || 'dim',
@@ -3673,6 +4154,8 @@ class TaskMateChildCardEditor extends LitElement {
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',
       };
       if (value === '' || value === null || value === undefined) {
+        delete newConfig[key];
+      } else if (key === 'card_design' && value === 'global') {
         delete newConfig[key];
       } else if (defaults[key] !== undefined && value === defaults[key]) {
         delete newConfig[key];
