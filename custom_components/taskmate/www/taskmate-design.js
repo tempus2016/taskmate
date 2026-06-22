@@ -39,12 +39,12 @@
   --tmd-c1:#FF6B6B;--tmd-c2:#4ECDC4;--tmd-c3:#FFB020;--tmd-c4:#6C8DFF;--tmd-c5:#C77DFF;--tmd-c6:#45D483;
 }
 :host([data-tm-design="console"]),[data-tm-design="console"]{
-  --tmd-bg:#0E1320;--tmd-surface:#161D2E;--tmd-surface-2:#1E2740;--tmd-border:#2A3550;
-  --tmd-text:#EAF0FF;--tmd-dim:#8A97B8;
-  --tmd-accent:#3DDBFF;--tmd-accent2:#FF4D9D;--tmd-good:#4BE08B;--tmd-warn:#FFCB45;--tmd-bad:#FF5A7A;--tmd-gold:#FFCB45;
-  --tmd-radius:12px;--tmd-radius-sm:8px;--tmd-shadow:0 10px 28px rgba(0,0,0,.5);--tmd-hd-text:#06101c;
+  --tmd-bg:#EEF2F8;--tmd-surface:#FFFFFF;--tmd-surface-2:#E9EEF5;--tmd-border:#D3DCE7;
+  --tmd-text:#0F1B2D;--tmd-dim:#5C6B80;
+  --tmd-accent:#0E9BC4;--tmd-accent2:#E0357F;--tmd-good:#1AA06A;--tmd-warn:#C98800;--tmd-bad:#E0476A;--tmd-gold:#C98800;
+  --tmd-radius:12px;--tmd-radius-sm:8px;--tmd-shadow:0 6px 18px rgba(18,32,52,.12);--tmd-hd-text:#fff;
   --tmd-font-display:"Space Grotesk",sans-serif;--tmd-font-body:"Inter",sans-serif;--tmd-font-mono:"JetBrains Mono",monospace;
-  --tmd-c1:#3DDBFF;--tmd-c2:#FF4D9D;--tmd-c3:#FFCB45;--tmd-c4:#7C5CFF;--tmd-c5:#4BE08B;--tmd-c6:#FF8A3D;
+  --tmd-c1:#0E9BC4;--tmd-c2:#E0357F;--tmd-c3:#C98800;--tmd-c4:#6A4BE0;--tmd-c5:#1AA06A;--tmd-c6:#E0703D;
 }
 :host([data-tm-design="cleanpro"]),[data-tm-design="cleanpro"]{
   --tmd-bg:#F6F7F9;--tmd-surface:#FFFFFF;--tmd-surface-2:#F1F3F6;--tmd-border:#E5E8EC;
@@ -56,10 +56,16 @@
 }
 
 /* ── Dark-mode variants ──────────────────────────────────────────────────
-   Cards stamp data-tm-dark on the host when HA is in dark mode. Console is a
-   dark HUD already, so it needs no override. Playroom (warm) and Clean Pro
-   (neutral) get darkened surfaces + lifted text; accents/child-colours stay so
-   the identity is preserved. */
+   Cards stamp data-tm-dark on the host when HA is in dark mode. Each design has
+   a light base (above) and a dark override here, so all three follow HA's
+   light/dark setting. */
+:host([data-tm-design="console"][data-tm-dark]),[data-tm-design="console"][data-tm-dark]{
+  --tmd-bg:#0E1320;--tmd-surface:#161D2E;--tmd-surface-2:#1E2740;--tmd-border:#2A3550;
+  --tmd-text:#EAF0FF;--tmd-dim:#8A97B8;
+  --tmd-accent:#3DDBFF;--tmd-accent2:#FF4D9D;--tmd-good:#4BE08B;--tmd-warn:#FFCB45;--tmd-bad:#FF5A7A;--tmd-gold:#FFCB45;
+  --tmd-shadow:0 10px 28px rgba(0,0,0,.5);
+  --tmd-c1:#3DDBFF;--tmd-c2:#FF4D9D;--tmd-c3:#FFCB45;--tmd-c4:#7C5CFF;--tmd-c5:#4BE08B;--tmd-c6:#FF8A3D;
+}
 :host([data-tm-design="playroom"][data-tm-dark]),[data-tm-design="playroom"][data-tm-dark]{
   --tmd-bg:#241A2B;--tmd-surface:#2C2235;--tmd-surface-2:#382B43;--tmd-border:#473754;
   --tmd-text:#F6ECEF;--tmd-dim:#B6A3B4;--tmd-accent:#A88BFF;
@@ -85,7 +91,7 @@
 .tmd-hd .cnt{margin-left:auto;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--tmd-bad);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center}
 .tmd-bd{padding:15px}
 .tmd-empty{text-align:center;padding:26px 12px;color:var(--tmd-dim);font-size:.9rem}
-.av{width:var(--av,42px);height:var(--av,42px);border-radius:50%;flex:none;display:grid;place-items:center;font-family:var(--tmd-font-display);font-weight:800;color:#fff;font-size:calc(var(--av,42px)*.4);background:var(--ac,var(--tmd-accent));box-shadow:0 2px 6px rgba(0,0,0,.18);overflow:hidden}
+.av{width:var(--av,42px);height:var(--av,42px);border-radius:50%;flex:none;display:grid;place-items:center;font-family:var(--tmd-font-display);font-weight:800;color:#fff;font-size:calc(var(--av,42px)*.4);line-height:1;text-align:center;background:var(--ac,var(--tmd-accent));box-shadow:0 2px 6px rgba(0,0,0,.18);overflow:hidden}
 :host([data-tm-design="console"]) .av{box-shadow:0 0 0 1px color-mix(in srgb,var(--ac,var(--tmd-accent)) 70%,transparent),0 0 14px color-mix(in srgb,var(--ac,var(--tmd-accent)) 35%,transparent)}
 .av ha-icon{--mdc-icon-size:calc(var(--av,42px)*.55);color:#fff}
 .av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
@@ -95,14 +101,13 @@
 .big{font-family:var(--tmd-font-display);font-weight:800;line-height:1}
 .bar{height:10px;border-radius:999px;background:var(--tmd-surface-2);overflow:hidden;border:1px solid var(--tmd-border)}
 .bar>i{display:block;height:100%;border-radius:999px;background:var(--tmd-accent)}
-:host([data-tm-design="console"]) .bar{background:#0b1424}
 :host([data-tm-design="console"]) .bar>i{background:linear-gradient(90deg,var(--tmd-accent),var(--tmd-accent2));box-shadow:0 0 12px color-mix(in srgb,var(--tmd-accent) 60%,transparent)}
 .row{display:flex;align-items:center;gap:10px}
 .muted{color:var(--tmd-dim)}
 .divide{height:1px;background:var(--tmd-border);margin:12px 0}
 .lead{color:var(--tmd-accent)}
 .lead-dot{color:var(--tmd-gold)}
-.btn{font:inherit;font-family:var(--tmd-font-display);font-weight:800;font-size:13.5px;border:0;cursor:pointer;padding:9px 14px;border-radius:var(--tmd-radius-sm);background:var(--tmd-accent);color:#fff;display:inline-flex;align-items:center;gap:6px}
+.btn{font:inherit;font-family:var(--tmd-font-display);font-weight:800;font-size:13.5px;line-height:1;border:0;cursor:pointer;padding:9px 14px;border-radius:var(--tmd-radius-sm);background:var(--tmd-accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 :host([data-tm-design="console"]) .btn{color:#06101c;background:linear-gradient(135deg,var(--tmd-accent),color-mix(in srgb,var(--tmd-accent) 60%,var(--tmd-accent2)));box-shadow:0 0 14px color-mix(in srgb,var(--tmd-accent) 45%,transparent)}
 .btn.ghost{background:var(--tmd-surface-2);color:var(--tmd-text);border:1px solid var(--tmd-border)}
 :host([data-tm-design="console"]) .btn.ghost{box-shadow:none}
@@ -169,9 +174,41 @@
     return _globalDesign(hass, entity);
   }
 
-  /** Is Home Assistant currently in dark mode? */
-  function isDark(hass) {
-    return !!(hass && hass.themes && hass.themes.darkMode);
+  // Relative luminance (0..1) of a CSS colour string, or null if unparseable.
+  function _luminance(c) {
+    if (!c) return null;
+    c = c.trim();
+    let r, g, b;
+    let m = c.match(/^#([0-9a-f]{3})$/i);
+    if (m) { const h = m[1]; r = parseInt(h[0] + h[0], 16); g = parseInt(h[1] + h[1], 16); b = parseInt(h[2] + h[2], 16); }
+    else if ((m = c.match(/^#([0-9a-f]{6})$/i))) { r = parseInt(m[1].slice(0, 2), 16); g = parseInt(m[1].slice(2, 4), 16); b = parseInt(m[1].slice(4, 6), 16); }
+    else if ((m = c.match(/rgba?\(\s*([\d.]+)[ ,]+([\d.]+)[ ,]+([\d.]+)/i))) { r = +m[1]; g = +m[2]; b = +m[3]; }
+    else return null;
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  }
+
+  /**
+   * Is the card currently in dark mode? Order:
+   * 1. an explicitly-selected dark theme (hass.themes.darkMode)
+   * 2. the ACTUAL rendered background brightness (covers the default theme
+   *    following the OS, custom themes, etc.) read from the card's own scope
+   * 3. the OS preference as a last resort.
+   * `el` is the card host; its inherited --card/--primary-background-color
+   * reflects whatever theme is live around it.
+   */
+  function isDark(hass, el) {
+    if (hass && hass.themes && hass.themes.darkMode) return true;
+    if (el && typeof getComputedStyle === "function") {
+      try {
+        const cs = getComputedStyle(el);
+        const bg = (cs.getPropertyValue("--card-background-color")
+          || cs.getPropertyValue("--primary-background-color")
+          || cs.backgroundColor || "").trim();
+        const lum = _luminance(bg);
+        if (lum !== null) return lum < 0.5;
+      } catch (_e) { /* ignore */ }
+    }
+    return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
   }
 
   /**
@@ -183,7 +220,7 @@
     const design = resolve(hass, config, entity);
     if (el) {
       el.setAttribute("data-tm-design", design);
-      el.toggleAttribute("data-tm-dark", design !== "classic" && isDark(hass));
+      el.toggleAttribute("data-tm-dark", design !== "classic" && isDark(hass, el));
     }
     return design;
   }

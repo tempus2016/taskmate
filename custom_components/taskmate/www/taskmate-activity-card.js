@@ -426,20 +426,21 @@ class TaskMateActivityCard extends LitElement {
       .act-line { font-weight: 700; font-size: 13.5px; line-height: 1.35; }
       .act-line .reason { font-weight: 400; color: var(--tmd-dim); }
       .act-ago { font-size: 11.5px; }
+      .act-rel { opacity: 0.8; }
 
       /* Playroom — bubbly nodes */
       .act-pl { gap: 11px; }
-      .act-pl-row { align-items: flex-start; gap: 11px; }
+      .act-pl-row { gap: 11px; }
       .act-pl-av { font-size: 18px; }
       .act-pl-bub { flex: 1; min-width: 0; background: var(--tmd-surface-2); border-radius: 16px; padding: 10px 12px; }
-      .act-pl-foot { justify-content: space-between; margin-top: 5px; }
+      .act-pl-foot { justify-content: space-between; margin-top: 5px; gap: 8px; }
 
       /* Console — log feel, mono timestamps */
       .act-cn { gap: 0; }
-      .act-cn-row { gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--tmd-border); }
+      .act-cn-row { gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--tmd-border); }
       .act-cn-row:last-child { border-bottom: none; }
       .act-cn-mid { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; }
-      .act-cn-time { font-size: 11px; flex-shrink: 0; }
+      .act-cn-time { font-size: 11px; flex-shrink: 0; text-align: right; line-height: 1.3; white-space: nowrap; }
 
       /* Clean Pro — connecting rail */
       .act-cp-rail { position: relative; padding-left: 26px; }
@@ -448,14 +449,15 @@ class TaskMateActivityCard extends LitElement {
       .act-cp-node { position: relative; }
       .act-cp-dot { position: absolute; left: -26px; top: 0; width: 22px; height: 22px; border-radius: 50%;
         background: color-mix(in srgb, var(--ac, var(--tmd-accent)) 18%, transparent); color: var(--ac, var(--tmd-accent));
-        display: grid; place-items: center; font-size: 11px; box-shadow: 0 0 0 3px var(--tmd-surface); }
+        display: grid; place-items: center; font-size: 11px; line-height: 1; box-shadow: 0 0 0 3px var(--tmd-surface); }
       .act-cp-head { justify-content: space-between; align-items: flex-start; gap: 10px; }
-      /* Coloured event stripe (honours accent_stripes) */
+      /* Coloured event stripe (honours accent_stripes) — vertically centred with the row */
       .act-stripe { width: 4px; border-radius: 4px; flex: none; align-self: stretch; }
-      .act-pl-row, .act-cn-row { align-items: stretch; }
-      .act-pl-row > .av, .act-cn-row > .av { align-self: center; }
-      /* Vertical scroll (parity with classic max-height list) */
-      .act-pl, .act-cn, .act-cp-rail { max-height: 360px; overflow-y: auto; }
+      .act-pl-row, .act-cn-row { align-items: center; }
+      /* Vertical scroll (parity with classic) — extend to the card edge so the
+         scrollbar sits at the edge, not floating inset by the body padding. */
+      .act-pl, .act-cn, .act-cp-rail { max-height: 360px; overflow-y: auto;
+        margin-right: -15px; padding-right: 8px; }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
       ? window.__taskmate_design.styles() : null;
@@ -1002,8 +1004,13 @@ class TaskMateActivityCard extends LitElement {
     </ha-card>`;
   }
 
-  // ON = relative "time ago", OFF = absolute time (matches the editor hint).
-  _timeLabel(r) { return this.config.show_relative_time !== false ? r.ago : r.time; }
+  // Always show the absolute time; when show_relative_time is on, show the
+  // relative "x ago" ALONGSIDE it (matches the classic activity-meta row).
+  _timeMeta(r) {
+    return this.config.show_relative_time !== false
+      ? html`${r.time} <span class="act-rel">· ${r.ago}</span>`
+      : html`${r.time}`;
+  }
   _stripe(r) {
     return this.config.accent_stripes !== false
       ? html`<div class="act-stripe" style="background:var(--tmd-${r.tone})"></div>` : '';
@@ -1019,7 +1026,7 @@ class TaskMateActivityCard extends LitElement {
             <div class="act-pl-bub">
               <div class="act-line">${r.text} <span class="num" style="color:var(--tmd-${r.ptsClass})">${r.sign}${r.pts}</span></div>
               <div class="row act-pl-foot">
-                <span class="muted act-ago">${this._timeLabel(r)}</span>
+                <span class="muted act-ago">${this._timeMeta(r)}</span>
                 ${this._designUndoBtn(r.undo, this._t('activity.undo'))}
               </div>
             </div>
@@ -1036,7 +1043,7 @@ class TaskMateActivityCard extends LitElement {
             <div class="av" style="--av:26px;--ac:var(--tmd-${r.tone})">${r.emoji}</div>
             <div class="act-cn-mid">${r.plain} <span class="num" style="color:var(--tmd-${r.ptsClass})">${r.sign}${r.pts}</span></div>
             ${this._designUndoBtn(r.undo, this._t('activity.undo'))}
-            <div class="num muted act-cn-time">${this._timeLabel(r)}</div>
+            <div class="num muted act-cn-time">${this._timeMeta(r)}</div>
           </div>`)}
       </div>`;
   }
@@ -1055,7 +1062,7 @@ class TaskMateActivityCard extends LitElement {
               <div class="row act-cp-head">
                 <div>
                   <div class="act-line">${r.text} <span style="color:var(--tmd-${r.ptsClass});font-weight:700">${r.sign}${r.pts}</span></div>
-                  <div class="muted act-ago">${this._timeLabel(r)}</div>
+                  <div class="muted act-ago">${this._timeMeta(r)}</div>
                 </div>
                 ${this._designUndoBtn(r.undo, this._t('activity.undo'))}
               </div>
