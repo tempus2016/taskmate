@@ -403,9 +403,8 @@ class TaskMateCalendarCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];

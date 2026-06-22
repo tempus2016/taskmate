@@ -323,8 +323,20 @@ class TaskMateOverviewCard extends LitElement {
       .ov-alert .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tmd-bad); flex: none; }
 
       /* Overview — children grid */
-      .ov-kids { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-      .ov-kid { text-align: center; padding: 11px; border-radius: 16px; background: var(--tmd-surface-2); }
+      .ov-kids { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-height: 360px; overflow-y: auto; }
+      .ov-kid { text-align: center; padding: 11px; border-radius: 16px; background: var(--tmd-surface-2); position: relative; }
+      .ov-kid.tm-clickable { cursor: pointer; }
+      .ov-kid-flags { position: absolute; top: 6px; right: 7px; display: flex; gap: 4px; }
+      .ov-kid-flag { font-size: 9.5px; font-weight: 800; padding: 1px 5px; border-radius: 999px; line-height: 1.5; }
+      .ov-kid-flag.pend { background: color-mix(in srgb, var(--tmd-warn) 22%, transparent); color: var(--tmd-warn); }
+      .ov-kid-flag.wait { background: color-mix(in srgb, var(--tmd-bad) 20%, transparent); color: var(--tmd-bad); }
+      .ov-behalf { margin-top: 10px; text-align: left; background: var(--tmd-surface-2); border-radius: var(--tmd-radius-sm); padding: 9px 11px; }
+      .ov-behalf-hdr { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--tmd-dim); margin-bottom: 6px; }
+      .ov-behalf-done { font-size: 12px; font-style: italic; color: var(--tmd-dim); padding: 3px 0; }
+      .ov-behalf-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+      .ov-behalf-row + .ov-behalf-row { border-top: 1px solid var(--tmd-border); }
+      .ov-behalf-name { flex: 1; font-size: 12.5px; font-weight: 600; min-width: 0; }
+      .ov-behalf .btn.good.sm { padding: 4px 9px; }
       .ov-kid.cn { border: 1px solid var(--tmd-border); border-radius: 10px; }
       .ov-kid.cp { border: 1px solid var(--tmd-border); border-radius: var(--tmd-radius-sm); }
       .ov-kid .pts { font-family: var(--tmd-font-display); font-weight: 800; font-size: 20px; line-height: 1; color: var(--tmd-accent); }
@@ -381,9 +393,8 @@ class TaskMateOverviewCard extends LitElement {
     }
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") return this._renderDesigned(design, entity);
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
@@ -482,23 +493,7 @@ class TaskMateOverviewCard extends LitElement {
 
   /** Per-child today progress, mirroring the classic tile filtering exactly. */
   _childProgress(child, chores, completions, attrs) {
-    const todayDow = attrs.today_day_of_week ||
-      new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-    const availability = attrs.chore_availability || {};
-    const childChores = chores.filter(c => {
-      const at = Array.isArray(c.assigned_to) ? c.assigned_to.map(String) : [];
-      const assigned = at.length === 0 || at.includes(String(child.id));
-      if (!assigned) return false;
-      if (c.schedule_mode !== 'recurring') {
-        const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
-        if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
-      }
-      if (c.schedule_mode === 'recurring') {
-        const perChild = availability[c.id];
-        if (perChild && perChild[child.id] === false) return false;
-      }
-      return true;
-    });
+    const childChores = this._childChoresToday(child, chores, attrs);
     const childChoreIds = new Set(childChores.map(c => c.id));
     const childCompletions = completions.filter(c => c.child_id === child.id);
     const completed = childCompletions.filter(c => c.approved && childChoreIds.has(c.chore_id)).length;
@@ -529,6 +524,8 @@ class TaskMateOverviewCard extends LitElement {
       pendingApprovals = (attrs.chore_completions || completions.filter(c => !c.approved)).length;
     }
 
+    const isAdmin = !!(this.hass && this.hass.user && this.hass.user.is_admin);
+
     // Aggregate today's progress across all children
     let doneTotal = 0;
     let choreTotal = 0;
@@ -536,20 +533,55 @@ class TaskMateOverviewCard extends LitElement {
       const p = this._childProgress(child, chores, completions, attrs);
       doneTotal += p.completed;
       choreTotal += p.total;
-      return { child, points: child.points || 0, pct: p.pct, tone: this._designTone(i) };
+      // Outstanding chores for the admin "complete on behalf" affordance (mirrors classic tile).
+      const childChores = this._childChoresToday(child, chores, attrs);
+      const outstanding = childChores.filter(c => {
+        const doneToday = completions.filter(
+          x => x.child_id === child.id && x.chore_id === c.id && !x.bonus_subtask_id
+        ).length;
+        return doneToday < (c.daily_limit || 1);
+      });
+      const childPending = completions.filter(c => c.child_id === child.id && !c.approved).length;
+      return {
+        child, points: child.points || 0, pct: p.pct, tone: this._designTone(i),
+        pendingPoints: child.pending_points || 0, childPending, outstanding,
+      };
     });
     const overallPct = choreTotal > 0 ? Math.round((doneTotal / choreTotal) * 100) : 0;
+    const pointsIcon = attrs.points_icon || "mdi:star";
 
     return html`<ha-card class="tmd" style="--hd:${hd}">
       ${this._ovHeader(design, pendingApprovals)}
       <div class="tmd-bd">
         ${pendingApprovals > 0 ? this._ovAlert(design, pendingApprovals) : ""}
         <div class="ov-kids">
-          ${kids.map((k) => this._ovKid(design, k))}
+          ${kids.map((k) => this._ovKid(design, k, isAdmin, pointsIcon))}
         </div>
+        ${isAdmin ? kids.filter(k => this._expanded[k.child.id]).map(k => this._ovBehalf(k, pointsIcon)) : ""}
         ${this._ovToday(design, doneTotal, choreTotal, overallPct)}
       </div>
     </ha-card>`;
+  }
+
+  /** Chores assigned to + due/available for a child today — shared by classic tile and designed kid. */
+  _childChoresToday(child, chores, attrs) {
+    const todayDow = attrs.today_day_of_week ||
+      new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    const availability = attrs.chore_availability || {};
+    return chores.filter(c => {
+      const at = Array.isArray(c.assigned_to) ? c.assigned_to.map(String) : [];
+      const assigned = at.length === 0 || at.includes(String(child.id));
+      if (!assigned) return false;
+      if (c.schedule_mode !== 'recurring') {
+        const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
+        if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
+      }
+      if (c.schedule_mode === 'recurring') {
+        const perChild = availability[c.id];
+        if (perChild && perChild[child.id] === false) return false;
+      }
+      return true;
+    });
   }
 
   _ovHeader(design, pending) {
@@ -598,15 +630,45 @@ class TaskMateOverviewCard extends LitElement {
       </div>`;
   }
 
-  _ovKid(design, k) {
+  _ovKid(design, k, isAdmin, pointsIcon) {
     const cls = design === "console" ? "cn" : design === "cleanpro" ? "cp" : "";
     const nameUpper = design === "console" ? `${k.child.name.toUpperCase()} · ${k.pct}%` : k.child.name;
+    const isOpen = !!this._expanded[k.child.id];
+    const expandable = isAdmin;
     return html`
-      <div class="ov-kid ${cls}" style="--ac:${k.tone}">
+      <div class="ov-kid ${cls} ${expandable ? 'tm-clickable' : ''}" style="--ac:${k.tone}"
+        @click="${expandable ? () => { this._expanded = { ...this._expanded, [k.child.id]: !isOpen }; this.requestUpdate(); } : null}">
+        ${(k.pendingPoints > 0 || k.childPending > 0) ? html`
+          <div class="ov-kid-flags">
+            ${k.pendingPoints > 0 ? html`<span class="ov-kid-flag pend">⏳+${k.pendingPoints}</span>` : ""}
+            ${k.childPending > 0 ? html`<span class="ov-kid-flag wait">${k.childPending}</span>` : ""}
+          </div>` : ""}
         ${this._av(k.child, k.tone, design === "console" ? 34 : design === "cleanpro" ? 38 : 42)}
         <div class="pts ${design === "console" ? "num" : ""}">${k.points.toLocaleString()}</div>
         <div class="nm ${cls}">${nameUpper}</div>
         <div class="bar"><i style="width:${k.pct}%"></i></div>
+      </div>`;
+  }
+
+  /** Admin "complete on behalf" panel — same handler as the classic tile. */
+  _ovBehalf(k, pointsIcon) {
+    return html`
+      <div class="ov-behalf" @click="${(e) => e.stopPropagation()}">
+        <div class="ov-behalf-hdr">${this._t('common.complete_on_behalf_heading')} · ${k.child.name}</div>
+        ${k.outstanding.length === 0 ? html`
+          <div class="ov-behalf-done">${this._t('common.complete_on_behalf_all_done')}</div>
+        ` : k.outstanding.map(c => {
+          const key = `behalf_${k.child.id}_${c.id}`;
+          const loading = !!(this._loading && this._loading[key]);
+          return html`
+            <div class="ov-behalf-row">
+              <span class="ov-behalf-name">${c.name}</span>
+              <span class="muted num">${c.points}</span>
+              <button class="btn good sm" ?disabled="${loading}"
+                title="${this._t('common.complete_on_behalf_tooltip', { name: k.child.name })}"
+                @click="${() => this._handleCompleteOnBehalf(c.id, k.child.id)}">✓</button>
+            </div>`;
+        })}
       </div>`;
   }
 

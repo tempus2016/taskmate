@@ -421,6 +421,9 @@ class TaskMateBonusesCard extends LitElement {
       .d-add { width: 100%; justify-content: center; }
       .d-edit-actions { display: flex; gap: 6px; flex: none; }
       .d-foot { text-align: center; font-size: 12px; color: var(--tmd-dim); padding-top: 8px; }
+
+      /* Scrollable list (parity with a long bonus list) */
+      .d-scroll { max-height: 360px; overflow-y: auto; }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
       ? window.__taskmate_design.styles() : null;
@@ -710,9 +713,8 @@ class TaskMateBonusesCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity || "sensor.taskmate_overview")
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity || "sensor.taskmate_overview")
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") return this._renderDesigned(design);
 
     const bonuses = this._getBonuses();
@@ -950,8 +952,8 @@ class TaskMateBonusesCard extends LitElement {
       </div>`;
 
     const rows = design === "playroom"
-      ? html`<div class="d-pl-list">${visible.map(b => this._renderDesignedRow(b, design))}</div>`
-      : html`${visible.map(b => this._renderDesignedRow(b, design))}`;
+      ? html`<div class="d-scroll d-pl-list">${visible.map(b => this._renderDesignedRow(b, design))}</div>`
+      : html`<div class="d-scroll">${visible.map(b => this._renderDesignedRow(b, design))}</div>`;
 
     const body = html`
       ${this._renderDesignTabs(design)}

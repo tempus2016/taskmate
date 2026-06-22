@@ -274,9 +274,8 @@ class TaskMateStreakCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
@@ -554,6 +553,22 @@ class TaskMateStreakCard extends LitElement {
     return achievements.filter(a => a.earned);
   }
 
+  // Classic shows earned badges PLUS the next locked milestone. _getAchievements
+  // already returns exactly that set, so the designed badge rows render it whole,
+  // dimming the locked entry to match the classic .badge.locked treatment.
+  _designBadges(achievements, wrapClass, locked) {
+    if (!achievements.length) return "";
+    return html`
+      <div class="${wrapClass}">
+        ${achievements.map((a) => html`
+          <span class="chip ${a.earned ? (locked.soft ? "soft" : "") : "locked"}"
+            title="${a.description}"
+            style="${a.earned ? "" : "opacity:0.45;filter:grayscale(1)"}">
+            ${locked.dot && a.earned ? html`<span style="color:var(--tmd-accent)">●</span> ` : html`${a.emoji} `}${a.name}
+          </span>`)}
+      </div>`;
+  }
+
   _skPlayroom(rows) {
     return html`
       <div class="sk-grid">
@@ -570,10 +585,7 @@ class TaskMateStreakCard extends LitElement {
             <div class="sk-dots">
               ${r.dayDots.map((d) => html`<i class="sk-dot ${d.cssClass !== "inactive" ? "on" : ""}" title="${d.label}"></i>`)}
             </div>
-            ${this._earnedBadges(r.achievements).length ? html`
-              <div class="sk-badges">
-                ${this._earnedBadges(r.achievements).map((a) => html`<span class="chip soft">${a.emoji} ${a.name}</span>`)}
-              </div>` : ""}
+            ${this._designBadges(r.achievements, "sk-badges", { soft: true })}
           </div>`)}
       </div>`;
   }
@@ -594,10 +606,7 @@ class TaskMateStreakCard extends LitElement {
             <div class="sk-segs">
               ${r.dayDots.map((d) => html`<i class="sk-seg ${d.cssClass !== "inactive" ? "on" : ""}"></i>`)}
             </div>
-            ${this._earnedBadges(r.achievements).length ? html`
-              <div class="sk-badges-cn">
-                ${this._earnedBadges(r.achievements).map((a) => html`<span class="chip">${a.emoji} ${a.name}</span>`)}
-              </div>` : ""}
+            ${this._designBadges(r.achievements, "sk-badges-cn", {})}
           </div>`)}
       </div>`;
   }
@@ -617,10 +626,7 @@ class TaskMateStreakCard extends LitElement {
             <div class="sk-segs-cp">
               ${r.dayDots.map((d) => html`<i class="sk-seg-cp ${d.cssClass !== "inactive" ? "on" : ""}"></i>`)}
             </div>
-            ${this._earnedBadges(r.achievements).length ? html`
-              <div class="sk-badges-cp">
-                ${this._earnedBadges(r.achievements).map((a) => html`<span class="chip"><span style="color:var(--tmd-accent)">●</span> ${a.name}</span>`)}
-              </div>` : ""}
+            ${this._designBadges(r.achievements, "sk-badges-cp", { dot: true })}
           </div>`)}
       </div>`;
   }

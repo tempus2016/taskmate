@@ -903,7 +903,15 @@ class TaskMateRewardsCard extends LitElement {
 
       /* ── Designed (playroom / console / cleanpro) — shared .tmd kit comes
          from taskmate-design.js styles(); only card-specific layout below. ── */
-      .rw-list { display: flex; flex-direction: column; gap: 11px; }
+      .rw-list { display: flex; flex-direction: column; gap: 11px;
+                 max-height: 360px; overflow-y: auto; }
+      .rw-jackpot-label { align-self: flex-start; background: var(--tmd-gold); color: #3a2e26;
+                          border-color: transparent; font-weight: 800; text-transform: uppercase;
+                          letter-spacing: 0.04em; font-size: 10.5px; margin-bottom: 2px; }
+      .rw-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+      .rw-badge { font-size: 11px; padding: 2px 8px; }
+      .rw-badge-all { background: color-mix(in srgb, var(--tmd-good) 16%, transparent);
+                      color: var(--tmd-good); border-color: transparent; }
       .rw-sel { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
                 border-radius: var(--tmd-radius-sm); padding: 9px 12px; }
       .rw-sel-name { flex: 1; min-width: 0; font-weight: 800; }
@@ -977,9 +985,8 @@ class TaskMateRewardsCard extends LitElement {
     }
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
@@ -1766,6 +1773,18 @@ class TaskMateRewardsCard extends LitElement {
     const avail = this._designAvail(d);
     const emoji = "🎁";
 
+    // Child-assignment badges — honour show_child_badges (default on), classic-parity:
+    // only for non-jackpot rewards; "all children" chip when unassigned.
+    const showChildBadges = this.config.show_child_badges !== false;
+    const assignedTo = reward.assigned_to || [];
+    const childMap = {};
+    children.forEach((c) => { childMap[c.id] = c.name; });
+    const badges = showChildBadges && !d.isJackpot
+      ? (assignedTo.length === 0
+          ? html`<span class="chip soft rw-badge rw-badge-all">${this._t('rewards.all_children')}</span>`
+          : assignedTo.map((cid) => html`<span class="chip rw-badge">${childMap[cid] || cid}</span>`))
+      : '';
+
     const costBadge = html`<span class="chip rw-cost">⭐ ${d.displayCost} ${pointsName}</span>`;
 
     const bar = d.isJackpot
@@ -1815,9 +1834,11 @@ class TaskMateRewardsCard extends LitElement {
         <div class="row rw-top">
           <span class="rw-emoji">${emoji}</span>
           <div class="rw-info">
+            ${d.isJackpot ? html`<span class="chip rw-jackpot-label">🎰 ${this._t('rewards.jackpot')}</span>` : ''}
             <div class="rw-name">${reward.name}</div>
             ${reward.description ? html`<div class="muted rw-desc">${reward.description}</div>` : ''}
             ${avail ? html`<span class="chip soft rw-avail rw-avail-${avail.tone}">${avail.label}</span>` : ''}
+            ${badges ? html`<div class="rw-badges">${badges}</div>` : ''}
           </div>
           ${costBadge}
         </div>

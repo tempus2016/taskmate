@@ -322,19 +322,19 @@ class TaskMateWeeklyCard extends LitElement {
   render() {
     if (!this.hass || !this.config) return html``;
 
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      : "classic";
+
     const entity = this.hass.states[this.config.entity];
+    if (design !== "classic") return this._renderDesigned(design, entity);
+
     if (!entity) {
       return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div></ha-card>`;
     }
     if (entity.state === "unavailable" || entity.state === "unknown") {
       return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.unavailable')}</div></div></ha-card>`;
     }
-
-    const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
-      : "classic";
-    this.setAttribute("data-tm-design", design);
-    if (design !== "classic") return this._renderDesigned(design, entity);
 
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
@@ -581,6 +581,20 @@ class TaskMateWeeklyCard extends LitElement {
   _renderDesigned(design, entity) {
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const hd = _safeColor(this.config.header_color, "#27ae60");
+
+    if (!entity) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        <div class="tmd-hd"><span class="ic">📅</span><span class="tt">${this.config.title || this._t("weekly.default_title")}</span></div>
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div>
+      </ha-card>`;
+    }
+    if (entity.state === "unavailable" || entity.state === "unknown") {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        <div class="tmd-hd"><span class="ic">📅</span><span class="tt">${this.config.title || this._t("weekly.default_title")}</span></div>
+        <div class="tmd-bd"><div class="tmd-empty">${this._t('common.unavailable')}</div></div>
+      </ha-card>`;
+    }
+
     const d = this._weekData(entity, tz);
     const weekLabel = this._getWeekLabel(d.weekDays, tz);
     const title = this.config.title || this._t("weekly.default_title");

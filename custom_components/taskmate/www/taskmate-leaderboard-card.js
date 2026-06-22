@@ -300,9 +300,8 @@ class TaskMateLeaderboardCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
@@ -608,12 +607,15 @@ class TaskMateLeaderboardCard extends LitElement {
       score: scoreOf(child),
       streak: child.current_streak || 0,
       weekly: weeklyPoints[child.id] || 0,
+      points: child.points || 0,
+      career: child.career_score || 0,
     }));
 
+    const ctx = { sortBy, pointsName };
     const body =
-      design === "playroom" ? this._lbPlayroom(rows, scoreUnit) :
-      design === "console"  ? this._lbConsole(rows, scoreUnit) :
-                              this._lbCleanpro(rows, scoreUnit);
+      design === "playroom" ? this._lbPlayroom(rows, scoreUnit, ctx) :
+      design === "console"  ? this._lbConsole(rows, scoreUnit, ctx) :
+                              this._lbCleanpro(rows, scoreUnit, ctx);
 
     return html`<ha-card class="tmd" style="--hd:${hd}">${header}<div class="tmd-bd">${body}</div></ha-card>`;
   }
@@ -628,15 +630,22 @@ class TaskMateLeaderboardCard extends LitElement {
       </div>`;
   }
 
-  _lbMeta(r) {
-    return html`
-      <div class="row muted lb-cn-meta">
-        ${this.config.show_streak !== false ? html`<span>🔥 ${r.streak}</span>` : ""}
-        ${this.config.show_weekly !== false ? html`<span>📅 ${r.weekly}</span>` : ""}
-      </div>`;
+  // Mirrors the classic rank-stats: each chip is shown only when its toggle is
+  // on AND it is not the metric currently being ranked (sortBy).
+  _lbMetaChips(r, ctx, cls) {
+    const sortBy = ctx.sortBy;
+    const chips = [];
+    if (this.config.show_streak !== false && sortBy !== "streak") chips.push(html`<span>🔥 ${r.streak}</span>`);
+    if (this.config.show_weekly !== false && sortBy !== "weekly") chips.push(html`<span>📅 ${r.weekly}</span>`);
+    if (sortBy !== "points") chips.push(html`<span>⭐ ${r.points}</span>`);
+    if (this.config.show_career !== false && sortBy !== "career") chips.push(html`<span>🏆 ${r.career}</span>`);
+    if (!chips.length) return "";
+    return html`<div class="row muted ${cls}">${chips}</div>`;
   }
 
-  _lbPlayroom(rows, scoreUnit) {
+  _lbMeta(r, ctx) { return this._lbMetaChips(r, ctx, "lb-cn-meta"); }
+
+  _lbPlayroom(rows, scoreUnit, ctx) {
     const MEDAL = ["🥇", "🥈", "🥉"];
     if (rows.length >= 3) {
       const [first, second, third] = rows;
@@ -673,14 +682,14 @@ class TaskMateLeaderboardCard extends LitElement {
             ${this._av(r.child, r.tone, 44)}
             <div style="flex:1;min-width:0">
               <div class="lb-pod-name">${r.child.name}</div>
-              ${this._lbMeta(r)}
+              ${this._lbMeta(r, ctx)}
             </div>
             <div class="big" style="font-size:22px;color:var(--tmd-accent)">${r.score.toLocaleString()}</div>
           </div>`)}
       </div>`;
   }
 
-  _lbConsole(rows, scoreUnit) {
+  _lbConsole(rows, scoreUnit, ctx) {
     const max = Math.max(...rows.map((r) => r.score), 1);
     return html`
       <div class="lb-cn">
@@ -691,7 +700,7 @@ class TaskMateLeaderboardCard extends LitElement {
             <div class="lb-cn-mid">
               <div class="lb-cn-name">${r.child.name}</div>
               <div class="bar" style="margin-top:6px"><i style="width:${Math.round((r.score / max) * 100)}%"></i></div>
-              ${this._lbMeta(r)}
+              ${this._lbMeta(r, ctx)}
             </div>
             <div class="lb-cn-right">
               <div class="num lb-cn-score ${r.idx === 0 ? "win" : ""}">${r.score.toLocaleString()}</div>
@@ -701,7 +710,7 @@ class TaskMateLeaderboardCard extends LitElement {
       </div>`;
   }
 
-  _lbCleanpro(rows, scoreUnit) {
+  _lbCleanpro(rows, scoreUnit, ctx) {
     return html`
       <div class="lb-cp">
         ${rows.map((r, i) => html`
@@ -711,10 +720,7 @@ class TaskMateLeaderboardCard extends LitElement {
             ${this._av(r.child, r.tone, 36)}
             <div class="lb-cp-mid">
               <div class="lb-cp-name">${r.child.name}</div>
-              <div class="row muted lb-cp-meta">
-                ${this.config.show_streak !== false ? html`<span>🔥 ${this._t('common.d_streak', { count: r.streak })}</span>` : ""}
-                ${this.config.show_weekly !== false ? html`<span>📅 ${r.weekly} ${this._t('common.this_week')}</span>` : ""}
-              </div>
+              ${this._lbMetaChips(r, ctx, "lb-cp-meta")}
             </div>
             <div class="lb-cp-right">
               <div class="num lb-cp-score">${r.score.toLocaleString()}</div>

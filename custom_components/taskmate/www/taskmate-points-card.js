@@ -622,6 +622,41 @@ class TaskMatePointsCard extends LitElement {
       .pc-quick { gap: 7px; flex-wrap: wrap; }
       .pc-reason { margin-top: 12px; cursor: pointer; }
       .pc-reason.con { gap: 8px; }
+
+      /* Per-child quick add/remove chips (all designed styles) */
+      .pc-actions { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; flex-shrink: 0; }
+      .pc-qrow { display: flex; gap: 4px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+      .pc-qchip {
+        font: inherit;
+        font-family: var(--tmd-font-display);
+        font-weight: 800;
+        font-size: 12px;
+        line-height: 1.3;
+        border: 0;
+        cursor: pointer;
+        padding: 4px 9px;
+        min-width: 30px;
+        text-align: center;
+        border-radius: 999px;
+        color: #fff;
+      }
+      .pc-qchip:disabled { opacity: 0.5; cursor: not-allowed; }
+      .pc-qchip.add { background: var(--tmd-good); }
+      .pc-qchip.remove { background: var(--tmd-bad); }
+      :host([data-tm-design="console"]) .pc-qchip.add {
+        color: #06301f;
+        box-shadow: 0 0 10px color-mix(in srgb, var(--tmd-good) 45%, transparent);
+      }
+      :host([data-tm-design="console"]) .pc-qchip.remove {
+        color: #3a0d0d;
+        box-shadow: 0 0 10px color-mix(in srgb, var(--tmd-bad) 45%, transparent);
+      }
+      .pc-qchip.more {
+        background: var(--tmd-surface-2);
+        color: var(--tmd-text);
+        border: 1px solid var(--tmd-border);
+        padding: 4px 8px;
+      }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
       ? window.__taskmate_design.styles() : null;
@@ -688,11 +723,10 @@ class TaskMatePointsCard extends LitElement {
     const pointsName = attrs.points_name || this._t("common.stars");
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") {
-      return this._renderDesigned(design, children, pointsName);
+      return this._renderDesigned(design, children, pointsName, pointsIcon);
     }
 
     const headerStyle = this.config.header_color
@@ -759,7 +793,7 @@ class TaskMatePointsCard extends LitElement {
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }
 
-  _renderDesigned(design, children, pointsName) {
+  _renderDesigned(design, children, pointsName, pointsIcon) {
     const hd = this.config.header_color || DESIGN_HEADER;
 
     const header = design === "console"
@@ -775,9 +809,9 @@ class TaskMatePointsCard extends LitElement {
 
     const body = children.length === 0
       ? html`<div class="tmd-empty">${this._t('points_card.empty_title')}</div>`
-      : design === "console"  ? this._designConsole(children, pointsName)
-      : design === "cleanpro" ? this._designCleanpro(children, pointsName)
-      :                         this._designPlayroom(children, pointsName);
+      : design === "console"  ? this._designConsole(children, pointsName, pointsIcon)
+      : design === "cleanpro" ? this._designCleanpro(children, pointsName, pointsIcon)
+      :                         this._designPlayroom(children, pointsName, pointsIcon);
 
     return html`
       <ha-card class="tmd" style="--hd:${hd}">
@@ -788,7 +822,43 @@ class TaskMatePointsCard extends LitElement {
       </ha-card>`;
   }
 
-  _designPlayroom(children, pointsName) {
+  /**
+   * Per-child quick add/remove buttons, honouring quick_add_amounts,
+   * quick_remove_amounts and show_dialog. Mirrors the classic _renderChildRow
+   * quick-button block (same handlers: _quickAdjust + _openDialog).
+   */
+  _designQuickActions(child, pointsName, pointsIcon, isLoading) {
+    const addAmounts = Array.isArray(this.config.quick_add_amounts)
+      ? this.config.quick_add_amounts : [1, 5, 10];
+    const removeAmounts = Array.isArray(this.config.quick_remove_amounts)
+      ? this.config.quick_remove_amounts : [1, 5, 10];
+    const showDialog = this.config.show_dialog !== false;
+    return html`
+      <div class="pc-actions">
+        <div class="pc-qrow">
+          ${addAmounts.map(amt => html`
+            <button class="pc-qchip add" ?disabled="${isLoading}"
+              @click="${(e) => { e.stopPropagation(); this._quickAdjust(child, 'add', amt); }}"
+              title="${this._t('points_card.quick_add_title', { amount: amt, pointsName })}">+${amt}</button>`)}
+          ${showDialog ? html`
+            <button class="pc-qchip more" ?disabled="${isLoading}"
+              @click="${(e) => { e.stopPropagation(); this._openDialog(child, 'add', pointsIcon, pointsName); }}"
+              title="${this._t('points_card.quick_custom_title')}">⋯</button>` : ""}
+        </div>
+        <div class="pc-qrow">
+          ${removeAmounts.map(amt => html`
+            <button class="pc-qchip remove" ?disabled="${isLoading}"
+              @click="${(e) => { e.stopPropagation(); this._quickAdjust(child, 'remove', amt); }}"
+              title="${this._t('points_card.quick_remove_title', { amount: amt, pointsName })}">−${amt}</button>`)}
+          ${showDialog ? html`
+            <button class="pc-qchip more" ?disabled="${isLoading}"
+              @click="${(e) => { e.stopPropagation(); this._openDialog(child, 'remove', pointsIcon, pointsName); }}"
+              title="${this._t('points_card.quick_custom_title')}">⋯</button>` : ""}
+        </div>
+      </div>`;
+  }
+
+  _designPlayroom(children, pointsName, pointsIcon) {
     return html`
       <div class="pc-grid">
         ${children.map((child, i) => {
@@ -801,18 +871,13 @@ class TaskMatePointsCard extends LitElement {
                 <div class="pc-name">${child.name}</div>
                 <div class="pc-pts">${child.points}<span>⭐</span></div>
               </div>
-              <button class="btn bad round" ?disabled="${isLoading}"
-                @click="${() => this._openDialog(child, 'remove', 'mdi:star', pointsName)}"
-                title="${this._t('points_card.dialog_remove_title', { pointsName })}">−</button>
-              <button class="btn good round" ?disabled="${isLoading}"
-                @click="${() => this._openDialog(child, 'add', 'mdi:star', pointsName)}"
-                title="${this._t('points_card.dialog_add_title', { pointsName })}">+</button>
+              ${this._designQuickActions(child, pointsName, pointsIcon, isLoading)}
             </div>`;
         })}
       </div>`;
   }
 
-  _designConsole(children, pointsName) {
+  _designConsole(children, pointsName, pointsIcon) {
     return html`
       <div class="pc-grid">
         ${children.map((child, i) => {
@@ -825,20 +890,13 @@ class TaskMatePointsCard extends LitElement {
                 <div class="cn-name">${child.name}</div>
                 <div class="num muted cn-cur">${(child.points + ' ' + pointsName).toUpperCase()}</div>
               </div>
-              <button class="btn bad round sm" ?disabled="${isLoading}"
-                @click="${() => this._openDialog(child, 'remove', 'mdi:star', pointsName)}"
-                title="${this._t('points_card.dialog_remove_title', { pointsName })}">−</button>
-              <button class="btn round sm" ?disabled="${isLoading}"
-                @click="${() => this._openDialog(child, 'add', 'mdi:star', pointsName)}"
-                title="${this._t('points_card.dialog_add_title', { pointsName })}">+</button>
+              ${this._designQuickActions(child, pointsName, pointsIcon, isLoading)}
             </div>`;
         })}
       </div>`;
   }
 
-  _designCleanpro(children, pointsName) {
-    const quick = Array.isArray(this.config.quick_add_amounts)
-      ? this.config.quick_add_amounts : [1, 5, 10];
+  _designCleanpro(children, pointsName, pointsIcon) {
     return html`
       <div class="pc-grid cp-grid">
         ${children.map((child, i) => {
@@ -849,26 +907,10 @@ class TaskMatePointsCard extends LitElement {
               ${this._av(child, tone, 38)}
               <div class="cp-name">${child.name}</div>
               <div class="num cp-num">${child.points}</div>
-              <button class="btn ghost sm round" ?disabled="${isLoading}"
-                @click="${() => this._openDialog(child, 'remove', 'mdi:star', pointsName)}"
-                title="${this._t('points_card.dialog_remove_title', { pointsName })}">−</button>
-              <button class="btn sm round" ?disabled="${isLoading}"
-                @click="${() => this._openDialog(child, 'add', 'mdi:star', pointsName)}"
-                title="${this._t('points_card.dialog_add_title', { pointsName })}">+</button>
+              ${this._designQuickActions(child, pointsName, pointsIcon, isLoading)}
             </div>`;
         })}
-      </div>
-      ${children.length === 1 ? html`
-        <div class="divide"></div>
-        <div class="row pc-quick">
-          <span class="muted" style="font-size:12px;margin-right:2px">${this._t('points_card.quick_label_add', { pointsName })}</span>
-          ${quick.map(amt => html`
-            <button class="chip soft" ?disabled="${this._loading[children[0].id]}"
-              @click="${() => this._quickAdjust(children[0], 'add', amt)}">+${amt}</button>`)}
-          ${this.config.show_dialog !== false ? html`
-            <button class="chip" style="margin-left:auto"
-              @click="${() => this._openDialog(children[0], 'add', 'mdi:star', pointsName)}">📝 ${this._t('points_card.dialog_reason_label')}</button>` : ""}
-        </div>` : ""}`;
+      </div>`;
   }
 
   _renderChildRow(child, pointsIcon, pointsName) {

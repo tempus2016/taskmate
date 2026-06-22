@@ -667,9 +667,8 @@ class TaskMateReorderCard extends LitElement {
     }
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
@@ -1050,8 +1049,9 @@ class TaskMateReorderCard extends LitElement {
     const touch = e.touches[0];
     const el = this.shadowRoot?.elementFromPoint(touch.clientX, touch.clientY);
     if (!el) return;
-    const item = el.closest(".chore-item");
-    this.shadowRoot.querySelectorAll(".chore-item").forEach(i => i.classList.remove("drag-over"));
+    // Classic rows use .chore-item, designed rows use .d-row — match either.
+    const item = el.closest(".chore-item, .d-row");
+    this.shadowRoot.querySelectorAll(".chore-item, .d-row").forEach(i => i.classList.remove("drag-over"));
     if (item) item.classList.add("drag-over");
   }
 
@@ -1059,8 +1059,8 @@ class TaskMateReorderCard extends LitElement {
     if (!this._touchState) return;
     const touch = e.changedTouches[0];
     const el = this.shadowRoot?.elementFromPoint(touch.clientX, touch.clientY);
-    this.shadowRoot?.querySelectorAll(".chore-item").forEach(i => i.classList.remove("drag-over"));
-    const item = el ? el.closest(".chore-item") : null;
+    this.shadowRoot?.querySelectorAll(".chore-item, .d-row").forEach(i => i.classList.remove("drag-over"));
+    const item = el ? el.closest(".chore-item, .d-row") : null;
     if (item) {
       const toIndex = parseInt(item.dataset.index, 10);
       const { index: fromIndex } = this._touchState;

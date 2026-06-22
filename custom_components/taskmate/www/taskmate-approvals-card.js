@@ -406,6 +406,9 @@ class TaskMateApprovalsCard extends LitElement {
       .ap-gold-soft { color: var(--tmd-gold); }
 
       .ap-d-photo-link { line-height: 0; text-decoration: none; }
+
+      /* Scrollable list (parity with classic content) */
+      .ap-d-scroll { max-height: 360px; overflow-y: auto; }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
       ? window.__taskmate_design.styles() : null;
@@ -444,9 +447,8 @@ class TaskMateApprovalsCard extends LitElement {
     }
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
@@ -664,10 +666,10 @@ class TaskMateApprovalsCard extends LitElement {
         design === "console"  ? (it, i) => this._apConsole(it, i) :
                                 (it, i) => this._apCleanpro(it, i);
       let idx = 0;
-      body = html`${sections.map((sec) => html`
+      body = html`<div class="ap-d-scroll">${sections.map((sec) => html`
         <div class="ap-group-label muted">${sec.label}</div>
         ${sec.items.map((it) => rowFn(it, idx++))}
-      `)}`;
+      `)}</div>`;
     }
 
     return html`<ha-card class="tmd" style="--hd:${hd}">

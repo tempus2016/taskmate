@@ -364,7 +364,7 @@ class TaskMateBadgesCard extends LitElement {
       /* Shared .tmd kit + tokens come from taskmate-design.js styles(). */
       .bd-filter { gap: 6px; flex-wrap: wrap; margin-bottom: 11px; }
       .bd-chip { cursor: pointer; }
-      .bd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(82px, 1fr)); gap: 9px; }
+      .bd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(82px, 1fr)); gap: 9px; max-height: 360px; overflow-y: auto; }
       .bd-tile {
         background: var(--tmd-surface-2);
         border-radius: 16px;
@@ -514,9 +514,8 @@ class TaskMateBadgesCard extends LitElement {
     const title = this.config.title || (childName ? this._t("badges.title_with_name", { name: childName }) : this._t("badges.default_title"));
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") {
       return this._renderDesigned(design, {
         title, childName, earned, available, totalBadges,
@@ -640,9 +639,12 @@ TaskMateBadgesCard.prototype._designLockedTile = function (b) {
     : (b.closest_criterion ? Math.min(100, Math.round((b.closest_criterion.current / b.closest_criterion.target) * 100)) : 0);
   const progressLabel = b.progress_label
     || (b.closest_criterion ? `${b.closest_criterion.current} / ${b.closest_criterion.target}` : null);
+  const a = b.icon || "mdi:medal-outline";
+  const icon = a.startsWith("mdi:") ? html`<ha-icon icon="${a}"></ha-icon>` : a;
   return html`
     <div class="bd-tile locked" style="--bt:${tone}">
-      <div class="bd-ic locked">🔒</div>
+      ${b.point_bonus > 0 ? html`<div class="bd-bonus" style="opacity:0.45">+${b.point_bonus}</div>` : ""}
+      <div class="bd-ic locked">${icon}</div>
       <div class="bd-name">${b.name}</div>
       ${progressLabel ? html`
         <div class="bar" style="height:7px;margin-top:6px"><i style="width:${pct}%"></i></div>

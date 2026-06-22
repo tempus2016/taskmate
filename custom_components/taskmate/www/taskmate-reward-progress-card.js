@@ -405,6 +405,15 @@ class TaskMateRewardProgressCard extends LitElement {
       :host([data-tm-design="console"]) .rp-hero-emoji {
         filter: drop-shadow(0 0 18px color-mix(in srgb, var(--tmd-accent) 70%, transparent)); }
       .rp-name { font-size: 24px; color: var(--tmd-accent); }
+      .rp-desc { font-size: 13px; margin-top: 4px; max-width: 280px; margin-left: auto; margin-right: auto; }
+      .rp-jackpot { margin-top: 8px; background: var(--tmd-gold); color: #3a2e26;
+                    border-color: transparent; font-weight: 800; text-transform: uppercase;
+                    letter-spacing: 0.04em; font-size: 11px; }
+      .rp-avail { margin-top: 8px; font-weight: 800; text-transform: uppercase;
+                  letter-spacing: 0.04em; font-size: 11px; border-color: transparent; }
+      .rp-avail-dim { background: color-mix(in srgb, var(--tmd-dim) 20%, transparent); color: var(--tmd-dim); }
+      .rp-avail-bad { background: color-mix(in srgb, var(--tmd-bad) 18%, transparent); color: var(--tmd-bad); }
+      .rp-avail-warn { background: color-mix(in srgb, var(--tmd-warn) 20%, transparent); color: var(--tmd-warn); }
       .rp-cost { margin-top: 8px; background: var(--tmd-gold); color: #3a2e26;
                  border-color: transparent; font-weight: 800; }
       .rp-bar { height: 24px; margin-top: 16px; }
@@ -451,9 +460,8 @@ class TaskMateRewardProgressCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
@@ -738,10 +746,34 @@ class TaskMateRewardProgressCard extends LitElement {
     const pct = cost > 0 ? Math.min(100, Math.round((have / cost) * 100)) : 0;
     const remaining = Math.max(0, cost - have);
 
-    return wrap(html`${this._designBody(reward, design, cost, have, pct, remaining, contributors, pointsName)}`);
+    // Availability badge — same precedence as the classic render.
+    const isSoldOut = reward.is_sold_out === true;
+    const isExpired = reward.is_expired === true;
+    const daysUntilExpiry = (typeof reward.days_until_expiry === 'number') ? reward.days_until_expiry : null;
+    let availabilityLabel = '';
+    let availabilityTone = '';
+    if (isExpired) {
+      availabilityLabel = this._t('rewards.expired');
+      availabilityTone = 'dim';
+    } else if (isSoldOut) {
+      availabilityLabel = this._t('rewards.sold_out');
+      availabilityTone = 'dim';
+    } else if (typeof reward.quantity === 'number' && reward.quantity > 0 && reward.quantity <= 3) {
+      availabilityLabel = this._t('rewards.only_n_left', { count: reward.quantity });
+      availabilityTone = 'bad';
+    } else if (typeof daysUntilExpiry === 'number' && daysUntilExpiry >= 0 && daysUntilExpiry <= 7) {
+      availabilityLabel = daysUntilExpiry === 0
+        ? this._t('rewards.expires_today')
+        : (daysUntilExpiry === 1
+            ? this._t('rewards.expires_in_days', { count: daysUntilExpiry })
+            : this._t('rewards.expires_in_days_plural', { count: daysUntilExpiry }));
+      availabilityTone = 'warn';
+    }
+
+    return wrap(html`${this._designBody(reward, design, cost, have, pct, remaining, contributors, pointsName, availabilityLabel, availabilityTone)}`);
   }
 
-  _designBody(reward, design, cost, have, pct, remaining, contributors, pointsName) {
+  _designBody(reward, design, cost, have, pct, remaining, contributors, pointsName, availabilityLabel, availabilityTone) {
     const icon = reward.icon || "mdi:gift";
     const isIcon = typeof icon === "string" && icon.startsWith("mdi:");
     const hero = isIcon
@@ -752,6 +784,9 @@ class TaskMateRewardProgressCard extends LitElement {
       <div class="rp-wrap">
         ${hero}
         <div class="big rp-name">${reward.name}</div>
+        ${reward.description ? html`<div class="muted rp-desc">${reward.description}</div>` : ''}
+        ${reward.is_jackpot ? html`<div class="chip rp-jackpot">🎰 ${this._t('reward_progress.jackpot_reward')}</div>` : ''}
+        ${availabilityLabel ? html`<div class="chip rp-avail rp-avail-${availabilityTone}">${availabilityLabel}</div>` : ''}
         <div class="chip rp-cost">⭐ ${cost} ${pointsName}</div>
         <div class="bar rp-bar"><i style="width:${pct}%;${pct >= 100 ? 'background:var(--tmd-good)' : ''}"></i></div>
         ${design === "cleanpro"

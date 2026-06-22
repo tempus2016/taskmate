@@ -243,9 +243,8 @@ class TaskMateGraphCard extends LitElement {
 
   render() {
     const design = window.__taskmate_design
-      ? window.__taskmate_design.resolve(this.hass, this.config, this.config?.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config?.entity)
       : "classic";
-    this.setAttribute("data-tm-design", design);
     if (design !== "classic") {
       try {
         return this._renderDesigned(design);
@@ -461,6 +460,11 @@ class TaskMateGraphCard extends LitElement {
         <div class="tmd-bd"><div class="tmd-empty">${this._t('common.no_children')}</div></div></ha-card>`;
     }
 
+    // Match classic: surface the active child filter (or "all children") as a subline.
+    const filterLabel = this.config.child_id
+      ? (series[0]?.child?.name || '')
+      : this._t('graph.all_children');
+
     const hasData = series.some(s => s[dataKey].some(v => v > 0));
 
     // Mode chips wired to the SAME handler/state as the classic toggle.
@@ -489,30 +493,37 @@ class TaskMateGraphCard extends LitElement {
       design === "cleanpro" ? this._graphCleanpro(series, dateRange, dataKey, chips, legend, hasData, empty) :
                               this._graphPlayroom(series, dateRange, dataKey, chips, legend, hasData, empty);
 
-    return html`<ha-card class="tmd" style="--hd:${hd}">${header()}<div class="tmd-bd">${body}</div></ha-card>`;
+    return html`<ha-card class="tmd" style="--hd:${hd}">${header(filterLabel)}<div class="tmd-bd">${body}</div></ha-card>`;
   }
 
   // Shared SVG chart builder; per-style flags tweak fills/glow/stroke width.
-  _svgChart(series, dataKey, { area, glow, stroke, grid, dash, gridStroke }) {
+  // Built as a string parsed via <template> so the elements get the proper SVG
+  // namespace — nested Lit html`` templates render <polyline> in the XHTML
+  // namespace (zero-size/invisible), and var(--tmd-*) only resolves via `style`
+  // (not as an SVG presentation attribute). Returning the parsed node sidesteps
+  // both: LitElement.prototype.svg isn't exposed by HA's Lit build.
+  _svgChart(series, dataKey, { area, glow, stroke, dash, gridStroke }) {
     const VW = 280, VH = 115;
     const allValues = series.flatMap(s => s[dataKey]);
     const niceMax = this._niceMax(Math.max(1, ...allValues));
-    return html`
-      <svg viewBox="0 0 ${VW} ${VH + 15}" width="100%" height="130" preserveAspectRatio="none" style="overflow:visible">
-        <line x1="0" y1="${VH}" x2="${VW}" y2="${VH}" stroke="${gridStroke}" stroke-width="1.5"></line>
-        <line x1="0" y1="${VH * 0.65}" x2="${VW}" y2="${VH * 0.65}" stroke="${gridStroke}" stroke-width="1" stroke-dasharray="${dash}"></line>
-        <line x1="0" y1="${VH * 0.3}" x2="${VW}" y2="${VH * 0.3}" stroke="${gridStroke}" stroke-width="1" stroke-dasharray="${dash}"></line>
-        ${area ? series.map(s => {
-          const pts = this._svgPoints(s[dataKey], niceMax, VW, VH);
-          return html`<path d="M${pts} L${VW},${VH} L0,${VH} Z" fill="${s.tone}" opacity="0.16"></path>`;
-        }) : ""}
-        ${series.map(s => {
-          const pts = this._svgPoints(s[dataKey], niceMax, VW, VH);
-          return html`<polyline points="${pts}" fill="none" stroke="${s.tone}" stroke-width="${stroke}"
-            stroke-linecap="round" stroke-linejoin="round"
-            style="${glow ? `filter:drop-shadow(0 0 6px ${s.tone})` : ""}"></polyline>`;
-        })}
-      </svg>`;
+    let inner =
+      `<line x1="0" y1="${VH}" x2="${VW}" y2="${VH}" style="stroke:${gridStroke}" stroke-width="1.5"></line>` +
+      `<line x1="0" y1="${VH * 0.65}" x2="${VW}" y2="${VH * 0.65}" style="stroke:${gridStroke}" stroke-width="1" stroke-dasharray="${dash}"></line>` +
+      `<line x1="0" y1="${VH * 0.3}" x2="${VW}" y2="${VH * 0.3}" style="stroke:${gridStroke}" stroke-width="1" stroke-dasharray="${dash}"></line>`;
+    if (area) {
+      inner += series.map(s => {
+        const pts = this._svgPoints(s[dataKey], niceMax, VW, VH);
+        return `<path d="M${pts} L${VW},${VH} L0,${VH} Z" style="fill:${s.tone};opacity:0.16"></path>`;
+      }).join("");
+    }
+    inner += series.map(s => {
+      const pts = this._svgPoints(s[dataKey], niceMax, VW, VH);
+      return `<polyline points="${pts}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" ` +
+        `style="fill:none;stroke:${s.tone}${glow ? `;filter:drop-shadow(0 0 6px ${s.tone})` : ""}"></polyline>`;
+    }).join("");
+    const tmpl = document.createElement("template");
+    tmpl.innerHTML = `<svg viewBox="0 0 ${VW} ${VH + 15}" width="100%" height="130" preserveAspectRatio="none" style="overflow:visible">${inner}</svg>`;
+    return tmpl.content.firstElementChild;
   }
 
   _xAxis(dateRange) {
