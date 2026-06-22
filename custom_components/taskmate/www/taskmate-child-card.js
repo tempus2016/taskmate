@@ -2566,21 +2566,27 @@ class TaskMateChildCard extends LitElement {
       const isAssignedToAll = assignedToStrings.length === 0;
       let isAssignedToChild = isAssignedToAll || assignedToStrings.includes(childId);
 
-      // Dynamic assignment (alternating / random): only the currently-active child
-      // sees the chore. The backend caches today's pick in assignment_current_child_id.
-      // Once any eligible pool member has completed the chore today (e.g. a parent
-      // credited the off-rotation child), the chore is done for the whole pool and
-      // should disappear for everyone — including today's active child.
+      // Dynamic assignment. Rotation modes (alternating / random / balanced):
+      // only the currently-active child sees the chore — the backend caches
+      // today's pick in assignment_current_child_id. first_come is competitive:
+      // the whole pool sees it (there is no single active child) until one
+      // member wins the race. Either way, once any eligible pool member has
+      // completed the chore today (e.g. a parent credited the off-rotation
+      // child), the chore is done for the whole pool and should disappear for
+      // everyone — including today's active child.
       const assignmentMode = chore.assignment_mode || 'everyone';
       if (assignmentMode !== 'everyone' && isAssignedToChild) {
         const activeId = chore.assignment_current_child_id ? String(chore.assignment_current_child_id) : '';
-        isAssignedToChild = activeId !== '' && activeId === String(childId);
+        if (assignmentMode !== 'first_come') {
+          isAssignedToChild = activeId !== '' && activeId === String(childId);
+        }
         if (isAssignedToChild) {
           const poolIds = assignedToStrings.length > 0
             ? assignedToStrings
             : (attrs.children || []).map(c => String(c.id));
           const poolSet = new Set(poolIds);
-          const dailyLimit = chore.daily_limit || 1;
+          // first_come is a single-winner race regardless of any configured limit.
+          const dailyLimit = assignmentMode === 'first_come' ? 1 : (chore.daily_limit || 1);
           const allTodayCompletions = attrs.todays_completions || [];
           const poolCompletionsToday = allTodayCompletions.filter(
             comp => comp.chore_id === chore.id && (poolSet.has(String(comp.child_id)) || comp.child_id === "__parent__") && !comp.bonus_subtask_id
@@ -2588,8 +2594,9 @@ class TaskMateChildCard extends LitElement {
           if (poolCompletionsToday >= dailyLimit) {
             // Bonus sub-tasks render inside the parent card; if the active
             // child still has any pending, keep the chore visible so they
-            // remain reachable.
-            const bonusSubtasks = chore.bonus_subtasks || [];
+            // remain reachable. Only applies to single-active-child rotation
+            // modes (mirrors the backend, which guards this on active_child_id).
+            const bonusSubtasks = activeId ? (chore.bonus_subtasks || []) : [];
             const completedBonusIds = new Set(
               allTodayCompletions
                 .filter(c => c.chore_id === chore.id && String(c.child_id) === activeId && c.bonus_subtask_id)

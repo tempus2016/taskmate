@@ -31,7 +31,11 @@ from custom_components.taskmate.models import (
     Reward,
     RewardClaim,
 )
-from custom_components.taskmate.sensor import ChildBadgesSensor, PendingApprovalsSensor
+from custom_components.taskmate.sensor import (
+    ChildBadgesSensor,
+    ChildStatsSensor,
+    PendingApprovalsSensor,
+)
 
 
 MAX_ATTR_BYTES = 16384  # Home Assistant recorder limit
@@ -404,6 +408,56 @@ class TestChildBadgesSensor:
         attrs = sensor.extra_state_attributes
         assert attrs["total_badges"] == 1
         assert attrs["available"][0]["badge_id"] == "y"
+
+
+class TestChildStatsAssignedChores:
+    """`assigned_chores` drives which chores a child sees on their card.
+
+    Regression for #540: `first_come` ("First come, first served") chores were
+    invisible because the visibility filter treated every non-`everyone` mode as
+    a single-active-child rotation. first_come has no single active child, so the
+    chore was hidden from the whole pool. It must stay visible to every pool
+    member until one child fills the shared (single-winner) quota.
+    """
+
+    def _coord(self, child, chores, *, rotation_done=False):
+        coord = MagicMock()
+        coord.get_child = lambda cid: child if (child and child.id == cid) else None
+        coord.data = {"chores": chores}
+        coord._is_rotation_done_today = MagicMock(return_value=rotation_done)
+        return coord
+
+    def _assigned_names(self, child, chores, *, rotation_done=False):
+        coord = self._coord(child, chores, rotation_done=rotation_done)
+        sensor = ChildStatsSensor(coord, _MockEntry(), child)
+        return [c["name"] for c in sensor.extra_state_attributes["assigned_chores"]]
+
+    def test_first_come_chore_visible_to_pool_member(self, hass):
+        child = Child(name="Mia")
+        child.id = "c1"
+        chore = Chore(name="Race", assigned_to=["c1", "c2"], assignment_mode="first_come")
+        assert "Race" in self._assigned_names(child, [chore], rotation_done=False)
+
+    def test_first_come_chore_hidden_once_quota_filled(self, hass):
+        child = Child(name="Mia")
+        child.id = "c1"
+        chore = Chore(name="Race", assigned_to=["c1", "c2"], assignment_mode="first_come")
+        assert "Race" not in self._assigned_names(child, [chore], rotation_done=True)
+
+    def test_rotation_chore_still_hidden_from_off_rotation_child(self, hass):
+        # Guard: the fix must not over-expose single-assignee rotation modes.
+        child = Child(name="Mia")
+        child.id = "c1"
+        chore = Chore(name="Rotate", assigned_to=["c1", "c2"], assignment_mode="alternating")
+        chore.assignment_current_child_id = "c2"
+        assert "Rotate" not in self._assigned_names(child, [chore], rotation_done=False)
+
+    def test_rotation_chore_visible_to_active_child(self, hass):
+        child = Child(name="Mia")
+        child.id = "c1"
+        chore = Chore(name="Rotate", assigned_to=["c1", "c2"], assignment_mode="alternating")
+        chore.assignment_current_child_id = "c1"
+        assert "Rotate" in self._assigned_names(child, [chore], rotation_done=False)
 
 
 class TestPendingApprovalsSensor:
