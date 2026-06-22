@@ -512,6 +512,7 @@ class TaskMatePointsDisplayCard extends LitElement {
                 color: var(--tmd-accent); }
       .pl-pts span { font-size: 0.9rem; margin-left: 2px; }
       .pl-name { font-weight: 800; font-size: 0.95rem; }
+      .pl-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 
       /* Points Display — Console */
       .cn-list { display: flex; flex-direction: column; gap: 9px; }
@@ -531,6 +532,7 @@ class TaskMatePointsDisplayCard extends LitElement {
       .cp-pts { font-size: 1.6rem; }
       .cp-name { font-size: 0.82rem; font-weight: 600; }
       .cp-rank { background: transparent; }
+      .cp-chips { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
       .cp-total { justify-content: space-between; }
 
       /* Points Display — Cumulative (designed) */
@@ -913,27 +915,36 @@ class TaskMatePointsDisplayCard extends LitElement {
   }
 
   _designPlayroom(rows) {
+    const showRank = this.config.show_rank !== false;
+    const showWeekly = this.config.show_weekly !== false;
+    const showStreak = this.config.show_streak !== false;
     return html`
       <div class="pl-grid">
         ${rows.map((r) => html`
           <div class="pl-tile" style="--ac:${r.tone}">
-            ${r.rank < 3 ? html`<div class="pl-medal">${RANK_MEDAL[r.rank]}</div>` : ""}
+            ${showRank && r.rank < 3 ? html`<div class="pl-medal">${RANK_MEDAL[r.rank]}</div>` : ""}
             ${this._av(r.child, r.tone, 52)}
             <div class="pl-pts">${r.points.toLocaleString()}<span>⭐</span></div>
             <div class="pl-name">${r.child.name}</div>
-            ${this.config.show_streak !== false && r.streak
-              ? html`<div class="chip soft">\u{1F525} ${r.streak}</div>` : ""}
+            ${showWeekly || (showStreak && r.streak) ? html`
+              <div class="pl-chips">
+                ${showWeekly ? html`<div class="chip soft">${this._t("points_display.weekly_plus", { count: r.weekly })}</div>` : ""}
+                ${showStreak && r.streak ? html`<div class="chip soft">\u{1F525} ${r.streak}</div>` : ""}
+              </div>` : ""}
           </div>`)}
       </div>`;
   }
 
   _designConsole(rows) {
     const max = Math.max(...rows.map((r) => r.points), 1);
+    const showRank = this.config.show_rank !== false;
+    const showWeekly = this.config.show_weekly !== false;
+    const showStreak = this.config.show_streak !== false;
     return html`
       <div class="cn-list">
         ${rows.map((r) => html`
           <div class="cn-row" style="--ac:${r.tone}">
-            <div class="num cn-rank ${r.rank === 0 ? "lead" : ""}">#${r.rank + 1}</div>
+            ${showRank ? html`<div class="num cn-rank ${r.rank === 0 ? "lead" : ""}">#${r.rank + 1}</div>` : ""}
             ${this._av(r.child, r.tone, 38)}
             <div class="cn-mid">
               <div class="cn-name">${r.child.name}</div>
@@ -941,13 +952,16 @@ class TaskMatePointsDisplayCard extends LitElement {
             </div>
             <div class="cn-right">
               <div class="num cn-pts ${r.rank === 0 ? "lead" : ""}">${r.points.toLocaleString()}</div>
-              <div class="cn-sub muted">XP${this.config.show_streak !== false && r.streak ? html` · \u{1F525}${r.streak}` : ""}</div>
+              <div class="cn-sub muted">XP${showWeekly ? html` · +${r.weekly}` : ""}${showStreak && r.streak ? html` · \u{1F525}${r.streak}` : ""}</div>
             </div>
           </div>`)}
       </div>`;
   }
 
   _designCleanpro(rows, total) {
+    const showRank = this.config.show_rank !== false;
+    const showWeekly = this.config.show_weekly !== false;
+    const showStreak = this.config.show_streak !== false;
     return html`
       <div class="cp-grid">
         ${rows.map((r) => html`
@@ -955,9 +969,12 @@ class TaskMatePointsDisplayCard extends LitElement {
             ${this._av(r.child, r.tone, 46)}
             <div class="big cp-pts">${r.points.toLocaleString()}</div>
             <div class="cp-name">${r.child.name}</div>
-            ${this.config.show_rank !== false
-              ? html`<div class="chip cp-rank">${r.rank === 0
-                  ? html`<span class="lead-dot">●</span> ` : ""}#${r.rank + 1}</div>` : ""}
+            <div class="cp-chips">
+              ${showRank ? html`<div class="chip cp-rank">${r.rank === 0
+                ? html`<span class="lead-dot">●</span> ` : ""}#${r.rank + 1}</div>` : ""}
+              ${showWeekly ? html`<div class="chip cp-rank">+${r.weekly}</div>` : ""}
+              ${showStreak && r.streak ? html`<div class="chip cp-rank">\u{1F525} ${r.streak}</div>` : ""}
+            </div>
           </div>`)}
       </div>
       ${rows.length > 1 ? html`

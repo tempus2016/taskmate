@@ -1815,6 +1815,7 @@ class TaskMateChildCard extends LitElement {
       .tmd-desc { font-size: 11.5px; color: var(--tmd-dim); margin-top: 3px; white-space: normal; line-height: 1.3; }
       .tmd-chore.mandatory, .tmd-quest.mandatory, .tmd-check.mandatory {
         box-shadow: inset 3px 0 0 0 var(--tmd-bad);
+        padding-left: 20px;
       }
       .tmd-chore.dimmed, .tmd-quest.dimmed, .tmd-check.dimmed { opacity: 0.5; }
 

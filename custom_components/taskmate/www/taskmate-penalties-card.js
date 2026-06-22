@@ -367,7 +367,7 @@ class TaskMatePenaltiesCard extends LitElement {
                background: color-mix(in srgb, var(--ac, var(--tmd-accent)) 16%, transparent);
                border: 1px solid transparent; }
       .d-tab .av { box-shadow: none; }
-      .d-tab.off { background: transparent; border-color: transparent; padding: 0; opacity: .6; }
+      .d-tab.off { background: transparent; border-color: transparent; opacity: .55; }
       .d-tab.off .av { opacity: .6; }
       :host([data-tm-design="console"]) .d-tab { border-radius: 8px; font-size: 12px; font-weight: 700;
                background: var(--tmd-surface-2); border-color: color-mix(in srgb, var(--ac, var(--tmd-accent)) 60%, transparent); }
@@ -796,17 +796,15 @@ class TaskMatePenaltiesCard extends LitElement {
     if (children.length <= 1) return "";
     const selected = this._getSelectedChild();
     const avSize = design === "playroom" ? 28 : 24;
-    const offSize = design === "playroom" ? 30 : 26;
     return html`
       <div class="d-tabs">
         ${children.map((c, i) => {
           const tone = this._designTone(i);
           const isSel = selected?.id === c.id;
-          return isSel
-            ? html`<div class="d-tab" style="--ac:${tone}" @click=${() => this._selectChild(c.id)}>
-                ${this._av(c, tone, avSize)}${c.name}</div>`
-            : html`<div class="d-tab off" title="${c.name}" @click=${() => this._selectChild(c.id)}>
-                ${this._av(c, tone, offSize)}</div>`;
+          // Always show the child's name on every tab (selected and not).
+          return html`<div class="d-tab ${isSel ? "" : "off"}" style="--ac:${tone}"
+              @click=${() => this._selectChild(c.id)}>
+            ${this._av(c, tone, avSize)}${c.name}</div>`;
         })}
       </div>`;
   }
