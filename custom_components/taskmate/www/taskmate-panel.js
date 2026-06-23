@@ -8,9 +8,14 @@
  */
 
 const PANEL_VERSION = (() => {
-  try { return new URL(import.meta.url).searchParams.get("v") || "?"; } catch (_) {}
+  // The version comes from the resource URL (?v=x.x.x), set by the integration
+  // itself — but it is still DOM-sourced text that we later splice into
+  // innerHTML, so clamp it to a version-safe charset to remove any chance of
+  // HTML injection (and silence CodeQL js/xss-through-dom).
+  const sanitize = (v) => ((v || "").replace(/[^\w.+-]/g, "") || "?");
+  try { return sanitize(new URL(import.meta.url).searchParams.get("v")); } catch (_) {}
   const el = document.querySelector('script[src*="/taskmate-panel.js"]');
-  return el ? new URLSearchParams(el.src.split("?")[1] || "").get("v") || "?" : "?";
+  return el ? sanitize(new URLSearchParams(el.src.split("?")[1] || "").get("v")) : "?";
 })();
 
 const TABS = [
