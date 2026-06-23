@@ -1137,6 +1137,7 @@
   "rewards.confirm_body": "Resgatar {name}?",
   "rewards.confirm_claim_btn": "Resgatar!",
   "rewards.confirm_cost": "Custo",
+  "rewards.confirm_pool_total": "Total do mealheiro",
   "rewards.confirm_remaining": "Restante",
   "rewards.confirm_title": "Resgatar recompensa?",
   "rewards.confirm_your_points": "Seus {name}",

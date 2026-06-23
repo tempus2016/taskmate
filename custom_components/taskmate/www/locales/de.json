@@ -1132,6 +1132,7 @@
   "rewards.confirm_body": "Einlösen: {name}?",
   "rewards.confirm_claim_btn": "Einlösen!",
   "rewards.confirm_cost": "Kosten",
+  "rewards.confirm_pool_total": "Pool gesamt",
   "rewards.confirm_remaining": "Verbleibend",
   "rewards.confirm_title": "Belohnung einlösen?",
   "rewards.confirm_your_points": "Deine {name}",

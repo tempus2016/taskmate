@@ -1185,6 +1185,7 @@
   "rewards.confirm_body": "Claim {name}?",
   "rewards.confirm_claim_btn": "Claim!",
   "rewards.confirm_cost": "Cost",
+  "rewards.confirm_pool_total": "Pool total",
   "rewards.confirm_remaining": "Remaining",
   "rewards.confirm_title": "Claim Reward?",
   "rewards.confirm_your_points": "Your {name}",

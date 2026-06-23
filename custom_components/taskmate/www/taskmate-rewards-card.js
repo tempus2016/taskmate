@@ -1158,15 +1158,33 @@ class TaskMateRewardsCard extends LitElement {
               ${(() => {
                 const r = this._pendingClaim;
                 const child = r._child;
-                const currentPoints = child ? (typeof child.spendable_balance === 'number' ? child.spendable_balance : (child.points || 0)) : null;
                 const cost = r.cost;
+                // Pool/jackpot redemptions spend POOLED points, not the claiming
+                // child's wallet. Showing the child's balance vs the full cost
+                // produced a nonsensical negative "Remaining" (#557). Use the pool
+                // total (jackpot: summed across all children; savings-jar: this
+                // child's allocation) so the calculation reflects the pooled points.
+                const isJackpot = r.is_jackpot === true;
+                const isPoolRedeem = isJackpot || r.pool_enabled === true || this.config.enable_pool_mode === true;
+                let currentPoints;
+                let availableLabel;
+                if (isPoolRedeem) {
+                  const poolAllocations = r.pool_allocations || {};
+                  currentPoints = isJackpot
+                    ? (typeof r.jackpot_pool_total === 'number' ? r.jackpot_pool_total : 0)
+                    : (child ? (poolAllocations[child.id] || 0) : 0);
+                  availableLabel = this._t('rewards.confirm_pool_total');
+                } else {
+                  currentPoints = child ? (typeof child.spendable_balance === 'number' ? child.spendable_balance : (child.points || 0)) : null;
+                  availableLabel = this._t('rewards.confirm_your_points', { name: pointsName });
+                }
                 const remaining = currentPoints !== null ? currentPoints - cost : null;
                 return html`
                   <div style="margin-bottom: 12px;">${this._t('rewards.confirm_body', { name: r.name })}</div>
                   ${currentPoints !== null ? html`
                     <div class="dialog-points-summary">
                       <div class="dialog-points-row">
-                        <span>${this._t('rewards.confirm_your_points', { name: pointsName })}</span>
+                        <span>${availableLabel}</span>
                         <span class="points-val">
                           <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
                           ${currentPoints}
