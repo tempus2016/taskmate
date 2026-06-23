@@ -4359,10 +4359,13 @@ class TaskMatePanel extends HTMLElement {
             <span class="tm-field-hint">${this._t("panel.reward_assigned_hint")}</span>
           </div>
         ` : "",
-        this._switch(this._t("panel.reward_pool_label"), "pool_enabled", d.pool_enabled,
-          this._t("panel.reward_pool_hint")),
+        // Jackpot first; toggling it re-renders so the Pool switch below can be
+        // hidden — jackpots are always pool-mode (#552), so the separate Pool
+        // toggle would be redundant and confusing.
         this._switch(this._t("panel.reward_is_jackpot_label"), "is_jackpot", d.is_jackpot,
-          this._t("panel.reward_is_jackpot_hint")),
+          this._t("panel.reward_is_jackpot_hint"), true),
+        d.is_jackpot ? "" : this._switch(this._t("panel.reward_pool_label"), "pool_enabled", d.pool_enabled,
+          this._t("panel.reward_pool_hint")),
         `<div class="tm-field-row">
           ${this._field(this._t("panel.reward_quantity_label"), "quantity_str", d.quantity_str, "text", this._t("panel.reward_quantity_hint"))}
           ${this._dateField(this._t("panel.reward_expires_label"), "expires_at", d.expires_at, this._t("panel.reward_expires_hint"))}
