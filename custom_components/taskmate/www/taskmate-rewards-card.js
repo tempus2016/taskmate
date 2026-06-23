@@ -797,6 +797,43 @@ class TaskMateRewardsCard extends LitElement {
         cursor: not-allowed;
       }
 
+      /* Custom-amount deposit (#559): sits beside the quick buttons, wraps
+         below them on narrow widths. */
+      .deposit-custom {
+        display: flex;
+        align-items: stretch;
+        gap: 6px;
+        margin-left: auto;
+        flex: 0 0 auto;
+      }
+      .deposit-custom input {
+        width: 72px;
+        min-width: 0;
+        padding: 7px 8px;
+        border-radius: 8px;
+        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.18));
+        background: var(--card-background-color, #fff);
+        color: var(--primary-text-color, #111);
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-align: center;
+      }
+      .deposit-custom input:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .deposit-custom .alloc-btn.deposit-add {
+        flex: 0 0 auto;
+        min-width: 0;
+      }
+      /* Hide the number spinners for a cleaner look */
+      .deposit-custom input::-webkit-outer-spin-button,
+      .deposit-custom input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .deposit-custom input[type="number"] { -moz-appearance: textfield; }
+
       .redeem-btn {
         display: inline-flex;
         align-items: center;
@@ -972,7 +1009,24 @@ class TaskMateRewardsCard extends LitElement {
       .rw-foot { gap: 8px; }
       .rw-status { font-size: 12px; }
       .rw-status-good { color: var(--tmd-good); font-weight: 800; }
-      .rw-pool-btns { gap: 6px; }
+      .rw-pool-btns { gap: 6px; flex-wrap: wrap; align-items: center; }
+      .rw-pool-btns .deposit-custom { margin-left: auto; gap: 6px; }
+      .rw-deposit-input {
+        width: 70px;
+        min-width: 0;
+        padding: 7px 8px;
+        border-radius: var(--tmd-radius-sm);
+        border: 1px solid var(--tmd-border);
+        background: var(--tmd-surface);
+        color: var(--tmd-text);
+        font-size: 13px;
+        font-weight: 700;
+        text-align: center;
+      }
+      .rw-deposit-input:disabled { opacity: 0.4; cursor: not-allowed; }
+      .rw-deposit-input::-webkit-outer-spin-button,
+      .rw-deposit-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      .rw-deposit-input[type="number"] { -moz-appearance: textfield; }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
       ? window.__taskmate_design.styles() : null;
@@ -988,6 +1042,7 @@ class TaskMateRewardsCard extends LitElement {
       child_id: null, // Optional: filter rewards for a specific child
       show_child_badges: true, // Show which children can claim each reward
       enable_pool_mode: false, // v3.0: "savings jar" allocation mode (opt-in per card)
+      deposit_amounts: [1, 5, 10], // #559: quick-deposit button amounts for pool/jackpot rewards
       header_color: '#e67e22',
       ...config,
     };
@@ -1458,7 +1513,7 @@ class TaskMateRewardsCard extends LitElement {
         </div>
       `;
     }
-    const amounts = [1, 5, 10];
+    const amounts = this._quickDepositAmounts();
     return html`
       <div class="pool-controls">
         ${amounts.map((amt) => {
@@ -1474,6 +1529,7 @@ class TaskMateRewardsCard extends LitElement {
             >+${amt}</button>
           `;
         })}
+        ${this._renderCustomDeposit(reward, child, spendable, isAllocLoading)}
       </div>
     `;
   }
@@ -1485,6 +1541,72 @@ class TaskMateRewardsCard extends LitElement {
       return this._t('rewards.deposit_disabled_insufficient', { spendable });
     }
     return this._t('rewards.deposit_points', { amount: amt });
+  }
+
+  /**
+   * Quick-deposit button amounts from config.deposit_amounts (#559). Sanitised
+   * to positive integers (deduped, order preserved); falls back to [1, 5, 10]
+   * when unset or invalid so existing cards are unaffected.
+   */
+  _quickDepositAmounts() {
+    const raw = this.config && this.config.deposit_amounts;
+    if (Array.isArray(raw)) {
+      const cleaned = [];
+      for (const v of raw) {
+        const n = Math.floor(Number(v));
+        if (Number.isFinite(n) && n >= 1 && !cleaned.includes(n)) cleaned.push(n);
+      }
+      if (cleaned.length) return cleaned;
+    }
+    return [1, 5, 10];
+  }
+
+  /**
+   * Deposit a typed custom amount (#559). The <input> is uncontrolled — we read
+   * it from the DOM on submit so keystrokes don't trigger re-renders (which
+   * would steal focus). The backend silently caps the amount to the child's
+   * spendable balance and the pool's remaining room.
+   */
+  _handleCustomDeposit(reward, child, e) {
+    const wrap = e.target.closest(".deposit-custom");
+    const input = wrap && wrap.querySelector("input");
+    if (!input) return;
+    const amount = Math.floor(Number(input.value));
+    if (!Number.isFinite(amount) || amount < 1) return;
+    input.value = "";
+    this._handleAllocate(reward, child, amount);
+  }
+
+  /**
+   * The "type any amount + Add" control shown beside the quick-deposit buttons.
+   * Shared by the classic and designed layouts; `cls` carries layout-specific
+   * button/input classes so each matches its surrounding style.
+   */
+  _renderCustomDeposit(reward, child, spendable, isAllocLoading, cls = {}) {
+    if (!child) return "";
+    const disabled = spendable < 1 || isAllocLoading;
+    const inputCls = cls.input || "";
+    const btnCls = cls.button || "alloc-btn";
+    const submit = (e) => { e.stopPropagation(); this._handleCustomDeposit(reward, child, e); };
+    return html`
+      <span class="deposit-custom">
+        <input
+          type="number" min="1" inputmode="numeric"
+          class="${inputCls}"
+          placeholder="${this._t('rewards.deposit_custom_placeholder')}"
+          aria-label="${this._t('rewards.deposit_custom_label')}"
+          ?disabled="${disabled}"
+          @click="${(e) => e.stopPropagation()}"
+          @keydown="${(e) => { if (e.key === 'Enter') { e.preventDefault(); submit(e); } }}"
+        >
+        <button
+          class="${btnCls} deposit-add"
+          ?disabled="${disabled}"
+          @click="${submit}"
+          title="${this._t('rewards.deposit_custom_add')}"
+        >${this._t('rewards.deposit_custom_add')}</button>
+      </span>
+    `;
   }
 
   _promptClaim(reward, child) {
@@ -1918,14 +2040,15 @@ class TaskMateRewardsCard extends LitElement {
             @click="${(e) => { e.stopPropagation(); this._handleRedeem(reward, d.relevantChild); }}"
           >${this._t('rewards.redeem')}</button>`
         : html`<span class="row rw-pool-btns">
-            ${[1, 5, 10].map((amt) => {
+            ${this._quickDepositAmounts().map((amt, i, arr) => {
               const disabled = !d.relevantChild || d.spendable < amt || this._loading[`${reward.id}_alloc`];
-              return html`<button class="btn sm ${amt === 10 ? '' : 'ghost'}"
+              return html`<button class="btn sm ${i === arr.length - 1 ? '' : 'ghost'}"
                 ?disabled="${disabled}"
                 title="${this._depositTooltip({ child: d.relevantChild, spendable: d.spendable, amt, isAllocLoading: this._loading[`${reward.id}_alloc`] })}"
                 @click="${(e) => { e.stopPropagation(); this._handleAllocate(reward, d.relevantChild, amt); }}"
               >+${amt}</button>`;
             })}
+            ${this._renderCustomDeposit(reward, d.relevantChild, d.spendable, this._loading[`${reward.id}_alloc`], { button: 'btn sm', input: 'rw-deposit-input' })}
           </span>`)
       : '';
 

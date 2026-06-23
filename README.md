@@ -635,8 +635,11 @@ type: custom:taskmate-rewards-card
 entity: sensor.taskmate_overview
 child_id: a8c8376a            # optional — pin to one child; omit to show a child picker
 show_child_badges: true       # show which children are assigned each reward
+deposit_amounts: [10, 50, 100] # optional — quick-deposit button amounts for pool/jackpot rewards (default [1, 5, 10])
 header_color: "#e67e22"
 ```
+
+> **Pool deposits:** Jackpot and savings-pool rewards show quick-deposit buttons plus an **Amount** field where a child can type any custom amount — handy for large goals. Set `deposit_amounts` to change the quick buttons (e.g. `[10, 50, 100]`); the custom field always accepts any value and is capped to the child's spendable balance and the pool's remaining room.
  
 ---
  
