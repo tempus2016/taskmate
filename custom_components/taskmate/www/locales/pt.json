@@ -53,6 +53,7 @@
   "activity.reason_penalty": "Penalidade: {name}",
   "activity.reason_perfect_week": "Bónus de semana perfeita!",
   "activity.reason_pool_refund_cost_reduced": "Reembolso do mealheiro (custo reduzido): {name}",
+  "activity.reason_pool_refund_deleted": "Reembolso do mealheiro (recompensa eliminada): {name}",
   "activity.reason_pool_refund_expired": "Reembolso do mealheiro (recompensa expirada): {name}",
   "activity.reason_pool_refund_sold_out": "Reembolso do mealheiro (recompensa esgotada): {name}",
   "activity.reason_streak_milestone": "Bónus de marco de sequência ({days} dias seguidos!)",

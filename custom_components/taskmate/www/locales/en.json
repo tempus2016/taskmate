@@ -53,6 +53,7 @@
   "activity.reason_penalty": "Penalty: {name}",
   "activity.reason_perfect_week": "Perfect week bonus!",
   "activity.reason_pool_refund_cost_reduced": "Pool refund (reward cost reduced): {name}",
+  "activity.reason_pool_refund_deleted": "Pool refund (reward deleted): {name}",
   "activity.reason_pool_refund_expired": "Pool refund (reward expired): {name}",
   "activity.reason_pool_refund_sold_out": "Pool refund (reward sold out): {name}",
   "activity.reason_streak_milestone": "Streak milestone bonus ({days} day streak!)",

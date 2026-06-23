@@ -53,6 +53,7 @@
   "activity.reason_penalty": "Pénalité : {name}",
   "activity.reason_perfect_week": "Bonus de semaine parfaite !",
   "activity.reason_pool_refund_cost_reduced": "Remboursement de cagnotte (coût réduit) : {name}",
+  "activity.reason_pool_refund_deleted": "Remboursement de cagnotte (récompense supprimée) : {name}",
   "activity.reason_pool_refund_expired": "Remboursement de cagnotte (récompense expirée) : {name}",
   "activity.reason_pool_refund_sold_out": "Remboursement de cagnotte (récompense épuisée) : {name}",
   "activity.reason_streak_milestone": "Bonus de palier de série ({days} jours de suite !)",

@@ -53,6 +53,7 @@
   "activity.reason_penalty": "Penalidade: {name}",
   "activity.reason_perfect_week": "Bônus de semana perfeita!",
   "activity.reason_pool_refund_cost_reduced": "Reembolso do cofrinho (custo reduzido): {name}",
+  "activity.reason_pool_refund_deleted": "Reembolso do cofrinho (recompensa excluída): {name}",
   "activity.reason_pool_refund_expired": "Reembolso do cofrinho (recompensa expirada): {name}",
   "activity.reason_pool_refund_sold_out": "Reembolso do cofrinho (recompensa esgotada): {name}",
   "activity.reason_streak_milestone": "Bônus de marco de sequência ({days} dias seguidos!)",

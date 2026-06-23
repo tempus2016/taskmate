@@ -292,6 +292,7 @@ class TaskMatePanel extends HTMLElement {
       ['Pool refund (reward expired):', 'activity.reason_pool_refund_expired'],
       ['Pool refund (reward sold out):', 'activity.reason_pool_refund_sold_out'],
       ['Pool refund (reward cost reduced):', 'activity.reason_pool_refund_cost_reduced'],
+      ['Pool refund (reward deleted):', 'activity.reason_pool_refund_deleted'],
       ['Penalty:', 'activity.reason_penalty'],
       ['Bonus:', 'activity.reason_bonus'],
     ];

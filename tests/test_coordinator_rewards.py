@@ -670,3 +670,35 @@ class TestJackpotImpliesPoolMode:
             name="Ice cream", cost=10, is_jackpot=False, pool_enabled=False
         ))
         assert reward.pool_enabled is False
+
+
+# ---------------------------------------------------------------------------
+# async_remove_reward — refund outstanding pool allocations (#564)
+# ---------------------------------------------------------------------------
+
+class TestRemoveRewardRefundsPool:
+    def test_delete_refunds_pool_allocations_to_wallets(self):
+        # Points were deducted at allocation time; deleting the reward must
+        # return each contributor's earmarked points to their wallet (#564).
+        child_a = Child(name="A", points=70, id="A")   # 30 earmarked earlier
+        child_b = Child(name="B", points=46, id="B")   # 25 earmarked earlier
+        reward = Reward(name="Family Trip", cost=800, is_jackpot=True, id="rewardJ")
+        coord = _make_coord(children=[child_a, child_b], rewards=[reward])
+        alloc_a = PoolAllocation(child_id="A", reward_id="rewardJ", allocated_points=30, id="pa1")
+        alloc_b = PoolAllocation(child_id="B", reward_id="rewardJ", allocated_points=25, id="pa2")
+        coord.storage.get_pool_allocations = MagicMock(return_value=[alloc_a, alloc_b])
+
+        run(coord.async_remove_reward("rewardJ"))
+
+        assert child_a.points == 100   # 70 + 30 refunded
+        assert child_b.points == 71    # 46 + 25 refunded
+        assert coord.storage.add_points_transaction.call_count == 2
+        coord.storage.remove_reward.assert_called_once_with("rewardJ")
+
+    def test_delete_with_no_allocations_still_removes(self):
+        reward = Reward(name="Ice cream", cost=10, id="reward1")
+        coord = _make_coord(rewards=[reward])
+        coord.storage.get_pool_allocations = MagicMock(return_value=[])
+        run(coord.async_remove_reward("reward1"))
+        coord.storage.remove_reward.assert_called_once_with("reward1")
+        assert coord.storage.add_points_transaction.call_count == 0
