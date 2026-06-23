@@ -33,6 +33,8 @@
 - [Achievement Badges](#achievement-badges)
 - [Timed Tasks](#timed-tasks)
 - [Task Groups](#task-groups)
+- [Quests](#quests)
+- [Challenges](#challenges)
 - [Pool Mode (Savings Jars)](#pool-mode-savings-jars)
 - [Dashboard Cards](#dashboard-cards)
 - [Services](#services)
@@ -481,6 +483,55 @@ Coordinate related rotation-mode chores so they're assigned to the same child (s
 Manage groups via the admin panel or the `taskmate.add_task_group` / `taskmate.update_task_group` / `taskmate.remove_task_group` services.
 
 See the [Task Groups wiki page](https://github.com/tempus2016/taskmate/wiki/Task-Groups) for full details.
+
+---
+
+## Quests
+
+A **Quest** is an ordered chain of chores a child works through step by step. They complete each chore in sequence, and when the **final step** is done (and approved, if that chore requires approval), they earn a one-time **bonus** on top of the points from the chores themselves. Think of it as a themed multi-step mission — "Morning Routine", "Saturday Tidy-Up", "Get Ready for School".
+
+Create and manage quests in the **Quests** tab of the TaskMate panel (you need at least one chore first):
+
+| Field | Default | Description |
+|---|---|---|
+| **Name** / **Description** / **Icon** | `mdi:map-marker-path` | Display details |
+| **Steps** | — | The ordered list of chores that make up the quest (pick from your existing chores) |
+| **Bonus points** | `25` | One-time reward granted when the last step is completed |
+| **Assigned to** | all children | Which children can take the quest — leave empty for everyone |
+| **Repeatable** | off | When on, progress resets after completion so the child can run it again; when off, it stays done once finished |
+| **Active** | on | Turn off to hide a quest without deleting it |
+
+**Key points:**
+- Progress is **per child** — each child works through the chain independently, and the panel shows each child's current step.
+- Steps advance only when the current step's chore is completed (and approved, if required) — they must be done in order.
+- A repeatable quest tracks how many times each child has completed it.
+- If a chore used as a step is later deleted, the step shows as a missing chore; the rest of the quest is unaffected.
+- Completing a quest fires a `taskmate_quest_completed` event (with `child_id`, `quest_id`, `bonus`, …) you can use in your own automations.
+
+---
+
+## Challenges
+
+A **Challenge** is a time-boxed target that refreshes every period. Within each **daily** or **weekly** window, a child works toward a goal — complete *N* chores, or earn *N* points — and the moment they hit it they get a one-time **bonus**. Progress and the reward reset automatically when the period rolls over, so a daily challenge is a fresh goal every day. Unlike a Quest (a fixed chore chain), a Challenge just measures output over a window.
+
+Create and manage challenges in the **Challenges** tab of the TaskMate panel:
+
+| Field | Default | Description |
+|---|---|---|
+| **Name** / **Description** / **Icon** | `mdi:trophy-outline` | Display details |
+| **Scope** | `daily` | The reset window — `daily` (resets at midnight) or `weekly` (resets Monday) |
+| **Metric** | `chores` | What counts toward the target — `chores` completed or `points` earned |
+| **Target** | `3` | The value the child must reach within the period |
+| **Bonus points** | `15` | Reward granted once per period when the target is met |
+| **Assigned to** | all children | Which children the challenge applies to — leave empty for everyone |
+| **Active** | on | Turn off to pause a challenge without deleting it |
+
+**Key points:**
+- Only **approved** chore completions count toward progress; bonus subtasks are excluded.
+- The bonus is awarded **once per period** — hitting the target again in the same day/week doesn't pay out twice.
+- Progress is tracked **per child** against the same shared target — it's not a head-to-head race between siblings.
+- Daily challenges reset at midnight; weekly challenges reset on Monday (ISO week). A target met just before the boundary does not carry into the next period.
+- Completing a challenge fires a `taskmate_challenge_completed` event (with `child_id`, `challenge_id`, `scope`, `bonus`, …) for use in automations.
 
 ---
 
