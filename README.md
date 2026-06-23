@@ -171,7 +171,7 @@ Lovelace resources are registered automatically on startup — no manual setup n
 | Type | How to Set | Description |
 |------|-----------|-------------|
 | **Standard** | Set `Points Cost` | Fixed cost set by the parent |
-| **Jackpot** | Enable "Jackpot" toggle | All assigned children's points pool together toward one shared reward |
+| **Jackpot** | Enable "Jackpot" toggle | A shared family goal — everyone deposits into one pooled jar (jackpots are always pool-mode) and it's redeemed once the combined total reaches the cost |
  
 ### Reward Approval Flow
  
@@ -624,7 +624,7 @@ Time-of-day periods are fully customisable in **Settings → Time-of-day boundar
  
 ### Rewards Card
  
-Shows all available rewards with progress bars and claim buttons. After claiming, the button shows "Awaiting parent approval" until approved. Jackpot rewards show a colour-coded contribution bar per child.
+Shows all available rewards with progress bars and claim buttons. After claiming, the button shows "Awaiting parent approval" until approved. If you don't set `child_id`, the card shows a **child picker** at the top so you can choose who is claiming (for households with more than one child). Jackpot rewards show pooled **deposit** controls and a colour-coded contribution bar per child instead of a single claim button.
  
 <p align="center">
   <img src="https://raw.githubusercontent.com/tempus2016/taskmate/main/images/rewardCard.png" alt="Rewards Card" width="500">
@@ -633,7 +633,7 @@ Shows all available rewards with progress bars and claim buttons. After claiming
 ```yaml
 type: custom:taskmate-rewards-card
 entity: sensor.taskmate_overview
-child_id: a8c8376a            # optional — filter to one child
+child_id: a8c8376a            # optional — pin to one child; omit to show a child picker
 show_child_badges: true       # show which children are assigned each reward
 header_color: "#e67e22"
 ```
@@ -1020,7 +1020,9 @@ data:
  
 ## Jackpot Rewards
  
-Enable **Jackpot** mode on a reward for big family goals — all assigned children's points pool together toward a single shared cost. The rewards card shows each child's contribution as a colour-coded bar segment.
+Enable **Jackpot** mode on a reward for big family goals — a holiday, a theme-park trip, a board game everyone wants. Jackpots are **always pooled**: each assigned child **deposits** points into the shared jar (deposited points are locked in), and once the combined total reaches the cost the reward can be **redeemed** — so a goal no single child could afford on their own is reached together. The rewards card shows each child's contribution as a colour-coded bar segment.
+ 
+Because jackpots are inherently pooled, the reward editor manages pool mode for them automatically — there's no separate Pool toggle to set. See [Pool Mode (Savings Jars)](#pool-mode-savings-jars) for how depositing and redeeming work.
  
 ---
  
