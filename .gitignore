@@ -33,3 +33,6 @@ dev/config/.cloud/
 !dev/config/.storage/choremander.*
 docs/
 .DS_Store
+
+# Local-only dev screenshot tooling (browserless/ha-dev specific; not for the published repo)
+scripts/screenshots/
