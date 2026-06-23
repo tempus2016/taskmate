@@ -1,0 +1,85 @@
+# Source of truth for repository labels, synced by .github/workflows/labels.yml.
+# Edit here and push to main to create/update labels. Deletion is disabled
+# (skip_delete: true) so existing labels not listed here are left untouched —
+# flip that in the workflow once this list is known-complete.
+
+# ── Type ─────────────────────────────────────────────────────────────────────
+- name: bug
+  color: d73a4a
+  description: Something isn't working
+- name: enhancement
+  color: a2eeef
+  description: New feature or request
+- name: documentation
+  color: 0075ca
+  description: Improvements or additions to documentation
+- name: question
+  color: d876e3
+  description: Further information is requested
+
+# ── Triage / workflow ────────────────────────────────────────────────────────
+- name: needs-triage
+  color: ededed
+  description: Awaiting maintainer triage
+- name: planned
+  color: 1d76db
+  description: Accepted and scheduled — triggers an auto-created branch
+- name: in-progress
+  color: fbca04
+  description: Actively being worked on
+- name: blocked
+  color: b60205
+  description: Blocked by another issue or external dependency
+- name: needs-info
+  color: e99695
+  description: More information needed from the reporter
+- name: stale
+  color: cccccc
+  description: No recent activity — may be closed if it stays inactive
+
+# ── Conversation state (set automatically on comment) ────────────────────────
+- name: Author Reply
+  color: 5319e7
+  description: Maintainer has replied — awaiting the reporter
+- name: User Reply
+  color: 0e8a16
+  description: Reporter has replied — awaiting the maintainer
+
+# ── Resolution ───────────────────────────────────────────────────────────────
+- name: duplicate
+  color: cfd3d7
+  description: This issue or PR already exists
+- name: wontfix
+  color: ffffff
+  description: This will not be worked on
+- name: invalid
+  color: e4e669
+  description: This doesn't seem right
+
+# ── Areas (also applied automatically by the path labeler) ───────────────────
+- name: cards
+  color: c5def5
+  description: Lovelace cards / frontend (www/*.js)
+- name: backend
+  color: bfd4f2
+  description: Python integration code
+- name: translations
+  color: fef2c0
+  description: i18n / locale strings
+- name: tests
+  color: c2e0c6
+  description: Test suite
+- name: ci
+  color: ededed
+  description: CI, workflows, and tooling
+- name: dependencies
+  color: 0366d6
+  description: Dependency updates
+
+# ── Community ────────────────────────────────────────────────────────────────
+- name: good first issue
+  color: 7057ff
+  description: Good for newcomers
+- name: help wanted
+  color: 008672
+  description: Extra attention is welcome

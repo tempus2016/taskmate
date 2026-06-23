@@ -1,0 +1,32 @@
+name: Sync labels
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/labels.yml
+      - .github/workflows/labels.yml
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6 2026-06-17
+
+      - name: Apply labels
+        uses: crazy-max/ghaction-github-labeler@24d110aa46a59976b8a7f35518cb7f14f434c916 # v5 2026-06-23
+        with:
+          yaml_file: .github/labels.yml
+          # Never delete labels not listed in labels.yml — create/update only.
+          # Set to false once the label list is confirmed complete.
+          skip_delete: true
+          dry_run: false

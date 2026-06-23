@@ -11,8 +11,17 @@
  
 <p align="center">
   <a href="https://github.com/tempus2016/taskmate/releases"><img src="https://img.shields.io/github/v/release/tempus2016/taskmate" alt="Latest Release"></a>
+  <a href="https://github.com/hacs/default"><img src="https://img.shields.io/badge/HACS-Default-41BDF5.svg" alt="HACS Default"></a>
   <a href="https://github.com/tempus2016/taskmate/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.1+-blue" alt="HA Version">
+  <a href="https://github.com/tempus2016/taskmate/releases"><img src="https://img.shields.io/github/downloads/tempus2016/taskmate/total" alt="Downloads"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/tempus2016/taskmate/actions/workflows/validate.yml"><img src="https://github.com/tempus2016/taskmate/actions/workflows/validate.yml/badge.svg" alt="HACS Validation"></a>
+  <a href="https://github.com/tempus2016/taskmate/actions/workflows/hassfest.yaml"><img src="https://github.com/tempus2016/taskmate/actions/workflows/hassfest.yaml/badge.svg" alt="hassfest"></a>
+  <a href="https://github.com/tempus2016/taskmate/actions/workflows/tests.yml"><img src="https://github.com/tempus2016/taskmate/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+  <a href="https://github.com/tempus2016/taskmate/actions/workflows/lint.yml"><img src="https://github.com/tempus2016/taskmate/actions/workflows/lint.yml/badge.svg" alt="Lint"></a>
 </p>
  
 > Originally created by [vinnybad/choremander](https://github.com/vinnybad/choremander). This fork adds 15 Lovelace cards, a bonus points system, streak tracking, reward approval flow, a penalty system, and much more.
@@ -68,6 +77,13 @@ TaskMate is a **default HACS integration** — no custom repository needed:
 1. Open **HACS** → search **"TaskMate"**
 2. Click **Download**
 3. **Restart Home Assistant**
+4. Add the integration: **Settings → Devices & Services → Add Integration → TaskMate**
+ 
+Or use the one-click buttons:
+ 
+[![Open TaskMate in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tempus2016&repository=taskmate&category=integration)
+&nbsp;
+[![Add TaskMate integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=taskmate)
  
 > Already installed TaskMate as a custom repository from before it was accepted into HACS? It keeps working and keeps receiving updates — you can safely remove the custom repository entry, HACS now tracks it by default.
  
