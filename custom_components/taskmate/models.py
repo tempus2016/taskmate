@@ -415,6 +415,14 @@ class Reward:
     restock_last: str = ""  # ISO date this reward was last restocked
     id: str = field(default_factory=generate_id)
 
+    def __post_init__(self) -> None:
+        # Jackpots are inherently pooled (#552): everyone deposits into the shared
+        # jar, so pool mode is always on. Enforced here so every construction path
+        # — WS add, service add, and storage load (legacy migration) — stays
+        # consistent and never yields an unclaimable single-child jackpot.
+        if self.is_jackpot:
+            self.pool_enabled = True
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Reward:
         """Create a Reward from a dictionary."""

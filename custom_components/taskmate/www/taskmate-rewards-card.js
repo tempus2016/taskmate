@@ -1122,7 +1122,7 @@ class TaskMateRewardsCard extends LitElement {
     const activeChild = activeChildId ? children.find((c) => c.id === activeChildId) : null;
     // Show the spendable banner when any visible reward is in pool mode
     const anyPoolReward = sortedRewards.some(
-      (r) => cardForcesPool || r.pool_enabled === true
+      (r) => cardForcesPool || r.pool_enabled === true || r.is_jackpot
     );
 
     return html`
@@ -1238,7 +1238,10 @@ class TaskMateRewardsCard extends LitElement {
     const isJackpot = reward.is_jackpot || false;
     // Pool mode is enabled per-reward (reward.pool_enabled) OR forced on via card config.
     const cardForcesPool = this.config.enable_pool_mode === true;
-    const enablePoolMode = cardForcesPool || reward.pool_enabled === true;
+    // Jackpot rewards are always pool-mode (#552): everyone deposits into the
+    // shared jar and it's redeemed when full. Combined points only work via the
+    // pool, so jackpots never show the single-child claim button.
+    const enablePoolMode = cardForcesPool || reward.pool_enabled === true || isJackpot;
     // All costs are static — just use reward.cost
     const displayCost = this._getDisplayCost(reward, children);
 
@@ -1668,7 +1671,10 @@ class TaskMateRewardsCard extends LitElement {
     const assignedTo = reward.assigned_to || [];
     const isJackpot = reward.is_jackpot || false;
     const cardForcesPool = this.config.enable_pool_mode === true;
-    const enablePoolMode = cardForcesPool || reward.pool_enabled === true;
+    // Jackpot rewards are always pool-mode (#552): everyone deposits into the
+    // shared jar and it's redeemed when full. Combined points only work via the
+    // pool, so jackpots never show the single-child claim button.
+    const enablePoolMode = cardForcesPool || reward.pool_enabled === true || isJackpot;
     const displayCost = this._getDisplayCost(reward, children);
 
     const relevantChildren = assignedTo.length === 0
@@ -1800,7 +1806,7 @@ class TaskMateRewardsCard extends LitElement {
     const cardForcesPool = this.config.enable_pool_mode === true;
     const activeChildId = this.config.child_id || this._selectedChildId;
     const activeChild = activeChildId ? children.find((c) => c.id === activeChildId) : null;
-    const anyPoolReward = sortedRewards.some((r) => cardForcesPool || r.pool_enabled === true);
+    const anyPoolReward = sortedRewards.some((r) => cardForcesPool || r.pool_enabled === true || r.is_jackpot);
 
     const header = this._designHeader(rewards.length, hd);
 

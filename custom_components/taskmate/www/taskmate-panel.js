@@ -2655,7 +2655,7 @@ class TaskMatePanel extends HTMLElement {
 
   _renderRewardCard(r, pointsName) {
     const totalPooled = (this._state.pool_allocations || []).filter(a => a.reward_id === r.id).reduce((s, a) => s + (a.allocated_points || 0), 0);
-    const showProgress = r.pool_enabled && r.cost > 0;
+    const showProgress = (r.pool_enabled || r.is_jackpot) && r.cost > 0;
     const pct = showProgress ? Math.min(100, Math.round(totalPooled / r.cost * 100)) : 0;
     return `
       <article class="tm-card tm-reward-card">
