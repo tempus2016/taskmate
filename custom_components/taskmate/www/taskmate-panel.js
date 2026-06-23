@@ -2131,7 +2131,7 @@ class TaskMatePanel extends HTMLElement {
   _sidebarGroups() {
     const counts = this._state ? {
       children:  (this._state.children || []).length,
-      activity:  (this._state.pending_completions || []).length + (this._state.pending_reward_claims || []).length,
+      activity:  (this._state.pending_completions || []).length + (this._state.pending_reward_claims || []).length + (this._state.swap_requests || []).length,
       chores:    (this._state.chores || []).length,
       rewards:   (this._state.rewards || []).length,
       penalties: (this._state.penalties || []).length,
@@ -2208,7 +2208,7 @@ class TaskMatePanel extends HTMLElement {
       .find(i => i.id === this._activeTab);
     const crumbLabel = crumb ? crumb.label : "";
     const pendingCount = this._state
-      ? (this._state.pending_completions || []).length + (this._state.pending_reward_claims || []).length
+      ? (this._state.pending_completions || []).length + (this._state.pending_reward_claims || []).length + (this._state.swap_requests || []).length
       : 0;
     return `
       <div class="tm-topbar">
@@ -2253,11 +2253,15 @@ class TaskMatePanel extends HTMLElement {
     if (this._activeTab === "activity") return "";
     const completionsP = (this._state.pending_completions || []).length;
     const rewardsP     = (this._state.pending_reward_claims || []).length;
-    const total = completionsP + rewardsP;
+    const swapsP       = (this._state.swap_requests || []).length;
+    const total = completionsP + rewardsP + swapsP;
     if (total === 0) return "";
     const parts = [];
-    if (completionsP) parts.push(`<strong>${completionsP}</strong> ${this._t("panel.topbar_chore_count", {count: completionsP})}`);
-    if (rewardsP)     parts.push(`<strong>${rewardsP}</strong> ${this._t("panel.topbar_reward_count", {count: rewardsP})}`);
+    // The count strings already include {count}; pass it bolded so the number
+    // renders once (not duplicated by a separate <strong> prefix — issue #573).
+    if (completionsP) parts.push(this._t("panel.topbar_chore_count", {count: `<strong>${completionsP}</strong>`}));
+    if (rewardsP)     parts.push(this._t("panel.topbar_reward_count", {count: `<strong>${rewardsP}</strong>`}));
+    if (swapsP)       parts.push(this._t("panel.topbar_swap_count", {count: `<strong>${swapsP}</strong>`}));
     return `
       <div class="tm-approval-banner">
         <ha-icon icon="mdi:bell-ring-outline"></ha-icon>

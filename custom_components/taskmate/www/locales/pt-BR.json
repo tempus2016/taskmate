@@ -975,6 +975,7 @@
   "panel.topbar_pending": "{count} pendente(s)",
   "panel.topbar_pending_title": "{count} pendente(s) — clique para revisar",
   "panel.topbar_reward_count": "{count} resgate(s) de recompensa",
+  "panel.topbar_swap_count": "{count} solicitação(ões) de troca",
   "panel.vis_equals": "Igual — estado corresponde exatamente",
   "panel.vis_gt": "Maior que (>)",
   "panel.vis_gte": "Maior ou igual (≥)",

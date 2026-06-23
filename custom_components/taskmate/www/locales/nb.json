@@ -975,6 +975,7 @@
   "panel.topbar_pending": "{count} ventende",
   "panel.topbar_pending_title": "{count} ventende — klikk for å gjennomgå",
   "panel.topbar_reward_count": "{count} belønningsinnløsning(er)",
+  "panel.topbar_swap_count": "{count} bytteforespørsel(er)",
   "panel.vis_equals": "Er lik — tilstand samsvarer nøyaktig",
   "panel.vis_gt": "Større enn (>)",
   "panel.vis_gte": "Større enn eller lik (≥)",

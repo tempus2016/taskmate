@@ -1028,6 +1028,7 @@
   "panel.topbar_pending": "{count} pending",
   "panel.topbar_pending_title": "{count} pending — click to review",
   "panel.topbar_reward_count": "{count} reward claim(s)",
+  "panel.topbar_swap_count": "{count} swap request(s)",
   "panel.vis_equals": "Equals — state matches exactly",
   "panel.vis_gt": "Greater than (>)",
   "panel.vis_gte": "Greater than or equal (≥)",
