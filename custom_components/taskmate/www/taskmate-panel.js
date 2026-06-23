@@ -3644,6 +3644,10 @@ class TaskMatePanel extends HTMLElement {
               </select>
             </div>
             <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_streak_all_chores_label")}<small>${this._t("panel.settings_streak_all_chores_hint")}</small></div>
+              <ha-switch data-setting="streak_requires_all_chores" ${s.streak_requires_all_chores ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_weekend_multiplier_label")}<small>${this._t("panel.settings_weekend_multiplier_hint")}</small></div>
               <input type="number" class="tm-input" step="0.1" min="1" max="5" data-setting="weekend_multiplier" value="${s.weekend_multiplier || 1.0}">
             </div>
@@ -3740,6 +3744,10 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_perfect_week_label")}<small>${this._t("panel.settings_perfect_week_hint")}</small></div>
               <ha-switch data-setting="perfect_week_enabled" ${s.perfect_week_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_perfect_week_all_chores_label")}<small>${this._t("panel.settings_perfect_week_all_chores_hint")}</small></div>
+              <ha-switch data-setting="perfect_week_requires_all_chores" ${s.perfect_week_requires_all_chores ? "checked" : ""}></ha-switch>
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_perfect_week_bonus_label")}<small>${this._t("panel.settings_perfect_week_bonus_hint")}</small></div>

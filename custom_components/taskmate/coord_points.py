@@ -30,6 +30,9 @@ class PointsMixin:
         except (ValueError, TypeError):
             perfect_week_bonus = 50
 
+        # #563: require every chore due each day (not just one) to count the day.
+        all_mode = self._setting_enabled("perfect_week_requires_all_chores")
+
         today = dt_util.now().date()
         # Should only run on Monday — last week is Mon(today-7) to Sun(today-1)
         if today.weekday() != 0:
@@ -91,8 +94,20 @@ class PointsMixin:
 
             # If no scheduled days can be derived (e.g. rotation-only setups),
             # fall back to requiring a completion on all 7 days as before
-            required_dates = _required_dates(child.id) or last_week_dates
-            if completed_days >= required_dates:
+            derived_dates = _required_dates(child.id)
+            required_dates = derived_dates or last_week_dates
+            # #563: when enabled (and the required days could be derived), a day
+            # counts only when EVERY chore due that day was done — not just one.
+            if all_mode and derived_dates:
+                satisfied = all(
+                    self._all_due_chores_done(
+                        child.id, date.fromisoformat(d), include_rotation=False
+                    )
+                    for d in derived_dates
+                )
+            else:
+                satisfied = completed_days >= required_dates
+            if satisfied:
                 # Perfect week!
                 child.awarded_perfect_weeks = awarded_weeks + [week_key]
                 child.points += perfect_week_bonus
@@ -609,12 +624,78 @@ class PointsMixin:
             result[days] = points
         return result
 
+    def _setting_enabled(self, key: str, default: str = "false") -> bool:
+        """Read a boolean setting that may be stored as a real bool or a
+        "true"/"false" string (the panel sends bools; defaults are strings)."""
+        v = self.storage.get_setting(key, default)
+        return v is True or str(v).lower() == "true"
+
+    def _due_chore_ids_for_child(self, child_id: str, day: date, *, include_rotation: bool) -> set[str]:
+        """Chore IDs *due* for ``child_id`` on ``day`` (#563).
+
+        A chore is due when it is enabled, assigned to the child (empty
+        ``assigned_to`` = everyone), not disabled for them, and scheduled for
+        that date. Rotation-mode chores only count when it's the child's turn —
+        and only when ``include_rotation`` is True (past days can't reconstruct
+        who was active, so the perfect-week path passes False).
+        """
+        out: set[str] = set()
+        for chore in self.storage.get_chores():
+            if not getattr(chore, "enabled", True):
+                continue
+            assigned = chore.assigned_to or []
+            if assigned and child_id not in assigned:
+                continue
+            if child_id in getattr(chore, "disabled_for", []):
+                continue
+            mode = getattr(chore, "assignment_mode", "everyone")
+            if mode not in ("", "everyone"):
+                if not include_rotation:
+                    continue
+                if child_id not in self._compute_active_children(chore, day):
+                    continue
+            if not self._is_chore_scheduled_for_date(chore, day):
+                continue
+            out.add(chore.id)
+        return out
+
+    def _completed_chore_ids_for_child(self, child_id: str, day: date) -> set[str]:
+        """Chore IDs the child has a (non-bonus) completion for on ``day`` —
+        approved or pending, so slow parent approval doesn't break the day."""
+        out: set[str] = set()
+        for c in self.storage.get_completions():
+            if c.child_id != child_id or getattr(c, "bonus_subtask_id", ""):
+                continue
+            try:
+                if dt_util.as_local(c.completed_at).date() == day:
+                    out.add(c.chore_id)
+            except (ValueError, TypeError, AttributeError):
+                continue
+        return out
+
+    def _all_due_chores_done(
+        self, child_id: str, day: date, *, include_rotation: bool, extra_done: str | None = None
+    ) -> bool:
+        """True when every chore due for the child on ``day`` has a completion.
+
+        A day with nothing due is satisfied. ``extra_done`` lets the streak path
+        count an in-flight completion that hasn't been persisted yet.
+        """
+        due = self._due_chore_ids_for_child(child_id, day, include_rotation=include_rotation)
+        if not due:
+            return True
+        done = self._completed_chore_ids_for_child(child_id, day)
+        if extra_done:
+            done = done | {extra_done}
+        return due <= done
+
     async def _award_points(
         self,
         child: Child,
         points: int,
         completion_date: date | None = None,
         skip_streak: bool = False,
+        chore_id: str | None = None,
     ) -> int:
         """Award points to a child, update streak, and apply bonus systems.
 
@@ -663,7 +744,16 @@ class PointsMixin:
 
         # ── Streak tracking ─────────────────────────────────────────────────
         streak_reset_occurred = False
-        if not skip_streak:
+        advance_streak = not skip_streak
+        # #563: when enabled, the streak only advances once EVERY chore due that
+        # day is done. The in-flight completion (chore_id) is counted as done
+        # since it may not be persisted yet at this point in the flow.
+        if advance_streak and self._setting_enabled("streak_requires_all_chores"):
+            if not self._all_due_chores_done(
+                child.id, effective_date, include_rotation=True, extra_done=chore_id
+            ):
+                advance_streak = False
+        if advance_streak:
             streak_mode = self.storage.get_setting("streak_reset_mode", "reset")
             streak_paused = getattr(child, "streak_paused", False)
             streak_before = child.current_streak or 0
@@ -710,7 +800,7 @@ class PointsMixin:
         # ── Streak milestone bonus ──────────────────────────────────────────
         reached_milestones: list[tuple[int, int]] = []
         milestones_enabled = self.storage.get_setting("streak_milestones_enabled", "true") == "true"
-        if not skip_streak and milestones_enabled and child.current_streak > 0:
+        if advance_streak and milestones_enabled and child.current_streak > 0:
             # Parse custom milestone config
             milestone_setting = self.storage.get_setting(
                 "streak_milestones", self.DEFAULT_STREAK_MILESTONES

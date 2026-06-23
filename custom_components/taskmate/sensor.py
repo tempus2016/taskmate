@@ -733,6 +733,8 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "streak_milestones": settings.get("streak_milestones", "3:5, 7:10, 14:20, 30:50, 60:100, 100:200"),
             "perfect_week_enabled": settings.get("perfect_week_enabled", "true") == "true",
             "perfect_week_bonus": _safe_int(settings.get("perfect_week_bonus"), 50),
+            "streak_requires_all_chores": settings.get("streak_requires_all_chores", "false") in (True, "true"),
+            "perfect_week_requires_all_chores": settings.get("perfect_week_requires_all_chores", "false") in (True, "true"),
             "total_children": len(children),
             "total_chores": len(chores),
             "total_rewards": len(rewards),
