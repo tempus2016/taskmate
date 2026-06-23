@@ -56,7 +56,7 @@ class RewardsMixin:
             icon=icon,
             assigned_to=assigned_to or [],
             is_jackpot=is_jackpot,
-            pool_enabled=pool_enabled,
+            pool_enabled=pool_enabled,  # Reward.__post_init__ forces this on for jackpots (#552)
             quantity=quantity,
             expires_at=expires_at,
         )
@@ -75,6 +75,9 @@ class RewardsMixin:
         allocations on that reward are refunded in full.
         """
         old = self.get_reward(reward.id)
+        # Jackpots are always pool-mode (#552); keep stored data consistent.
+        if reward.is_jackpot:
+            reward.pool_enabled = True
         self.storage.update_reward(reward)
         if old and reward.cost < old.cost:
             self._refund_pool_excess(reward, "Pool refund (reward cost reduced)")

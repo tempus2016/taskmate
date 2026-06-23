@@ -641,3 +641,32 @@ class TestRewardStockAndExpiration:
 
         assert child.points == 80  # 50 + 30 refund
         coord.storage.remove_pool_allocation.assert_called_with("kid1", "reward1")
+
+
+class TestJackpotImpliesPoolMode:
+    """Jackpots are inherently pooled — pool mode is forced on (#552)."""
+
+    def test_add_jackpot_forces_pool_enabled(self):
+        coord = _make_coord()
+        reward = run(coord.async_add_reward(
+            name="Family Trip", cost=100, is_jackpot=True, pool_enabled=False
+        ))
+        assert reward.pool_enabled is True
+        assert coord.storage.add_reward.call_args.args[0].pool_enabled is True
+
+    def test_update_jackpot_forces_pool_enabled(self):
+        existing = Reward(name="Trip", cost=100, is_jackpot=True,
+                          pool_enabled=False, id="rwJ")
+        coord = _make_coord(rewards=[existing])
+        edited = Reward(name="Trip", cost=100, is_jackpot=True,
+                        pool_enabled=False, id="rwJ")
+        run(coord.async_update_reward(edited))
+        assert edited.pool_enabled is True
+        assert coord.storage.update_reward.call_args.args[0].pool_enabled is True
+
+    def test_non_jackpot_pool_flag_left_untouched(self):
+        coord = _make_coord()
+        reward = run(coord.async_add_reward(
+            name="Ice cream", cost=10, is_jackpot=False, pool_enabled=False
+        ))
+        assert reward.pool_enabled is False
