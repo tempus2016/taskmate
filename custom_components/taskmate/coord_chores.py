@@ -593,7 +593,7 @@ class ChoresMixin:
         )
 
         if auto_approve:
-            total_awarded = await self._award_points(child, effective_points)
+            total_awarded = await self._award_points(child, effective_points, chore_id=chore_id)
             completion.approved = True
             completion.approved_at = dt_util.now()
             completion.points_awarded = total_awarded
@@ -805,7 +805,8 @@ class ChoresMixin:
                             chore, self.effective_chore_points(chore), completion.completed_at
                         )
                     total_awarded = await self._award_points(
-                        child, pts, completion_date=comp_date, skip_streak=is_bonus
+                        child, pts, completion_date=comp_date, skip_streak=is_bonus,
+                        chore_id=completion.chore_id,
                     )
                     completion.approved = True
                     completion.approved_at = dt_util.now()
