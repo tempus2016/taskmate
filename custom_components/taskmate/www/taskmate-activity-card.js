@@ -489,6 +489,7 @@ class TaskMateActivityCard extends LitElement {
       show_filter_chips: true,
       accent_stripes: true,
       show_relative_time: true,
+      show_undo: true,
       ...config,
     };
   }
@@ -812,7 +813,7 @@ class TaskMateActivityCard extends LitElement {
   // ── Undo affordance ──────────────────────────────────────
   // kind: 'chore' (undo an approval → pending) or 'txn' (reverse a points txn).
   _renderUndoButton(kind, id, detail, child, points) {
-    if (!id) return '';
+    if (!id || this.config.show_undo === false) return '';
     const loading = !!this._loading[id];
     const message = kind === 'chore'
       ? this._t('activity.undo_confirm_chore', { detail, child, points })
@@ -951,7 +952,7 @@ class TaskMateActivityCard extends LitElement {
   }
 
   _designUndoBtn(undo, label) {
-    if (!undo || !undo.id) return '';
+    if (!undo || !undo.id || this.config.show_undo === false) return '';
     const loading = !!this._loading[undo.id];
     const message = undo.kind === 'chore'
       ? this._t('activity.undo_confirm_chore', { detail: undo.detail, child: undo.child, points: undo.points })
@@ -1209,6 +1210,7 @@ class TaskMateActivityCardEditor extends LitElement {
       { name: 'show_filter_chips', selector: { boolean: {} } },
       { name: 'accent_stripes', selector: { boolean: {} } },
       { name: 'show_relative_time', selector: { boolean: {} } },
+      { name: 'show_undo', selector: { boolean: {} } },
     ];
   }
 
@@ -1222,6 +1224,7 @@ class TaskMateActivityCardEditor extends LitElement {
       show_filter_chips: this._t('activity.editor.show_filter_chips'),
       accent_stripes: this._t('activity.editor.accent_stripes'),
       show_relative_time: this._t('activity.editor.show_relative_time'),
+      show_undo: this._t('activity.editor.show_undo'),
     };
     return labels[entry.name] ?? entry.name;
   };
@@ -1234,6 +1237,7 @@ class TaskMateActivityCardEditor extends LitElement {
       show_filter_chips: this._t('activity.editor.show_filter_chips_helper'),
       accent_stripes: this._t('activity.editor.accent_stripes_helper'),
       show_relative_time: this._t('activity.editor.show_relative_time_helper'),
+      show_undo: this._t('activity.editor.show_undo_helper'),
     };
     return helpers[entry.name] ?? '';
   };
@@ -1249,6 +1253,7 @@ class TaskMateActivityCardEditor extends LitElement {
       show_filter_chips: this.config.show_filter_chips !== false,
       accent_stripes: this.config.accent_stripes !== false,
       show_relative_time: this.config.show_relative_time !== false,
+      show_undo: this.config.show_undo !== false,
     };
     return html`
       <ha-form

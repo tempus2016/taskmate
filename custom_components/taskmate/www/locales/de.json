@@ -34,6 +34,8 @@
   "activity.editor.show_relative_time": "Relative time labels",
   "activity.editor.show_filter_chips_helper": "Show the All / Chores / Rewards / Adjustments chip bar below the header",
   "activity.editor.show_filter_chips": "Show filter chips",
+  "activity.editor.show_undo": "Rückgängig-Schaltflächen anzeigen",
+  "activity.editor.show_undo_helper": "Zeigt die Rückgängig-Schaltfläche in jeder Zeile. Für ein kindgerechtes Dashboard deaktivieren, damit Kinder ihre eigene Aktivität nicht rückgängig machen können.",
   "activity.events_count": "{count} Ereignisse",
   "activity.just_now": "just now",
   "activity.hours_ago": "{count}h ago",

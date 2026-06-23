@@ -34,6 +34,8 @@
   "activity.editor.show_relative_time": "Relative time labels",
   "activity.editor.show_filter_chips_helper": "Show the All / Chores / Rewards / Adjustments chip bar below the header",
   "activity.editor.show_filter_chips": "Show filter chips",
+  "activity.editor.show_undo": "Mostrar botões de desfazer",
+  "activity.editor.show_undo_helper": "Mostra o botão de desfazer em cada linha. Desative para um painel adequado a crianças, para que não possam desfazer a própria atividade.",
   "activity.events_count": "{count} eventos",
   "activity.just_now": "just now",
   "activity.hours_ago": "{count}h ago",
