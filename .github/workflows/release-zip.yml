@@ -1,0 +1,38 @@
+name: Attach HACS zip to release
+
+# Builds taskmate.zip from custom_components/taskmate/ and attaches it to the
+# GitHub release. HACS uses this asset when hacs.json has "zip_release": true
+# and "filename": "taskmate.zip" — and the asset's download_count is what HACS
+# shows as the integration's download number.
+#
+# The zip's root must contain manifest.json directly: HACS extracts the archive
+# straight into custom_components/taskmate/.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  attach-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6 2026-06-17
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Build taskmate.zip
+        run: |
+          cd custom_components/taskmate
+          zip -r -X "$GITHUB_WORKSPACE/taskmate.zip" . \
+            -x '*/__pycache__/*' '__pycache__/*' '*.pyc'
+          cd "$GITHUB_WORKSPACE"
+          echo "--- zip contents (top level) ---"
+          unzip -l taskmate.zip | grep -E 'manifest.json' || (echo "manifest.json missing from zip root" && exit 1)
+
+      - name: Upload taskmate.zip to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.event.release.tag_name }}" taskmate.zip --clobber --repo "${{ github.repository }}"
