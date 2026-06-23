@@ -53,6 +53,7 @@
   "activity.reason_penalty": "Strafe: {name}",
   "activity.reason_perfect_week": "Perfekter Wochenbonus!",
   "activity.reason_pool_refund_cost_reduced": "Pool-Rückerstattung (Prämienkosten reduziert): {name}",
+  "activity.reason_pool_refund_deleted": "Poolrückerstattung (Prämie gelöscht): {name}",
   "activity.reason_pool_refund_expired": "Poolrückerstattung (Prämie abgelaufen): {name}",
   "activity.reason_pool_refund_sold_out": "Poolrückerstattung (Prämie ausverkauft): {name}",
   "activity.reason_streak_milestone": "Serie-Meilensteinbonus ({days} Tage Serie!)",

@@ -99,6 +99,12 @@ class RewardsMixin:
     async def async_remove_reward(self, reward_id: str) -> None:
         """Remove a reward and clean up any pending claims and pool allocations referencing it."""
         self.storage.remove_reward_claims_for_reward(reward_id)
+        # Refund any earmarked pool points back to their contributors before the
+        # allocations are dropped — otherwise the points deducted at allocation
+        # time would be silently lost (#564). Mirrors the expiry/sold-out paths.
+        reward = self.get_reward(reward_id)
+        if reward:
+            self._refund_all_pool_allocations(reward, "Pool refund (reward deleted)")
         self.storage.remove_pool_allocations_for_reward(reward_id)
         self.storage.remove_reward(reward_id)
         await self.storage.async_save()

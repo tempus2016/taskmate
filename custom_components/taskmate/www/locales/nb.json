@@ -53,6 +53,7 @@
   "activity.reason_penalty": "Straff: {name}",
   "activity.reason_perfect_week": "Perfekt uke-bonus!",
   "activity.reason_pool_refund_cost_reduced": "Refusjon fra sparegris (kostnad redusert): {name}",
+  "activity.reason_pool_refund_deleted": "Refusjon fra sparegris (belønning slettet): {name}",
   "activity.reason_pool_refund_expired": "Refusjon fra sparegris (belønning utløpt): {name}",
   "activity.reason_pool_refund_sold_out": "Refusjon fra sparegris (belønning utsolgt): {name}",
   "activity.reason_streak_milestone": "Milepælsbonus ({days} dagers strek!)",
