@@ -310,6 +310,9 @@ Children earn a bonus when they complete at least one chore every day Monday–S
  
 - Checked automatically every **Monday at midnight**
 - Default: **50 points** — configurable from 10 to 500
+- Enable **Perfect week needs all tasks** to require *every* chore due that day to be done (not just one) before the day counts
+
+> **Stricter streaks:** the matching **Streak needs all tasks** toggle applies the same rule to daily streaks — a day only extends the streak once every chore due that day is complete. Both default to off, preserving the original "any one chore" behaviour.
  
 ### Settings Reference
  
@@ -318,8 +321,10 @@ Children earn a bonus when they complete at least one chore every day Monday–S
 | Weekend Points Multiplier | `2.0` | Multiplier on Sat/Sun (1.0 = off) |
 | Streak Milestone Bonuses | `on` | Master toggle |
 | Streak Milestone Configuration | `3:5, 7:10, 14:20, 30:50, 60:100, 100:200` | Custom `days:points` pairs |
+| Streak needs all tasks | `off` | Only extend a streak once every chore due that day is done |
 | Perfect Week Bonus | `on` | Toggle |
 | Perfect Week Bonus Points | `50` | Points per perfect week |
+| Perfect week needs all tasks | `off` | A day counts only when every chore due that day is done |
 | Streak Reset Mode | `reset` | `reset` — streak drops to 0 on a missed day; `pause` — streak is preserved |
 | History Days to Keep | `90` | Completion history retention, 30–365 days |
  
@@ -755,6 +760,7 @@ type: custom:taskmate-activity-card
 entity: sensor.taskmate_overview
 child_id: a8c8376a            # optional — filter to one child
 max_items: 30
+show_undo: true               # optional — set false to hide undo buttons (kid-friendly dashboards)
 header_color: "#2471a3"
 ```
  
