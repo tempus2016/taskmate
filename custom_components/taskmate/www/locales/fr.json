@@ -1132,6 +1132,7 @@
   "rewards.confirm_body": "Réclamer {name} ?",
   "rewards.confirm_claim_btn": "Réclamer !",
   "rewards.confirm_cost": "Coût",
+  "rewards.confirm_pool_total": "Total de la cagnotte",
   "rewards.confirm_remaining": "Restant",
   "rewards.confirm_title": "Réclamer la récompense ?",
   "rewards.confirm_your_points": "Vos {name}",

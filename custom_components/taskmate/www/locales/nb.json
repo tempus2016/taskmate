@@ -1132,6 +1132,7 @@
   "rewards.confirm_body": "Innløs {name}?",
   "rewards.confirm_claim_btn": "Innløs!",
   "rewards.confirm_cost": "Kostnad",
+  "rewards.confirm_pool_total": "Sparegris totalt",
   "rewards.confirm_remaining": "Gjenstående",
   "rewards.confirm_title": "Innløs belønning?",
   "rewards.confirm_your_points": "Dine {name}",
