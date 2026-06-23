@@ -635,6 +635,15 @@ class ChoresMixin:
         if auto_approve and getattr(self, "badges", None):
             await self.badges.evaluate_for_child(child_id, "manual")
 
+        # Auto-approved completions skip the parent-approval path, so they must
+        # run the same post-approval progression hooks here — otherwise quest
+        # steps and challenges only advance for approval-required chores (#558).
+        if auto_approve:
+            if hasattr(self, "_async_advance_quests"):
+                await self._async_advance_quests(child_id, chore_id)
+            if hasattr(self, "_async_evaluate_challenges"):
+                await self._async_evaluate_challenges(child_id)
+
         return completion
 
     async def async_parent_complete_chore(self, chore_id: str) -> ChoreCompletion:
