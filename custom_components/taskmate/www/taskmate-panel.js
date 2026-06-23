@@ -2169,6 +2169,9 @@ class TaskMatePanel extends HTMLElement {
             TaskMate
             <small>v${PANEL_VERSION}</small>
           </div>
+          <a class="tm-brand-wiki" href="https://github.com/tempus2016/taskmate/wiki" target="_blank" rel="noopener noreferrer" title="${this._esc(this._t("panel.wiki_tooltip"))}" aria-label="${this._esc(this._t("panel.wiki_tooltip"))}">
+            <ha-icon icon="mdi:book-open-variant"></ha-icon>
+          </a>
         </div>
         <nav class="tm-nav">
           ${groups.map(g => `
@@ -5034,6 +5037,21 @@ class TaskMatePanel extends HTMLElement {
         font-size: 11px;
         font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
         margin-top: 1px;
+      }
+      .tm-brand-wiki {
+        flex-shrink: 0;
+        width: 28px; height: 28px;
+        border-radius: 7px;
+        display: grid; place-items: center;
+        color: var(--tm-text-faint);
+        text-decoration: none;
+        transition: color 0.15s ease, background 0.15s ease;
+      }
+      .tm-brand-wiki ha-icon { --mdc-icon-size: 18px; }
+      .tm-brand-wiki:hover, .tm-brand-wiki:focus-visible {
+        color: var(--tm-accent);
+        background: var(--tm-border-soft);
+        outline: none;
       }
       .tm-nav {
         padding: 10px 8px;

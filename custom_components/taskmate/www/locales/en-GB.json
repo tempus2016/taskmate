@@ -868,6 +868,7 @@
   "panel.tab_settings": "Settings",
   "panel.tab_templates": "Templates",
   "panel.tab_unknown": "Unknown tab",
+  "panel.wiki_tooltip": "Open the TaskMate wiki",
   "panel.notif_add_custom": "Add custom notification",
   "panel.notif_add_parent": "Add parent",
   "panel.notif_custom_empty": "No custom notifications yet.",

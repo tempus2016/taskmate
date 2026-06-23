@@ -818,6 +818,7 @@
   "panel.tab_settings": "Einstellungen",
   "panel.tab_templates": "Vorlagen",
   "panel.tab_unknown": "Unbekannter Tab",
+  "panel.wiki_tooltip": "TaskMate-Wiki öffnen",
   "panel.notif_add_custom": "Benutzerdefinierte Benachrichtigung hinzufügen",
   "panel.notif_add_parent": "Elternteil hinzufügen",
   "panel.notif_custom_empty": "Noch keine benutzerdefinierten Benachrichtigungen.",
