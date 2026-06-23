@@ -2578,7 +2578,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr>
-              ${this._bulkMode ? "<th></th>" : ""}<th class="${this._bulkMode ? "" : "tm-col-sticky"}">${this._t("panel.chore_table_name")}</th><th>${this._t("panel.chore_table_points")}</th><th>${this._t("panel.chore_table_period")}</th><th>${this._t("panel.chore_table_assigned")}</th><th>${this._t("panel.chore_table_current")}</th><th>${this._t("panel.chore_table_schedule")}</th><th>${this._t("panel.chore_table_approval")}</th><th></th>
+              ${this._bulkMode ? "<th></th>" : ""}<th class="${this._bulkMode ? "" : "tm-col-sticky"}">${this._t("panel.chore_table_name")}</th><th>${this._t("panel.chore_table_points")}</th><th>${this._t("panel.chore_table_period")}</th><th>${this._t("panel.chore_table_assigned")}</th><th>${this._t("panel.chore_table_current")}</th><th>${this._t("panel.chore_table_schedule")}</th><th>${this._t("panel.chore_table_approval")}</th>
             </tr></thead>
             <tbody>
               ${chores.map(c => this._renderChoreRow(c, childById)).join("")}
@@ -2618,17 +2618,19 @@ class TaskMatePanel extends HTMLElement {
     return `
       <tr class="tm-row ${c.enabled === false ? "tm-row-disabled" : ""}">
         ${this._bulkMode ? `<td><input type="checkbox" data-act="bulk-toggle-row" data-id="${this._esc(c.id)}" ${this._bulkSel.has(c.id) ? "checked" : ""}></td>` : ""}
-        <td class="${this._bulkMode ? "" : "tm-col-sticky"}">${nameCell}</td>
+        <td class="${this._bulkMode ? "" : "tm-col-sticky"}"><div class="tm-name-cell">
+          <span class="tm-name-main">${nameCell}</span>
+          ${renaming ? "" : `<span class="tm-name-actions">
+            <button type="button" class="tm-icon-btn" data-act="edit-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_edit")}">✏</button>
+            <button type="button" class="tm-icon-btn" data-act="toggle-row-menu" data-id="${this._esc(c.id)}" title="${this._t("panel.row_menu_more")}" aria-haspopup="menu" aria-label="${this._t("panel.row_menu_more")}">⋮</button>
+          </span>`}
+        </div></td>
         <td><strong class="tm-numeric">${c.task_type === "timed" ? `${c.timed_rate_points || 0}/${c.timed_rate_minutes || 1} min` : c.points}</strong></td>
         <td><span class="tm-pill">${this._esc(this._timeCategoryLabel(c.time_category))}</span></td>
         <td>${assignedNames} ${modeBadge}</td>
         <td>${currentName}</td>
         <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span></td>
         <td>${c.requires_approval ? `<span class='tm-yes'>${this._t("panel.common_yes")}</span>` : `<span class='tm-no'>${this._t("panel.common_no")}</span>`}</td>
-        <td class="tm-row-actions"><div>
-          <button type="button" class="tm-icon-btn" data-act="edit-chore" data-id="${this._esc(c.id)}" title="${this._t("panel.btn_edit")}">✏</button>
-          <button type="button" class="tm-icon-btn" data-act="toggle-row-menu" data-id="${this._esc(c.id)}" title="${this._t("panel.row_menu_more")}" aria-haspopup="menu" aria-label="${this._t("panel.row_menu_more")}">⋮</button>
-        </div></td>
       </tr>
     `;
   }
@@ -5479,6 +5481,16 @@ class TaskMatePanel extends HTMLElement {
       .tm-table td.tm-col-sticky { background: var(--tm-surface-0); }
       .tm-table th.tm-col-sticky { z-index: 3; }
       .tm-row:hover td.tm-col-sticky { background: var(--tm-surface-hover); }
+
+      /* Row actions (✏ / ⋮) ride inside the pinned name cell so they stay
+         reachable without scrolling the wide table right (issue #568).
+         Pinned with the name outside bulk mode; scroll with it in bulk mode. */
+      .tm-name-cell { display: flex; align-items: center; gap: 12px; }
+      .tm-name-cell .tm-name-main { min-width: 0; }
+      .tm-name-cell .tm-name-actions {
+        margin-left: auto; display: inline-flex; gap: 4px;
+        align-items: center; flex-shrink: 0;
+      }
 
       /* Floating kebab (⋮) action menu for chore rows. Rendered fixed at the
          document root so the table wrap's overflow never clips it. */
