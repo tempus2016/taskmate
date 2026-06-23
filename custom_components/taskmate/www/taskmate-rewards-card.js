@@ -98,6 +98,37 @@ class TaskMateRewardsCard extends LitElement {
         font-weight: 500;
       }
 
+      /* ── Child tabs (shown when no child_id is pinned and 2+ children) ── */
+      .child-tabs {
+        display: flex;
+        gap: 6px;
+        padding: 12px 16px 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .child-tabs::-webkit-scrollbar { display: none; }
+      .child-tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        background: var(--divider, rgba(0, 0, 0, 0.08));
+        border: 2px solid transparent;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        white-space: nowrap;
+        color: var(--text-secondary, #666);
+        transition: all 0.15s;
+      }
+      .child-tab ha-icon { --mdc-icon-size: 18px; }
+      .child-tab.selected {
+        background: color-mix(in srgb, var(--taskmate-header-bg, #e67e22) 16%, transparent);
+        border-color: var(--taskmate-header-bg, #e67e22);
+        color: var(--taskmate-header-bg, #e67e22);
+      }
+
       .card-content {
         padding: 16px;
         display: flex;
@@ -912,6 +943,7 @@ class TaskMateRewardsCard extends LitElement {
       .rw-badge { font-size: 11px; padding: 2px 8px; }
       .rw-badge-all { background: color-mix(in srgb, var(--tmd-good) 16%, transparent);
                       color: var(--tmd-good); border-color: transparent; }
+      .rw-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
       .rw-sel { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
                 border-radius: var(--tmd-radius-sm); padding: 9px 12px; }
       .rw-sel-name { flex: 1; min-width: 0; font-weight: 800; }
@@ -977,6 +1009,54 @@ class TaskMateRewardsCard extends LitElement {
       show_child_badges: true,
       enable_pool_mode: false,
     };
+  }
+
+  willUpdate() {
+    // #547: when the card isn't pinned to a child via config.child_id, default the
+    // in-card selection to the first child so the claim button renders (and the
+    // child tabs have a selection). Without this, childId stays null and no claim
+    // button is ever shown, making rewards impossible to claim.
+    if (this.hass && this.config && !this.config.child_id && !this._selectedChildId) {
+      const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+        || this.hass.states?.[this.config.entity]?.attributes || {};
+      const kids = attrs.children || [];
+      if (kids.length) this._selectedChildId = kids[0].id;
+    }
+  }
+
+  _selectChild(id) {
+    this._selectedChildId = id;
+  }
+
+  // Classic child picker — shown only when no child_id is pinned and 2+ children.
+  _renderChildTabs(children) {
+    if (this.config.child_id || children.length <= 1) return html``;
+    const activeId = this._selectedChildId || children[0]?.id;
+    return html`
+      <div class="child-tabs">
+        ${children.map((c) => html`
+          <div class="child-tab ${activeId === c.id ? 'selected' : ''}"
+               @click=${() => this._selectChild(c.id)}>
+            <ha-icon icon="${c.avatar || 'mdi:account-circle'}"></ha-icon>
+            ${c.name}
+          </div>
+        `)}
+      </div>
+    `;
+  }
+
+  // Designed-style child picker (reuses the .btn sm button styling).
+  _designChildTabs(children) {
+    if (this.config.child_id || children.length <= 1) return html``;
+    const activeId = this._selectedChildId || children[0]?.id;
+    return html`
+      <div class="row rw-tabs">
+        ${children.map((c) => html`
+          <button class="btn sm ${activeId === c.id ? 'good' : 'ghost'}"
+                  @click=${() => this._selectChild(c.id)}>${c.name}</button>
+        `)}
+      </div>
+    `;
   }
 
   render() {
@@ -1057,6 +1137,8 @@ class TaskMateRewardsCard extends LitElement {
             ? html`<span class="reward-count">${rewards.length === 1 ? this._t('rewards.reward_count_singular', { count: rewards.length }) : this._t('rewards.reward_count_plural', { count: rewards.length })}</span>`
             : ""}
         </div>
+
+        ${this._renderChildTabs(children)}
 
         ${anyPoolReward && activeChild ? this._renderSpendableBanner(activeChild, pointsIcon, pointsName) : ''}
 
@@ -1725,6 +1807,7 @@ class TaskMateRewardsCard extends LitElement {
     const body = sortedRewards.length === 0
       ? html`<div class="tmd-empty">${this._t('rewards.empty_title')}<br>${this._t('rewards.empty_subtitle')}</div>`
       : html`
+        ${this._designChildTabs(children)}
         ${(anyPoolReward && activeChild) || activeChild
           ? this._designChildSelector(activeChild, pointsIcon, pointsName, design)
           : ''}
