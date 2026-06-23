@@ -34,6 +34,8 @@
   "activity.editor.show_relative_time": "Relative time labels",
   "activity.editor.show_filter_chips_helper": "Show the All / Chores / Rewards / Adjustments chip bar below the header",
   "activity.editor.show_filter_chips": "Show filter chips",
+  "activity.editor.show_undo": "Show undo buttons",
+  "activity.editor.show_undo_helper": "Show the undo button on each row. Turn off for a kid-friendly dashboard so children can't reverse their own activity.",
   "activity.events_count": "{count} events",
   "activity.just_now": "just now",
   "activity.hours_ago": "{count}h ago",
