@@ -975,6 +975,7 @@
   "panel.topbar_pending": "{count} en attente",
   "panel.topbar_pending_title": "{count} en attente — cliquez pour vérifier",
   "panel.topbar_reward_count": "{count} réclamation(s) de récompense",
+  "panel.topbar_swap_count": "{count} demande(s) d'échange",
   "panel.vis_equals": "Égal — l'état correspond exactement",
   "panel.vis_gt": "Supérieur à (>)",
   "panel.vis_gte": "Supérieur ou égal (≥)",

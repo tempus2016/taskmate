@@ -975,6 +975,7 @@
   "panel.topbar_pending": "{count} ausstehend",
   "panel.topbar_pending_title": "{count} ausstehend — klicke zum Überprüfen",
   "panel.topbar_reward_count": "{count} Belohnungseinlösung(en)",
+  "panel.topbar_swap_count": "{count} Tauschanfrage(n)",
   "panel.vis_equals": "Gleich — Zustand stimmt genau überein",
   "panel.vis_gt": "Größer als (>)",
   "panel.vis_gte": "Größer oder gleich (≥)",
