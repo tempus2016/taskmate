@@ -1,0 +1,35 @@
+# Path-based PR labels, applied by .github/workflows/labeler.yml (actions/labeler v5).
+# Labels referenced here must exist — they're defined in .github/labels.yml.
+
+cards:
+  - changed-files:
+      - any-glob-to-any-file:
+          - custom_components/taskmate/www/**/*.js
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - custom_components/taskmate/**/*.py
+
+translations:
+  - changed-files:
+      - any-glob-to-any-file:
+          - custom_components/taskmate/translations/**
+          - custom_components/taskmate/www/locales/**
+          - custom_components/taskmate/strings.json
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - tests/**
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - docs/**
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**

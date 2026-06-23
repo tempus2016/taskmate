@@ -1,0 +1,95 @@
+# Contributing to TaskMate
+
+Thanks for your interest in improving TaskMate! This is a Home Assistant custom
+integration for family chore and points tracking. Contributions of all kinds are
+welcome — bug reports, feature ideas, translations, docs, and code.
+
+## Before you start
+
+- **Bugs and features:** please open an issue first using the
+  [issue templates](https://github.com/tempus2016/taskmate/issues/new/choose).
+  For features especially, it's worth agreeing on the approach before writing
+  code.
+- **Questions and ideas:** use
+  [Discussions](https://github.com/tempus2016/taskmate/discussions) rather than
+  an issue.
+- **Check the [Troubleshooting wiki](https://github.com/tempus2016/taskmate/wiki/Troubleshooting)**
+  first for common problems.
+
+## Project layout
+
+```
+custom_components/taskmate/
+├── __init__.py            # integration setup
+├── config_flow.py         # UI config & options flow
+├── coordinator.py         # core data coordinator
+├── coord_*.py             # per-domain coordinators (chores, points, badges, …)
+├── sensor.py              # sensors the cards read from
+├── services.yaml          # service definitions
+├── websocket.py           # WebSocket API commands
+├── translations/          # backend strings (de, en, en-GB, fr, nb, nn, pt, pt-BR)
+├── strings.json           # source strings
+└── www/                   # Lovelace cards (LitElement) + panel + locales
+```
+
+- **Backend** is Python. Follow the existing patterns — don't introduce new
+  frameworks or heavy dependencies without discussing it first.
+- **Cards** (`www/taskmate-*-card.js`) are **LitElement**-based. Other frontend
+  code is vanilla JS. Cards read chore/child data from the sensors, not by
+  calling services directly to fetch state.
+
+## Development setup
+
+The fastest loop is a real Home Assistant instance with the integration
+bind-mounted:
+
+1. Mount or copy `custom_components/taskmate` into your HA config's
+   `custom_components/` directory.
+2. Restart Home Assistant to pick up Python changes.
+3. For card (`.js`) changes, **hard-refresh** the browser — the cards are
+   cache-busted by the manifest version, so a hard refresh is needed after JS
+   edits.
+
+## Code quality
+
+Two checks gate every PR into `main`. Run them locally before pushing:
+
+```bash
+# Lint (matches the "Ruff" CI check)
+ruff check .
+
+# Tests (matches the "Run tests" CI check)
+pytest
+```
+
+`hassfest` and HACS validation also run in CI to keep the integration
+compliant.
+
+## Translations
+
+TaskMate ships in several languages. **Any new user-facing string must be added
+to every locale in the same PR** — `de`, `fr`, `nb`, `nn`, `pt`, and `pt-BR`
+(plus the English source). English-only PRs with a "translate later" note will
+be asked to include the translations.
+
+Backend strings live in `custom_components/taskmate/translations/` and
+`strings.json`; card strings live under `www/locales/`.
+
+## Submitting a pull request
+
+1. Fork and create a feature branch.
+2. Make your change, keeping the PR focused on one logical thing.
+3. Run `ruff` and `pytest` locally.
+4. Test the change on a real Home Assistant instance.
+5. Open a PR using the template. Link the issue it closes
+   (`Closes #123`) so it auto-closes on merge.
+6. If your change is release-bound and affects behaviour, bump the
+   `manifest.json` version.
+
+A maintainer will review, and may ask for changes. Once it's green and approved,
+it gets merged.
+
+## Code of Conduct
+
+By participating you agree to abide by our
+[Code of Conduct](../CODE_OF_CONDUCT.md).
