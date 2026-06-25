@@ -1476,5 +1476,7 @@
   "panel.dialog_add_challenge": "Legg til utfordring",
   "panel.dialog_edit_challenge": "Rediger utfordring",
   "panel.toast_challenge_added": "Utfordring lagt til",
-  "panel.toast_challenge_updated": "Utfordring oppdatert"
+  "panel.toast_challenge_updated": "Utfordring oppdatert",
+  "panel.settings_allow_negative_label": "Tillat negativ saldo",
+  "panel.settings_allow_negative_hint": "La straff trekke et barns saldo under null i stedet for å stoppe på null."
 }

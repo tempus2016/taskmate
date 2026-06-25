@@ -1476,5 +1476,7 @@
   "panel.dialog_add_challenge": "Ajouter un défi",
   "panel.dialog_edit_challenge": "Modifier le défi",
   "panel.toast_challenge_added": "Défi ajouté",
-  "panel.toast_challenge_updated": "Défi mis à jour"
+  "panel.toast_challenge_updated": "Défi mis à jour",
+  "panel.settings_allow_negative_label": "Autoriser le solde négatif",
+  "panel.settings_allow_negative_hint": "Les pénalités peuvent faire passer le solde d'un enfant sous zéro au lieu de s'arrêter à zéro."
 }

@@ -1105,3 +1105,21 @@ class TestReverseCompletionMilestones:
         assert child.streak_milestones_achieved == [3]
         # only the base points were reversed; milestone bonus stays
         assert child.points == 0
+
+
+# ---------------------------------------------------------------------------
+# FEAT-7: negative-balance policy
+# ---------------------------------------------------------------------------
+
+class TestNegativeBalancePolicy:
+    def test_remove_points_floors_at_zero_by_default(self):
+        child = _make_child(points=5)
+        coord = _make_coord(children=[child])
+        run(coord.async_remove_points(child.id, 8, reason="Penalty: test"))
+        assert child.points == 0
+
+    def test_remove_points_allows_negative_when_enabled(self):
+        child = _make_child(points=5)
+        coord = _make_coord(settings={"allow_negative_balance": "true"}, children=[child])
+        run(coord.async_remove_points(child.id, 8, reason="Penalty: test"))
+        assert child.points == -3
