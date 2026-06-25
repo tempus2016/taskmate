@@ -286,6 +286,48 @@ async def _async_require_admin(hass: HomeAssistant, call: ServiceCall) -> None:
             raise Unauthorized(context=call.context)
 
 
+_AUDIT_TARGET_KEYS = (
+    "chore_id", "reward_id", "penalty_id", "bonus_id", "badge_id",
+    "task_group_id", "miss_id", "claim_id", "transaction_id", "type_id",
+)
+
+
+async def _async_record_service_audit(hass: HomeAssistant, call: ServiceCall) -> None:
+    """Record a mutating service call in the admin audit log (SEC-3).
+
+    The panel's WebSocket path audits every config change; the equivalent
+    ``taskmate.*`` services did not, so point/penalty/chore mutations made via
+    Dev Tools or automations left no trail. Best-effort: never block the action.
+    """
+    coordinator = _get_coordinator(hass)
+    if not coordinator:
+        return
+    user_id = call.context.user_id or ""
+    user_name = ""
+    if user_id:
+        try:
+            user = await hass.auth.async_get_user(user_id)
+            user_name = user.name if user else ""
+        except Exception:  # noqa: BLE001 - audit must never break the action
+            user_name = ""
+    target = ""
+    cid = call.data.get(ATTR_CHILD_ID) or call.data.get("child_id") or call.data.get("to_child_id")
+    if cid:
+        child = coordinator.get_child(cid)
+        target = getattr(child, "name", "") or str(cid)
+    else:
+        for key in _AUDIT_TARGET_KEYS:
+            if call.data.get(key):
+                target = f"{key}={call.data[key]}"
+                break
+    try:
+        await coordinator.async_record_audit(
+            user_id, user_name, f"service.{call.service}", target
+        )
+    except Exception:  # noqa: BLE001 - audit must never break the action
+        _LOGGER.debug("Failed to record service audit for %s", call.service, exc_info=True)
+
+
 def _safe(handler):
     """Surface coordinator validation errors as clean service errors.
 
@@ -338,6 +380,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         async def wrapped(call: ServiceCall) -> None:
             await _async_require_admin(hass, call)
             await handler(call)
+            await _async_record_service_audit(hass, call)
         # Compose with _safe so admin handlers also convert coordinator
         # ValueErrors into clean validation errors. The admin gate raises
         # Unauthorized (not ValueError), so it is unaffected and still 401s.
