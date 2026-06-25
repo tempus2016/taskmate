@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from homeassistant.util import dt as dt_util
 
 from . import photos
-from .models import Chore, ChoreCompletion
+from .models import Chore, ChoreCompletion, PointsTransaction
 
 if TYPE_CHECKING:
     pass
@@ -922,6 +922,44 @@ class ChoresMixin:
                             ]
                             child.last_completion_date = (
                                 max(remaining).isoformat() if remaining else None
+                            )
+                        # Reverse any streak milestones this completion unlocked.
+                        # Milestone bonuses are logged as separate transactions
+                        # (not part of points_awarded), so dropping the streak
+                        # below a previously-achieved milestone must refund it.
+                        achieved = list(child.streak_milestones_achieved or [])
+                        lost = [d for d in achieved if d > child.current_streak]
+                        if lost:
+                            try:
+                                milestones = self.parse_milestone_setting(
+                                    self.storage.get_setting(
+                                        "streak_milestones", self.DEFAULT_STREAK_MILESTONES
+                                    )
+                                )
+                            except ValueError:
+                                milestones = self.parse_milestone_setting(
+                                    self.DEFAULT_STREAK_MILESTONES
+                                )
+                            refund = sum(milestones.get(d, 0) for d in lost)
+                            if refund > 0:
+                                child.points = max(0, child.points - refund)
+                                child.total_points_earned = max(
+                                    0, child.total_points_earned - refund
+                                )
+                                child.career_score = (
+                                    child.total_points_earned
+                                    - child.total_penalties_received
+                                )
+                                self.storage.add_points_transaction(
+                                    PointsTransaction(
+                                        child_id=child.id,
+                                        points=-refund,
+                                        reason="Streak milestone reversed",
+                                        created_at=dt_util.now(),
+                                    )
+                                )
+                            child.streak_milestones_achieved = sorted(
+                                d for d in achieved if d <= child.current_streak
                             )
 
                 self.storage.update_child(child)

@@ -1047,3 +1047,60 @@ class TestCareerScore:
         assert child.total_points_earned == 65
         assert child.career_score == 65
         coord.storage.append_career_score_snapshot.assert_called()
+
+
+# ---------------------------------------------------------------------------
+# _reverse_completion_awards — milestone bonus reversal (ERR-1)
+# ---------------------------------------------------------------------------
+
+class TestReverseCompletionMilestones:
+    def test_reject_reverses_milestone_bonus(self):
+        settings = {
+            "streak_milestones_enabled": "true",
+            "streak_milestones": "3:5, 7:10",
+        }
+        # Child crossed to streak 3 today: base 10 + milestone 5 = 15 points.
+        child = _make_child(
+            points=15,
+            current_streak=3,
+            last_completion_date="2024-03-20",
+            streak_milestones_achieved=[3],
+        )
+        completion = ChoreCompletion(
+            chore_id="chore1",
+            child_id=child.id,
+            completed_at=_date(2024, 3, 20),
+            approved=True,
+            points_awarded=10,
+        )
+        coord = _make_coord(settings=settings, children=[child], completions=[completion])
+        coord._reverse_completion_awards(completion, [completion])
+        # both the base (10) and the milestone bonus (5) are reversed
+        assert child.points == 0
+        assert child.total_points_earned == 0
+        assert child.current_streak == 2
+        assert child.streak_milestones_achieved == []
+
+    def test_reject_keeps_milestone_when_streak_stays_above(self):
+        settings = {"streak_milestones_enabled": "true", "streak_milestones": "3:5"}
+        # Streak 5, milestone 3 achieved earlier; rejecting drops streak to 4,
+        # still >= 3, so the milestone and its bonus must remain.
+        child = _make_child(
+            points=10,
+            current_streak=5,
+            last_completion_date="2024-03-20",
+            streak_milestones_achieved=[3],
+        )
+        completion = ChoreCompletion(
+            chore_id="chore1",
+            child_id=child.id,
+            completed_at=_date(2024, 3, 20),
+            approved=True,
+            points_awarded=10,
+        )
+        coord = _make_coord(settings=settings, children=[child], completions=[completion])
+        coord._reverse_completion_awards(completion, [completion])
+        assert child.current_streak == 4
+        assert child.streak_milestones_achieved == [3]
+        # only the base points were reversed; milestone bonus stays
+        assert child.points == 0
