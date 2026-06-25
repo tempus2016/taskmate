@@ -265,8 +265,13 @@ class PointsMixin:
         child = self.get_child(child_id)
         if not child:
             raise ValueError(f"Child {child_id} not found")
-        actual_deducted = min(points, child.points)  # Can't go below 0
-        child.points = max(0, child.points - points)
+        # Negative-balance policy (FEAT-7): floor at zero unless opted in.
+        if self._setting_enabled("allow_negative_balance"):
+            actual_deducted = points
+            child.points = child.points - points
+        else:
+            actual_deducted = min(points, child.points)  # Can't go below 0
+            child.points = max(0, child.points - points)
         if reason.startswith("Penalty: "):
             child.total_penalties_received += actual_deducted
             child.career_score = child.total_points_earned - child.total_penalties_received

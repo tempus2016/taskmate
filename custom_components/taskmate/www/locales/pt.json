@@ -1476,5 +1476,7 @@
   "panel.dialog_add_challenge": "Adicionar desafio",
   "panel.dialog_edit_challenge": "Editar desafio",
   "panel.toast_challenge_added": "Desafio adicionado",
-  "panel.toast_challenge_updated": "Desafio atualizado"
+  "panel.toast_challenge_updated": "Desafio atualizado",
+  "panel.settings_allow_negative_label": "Permitir saldo negativo",
+  "panel.settings_allow_negative_hint": "Permite que penalizações deixem o saldo de uma criança abaixo de zero, em vez de parar em zero."
 }

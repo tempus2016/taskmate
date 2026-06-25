@@ -3699,6 +3699,10 @@ class TaskMatePanel extends HTMLElement {
               </div>
             </div>
             <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_allow_negative_label")}<small>${this._t("panel.settings_allow_negative_hint")}</small></div>
+              <ha-switch data-setting="allow_negative_balance" ${s.allow_negative_balance ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_level_step_label")}<small>${this._t("panel.settings_level_step_hint")}</small></div>
               <input type="number" class="tm-input" min="1" data-setting="level_xp_step" value="${s.level_xp_step || 100}">
             </div>

@@ -1476,5 +1476,7 @@
   "panel.dialog_add_challenge": "Challenge hinzufügen",
   "panel.dialog_edit_challenge": "Challenge bearbeiten",
   "panel.toast_challenge_added": "Challenge hinzugefügt",
-  "panel.toast_challenge_updated": "Challenge aktualisiert"
+  "panel.toast_challenge_updated": "Challenge aktualisiert",
+  "panel.settings_allow_negative_label": "Negatives Guthaben zulassen",
+  "panel.settings_allow_negative_hint": "Strafen dürfen das Guthaben eines Kindes unter null senken, statt bei null zu stoppen."
 }
