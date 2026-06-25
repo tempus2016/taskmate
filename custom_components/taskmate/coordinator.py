@@ -26,6 +26,7 @@ from .coord_quests import QuestsMixin
 from .coord_rewards import RewardsMixin
 from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
+from . import photos
 from .models import Child
 from .storage import TaskMateStorage
 
@@ -435,6 +436,7 @@ class TaskMateCoordinator(
             # Mandatory 'anytime' chores + postpone-map reset (#532)
             self.async_detect_anytime_mandatory_misses,
             self.async_prune_orphan_misses,
+            self._async_sweep_orphan_photos,
         ]
         # Check for perfect week bonus every Monday at midnight
         if now.weekday() == 0:
@@ -447,6 +449,17 @@ class TaskMateCoordinator(
         # Prune all-chores-done daily flags older than today
         self.storage.prune_all_done_flags(dt_util.now().date().isoformat())
         await self.storage.async_save()
+
+    async def _async_sweep_orphan_photos(self) -> None:
+        """Delete evidence photos not referenced by any completion (SEC-2)."""
+        referenced = [
+            getattr(c, "photo_url", "")
+            for c in self.storage.get_completions()
+            if getattr(c, "photo_url", "")
+        ]
+        removed = await photos.async_sweep_orphan_photos(self.hass, referenced)
+        if removed:
+            _LOGGER.info("Swept %d orphan evidence photo(s)", removed)
 
     @callback
     def _async_scheduled_prune(self, now: datetime) -> None:
