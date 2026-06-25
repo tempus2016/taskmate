@@ -45,6 +45,7 @@ class TaskMatePointsCard extends LitElement {
     this._loading = {};
     this._dialog = null;
     this._notification = null;
+    this._notificationTimer = null;
   }
 
   static get styles() {
@@ -1124,6 +1125,10 @@ class TaskMatePointsCard extends LitElement {
       document.removeEventListener("keydown", this._dialogKeyHandler);
       this._dialogKeyHandler = null;
     }
+    if (this._notificationTimer) {
+      clearTimeout(this._notificationTimer);
+      this._notificationTimer = null;
+    }
   }
 
   _handleKeyDown(e, child, action) {
@@ -1192,8 +1197,11 @@ class TaskMatePointsCard extends LitElement {
     this._notification = { message, type };
     this.requestUpdate();
 
-    // Auto-hide notification after 3 seconds
-    setTimeout(() => {
+    // Auto-hide after 3s. Track the timer so it is cleared on re-trigger and
+    // on disconnect — avoids requestUpdate() on a detached element (ERR-4).
+    if (this._notificationTimer) clearTimeout(this._notificationTimer);
+    this._notificationTimer = setTimeout(() => {
+      this._notificationTimer = null;
       this._notification = null;
       this.requestUpdate();
     }, 3000);
