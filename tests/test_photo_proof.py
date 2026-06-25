@@ -54,11 +54,12 @@ def test_photo_required_forces_pending_even_if_no_approval():
                   assignment_mode="everyone", id="ch1")
     child = Child(name="Mia", id="c1")
     coord = _coord(chore, child)
-    run(coord.async_complete_chore("ch1", "c1", photo_url="http://x/p.jpg"))
+    photo = "/api/taskmate/photo/" + "a" * 32 + ".jpg"
+    run(coord.async_complete_chore("ch1", "c1", photo_url=photo))
     comp = coord._added[0]
     assert comp.approved is False
     assert comp.points_awarded == 0
-    assert comp.photo_url == "http://x/p.jpg"
+    assert comp.photo_url == photo
     coord._award_points.assert_not_awaited()
 
 
@@ -66,8 +67,9 @@ def test_photo_stored_on_completion():
     chore = Chore(name="Room", requires_approval=True, require_photo=True,
                   assignment_mode="everyone", id="ch1")
     coord = _coord(chore, Child(name="Mia", id="c1"))
-    run(coord.async_complete_chore("ch1", "c1", photo_url="http://x/snap.png"))
-    assert coord._added[0].photo_url == "http://x/snap.png"
+    photo = "/api/taskmate/photo/" + "b" * 32 + ".png"
+    run(coord.async_complete_chore("ch1", "c1", photo_url=photo))
+    assert coord._added[0].photo_url == photo
 
 
 def test_photo_required_blocks_completion_without_photo():
@@ -88,6 +90,34 @@ def test_photo_required_blocks_blank_photo():
     coord = _coord(chore, Child(name="Mia", id="c1"))
     with pytest.raises(ValueError):
         run(coord.async_complete_chore("ch1", "c1", photo_url="   "))
+    assert coord._added == []
+
+
+def test_foreign_photo_url_is_rejected_not_stored():
+    # Security: a crafted/foreign photo_url (javascript:, external https, traversal)
+    # must never be stored — it would later render into an href/src in the parent's
+    # approval views. The coordinator drops it to "" at the boundary. With an
+    # approval-required (non-photo) chore the completion still proceeds, but with no
+    # photo attached.
+    chore = Chore(name="Room", requires_approval=True, require_photo=False,
+                  assignment_mode="everyone", id="ch1")
+    coord = _coord(chore, Child(name="Mia", id="c1"))
+    for bad in ("javascript:alert(1)",
+                "https://evil.example/track.png",
+                "/api/taskmate/photo/../../etc/passwd"):
+        coord._added.clear()
+        run(coord.async_complete_chore("ch1", "c1", photo_url=bad))
+        assert coord._added[0].photo_url == ""
+
+
+def test_foreign_photo_url_does_not_satisfy_require_photo():
+    # A crafted photo_url must not satisfy a require_photo chore — once dropped to
+    # "", the require_photo guard fires exactly as if no photo were sent.
+    chore = Chore(name="Room", requires_approval=False, require_photo=True,
+                  assignment_mode="everyone", id="ch1")
+    coord = _coord(chore, Child(name="Mia", id="c1"))
+    with pytest.raises(ValueError):
+        run(coord.async_complete_chore("ch1", "c1", photo_url="javascript:alert(1)"))
     assert coord._added == []
 
 

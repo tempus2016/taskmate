@@ -12,6 +12,13 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+// Security defense-in-depth: only ever emit our own auth-gated photo endpoint
+// into an href/src. The backend already rejects foreign/crafted photo_url
+// values, but guard here too so a stored bad value can never become a
+// javascript:/external link in a parent's browser.
+const tmSafePhotoUrl = (u) =>
+  typeof u === "string" && u.startsWith("/api/taskmate/photo/") ? u : "";
+
 class TaskMateParentDashboardCard extends LitElement {
   static get properties() {
     return {
@@ -780,9 +787,10 @@ class TaskMateParentDashboardCard extends LitElement {
       const time = comp.completed_at
         ? new Date(comp.completed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
       const pts = comp.points || choreMap[comp.chore_id]?.points || 0;
-      const photo = comp.photo_url
-        ? html`<a class="pd-photo-link" href="${comp.photo_url}" target="_blank" rel="noopener"
-            title="${this._t('approvals.view_photo') || 'View photo'}"><div class="pd-photo"><img src="${comp.photo_url}" alt=""></div></a>`
+      const photoUrl = tmSafePhotoUrl(comp.photo_url);
+      const photo = photoUrl
+        ? html`<a class="pd-photo-link" href="${photoUrl}" target="_blank" rel="noopener"
+            title="${this._t('approvals.view_photo') || 'View photo'}"><div class="pd-photo"><img src="${photoUrl}" alt=""></div></a>`
         : "";
       const acts = html`
         <button class="btn good sm round" ?disabled="${isLoading}" title="${this._t('common.approve')}"
@@ -1110,10 +1118,10 @@ class TaskMateParentDashboardCard extends LitElement {
                   +${comp.points || chore?.points || 0}
                 </span>
               </div>
-              ${comp.photo_url ? html`
-                <a class="approval-photo" href="${comp.photo_url}" target="_blank" rel="noopener"
+              ${tmSafePhotoUrl(comp.photo_url) ? html`
+                <a class="approval-photo" href="${tmSafePhotoUrl(comp.photo_url)}" target="_blank" rel="noopener"
                    title="${this._t('approvals.view_photo') || 'View photo'}">
-                  <img src="${comp.photo_url}" alt="" loading="lazy">
+                  <img src="${tmSafePhotoUrl(comp.photo_url)}" alt="" loading="lazy">
                 </a>
               ` : ''}
             </div>

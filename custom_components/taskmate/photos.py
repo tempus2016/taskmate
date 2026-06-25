@@ -67,6 +67,22 @@ def photos_path(hass) -> Path:
     return Path(hass.config.path(PHOTOS_DIR))
 
 
+def is_taskmate_photo_url(photo_url: str) -> bool:
+    """True only for a well-formed ``/api/taskmate/photo/<name>`` URL of ours.
+
+    Pure (no hass / no filesystem) so it can guard untrusted ``photo_url`` input
+    at the service/coordinator boundary. Rejects blanks, foreign URLs and any
+    dangerous scheme (``javascript:``, external ``http(s):``) and anything whose
+    name fails the strict filename pattern.
+    """
+    if not photo_url:
+        return False
+    prefix = URL_PREFIX + "/"
+    if not photo_url.startswith(prefix):
+        return False
+    return bool(FILENAME_RE.match(photo_url[len(prefix):]))
+
+
 def photo_file_for_url(hass, photo_url: str) -> Path | None:
     """Map a ``/api/taskmate/photo/<name>`` URL to its file path.
 
