@@ -7,6 +7,7 @@ import logging
 from datetime import date
 from typing import TYPE_CHECKING, Any
 
+from homeassistant.core import callback
 from homeassistant.util import dt as dt_util
 
 from .models import Chore
@@ -20,19 +21,34 @@ _LOGGER = logging.getLogger(__name__)
 class AssignmentsMixin:
     """Mixin providing assignment rotation, availability, and visibility logic."""
 
-    def _availability_state_changed(self, event: Any) -> None:
-        """Cheap bus-filter: only dispatch a re-eval when a tracked availability entity changes."""
-        data = getattr(event, "data", None) or {}
-        entity_id = data.get("entity_id")
-        if not entity_id:
-            return
+    def _refresh_tracked_availability_entities(self) -> None:
+        """Rebuild the cached set of entities that gate child availability.
+
+        Children only change via mutations (which trigger a coordinator
+        refresh), so this is rebuilt on refresh rather than on every bus
+        state_changed event — which fires for every entity in HA (PERF-5).
+        """
         tracked: set[str] = set()
         for c in self.storage.get_children():
             if getattr(c, "availability_entity", ""):
                 tracked.add(c.availability_entity)
             if getattr(c, "unavailability_entity", ""):
                 tracked.add(c.unavailability_entity)
-        if entity_id not in tracked:
+        self._tracked_availability_entities = tracked
+
+    @callback
+    def _availability_state_changed(self, event: Any) -> None:
+        """Cheap bus-filter: dispatch a re-eval only when a tracked entity changes.
+
+        Decorated @callback so it runs on the event loop (a plain listener runs
+        in the executor, where async_create_task raises) and reads the cached
+        tracked-entity set rather than rescanning all children per event.
+        """
+        data = getattr(event, "data", None) or {}
+        entity_id = data.get("entity_id")
+        if not entity_id:
+            return
+        if entity_id not in getattr(self, "_tracked_availability_entities", set()):
             return
         self.hass.async_create_task(self._async_reevaluate_availability())
 

@@ -64,6 +64,7 @@ class TaskMateCoordinator(
         self._unsub_midnight: Callable[[], None] | None = None
         self._unsub_prune: Callable[[], None] | None = None
         self._unsub_availability: Callable[[], None] | None = None
+        self._tracked_availability_entities: set[str] = set()
         self._unsub_surprise: Callable[[], None] | None = None
         self._unsub_weekly: Callable[[], None] | None = None
         self._unsub_mandatory: list[Callable[[], None]] = []
@@ -238,6 +239,7 @@ class TaskMateCoordinator(
         # Re-evaluate availability-aware chore assignments when any HA entity
         # state changes. The callback filters cheaply on entity id so only
         # relevant flips trigger a recompute.
+        self._refresh_tracked_availability_entities()
         self._unsub_availability = self.hass.bus.async_listen(
             "state_changed", self._availability_state_changed
         )
@@ -470,6 +472,7 @@ class TaskMateCoordinator(
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from storage."""
         await self._async_auto_stop_capped_sessions()
+        self._refresh_tracked_availability_entities()
         return {
             "children": self.storage.get_children(),
             "chores": self.storage.get_chores(),
