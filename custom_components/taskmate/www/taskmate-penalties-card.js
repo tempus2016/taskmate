@@ -50,6 +50,7 @@ class TaskMatePenaltiesCard extends LitElement {
     this._editMode = false;
     this._loading = {};
     this._editingPenalty = null;
+    this._saving = false;
     this._showNewForm = false;
     this._toast = null;
     this._newForm = { name: "", points: "", description: "", icon: "mdi:alert-circle-outline" };
@@ -528,6 +529,8 @@ class TaskMatePenaltiesCard extends LitElement {
 
   async _saveEdit() {
     if (!this._editingPenalty?.name || !this._editingPenalty?.points) return;
+    if (this._saving) return;
+    this._saving = true;
     try {
       await this.hass.callService("taskmate", "update_penalty", {
         penalty_id: this._editingPenalty.id,
@@ -539,6 +542,8 @@ class TaskMatePenaltiesCard extends LitElement {
       this._editingPenalty = null;
     } catch (e) {
       this._showToast(this._t('penalties.toast_save_failed'));
+    } finally {
+      this._saving = false;
     }
   }
 
@@ -558,6 +563,8 @@ class TaskMatePenaltiesCard extends LitElement {
 
   async _saveNew() {
     if (!this._newForm.name || !this._newForm.points) return;
+    if (this._saving) return;
+    this._saving = true;
     try {
       await this.hass.callService("taskmate", "add_penalty", {
         name: this._newForm.name,
@@ -568,6 +575,8 @@ class TaskMatePenaltiesCard extends LitElement {
       this._showNewForm = false;
     } catch (e) {
       this._showToast(this._t('penalties.toast_add_failed'));
+    } finally {
+      this._saving = false;
     }
   }
 

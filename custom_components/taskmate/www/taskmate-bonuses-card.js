@@ -50,6 +50,7 @@ class TaskMateBonusesCard extends LitElement {
     this._editMode = false;
     this._loading = {};
     this._editingBonus = null;
+    this._saving = false;
     this._showNewForm = false;
     this._toast = null;
     this._newForm = { name: "", points: "", description: "", icon: "mdi:star-circle-outline" };
@@ -528,6 +529,8 @@ class TaskMateBonusesCard extends LitElement {
 
   async _saveEdit() {
     if (!this._editingBonus?.name || !this._editingBonus?.points) return;
+    if (this._saving) return;
+    this._saving = true;
     try {
       await this.hass.callService("taskmate", "update_bonus", {
         bonus_id: this._editingBonus.id,
@@ -539,6 +542,8 @@ class TaskMateBonusesCard extends LitElement {
       this._editingBonus = null;
     } catch (e) {
       this._showToast(this._t('bonuses.toast_save_failed'));
+    } finally {
+      this._saving = false;
     }
   }
 
@@ -558,6 +563,8 @@ class TaskMateBonusesCard extends LitElement {
 
   async _saveNew() {
     if (!this._newForm.name || !this._newForm.points) return;
+    if (this._saving) return;
+    this._saving = true;
     try {
       await this.hass.callService("taskmate", "add_bonus", {
         name: this._newForm.name,
@@ -570,6 +577,8 @@ class TaskMateBonusesCard extends LitElement {
       this._showToast(this._t('bonuses.toast_saved'));
     } catch (e) {
       this._showToast(this._t('bonuses.toast_add_failed'));
+    } finally {
+      this._saving = false;
     }
   }
 
