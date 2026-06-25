@@ -201,8 +201,9 @@ class TestAwardPointsStreakTracking:
         )
         now = _date(2024, 3, 20)
         self._run_award(coord, child, 10, now)
-        # Streak should be preserved (not reset), paused flag cleared
-        assert child.current_streak == 10
+        # Streak resumes and counts today's completion (10 -> 11); the missed
+        # days are paused over, not reset (ERR-3).
+        assert child.current_streak == 11
         assert child.streak_paused is False
 
     def test_best_streak_updates_when_current_exceeds_it(self):

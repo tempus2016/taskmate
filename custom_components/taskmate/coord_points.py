@@ -771,6 +771,10 @@ class PointsMixin:
                         child.current_streak = streak_before + 1
                         child.streak_paused = False
                     elif streak_mode == "pause" or streak_paused:
+                        # Resume from a paused gap: today is a completed day, so
+                        # it must count toward the streak (ERR-3 — previously the
+                        # streak resumed at its frozen value, dropping today).
+                        child.current_streak = streak_before + 1
                         child.streak_paused = False
                         _LOGGER.debug("Streak resumed for %s at %d", child.name, child.current_streak)
                     else:
