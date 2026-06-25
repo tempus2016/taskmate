@@ -19,6 +19,8 @@ const css = LitElement.prototype.css;
 const tmSafePhotoUrl = (u) =>
   typeof u === "string" && u.startsWith("/api/taskmate/photo/") ? u : "";
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 class TaskMateParentDashboardCard extends LitElement {
   static get properties() {
     return {
@@ -522,7 +524,7 @@ class TaskMateParentDashboardCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#c0392b'}; }</style>
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#c0392b')}; }</style>
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:shield-account"></ha-icon>
@@ -612,7 +614,7 @@ class TaskMateParentDashboardCard extends LitElement {
   }
 
   _renderDesigned(design) {
-    const hd = this.config.header_color || '#c0392b';
+    const hd = _safeColor(this.config.header_color, '#c0392b');
     const entity = this.hass.states[this.config.entity];
 
     if (!entity) {
