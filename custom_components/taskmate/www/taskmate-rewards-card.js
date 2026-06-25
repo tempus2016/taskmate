@@ -483,23 +483,6 @@ class TaskMateRewardsCard extends LitElement {
         box-shadow: 0 3px 10px rgba(241, 196, 15, 0.4);
       }
 
-      /* Dynamic reward styles */
-      .reward-row.dynamic {
-        border: 1px dashed rgba(52, 152, 219, 0.5);
-      }
-
-      .cost-badge.dynamic-cost {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
-        position: relative;
-      }
-
-      .dynamic-indicator {
-        font-size: 0.9rem;
-        margin-top: 2px;
-        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-      }
-
       /* Reward icon + claim button wrapper */
       /* Child picker shown when no child_id configured */
       .child-picker-row {

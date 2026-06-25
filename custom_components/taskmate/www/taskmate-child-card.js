@@ -2956,8 +2956,6 @@ class TaskMateChildCard extends LitElement {
     // Get tomorrow midnight in HA timezone
     const tomorrow = new Date(now.toLocaleDateString("en-CA", { timeZone: tz }) + "T00:00:00");
     tomorrow.setDate(tomorrow.getDate() + 1);
-    // Convert back to UTC ms
-    const tomorrowUTC = new Date(tomorrow.toLocaleString("en-US", { timeZone: tz }));
     const diffMs = tomorrow - now;
     if (diffMs <= 0) return null;
 

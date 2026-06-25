@@ -1126,11 +1126,11 @@ class TaskMateStorage:
         ]
 
     # Generic settings
-    def get_setting(self, key: str, default: str = "") -> str:
-        """Get a generic setting value."""
+    def get_setting(self, key: str, default: Any = "") -> Any:
+        """Get a generic setting value (may be a bool/number/list, not just str)."""
         return self._data.get("settings", {}).get(key, default)
 
-    def set_setting(self, key: str, value: str) -> None:
+    def set_setting(self, key: str, value: Any) -> None:
         """Set a generic setting value."""
         if "settings" not in self._data:
             self._data["settings"] = {}
