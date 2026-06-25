@@ -13,6 +13,8 @@ const css = LitElement.prototype.css;
 
 const DESIGN_HEADER = "#8e44ad";
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 class TaskMatePointsCard extends LitElement {
   static get properties() {
     return {
@@ -729,8 +731,9 @@ class TaskMatePointsCard extends LitElement {
       return this._renderDesigned(design, children, pointsName, pointsIcon);
     }
 
-    const headerStyle = this.config.header_color
-      ? `--taskmate-header-bg: ${this.config.header_color};`
+    const _hc = _safeColor(this.config.header_color, '');
+    const headerStyle = _hc
+      ? `--taskmate-header-bg: ${_hc};`
       : '';
 
     return html`
@@ -794,7 +797,7 @@ class TaskMatePointsCard extends LitElement {
   }
 
   _renderDesigned(design, children, pointsName, pointsIcon) {
-    const hd = this.config.header_color || DESIGN_HEADER;
+    const hd = _safeColor(this.config.header_color, DESIGN_HEADER);
 
     const header = design === "console"
       ? html`<div class="tmd-hd">

@@ -23,6 +23,8 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 class TaskMateChildCard extends LitElement {
   static get properties() {
     return {
@@ -2001,7 +2003,7 @@ class TaskMateChildCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#9b59b6'}; }</style>
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#9b59b6')}; }</style>
         <div class="card-header">
           <div class="header-left">
             ${(() => {
@@ -2208,7 +2210,7 @@ class TaskMateChildCard extends LitElement {
 
   _renderDesigned(design) {
     const entity = this.hass.states[this.config.entity];
-    const hd = this.config.header_color || "#ff7043";
+    const hd = _safeColor(this.config.header_color, "#ff7043");
 
     const header = (title, sub, pill) => html`
       <div class="tmd-hd">

@@ -17,6 +17,8 @@ const css = LitElement.prototype.css;
 const tmSafePhotoUrl = (u) =>
   typeof u === "string" && u.startsWith("/api/taskmate/photo/") ? u : "";
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 class TaskMateApprovalsCard extends LitElement {
   static get properties() {
     return {
@@ -504,7 +506,7 @@ class TaskMateApprovalsCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --taskmate-header-bg: ${this.config.header_color || '#27ae60'}; }</style>
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#27ae60')}; }</style>
         <div class="card-header">
           <div class="header-left">
             <ha-icon class="header-icon" icon="mdi:check-circle-outline"></ha-icon>
@@ -652,7 +654,7 @@ class TaskMateApprovalsCard extends LitElement {
 
   _renderDesigned(design) {
     const entity = this.hass.states[this.config.entity];
-    const hd = this.config.header_color || '#27ae60';
+    const hd = _safeColor(this.config.header_color, '#27ae60');
 
     if (!entity) {
       return html`<ha-card class="tmd" style="--hd:${hd}">

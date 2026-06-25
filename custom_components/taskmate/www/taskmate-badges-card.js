@@ -20,6 +20,8 @@ const css = LitElement.prototype.css;
 
 const DESIGN_HEADER = "#6c5ce7";
 
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
 class TaskMateBadgesCard extends LitElement {
   static get properties() {
     return {
@@ -653,7 +655,7 @@ TaskMateBadgesCard.prototype._designLockedTile = function (b) {
 };
 
 TaskMateBadgesCard.prototype._renderDesigned = function (design, d) {
-  const hd = this.config.header_color || DESIGN_HEADER;
+  const hd = _safeColor(this.config.header_color, DESIGN_HEADER);
   const ic = design === "console" ? "✦" : design === "cleanpro" ? "◈" : "🎖️";
   const sub = d.childName;
   const countPill = this._t("badges.count_label", { earned: d.earned.length, total: d.totalBadges });
