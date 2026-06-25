@@ -588,6 +588,7 @@
       childList: true,
       subtree: true,
     });
+    window._taskmateSoundObserver = observer;
 
     debugLog('[TaskMate Config] Sound change observer started');
   }
@@ -611,6 +612,10 @@
       if (window._taskmateScanTimeout) {
         clearTimeout(window._taskmateScanTimeout);
         window._taskmateScanTimeout = null;
+      }
+      if (window._taskmateSoundObserver) {
+        window._taskmateSoundObserver.disconnect();
+        window._taskmateSoundObserver = null;
       }
     };
     // pagehide covers SPA navigation in HA; beforeunload covers full reloads.

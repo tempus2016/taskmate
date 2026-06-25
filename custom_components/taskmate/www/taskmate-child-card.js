@@ -111,8 +111,9 @@ class TaskMateChildCard extends LitElement {
   }
 
   _subscribeBadgeEvents() {
-    if (this._badgeEventUnsub) return;
+    if (this._badgeEventUnsub || this._badgeSubscribing) return;
     if (!this.hass?.connection) return;
+    this._badgeSubscribing = true;
     this.hass.connection.subscribeEvents((event) => {
       const data = event.data || {};
       const configChild = this.config?.child_id;
@@ -123,12 +124,13 @@ class TaskMateChildCard extends LitElement {
         setTimeout(() => { this._justEarnedBadge = null; this.requestUpdate(); }, 1800);
       }
     }, "taskmate_badge_earned").then(unsub => {
+      this._badgeSubscribing = false;
       if (!this.isConnected) {
         unsub();
         return;
       }
       this._badgeEventUnsub = unsub;
-    }).catch(() => {});
+    }).catch(() => { this._badgeSubscribing = false; });
   }
 
   _tierColor(tier) {
