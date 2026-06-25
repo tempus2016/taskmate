@@ -130,7 +130,7 @@ class TaskMateApprovalsCard extends LitElement {
       }
 
       .time-header ha-icon {
-        --mdi-icon-size: 16px;
+        --mdc-icon-size: 16px;
       }
 
       .approval-item {
@@ -209,7 +209,7 @@ class TaskMateApprovalsCard extends LitElement {
       }
 
       .points-badge ha-icon {
-        --mdi-icon-size: 14px;
+        --mdc-icon-size: 14px;
       }
 
       .duration-badge {
@@ -224,7 +224,7 @@ class TaskMateApprovalsCard extends LitElement {
         font-size: 0.85em;
       }
       .duration-badge ha-icon {
-        --mdi-icon-size: 14px;
+        --mdc-icon-size: 14px;
       }
 
       .action-buttons {
@@ -305,7 +305,7 @@ class TaskMateApprovalsCard extends LitElement {
       }
 
       .action-button ha-icon {
-        --mdi-icon-size: 20px;
+        --mdc-icon-size: 20px;
       }
 
       .action-button.loading {
@@ -324,7 +324,7 @@ class TaskMateApprovalsCard extends LitElement {
       }
 
       .empty-state ha-icon {
-        --mdi-icon-size: 48px;
+        --mdc-icon-size: 48px;
         margin-bottom: 16px;
         opacity: 0.5;
       }
@@ -350,7 +350,7 @@ class TaskMateApprovalsCard extends LitElement {
       }
 
       .error-state ha-icon {
-        --mdi-icon-size: 48px;
+        --mdc-icon-size: 48px;
         margin-bottom: 16px;
       }
 
