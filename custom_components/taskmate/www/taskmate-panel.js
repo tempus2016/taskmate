@@ -2435,7 +2435,7 @@ class TaskMatePanel extends HTMLElement {
               return `
                 <div class="tm-approval-item">
                   <div class="tm-approval-icon"><ha-icon icon="${c.bonus_subtask_id ? 'mdi:star-plus' : 'mdi:checkbox-marked-circle-outline'}"></ha-icon></div>
-                  ${c.photo_url ? `<a class="tm-approval-photo" href="${this._esc(c.photo_url)}" target="_blank" rel="noopener" title="${this._t("panel.activity_view_photo")}"><img src="${this._esc(c.photo_url)}" alt="" loading="lazy"></a>` : ""}
+                  ${this._safePhotoUrl(c.photo_url) ? `<a class="tm-approval-photo" href="${this._esc(this._safePhotoUrl(c.photo_url))}" target="_blank" rel="noopener" title="${this._t("panel.activity_view_photo")}"><img src="${this._esc(this._safePhotoUrl(c.photo_url))}" alt="" loading="lazy"></a>` : ""}
                   <div class="tm-approval-body">
                     <div class="tm-approval-line">${this._t("panel.activity_completed_text", {child: this._esc((child && child.name) || "?"), chore: this._esc(choreName)})}</div>
                     <div class="tm-meta">${this._timeAgo(c.completed_at)} · ${chorePoints} ${this._t("panel.activity_points")}</div>
@@ -4937,6 +4937,14 @@ class TaskMatePanel extends HTMLElement {
     return String(str == null ? "" : str)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  // Security defense-in-depth: only ever emit our own auth-gated photo endpoint
+  // into an href/src. _esc() escapes HTML metacharacters but does NOT neutralize
+  // a javascript:/external scheme, so guard the URL itself. Signed URLs keep the
+  // /api/taskmate/photo/ prefix (the ?authSig= is appended), so they still pass.
+  _safePhotoUrl(u) {
+    return typeof u === "string" && u.startsWith("/api/taskmate/photo/") ? u : "";
   }
 
   _fmtNum(n) {

@@ -10,6 +10,13 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+// Security defense-in-depth: only ever emit our own auth-gated photo endpoint
+// into an href/src. The backend already rejects foreign/crafted photo_url
+// values, but guard here too so a stored bad value can never become a
+// javascript:/external link in a parent's browser.
+const tmSafePhotoUrl = (u) =>
+  typeof u === "string" && u.startsWith("/api/taskmate/photo/") ? u : "";
+
 class TaskMateApprovalsCard extends LitElement {
   static get properties() {
     return {
@@ -744,13 +751,14 @@ class TaskMateApprovalsCard extends LitElement {
   }
 
   _apPhotoDesigned(it, cls, fallback) {
-    if (it.kind !== "completion" || !it.photo) {
+    const photoUrl = tmSafePhotoUrl(it.photo);
+    if (it.kind !== "completion" || !photoUrl) {
       return it.kind === "claim" && it.icon
         ? html`<div class="${cls}"><ha-icon icon="${it.icon}"></ha-icon></div>`
         : "";
     }
-    return html`<a class="ap-d-photo-link" href="${it.photo}" target="_blank" rel="noopener"
-      title="${this._t('approvals.view_photo') || 'View photo'}"><div class="${cls}"><img src="${it.photo}" alt=""></div></a>`;
+    return html`<a class="ap-d-photo-link" href="${photoUrl}" target="_blank" rel="noopener"
+      title="${this._t('approvals.view_photo') || 'View photo'}"><div class="${cls}"><img src="${photoUrl}" alt=""></div></a>`;
   }
 
   _apPlayroom(it, i) {
@@ -1250,10 +1258,10 @@ class TaskMateApprovalsCard extends LitElement {
               ${completion.points}
             </span>
           </div>
-          ${completion.photo_url ? html`
-            <a class="approval-photo" href="${completion.photo_url}" target="_blank" rel="noopener"
+          ${tmSafePhotoUrl(completion.photo_url) ? html`
+            <a class="approval-photo" href="${tmSafePhotoUrl(completion.photo_url)}" target="_blank" rel="noopener"
                title="${this._t('approvals.view_photo') || 'View photo'}">
-              <img src="${completion.photo_url}" alt="" loading="lazy">
+              <img src="${tmSafePhotoUrl(completion.photo_url)}" alt="" loading="lazy">
             </a>
           ` : ''}
         </div>

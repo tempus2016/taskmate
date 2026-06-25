@@ -499,6 +499,19 @@ class ChoresMixin:
         if not child:
             raise ValueError(f"Child {child_id} not found")
 
+        # Security: photo_url must be one of OUR upload URLs
+        # (/api/taskmate/photo/<uuid>.<ext>). The service accepts it as a free
+        # string, so reject foreign/crafted values (e.g. "javascript:..." or an
+        # external https URL) before they are stored and later rendered into an
+        # href/src in the parent's approval views. An invalid value is dropped to
+        # "" — which also means it can't satisfy a require_photo chore below.
+        if photo_url and not photos.is_taskmate_photo_url(photo_url):
+            _LOGGER.warning(
+                "Ignoring invalid photo_url for chore %s (not a TaskMate photo URL)",
+                chore_id,
+            )
+            photo_url = ""
+
         now = dt_util.now()
         today = dt_util.as_local(now).date()
 
