@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from pathlib import Path
 
 _LOGGER = logging.getLogger(__name__)
@@ -24,6 +25,11 @@ URL_PREFIX = "/api/taskmate/photo"
 # Defensive cap. The child card downscales + JPEG-compresses before upload, so a
 # legitimate evidence photo is well under this; the cap only catches abuse/bugs.
 MAX_UPLOAD_BYTES = 8 * 1024 * 1024  # 8 MB
+
+# Total disk budget for all stored evidence photos. Each photo is small (the
+# card downscales + JPEG-compresses before upload), so this is generous — it
+# only caps runaway/abusive uploads (SEC-2).
+MAX_TOTAL_BYTES = 512 * 1024 * 1024  # 512 MB
 
 # Stored filenames are always a generated uuid4().hex + a known image extension.
 # Anything else is rejected before any filesystem access (path-traversal safety).
@@ -144,3 +150,54 @@ async def async_delete_photo(hass, photo_url: str) -> None:
             _LOGGER.debug("Could not delete evidence photo %s: %s", path, err)
 
     await hass.async_add_executor_job(_unlink)
+
+
+def total_photos_bytes(hass) -> int:
+    """Sum of all stored evidence-photo file sizes (0 if the dir is absent)."""
+    directory = photos_path(hass)
+    if not directory.is_dir():
+        return 0
+    total = 0
+    for p in directory.iterdir():
+        if p.is_file() and FILENAME_RE.match(p.name):
+            try:
+                total += p.stat().st_size
+            except OSError:  # pragma: no cover - defensive
+                pass
+    return total
+
+
+async def async_sweep_orphan_photos(hass, referenced_urls, max_age_hours: int = 24) -> int:
+    """Delete stored photos not referenced by any completion (SEC-2).
+
+    Covers photos orphaned by history pruning and uploads that were never
+    attached to a completion. Files younger than ``max_age_hours`` are kept so
+    an in-flight upload (uploaded but not yet submitted) is not removed.
+    Returns the number of files deleted.
+    """
+    prefix = URL_PREFIX + "/"
+    referenced = {
+        url[len(prefix):] for url in referenced_urls
+        if url and url.startswith(prefix)
+    }
+    directory = photos_path(hass)
+
+    def _sweep() -> int:
+        if not directory.is_dir():
+            return 0
+        cutoff = time.time() - max_age_hours * 3600
+        removed = 0
+        for p in directory.iterdir():
+            if not (p.is_file() and FILENAME_RE.match(p.name)):
+                continue
+            if p.name in referenced:
+                continue
+            try:
+                if p.stat().st_mtime < cutoff:
+                    p.unlink()
+                    removed += 1
+            except OSError:  # pragma: no cover - defensive
+                pass
+        return removed
+
+    return await hass.async_add_executor_job(_sweep)

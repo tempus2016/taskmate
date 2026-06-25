@@ -69,6 +69,15 @@ class TaskMatePhotoUploadView(HomeAssistantView):
         if ext is None:
             return self.json_message("Not a valid image", HTTPStatus.BAD_REQUEST)
 
+        # DoS guard: reject if the photo store is already at its disk budget.
+        used = await self.hass.async_add_executor_job(
+            photos.total_photos_bytes, self.hass
+        )
+        if used + len(data) > photos.MAX_TOTAL_BYTES:
+            return self.json_message(
+                "Photo storage full", HTTPStatus.INSUFFICIENT_STORAGE
+            )
+
         name = f"{uuid.uuid4().hex}.{ext}"
         directory = photos.photos_path(self.hass)
         payload = bytes(data)

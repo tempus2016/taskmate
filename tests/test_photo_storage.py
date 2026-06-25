@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import time
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -109,3 +111,48 @@ def test_delete_photo_ignores_foreign_url(tmp_path):
     hass = _hass(tmp_path)
     run(photos.async_delete_photo(hass, "http://example.com/x.jpg"))  # no raise, no exec
     hass.async_add_executor_job.assert_not_called()
+
+
+# ── quota + orphan sweep (SEC-2) ─────────────────────────────────────────────
+
+def _write_photo(tmp_path, name, data=b"x", age_hours=0):
+    d = Path(tmp_path, photos.PHOTOS_DIR)
+    d.mkdir(parents=True, exist_ok=True)
+    f = d / name
+    f.write_bytes(data)
+    if age_hours:
+        old = time.time() - age_hours * 3600
+        os.utime(f, (old, old))
+    return f
+
+
+def test_total_photos_bytes(tmp_path):
+    hass = _hass(tmp_path)
+    assert photos.total_photos_bytes(hass) == 0
+    _write_photo(tmp_path, "a" * 32 + ".jpg", b"12345")
+    _write_photo(tmp_path, "b" * 32 + ".png", b"123")
+    # non-photo files are ignored
+    Path(tmp_path, photos.PHOTOS_DIR, "notes.txt").write_bytes(b"ignored")
+    assert photos.total_photos_bytes(hass) == 8
+
+
+def test_sweep_removes_old_unreferenced_only(tmp_path):
+    hass = _hass(tmp_path)
+    keep = "a" * 32 + ".jpg"        # old but referenced -> keep
+    orphan_old = "b" * 32 + ".jpg"  # old + unreferenced -> delete
+    orphan_new = "c" * 32 + ".jpg"  # new + unreferenced -> keep (grace window)
+    _write_photo(tmp_path, keep, age_hours=48)
+    _write_photo(tmp_path, orphan_old, age_hours=48)
+    _write_photo(tmp_path, orphan_new, age_hours=1)
+    referenced = [photos.URL_PREFIX + "/" + keep]
+    removed = run(photos.async_sweep_orphan_photos(hass, referenced))
+    assert removed == 1
+    d = Path(tmp_path, photos.PHOTOS_DIR)
+    assert (d / keep).exists()
+    assert not (d / orphan_old).exists()
+    assert (d / orphan_new).exists()
+
+
+def test_sweep_missing_dir_is_noop(tmp_path):
+    hass = _hass(tmp_path)
+    assert run(photos.async_sweep_orphan_photos(hass, [])) == 0
