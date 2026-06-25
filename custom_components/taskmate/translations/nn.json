@@ -743,6 +743,92 @@
     "rebuild_badges": {
       "name": "Bygg opp att merke",
       "description": "Reevaluer alle merke for alle born i det stille (ingen varsel, ingen poengbonusar)."
+    },
+    "apply_mandatory_penalty": {
+      "name": "Bruk obligatorisk straff",
+      "description": "Trekk frå dei konfigurerte straffepoenga for ei gløymd obligatorisk oppgåve og fjern gjennomgangselementet.",
+      "fields": {
+        "miss_id": {
+          "name": "Forsøming-ID",
+          "description": "ID-en til gjennomgangselementet for den gløymde obligatoriske oppgåva"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "Vel avatar",
+      "description": "Eit barn byter til ein avatar dei har låst opp.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "ID-en til barnet"
+        },
+        "icon": {
+          "name": "Avatar-ikon",
+          "description": "mdi-ikonet til ein opplåst katalog-avatar (t.d. mdi:rocket-launch)."
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "Avvis obligatorisk oppgåve",
+      "description": "Fjern gjennomgangselementet for ei gløymd obligatorisk oppgåve utan straff.",
+      "fields": {
+        "miss_id": {
+          "name": "Forsøming-ID",
+          "description": "ID-en til gjennomgangselementet for den gløymde obligatoriske oppgåva"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "Gi bort poeng",
+      "description": "Overfør brukbare poeng frå eitt barn til eit anna (foreldrestyrt).",
+      "fields": {
+        "from_child_id": {
+          "name": "Frå barne-ID",
+          "description": "ID-en til barnet som sender poeng"
+        },
+        "to_child_id": {
+          "name": "Til barne-ID",
+          "description": "ID-en til barnet som mottek poeng"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Talet på poeng som skal overførast"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "Utsett obligatorisk oppgåve",
+      "description": "Gi ei gløymd obligatorisk oppgåve ein ny periode (eller i morgon) utan straff, og fjern gjennomgangselementet.",
+      "fields": {
+        "miss_id": {
+          "name": "Forsøming-ID",
+          "description": "ID-en til gjennomgangselementet for den gløymde obligatoriske oppgåva"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "Be om oppgåvebyte",
+      "description": "Eit barn ber om å overta dagens rotasjonstildeling av ei oppgåve (ventar på foreldregodkjenning).",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgåve-ID",
+          "description": "ID-en til oppgåva som skal overtakast"
+        },
+        "requester_id": {
+          "name": "Barne-ID for førespurnad",
+          "description": "ID-en til barnet som ber om bytet"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Testvarsel",
+      "description": "Send eit eksempelvarsel av den angitte typen til dei aktiverte mottakarane (ignorerer hovudbrytaren slik at rutinga kan verifiserast).",
+      "fields": {
+        "type_id": {
+          "name": "Varseltype",
+          "description": "ID for varseltype, t.d. pending_chore_approval, badge_earned, streak_milestone"
+        }
+      }
     }
   },
   "entity": {

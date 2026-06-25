@@ -110,6 +110,7 @@
         "alternating": "Alternating — rotate through the assigned children, one per day",
         "random": "Random — pick one assigned child at random each day",
         "balanced": "Balanced — split today's balanced chores evenly across the assigned children",
+        "first_come": "First come, first served — first child to complete it wins; it hides for the rest",
         "unassigned": "Unassigned — no child sees this chore"
       }
     },
@@ -742,6 +743,92 @@
     "rebuild_badges": {
       "name": "Rebuild Badges",
       "description": "Re-evaluate all badges across all children silently (no notifications, no point bonuses)."
+    },
+    "apply_mandatory_penalty": {
+      "name": "Apply Mandatory Penalty",
+      "description": "Deduct the configured penalty points for a missed mandatory chore and clear the review item.",
+      "fields": {
+        "miss_id": {
+          "name": "Miss ID",
+          "description": "The ID of the mandatory-miss review item"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "Choose Avatar",
+      "description": "A child switches to an avatar they have unlocked.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child"
+        },
+        "icon": {
+          "name": "Avatar icon",
+          "description": "The mdi icon of an unlocked catalogue avatar (e.g. mdi:rocket-launch)."
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "Dismiss Mandatory Chore",
+      "description": "Clear a missed mandatory chore review item with no penalty.",
+      "fields": {
+        "miss_id": {
+          "name": "Miss ID",
+          "description": "The ID of the mandatory-miss review item"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "Gift Points",
+      "description": "Transfer spendable points from one child to another (parent-controlled).",
+      "fields": {
+        "from_child_id": {
+          "name": "From child ID",
+          "description": "The ID of the child sending points"
+        },
+        "to_child_id": {
+          "name": "To child ID",
+          "description": "The ID of the child receiving points"
+        },
+        "points": {
+          "name": "Points",
+          "description": "The number of points to transfer"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "Postpone Mandatory Chore",
+      "description": "Give a missed mandatory chore another period (or tomorrow) without a penalty, and clear the review item.",
+      "fields": {
+        "miss_id": {
+          "name": "Miss ID",
+          "description": "The ID of the mandatory-miss review item"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "Request Chore Swap",
+      "description": "A child requests to take over today's rotation assignment of a chore (pending parent approval).",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the chore to take over"
+        },
+        "requester_id": {
+          "name": "Requester child ID",
+          "description": "The ID of the child requesting the swap"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Test Notification",
+      "description": "Send a sample notification of the given type to its enabled recipients (ignores the master on/off so routing can be verified).",
+      "fields": {
+        "type_id": {
+          "name": "Notification type",
+          "description": "Notification type id, e.g. pending_chore_approval, badge_earned, streak_milestone"
+        }
+      }
     }
   },
   "entity": {
