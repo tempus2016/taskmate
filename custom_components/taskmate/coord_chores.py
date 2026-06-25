@@ -25,6 +25,13 @@ def _add_months(d: date, months: int) -> date:
     return date(year, month, min(d.day, monthrange(year, month)[1]))
 
 
+_DOW_MAP = {
+    'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
+    'friday': 4, 'saturday': 5, 'sunday': 6,
+}
+_MONTH_STEPS = {'monthly': 1, 'every_3_months': 3, 'every_6_months': 6}
+
+
 class ChoresMixin:
     """Mixin providing chore CRUD and completion logic."""
 
@@ -1179,11 +1186,7 @@ class ChoresMixin:
                 except ValueError:
                     pass
             if first_occurrence_mode == 'wait_for_first_occurrence' and recurrence_day:
-                day_map = {
-                    'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
-                    'friday': 4, 'saturday': 5, 'sunday': 6
-                }
-                target_dow = day_map.get(recurrence_day.lower())
+                target_dow = _DOW_MAP.get(recurrence_day.lower())
                 if target_dow is not None and today.weekday() != target_dow:
                     return False
             return True
@@ -1208,18 +1211,14 @@ class ChoresMixin:
 
         # weekly/every_2_weeks with specific day — only available on that day
         if recurrence_day and recurrence in ('weekly', 'every_2_weeks'):
-            day_map = {
-                'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
-                'friday': 4, 'saturday': 5, 'sunday': 6
-            }
-            target_dow = day_map.get(recurrence_day.lower())
+            target_dow = _DOW_MAP.get(recurrence_day.lower())
             if target_dow is not None and today.weekday() != target_dow:
                 return False
 
         # Month-based recurrences use real calendar months so availability
         # matches the calendar projection (a "monthly" chore re-opens on the
         # same day next month, not after a fixed 30 days)
-        month_steps = {'monthly': 1, 'every_3_months': 3, 'every_6_months': 6}.get(recurrence)
+        month_steps = _MONTH_STEPS.get(recurrence)
         if month_steps:
             return today >= _add_months(last_dt, month_steps)
 

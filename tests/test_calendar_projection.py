@@ -192,3 +192,67 @@ def test_projection_horizon_honors_settings_clamp():
     run_async(coord._publish_chore_to_calendars(chore, today))
     # Horizon is clamped to MAX_CALENDAR_PROJECTION_DAYS=90.
     assert coord.hass.services.async_call.await_count == 90
+
+
+# ---------------------------------------------------------------------------
+# ERR-2: interval recurrences fall back to created_date when no recurrence_start
+# ---------------------------------------------------------------------------
+
+def test_schedule_helper_monthly_without_start_uses_created_date():
+    coord = _coord([])
+    chore = Chore(
+        name="Pay allowance",
+        schedule_mode="recurring",
+        recurrence="monthly",
+        created_date="2026-04-10",
+    )
+    # Projects on the created day-of-month, and the same day next month
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 10)) is True
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 5, 10)) is True
+    # but not on other days
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 11)) is False
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 25)) is False
+
+
+def test_schedule_helper_quarterly_without_start_projects():
+    coord = _coord([])
+    chore = Chore(
+        name="Deep clean",
+        schedule_mode="recurring",
+        recurrence="every_3_months",
+        created_date="2026-01-15",
+    )
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 1, 15)) is True
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 15)) is True   # +3 months
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 2, 15)) is False  # +1 month
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 7, 15)) is True   # +6 months
+
+
+def test_schedule_helper_every_2_days_without_start_uses_created_date():
+    coord = _coord([])
+    chore = Chore(
+        name="Water plants",
+        schedule_mode="recurring",
+        recurrence="every_2_days",
+        created_date="2026-04-20",
+    )
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 20)) is True
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 22)) is True
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 21)) is False
+
+
+def test_schedule_helper_explicit_start_overrides_created_date():
+    coord = _coord([])
+    # recurrence_start anchors the cadence, not created_date
+    chore = Chore(
+        name="Bins out",
+        schedule_mode="recurring",
+        recurrence="monthly",
+        created_date="2026-04-01",
+        recurrence_start="2026-04-03",
+    )
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 3)) is True
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 5, 3)) is True
+    # anchored to recurrence_start (3rd), not created_date (1st)
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 1)) is False
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 10)) is False
