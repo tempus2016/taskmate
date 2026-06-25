@@ -333,6 +333,9 @@ class TaskMateCalendarCard extends LitElement {
       const recurrence = chore.recurrence || "weekly";
       const recurrenceDay = (chore.recurrence_day || "").toLowerCase();
       const recurrenceStart = chore.recurrence_start || "";
+      // Fall back to created_date as the cadence anchor for interval
+      // recurrences with no explicit start, so they still project (ERR-2).
+      const anchorStr = recurrenceStart || createdDate;
 
       if (recurrenceDay && (recurrence === "weekly" || recurrence === "every_2_weeks")) {
         if (recurrenceDay !== dayDow) return false;
@@ -347,9 +350,9 @@ class TaskMateCalendarCard extends LitElement {
         return true;
       }
 
-      if (recurrence === "every_2_days" && recurrenceStart) {
+      if (recurrence === "every_2_days" && anchorStr) {
         try {
-          const anchor = new Date(recurrenceStart + "T00:00:00");
+          const anchor = new Date(anchorStr + "T00:00:00");
           const diff = diffDays(dayDate, anchor);
           if (diff < 0) return false;
           return diff % 2 === 0;
@@ -357,9 +360,9 @@ class TaskMateCalendarCard extends LitElement {
       }
 
       const monthSteps = { monthly: 1, every_3_months: 3, every_6_months: 6 }[recurrence];
-      if (monthSteps && recurrenceStart) {
+      if (monthSteps && anchorStr) {
         try {
-          const anchor = new Date(recurrenceStart + "T00:00:00");
+          const anchor = new Date(anchorStr + "T00:00:00");
           if (dayDate < anchor) return false;
           const monthsDiff =
             (dayDate.getFullYear() - anchor.getFullYear()) * 12 +

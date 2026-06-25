@@ -151,6 +151,10 @@ class CalendarMixin:
         recurrence = getattr(chore, "recurrence", "weekly")
         recurrence_day = (getattr(chore, "recurrence_day", "") or "").lower()
         recurrence_start = getattr(chore, "recurrence_start", "") or ""
+        # For interval recurrences, fall back to created_date as the cadence
+        # anchor when no explicit recurrence_start is set — otherwise these
+        # chores never project onto the calendar at all (ERR-2).
+        anchor_iso = recurrence_start or created_iso
         day_dow = self._SCHEDULE_DOW[day.weekday()]
 
         if recurrence_day and recurrence in ("weekly", "every_2_weeks"):
@@ -166,18 +170,18 @@ class CalendarMixin:
                     pass
             return True
 
-        if recurrence == "every_2_days" and recurrence_start:
+        if recurrence == "every_2_days" and anchor_iso:
             try:
-                anchor = date.fromisoformat(recurrence_start)
+                anchor = date.fromisoformat(anchor_iso)
                 diff = (day - anchor).days
                 return diff >= 0 and diff % 2 == 0
             except ValueError:
                 return False
 
         month_steps = {"monthly": 1, "every_3_months": 3, "every_6_months": 6}.get(recurrence)
-        if month_steps and recurrence_start:
+        if month_steps and anchor_iso:
             try:
-                anchor = date.fromisoformat(recurrence_start)
+                anchor = date.fromisoformat(anchor_iso)
                 if day < anchor:
                     return False
                 months_diff = (day.year - anchor.year) * 12 + (day.month - anchor.month)
