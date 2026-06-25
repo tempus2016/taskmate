@@ -165,6 +165,14 @@ _ha_components_binary_sensor = MagicMock()
 _ha_components_binary_sensor.BinarySensorEntity = _FakeBinarySensorEntity
 
 
+class _FakeButtonEntity:
+    pass
+
+
+_ha_components_button = MagicMock()
+_ha_components_button.ButtonEntity = _FakeButtonEntity
+
+
 class _FakeDeviceInfo(dict):
     """DeviceInfo behaves like a TypedDict; accept kwargs like the real one."""
 
@@ -237,6 +245,7 @@ _ha_util.dt = dt_util_mock  # `from homeassistant.util import dt` resolves here
 _ha_components = MagicMock()
 _ha_components.websocket_api = _ha_websocket_api
 _ha_components.calendar = _ha_components_calendar
+_ha_components.button = _ha_components_button
 
 sys.modules.update(
     {
@@ -256,6 +265,7 @@ sys.modules.update(
         "homeassistant.components": _ha_components,
         "homeassistant.components.sensor": _ha_components_sensor,
         "homeassistant.components.binary_sensor": _ha_components_binary_sensor,
+        "homeassistant.components.button": _ha_components_button,
         "homeassistant.components.calendar": _ha_components_calendar,
         "homeassistant.components.websocket_api": _ha_websocket_api,
         "homeassistant.util": _ha_util,
