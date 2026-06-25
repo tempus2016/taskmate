@@ -743,6 +743,92 @@
     "rebuild_badges": {
       "name": "Abzeichen neu berechnen",
       "description": "Bewerten Sie alle Abzeichen für alle Kinder im Hintergrund neu (keine Benachrichtigungen, keine Punkteboni)."
+    },
+    "apply_mandatory_penalty": {
+      "name": "Pflichtstrafe anwenden",
+      "description": "Zieht die konfigurierten Strafpunkte für eine verpasste Pflichtaufgabe ab und entfernt den Prüfeintrag.",
+      "fields": {
+        "miss_id": {
+          "name": "Versäumnis-ID",
+          "description": "Die ID des Prüfeintrags für die verpasste Pflichtaufgabe"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "Avatar wählen",
+      "description": "Ein Kind wechselt zu einem freigeschalteten Avatar.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Die ID des Kindes"
+        },
+        "icon": {
+          "name": "Avatar-Symbol",
+          "description": "Das mdi-Symbol eines freigeschalteten Katalog-Avatars (z. B. mdi:rocket-launch)."
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "Pflichtaufgabe verwerfen",
+      "description": "Entfernt den Prüfeintrag einer verpassten Pflichtaufgabe ohne Strafe.",
+      "fields": {
+        "miss_id": {
+          "name": "Versäumnis-ID",
+          "description": "Die ID des Prüfeintrags für die verpasste Pflichtaufgabe"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "Punkte verschenken",
+      "description": "Überträgt ausgebbare Punkte von einem Kind auf ein anderes (elterngesteuert).",
+      "fields": {
+        "from_child_id": {
+          "name": "Von Kind-ID",
+          "description": "Die ID des Kindes, das Punkte sendet"
+        },
+        "to_child_id": {
+          "name": "An Kind-ID",
+          "description": "Die ID des Kindes, das Punkte erhält"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Die Anzahl der zu übertragenden Punkte"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "Pflichtaufgabe verschieben",
+      "description": "Gewährt einer verpassten Pflichtaufgabe ohne Strafe einen weiteren Zeitraum (oder morgen) und entfernt den Prüfeintrag.",
+      "fields": {
+        "miss_id": {
+          "name": "Versäumnis-ID",
+          "description": "Die ID des Prüfeintrags für die verpasste Pflichtaufgabe"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "Aufgabentausch anfragen",
+      "description": "Ein Kind beantragt, die heutige Rotationszuweisung einer Aufgabe zu übernehmen (Genehmigung der Eltern erforderlich).",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID der zu übernehmenden Aufgabe"
+        },
+        "requester_id": {
+          "name": "Anfragende Kind-ID",
+          "description": "Die ID des Kindes, das den Tausch beantragt"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Test-Benachrichtigung",
+      "description": "Sendet eine Beispiel-Benachrichtigung des angegebenen Typs an die aktivierten Empfänger (ignoriert den Hauptschalter, damit das Routing geprüft werden kann).",
+      "fields": {
+        "type_id": {
+          "name": "Benachrichtigungstyp",
+          "description": "ID des Benachrichtigungstyps, z. B. pending_chore_approval, badge_earned, streak_milestone"
+        }
+      }
     }
   },
   "entity": {

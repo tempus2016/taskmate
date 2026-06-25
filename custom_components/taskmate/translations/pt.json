@@ -743,6 +743,92 @@
     "rebuild_badges": {
       "name": "Reconstruir conquistas",
       "description": "Reavaliar todas as conquistas de todas as crianças silenciosamente (sem notificações nem bónus de pontos)."
+    },
+    "apply_mandatory_penalty": {
+      "name": "Aplicar penalização obrigatória",
+      "description": "Deduz os pontos de penalização configurados por uma tarefa obrigatória falhada e remove o item de revisão.",
+      "fields": {
+        "miss_id": {
+          "name": "ID da falha",
+          "description": "O ID do item de revisão da tarefa obrigatória falhada"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "Escolher avatar",
+      "description": "Uma criança muda para um avatar que desbloqueou.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança"
+        },
+        "icon": {
+          "name": "Ícone do avatar",
+          "description": "O ícone mdi de um avatar do catálogo desbloqueado (ex.: mdi:rocket-launch)."
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "Dispensar tarefa obrigatória",
+      "description": "Remove o item de revisão de uma tarefa obrigatória falhada sem penalização.",
+      "fields": {
+        "miss_id": {
+          "name": "ID da falha",
+          "description": "O ID do item de revisão da tarefa obrigatória falhada"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "Oferecer pontos",
+      "description": "Transfere pontos disponíveis de uma criança para outra (controlado pelos pais).",
+      "fields": {
+        "from_child_id": {
+          "name": "ID da criança de origem",
+          "description": "O ID da criança que envia os pontos"
+        },
+        "to_child_id": {
+          "name": "ID da criança de destino",
+          "description": "O ID da criança que recebe os pontos"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "O número de pontos a transferir"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "Adiar tarefa obrigatória",
+      "description": "Dá a uma tarefa obrigatória falhada outro período (ou amanhã) sem penalização e remove o item de revisão.",
+      "fields": {
+        "miss_id": {
+          "name": "ID da falha",
+          "description": "O ID do item de revisão da tarefa obrigatória falhada"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "Pedir troca de tarefa",
+      "description": "Uma criança pede para assumir a atribuição de rotação de hoje de uma tarefa (sujeito a aprovação dos pais).",
+      "fields": {
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "O ID da tarefa a assumir"
+        },
+        "requester_id": {
+          "name": "ID da criança solicitante",
+          "description": "O ID da criança que pede a troca"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Notificação de teste",
+      "description": "Envia uma notificação de exemplo do tipo indicado aos destinatários ativados (ignora o interruptor principal para que o encaminhamento possa ser verificado).",
+      "fields": {
+        "type_id": {
+          "name": "Tipo de notificação",
+          "description": "ID do tipo de notificação, p. ex. pending_chore_approval, badge_earned, streak_milestone"
+        }
+      }
     }
   },
   "entity": {

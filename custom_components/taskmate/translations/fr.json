@@ -743,6 +743,92 @@
     "rebuild_badges": {
       "name": "Recalculer les badges",
       "description": "Réévaluer silencieusement tous les badges pour tous les enfants (sans notifications ni bonus de points)."
+    },
+    "apply_mandatory_penalty": {
+      "name": "Appliquer la pénalité obligatoire",
+      "description": "Déduit les points de pénalité configurés pour une tâche obligatoire manquée et supprime l'élément à vérifier.",
+      "fields": {
+        "miss_id": {
+          "name": "ID d'oubli",
+          "description": "L'ID de l'élément à vérifier pour la tâche obligatoire manquée"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "Choisir un avatar",
+      "description": "Un enfant passe à un avatar qu'il a débloqué.",
+      "fields": {
+        "child_id": {
+          "name": "ID enfant",
+          "description": "L'ID de l'enfant"
+        },
+        "icon": {
+          "name": "Icône d'avatar",
+          "description": "L'icône mdi d'un avatar du catalogue débloqué (par ex. mdi:rocket-launch)."
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "Ignorer la tâche obligatoire",
+      "description": "Supprime l'élément à vérifier d'une tâche obligatoire manquée sans pénalité.",
+      "fields": {
+        "miss_id": {
+          "name": "ID d'oubli",
+          "description": "L'ID de l'élément à vérifier pour la tâche obligatoire manquée"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "Offrir des points",
+      "description": "Transfère des points dépensables d'un enfant à un autre (contrôlé par les parents).",
+      "fields": {
+        "from_child_id": {
+          "name": "ID enfant source",
+          "description": "L'ID de l'enfant qui envoie les points"
+        },
+        "to_child_id": {
+          "name": "ID enfant destinataire",
+          "description": "L'ID de l'enfant qui reçoit les points"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Le nombre de points à transférer"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "Reporter la tâche obligatoire",
+      "description": "Accorde à une tâche obligatoire manquée une autre période (ou demain) sans pénalité et supprime l'élément à vérifier.",
+      "fields": {
+        "miss_id": {
+          "name": "ID d'oubli",
+          "description": "L'ID de l'élément à vérifier pour la tâche obligatoire manquée"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "Demander un échange de tâche",
+      "description": "Un enfant demande à reprendre l'attribution par rotation d'une tâche pour aujourd'hui (en attente d'approbation parentale).",
+      "fields": {
+        "chore_id": {
+          "name": "ID tâche",
+          "description": "L'ID de la tâche à reprendre"
+        },
+        "requester_id": {
+          "name": "ID enfant demandeur",
+          "description": "L'ID de l'enfant qui demande l'échange"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Notification de test",
+      "description": "Envoie un exemple de notification du type indiqué à ses destinataires activés (ignore l'interrupteur principal afin de vérifier le routage).",
+      "fields": {
+        "type_id": {
+          "name": "Type de notification",
+          "description": "ID du type de notification, par ex. pending_chore_approval, badge_earned, streak_milestone"
+        }
+      }
     }
   },
   "entity": {
