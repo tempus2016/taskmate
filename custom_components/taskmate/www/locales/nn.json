@@ -1504,5 +1504,8 @@
   "panel.ics_copy": "Kopier",
   "panel.ics_regenerate": "Lag ny lenkje",
   "panel.ics_copied": "Abonnementslenkje kopiert",
-  "panel.ics_regenerated": "Ny lenkje laga — gamle abonnement stoppa"
+  "panel.ics_regenerated": "Ny lenkje laga — gamle abonnement stoppa",
+  "gallery.default_title": "Fotogalleri",
+  "gallery.empty": "Ingen bevisbilete enno",
+  "gallery.pending": "ventar"
 }

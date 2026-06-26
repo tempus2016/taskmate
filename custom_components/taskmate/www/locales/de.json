@@ -1504,5 +1504,8 @@
   "panel.ics_copy": "Kopieren",
   "panel.ics_regenerate": "Link neu erzeugen",
   "panel.ics_copied": "Abo-Link kopiert",
-  "panel.ics_regenerated": "Neuer Link erzeugt — alte Abos gestoppt"
+  "panel.ics_regenerated": "Neuer Link erzeugt — alte Abos gestoppt",
+  "gallery.default_title": "Fotogalerie",
+  "gallery.empty": "Noch keine Nachweisfotos",
+  "gallery.pending": "ausstehend"
 }

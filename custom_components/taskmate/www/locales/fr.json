@@ -1504,5 +1504,8 @@
   "panel.ics_copy": "Copier",
   "panel.ics_regenerate": "Régénérer le lien",
   "panel.ics_copied": "Lien d'abonnement copié",
-  "panel.ics_regenerated": "Nouveau lien généré — anciens abonnements arrêtés"
+  "panel.ics_regenerated": "Nouveau lien généré — anciens abonnements arrêtés",
+  "gallery.default_title": "Galerie photo",
+  "gallery.empty": "Aucune photo de preuve pour l'instant",
+  "gallery.pending": "en attente"
 }

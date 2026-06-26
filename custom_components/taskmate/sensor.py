@@ -508,6 +508,33 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
     return out
 
 
+def _build_photo_gallery(common: dict, limit: int = 40) -> list[dict]:
+    """Recent completions that carry an evidence photo, newest first (FEAT-13).
+
+    Returns the raw (unsigned) ``/api/taskmate/photo/<file>`` path; the gallery
+    card signs each via ``auth/sign_path`` before rendering (a card's <img> can't
+    send a bearer token).
+    """
+    child_lookup = common["child_lookup"]
+    chore_lookup = common["chore_lookup"]
+    with_photos = [
+        c for c in common["all_completions"] if getattr(c, "photo_url", "")
+    ]
+    recent = sorted(with_photos, key=lambda c: c.completed_at, reverse=True)[:limit]
+    out = []
+    for comp in recent:
+        chore = chore_lookup.get(comp.chore_id)
+        out.append({
+            "completion_id": comp.id,
+            "child_name": child_lookup[comp.child_id].name if comp.child_id in child_lookup else "",
+            "chore_name": chore.name if chore else "",
+            "approved": comp.approved,
+            "completed_at": comp.completed_at.isoformat() if hasattr(comp.completed_at, "isoformat") else str(comp.completed_at),
+            "photo_url": comp.photo_url,
+        })
+    return out
+
+
 def _build_recent_transactions(common: dict, limit: int = 20) -> list[dict]:
     """Unified activity feed of manual point adjustments and reward claims.
 
@@ -905,6 +932,7 @@ class TaskMateActivitySensor(_CachedAttrsSensor):
             "recent_completions": _build_recent_completions(common),
             "recent_transactions": _build_recent_transactions(common),
             "career_score_history": career_history,
+            "photo_gallery": _build_photo_gallery(common),
         }
 
 

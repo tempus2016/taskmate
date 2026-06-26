@@ -1504,5 +1504,8 @@
   "panel.ics_copy": "Copy",
   "panel.ics_regenerate": "Regenerate link",
   "panel.ics_copied": "Subscribe link copied",
-  "panel.ics_regenerated": "New link generated — old subscriptions stopped"
+  "panel.ics_regenerated": "New link generated — old subscriptions stopped",
+  "gallery.default_title": "Photo gallery",
+  "gallery.empty": "No evidence photos yet",
+  "gallery.pending": "pending"
 }

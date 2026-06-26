@@ -44,6 +44,7 @@ CARDS: Final = [
     "taskmate-bonuses-card.js",
     "taskmate-points-display-card.js",
     "taskmate-calendar-card.js",
+    "taskmate-photo-gallery-card.js",
 ]
 
 # Cards that USED to ship but were removed. Their files no longer exist, so any

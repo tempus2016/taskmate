@@ -1504,5 +1504,8 @@
   "panel.ics_copy": "Kopier",
   "panel.ics_regenerate": "Lag ny lenke",
   "panel.ics_copied": "Abonnementslenke kopiert",
-  "panel.ics_regenerated": "Ny lenke laget — gamle abonnementer stoppet"
+  "panel.ics_regenerated": "Ny lenke laget — gamle abonnementer stoppet",
+  "gallery.default_title": "Fotogalleri",
+  "gallery.empty": "Ingen bevisbilder ennå",
+  "gallery.pending": "venter"
 }
