@@ -293,11 +293,12 @@ def _build_chore_availability(coordinator: TaskMateCoordinator, common: dict) ->
     children = common["children"]
     chores = common["chores"]
     availability: dict[str, dict[str, bool]] = {}
-    for c in chores:
-        per_child = {}
-        for child in children:
-            per_child[child.id] = coordinator.is_chore_available_for_child(c, child.id)
-        availability[c.id] = per_child
+    with coordinator.availability_build_scope():
+        for c in chores:
+            per_child = {}
+            for child in children:
+                per_child[child.id] = coordinator.is_chore_available_for_child(c, child.id)
+            availability[c.id] = per_child
     return availability
 
 

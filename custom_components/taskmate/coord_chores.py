@@ -1149,7 +1149,7 @@ class ChoresMixin:
         depends_on = getattr(chore, 'depends_on', []) or []
         if depends_on:
             dep_today = dt_util.as_local(dt_util.now()).date()
-            completions = self.storage.get_completions()
+            completions = self._cached_completions()
             for dep_id in depends_on:
                 satisfied = any(
                     c.chore_id == dep_id
@@ -1258,33 +1258,34 @@ class ChoresMixin:
         """
         today = dt_util.as_local(dt_util.now()).date()
         dow = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")[today.weekday()]
-        completions = self.storage.get_completions()
         out = []
-        for chore in self.storage.get_chores():
-            if not self.is_chore_available_for_child(chore, child_id):
-                continue
-            assigned = getattr(chore, "assigned_to", []) or []
-            if assigned and child_id not in assigned:
-                continue
-            if getattr(chore, "schedule_mode", "specific_days") == "specific_days":
-                due_days = getattr(chore, "due_days", []) or []
-                if due_days and dow not in due_days:
+        with self.availability_build_scope():
+            completions = self._cached_completions()
+            for chore in self.storage.get_chores():
+                if not self.is_chore_available_for_child(chore, child_id):
                     continue
-            limit = getattr(chore, "daily_limit", 1) or 1
-            done = 0
-            for c in completions:
-                if c.chore_id != chore.id or c.child_id != child_id:
+                assigned = getattr(chore, "assigned_to", []) or []
+                if assigned and child_id not in assigned:
                     continue
-                if getattr(c, "bonus_subtask_id", ""):
+                if getattr(chore, "schedule_mode", "specific_days") == "specific_days":
+                    due_days = getattr(chore, "due_days", []) or []
+                    if due_days and dow not in due_days:
+                        continue
+                limit = getattr(chore, "daily_limit", 1) or 1
+                done = 0
+                for c in completions:
+                    if c.chore_id != chore.id or c.child_id != child_id:
+                        continue
+                    if getattr(c, "bonus_subtask_id", ""):
+                        continue
+                    try:
+                        if dt_util.as_local(c.completed_at).date() == today:
+                            done += 1
+                    except (AttributeError, TypeError, ValueError):
+                        continue
+                if done >= limit:
                     continue
-                try:
-                    if dt_util.as_local(c.completed_at).date() == today:
-                        done += 1
-                except (AttributeError, TypeError, ValueError):
-                    continue
-            if done >= limit:
-                continue
-            out.append(chore)
+                out.append(chore)
         return out
 
     async def _async_expire_dated_chores(self) -> None:

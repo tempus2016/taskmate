@@ -21,6 +21,11 @@ _LOGGER = logging.getLogger(__name__)
 STORAGE_VERSION = 1
 STORAGE_KEY = f"{DOMAIN}.storage"
 
+# Debounce window for coalescing the 2-4 saves a single operation can trigger
+# into one disk write (PERF-3). Small enough that a crash loses at most this
+# much; HA flushes pending delayed saves on shutdown.
+_SAVE_DEBOUNCE_SECONDS = 1.0
+
 
 class TaskMateStorage:
     """Manage TaskMate data storage."""
@@ -31,6 +36,9 @@ class TaskMateStorage:
         self.entry_id = entry_id
         self._store = Store(hass, STORAGE_VERSION, f"{STORAGE_KEY}.{entry_id}")
         self._data: dict[str, Any] = {}
+        # Monotonic counter bumped on every persisted mutation (PERF-2). Lets the
+        # coordinator skip rebuilding its data snapshot when nothing has changed.
+        self._data_version = 0
 
     async def async_load(self) -> dict[str, Any]:
         """Load data from storage."""
@@ -245,8 +253,30 @@ class TaskMateStorage:
         await self.async_save()
 
     async def async_save(self) -> None:
-        """Save data to storage."""
+        """Persist data, debounced (PERF-3).
+
+        A single TaskMate operation often calls this 2-4× (e.g. mutate a record,
+        award points, refresh). ``Store.async_delay_save`` coalesces all of them
+        into one disk write after a short delay, instead of serialising the whole
+        ``_data`` blob each time. HA flushes any pending delayed write on
+        shutdown; ``async_shutdown`` also forces a flush via ``async_save_now``.
+        Use ``async_save_now`` when an immediate on-disk write is required.
+        """
+        # Bump synchronously, before any await: a mutation method calls this with
+        # no interleaving await after touching _data, so the new version is
+        # visible the instant anything else (e.g. the 30 s poll) can run.
+        self._data_version = getattr(self, "_data_version", 0) + 1
+        self._store.async_delay_save(lambda: self._data, _SAVE_DEBOUNCE_SECONDS)
+
+    async def async_save_now(self) -> None:
+        """Persist data immediately, bypassing the debounce (shutdown/flush)."""
+        self._data_version = getattr(self, "_data_version", 0) + 1
         await self._store.async_save(self._data)
+
+    @property
+    def data_version(self) -> int:
+        """Monotonic version of the in-memory data; bumped on each save."""
+        return getattr(self, "_data_version", 0)
 
     @property
     def data(self) -> dict[str, Any]:
