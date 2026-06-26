@@ -29,6 +29,7 @@ from .const import (
     NOTIF_TYPE_MONTHLY_REPORT,
     NOTIF_TYPE_PENDING_CHORE_APPROVAL,
     NOTIF_TYPE_PENDING_REWARD_CLAIM,
+    NOTIF_TYPE_SEASON_CHAMPION,
     NOTIF_TYPE_STREAK_AT_RISK,
     NOTIF_TYPE_STREAK_MILESTONE,
     NOTIF_TYPE_WEEKLY_DIGEST,
@@ -66,6 +67,7 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_MANDATORY_REMINDER,     "child",  False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_MANDATORY_PARENT_ALERT, "parent", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_MONTHLY_REPORT,         "parent", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_SEASON_CHAMPION,        "both",   False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {
@@ -250,6 +252,7 @@ class NotificationCoordinator:
             NOTIF_TYPE_MANDATORY_REMINDER:     "{child_name}, you still need to do '{chore_name}'.",
             NOTIF_TYPE_MANDATORY_PARENT_ALERT: "{child_name} still hasn't done the mandatory chore '{chore_name}'.",
             NOTIF_TYPE_MONTHLY_REPORT:         "TaskMate {month} report:\n{summary}",
+            NOTIF_TYPE_SEASON_CHAMPION:        "🏆 {child_name} won the {month} leaderboard with {points} {points_name}!",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:

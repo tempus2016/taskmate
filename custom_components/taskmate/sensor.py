@@ -77,6 +77,9 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
     chore_lookup = {c.id: c for c in chores}
     reward_lookup = {r.id: r for r in rewards}
 
+    # Current-month leaderboard points per child (FEAT-2).
+    season_points = coordinator.storage.get_season_points(dt_util.now().strftime("%Y-%m"))
+
     # Pending chore points per child (awaiting approval -> points to be earned).
     pending_points_by_child: dict[str, int] = {}
     for comp in pending_completions:
@@ -122,6 +125,7 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
         "child_lookup": child_lookup,
         "chore_lookup": chore_lookup,
         "reward_lookup": reward_lookup,
+        "season_points": season_points,
         "all_completions": all_completions,
         "pending_completions": pending_completions,
         "pending_reward_claim_objs": pending_reward_claim_objs,
@@ -142,6 +146,7 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
     pending = common["pending_points_by_child"]
     committed = common["committed_points_by_child"]
     allocated = common["total_allocated_by_child"]
+    season = common["season_points"]
     summary = []
     for c in children:
         committed_amount = committed.get(c.id, 0)
@@ -162,6 +167,7 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
             "chore_order": c.chore_order,
             "current_streak": getattr(c, 'current_streak', 0) or 0,
             "best_streak": getattr(c, 'best_streak', 0) or 0,
+            "season_points": int(season.get(c.id, 0)),
             "total_points_earned": getattr(c, 'total_points_earned', 0) or 0,
             "total_chores_completed": getattr(c, 'total_chores_completed', 0) or 0,
             "avatar": getattr(c, 'avatar', 'mdi:account-circle') or 'mdi:account-circle',
@@ -754,6 +760,9 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "vacation_name": active_vacation.get("name", "") if active_vacation else "",
             "vacation_end": active_vacation.get("end", "") if active_vacation else "",
             "vacation_periods": self.coordinator.get_vacation_periods(),
+            # Leaderboard seasons (FEAT-2): current-month standings + champion history.
+            "season_month": dt_util.now().strftime("%Y-%m"),
+            "season_champions": list(reversed(self.coordinator.storage.get_season_champions()))[:12],
         }
 
 

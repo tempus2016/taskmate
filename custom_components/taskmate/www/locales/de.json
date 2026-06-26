@@ -1493,5 +1493,9 @@
   "panel.notif_escalation_parent_label": "Eltern benachrichtigen nach",
   "panel.notif_escalation_minutes_suffix": "Min.",
   "notification.monthly_report.name": "Monatsbericht",
-  "notification.monthly_report.description": "Eine Zusammenfassung des Vormonats je Kind zu Monatsbeginn (Aufgaben, Punkte, Level, beste Serie). Standardmäßig aus."
+  "notification.monthly_report.description": "Eine Zusammenfassung des Vormonats je Kind zu Monatsbeginn (Aufgaben, Punkte, Level, beste Serie). Standardmäßig aus.",
+  "leaderboard.sort_this_month": "Dieser Monat",
+  "leaderboard.last_champion": "Champion des Vormonats: {name} 🏆",
+  "notification.season_champion.name": "Saison-Champion",
+  "notification.season_champion.description": "Verkündet zu Monatsbeginn den Gewinner der monatlichen Bestenliste. Standardmäßig aus."
 }
