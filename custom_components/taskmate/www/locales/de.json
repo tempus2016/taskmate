@@ -1154,6 +1154,8 @@
   "rewards.deposit_points": "Zahlen Sie {amount} ein",
   "rewards.editor.enable_pool_mode": "Pool-Modus aktivieren (Spargläser)",
   "rewards.editor.enable_pool_mode_helper": "Jede Belohnung wird zu einem eigenen Sparpool – Kinder weisen Punkte direkt einem Ziel zu, anstatt sie aus einem globalen Guthaben auszugeben",
+  "rewards.editor.expand_to_fit": "Karte an alle Belohnungen anpassen",
+  "rewards.editor.expand_to_fit_helper": "Vergrößert die Karte, um jede Belohnung anzuzeigen, anstatt eine Liste mit fester Höhe zu scrollen (nur gestaltete Stile)",
   "rewards.editor.entity": "Entität",
   "rewards.editor.entity_helper": "Die TaskMate-Übersichtssensoreinheit",
   "rewards.editor.filter_by_child": "Nach Kind filtern",

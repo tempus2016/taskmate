@@ -956,8 +956,10 @@ class TaskMateRewardsCard extends LitElement {
 
       /* ── Designed (playroom / console / cleanpro) — shared .tmd kit comes
          from taskmate-design.js styles(); only card-specific layout below. ── */
-      .rw-list { display: flex; flex-direction: column; gap: 11px;
-                 max-height: 360px; overflow-y: auto; }
+      .rw-list { display: flex; flex-direction: column; gap: 11px; }
+      /* #604: default is fluid — the list grows to fit every reward. Opt into a
+         fixed 360px scroll region with expand_to_fit: false. */
+      .rw-list.rw-scroll { max-height: 360px; overflow-y: auto; }
       .rw-jackpot-label { align-self: flex-start; background: var(--tmd-gold); color: #3a2e26;
                           border-color: transparent; font-weight: 800; text-transform: uppercase;
                           letter-spacing: 0.04em; font-size: 10.5px; margin-bottom: 2px; }
@@ -1027,6 +1029,7 @@ class TaskMateRewardsCard extends LitElement {
       child_id: null, // Optional: filter rewards for a specific child
       show_child_badges: true, // Show which children can claim each reward
       enable_pool_mode: false, // v3.0: "savings jar" allocation mode (opt-in per card)
+      expand_to_fit: true, // #604: grow the card to fit all rewards (designed styles). false = fixed 360px scroll.
       deposit_amounts: [1, 5, 10], // #559: quick-deposit button amounts for pool/jackpot rewards
       header_color: '#e67e22',
       ...config,
@@ -1942,7 +1945,7 @@ class TaskMateRewardsCard extends LitElement {
         ${(anyPoolReward && activeChild) || activeChild
           ? this._designChildSelector(activeChild, pointsIcon, pointsName, design)
           : ''}
-        <div class="rw-list">
+        <div class="rw-list ${this.config.expand_to_fit === false ? 'rw-scroll' : ''}">
           ${sortedRewards.map((r) => this._designRewardRow(r, children, pointsIcon, pointsName, design))}
         </div>`;
 
@@ -2268,6 +2271,10 @@ class TaskMateRewardsCardEditor extends LitElement {
         name: 'enable_pool_mode',
         selector: { boolean: {} },
       },
+      {
+        name: 'expand_to_fit',
+        selector: { boolean: {} },
+      },
     ];
   }
 
@@ -2279,6 +2286,7 @@ class TaskMateRewardsCardEditor extends LitElement {
       card_design: this._t('common.design.field_label'),
       show_child_badges: this._t('rewards.editor.show_child_badges'),
       enable_pool_mode: this._t('rewards.editor.enable_pool_mode'),
+      expand_to_fit: this._t('rewards.editor.expand_to_fit'),
     };
     return labels[schemaEntry.name] ?? schemaEntry.name;
   };
@@ -2290,6 +2298,7 @@ class TaskMateRewardsCardEditor extends LitElement {
       child_id: this._t('rewards.editor.filter_by_child_helper'),
       show_child_badges: this._t('rewards.editor.show_child_badges_helper'),
       enable_pool_mode: this._t('rewards.editor.enable_pool_mode_helper'),
+      expand_to_fit: this._t('rewards.editor.expand_to_fit_helper'),
     };
     return helpers[schemaEntry.name] ?? '';
   };
@@ -2306,6 +2315,7 @@ class TaskMateRewardsCardEditor extends LitElement {
       card_design: this.config.card_design || 'global',
       show_child_badges: this.config.show_child_badges !== false,
       enable_pool_mode: this.config.enable_pool_mode === true,
+      expand_to_fit: this.config.expand_to_fit !== false,
     };
 
     return html`
@@ -2369,6 +2379,9 @@ class TaskMateRewardsCardEditor extends LitElement {
         // Default is true — omit to keep config minimal
         delete newConfig[key];
       } else if (key === 'enable_pool_mode' && value === false) {
+        delete newConfig[key];
+      } else if (key === 'expand_to_fit' && value === true) {
+        // Default is true (fluid) — omit to keep config minimal
         delete newConfig[key];
       } else {
         newConfig[key] = value;

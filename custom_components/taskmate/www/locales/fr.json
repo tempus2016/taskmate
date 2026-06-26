@@ -1154,6 +1154,8 @@
   "rewards.deposit_points": "Déposer {amount}",
   "rewards.editor.enable_pool_mode": "Activer le mode cagnotte (tirelires)",
   "rewards.editor.enable_pool_mode_helper": "Chaque récompense devient une cagnotte dédiée — les enfants allouent des points directement à un objectif plutôt que de dépenser depuis un solde global",
+  "rewards.editor.expand_to_fit": "Agrandir la carte pour toutes les récompenses",
+  "rewards.editor.expand_to_fit_helper": "Agrandit la carte pour afficher chaque récompense au lieu de faire défiler une liste à hauteur fixe (styles personnalisés uniquement)",
   "rewards.editor.entity": "Entité",
   "rewards.editor.entity_helper": "L'entité du capteur de vue d'ensemble TaskMate",
   "rewards.editor.filter_by_child": "Filtrer par enfant",
