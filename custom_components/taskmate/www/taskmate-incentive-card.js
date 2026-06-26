@@ -1,0 +1,1134 @@
+/**
+ * TaskMate Incentive Card (shared base for Bonuses + Penalties) — QUAL-2.
+ * One parameterised component; the two cards differ only by name/colour/icon/
+ * service-prefix/i18n-prefix, supplied via the P object.
+ */
+
+const LitElement = customElements.get("hui-masonry-view")
+  ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
+  : Object.getPrototypeOf(customElements.get("hui-view"));
+
+const html = LitElement.prototype.html;
+const css = LitElement.prototype.css;
+
+const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+
+export function createIncentiveCard(P) {
+  class IncentiveCard extends LitElement {
+    static get properties() {
+      return {
+        hass: { type: Object },
+        config: { type: Object },
+        _selectedChildId: { type: String },
+        _editMode: { type: Boolean },
+        _loading: { type: Object },
+        _editingBonus: { type: Object },   // bonus being edited (null = none)
+        _showNewForm: { type: Boolean },
+        _toast: { type: String },
+        _newForm: { type: Object },
+      };
+    }
+
+    shouldUpdate(changedProps) {
+      if (changedProps.has("hass")) {
+        return window.__taskmate_hasChanged
+          ? window.__taskmate_hasChanged(changedProps.get("hass"), this.hass, this.config?.entity)
+          : true;
+      }
+      return true;
+    }
+
+    _t(key, params) {
+      const fn = window.__taskmate_localize;
+      return fn ? fn(this.hass, key, params) : key;
+    }
+
+    _tp(key, params) {
+      return this._t(P.i18n + "." + key, params);
+    }
+
+    constructor() {
+      super();
+      this._selectedChildId = null;
+      this._editMode = false;
+      this._loading = {};
+      this._editingBonus = null;
+      this._saving = false;
+      this._showNewForm = false;
+      this._toast = null;
+      this._newForm = { name: "", points: "", description: "", icon: P.icon };
+    }
+
+    setConfig(config) {
+      this.config = config;
+    }
+
+    static getConfigElement() {
+      return document.createElement(P.tag + "-editor");
+    }
+
+    static getStubConfig() {
+      return { entity: "sensor.taskmate_overview" };
+    }
+
+    static get styles() {
+      const base = css`
+        :host {
+          display: block;
+          --text-primary: var(--primary-text-color, #212121);
+          --text-secondary: var(--secondary-text-color, #757575);
+          --card-bg: var(--card-background-color, #fff);
+          --divider: var(--divider-color, #e0e0e0);
+        }
+
+        ha-card { overflow: hidden; }
+
+        /* ── Header ── */
+        .card-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 18px;
+          background: var(--taskmate-header-bg, var(--bonus-green));
+          color: white;
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-icon { --mdc-icon-size: 32px; opacity: 0.95; }
+        .header-title { font-size: 1.3rem; font-weight: 600; }
+        .bonus-count {
+          background: rgba(255,255,255,0.2);
+          padding: 4px 12px;
+          border-radius: 16px;
+          font-size: 0.9rem;
+          font-weight: 500;
+        }
+        .header-actions { display: flex; gap: 8px; }
+        .icon-btn {
+          background: rgba(255,255,255,0.18);
+          border: none;
+          color: white;
+          border-radius: 50%;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: background 0.2s;
+          --mdc-icon-size: 20px;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.32); }
+        .icon-btn.active { background: rgba(255,255,255,0.35); }
+
+        /* ── Child tabs ── */
+        .child-tabs {
+          display: flex;
+          gap: 6px;
+          padding: 10px 16px 0;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .child-tabs::-webkit-scrollbar { display: none; }
+        .child-tab {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 14px;
+          border-radius: 20px;
+          background: var(--divider);
+          border: 2px solid transparent;
+          cursor: pointer;
+          font-size: 0.9rem;
+          font-weight: 500;
+          white-space: nowrap;
+          color: var(--text-secondary);
+          transition: all 0.15s;
+        }
+        .child-tab ha-icon { --mdc-icon-size: 18px; }
+        .child-tab.selected {
+          background: var(--bonus-green-light);
+          border-color: var(--bonus-green);
+          color: var(--bonus-green);
+        }
+
+        /* ── Card body ── */
+        .card-content {
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        /* ── Bonus tile ── */
+        .bonus-row {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 14px 16px;
+          background: var(--card-bg);
+          border: 1px solid var(--divider);
+          border-radius: 12px;
+          transition: box-shadow 0.2s, transform 0.15s;
+        }
+        .bonus-row:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.09); transform: translateY(-1px); }
+
+        /* Flash animation when bonus is applied */
+        @keyframes flash-green {
+          0%   { background: var(--bonus-green-light); }
+          40%  { background: var(--bonus-green-flash); }
+          100% { background: var(--card-bg); }
+        }
+        .bonus-row.flashing { animation: flash-green 0.6s ease forwards; }
+
+        /* Points badge */
+        .points-badge {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-width: 64px;
+          padding: 10px 8px;
+          background: linear-gradient(135deg, var(--bonus-green) 0%, var(--bonus-green-dark) 100%);
+          border-radius: 10px;
+          flex-shrink: 0;
+          box-shadow: 0 2px 6px var(--bonus-green-shadow);
+        }
+        .points-badge ha-icon { --mdc-icon-size: 20px; color: white; margin-bottom: 2px; }
+        .points-value { font-size: 1.3rem; font-weight: 700; color: white; line-height: 1; }
+        .points-label { font-size: 0.62rem; font-weight: 600; color: rgba(255,255,255,0.88); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+
+        /* Bonus info */
+        .bonus-info { flex: 1; min-width: 0; }
+        .bonus-name { font-size: 1.05rem; font-weight: 600; color: var(--text-primary); }
+        .bonus-description { font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; }
+
+        /* Apply button */
+        .apply-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 8px 16px;
+          background: var(--bonus-green);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.15s, transform 0.1s;
+          white-space: nowrap;
+          flex-shrink: 0;
+          --mdc-icon-size: 16px;
+        }
+        .apply-btn:hover { background: var(--bonus-green-dark); }
+        .apply-btn:active { transform: scale(0.97); }
+        .apply-btn:disabled { opacity: 0.55; cursor: default; }
+
+        /* Edit mode actions */
+        .edit-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .edit-btn {
+          background: none;
+          border: 1px solid var(--divider);
+          border-radius: 8px;
+          width: 34px;
+          height: 34px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: var(--text-secondary);
+          --mdc-icon-size: 18px;
+          transition: all 0.15s;
+        }
+        .edit-btn:hover { background: var(--divider); color: var(--text-primary); }
+        .edit-btn.delete:hover { background: var(--bonus-green-light); color: var(--bonus-green); border-color: var(--bonus-green); }
+
+        /* Inline edit form */
+        .edit-form {
+          background: var(--ha-card-background, #f5f5f5);
+          border: 1px solid var(--divider);
+          border-radius: 12px;
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: -4px;
+        }
+        .form-row { display: flex; gap: 10px; }
+        .form-row.full { flex-direction: column; }
+        .form-field {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          flex: 1;
+        }
+        .form-field label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; }
+        .form-field input {
+          padding: 8px 10px;
+          border: 1px solid var(--divider);
+          border-radius: 8px;
+          font-size: 0.95rem;
+          background: var(--card-bg);
+          color: var(--text-primary);
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .form-field input:focus { outline: 2px solid var(--bonus-green); border-color: transparent; }
+        .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+        .btn-save {
+          padding: 8px 18px;
+          background: var(--bonus-green);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .btn-save:hover { background: var(--bonus-green-dark); }
+        .btn-cancel {
+          padding: 8px 14px;
+          background: none;
+          color: var(--text-secondary);
+          border: 1px solid var(--divider);
+          border-radius: 8px;
+          font-size: 0.9rem;
+          cursor: pointer;
+        }
+        .btn-cancel:hover { background: var(--divider); }
+
+        /* Add new button */
+        .add-bonus-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 12px;
+          border: 2px dashed var(--divider);
+          border-radius: 12px;
+          background: none;
+          color: var(--text-secondary);
+          cursor: pointer;
+          font-size: 0.95rem;
+          font-weight: 500;
+          transition: all 0.15s;
+          --mdc-icon-size: 20px;
+        }
+        .add-bonus-btn:hover { border-color: var(--bonus-green); color: var(--bonus-green); background: var(--bonus-green-light); }
+
+        /* Empty state */
+        .empty-state {
+          text-align: center;
+          padding: 32px 16px;
+          color: var(--text-secondary);
+        }
+        .empty-state ha-icon { --mdc-icon-size: 48px; opacity: 0.35; display: block; margin: 0 auto 12px; }
+        .empty-state .empty-title { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+        .empty-state .empty-sub { font-size: 0.85rem; }
+
+        /* Toast */
+        .toast {
+          position: fixed;
+          bottom: 24px;
+          left: 50%;
+          transform: translateX(-50%) translateY(0);
+          background: #333;
+          color: white;
+          padding: 10px 20px;
+          border-radius: 24px;
+          font-size: 0.92rem;
+          font-weight: 500;
+          z-index: 9999;
+          pointer-events: none;
+          animation: toast-in 0.25s ease, toast-out 0.3s ease 2s forwards;
+          white-space: nowrap;
+        }
+        @keyframes toast-in {
+          from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes toast-out {
+          to { opacity: 0; transform: translateX(-50%) translateY(8px); }
+        }
+
+        /* ══════════════════════════════════════════════════════════════════
+           DESIGNED STYLES (playroom / console / cleanpro)
+           Shared .tmd kit + tokens come from taskmate-design.js styles().
+           Only card-specific layout classes live here.
+        ══════════════════════════════════════════════════════════════════ */
+
+        /* Child tab strip */
+        .d-tabs { display: flex; gap: 8px; margin-bottom: 13px; align-items: center;
+                  overflow-x: auto; scrollbar-width: none; }
+        .d-tabs::-webkit-scrollbar { display: none; }
+        .d-tab { display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 4px;
+                 border-radius: 999px; font-weight: 800; font-size: 13px; cursor: pointer;
+                 white-space: nowrap; color: var(--tmd-text);
+                 background: color-mix(in srgb, var(--ac, var(--tmd-accent)) 16%, transparent);
+                 border: 1px solid transparent; }
+        .d-tab .av { box-shadow: none; }
+        .d-tab.off { background: transparent; border-color: transparent; opacity: .55; }
+        .d-tab.off .av { opacity: .6; }
+        :host([data-tm-design="console"]) .d-tab { border-radius: 8px; font-size: 12px; font-weight: 700;
+                 background: var(--tmd-surface-2); border-color: color-mix(in srgb, var(--ac, var(--tmd-accent)) 60%, transparent); }
+        :host([data-tm-design="cleanpro"]) .d-tab { border-radius: 9px; font-size: 12.5px; font-weight: 700;
+                 background: var(--tmd-surface-2); border-color: var(--tmd-accent); }
+
+        /* Playroom rows */
+        .d-pl-list { display: flex; flex-direction: column; gap: 10px; }
+        .d-pl-row { display: flex; align-items: center; gap: 10px; background: var(--tmd-surface-2);
+                    border-radius: 18px; padding: 11px; }
+        .d-ic { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center;
+                font-size: 20px; flex: none; }
+        .d-ic ha-icon { --mdc-icon-size: 22px; color: var(--tmd-text); }
+        .d-pl-row .d-ic { background: color-mix(in srgb, var(--d-accent) 18%, transparent); }
+        .d-name { flex: 1; min-width: 0; font-weight: 800; font-size: 14px;
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .d-pts { font-family: var(--tmd-font-display); font-weight: 800; font-size: 19px;
+                 color: var(--d-accent); flex: none; }
+
+        /* Console rows */
+        .d-cn-row { display: flex; align-items: center; gap: 10px; background: var(--tmd-surface-2);
+                    border-radius: 9px; padding: 10px; margin-top: 9px;
+                    border: 1px solid color-mix(in srgb, var(--d-accent) 38%, var(--tmd-border));
+                    box-shadow: 0 0 14px color-mix(in srgb, var(--d-accent) 22%, transparent); }
+        .d-cn-row:first-of-type { margin-top: 0; }
+        .d-cn-ic { font-size: 18px; flex: none; }
+        .d-cn-ic ha-icon { --mdc-icon-size: 20px; color: var(--tmd-text); }
+        .d-cn-mid { flex: 1; min-width: 0; }
+        .d-cn-name { font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .d-cn-sub { font-size: 10px; }
+        .d-cn-pts { font-size: 18px; color: var(--d-accent);
+                    text-shadow: 0 0 10px color-mix(in srgb, var(--d-accent) 60%, transparent); flex: none; }
+
+        /* Clean Pro rows */
+        .d-cp-row { display: flex; align-items: center; gap: 11px; padding: 10px 0; }
+        .d-cp-ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+                   font-size: 17px; background: var(--tmd-surface-2); flex: none; }
+        .d-cp-ic ha-icon { --mdc-icon-size: 18px; color: var(--tmd-text); }
+        .d-cp-name { flex: 1; min-width: 0; font-weight: 600; font-size: 13.5px;
+                     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .d-cp-pts { font-size: 14px; color: var(--d-accent); flex: none; }
+
+        /* Designed inline edit / new form (reuse classic .edit-form look on token surfaces) */
+        .d-form { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
+                  border-radius: var(--tmd-radius-sm); padding: 12px; display: flex;
+                  flex-direction: column; gap: 10px; margin: 10px 0 4px; }
+        .d-form .form-field input { background: var(--tmd-surface); color: var(--tmd-text);
+                  border: 1px solid var(--tmd-border); }
+        .d-form .form-field label { color: var(--tmd-dim); }
+        .d-form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .d-add { width: 100%; justify-content: center; }
+        .d-edit-actions { display: flex; gap: 6px; flex: none; }
+        .d-foot { text-align: center; font-size: 12px; color: var(--tmd-dim); padding-top: 8px; }
+
+        /* Scrollable list (parity with a long bonus list) */
+        .d-scroll { max-height: 360px; overflow-y: auto; }
+      `;
+      const tokens = window.__taskmate_design && window.__taskmate_design.styles
+        ? window.__taskmate_design.styles() : null;
+      return tokens ? [tokens, base] : base;
+    }
+
+    _getState() {
+      const entityId = this.config?.entity || "sensor.taskmate_overview";
+      return this.hass?.states[entityId];
+    }
+
+    _getAttrs() {
+      const entityId = this.config?.entity || "sensor.taskmate_overview";
+      if (window.__taskmate_attrs) {
+        return window.__taskmate_attrs(this.hass, entityId);
+      }
+      return this._getState()?.attributes || {};
+    }
+
+    _getChildren() {
+      return this._getAttrs().children || [];
+    }
+
+    _getBonuses() {
+      return this._getAttrs()[P.attr] || [];
+    }
+
+    _getSelectedChild() {
+      const children = this._getChildren();
+      if (!children.length) return null;
+      if (this._selectedChildId) return children.find(c => c.id === this._selectedChildId) || children[0];
+      return children[0];
+    }
+
+    _getPointsName() {
+      return this._getAttrs().points_name || this._t("common.stars");
+    }
+
+    _getVisibleBonuses() {
+      const child = this._getSelectedChild();
+      if (!child) return this._getBonuses();
+      return this._getBonuses().filter(b =>
+        !b.assigned_to?.length || b.assigned_to.includes(child.id)
+      );
+    }
+
+    _selectChild(id) {
+      this._selectedChildId = id;
+      this._editingBonus = null;
+      this._showNewForm = false;
+    }
+
+    async _applyBonus(bonus) {
+      const child = this._getSelectedChild();
+      if (!child) return;
+      const key = bonus.id;
+      if (this._loading[key]) return;
+      this._loading = { ...this._loading, [key]: true };
+
+      try {
+        await this.hass.callService("taskmate", `apply_${P.kind}`, {
+          [P.idKey]: bonus.id,
+          child_id: child.id,
+        });
+        this._showToast(this._tp('toast_applied', { points: bonus.points, pointsName: this._getPointsName(), childName: child.name }));
+        // Flash the row
+        const row = this.shadowRoot.querySelector(`[data-bonus-id="${bonus.id}"]`);
+        if (row) {
+          row.classList.add("flashing");
+          setTimeout(() => row.classList.remove("flashing"), 700);
+        }
+      } catch (e) {
+        this._showToast(this._tp('toast_apply_failed'));
+      } finally {
+        this._loading = { ...this._loading, [key]: false };
+      }
+    }
+
+    _showToast(msg) {
+      this._toast = null;
+      clearTimeout(this._toastTimer);
+      // Force re-render with new toast
+      this._toastTimer = setTimeout(() => {
+        this._toast = msg;
+        this._toastTimer = setTimeout(() => { this._toast = null; }, 2700);
+      }, 10);
+    }
+
+    disconnectedCallback() {
+      super.disconnectedCallback();
+      clearTimeout(this._toastTimer);
+    }
+
+    _startEdit(bonus) {
+      this._editingBonus = { ...bonus };
+      this._showNewForm = false;
+    }
+
+    _cancelEdit() {
+      this._editingBonus = null;
+    }
+
+    async _saveEdit() {
+      if (!this._editingBonus?.name || !this._editingBonus?.points) return;
+      if (this._saving) return;
+      this._saving = true;
+      try {
+        await this.hass.callService("taskmate", `update_${P.kind}`, {
+          [P.idKey]: this._editingBonus.id,
+          name: this._editingBonus.name,
+          points: parseInt(this._editingBonus.points, 10),
+          description: this._editingBonus.description || "",
+          icon: this._editingBonus.icon || P.icon,
+        });
+        this._editingBonus = null;
+      } catch (e) {
+        this._showToast(this._tp('toast_save_failed'));
+      } finally {
+        this._saving = false;
+      }
+    }
+
+    async _deleteBonus(id) {
+      try {
+        await this.hass.callService("taskmate", `remove_${P.kind}`, { [P.idKey]: id });
+      } catch (e) {
+        this._showToast(this._tp('toast_delete_failed'));
+      }
+    }
+
+    _openNewForm() {
+      this._showNewForm = true;
+      this._editingBonus = null;
+      this._newForm = { name: "", points: "", description: "", icon: P.icon };
+    }
+
+    async _saveNew() {
+      if (!this._newForm.name || !this._newForm.points) return;
+      if (this._saving) return;
+      this._saving = true;
+      try {
+        await this.hass.callService("taskmate", `add_${P.kind}`, {
+          name: this._newForm.name,
+          points: parseInt(this._newForm.points, 10),
+          description: this._newForm.description || "",
+          icon: this._newForm.icon || P.icon,
+        });
+        this._showNewForm = false;
+        this._newForm = { name: "", points: "", description: "", icon: P.icon };
+        this._showToast(this._tp('toast_saved'));
+      } catch (e) {
+        this._showToast(this._tp('toast_add_failed'));
+      } finally {
+        this._saving = false;
+      }
+    }
+
+    _renderChildTabs() {
+      const children = this._getChildren();
+      if (children.length <= 1) return html``;
+      const selected = this._getSelectedChild();
+      return html`
+        <div class="child-tabs">
+          ${children.map(c => html`
+            <div class="child-tab ${selected?.id === c.id ? "selected" : ""}"
+                 @click=${() => this._selectChild(c.id)}>
+              <ha-icon icon="${c.avatar || "mdi:account-circle"}"></ha-icon>
+              ${c.name}
+            </div>
+          `)}
+        </div>
+      `;
+    }
+
+    _renderBonusRow(b) {
+      const isEditing = this._editingBonus?.id === b.id;
+      const isLoading = this._loading[b.id];
+      const child = this._getSelectedChild();
+      const pointsName = this._getPointsName();
+
+      return html`
+        <div class="bonus-row" data-bonus-id="${b.id}">
+          <div class="points-badge">
+            <ha-icon icon="${b.icon || P.icon}"></ha-icon>
+            <div class="points-value">${P.sign}${b.points}</div>
+            <div class="points-label">${pointsName}</div>
+          </div>
+
+          <div class="bonus-info">
+            <div class="bonus-name">${b.name}</div>
+            ${b.description ? html`<div class="bonus-description">${b.description}</div>` : ""}
+          </div>
+
+          ${this._editMode ? html`
+            <div class="edit-actions">
+              <button class="edit-btn" title="${this._tp('btn_edit_title')}" aria-label="${this._tp('btn_edit_title')}" @click=${() => this._startEdit(b)}>
+                <ha-icon icon="mdi:pencil"></ha-icon>
+              </button>
+              <button class="edit-btn delete" title="${this._tp('btn_delete_title')}" aria-label="${this._tp('btn_delete_title')}" @click=${() => this._deleteBonus(b.id)}>
+                <ha-icon icon="mdi:trash-can-outline"></ha-icon>
+              </button>
+            </div>
+          ` : html`
+            <button class="apply-btn"
+                    ?disabled=${isLoading || !child}
+                    @click=${() => this._applyBonus(b)}>
+              ${isLoading
+                ? html`<ha-icon icon="mdi:loading" class="spin"></ha-icon>`
+                : html`<ha-icon icon="${P.applyIcon}"></ha-icon> ${this._t('common.apply')}`
+              }
+            </button>
+          `}
+        </div>
+        ${isEditing ? this._renderEditForm() : ""}
+      `;
+    }
+
+    _renderEditForm() {
+      const b = this._editingBonus;
+      return html`
+        <div class="edit-form">
+          <div class="form-row">
+            <div class="form-field" style="flex:2">
+              <label>${this._tp('form_name_label')}</label>
+              <input type="text" .value=${b.name}
+                @input=${e => this._editingBonus = { ...b, name: e.target.value }} />
+            </div>
+            <div class="form-field" style="flex:1">
+              <label>${this._tp('form_points_label')}</label>
+              <input type="number" min="1" .value=${b.points}
+                @input=${e => this._editingBonus = { ...b, points: e.target.value }} />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>${this._tp('form_icon_label')}</label>
+              <input type="text" .value=${b.icon || P.icon}
+                @input=${e => this._editingBonus = { ...b, icon: e.target.value }} />
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="form-field">
+              <label>${this._tp('form_description_label')}</label>
+              <input type="text" .value=${b.description || ""}
+                @input=${e => this._editingBonus = { ...b, description: e.target.value }} />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-cancel" @click=${this._cancelEdit}>${this._t('common.cancel')}</button>
+            <button class="btn-save" @click=${this._saveEdit}>${this._t('common.save')}</button>
+          </div>
+        </div>
+      `;
+    }
+
+    _renderNewForm() {
+      const f = this._newForm;
+      return html`
+        <div class="edit-form">
+          <div class="form-row">
+            <div class="form-field" style="flex:2">
+              <label>${this._tp('form_name_label')}</label>
+              <input type="text" placeholder="${this._tp('form_name_placeholder')}" .value=${f.name}
+                @input=${e => this._newForm = { ...f, name: e.target.value }} />
+            </div>
+            <div class="form-field" style="flex:1">
+              <label>${this._tp('form_points_label')}</label>
+              <input type="number" min="1" placeholder="10" .value=${f.points}
+                @input=${e => this._newForm = { ...f, points: e.target.value }} />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>${this._tp('form_icon_label')}</label>
+              <input type="text" .value=${f.icon}
+                @input=${e => this._newForm = { ...f, icon: e.target.value }} />
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="form-field">
+              <label>${this._tp('form_description_label')}</label>
+              <input type="text" placeholder="${this._tp('form_description_placeholder')}" .value=${f.description}
+                @input=${e => this._newForm = { ...f, description: e.target.value }} />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-cancel" @click=${() => this._showNewForm = false}>${this._t('common.cancel')}</button>
+            <button class="btn-save" @click=${this._saveNew}>${this._tp('add_bonus')}</button>
+          </div>
+        </div>
+      `;
+    }
+
+    render() {
+      if (!this.hass || !this.config) return html``;
+
+      const design = window.__taskmate_design
+        ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity || "sensor.taskmate_overview")
+        : "classic";
+      if (design !== "classic") return this._renderDesigned(design);
+
+      const bonuses = this._getBonuses();
+      const visible = this._getVisibleBonuses();
+      const child = this._getSelectedChild();
+
+      return html`
+        <ha-card>
+          <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, P.accent)}; --bonus-green: ${P.accent}; --bonus-green-dark: ${P.accentDark}; --bonus-green-light: ${P.accentLight}; --bonus-green-flash: ${P.accentFlash}; --bonus-green-shadow: ${P.accentShadow}; }</style>
+          <div class="card-header">
+            <div class="header-left">
+              <ha-icon class="header-icon" icon="${P.headerIcon}"></ha-icon>
+              <span class="header-title">${this.config.title || this._tp('default_title')}</span>
+            </div>
+            <div class="header-actions">
+              ${bonuses.length ? html`
+                <span class="bonus-count">${bonuses.length}</span>
+              ` : ""}
+              <button class="icon-btn ${this._editMode ? "active" : ""}" title="${this._tp('manage_title')}"
+                      @click=${() => { this._editMode = !this._editMode; this._editingBonus = null; this._showNewForm = false; }}>
+                <ha-icon icon="mdi:pencil"></ha-icon>
+              </button>
+            </div>
+          </div>
+
+          ${this._renderChildTabs()}
+
+          <div class="card-content">
+            ${visible.length === 0 && !this._showNewForm ? html`
+              <div class="empty-state">
+                <ha-icon icon="${P.icon}"></ha-icon>
+                <div class="empty-title">${this._tp('empty_title')}</div>
+                <div class="empty-sub">${this._tp('empty_sub')}</div>
+              </div>
+            ` : ""}
+
+            ${visible.map(b => this._renderBonusRow(b))}
+
+            ${this._editMode ? html`
+              ${this._showNewForm
+                ? this._renderNewForm()
+                : html`
+                  <button class="add-bonus-btn" @click=${this._openNewForm}>
+                    <ha-icon icon="mdi:plus"></ha-icon>
+                    ${this._tp('new_bonus')}
+                  </button>
+                `}
+            ` : ""}
+
+            ${child && !this._editMode ? html`
+              <div style="text-align:center; font-size:0.8rem; color:var(--text-secondary); padding-top:4px;">
+                ${this._tp('applying_to', { childName: child.name, points: child.points, pointsName: this._getPointsName() })}
+              </div>
+            ` : ""}
+          </div>
+        </ha-card>
+
+        ${this._toast ? html`<div class="toast">${this._toast}</div>` : ""}
+      `;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════
+       DESIGNED STYLES (playroom / console / cleanpro) — see taskmate-design.js
+       Ported from docs/design/redesigns/frag/14-bonuses.html.
+    ══════════════════════════════════════════════════════════════════════ */
+
+    _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
+
+    _av(child, tone, size) {
+      const a = child.avatar || "";
+      const inner = a.startsWith("mdi:")
+        ? html`<ha-icon icon="${a}"></ha-icon>`
+        : a
+          ? html`<img src="${a}" alt="${child.name}">`
+          : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+      return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
+    }
+
+    _renderDesignTabs(design) {
+      const children = this._getChildren();
+      if (children.length <= 1) return "";
+      const selected = this._getSelectedChild();
+      const avSize = design === "playroom" ? 28 : 24;
+      return html`
+        <div class="d-tabs">
+          ${children.map((c, i) => {
+            const tone = this._designTone(i);
+            const isSel = selected?.id === c.id;
+            // Always show the child's name on every tab (selected and not).
+            return html`<div class="d-tab ${isSel ? "" : "off"}" style="--ac:${tone}"
+                @click=${() => this._selectChild(c.id)}>
+              ${this._av(c, tone, avSize)}${c.name}</div>`;
+          })}
+        </div>`;
+    }
+
+    _designIcon(b) {
+      const icon = b.icon || P.icon;
+      return icon.startsWith("mdi:")
+        ? html`<ha-icon icon="${icon}"></ha-icon>`
+        : html`${icon}`;
+    }
+
+    _designApplyBtn(b, klass) {
+      const child = this._getSelectedChild();
+      const isLoading = this._loading[b.id];
+      return html`
+        <button class="btn ${klass}" ?disabled=${isLoading || !child}
+                @click=${() => this._applyBonus(b)}>
+          ${isLoading
+            ? html`<ha-icon icon="mdi:loading" class="spin"></ha-icon>`
+            : this._t('common.apply')}
+        </button>`;
+    }
+
+    _designEditActions(b) {
+      return html`
+        <div class="d-edit-actions">
+          <button class="btn ghost sm" title="${this._tp('btn_edit_title')}"
+                  aria-label="${this._tp('btn_edit_title')}" @click=${() => this._startEdit(b)}>
+            <ha-icon icon="mdi:pencil"></ha-icon>
+          </button>
+          <button class="btn ghost sm" title="${this._tp('btn_delete_title')}"
+                  aria-label="${this._tp('btn_delete_title')}" @click=${() => this._deleteBonus(b.id)}>
+            <ha-icon icon="mdi:trash-can-outline"></ha-icon>
+          </button>
+        </div>`;
+    }
+
+    _renderDesignForm(model, onField, onCancel, onSave, saveLabel) {
+      return html`
+        <div class="d-form">
+          <div class="form-row">
+            <div class="form-field" style="flex:2">
+              <label>${this._tp('form_name_label')}</label>
+              <input type="text" placeholder="${this._tp('form_name_placeholder')}" .value=${model.name || ""}
+                @input=${e => onField('name', e.target.value)} />
+            </div>
+            <div class="form-field" style="flex:1">
+              <label>${this._tp('form_points_label')}</label>
+              <input type="number" min="1" placeholder="10" .value=${model.points || ""}
+                @input=${e => onField('points', e.target.value)} />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>${this._tp('form_icon_label')}</label>
+              <input type="text" .value=${model.icon || P.icon}
+                @input=${e => onField('icon', e.target.value)} />
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="form-field">
+              <label>${this._tp('form_description_label')}</label>
+              <input type="text" placeholder="${this._tp('form_description_placeholder')}" .value=${model.description || ""}
+                @input=${e => onField('description', e.target.value)} />
+            </div>
+          </div>
+          <div class="d-form-actions">
+            <button class="btn ghost sm" @click=${onCancel}>${this._t('common.cancel')}</button>
+            <button class="btn sm" @click=${onSave}>${saveLabel}</button>
+          </div>
+        </div>`;
+    }
+
+    _renderDesignedRow(b, design) {
+      const isEditing = this._editingBonus?.id === b.id;
+      const tone = this._designTone(0);
+      const accent = P.designAccent;
+      const pv = P.dpts(b.points);
+
+      let row;
+      if (design === "playroom") {
+        row = html`
+          <div class="d-pl-row" style="--d-accent:${accent}" data-bonus-id="${b.id}">
+            <div class="d-ic">${this._designIcon(b)}</div>
+            <div class="d-name">${b.name}</div>
+            <div class="d-pts">${pv}</div>
+            ${this._editMode ? this._designEditActions(b) : this._designApplyBtn(b, "good")}
+          </div>`;
+      } else if (design === "console") {
+        const pointsName = this._getPointsName();
+        row = html`
+          <div class="d-cn-row" style="--d-accent:${accent}" data-bonus-id="${b.id}">
+            <div class="d-cn-ic">${this._designIcon(b)}</div>
+            <div class="d-cn-mid">
+              <div class="d-cn-name">${b.name}</div>
+              <div class="num muted d-cn-sub">${pv} ${pointsName}${b.description ? html` · ${b.description}` : ""}</div>
+            </div>
+            <div class="num d-cn-pts">${pv}</div>
+            ${this._editMode ? this._designEditActions(b) : this._designApplyBtn(b, "good sm")}
+          </div>`;
+      } else {
+        row = html`
+          <div class="d-cp-row" style="--d-accent:${accent}" data-bonus-id="${b.id}">
+            <div class="d-cp-ic">${this._designIcon(b)}</div>
+            <div class="d-cp-name">${b.name}</div>
+            <div class="num d-cp-pts">${pv}</div>
+            ${this._editMode ? this._designEditActions(b) : this._designApplyBtn(b, "sm")}
+          </div>`;
+      }
+
+      const divider = design === "cleanpro" ? html`<div class="divide" style="margin:0"></div>` : "";
+      const editForm = isEditing
+        ? this._renderDesignForm(
+            this._editingBonus,
+            (k, v) => { this._editingBonus = { ...this._editingBonus, [k]: v }; },
+            () => this._cancelEdit(),
+            () => this._saveEdit(),
+            this._t('common.save'))
+        : "";
+      return html`${row}${divider}${editForm}`;
+    }
+
+    _renderDesigned(design) {
+      const hd = _safeColor(this.config.header_color, P.designHd);
+      const bonuses = this._getBonuses();
+      const visible = this._getVisibleBonuses();
+      const child = this._getSelectedChild();
+      const tone = this._designTone(0);
+
+      const icon = P.designIcons[design] || P.designIcons.playroom;
+
+      const header = html`
+        <div class="tmd-hd" style="--ac:${tone}">
+          <span class="ic">${icon}</span>
+          <span class="tt">${this.config.title || this._tp('default_title')}${
+            bonuses.length ? html`<small>${bonuses.length}</small>` : ""}</span>
+          <button class="btn ghost sm" style="margin-left:auto"
+                  title="${this._tp('manage_title')}"
+                  @click=${() => { this._editMode = !this._editMode; this._editingBonus = null; this._showNewForm = false; }}>
+            <ha-icon icon="mdi:pencil"></ha-icon>
+          </button>
+        </div>`;
+
+      const rows = design === "playroom"
+        ? html`<div class="d-scroll d-pl-list">${visible.map(b => this._renderDesignedRow(b, design))}</div>`
+        : html`<div class="d-scroll">${visible.map(b => this._renderDesignedRow(b, design))}</div>`;
+
+      const body = html`
+        ${this._renderDesignTabs(design)}
+        ${visible.length === 0 && !this._showNewForm
+          ? html`<div class="tmd-empty">${this._tp('empty_title')}</div>`
+          : rows}
+        ${this._editMode
+          ? (this._showNewForm
+              ? this._renderDesignForm(
+                  this._newForm,
+                  (k, v) => { this._newForm = { ...this._newForm, [k]: v }; },
+                  () => { this._showNewForm = false; },
+                  () => this._saveNew(),
+                  this._tp('add_bonus'))
+              : html`<button class="btn ghost sm d-add" style="margin-top:11px"
+                            @click=${this._openNewForm}>
+                  <ha-icon icon="mdi:plus"></ha-icon> ${this._tp('new_bonus')}
+                </button>`)
+          : ""}
+        ${child && !this._editMode
+          ? html`<div class="d-foot">${this._tp('applying_to', { childName: child.name, points: child.points, pointsName: this._getPointsName() })}</div>`
+          : ""}`;
+
+      return html`
+        <ha-card class="tmd" style="--hd:${hd}">
+          ${header}
+          <div class="tmd-bd">${body}</div>
+        </ha-card>
+        ${this._toast ? html`<div class="toast">${this._toast}</div>` : ""}`;
+    }
+  }
+
+  class IncentiveCardEditor extends LitElement {
+    static get properties() {
+      return { hass: { type: Object }, config: { type: Object } };
+    }
+
+    _t(key, params) {
+      const fn = window.__taskmate_localize;
+      return fn ? fn(this.hass, key, params) : key;
+    }
+
+    _tp(key, params) {
+      return this._t(P.i18n + "." + key, params);
+    }
+
+    static get styles() {
+      return css`
+        :host { display: block; }
+        ha-form { display: block; margin-bottom: 16px; }
+        .info-note { font-size: 0.85rem; color: var(--secondary-text-color); background: var(--secondary-background-color, #f5f5f5); border-radius: 8px; padding: 10px 14px; line-height: 1.4; margin-bottom: 16px; display: flex; gap: 10px; align-items: flex-start; }
+        .info-note ha-icon { flex-shrink: 0; color: var(--primary-color); --mdc-icon-size: 20px; margin-top: 1px; }
+        .colour-field { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border: 1px solid var(--outline-color, var(--divider-color, #e0e0e0)); border-radius: 4px; background: var(--mdc-text-field-fill-color, var(--card-background-color)); }
+        .colour-field-label { font-size: 0.82rem; color: var(--primary-color); font-weight: 500; }
+        .colour-field-body { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .colour-swatch-wrapper { position: relative; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); flex-shrink: 0; }
+        .colour-swatch-wrapper input[type="color"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+        .colour-swatch-preview { position: absolute; inset: 0; pointer-events: none; }
+        .colour-hex { font-family: var(--code-font-family, monospace); font-size: 0.85rem; color: var(--secondary-text-color); min-width: 70px; }
+        .colour-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+        .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
+        .preset-swatch:hover { transform: scale(1.15); }
+        .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
+        .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+        .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
+      `;
+    }
+
+    setConfig(config) { this.config = config; }
+
+    _buildSchema() {
+      return [
+        { name: 'entity', selector: { entity: { domain: 'sensor' } } },
+        { name: 'title', selector: { text: {} } },
+        {
+          name: 'card_design',
+          selector: {
+            select: {
+              options: window.__taskmate_design
+                ? window.__taskmate_design.editorOptions(this._t.bind(this))
+                : [{ value: 'global', label: 'Use global default' }],
+              mode: 'dropdown',
+            },
+          },
+        },
+      ];
+    }
+
+    _computeLabel = (entry) => {
+      const labels = {
+        entity: this._t('common.editor.overview_entity'),
+        title: this._t('common.editor.card_title'),
+        card_design: this._t('common.design.field_label'),
+      };
+      return labels[entry.name] ?? entry.name;
+    };
+
+    _computeHelper = (entry) => {
+      const helpers = {
+        entity: this._t('common.editor.overview_entity_helper'),
+      };
+      return helpers[entry.name] ?? '';
+    };
+
+    render() {
+      if (!this.hass || !this.config) return html``;
+      const data = {
+        entity: this.config.entity || '',
+        title: this.config.title || '',
+        card_design: this.config.card_design || 'global',
+      };
+      return html`
+        <div class="info-note">
+          <ha-icon icon="mdi:information-outline"></ha-icon>
+          <span>${this._tp('editor.manage_note')}</span>
+        </div>
+        <ha-form
+          .hass=${this.hass}
+          .data=${data}
+          .schema=${this._buildSchema()}
+          .computeLabel=${this._computeLabel}
+          .computeHelper=${this._computeHelper}
+          @value-changed=${this._formChanged}
+        ></ha-form>
+        ${this._renderColourPicker('header_color', P.accent)}
+      `;
+    }
+
+    _renderColourPicker(key, defaultValue) {
+      const d = window.__taskmate_design;
+      const current = this.config[key] || defaultValue;
+      if (!d || !d.colourPicker) return html``;
+      return d.colourPicker({
+        defaultValue, current,
+        label: this._t('common.editor.header_colour'),
+        helper: this._t('common.editor.header_colour_helper'),
+        resetLabel: this._t('common.reset'),
+        onInput: (v) => this._update(key, v),
+        onPreset: (v) => this._update(key, v),
+        onReset: () => this._update(key, defaultValue),
+      });
+    }
+
+    _formChanged(e) {
+      const newValues = e.detail.value || {};
+      const newConfig = { ...this.config };
+      for (const [key, value] of Object.entries(newValues)) {
+        if (value === '' || value === null || value === undefined) delete newConfig[key];
+        else if (key === 'card_design' && value === 'global') delete newConfig[key];
+        else newConfig[key] = value;
+      }
+      this._fire(newConfig);
+    }
+
+    _update(key, value) {
+      this._fire({ ...this.config, [key]: value });
+    }
+
+    _fire(config) {
+      this.dispatchEvent(new CustomEvent('config-changed', { detail: { config }, bubbles: true, composed: true }));
+    }
+  }
+
+  customElements.define(P.tag, IncentiveCard);
+  customElements.define(P.tag + "-editor", IncentiveCardEditor);
+  window.customCards = window.customCards || [];
+  window.customCards.push({ type: P.tag, name: P.cardName, description: P.cardDesc, preview: true });
+  console.info("%c TASKMATE " + P.bannerName + " CARD ",
+    "background:" + P.bannerColor + ";color:white;font-weight:bold;padding:2px 4px;border-radius:4px;");
+}
