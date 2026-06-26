@@ -31,6 +31,9 @@ class TaskMateStorage:
         self.entry_id = entry_id
         self._store = Store(hass, STORAGE_VERSION, f"{STORAGE_KEY}.{entry_id}")
         self._data: dict[str, Any] = {}
+        # Monotonic counter bumped on every persisted mutation (PERF-2). Lets the
+        # coordinator skip rebuilding its data snapshot when nothing has changed.
+        self._data_version = 0
 
     async def async_load(self) -> dict[str, Any]:
         """Load data from storage."""
@@ -246,7 +249,16 @@ class TaskMateStorage:
 
     async def async_save(self) -> None:
         """Save data to storage."""
+        # Bump synchronously, before the await: a mutation method calls this with
+        # no interleaving await after touching _data, so the new version is
+        # visible the instant anything else (e.g. the 30 s poll) can run.
+        self._data_version = getattr(self, "_data_version", 0) + 1
         await self._store.async_save(self._data)
+
+    @property
+    def data_version(self) -> int:
+        """Monotonic version of the in-memory data; bumped on each save."""
+        return getattr(self, "_data_version", 0)
 
     @property
     def data(self) -> dict[str, Any]:
