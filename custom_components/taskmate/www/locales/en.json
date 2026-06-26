@@ -1482,5 +1482,12 @@
   "panel.chore_depends_label": "Depends on",
   "panel.chore_depends_hint": "This chore stays hidden until the selected chores are approved for the child today.",
   "panel.notif_quiet_hours_label": "Quiet hours",
-  "panel.notif_quiet_hours_desc": "No reminders are sent to this child during this window (do-not-disturb). Leave blank to disable."
+  "panel.notif_quiet_hours_desc": "No reminders are sent to this child during this window (do-not-disturb). Leave blank to disable.",
+  "notification.mandatory_reminder.name": "Mandatory chore reminder",
+  "notification.mandatory_reminder.description": "Nudges the child when a mandatory chore is overdue, then reminds again after the escalation delay. Off by default.",
+  "notification.mandatory_parent_alert.name": "Mandatory chore parent alert",
+  "notification.mandatory_parent_alert.description": "Alerts a parent when a mandatory chore is still incomplete after the parent escalation delay. Off by default.",
+  "panel.notif_escalation_reminder_label": "Remind again after",
+  "panel.notif_escalation_parent_label": "Alert parent after",
+  "panel.notif_escalation_minutes_suffix": "min"
 }

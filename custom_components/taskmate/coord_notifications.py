@@ -29,6 +29,8 @@ from .const import (
     NOTIF_TYPE_LEVEL_UP,
     NOTIF_TYPE_WEEKLY_DIGEST,
     NOTIF_TYPE_CELEBRATION,
+    NOTIF_TYPE_MANDATORY_REMINDER,
+    NOTIF_TYPE_MANDATORY_PARENT_ALERT,
 )
 from .models import NotificationRoute
 
@@ -60,6 +62,8 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_LEVEL_UP,               "both",   False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_WEEKLY_DIGEST,          "parent", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_CELEBRATION,            "both",   False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_MANDATORY_REMINDER,     "child",  False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_MANDATORY_PARENT_ALERT, "parent", False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {
@@ -115,8 +119,16 @@ class NotificationCoordinator:
         self._scheduled_unsubs: list = []     # cancellation handles for time triggers
         self.coordinator: Any = None
 
-    async def fire(self, type_id: str, context: dict[str, Any]) -> None:
-        """Dispatch a notification of the given type with the given context."""
+    async def fire(
+        self, type_id: str, context: dict[str, Any],
+        only_recipients: set[str] | None = None,
+    ) -> None:
+        """Dispatch a notification of the given type with the given context.
+
+        ``only_recipients`` — if given, restrict delivery to those recipient ids
+        (e.g. a single ``child:<id>``). Used for per-child escalation so a
+        reminder about one child doesn't fan out to every routed recipient.
+        """
         meta = NOTIFICATION_TYPES_BY_ID.get(type_id)
         if meta is None:
             _LOGGER.warning("Unknown notification type %s", type_id)
@@ -132,6 +144,8 @@ class NotificationCoordinator:
 
         for recipient_id, route in cfg.routes.items():
             if not route.enabled:
+                continue
+            if only_recipients is not None and recipient_id not in only_recipients:
                 continue
             if self._child_in_quiet_hours(recipient_id):
                 # Do-not-disturb: suppress this child's notifications during
@@ -230,6 +244,8 @@ class NotificationCoordinator:
             NOTIF_TYPE_LEVEL_UP:               "{child_name} reached level {level}! 🎉",
             NOTIF_TYPE_WEEKLY_DIGEST:          "TaskMate weekly digest:\n{summary}",
             NOTIF_TYPE_CELEBRATION:            "🎉 {message}",
+            NOTIF_TYPE_MANDATORY_REMINDER:     "{child_name}, you still need to do '{chore_name}'.",
+            NOTIF_TYPE_MANDATORY_PARENT_ALERT: "{child_name} still hasn't done the mandatory chore '{chore_name}'.",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:

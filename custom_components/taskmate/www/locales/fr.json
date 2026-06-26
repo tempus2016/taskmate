@@ -1482,5 +1482,12 @@
   "panel.chore_depends_label": "Dépend de",
   "panel.chore_depends_hint": "Cette tâche reste masquée tant que les tâches sélectionnées ne sont pas approuvées pour l'enfant aujourd'hui.",
   "panel.notif_quiet_hours_label": "Heures silencieuses",
-  "panel.notif_quiet_hours_desc": "Aucun rappel n'est envoyé à cet enfant pendant cette plage horaire (ne pas déranger). Laisser vide pour désactiver."
+  "panel.notif_quiet_hours_desc": "Aucun rappel n'est envoyé à cet enfant pendant cette plage horaire (ne pas déranger). Laisser vide pour désactiver.",
+  "notification.mandatory_reminder.name": "Rappel de tâche obligatoire",
+  "notification.mandatory_reminder.description": "Relance l'enfant lorsqu'une tâche obligatoire est en retard, puis rappelle après le délai d'escalade. Désactivé par défaut.",
+  "notification.mandatory_parent_alert.name": "Alerte parent de tâche obligatoire",
+  "notification.mandatory_parent_alert.description": "Alerte un parent lorsqu'une tâche obligatoire est toujours incomplète après le délai d'escalade parent. Désactivé par défaut.",
+  "panel.notif_escalation_reminder_label": "Rappeler à nouveau après",
+  "panel.notif_escalation_parent_label": "Alerter le parent après",
+  "panel.notif_escalation_minutes_suffix": "min"
 }

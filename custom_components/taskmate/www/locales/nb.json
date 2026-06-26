@@ -1482,5 +1482,12 @@
   "panel.chore_depends_label": "Avhenger av",
   "panel.chore_depends_hint": "Denne oppgaven er skjult til de valgte oppgavene er godkjent for barnet i dag.",
   "panel.notif_quiet_hours_label": "Stilletimer",
-  "panel.notif_quiet_hours_desc": "Ingen påminnelser sendes til dette barnet i dette tidsrommet (ikke forstyrr). La stå tomt for å deaktivere."
+  "panel.notif_quiet_hours_desc": "Ingen påminnelser sendes til dette barnet i dette tidsrommet (ikke forstyrr). La stå tomt for å deaktivere.",
+  "notification.mandatory_reminder.name": "Påminnelse om obligatorisk plikt",
+  "notification.mandatory_reminder.description": "Dytter barnet når en obligatorisk plikt er forfalt, og minner på nytt etter eskaleringsforsinkelsen. Av som standard.",
+  "notification.mandatory_parent_alert.name": "Foreldrevarsel om obligatorisk plikt",
+  "notification.mandatory_parent_alert.description": "Varsler en forelder når en obligatorisk plikt fortsatt er uferdig etter foreldreeskaleringsforsinkelsen. Av som standard.",
+  "panel.notif_escalation_reminder_label": "Påminn igjen etter",
+  "panel.notif_escalation_parent_label": "Varsle forelder etter",
+  "panel.notif_escalation_minutes_suffix": "min"
 }

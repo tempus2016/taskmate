@@ -720,6 +720,28 @@ class TaskMateStorage:
     def set_streak_at_risk_cutoff(self, hhmm: str) -> None:
         self._data.setdefault("settings", {})["streak_at_risk_cutoff_time"] = hhmm
 
+    # --- mandatory reminder escalation (FEAT-6) ---
+    def get_escalation_reminder_minutes(self) -> int:
+        """Minutes after a mandatory miss before the child reminder escalates."""
+        try:
+            return max(1, int((self._data.get("settings", {}) or {}).get(
+                "mandatory_escalation_reminder_minutes", 30)))
+        except (TypeError, ValueError):
+            return 30
+
+    def get_escalation_parent_minutes(self) -> int:
+        """Minutes after a mandatory miss before the parent alert escalates."""
+        try:
+            return max(1, int((self._data.get("settings", {}) or {}).get(
+                "mandatory_escalation_parent_minutes", 120)))
+        except (TypeError, ValueError):
+            return 120
+
+    def set_escalation_minutes(self, reminder_minutes: int, parent_minutes: int) -> None:
+        s = self._data.setdefault("settings", {})
+        s["mandatory_escalation_reminder_minutes"] = max(1, int(reminder_minutes))
+        s["mandatory_escalation_parent_minutes"] = max(1, int(parent_minutes))
+
     # Task groups management
     def get_task_groups(self) -> list[TaskGroup]:
         """Get all task groups."""

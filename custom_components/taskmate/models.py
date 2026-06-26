@@ -640,6 +640,7 @@ class MandatoryMiss:
     period_id: str         # the window that closed ("anytime" for all-day)
     penalty_points: int = 0
     postpone_count: int = 0
+    escalation_stage: int = 0  # 0=none 1=nudged 2=reminded 3=parent-alerted (FEAT-6)
     created_at: str = field(default_factory=dt_util_now_iso)
     id: str = field(default_factory=generate_id)
 
@@ -653,6 +654,7 @@ class MandatoryMiss:
             period_id=data.get("period_id", "anytime"),
             penalty_points=max(0, int(data.get("penalty_points", 0) or 0)),
             postpone_count=max(0, int(data.get("postpone_count", 0) or 0)),
+            escalation_stage=max(0, int(data.get("escalation_stage", 0) or 0)),
             created_at=data.get("created_at", "") or dt_util_now_iso(),
             id=data.get("id", generate_id()),
         )
@@ -666,6 +668,7 @@ class MandatoryMiss:
             "period_id": self.period_id,
             "penalty_points": self.penalty_points,
             "postpone_count": self.postpone_count,
+            "escalation_stage": self.escalation_stage,
             "created_at": self.created_at,
             "id": self.id,
         }
