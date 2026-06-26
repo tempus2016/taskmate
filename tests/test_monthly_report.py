@@ -71,6 +71,6 @@ def test_evening_callback_fires_monthly_on_first():
     c.hass = MagicMock()
     created = []
     c.hass.async_create_task = lambda coro: (created.append(coro), coro.close())
-    # 1st of month, not Sunday -> monthly only.
+    # 1st of month, not Sunday -> monthly report + season finalize (FEAT-2).
     c._async_weekly_digest_check(dt.datetime(2026, 4, 1, 18, 0, tzinfo=UTC))
-    assert len(created) == 1
+    assert len(created) == 2
