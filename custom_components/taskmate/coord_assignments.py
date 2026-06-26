@@ -258,6 +258,20 @@ class AssignmentsMixin:
         parent has skipped. Stale skip state (skip_date != today) is ignored at
         read time and cleared during the midnight refresh.
         """
+        # PERF-1: the active set depends only on the chore for "today" (the
+        # availability matrix calls this per chore × child). Memoize per chore
+        # within an availability build scope. Skip when an explicit `today` is
+        # passed (callers that probe other days must not read today's cache).
+        cache = getattr(self, "_avail_cache", None)
+        if cache is not None and today is None:
+            cached = cache["active"].get(chore.id)
+            if cached is None:
+                cached = self._compute_active_children_uncached(chore, None)
+                cache["active"][chore.id] = cached
+            return cached
+        return self._compute_active_children_uncached(chore, today)
+
+    def _compute_active_children_uncached(self, chore: Chore, today: date | None = None) -> list[str]:
         mode = getattr(chore, "assignment_mode", "everyone")
         require_availability = getattr(chore, "require_availability", False)
 
@@ -464,6 +478,16 @@ class AssignmentsMixin:
         """
         if getattr(chore, 'assignment_mode', 'everyone') == 'everyone':
             return False
+        # PERF-1: result depends only on the chore; memoize per availability build.
+        cache = getattr(self, "_avail_cache", None)
+        if cache is not None and chore.id in cache["rotation_done"]:
+            return cache["rotation_done"][chore.id]
+        result = self._is_rotation_done_today_uncached(chore)
+        if cache is not None:
+            cache["rotation_done"][chore.id] = result
+        return result
+
+    def _is_rotation_done_today_uncached(self, chore) -> bool:
         pool = set(self._chore_assignment_pool(chore))
         if not pool:
             return False
@@ -471,7 +495,7 @@ class AssignmentsMixin:
         active_child_id = getattr(chore, 'assignment_current_child_id', '') or ''
         completions_today = 0
         completed_bonus_ids_today: set[str] = set()
-        for comp in self.storage.get_completions():
+        for comp in self._cached_completions():
             if comp.chore_id != chore.id:
                 continue
             comp_dt = comp.completed_at
