@@ -1084,35 +1084,18 @@ class TaskMatePenaltiesCardEditor extends LitElement {
   }
 
   _renderColourPicker(key, defaultValue) {
+    const d = window.__taskmate_design;
     const current = this.config[key] || defaultValue;
-    const presets = [defaultValue, '#e67e22', '#27ae60', '#3498db', '#9b59b6', '#f1c40f', '#34495e'];
-    const isActive = (c) => c.toLowerCase() === current.toLowerCase();
-    return html`
-      <div class="colour-field">
-        <span class="colour-field-label">${this._t('common.editor.header_colour')}</span>
-        <div class="colour-field-body">
-          <label class="colour-swatch-wrapper">
-            <input type="color" .value=${current}
-              @input=${(e) => this._update(key, e.target.value)} />
-            <span class="colour-swatch-preview" style="background:${current}"></span>
-          </label>
-          <span class="colour-hex">${current}</span>
-          <div class="colour-presets">
-            ${presets.map((p) => html`
-              <button class="preset-swatch ${isActive(p) ? 'active' : ''}"
-                style="background:${p}"
-                title=${p}
-                @click=${(e) => { e.preventDefault(); this._update(key, p); }}
-              ></button>
-            `)}
-          </div>
-          <button class="colour-reset"
-            @click=${(e) => { e.preventDefault(); this._update(key, defaultValue); }}
-          >${this._t('common.reset')}</button>
-        </div>
-        <div class="colour-helper">${this._t('common.editor.header_colour_helper')}</div>
-      </div>
-    `;
+    if (!d || !d.colourPicker) return html``;
+    return d.colourPicker({
+      defaultValue, current,
+      label: this._t('common.editor.header_colour'),
+      helper: this._t('common.editor.header_colour_helper'),
+      resetLabel: this._t('common.reset'),
+      onInput: (v) => this._update(key, v),
+      onPreset: (v) => this._update(key, v),
+      onReset: () => this._update(key, defaultValue),
+    });
   }
 
   _formChanged(e) {
