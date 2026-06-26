@@ -1491,5 +1491,7 @@
   "notification.mandatory_parent_alert.description": "Varsler en forelder når en obligatorisk plikt fortsatt er uferdig etter foreldreeskaleringsforsinkelsen. Av som standard.",
   "panel.notif_escalation_reminder_label": "Påminn igjen etter",
   "panel.notif_escalation_parent_label": "Varsle forelder etter",
-  "panel.notif_escalation_minutes_suffix": "min"
+  "panel.notif_escalation_minutes_suffix": "min",
+  "notification.monthly_report.name": "Månedsrapport",
+  "notification.monthly_report.description": "Et sammendrag ved månedsstart av forrige måned for hvert barn (plikter, poeng, nivå, beste rekke). Av som standard."
 }

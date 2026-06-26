@@ -1491,5 +1491,7 @@
   "notification.mandatory_parent_alert.description": "Alerta um dos pais quando uma tarefa obrigatória continua incompleta após o atraso de escalonamento aos pais. Desativado por predefinição.",
   "panel.notif_escalation_reminder_label": "Lembrar novamente após",
   "panel.notif_escalation_parent_label": "Alertar os pais após",
-  "panel.notif_escalation_minutes_suffix": "min"
+  "panel.notif_escalation_minutes_suffix": "min",
+  "notification.monthly_report.name": "Relatório mensal",
+  "notification.monthly_report.description": "Um resumo no início do mês do mês anterior de cada criança (tarefas, pontos, nível, melhor sequência). Desativado por predefinição."
 }

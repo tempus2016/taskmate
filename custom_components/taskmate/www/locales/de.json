@@ -1491,5 +1491,7 @@
   "notification.mandatory_parent_alert.description": "Benachrichtigt ein Elternteil, wenn eine Pflichtaufgabe nach der Eltern-Eskalationsverzögerung noch unerledigt ist. Standardmäßig aus.",
   "panel.notif_escalation_reminder_label": "Erneut erinnern nach",
   "panel.notif_escalation_parent_label": "Eltern benachrichtigen nach",
-  "panel.notif_escalation_minutes_suffix": "Min."
+  "panel.notif_escalation_minutes_suffix": "Min.",
+  "notification.monthly_report.name": "Monatsbericht",
+  "notification.monthly_report.description": "Eine Zusammenfassung des Vormonats je Kind zu Monatsbeginn (Aufgaben, Punkte, Level, beste Serie). Standardmäßig aus."
 }

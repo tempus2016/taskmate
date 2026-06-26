@@ -296,10 +296,12 @@ class TaskMateCoordinator(
 
     @callback
     def _async_weekly_digest_check(self, now: datetime) -> None:
-        """Daily 18:00 callback; only fires the digest on Sundays."""
-        if now.weekday() != 6:  # Sunday
-            return
-        self.hass.async_create_task(self._async_send_weekly_digest())
+        """Daily 18:00 callback; fires the weekly digest on Sundays and the
+        monthly report on the 1st of the month (FEAT-14)."""
+        if now.weekday() == 6:  # Sunday
+            self.hass.async_create_task(self._async_send_weekly_digest())
+        if now.day == 1:
+            self.hass.async_create_task(self._async_send_monthly_report())
 
     async def _async_send_weekly_digest(self) -> None:
         """Build and send the weekly digest to parents (opt-in)."""
@@ -327,6 +329,42 @@ class TaskMateCoordinator(
         pts = self.storage.get_points_name()
         lines = [
             f"• {c.name}: {done.get(c.id, 0)} chores, {earned.get(c.id, 0)} {pts} earned"
+            for c in children
+        ]
+        return "\n".join(lines)
+
+    async def _async_send_monthly_report(self) -> None:
+        """Build and send the previous calendar month's per-child recap (FEAT-14)."""
+        today = dt_util.now().date()
+        month_end = today.replace(day=1) - timedelta(days=1)
+        month_start = month_end.replace(day=1)
+        summary = self._build_monthly_report(month_start, month_end)
+        if not summary:
+            return
+        await self.notifications.fire("monthly_report", {
+            "summary": summary,
+            "month": month_start.strftime("%B %Y"),
+        })
+
+    def _build_monthly_report(self, month_start: date, month_end: date) -> str:
+        """Per-child recap for [month_start, month_end]: chores, points, level, best streak."""
+        children = self.storage.get_children()
+        if not children:
+            return ""
+        done: dict[str, int] = {}
+        earned: dict[str, int] = {}
+        for comp in self.storage.get_completions():
+            if not comp.approved or comp.bonus_subtask_id:
+                continue
+            d = dt_util.as_local(comp.completed_at).date()
+            if not (month_start <= d <= month_end):
+                continue
+            done[comp.child_id] = done.get(comp.child_id, 0) + 1
+            earned[comp.child_id] = earned.get(comp.child_id, 0) + (comp.points_awarded or 0)
+        pts = self.storage.get_points_name()
+        lines = [
+            f"• {c.name}: {done.get(c.id, 0)} chores, {earned.get(c.id, 0)} {pts}, "
+            f"level {getattr(c, 'level', 1)}, best streak {getattr(c, 'best_streak', 0)}"
             for c in children
         ]
         return "\n".join(lines)
