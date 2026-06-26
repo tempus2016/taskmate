@@ -133,6 +133,7 @@ WS_NOTIF_GET_STATE: Final          = "taskmate/notifications/get_state"
 WS_NOTIF_SET_MASTER: Final         = "taskmate/notifications/set_master_enabled"
 WS_NOTIF_SET_ROUTE: Final          = "taskmate/notifications/set_route"
 WS_NOTIF_SET_CHILD_NOTIFY: Final   = "taskmate/notifications/set_child_notify"
+WS_NOTIF_SET_CHILD_QUIET: Final    = "taskmate/notifications/set_child_quiet"
 WS_NOTIF_UPSERT_PARENT: Final      = "taskmate/notifications/upsert_parent"
 WS_NOTIF_DELETE_PARENT: Final      = "taskmate/notifications/delete_parent"
 WS_NOTIF_UPSERT_CUSTOM: Final      = "taskmate/notifications/upsert_custom"
@@ -1611,6 +1612,8 @@ async def ws_notif_get_state(hass, connection, msg, coordinator):
                     "id": f"child:{ch.id}",
                     "name": ch.name,
                     "notify_service": ch.notify_service,
+                    "quiet_hours_start": ch.quiet_hours_start,
+                    "quiet_hours_end": ch.quiet_hours_end,
                 }
                 for ch in c.storage.get_children()
             ],
@@ -1684,6 +1687,42 @@ async def ws_notif_set_child_notify(hass, connection, msg, coordinator):
     c.storage.update_child(child)
     await c.storage.async_save()
     await c.notifications.async_setup_schedules()
+    connection.send_result(msg["id"], {"ok": True})
+
+
+def _validate_hhmm_or_empty(value):
+    """voluptuous validator: '' (disabled) or a valid 'HH:MM' string."""
+    if value in (None, ""):
+        return ""
+    if not isinstance(value, str):
+        raise vol.Invalid("must be a string")
+    parts = value.split(":")
+    if len(parts) != 2 or not (parts[0].isdigit() and parts[1].isdigit()):
+        raise vol.Invalid("must be HH:MM")
+    hour, minute = int(parts[0]), int(parts[1])
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        raise vol.Invalid("HH:MM out of range")
+    return f"{hour:02d}:{minute:02d}"
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_NOTIF_SET_CHILD_QUIET,
+    vol.Required("child_id"): str,
+    vol.Required("quiet_hours_start"): _validate_hhmm_or_empty,
+    vol.Required("quiet_hours_end"): _validate_hhmm_or_empty,
+})
+@websocket_api.async_response
+@_admin_only
+async def ws_notif_set_child_quiet(hass, connection, msg, coordinator):
+    c = coordinator
+    child = c.storage.get_child(msg["child_id"])
+    if child is None:
+        connection.send_error(msg["id"], "not_found", "Child not found")
+        return
+    child.quiet_hours_start = msg["quiet_hours_start"]
+    child.quiet_hours_end = msg["quiet_hours_end"]
+    c.storage.update_child(child)
+    await c.storage.async_save()
     connection.send_result(msg["id"], {"ok": True})
 
 
@@ -1956,7 +1995,7 @@ _COMMANDS = (
     _ws_templates_save_from, _ws_templates_create, _ws_templates_update,
     _ws_templates_delete,
     ws_notif_get_state, ws_notif_set_master, ws_notif_set_route,
-    ws_notif_set_child_notify,
+    ws_notif_set_child_notify, ws_notif_set_child_quiet,
     ws_notif_upsert_parent, ws_notif_delete_parent,
     ws_notif_upsert_custom, ws_notif_delete_custom,
     ws_notif_list_notify, ws_notif_set_streak_cutoff, ws_notif_send_test,

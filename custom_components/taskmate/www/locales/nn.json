@@ -1480,5 +1480,7 @@
   "panel.settings_allow_negative_label": "Tillat negativ saldo",
   "panel.settings_allow_negative_hint": "La straff trekkje eit barns saldo under null i staden for å stoppe på null.",
   "panel.chore_depends_label": "Avheng av",
-  "panel.chore_depends_hint": "Denne oppgåva er skjult til dei valde oppgåvene er godkjende for barnet i dag."
+  "panel.chore_depends_hint": "Denne oppgåva er skjult til dei valde oppgåvene er godkjende for barnet i dag.",
+  "panel.notif_quiet_hours_label": "Stilletimar",
+  "panel.notif_quiet_hours_desc": "Ingen påminningar vert sende til dette barnet i dette tidsrommet (ikkje forstyrr). Lat stå tomt for å deaktivere."
 }

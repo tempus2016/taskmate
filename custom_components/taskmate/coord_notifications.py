@@ -67,6 +67,39 @@ NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {
 }
 
 
+def _parse_hhmm(value: str) -> tuple[int, int] | None:
+    """Parse "HH:MM" into (hour, minute); None if blank/malformed."""
+    if not value:
+        return None
+    try:
+        hour, minute = map(int, value.split(":", 1))
+    except (ValueError, AttributeError):
+        return None
+    if 0 <= hour <= 23 and 0 <= minute <= 59:
+        return hour, minute
+    return None
+
+
+def _is_within_quiet_hours(start: str, end: str, now) -> bool:
+    """True if ``now`` (a datetime) falls inside the [start, end) HH:MM window.
+
+    Both bounds must be set, else quiet hours are disabled. A start later than
+    the end denotes an overnight window (e.g. 20:00-07:00). The end bound is
+    exclusive so a window of 07:00-07:00 (equal bounds) is treated as disabled.
+    """
+    s = _parse_hhmm(start)
+    e = _parse_hhmm(end)
+    if s is None or e is None or s == e:
+        return False
+    cur = now.hour * 60 + now.minute
+    start_m = s[0] * 60 + s[1]
+    end_m = e[0] * 60 + e[1]
+    if start_m < end_m:
+        return start_m <= cur < end_m
+    # Overnight window: active from start through midnight to end.
+    return cur >= start_m or cur < end_m
+
+
 class _SafeDict(dict):
     """str.format_map dict that leaves missing keys as `{key}` literal."""
     def __missing__(self, key: str) -> str:
@@ -99,6 +132,11 @@ class NotificationCoordinator:
 
         for recipient_id, route in cfg.routes.items():
             if not route.enabled:
+                continue
+            if self._child_in_quiet_hours(recipient_id):
+                # Do-not-disturb: suppress this child's notifications during
+                # their configured quiet-hours window. Parent routes (and the
+                # bus event below) are unaffected.
                 continue
             notify_service = self._resolve_notify_service(recipient_id)
             if not notify_service:
@@ -153,6 +191,19 @@ class NotificationCoordinator:
             sent.append(recipient_id)
         await self._fire_persistent_notification(type_id, message)
         return sent
+
+    def _child_in_quiet_hours(self, recipient_id: str) -> bool:
+        """True if ``recipient_id`` is a child currently inside their quiet-hours
+        (do-not-disturb) window. Non-child recipients are never suppressed."""
+        if not recipient_id.startswith("child:"):
+            return False
+        child = self.storage.get_child(recipient_id.split(":", 1)[1])
+        if child is None:
+            return False
+        from homeassistant.util import dt as dt_util
+        return _is_within_quiet_hours(
+            child.quiet_hours_start, child.quiet_hours_end, dt_util.now()
+        )
 
     def _resolve_notify_service(self, recipient_id: str) -> str:
         if recipient_id.startswith("child:"):

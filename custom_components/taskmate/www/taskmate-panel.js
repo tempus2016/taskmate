@@ -773,6 +773,13 @@ class TaskMatePanel extends HTMLElement {
       this._notifSetChildNotify(t.dataset.childId, t.value);
       return;
     }
+    if (t.dataset.act === "notif-set-child-quiet") {
+      const row = t.closest("[data-quiet-row]");
+      const startEl = row && row.querySelector('[data-quiet-bound="start"]');
+      const endEl = row && row.querySelector('[data-quiet-bound="end"]');
+      this._notifSetChildQuiet(t.dataset.childId, (startEl && startEl.value) || "", (endEl && endEl.value) || "");
+      return;
+    }
     if (t.dataset.act === "notif-set-parent-notify") {
       const p = (this._notifState && this._notifState.recipients && this._notifState.recipients.parents || []).find(x => x.id === t.dataset.parentId);
       if (p) this._notifUpsertParent({ ...p, notify_service: t.value });
@@ -1891,6 +1898,11 @@ class TaskMatePanel extends HTMLElement {
 
   async _notifSetChildNotify(childId, notifyService) {
     await this._callWS({ type: "taskmate/notifications/set_child_notify", child_id: childId, notify_service: notifyService || null });
+    await this._fetchState();
+  }
+
+  async _notifSetChildQuiet(childId, start, end) {
+    await this._callWS({ type: "taskmate/notifications/set_child_quiet", child_id: childId, quiet_hours_start: start || "", quiet_hours_end: end || "" });
     await this._fetchState();
   }
 
@@ -3886,14 +3898,23 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-grid-2">
           <div>
             <h4>${this._t("panel.notif_recipients_children")}</h4>
-            ${ns.recipients.children.map(c => `
-              <div class="tm-row" style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--tm-border,#3a3a3a)">
-                <div style="flex:1"><strong>${this._esc(c.name)}</strong></div>
-                <select class="tm-notif-select" data-act="notif-set-child-notify" data-child-id="${this._esc(c.id.replace(/^child:/, ""))}">
+            ${ns.recipients.children.map(c => {
+              const cid = c.id.replace(/^child:/, "");
+              return `
+              <div class="tm-row" data-quiet-row style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--tm-border,#3a3a3a)">
+                <div style="flex:1;min-width:120px"><strong>${this._esc(c.name)}</strong></div>
+                <select class="tm-notif-select" data-act="notif-set-child-notify" data-child-id="${this._esc(cid)}">
                   ${optTags(c.notify_service)}
                 </select>
+                <div class="tm-meta" style="display:flex;align-items:center;gap:6px;width:100%" title="${this._t("panel.notif_quiet_hours_desc")}">
+                  <ha-icon icon="mdi:bell-sleep" style="--mdc-icon-size:16px"></ha-icon>
+                  <span>${this._t("panel.notif_quiet_hours_label")}</span>
+                  <input type="time" class="tm-notif-time-input" data-act="notif-set-child-quiet" data-quiet-bound="start" data-child-id="${this._esc(cid)}" value="${this._esc(c.quiet_hours_start || "")}" style="margin:0;width:90px">
+                  <span>–</span>
+                  <input type="time" class="tm-notif-time-input" data-act="notif-set-child-quiet" data-quiet-bound="end" data-child-id="${this._esc(cid)}" value="${this._esc(c.quiet_hours_end || "")}" style="margin:0;width:90px">
+                </div>
               </div>
-            `).join("")}
+            `;}).join("")}
           </div>
           <div>
             <h4>${this._t("panel.notif_recipients_parents")}</h4>
