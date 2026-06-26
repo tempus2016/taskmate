@@ -5,4 +5,7 @@
 # our code. The harness pins its own matching homeassistant + pytest +
 # pytest-asyncio + voluptuous + aiohttp + pyyaml, so freezing this one line
 # freezes the whole test stack deterministically.
-pytest-homeassistant-custom-component==0.13.341
+#
+# 0.13.205 is the newest release compatible with the CI Python (3.12); 0.13.206+
+# require >=3.13. This is exactly what the previous unpinned install resolved to.
+pytest-homeassistant-custom-component==0.13.205
