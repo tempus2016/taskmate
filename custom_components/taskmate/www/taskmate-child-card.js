@@ -3640,16 +3640,32 @@ class TaskMateChildCard extends LitElement {
     this._photoCapture = { ...cap, step: "uploading", error: "" };
     this.requestUpdate();
 
-    try {
-      const fd = new FormData();
-      fd.append("file", cap.blob, "evidence.jpg");
+    // POST the blob with a Bearer token, refreshing the (short-lived) access
+    // token if expired. A 401 means the cached token went stale mid-session, so
+    // force a refresh and retry once before giving up.
+    const postPhoto = async () => {
       const token = this.hass && this.hass.auth && this.hass.auth.data
         && this.hass.auth.data.access_token;
-      const resp = await fetch("/api/taskmate/photo", {
+      const fd = new FormData();
+      fd.append("file", cap.blob, "evidence.jpg");
+      return fetch("/api/taskmate/photo", {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
       });
+    };
+
+    try {
+      if (this.hass && this.hass.auth && this.hass.auth.expired
+        && this.hass.auth.refreshAccessToken) {
+        try { await this.hass.auth.refreshAccessToken(); } catch (e) { /* surfaced below */ }
+      }
+      let resp = await postPhoto();
+      if (resp.status === 401 && this.hass && this.hass.auth
+        && this.hass.auth.refreshAccessToken) {
+        await this.hass.auth.refreshAccessToken();
+        resp = await postPhoto();
+      }
       if (!resp.ok) throw new Error(`upload failed (${resp.status})`);
       const { photo_url: photoUrl } = await resp.json();
       if (!photoUrl) throw new Error("no photo_url in response");
