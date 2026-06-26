@@ -386,6 +386,25 @@ class TaskMateCoordinator(
             r["rank"] = i + 1
         return rows
 
+    # ── ICS calendar feed token (FEAT-10) ────────────────────────────────
+    async def async_get_or_create_ics_token(self) -> str:
+        """Return the ICS feed token, generating + persisting one on first use."""
+        token = self.storage.get_setting("ics_token", "")
+        if not token:
+            import secrets
+            token = secrets.token_urlsafe(24)
+            self.storage.set_setting("ics_token", token)
+            await self.storage.async_save()
+        return token
+
+    async def async_regenerate_ics_token(self) -> str:
+        """Rotate the ICS feed token (invalidates existing subscriptions)."""
+        import secrets
+        token = secrets.token_urlsafe(24)
+        self.storage.set_setting("ics_token", token)
+        await self.storage.async_save()
+        return token
+
     async def _async_finalize_season(self) -> None:
         """At month start, record the previous month's champion (top earner)."""
         now = dt_util.now()

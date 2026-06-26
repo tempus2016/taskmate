@@ -1497,5 +1497,12 @@
   "leaderboard.sort_this_month": "This Month",
   "leaderboard.last_champion": "Last month's champion: {name} 🏆",
   "notification.season_champion.name": "Season champion",
-  "notification.season_champion.description": "Announces the monthly leaderboard winner at the start of each month. Off by default."
+  "notification.season_champion.description": "Announces the monthly leaderboard winner at the start of each month. Off by default.",
+  "panel.ics_title": "Calendar subscription",
+  "panel.ics_hint": "Subscribe to upcoming chores from Google/Apple/Outlook calendar. The link contains a private token — share it carefully.",
+  "panel.ics_show": "Show subscribe link",
+  "panel.ics_copy": "Copy",
+  "panel.ics_regenerate": "Regenerate link",
+  "panel.ics_copied": "Subscribe link copied",
+  "panel.ics_regenerated": "New link generated — old subscriptions stopped"
 }

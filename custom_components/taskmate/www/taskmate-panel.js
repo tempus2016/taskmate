@@ -584,6 +584,9 @@ class TaskMatePanel extends HTMLElement {
     if (act === "save-settings") { this._doSaveSettings(); return; }
     if (act === "config-export") { this._doExportConfig(); return; }
     if (act === "config-import") { this.querySelector("[data-role='config-import-file']")?.click(); return; }
+    if (act === "ics-show") { this._icsShow(); return; }
+    if (act === "ics-regenerate") { this._icsRegenerate(); return; }
+    if (act === "ics-copy") { this._icsCopy(); return; }
 
     // Audit log
     if (act === "audit-clear") { this._doClearAudit(); return; }
@@ -1810,6 +1813,33 @@ class TaskMatePanel extends HTMLElement {
       URL.revokeObjectURL(url);
       this._showToast("ok", this._t("panel.backup_exported"));
     } catch (e) {
+      this._showToast("err", String(e));
+    }
+  }
+
+  async _icsShow() {
+    const { ok, err, res } = await this._callWS({ type: "taskmate/calendar/get_ics_url" });
+    if (!ok || !res) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._icsUrl = res.url;
+    this._render();
+  }
+
+  async _icsRegenerate() {
+    const { ok, err, res } = await this._callWS({ type: "taskmate/calendar/regenerate_ics_token" });
+    if (!ok || !res) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._icsUrl = res.url;
+    this._render();
+    this._showToast("ok", this._t("panel.ics_regenerated"));
+  }
+
+  async _icsCopy() {
+    const input = this.querySelector("[data-role='ics-url']");
+    if (!input) return;
+    try {
+      await navigator.clipboard.writeText(input.value);
+      this._showToast("ok", this._t("panel.ics_copied"));
+    } catch (e) {
+      input.select();
       this._showToast("err", String(e));
     }
   }
@@ -3861,6 +3891,23 @@ class TaskMatePanel extends HTMLElement {
               <button type="button" class="tm-btn" data-act="config-import"><ha-icon icon="mdi:upload"></ha-icon> ${this._t("panel.backup_import")}</button>
               <input type="file" accept="application/json,.json" data-role="config-import-file" style="display:none">
             </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.ics_title")}</h3><p class="tm-meta">${this._t("panel.ics_hint")}</p></div></div>
+          <div class="tm-section-body">
+            ${this._icsUrl ? `
+              <input type="text" readonly value="${this._esc(this._icsUrl)}" data-role="ics-url" style="width:100%;font-family:monospace;font-size:12px;padding:6px;margin-bottom:8px" onclick="this.select()">
+              <div class="tm-period-actions">
+                <button type="button" class="tm-btn" data-act="ics-copy"><ha-icon icon="mdi:content-copy"></ha-icon> ${this._t("panel.ics_copy")}</button>
+                <button type="button" class="tm-btn" data-act="ics-regenerate"><ha-icon icon="mdi:refresh"></ha-icon> ${this._t("panel.ics_regenerate")}</button>
+              </div>
+            ` : `
+              <div class="tm-period-actions">
+                <button type="button" class="tm-btn" data-act="ics-show"><ha-icon icon="mdi:calendar-export"></ha-icon> ${this._t("panel.ics_show")}</button>
+              </div>
+            `}
           </div>
         </div>
 

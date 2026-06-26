@@ -1497,5 +1497,12 @@
   "leaderboard.sort_this_month": "Ce mois-ci",
   "leaderboard.last_champion": "Champion du mois dernier : {name} 🏆",
   "notification.season_champion.name": "Champion de la saison",
-  "notification.season_champion.description": "Annonce le gagnant du classement mensuel en début de mois. Désactivé par défaut."
+  "notification.season_champion.description": "Annonce le gagnant du classement mensuel en début de mois. Désactivé par défaut.",
+  "panel.ics_title": "Abonnement calendrier",
+  "panel.ics_hint": "Abonnez-vous aux tâches à venir depuis Google/Apple/Outlook. Le lien contient un jeton privé — partagez-le avec prudence.",
+  "panel.ics_show": "Afficher le lien d'abonnement",
+  "panel.ics_copy": "Copier",
+  "panel.ics_regenerate": "Régénérer le lien",
+  "panel.ics_copied": "Lien d'abonnement copié",
+  "panel.ics_regenerated": "Nouveau lien généré — anciens abonnements arrêtés"
 }

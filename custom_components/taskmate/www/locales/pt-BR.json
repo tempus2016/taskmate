@@ -1497,5 +1497,12 @@
   "leaderboard.sort_this_month": "Este mês",
   "leaderboard.last_champion": "Campeão do mês passado: {name} 🏆",
   "notification.season_champion.name": "Campeão da temporada",
-  "notification.season_champion.description": "Anuncia o vencedor da classificação mensal no início de cada mês. Desativado por padrão."
+  "notification.season_champion.description": "Anuncia o vencedor da classificação mensal no início de cada mês. Desativado por padrão.",
+  "panel.ics_title": "Assinatura de calendário",
+  "panel.ics_hint": "Assine as tarefas futuras pelo Google/Apple/Outlook. O link contém um token privado — compartilhe com cuidado.",
+  "panel.ics_show": "Mostrar link de assinatura",
+  "panel.ics_copy": "Copiar",
+  "panel.ics_regenerate": "Gerar novo link",
+  "panel.ics_copied": "Link de assinatura copiado",
+  "panel.ics_regenerated": "Novo link gerado — assinaturas antigas interrompidas"
 }

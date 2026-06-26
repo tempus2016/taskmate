@@ -1497,5 +1497,12 @@
   "leaderboard.sort_this_month": "Dieser Monat",
   "leaderboard.last_champion": "Champion des Vormonats: {name} 🏆",
   "notification.season_champion.name": "Saison-Champion",
-  "notification.season_champion.description": "Verkündet zu Monatsbeginn den Gewinner der monatlichen Bestenliste. Standardmäßig aus."
+  "notification.season_champion.description": "Verkündet zu Monatsbeginn den Gewinner der monatlichen Bestenliste. Standardmäßig aus.",
+  "panel.ics_title": "Kalender-Abonnement",
+  "panel.ics_hint": "Anstehende Aufgaben in Google-/Apple-/Outlook-Kalender abonnieren. Der Link enthält ein privates Token — vorsichtig teilen.",
+  "panel.ics_show": "Abo-Link anzeigen",
+  "panel.ics_copy": "Kopieren",
+  "panel.ics_regenerate": "Link neu erzeugen",
+  "panel.ics_copied": "Abo-Link kopiert",
+  "panel.ics_regenerated": "Neuer Link erzeugt — alte Abos gestoppt"
 }

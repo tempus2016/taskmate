@@ -1497,5 +1497,12 @@
   "leaderboard.sort_this_month": "Denne måneden",
   "leaderboard.last_champion": "Forrige måneds mester: {name} 🏆",
   "notification.season_champion.name": "Sesongmester",
-  "notification.season_champion.description": "Kunngjør vinneren av den månedlige rangeringen ved månedsstart. Av som standard."
+  "notification.season_champion.description": "Kunngjør vinneren av den månedlige rangeringen ved månedsstart. Av som standard.",
+  "panel.ics_title": "Kalenderabonnement",
+  "panel.ics_hint": "Abonner på kommende plikter fra Google-/Apple-/Outlook-kalender. Lenken inneholder et privat token — del den forsiktig.",
+  "panel.ics_show": "Vis abonnementslenke",
+  "panel.ics_copy": "Kopier",
+  "panel.ics_regenerate": "Lag ny lenke",
+  "panel.ics_copied": "Abonnementslenke kopiert",
+  "panel.ics_regenerated": "Ny lenke laget — gamle abonnementer stoppet"
 }

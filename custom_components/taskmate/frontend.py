@@ -115,6 +115,10 @@ async def async_register_frontend(hass: HomeAssistant) -> None:
     from .http_photos import async_register_photo_views
     async_register_photo_views(hass)
 
+    # Token-gated ICS calendar feed (FEAT-10).
+    from .http_calendar import async_register_calendar_view
+    async_register_calendar_view(hass)
+
     # Register global JS modules (loaded on all pages, including config flow)
     version = await _async_get_version(hass)
     for module in GLOBAL_MODULES:
