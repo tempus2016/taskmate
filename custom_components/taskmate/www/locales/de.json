@@ -1514,5 +1514,20 @@
   "panel.allowance_rate": "Punkte pro Einheit",
   "panel.allowance_rate_hint": "Wie viele Punkte einer Währungseinheit entsprechen.",
   "panel.allowance_currency": "Währungssymbol",
-  "panel.allowance_ledger": "Letzte Auszahlungen"
+  "panel.allowance_ledger": "Letzte Auszahlungen",
+  "family_goal.default_title": "Familienziel",
+  "family_goal.disabled": "Kein Familienziel festgelegt",
+  "family_goal.reward_label": "Belohnung: {reward}",
+  "family_goal.reached": "Ziel erreicht! {reward}",
+  "panel.family_goal_title": "Familienziel",
+  "panel.family_goal_hint": "Ein gemeinsames Ziel über die kombinierten Punkte aller Kinder (z. B. alle erreichen 500 → Familienfilmabend).",
+  "panel.family_goal_enabled": "Familienziel aktivieren",
+  "panel.family_goal_name": "Zielname",
+  "panel.family_goal_name_ph": "Filmabend-Kasse",
+  "panel.family_goal_target": "Ziel (kombinierte Punkte)",
+  "panel.family_goal_target_hint": "Summe der Punkte aller Kinder, die zum Erreichen nötig ist.",
+  "panel.family_goal_reward": "Belohnung",
+  "panel.family_goal_reward_ph": "ein Familienfilmabend",
+  "notification.family_goal_reached.name": "Familienziel erreicht",
+  "notification.family_goal_reached.description": "Feiert, wenn die kombinierten Punkte der Familie das gemeinsame Ziel erreichen. Standardmäßig aus."
 }

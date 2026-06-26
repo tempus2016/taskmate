@@ -386,6 +386,37 @@ class TaskMateCoordinator(
             r["rank"] = i + 1
         return rows
 
+    # ── Family co-op goal (FEAT-4) ───────────────────────────────────────
+    def family_goal_progress(self) -> int:
+        """Combined current points across all children (the shared goal metric)."""
+        return sum(c.points for c in self.storage.get_children())
+
+    async def _async_check_family_goal(self) -> None:
+        """Fire the family-goal notification once the combined points reach the
+        target. Idempotent via the family_goal_achieved flag (reset when the
+        target/enabled setting changes)."""
+        if not self._setting_enabled("family_goal_enabled"):
+            return
+        if self.storage.get_setting("family_goal_achieved", False) in (True, "true"):
+            return
+        try:
+            target = int(self.storage.get_setting("family_goal_target", 0))
+        except (TypeError, ValueError):
+            target = 0
+        if target < 1 or self.family_goal_progress() < target:
+            return
+        self.storage.set_setting("family_goal_achieved", True)
+        await self.storage.async_save()
+        name = str(self.storage.get_setting("family_goal_name", "") or "Family goal")
+        reward = str(self.storage.get_setting("family_goal_reward", "") or "a treat")
+        self.hass.bus.async_fire("taskmate_family_goal_reached", {
+            "goal_name": name, "goal_reward": reward, "target": target,
+            "timestamp": dt_util.now().isoformat(),
+        })
+        await self.notifications.fire("family_goal_reached", {
+            "goal_name": name, "goal_reward": reward,
+        })
+
     # ── Allowance payout ledger (FEAT-3) ─────────────────────────────────
     async def async_record_allowance_payout(self, child_id: str, points: int) -> dict:
         """Record a parent-confirmed allowance payout: deduct ``points`` and log
@@ -666,6 +697,7 @@ class TaskMateCoordinator(
         """
         # May stop sessions (mutates + saves -> bumps the version), so run first.
         await self._async_auto_stop_capped_sessions()
+        await self._async_check_family_goal()
         self._refresh_tracked_availability_entities()
         version = self.storage.data_version
         cached = getattr(self, "_data_snapshot_cache", None)

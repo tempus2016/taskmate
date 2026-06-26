@@ -1514,5 +1514,20 @@
   "panel.allowance_rate": "Points per unit",
   "panel.allowance_rate_hint": "How many points equal one unit of currency.",
   "panel.allowance_currency": "Currency symbol",
-  "panel.allowance_ledger": "Recent payouts"
+  "panel.allowance_ledger": "Recent payouts",
+  "family_goal.default_title": "Family goal",
+  "family_goal.disabled": "No family goal set",
+  "family_goal.reward_label": "Reward: {reward}",
+  "family_goal.reached": "Goal reached! {reward}",
+  "panel.family_goal_title": "Family goal",
+  "panel.family_goal_hint": "A shared target across all children's combined points (e.g. everyone hits 500 → family movie night).",
+  "panel.family_goal_enabled": "Enable family goal",
+  "panel.family_goal_name": "Goal name",
+  "panel.family_goal_name_ph": "Movie night fund",
+  "panel.family_goal_target": "Target (combined points)",
+  "panel.family_goal_target_hint": "Sum of all children's points needed to reach the goal.",
+  "panel.family_goal_reward": "Reward",
+  "panel.family_goal_reward_ph": "a family movie night",
+  "notification.family_goal_reached.name": "Family goal reached",
+  "notification.family_goal_reached.description": "Celebrates when the family's combined points reach the shared goal. Off by default."
 }

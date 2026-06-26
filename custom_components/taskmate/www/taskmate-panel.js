@@ -3895,6 +3895,28 @@ class TaskMatePanel extends HTMLElement {
         </div>
 
         <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.family_goal_title")}</h3><p class="tm-meta">${this._t("panel.family_goal_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.family_goal_enabled")}</div>
+              <ha-switch data-setting="family_goal_enabled" ${s.family_goal_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.family_goal_name")}</div>
+              <input type="text" class="tm-input" maxlength="120" data-setting="family_goal_name" value="${this._esc(s.family_goal_name || "")}" placeholder="${this._esc(this._t("panel.family_goal_name_ph"))}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.family_goal_target")}<small>${this._t("panel.family_goal_target_hint")}</small></div>
+              <input type="number" class="tm-input" min="1" max="10000000" data-setting="family_goal_target" value="${this._esc(String(s.family_goal_target || 500))}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.family_goal_reward")}</div>
+              <input type="text" class="tm-input" maxlength="200" data-setting="family_goal_reward" value="${this._esc(s.family_goal_reward || "")}" placeholder="${this._esc(this._t("panel.family_goal_reward_ph"))}">
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.allowance_title")}</h3><p class="tm-meta">${this._t("panel.allowance_hint")}</p></div></div>
           <div class="tm-section-body">
             <div class="tm-setting-row">

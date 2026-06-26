@@ -1120,6 +1120,7 @@ _SUBKEY_SETTINGS = {
     "celebration_notify", "celebration_notify_min_tier",
     "allow_negative_balance",
     "allowance_enabled", "allowance_rate", "allowance_currency",
+    "family_goal_enabled", "family_goal_name", "family_goal_target", "family_goal_reward",
     "notify_service", "calendar_projection_days", "skip_confirmation_enabled",
     "vacation_calendar",
     "time_morning_start", "time_morning_end",
@@ -1291,6 +1292,10 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("allowance_enabled"): bool,
     vol.Optional("allowance_rate"): vol.All(vol.Coerce(int), vol.Range(min=1, max=100000)),
     vol.Optional("allowance_currency"): vol.All(str, vol.Length(max=8)),
+    vol.Optional("family_goal_enabled"): bool,
+    vol.Optional("family_goal_name"): vol.All(str, vol.Length(max=120)),
+    vol.Optional("family_goal_target"): vol.All(vol.Coerce(int), vol.Range(min=1, max=10000000)),
+    vol.Optional("family_goal_reward"): vol.All(str, vol.Length(max=200)),
     vol.Optional("streak_milestones"): str,
     vol.Optional("notify_service"): str,
     vol.Optional("calendar_projection_days"): vol.All(int, vol.Range(min=1, max=90)),
@@ -1342,6 +1347,9 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
                 continue
             storage.set_setting(k, v)
             changed.append(k)
+    # Re-arm a family goal when its target/enabled changes (FEAT-4).
+    if "family_goal_target" in changed or "family_goal_enabled" in changed:
+        storage.set_setting("family_goal_achieved", False)
     if changed:
         await storage.async_save()
         # Period boundaries moved → re-arm the mandatory-chore end-of-period checks (#532)

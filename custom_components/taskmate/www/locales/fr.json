@@ -1514,5 +1514,20 @@
   "panel.allowance_rate": "Points par unité",
   "panel.allowance_rate_hint": "Combien de points équivalent à une unité monétaire.",
   "panel.allowance_currency": "Symbole monétaire",
-  "panel.allowance_ledger": "Versements récents"
+  "panel.allowance_ledger": "Versements récents",
+  "family_goal.default_title": "Objectif familial",
+  "family_goal.disabled": "Aucun objectif familial défini",
+  "family_goal.reward_label": "Récompense : {reward}",
+  "family_goal.reached": "Objectif atteint ! {reward}",
+  "panel.family_goal_title": "Objectif familial",
+  "panel.family_goal_hint": "Un objectif commun sur les points cumulés de tous les enfants (p. ex. tout le monde atteint 500 → soirée cinéma).",
+  "panel.family_goal_enabled": "Activer l'objectif familial",
+  "panel.family_goal_name": "Nom de l'objectif",
+  "panel.family_goal_name_ph": "Cagnotte soirée cinéma",
+  "panel.family_goal_target": "Cible (points cumulés)",
+  "panel.family_goal_target_hint": "Somme des points de tous les enfants nécessaire pour atteindre l'objectif.",
+  "panel.family_goal_reward": "Récompense",
+  "panel.family_goal_reward_ph": "une soirée cinéma en famille",
+  "notification.family_goal_reached.name": "Objectif familial atteint",
+  "notification.family_goal_reached.description": "Célèbre lorsque les points cumulés de la famille atteignent l'objectif commun. Désactivé par défaut."
 }

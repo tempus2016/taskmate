@@ -1514,5 +1514,20 @@
   "panel.allowance_rate": "Poeng per eining",
   "panel.allowance_rate_hint": "Kor mange poeng som svarar til éi valutaeining.",
   "panel.allowance_currency": "Valutasymbol",
-  "panel.allowance_ledger": "Nylege utbetalingar"
+  "panel.allowance_ledger": "Nylege utbetalingar",
+  "family_goal.default_title": "Familiemål",
+  "family_goal.disabled": "Ingen familiemål sett",
+  "family_goal.reward_label": "Beløning: {reward}",
+  "family_goal.reached": "Målet er nådd! {reward}",
+  "panel.family_goal_title": "Familiemål",
+  "panel.family_goal_hint": "Eit felles mål for dei samla poenga til alle barna (t.d. alle når 500 → familiefilmkveld).",
+  "panel.family_goal_enabled": "Aktiver familiemål",
+  "panel.family_goal_name": "Målnamn",
+  "panel.family_goal_name_ph": "Filmkveldkasse",
+  "panel.family_goal_target": "Mål (samla poeng)",
+  "panel.family_goal_target_hint": "Summen av poenga til alle barna som trengst for å nå målet.",
+  "panel.family_goal_reward": "Beløning",
+  "panel.family_goal_reward_ph": "ein familiefilmkveld",
+  "notification.family_goal_reached.name": "Familiemål nådd",
+  "notification.family_goal_reached.description": "Feirar når dei samla poenga til familien når det felles målet. Av som standard."
 }
