@@ -173,6 +173,29 @@ _ha_components_button = MagicMock()
 _ha_components_button.ButtonEntity = _FakeButtonEntity
 
 
+class _FakeNumberEntity:
+    pass
+
+
+class _FakeNumberMode:
+    BOX = "box"
+    SLIDER = "slider"
+    AUTO = "auto"
+
+
+_ha_components_number = MagicMock()
+_ha_components_number.NumberEntity = _FakeNumberEntity
+_ha_components_number.NumberMode = _FakeNumberMode
+
+
+class _FakeSelectEntity:
+    pass
+
+
+_ha_components_select = MagicMock()
+_ha_components_select.SelectEntity = _FakeSelectEntity
+
+
 class _FakeDeviceInfo(dict):
     """DeviceInfo behaves like a TypedDict; accept kwargs like the real one."""
 
@@ -246,6 +269,8 @@ _ha_components = MagicMock()
 _ha_components.websocket_api = _ha_websocket_api
 _ha_components.calendar = _ha_components_calendar
 _ha_components.button = _ha_components_button
+_ha_components.number = _ha_components_number
+_ha_components.select = _ha_components_select
 
 sys.modules.update(
     {
@@ -266,6 +291,8 @@ sys.modules.update(
         "homeassistant.components.sensor": _ha_components_sensor,
         "homeassistant.components.binary_sensor": _ha_components_binary_sensor,
         "homeassistant.components.button": _ha_components_button,
+        "homeassistant.components.number": _ha_components_number,
+        "homeassistant.components.select": _ha_components_select,
         "homeassistant.components.calendar": _ha_components_calendar,
         "homeassistant.components.websocket_api": _ha_websocket_api,
         "homeassistant.util": _ha_util,

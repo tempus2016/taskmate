@@ -839,6 +839,22 @@
       "child_badges": {
         "unit_of_measurement": "merke"
       }
+    },
+    "number": {
+      "weekend_multiplier": {
+        "name": "Helgemultiplikator"
+      },
+      "perfect_week_bonus": {
+        "name": "Bonus for perfekt veke"
+      }
+    },
+    "select": {
+      "streak_reset_mode": {
+        "name": "Tilbakestillingsmodus for rekkje"
+      },
+      "card_design": {
+        "name": "Kortdesign"
+      }
     }
   }
 }
