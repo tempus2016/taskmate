@@ -1478,5 +1478,7 @@
   "panel.toast_challenge_added": "Challenge added",
   "panel.toast_challenge_updated": "Challenge updated",
   "panel.settings_allow_negative_label": "Allow negative balance",
-  "panel.settings_allow_negative_hint": "Let penalties take a child's balance below zero instead of stopping at zero."
+  "panel.settings_allow_negative_hint": "Let penalties take a child's balance below zero instead of stopping at zero.",
+  "panel.chore_depends_label": "Depends on",
+  "panel.chore_depends_hint": "This chore stays hidden until the selected chores are approved for the child today."
 }

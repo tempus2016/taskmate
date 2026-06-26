@@ -10,7 +10,7 @@ from datetime import timezone
 from unittest.mock import MagicMock, patch
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
-from custom_components.taskmate.models import Chore, ChoreCompletion
+from custom_components.taskmate.models import Child, Chore, ChoreCompletion
 
 UTC = timezone.utc
 NOW = dt.datetime(2026, 4, 20, 10, 0, 0, tzinfo=UTC)  # Monday
@@ -79,3 +79,51 @@ def test_unavailable_chores_excluded():
     chores = [Chore(name="A", id="a"), Chore(name="B", id="b")]
     avail = lambda chore, cid: chore.id == "a"  # only A available
     assert _due(_coord(chores, available=avail)) == ["A"]
+
+
+# ---------------------------------------------------------------------------
+# FEAT-1: chore dependency gating in is_chore_available_for_child
+# ---------------------------------------------------------------------------
+
+def _avail_coord(chore, child, completions):
+    coord = object.__new__(TaskMateCoordinator)
+    coord.storage = MagicMock()
+    coord.storage.get_child = MagicMock(return_value=child)
+    coord.storage.get_completions = MagicMock(return_value=completions)
+    coord._is_child_on_vacation = MagicMock(return_value=False)
+    coord._is_visibility_entity_active = MagicMock(return_value=True)
+    return coord
+
+
+def _avail(chore, child, completions):
+    coord = _avail_coord(chore, child, completions)
+    with patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NOW):
+        return coord.is_chore_available_for_child(chore, child.id)
+
+
+def _dep_chore():
+    return Chore(name="B", id="B", depends_on=["A"], schedule_mode="specific_days",
+                 due_days=[], assignment_mode="everyone", enabled=True)
+
+
+def test_dependency_unmet_blocks_chore():
+    child = Child(name="K", id="ch1")
+    assert _avail(_dep_chore(), child, []) is False
+
+
+def test_dependency_met_unlocks_chore():
+    child = Child(name="K", id="ch1")
+    comps = [ChoreCompletion(chore_id="A", child_id="ch1", approved=True, completed_at=NOW)]
+    assert _avail(_dep_chore(), child, comps) is True
+
+
+def test_dependency_unapproved_completion_does_not_unlock():
+    child = Child(name="K", id="ch1")
+    comps = [ChoreCompletion(chore_id="A", child_id="ch1", approved=False, completed_at=NOW)]
+    assert _avail(_dep_chore(), child, comps) is False
+
+
+def test_dependency_met_by_other_child_does_not_unlock():
+    child = Child(name="K", id="ch1")
+    comps = [ChoreCompletion(chore_id="A", child_id="ch2", approved=True, completed_at=NOW)]
+    assert _avail(_dep_chore(), child, comps) is False

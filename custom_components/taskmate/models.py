@@ -248,6 +248,7 @@ class Chore:
     # One-shot chore fields
     enabled: bool = True  # False = soft-disabled (completed or expired)
     disabled_for: list[str] = field(default_factory=list)  # Child IDs this chore is disabled for
+    depends_on: list[str] = field(default_factory=list)  # Chore IDs that must be approved-completed today before this is available
     created_date: str = ""  # ISO date for one-shot expiry, e.g. "2026-04-16"
     expires_on: str = ""  # optional ISO end date; chore auto-disables the day after
     # Time-of-day incentive: when due_time (HH:MM) is set, a completion at/before
@@ -316,6 +317,7 @@ class Chore:
             visibility_operator=data.get("visibility_operator", "equals"),
             enabled=data.get("enabled", True),
             disabled_for=list(data.get("disabled_for", [])),
+            depends_on=list(data.get("depends_on", []) or []),
             created_date=data.get("created_date", ""),
             expires_on=data.get("expires_on", ""),
             due_time=data.get("due_time", ""),
@@ -370,6 +372,7 @@ class Chore:
             "visibility_operator": self.visibility_operator,
             "enabled": self.enabled,
             "disabled_for": self.disabled_for,
+            "depends_on": self.depends_on,
             "created_date": self.created_date,
             "expires_on": self.expires_on,
             "due_time": self.due_time,

@@ -469,6 +469,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "toggle-day")        { this._toggleArrayField("due_days", t.dataset.day); return; }
     if (act === "toggle-bulk-day")   { this._toggleArrayField("due_days", t.dataset.day); return; }
     if (act === "toggle-assigned")   { this._toggleArrayField("assigned_to", t.dataset.id); return; }
+    if (act === "toggle-depends")    { this._toggleArrayField("depends_on", t.dataset.id); return; }
     if (act === "toggle-calendar")   { this._toggleArrayField("publish_calendar_entities", t.dataset.id); return; }
     if (act === "add-bonus-subtask") { this._addBonusSubtask(); return; }
     if (act === "remove-bonus-subtask") { this._removeBonusSubtask(Number(t.dataset.idx)); return; }
@@ -1130,6 +1131,7 @@ class TaskMatePanel extends HTMLElement {
       chore_names: names,
       points: Number(d.points) || 10,
       assigned_to: d.assigned_to || [],
+      depends_on: d.depends_on || [],
       requires_approval: !!d.requires_approval,
       time_category: d.time_category || "anytime",
       schedule_mode: d.schedule_mode || "specific_days",
@@ -1215,6 +1217,7 @@ class TaskMatePanel extends HTMLElement {
       mandatory: false, mandatory_penalty_points: 0,
       require_photo: false,
       publish_calendar_entities: [],
+      depends_on: [],
       bonus_subtasks: [],
     };
     if (id) {
@@ -1225,6 +1228,7 @@ class TaskMatePanel extends HTMLElement {
         assigned_to: [...(c.assigned_to || [])],
         due_days: [...(c.due_days || [])],
         publish_calendar_entities: [...(c.publish_calendar_entities || [])],
+        depends_on: [...(c.depends_on || [])],
         bonus_subtasks: (c.bonus_subtasks || []).map(b => ({...b})),
         visibility_operator: c.visibility_operator || "none",
         manual_start_child_id: "",
@@ -4253,6 +4257,19 @@ class TaskMatePanel extends HTMLElement {
             <span class="tm-field-hint">${this._t("panel.chore_assign_hint")}</span>
           </div>
         ` : `<div class="tm-field"><span class="tm-field-hint">${this._t("panel.chore_assign_no_children")}</span></div>`) : "",
+        (this._state.chores || []).filter(x => x.id !== d.id).length > 0 ? `
+          <div class="tm-field">
+            <span class="tm-field-label">${this._t("panel.chore_depends_label")}</span>
+            <div class="tm-chip-row">
+              ${(this._state.chores || []).filter(x => x.id !== d.id).map(c => `
+                <button type="button" class="tm-chip-btn ${(d.depends_on || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="toggle-depends" data-id="${this._esc(c.id)}">
+                  ${this._esc(c.name)}
+                </button>
+              `).join("")}
+            </div>
+            <span class="tm-field-hint">${this._t("panel.chore_depends_hint")}</span>
+          </div>
+        ` : "",
         showRotation && children.length > 0 ? this._select(
           this._t("panel.chore_rotation_label"), "manual_start_child_id", d.manual_start_child_id,
           [{ v: "", l: this._t("panel.chore_rotation_no_override") }, ...children.map(c => ({ v: c.id, l: c.name }))],
