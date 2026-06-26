@@ -839,6 +839,22 @@
       "child_badges": {
         "unit_of_measurement": "Abzeichen"
       }
+    },
+    "number": {
+      "weekend_multiplier": {
+        "name": "Wochenend-Multiplikator"
+      },
+      "perfect_week_bonus": {
+        "name": "Bonus für perfekte Woche"
+      }
+    },
+    "select": {
+      "streak_reset_mode": {
+        "name": "Streak-Zurücksetzmodus"
+      },
+      "card_design": {
+        "name": "Kartendesign"
+      }
     }
   }
 }

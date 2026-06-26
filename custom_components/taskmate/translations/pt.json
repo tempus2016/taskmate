@@ -839,6 +839,22 @@
       "child_badges": {
         "unit_of_measurement": "medalhas"
       }
+    },
+    "number": {
+      "weekend_multiplier": {
+        "name": "Multiplicador de fim de semana"
+      },
+      "perfect_week_bonus": {
+        "name": "Bónus de semana perfeita"
+      }
+    },
+    "select": {
+      "streak_reset_mode": {
+        "name": "Modo de reposição de sequência"
+      },
+      "card_design": {
+        "name": "Design do cartão"
+      }
     }
   }
 }
