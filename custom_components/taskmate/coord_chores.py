@@ -1225,6 +1225,48 @@ class ChoresMixin:
         days_since = (today - last_dt).days
         return days_since >= window_days
 
+    def get_due_chores_for_child(self, child_id: str) -> list:
+        """Chores this child should still act on today (their outstanding to-dos).
+
+        The single backend definition matching what the child card surfaces:
+        assigned to the child, scheduled/available today, and not yet completed
+        up to the daily limit. ``is_chore_available_for_child`` already covers
+        enabled/vacation/disabled_for/rotation/visibility/recurrence; on top of
+        that this adds the everyone-mode ``assigned_to`` membership, the
+        ``specific_days`` ``due_days`` filter, and the completed-today cap.
+        Used by the todo platform (and reusable by cards/automations).
+        """
+        today = dt_util.as_local(dt_util.now()).date()
+        dow = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")[today.weekday()]
+        completions = self.storage.get_completions()
+        out = []
+        for chore in self.storage.get_chores():
+            if not self.is_chore_available_for_child(chore, child_id):
+                continue
+            assigned = getattr(chore, "assigned_to", []) or []
+            if assigned and child_id not in assigned:
+                continue
+            if getattr(chore, "schedule_mode", "specific_days") == "specific_days":
+                due_days = getattr(chore, "due_days", []) or []
+                if due_days and dow not in due_days:
+                    continue
+            limit = getattr(chore, "daily_limit", 1) or 1
+            done = 0
+            for c in completions:
+                if c.chore_id != chore.id or c.child_id != child_id:
+                    continue
+                if getattr(c, "bonus_subtask_id", ""):
+                    continue
+                try:
+                    if dt_util.as_local(c.completed_at).date() == today:
+                        done += 1
+                except (AttributeError, TypeError, ValueError):
+                    continue
+            if done >= limit:
+                continue
+            out.append(chore)
+        return out
+
     async def _async_expire_dated_chores(self) -> None:
         """Soft-disable any enabled chore whose expires_on date has passed."""
         today = dt_util.as_local(dt_util.now()).date()
