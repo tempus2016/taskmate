@@ -794,6 +794,10 @@ class TaskMatePanel extends HTMLElement {
       this._notifSetStreakCutoff(t.value);
       return;
     }
+    if (t.dataset.act === "notif-set-escalation") {
+      this._notifSetEscalation(t.dataset.escField, t.value);
+      return;
+    }
     if (t.dataset.act === "notif-update-custom") {
       this._notifUpdateCustomField(t.dataset.customId, t.dataset.field, t.value);
       return;
@@ -1908,6 +1912,18 @@ class TaskMatePanel extends HTMLElement {
 
   async _notifSetStreakCutoff(time) {
     await this._callWS({ type: "taskmate/notifications/set_streak_cutoff", time });
+    await this._fetchState();
+  }
+
+  async _notifSetEscalation(field, value) {
+    const s = (this._notifState && this._notifState.settings) || {};
+    const cur = {
+      reminder_minutes: Number(s.mandatory_escalation_reminder_minutes) || 30,
+      parent_minutes: Number(s.mandatory_escalation_parent_minutes) || 120,
+    };
+    const n = Math.max(1, Math.min(1440, Math.round(Number(value) || cur[field])));
+    cur[field] = n;
+    await this._callWS({ type: "taskmate/notifications/set_escalation", reminder_minutes: cur.reminder_minutes, parent_minutes: cur.parent_minutes });
     await this._fetchState();
   }
 
@@ -3970,6 +3986,20 @@ class TaskMatePanel extends HTMLElement {
                 <div class="tm-meta" style="margin-top:6px;display:flex;align-items:center;gap:8px">
                   ${this._t("panel.notif_streak_cutoff_label")}
                   <input type="time" class="tm-notif-time-input" value="${this._esc(settings.streak_at_risk_cutoff_time || "20:00")}" data-act="notif-set-streak-cutoff" style="display:inline;margin:0;width:90px">
+                </div>
+              ` : ""}
+              ${t.id === "mandatory_reminder" ? `
+                <div class="tm-meta" style="margin-top:6px;display:flex;align-items:center;gap:8px">
+                  ${this._t("panel.notif_escalation_reminder_label")}
+                  <input type="number" min="1" max="1440" class="tm-notif-time-input" value="${this._esc(String(settings.mandatory_escalation_reminder_minutes || 30))}" data-act="notif-set-escalation" data-esc-field="reminder_minutes" style="display:inline;margin:0;width:70px">
+                  ${this._t("panel.notif_escalation_minutes_suffix")}
+                </div>
+              ` : ""}
+              ${t.id === "mandatory_parent_alert" ? `
+                <div class="tm-meta" style="margin-top:6px;display:flex;align-items:center;gap:8px">
+                  ${this._t("panel.notif_escalation_parent_label")}
+                  <input type="number" min="1" max="1440" class="tm-notif-time-input" value="${this._esc(String(settings.mandatory_escalation_parent_minutes || 120))}" data-act="notif-set-escalation" data-esc-field="parent_minutes" style="display:inline;margin:0;width:70px">
+                  ${this._t("panel.notif_escalation_minutes_suffix")}
                 </div>
               ` : ""}
               <div style="margin-top:6px">

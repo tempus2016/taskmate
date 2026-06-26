@@ -5,10 +5,20 @@ from datetime import date, datetime, time as dt_time, timedelta
 import logging
 
 from homeassistant.core import callback
-from homeassistant.helpers.event import async_track_time_change
+from homeassistant.helpers.event import (
+    async_track_time_change,
+    async_track_time_interval,
+)
 from homeassistant.util import dt as dt_util
 
-from .models import MandatoryMiss
+from .const import (
+    NOTIF_TYPE_MANDATORY_PARENT_ALERT,
+    NOTIF_TYPE_MANDATORY_REMINDER,
+)
+from .models import MandatoryMiss, parse_datetime
+
+# How often the escalation ladder is re-evaluated (FEAT-6).
+_ESCALATION_INTERVAL = timedelta(minutes=5)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -163,6 +173,72 @@ class MandatoryMixin:
         })
         await self.async_refresh()
 
+    # ---- escalation (FEAT-6) ----------------------------------------------
+
+    async def async_escalate_mandatory_misses(self, now: datetime | None = None) -> int:
+        """Walk today's open mandatory misses and advance each escalation stage.
+
+        Ladder driven by minutes elapsed since the miss was created:
+          stage 1 (nudge)        immediately -> mandatory_reminder (child)
+          stage 2 (reminder)     after reminder_minutes -> mandatory_reminder
+          stage 3 (parent alert) after parent_minutes  -> mandatory_parent_alert
+
+        A miss whose chore has since been completed by that child is skipped (it
+        will be resolved by the parent / next-day prune). Each notification is
+        still gated by its own master switch + routes inside ``fire()``; stages
+        advance regardless so a disabled type is not retro-fired when re-enabled.
+        Returns the number of misses whose stage advanced.
+        """
+        now = now or dt_util.now()
+        today_iso = now.date().isoformat()
+        reminder_minutes = self.storage.get_escalation_reminder_minutes()
+        parent_minutes = self.storage.get_escalation_parent_minutes()
+        chores = {c.id: c for c in self.storage.get_chores()}
+        children = {c.id: c for c in self.storage.get_children()}
+        advanced = 0
+
+        for miss in self.storage.get_mandatory_misses():
+            if miss.due_date != today_iso:
+                continue  # only escalate same-day misses (skips midnight backfill)
+            if self._child_completed_today(miss.chore_id, miss.child_id, now.date()):
+                continue
+            created = parse_datetime(miss.created_at)
+            if created is None:
+                continue
+            elapsed_min = (now - created).total_seconds() / 60.0
+            target = 1
+            if elapsed_min >= reminder_minutes:
+                target = 2
+            if elapsed_min >= parent_minutes:
+                target = 3
+            if target <= miss.escalation_stage:
+                continue
+
+            chore = chores.get(miss.chore_id)
+            child = children.get(miss.child_id)
+            ctx = {
+                "child_id": miss.child_id,
+                "child_name": getattr(child, "name", ""),
+                "chore_name": getattr(chore, "name", "chore"),
+            }
+            for stage in range(miss.escalation_stage + 1, target + 1):
+                if stage in (1, 2):
+                    await self.notifications.fire(
+                        NOTIF_TYPE_MANDATORY_REMINDER, ctx,
+                        only_recipients={f"child:{miss.child_id}"},
+                    )
+                elif stage == 3:
+                    await self.notifications.fire(
+                        NOTIF_TYPE_MANDATORY_PARENT_ALERT, ctx,
+                    )
+            miss.escalation_stage = target
+            self.storage.update_mandatory_miss(miss)
+            advanced += 1
+
+        if advanced:
+            await self.storage.async_save()
+        return advanced
+
     # ---- scheduling --------------------------------------------------------
 
     def _mandatory_period_end_times(self) -> list[tuple[int, int, str]]:
@@ -177,7 +253,7 @@ class MandatoryMixin:
         return out
 
     def arm_mandatory_schedules(self) -> None:
-        """Register a callback at each period's end time."""
+        """Register a callback at each period's end time + the escalation tick."""
         self._ensure_mandatory_state()
         self._unsub_mandatory = getattr(self, "_unsub_mandatory", [])
         for hour, minute, period_id in self._mandatory_period_end_times():
@@ -187,6 +263,16 @@ class MandatoryMixin:
                 hour=hour, minute=minute, second=10,
             )
             self._unsub_mandatory.append(unsub)
+        # Reminder escalation ladder (FEAT-6) — re-evaluate open misses on a tick.
+        self._unsub_mandatory.append(
+            async_track_time_interval(
+                self.hass, self._escalation_tick, _ESCALATION_INTERVAL,
+            )
+        )
+
+    @callback
+    def _escalation_tick(self, now: datetime) -> None:
+        self.hass.async_create_task(self.async_escalate_mandatory_misses(now))
 
     def _make_mandatory_period_cb(self, period_id: str):
         @callback

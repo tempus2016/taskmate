@@ -140,6 +140,7 @@ WS_NOTIF_UPSERT_CUSTOM: Final      = "taskmate/notifications/upsert_custom"
 WS_NOTIF_DELETE_CUSTOM: Final      = "taskmate/notifications/delete_custom"
 WS_NOTIF_LIST_NOTIFY: Final        = "taskmate/notifications/list_notify_services"
 WS_NOTIF_SET_STREAK_CUTOFF: Final  = "taskmate/notifications/set_streak_cutoff"
+WS_NOTIF_SET_ESCALATION: Final     = "taskmate/notifications/set_escalation"
 WS_NOTIF_SEND_TEST: Final          = "taskmate/notifications/send_test"
 
 # Admin audit log
@@ -1637,6 +1638,8 @@ async def ws_notif_get_state(hass, connection, msg, coordinator):
         "custom": [n.to_dict() for n in c.storage.get_custom_notifications()],
         "settings": {
             "streak_at_risk_cutoff_time": c.storage.get_streak_at_risk_cutoff(),
+            "mandatory_escalation_reminder_minutes": c.storage.get_escalation_reminder_minutes(),
+            "mandatory_escalation_parent_minutes": c.storage.get_escalation_parent_minutes(),
         },
     }
     connection.send_result(msg["id"], state)
@@ -1835,6 +1838,21 @@ async def ws_notif_set_streak_cutoff(hass, connection, msg, coordinator):
 
 
 @websocket_api.websocket_command({
+    vol.Required("type"): WS_NOTIF_SET_ESCALATION,
+    vol.Required("reminder_minutes"): vol.All(vol.Coerce(int), vol.Range(min=1, max=1440)),
+    vol.Required("parent_minutes"): vol.All(vol.Coerce(int), vol.Range(min=1, max=1440)),
+})
+@websocket_api.async_response
+@_admin_only
+async def ws_notif_set_escalation(hass, connection, msg, coordinator):
+    coordinator.storage.set_escalation_minutes(
+        msg["reminder_minutes"], msg["parent_minutes"]
+    )
+    await coordinator.storage.async_save()
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({
     vol.Required("type"): WS_NOTIF_SEND_TEST,
     vol.Required("type_id"): str,
 })
@@ -1999,6 +2017,7 @@ _COMMANDS = (
     ws_notif_upsert_parent, ws_notif_delete_parent,
     ws_notif_upsert_custom, ws_notif_delete_custom,
     ws_notif_list_notify, ws_notif_set_streak_cutoff, ws_notif_send_test,
+    ws_notif_set_escalation,
 )
 
 

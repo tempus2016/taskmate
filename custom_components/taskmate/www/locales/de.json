@@ -1482,5 +1482,12 @@
   "panel.chore_depends_label": "Hängt ab von",
   "panel.chore_depends_hint": "Diese Aufgabe bleibt verborgen, bis die ausgewählten Aufgaben heute für das Kind genehmigt sind.",
   "panel.notif_quiet_hours_label": "Ruhezeiten",
-  "panel.notif_quiet_hours_desc": "In diesem Zeitraum werden keine Erinnerungen an dieses Kind gesendet (Nicht stören). Zum Deaktivieren leer lassen."
+  "panel.notif_quiet_hours_desc": "In diesem Zeitraum werden keine Erinnerungen an dieses Kind gesendet (Nicht stören). Zum Deaktivieren leer lassen.",
+  "notification.mandatory_reminder.name": "Erinnerung an Pflichtaufgabe",
+  "notification.mandatory_reminder.description": "Stupst das Kind an, wenn eine Pflichtaufgabe überfällig ist, und erinnert nach der Eskalationsverzögerung erneut. Standardmäßig aus.",
+  "notification.mandatory_parent_alert.name": "Eltern-Benachrichtigung zu Pflichtaufgabe",
+  "notification.mandatory_parent_alert.description": "Benachrichtigt ein Elternteil, wenn eine Pflichtaufgabe nach der Eltern-Eskalationsverzögerung noch unerledigt ist. Standardmäßig aus.",
+  "panel.notif_escalation_reminder_label": "Erneut erinnern nach",
+  "panel.notif_escalation_parent_label": "Eltern benachrichtigen nach",
+  "panel.notif_escalation_minutes_suffix": "Min."
 }

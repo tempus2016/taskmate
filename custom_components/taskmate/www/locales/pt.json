@@ -1482,5 +1482,12 @@
   "panel.chore_depends_label": "Depende de",
   "panel.chore_depends_hint": "Esta tarefa fica oculta até as tarefas selecionadas serem aprovadas para a criança hoje.",
   "panel.notif_quiet_hours_label": "Horário de silêncio",
-  "panel.notif_quiet_hours_desc": "Nenhum lembrete é enviado a esta criança durante este período (não perturbar). Deixe em branco para desativar."
+  "panel.notif_quiet_hours_desc": "Nenhum lembrete é enviado a esta criança durante este período (não perturbar). Deixe em branco para desativar.",
+  "notification.mandatory_reminder.name": "Lembrete de tarefa obrigatória",
+  "notification.mandatory_reminder.description": "Avisa a criança quando uma tarefa obrigatória está atrasada e lembra novamente após o atraso de escalonamento. Desativado por predefinição.",
+  "notification.mandatory_parent_alert.name": "Alerta aos pais sobre tarefa obrigatória",
+  "notification.mandatory_parent_alert.description": "Alerta um dos pais quando uma tarefa obrigatória continua incompleta após o atraso de escalonamento aos pais. Desativado por predefinição.",
+  "panel.notif_escalation_reminder_label": "Lembrar novamente após",
+  "panel.notif_escalation_parent_label": "Alertar os pais após",
+  "panel.notif_escalation_minutes_suffix": "min"
 }
