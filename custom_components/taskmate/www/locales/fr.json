@@ -1493,5 +1493,9 @@
   "panel.notif_escalation_parent_label": "Alerter le parent après",
   "panel.notif_escalation_minutes_suffix": "min",
   "notification.monthly_report.name": "Rapport mensuel",
-  "notification.monthly_report.description": "Un récapitulatif en début de mois du mois précédent de chaque enfant (tâches, points, niveau, meilleure série). Désactivé par défaut."
+  "notification.monthly_report.description": "Un récapitulatif en début de mois du mois précédent de chaque enfant (tâches, points, niveau, meilleure série). Désactivé par défaut.",
+  "leaderboard.sort_this_month": "Ce mois-ci",
+  "leaderboard.last_champion": "Champion du mois dernier : {name} 🏆",
+  "notification.season_champion.name": "Champion de la saison",
+  "notification.season_champion.description": "Annonce le gagnant du classement mensuel en début de mois. Désactivé par défaut."
 }

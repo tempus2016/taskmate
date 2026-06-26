@@ -1493,5 +1493,9 @@
   "panel.notif_escalation_parent_label": "Alert parent after",
   "panel.notif_escalation_minutes_suffix": "min",
   "notification.monthly_report.name": "Monthly report",
-  "notification.monthly_report.description": "A start-of-month recap of each child's previous month (chores, points, level, best streak). Off by default."
+  "notification.monthly_report.description": "A start-of-month recap of each child's previous month (chores, points, level, best streak). Off by default.",
+  "leaderboard.sort_this_month": "This Month",
+  "leaderboard.last_champion": "Last month's champion: {name} 🏆",
+  "notification.season_champion.name": "Season champion",
+  "notification.season_champion.description": "Announces the monthly leaderboard winner at the start of each month. Off by default."
 }

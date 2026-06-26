@@ -302,6 +302,7 @@ class TaskMateCoordinator(
             self.hass.async_create_task(self._async_send_weekly_digest())
         if now.day == 1:
             self.hass.async_create_task(self._async_send_monthly_report())
+            self.hass.async_create_task(self._async_finalize_season())
 
     async def _async_send_weekly_digest(self) -> None:
         """Build and send the weekly digest to parents (opt-in)."""
@@ -368,6 +369,50 @@ class TaskMateCoordinator(
             for c in children
         ]
         return "\n".join(lines)
+
+    # ── Leaderboard seasons (FEAT-2) ─────────────────────────────────────
+    def get_season_standings(self, ym: str | None = None) -> list[dict]:
+        """Per-child points earned in calendar month ``ym`` (default current),
+        ranked high→low (ties broken by name)."""
+        if ym is None:
+            ym = dt_util.now().strftime("%Y-%m")
+        pts = self.storage.get_season_points(ym)
+        rows = [
+            {"child_id": c.id, "name": c.name, "points": int(pts.get(c.id, 0))}
+            for c in self.storage.get_children()
+        ]
+        rows.sort(key=lambda r: (-r["points"], r["name"].lower()))
+        for i, r in enumerate(rows):
+            r["rank"] = i + 1
+        return rows
+
+    async def _async_finalize_season(self) -> None:
+        """At month start, record the previous month's champion (top earner)."""
+        now = dt_util.now()
+        prev_end = now.date().replace(day=1) - timedelta(days=1)
+        ym = prev_end.strftime("%Y-%m")
+        if any(c.get("month") == ym for c in self.storage.get_season_champions()):
+            return  # already finalised
+        winners = [r for r in self.get_season_standings(ym) if r["points"] > 0]
+        if not winners:
+            return
+        top = winners[0]
+        self.storage.add_season_champion({
+            "month": ym,
+            "child_id": top["child_id"],
+            "child_name": top["name"],
+            "points": top["points"],
+        })
+        await self.storage.async_save()
+        self.hass.bus.async_fire("taskmate_season_champion", {
+            "month": ym, "child_id": top["child_id"], "child_name": top["name"],
+            "points": top["points"], "timestamp": now.isoformat(),
+        })
+        await self.notifications.fire("season_champion", {
+            "child_name": top["name"], "points": top["points"],
+            "month": prev_end.strftime("%B %Y"),
+            "points_name": self.storage.get_points_name(),
+        })
 
     @callback
     def _async_surprise_bonus_check(self, now: datetime) -> None:

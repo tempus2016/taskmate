@@ -1493,5 +1493,9 @@
   "panel.notif_escalation_parent_label": "Alertar os pais após",
   "panel.notif_escalation_minutes_suffix": "min",
   "notification.monthly_report.name": "Relatório mensal",
-  "notification.monthly_report.description": "Um resumo no início do mês do mês anterior de cada criança (tarefas, pontos, nível, melhor sequência). Desativado por padrão."
+  "notification.monthly_report.description": "Um resumo no início do mês do mês anterior de cada criança (tarefas, pontos, nível, melhor sequência). Desativado por padrão.",
+  "leaderboard.sort_this_month": "Este mês",
+  "leaderboard.last_champion": "Campeão do mês passado: {name} 🏆",
+  "notification.season_champion.name": "Campeão da temporada",
+  "notification.season_champion.description": "Anuncia o vencedor da classificação mensal no início de cada mês. Desativado por padrão."
 }

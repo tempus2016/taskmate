@@ -1493,5 +1493,9 @@
   "panel.notif_escalation_parent_label": "Varsle forelder etter",
   "panel.notif_escalation_minutes_suffix": "min",
   "notification.monthly_report.name": "Månadsrapport",
-  "notification.monthly_report.description": "Eit samandrag ved månadsstart av førre månad for kvart barn (plikter, poeng, nivå, beste rekkje). Av som standard."
+  "notification.monthly_report.description": "Eit samandrag ved månadsstart av førre månad for kvart barn (plikter, poeng, nivå, beste rekkje). Av som standard.",
+  "leaderboard.sort_this_month": "Denne månaden",
+  "leaderboard.last_champion": "Førre månads meister: {name} 🏆",
+  "notification.season_champion.name": "Sesongmeister",
+  "notification.season_champion.description": "Kunngjer vinnaren av den månadlege rangeringa ved månadsstart. Av som standard."
 }
