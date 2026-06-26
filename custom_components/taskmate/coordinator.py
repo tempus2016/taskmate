@@ -448,6 +448,9 @@ class TaskMateCoordinator(
             self._unsub_weekly()
             self._unsub_weekly = None
         self.disarm_mandatory_schedules()
+        # Flush any pending debounced save so an entry unload/reload can't drop
+        # the last mutation (PERF-3).
+        await self.storage.async_save_now()
 
     @callback
     def _async_midnight_streak_check(self, now: datetime) -> None:

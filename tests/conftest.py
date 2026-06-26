@@ -83,6 +83,10 @@ class FakeStore:
     async def async_save(self, data):
         self._data = data
 
+    def async_delay_save(self, data_func, delay=0):
+        # Tests want deterministic persistence: write through immediately.
+        self._data = data_func()
+
 
 _ha_storage_mod = MagicMock()
 _ha_storage_mod.Store = FakeStore
