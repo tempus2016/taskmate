@@ -1154,6 +1154,8 @@
   "rewards.deposit_points": "Set inn {amount}",
   "rewards.editor.enable_pool_mode": "Aktiver spareglasmodus",
   "rewards.editor.enable_pool_mode_helper": "Kvar løning blir eit dedikert spareglas — borna tildeler poeng direkte til eit mål i staden for å bruke frå ein felles saldo",
+  "rewards.editor.expand_to_fit": "Utvid kortet til alle løningar",
+  "rewards.editor.expand_to_fit_helper": "Lèt kortet veksa slik at alle løningar vert viste, i staden for å bla i ei liste med fast høgd (berre designa stilar)",
   "rewards.editor.entity": "Entitet",
   "rewards.editor.entity_helper": "TaskMate oversiktssensor-entiteten",
   "rewards.editor.filter_by_child": "Filtrer etter born",

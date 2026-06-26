@@ -1207,6 +1207,8 @@
   "rewards.deposit_points": "Deposit {amount}",
   "rewards.editor.enable_pool_mode": "Enable Pool Mode (Savings Jars)",
   "rewards.editor.enable_pool_mode_helper": "Each reward becomes a dedicated savings pool — children allocate points directly to a goal rather than spending from a global balance",
+  "rewards.editor.expand_to_fit": "Expand card to fit all rewards",
+  "rewards.editor.expand_to_fit_helper": "Grow the card to show every reward instead of scrolling a fixed-height list (designed styles only)",
   "rewards.editor.entity": "Entity",
   "rewards.editor.entity_helper": "The TaskMate overview sensor entity",
   "rewards.editor.filter_by_child": "Filter by Child",

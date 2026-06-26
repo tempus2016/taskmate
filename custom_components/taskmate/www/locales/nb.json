@@ -1154,6 +1154,8 @@
   "rewards.deposit_points": "Sett inn {amount}",
   "rewards.editor.enable_pool_mode": "Aktiver spareglassmodus",
   "rewards.editor.enable_pool_mode_helper": "Hver belønning blir et dedikert spareglass — barna tildeler poeng direkte til et mål i stedet for å bruke fra en felles saldo",
+  "rewards.editor.expand_to_fit": "Utvid kortet til alle belønninger",
+  "rewards.editor.expand_to_fit_helper": "Lar kortet vokse slik at alle belønninger vises, i stedet for å bla i en liste med fast høyde (kun designede stiler)",
   "rewards.editor.entity": "Entitet",
   "rewards.editor.entity_helper": "TaskMate oversiktssensor-entiteten",
   "rewards.editor.filter_by_child": "Filtrer etter barn",

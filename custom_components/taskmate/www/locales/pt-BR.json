@@ -1154,6 +1154,8 @@
   "rewards.deposit_points": "Depositar {amount}",
   "rewards.editor.enable_pool_mode": "Ativar modo mealheiro",
   "rewards.editor.enable_pool_mode_helper": "Cada recompensa torna-se um mealheiro dedicado — as crianças alocam pontos diretamente a um objetivo em vez de gastar de um saldo global",
+  "rewards.editor.expand_to_fit": "Expandir o cartão para todas as recompensas",
+  "rewards.editor.expand_to_fit_helper": "Aumenta o cartão para mostrar todas as recompensas em vez de rolar uma lista de altura fixa (apenas estilos personalizados)",
   "rewards.editor.entity": "Entidade",
   "rewards.editor.entity_helper": "A entidade sensor de visão geral do TaskMate",
   "rewards.editor.filter_by_child": "Filtrar por Criança",
