@@ -264,6 +264,23 @@ _ha_helpers_entity.DeviceInfo = _FakeDeviceInfo
 _ha_helpers_entity_platform = MagicMock()
 
 
+# ── homeassistant.helpers.intent ─────────────────────────────────────────────
+class _FakeIntentHandler:
+    """Minimal stand-in so intents.py can subclass intent.IntentHandler."""
+
+    slot_schema = None
+
+
+_ha_intent = MagicMock()
+_ha_intent.IntentHandler = _FakeIntentHandler
+_ha_intent.async_register = MagicMock()
+
+# `from homeassistant.helpers import intent` resolves via the helpers package
+# attribute, so the helpers mock must expose our stub.
+_ha_helpers = MagicMock()
+_ha_helpers.intent = _ha_intent
+
+
 # ── homeassistant.util.dt ────────────────────────────────────────────────────
 # coordinator.py imports this as:  from homeassistant.util import dt as dt_util
 
@@ -313,7 +330,8 @@ sys.modules.update(
         "homeassistant.config_entries": MagicMock(),
         "homeassistant.const": MagicMock(),
         "homeassistant.exceptions": _ha_exceptions,
-        "homeassistant.helpers": MagicMock(),
+        "homeassistant.helpers": _ha_helpers,
+        "homeassistant.helpers.intent": _ha_intent,
         "homeassistant.helpers.service": MagicMock(),
         "homeassistant.helpers.storage": _ha_storage_mod,
         "homeassistant.helpers.event": _ha_event,
