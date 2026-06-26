@@ -363,12 +363,20 @@ async def _async_require_linked_child(
         return
     child = coordinator.get_child(child_id)
     linked = getattr(child, "linked_user_id", "") if child else ""
-    if not linked or linked == user_id:
+    if linked == user_id:
         return
     user = await hass.auth.async_get_user(user_id)
     if user is not None and user.is_admin:
         return
-    raise Unauthorized(context=call.context)
+    if linked:
+        # Target child is linked to a different user and caller isn't admin.
+        raise Unauthorized(context=call.context)
+    # Target child is unlinked (kiosk). A user who is themselves linked to a
+    # *different* child must not act through an unlinked child (SEC-4); truly
+    # unlinked/anonymous callers keep the open kiosk behaviour.
+    others = coordinator.get_children() or []
+    if any(getattr(c, "linked_user_id", "") == user_id for c in others):
+        raise Unauthorized(context=call.context)
 
 
 async def _async_register_services(hass: HomeAssistant) -> None:

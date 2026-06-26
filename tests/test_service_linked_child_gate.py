@@ -27,12 +27,13 @@ def _hass(user):
     return hass
 
 
-def _coordinator(linked_user_id):
+def _coordinator(linked_user_id, others=None):
     coord = MagicMock()
     if linked_user_id is None:
         coord.get_child.return_value = None
     else:
         coord.get_child.return_value = MagicMock(linked_user_id=linked_user_id)
+    coord.get_children.return_value = others or []
     return coord
 
 
@@ -84,3 +85,22 @@ async def test_other_non_admin_rejected():
         await tm._async_require_linked_child(
             _hass(MagicMock(is_admin=False)), _call("uid-sibling"), _coordinator("uid-malia"), "child-1"
         )
+
+
+@pytest.mark.asyncio
+async def test_unlinked_child_blocks_known_other_child():
+    """SEC-4: a user linked to a different child can't act via an unlinked child."""
+    coord = _coordinator("", others=[MagicMock(linked_user_id="uid-sibling")])
+    with pytest.raises(tm.Unauthorized):
+        await tm._async_require_linked_child(
+            _hass(MagicMock(is_admin=False)), _call("uid-sibling"), coord, "child-1"
+        )
+
+
+@pytest.mark.asyncio
+async def test_unlinked_child_admin_still_allowed_with_other_links():
+    """An admin is allowed through an unlinked child even when other links exist."""
+    coord = _coordinator("", others=[MagicMock(linked_user_id="uid-sibling")])
+    await tm._async_require_linked_child(
+        _hass(MagicMock(is_admin=True)), _call("uid-parent"), coord, "child-1"
+    )

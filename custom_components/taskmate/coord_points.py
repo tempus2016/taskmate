@@ -233,6 +233,8 @@ class PointsMixin:
 
     async def async_add_points(self, child_id: str, points: int, reason: str = "") -> None:
         """Add points to a child (bonus)."""
+        if points < 0:
+            raise ValueError("points must be non-negative")
         child = self.get_child(child_id)
         if not child:
             raise ValueError(f"Child {child_id} not found")
@@ -262,6 +264,8 @@ class PointsMixin:
 
     async def async_remove_points(self, child_id: str, points: int, reason: str = "") -> None:
         """Remove points from a child (penalty)."""
+        if points < 0:
+            raise ValueError("points must be non-negative")
         child = self.get_child(child_id)
         if not child:
             raise ValueError(f"Child {child_id} not found")
