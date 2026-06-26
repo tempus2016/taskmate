@@ -240,18 +240,20 @@ def _async_update_service_descriptions(hass: HomeAssistant) -> None:
     if not coordinator:
         return
 
-    options: dict[str, list[dict[str, str]]] = {}
-    for field, getter in _DYNAMIC_SELECTOR_FIELDS.items():
-        entities = getattr(coordinator.storage, getter)()
-        options[field] = [{"label": e.name, "value": e.id} for e in entities]
-
-    # Re-registering schemas deep-copies every dynamic service description;
-    # skip the whole pass when the option sets haven't changed since last time.
-    fingerprint = repr(options)
+    # PERF-4: the dynamic selectors mirror children/chores/rewards/etc., which
+    # only change via a save (bumping storage.data_version). Use that as the
+    # fingerprint and short-circuit BEFORE hydrating every entity from its dict
+    # + repr()-ing them — both of which previously ran on every listener fire.
+    fingerprint = coordinator.storage.data_version
     domain_data = hass.data.setdefault(DOMAIN, {})
     if domain_data.get("_service_desc_fingerprint") == fingerprint:
         return
     domain_data["_service_desc_fingerprint"] = fingerprint
+
+    options: dict[str, list[dict[str, str]]] = {}
+    for field, getter in _DYNAMIC_SELECTOR_FIELDS.items():
+        entities = getattr(coordinator.storage, getter)()
+        options[field] = [{"label": e.name, "value": e.id} for e in entities]
 
     base = _load_base_descriptions()
 
