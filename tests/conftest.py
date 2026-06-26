@@ -196,6 +196,35 @@ _ha_components_select = MagicMock()
 _ha_components_select.SelectEntity = _FakeSelectEntity
 
 
+class _FakeTodoItem:
+    def __init__(self, summary=None, uid=None, status=None, **kw):
+        self.summary = summary
+        self.uid = uid
+        self.status = status
+
+
+class _FakeTodoItemStatus:
+    NEEDS_ACTION = "needs_action"
+    COMPLETED = "completed"
+
+
+class _FakeTodoListEntity:
+    pass
+
+
+class _FakeTodoListEntityFeature:
+    UPDATE_TODO_ITEM = 4
+    CREATE_TODO_ITEM = 1
+    DELETE_TODO_ITEM = 2
+
+
+_ha_components_todo = MagicMock()
+_ha_components_todo.TodoItem = _FakeTodoItem
+_ha_components_todo.TodoItemStatus = _FakeTodoItemStatus
+_ha_components_todo.TodoListEntity = _FakeTodoListEntity
+_ha_components_todo.TodoListEntityFeature = _FakeTodoListEntityFeature
+
+
 class _FakeDeviceInfo(dict):
     """DeviceInfo behaves like a TypedDict; accept kwargs like the real one."""
 
@@ -271,6 +300,7 @@ _ha_components.calendar = _ha_components_calendar
 _ha_components.button = _ha_components_button
 _ha_components.number = _ha_components_number
 _ha_components.select = _ha_components_select
+_ha_components.todo = _ha_components_todo
 
 sys.modules.update(
     {
@@ -293,6 +323,7 @@ sys.modules.update(
         "homeassistant.components.button": _ha_components_button,
         "homeassistant.components.number": _ha_components_number,
         "homeassistant.components.select": _ha_components_select,
+        "homeassistant.components.todo": _ha_components_todo,
         "homeassistant.components.calendar": _ha_components_calendar,
         "homeassistant.components.websocket_api": _ha_websocket_api,
         "homeassistant.util": _ha_util,
