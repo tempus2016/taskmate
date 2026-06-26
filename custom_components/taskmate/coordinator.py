@@ -72,6 +72,8 @@ class TaskMateCoordinator(
         # Per-build memo for the availability matrix (PERF-1). Non-None only
         # inside `availability_build_scope()`; see coord_chores/coord_assignments.
         self._avail_cache: dict | None = None
+        # (data_version, snapshot) cache for _async_update_data (PERF-2).
+        self._data_snapshot_cache: tuple[int, dict[str, Any]] | None = None
 
     def difficulty_multiplier(self, tier: str) -> float:
         """Return the points multiplier for a difficulty tier.
@@ -506,9 +508,27 @@ class TaskMateCoordinator(
         self.hass.async_create_task(self.async_prune_history(days))
 
     async def _async_update_data(self) -> dict[str, Any]:
-        """Fetch data from storage."""
+        """Fetch data from storage.
+
+        PERF-2: rebuilding every child/chore/completion from its stored dict on
+        each 30 s poll is wasteful when nothing changed. Cache the built dict
+        keyed by ``storage.data_version`` (bumped on every save) and reuse it
+        until the next mutation. Availability is recomputed in the sensor layer
+        from live entity state, not from this dict, so a stale-version reuse
+        never staleness-bugs availability — listeners still re-read each tick.
+        """
+        # May stop sessions (mutates + saves -> bumps the version), so run first.
         await self._async_auto_stop_capped_sessions()
         self._refresh_tracked_availability_entities()
+        version = self.storage.data_version
+        cached = getattr(self, "_data_snapshot_cache", None)
+        if cached is not None and cached[0] == version:
+            return cached[1]
+        snapshot = self._build_data_snapshot()
+        self._data_snapshot_cache = (version, snapshot)
+        return snapshot
+
+    def _build_data_snapshot(self) -> dict[str, Any]:
         return {
             "children": self.storage.get_children(),
             "chores": self.storage.get_chores(),
