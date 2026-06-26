@@ -1491,5 +1491,7 @@
   "notification.mandatory_parent_alert.description": "Alerts a parent when a mandatory chore is still incomplete after the parent escalation delay. Off by default.",
   "panel.notif_escalation_reminder_label": "Remind again after",
   "panel.notif_escalation_parent_label": "Alert parent after",
-  "panel.notif_escalation_minutes_suffix": "min"
+  "panel.notif_escalation_minutes_suffix": "min",
+  "notification.monthly_report.name": "Monthly report",
+  "notification.monthly_report.description": "A start-of-month recap of each child's previous month (chores, points, level, best streak). Off by default."
 }

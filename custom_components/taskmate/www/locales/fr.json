@@ -1491,5 +1491,7 @@
   "notification.mandatory_parent_alert.description": "Alerte un parent lorsqu'une tâche obligatoire est toujours incomplète après le délai d'escalade parent. Désactivé par défaut.",
   "panel.notif_escalation_reminder_label": "Rappeler à nouveau après",
   "panel.notif_escalation_parent_label": "Alerter le parent après",
-  "panel.notif_escalation_minutes_suffix": "min"
+  "panel.notif_escalation_minutes_suffix": "min",
+  "notification.monthly_report.name": "Rapport mensuel",
+  "notification.monthly_report.description": "Un récapitulatif en début de mois du mois précédent de chaque enfant (tâches, points, niveau, meilleure série). Désactivé par défaut."
 }

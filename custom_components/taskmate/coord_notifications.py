@@ -26,6 +26,7 @@ from .const import (
     NOTIF_TYPE_LEVEL_UP,
     NOTIF_TYPE_MANDATORY_PARENT_ALERT,
     NOTIF_TYPE_MANDATORY_REMINDER,
+    NOTIF_TYPE_MONTHLY_REPORT,
     NOTIF_TYPE_PENDING_CHORE_APPROVAL,
     NOTIF_TYPE_PENDING_REWARD_CLAIM,
     NOTIF_TYPE_STREAK_AT_RISK,
@@ -64,6 +65,7 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_CELEBRATION,            "both",   False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_MANDATORY_REMINDER,     "child",  False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_MANDATORY_PARENT_ALERT, "parent", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_MONTHLY_REPORT,         "parent", False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {
@@ -190,6 +192,7 @@ class NotificationCoordinator:
             "tier": 3,
             "message": "Alex reached level 5!",
             "summary": "• Alex: 5 chores, 50 Stars earned",
+            "month": "January 2026",
             "points_name": self.storage.get_points_name(),
         }
         message = "[TEST] " + self._render_template(meta, ctx)
@@ -246,6 +249,7 @@ class NotificationCoordinator:
             NOTIF_TYPE_CELEBRATION:            "🎉 {message}",
             NOTIF_TYPE_MANDATORY_REMINDER:     "{child_name}, you still need to do '{chore_name}'.",
             NOTIF_TYPE_MANDATORY_PARENT_ALERT: "{child_name} still hasn't done the mandatory chore '{chore_name}'.",
+            NOTIF_TYPE_MONTHLY_REPORT:         "TaskMate {month} report:\n{summary}",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:
