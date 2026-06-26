@@ -4,9 +4,10 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
-from custom_components.taskmate.models import Chore, Child
-from custom_components.taskmate.todo import TaskMateChildTodoList
 from homeassistant.components.todo import TodoItem, TodoItemStatus
+
+from custom_components.taskmate.models import Child, Chore
+from custom_components.taskmate.todo import TaskMateChildTodoList
 
 
 def run(coro):

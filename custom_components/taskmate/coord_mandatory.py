@@ -1,8 +1,9 @@
 """Mandatory-chore detection, scheduling, and resolution (#532)."""
 from __future__ import annotations
 
-from datetime import date, datetime, time as dt_time, timedelta
 import logging
+from datetime import date, datetime, timedelta
+from datetime import time as dt_time
 
 from homeassistant.core import callback
 from homeassistant.helpers.event import (

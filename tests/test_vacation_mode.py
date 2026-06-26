@@ -15,7 +15,6 @@ from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.models import Child
 from custom_components.taskmate.websocket import _validate_vacation_periods
 
-
 UTC = dt.timezone.utc
 
 

@@ -620,10 +620,10 @@ class PointsMixin:
             try:
                 days = int(days_str.strip())
                 points = int(points_str.strip())
-            except ValueError:
+            except ValueError as err:
                 raise ValueError(
                     f"Invalid numbers in '{part}' — days and points must be whole numbers"
-                )
+                ) from err
             if days < 1:
                 raise ValueError(f"Days must be at least 1, got {days}")
             if points < 1:

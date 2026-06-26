@@ -6,8 +6,8 @@ import logging
 from pathlib import Path
 from typing import Final
 
-from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN

@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from custom_components.taskmate import websocket as ws
-from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.const import DOMAIN
+from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.storage import TaskMateStorage
 
 

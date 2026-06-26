@@ -1,8 +1,8 @@
 """Storage management for TaskMate integration."""
 from __future__ import annotations
 
-from datetime import date, timedelta
 import logging
+from datetime import date, timedelta
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -10,10 +10,26 @@ from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
 from .models import (
-    Badge, AwardedBadge, Bonus, Challenge, Child, Chore, ChoreCompletion,
-    CustomNotification, MandatoryMiss, NotificationConfig, NotificationRoute,
-    ParentRecipient, Penalty, PoolAllocation, Quest, Reward, RewardClaim,
-    PointsTransaction, TaskGroup, TimedSession,
+    AwardedBadge,
+    Badge,
+    Bonus,
+    Challenge,
+    Child,
+    Chore,
+    ChoreCompletion,
+    CustomNotification,
+    MandatoryMiss,
+    NotificationConfig,
+    NotificationRoute,
+    ParentRecipient,
+    Penalty,
+    PointsTransaction,
+    PoolAllocation,
+    Quest,
+    Reward,
+    RewardClaim,
+    TaskGroup,
+    TimedSession,
 )
 
 _LOGGER = logging.getLogger(__name__)

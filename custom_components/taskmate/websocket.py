@@ -1182,7 +1182,7 @@ def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, s
         })
 
     periods.sort(key=lambda p: p["start"])
-    for prev, cur in zip(periods, periods[1:]):
+    for prev, cur in zip(periods, periods[1:], strict=False):
         if cur["start"] < prev["end"]:
             return None, (
                 f"'{cur['label'] or cur['id']}' overlaps "

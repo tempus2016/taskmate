@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from custom_components.taskmate.models import Child
 from custom_components.taskmate.websocket import (
-    _build_state_snapshot,
-    _SUBKEY_SETTINGS,
     _ALLOWED_CARD_DESIGNS,
+    _SUBKEY_SETTINGS,
+    _build_state_snapshot,
 )
 
 from .test_assignment_modes import _coord
@@ -37,7 +37,9 @@ def test_allowed_card_designs_set():
 
 def test_overview_sensor_exposes_card_design_default():
     from unittest.mock import MagicMock
+
     from custom_components.taskmate.sensor import TaskMateOverallStatsSensor
+
     from .test_sensor_attributes import _stress_coordinator
 
     coord = _stress_coordinator()
@@ -47,7 +49,9 @@ def test_overview_sensor_exposes_card_design_default():
 
 def test_overview_sensor_reflects_stored_card_design():
     from unittest.mock import MagicMock
+
     from custom_components.taskmate.sensor import TaskMateOverallStatsSensor
+
     from .test_sensor_attributes import _stress_coordinator
 
     coord = _stress_coordinator()
@@ -59,6 +63,7 @@ def test_overview_sensor_reflects_stored_card_design():
 def _settings_schema():
     """The update_settings websocket schema, wrapped for direct validation."""
     import voluptuous as vol
+
     from custom_components.taskmate.websocket import _UPDATE_SETTINGS_SCHEMA, WS_UPDATE_SETTINGS
     return vol.Schema(_UPDATE_SETTINGS_SCHEMA, extra=vol.ALLOW_EXTRA), WS_UPDATE_SETTINGS
 
@@ -84,7 +89,9 @@ def test_every_routed_setting_is_in_the_schema():
     # (in _SUBKEY_SETTINGS / _TOP_LEVEL_SETTINGS) but absent from the schema, so
     # voluptuous rejects it before the handler runs.
     from custom_components.taskmate.websocket import (
-        _UPDATE_SETTINGS_SCHEMA, _SUBKEY_SETTINGS, _TOP_LEVEL_SETTINGS,
+        _SUBKEY_SETTINGS,
+        _TOP_LEVEL_SETTINGS,
+        _UPDATE_SETTINGS_SCHEMA,
     )
     schema_keys = {str(k) for k in _UPDATE_SETTINGS_SCHEMA}
     routed = _SUBKEY_SETTINGS | _TOP_LEVEL_SETTINGS

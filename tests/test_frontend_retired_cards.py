@@ -8,8 +8,9 @@ live card and never via heuristic diffing (which once wiped every resource).
 from __future__ import annotations
 
 import sys
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 # conftest stubs the whole `custom_components.taskmate.frontend` module (its HA
 # deps aren't stubbed suite-wide). To exercise the real cleanup logic, supply

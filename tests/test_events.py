@@ -8,7 +8,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.models import (
-    Bonus, Child, ChoreCompletion, Chore, Penalty, Reward, RewardClaim,
+    Bonus,
+    Child,
+    Chore,
+    ChoreCompletion,
+    Penalty,
+    Reward,
+    RewardClaim,
 )
 
 UTC = dt.timezone.utc

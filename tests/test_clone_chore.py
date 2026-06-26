@@ -107,7 +107,7 @@ def test_clone_missing_chore_raises():
     coord.get_chore = MagicMock(return_value=None)
     try:
         run(coord.async_clone_chore("nope"))
-        assert False, "expected ValueError"
+        raise AssertionError("expected ValueError")
     except ValueError as e:
         assert "not found" in str(e)
 

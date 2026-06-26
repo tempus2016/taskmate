@@ -1,11 +1,19 @@
 """Tests for coord_badges."""
 from __future__ import annotations
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime, timezone
+from unittest.mock import AsyncMock, MagicMock
 
-from custom_components.taskmate.coord_badges import BUILTIN_CATALOGUE, BadgeCoordinator, resolve_metric, TRIGGER_METRICS, badge_relevant_to_trigger, criterion_met
+import pytest
+
+from custom_components.taskmate.coord_badges import (
+    BUILTIN_CATALOGUE,
+    TRIGGER_METRICS,
+    BadgeCoordinator,
+    badge_relevant_to_trigger,
+    criterion_met,
+    resolve_metric,
+)
 from custom_components.taskmate.models import AwardedBadge, Badge, BadgeCriterion, Child, RewardClaim
 
 
