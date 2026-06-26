@@ -993,6 +993,28 @@ class TaskMateStorage:
             self._data["quest_progress"] = {}
         if not isinstance(self._data.get("challenge_progress"), dict):
             self._data["challenge_progress"] = {}
+        self._sanitize_imported_records()
+
+    def _sanitize_imported_records(self) -> None:
+        """Re-validate untrusted inner records after a full-replace import (SEC-5).
+
+        ``import_data`` deep-copies the payload in with only top-level coercion,
+        so a crafted backup could smuggle a ``photo_url`` that bypasses the
+        ``is_taskmate_photo_url`` gate enforced at the ``complete_chore``
+        boundary. Strip any completion ``photo_url`` that isn't one of our own
+        well-formed photo URLs so the panel never renders a foreign/dangerous one.
+        """
+        from .photos import is_taskmate_photo_url
+        for comp in self._data.get("completions", []):
+            if not isinstance(comp, dict):
+                continue
+            url = comp.get("photo_url")
+            if url and not is_taskmate_photo_url(url):
+                _LOGGER.warning(
+                    "Import: dropped non-TaskMate photo_url on completion %s",
+                    comp.get("id", "?"),
+                )
+                comp["photo_url"] = ""
 
     def replace_completions(self, completions: list[ChoreCompletion]) -> None:
         """Replace all completions with the given list."""
