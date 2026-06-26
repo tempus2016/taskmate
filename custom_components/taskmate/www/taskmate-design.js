@@ -242,5 +242,42 @@
   // wrapper element; the [data-tm-design] selector variant applies there.
   const cssText = TOKENS + "\n" + KIT;
 
-  window.__taskmate_design = { IDS, resolve, isDark, apply, editorOptions, styles, cssText, tokensCSS: TOKENS };
+  // ── Shared header-colour picker (QUAL-3) ───────────────────────────────
+  // The same ~30-line colour-picker editor block was copy-pasted into 17 card
+  // editors. They render it via a thin `_renderColourPicker` wrapper that calls
+  // this helper, passing their own update method as onInput/onPreset/onReset.
+  const _DEFAULT_COLOUR_PRESETS = ["#e67e22", "#27ae60", "#9b59b6", "#f1c40f", "#e74c3c", "#34495e"];
+
+  function colourPicker(opts) {
+    const base = customElements.get("hui-masonry-view") || customElements.get("hui-view");
+    const html = base ? Object.getPrototypeOf(base).prototype.html : null;
+    if (!html) return "";
+    const { defaultValue, current, label, helper, resetLabel, onInput, onPreset, onReset } = opts;
+    const presets = [defaultValue, ...(opts.presets || _DEFAULT_COLOUR_PRESETS)];
+    const isActive = (c) => String(c).toLowerCase() === String(current).toLowerCase();
+    return html`
+      <div class="colour-field">
+        <span class="colour-field-label">${label}</span>
+        <div class="colour-field-body">
+          <label class="colour-swatch-wrapper">
+            <input type="color" .value=${current} @input=${(e) => onInput(e.target.value)} />
+            <span class="colour-swatch-preview" style="background:${current}"></span>
+          </label>
+          <span class="colour-hex">${current}</span>
+          <div class="colour-presets">
+            ${presets.map((p) => html`
+              <button class="preset-swatch ${isActive(p) ? "active" : ""}"
+                style="background:${p}" title=${p}
+                @click=${(e) => { e.preventDefault(); onPreset(p); }}></button>
+            `)}
+          </div>
+          <button class="colour-reset"
+            @click=${(e) => { e.preventDefault(); onReset(); }}>${resetLabel}</button>
+        </div>
+        <div class="colour-helper">${helper}</div>
+      </div>
+    `;
+  }
+
+  window.__taskmate_design = { IDS, resolve, isDark, apply, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker };
 })();
