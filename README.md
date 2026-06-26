@@ -1434,6 +1434,13 @@ Beyond the sensors above, TaskMate also exposes:
  
 ## Changelog
  
+### v4.4.1
+ 
+**Fixes**
+- **Photo-proof upload no longer fails on long sessions** — the child card's photo upload sent a manually-cached access token that expires after ~30 min, so an aged session got a `401` shown as the misleading *"Upload failed. Check your connection."* It now refreshes the token when expired and retries once on a `401`. ([#636](https://github.com/tempus2016/taskmate/pull/636))
+- **No more `taskmate-panel` "already defined" console error after upgrades** — guarded the panel's `customElements.define()` so a browser briefly holding both the old and new panel module (different `?v=` cache-busters) no longer throws an uncaught error. ([#636](https://github.com/tempus2016/taskmate/pull/636))
+- **Config-entity defaults now match the applied bonus** — the `weekend_multiplier` and `perfect_week_bonus` number entities defaulted to `1.0`/`0`, but the bonus logic falls back to `2.0`/`50` when unset, so a fresh install displayed values that didn't match what was actually applied. Defaults aligned. ([#635](https://github.com/tempus2016/taskmate/pull/635))
+ 
 ### v4.4.0
  
 **New features**
