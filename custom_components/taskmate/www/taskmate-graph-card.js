@@ -907,8 +907,9 @@ class TaskMateGraphCard extends LitElement {
 
   _formatTooltipDate(dateStr) {
     const d = new Date(dateStr + "T12:00:00");
-    const today = new Date().toLocaleDateString("en-CA");
-    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString("en-CA");
+    const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString("en-CA", { timeZone: tz });
     if (dateStr === today) return this._t('common.today');
     if (dateStr === yesterday) return this._t('common.yesterday');
     return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
