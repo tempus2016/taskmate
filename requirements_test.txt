@@ -1,0 +1,8 @@
+# Test dependencies for TaskMate (CI-1).
+# The test suite stubs all of Home Assistant in tests/conftest.py, so it needs
+# only pytest + the asyncio plugin (pytest.ini sets asyncio_mode = auto). The
+# heavy pytest-homeassistant-custom-component harness is intentionally NOT used
+# — pinning these keeps CI deterministic (a harness release can't red/green-flip
+# the required check).
+pytest==9.0.3
+pytest-asyncio==1.4.0
