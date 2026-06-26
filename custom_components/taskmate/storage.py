@@ -1210,6 +1210,25 @@ class TaskMateStorage:
             self._data["settings"] = {}
         self._data["settings"][key] = value
 
+    def get_settings(self) -> dict[str, Any]:
+        """The whole settings dict (live reference; callers must not assume a copy)."""
+        return self._data.get("settings", {}) or {}
+
+    # ── Typed top-level flags (ARCH-1) ────────────────────────────────────
+    # These live at the root of _data (not under "settings"). Accessors keep the
+    # key names + defaults in one place so setup/migration logic can't drift.
+    def is_initial_setup_done(self) -> bool:
+        return bool(self._data.get("_initial_setup_done"))
+
+    def mark_initial_setup_done(self) -> None:
+        self._data["_initial_setup_done"] = True
+
+    def is_badges_backfill_pending(self) -> bool:
+        return bool(self._data.get("badges_backfill_pending"))
+
+    def clear_badges_backfill_pending(self) -> None:
+        self._data.pop("badges_backfill_pending", None)
+
     # Settings
     def get_points_name(self) -> str:
         """Get the points currency name."""

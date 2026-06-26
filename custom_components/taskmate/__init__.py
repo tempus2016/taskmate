@@ -130,12 +130,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Store initial settings from config entry only on first setup
     # (when storage has never been written yet). Once storage exists, the user
     # controls these values via Settings — never overwrite on restart.
-    if not coordinator.storage._data.get("_initial_setup_done"):
+    if not coordinator.storage.is_initial_setup_done():
         if entry.data.get("points_name"):
             coordinator.storage.set_points_name(entry.data["points_name"])
         if entry.data.get("points_icon"):
             coordinator.storage.set_points_icon(entry.data["points_icon"])
-        coordinator.storage._data["_initial_setup_done"] = True
+        coordinator.storage.mark_initial_setup_done()
     await coordinator.storage.async_save()
 
     hass.data[DOMAIN][entry.entry_id] = coordinator

@@ -259,9 +259,9 @@ class TaskMateCoordinator(
         if self.notifications.ensure_parent_default_routes():
             await self.storage.async_save()
         # Achievement badges: silent retroactive backfill on first install
-        if self.storage._data.get("badges_backfill_pending"):
+        if self.storage.is_badges_backfill_pending():
             await self.badges.rebuild_all()
-            self.storage._data.pop("badges_backfill_pending", None)
+            self.storage.clear_badges_backfill_pending()
             await self.storage.async_save()
         await self._async_backfill_career_history()
         await self._async_stop_stale_timed_sessions()
@@ -543,7 +543,7 @@ class TaskMateCoordinator(
             "points_transactions": self.storage.get_points_transactions(),
             "points_name": self.storage.get_points_name(),
             "points_icon": self.storage.get_points_icon(),
-            "settings": self.storage._data.get("settings", {}),
+            "settings": self.storage.get_settings(),
             "penalties": self.storage.get_penalties(),
             "bonuses": self.storage.get_bonuses(),
             "pool_allocations": self.storage.get_pool_allocations(),
