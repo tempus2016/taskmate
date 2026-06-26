@@ -41,6 +41,7 @@ class ChoresMixin:
         points: int = 10,
         description: str = "",
         assigned_to: list[str] | None = None,
+        depends_on: list[str] | None = None,
         requires_approval: bool = True,
         time_category: str = "anytime",
         claim_allowance_minutes: int = 0,
@@ -90,6 +91,7 @@ class ChoresMixin:
             points=points,
             description=description,
             assigned_to=pool,
+            depends_on=depends_on or [],
             requires_approval=requires_approval,
             time_category=time_category,
             claim_allowance_minutes=max(0, int(claim_allowance_minutes or 0)),
@@ -1141,6 +1143,24 @@ class ChoresMixin:
         visibility_operator = getattr(chore, 'visibility_operator', 'equals')
         if not self._is_visibility_entity_active(visibility_entity, visibility_state, visibility_operator):
             return False
+
+        # Chore dependencies (FEAT-1): this chore unlocks only once every chore
+        # it depends on has an approved completion today by this same child.
+        depends_on = getattr(chore, 'depends_on', []) or []
+        if depends_on:
+            dep_today = dt_util.as_local(dt_util.now()).date()
+            completions = self.storage.get_completions()
+            for dep_id in depends_on:
+                satisfied = any(
+                    c.chore_id == dep_id
+                    and c.child_id == child_id
+                    and c.approved
+                    and not getattr(c, 'bonus_subtask_id', '')
+                    and dt_util.as_local(c.completed_at).date() == dep_today
+                    for c in completions
+                )
+                if not satisfied:
+                    return False
 
         schedule_mode = getattr(chore, 'schedule_mode', 'specific_days')
 

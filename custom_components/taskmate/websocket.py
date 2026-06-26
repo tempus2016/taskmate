@@ -438,7 +438,7 @@ async def _ws_list_ha_users(hass, connection, msg, coordinator):
 # assignment_current_child_id, publish_calendar_published_dates, etc.) is
 # coordinator-managed runtime state and intentionally not exposed.
 _CHORE_EDITABLE_FIELDS = {
-    "name", "description", "points", "assigned_to", "requires_approval",
+    "name", "description", "points", "assigned_to", "depends_on", "requires_approval",
     "time_category", "claim_allowance_minutes", "daily_limit", "completion_sound",
     "difficulty",
     "schedule_mode", "due_days", "recurrence", "recurrence_day",
@@ -460,6 +460,7 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("description"): str,
         vol.Optional("points"): vol.All(int, vol.Range(min=0)),
         vol.Optional("assigned_to"): [str],
+        vol.Optional("depends_on"): [str],
         vol.Optional("requires_approval"): bool,
         vol.Optional("time_category"): str,
         vol.Optional("claim_allowance_minutes"): vol.All(int, vol.Range(min=0)),

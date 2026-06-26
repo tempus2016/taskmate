@@ -197,12 +197,14 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
     chores_list = []
     for c in chores:
         assigned_to = c.assigned_to if isinstance(c.assigned_to, list) else []
+        depends_on = c.depends_on if isinstance(getattr(c, "depends_on", None), list) else []
         record: dict = {
             "id": c.id,
             "name": c.name,
             "points": c.points,
             "time_category": c.time_category,
             "assigned_to": assigned_to,
+            "depends_on": depends_on,
             "schedule_mode": getattr(c, 'schedule_mode', 'specific_days'),
             "enabled": getattr(c, 'enabled', True),
             "assignment_mode": getattr(c, 'assignment_mode', 'everyone'),

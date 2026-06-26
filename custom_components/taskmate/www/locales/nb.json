@@ -1478,5 +1478,7 @@
   "panel.toast_challenge_added": "Utfordring lagt til",
   "panel.toast_challenge_updated": "Utfordring oppdatert",
   "panel.settings_allow_negative_label": "Tillat negativ saldo",
-  "panel.settings_allow_negative_hint": "La straff trekke et barns saldo under null i stedet for å stoppe på null."
+  "panel.settings_allow_negative_hint": "La straff trekke et barns saldo under null i stedet for å stoppe på null.",
+  "panel.chore_depends_label": "Avhenger av",
+  "panel.chore_depends_hint": "Denne oppgaven er skjult til de valgte oppgavene er godkjent for barnet i dag."
 }
