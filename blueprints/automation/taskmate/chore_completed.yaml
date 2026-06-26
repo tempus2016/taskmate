@@ -1,0 +1,37 @@
+blueprint:
+  name: TaskMate — Chore completed
+  description: >
+    Run any action when a child completes a TaskMate chore (e.g. flash a light,
+    play a sound, send a notification). The triggering child's name, the chore
+    name, points and difficulty are available to your action via
+    `trigger.event.data` (child_name, chore_name, points, difficulty).
+  domain: automation
+  source_url: https://github.com/tempus2016/taskmate/blob/main/blueprints/automation/taskmate/chore_completed.yaml
+  input:
+    child_filter:
+      name: Only this child (optional)
+      description: Leave blank to react to every child; otherwise enter the exact child name.
+      default: ""
+      selector:
+        text: {}
+    chore_action:
+      name: Action
+      description: What to do when the chore is completed.
+      selector:
+        action: {}
+
+mode: queued
+max: 10
+
+triggers:
+  - trigger: event
+    event_type: taskmate_chore_completed
+
+variables:
+  child_filter: !input child_filter
+
+conditions:
+  - condition: template
+    value_template: "{{ child_filter == '' or trigger.event.data.child_name == child_filter }}"
+
+actions: !input chore_action

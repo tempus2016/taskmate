@@ -1,0 +1,36 @@
+blueprint:
+  name: TaskMate — Level up
+  description: >
+    Celebrate when a child reaches a new XP level — flash lights, play a fanfare,
+    announce on a speaker, etc. The child's name and new level are available to
+    your action via `trigger.event.data` (child_name, level).
+  domain: automation
+  source_url: https://github.com/tempus2016/taskmate/blob/main/blueprints/automation/taskmate/level_up.yaml
+  input:
+    child_filter:
+      name: Only this child (optional)
+      description: Leave blank to react to every child; otherwise enter the exact child name.
+      default: ""
+      selector:
+        text: {}
+    levelup_action:
+      name: Action
+      description: What to do when the child levels up.
+      selector:
+        action: {}
+
+mode: queued
+max: 10
+
+triggers:
+  - trigger: event
+    event_type: taskmate_level_up
+
+variables:
+  child_filter: !input child_filter
+
+conditions:
+  - condition: template
+    value_template: "{{ child_filter == '' or trigger.event.data.child_name == child_filter }}"
+
+actions: !input levelup_action
