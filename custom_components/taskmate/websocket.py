@@ -143,6 +143,10 @@ WS_NOTIF_SET_STREAK_CUTOFF: Final  = "taskmate/notifications/set_streak_cutoff"
 WS_NOTIF_SET_ESCALATION: Final     = "taskmate/notifications/set_escalation"
 WS_NOTIF_SEND_TEST: Final          = "taskmate/notifications/send_test"
 
+# Calendar ICS feed (FEAT-10)
+WS_CAL_GET_URL: Final     = "taskmate/calendar/get_ics_url"
+WS_CAL_REGEN_TOKEN: Final = "taskmate/calendar/regenerate_ics_token"
+
 # Admin audit log
 WS_AUDIT_LIST: Final  = "taskmate/audit/list"
 WS_AUDIT_CLEAR: Final = "taskmate/audit/clear"
@@ -1864,6 +1868,37 @@ async def ws_notif_send_test(hass, connection, msg, coordinator):
 
 
 # ---------------------------------------------------------------------------
+# Calendar ICS feed (FEAT-10)
+# ---------------------------------------------------------------------------
+
+def _build_ics_url(hass, token: str) -> str:
+    from .http_calendar import CALENDAR_URL
+    base = ""
+    try:
+        from homeassistant.helpers.network import get_url
+        base = get_url(hass, prefer_external=True)
+    except Exception:  # noqa: BLE001 - no configured URL yet
+        base = ""
+    return f"{base}{CALENDAR_URL}?token={token}"
+
+
+@websocket_api.websocket_command({vol.Required("type"): WS_CAL_GET_URL})
+@websocket_api.async_response
+@_admin_only
+async def ws_cal_get_url(hass, connection, msg, coordinator):
+    token = await coordinator.async_get_or_create_ics_token()
+    connection.send_result(msg["id"], {"token": token, "url": _build_ics_url(hass, token)})
+
+
+@websocket_api.websocket_command({vol.Required("type"): WS_CAL_REGEN_TOKEN})
+@websocket_api.async_response
+@_admin_only
+async def ws_cal_regen_token(hass, connection, msg, coordinator):
+    token = await coordinator.async_regenerate_ics_token()
+    connection.send_result(msg["id"], {"token": token, "url": _build_ics_url(hass, token)})
+
+
+# ---------------------------------------------------------------------------
 # Admin audit log
 # ---------------------------------------------------------------------------
 
@@ -2018,6 +2053,7 @@ _COMMANDS = (
     ws_notif_upsert_custom, ws_notif_delete_custom,
     ws_notif_list_notify, ws_notif_set_streak_cutoff, ws_notif_send_test,
     ws_notif_set_escalation,
+    ws_cal_get_url, ws_cal_regen_token,
 )
 
 
