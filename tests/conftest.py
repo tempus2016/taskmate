@@ -7,9 +7,9 @@ statements resolve without needing a real HA installation.
 from __future__ import annotations
 
 import asyncio
+import datetime as _dt
 import sys
 from unittest.mock import AsyncMock, MagicMock
-import datetime as _dt
 
 import pytest
 

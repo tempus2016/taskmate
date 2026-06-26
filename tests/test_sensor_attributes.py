@@ -15,7 +15,6 @@ from datetime import timezone
 from unittest.mock import MagicMock
 
 from custom_components.taskmate import sensor as sensor_module
-from .conftest import dt_util_mock
 from custom_components.taskmate.models import (
     AwardedBadge,
     Badge,
@@ -37,6 +36,7 @@ from custom_components.taskmate.sensor import (
     PendingApprovalsSensor,
 )
 
+from .conftest import dt_util_mock
 
 MAX_ATTR_BYTES = 16384  # Home Assistant recorder limit
 UTC = timezone.utc

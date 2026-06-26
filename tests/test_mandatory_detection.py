@@ -6,7 +6,7 @@ import datetime as dt
 from unittest.mock import AsyncMock, MagicMock
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
-from custom_components.taskmate.models import Chore, Child, ChoreCompletion
+from custom_components.taskmate.models import Child, Chore, ChoreCompletion
 
 
 def run(coro):

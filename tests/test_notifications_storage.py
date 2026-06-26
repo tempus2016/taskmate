@@ -4,7 +4,9 @@ from __future__ import annotations
 import pytest
 
 from custom_components.taskmate.models import (
-    CustomNotification, NotificationRoute, ParentRecipient,
+    CustomNotification,
+    NotificationRoute,
+    ParentRecipient,
 )
 from custom_components.taskmate.storage import TaskMateStorage
 

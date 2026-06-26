@@ -1,11 +1,12 @@
 """Tests for badge storage layer."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock
 
-from custom_components.taskmate.models import Badge, BadgeCriterion, AwardedBadge, Child
+import pytest
+
 from custom_components.taskmate.coord_badges import BUILTIN_CATALOGUE
+from custom_components.taskmate.models import AwardedBadge, Badge, BadgeCriterion, Child
 from custom_components.taskmate.storage import TaskMateStorage
 
 

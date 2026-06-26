@@ -9,10 +9,10 @@ that already raises ``ServiceValidationError`` must pass through untouched.
 from __future__ import annotations
 
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 import voluptuous as vol
-from unittest.mock import AsyncMock
 
 import custom_components.taskmate as tm
 

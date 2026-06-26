@@ -135,8 +135,9 @@ def test_prune_deletes_orphaned_evidence_photos(monkeypatch):
     # the photos dir doesn't grow forever. Kept/pending completions keep theirs.
     import datetime as _dt
 
-    from custom_components.taskmate import coord_points
     from homeassistant.util import dt as dt_util
+
+    from custom_components.taskmate import coord_points
 
     deleted = []
     monkeypatch.setattr(

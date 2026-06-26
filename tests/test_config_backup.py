@@ -104,7 +104,7 @@ def test_import_config_rejects_bad_payload():
     for bad in ({}, {"data": "x"}, "nope", {"taskmate_export_version": 1}):
         try:
             run(coord.async_import_config(bad))
-            assert False, f"expected ValueError for {bad!r}"
+            raise AssertionError(f"expected ValueError for {bad!r}")
         except ValueError:
             pass
     coord.storage.import_data.assert_not_called()
