@@ -269,11 +269,12 @@ class TaskMateChildCard extends LitElement {
         case 'fart10':
           this._playAudioFile('fart10.mp3');
           break;
-        case 'fart_random':
+        case 'fart_random': {
           // Pick a random fart sound (1-10)
           const randomFartNum = Math.floor(Math.random() * 10) + 1;
           this._playAudioFile(`fart${randomFartNum}.mp3`);
           break;
+        }
         default:
           this._playCoinSound(ctx, now);
       }
@@ -1999,10 +2000,6 @@ class TaskMateChildCard extends LitElement {
     const allCompletions = attrs.todays_completions || attrs.completions || [];
     const todaysCompletions = this._filterCompletionsForToday(allCompletions);
 
-    // Debug logging to help troubleshoot daily limit issues
-    if (allCompletions.length > 0 || todaysCompletions.length > 0) {
-    }
-
     return html`
       <ha-card>
         <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#9b59b6')}; }</style>
@@ -3029,10 +3026,6 @@ class TaskMateChildCard extends LitElement {
     }
 
     const isCompletedForToday = completionsToday >= dailyLimit;
-
-    // Debug logging to help troubleshoot daily limit issues
-    if (childCompletionsToday.length > 0 || isCompletedForToday || hasOptimisticCompletion) {
-    }
 
     // Check if the most recent completion is pending approval
     const hasPendingCompletion = childCompletionsToday.some((comp) => !comp.approved) || hasOptimisticCompletion;
