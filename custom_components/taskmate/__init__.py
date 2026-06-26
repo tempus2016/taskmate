@@ -6,17 +6,17 @@ import logging
 from functools import wraps
 from pathlib import Path
 
+import voluptuous as vol
 import yaml
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ServiceValidationError, Unauthorized
-import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_set_service_schema
 
 from .const import (
+    ATTR_AS_PARENT,
     ATTR_AWARDED_BADGE_ID,
     ATTR_BADGE_ASSIGNED_TO,
     ATTR_BADGE_COMBINATOR,
@@ -34,7 +34,6 @@ from .const import (
     ATTR_BONUS_ICON,
     ATTR_BONUS_ID,
     ATTR_BONUS_NAME,
-    ATTR_AS_PARENT,
     ATTR_BONUS_POINTS,
     ATTR_BONUS_SUBTASK_ID,
     ATTR_CHILD_ID,
@@ -57,54 +56,55 @@ from .const import (
     ATTR_REASON,
     ATTR_REWARD_ID,
     ATTR_SOUND,
+    CONF_TASK_GROUP_CHORE_IDS,
+    CONF_TASK_GROUP_ID,
+    CONF_TASK_GROUP_NAME,
+    CONF_TASK_GROUP_POLICY,
+    DEFAULT_DIFFICULTY,
+    DIFFICULTY_TIERS,
     DOMAIN,
     EVENT_PREVIEW_SOUND,
     SERVICE_ADD_BONUS,
     SERVICE_ADD_CHORE,
     SERVICE_ADD_PENALTY,
     SERVICE_ADD_POINTS,
+    SERVICE_ADD_TASK_GROUP,
     SERVICE_ALLOCATE_POINTS_TO_POOL,
     SERVICE_APPLY_BONUS,
-    SERVICE_APPLY_PENALTY,
     SERVICE_APPLY_MANDATORY_PENALTY,
+    SERVICE_APPLY_PENALTY,
     SERVICE_APPROVE_CHORE,
     SERVICE_APPROVE_REWARD,
+    SERVICE_CHOOSE_AVATAR,
     SERVICE_CLAIM_REWARD,
-    SERVICE_REJECT_REWARD,
     SERVICE_COMPLETE_BONUS_SUBTASK,
     SERVICE_COMPLETE_CHORE,
-    SERVICE_START_TIMED_TASK,
-    SERVICE_PAUSE_TIMED_TASK,
-    SERVICE_STOP_TIMED_TASK,
-    SERVICE_PREVIEW_SOUND,
     SERVICE_DISMISS_MANDATORY_CHORE,
+    SERVICE_GIFT_POINTS,
+    SERVICE_PAUSE_TIMED_TASK,
     SERVICE_POSTPONE_MANDATORY_CHORE,
+    SERVICE_PREVIEW_SOUND,
+    SERVICE_RECORD_ALLOWANCE_PAYOUT,
     SERVICE_REJECT_CHORE,
-    SERVICE_UNDO_CHORE_APPROVAL,
+    SERVICE_REJECT_REWARD,
     SERVICE_REMOVE_BONUS,
     SERVICE_REMOVE_PENALTY,
     SERVICE_REMOVE_POINTS,
-    SERVICE_UNDO_TRANSACTION,
-    SERVICE_TEST_NOTIFICATION,
-    SERVICE_GIFT_POINTS,
+    SERVICE_REMOVE_TASK_GROUP,
     SERVICE_REQUEST_SWAP,
-    SERVICE_CHOOSE_AVATAR,
+    SERVICE_SET_CHORE_MANUAL_START,
     SERVICE_SET_CHORE_ORDER,
+    SERVICE_SKIP_CHORE,
+    SERVICE_START_TIMED_TASK,
+    SERVICE_STOP_TIMED_TASK,
+    SERVICE_TEST_NOTIFICATION,
+    SERVICE_UNDO_CHORE_APPROVAL,
+    SERVICE_UNDO_TRANSACTION,
     SERVICE_UPDATE_BONUS,
     SERVICE_UPDATE_PENALTY,
-    SERVICE_SKIP_CHORE,
-    SERVICE_SET_CHORE_MANUAL_START,
-    SERVICE_ADD_TASK_GROUP,
     SERVICE_UPDATE_TASK_GROUP,
-    SERVICE_REMOVE_TASK_GROUP,
-    CONF_TASK_GROUP_ID,
-    CONF_TASK_GROUP_NAME,
-    CONF_TASK_GROUP_POLICY,
-    CONF_TASK_GROUP_CHORE_IDS,
     TASK_GROUP_POLICIES,
     TIME_CATEGORIES,
-    DIFFICULTY_TIERS,
-    DEFAULT_DIFFICULTY,
 )
 from .coordinator import TaskMateCoordinator
 from .frontend import async_register_cards, async_register_frontend
@@ -130,12 +130,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Store initial settings from config entry only on first setup
     # (when storage has never been written yet). Once storage exists, the user
     # controls these values via Settings — never overwrite on restart.
-    if not coordinator.storage._data.get("_initial_setup_done"):
+    if not coordinator.storage.is_initial_setup_done():
         if entry.data.get("points_name"):
             coordinator.storage.set_points_name(entry.data["points_name"])
         if entry.data.get("points_icon"):
             coordinator.storage.set_points_icon(entry.data["points_icon"])
-        coordinator.storage._data["_initial_setup_done"] = True
+        coordinator.storage.mark_initial_setup_done()
     await coordinator.storage.async_save()
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
@@ -159,6 +159,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # and the WebSocket commands it talks to.
     await async_register_panel(hass)
     async_register_websocket_commands(hass)
+
+    # Conversation/voice intents (FEAT-12). Lazy import so a missing conversation
+    # stack never blocks setup.
+    try:
+        from .intents import async_setup_intents
+        async_setup_intents(hass)
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.debug("TaskMate intents not registered: %s", err)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -240,18 +248,20 @@ def _async_update_service_descriptions(hass: HomeAssistant) -> None:
     if not coordinator:
         return
 
-    options: dict[str, list[dict[str, str]]] = {}
-    for field, getter in _DYNAMIC_SELECTOR_FIELDS.items():
-        entities = getattr(coordinator.storage, getter)()
-        options[field] = [{"label": e.name, "value": e.id} for e in entities]
-
-    # Re-registering schemas deep-copies every dynamic service description;
-    # skip the whole pass when the option sets haven't changed since last time.
-    fingerprint = repr(options)
+    # PERF-4: the dynamic selectors mirror children/chores/rewards/etc., which
+    # only change via a save (bumping storage.data_version). Use that as the
+    # fingerprint and short-circuit BEFORE hydrating every entity from its dict
+    # + repr()-ing them — both of which previously ran on every listener fire.
+    fingerprint = coordinator.storage.data_version
     domain_data = hass.data.setdefault(DOMAIN, {})
     if domain_data.get("_service_desc_fingerprint") == fingerprint:
         return
     domain_data["_service_desc_fingerprint"] = fingerprint
+
+    options: dict[str, list[dict[str, str]]] = {}
+    for field, getter in _DYNAMIC_SELECTOR_FIELDS.items():
+        entities = getattr(coordinator.storage, getter)()
+        options[field] = [{"label": e.name, "value": e.id} for e in entities]
 
     base = _load_base_descriptions()
 
@@ -542,6 +552,16 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             return
         await coordinator.async_gift_points(
             call.data["from_child_id"], call.data["to_child_id"], call.data["points"],
+        )
+
+    async def handle_record_allowance_payout(call: ServiceCall) -> None:
+        """Record a parent-confirmed allowance payout (deduct points, log cash)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_record_allowance_payout(
+            call.data["child_id"], call.data["points"],
         )
 
     async def handle_request_swap(call: ServiceCall) -> None:
@@ -1090,6 +1110,18 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN,
+        SERVICE_RECORD_ALLOWANCE_PAYOUT,
+        _admin(handle_record_allowance_payout),
+        schema=vol.Schema(
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Required("points"): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
         SERVICE_REQUEST_SWAP,
         _safe(handle_request_swap),
         schema=vol.Schema(
@@ -1437,6 +1469,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_UNDO_CHORE_APPROVAL,
         SERVICE_TEST_NOTIFICATION,
         SERVICE_GIFT_POINTS,
+        SERVICE_RECORD_ALLOWANCE_PAYOUT,
         SERVICE_REQUEST_SWAP,
         SERVICE_CHOOSE_AVATAR,
         SERVICE_CLAIM_REWARD,

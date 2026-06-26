@@ -829,6 +829,20 @@
           "description": "ID des Benachrichtigungstyps, z. B. pending_chore_approval, badge_earned, streak_milestone"
         }
       }
+    },
+    "record_allowance_payout": {
+      "name": "Taschengeld-Auszahlung erfassen",
+      "description": "Punkte abziehen und eine reale Taschengeld-Auszahlung im Verlauf erfassen (fester Umrechnungskurs; elterngesteuert).",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Die ID des Kindes, das die Auszahlung erhält"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Punkte, die in Bargeld umgerechnet und abgezogen werden"
+        }
+      }
     }
   },
   "entity": {

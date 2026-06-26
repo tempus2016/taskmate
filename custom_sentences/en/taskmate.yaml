@@ -1,0 +1,23 @@
+language: "en"
+intents:
+  TaskMateChoresLeft:
+    data:
+      - sentences:
+          - "how many chores (does|has) {name} have left"
+          - "how many chores (are|is) left for {name}"
+          - "(does|has) {name} have any chores left"
+          - "what chores does {name} have left"
+  TaskMatePoints:
+    data:
+      - sentences:
+          - "how many {points_word} does {name} have"
+          - "what is {name}'s balance"
+          - "how many points does {name} have"
+lists:
+  name:
+    wildcard: true
+  points_word:
+    values:
+      - "points"
+      - "stars"
+      - "coins"

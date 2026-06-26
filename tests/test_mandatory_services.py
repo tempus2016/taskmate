@@ -4,7 +4,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
-from custom_components.taskmate.models import MandatoryMiss, Chore, Child
+from custom_components.taskmate.models import Child, Chore, MandatoryMiss
 
 
 def test_state_includes_enriched_misses():

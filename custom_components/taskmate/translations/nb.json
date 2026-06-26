@@ -829,6 +829,20 @@
           "description": "ID for varseltype, f.eks. pending_chore_approval, badge_earned, streak_milestone"
         }
       }
+    },
+    "record_allowance_payout": {
+      "name": "Registrer lommepenge-utbetaling",
+      "description": "Trekk fra poeng og registrer en reell lommepenge-utbetaling i loggen (fast omregningskurs; foreldrestyrt).",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "ID-en til barnet som mottar utbetalingen"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Poeng som skal regnes om til penger og trekkes fra"
+        }
+      }
     }
   },
   "entity": {

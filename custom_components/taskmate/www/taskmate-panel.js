@@ -584,6 +584,9 @@ class TaskMatePanel extends HTMLElement {
     if (act === "save-settings") { this._doSaveSettings(); return; }
     if (act === "config-export") { this._doExportConfig(); return; }
     if (act === "config-import") { this.querySelector("[data-role='config-import-file']")?.click(); return; }
+    if (act === "ics-show") { this._icsShow(); return; }
+    if (act === "ics-regenerate") { this._icsRegenerate(); return; }
+    if (act === "ics-copy") { this._icsCopy(); return; }
 
     // Audit log
     if (act === "audit-clear") { this._doClearAudit(); return; }
@@ -1810,6 +1813,33 @@ class TaskMatePanel extends HTMLElement {
       URL.revokeObjectURL(url);
       this._showToast("ok", this._t("panel.backup_exported"));
     } catch (e) {
+      this._showToast("err", String(e));
+    }
+  }
+
+  async _icsShow() {
+    const { ok, err, res } = await this._callWS({ type: "taskmate/calendar/get_ics_url" });
+    if (!ok || !res) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._icsUrl = res.url;
+    this._render();
+  }
+
+  async _icsRegenerate() {
+    const { ok, err, res } = await this._callWS({ type: "taskmate/calendar/regenerate_ics_token" });
+    if (!ok || !res) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._icsUrl = res.url;
+    this._render();
+    this._showToast("ok", this._t("panel.ics_regenerated"));
+  }
+
+  async _icsCopy() {
+    const input = this.querySelector("[data-role='ics-url']");
+    if (!input) return;
+    try {
+      await navigator.clipboard.writeText(input.value);
+      this._showToast("ok", this._t("panel.ics_copied"));
+    } catch (e) {
+      input.select();
       this._showToast("err", String(e));
     }
   }
@@ -3861,6 +3891,75 @@ class TaskMatePanel extends HTMLElement {
               <button type="button" class="tm-btn" data-act="config-import"><ha-icon icon="mdi:upload"></ha-icon> ${this._t("panel.backup_import")}</button>
               <input type="file" accept="application/json,.json" data-role="config-import-file" style="display:none">
             </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.family_goal_title")}</h3><p class="tm-meta">${this._t("panel.family_goal_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.family_goal_enabled")}</div>
+              <ha-switch data-setting="family_goal_enabled" ${s.family_goal_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.family_goal_name")}</div>
+              <input type="text" class="tm-input" maxlength="120" data-setting="family_goal_name" value="${this._esc(s.family_goal_name || "")}" placeholder="${this._esc(this._t("panel.family_goal_name_ph"))}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.family_goal_target")}<small>${this._t("panel.family_goal_target_hint")}</small></div>
+              <input type="number" class="tm-input" min="1" max="10000000" data-setting="family_goal_target" value="${this._esc(String(s.family_goal_target || 500))}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.family_goal_reward")}</div>
+              <input type="text" class="tm-input" maxlength="200" data-setting="family_goal_reward" value="${this._esc(s.family_goal_reward || "")}" placeholder="${this._esc(this._t("panel.family_goal_reward_ph"))}">
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.allowance_title")}</h3><p class="tm-meta">${this._t("panel.allowance_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.allowance_enabled")}</div>
+              <ha-switch data-setting="allowance_enabled" ${s.allowance_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.allowance_rate")}<small>${this._t("panel.allowance_rate_hint")}</small></div>
+              <input type="number" class="tm-input" min="1" max="100000" data-setting="allowance_rate" value="${this._esc(String(s.allowance_rate || 10))}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.allowance_currency")}</div>
+              <input type="text" class="tm-input" maxlength="8" data-setting="allowance_currency" value="${this._esc(s.allowance_currency || "")}" placeholder="£">
+            </div>
+            ${(this._state.allowance_payouts || []).length ? `
+              <h4 style="margin:12px 0 4px">${this._t("panel.allowance_ledger")}</h4>
+              <div class="tm-table-wrap"><table class="tm-table"><tbody>
+                ${(this._state.allowance_payouts || []).slice(0, 10).map(p => `
+                  <tr>
+                    <td>${this._esc((p.date || "").slice(0, 10))}</td>
+                    <td>${this._esc(p.child_name || "")}</td>
+                    <td style="text-align:right">${p.points} → ${this._esc(p.currency || "")}${this._esc(String(p.amount))}</td>
+                  </tr>
+                `).join("")}
+              </tbody></table></div>
+            ` : ""}
+          </div>
+        </div>
+
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.ics_title")}</h3><p class="tm-meta">${this._t("panel.ics_hint")}</p></div></div>
+          <div class="tm-section-body">
+            ${this._icsUrl ? `
+              <input type="text" readonly value="${this._esc(this._icsUrl)}" data-role="ics-url" style="width:100%;font-family:monospace;font-size:12px;padding:6px;margin-bottom:8px" onclick="this.select()">
+              <div class="tm-period-actions">
+                <button type="button" class="tm-btn" data-act="ics-copy"><ha-icon icon="mdi:content-copy"></ha-icon> ${this._t("panel.ics_copy")}</button>
+                <button type="button" class="tm-btn" data-act="ics-regenerate"><ha-icon icon="mdi:refresh"></ha-icon> ${this._t("panel.ics_regenerate")}</button>
+              </div>
+            ` : `
+              <div class="tm-period-actions">
+                <button type="button" class="tm-btn" data-act="ics-show"><ha-icon icon="mdi:calendar-export"></ha-icon> ${this._t("panel.ics_show")}</button>
+              </div>
+            `}
           </div>
         </div>
 

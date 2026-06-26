@@ -9,7 +9,6 @@ import asyncio
 import datetime as dt
 from datetime import timezone
 
-
 from custom_components.taskmate.models import Child, ChoreCompletion
 from custom_components.taskmate.storage import TaskMateStorage
 

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from custom_components.taskmate.sensor import _build_chores_list
 from custom_components.taskmate.models import Chore
+from custom_components.taskmate.sensor import _build_chores_list
 
 
 def _coord():

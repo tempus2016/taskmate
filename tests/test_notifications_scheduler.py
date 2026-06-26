@@ -7,7 +7,8 @@ import pytest
 
 from custom_components.taskmate.coord_notifications import NotificationCoordinator
 from custom_components.taskmate.models import (
-    Child, NotificationRoute,
+    Child,
+    NotificationRoute,
 )
 from custom_components.taskmate.storage import TaskMateStorage
 
@@ -71,6 +72,7 @@ async def test_bedtime_skips_when_no_outstanding_chores(coord, hass):
 @pytest.mark.asyncio
 async def test_streak_at_risk_skips_when_completed_today(coord, hass):
     from datetime import datetime
+
     from homeassistant.util import dt as dt_util
     today = dt_util.now().date().isoformat()
     child = Child(name="M", current_streak=5, last_completion_date=today)
@@ -106,6 +108,7 @@ async def test_streak_at_risk_fires_when_streak_active_and_not_extended(coord, h
 @pytest.mark.asyncio
 async def test_custom_skips_when_day_mask_excludes_today(coord, hass, monkeypatch):
     from datetime import datetime
+
     from custom_components.taskmate.models import CustomNotification
     # day_mask=0 means no day enabled
     n = CustomNotification(
@@ -123,8 +126,10 @@ async def test_custom_skips_when_day_mask_excludes_today(coord, hass, monkeypatc
 @pytest.mark.asyncio
 async def test_custom_fires_when_today_bit_set(coord, hass):
     from datetime import datetime
-    from custom_components.taskmate.models import CustomNotification
+
     from homeassistant.util import dt as dt_util
+
+    from custom_components.taskmate.models import CustomNotification
     today_bit = 1 << dt_util.now().date().weekday()
 
     child = Child(name="M", notify_service="notify.m")

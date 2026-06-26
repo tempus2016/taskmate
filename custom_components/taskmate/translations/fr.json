@@ -829,6 +829,20 @@
           "description": "ID du type de notification, par ex. pending_chore_approval, badge_earned, streak_milestone"
         }
       }
+    },
+    "record_allowance_payout": {
+      "name": "Enregistrer un versement d'argent de poche",
+      "description": "Déduire des points et enregistrer un versement d'argent de poche réel dans le journal (taux de conversion fixe ; contrôlé par les parents).",
+      "fields": {
+        "child_id": {
+          "name": "ID enfant",
+          "description": "L'ID de l'enfant recevant le versement"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Points à convertir en argent et à déduire"
+        }
+      }
     }
   },
   "entity": {

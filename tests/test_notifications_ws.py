@@ -1,12 +1,13 @@
 """Tests for notification WebSocket commands."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
+from custom_components.taskmate import websocket as ws
 from custom_components.taskmate.const import DOMAIN
 from custom_components.taskmate.coordinator import TaskMateCoordinator
-from custom_components.taskmate import websocket as ws
 
 
 @pytest.fixture

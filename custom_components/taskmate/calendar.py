@@ -30,7 +30,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
-from .models import Chore, Child
+from .models import Child, Chore
 
 _LOGGER = logging.getLogger(__name__)
 

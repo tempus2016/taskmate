@@ -1,0 +1,25 @@
+blueprint:
+  name: TaskMate — Mandatory chore missed
+  description: >
+    Run an action when a mandatory chore's time window closes without being
+    completed (e.g. pause the TV, notify a parent, turn the bedroom light red).
+    The event data (`trigger.event.data`) carries child_id, chore_id, period_id
+    and penalty_points. This complements TaskMate's built-in escalation
+    notifications — use it for home-automation reactions, not just messages.
+  domain: automation
+  source_url: https://github.com/tempus2016/taskmate/blob/main/blueprints/automation/taskmate/mandatory_missed.yaml
+  input:
+    missed_action:
+      name: Action
+      description: What to do when a mandatory chore is missed.
+      selector:
+        action: {}
+
+mode: queued
+max: 10
+
+triggers:
+  - trigger: event
+    event_type: taskmate_mandatory_missed
+
+actions: !input missed_action

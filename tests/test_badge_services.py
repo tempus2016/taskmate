@@ -1,10 +1,12 @@
 """Tests for badge service handlers (via coordinator methods)."""
 from __future__ import annotations
-import pytest
+
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from custom_components.taskmate.coord_badges import BadgeCoordinator
-from custom_components.taskmate.models import Badge, BadgeCriterion, AwardedBadge, Child
+from custom_components.taskmate.models import AwardedBadge, Badge, BadgeCriterion, Child
 
 
 @pytest.fixture

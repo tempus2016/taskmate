@@ -1,8 +1,8 @@
 """Storage management for TaskMate integration."""
 from __future__ import annotations
 
-from datetime import date, timedelta
 import logging
+from datetime import date, timedelta
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -10,10 +10,26 @@ from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
 from .models import (
-    Badge, AwardedBadge, Bonus, Challenge, Child, Chore, ChoreCompletion,
-    CustomNotification, MandatoryMiss, NotificationConfig, NotificationRoute,
-    ParentRecipient, Penalty, PoolAllocation, Quest, Reward, RewardClaim,
-    PointsTransaction, TaskGroup, TimedSession,
+    AwardedBadge,
+    Badge,
+    Bonus,
+    Challenge,
+    Child,
+    Chore,
+    ChoreCompletion,
+    CustomNotification,
+    MandatoryMiss,
+    NotificationConfig,
+    NotificationRoute,
+    ParentRecipient,
+    Penalty,
+    PointsTransaction,
+    PoolAllocation,
+    Quest,
+    Reward,
+    RewardClaim,
+    TaskGroup,
+    TimedSession,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -827,9 +843,60 @@ class TaskMateStorage:
             self._data["points_transactions"] = []
         self._data["points_transactions"].append(transaction.to_dict())
 
+        # Accumulate season (leaderboard) points from every positive award here,
+        # the single choke point all awards flow through — the rolling 200-cap on
+        # transactions makes them unreliable for a monthly total (FEAT-2).
+        if transaction.points > 0:
+            self.record_season_points(
+                transaction.child_id, transaction.points, transaction.created_at
+            )
+
         # Keep only the last 200 transactions to avoid unbounded storage growth
         if len(self._data["points_transactions"]) > 200:
             self._data["points_transactions"] = self._data["points_transactions"][-200:]
+
+    # ── Leaderboard seasons (FEAT-2) ──────────────────────────────────────
+    def record_season_points(self, child_id: str, points: int, when) -> None:
+        """Add ``points`` to ``child_id``'s tally for the calendar month of ``when``."""
+        if points <= 0 or not child_id:
+            return
+        key = when.strftime("%Y-%m")
+        seasons = self._data.setdefault("season_points", {})
+        month = seasons.setdefault(key, {})
+        month[child_id] = month.get(child_id, 0) + int(points)
+        # Keep ~13 months so year-over-year stays available without unbounded growth.
+        if len(seasons) > 13:
+            for stale in sorted(seasons)[:-13]:
+                del seasons[stale]
+
+    def get_season_points(self, ym: str) -> dict[str, int]:
+        """Per-child points earned in calendar month ``ym`` ("YYYY-MM")."""
+        return dict((self._data.get("season_points", {}) or {}).get(ym, {}))
+
+    # ── Allowance payout ledger (FEAT-3) ──────────────────────────────────
+    def get_allowance_payouts(self) -> list[dict]:
+        """Recorded allowance payouts, oldest first."""
+        return list(self._data.get("allowance_payouts", []))
+
+    def add_allowance_payout(self, entry: dict) -> None:
+        """Append an allowance payout; cap the ledger at 500 entries."""
+        ledger = self._data.setdefault("allowance_payouts", [])
+        ledger.append(entry)
+        if len(ledger) > 500:
+            del ledger[:-500]
+
+    def get_season_champions(self) -> list[dict]:
+        """Recorded monthly champions, oldest first."""
+        return list(self._data.get("season_champions", []))
+
+    def add_season_champion(self, entry: dict) -> None:
+        """Record a month's champion once; cap history at 24 months."""
+        champs = self._data.setdefault("season_champions", [])
+        if any(c.get("month") == entry.get("month") for c in champs):
+            return
+        champs.append(entry)
+        if len(champs) > 24:
+            del champs[:-24]
 
     def remove_points_transaction(self, transaction_id: str) -> bool:
         """Remove a points transaction by id. Returns True if one was removed."""
@@ -993,6 +1060,28 @@ class TaskMateStorage:
             self._data["quest_progress"] = {}
         if not isinstance(self._data.get("challenge_progress"), dict):
             self._data["challenge_progress"] = {}
+        self._sanitize_imported_records()
+
+    def _sanitize_imported_records(self) -> None:
+        """Re-validate untrusted inner records after a full-replace import (SEC-5).
+
+        ``import_data`` deep-copies the payload in with only top-level coercion,
+        so a crafted backup could smuggle a ``photo_url`` that bypasses the
+        ``is_taskmate_photo_url`` gate enforced at the ``complete_chore``
+        boundary. Strip any completion ``photo_url`` that isn't one of our own
+        well-formed photo URLs so the panel never renders a foreign/dangerous one.
+        """
+        from .photos import is_taskmate_photo_url
+        for comp in self._data.get("completions", []):
+            if not isinstance(comp, dict):
+                continue
+            url = comp.get("photo_url")
+            if url and not is_taskmate_photo_url(url):
+                _LOGGER.warning(
+                    "Import: dropped non-TaskMate photo_url on completion %s",
+                    comp.get("id", "?"),
+                )
+                comp["photo_url"] = ""
 
     def replace_completions(self, completions: list[ChoreCompletion]) -> None:
         """Replace all completions with the given list."""
@@ -1187,6 +1276,25 @@ class TaskMateStorage:
         if "settings" not in self._data:
             self._data["settings"] = {}
         self._data["settings"][key] = value
+
+    def get_settings(self) -> dict[str, Any]:
+        """The whole settings dict (live reference; callers must not assume a copy)."""
+        return self._data.get("settings", {}) or {}
+
+    # ── Typed top-level flags (ARCH-1) ────────────────────────────────────
+    # These live at the root of _data (not under "settings"). Accessors keep the
+    # key names + defaults in one place so setup/migration logic can't drift.
+    def is_initial_setup_done(self) -> bool:
+        return bool(self._data.get("_initial_setup_done"))
+
+    def mark_initial_setup_done(self) -> None:
+        self._data["_initial_setup_done"] = True
+
+    def is_badges_backfill_pending(self) -> bool:
+        return bool(self._data.get("badges_backfill_pending"))
+
+    def clear_badges_backfill_pending(self) -> None:
+        self._data.pop("badges_backfill_pending", None)
 
     # Settings
     def get_points_name(self) -> str:

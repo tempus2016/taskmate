@@ -143,6 +143,10 @@ WS_NOTIF_SET_STREAK_CUTOFF: Final  = "taskmate/notifications/set_streak_cutoff"
 WS_NOTIF_SET_ESCALATION: Final     = "taskmate/notifications/set_escalation"
 WS_NOTIF_SEND_TEST: Final          = "taskmate/notifications/send_test"
 
+# Calendar ICS feed (FEAT-10)
+WS_CAL_GET_URL: Final     = "taskmate/calendar/get_ics_url"
+WS_CAL_REGEN_TOKEN: Final = "taskmate/calendar/regenerate_ics_token"
+
 # Admin audit log
 WS_AUDIT_LIST: Final  = "taskmate/audit/list"
 WS_AUDIT_CLEAR: Final = "taskmate/audit/clear"
@@ -311,6 +315,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "awarded_badges": list(data.get("awarded_badges", [])),
         "audit_log":     coordinator.storage.get_audit_log()[:100],  # newest 100 for the panel
         "swap_requests": [r for r in coordinator.storage.get_swap_requests() if r.get("status") == "pending"],
+        "allowance_payouts": list(reversed(coordinator.storage.get_allowance_payouts()))[:50],  # newest first (FEAT-3)
         "settings": {
             "points_name":       data.get("points_name", "Stars"),
             "points_icon":       data.get("points_icon", "mdi:star"),
@@ -1114,6 +1119,8 @@ _SUBKEY_SETTINGS = {
     "interest_enabled", "interest_period", "interest_percent",
     "celebration_notify", "celebration_notify_min_tier",
     "allow_negative_balance",
+    "allowance_enabled", "allowance_rate", "allowance_currency",
+    "family_goal_enabled", "family_goal_name", "family_goal_target", "family_goal_reward",
     "notify_service", "calendar_projection_days", "skip_confirmation_enabled",
     "vacation_calendar",
     "time_morning_start", "time_morning_end",
@@ -1182,7 +1189,7 @@ def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, s
         })
 
     periods.sort(key=lambda p: p["start"])
-    for prev, cur in zip(periods, periods[1:]):
+    for prev, cur in zip(periods, periods[1:], strict=False):
         if cur["start"] < prev["end"]:
             return None, (
                 f"'{cur['label'] or cur['id']}' overlaps "
@@ -1282,6 +1289,13 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("celebration_notify_min_tier"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
     vol.Optional("skip_confirmation_enabled"): bool,
     vol.Optional("allow_negative_balance"): bool,
+    vol.Optional("allowance_enabled"): bool,
+    vol.Optional("allowance_rate"): vol.All(vol.Coerce(int), vol.Range(min=1, max=100000)),
+    vol.Optional("allowance_currency"): vol.All(str, vol.Length(max=8)),
+    vol.Optional("family_goal_enabled"): bool,
+    vol.Optional("family_goal_name"): vol.All(str, vol.Length(max=120)),
+    vol.Optional("family_goal_target"): vol.All(vol.Coerce(int), vol.Range(min=1, max=10000000)),
+    vol.Optional("family_goal_reward"): vol.All(str, vol.Length(max=200)),
     vol.Optional("streak_milestones"): str,
     vol.Optional("notify_service"): str,
     vol.Optional("calendar_projection_days"): vol.All(int, vol.Range(min=1, max=90)),
@@ -1333,6 +1347,9 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
                 continue
             storage.set_setting(k, v)
             changed.append(k)
+    # Re-arm a family goal when its target/enabled changes (FEAT-4).
+    if "family_goal_target" in changed or "family_goal_enabled" in changed:
+        storage.set_setting("family_goal_achieved", False)
     if changed:
         await storage.async_save()
         # Period boundaries moved → re-arm the mandatory-chore end-of-period checks (#532)
@@ -1864,6 +1881,37 @@ async def ws_notif_send_test(hass, connection, msg, coordinator):
 
 
 # ---------------------------------------------------------------------------
+# Calendar ICS feed (FEAT-10)
+# ---------------------------------------------------------------------------
+
+def _build_ics_url(hass, token: str) -> str:
+    from .http_calendar import CALENDAR_URL
+    base = ""
+    try:
+        from homeassistant.helpers.network import get_url
+        base = get_url(hass, prefer_external=True)
+    except Exception:  # noqa: BLE001 - no configured URL yet
+        base = ""
+    return f"{base}{CALENDAR_URL}?token={token}"
+
+
+@websocket_api.websocket_command({vol.Required("type"): WS_CAL_GET_URL})
+@websocket_api.async_response
+@_admin_only
+async def ws_cal_get_url(hass, connection, msg, coordinator):
+    token = await coordinator.async_get_or_create_ics_token()
+    connection.send_result(msg["id"], {"token": token, "url": _build_ics_url(hass, token)})
+
+
+@websocket_api.websocket_command({vol.Required("type"): WS_CAL_REGEN_TOKEN})
+@websocket_api.async_response
+@_admin_only
+async def ws_cal_regen_token(hass, connection, msg, coordinator):
+    token = await coordinator.async_regenerate_ics_token()
+    connection.send_result(msg["id"], {"token": token, "url": _build_ics_url(hass, token)})
+
+
+# ---------------------------------------------------------------------------
 # Admin audit log
 # ---------------------------------------------------------------------------
 
@@ -2018,6 +2066,7 @@ _COMMANDS = (
     ws_notif_upsert_custom, ws_notif_delete_custom,
     ws_notif_list_notify, ws_notif_set_streak_cutoff, ws_notif_send_test,
     ws_notif_set_escalation,
+    ws_cal_get_url, ws_cal_regen_token,
 )
 
 

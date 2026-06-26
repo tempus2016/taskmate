@@ -829,6 +829,20 @@
           "description": "ID do tipo de notificação, ex.: pending_chore_approval, badge_earned, streak_milestone"
         }
       }
+    },
+    "record_allowance_payout": {
+      "name": "Registrar pagamento de mesada",
+      "description": "Deduzir pontos e registrar um pagamento de mesada real no histórico (taxa de conversão fixa; controlado pelos pais).",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que recebe o pagamento"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "Pontos a converter em dinheiro e deduzir"
+        }
+      }
     }
   },
   "entity": {

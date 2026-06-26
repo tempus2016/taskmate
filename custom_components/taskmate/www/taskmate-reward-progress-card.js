@@ -937,35 +937,18 @@ class TaskMateRewardProgressCardEditor extends LitElement {
   }
 
   _renderColourPicker(key, defaultValue) {
+    const d = window.__taskmate_design;
     const current = this.config[key] || defaultValue;
-    const presets = ['#7d3c98', '#e67e22', '#27ae60', '#3498db', '#f1c40f', '#e74c3c', '#34495e'];
-    const isActive = (c) => current && c.toLowerCase() === current.toLowerCase();
-    return html`
-      <div class="colour-field">
-        <span class="colour-field-label">${this._t('common.editor.header_colour')}</span>
-        <div class="colour-field-body">
-          <label class="colour-swatch-wrapper">
-            <input type="color" .value=${current || '#7d3c98'}
-              @input=${(e) => this._update(key, e.target.value)} />
-            <span class="colour-swatch-preview" style="background:${current || '#7d3c98'}"></span>
-          </label>
-          <span class="colour-hex">${current || this._t('common.default')}</span>
-          <div class="colour-presets">
-            ${presets.map((p) => html`
-              <button class="preset-swatch ${isActive(p) ? 'active' : ''}"
-                style="background:${p}"
-                title=${p}
-                @click=${(e) => { e.preventDefault(); this._update(key, p); }}
-              ></button>
-            `)}
-          </div>
-          <button class="colour-reset"
-            @click=${(e) => { e.preventDefault(); this._update(key, ''); }}
-          >${this._t('common.reset')}</button>
-        </div>
-        <div class="colour-helper">${this._t('common.editor.header_colour_helper')}</div>
-      </div>
-    `;
+    if (!d || !d.colourPicker) return html``;
+    return d.colourPicker({
+      defaultValue, current,
+      label: this._t('common.editor.header_colour'),
+      helper: this._t('common.editor.header_colour_helper'),
+      resetLabel: this._t('common.reset'),
+      onInput: (v) => this._update(key, v),
+      onPreset: (v) => this._update(key, v),
+      onReset: () => this._update(key, defaultValue),
+    });
   }
 
   _formChanged(e) {

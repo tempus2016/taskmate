@@ -44,6 +44,29 @@ async def test_storage_import_replaces_and_ensures_keys(hass):
 
 
 @pytest.mark.asyncio
+async def test_import_strips_foreign_photo_url(hass):
+    """SEC-5: a crafted backup can't smuggle a non-TaskMate photo_url."""
+    storage = TaskMateStorage(hass, "sec5")
+    await storage.async_load()
+    storage.import_data({
+        "completions": [
+            {"id": "c1", "chore_id": "x", "child_id": "k",
+             "photo_url": "javascript:alert(1)"},
+            {"id": "c2", "chore_id": "x", "child_id": "k",
+             "photo_url": "https://evil.example/p.png"},
+            {"id": "c3", "chore_id": "x", "child_id": "k",
+             "photo_url": "/api/taskmate/photo/" + "a" * 32 + ".jpg"},  # one of ours
+            {"id": "c4", "chore_id": "x", "child_id": "k", "photo_url": ""},
+        ],
+    })
+    by_id = {c["id"]: c for c in storage._data["completions"]}
+    assert by_id["c1"]["photo_url"] == ""   # dangerous scheme stripped
+    assert by_id["c2"]["photo_url"] == ""   # foreign host stripped
+    assert by_id["c3"]["photo_url"] == "/api/taskmate/photo/" + "a" * 32 + ".jpg"  # kept
+    assert by_id["c4"]["photo_url"] == ""
+
+
+@pytest.mark.asyncio
 async def test_storage_import_rejects_non_dict(hass):
     storage = TaskMateStorage(hass, "imp2")
     await storage.async_load()
@@ -81,7 +104,7 @@ def test_import_config_rejects_bad_payload():
     for bad in ({}, {"data": "x"}, "nope", {"taskmate_export_version": 1}):
         try:
             run(coord.async_import_config(bad))
-            assert False, f"expected ValueError for {bad!r}"
+            raise AssertionError(f"expected ValueError for {bad!r}")
         except ValueError:
             pass
     coord.storage.import_data.assert_not_called()

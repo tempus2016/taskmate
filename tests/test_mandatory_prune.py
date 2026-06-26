@@ -5,7 +5,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
-from custom_components.taskmate.models import MandatoryMiss, Chore
+from custom_components.taskmate.models import Chore, MandatoryMiss
 
 
 def run(coro):

@@ -14,7 +14,6 @@ from custom_components.taskmate.websocket import _validate_time_periods
 
 from .test_assignment_modes import _coord
 
-
 # ---------------------------------------------------------------------------
 # Resolver: coordinator.get_time_periods()
 # ---------------------------------------------------------------------------

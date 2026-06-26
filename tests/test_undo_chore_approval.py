@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
-from custom_components.taskmate.models import Child, ChoreCompletion, Chore
+from custom_components.taskmate.models import Child, Chore, ChoreCompletion
 
 UTC = dt.timezone.utc
 DAY = dt.datetime(2024, 1, 1, tzinfo=UTC)
