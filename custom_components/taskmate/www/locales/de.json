@@ -1480,5 +1480,7 @@
   "panel.settings_allow_negative_label": "Negatives Guthaben zulassen",
   "panel.settings_allow_negative_hint": "Strafen dürfen das Guthaben eines Kindes unter null senken, statt bei null zu stoppen.",
   "panel.chore_depends_label": "Hängt ab von",
-  "panel.chore_depends_hint": "Diese Aufgabe bleibt verborgen, bis die ausgewählten Aufgaben heute für das Kind genehmigt sind."
+  "panel.chore_depends_hint": "Diese Aufgabe bleibt verborgen, bis die ausgewählten Aufgaben heute für das Kind genehmigt sind.",
+  "panel.notif_quiet_hours_label": "Ruhezeiten",
+  "panel.notif_quiet_hours_desc": "In diesem Zeitraum werden keine Erinnerungen an dieses Kind gesendet (Nicht stören). Zum Deaktivieren leer lassen."
 }

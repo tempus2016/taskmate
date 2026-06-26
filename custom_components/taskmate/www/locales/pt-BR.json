@@ -1480,5 +1480,7 @@
   "panel.settings_allow_negative_label": "Permitir saldo negativo",
   "panel.settings_allow_negative_hint": "Permite que penalidades deixem o saldo de uma criança abaixo de zero, em vez de parar em zero.",
   "panel.chore_depends_label": "Depende de",
-  "panel.chore_depends_hint": "Esta tarefa fica oculta até as tarefas selecionadas serem aprovadas para a criança hoje."
+  "panel.chore_depends_hint": "Esta tarefa fica oculta até as tarefas selecionadas serem aprovadas para a criança hoje.",
+  "panel.notif_quiet_hours_label": "Horário de silêncio",
+  "panel.notif_quiet_hours_desc": "Nenhum lembrete é enviado para esta criança durante este período (não perturbe). Deixe em branco para desativar."
 }
