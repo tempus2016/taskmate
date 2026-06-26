@@ -1123,3 +1123,23 @@ class TestNegativeBalancePolicy:
         coord = _make_coord(settings={"allow_negative_balance": "true"}, children=[child])
         run(coord.async_remove_points(child.id, 8, reason="Penalty: test"))
         assert child.points == -3
+
+
+# ---------------------------------------------------------------------------
+# SEC-6: coordinator-layer guard against negative point arguments
+# ---------------------------------------------------------------------------
+
+class TestPointArgSignGuard:
+    def test_add_points_rejects_negative(self):
+        child = _make_child(points=10)
+        coord = _make_coord(children=[child])
+        with pytest.raises(ValueError):
+            run(coord.async_add_points(child.id, -5))
+        assert child.points == 10  # unchanged
+
+    def test_remove_points_rejects_negative(self):
+        child = _make_child(points=10)
+        coord = _make_coord(children=[child])
+        with pytest.raises(ValueError):
+            run(coord.async_remove_points(child.id, -5))
+        assert child.points == 10
