@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 import logging
 import random
@@ -68,6 +69,9 @@ class TaskMateCoordinator(
         self._unsub_surprise: Callable[[], None] | None = None
         self._unsub_weekly: Callable[[], None] | None = None
         self._unsub_mandatory: list[Callable[[], None]] = []
+        # Per-build memo for the availability matrix (PERF-1). Non-None only
+        # inside `availability_build_scope()`; see coord_chores/coord_assignments.
+        self._avail_cache: dict | None = None
 
     def difficulty_multiplier(self, tier: str) -> float:
         """Return the points multiplier for a difficulty tier.
@@ -152,6 +156,38 @@ class TaskMateCoordinator(
         if not entity_id:
             return False
         return self._read_entity_active(entity_id) is True
+
+    @contextmanager
+    def availability_build_scope(self):
+        """Memoize chore-only computations for one availability build (PERF-1).
+
+        The availability matrix calls ``is_chore_available_for_child`` for every
+        chore × child. Several inner computations depend only on the chore (the
+        rotation active-set, the rotation-done check) or are re-fetched from
+        storage repeatedly (the completions list, which ``get_completions``
+        rebuilds from dicts on each call). Inside this scope those are computed
+        once and cached. The build is fully synchronous (no awaits), so storage
+        cannot mutate while the cache is live. Re-entrant scopes reuse the cache.
+        """
+        if getattr(self, "_avail_cache", None) is not None:
+            yield  # already inside a scope — reuse the existing cache
+            return
+        self._avail_cache = {
+            "completions": self.storage.get_completions(),
+            "active": {},
+            "rotation_done": {},
+        }
+        try:
+            yield
+        finally:
+            self._avail_cache = None
+
+    def _cached_completions(self) -> list:
+        """Completions list, served from the availability cache when in scope."""
+        cache = getattr(self, "_avail_cache", None)
+        if cache is not None:
+            return cache["completions"]
+        return self.storage.get_completions()
 
     def _is_child_on_vacation(self, child, on: date | None = None) -> bool:
         """True when ``child`` should be treated as away (streak frozen, chores
