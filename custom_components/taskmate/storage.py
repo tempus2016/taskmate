@@ -873,6 +873,18 @@ class TaskMateStorage:
         """Per-child points earned in calendar month ``ym`` ("YYYY-MM")."""
         return dict((self._data.get("season_points", {}) or {}).get(ym, {}))
 
+    # ── Allowance payout ledger (FEAT-3) ──────────────────────────────────
+    def get_allowance_payouts(self) -> list[dict]:
+        """Recorded allowance payouts, oldest first."""
+        return list(self._data.get("allowance_payouts", []))
+
+    def add_allowance_payout(self, entry: dict) -> None:
+        """Append an allowance payout; cap the ledger at 500 entries."""
+        ledger = self._data.setdefault("allowance_payouts", [])
+        ledger.append(entry)
+        if len(ledger) > 500:
+            del ledger[:-500]
+
     def get_season_champions(self) -> list[dict]:
         """Recorded monthly champions, oldest first."""
         return list(self._data.get("season_champions", []))

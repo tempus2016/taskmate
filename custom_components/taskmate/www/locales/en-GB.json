@@ -1507,5 +1507,12 @@
   "panel.ics_regenerated": "New link generated — old subscriptions stopped",
   "gallery.default_title": "Photo gallery",
   "gallery.empty": "No evidence photos yet",
-  "gallery.pending": "pending"
+  "gallery.pending": "pending",
+  "panel.allowance_title": "Allowance",
+  "panel.allowance_hint": "Convert points to a real-money allowance. Record payouts via the record_allowance_payout service or a dashboard button.",
+  "panel.allowance_enabled": "Enable allowance payouts",
+  "panel.allowance_rate": "Points per unit",
+  "panel.allowance_rate_hint": "How many points equal one unit of currency.",
+  "panel.allowance_currency": "Currency symbol",
+  "panel.allowance_ledger": "Recent payouts"
 }

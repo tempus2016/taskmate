@@ -139,6 +139,25 @@ test_notification:
       selector:
         text:
 
+record_allowance_payout:
+  name: Record Allowance Payout
+  description: Deduct points and record a real-money allowance payout in the ledger (fixed conversion rate; parent-controlled).
+  fields:
+    child_id:
+      name: Child ID
+      required: true
+      selector:
+        text:
+    points:
+      name: Points
+      description: Points to convert to cash and deduct.
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+
 gift_points:
   name: Gift Points
   description: Transfer spendable points from one child to another (parent-controlled).

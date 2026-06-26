@@ -1507,5 +1507,12 @@
   "panel.ics_regenerated": "Ny lenkje laga — gamle abonnement stoppa",
   "gallery.default_title": "Fotogalleri",
   "gallery.empty": "Ingen bevisbilete enno",
-  "gallery.pending": "ventar"
+  "gallery.pending": "ventar",
+  "panel.allowance_title": "Lommepengar",
+  "panel.allowance_hint": "Gjer poeng om til ekte lommepengar. Registrer utbetalingar via tenesta record_allowance_payout eller ein dashbord-knapp.",
+  "panel.allowance_enabled": "Aktiver lommepenge-utbetalingar",
+  "panel.allowance_rate": "Poeng per eining",
+  "panel.allowance_rate_hint": "Kor mange poeng som svarar til éi valutaeining.",
+  "panel.allowance_currency": "Valutasymbol",
+  "panel.allowance_ledger": "Nylege utbetalingar"
 }

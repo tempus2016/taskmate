@@ -386,6 +386,48 @@ class TaskMateCoordinator(
             r["rank"] = i + 1
         return rows
 
+    # ── Allowance payout ledger (FEAT-3) ─────────────────────────────────
+    async def async_record_allowance_payout(self, child_id: str, points: int) -> dict:
+        """Record a parent-confirmed allowance payout: deduct ``points`` and log
+        the cash equivalent (fixed conversion rate — no dynamic pricing).
+
+        Returns the ledger entry. Raises ValueError on a bad child/points or when
+        allowance is disabled.
+        """
+        child = self.get_child(child_id)
+        if child is None:
+            raise ValueError(f"Child {child_id} not found")
+        points = int(points)
+        if points < 1:
+            raise ValueError("points must be >= 1")
+        if not self._setting_enabled("allowance_enabled"):
+            raise ValueError("Allowance is not enabled")
+        try:
+            rate = int(self.storage.get_setting("allowance_rate", 10))
+        except (TypeError, ValueError):
+            rate = 10
+        rate = max(1, rate)
+        currency = str(self.storage.get_setting("allowance_currency", "") or "")
+        amount = round(points / rate, 2)
+
+        await self.async_remove_points(child_id, points, reason="Allowance payout")
+
+        from .models import generate_id
+        entry = {
+            "id": generate_id(),
+            "child_id": child_id,
+            "child_name": child.name,
+            "points": points,
+            "amount": amount,
+            "currency": currency,
+            "date": dt_util.now().isoformat(),
+        }
+        self.storage.add_allowance_payout(entry)
+        await self.storage.async_save()
+        self.hass.bus.async_fire("taskmate_allowance_paid", {**entry, "timestamp": entry["date"]})
+        await self.async_refresh()
+        return entry
+
     # ── ICS calendar feed token (FEAT-10) ────────────────────────────────
     async def async_get_or_create_ics_token(self) -> str:
         """Return the ICS feed token, generating + persisting one on first use."""

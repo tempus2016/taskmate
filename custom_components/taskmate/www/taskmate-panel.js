@@ -3895,6 +3895,36 @@ class TaskMatePanel extends HTMLElement {
         </div>
 
         <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.allowance_title")}</h3><p class="tm-meta">${this._t("panel.allowance_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.allowance_enabled")}</div>
+              <ha-switch data-setting="allowance_enabled" ${s.allowance_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.allowance_rate")}<small>${this._t("panel.allowance_rate_hint")}</small></div>
+              <input type="number" class="tm-input" min="1" max="100000" data-setting="allowance_rate" value="${this._esc(String(s.allowance_rate || 10))}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.allowance_currency")}</div>
+              <input type="text" class="tm-input" maxlength="8" data-setting="allowance_currency" value="${this._esc(s.allowance_currency || "")}" placeholder="£">
+            </div>
+            ${(this._state.allowance_payouts || []).length ? `
+              <h4 style="margin:12px 0 4px">${this._t("panel.allowance_ledger")}</h4>
+              <div class="tm-table-wrap"><table class="tm-table"><tbody>
+                ${(this._state.allowance_payouts || []).slice(0, 10).map(p => `
+                  <tr>
+                    <td>${this._esc((p.date || "").slice(0, 10))}</td>
+                    <td>${this._esc(p.child_name || "")}</td>
+                    <td style="text-align:right">${p.points} → ${this._esc(p.currency || "")}${this._esc(String(p.amount))}</td>
+                  </tr>
+                `).join("")}
+              </tbody></table></div>
+            ` : ""}
+          </div>
+        </div>
+
+        <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.ics_title")}</h3><p class="tm-meta">${this._t("panel.ics_hint")}</p></div></div>
           <div class="tm-section-body">
             ${this._icsUrl ? `

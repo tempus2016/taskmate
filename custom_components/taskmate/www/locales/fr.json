@@ -1507,5 +1507,12 @@
   "panel.ics_regenerated": "Nouveau lien généré — anciens abonnements arrêtés",
   "gallery.default_title": "Galerie photo",
   "gallery.empty": "Aucune photo de preuve pour l'instant",
-  "gallery.pending": "en attente"
+  "gallery.pending": "en attente",
+  "panel.allowance_title": "Argent de poche",
+  "panel.allowance_hint": "Convertir les points en argent de poche réel. Enregistrez les versements via le service record_allowance_payout ou un bouton du tableau de bord.",
+  "panel.allowance_enabled": "Activer les versements",
+  "panel.allowance_rate": "Points par unité",
+  "panel.allowance_rate_hint": "Combien de points équivalent à une unité monétaire.",
+  "panel.allowance_currency": "Symbole monétaire",
+  "panel.allowance_ledger": "Versements récents"
 }

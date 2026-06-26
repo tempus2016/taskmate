@@ -1507,5 +1507,12 @@
   "panel.ics_regenerated": "Novo link gerado — assinaturas antigas interrompidas",
   "gallery.default_title": "Galeria de fotos",
   "gallery.empty": "Ainda sem fotos de comprovação",
-  "gallery.pending": "pendente"
+  "gallery.pending": "pendente",
+  "panel.allowance_title": "Mesada",
+  "panel.allowance_hint": "Converter pontos em mesada real. Registre pagamentos pelo serviço record_allowance_payout ou um botão do painel.",
+  "panel.allowance_enabled": "Ativar pagamentos de mesada",
+  "panel.allowance_rate": "Pontos por unidade",
+  "panel.allowance_rate_hint": "Quantos pontos equivalem a uma unidade monetária.",
+  "panel.allowance_currency": "Símbolo monetário",
+  "panel.allowance_ledger": "Pagamentos recentes"
 }
