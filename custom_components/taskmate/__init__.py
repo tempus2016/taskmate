@@ -160,6 +160,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await async_register_panel(hass)
     async_register_websocket_commands(hass)
 
+    # Conversation/voice intents (FEAT-12). Lazy import so a missing conversation
+    # stack never blocks setup.
+    try:
+        from .intents import async_setup_intents
+        async_setup_intents(hass)
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.debug("TaskMate intents not registered: %s", err)
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     # Register services (only once)
