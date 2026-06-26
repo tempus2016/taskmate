@@ -1514,5 +1514,20 @@
   "panel.allowance_rate": "Pontos por unidade",
   "panel.allowance_rate_hint": "Quantos pontos equivalem a uma unidade monetária.",
   "panel.allowance_currency": "Símbolo monetário",
-  "panel.allowance_ledger": "Pagamentos recentes"
+  "panel.allowance_ledger": "Pagamentos recentes",
+  "family_goal.default_title": "Objetivo da família",
+  "family_goal.disabled": "Nenhum objetivo da família definido",
+  "family_goal.reward_label": "Recompensa: {reward}",
+  "family_goal.reached": "Objetivo alcançado! {reward}",
+  "panel.family_goal_title": "Objetivo da família",
+  "panel.family_goal_hint": "Um objetivo partilhado com os pontos combinados de todas as crianças (ex.: todos chegam a 500 → noite de cinema em família).",
+  "panel.family_goal_enabled": "Ativar objetivo da família",
+  "panel.family_goal_name": "Nome do objetivo",
+  "panel.family_goal_name_ph": "Fundo da noite de cinema",
+  "panel.family_goal_target": "Meta (pontos combinados)",
+  "panel.family_goal_target_hint": "Soma dos pontos de todas as crianças necessária para alcançar o objetivo.",
+  "panel.family_goal_reward": "Recompensa",
+  "panel.family_goal_reward_ph": "uma noite de cinema em família",
+  "notification.family_goal_reached.name": "Objetivo da família alcançado",
+  "notification.family_goal_reached.description": "Comemora quando os pontos combinados da família atingem o objetivo partilhado. Desativado por predefinição."
 }

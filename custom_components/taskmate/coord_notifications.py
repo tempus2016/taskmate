@@ -23,6 +23,7 @@ from .const import (
     NOTIF_TYPE_BADGE_EARNED,
     NOTIF_TYPE_BEDTIME_REMINDER,
     NOTIF_TYPE_CELEBRATION,
+    NOTIF_TYPE_FAMILY_GOAL_REACHED,
     NOTIF_TYPE_LEVEL_UP,
     NOTIF_TYPE_MANDATORY_PARENT_ALERT,
     NOTIF_TYPE_MANDATORY_REMINDER,
@@ -68,6 +69,7 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_MANDATORY_PARENT_ALERT, "parent", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_MONTHLY_REPORT,         "parent", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_SEASON_CHAMPION,        "both",   False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_FAMILY_GOAL_REACHED,    "both",   False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {
@@ -195,6 +197,8 @@ class NotificationCoordinator:
             "message": "Alex reached level 5!",
             "summary": "• Alex: 5 chores, 50 Stars earned",
             "month": "January 2026",
+            "goal_name": "Movie night fund",
+            "goal_reward": "a family movie night",
             "points_name": self.storage.get_points_name(),
         }
         message = "[TEST] " + self._render_template(meta, ctx)
@@ -253,6 +257,7 @@ class NotificationCoordinator:
             NOTIF_TYPE_MANDATORY_PARENT_ALERT: "{child_name} still hasn't done the mandatory chore '{chore_name}'.",
             NOTIF_TYPE_MONTHLY_REPORT:         "TaskMate {month} report:\n{summary}",
             NOTIF_TYPE_SEASON_CHAMPION:        "🏆 {child_name} won the {month} leaderboard with {points} {points_name}!",
+            NOTIF_TYPE_FAMILY_GOAL_REACHED:    "🎉 Family goal reached: {goal_name}! Time for {goal_reward}.",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:

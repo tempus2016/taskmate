@@ -790,6 +790,15 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             # Leaderboard seasons (FEAT-2): current-month standings + champion history.
             "season_month": dt_util.now().strftime("%Y-%m"),
             "season_champions": list(reversed(self.coordinator.storage.get_season_champions()))[:12],
+            # Family co-op goal (FEAT-4).
+            "family_goal": {
+                "enabled": settings.get("family_goal_enabled", False) in (True, "true"),
+                "name": settings.get("family_goal_name", "") or "",
+                "target": _safe_int(settings.get("family_goal_target"), 0),
+                "reward": settings.get("family_goal_reward", "") or "",
+                "progress": sum(c.points for c in children),
+                "achieved": settings.get("family_goal_achieved", False) in (True, "true"),
+            },
         }
 
 
