@@ -315,6 +315,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "awarded_badges": list(data.get("awarded_badges", [])),
         "audit_log":     coordinator.storage.get_audit_log()[:100],  # newest 100 for the panel
         "swap_requests": [r for r in coordinator.storage.get_swap_requests() if r.get("status") == "pending"],
+        "allowance_payouts": list(reversed(coordinator.storage.get_allowance_payouts()))[:50],  # newest first (FEAT-3)
         "settings": {
             "points_name":       data.get("points_name", "Stars"),
             "points_icon":       data.get("points_icon", "mdi:star"),
@@ -1118,6 +1119,7 @@ _SUBKEY_SETTINGS = {
     "interest_enabled", "interest_period", "interest_percent",
     "celebration_notify", "celebration_notify_min_tier",
     "allow_negative_balance",
+    "allowance_enabled", "allowance_rate", "allowance_currency",
     "notify_service", "calendar_projection_days", "skip_confirmation_enabled",
     "vacation_calendar",
     "time_morning_start", "time_morning_end",
@@ -1286,6 +1288,9 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("celebration_notify_min_tier"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
     vol.Optional("skip_confirmation_enabled"): bool,
     vol.Optional("allow_negative_balance"): bool,
+    vol.Optional("allowance_enabled"): bool,
+    vol.Optional("allowance_rate"): vol.All(vol.Coerce(int), vol.Range(min=1, max=100000)),
+    vol.Optional("allowance_currency"): vol.All(str, vol.Length(max=8)),
     vol.Optional("streak_milestones"): str,
     vol.Optional("notify_service"): str,
     vol.Optional("calendar_projection_days"): vol.All(int, vol.Range(min=1, max=90)),

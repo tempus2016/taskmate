@@ -1507,5 +1507,12 @@
   "panel.ics_regenerated": "Neuer Link erzeugt — alte Abos gestoppt",
   "gallery.default_title": "Fotogalerie",
   "gallery.empty": "Noch keine Nachweisfotos",
-  "gallery.pending": "ausstehend"
+  "gallery.pending": "ausstehend",
+  "panel.allowance_title": "Taschengeld",
+  "panel.allowance_hint": "Punkte in echtes Taschengeld umwandeln. Auszahlungen über den Dienst record_allowance_payout oder eine Dashboard-Schaltfläche erfassen.",
+  "panel.allowance_enabled": "Taschengeld-Auszahlungen aktivieren",
+  "panel.allowance_rate": "Punkte pro Einheit",
+  "panel.allowance_rate_hint": "Wie viele Punkte einer Währungseinheit entsprechen.",
+  "panel.allowance_currency": "Währungssymbol",
+  "panel.allowance_ledger": "Letzte Auszahlungen"
 }

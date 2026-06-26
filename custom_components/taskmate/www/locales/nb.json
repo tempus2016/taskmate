@@ -1507,5 +1507,12 @@
   "panel.ics_regenerated": "Ny lenke laget — gamle abonnementer stoppet",
   "gallery.default_title": "Fotogalleri",
   "gallery.empty": "Ingen bevisbilder ennå",
-  "gallery.pending": "venter"
+  "gallery.pending": "venter",
+  "panel.allowance_title": "Lommepenger",
+  "panel.allowance_hint": "Gjør poeng om til ekte lommepenger. Registrer utbetalinger via tjenesten record_allowance_payout eller en dashbord-knapp.",
+  "panel.allowance_enabled": "Aktiver lommepenge-utbetalinger",
+  "panel.allowance_rate": "Poeng per enhet",
+  "panel.allowance_rate_hint": "Hvor mange poeng som tilsvarer én valutaenhet.",
+  "panel.allowance_currency": "Valutasymbol",
+  "panel.allowance_ledger": "Nylige utbetalinger"
 }

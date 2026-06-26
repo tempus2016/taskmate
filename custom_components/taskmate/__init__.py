@@ -84,6 +84,7 @@ from .const import (
     SERVICE_PAUSE_TIMED_TASK,
     SERVICE_POSTPONE_MANDATORY_CHORE,
     SERVICE_PREVIEW_SOUND,
+    SERVICE_RECORD_ALLOWANCE_PAYOUT,
     SERVICE_REJECT_CHORE,
     SERVICE_REJECT_REWARD,
     SERVICE_REMOVE_BONUS,
@@ -543,6 +544,16 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             return
         await coordinator.async_gift_points(
             call.data["from_child_id"], call.data["to_child_id"], call.data["points"],
+        )
+
+    async def handle_record_allowance_payout(call: ServiceCall) -> None:
+        """Record a parent-confirmed allowance payout (deduct points, log cash)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_record_allowance_payout(
+            call.data["child_id"], call.data["points"],
         )
 
     async def handle_request_swap(call: ServiceCall) -> None:
@@ -1091,6 +1102,18 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN,
+        SERVICE_RECORD_ALLOWANCE_PAYOUT,
+        _admin(handle_record_allowance_payout),
+        schema=vol.Schema(
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Required("points"): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
         SERVICE_REQUEST_SWAP,
         _safe(handle_request_swap),
         schema=vol.Schema(
@@ -1438,6 +1461,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_UNDO_CHORE_APPROVAL,
         SERVICE_TEST_NOTIFICATION,
         SERVICE_GIFT_POINTS,
+        SERVICE_RECORD_ALLOWANCE_PAYOUT,
         SERVICE_REQUEST_SWAP,
         SERVICE_CHOOSE_AVATAR,
         SERVICE_CLAIM_REWARD,
