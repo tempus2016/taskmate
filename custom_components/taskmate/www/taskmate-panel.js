@@ -6617,4 +6617,9 @@ class TaskMatePanel extends HTMLElement {
   }
 }
 
-customElements.define("taskmate-panel", TaskMatePanel);
+// Guard the define: after a version bump the browser can briefly hold both the
+// old (?v=prev) and new (?v=current) panel modules, and a second unguarded
+// define() throws "name already used", aborting module evaluation.
+if (!customElements.get("taskmate-panel")) {
+  customElements.define("taskmate-panel", TaskMatePanel);
+}

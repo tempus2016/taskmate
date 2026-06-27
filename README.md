@@ -24,7 +24,7 @@
   <a href="https://github.com/tempus2016/taskmate/actions/workflows/lint.yml"><img src="https://github.com/tempus2016/taskmate/actions/workflows/lint.yml/badge.svg" alt="Lint"></a>
 </p>
  
-> Originally created by [vinnybad/choremander](https://github.com/vinnybad/choremander). This fork adds 15 Lovelace cards, a bonus points system, streak tracking, reward approval flow, a penalty system, and much more.
+> Originally created by [vinnybad/choremander](https://github.com/vinnybad/choremander). This fork adds 20 Lovelace cards, a bonus points system, streak tracking, reward approval flow, a penalty system, and much more.
  
 ---
  
@@ -35,16 +35,29 @@
 - [Setup](#setup)
 - [Chores & Rewards](#chores--rewards)
 - [Chore Scheduling](#chore-scheduling)
+- [Chore Dependencies](#chore-dependencies)
 - [Dynamic Chore Visibility](#dynamic-chore-visibility)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
+- [Quiet Hours](#quiet-hours)
+- [Reminder Escalation](#reminder-escalation)
+- [Weekly Digest & Monthly Report](#weekly-digest--monthly-report)
 - [Penalties](#penalties)
 - [Achievement Badges](#achievement-badges)
 - [Timed Tasks](#timed-tasks)
 - [Task Groups](#task-groups)
 - [Quests](#quests)
 - [Challenges](#challenges)
+- [Leaderboard Seasons](#leaderboard-seasons)
 - [Pool Mode (Savings Jars)](#pool-mode-savings-jars)
+- [Family Goals](#family-goals)
+- [Allowance (Real-Money Payouts)](#allowance-real-money-payouts)
+- [Photo Proof](#photo-proof)
+- [To-Do Lists](#to-do-lists)
+- [Configuration Entities](#configuration-entities)
+- [Voice Assistants](#voice-assistants)
+- [Calendar Subscription (ICS Feed)](#calendar-subscription-ics-feed)
+- [Automation Blueprints](#automation-blueprints)
 - [Dashboard Cards](#dashboard-cards)
 - [Services](#services)
 - [Jackpot Rewards](#jackpot-rewards)
@@ -214,6 +227,19 @@ The chore has a rolling recurrence window. Once completed, it cannot be done aga
  
 ---
  
+## Chore Dependencies
+ 
+Chain chores together so one only becomes available after others are finished. A chore with dependencies stays **locked** until **every** chore it depends on has been completed and approved **today** by the **same child** — then it unlocks for that child. This turns a loose list into an ordered routine: tidy the room *before* vacuuming, clear the table *before* loading the dishwasher.
+ 
+- Set prerequisites in the chore editor (**Admin Panel → Chores → Edit chore**) via the **"Depends on"** picker — pick one or more of your other chores (stored as the chore's `depends_on` list). All selected prerequisites must be satisfied before the dependent chore unlocks.
+- Each prerequisite needs an **approved** completion (a pending one doesn't count), made **today**, by the **same child**. Parent completions count; bonus sub-tasks do not.
+- The check is **per day** — dependencies reset every night. If a prerequisite is rejected or its approval is undone, the dependent chore locks again.
+- Dependencies are one more gate on top of scheduling, rotation, vacation status, and [Dynamic Chore Visibility](#dynamic-chore-visibility). While locked, the chore follows the same hide/dim child-card rules as any other unavailable chore.
+ 
+See the [Chore Dependencies wiki page](https://github.com/tempus2016/taskmate/wiki/Chore-Dependencies) for full details.
+ 
+---
+ 
 ## Dynamic Chore Visibility
  
 Show or hide chores based on the state of a Home Assistant entity. Chores only appear on the child card when the visibility condition is met.
@@ -354,6 +380,49 @@ Leave all targets empty to use persistent (in-app) notifications only.
 > **Note:** Targets must be in the `notify` domain (e.g. `notify.mobile_app_...`). Services from other domains are ignored with a warning in the HA logs.
 
 > **Tip:** Use `binary_sensor.taskmate_has_pending_approvals` in your own automations for more customised notification logic.
+ 
+---
+ 
+## Quiet Hours
+ 
+Set a per-child do-not-disturb window so TaskMate doesn't ping a child during school or after bedtime. While a child's local time is inside their window, **that child's** notifications are silently held back. Parent notifications are never affected.
+ 
+- Set the window per child in the **Admin Panel → Notifications** tab — a **Quiet hours** start and end time alongside each child's notify service. Fill in **both** (`quiet_hours_start` / `quiet_hours_end`, 24-hour `HH:MM`) to enable; clear either to turn it off.
+- The **end is exclusive**; an equal start and end is treated as disabled.
+- If the start is later than the end, the window runs **overnight** (e.g. `20:00`–`07:00` covers the evening through to the next morning). Earlier start than end is a same-day window (e.g. `08:30`–`15:30` for the school day).
+ 
+See the [Quiet Hours wiki page](https://github.com/tempus2016/taskmate/wiki/Quiet-Hours) for full details.
+ 
+---
+ 
+## Reminder Escalation
+ 
+When a mandatory chore is left incomplete, TaskMate can step up its reminders instead of staying silent. Each open same-day mandatory miss climbs a three-rung ladder:
+ 
+| Stage | Fires | Audience | When |
+|---|---|---|---|
+| 1 — Nudge | `mandatory_reminder` | The child | As soon as the miss is raised |
+| 2 — Reminder | `mandatory_reminder` | The child | After the **reminder** threshold |
+| 3 — Parent alert | `mandatory_parent_alert` | Parents | After the **parent** threshold |
+ 
+- The two thresholds, both in minutes from when the miss was raised, are set in the **Admin Panel → Notifications** tab under the mandatory-reminder controls: `mandatory_escalation_reminder_minutes` (default `30`) and `mandatory_escalation_parent_minutes` (default `120`), each 1–1440.
+- The child rungs go only to the affected child (and respect [Quiet Hours](#quiet-hours)); the parent alert goes to the routed parent recipients and is never suppressed.
+- Both notification types are **off by default** — enable and route the **Mandatory reminder** and **Mandatory parent alert** types. If the child completes the chore, that miss stops climbing.
+ 
+See the [Reminder Escalation wiki page](https://github.com/tempus2016/taskmate/wiki/Reminder-Escalation) for full details.
+ 
+---
+ 
+## Weekly Digest & Monthly Report
+ 
+TaskMate can send parents a periodic recap of each child's activity.
+ 
+- **Weekly digest** (`weekly_digest`) — fires **Sundays at 18:00**, one line per child showing chores completed and points earned this week (approved completions only; bonus subtasks and pending completions excluded).
+- **Monthly report** (`monthly_report`) — fires on the **1st of each month at 18:00**, recapping the **previous calendar month** per child: chores completed, points earned, level, and best streak.
+ 
+Both have the **parent** audience, deliver through the standard notification system, and are **off by default**. Enable and route the **Weekly digest** / **Monthly report** types on the Notifications tab, and use **Send test** to verify routing without waiting for the schedule.
+ 
+See the [Weekly Digest wiki page](https://github.com/tempus2016/taskmate/wiki/Weekly-Digest) for full details.
  
 ---
  
@@ -556,6 +625,26 @@ Create and manage challenges in the **Challenges** tab of the TaskMate panel:
 
 ---
 
+## Leaderboard Seasons
+
+Leaderboard Seasons turn the leaderboard into a fresh monthly contest. Each child builds up **season points** over the current calendar month; on the 1st of the next month the season finalizes, a champion is recorded, and everyone's season total resets to zero — so every child gets a fresh shot each month.
+
+- Season points accumulate from **positive point gains only** during the current month (approved chores, bonuses, other awards). Penalties and deductions never pull a season score down.
+- The running total is exposed per child on `sensor.taskmate_overview` as `season_points`, with the current month in `season_month` (`YYYY-MM`).
+- When the month rolls over, the top child is appended to `season_champions` history and a `season_champion` notification announces the winner. If nobody earned points, no champion is recorded.
+- Show it on the [Leaderboard Card](#leaderboard-card) with `sort_by: season` — children rank by season points and the card shows a champion banner. Other sort modes leave season tracking running in the background.
+
+```yaml
+type: custom:taskmate-leaderboard-card
+entity: sensor.taskmate_overview
+sort_by: season               # points | streak | weekly | career | season
+header_color: "#b7950b"
+```
+
+See the [Leaderboard Seasons wiki page](https://github.com/tempus2016/taskmate/wiki/Leaderboard-Seasons) for full details.
+
+---
+
 ## Pool Mode (Savings Jars)
 
 Children can save up for expensive rewards over time by depositing points into a dedicated savings pool. Points are locked once deposited — there is no withdrawal.
@@ -565,6 +654,150 @@ Children can save up for expensive rewards over time by depositing points into a
 - Once the pool reaches the reward cost, the child can claim it
 
 See the [Pool Mode wiki page](https://github.com/tempus2016/taskmate/wiki/Pool-Mode-(Savings-Jars)) for full details.
+
+---
+
+## Family Goals
+
+A Family Goal is a single shared target the whole family works toward together — *"when we reach 500 points between us, we have a movie night"*. Instead of each child chasing their own rewards, **everyone's points are summed** against one combined target. It's co-operative rather than competitive, and parent-controlled.
+
+Family Goals are opt-in. Enable in the panel's **Settings → Family goal** section: set **Enable family goal** (`family_goal_enabled`), a **Goal name**, a **Target** combined-points figure (`family_goal_target`, default `500`), and the **Reward** the family earns.
+
+- Progress is simply the **sum of every child's current points** — there are no deposits to make (unlike [Pool Mode](#pool-mode-savings-jars)). The total moves up and down as children earn and spend.
+- When the combined total first reaches the target, TaskMate fires a one-time **Family goal reached** notification and a `taskmate_family_goal_reached` event. Changing the target (or toggling the goal off and on) resets the reached state so it can be celebrated afresh.
+- Add the **Family Goal Card** to a dashboard for live progress. The card reads the overview sensor's `family_goal` attribute.
+
+See the [Family Goals wiki page](https://github.com/tempus2016/taskmate/wiki/Family-Goals) for full details.
+
+---
+
+## Allowance (Real-Money Payouts)
+
+Allowance turns saved-up points into a real-money pocket-money payout. When a child cashes in points, you record the payout: TaskMate deducts the points and writes a cash entry — in your currency — into a payout ledger you can review later. It is **parent-controlled** and uses a **fixed conversion rate** — a point is always worth the same amount.
+
+Allowance is opt-in. Enable in the panel's **Settings → Allowance** section: switch **Enable allowance payouts** (`allowance_enabled`) on, set **Points per unit** (`allowance_rate`, default `10` — how many points equal one unit of currency), and a **Currency symbol** (`allowance_currency`, e.g. `£` or `$`).
+
+Record a payout with the `record_allowance_payout` service — typically from a weekly automation or a dashboard button:
+
+```yaml
+service: taskmate.record_allowance_payout
+data:
+  child_id: a8c8376a
+  points: 50                  # 1–100000; with a rate of 10 this pays out 5.00
+```
+
+When it runs, the points are **deducted** (logged as `Allowance payout`), a cash amount of `points ÷ rate` (rounded to 2 dp) is recorded in your currency, a ledger entry is appended (capped at the most recent 500, shown in the panel's Allowance section), and a `taskmate_allowance_paid` event is fired. The service is **admin-gated** and rejected if allowance is disabled, the child is unknown, or `points` is below 1.
+
+See the [Allowance wiki page](https://github.com/tempus2016/taskmate/wiki/Allowance) for full details.
+
+---
+
+## Photo Proof
+
+Photo proof lets a chore require evidence before it counts. Turn on **Require photo proof** (`require_photo`) in the chore dialog and that chore's completions **always** go through parent approval — even if Requires Approval is off — and any photo attached is shown to the parent as a thumbnail when they review it.
+
+- Attach a photo at completion time via the `photo_url` field on `taskmate.complete_chore` — a URL or path to an image, e.g. a camera snapshot from an automation. The photo is optional; the requirement forces *approval*, while the photo is the evidence.
+
+```yaml
+service: taskmate.complete_chore
+data:
+  chore_id: b3f9a12c
+  child_id: a8c8376a
+  photo_url: /local/snapshots/dishwasher.jpg
+```
+
+- The thumbnail renders in the Admin Panel approvals list, the [Approvals Card](#approvals-card), and the [Parent Dashboard](#parent-dashboard-card) card; clicking it opens the full image. The photo URL is signed so it loads without extra authentication.
+- To browse past evidence, add the **Photo Gallery Card** — a grid of every proof photo, each captioned with the child, chore, and date.
+
+See the [Photo Proof wiki page](https://github.com/tempus2016/taskmate/wiki/Photo-Proof) for full details.
+
+---
+
+## To-Do Lists
+
+TaskMate publishes each child's outstanding chores as a native Home Assistant **to-do list** — `todo.taskmate_<child name>` (e.g. `todo.taskmate_malia`) — so you can see and tick off today's chores using HA's built-in To-do List card and any voice assistant, without the custom TaskMate cards. New children get their own list automatically.
+
+Each list shows the chores that child **still needs to do today** (it shares the integration's due-chore logic, so vacation mode, scheduling, availability, and dynamic visibility are honoured). **Checking an item off completes the chore** for that child — points are awarded and the usual approval flow applies. You don't add chores from the to-do card; create them in the Admin Panel.
+
+```yaml
+type: todo-list
+entity: todo.taskmate_malia
+```
+
+See the [To-Do Lists wiki page](https://github.com/tempus2016/taskmate/wiki/To-Do-Lists) for full details.
+
+---
+
+## Configuration Entities
+
+A handful of TaskMate's most useful settings are also exposed as standard Home Assistant **number** and **select** entities, so you can read or change them straight from the HA UI or from an automation — without opening the Admin Panel. These entities and the panel are two views of the **same** stored settings.
+
+| Entity | Range / Options | Controls |
+|--------|-----------------|----------|
+| `number.taskmate_weekend_multiplier` | 1.0–5.0, step 0.5 | Weekend points multiplier (1.0 = off) |
+| `number.taskmate_perfect_week_bonus` | 0–1000 | Points for a perfect week |
+| `select.taskmate_streak_reset_mode` | `reset`, `pause` | What happens when a child misses a day |
+| `select.taskmate_card_design` | `classic`, `playroom`, `console`, `cleanpro` | Global default card style |
+
+```yaml
+# e.g. raise the weekend multiplier during a holiday week
+action: number.set_value
+target:
+  entity_id: number.taskmate_weekend_multiplier
+data:
+  value: 2.0
+```
+
+See the [Configuration Entities wiki page](https://github.com/tempus2016/taskmate/wiki/Configuration-Entities) for full details.
+
+---
+
+## Voice Assistants
+
+TaskMate adds Home Assistant **conversation intents** so you can ask Assist — by voice or text — about your children's chores and points:
+
+- *"How many chores does Malia have left?"* → `TaskMateChoresLeft`
+- *"How many stars does Alex have?"* → `TaskMatePoints`
+
+The intent handlers register automatically. The **trigger sentences** are not automatic — copy TaskMate's example file from the repo (`custom_sentences/en/taskmate.yaml`) into your config at `<config>/custom_sentences/en/taskmate.yaml`, then restart Home Assistant. For other languages, copy it under the matching language code and translate only the `sentences:` lines.
+
+The per-child [to-do lists](#to-do-lists) also work with voice assistants for free — you can ask what's on a child's list and tick items off by voice.
+
+See the [Voice Assistants wiki page](https://github.com/tempus2016/taskmate/wiki/Voice-Assistants) for full details.
+
+---
+
+## Calendar Subscription (ICS Feed)
+
+Alongside the per-child HA calendar entities (`calendar.taskmate_<child>`), TaskMate can publish your upcoming chores as a single subscribable **ICS feed** you can add to Google Calendar, Apple Calendar, Outlook, or any app that accepts a calendar URL — so a parent or child can see upcoming chores in their everyday calendar app without opening HA.
+
+The feed is served read-only at:
+
+```
+/api/taskmate/calendar.ics?token=<token>
+```
+
+- Find the subscribe URL in the **Admin Panel → Settings → Calendar subscription** section — click **Show subscribe link**, then **Copy**. It covers the same horizon as the calendar entities (the **Calendar projection** setting).
+- The link is **token-protected** and public-by-link, so treat it like a private link. If it's ever shared too widely, click **Regenerate link** to issue a new URL and immediately invalidate the old one (any app still subscribed to the previous link must be re-subscribed).
+
+See the [Calendar wiki page](https://github.com/tempus2016/taskmate/wiki/Calendar) for full details.
+
+---
+
+## Automation Blueprints
+
+TaskMate ships a set of ready-made Home Assistant **automation blueprints** so you can react to common TaskMate moments without writing the trigger and condition logic yourself. Each fires on a TaskMate bus event and lets you pick the action to run.
+
+| Blueprint | Fires on | Use it for |
+|-----------|----------|-----------|
+| `chore_completed.yaml` | `taskmate_chore_completed` | Reward a completed chore — flash a light, play a chime, post a message |
+| `level_up.yaml` | `taskmate_level_up` | Celebrate when a child reaches a new XP level |
+| `reward_approved.yaml` | `taskmate_reward_approved` | React when a reward claim is approved |
+| `mandatory_missed.yaml` | `taskmate_mandatory_missed` | React when a mandatory chore's window closes incomplete |
+
+The first three accept an optional **Only this child** name (blank = all children). Import via **Settings → Automations & scenes → Blueprints → Import blueprint** with the blueprint's raw URL, e.g. `https://github.com/tempus2016/taskmate/blob/main/blueprints/automation/taskmate/chore_completed.yaml`.
+
+See the [Automations wiki page](https://github.com/tempus2016/taskmate/wiki/Automations) for full details.
 
 ---
 
@@ -595,6 +828,8 @@ See the [Pool Mode wiki page](https://github.com/tempus2016/taskmate/wiki/Pool-M
 | [Bonuses Card](#bonuses-card) | Parents | Apply one-tap point bonuses |
 | [Points Display Card](#points-display-card) | Kids | Big, kid-friendly points readout |
 | [Calendar Card](#calendar-card) | Both | One-day view of chores assigned to each child |
+| [Family Goal Card](#family-goal-card) | Both | Live progress toward a shared family-wide points goal |
+| [Photo Gallery Card](#photo-gallery-card) | Parents | Grid of proof photos from chore completions |
  
 ---
  
@@ -849,11 +1084,13 @@ Competitive ranking
 ```yaml
 type: custom:taskmate-leaderboard-card
 entity: sensor.taskmate_overview
-sort_by: points               # points | streak | weekly
+sort_by: points               # points | streak | weekly | career | season
 show_streak: true
 show_weekly: true
 header_color: "#b7950b"
 ```
+
+> **Seasons:** set `sort_by: season` to rank children by their points for the current calendar month and show a champion banner naming the most recent monthly winner. See [Leaderboard Seasons](#leaderboard-seasons).
 
 ---
 
@@ -936,6 +1173,33 @@ header_color: "#3498db"
 
 ---
 
+### Family Goal Card
+
+Live progress toward a shared [Family Goal](#family-goals) — a progress bar, the combined family total against the target, the percentage, and the reward. When the goal is reached the card switches to a trophy and a celebration message. If no family goal is enabled, it shows a quiet "No family goal set" placeholder. Reads the overview sensor's `family_goal` attribute.
+
+```yaml
+type: custom:taskmate-family-goal-card
+entity: sensor.taskmate_overview
+title: Movie Night Fund       # optional — defaults to the goal name
+header_color: "#16a085"
+```
+
+---
+
+### Photo Gallery Card
+
+Grid of thumbnails for every chore completion that carried a [photo-proof](#photo-proof) image, each captioned with the child, the chore, and the date. Tap a thumbnail to open the full image in a new tab; completions still awaiting approval are marked **pending**. Backed by the `photo_gallery` attribute on the **activity** sensor — note this card uses `sensor.taskmate_activity` as its entity.
+
+```yaml
+type: custom:taskmate-photo-gallery-card
+entity: sensor.taskmate_activity
+title: Proof Photos           # optional
+max: 40                       # optional — limit the number of photos shown
+header_color: "#5d6d7e"
+```
+
+---
+
 ## Services
  
 TaskMate exposes services you can call from automations, scripts, or Developer Tools.
@@ -977,6 +1241,16 @@ TaskMate exposes services you can call from automations, scripts, or Developer T
 |---------|-----------|-------------|
 | `taskmate.add_points` | `child_id`, `points`, `reason`\* | Manually add points to a child |
 | `taskmate.remove_points` | `child_id`, `points`, `reason`\* | Manually remove points from a child |
+| `taskmate.record_allowance_payout` | `child_id`, `points` | Deduct points and log a fixed-rate real-money payout in the allowance ledger (admin-only) |
+
+**Example — record an allowance payout:**
+
+```yaml
+service: taskmate.record_allowance_payout
+data:
+  child_id: a8c8376a
+  points: 50                  # 1–100000; deducted and logged at the fixed allowance rate
+```
 
 ### Penalty Services
 
@@ -1087,17 +1361,30 @@ the overview sensor and its companion sensors at render time.
 
 | Entity | State | What lives here |
 |---|---|---|
-| `sensor.taskmate_overview` | total children | `children` summary, `points_name`, `points_icon`, `today_day_of_week`, totals, streak / perfect-week settings |
+| `sensor.taskmate_overview` | total children | `children` summary (incl. per-child `season_points`), `points_name`, `points_icon`, `today_day_of_week`, totals, streak / perfect-week settings, `family_goal`, `season_month`, `season_champions` |
 | `sensor.taskmate_chores` | total chores | `chores` list (definitions), `todays_completions` |
 | `sensor.taskmate_chore_availability` | total chores available today | `chore_availability`: `{chore_id: {child_id: bool}}` |
 | `sensor.taskmate_rewards` | total rewards | `rewards`, `pending_reward_claims`, `pool_allocations` |
-| `sensor.taskmate_activity` | total completions all-time | `recent_completions` (last 35), `recent_transactions` (last 20) |
+| `sensor.taskmate_activity` | total completions all-time | `recent_completions` (last 35), `recent_transactions` (last 20), `photo_gallery` |
 | `sensor.taskmate_incentives` | penalties + bonuses count | `penalties`, `bonuses` |
 | `sensor.taskmate_pending_approvals` | pending approvals count | `chore_completions`, `reward_claims` (detailed lists) |
 | `sensor.taskmate_<child>_points` | points for that child | `child_id`, `current_streak`, `best_streak`, `total_*` |
 | `sensor.taskmate_<child>_stats` | chores completed by that child | `assigned_chores`, streak / totals |
 
 Automations that read the old overview attributes (e.g. `sensor.taskmate_overview.attributes.chores`) should instead read from the matching companion sensor listed above.
+
+### Other Platforms
+
+Beyond the sensors above, TaskMate also exposes:
+
+| Entity | What it is |
+|---|---|
+| `todo.taskmate_<child>` | One native HA to-do list per child of today's outstanding chores — tick an item to complete the chore. See [To-Do Lists](#to-do-lists) |
+| `calendar.taskmate_<child>` | One read-only HA calendar per child of upcoming chore occurrences and away days |
+| `number.taskmate_weekend_multiplier` | Weekend points multiplier (1.0–5.0). See [Configuration Entities](#configuration-entities) |
+| `number.taskmate_perfect_week_bonus` | Perfect-week bonus points (0–1000) |
+| `select.taskmate_streak_reset_mode` | Streak reset mode (`reset` / `pause`) |
+| `select.taskmate_card_design` | Global default card design (`classic` / `playroom` / `console` / `cleanpro`) |
  
 ---
  
@@ -1146,6 +1433,34 @@ Automations that read the old overview attributes (e.g. `sensor.taskmate_overvie
 ---
  
 ## Changelog
+ 
+### v4.4.1
+ 
+**Fixes**
+- **Photo-proof upload no longer fails on long sessions** — the child card's photo upload sent a manually-cached access token that expires after ~30 min, so an aged session got a `401` shown as the misleading *"Upload failed. Check your connection."* It now refreshes the token when expired and retries once on a `401`. ([#636](https://github.com/tempus2016/taskmate/pull/636))
+- **No more `taskmate-panel` "already defined" console error after upgrades** — guarded the panel's `customElements.define()` so a browser briefly holding both the old and new panel module (different `?v=` cache-busters) no longer throws an uncaught error. ([#636](https://github.com/tempus2016/taskmate/pull/636))
+- **Config-entity defaults now match the applied bonus** — the `weekend_multiplier` and `perfect_week_bonus` number entities defaulted to `1.0`/`0`, but the bonus logic falls back to `2.0`/`50` when unset, so a fresh install displayed values that didn't match what was actually applied. Defaults aligned. ([#635](https://github.com/tempus2016/taskmate/pull/635))
+ 
+### v4.4.0
+ 
+**New features**
+- **Allowance** — convert points into a real-money pocket-money payout at a fixed conversion rate, with a payout ledger and the `taskmate.record_allowance_payout` service. See [Allowance](#allowance-real-money-payouts).
+- **Family Goals** — a single shared, family-wide points target with a one-time goal-reached notification and the new **Family Goal Card**. See [Family Goals](#family-goals).
+- **Chore Dependencies** — `depends_on` prerequisites that keep a chore locked until its predecessors are completed and approved for the same child today. See [Chore Dependencies](#chore-dependencies).
+- **Leaderboard Seasons** — a fresh monthly leaderboard contest with `sort_by: season`, recorded champions, and an automatic reset on the 1st. See [Leaderboard Seasons](#leaderboard-seasons).
+- **Quiet Hours** — per-child do-not-disturb windows that suppress a child's notifications. See [Quiet Hours](#quiet-hours).
+- **Reminder Escalation** — a nudge → reminder → parent-alert ladder for missed mandatory chores. See [Reminder Escalation](#reminder-escalation).
+- **Monthly report** — a 1st-of-the-month parent recap alongside the weekly digest. See [Weekly Digest & Monthly Report](#weekly-digest--monthly-report).
+- **To-Do Lists** — a native HA `todo.taskmate_<child>` list per child; ticking an item completes the chore. See [To-Do Lists](#to-do-lists).
+- **Configuration Entities** — `number`/`select` entities mirroring key settings for use from the UI and automations. See [Configuration Entities](#configuration-entities).
+- **Voice Assistants** — `TaskMateChoresLeft` and `TaskMatePoints` conversation intents. See [Voice Assistants](#voice-assistants).
+- **Calendar subscription** — a token-protected ICS feed (`/api/taskmate/calendar.ics`) for external calendar apps. See [Calendar Subscription](#calendar-subscription-ics-feed).
+- **Photo Gallery Card** — browse past photo-proof images. See [Photo Proof](#photo-proof).
+- **Automation blueprint pack** — ready-made blueprints for common TaskMate events. See [Automation Blueprints](#automation-blueprints).
+- **Negative-balance policy** — optional `allow_negative_balance` to let penalties push a balance below zero.
+ 
+**Fixes & polish**
+- Card count is now 20; sensors expose new `family_goal`, `season_*`, and `photo_gallery` attributes; the Leaderboard Card gains `career` and `season` sort modes.
  
 See [GitHub Releases](https://github.com/tempus2016/taskmate/releases) for the full changelog.
  
