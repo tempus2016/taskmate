@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Apply path labels
-        uses: actions/labeler@f27b608878404679385c85cfa523b85ccb86e213 # v5 2026-06-23
+        uses: actions/labeler@f27b608878404679385c85cfa523b85ccb86e213 # v6.1.0 2026-06-27
         with:
           configuration-path: .github/labeler.yml
           sync-labels: true
