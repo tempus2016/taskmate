@@ -39,3 +39,7 @@ scripts/screenshots/
 
 # Node / JS tooling (CI-3)
 node_modules/
+
+# Internal audit artifacts — never commit
+AUDIT_PROMPT.md
+AUDIT_REPORT.md
