@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6 2026-06-17
 
       - name: Apply labels
-        uses: crazy-max/ghaction-github-labeler@548a7c3603594ec17c819e1239f281a3b801ab4d # v5 2026-06-23
+        uses: crazy-max/ghaction-github-labeler@548a7c3603594ec17c819e1239f281a3b801ab4d # v6.0.0 2026-06-27
         with:
           yaml_file: .github/labels.yml
           # Never delete labels not listed in labels.yml — create/update only.
