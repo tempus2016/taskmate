@@ -77,6 +77,9 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
     chore_lookup = {c.id: c for c in chores}
     reward_lookup = {r.id: r for r in rewards}
 
+    # Current-month leaderboard points per child (FEAT-2).
+    season_points = coordinator.storage.get_season_points(dt_util.now().strftime("%Y-%m"))
+
     # Pending chore points per child (awaiting approval -> points to be earned).
     pending_points_by_child: dict[str, int] = {}
     for comp in pending_completions:
@@ -122,6 +125,7 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
         "child_lookup": child_lookup,
         "chore_lookup": chore_lookup,
         "reward_lookup": reward_lookup,
+        "season_points": season_points,
         "all_completions": all_completions,
         "pending_completions": pending_completions,
         "pending_reward_claim_objs": pending_reward_claim_objs,
@@ -142,6 +146,7 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
     pending = common["pending_points_by_child"]
     committed = common["committed_points_by_child"]
     allocated = common["total_allocated_by_child"]
+    season = common["season_points"]
     summary = []
     for c in children:
         committed_amount = committed.get(c.id, 0)
@@ -162,6 +167,7 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
             "chore_order": c.chore_order,
             "current_streak": getattr(c, 'current_streak', 0) or 0,
             "best_streak": getattr(c, 'best_streak', 0) or 0,
+            "season_points": int(season.get(c.id, 0)),
             "total_points_earned": getattr(c, 'total_points_earned', 0) or 0,
             "total_chores_completed": getattr(c, 'total_chores_completed', 0) or 0,
             "avatar": getattr(c, 'avatar', 'mdi:account-circle') or 'mdi:account-circle',
@@ -502,6 +508,33 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
     return out
 
 
+def _build_photo_gallery(common: dict, limit: int = 40) -> list[dict]:
+    """Recent completions that carry an evidence photo, newest first (FEAT-13).
+
+    Returns the raw (unsigned) ``/api/taskmate/photo/<file>`` path; the gallery
+    card signs each via ``auth/sign_path`` before rendering (a card's <img> can't
+    send a bearer token).
+    """
+    child_lookup = common["child_lookup"]
+    chore_lookup = common["chore_lookup"]
+    with_photos = [
+        c for c in common["all_completions"] if getattr(c, "photo_url", "")
+    ]
+    recent = sorted(with_photos, key=lambda c: c.completed_at, reverse=True)[:limit]
+    out = []
+    for comp in recent:
+        chore = chore_lookup.get(comp.chore_id)
+        out.append({
+            "completion_id": comp.id,
+            "child_name": child_lookup[comp.child_id].name if comp.child_id in child_lookup else "",
+            "chore_name": chore.name if chore else "",
+            "approved": comp.approved,
+            "completed_at": comp.completed_at.isoformat() if hasattr(comp.completed_at, "isoformat") else str(comp.completed_at),
+            "photo_url": comp.photo_url,
+        })
+    return out
+
+
 def _build_recent_transactions(common: dict, limit: int = 20) -> list[dict]:
     """Unified activity feed of manual point adjustments and reward claims.
 
@@ -754,6 +787,18 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "vacation_name": active_vacation.get("name", "") if active_vacation else "",
             "vacation_end": active_vacation.get("end", "") if active_vacation else "",
             "vacation_periods": self.coordinator.get_vacation_periods(),
+            # Leaderboard seasons (FEAT-2): current-month standings + champion history.
+            "season_month": dt_util.now().strftime("%Y-%m"),
+            "season_champions": list(reversed(self.coordinator.storage.get_season_champions()))[:12],
+            # Family co-op goal (FEAT-4).
+            "family_goal": {
+                "enabled": settings.get("family_goal_enabled", False) in (True, "true"),
+                "name": settings.get("family_goal_name", "") or "",
+                "target": _safe_int(settings.get("family_goal_target"), 0),
+                "reward": settings.get("family_goal_reward", "") or "",
+                "progress": sum(c.points for c in children),
+                "achieved": settings.get("family_goal_achieved", False) in (True, "true"),
+            },
         }
 
 
@@ -896,6 +941,7 @@ class TaskMateActivitySensor(_CachedAttrsSensor):
             "recent_completions": _build_recent_completions(common),
             "recent_transactions": _build_recent_transactions(common),
             "career_score_history": career_history,
+            "photo_gallery": _build_photo_gallery(common),
         }
 
 

@@ -3640,16 +3640,32 @@ class TaskMateChildCard extends LitElement {
     this._photoCapture = { ...cap, step: "uploading", error: "" };
     this.requestUpdate();
 
-    try {
-      const fd = new FormData();
-      fd.append("file", cap.blob, "evidence.jpg");
+    // POST the blob with a Bearer token, refreshing the (short-lived) access
+    // token if expired. A 401 means the cached token went stale mid-session, so
+    // force a refresh and retry once before giving up.
+    const postPhoto = async () => {
       const token = this.hass && this.hass.auth && this.hass.auth.data
         && this.hass.auth.data.access_token;
-      const resp = await fetch("/api/taskmate/photo", {
+      const fd = new FormData();
+      fd.append("file", cap.blob, "evidence.jpg");
+      return fetch("/api/taskmate/photo", {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
       });
+    };
+
+    try {
+      if (this.hass && this.hass.auth && this.hass.auth.expired
+        && this.hass.auth.refreshAccessToken) {
+        try { await this.hass.auth.refreshAccessToken(); } catch (e) { /* surfaced below */ }
+      }
+      let resp = await postPhoto();
+      if (resp.status === 401 && this.hass && this.hass.auth
+        && this.hass.auth.refreshAccessToken) {
+        await this.hass.auth.refreshAccessToken();
+        resp = await postPhoto();
+      }
       if (!resp.ok) throw new Error(`upload failed (${resp.status})`);
       const { photo_url: photoUrl } = await resp.json();
       if (!photoUrl) throw new Error("no photo_url in response");
@@ -4115,35 +4131,18 @@ class TaskMateChildCardEditor extends LitElement {
   }
 
   _renderColourPicker(key, defaultValue) {
+    const d = window.__taskmate_design;
     const current = this.config[key] || defaultValue;
-    const presets = ['#9b59b6', '#e67e22', '#27ae60', '#3498db', '#f1c40f', '#e74c3c', '#34495e'];
-    const isActive = (c) => c.toLowerCase() === current.toLowerCase();
-    return html`
-      <div class="colour-field">
-        <span class="colour-field-label">${this._t('common.editor.header_colour')}</span>
-        <div class="colour-field-body">
-          <label class="colour-swatch-wrapper">
-            <input type="color" .value=${current}
-              @input=${(e) => this._updateConfig(key, e.target.value)} />
-            <span class="colour-swatch-preview" style="background:${current}"></span>
-          </label>
-          <span class="colour-hex">${current}</span>
-          <div class="colour-presets">
-            ${presets.map((p) => html`
-              <button class="preset-swatch ${isActive(p) ? 'active' : ''}"
-                style="background:${p}"
-                title=${p}
-                @click=${(e) => { e.preventDefault(); this._updateConfig(key, p); }}
-              ></button>
-            `)}
-          </div>
-          <button class="colour-reset"
-            @click=${(e) => { e.preventDefault(); this._updateConfig(key, defaultValue); }}
-          >${this._t('common.reset')}</button>
-        </div>
-        <div class="colour-helper">${this._t('common.editor.header_colour_helper')}</div>
-      </div>
-    `;
+    if (!d || !d.colourPicker) return html``;
+    return d.colourPicker({
+      defaultValue, current,
+      label: this._t('common.editor.header_colour'),
+      helper: this._t('common.editor.header_colour_helper'),
+      resetLabel: this._t('common.reset'),
+      onInput: (v) => this._updateConfig(key, v),
+      onPreset: (v) => this._updateConfig(key, v),
+      onReset: () => this._updateConfig(key, defaultValue),
+    });
   }
 
   _formChanged(e) {

@@ -18,8 +18,8 @@ from .coordinator import TaskMateCoordinator
 
 # (setting_key, translation_key, min, max, step, default, icon)
 _NUMBERS = [
-    ("weekend_multiplier", "weekend_multiplier", 1.0, 5.0, 0.5, 1.0, "mdi:calendar-weekend"),
-    ("perfect_week_bonus", "perfect_week_bonus", 0, 1000, 1, 0, "mdi:trophy-award"),
+    ("weekend_multiplier", "weekend_multiplier", 1.0, 5.0, 0.5, 2.0, "mdi:calendar-weekend"),
+    ("perfect_week_bonus", "perfect_week_bonus", 0, 1000, 1, 50, "mdi:trophy-award"),
 ]
 
 

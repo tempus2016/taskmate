@@ -44,6 +44,8 @@ CARDS: Final = [
     "taskmate-bonuses-card.js",
     "taskmate-points-display-card.js",
     "taskmate-calendar-card.js",
+    "taskmate-photo-gallery-card.js",
+    "taskmate-family-goal-card.js",
 ]
 
 # Cards that USED to ship but were removed. Their files no longer exist, so any
@@ -114,6 +116,10 @@ async def async_register_frontend(hass: HomeAssistant) -> None:
     # Authenticated upload/serve endpoints for chore evidence photos.
     from .http_photos import async_register_photo_views
     async_register_photo_views(hass)
+
+    # Token-gated ICS calendar feed (FEAT-10).
+    from .http_calendar import async_register_calendar_view
+    async_register_calendar_view(hass)
 
     # Register global JS modules (loaded on all pages, including config flow)
     version = await _async_get_version(hass)

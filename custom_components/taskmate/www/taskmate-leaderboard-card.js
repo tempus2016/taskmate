@@ -205,6 +205,16 @@ class TaskMateLeaderboardCard extends LitElement {
         font-size: 0.78rem; color: var(--secondary-text-color);
       }
 
+      /* Season champion banner (FEAT-2) */
+      .season-champion-banner {
+        display: flex; align-items: center; gap: 8px;
+        padding: 8px 18px;
+        background: linear-gradient(90deg, #f9e79f33, transparent);
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+        font-size: 0.82rem; color: var(--primary-text-color);
+      }
+      .season-champion-banner ha-icon { color: #d4ac0d; --mdc-icon-size: 18px; }
+
       /* Error / empty */
       .error-state, .empty-state {
         display: flex; flex-direction: column; align-items: center;
@@ -325,11 +335,16 @@ class TaskMateLeaderboardCard extends LitElement {
       if (sortBy === "streak") return (b.current_streak || 0) - (a.current_streak || 0);
       if (sortBy === "weekly") return (weeklyPoints[b.id] || 0) - (weeklyPoints[a.id] || 0);
       if (sortBy === "career") return (b.career_score || 0) - (a.career_score || 0);
+      if (sortBy === "season") return (b.season_points || 0) - (a.season_points || 0);
       return (b.points || 0) - (a.points || 0);
     });
 
-    const sortLabels = { points: this._t('leaderboard.sort_all_time_points'), streak: this._t('leaderboard.sort_current_streak'), weekly: this._t('leaderboard.sort_this_week'), career: this._t('leaderboard.sort_career_score') };
+    const sortLabels = { points: this._t('leaderboard.sort_all_time_points'), streak: this._t('leaderboard.sort_current_streak'), weekly: this._t('leaderboard.sort_this_week'), career: this._t('leaderboard.sort_career_score'), season: this._t('leaderboard.sort_this_month') };
     const periodLabel = sortLabels[sortBy] || sortLabels.points;
+
+    // Season champion banner (FEAT-2): show the most recent recorded champion.
+    const champions = attrs.season_champions || [];
+    const lastChampion = champions.length ? champions[0] : null;
 
     // Solo mode
     if (children.length === 1) {
@@ -346,6 +361,12 @@ class TaskMateLeaderboardCard extends LitElement {
           </div>
           <span class="period-badge">${periodLabel}</span>
         </div>
+        ${lastChampion ? html`
+          <div class="season-champion-banner">
+            <ha-icon icon="mdi:crown"></ha-icon>
+            <span>${this._t('leaderboard.last_champion', { name: lastChampion.child_name })}</span>
+          </div>
+        ` : ''}
         <div class="card-content">
           ${sorted.map((child, idx) => {
             const prevChild = idx > 0 ? sorted[idx - 1] : null;
@@ -367,6 +388,7 @@ class TaskMateLeaderboardCard extends LitElement {
     if (sortBy === "streak") return (a.current_streak || 0) === (b.current_streak || 0);
     if (sortBy === "weekly") return (weeklyPoints[a.id] || 0) === (weeklyPoints[b.id] || 0);
     if (sortBy === "career") return (a.career_score || 0) === (b.career_score || 0);
+    if (sortBy === "season") return (a.season_points || 0) === (b.season_points || 0);
     return (a.points || 0) === (b.points || 0);
   }
 
@@ -386,6 +408,9 @@ class TaskMateLeaderboardCard extends LitElement {
     } else if (sortBy === "career") {
       scoreValue = child.career_score || 0;
       scoreLabel = this._t('leaderboard.career_score');
+    } else if (sortBy === "season") {
+      scoreValue = child.season_points || 0;
+      scoreLabel = this._t('leaderboard.sort_this_month');
     } else {
       scoreValue = child.points || 0;
       scoreLabel = pointsName;
@@ -844,35 +869,18 @@ class TaskMateLeaderboardCardEditor extends LitElement {
   }
 
   _renderColourPicker(key, defaultValue) {
+    const d = window.__taskmate_design;
     const current = this.config[key] || defaultValue;
-    const presets = [defaultValue, '#e67e22', '#27ae60', '#3498db', '#9b59b6', '#e74c3c', '#34495e'];
-    const isActive = (c) => c.toLowerCase() === current.toLowerCase();
-    return html`
-      <div class="colour-field">
-        <span class="colour-field-label">${this._t('common.editor.header_colour')}</span>
-        <div class="colour-field-body">
-          <label class="colour-swatch-wrapper">
-            <input type="color" .value=${current}
-              @input=${(e) => this._update(key, e.target.value)} />
-            <span class="colour-swatch-preview" style="background:${current}"></span>
-          </label>
-          <span class="colour-hex">${current}</span>
-          <div class="colour-presets">
-            ${presets.map((p) => html`
-              <button class="preset-swatch ${isActive(p) ? 'active' : ''}"
-                style="background:${p}"
-                title=${p}
-                @click=${(e) => { e.preventDefault(); this._update(key, p); }}
-              ></button>
-            `)}
-          </div>
-          <button class="colour-reset"
-            @click=${(e) => { e.preventDefault(); this._update(key, defaultValue); }}
-          >${this._t('common.reset')}</button>
-        </div>
-        <div class="colour-helper">${this._t('common.editor.header_colour_helper')}</div>
-      </div>
-    `;
+    if (!d || !d.colourPicker) return html``;
+    return d.colourPicker({
+      defaultValue, current,
+      label: this._t('common.editor.header_colour'),
+      helper: this._t('common.editor.header_colour_helper'),
+      resetLabel: this._t('common.reset'),
+      onInput: (v) => this._update(key, v),
+      onPreset: (v) => this._update(key, v),
+      onReset: () => this._update(key, defaultValue),
+    });
   }
 
   _formChanged(e) {

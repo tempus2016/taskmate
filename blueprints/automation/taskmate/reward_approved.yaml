@@ -1,0 +1,37 @@
+blueprint:
+  name: TaskMate — Reward approved
+  description: >
+    Run an action when a child's reward claim is approved (e.g. announce
+    "Movie night unlocked!", unlock a smart plug for the games console). The
+    child's name, reward name and cost are available to your action via
+    `trigger.event.data` (child_name, reward_name, cost).
+  domain: automation
+  source_url: https://github.com/tempus2016/taskmate/blob/main/blueprints/automation/taskmate/reward_approved.yaml
+  input:
+    child_filter:
+      name: Only this child (optional)
+      description: Leave blank to react to every child; otherwise enter the exact child name.
+      default: ""
+      selector:
+        text: {}
+    reward_action:
+      name: Action
+      description: What to do when the reward is approved.
+      selector:
+        action: {}
+
+mode: queued
+max: 10
+
+triggers:
+  - trigger: event
+    event_type: taskmate_reward_approved
+
+variables:
+  child_filter: !input child_filter
+
+conditions:
+  - condition: template
+    value_template: "{{ child_filter == '' or trigger.event.data.child_name == child_filter }}"
+
+actions: !input reward_action

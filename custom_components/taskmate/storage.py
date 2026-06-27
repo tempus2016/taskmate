@@ -843,9 +843,60 @@ class TaskMateStorage:
             self._data["points_transactions"] = []
         self._data["points_transactions"].append(transaction.to_dict())
 
+        # Accumulate season (leaderboard) points from every positive award here,
+        # the single choke point all awards flow through — the rolling 200-cap on
+        # transactions makes them unreliable for a monthly total (FEAT-2).
+        if transaction.points > 0:
+            self.record_season_points(
+                transaction.child_id, transaction.points, transaction.created_at
+            )
+
         # Keep only the last 200 transactions to avoid unbounded storage growth
         if len(self._data["points_transactions"]) > 200:
             self._data["points_transactions"] = self._data["points_transactions"][-200:]
+
+    # ── Leaderboard seasons (FEAT-2) ──────────────────────────────────────
+    def record_season_points(self, child_id: str, points: int, when) -> None:
+        """Add ``points`` to ``child_id``'s tally for the calendar month of ``when``."""
+        if points <= 0 or not child_id:
+            return
+        key = when.strftime("%Y-%m")
+        seasons = self._data.setdefault("season_points", {})
+        month = seasons.setdefault(key, {})
+        month[child_id] = month.get(child_id, 0) + int(points)
+        # Keep ~13 months so year-over-year stays available without unbounded growth.
+        if len(seasons) > 13:
+            for stale in sorted(seasons)[:-13]:
+                del seasons[stale]
+
+    def get_season_points(self, ym: str) -> dict[str, int]:
+        """Per-child points earned in calendar month ``ym`` ("YYYY-MM")."""
+        return dict((self._data.get("season_points", {}) or {}).get(ym, {}))
+
+    # ── Allowance payout ledger (FEAT-3) ──────────────────────────────────
+    def get_allowance_payouts(self) -> list[dict]:
+        """Recorded allowance payouts, oldest first."""
+        return list(self._data.get("allowance_payouts", []))
+
+    def add_allowance_payout(self, entry: dict) -> None:
+        """Append an allowance payout; cap the ledger at 500 entries."""
+        ledger = self._data.setdefault("allowance_payouts", [])
+        ledger.append(entry)
+        if len(ledger) > 500:
+            del ledger[:-500]
+
+    def get_season_champions(self) -> list[dict]:
+        """Recorded monthly champions, oldest first."""
+        return list(self._data.get("season_champions", []))
+
+    def add_season_champion(self, entry: dict) -> None:
+        """Record a month's champion once; cap history at 24 months."""
+        champs = self._data.setdefault("season_champions", [])
+        if any(c.get("month") == entry.get("month") for c in champs):
+            return
+        champs.append(entry)
+        if len(champs) > 24:
+            del champs[:-24]
 
     def remove_points_transaction(self, transaction_id: str) -> bool:
         """Remove a points transaction by id. Returns True if one was removed."""
