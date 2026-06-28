@@ -34,7 +34,10 @@ def _coordinator(linked_user_id, others=None):
         coord.get_child.return_value = None
     else:
         coord.get_child.return_value = MagicMock(linked_user_id=linked_user_id)
-    coord.get_children.return_value = others or []
+    # The guard reads the full roster via coordinator.storage.get_children();
+    # mirror that exact path so a regression to a non-existent coordinator
+    # method (issue #641) is caught here rather than only at runtime.
+    coord.storage.get_children.return_value = others or []
     return coord
 
 
