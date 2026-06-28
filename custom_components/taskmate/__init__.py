@@ -384,7 +384,7 @@ async def _async_require_linked_child(
     # Target child is unlinked (kiosk). A user who is themselves linked to a
     # *different* child must not act through an unlinked child (SEC-4); truly
     # unlinked/anonymous callers keep the open kiosk behaviour.
-    others = coordinator.get_children() or []
+    others = coordinator.storage.get_children() or []
     if any(getattr(c, "linked_user_id", "") == user_id for c in others):
         raise Unauthorized(context=call.context)
 
