@@ -1434,6 +1434,11 @@ Beyond the sensors above, TaskMate also exposes:
  
 ## Changelog
  
+### v4.4.2
+ 
+**Fixes**
+- **Rewards Card: depositing points into a pool/jackpot reward no longer crashes** — `allocate_points_to_pool` failed with `'TaskMateCoordinator' object has no attribute 'get_children'` whenever the kiosk cross-child safety check ran (a non-admin/shared-tablet session depositing to an unlinked child). The child roster is now looked up on the correct object, so deposits work again. ([#642](https://github.com/tempus2016/taskmate/pull/642), fixes [#641](https://github.com/tempus2016/taskmate/issues/641))
+ 
 ### v4.4.1
  
 **Fixes**
