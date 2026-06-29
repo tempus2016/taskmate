@@ -170,6 +170,16 @@
         }
       }
     },
+    "approve_all_chores": {
+      "name": "Godkjenn alle gjeremål",
+      "description": "Godkjenn alle ventande fullførte gjeremål (eller eit bestemt utval) og tildel poeng",
+      "fields": {
+        "completion_ids": {
+          "name": "Fullførings-ID-ar",
+          "description": "Bestemte fullførings-ID-ar som skal godkjennast; utelat for å godkjenne alle ventande"
+        }
+      }
+    },
     "reject_chore": {
       "name": "Avvis oppgåve",
       "description": "Avvis ei fullført oppgåve",
