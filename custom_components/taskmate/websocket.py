@@ -111,6 +111,7 @@ WS_UPDATE_SETTINGS: Final     = "taskmate/update_settings"
 # Operational
 WS_COMPLETE_BONUS_SUBTASK: Final = "taskmate/complete_bonus_subtask"
 WS_APPROVE_CHORE: Final       = "taskmate/approve_chore"
+WS_APPROVE_ALL_CHORES: Final  = "taskmate/approve_all_chores"
 WS_REJECT_CHORE: Final        = "taskmate/reject_chore"
 WS_APPROVE_REWARD: Final      = "taskmate/approve_reward"
 WS_REJECT_REWARD: Final       = "taskmate/reject_reward"
@@ -1390,6 +1391,17 @@ async def _ws_approve_chore(hass, connection, msg, coordinator):
 
 
 @websocket_api.websocket_command({
+    vol.Required("type"): WS_APPROVE_ALL_CHORES,
+    vol.Optional("completion_ids"): [str],
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_approve_all_chores(hass, connection, msg, coordinator):
+    count = await coordinator.async_approve_chores_bulk(msg.get("completion_ids"))
+    connection.send_result(msg["id"], {"count": count})
+
+
+@websocket_api.websocket_command({
     vol.Required("type"): WS_REJECT_CHORE,
     vol.Required("completion_id"): str,
 })
@@ -2054,7 +2066,7 @@ _COMMANDS = (
     _ws_add_task_group, _ws_update_task_group, _ws_remove_task_group,
     _ws_update_settings,
     _ws_complete_bonus_subtask,
-    _ws_approve_chore, _ws_reject_chore, _ws_approve_reward, _ws_reject_reward,
+    _ws_approve_chore, _ws_approve_all_chores, _ws_reject_chore, _ws_approve_reward, _ws_reject_reward,
     _ws_parent_complete_chore,
     _ws_set_chore_order, _ws_set_global_chore_order, _ws_add_chores_bulk,
     _ws_templates_list, _ws_templates_get, _ws_templates_apply,
