@@ -98,6 +98,27 @@ class TaskMateApprovalsCard extends LitElement {
         flex-shrink: 0;
       }
 
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+
+      .approve-all-btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        border-radius: 14px;
+        padding: 5px 12px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .approve-all-btn:hover { background: rgba(255, 255, 255, 0.3); }
+      .approve-all-btn:disabled { opacity: 0.6; cursor: default; }
+
       .card-content { padding: 16px; }
 
       .day-group {
@@ -512,7 +533,13 @@ class TaskMateApprovalsCard extends LitElement {
             <ha-icon class="header-icon" icon="mdi:check-circle-outline"></ha-icon>
             <span class="card-title">${this.config.title || this._t('approvals.default_title')}</span>
           </div>
-          ${totalPending > 0 ? html`<span class="pending-count">${totalPending}</span>` : ""}
+          <div class="header-right">
+            ${filteredCompletions.length > 0
+              ? html`<button class="approve-all-btn" ?disabled="${this._loading['__all__']}"
+                  @click="${() => this._handleApproveAll(filteredCompletions)}">${this._t('approvals.approve_all')}</button>`
+              : ""}
+            ${totalPending > 0 ? html`<span class="pending-count">${totalPending}</span>` : ""}
+          </div>
         </div>
 
         <div class="card-content">
@@ -681,18 +708,23 @@ class TaskMateApprovalsCard extends LitElement {
       `)}</div>`;
     }
 
+    const completions = items.filter((it) => it.kind === "completion").map((it) => it.completion);
     return html`<ha-card class="tmd" style="--hd:${hd}">
-      ${this._designHeader(hd, items.length)}
+      ${this._designHeader(hd, items.length, completions)}
       <div class="tmd-bd">${body}</div>
     </ha-card>`;
   }
 
-  _designHeader(hd, count) {
+  _designHeader(hd, count, completions = []) {
     const title = this.config.title || this._t('approvals.default_title');
     return html`
       <div class="tmd-hd">
         <span class="ic">✅</span>
         <span class="tt">${title}</span>
+        ${completions.length > 0
+          ? html`<button class="approve-all-btn" ?disabled="${this._loading['__all__']}"
+              @click="${() => this._handleApproveAll(completions)}">${this._t('approvals.approve_all')}</button>`
+          : ""}
         ${count > 0 ? html`<span class="cnt">${count}</span>` : ""}
       </div>`;
   }
@@ -1287,6 +1319,30 @@ class TaskMateApprovalsCard extends LitElement {
 
   async _handleReject(completion) {
     await this._callService("reject_chore", completion.completion_id);
+  }
+
+  async _handleApproveAll(completions) {
+    const ids = (completions || []).map(c => c.completion_id).filter(Boolean);
+    if (ids.length === 0) return;
+    if (!window.confirm(this._t('approvals.approve_all_confirm', { count: ids.length }))) return;
+    if (this._loading['__all__']) return;
+    this._loading = { ...this._loading, '__all__': true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService('taskmate', 'approve_all_chores', { completion_ids: ids });
+    } catch (error) {
+      console.error('Failed to approve all:', error);
+      if (this.hass.callService) {
+        this.hass.callService('persistent_notification', 'create', {
+          title: this._t('approvals.error_title'),
+          message: this._t('approvals.error_failed_service', { service: 'approve all', message: error.message }),
+          notification_id: 'taskmate_error_approve_all',
+        });
+      }
+    } finally {
+      this._loading = { ...this._loading, '__all__': false };
+      this.requestUpdate();
+    }
   }
 
   async _callService(service, completionId) {
