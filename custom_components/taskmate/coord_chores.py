@@ -272,6 +272,28 @@ class ChoresMixin:
         await self.async_refresh()
         return count
 
+    async def async_approve_chores_bulk(
+        self, completion_ids: list[str] | None = None
+    ) -> int:
+        """Approve several pending chore completions at once. Returns count approved.
+
+        If completion_ids is given, only those (still-pending) completions are
+        approved. If None/empty, every currently-unapproved completion is approved.
+        Reuses async_approve_chore so all award/badge/quest/celebration side-effects
+        match single approval exactly.
+        """
+        pending = {c.id for c in self.storage.get_completions() if not c.approved}
+        if completion_ids:
+            # Preserve caller order, drop dupes and anything not currently pending.
+            targets = [cid for cid in dict.fromkeys(completion_ids) if cid in pending]
+        else:
+            targets = [c.id for c in self.storage.get_completions() if not c.approved]
+        count = 0
+        for cid in targets:
+            await self.async_approve_chore(cid)
+            count += 1
+        return count
+
     async def async_add_chores_bulk(
         self,
         chore_names: list[str],

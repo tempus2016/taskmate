@@ -170,6 +170,16 @@
         }
       }
     },
+    "approve_all_chores": {
+      "name": "Aprovar todas as tarefas",
+      "description": "Aprovar todas as conclusões de tarefas pendentes (ou um conjunto específico) e atribuir pontos",
+      "fields": {
+        "completion_ids": {
+          "name": "IDs de conclusão",
+          "description": "IDs de conclusão específicos para aprovar; omita para aprovar todas as pendentes"
+        }
+      }
+    },
     "reject_chore": {
       "name": "Rejeitar tarefa",
       "description": "Rejeitar uma tarefa concluída",

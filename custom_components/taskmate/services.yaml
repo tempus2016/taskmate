@@ -62,6 +62,17 @@ approve_chore:
       selector:
         text:
 
+approve_all_chores:
+  name: Approve All Chores
+  description: Approve all pending chore completions (or a specific set) and award points
+  fields:
+    completion_ids:
+      name: Completion IDs
+      description: Specific completion IDs to approve; omit to approve all pending
+      required: false
+      selector:
+        object:
+
 reject_chore:
   name: Reject Chore
   description: Reject a completed chore

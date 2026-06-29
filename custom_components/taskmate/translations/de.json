@@ -170,6 +170,16 @@
         }
       }
     },
+    "approve_all_chores": {
+      "name": "Alle Aufgaben genehmigen",
+      "description": "Alle ausstehenden Aufgabenerledigungen (oder eine bestimmte Auswahl) genehmigen und Punkte vergeben",
+      "fields": {
+        "completion_ids": {
+          "name": "Erledigungs-IDs",
+          "description": "Bestimmte Erledigungs-IDs zum Genehmigen; leer lassen, um alle ausstehenden zu genehmigen"
+        }
+      }
+    },
     "reject_chore": {
       "name": "Aufgabe ablehnen",
       "description": "Eine erledigte Aufgabe ablehnen",

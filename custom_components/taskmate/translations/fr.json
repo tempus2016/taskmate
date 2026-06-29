@@ -170,6 +170,16 @@
         }
       }
     },
+    "approve_all_chores": {
+      "name": "Approuver toutes les tâches",
+      "description": "Approuver toutes les tâches terminées en attente (ou un ensemble précis) et attribuer les points",
+      "fields": {
+        "completion_ids": {
+          "name": "Identifiants de complétion",
+          "description": "Identifiants de complétion à approuver ; laisser vide pour tout approuver"
+        }
+      }
+    },
     "reject_chore": {
       "name": "Rejeter une corvée",
       "description": "Rejeter une corvée terminée",
