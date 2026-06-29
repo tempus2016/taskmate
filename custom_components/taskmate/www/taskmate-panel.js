@@ -628,6 +628,7 @@ class TaskMatePanel extends HTMLElement {
     }
 
     // Activity / approvals
+    if (act === "approve-all-chores") { this._doApproveAll(); return; }
     if (act === "approve-chore")  { this._doApprove("chore", t.dataset.id); return; }
     if (act === "reject-chore")   { this._doReject("chore", t.dataset.id); return; }
     if (act === "approve-reward") { this._doApprove("reward", t.dataset.id); return; }
@@ -1010,6 +1011,19 @@ class TaskMatePanel extends HTMLElement {
     if (!ok) { this._showToast("err", this._t("panel.toast_approve_failed", {error: err})); return; }
     await this._fetchState();
     this._showToast("ok", this._t("panel.toast_approved"));
+  }
+
+  async _doApproveAll() {
+    const pending = this._state?.pending_completions || [];
+    if (pending.length === 0) return;
+    if (!confirm(this._t("panel.activity_approve_all_confirm", { count: pending.length }))) return;
+    const { ok, err } = await this._callWS({
+      type: "taskmate/approve_all_chores",
+      completion_ids: pending.map(c => c.id),
+    });
+    if (!ok) { this._showToast("err", this._t("panel.toast_approve_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.activity_approve_all_done", { count: pending.length }));
   }
 
   async _doReject(kind, id) {
@@ -2473,6 +2487,9 @@ class TaskMatePanel extends HTMLElement {
           ${(pendingCompletions.length + pendingClaims.length + pendingSwaps.length) > 0
             ? `<span class="tm-pill tm-pill-warn">${pendingCompletions.length + pendingClaims.length + pendingSwaps.length}</span>`
             : `<span class="tm-pill tm-pill-success">${this._t("panel.activity_pending_all_clear")}</span>`}
+          ${pendingCompletions.length > 0
+            ? `<button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="approve-all-chores" style="margin-left:auto">${this._t("panel.activity_approve_all")}</button>`
+            : ""}
         </h3>
         ${pendingCompletions.length === 0 && pendingClaims.length === 0 && pendingSwaps.length === 0 ? `
           <p class="tm-meta">${this._t("panel.activity_no_items")}</p>
