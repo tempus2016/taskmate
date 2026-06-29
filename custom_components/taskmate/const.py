@@ -240,6 +240,7 @@ PLATFORMS: Final = ["sensor", "button", "binary_sensor"]
 # Services
 SERVICE_COMPLETE_CHORE: Final = "complete_chore"
 SERVICE_APPROVE_CHORE: Final = "approve_chore"
+SERVICE_APPROVE_ALL_CHORES: Final = "approve_all_chores"
 SERVICE_REJECT_CHORE: Final = "reject_chore"
 SERVICE_UNDO_CHORE_APPROVAL: Final = "undo_chore_approval"
 SERVICE_APPLY_MANDATORY_PENALTY: Final = "apply_mandatory_penalty"

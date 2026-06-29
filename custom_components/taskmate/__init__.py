@@ -73,6 +73,7 @@ from .const import (
     SERVICE_APPLY_BONUS,
     SERVICE_APPLY_MANDATORY_PENALTY,
     SERVICE_APPLY_PENALTY,
+    SERVICE_APPROVE_ALL_CHORES,
     SERVICE_APPROVE_CHORE,
     SERVICE_APPROVE_REWARD,
     SERVICE_CHOOSE_AVATAR,
@@ -486,6 +487,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             return
         completion_id = call.data["completion_id"]
         await coordinator.async_approve_chore(completion_id)
+
+    async def handle_approve_all_chores(call: ServiceCall) -> None:
+        """Handle the approve_all_chores service call."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_approve_chores_bulk(call.data.get("completion_ids"))
 
     async def handle_reject_chore(call: ServiceCall) -> None:
         """Handle the reject_chore service call."""
@@ -1039,6 +1048,17 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN,
+        SERVICE_APPROVE_ALL_CHORES,
+        _admin(handle_approve_all_chores),
+        schema=vol.Schema(
+            {
+                vol.Optional("completion_ids"): [cv.string],
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
         SERVICE_REJECT_CHORE,
         _admin(handle_reject_chore),
         schema=vol.Schema(
@@ -1464,6 +1484,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_COMPLETE_CHORE,
         SERVICE_COMPLETE_BONUS_SUBTASK,
         SERVICE_APPROVE_CHORE,
+        SERVICE_APPROVE_ALL_CHORES,
         SERVICE_REJECT_CHORE,
         SERVICE_UNDO_TRANSACTION,
         SERVICE_UNDO_CHORE_APPROVAL,
