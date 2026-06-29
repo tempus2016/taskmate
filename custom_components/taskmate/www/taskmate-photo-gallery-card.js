@@ -157,4 +157,6 @@ window.customCards.push({
   name: "TaskMate Photo Gallery",
   description: "History grid of chore-evidence photos",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-photo-gallery-card", "activity"),
 });

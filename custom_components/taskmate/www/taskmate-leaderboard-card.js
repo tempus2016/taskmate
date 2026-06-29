@@ -919,6 +919,8 @@ window.customCards.push({
   name: "TaskMate Leaderboard",
   description: "Multi-child competitive ranking by points, streak, or weekly activity",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-leaderboard-card", "overview"),
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM

@@ -105,4 +105,6 @@ window.customCards.push({
   name: "TaskMate Family Goal",
   description: "Shared family goal progress toward a combined points target",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-family-goal-card", "overview"),
 });

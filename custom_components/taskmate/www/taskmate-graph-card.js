@@ -1078,6 +1078,8 @@ window.customCards.push({
   name: "TaskMate Points Graph",
   description: "Line graph tracking daily or cumulative points over time",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-graph-card", "overview"),
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM

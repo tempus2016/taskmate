@@ -280,4 +280,38 @@
   }
 
   window.__taskmate_design = { IDS, resolve, isDark, apply, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker };
+
+  // ── Card-picker entity suggestions (HA 2026.6+) ────────────────────────────
+  // Custom cards may add getEntitySuggestion(hass, entityId) to their
+  // window.customCards entry; when a user picks an entity in the card picker,
+  // HA shows matching cards in a "Community" section. This shared helper lets
+  // every TaskMate card opt in with a one-liner. We identify a TaskMate sensor
+  // by its attribute SIGNATURE rather than its entity_id, so suggestions still
+  // work after an entity_id rename and across multi-instance setups (e.g.
+  // sensor.taskmate_overview_2). getEntitySuggestion runs at pick-time, by
+  // which point every card module (and getStubConfig) is defined — so reading
+  // this global from a card's registration closure is load-order safe.
+  //
+  //   role "overview" — the hub sensor (sensor.taskmate_overview): carries
+  //                     points_name + the children[] summary. Almost every card
+  //                     reads from it.
+  //   role "activity" — the activity sensor (sensor.taskmate_activity):
+  //                     recent_completions[] + photo_gallery. Used by the photo
+  //                     gallery card.
+  window.__taskmate_suggest = window.__taskmate_suggest || function (hass, entityId, type, role) {
+    if (!entityId || typeof entityId !== "string" || !entityId.startsWith("sensor.")) return null;
+    const a = hass && hass.states && hass.states[entityId] && hass.states[entityId].attributes;
+    if (!a) return null;
+    const isOverview = a.points_name !== undefined && Array.isArray(a.children);
+    const isActivity = Array.isArray(a.recent_completions) && a.photo_gallery !== undefined;
+    if (!(role === "activity" ? isActivity : isOverview)) return null;
+    // Mirror the card's own stub defaults (mode/title/days/…) so a suggested
+    // card lands configured exactly as if added manually, just on this entity.
+    let stub = {};
+    try {
+      const el = customElements.get(type);
+      if (el && typeof el.getStubConfig === "function") stub = el.getStubConfig() || {};
+    } catch (e) { stub = {}; }
+    return { config: Object.assign({}, stub, { type: "custom:" + type, entity: entityId }) };
+  };
 })();

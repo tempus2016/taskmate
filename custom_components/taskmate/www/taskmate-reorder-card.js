@@ -1309,6 +1309,8 @@ window.customCards.push({
   name: "TaskMate Reorder Card",
   description: "A card for reordering chores per child, organized by time category",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-reorder-card", "overview"),
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM

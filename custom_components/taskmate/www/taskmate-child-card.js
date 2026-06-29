@@ -4191,6 +4191,8 @@ window.customCards.push({
   name: "TaskMate Child Card",
   description: "A fun, kid-friendly card for children to complete their chores!",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-child-card", "overview"),
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM
