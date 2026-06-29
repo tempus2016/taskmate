@@ -908,6 +908,8 @@ window.customCards.push({
   name: "TaskMate Calendar",
   description: "One-day view of chores assigned to each child",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-calendar-card", "overview"),
 });
 
 const _tmVersion = new URLSearchParams(

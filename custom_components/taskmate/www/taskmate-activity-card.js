@@ -1327,6 +1327,8 @@ window.customCards.push({
   name: "TaskMate Activity Feed",
   description: "Timeline of recent chore completions and reward claims",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-activity-card", "overview"),
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM

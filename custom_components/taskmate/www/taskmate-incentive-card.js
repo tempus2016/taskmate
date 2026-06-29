@@ -1128,7 +1128,11 @@ export function createIncentiveCard(P) {
   customElements.define(P.tag, IncentiveCard);
   customElements.define(P.tag + "-editor", IncentiveCardEditor);
   window.customCards = window.customCards || [];
-  window.customCards.push({ type: P.tag, name: P.cardName, description: P.cardDesc, preview: true });
+  window.customCards.push({
+    type: P.tag, name: P.cardName, description: P.cardDesc, preview: true,
+    getEntitySuggestion: (hass, entityId) =>
+      window.__taskmate_suggest(hass, entityId, P.tag, "overview"),
+  });
   console.info("%c TASKMATE " + P.bannerName + " CARD ",
     "background:" + P.bannerColor + ";color:white;font-weight:bold;padding:2px 4px;border-radius:4px;");
 }

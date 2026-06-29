@@ -2403,6 +2403,8 @@ window.customCards.push({
   name: "TaskMate Rewards Card",
   description: "A card displaying available rewards with star costs",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-rewards-card", "overview"),
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM

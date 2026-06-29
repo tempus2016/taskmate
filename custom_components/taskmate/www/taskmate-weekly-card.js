@@ -882,6 +882,8 @@ window.customCards.push({
   name: "TaskMate Weekly Summary",
   description: "Week at a glance — chores, points, and daily bar chart",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-weekly-card", "overview"),
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM

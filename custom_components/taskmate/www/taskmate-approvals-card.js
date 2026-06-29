@@ -1491,6 +1491,8 @@ window.customCards.push({
   name: "TaskMate Approvals",
   description: "A card to manage pending chore approvals for TaskMate",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-approvals-card", "overview"),
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM

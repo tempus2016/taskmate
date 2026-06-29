@@ -763,6 +763,8 @@ window.customCards.push({
   name: "TaskMate Badges",
   description: "Achievement badge grid for a single child",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-badges-card", "overview"),
 });
 
 const _tmBadgesVersion = new URLSearchParams(

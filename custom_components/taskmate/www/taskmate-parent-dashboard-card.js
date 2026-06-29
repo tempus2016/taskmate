@@ -1475,6 +1475,8 @@ window.customCards.push({
   name: "TaskMate Parent Dashboard",
   description: "Unified parent view with approvals, child progress, and quick point controls",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-parent-dashboard-card", "overview"),
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM

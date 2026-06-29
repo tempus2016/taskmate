@@ -980,6 +980,8 @@ window.customCards.push({
   name: "TaskMate Reward Progress",
   description: "Full-screen motivational reward progress display",
   preview: true,
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-reward-progress-card", "overview"),
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM

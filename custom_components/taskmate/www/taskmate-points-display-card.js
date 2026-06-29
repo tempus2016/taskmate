@@ -1243,6 +1243,8 @@ window.customCards.push({
   description: "Kid-friendly display of points. Supports single child, all children, or combined family total.",
   preview:     true,
   configElement: "taskmate-points-display-card-editor",
+  getEntitySuggestion: (hass, entityId) =>
+    window.__taskmate_suggest(hass, entityId, "taskmate-points-display-card", "overview"),
 });
 
 // Version is injected by the HA resource URL (?v=x.x.x) and read from the DOM
