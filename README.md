@@ -1434,6 +1434,14 @@ Beyond the sensors above, TaskMate also exposes:
  
 ## Changelog
  
+### v4.4.3
+ 
+**New**
+- **Approve All on pending approvals** — when several chore completions are waiting for a parent's sign-off, you can now clear the whole queue with a single **Approve All** button instead of approving each one. The button appears on both the TaskMate panel's pending-approvals view and the **Approvals card**, and runs every award, badge, quest and celebration side-effect exactly as approving each chore by hand would. Backed by a new `taskmate.approve_all_chores` service (approves all pending, or a specific list of `completion_ids`) and a matching `taskmate/approve_all_chores` WebSocket command. ([#647](https://github.com/tempus2016/taskmate/pull/647), [#648](https://github.com/tempus2016/taskmate/pull/648))
+ 
+**Changed**
+- **Dashboard card-picker suggestions (HA 2026.6+)** — every TaskMate card now implements `getEntitySuggestion`, so Home Assistant's "add card" picker pre-fills a sensible TaskMate entity instead of leaving the card blank when you drop it onto a dashboard. ([#646](https://github.com/tempus2016/taskmate/pull/646))
+ 
 ### v4.4.2
  
 **Fixes**
