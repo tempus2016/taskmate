@@ -791,8 +791,30 @@ class TaskMateApprovalsCard extends LitElement {
         ? html`<div class="${cls}"><ha-icon icon="${it.icon}"></ha-icon></div>`
         : "";
     }
+    const cap = this._photoCaption(it.title, it.childName, it.completedAt);
     return html`<a class="ap-d-photo-link" href="${photoUrl}" target="_blank" rel="noopener"
+      @click="${(e) => this._openPhoto(e, photoUrl, cap)}"
       title="${this._t('approvals.view_photo') || 'View photo'}"><div class="${cls}"><img src="${photoUrl}" alt=""></div></a>`;
+  }
+
+  // Build "Chore · Child · date" for the lightbox caption from whatever row
+  // fields are present (any missing part is dropped).
+  _photoCaption(chore, child, iso) {
+    let when = "";
+    if (iso) {
+      const d = new Date(iso);
+      if (!isNaN(d)) when = d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    }
+    return [chore, child, when].filter(Boolean).join(" · ");
+  }
+
+  // Open the shared in-page lightbox; fall through to the href (new tab) if the
+  // shared design layer somehow isn't loaded.
+  _openPhoto(e, url, caption) {
+    if (window.__taskmate_lightbox) {
+      e.preventDefault();
+      window.__taskmate_lightbox(url, caption, this._t("common.close"));
+    }
   }
 
   _apPlayroom(it, i) {
@@ -1294,6 +1316,7 @@ class TaskMateApprovalsCard extends LitElement {
           </div>
           ${tmSafePhotoUrl(completion.photo_url) ? html`
             <a class="approval-photo" href="${tmSafePhotoUrl(completion.photo_url)}" target="_blank" rel="noopener"
+               @click="${(e) => this._openPhoto(e, tmSafePhotoUrl(completion.photo_url), this._photoCaption(completion.chore_name, completion.child_name, completion.completed_at))}"
                title="${this._t('approvals.view_photo') || 'View photo'}">
               <img src="${tmSafePhotoUrl(completion.photo_url)}" alt="" loading="lazy">
             </a>

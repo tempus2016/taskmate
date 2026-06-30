@@ -46,6 +46,14 @@ class TaskMatePhotoGalleryCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
+  // Open the shared in-page lightbox; fall through to the href if it's absent.
+  _openPhoto(e, url, caption) {
+    if (window.__taskmate_lightbox) {
+      e.preventDefault();
+      window.__taskmate_lightbox(url, caption, this._t("common.close"));
+    }
+  }
+
   _gallery() {
     const entity = this.hass && this.hass.states[this.config.entity];
     const items = (entity && entity.attributes && entity.attributes.photo_gallery) || [];
@@ -105,7 +113,8 @@ class TaskMatePhotoGalleryCard extends LitElement {
     return html`
       <div class="tile" title="${it.chore_name} — ${it.child_name}">
         ${src
-          ? html`<a href="${src}" target="_blank" rel="noopener"><img src="${src}" alt="${it.chore_name}" loading="lazy"></a>`
+          ? html`<a href="${src}" target="_blank" rel="noopener"
+              @click="${(e) => this._openPhoto(e, src, [it.chore_name, it.child_name, when].filter(Boolean).join(" · "))}"><img src="${src}" alt="${it.chore_name}" loading="lazy"></a>`
           : html`<div class="ph"><ha-icon icon="mdi:image"></ha-icon></div>`}
         <div class="cap">
           <span class="who">${it.child_name}</span>
