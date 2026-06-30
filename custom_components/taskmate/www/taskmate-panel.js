@@ -424,6 +424,10 @@ class TaskMatePanel extends HTMLElement {
     if (act === "switch-to-activity") { this._activeTab = "activity"; this._render(); return; }
     if (act === "toggle-ha-menu") { this.dispatchEvent(new CustomEvent("hass-toggle-menu", { bubbles: true, composed: true })); return; }
     if (act === "copy-id") { navigator.clipboard.writeText(t.dataset.id).then(() => this._showToast("ok", this._t("panel.toast_copied"))); return; }
+    if (act === "view-photo") {
+      if (window.__taskmate_lightbox) { e.preventDefault(); window.__taskmate_lightbox(t.dataset.photo, t.dataset.cap, this._t("common.close")); }
+      return;
+    }
 
     // Children
     if (act === "add-child")    { this._openChildDialog(null); return; }
@@ -2511,10 +2515,11 @@ class TaskMatePanel extends HTMLElement {
                   chorePoints = Math.floor(c.timed_duration_seconds / rateSeconds) * (chore.timed_rate_points || 0);
                 }
               }
+              const photoCap = [choreName, (child && child.name) || "", c.completed_at ? new Date(c.completed_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""].filter(Boolean).join(" · ");
               return `
                 <div class="tm-approval-item">
                   <div class="tm-approval-icon"><ha-icon icon="${c.bonus_subtask_id ? 'mdi:star-plus' : 'mdi:checkbox-marked-circle-outline'}"></ha-icon></div>
-                  ${this._safePhotoUrl(c.photo_url) ? `<a class="tm-approval-photo" href="${this._esc(this._safePhotoUrl(c.photo_url))}" target="_blank" rel="noopener" title="${this._t("panel.activity_view_photo")}"><img src="${this._esc(this._safePhotoUrl(c.photo_url))}" alt="" loading="lazy"></a>` : ""}
+                  ${this._safePhotoUrl(c.photo_url) ? `<a class="tm-approval-photo" href="${this._esc(this._safePhotoUrl(c.photo_url))}" target="_blank" rel="noopener" data-act="view-photo" data-photo="${this._esc(this._safePhotoUrl(c.photo_url))}" data-cap="${this._esc(photoCap)}" title="${this._t("panel.activity_view_photo")}"><img src="${this._esc(this._safePhotoUrl(c.photo_url))}" alt="" loading="lazy"></a>` : ""}
                   <div class="tm-approval-body">
                     <div class="tm-approval-line">${this._t("panel.activity_completed_text", {child: this._esc((child && child.name) || "?"), chore: this._esc(choreName)})}</div>
                     <div class="tm-meta">${this._timeAgo(c.completed_at)} · ${chorePoints} ${this._t("panel.activity_points")}</div>

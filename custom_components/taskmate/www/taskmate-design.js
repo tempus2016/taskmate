@@ -314,4 +314,81 @@
     } catch (e) { stub = {}; }
     return { config: Object.assign({}, stub, { type: "custom:" + type, entity: entityId }) };
   };
+
+  // ── Chore-photo lightbox ───────────────────────────────────────────────────
+  // A single shared, design-AGNOSTIC image viewer for evidence photos. It is
+  // mounted on document.body (NOT inside any card's shadow root), so it paints
+  // above every card, the admin panel, and HA's own stacking contexts no matter
+  // how deeply the trigger is nested or whether an ancestor clips overflow.
+  // Callers pass an ALREADY safety-checked URL (tmSafePhotoUrl/_safePhotoUrl),
+  // an optional caption string, and an optional localised close label. Closes on
+  // backdrop click, the ✕ button, or Escape. Deliberately uses no --tmd-* tokens
+  // so it looks right under all four design styles.
+  window.__taskmate_lightbox = window.__taskmate_lightbox || (function () {
+    let overlay = null, imgEl = null, capEl = null, closeBtn = null, lastFocus = null;
+
+    function onKey(e) { if (e.key === "Escape") { e.stopPropagation(); close(); } }
+
+    function close() {
+      if (!overlay) return;
+      overlay.classList.remove("open");
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKey, true);
+      window.setTimeout(() => { if (overlay) overlay.style.display = "none"; if (imgEl) imgEl.src = ""; }, 180);
+      if (lastFocus && typeof lastFocus.focus === "function") { try { lastFocus.focus(); } catch (e) {} }
+      lastFocus = null;
+    }
+
+    function build() {
+      overlay = document.createElement("div");
+      overlay.className = "tm-lightbox";
+      overlay.setAttribute("role", "dialog");
+      overlay.setAttribute("aria-modal", "true");
+      overlay.innerHTML =
+        "<style>" +
+        ".tm-lightbox{position:fixed;inset:0;z-index:2147483000;display:none;flex-direction:column;" +
+        "align-items:center;justify-content:center;gap:14px;box-sizing:border-box;" +
+        "padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));" +
+        "background:rgba(8,10,14,.86);opacity:0;transition:opacity .18s ease;" +
+        "font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;}" +
+        ".tm-lightbox.open{opacity:1;}" +
+        ".tm-lightbox img{max-width:92vw;max-height:80vh;object-fit:contain;border-radius:10px;" +
+        "background:#111;box-shadow:0 18px 60px rgba(0,0,0,.6);}" +
+        ".tm-lightbox .tm-lb-cap{color:#f4f6fb;font-size:14px;font-weight:600;text-align:center;" +
+        "max-width:92vw;line-height:1.4;text-shadow:0 1px 2px rgba(0,0,0,.6);}" +
+        ".tm-lightbox .tm-lb-close{position:absolute;top:14px;right:16px;width:42px;height:42px;border:none;" +
+        "border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:22px;line-height:1;" +
+        "cursor:pointer;transition:background .15s;}" +
+        ".tm-lightbox .tm-lb-close:hover{background:rgba(255,255,255,.28);}" +
+        "@media (prefers-reduced-motion:reduce){.tm-lightbox{transition:none;}}" +
+        "</style>" +
+        "<button class=\"tm-lb-close\" type=\"button\">✕</button>" +
+        "<img alt=\"\">" +
+        "<div class=\"tm-lb-cap\"></div>";
+      document.body.appendChild(overlay);
+      imgEl = overlay.querySelector("img");
+      capEl = overlay.querySelector(".tm-lb-cap");
+      closeBtn = overlay.querySelector(".tm-lb-close");
+      closeBtn.addEventListener("click", close);
+      // Only a click on the dimmed backdrop itself (not image/caption/button) closes.
+      overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    }
+
+    return function (src, caption, closeLabel) {
+      if (!src) return;
+      if (!overlay) build();
+      lastFocus = document.activeElement;
+      imgEl.src = src;
+      if (caption) { capEl.textContent = caption; capEl.style.display = ""; }
+      else { capEl.textContent = ""; capEl.style.display = "none"; }
+      closeBtn.setAttribute("aria-label", closeLabel || "Close");
+      closeBtn.title = closeLabel || "Close";
+      overlay.style.display = "flex";
+      void overlay.offsetWidth; // force reflow so the opacity transition runs from 0
+      overlay.classList.add("open");
+      document.body.style.overflow = "hidden";
+      document.addEventListener("keydown", onKey, true);
+      closeBtn.focus();
+    };
+  })();
 })();

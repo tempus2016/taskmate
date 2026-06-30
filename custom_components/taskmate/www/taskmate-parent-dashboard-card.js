@@ -46,6 +46,24 @@ class TaskMateParentDashboardCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
+  // Build "Chore · Child · date" for the lightbox caption (missing parts drop).
+  _photoCaption(chore, child, iso) {
+    let when = "";
+    if (iso) {
+      const d = new Date(iso);
+      if (!isNaN(d)) when = d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    }
+    return [chore, child, when].filter(Boolean).join(" · ");
+  }
+
+  // Open the shared in-page lightbox; fall through to the href if it's absent.
+  _openPhoto(e, url, caption) {
+    if (window.__taskmate_lightbox) {
+      e.preventDefault();
+      window.__taskmate_lightbox(url, caption, this._t("common.close"));
+    }
+  }
+
   constructor() {
     super();
     this._loading = {};
@@ -790,8 +808,10 @@ class TaskMateParentDashboardCard extends LitElement {
         ? new Date(comp.completed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
       const pts = comp.points || choreMap[comp.chore_id]?.points || 0;
       const photoUrl = tmSafePhotoUrl(comp.photo_url);
+      const photoCap = this._photoCaption(comp.chore_name, child && child.name, comp.completed_at);
       const photo = photoUrl
         ? html`<a class="pd-photo-link" href="${photoUrl}" target="_blank" rel="noopener"
+            @click="${(e) => this._openPhoto(e, photoUrl, photoCap)}"
             title="${this._t('approvals.view_photo') || 'View photo'}"><div class="pd-photo"><img src="${photoUrl}" alt=""></div></a>`
         : "";
       const acts = html`
@@ -1122,6 +1142,7 @@ class TaskMateParentDashboardCard extends LitElement {
               </div>
               ${tmSafePhotoUrl(comp.photo_url) ? html`
                 <a class="approval-photo" href="${tmSafePhotoUrl(comp.photo_url)}" target="_blank" rel="noopener"
+                   @click="${(e) => this._openPhoto(e, tmSafePhotoUrl(comp.photo_url), this._photoCaption(comp.chore_name || chore?.name, child && child.name, comp.completed_at))}"
                    title="${this._t('approvals.view_photo') || 'View photo'}">
                   <img src="${tmSafePhotoUrl(comp.photo_url)}" alt="" loading="lazy">
                 </a>
