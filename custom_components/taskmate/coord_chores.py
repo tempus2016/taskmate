@@ -857,6 +857,14 @@ class ChoresMixin:
                     completion.points_awarded = total_awarded
                     self.storage.update_completion(completion)
 
+                    # Dismiss the mobile approval push now this completion is
+                    # reviewed (covers single approve AND "approve all", which
+                    # reuses this method per completion).
+                    if getattr(self, "notifications", None):
+                        await self.notifications.clear_approval(
+                            "pending_chore_approval", completion_id
+                        )
+
                     self.hass.bus.async_fire(
                         "taskmate_chore_approved",
                         {
@@ -1067,6 +1075,13 @@ class ChoresMixin:
                 "completion_id": completion_id,
                 "timestamp": dt_util.now().isoformat(),
             })
+            # Dismiss the mobile approval push for this reviewed completion. Also
+            # covers undoing an already-approved chore (whose push was cleared at
+            # approval): re-clearing a stale tag is a harmless no-op.
+            if getattr(self, "notifications", None):
+                await self.notifications.clear_approval(
+                    "pending_chore_approval", completion_id
+                )
 
     async def async_undo_chore_approval(self, completion_id: str) -> None:
         """Undo an accidental approval: reverse the awards and return the

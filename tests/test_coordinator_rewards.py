@@ -64,6 +64,7 @@ def _make_coord(*, children=None, rewards=None, claims=None):
     coord.async_refresh = AsyncMock()
     notifications = MagicMock()
     notifications.fire = AsyncMock()
+    notifications.clear_approval = AsyncMock()
     coord.notifications = notifications
     return coord
 

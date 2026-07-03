@@ -403,6 +403,12 @@ class RewardsMixin:
                 await self.storage.async_save()
                 await self.async_refresh()
 
+                # Dismiss the mobile approval push now this claim is reviewed.
+                if getattr(self, "notifications", None):
+                    await self.notifications.clear_approval(
+                        "pending_reward_claim", claim_id
+                    )
+
                 self.hass.bus.async_fire("taskmate_reward_approved", {
                     "child_id": child.id, "child_name": child.name,
                     "reward_id": reward.id, "reward_name": reward.name,
@@ -432,6 +438,11 @@ class RewardsMixin:
                 "reward_name": getattr(reward, "name", ""),
                 "timestamp": dt_util.now().isoformat(),
             })
+            # Dismiss the mobile approval push for this reviewed claim.
+            if getattr(self, "notifications", None):
+                await self.notifications.clear_approval(
+                    "pending_reward_claim", claim_id
+                )
 
     async def async_allocate_points_to_pool(
         self, child_id: str, reward_id: str, points: int

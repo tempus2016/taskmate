@@ -129,3 +129,92 @@ async def test_pending_chore_approval_dispatches_actionable(coord, hass):
     data = notify_calls[0][0][2]["data"]
     assert {"action": "TASKMATE_APPROVE_completion-123", "title": "Approve"} in data["actions"]
     assert {"action": "TASKMATE_REJECT_completion-123",  "title": "Reject"} in data["actions"]
+
+
+@pytest.mark.asyncio
+async def test_pending_approval_push_carries_clear_tag(coord, hass):
+    """The mobile approval push must carry a stable `tag` so it can later be
+    dismissed via clear_notification (issue #655)."""
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(p)
+    coord.storage.set_notification_master("pending_chore_approval", True)
+    coord.storage.set_notification_route(
+        "pending_chore_approval", p.id, NotificationRoute(enabled=True),
+    )
+
+    await coord.fire(
+        "pending_chore_approval",
+        {
+            "entry_id": "completion-123",
+            "child_name": "Maria", "chore_name": "Bin",
+            "points": 10, "points_name": "Stars",
+        },
+    )
+
+    notify_calls = [c for c in hass.services.async_call.call_args_list if c[0][0] == "notify"]
+    assert len(notify_calls) == 1
+    data = notify_calls[0][0][2]["data"]
+    assert data["tag"] == "taskmate_approval_completion-123"
+
+
+@pytest.mark.asyncio
+async def test_clear_approval_targets_only_mobile_app(coord, hass):
+    """clear_approval must send clear_notification to mobile_app.* services only
+    (with the matching tag) and skip non-mobile backends, which would otherwise
+    render the literal 'clear_notification' string as a message."""
+    hass.services.async_call = AsyncMock()
+    mobile = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    other = ParentRecipient(name="Lisa", notify_service="notify.telegram_lisa")
+    coord.storage.upsert_parent_recipient(mobile)
+    coord.storage.upsert_parent_recipient(other)
+    coord.storage.set_notification_master("pending_chore_approval", True)
+    coord.storage.set_notification_route(
+        "pending_chore_approval", mobile.id, NotificationRoute(enabled=True),
+    )
+    coord.storage.set_notification_route(
+        "pending_chore_approval", other.id, NotificationRoute(enabled=True),
+    )
+
+    await coord.clear_approval("pending_chore_approval", "completion-123")
+
+    notify_calls = [c for c in hass.services.async_call.call_args_list if c[0][0] == "notify"]
+    assert len(notify_calls) == 1
+    assert notify_calls[0][0][1] == "mobile_app_johns_iphone"
+    assert notify_calls[0][0][2] == {
+        "message": "clear_notification",
+        "data": {"tag": "taskmate_approval_completion-123"},
+    }
+
+
+@pytest.mark.asyncio
+async def test_clear_approval_skips_when_master_disabled(coord, hass):
+    """No push was sent when the type's master is off, so nothing to clear."""
+    hass.services.async_call = AsyncMock()
+    mobile = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(mobile)
+    coord.storage.set_notification_master("pending_chore_approval", False)
+    coord.storage.set_notification_route(
+        "pending_chore_approval", mobile.id, NotificationRoute(enabled=True),
+    )
+
+    await coord.clear_approval("pending_chore_approval", "completion-123")
+
+    assert not [c for c in hass.services.async_call.call_args_list if c[0][0] == "notify"]
+
+
+@pytest.mark.asyncio
+async def test_clear_approval_noop_without_entry_id(coord, hass):
+    """A missing entry_id must not fire any notify call."""
+    hass.services.async_call = AsyncMock()
+    mobile = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(mobile)
+    coord.storage.set_notification_master("pending_chore_approval", True)
+    coord.storage.set_notification_route(
+        "pending_chore_approval", mobile.id, NotificationRoute(enabled=True),
+    )
+
+    await coord.clear_approval("pending_chore_approval", "")
+
+    assert not hass.services.async_call.call_args_list

@@ -44,6 +44,17 @@ _LOGGER = logging.getLogger(__name__)
 _APPROVE_IN_PANEL_HINT = "Open the TaskMate panel to approve or reject."
 
 
+def _approval_tag(entry_id: str) -> str:
+    """Stable HA companion-app notification tag for an approval (chore/reward).
+
+    Set on the outgoing mobile push so that, once the item is approved or
+    rejected, the same tag can be passed to ``clear_notification`` to dismiss
+    the alert from the phone. Keyed on the completion/claim id, so each pending
+    item owns exactly one push.
+    """
+    return f"taskmate_approval_{entry_id}"
+
+
 @dataclass(frozen=True)
 class NotificationTypeMeta:
     id: str
@@ -287,7 +298,10 @@ class NotificationCoordinator:
             # sending dead buttons we append a hint pointing to the panel.
             if service.startswith("mobile_app"):
                 if entry_id:
+                    # `tag` lets us dismiss this push later (clear_approval) once
+                    # the item is reviewed — see _approval_tag.
                     data["data"] = {
+                        "tag": _approval_tag(entry_id),
                         "actions": [
                             {"action": f"TASKMATE_APPROVE_{entry_id}", "title": "Approve"},
                             {"action": f"TASKMATE_REJECT_{entry_id}",  "title": "Reject"},
@@ -299,6 +313,51 @@ class NotificationCoordinator:
             await self.hass.services.async_call(domain, service, data, blocking=False)
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("notify call failed for %s: %s", notify_service, err)
+
+    async def clear_approval(self, type_id: str, entry_id: str) -> None:
+        """Dismiss the mobile push for a reviewed approval (chore or reward).
+
+        The pending-approval push carries a stable ``tag`` (:func:`_approval_tag`).
+        Once the item is approved or rejected we send the HA companion app's
+        ``clear_notification`` with the same tag so the alert disappears from the
+        phone — the fix for the "approve all leaves a pile of notifications"
+        problem.
+
+        Gated to ``mobile_app.*`` services only: other backends (Telegram, email,
+        persistent) would render the literal "clear_notification" string as a
+        message, so they are skipped. Clearing a tag that isn't present is a
+        harmless no-op on the app, so no per-recipient bookkeeping is needed.
+        """
+        if not entry_id:
+            return
+        cfg = self.storage.get_notification_config(type_id)
+        if not cfg.master_enabled:
+            return
+        tag = _approval_tag(entry_id)
+        cleared_services: set[str] = set()
+        for recipient_id, route in cfg.routes.items():
+            if not route.enabled:
+                continue
+            notify_service = self._resolve_notify_service(recipient_id)
+            if not notify_service:
+                continue
+            domain, service = (
+                notify_service.split(".", 1) if "." in notify_service
+                else ("notify", notify_service)
+            )
+            if domain != "notify" or not service.startswith("mobile_app"):
+                continue
+            if service in cleared_services:
+                continue
+            cleared_services.add(service)
+            try:
+                await self.hass.services.async_call(
+                    "notify", service,
+                    {"message": "clear_notification", "data": {"tag": tag}},
+                    blocking=False,
+                )
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning("clear_notification failed for %s: %s", notify_service, err)
 
     async def _fire_persistent_notification(self, type_id: str, message: str) -> None:
         await self.hass.services.async_call(
