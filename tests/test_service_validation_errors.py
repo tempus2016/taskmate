@@ -94,3 +94,27 @@ async def test_complete_chore_schema_accepts_photo_url():
 
     assert marker is not None, "complete_chore schema is missing 'photo_url'"
     assert isinstance(marker, vol.Optional)
+
+
+@pytest.mark.asyncio
+async def test_add_badge_schema_accepts_combinator():
+    """The add_badge schema must whitelist `combinator`. The badge editor always
+    sends it, so without the key the whole call 400s with
+    "extra keys not allowed @ data['combinator']" (regression: #654)."""
+    schema = (await _registered_schemas())["add_badge"]
+    marker, _ = _schema_entry(schema, tm.ATTR_BADGE_COMBINATOR)
+
+    assert marker is not None, "add_badge schema is missing 'combinator'"
+    assert isinstance(marker, vol.Optional)
+    assert marker.default() == "AND"
+
+
+@pytest.mark.asyncio
+async def test_update_badge_schema_accepts_combinator():
+    """The update_badge schema must whitelist `combinator`; the badge editor
+    sends it on every save (regression: #654)."""
+    schema = (await _registered_schemas())["update_badge"]
+    marker, _ = _schema_entry(schema, tm.ATTR_BADGE_COMBINATOR)
+
+    assert marker is not None, "update_badge schema is missing 'combinator'"
+    assert isinstance(marker, vol.Optional)
