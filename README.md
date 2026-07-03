@@ -1434,6 +1434,16 @@ Beyond the sensors above, TaskMate also exposes:
  
 ## Changelog
  
+### v4.4.4
+ 
+**New**
+- **Undo a bonus sub-task by tapping it again** — a completed bonus sub-task on the Child Card can now be un-completed with a second tap, mirroring the tap-to-undo that top-level chores already had. Reverses only that sub-task's points; the parent chore stays done. Works on the classic and all designed card styles. ([#656](https://github.com/tempus2016/taskmate/pull/656), fixes [#653](https://github.com/tempus2016/taskmate/issues/653))
+- **Approval notifications clear from your phone when reviewed** — approving or rejecting a chore (or reward) — including with **Approve All** — now dismisses its push notification from the Home Assistant companion app, so a big approval sweep no longer leaves a pile of stale alerts. Clearing is limited to `mobile_app.*` notify targets, so other channels (Telegram, email, persistent) are never spammed. ([#658](https://github.com/tempus2016/taskmate/pull/658), fixes [#655](https://github.com/tempus2016/taskmate/issues/655))
+- **In-page lightbox for chore evidence photos** — tapping a chore evidence photo now opens it in an in-page lightbox instead of jumping to the raw image in a new browser tab. Applies to the Approvals card, Parent Dashboard card, the panel's pending-approvals view, and the Photo Gallery card (classic and designed styles). ([#652](https://github.com/tempus2016/taskmate/pull/652))
+ 
+**Fixes**
+- **Badges can be created and edited from the UI again** — saving a badge failed every time with `extra keys not allowed @ data['combinator']`. The badge editor always sends the `combinator` field (AND/OR), but the `add_badge`/`update_badge` service schemas never allowed it. Both schemas now accept it. ([#657](https://github.com/tempus2016/taskmate/pull/657), fixes [#654](https://github.com/tempus2016/taskmate/issues/654))
+ 
 ### v4.4.3
  
 **New**
