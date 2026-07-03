@@ -3301,15 +3301,19 @@ class TaskMateChildCard extends LitElement {
       const isLoading = this._loading[bonusKey];
 
       const handleClick = () => {
-        if (isLoading || bonusDone) return;
-        this._handleCompleteBonusSubtask(chore, subtask, child);
+        if (isLoading) return;
+        if (bonusDone) {
+          this._handleUndoBonusSubtask(chore, subtask, child, todaysCompletions);
+        } else {
+          this._handleCompleteBonusSubtask(chore, subtask, child);
+        }
       };
 
       return html`
         <div
           class="chore-card bonus-subtask ${bonusDone ? 'completed' : ''} ${isLoading ? 'loading' : ''}"
           role="button"
-          tabindex="${bonusDone ? '-1' : '0'}"
+          tabindex="0"
           @click="${handleClick}"
           title="${bonusDone ? this._t('child.click_to_undo') : this._t('child.bonus_tooltip', {name: subtask.name})}"
         >
@@ -3368,6 +3372,66 @@ class TaskMateChildCard extends LitElement {
         this.requestUpdate();
       }
     }, 30000);
+  }
+
+  /**
+   * Undo a completed bonus sub-task (second click on its checkbox). Each
+   * sub-task completion carries its own completion_id, so rejecting it reverses
+   * only that sub-task's points — the parent chore stays done. Mirrors the
+   * parent-only admin gate and reject_chore path used by _handleUndo.
+   */
+  async _handleUndoBonusSubtask(chore, subtask, child, todaysCompletions) {
+    const bonusKey = `${chore.id}_bonus_${subtask.id}_${child.id}`;
+    if (this._loading[bonusKey]) return;
+
+    // Undoing removes already-awarded points, so it is parent-only — short-circuit
+    // for non-admins with one friendly message instead of a doomed service call.
+    if (this.hass.user && !this.hass.user.is_admin) {
+      this._notifyUndo(this._t("child.undo_not_allowed"));
+      return;
+    }
+
+    const clearOptimistic = () => {
+      if (this._optimisticCompletions && this._optimisticCompletions[bonusKey]) {
+        const next = { ...this._optimisticCompletions };
+        delete next[bonusKey];
+        this._optimisticCompletions = next;
+      }
+    };
+
+    // Find the persisted completion record for this sub-task.
+    const completion = (todaysCompletions || []).find(
+      c => c.chore_id === chore.id && c.child_id === child.id && c.bonus_subtask_id === subtask.id
+    );
+    const completionId = completion?.completion_id || completion?.id;
+
+    // Only an optimistic tick and nothing on the server yet — just roll back the
+    // optimistic state; there is no completion to reject.
+    if (!completionId) {
+      clearOptimistic();
+      this.requestUpdate();
+      return;
+    }
+
+    this._loading = { ...this._loading, [bonusKey]: true };
+    this.requestUpdate();
+
+    try {
+      await this.hass.callService("taskmate", "reject_chore", {
+        completion_id: completionId,
+      });
+      this._playSound(this.config.undo_sound || "undo");
+      clearOptimistic();
+    } catch (error) {
+      console.error("Failed to undo bonus sub-task completion:", error);
+      const message = this._isUnauthorized(error)
+        ? this._t("child.undo_not_allowed")
+        : this._t("child.error_undo", { message: error?.message || "" });
+      this._notifyUndo(message);
+    } finally {
+      this._loading = { ...this._loading, [bonusKey]: false };
+      this.requestUpdate();
+    }
   }
 
   _renderCelebration() {
