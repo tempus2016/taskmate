@@ -324,6 +324,7 @@ class TaskMateOverviewCard extends LitElement {
 
       /* Overview — children grid */
       .ov-kids { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-height: 360px; overflow-y: auto; }
+      @media (max-width: 480px) { .ov-kids { grid-template-columns: repeat(2, 1fr); } }
       .ov-kid { text-align: center; padding: 11px; border-radius: 16px; background: var(--tmd-surface-2); position: relative; }
       .ov-kid.tm-clickable { cursor: pointer; }
       .ov-kid-flags { position: absolute; top: 6px; right: 7px; display: flex; gap: 4px; }

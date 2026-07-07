@@ -206,6 +206,7 @@ class TaskMateApprovalsCard extends LitElement {
 
       .item-details {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 12px;
         font-size: 0.85em;

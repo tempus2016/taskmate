@@ -302,7 +302,7 @@ class TaskMateRewardsCard extends LitElement {
         font-weight: 600;
         color: var(--text-secondary);
         white-space: nowrap;
-        min-width: 70px;
+        min-width: 0;
         text-align: right;
       }
 
@@ -656,7 +656,7 @@ class TaskMateRewardsCard extends LitElement {
       }
 
       /* Responsive adjustments */
-      @media (max-width: 400px) {
+      @media (max-width: 430px) {
         .card-header {
           padding: 14px 18px;
         }

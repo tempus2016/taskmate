@@ -2441,7 +2441,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-meta">${child.availability_entity ? `<code>${this._esc(child.availability_entity)}</code>${child.availability_inverted ? ` <em>${this._t("panel.child_inverted")}</em>` : ""}` : `${this._t("panel.child_no_availability")}`}${child.unavailability_entity ? ` · ${this._t("panel.child_busy_label")} <code>${this._esc(child.unavailability_entity)}</code>` : ""}</div>
           </div>
         </div>
-        <div class="tm-stats-row">
+        <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr;">
           <div class="tm-stat tm-stat-highlight"><div class="tm-stat-value">${this._fmtNum(child.points || 0)}</div><div class="tm-stat-label">${this._esc(pointsName)}</div></div>
           <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.level || 1)}</div><div class="tm-stat-label">${this._t("panel.child_stat_level")}</div></div>
           <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.total_points_earned || 0)}</div><div class="tm-stat-label">${this._t("panel.child_stat_earned")}</div></div>

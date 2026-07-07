@@ -87,14 +87,16 @@ class TaskMateCalendarCard extends LitElement {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        flex-wrap: wrap;
+        row-gap: 8px;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, #3498db);
         color: white;
       }
 
-      .header-content { display: flex; align-items: center; gap: 10px; }
-      .header-icon { --mdc-icon-size: 28px; opacity: 0.9; }
-      .header-title { font-size: 1.2rem; font-weight: 600; }
+      .header-content { display: flex; align-items: center; gap: 10px; min-width: 0; }
+      .header-icon { --mdc-icon-size: 28px; opacity: 0.9; flex: none; }
+      .header-title { font-size: 1.2rem; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
       .day-nav {
         display: flex;
@@ -250,7 +252,7 @@ class TaskMateCalendarCard extends LitElement {
       .cal-head { margin-bottom: 8px; }
       .cal-name { font-weight: 800; }
       .cal-chips { gap: 7px; flex-wrap: wrap; }
-      .cal-chip { white-space: nowrap; }
+      .cal-chip { white-space: normal; overflow-wrap: anywhere; }
       .cal-empty-line { font-size: 12px; font-style: italic; }
       .cal-card-pl { background: var(--tmd-surface-2); border-radius: 18px; padding: 11px 12px; }
 

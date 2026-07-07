@@ -234,7 +234,7 @@ class TaskMateStreakCard extends LitElement {
                     border-radius: 10px; padding: 11px; }
       .sk-combo-label { font-size: 10px; }
       .sk-combo { font-size: 24px; color: var(--tmd-accent); }
-      .sk-segs { display: flex; gap: 4px; margin-top: 9px; }
+      .sk-segs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 9px; }
       .sk-seg { flex: 1; height: 8px; border-radius: 2px; background: #0b1424; }
       .sk-seg.on { background: var(--tmd-accent);
                    box-shadow: 0 0 8px color-mix(in srgb, var(--tmd-accent) 70%, transparent); }
@@ -243,7 +243,7 @@ class TaskMateStreakCard extends LitElement {
       /* Clean Pro */
       .sk-grid-cp { display: flex; flex-direction: column; gap: 13px; }
       .sk-row-cp .num { font-size: 17px; }
-      .sk-segs-cp { display: flex; gap: 5px; margin-top: 8px; }
+      .sk-segs-cp { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
       .sk-seg-cp { flex: 1; height: 9px; border-radius: 3px; background: var(--tmd-surface-2); }
       .sk-seg-cp.on { background: var(--tmd-good); }
       .sk-badges-cp { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
