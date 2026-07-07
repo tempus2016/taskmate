@@ -566,3 +566,23 @@ class TestCareerScoreHistory:
     def test_get_nonexistent_child(self):
         storage = self._loaded_storage()
         assert storage.get_career_score_history("nonexistent") == []
+
+
+# ---------------------------------------------------------------------------
+# parent_user_ids — non-admin parent role (#661)
+# ---------------------------------------------------------------------------
+
+class TestParentUserIds:
+    def test_default_empty(self):
+        storage = _make_storage()
+        assert storage.get_parent_user_ids() == []
+
+    def test_roundtrip_dedupes_and_drops_non_strings(self):
+        storage = _make_storage()
+        storage.set_parent_user_ids(["u1", "u2", "u2", 3, "", "u1"])
+        assert storage.get_parent_user_ids() == ["u1", "u2"]
+
+    def test_get_ignores_malformed_stored_value(self):
+        storage = _make_storage()
+        storage._data = {"settings": {"parent_user_ids": "not-a-list"}}
+        assert storage.get_parent_user_ids() == []

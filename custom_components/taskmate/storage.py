@@ -766,6 +766,21 @@ class TaskMateStorage:
     def set_streak_at_risk_cutoff(self, hhmm: str) -> None:
         self._data.setdefault("settings", {})["streak_at_risk_cutoff_time"] = hhmm
 
+    def get_parent_user_ids(self) -> list[str]:
+        """HA user IDs granted the non-admin TaskMate parent role (#661)."""
+        raw = (self._data.get("settings", {}) or {}).get("parent_user_ids", [])
+        if not isinstance(raw, list):
+            return []
+        return [x for x in raw if isinstance(x, str) and x]
+
+    def set_parent_user_ids(self, ids: list[str]) -> None:
+        """Replace the parent role list (deduped, order-preserving, strings only)."""
+        seen: list[str] = []
+        for x in ids or []:
+            if isinstance(x, str) and x and x not in seen:
+                seen.append(x)
+        self._data.setdefault("settings", {})["parent_user_ids"] = seen
+
     # --- mandatory reminder escalation (FEAT-6) ---
     def get_escalation_reminder_minutes(self) -> int:
         """Minutes after a mandatory miss before the child reminder escalates."""
