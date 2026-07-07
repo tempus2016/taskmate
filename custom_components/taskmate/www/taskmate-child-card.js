@@ -3385,8 +3385,8 @@ class TaskMateChildCard extends LitElement {
     if (this._loading[bonusKey]) return;
 
     // Undoing removes already-awarded points, so it is parent-only — short-circuit
-    // for non-admins with one friendly message instead of a doomed service call.
-    if (this.hass.user && !this.hass.user.is_admin) {
+    // for non-parents with one friendly message instead of a doomed service call.
+    if (!window.__taskmate_is_parent(this.hass)) {
       this._notifyUndo(this._t("child.undo_not_allowed"));
       return;
     }
@@ -3839,11 +3839,11 @@ class TaskMateChildCard extends LitElement {
     }
 
     // Undoing a completion removes already-awarded points, so it is parent-only
-    // (this mirrors the admin gate on the reject_chore service). For a non-admin
+    // (this mirrors the parent gate on the reject_chore service). For a non-parent
     // user the call always fails with a raw "Unauthorized" — HA shows its own
     // snackbar and we used to add an error notification on top. Short-circuit
     // with one clear, friendly message and never fire the doomed call.
-    if (this.hass.user && !this.hass.user.is_admin) {
+    if (!window.__taskmate_is_parent(this.hass)) {
       this._notifyUndo(this._t("child.undo_not_allowed"));
       return;
     }

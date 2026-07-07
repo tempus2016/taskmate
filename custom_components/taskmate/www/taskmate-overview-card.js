@@ -524,7 +524,7 @@ class TaskMateOverviewCard extends LitElement {
       pendingApprovals = (attrs.chore_completions || completions.filter(c => !c.approved)).length;
     }
 
-    const isAdmin = !!(this.hass && this.hass.user && this.hass.user.is_admin);
+    const isParent = window.__taskmate_is_parent(this.hass);
 
     // Aggregate today's progress across all children
     let doneTotal = 0;
@@ -555,9 +555,9 @@ class TaskMateOverviewCard extends LitElement {
       <div class="tmd-bd">
         ${pendingApprovals > 0 ? this._ovAlert(design, pendingApprovals) : ""}
         <div class="ov-kids">
-          ${kids.map((k) => this._ovKid(design, k, isAdmin, pointsIcon))}
+          ${kids.map((k) => this._ovKid(design, k, isParent, pointsIcon))}
         </div>
-        ${isAdmin ? kids.filter(k => this._expanded[k.child.id]).map(k => this._ovBehalf(k, pointsIcon)) : ""}
+        ${isParent ? kids.filter(k => this._expanded[k.child.id]).map(k => this._ovBehalf(k, pointsIcon)) : ""}
         ${this._ovToday(design, doneTotal, choreTotal, overallPct)}
       </div>
     </ha-card>`;
@@ -630,11 +630,11 @@ class TaskMateOverviewCard extends LitElement {
       </div>`;
   }
 
-  _ovKid(design, k, isAdmin, pointsIcon) {
+  _ovKid(design, k, isParent, pointsIcon) {
     const cls = design === "console" ? "cn" : design === "cleanpro" ? "cp" : "";
     const nameUpper = design === "console" ? `${k.child.name.toUpperCase()} · ${k.pct}%` : k.child.name;
     const isOpen = !!this._expanded[k.child.id];
-    const expandable = isAdmin;
+    const expandable = isParent;
     return html`
       <div class="ov-kid ${cls} ${expandable ? 'tm-clickable' : ''}" style="--ac:${k.tone}"
         @click="${expandable ? () => { this._expanded = { ...this._expanded, [k.child.id]: !isOpen }; this.requestUpdate(); } : null}">
@@ -737,7 +737,7 @@ class TaskMateOverviewCard extends LitElement {
     // Pending approvals for this child
     const childPending = childCompletions.filter(c => !c.approved).length;
 
-    const isAdmin = !!(this.hass && this.hass.user && this.hass.user.is_admin);
+    const isParent = window.__taskmate_is_parent(this.hass);
     const outstanding = childChores.filter(c => {
       const doneToday = completions.filter(
         x => x.child_id === child.id && x.chore_id === c.id && !x.bonus_subtask_id
@@ -751,8 +751,8 @@ class TaskMateOverviewCard extends LitElement {
         <div class="child-avatar">
           <ha-icon icon="${avatar}"></ha-icon>
         </div>
-        <div class="child-main ${isAdmin ? 'tm-expandable' : ''}"
-          @click="${isAdmin ? () => { this._expanded = { ...this._expanded, [child.id]: !isOpen }; this.requestUpdate(); } : null}">
+        <div class="child-main ${isParent ? 'tm-expandable' : ''}"
+          @click="${isParent ? () => { this._expanded = { ...this._expanded, [child.id]: !isOpen }; this.requestUpdate(); } : null}">
           <div class="child-name-row">
             <span class="child-name">${child.name}</span>
             <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;">
@@ -787,7 +787,7 @@ class TaskMateOverviewCard extends LitElement {
           ` : html`
             <div style="font-size:0.8rem;color:var(--secondary-text-color);opacity:0.7;">${this._t('common.no_chores_today')}</div>
           `}
-          ${isAdmin && isOpen ? html`
+          ${isParent && isOpen ? html`
             <div class="tm-outstanding" @click="${(e) => e.stopPropagation()}">
               <div class="tm-outstanding-hdr">${this._t('common.complete_on_behalf_heading')}</div>
               ${outstanding.length === 0 ? html`
