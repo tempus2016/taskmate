@@ -311,8 +311,8 @@ class TaskMatePointsCard extends LitElement {
         background: var(--card-background-color, white);
         border-radius: 16px;
         padding: 24px;
-        min-width: 300px;
-        max-width: 400px;
+        min-width: 0;
+        max-width: min(400px, calc(100vw - 24px));
         box-shadow: var(--ha-card-box-shadow, 0 8px 32px rgba(0, 0, 0, 0.2));
         animation: slide-up 0.3s ease;
       }
@@ -480,6 +480,8 @@ class TaskMatePointsCard extends LitElement {
         bottom: 24px;
         left: 50%;
         transform: translateX(-50%);
+        max-width: calc(100vw - 24px);
+        white-space: normal;
         padding: 12px 24px;
         border-radius: 8px;
         color: var(--text-primary-color, #fff);

@@ -237,6 +237,7 @@ class TaskMateRewardProgressCard extends LitElement {
 
       .progress-stat-row {
         display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
         font-size: 0.82rem;
@@ -426,6 +427,7 @@ class TaskMateRewardProgressCard extends LitElement {
       .rp-frac { font-size: 18px; }
       .rp-need { font-size: 12px; }
       .rp-kids { grid-template-columns: repeat(var(--n, 3), 1fr); gap: 9px; margin-top: 16px; }
+      @media (max-width: 430px) { .rp-kids { grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); } }
       .rp-kid { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
                 border-radius: var(--tmd-radius-sm); padding: 10px; display: flex;
                 flex-direction: column; align-items: center; gap: 4px; }

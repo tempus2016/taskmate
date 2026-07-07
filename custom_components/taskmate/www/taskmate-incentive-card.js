@@ -262,6 +262,7 @@ export function createIncentiveCard(P) {
           flex-direction: column;
           gap: 4px;
           flex: 1;
+          min-width: 0;
         }
         .form-field label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; }
         .form-field input {
@@ -342,7 +343,9 @@ export function createIncentiveCard(P) {
           z-index: 9999;
           pointer-events: none;
           animation: toast-in 0.25s ease, toast-out 0.3s ease 2s forwards;
-          white-space: nowrap;
+          white-space: normal;
+          max-width: calc(100vw - 32px);
+          text-align: center;
         }
         @keyframes toast-in {
           from { opacity: 0; transform: translateX(-50%) translateY(12px); }

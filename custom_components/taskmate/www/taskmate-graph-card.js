@@ -201,8 +201,9 @@ class TaskMateGraphCard extends LitElement {
       .empty-state .submessage { font-size: 0.85rem; margin-top: 4px; }
 
       @media (max-width: 480px) {
-        .card-header { padding: 12px 14px; }
+        .card-header { padding: 12px 14px; flex-wrap: wrap; row-gap: 8px; }
         .header-title { font-size: 1rem; }
+        .mode-toggle { flex-shrink: 1; }
         .mode-btn { padding: 3px 8px; font-size: 0.7rem; }
         .card-content { padding: 12px; }
       }
