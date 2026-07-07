@@ -297,6 +297,29 @@ async def _async_require_admin(hass: HomeAssistant, call: ServiceCall) -> None:
             raise Unauthorized(context=call.context)
 
 
+async def _async_require_parent(hass: HomeAssistant, call: ServiceCall) -> None:
+    """Reject user-initiated calls that aren't from an admin or a TaskMate parent.
+
+    Day-to-day parent actions (approve/reject, gift/adjust points, confirm
+    rewards/allowance, award badges, complete-as-parent) accept non-admin HA
+    users listed in ``parent_user_ids`` (issue #661). Context-less calls
+    (automations, scripts) pass. Structural config stays on
+    ``_async_require_admin``.
+    """
+    if not call.context.user_id:
+        return
+    user = await hass.auth.async_get_user(call.context.user_id)
+    if user is None:
+        raise Unauthorized(context=call.context)
+    if user.is_admin:
+        return
+    coordinator = _get_coordinator(hass)
+    parent_ids = coordinator.storage.get_parent_user_ids() if coordinator else []
+    if call.context.user_id in parent_ids:
+        return
+    raise Unauthorized(context=call.context)
+
+
 _AUDIT_TARGET_KEYS = (
     "chore_id", "reward_id", "penalty_id", "bonus_id", "badge_id",
     "task_group_id", "miss_id", "claim_id", "transaction_id", "type_id",
@@ -405,6 +428,18 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         # Unauthorized (not ValueError), so it is unaffected and still 401s.
         return _safe(wrapped)
 
+    def _parent(handler):
+        """Like _admin, but also allows non-admin users in parent_user_ids (#661).
+
+        Used for day-to-day parent actions. Structural config keeps _admin.
+        """
+        @wraps(handler)
+        async def wrapped(call: ServiceCall) -> None:
+            await _async_require_parent(hass, call)
+            await handler(call)
+            await _async_record_service_audit(hass, call)
+        return _safe(wrapped)
+
     async def handle_complete_chore(call: ServiceCall) -> None:
         """Handle the complete_chore service call."""
         coordinator = _get_coordinator(hass)
@@ -418,8 +453,9 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             # Completing on behalf of a child (auto-approve + instant award) is a
             # parent privilege. Enforce it on the backend, not just by hiding the
             # control in the UI — the service is callable by any authenticated
-            # user. Normal child self-completion (as_parent omitted) stays open.
-            await _async_require_admin(hass, call)
+            # user. Admins and listed non-admin parents (#661) may do this;
+            # normal child self-completion (as_parent omitted) stays open.
+            await _async_require_parent(hass, call)
         else:
             await _async_require_linked_child(hass, call, coordinator, child_id)
         try:
@@ -1038,7 +1074,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_APPROVE_CHORE,
-        _admin(handle_approve_chore),
+        _parent(handle_approve_chore),
         schema=vol.Schema(
             {
                 vol.Required("completion_id"): cv.string,
@@ -1049,7 +1085,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_APPROVE_ALL_CHORES,
-        _admin(handle_approve_all_chores),
+        _parent(handle_approve_all_chores),
         schema=vol.Schema(
             {
                 vol.Optional("completion_ids"): [cv.string],
@@ -1060,7 +1096,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_REJECT_CHORE,
-        _admin(handle_reject_chore),
+        _parent(handle_reject_chore),
         schema=vol.Schema(
             {
                 vol.Required("completion_id"): cv.string,
@@ -1071,21 +1107,21 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     _miss_schema = vol.Schema({vol.Required("miss_id"): cv.string})
     hass.services.async_register(
         DOMAIN, SERVICE_APPLY_MANDATORY_PENALTY,
-        _admin(handle_apply_mandatory_penalty), schema=_miss_schema,
+        _parent(handle_apply_mandatory_penalty), schema=_miss_schema,
     )
     hass.services.async_register(
         DOMAIN, SERVICE_POSTPONE_MANDATORY_CHORE,
-        _admin(handle_postpone_mandatory_chore), schema=_miss_schema,
+        _parent(handle_postpone_mandatory_chore), schema=_miss_schema,
     )
     hass.services.async_register(
         DOMAIN, SERVICE_DISMISS_MANDATORY_CHORE,
-        _admin(handle_dismiss_mandatory_chore), schema=_miss_schema,
+        _parent(handle_dismiss_mandatory_chore), schema=_miss_schema,
     )
 
     hass.services.async_register(
         DOMAIN,
         SERVICE_UNDO_TRANSACTION,
-        _admin(handle_undo_transaction),
+        _parent(handle_undo_transaction),
         schema=vol.Schema(
             {
                 vol.Required("transaction_id"): cv.string,
@@ -1096,7 +1132,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_UNDO_CHORE_APPROVAL,
-        _admin(handle_undo_chore_approval),
+        _parent(handle_undo_chore_approval),
         schema=vol.Schema(
             {
                 vol.Required("completion_id"): cv.string,
@@ -1118,7 +1154,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_GIFT_POINTS,
-        _admin(handle_gift_points),
+        _parent(handle_gift_points),
         schema=vol.Schema(
             {
                 vol.Required("from_child_id"): cv.string,
@@ -1131,7 +1167,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_RECORD_ALLOWANCE_PAYOUT,
-        _admin(handle_record_allowance_payout),
+        _parent(handle_record_allowance_payout),
         schema=vol.Schema(
             {
                 vol.Required("child_id"): cv.string,
@@ -1179,14 +1215,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_REJECT_REWARD,
-        _admin(handle_reject_reward),
+        _parent(handle_reject_reward),
         schema=vol.Schema({ vol.Required("claim_id"): cv.string }),
     )
 
     hass.services.async_register(
         DOMAIN,
         SERVICE_APPROVE_REWARD,
-        _admin(handle_approve_reward),
+        _parent(handle_approve_reward),
         schema=vol.Schema(
             {
                 vol.Required("claim_id"): cv.string,
@@ -1210,7 +1246,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_ADD_POINTS,
-        _admin(handle_add_points),
+        _parent(handle_add_points),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHILD_ID): cv.string,
@@ -1368,7 +1404,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_SKIP_CHORE,
-        _admin(handle_skip_chore),
+        _parent(handle_skip_chore),
         schema=vol.Schema({vol.Required(ATTR_CHORE_ID): cv.string}),
     )
 
@@ -1458,7 +1494,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         "award_badge_manually",
-        _admin(handle_award_badge_manually),
+        _parent(handle_award_badge_manually),
         schema=vol.Schema({
             vol.Required(ATTR_BADGE_ID): cv.string,
             vol.Required(ATTR_CHILD_ID): cv.string,

@@ -412,7 +412,12 @@ class TaskMatePanel extends HTMLElement {
     if (!t) return;
     const act = t.dataset.act;
 
-    if (act === "tab")          { this._activeTab = t.dataset.tab; this._filter = ""; this._render(); return; }
+    if (act === "tab")          {
+      this._activeTab = t.dataset.tab; this._filter = ""; this._render();
+      // Settings tab lists HA users for the parent-role picker (#661); load then repaint.
+      if (this._activeTab === "settings") this._ensureHaUsers().then(() => this._render());
+      return;
+    }
     if (act === "close-dialog") { this._closeDialog(); return; }
     if (act === "clear-field") { this._setEntityField(t.dataset.field, ""); this._render(); return; }
     if (act === "pick-entity") { this._setEntityField(t.dataset.field, t.dataset.value); this._closeEntityDropdown(); this._render(); return; }
@@ -1899,6 +1904,13 @@ class TaskMatePanel extends HTMLElement {
     root.querySelectorAll("ha-icon-picker[data-setting]").forEach(el => {
       payload[el.dataset.setting] = el.value || "";
     });
+    // Non-admin parent role (#661): collect the ticked HA users.
+    const parentBoxes = root.querySelectorAll("input[type=checkbox][data-parent-user]");
+    if (parentBoxes.length) {
+      payload.parent_user_ids = Array.from(parentBoxes)
+        .filter(el => el.checked)
+        .map(el => el.dataset.parentUser);
+    }
     if (this._settingsEntityDraft) {
       Object.assign(payload, this._settingsEntityDraft);
     }
@@ -3718,6 +3730,21 @@ class TaskMatePanel extends HTMLElement {
                 ${["classic","playroom","console","cleanpro"].map(v => `<option value="${v}" ${v === (s.card_design || "classic") ? "selected" : ""}>${this._esc(this._t("common.design." + v))}</option>`).join("")}
               </select>
             </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
+          <div class="tm-section-head"><div>
+            <h3>${this._t("panel.settings_parents_title")}</h3>
+            <p class="tm-meta">${this._t("panel.settings_parents_hint")}</p>
+          </div></div>
+          <div class="tm-section-body">
+            ${(this._haUsers || []).filter(u => !u.is_admin).map(u => `
+              <label class="tm-setting-row" style="cursor:pointer">
+                <div class="tm-setting-label">${this._esc(u.name)}</div>
+                <input type="checkbox" data-parent-user="${this._esc(u.id)}" ${(s.parent_user_ids || []).includes(u.id) ? "checked" : ""}>
+              </label>`).join("")
+              || `<p class="tm-meta">${this._t("panel.settings_parents_empty")}</p>`}
           </div>
         </div>
 

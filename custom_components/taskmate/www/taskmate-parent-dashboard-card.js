@@ -763,7 +763,7 @@ class TaskMateParentDashboardCard extends LitElement {
           </div>`;
       }
       if (design === "cleanpro") {
-        const isAdmin = !!(this.hass && this.hass.user && this.hass.user.is_admin);
+        const isParent = window.__taskmate_is_parent(this.hass);
         return html`
           <div class="row pd-ov-cp" style="--ac:${tone}">
             ${this._av(child.name, child.avatar, tone, 36)}
@@ -774,7 +774,7 @@ class TaskMateParentDashboardCard extends LitElement {
               </div>
               <div class="bar" style="margin-top:7px;height:8px"><i style="width:${pct}%"></i></div>
             </div>
-            ${isAdmin ? html`<button class="btn ghost round sm"
+            ${isParent ? html`<button class="btn ghost round sm"
               title="${this._t('dashboard.tab_points')}"
               @click="${() => this._switchTab('points')}">+</button>` : ""}
           </div>
@@ -982,7 +982,7 @@ class TaskMateParentDashboardCard extends LitElement {
         const isComplete = total > 0 && approved >= total;
         const cls = isComplete ? "complete" : pct > 0 ? "partial" : "none";
 
-        const isAdmin = !!(this.hass && this.hass.user && this.hass.user.is_admin);
+        const isParent = window.__taskmate_is_parent(this.hass);
         const outstanding = childChores.filter(c => {
           const doneToday = completions.filter(
             x => x.child_id === child.id && x.chore_id === c.id && !x.bonus_subtask_id
@@ -992,12 +992,12 @@ class TaskMateParentDashboardCard extends LitElement {
         const isOpen = !!this._expanded[child.id];
 
         return html`
-          <div class="child-tile ${isAdmin ? 'tm-expandable' : ''}">
+          <div class="child-tile ${isParent ? 'tm-expandable' : ''}">
             <div class="child-avatar">
               <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
             </div>
             <div class="child-tile-main"
-              @click="${isAdmin ? () => { this._expanded = { ...this._expanded, [child.id]: !isOpen }; this.requestUpdate(); } : null}">
+              @click="${isParent ? () => { this._expanded = { ...this._expanded, [child.id]: !isOpen }; this.requestUpdate(); } : null}">
               <div class="child-tile-header">
                 <span class="child-tile-name">${child.name}</span>
                 <span class="points-pill">
@@ -1011,7 +1011,7 @@ class TaskMateParentDashboardCard extends LitElement {
                 </div>
                 <span class="progress-label">${approved}/${total}</span>
               </div>
-              ${isAdmin && isOpen ? html`
+              ${isParent && isOpen ? html`
                 <div class="tm-outstanding" @click="${(e) => e.stopPropagation()}">
                   <div class="tm-outstanding-hdr">${this._t('common.complete_on_behalf_heading')}</div>
                   ${outstanding.length === 0 ? html`

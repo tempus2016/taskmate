@@ -67,6 +67,35 @@
   window.__taskmate_attrs = resolveAttrs;
 
   /**
+   * Non-admin parent role (#661). True for Home Assistant admins and for users
+   * the admin has designated as TaskMate parents (published as the
+   * parent_user_ids attribute on sensor.taskmate_overview). Parents get the
+   * day-to-day controls (approve/reject, complete-on-behalf, undo) without HA
+   * admin rights. Admin remains the only tier that can open the admin panel or
+   * change configuration.
+   */
+  function isTaskmateParent(hass) {
+    if (!hass || !hass.user) return false;
+    if (hass.user.is_admin) return true;
+    let ids;
+    const ov = hass.states && hass.states["sensor.taskmate_overview"];
+    if (ov && ov.attributes && Array.isArray(ov.attributes.parent_user_ids)) {
+      ids = ov.attributes.parent_user_ids;
+    } else if (hass.states) {
+      // Overview sensor renamed: find whichever taskmate sensor carries the list.
+      for (const st of Object.values(hass.states)) {
+        if (st && st.attributes && Array.isArray(st.attributes.parent_user_ids)) {
+          ids = st.attributes.parent_user_ids;
+          break;
+        }
+      }
+    }
+    return Array.isArray(ids) && ids.includes(hass.user.id);
+  }
+
+  window.__taskmate_is_parent = isTaskmateParent;
+
+  /**
    * Event-driven update guard for LitElement cards.
    *
    * HA sets a new `hass` object on every card whenever ANY entity changes.
