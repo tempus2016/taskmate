@@ -1434,6 +1434,11 @@ Beyond the sensors above, TaskMate also exposes:
  
 ## Changelog
  
+### v4.5.0
+ 
+**New**
+- **Parent access without admin rights** — you can now give a second parent day-to-day control of TaskMate without making them a Home Assistant admin. In **Settings → Parents (no admin rights)**, tick any existing non-admin Home Assistant user; they can then approve or reject chores, adjust points, confirm rewards and allowance payouts, award badges, complete chores on a child's behalf, and undo — straight from the cards. They still **cannot** open the admin panel or change any configuration, and every parent action is recorded in the audit log. Ideal for a partner who wants to run the daily routine but shouldn't have full Home Assistant admin rights. ([#662](https://github.com/tempus2016/taskmate/pull/662), fixes [#661](https://github.com/tempus2016/taskmate/issues/661))
+ 
 ### v4.4.4
  
 **New**
