@@ -1311,6 +1311,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("time_night_end"): vol.Match(r"^\d{2}:\d{2}$"),
     vol.Optional("time_periods"): list,
     vol.Optional("vacation_periods"): list,
+    vol.Optional("parent_user_ids"): [str],
 }
 
 
@@ -1334,8 +1335,13 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
             return
         storage.set_setting("vacation_periods", vacations)
         changed.append("vacation_periods")
+    if "parent_user_ids" in msg:
+        # Non-admin parent role (#661). Admin-gated write (this whole handler is
+        # @_admin_only) so a parent can never grant/escalate the role.
+        storage.set_parent_user_ids(list(msg["parent_user_ids"]))
+        changed.append("parent_user_ids")
     for k, v in msg.items():
-        if k in {"id", "type", "time_periods", "vacation_periods"}:
+        if k in {"id", "type", "time_periods", "vacation_periods", "parent_user_ids"}:
             continue
         if k == "points_name":
             storage.set_points_name(v.strip())
