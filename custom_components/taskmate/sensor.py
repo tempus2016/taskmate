@@ -780,6 +780,8 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "points_icon": data.get("points_icon", "mdi:star"),
             # Global default card-design style; cards read this when no per-card override (#design).
             "card_design": settings.get("card_design", "classic"),
+            # Non-admin parent role (#661): cards unlock parent controls for these HA users.
+            "parent_user_ids": self.coordinator.storage.get_parent_user_ids(),
             "children": _build_children_summary(self.coordinator, common),
             "time_boundaries": time_boundaries,
             "time_periods": time_periods,
