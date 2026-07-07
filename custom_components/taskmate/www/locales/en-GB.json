@@ -562,7 +562,7 @@
   "panel.btn_delete": "Delete",
   "panel.btn_edit": "Edit",
   "panel.btn_clone_chore": "Duplicate",
-  "panel.btn_from_template": "From template",
+  "panel.btn_from_template": "Create from template",
   "panel.btn_reorder_chores": "Reorder",
   "panel.btn_retry": "Retry",
   "panel.btn_review": "Review",
