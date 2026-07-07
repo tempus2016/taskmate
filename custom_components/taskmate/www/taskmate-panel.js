@@ -3381,7 +3381,7 @@ class TaskMatePanel extends HTMLElement {
     const count = (tpl.chores || []).length;
     const pts = (tpl.chores || []).reduce((s, c) => s + (c.points || 0), 0);
     return `
-      <div class="tm-manage-tpl ${locked ? "tm-manage-tpl-locked" : ""}">
+      <div class="tm-manage-tpl ${locked ? "tm-manage-tpl-locked" : ""}" data-act="tpl-select" data-id="${this._esc(tpl.id)}" style="cursor:pointer">
         <div class="tm-tpl-icon"><ha-icon icon="${this._esc(tpl.icon || "mdi:clipboard-list")}"></ha-icon></div>
         <div class="tm-manage-tpl-info">
           <div class="tm-manage-tpl-name">${this._esc(tpl.name)}${locked ? ' <span class="tm-text-vfaint" style="font-size:12px">🔒</span>' : ""}</div>
@@ -3740,9 +3740,9 @@ class TaskMatePanel extends HTMLElement {
           </div></div>
           <div class="tm-section-body">
             ${(this._haUsers || []).filter(u => !u.is_admin).map(u => `
-              <label class="tm-setting-row" style="cursor:pointer">
+              <label class="tm-setting-row tm-role-row">
                 <div class="tm-setting-label">${this._esc(u.name)}</div>
-                <input type="checkbox" data-parent-user="${this._esc(u.id)}" ${(s.parent_user_ids || []).includes(u.id) ? "checked" : ""}>
+                <input type="checkbox" class="tm-role-check" data-parent-user="${this._esc(u.id)}" ${(s.parent_user_ids || []).includes(u.id) ? "checked" : ""}>
               </label>`).join("")
               || `<p class="tm-meta">${this._t("panel.settings_parents_empty")}</p>`}
           </div>
@@ -4084,7 +4084,7 @@ class TaskMatePanel extends HTMLElement {
             <h4>${this._t("panel.notif_recipients_parents")}</h4>
             ${ns.recipients.parents.map(p => `
               <div class="tm-row" style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--tm-border,#3a3a3a)">
-                <input type="text" value="${this._esc(p.name)}" data-act="notif-rename-parent" data-parent-id="${this._esc(p.id)}" style="flex:1;background:transparent;border:none;color:inherit;font-size:14px;font-weight:500">
+                <input type="text" value="${this._esc(p.name)}" data-act="notif-rename-parent" data-parent-id="${this._esc(p.id)}" style="flex:1;min-width:60px;background:transparent;border:none;color:inherit;font-size:14px;font-weight:500">
                 <select class="tm-notif-select" data-act="notif-set-parent-notify" data-parent-id="${this._esc(p.id)}">
                   ${optTags(p.notify_service)}
                 </select>
@@ -4127,7 +4127,7 @@ class TaskMatePanel extends HTMLElement {
         <td>
           <div style="display:flex;gap:10px;align-items:flex-start">
             <input type="checkbox" class="tm-notif-switch" data-act="notif-set-master" data-type-id="${this._esc(t.id)}" ${active ? "checked" : ""}>
-            <div>
+            <div style="max-width:240px;white-space:normal">
               <strong>${this._t("notification." + t.id + ".name")}</strong>
               <div class="tm-meta">${this._t("notification." + t.id + ".description")}</div>
               ${t.id === "streak_at_risk" ? `
@@ -4183,8 +4183,8 @@ class TaskMatePanel extends HTMLElement {
   _renderNotifCustomSection(ns, recipients) {
     return `
       <div class="tm-card" style="margin-bottom:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <h3>${this._t("panel.notif_section_custom")}</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center">
+          <h3 style="margin:0">${this._t("panel.notif_section_custom")}</h3>
           <button type="button" class="tm-btn tm-btn-raised" data-act="notif-add-custom">+ ${this._t("panel.notif_add_custom")}</button>
         </div>
         <p class="tm-meta">${this._t("panel.notif_section_custom_desc")}</p>
@@ -5945,6 +5945,11 @@ class TaskMatePanel extends HTMLElement {
         border-top: 1px solid var(--tm-border-soft);
       }
       .tm-setting-row:first-child { border-top: 0; }
+      .tm-role-row { grid-template-columns: 1fr auto; cursor: pointer; }
+      .tm-role-check {
+        width: 20px; height: 20px; margin: 0;
+        justify-self: end; accent-color: var(--tm-accent); cursor: pointer;
+      }
       .tm-setting-label { color: var(--tm-text); font-size: 13px; font-weight: 500; }
       .tm-setting-label small { display: block; color: var(--tm-text-faint); font-weight: 400; font-size: 12px; margin-top: 2px; }
       .tm-difficulty-mults { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -5965,7 +5970,17 @@ class TaskMatePanel extends HTMLElement {
         grid-template-columns: 56px minmax(140px, 1fr) auto 36px;
         gap: 12px;
       }
-      .tm-period-row ha-icon-picker { max-width: 56px; }
+      .tm-period-row ha-icon-picker {
+        width: 56px; max-width: 56px; height: 56px;
+        border-radius: var(--tm-radius-sm, 8px); overflow: hidden;
+        /* Older HA renders the picker as a filled mwc-textfield: drop the fill
+           and its dark active-indicator line so no stray underline shows. */
+        --mdc-text-field-fill-color: transparent;
+        --mdc-text-field-idle-line-color: transparent;
+        --mdc-text-field-hover-line-color: transparent;
+        --mdc-text-field-focused-line-color: transparent;
+        --mdc-text-field-disabled-line-color: transparent;
+      }
       .tm-period-row > .tm-input { max-width: none; }
       .tm-vacation-row {
         grid-template-columns: minmax(140px, 1fr) auto 36px;
@@ -6563,7 +6578,7 @@ class TaskMatePanel extends HTMLElement {
         background: var(--tm-surface-0); border: 1px solid var(--tm-border);
         border-radius: var(--tm-radius-sm); padding: 7px 10px;
         color: var(--tm-text); font-size: 12.5px; font-family: inherit;
-        cursor: pointer; max-width: 240px; transition: border-color 0.1s;
+        cursor: pointer; min-width: 0; max-width: 240px; transition: border-color 0.1s;
       }
       .tm-notif-select:hover { border-color: var(--tm-border-strong); }
       .tm-notif-select:focus { outline: 0; border-color: var(--tm-accent); box-shadow: var(--tm-shadow-focus); }
@@ -6658,6 +6673,7 @@ class TaskMatePanel extends HTMLElement {
         .tm-scrim { padding: 0; }
         .tm-dialog-body .tm-field-row { grid-template-columns: 1fr; }
         .tm-setting-row { grid-template-columns: 1fr; gap: 6px; padding: 12px 16px; }
+        .tm-role-row { grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
         .tm-section-head, .tm-setting-row { padding-left: 16px; padding-right: 16px; }
         .tm-timeline-row { grid-template-columns: 1fr auto; }
         .tm-timeline-time, .tm-timeline-icon { display: none; }
