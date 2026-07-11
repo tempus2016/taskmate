@@ -1434,6 +1434,15 @@ Beyond the sensors above, TaskMate also exposes:
  
 ## Changelog
  
+### v4.5.1
+ 
+**Improved**
+- **Easier mobile navigation in the admin panel** — on phones, the admin panel no longer packs every section into a single horizontally-scrolling tab strip that you had to swipe across to reach Settings. Instead a **section picker** shows the current section; tap it to open a grouped list (Today / Manage / System) that mirrors the desktop sidebar — with the same count badges and highlight — and jump straight to any section in one tap. Desktop is unchanged. ([#669](https://github.com/tempus2016/taskmate/pull/669))
+- **Clickable template packs** — on the **Templates** tab, built-in and custom pack cards are now clickable and open the preview (chore list + **Create N chores**); the chores toolbar button is clearer as **Create from template** (all locales). ([#665](https://github.com/tempus2016/taskmate/pull/665))
+ 
+**Fixes**
+- **Mobile styling sweep** — audited every card and the admin panel at phone widths and fixed the overflow, clipping and broken-layout issues found: the Children stat grid now lays out as a clean 2×2 instead of leaving empty cells, the points-card add dialog and toast no longer run off-screen on narrow phones, the Parents (no-admin) rows sit inline, and more. ([#666](https://github.com/tempus2016/taskmate/pull/666), [#665](https://github.com/tempus2016/taskmate/pull/665))
+ 
 ### v4.5.0
  
 **New**
