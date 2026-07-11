@@ -133,6 +133,7 @@ class TaskMatePanel extends HTMLElement {
     this._bulkMode = false;         // chores multi-select mode
     this._bulkSel = new Set();      // selected chore ids for bulk actions
     this._activeTab = "children";
+    this._mobileNavOpen = false;     // mobile section-picker dropdown state
     this._dialog = null;
     this._dialogInitialHash = null;  // for confirm-on-leave
     this._filter = "";               // per-tab search/filter
@@ -413,11 +414,13 @@ class TaskMatePanel extends HTMLElement {
     const act = t.dataset.act;
 
     if (act === "tab")          {
-      this._activeTab = t.dataset.tab; this._filter = ""; this._render();
+      this._activeTab = t.dataset.tab; this._filter = ""; this._mobileNavOpen = false; this._render();
       // Settings tab lists HA users for the parent-role picker (#661); load then repaint.
       if (this._activeTab === "settings") this._ensureHaUsers().then(() => this._render());
       return;
     }
+    if (act === "toggle-mobile-nav") { this._mobileNavOpen = !this._mobileNavOpen; this._render(); return; }
+    if (act === "close-mobile-nav")  { this._mobileNavOpen = false; this._render(); return; }
     if (act === "close-dialog") { this._closeDialog(); return; }
     if (act === "clear-field") { this._setEntityField(t.dataset.field, ""); this._render(); return; }
     if (act === "pick-entity") { this._setEntityField(t.dataset.field, t.dataset.value); this._closeEntityDropdown(); this._render(); return; }
@@ -2136,7 +2139,6 @@ class TaskMatePanel extends HTMLElement {
       this._zoneCache = {};
       this._applyDesign();
       this._bindHaPickers();
-      this._scrollActiveMobileTabIntoView();
       return;
     }
 
@@ -2156,10 +2158,6 @@ class TaskMatePanel extends HTMLElement {
       const dialogBody = dialogZone.querySelector(".tm-dialog-body");
       savedScroll = dialogBody ? dialogBody.scrollTop : 0;
     }
-
-    const mtabsZone = this.querySelector('[data-zone="mtabs"]');
-    const existingMtabs = mtabsZone ? mtabsZone.querySelector(".tm-mobile-tabs") : null;
-    const savedMtabsScroll = existingMtabs ? existingMtabs.scrollLeft : 0;
 
     if (this._dialog) {
       const openSet = this._dialog._openAdvanced instanceof Set ? this._dialog._openAdvanced : new Set();
@@ -2190,13 +2188,7 @@ class TaskMatePanel extends HTMLElement {
       if (newBody) newBody.scrollTop = savedScroll;
     }
 
-    if (savedMtabsScroll) {
-      const newMtabs = this.querySelector(".tm-mobile-tabs");
-      if (newMtabs) newMtabs.scrollLeft = savedMtabsScroll;
-    }
-
     this._applyDesign();
-    this._scrollActiveMobileTabIntoView();
   }
 
   // The admin panel intentionally stays CLASSIC regardless of the global card
@@ -2205,19 +2197,6 @@ class TaskMatePanel extends HTMLElement {
   _applyDesign() {
     const shell = this.querySelector(".tm-shell");
     if (shell) shell.removeAttribute("data-tm-design");
-  }
-
-  _scrollActiveMobileTabIntoView() {
-    const nav = this.querySelector(".tm-mobile-tabs");
-    if (!nav) return;
-    const active = nav.querySelector(".tm-mtab-active");
-    if (!active) return;
-    const navRect = nav.getBoundingClientRect();
-    const btnRect = active.getBoundingClientRect();
-    if (btnRect.left < navRect.left || btnRect.right > navRect.right) {
-      const target = active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2;
-      nav.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
-    }
   }
 
   _sidebarGroups() {
@@ -2324,19 +2303,43 @@ class TaskMatePanel extends HTMLElement {
 
   _mobileTabs() {
     const groups = this._sidebarGroups();
+    const open = !!this._mobileNavOpen;
+    const current = groups.flatMap(g => g.items).find(it => it.id === this._activeTab)
+      || { id: this._activeTab, label: "", icon: "mdi:cog-outline" };
+    const curUrgent = current.id === "activity" && current.count > 0;
+    const curShowCount = current.count != null && current.count > 0;
     return `
-      <nav class="tm-mobile-tabs">
-        ${groups.flatMap(g => g.items).map(it => {
-          const active = it.id === this._activeTab;
-          const urgent = it.id === "activity" && it.count > 0;
-          const showCount = it.count != null && it.count > 0;
-          return `
-            <button type="button" class="tm-mtab ${active ? "tm-mtab-active" : ""}" data-act="tab" data-tab="${it.id}">
-              ${this._esc(it.label)}${showCount ? `<span class="tm-mtab-pill ${urgent ? "tm-mtab-pill-urgent" : ""}">${it.count}</span>` : ""}
-            </button>
-          `;
-        }).join("")}
-      </nav>
+      <div class="tm-mobilenav ${open ? "tm-mobilenav-open" : ""}">
+        <button type="button" class="tm-mnav-trigger" data-act="toggle-mobile-nav"
+                aria-haspopup="true" aria-expanded="${open ? "true" : "false"}">
+          <span class="tm-mnav-ico"><ha-icon icon="${this._esc(current.icon)}"></ha-icon></span>
+          <span class="tm-mnav-main">
+            <span class="tm-mnav-crumb">TaskMate</span>
+            <span class="tm-mnav-title">${this._esc(current.label)}</span>
+          </span>
+          ${curShowCount ? `<span class="tm-mnav-count ${curUrgent ? "tm-mnav-count-urgent" : ""}">${current.count}</span>` : ""}
+          <span class="tm-mnav-chev"><ha-icon icon="mdi:chevron-down"></ha-icon></span>
+        </button>
+        ${open ? `
+          <div class="tm-mnav-scrim" data-act="close-mobile-nav"></div>
+          <nav class="tm-mnav-sheet">
+            ${groups.map(g => `
+              <div class="tm-mnav-grp-head">${this._esc(g.head)}</div>
+              ${g.items.map(it => {
+                const active = it.id === this._activeTab;
+                const urgent = it.id === "activity" && it.count > 0;
+                const showCount = it.count != null && it.count > 0;
+                return `
+                  <button type="button" class="tm-mnav-item ${active ? "tm-mnav-item-active" : ""}" data-act="tab" data-tab="${it.id}">
+                    <ha-icon class="tm-mnav-item-ico" icon="${this._esc(it.icon)}"></ha-icon>
+                    <span class="tm-mnav-item-label">${this._esc(it.label)}</span>
+                    ${showCount ? `<span class="tm-mnav-count ${urgent ? "tm-mnav-count-urgent" : ""}">${it.count}</span>` : ""}
+                  </button>`;
+              }).join("")}
+            `).join("")}
+          </nav>
+        ` : ""}
+      </div>
     `;
   }
 
@@ -5426,8 +5429,8 @@ class TaskMatePanel extends HTMLElement {
       }
       @keyframes tm-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
 
-      /* ===== Mobile tabs (hidden by default, shown on narrow) ===== */
-      .tm-mobile-tabs { display: none; }
+      /* ===== Mobile section picker (hidden by default, shown on narrow) ===== */
+      .tm-mobilenav { display: none; }
 
       /* Approval banner */
       .tm-approval-banner {
@@ -6617,54 +6620,112 @@ class TaskMatePanel extends HTMLElement {
         .tm-sidebar { display: none; }
         .tm-menu-btn { display: inline-flex; }
         .tm-topbar { padding: 0 12px; }
-        .tm-mobile-tabs {
-          display: flex;
-          overflow-x: auto;
-          overflow-y: hidden;
-          overscroll-behavior: contain;
-          touch-action: pan-x;
-          scrollbar-width: none;
-          padding: 0 12px;
+        /* Redundant with the section picker below — hide on mobile. */
+        .tm-crumbs { display: none; }
+        .tm-approval-pill { margin-left: auto; }
+
+        /* Section picker replaces the old horizontal tab strip. */
+        .tm-main { position: relative; }
+        .tm-mobilenav {
+          display: block;
+          position: relative;
+          z-index: 5;
+          flex-shrink: 0;
           background: var(--tm-surface-0);
           border-bottom: 1px solid var(--tm-border);
-          flex-shrink: 0;
+          padding: 8px 12px;
         }
-        .tm-mobile-tabs::-webkit-scrollbar { display: none; }
-        .tm-mtab {
-          position: relative;
-          background: transparent;
-          border: 0;
-          color: var(--tm-text-faint);
-          padding: 12px 14px;
-          cursor: pointer;
-          font-size: 13px;
-          font-weight: 500;
-          font-family: inherit;
-          white-space: nowrap;
-          display: flex; align-items: center; gap: 6px;
-          transition: color 0.1s var(--tm-easing);
-        }
-        .tm-mtab:hover { color: var(--tm-text); }
-        .tm-mtab-active { color: var(--tm-text); }
-        .tm-mtab-active::after {
-          content: ""; position: absolute;
-          left: 14px; right: 14px; bottom: -1px;
-          height: 2px; background: var(--tm-accent);
-          border-radius: 2px 2px 0 0;
-        }
-        .tm-mtab-pill {
+        .tm-mnav-trigger {
+          width: 100%;
+          display: flex; align-items: center; gap: 10px;
           background: var(--tm-surface-2);
-          color: var(--tm-text-muted);
-          font-size: 10.5px; font-weight: 600;
-          padding: 1px 6px; border-radius: 999px;
+          border: 1px solid var(--tm-border);
+          border-radius: var(--tm-radius-md, 12px);
+          padding: 8px 12px;
+          cursor: pointer;
+          font-family: inherit;
+          color: var(--tm-text);
+          text-align: left;
+          transition: background 0.12s var(--tm-easing), border-color 0.12s var(--tm-easing);
         }
-        .tm-mtab-active .tm-mtab-pill {
+        .tm-mnav-trigger:active { background: var(--tm-surface-3); }
+        .tm-mobilenav-open .tm-mnav-trigger { border-color: var(--tm-accent); }
+        .tm-mnav-ico {
+          width: 30px; height: 30px; flex-shrink: 0;
+          border-radius: var(--tm-radius-sm, 8px);
           background: var(--tm-accent-soft);
           color: var(--tm-accent-text);
+          display: grid; place-items: center;
+          --mdc-icon-size: 20px;
         }
-        .tm-mtab-pill-urgent {
-          background: var(--tm-warning-soft) !important;
-          color: var(--tm-warning) !important;
+        .tm-mnav-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .tm-mnav-crumb { font-size: 11px; color: var(--tm-text-faint); line-height: 1.2; }
+        .tm-mnav-title {
+          font-size: 15px; font-weight: 600; line-height: 1.25;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .tm-mnav-chev {
+          color: var(--tm-text-muted); flex-shrink: 0;
+          --mdc-icon-size: 22px;
+          transition: transform 0.18s var(--tm-easing);
+        }
+        .tm-mobilenav-open .tm-mnav-chev { transform: rotate(180deg); }
+        .tm-mnav-count {
+          flex-shrink: 0;
+          background: var(--tm-surface-0);
+          border: 1px solid var(--tm-border);
+          color: var(--tm-text-muted);
+          font-size: 11px; font-weight: 600;
+          padding: 1px 7px; border-radius: 999px;
+        }
+        .tm-mnav-count-urgent {
+          background: var(--tm-warning-soft);
+          border-color: transparent;
+          color: var(--tm-warning);
+        }
+        .tm-mnav-scrim {
+          position: absolute;
+          top: 100%; left: 0; right: 0;
+          height: 100vh;
+          background: rgba(10, 15, 22, 0.32);
+          z-index: 30;
+          animation: tm-mnav-fade 0.18s var(--tm-easing);
+        }
+        .tm-mnav-sheet {
+          position: absolute;
+          top: calc(100% + 6px); left: 8px; right: 8px;
+          z-index: 31;
+          background: var(--tm-surface-0);
+          border: 1px solid var(--tm-border);
+          border-radius: var(--tm-radius-md, 14px);
+          box-shadow: 0 20px 48px rgba(0, 0, 0, 0.24);
+          max-height: calc(100vh - 200px);
+          overflow-y: auto;
+          padding: 4px 0 8px;
+          animation: tm-mnav-drop 0.18s var(--tm-easing);
+        }
+        .tm-mnav-grp-head {
+          font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+          text-transform: uppercase; color: var(--tm-text-faint);
+          padding: 12px 16px 4px;
+        }
+        .tm-mnav-item {
+          display: flex; align-items: center; gap: 12px; width: 100%;
+          background: none; border: 0; font-family: inherit; cursor: pointer;
+          padding: 11px 16px; color: var(--tm-text); text-align: left;
+        }
+        .tm-mnav-item:active { background: var(--tm-surface-2); }
+        .tm-mnav-item-ico {
+          flex-shrink: 0; color: var(--tm-text-muted);
+          --mdc-icon-size: 20px;
+        }
+        .tm-mnav-item-label { flex: 1; font-size: 15px; }
+        .tm-mnav-item-active { background: var(--tm-accent-soft); color: var(--tm-accent-text); }
+        .tm-mnav-item-active .tm-mnav-item-ico { color: var(--tm-accent-text); }
+        @keyframes tm-mnav-fade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes tm-mnav-drop {
+          from { opacity: 0; transform: translateY(-8px) scale(0.985); }
+          to { opacity: 1; transform: none; }
         }
         .tm-body { padding: 16px; }
         .tm-toolbar { flex-direction: column; align-items: stretch; }
