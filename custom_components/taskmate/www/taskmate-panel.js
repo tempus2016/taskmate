@@ -1283,6 +1283,7 @@ class TaskMatePanel extends HTMLElement {
       due_days: d.due_days || [],
       daily_limit: Number(d.daily_limit) || 1,
       completion_sound: d.completion_sound || "coin",
+      icon: d.icon || "",
     });
     if (!ok) { this._showToast("err", this._t("panel.toast_bulk_add_failed", {error: err})); return; }
     this._closeDialog(true);
@@ -1355,6 +1356,7 @@ class TaskMatePanel extends HTMLElement {
       assignment_mode: "everyone", assignment_rotation_anchor: "",
       manual_start_child_id: "",
       require_availability: false,
+      icon: "",
       visibility_entity: "", visibility_state: "on", visibility_operator: "none",
       weather_entity: "", weather_block_conditions: [],
       weather_temp_min: "", weather_temp_max: "", weather_wind_max: "",
@@ -4894,7 +4896,10 @@ class TaskMatePanel extends HTMLElement {
     return this._dialogShell(this._dialog.mode === "add" ? this._t("panel.dialog_add_chore") : this._t("panel.dialog_edit_chore"),
       [
         this._field(this._t("panel.chore_name_label"), "name", d.name, "text"),
-        this._field(this._t("panel.chore_description_label"), "description", d.description, "text"),
+        `<div class="tm-field-row">
+          ${this._field(this._t("panel.chore_description_label"), "description", d.description, "text")}
+          ${this._iconPickerField(this._t("panel.chore_icon_label"), "icon", d.icon)}
+        </div>`,
         this._select(this._t("panel.chore_task_type_label"), "task_type", d.task_type || "standard", [
           { v: "standard", l: this._t("panel.chore_task_type_standard") },
           { v: "timed", l: this._t("panel.chore_task_type_timed") },

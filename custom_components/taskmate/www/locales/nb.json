@@ -1708,5 +1708,8 @@
   "panel.health_count_scheduled_changes": "Planlagte",
   "panel.health_count_active_unlocks": "Opplåsinger",
   "panel.health_count_mandatory_misses": "Glemt",
-  "panel.health_count_storage": "Lagring"
+  "panel.health_count_storage": "Lagring",
+  "panel.chore_icon_label": "Bilde",
+  "child.editor.pre_reader": "Kun bilder (for små barn)",
+  "child.editor.pre_reader_labels": "Vis navn i bildemodus"
 }

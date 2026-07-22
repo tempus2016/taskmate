@@ -1708,5 +1708,8 @@
   "panel.health_count_scheduled_changes": "Planifiées",
   "panel.health_count_active_unlocks": "Déverrouillages",
   "panel.health_count_mandatory_misses": "Manquements",
-  "panel.health_count_storage": "Stockage"
+  "panel.health_count_storage": "Stockage",
+  "panel.chore_icon_label": "Image",
+  "child.editor.pre_reader": "Mode images seules (jeunes enfants)",
+  "child.editor.pre_reader_labels": "Afficher les noms en mode images"
 }

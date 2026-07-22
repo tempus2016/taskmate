@@ -251,6 +251,9 @@ class Chore:
     claim_allowance_minutes: int = 0  # Grace minutes past period end during which the chore stays claimable; 0 = no grace. Night chores still cap at midnight.
     daily_limit: int = 1
     completion_sound: str = "coin"  # Sound to play on completion
+    # Optional picture for the chore. Text-free pre-reader mode (#683) needs
+    # one per chore; everything else falls back to the time-of-day icon.
+    icon: str = ""
     difficulty: str = "medium"  # easy | medium | hard — scales awarded points by the tier multiplier (medium = ×1.0 baseline)
     # Scheduling
     # schedule_mode: "specific_days" = show on selected days of week (Mode A)
@@ -342,6 +345,7 @@ class Chore:
             claim_allowance_minutes=max(0, int(data.get("claim_allowance_minutes", 0) or 0)),
             daily_limit=data.get("daily_limit", 1),
             completion_sound=data.get("completion_sound", "coin"),
+            icon=str(data.get("icon", "") or ""),
             difficulty=data.get("difficulty", "medium"),
             schedule_mode=schedule_mode,
             due_days=list(data.get("due_days", [])),
@@ -404,6 +408,7 @@ class Chore:
             "claim_allowance_minutes": self.claim_allowance_minutes,
             "daily_limit": self.daily_limit,
             "completion_sound": self.completion_sound,
+            "icon": self.icon,
             "difficulty": self.difficulty,
             "schedule_mode": self.schedule_mode,
             "due_days": self.due_days,

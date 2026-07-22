@@ -44,6 +44,7 @@
 - [Chore Roulette](#chore-roulette)
 - [Timed Unlock Rewards](#timed-unlock-rewards)
 - [Insights — Fairness, Friction, Week Ahead & Health](#insights--fairness-friction-week-ahead--health)
+- [Pre-Reader Mode](#pre-reader-mode)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -519,6 +520,27 @@ The fourth view checks the setup itself and reports storage size and entity coun
 | A child has no chores; completion records for deleted chores; a very large history | Note |
  
 Every issue carries a plain sentence and a **Show me** button that jumps to where it lives — a diagnostic that only says "3 problems" isn't one you can act on. Notes alone still count as healthy.
+ 
+---
+ 
+## Pre-Reader Mode
+ 
+A picture-only child card for children who can't read yet. No chore names, no numbers — a big icon, a row of stars for the points, and a huge tick when it's done.
+ 
+```yaml
+type: custom:taskmate-child-card
+entity: sensor.taskmate_overview
+child_id: <child_id>
+pre_reader: true
+pre_reader_labels: false   # optional; adds the chore name back under each tile
+```
+ 
+### Key Points
+ 
+- **Chores now have a picture.** Set one per chore in the panel (next to the description). Without it a tile falls back to the time-of-day icon — fine for one chore, useless for telling "brush teeth" from "get dressed", so set them.
+- **Points are shown as stars, not digits** (1–5, scaled from the chore's value). A four-year-old can count pictures.
+- Tiles are at least 128 px with a large tap target, and a **done tile stays tappable** so a mis-tap can be undone, exactly as on the standard card.
+- **Opt-in.** An existing dashboard never turns into pictures on its own, and names stay off unless you ask for them.
  
 ---
  
