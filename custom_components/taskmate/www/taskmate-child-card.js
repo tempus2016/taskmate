@@ -1193,6 +1193,51 @@ class TaskMateChildCard extends LitElement {
         width: 6px;
         background: var(--fun-red);
       }
+      /* Pre-reader mode (#683) — picture-only, huge targets */
+      .pre-reader-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+        gap: 14px;
+        padding: 4px 0 8px;
+      }
+      .pre-tile {
+        position: relative;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 8px;
+        min-height: 140px; padding: 16px 10px;
+        border: 3px solid var(--divider-color, #e0e0e0);
+        border-radius: 26px;
+        background: var(--card-background-color, #fff);
+        font-family: inherit; cursor: pointer;
+        transition: transform 0.12s ease, border-color 0.12s ease;
+      }
+      .pre-tile:active { transform: scale(0.96); }
+      .pre-tile:focus-visible { outline: 4px solid var(--primary-color); outline-offset: 3px; }
+      .pre-tile-icon ha-icon { --mdc-icon-size: 64px; color: var(--primary-color); }
+      .pre-tile-stars { display: flex; gap: 2px; }
+      .pre-tile-stars ha-icon { --mdc-icon-size: 18px; color: #f1c40f; }
+      .pre-tile-label {
+        font-size: 0.85rem; font-weight: 700; text-align: center;
+        color: var(--secondary-text-color); line-height: 1.2;
+      }
+      .pre-tile.done {
+        border-color: var(--success-color, #2ecc71);
+        background: rgba(46, 204, 113, 0.10);
+      }
+      .pre-tile.done .pre-tile-icon ha-icon { opacity: 0.35; }
+      .pre-tile.done .pre-tile-stars { opacity: 0.35; }
+      .pre-tile-tick {
+        position: absolute; inset: 0;
+        display: grid; place-items: center;
+        pointer-events: none;
+      }
+      .pre-tile-tick ha-icon {
+        --mdc-icon-size: 72px;
+        color: var(--success-color, #2ecc71);
+      }
+      .pre-tile.locked { opacity: 0.4; cursor: default; }
+      .pre-tile.loading { opacity: 0.6; }
+
       /* Chore roulette (#677) */
       .roulette {
         display: flex; flex-direction: column; gap: 8px;
@@ -2166,7 +2211,12 @@ class TaskMateChildCard extends LitElement {
                   })() : ''}
                 </div>
                 ${this._renderRoulette(child, childChores, pointsIcon)}
-                ${childChores.map((chore, index) => html`
+                ${this.config.pre_reader === true ? html`
+                  <div class="pre-reader-grid">
+                    ${childChores.map((chore, index) =>
+                      this._renderPreReaderTile(chore, child, todaysCompletions, index))}
+                  </div>
+                ` : childChores.map((chore, index) => html`
                   ${chore.task_type === 'timed'
                     ? this._renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, index)
                     : html`
@@ -3146,6 +3196,53 @@ class TaskMateChildCard extends LitElement {
       this._spinning = null;
       this.requestUpdate();
     }
+  }
+
+  /**
+   * Pre-reader mode (#683): a picture-only tile for children who can't read
+   * yet. No chore name, no numbers — a big icon, a row of stars for the
+   * points, and a huge tick when it's done.
+   */
+  _renderPreReaderTile(chore, child, todaysCompletions = [], choreIndex = 0) {
+    const dailyLimit = chore.daily_limit || 1;
+    // Counted the same way the standard row does: pending completions hold a
+    // place too, and a parent completing on behalf lands under "__parent__".
+    const childCompletionsToday = todaysCompletions.filter(
+      (comp) => comp.chore_id === chore.id
+        && (comp.child_id === child.id || comp.child_id === "__parent__")
+        && !comp.bonus_subtask_id
+    );
+    const isDone = childCompletionsToday.length >= dailyLimit;
+    const isLoading = this._loading[chore.id];
+    const available = chore._isAvailableForChild !== false && !chore._isLockedPreview;
+
+    // Stars, not digits: a 4-year-old can count pictures, not read "+3".
+    const points = chore.effective_points ?? chore.points ?? 0;
+    const stars = Math.max(1, Math.min(5, Math.round(points / 2) || 1));
+
+    const icon = chore.icon
+      || this._getTimeCategoryIcon(chore.time_category)
+      || 'mdi:checkbox-marked-circle-outline';
+
+    return html`
+      <button
+        class="pre-tile ${isDone ? 'done' : ''} ${isLoading ? 'loading' : ''} ${available ? '' : 'locked'}"
+        ?disabled=${isLoading || !available}
+        aria-label="${chore.name}"
+        title="${chore.name}"
+        @click=${() => (isDone
+          ? this._handleUndo(chore, child, childCompletionsToday)
+          : this._handleComplete(chore, child))}
+      >
+        <div class="pre-tile-icon"><ha-icon icon="${icon}"></ha-icon></div>
+        ${isDone ? html`<div class="pre-tile-tick"><ha-icon icon="mdi:check-bold"></ha-icon></div>` : ''}
+        <div class="pre-tile-stars">
+          ${Array.from({ length: stars }, () => html`<ha-icon icon="mdi:star"></ha-icon>`)}
+        </div>
+        ${this.config.pre_reader_labels === true
+          ? html`<div class="pre-tile-label">${chore.name}</div>` : ''}
+      </button>
+    `;
   }
 
   _renderChoreCard(chore, child, pointsIcon, todaysCompletions = [], choreIndex = 0) {
@@ -4300,6 +4397,8 @@ class TaskMateChildCardEditor extends LitElement {
       },
       { name: 'show_countdown', selector: { boolean: {} } },
       { name: 'show_description', selector: { boolean: {} } },
+      { name: 'pre_reader', selector: { boolean: {} } },
+      { name: 'pre_reader_labels', selector: { boolean: {} } },
       { name: 'debug', selector: { boolean: {} } },
     ];
   }
@@ -4315,6 +4414,8 @@ class TaskMateChildCardEditor extends LitElement {
       elapsed_time_mode: this._t('child.editor.missed_time_chores'),
       show_countdown: this._t('child.editor.show_countdown'),
       show_description: this._t('child.editor.show_description'),
+      pre_reader: this._t('child.editor.pre_reader'),
+      pre_reader_labels: this._t('child.editor.pre_reader_labels'),
       debug: this._t('child.editor.show_debug'),
     };
     return labels[entry.name] ?? entry.name;
@@ -4345,6 +4446,8 @@ class TaskMateChildCardEditor extends LitElement {
       elapsed_time_mode: this.config.elapsed_time_mode || 'dim',
       show_countdown: this.config.show_countdown !== false,
       show_description: this.config.show_description === true,
+      pre_reader: this.config.pre_reader === true,
+      pre_reader_labels: this.config.pre_reader_labels === true,
       debug: this.config.debug === true,
     };
 

@@ -299,6 +299,9 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         assignment_current_child_id = getattr(c, 'assignment_current_child_id', '')
         if assignment_current_child_id:
             record["assignment_current_child_id"] = assignment_current_child_id
+        icon = getattr(c, 'icon', '')
+        if icon:
+            record["icon"] = icon
         completion_sound = getattr(c, 'completion_sound', 'coin')
         if completion_sound and completion_sound != 'coin':
             record["completion_sound"] = completion_sound

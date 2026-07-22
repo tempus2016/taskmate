@@ -1708,5 +1708,8 @@
   "panel.health_count_scheduled_changes": "Planlagde",
   "panel.health_count_active_unlocks": "Opplåsingar",
   "panel.health_count_mandatory_misses": "Gløymt",
-  "panel.health_count_storage": "Lagring"
+  "panel.health_count_storage": "Lagring",
+  "panel.chore_icon_label": "Bilete",
+  "child.editor.pre_reader": "Berre bilete (for små born)",
+  "child.editor.pre_reader_labels": "Vis namn i biletemodus"
 }

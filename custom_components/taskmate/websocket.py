@@ -457,7 +457,7 @@ async def _ws_list_ha_users(hass, connection, msg, coordinator):
 _CHORE_EDITABLE_FIELDS = {
     "name", "description", "points", "assigned_to", "depends_on", "requires_approval",
     "time_category", "claim_allowance_minutes", "daily_limit", "completion_sound",
-    "difficulty",
+    "icon", "difficulty",
     "schedule_mode", "due_days", "recurrence", "recurrence_day",
     "recurrence_start", "first_occurrence_mode", "visibility_entity",
     "visibility_state", "visibility_operator",
@@ -487,6 +487,7 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("claim_allowance_minutes"): vol.All(int, vol.Range(min=0)),
         vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
         vol.Optional("completion_sound"): str,
+        vol.Optional("icon"): str,
         vol.Optional("difficulty"): vol.In(["easy", "medium", "hard"]),
         vol.Optional("schedule_mode"): vol.In(["specific_days", "recurring", "one_shot"]),
         vol.Optional("due_days"): [str],

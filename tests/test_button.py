@@ -45,7 +45,7 @@ def test_complete_chore_button_identity_and_icon():
     btn = CompleteChoreButton(coord, _entry(), child, chore)
     assert btn._attr_unique_id == "entry1_ch1_cho1_complete"
     assert btn._attr_name == "Malia: Complete Dishes"
-    assert btn.icon == "mdi:check-circle"  # Chore has no icon field -> getattr fallback
+    assert btn.icon == "mdi:check-circle"  # no picture set -> falls back
     attrs = btn.extra_state_attributes
     assert attrs["child_id"] == "ch1"
     assert attrs["chore_id"] == "cho1"

@@ -139,7 +139,10 @@ class CompleteChoreButton(TaskMateBaseButton):
     def icon(self) -> str:
         """Return the icon."""
         chore = self.coordinator.get_chore(self.chore_id)
-        return getattr(chore, 'icon', "mdi:check-circle") if chore else "mdi:check-circle"
+        # Chores gained an optional icon in #683, defaulting to "". Fall back on
+        # falsiness, not on the attribute being absent — otherwise every chore
+        # without a picture gets a blank button icon.
+        return (getattr(chore, 'icon', "") or "mdi:check-circle") if chore else "mdi:check-circle"
 
     @property
     def extra_state_attributes(self) -> dict:
