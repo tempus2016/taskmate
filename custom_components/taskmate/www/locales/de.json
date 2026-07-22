@@ -1711,5 +1711,6 @@
   "panel.health_count_storage": "Speicher",
   "panel.chore_icon_label": "Bild",
   "child.editor.pre_reader": "Nur-Bilder-Modus (für kleine Kinder)",
-  "child.editor.pre_reader_labels": "Namen im Bildmodus anzeigen"
+  "child.editor.pre_reader_labels": "Namen im Bildmodus anzeigen",
+  "common.design.accessible": "Barrierefrei"
 }

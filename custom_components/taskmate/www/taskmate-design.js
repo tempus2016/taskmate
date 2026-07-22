@@ -12,16 +12,17 @@
  *   playroom — warm, rounded, picture-book
  *   console  — dark gamified HUD
  *   cleanpro — calm productivity / SaaS
+ *   accessible — high contrast, colour-blind safe, dyslexia-friendly type
  *
  * Mirrors window.__taskmate_localize: exposed globally, no ES module imports.
  */
 (function () {
-  const IDS = ["classic", "playroom", "console", "cleanpro"];
+  const IDS = ["classic", "playroom", "console", "cleanpro", "accessible"];
 
   // Fonts must be loaded at the document level (an @import inside a shadow
   // stylesheet is honoured, but loading once globally avoids N duplicate fetches).
   const FONT_IMPORT =
-    "@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&family=Manrope:wght@500;600;700;800&display=swap');";
+    "@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&family=Manrope:wght@500;600;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap');";
 
   // Design tokens. IMPORTANT: these are :host-scoped so they can be applied
   // INSIDE each card's shadow root. A document-level [data-tm-design] rule
@@ -59,6 +60,22 @@
    Cards stamp data-tm-dark on the host when HA is in dark mode. Each design has
    a light base (above) and a dark override here, so all three follow HA's
    light/dark setting. */
+:host([data-tm-design="accessible"]),[data-tm-design="accessible"]{
+  /* Colours are the Okabe-Ito colour-blind-safe palette: distinguishable
+     under protanopia, deuteranopia and tritanopia. Text is near-black on
+     white (~19:1, comfortably past WCAG AAA) and borders are heavy enough to
+     carry meaning without relying on hue. Atkinson Hyperlegible is drawn for
+     low vision — its letterforms stay distinct where similar glyphs (I/l/1,
+     O/0) usually collapse. */
+  --tmd-bg:#FFFFFF;--tmd-surface:#FFFFFF;--tmd-surface-2:#F2F2F2;--tmd-border:#111111;
+  --tmd-text:#111111;--tmd-dim:#3D3D3D;
+  --tmd-accent:#0072B2;--tmd-accent2:#D55E00;--tmd-good:#009E73;--tmd-warn:#E69F00;--tmd-bad:#D55E00;--tmd-gold:#E69F00;
+  --tmd-radius:10px;--tmd-radius-sm:6px;--tmd-shadow:0 0 0 2px #111111;--tmd-hd-text:#fff;
+  --tmd-font-display:"Atkinson Hyperlegible",sans-serif;
+  --tmd-font-body:"Atkinson Hyperlegible",sans-serif;
+  --tmd-font-mono:"Atkinson Hyperlegible",monospace;
+  --tmd-c1:#0072B2;--tmd-c2:#D55E00;--tmd-c3:#009E73;--tmd-c4:#CC79A7;--tmd-c5:#56B4E9;--tmd-c6:#E69F00;
+}
 :host([data-tm-design="console"][data-tm-dark]),[data-tm-design="console"][data-tm-dark]{
   --tmd-bg:#0E1320;--tmd-surface:#161D2E;--tmd-surface-2:#1E2740;--tmd-border:#2A3550;
   --tmd-text:#EAF0FF;--tmd-dim:#8A97B8;
@@ -75,6 +92,16 @@
   --tmd-bg:#0F141A;--tmd-surface:#181D25;--tmd-surface-2:#212733;--tmd-border:#2C3340;
   --tmd-text:#E6EAF1;--tmd-dim:#97A1B0;--tmd-accent:#6E86F5;--tmd-accent2:#1FC7B8;
   --tmd-shadow:0 1px 2px rgba(0,0,0,.4),0 8px 18px rgba(0,0,0,.35);
+}
+:host([data-tm-design="accessible"][data-tm-dark]),[data-tm-design="accessible"][data-tm-dark]{
+  /* Pure black would bloom on OLED and is harsh for astigmatism; #0A0A0A with
+     near-white text still clears AAA. Hues are the Okabe-Ito light variants,
+     which stay distinguishable against a dark ground. */
+  --tmd-bg:#0A0A0A;--tmd-surface:#0A0A0A;--tmd-surface-2:#1C1C1C;--tmd-border:#F5F5F5;
+  --tmd-text:#F5F5F5;--tmd-dim:#CFCFCF;
+  --tmd-accent:#56B4E9;--tmd-accent2:#E69F00;--tmd-good:#009E73;--tmd-warn:#F0E442;--tmd-bad:#E69F00;--tmd-gold:#F0E442;
+  --tmd-shadow:0 0 0 2px #F5F5F5;
+  --tmd-c1:#56B4E9;--tmd-c2:#E69F00;--tmd-c3:#009E73;--tmd-c4:#CC79A7;--tmd-c5:#F0E442;--tmd-c6:#0072B2;
 }`;
 
   // Shared component kit, themed by the tokens above. Every designed card
@@ -234,6 +261,7 @@
       { value: "playroom", label: label("playroom", "Playroom") },
       { value: "console",  label: label("console", "Console") },
       { value: "cleanpro", label: label("cleanpro", "Clean Pro") },
+      { value: "accessible", label: label("accessible", "Accessible") },
     ];
   }
 

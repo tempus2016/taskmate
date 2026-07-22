@@ -46,6 +46,7 @@
 - [Insights — Fairness, Friction, Week Ahead & Health](#insights--fairness-friction-week-ahead--health)
 - [Pre-Reader Mode](#pre-reader-mode)
 - [Read Aloud](#read-aloud)
+- [Accessible Design Style](#accessible-design-style)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -572,6 +573,17 @@ The sentence comes from **parent-editable templates** in Settings, not from Task
 A template with a bad placeholder logs a warning and falls back to the built-in wording rather than silencing the feature.
  
 Fires `taskmate_read_aloud` (`child_id`, `media_player`, `tts_entity`, `message`).
+ 
+---
+ 
+## Accessible Design Style
+ 
+A fifth per-card design alongside Classic, Playroom, Console and Clean Pro — pick it per card or as the global default.
+ 
+- **Colour-blind safe.** Uses the Okabe-Ito palette, which stays distinguishable under protanopia, deuteranopia and tritanopia.
+- **High contrast.** Near-black on white (~19:1, comfortably past WCAG AAA), with heavy borders so meaning never rests on hue alone.
+- **Dyslexia-friendly type.** Atkinson Hyperlegible, drawn for low vision — its letterforms stay distinct where similar glyphs (I/l/1, O/0) usually collapse.
+- **Dark variant included.** `#0A0A0A` rather than pure black, which blooms on OLED and is harsh with astigmatism.
  
 ---
  

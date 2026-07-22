@@ -14,7 +14,7 @@ from .coordinator import TaskMateCoordinator
 # (setting_key, translation_key, options, default, icon)
 _SELECTS = [
     ("streak_reset_mode", "streak_reset_mode", ["reset", "pause"], "reset", "mdi:restart"),
-    ("card_design", "card_design", ["classic", "playroom", "console", "cleanpro"], "classic", "mdi:palette"),
+    ("card_design", "card_design", ["classic", "playroom", "console", "cleanpro", "accessible"], "classic", "mdi:palette"),
 ]
 
 

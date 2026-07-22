@@ -1711,5 +1711,6 @@
   "panel.health_count_storage": "Storage",
   "panel.chore_icon_label": "Picture",
   "child.editor.pre_reader": "Picture-only mode (for young children)",
-  "child.editor.pre_reader_labels": "Show names in picture mode"
+  "child.editor.pre_reader_labels": "Show names in picture mode",
+  "common.design.accessible": "Accessible"
 }
