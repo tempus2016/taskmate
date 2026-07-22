@@ -1243,11 +1243,15 @@ class TaskMateChildCard extends LitElement {
         display: flex; flex-direction: column; gap: 8px;
         margin: 4px 0 12px;
       }
+      /* The --tmd-* tokens only resolve under a designed style; the fallbacks
+         are the original classic values, so classic is unchanged. */
       .roulette-btn {
         display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        background: linear-gradient(135deg, #8e44ad, #c0392b);
-        color: #fff; border: 0; border-radius: 14px;
-        padding: 12px 16px; font-family: inherit; font-size: 0.95rem;
+        background: var(--tmd-accent, linear-gradient(135deg, #8e44ad, #c0392b));
+        color: #fff; border: 0;
+        border-radius: var(--tmd-radius-sm, 14px);
+        padding: 12px 16px;
+        font-family: var(--tmd-font-display, inherit); font-size: 0.95rem;
         font-weight: 800; cursor: pointer; width: 100%;
       }
       .roulette-btn:disabled { opacity: 0.55; cursor: default; }
@@ -1255,24 +1259,24 @@ class TaskMateChildCard extends LitElement {
       @keyframes tm-roulette-spin { to { transform: rotate(360deg); } }
       .roulette-result {
         display: flex; align-items: center; gap: 8px;
-        background: rgba(142, 68, 173, 0.12);
-        border: 1px solid rgba(142, 68, 173, 0.35);
-        border-radius: 12px; padding: 8px 12px;
+        background: color-mix(in srgb, var(--tmd-accent, #8e44ad) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--tmd-accent, #8e44ad) 35%, transparent);
+        border-radius: var(--tmd-radius-sm, 12px); padding: 8px 12px;
       }
       .roulette-mult {
-        background: #8e44ad; color: #fff;
-        border-radius: 8px; padding: 2px 8px;
+        background: var(--tmd-accent, #8e44ad); color: #fff;
+        border-radius: var(--tmd-radius-sm, 8px); padding: 2px 8px;
         font-weight: 900; font-size: 0.85rem;
       }
       .roulette-name { flex: 1; font-weight: 700; font-size: 0.95rem; }
       .roulette-worth {
         display: inline-flex; align-items: center; gap: 4px;
-        font-weight: 800; color: #8e44ad;
+        font-weight: 800; color: var(--tmd-accent, #8e44ad);
       }
       .roulette-worth ha-icon { --mdc-icon-size: 16px; }
       .roulette-spent {
         text-align: center; font-size: 0.8rem;
-        color: var(--secondary-text-color); opacity: 0.8;
+        color: var(--tmd-dim, var(--secondary-text-color)); opacity: 0.8;
       }
 
       /* Reactive-chore countdown (#674). Amber by default, red under 5 min.
@@ -2441,6 +2445,7 @@ class TaskMateChildCard extends LitElement {
             ${earnedBadges.length > 5 ? html`<span class="more">+${earnedBadges.length - 5} →</span>` : ""}
           </div>` : ""}
         ${sectionLine}
+        ${this._renderRoulette(child, childChores, pointsIcon)}
         ${body}
         ${this._renderSwappable(allChores, child, pointsIcon)}
       </div>
