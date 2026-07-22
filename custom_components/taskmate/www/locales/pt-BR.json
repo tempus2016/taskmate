@@ -1711,5 +1711,6 @@
   "panel.health_count_storage": "Armazenamento",
   "panel.chore_icon_label": "Imagem",
   "child.editor.pre_reader": "Modo só imagens (crianças pequenas)",
-  "child.editor.pre_reader_labels": "Mostrar nomes no modo imagens"
+  "child.editor.pre_reader_labels": "Mostrar nomes no modo imagens",
+  "common.design.accessible": "Acessível"
 }

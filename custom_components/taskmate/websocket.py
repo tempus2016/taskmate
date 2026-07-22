@@ -1246,7 +1246,7 @@ async def _ws_remove_task_group(hass, connection, msg, coordinator):
 # Top-level fields stored at storage._data root
 _TOP_LEVEL_SETTINGS = {"points_name", "points_icon"}
 # Allowed values for the global default card-design style (per-card design styles).
-_ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro"}
+_ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro", "accessible"}
 # Settings stored under storage._data["settings"][key]
 _SUBKEY_SETTINGS = {
     "history_days", "streak_reset_mode", "card_design",

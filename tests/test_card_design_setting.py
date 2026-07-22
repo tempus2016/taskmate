@@ -32,7 +32,10 @@ def test_snapshot_reflects_stored_card_design():
 
 
 def test_allowed_card_designs_set():
-    assert _ALLOWED_CARD_DESIGNS == {"classic", "playroom", "console", "cleanpro"}
+    # "accessible" added in #685. test_accessible_design.py additionally pins
+    # this set against the JS design layer and the select entity, so the three
+    # lists can't drift apart.
+    assert _ALLOWED_CARD_DESIGNS == {"classic", "playroom", "console", "cleanpro", "accessible"}
 
 
 def test_overview_sensor_exposes_card_design_default():

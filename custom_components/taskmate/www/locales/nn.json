@@ -1711,5 +1711,6 @@
   "panel.health_count_storage": "Lagring",
   "panel.chore_icon_label": "Bilete",
   "child.editor.pre_reader": "Berre bilete (for små born)",
-  "child.editor.pre_reader_labels": "Vis namn i biletemodus"
+  "child.editor.pre_reader_labels": "Vis namn i biletemodus",
+  "common.design.accessible": "Tilgjengeleg"
 }
