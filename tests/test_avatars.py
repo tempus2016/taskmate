@@ -95,3 +95,41 @@ def test_update_catalog_filters_iconless_rows():
     assert len(cat) == 1
     assert cat[0]["icon"] == "mdi:star"
     assert cat[0]["unlock_value"] == 4
+
+
+class TestAvatarPickerOnEveryDesign:
+    """The avatar picker was wired into the classic child-card only.
+
+    `render()` (classic) makes the avatar clickable and renders
+    `_renderAvatarPicker`. `_renderDesigned` builds its header with `_av(...)`,
+    a plain non-interactive element, and never opens the picker — so on
+    playroom / console / cleanpro / accessible, tapping the avatar does
+    nothing even though the same feature works on classic.
+    """
+
+    import pathlib as _pathlib
+
+    SOURCE = (
+        _pathlib.Path(__file__).resolve().parent.parent
+        / "custom_components" / "taskmate" / "www" / "taskmate-child-card.js"
+    ).read_text(encoding="utf-8")
+
+    def _designed_region(self) -> str:
+        start = self.SOURCE.index("_renderDesigned(design) {")
+        end = self.SOURCE.index("\n  _designChoreMeta(", start)
+        return self.SOURCE[start:end]
+
+    def test_classic_opens_the_picker(self):
+        classic = self.SOURCE[self.SOURCE.index("  render() {"):self.SOURCE.index("_renderDesigned(design) {")]
+        assert "_toggleAvatarPicker()" in classic
+        assert "_renderAvatarPicker(" in classic
+
+    def test_designed_header_opens_the_picker(self):
+        region = self._designed_region()
+        assert "_toggleAvatarPicker()" in region, (
+            "the designed header never wires the avatar to the picker, so it "
+            "does nothing on any style but classic"
+        )
+
+    def test_designed_header_renders_the_picker(self):
+        assert "_renderAvatarPicker(" in self._designed_region()
