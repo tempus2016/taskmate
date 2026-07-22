@@ -8,3 +8,20 @@ updates:
     labels:
       - "dependencies"
       - "ci"
+
+  # Dev tooling only (eslint) — nothing here ships in the integration.
+  # Grouped so routine bumps arrive as one PR rather than one per package.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+    groups:
+      npm-dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
