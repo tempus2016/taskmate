@@ -49,6 +49,7 @@
 - [Accessible Design Style](#accessible-design-style)
 - [Multi-Parent Approval Routing](#multi-parent-approval-routing)
 - [Sharing Template Packs](#sharing-template-packs)
+- [Printable Weekly Chart](#printable-weekly-chart)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -632,6 +633,27 @@ A pack is arbitrary JSON from someone else, so:
 - A pack that fails validation writes **nothing**.
  
 **No URL importing.** Packs are imported from pasted or uploaded JSON only. Fetching arbitrary URLs from inside your home network would make TaskMate an SSRF vector; you can still paste a gist's raw contents.
+ 
+---
+ 
+## Printable Weekly Chart
+ 
+A fridge-ready A4 chore chart with a box to tick against every task.
+ 
+`taskmate/print/weekly_chart` returns a **standalone HTML page** — open it in a tab and print. No external assets, so it prints identically offline.
+ 
+| Option | Values |
+|---|---|
+| `orientation` | `portrait` *(default)* or `landscape` — **your choice**: two children with short names fit portrait, five need the width |
+| `week_start` | ISO date anywhere in the week you want (defaults to this week) |
+| `title` | Heading text (defaults to "This week") |
+ 
+### Key Points
+ 
+- **Schedule only.** A paper chart can't know next Thursday's weather, so entity-driven gates aren't applied — a chart that quietly omitted a chore would be worse than one that lists it.
+- Chores with no assignee appear for every child; assigned ones only for theirs.
+- Children with nothing assigned are left off entirely rather than printing an empty row.
+- Chore names are HTML-escaped: they're user input landing in a document.
  
 ---
  
