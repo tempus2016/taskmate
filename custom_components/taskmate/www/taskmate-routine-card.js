@@ -24,6 +24,13 @@ const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.tes
 
 const TIME_CATEGORIES = ["all", "morning", "afternoon", "evening", "night", "anytime"];
 
+// The card has ONE layout, so it consumes the design tokens directly rather
+// than carrying a second _renderDesigned() template like the multi-layout
+// cards do. Every --tmd-* reference below is written with the card's original
+// value as the fallback, so "classic" — which defines no tokens — renders
+// exactly as it did before the design system was wired in.
+const DEFAULT_ACCENT = "#7c3aed";
+
 class TaskMateRoutineCard extends LitElement {
   static get properties() {
     return {
@@ -79,6 +86,32 @@ class TaskMateRoutineCard extends LitElement {
   _attrs() {
     return (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
       || this.hass?.states?.[this.config.entity]?.attributes || {};
+  }
+
+  /**
+   * Resolve the active design, stamp data-tm-design on the host (which is what
+   * makes the :host-scoped token block apply inside this shadow root), and
+   * settle the header colour.
+   *
+   * The accent is set as an inline property on the host rather than from a
+   * <style> in the template: a shadow tree's <style> is ordered BEFORE
+   * adoptedStyleSheets, so it loses to the :host default in static styles()
+   * at equal specificity. An element's own inline property beats both.
+   * An explicit header_color always wins; otherwise the rule in styles()
+   * takes the design's accent, falling back to the card's purple in classic.
+   * Headers stay full-colour in every style per the house rule.
+   */
+  _applyDesign() {
+    const design = window.__taskmate_design
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      : "classic";
+    const configured = this.config.header_color;
+    if (typeof configured === "string" && /^#[0-9a-fA-F]{3,8}$/.test(configured)) {
+      this.style.setProperty("--routine-accent", _safeColor(configured, DEFAULT_ACCENT));
+    } else {
+      this.style.removeProperty("--routine-accent");
+    }
+    return design;
   }
 
   _child() {
@@ -203,6 +236,7 @@ class TaskMateRoutineCard extends LitElement {
 
   render() {
     if (!this.hass || !this.config) return html``;
+    this._applyDesign();
     const child = this._child();
     if (!child) {
       return html`<ha-card><div class="pad error">${this._t("routine.no_child")}</div></ha-card>`;
@@ -225,13 +259,12 @@ class TaskMateRoutineCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --routine-accent: ${_safeColor(this.config.header_color, "#7c3aed")}; }</style>
         <div class="head">
           <span class="who">${title}</span>
         </div>
 
         <div class="progress">
-          <div class="bar"><i style="width:${pct}%"></i></div>
+          <div class="rt-bar"><i style="width:${pct}%"></i></div>
           <div class="count">${this._t("routine.task_of", { current: index + 1, total: tasks.length })}</div>
         </div>
 
@@ -254,18 +287,18 @@ class TaskMateRoutineCard extends LitElement {
 
         <div class="foot">
           ${done
-            ? html`<button class="btn btn-done is-done" disabled>
+            ? html`<button class="rt-btn rt-done is-done" disabled>
                      ${done.pending ? this._t("routine.sent_for_checking") : this._t("routine.completed")}
                    </button>`
-            : html`<button class="btn btn-done" ?disabled=${this._busy}
+            : html`<button class="rt-btn rt-done" ?disabled=${this._busy}
                            @click=${() => this._complete(chore)}>
                      ${this._t("routine.done")}
                    </button>`}
-          <div class="btn-row">
-            <button class="btn btn-back" ?disabled=${index === 0} @click=${this._back}>
+          <div class="rt-row">
+            <button class="rt-btn rt-back" ?disabled=${index === 0} @click=${this._back}>
               ${this._t("routine.back")}
             </button>
-            <button class="btn btn-skip" @click=${this._skip}>
+            <button class="rt-btn rt-skip" @click=${this._skip}>
               ${done ? this._t("routine.next") : this._t("routine.skip")}
             </button>
           </div>
@@ -277,7 +310,6 @@ class TaskMateRoutineCard extends LitElement {
   _renderEmpty(title) {
     return html`
       <ha-card>
-        <style>:host { --routine-accent: ${_safeColor(this.config.header_color, "#7c3aed")}; }</style>
         <div class="head"><span class="who">${title}</span></div>
         <div class="empty">
           <ha-icon icon="mdi:check-circle-outline"></ha-icon>
@@ -298,10 +330,9 @@ class TaskMateRoutineCard extends LitElement {
 
     return html`
       <ha-card>
-        <style>:host { --routine-accent: ${_safeColor(this.config.header_color, "#7c3aed")}; }</style>
         <div class="head"><span class="who">${title}</span></div>
         <div class="progress">
-          <div class="bar"><i class="full" style="width:100%"></i></div>
+          <div class="rt-bar"><i class="full" style="width:100%"></i></div>
           <div class="count">${this._t("routine.all_done_count", { total: tasks.length })}</div>
         </div>
         <div class="finished">
@@ -319,49 +350,62 @@ class TaskMateRoutineCard extends LitElement {
           ` : ""}
         </div>
         <div class="foot">
-          <button class="btn btn-done" @click=${this._restart}>${this._t("routine.start_again")}</button>
+          <button class="rt-btn rt-done" @click=${this._restart}>${this._t("routine.start_again")}</button>
         </div>
       </ha-card>
     `;
   }
 
   static get styles() {
-    return css`
-      :host { display: block; --routine-accent: #7c3aed; }
+    // Layout classes carry an rt- prefix because the shared design kit defines
+    // its own .btn and .bar, and its :host([data-tm-design=...]) .btn rules
+    // outrank a bare .btn-done here — which repainted the green Done button
+    // with the console gradient and gave Skip equal visual weight.
+    const base = css`
+      :host { display: block; --routine-accent: var(--tmd-accent, #7c3aed); }
       ha-card {
         overflow: hidden;
         display: flex;
         flex-direction: column;
         min-height: 460px;
+        font-family: var(--tmd-font-body, inherit);
+        background: var(--tmd-surface, var(--ha-card-background, var(--card-background-color, #fff)));
+        color: var(--tmd-text, var(--primary-text-color));
+        border-radius: var(--tmd-radius, var(--ha-card-border-radius, 12px));
       }
       .head {
         background: var(--routine-accent);
-        color: #fff;
+        color: var(--tmd-hd-text, #fff);
         padding: 16px 20px;
         display: flex;
         align-items: center;
         gap: 12px;
       }
-      .who { font-weight: 800; font-size: 17px; flex: 1; }
+      .who {
+        font-weight: 800; font-size: 17px; flex: 1;
+        font-family: var(--tmd-font-display, inherit);
+      }
 
       .progress { padding: 14px 20px 0; }
-      .bar {
+      .rt-bar {
         height: 8px;
         border-radius: 99px;
-        background: var(--divider-color, #e5e7eb);
+        background: var(--tmd-surface-2, var(--divider-color, #e5e7eb));
+        border: 1px solid var(--tmd-border, transparent);
+        box-sizing: border-box;
         overflow: hidden;
       }
-      .bar > i {
+      .rt-bar > i {
         display: block;
         height: 100%;
         border-radius: 99px;
         background: var(--routine-accent);
         transition: width 0.25s ease;
       }
-      .bar > i.full { background: var(--success-color, #16a34a); }
+      .rt-bar > i.full { background: var(--tmd-good, var(--success-color, #16a34a)); }
       .count {
         font-size: 12.5px;
-        color: var(--secondary-text-color);
+        color: var(--tmd-dim, var(--secondary-text-color));
         margin-top: 7px;
         font-weight: 600;
       }
@@ -376,10 +420,15 @@ class TaskMateRoutineCard extends LitElement {
       .dot {
         width: 9px; height: 9px;
         border-radius: 50%;
-        background: var(--divider-color, #e5e7eb);
+        background: var(--tmd-surface-2, var(--divider-color, #e5e7eb));
+        /* Transparent under classic, so the outline only appears in the
+           designed styles — it is what keeps the steps distinguishable in
+           accessible, where meaning must not rest on hue alone. */
+        border: 1px solid var(--tmd-border, transparent);
+        box-sizing: border-box;
         transition: transform 0.2s ease;
       }
-      .dot.done { background: var(--success-color, #16a34a); }
+      .dot.done { background: var(--tmd-good, var(--success-color, #16a34a)); }
       .dot.now { background: var(--routine-accent); transform: scale(1.35); }
 
       .body {
@@ -394,82 +443,112 @@ class TaskMateRoutineCard extends LitElement {
       }
       .icon {
         width: 128px; height: 128px;
-        border-radius: 34px;
+        border-radius: var(--tmd-radius, 34px);
         background: color-mix(in srgb, var(--routine-accent), transparent 88%);
         display: grid;
         place-items: center;
         color: var(--routine-accent);
       }
       .icon ha-icon { --mdc-icon-size: 64px; }
-      .task { font-size: 27px; font-weight: 800; line-height: 1.2; }
-      .desc { font-size: 14.5px; color: var(--secondary-text-color); line-height: 1.45; }
+      .task {
+        font-size: 27px; font-weight: 800; line-height: 1.2;
+        font-family: var(--tmd-font-display, inherit);
+      }
+      .desc {
+        font-size: 14.5px; line-height: 1.45;
+        color: var(--tmd-dim, var(--secondary-text-color));
+      }
       .points {
         display: inline-flex; align-items: center; gap: 6px;
-        background: rgba(245, 158, 11, 0.16);
-        color: #92400e;
+        background: color-mix(in srgb, var(--tmd-warn, #f59e0b) 16%, transparent);
+        color: var(--tmd-gold, #92400e);
         padding: 5px 13px; border-radius: 99px;
         font-weight: 800; font-size: 14px;
       }
       .points ha-icon { --mdc-icon-size: 17px; }
       .pending {
         display: inline-flex; align-items: center; gap: 6px;
-        background: rgba(249, 115, 22, 0.12);
-        color: #9a3412;
-        border: 1px solid rgba(249, 115, 22, 0.35);
+        background: color-mix(in srgb, var(--tmd-bad, #f97316) 12%, transparent);
+        color: var(--tmd-bad, #9a3412);
+        border: 1px solid color-mix(in srgb, var(--tmd-bad, #f97316) 35%, transparent);
         padding: 5px 12px; border-radius: 99px;
         font-weight: 700; font-size: 12.5px;
       }
-      .note { font-size: 12.5px; color: var(--secondary-text-color); }
+      .note { font-size: 12.5px; color: var(--tmd-dim, var(--secondary-text-color)); }
 
       .foot { padding: 14px 20px 20px; display: flex; flex-direction: column; gap: 10px; }
-      .btn {
-        border: 0; border-radius: 16px;
-        font-family: inherit; font-weight: 800;
+      .rt-btn {
+        border: 0; border-radius: var(--tmd-radius-sm, 16px);
+        font-family: var(--tmd-font-display, inherit); font-weight: 800;
         width: 100%; cursor: pointer;
       }
-      .btn:disabled { cursor: default; }
-      .btn-done {
-        background: var(--success-color, #16a34a);
+      .rt-btn:disabled { cursor: default; }
+      .rt-done {
+        background: var(--tmd-good, var(--success-color, #16a34a));
         color: #fff; padding: 19px; font-size: 19px;
       }
-      .btn-done.is-done { background: var(--disabled-text-color, #9ca3af); }
-      .btn-row { display: flex; gap: 10px; }
-      .btn-skip {
-        background: var(--divider-color, #e5e7eb);
-        color: var(--primary-text-color);
+      /* The shared kit renders a "good" button as dark ink on the good colour
+         (.btn.good in taskmate-design.js). Matching it here matters beyond
+         consistency: on the accessible palette's #009E73, dark ink measures
+         4.2:1 against white's 3.4:1. */
+      :host([data-tm-design]:not([data-tm-design="classic"])) .rt-done { color: #06301f; }
+      .rt-done.is-done {
+        background: var(--tmd-dim, var(--disabled-text-color, #9ca3af));
+      }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .rt-done.is-done { color: #fff; }
+      .rt-row { display: flex; gap: 10px; }
+      .rt-skip {
+        background: var(--tmd-surface-2, var(--divider-color, #e5e7eb));
+        color: var(--tmd-text, var(--primary-text-color));
+        border: 1px solid var(--tmd-border, transparent);
         padding: 12px; font-size: 14px; flex: 1;
       }
-      .btn-back {
+      .rt-back {
         background: transparent;
-        color: var(--secondary-text-color);
-        border: 1px solid var(--divider-color, #e5e7eb);
+        color: var(--tmd-dim, var(--secondary-text-color));
+        border: 1px solid var(--tmd-border, var(--divider-color, #e5e7eb));
         padding: 12px; font-size: 14px; flex: 0 0 96px;
       }
-      .btn-back:disabled { opacity: 0.4; }
+      .rt-back:disabled { opacity: 0.4; }
 
       .finished { text-align: center; padding: 34px 26px; flex: 1; }
       .finished .cheer { font-size: 66px; line-height: 1; }
-      .finished h2 { font-size: 25px; margin: 12px 0 6px; }
-      .finished p { color: var(--secondary-text-color); font-size: 15px; margin: 0 0 6px; }
+      .finished h2 {
+        font-size: 25px; margin: 12px 0 6px;
+        font-family: var(--tmd-font-display, inherit);
+      }
+      .finished p {
+        color: var(--tmd-dim, var(--secondary-text-color));
+        font-size: 15px; margin: 0 0 6px;
+      }
       .finished .skipped { font-size: 13px; margin-top: 12px; }
       .earned {
         display: inline-flex; gap: 6px; align-items: center; margin-top: 10px;
-        background: rgba(22, 163, 74, 0.14); color: #166534;
+        background: color-mix(in srgb, var(--tmd-good, #16a34a) 14%, transparent);
+        color: var(--tmd-good, #166534);
         padding: 9px 18px; border-radius: 99px;
         font-weight: 800; font-size: 16px;
       }
       .earned.pending-total {
-        background: rgba(249, 115, 22, 0.12); color: #9a3412;
+        background: color-mix(in srgb, var(--tmd-bad, #f97316) 12%, transparent);
+        color: var(--tmd-bad, #9a3412);
         font-size: 14px;
       }
 
-      .empty { text-align: center; padding: 64px 26px; color: var(--secondary-text-color); flex: 1; }
+      .empty {
+        text-align: center; padding: 64px 26px; flex: 1;
+        color: var(--tmd-dim, var(--secondary-text-color));
+      }
       .empty ha-icon { --mdc-icon-size: 60px; opacity: 0.5; }
-      .empty h2 { font-size: 20px; color: var(--primary-text-color); margin: 14px 0 6px; }
+      .empty h2 {
+        font-size: 20px; margin: 14px 0 6px;
+        color: var(--tmd-text, var(--primary-text-color));
+        font-family: var(--tmd-font-display, inherit);
+      }
       .empty p { font-size: 14.5px; margin: 0; }
 
       .pad { padding: 24px; }
-      .error { color: var(--error-color, #c62828); }
+      .error { color: var(--tmd-bad, var(--error-color, #c62828)); }
 
       @media (max-width: 420px) {
         .icon { width: 104px; height: 104px; border-radius: 28px; }
@@ -477,6 +556,12 @@ class TaskMateRoutineCard extends LitElement {
         .task { font-size: 23px; }
       }
     `;
+    // The token block is :host-scoped, so it only takes effect when included
+    // in THIS card's styles — a document-level rule cannot cross into the
+    // shadow root.
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 }
 
@@ -527,13 +612,27 @@ class TaskMateRoutineCardEditor extends LitElement {
           .value=${this._config.title || ""}
           @input=${e => this._set("title", e.target.value)}
         ></ha-textfield>
+
+        <ha-select
+          .label=${this._t("common.design.field_label")}
+          .value=${this._config.card_design || "global"}
+          @selected=${e => this._set("card_design", e.target.value)}
+          @closed=${e => e.stopPropagation()}
+        >
+          ${(window.__taskmate_design
+            ? window.__taskmate_design.editorOptions(this._t.bind(this))
+            : [{ value: "global", label: "Use global default" }]
+          ).map(o => html`<mwc-list-item .value=${o.value}>${o.label}</mwc-list-item>`)}
+        </ha-select>
       </div>
     `;
   }
 
   _set(key, value) {
     const newConfig = { ...this._config, [key]: value };
-    if (value === null || value === "" || value === undefined) delete newConfig[key];
+    // "global" is the absence of a per-card override, not a value to store.
+    if (key === "card_design" && value === "global") delete newConfig[key];
+    else if (value === null || value === "" || value === undefined) delete newConfig[key];
     this._config = newConfig;
     this.dispatchEvent(new CustomEvent("config-changed", {
       detail: { config: newConfig }, bubbles: true, composed: true,
