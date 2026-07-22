@@ -544,6 +544,14 @@ class TaskMatePanel extends HTMLElement {
       this._render();
       return;
     }
+    if (act === "health-refresh") { this._health = null; this._loadHealth(); return; }
+    if (act === "health-goto") {
+      // Jump straight to where the problem lives rather than describing it.
+      const target = { chores: "chores", rewards: "rewards", children: "children",
+                       settings: "settings", activity: "activity" }[t.dataset.id];
+      if (target) { this._activeTab = target; this._render(); }
+      return;
+    }
     if (act === "projection-window") {
       this._projectionDays = Number(t.dataset.id);
       this._projection = null;
@@ -2518,7 +2526,7 @@ class TaskMatePanel extends HTMLElement {
     const view = this._insightView || "fairness";
     const switcher = `
       <div class="tm-chip-row" style="margin-bottom:14px">
-        ${["fairness", "friction", "projection"].map(v => `
+        ${["fairness", "friction", "projection", "health"].map(v => `
           <button type="button" class="tm-chip-btn ${v === view ? "tm-chip-on" : ""}"
                   data-act="insights-view" data-id="${v}">
             ${this._t("panel.insights_view_" + v)}
@@ -2527,6 +2535,7 @@ class TaskMatePanel extends HTMLElement {
       </div>`;
     if (view === "friction") return switcher + this._renderFrictionReport();
     if (view === "projection") return switcher + this._renderProjectionReport();
+    if (view === "health") return switcher + this._renderHealthReport();
     return switcher + this._renderFairnessReport();
   }
 
@@ -2667,6 +2676,73 @@ class TaskMatePanel extends HTMLElement {
         <span class="tm-field-hint">${this._t("panel.insights_projection_note")}</span>
       </div>
     `;
+  }
+
+  /**
+   * Health & diagnostics (#682). Every issue carries a severity, a plain
+   * sentence and where to fix it — a diagnostic that only says "3 problems"
+   * is one the parent can't act on.
+   */
+  _renderHealthReport() {
+    const report = this._health;
+    if (!report) {
+      this._loadHealth();
+      return `<div class="tm-card"><div class="tm-empty">${this._t("panel.insights_loading")}</div></div>`;
+    }
+    const kb = (report.storage_bytes / 1024).toFixed(1);
+    const counts = report.counts;
+
+    return `
+      <div class="tm-card">
+        <div class="tm-card-head">
+          <h2>${this._t("panel.health_title")}</h2>
+          <button type="button" class="tm-btn" data-act="health-refresh">${this._t("panel.health_recheck")}</button>
+        </div>
+
+        <div class="tm-verdict tm-verdict-${report.healthy ? "ok" : "warn"}">
+          ${report.healthy
+            ? this._t("panel.health_all_good")
+            : this._t("panel.health_issues", { count: report.issues.filter(i => i.severity !== "info").length })}
+        </div>
+
+        ${report.issues.length ? `
+          <div class="tm-health-issues">
+            ${report.issues.map(i => `
+              <div class="tm-health-issue tm-health-${i.severity}">
+                <span class="tm-health-sev">${this._t("panel.health_sev_" + i.severity)}</span>
+                <span class="tm-health-msg">${this._esc(i.message)}</span>
+                <button type="button" class="tm-btn tm-btn-small" data-act="health-goto" data-id="${this._esc(i.where)}">
+                  ${this._t("panel.health_goto")}
+                </button>
+              </div>
+            `).join("")}
+          </div>
+        ` : ""}
+
+        <div class="tm-health-counts">
+          ${Object.entries(counts).map(([key, value]) => `
+            <div class="tm-health-stat">
+              <div class="tm-health-num">${value}</div>
+              <div class="tm-health-label">${this._t("panel.health_count_" + key)}</div>
+            </div>
+          `).join("")}
+          <div class="tm-health-stat">
+            <div class="tm-health-num">${kb} KB</div>
+            <div class="tm-health-label">${this._t("panel.health_count_storage")}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async _loadHealth() {
+    if (this._healthLoading) return;
+    this._healthLoading = true;
+    const { ok, res, err } = await this._callWS({ type: "taskmate/reports/health" });
+    this._healthLoading = false;
+    if (!ok) { this._showToast("err", err); return; }
+    this._health = res;
+    this._render();
   }
 
   async _loadProjection(days) {
@@ -6895,6 +6971,33 @@ class TaskMatePanel extends HTMLElement {
         .tm-fair-row { grid-template-columns: 1fr auto; }
         .tm-fair-bar { grid-column: 1 / -1; }
       }
+
+      /* Health & diagnostics (#682) */
+      .tm-health-issues { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+      .tm-health-issue {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 12px; border-radius: 10px;
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+      }
+      .tm-health-sev {
+        font-size: 11px; font-weight: 800; text-transform: uppercase;
+        padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+      }
+      .tm-health-error .tm-health-sev { background: rgba(198,40,40,.14); color: #c62828; }
+      .tm-health-warning .tm-health-sev { background: rgba(239,108,0,.16); color: #ef6c00; }
+      .tm-health-info .tm-health-sev { background: var(--tm-surface-1, #eee); color: var(--tm-text-muted); }
+      .tm-health-msg { flex: 1; font-size: 13.5px; line-height: 1.45; }
+      .tm-btn-small { padding: 4px 10px; font-size: 12px; }
+      .tm-health-counts {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 10px;
+      }
+      .tm-health-stat {
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+        border-radius: 10px; padding: 10px; text-align: center;
+      }
+      .tm-health-num { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+      .tm-health-label { font-size: 11.5px; color: var(--tm-text-muted); margin-top: 2px; }
 
       /* Projection report (#681) */
       .tm-proj-totals { display: flex; flex-direction: column; gap: 12px; margin: 12px 0 16px; }

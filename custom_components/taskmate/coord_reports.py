@@ -430,3 +430,147 @@ class ReportsMixin:
             # per-child figures are a ceiling, not a forecast. Say so.
             "is_ceiling": True,
         }
+
+    # ── Health & diagnostics (#682) ──────────────────────────────────────
+
+    def health_report(self) -> dict[str, Any]:
+        """Storage size, entity counts, and anything obviously wrong.
+
+        Every issue carries a severity, a human sentence, and where to fix it.
+        A diagnostic that only says "3 problems" is a diagnostic the parent
+        can't act on.
+        """
+        import json
+
+        data = self.storage.data
+        children = self.storage.get_children()
+        chores = self.storage.get_chores()
+        rewards = self.storage.get_rewards()
+        completions = self.storage.get_completions()
+
+        child_ids = {c.id for c in children}
+        chore_ids = {c.id for c in chores}
+
+        issues: list[dict[str, Any]] = []
+
+        def add(severity: str, code: str, message: str, where: str, count: int = 1) -> None:
+            issues.append({
+                "severity": severity, "code": code,
+                "message": message, "where": where, "count": count,
+            })
+
+        # ── orphaned references ──────────────────────────────────────────
+        orphan_assignees = [
+            c.name for c in chores
+            if any(cid not in child_ids for cid in (getattr(c, "assigned_to", []) or []))
+        ]
+        if orphan_assignees:
+            add("warning", "chore_orphan_assignee",
+                f"{len(orphan_assignees)} chore(s) are assigned to a child that no longer exists",
+                "chores", len(orphan_assignees))
+
+        orphan_rewards = [
+            r.name for r in rewards
+            if any(cid not in child_ids for cid in (getattr(r, "assigned_to", []) or []))
+        ]
+        if orphan_rewards:
+            add("warning", "reward_orphan_assignee",
+                f"{len(orphan_rewards)} reward(s) are assigned to a child that no longer exists",
+                "rewards", len(orphan_rewards))
+
+        orphan_deps = [
+            c.name for c in chores
+            if any(dep not in chore_ids for dep in (getattr(c, "depends_on", []) or []))
+        ]
+        if orphan_deps:
+            add("error", "chore_orphan_dependency",
+                f"{len(orphan_deps)} chore(s) depend on a chore that no longer exists, "
+                "so they can never unlock",
+                "chores", len(orphan_deps))
+
+        orphan_completions = sum(
+            1 for c in completions
+            if c.chore_id not in chore_ids or c.child_id not in child_ids
+        )
+        if orphan_completions:
+            add("info", "completion_orphan",
+                f"{orphan_completions} completion record(s) refer to a deleted chore or child",
+                "activity", orphan_completions)
+
+        # ── configuration that can't work ────────────────────────────────
+        missing_entities = []
+        for chore in chores:
+            for field in ("visibility_entity", "weather_entity"):
+                entity_id = (getattr(chore, field, "") or "").strip()
+                if entity_id and self.hass.states.get(entity_id) is None:
+                    missing_entities.append(f"{chore.name} → {entity_id}")
+        if missing_entities:
+            add("warning", "chore_missing_entity",
+                f"{len(missing_entities)} chore(s) reference an entity that doesn't exist",
+                "chores", len(missing_entities))
+
+        unlock_offlist = [
+            r.name for r in rewards
+            if (getattr(r, "unlock_entity", "") or "") and not self.is_unlock_allowed(r.unlock_entity)
+        ]
+        if unlock_offlist:
+            add("warning", "reward_unlock_not_allowed",
+                f"{len(unlock_offlist)} reward(s) unlock an entity that is no longer on the "
+                "allowlist, so nothing will happen when they're approved",
+                "settings", len(unlock_offlist))
+
+        no_chores = [c.name for c in children if not self._child_has_any_chore(c.id, chores)]
+        if no_chores:
+            add("info", "child_without_chores",
+                f"{len(no_chores)} child/children have no chores assigned to them",
+                "children", len(no_chores))
+
+        # ── size ─────────────────────────────────────────────────────────
+        try:
+            storage_bytes = len(json.dumps(data, default=str).encode("utf-8"))
+        except (TypeError, ValueError):
+            storage_bytes = 0
+
+        # The recorder refuses to store an attribute payload over 16KB, so a
+        # large completion history is worth flagging before it bites.
+        if len(completions) > 5000:
+            add("info", "large_history",
+                f"{len(completions)} completion records stored; history pruning keeps "
+                "this in check but a large history slows every report",
+                "activity", len(completions))
+
+        severity_rank = {"error": 0, "warning": 1, "info": 2}
+        issues.sort(key=lambda i: (severity_rank.get(i["severity"], 9), i["code"]))
+
+        return {
+            "generated_at": dt_util.now().isoformat(),
+            "healthy": not any(i["severity"] in ("error", "warning") for i in issues),
+            "issues": issues,
+            "counts": {
+                "children": len(children),
+                "chores": len(chores),
+                "enabled_chores": sum(1 for c in chores if getattr(c, "enabled", True)),
+                "rewards": len(rewards),
+                "completions": len(completions),
+                "badges": len(self.storage.get_badges()),
+                "scheduled_changes": len(self.storage.get_scheduled_changes()),
+                "active_unlocks": len(self.active_unlocks()),
+                "mandatory_misses": len(self.storage.get_mandatory_misses()),
+            },
+            "storage_bytes": storage_bytes,
+            "data_version": self.storage.data_version,
+        }
+
+    @staticmethod
+    def _child_has_any_chore(child_id: str, chores) -> bool:
+        """True when any chore could reach this child.
+
+        An empty assigned_to means "everyone", so it counts.
+        """
+        for chore in chores:
+            if not getattr(chore, "enabled", True):
+                continue
+            assigned = getattr(chore, "assigned_to", []) or []
+            if not assigned or child_id in assigned:
+                return True
+        return False
