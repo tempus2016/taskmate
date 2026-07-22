@@ -26,6 +26,7 @@ from .coord_notifications import NotificationCoordinator
 from .coord_points import PointsMixin
 from .coord_quests import QuestsMixin
 from .coord_rewards import RewardsMixin
+from .coord_scheduled import ScheduledChangesMixin
 from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
 from .models import Child
@@ -46,6 +47,7 @@ class TaskMateCoordinator(
     TimedMixin,
     CalendarMixin,
     TemplatesMixin,
+    ScheduledChangesMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -271,6 +273,9 @@ class TaskMateCoordinator(
             await self.storage.async_save()
         await self._async_backfill_career_history()
         await self._async_stop_stale_timed_sessions()
+        # Catch up on scheduled changes (#675) that came due while HA was off —
+        # the parent still expects "from 1 September" to have happened.
+        await self.async_apply_due_scheduled_changes(refresh=False)
         await self.async_refresh()
         # Schedule midnight streak check at 00:00:05
         self._unsub_midnight = async_track_time_change(
@@ -646,6 +651,7 @@ class TaskMateCoordinator(
         saves. One step failing must not stop the rest.
         """
         steps = [
+            self.async_apply_due_scheduled_changes,
             self._async_check_streaks,
             self._async_expire_one_shot_chores,
             self._async_expire_dated_chores,

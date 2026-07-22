@@ -469,6 +469,8 @@ class ChoresMixin:
         self.storage.remove_last_completed_for_chore(chore_id)
         # Strip chore from any task group it belonged to.
         self.storage.remove_chore_from_task_groups(chore_id)
+        # Drop queued scheduled changes (#675) — nothing left to apply them to.
+        self.storage.remove_scheduled_changes_for_chore(chore_id)
         # Remove chore from children's chore_order lists
         for child in self.storage.get_children():
             if chore_id in child.chore_order:

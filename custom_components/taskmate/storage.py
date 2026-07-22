@@ -28,6 +28,7 @@ from .models import (
     Quest,
     Reward,
     RewardClaim,
+    ScheduledChange,
     TaskGroup,
     TimedSession,
 )
@@ -114,6 +115,10 @@ class TaskMateStorage:
         # Ensure chore_display_order store exists (global admin ordering)
         if "chore_display_order" not in self._data:
             self._data["chore_display_order"] = []
+
+        # Ensure scheduled_changes store exists (#675)
+        if "scheduled_changes" not in self._data:
+            self._data["scheduled_changes"] = []
 
         # Notifications overhaul (v3.9.0)
         if "parent_recipients" not in self._data:
@@ -846,6 +851,39 @@ class TaskMateStorage:
         for g in self._data.get("task_groups", []):
             if chore_id in g.get("chore_ids", []):
                 g["chore_ids"] = [c for c in g["chore_ids"] if c != chore_id]
+
+    # Scheduled config changes (#675)
+    def get_scheduled_changes(self) -> list[ScheduledChange]:
+        """All scheduled changes, pending and already applied."""
+        return [ScheduledChange.from_dict(c) for c in self._data.get("scheduled_changes", [])]
+
+    def get_scheduled_change(self, change_id: str) -> ScheduledChange | None:
+        for c in self._data.get("scheduled_changes", []):
+            if c.get("id") == change_id:
+                return ScheduledChange.from_dict(c)
+        return None
+
+    def add_scheduled_change(self, change: ScheduledChange) -> None:
+        self._data.setdefault("scheduled_changes", []).append(change.to_dict())
+
+    def update_scheduled_change(self, change: ScheduledChange) -> None:
+        changes = self._data.setdefault("scheduled_changes", [])
+        for i, c in enumerate(changes):
+            if c.get("id") == change.id:
+                changes[i] = change.to_dict()
+                return
+        changes.append(change.to_dict())
+
+    def remove_scheduled_change(self, change_id: str) -> None:
+        self._data["scheduled_changes"] = [
+            c for c in self._data.get("scheduled_changes", []) if c.get("id") != change_id
+        ]
+
+    def remove_scheduled_changes_for_chore(self, chore_id: str) -> None:
+        """Drop a deleted chore's queued changes so they can't fire on nothing."""
+        self._data["scheduled_changes"] = [
+            c for c in self._data.get("scheduled_changes", []) if c.get("chore_id") != chore_id
+        ]
 
     # Points transactions management
     def get_points_transactions(self) -> list[PointsTransaction]:

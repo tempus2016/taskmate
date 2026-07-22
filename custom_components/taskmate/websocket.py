@@ -77,6 +77,10 @@ WS_ADD_CHORE: Final           = "taskmate/add_chore"
 WS_UPDATE_CHORE: Final        = "taskmate/update_chore"
 WS_REMOVE_CHORE: Final        = "taskmate/remove_chore"
 
+WS_SCHEDULED_LIST: Final      = "taskmate/scheduled/list"
+WS_SCHEDULED_ADD: Final       = "taskmate/scheduled/add"
+WS_SCHEDULED_REMOVE: Final    = "taskmate/scheduled/remove"
+
 WS_ADD_REWARD: Final          = "taskmate/add_reward"
 WS_UPDATE_REWARD: Final       = "taskmate/update_reward"
 WS_REMOVE_REWARD: Final       = "taskmate/remove_reward"
@@ -178,7 +182,7 @@ WS_CONFIG_IMPORT: Final = "taskmate/config/import"
 _AUDIT_EXCLUDE: Final = {
     WS_GET_STATE, WS_NOTIF_GET_STATE, WS_NOTIF_LIST_NOTIFY,
     WS_TEMPLATES_LIST, WS_TEMPLATES_GET, WS_AUDIT_LIST, WS_AUDIT_CLEAR,
-    WS_CONFIG_EXPORT,
+    WS_CONFIG_EXPORT, WS_SCHEDULED_LIST,
 }
 
 
@@ -294,6 +298,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "children":         list(data.get("children", [])),
         "chores":           list(data.get("chores", [])),
         "chore_display_order": list(data.get("chore_display_order", [])),
+        "scheduled_changes": list(data.get("scheduled_changes", [])),
         "rewards":          list(data.get("rewards", [])),
         "penalties":        list(data.get("penalties", [])),
         "bonuses":          list(data.get("bonuses", [])),
@@ -612,6 +617,60 @@ async def _ws_remove_chore(hass, connection, msg, coordinator):
         return
     await coordinator.async_remove_chore(msg["chore_id"])
     connection.send_result(msg["id"], {"id": msg["chore_id"]})
+
+
+
+# ---------------------------------------------------------------------------
+# Scheduled config changes (#675)
+# ---------------------------------------------------------------------------
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_SCHEDULED_LIST,
+    vol.Optional("chore_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_scheduled_list(hass, connection, msg, coordinator):
+    changes = coordinator.get_scheduled_changes(msg.get("chore_id", ""))
+    connection.send_result(msg["id"], {"changes": [c.to_dict() for c in changes]})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_SCHEDULED_ADD,
+    vol.Required("chore_id"): str,
+    vol.Required("apply_on"): str,
+    vol.Required("changes"): dict,
+    vol.Optional("note", default=""): vol.All(str, vol.Length(max=200)),
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_scheduled_add(hass, connection, msg, coordinator):
+    try:
+        change = await coordinator.async_add_scheduled_change(
+            chore_id=msg["chore_id"],
+            apply_on=msg["apply_on"],
+            changes=msg["changes"],
+            note=msg.get("note", ""),
+        )
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid_format", str(err))
+        return
+    connection.send_result(msg["id"], {"id": change.id})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_SCHEDULED_REMOVE,
+    vol.Required("change_id"): str,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_scheduled_remove(hass, connection, msg, coordinator):
+    try:
+        await coordinator.async_remove_scheduled_change(msg["change_id"])
+    except ValueError as err:
+        connection.send_error(msg["id"], "not_found", str(err))
+        return
+    connection.send_result(msg["id"], {"success": True})
 
 
 # ---------------------------------------------------------------------------
@@ -2072,6 +2131,7 @@ _COMMANDS = (
     _ws_audit_list, _ws_audit_clear, _ws_undo_transaction,
     _ws_add_child, _ws_update_child, _ws_remove_child, _ws_list_ha_users,
     _ws_add_chore, _ws_update_chore, _ws_remove_chore, _ws_clone_chore,
+    _ws_scheduled_list, _ws_scheduled_add, _ws_scheduled_remove,
     _ws_bulk_chore_action, _ws_gift_points,
     _ws_request_swap, _ws_approve_swap, _ws_reject_swap,
     _ws_config_export, _ws_config_import,

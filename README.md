@@ -39,6 +39,7 @@
 - [Dynamic Chore Visibility](#dynamic-chore-visibility)
 - [Weather-Aware Chores](#weather-aware-chores)
 - [Reactive Chores (Deadlines & Speed Bonus)](#reactive-chores-deadlines--speed-bonus)
+- [Scheduled Config Changes](#scheduled-config-changes)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -357,6 +358,30 @@ actions:
 - Beat the deadline and `speed_bonus_points` is added on top of the normal award. This **stacks** with the early-bonus/late-penalty of `due_time` if the chore has one.
 - Miss it and the chore disappears and is soft-disabled. The sweep runs on the 30-second poll, so a 30-minute chore doesn't sit on the card until midnight.
 - Expiry fires a `taskmate_chore_expired` event (`chore_id`, `chore_name`, `deadline_at`, `timestamp`) so an automation can nag, re-raise it, or just log the miss.
+ 
+---
+ 
+## Scheduled Config Changes
+ 
+Queue an edit to take effect on a future date — *"from 1 September this chore is worth 20 points"*, *"from November it's disabled for the winter"*.
+ 
+Open a chore in the TaskMate panel and expand **Advanced — scheduled changes**. Pick a date, a field, and the new value. Queued changes are listed with a count badge on the section, and can be removed before they fire.
+ 
+### What Can Be Scheduled
+ 
+Points · Assigned to · Enabled · Requires approval · Daily limit · Days · Mandatory · Penalty points · Expires on · Description · Time of day · Difficulty
+ 
+Runtime state (rotation anchors, skip dates, calendar publish history) deliberately **cannot** be scheduled — a queued change can only touch configuration.
+ 
+### How It Works
+ 
+- Changes are applied during **midnight maintenance**.
+- **Missed days catch up.** If Home Assistant was off on the day a change was due, it's applied on the next start — the parent still expects "from 1 September" to have happened.
+- **Values are validated when you queue them**, not at midnight weeks later, so a bad value fails in front of you.
+- The date must be in the future. Today is rejected, because it would actually fire at the *next* midnight — a day later than it reads.
+- **Applied changes are kept**, not deleted, and shown under "Already applied". A config change that happens silently is worse than one that doesn't happen at all.
+- Applying fires a `taskmate_scheduled_change_applied` event (`change_id`, `chore_id`, `chore_name`, `changes`, `timestamp`).
+- Deleting a chore removes its queued changes.
  
 ---
  
