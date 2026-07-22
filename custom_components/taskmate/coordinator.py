@@ -30,6 +30,7 @@ from .coord_roulette import RouletteMixin
 from .coord_scheduled import ScheduledChangesMixin
 from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
+from .coord_unlocks import UnlocksMixin
 from .models import Child
 from .storage import TaskMateStorage
 
@@ -50,6 +51,7 @@ class TaskMateCoordinator(
     TemplatesMixin,
     ScheduledChangesMixin,
     RouletteMixin,
+    UnlocksMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -84,6 +86,8 @@ class TaskMateCoordinator(
         self._avail_cache: dict | None = None
         # (data_version, snapshot) cache for _async_update_data (PERF-2).
         self._data_snapshot_cache: tuple[int, dict[str, Any]] | None = None
+        # Scheduled reverts for timed unlock rewards (#678).
+        self._unlock_timers: list = []
 
     def difficulty_multiplier(self, tier: str) -> float:
         """Return the points multiplier for a difficulty tier.
@@ -278,6 +282,8 @@ class TaskMateCoordinator(
         # Catch up on scheduled changes (#675) that came due while HA was off —
         # the parent still expects "from 1 September" to have happened.
         await self.async_apply_due_scheduled_changes(refresh=False)
+        # A restart mid-unlock must never strand the TV on (#678).
+        await self.async_resume_unlocks()
         await self.async_refresh()
         # Schedule midnight streak check at 00:00:05
         self._unsub_midnight = async_track_time_change(
@@ -620,6 +626,7 @@ class TaskMateCoordinator(
 
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator and clean up listeners."""
+        self.cancel_unlock_timers()
         if self._unsub_midnight:
             self._unsub_midnight()
             self._unsub_midnight = None

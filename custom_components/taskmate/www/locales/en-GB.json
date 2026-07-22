@@ -1628,5 +1628,16 @@
   "panel.settings_roulette_enabled": "Enable chore roulette",
   "panel.settings_roulette_enabled_hint": "Lets a child spin for a random outstanding chore worth extra points.",
   "panel.settings_roulette_multiplier": "Points multiplier",
-  "panel.settings_roulette_spins": "Spins per day"
+  "panel.settings_roulette_spins": "Spins per day",
+  "panel.settings_unlock_allowlist": "Unlock allowlist",
+  "panel.settings_unlock_allowlist_hint": "Only these entities may be unlocked by a reward. Nothing is allowed until you add something here.",
+  "panel.settings_unlock_allowlist_empty": "Nothing allowed yet.",
+  "panel.settings_unlock_allowlist_add": "Search for an entity to allow",
+  "panel.reward_unlock_section": "Advanced — timed unlock",
+  "panel.reward_unlock_intro": "Turn something on when this reward is approved, and back off again after a set time.",
+  "panel.reward_unlock_none": "Nothing",
+  "panel.reward_unlock_entity": "Unlock",
+  "panel.reward_unlock_minutes": "For how long (minutes)",
+  "panel.reward_unlock_minutes_hint": "0 = leave it on; you'll need to turn it off yourself.",
+  "panel.reward_unlock_no_allowlist": "Add an entity to the unlock allowlist in Settings first."
 }

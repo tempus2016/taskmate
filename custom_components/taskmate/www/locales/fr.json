@@ -1628,5 +1628,16 @@
   "panel.settings_roulette_enabled": "Activer la roulette des tâches",
   "panel.settings_roulette_enabled_hint": "Permet à un enfant de tirer une tâche au hasard valant plus de points.",
   "panel.settings_roulette_multiplier": "Multiplicateur de points",
-  "panel.settings_roulette_spins": "Tours par jour"
+  "panel.settings_roulette_spins": "Tours par jour",
+  "panel.settings_unlock_allowlist": "Liste d'autorisation de déverrouillage",
+  "panel.settings_unlock_allowlist_hint": "Seules ces entités peuvent être déverrouillées par une récompense. Rien n'est autorisé tant que vous n'ajoutez rien ici.",
+  "panel.settings_unlock_allowlist_empty": "Rien d'autorisé pour l'instant.",
+  "panel.settings_unlock_allowlist_add": "Rechercher une entité à autoriser",
+  "panel.reward_unlock_section": "Avancé — déverrouillage temporaire",
+  "panel.reward_unlock_intro": "Allume quelque chose quand cette récompense est validée, puis l'éteint après un temps donné.",
+  "panel.reward_unlock_none": "Rien",
+  "panel.reward_unlock_entity": "Déverrouiller",
+  "panel.reward_unlock_minutes": "Pendant combien de temps (minutes)",
+  "panel.reward_unlock_minutes_hint": "0 = laisser allumé ; vous devrez l'éteindre vous-même.",
+  "panel.reward_unlock_no_allowlist": "Ajoutez d'abord une entité à la liste d'autorisation dans les Réglages."
 }

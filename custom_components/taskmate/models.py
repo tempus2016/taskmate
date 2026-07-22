@@ -467,6 +467,11 @@ class Reward:
     restock_amount: int = 0
     restock_period: str = "weekly"  # daily | weekly (Mon) | monthly (1st)
     restock_last: str = ""  # ISO date this reward was last restocked
+    # Timed unlock (#678): on approval, turn this entity on and turn it back
+    # off after unlock_minutes. The entity must be on the parent's allowlist,
+    # checked both at save time and again when it fires.
+    unlock_entity: str = ""
+    unlock_minutes: int = 0
     id: str = field(default_factory=generate_id)
 
     def __post_init__(self) -> None:
@@ -496,6 +501,8 @@ class Reward:
             expires_at=expires_at,
             restock_enabled=data.get("restock_enabled", False),
             restock_amount=int(data.get("restock_amount", 0) or 0),
+            unlock_entity=str(data.get("unlock_entity", "") or ""),
+            unlock_minutes=int(data.get("unlock_minutes", 0) or 0),
             restock_period=data.get("restock_period", "weekly"),
             restock_last=data.get("restock_last", ""),
             id=data.get("id", generate_id()),
@@ -517,6 +524,8 @@ class Reward:
             "restock_amount": self.restock_amount,
             "restock_period": self.restock_period,
             "restock_last": self.restock_last,
+            "unlock_entity": self.unlock_entity,
+            "unlock_minutes": self.unlock_minutes,
             "id": self.id,
         }
 

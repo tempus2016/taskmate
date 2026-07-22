@@ -679,7 +679,8 @@ async def _ws_scheduled_remove(hass, connection, msg, coordinator):
 
 _REWARD_FIELDS = {"name", "cost", "description", "icon", "assigned_to",
                   "is_jackpot", "pool_enabled", "quantity", "expires_at",
-                  "restock_enabled", "restock_amount", "restock_period"}
+                  "restock_enabled", "restock_amount", "restock_period",
+                  "unlock_entity", "unlock_minutes"}
 
 
 def _reward_payload_schema(*, require_name: bool):
@@ -698,6 +699,8 @@ def _reward_payload_schema(*, require_name: bool):
         vol.Optional("restock_enabled"): bool,
         vol.Optional("restock_amount"): vol.All(int, vol.Range(min=0, max=10000)),
         vol.Optional("restock_period"): vol.In(["daily", "weekly", "monthly"]),
+        vol.Optional("unlock_entity"): str,
+        vol.Optional("unlock_minutes"): vol.All(int, vol.Range(min=0, max=1440)),
     }
 
 
@@ -708,6 +711,16 @@ def _reward_payload_schema(*, require_name: bool):
 @websocket_api.async_response
 @_admin_only
 async def _ws_add_reward(hass, connection, msg, coordinator):
+    # Timed unlock (#678): refuse an entity that isn't on the parent's
+    # allowlist, at save time, with a message the panel can show.
+    try:
+        unlock_entity, unlock_minutes = coordinator.validate_unlock(
+            msg.get("unlock_entity", ""), msg.get("unlock_minutes", 0),
+        )
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid_format", str(err))
+        return
+
     # coordinator.async_add_reward accepts a subset; build a Reward dataclass
     # to populate every editable field uniformly.
     reward = Reward(
@@ -723,6 +736,8 @@ async def _ws_add_reward(hass, connection, msg, coordinator):
         restock_enabled=msg.get("restock_enabled", False),
         restock_amount=msg.get("restock_amount", 0),
         restock_period=msg.get("restock_period", "weekly"),
+        unlock_entity=unlock_entity,
+        unlock_minutes=unlock_minutes,
     )
     coordinator.storage.add_reward(reward)
     await coordinator.storage.async_save()
@@ -742,6 +757,15 @@ async def _ws_update_reward(hass, connection, msg, coordinator):
     if not existing:
         connection.send_error(msg["id"], "not_found", f"Reward {msg['reward_id']} not found")
         return
+    if "unlock_entity" in msg or "unlock_minutes" in msg:
+        try:
+            coordinator.validate_unlock(
+                msg.get("unlock_entity", existing.unlock_entity),
+                msg.get("unlock_minutes", existing.unlock_minutes),
+            )
+        except ValueError as err:
+            connection.send_error(msg["id"], "invalid_format", str(err))
+            return
     for field in _REWARD_FIELDS:
         if field in msg:
             value = msg[field]
@@ -1184,6 +1208,7 @@ _SUBKEY_SETTINGS = {
     "perfect_week_bonus", "streak_milestones",
     "streak_requires_all_chores", "perfect_week_requires_all_chores",
     "difficulty_multiplier_easy", "difficulty_multiplier_medium", "difficulty_multiplier_hard",
+    "unlock_allowlist",
     "roulette_enabled", "roulette_multiplier", "roulette_daily_spins",
     "surprise_bonus_enabled", "surprise_bonus_chance", "surprise_bonus_min", "surprise_bonus_max",
     "points_decay_enabled", "points_decay_period", "points_decay_percent",
@@ -1344,6 +1369,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("difficulty_multiplier_easy"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("difficulty_multiplier_medium"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("difficulty_multiplier_hard"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
+    vol.Optional("unlock_allowlist"): [str],
     vol.Optional("roulette_enabled"): bool,
     vol.Optional("roulette_multiplier"): vol.All(vol.Coerce(float), vol.Range(min=1.0, max=5.0)),
     vol.Optional("roulette_daily_spins"): vol.All(int, vol.Range(min=1, max=10)),
