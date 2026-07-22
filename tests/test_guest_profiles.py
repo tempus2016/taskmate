@@ -6,7 +6,7 @@ history survives and the same guest can come back next summer.
 """
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
