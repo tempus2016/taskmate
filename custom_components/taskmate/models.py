@@ -1045,6 +1045,73 @@ class TaskGroup:
 
 
 @dataclass
+class ScheduledChange:
+    """A chore edit queued to take effect on a future date (#675).
+
+    "From 1 September this chore is worth 20 points" / "from Monday it's
+    Ella's". ``changes`` maps chore field -> new value; only the fields in
+    ``SCHEDULED_CHANGE_FIELDS`` may be set, so a queued change can't rewrite
+    runtime state like rotation anchors or publish history.
+
+    Applied changes are kept (not deleted) so the panel can show what happened
+    and when — a silent config change is worse than no config change.
+    """
+
+    chore_id: str
+    apply_on: str  # ISO date, e.g. "2026-09-01"
+    changes: dict[str, Any] = field(default_factory=dict)
+    note: str = ""
+    applied: bool = False
+    applied_at: str = ""
+    created_at: str = field(default_factory=dt_util_now_iso)
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ScheduledChange":
+        return cls(
+            chore_id=data.get("chore_id", ""),
+            apply_on=data.get("apply_on", ""),
+            changes=dict(data.get("changes", {}) or {}),
+            note=data.get("note", ""),
+            applied=bool(data.get("applied", False)),
+            applied_at=data.get("applied_at", ""),
+            created_at=data.get("created_at", "") or dt_util_now_iso(),
+            id=data.get("id", generate_id()),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "chore_id": self.chore_id,
+            "apply_on": self.apply_on,
+            "changes": self.changes,
+            "note": self.note,
+            "applied": self.applied,
+            "applied_at": self.applied_at,
+            "created_at": self.created_at,
+            "id": self.id,
+        }
+
+
+# Chore fields a scheduled change is allowed to set. Deliberately excludes
+# runtime state (assignment_current_child_id, skip_date, publish history) and
+# anything that would need extra coordination to change safely.
+SCHEDULED_CHANGE_FIELDS: dict[str, type | tuple[type, ...]] = {
+    "points": int,
+    "assigned_to": list,
+    "enabled": bool,
+    "time_category": str,
+    "difficulty": str,
+    "requires_approval": bool,
+    "daily_limit": int,
+    "due_days": list,
+    "mandatory": bool,
+    "mandatory_penalty_points": int,
+    "description": str,
+    "expires_on": str,
+}
+
+
+@dataclass
 class ParentRecipient:
     """A configured parent notification target."""
 

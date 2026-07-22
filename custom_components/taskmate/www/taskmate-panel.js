@@ -94,6 +94,33 @@ const VISIBILITY_OPS = [
   { v: "lt",         lk: "panel.vis_lt" },
 ];
 
+// Chore fields a change can be scheduled against (#675). Must stay in step with
+// SCHEDULED_CHANGE_FIELDS in models.py — the backend rejects anything else.
+const SCHEDULED_FIELDS = [
+  { v: "points",                   kind: "number" },
+  { v: "assigned_to",              kind: "children" },
+  { v: "enabled",                  kind: "bool" },
+  { v: "requires_approval",        kind: "bool" },
+  { v: "daily_limit",              kind: "number" },
+  { v: "due_days",                 kind: "days" },
+  { v: "mandatory",                kind: "bool" },
+  { v: "mandatory_penalty_points", kind: "number" },
+  { v: "expires_on",               kind: "text" },
+  { v: "description",              kind: "text" },
+  { v: "time_category", kind: "select", options: [
+    { v: "anytime",   lk: "panel.time_anytime" },
+    { v: "morning",   lk: "panel.time_morning" },
+    { v: "afternoon", lk: "panel.time_afternoon" },
+    { v: "evening",   lk: "panel.time_evening" },
+    { v: "night",     lk: "panel.time_night" },
+  ] },
+  { v: "difficulty", kind: "select", options: [
+    { v: "easy",   lk: "panel.difficulty_easy" },
+    { v: "medium", lk: "panel.difficulty_medium" },
+    { v: "hard",   lk: "panel.difficulty_hard" },
+  ] },
+];
+
 // Adverse HA weather conditions a chore can be blocked by. The pleasant ones
 // (sunny, clear-night, partlycloudy) are deliberately omitted — nobody rains
 // off "mow the lawn" because it's sunny.
@@ -502,6 +529,11 @@ class TaskMatePanel extends HTMLElement {
     if (act === "toggle-depends")    { this._toggleArrayField("depends_on", t.dataset.id); return; }
     if (act === "toggle-calendar")   { this._toggleArrayField("publish_calendar_entities", t.dataset.id); return; }
     if (act === "toggle-weather-condition") { this._toggleArrayField("weather_block_conditions", t.dataset.id); return; }
+    if (act === "add-scheduled")            { this._addScheduledChange(); return; }
+    if (act === "remove-scheduled")         { this._removeScheduledChange(t.dataset.id); return; }
+    if (act === "toggle-scheduled-child" || act === "toggle-scheduled-day") {
+      this._toggleScheduledListValue(t.dataset.id); return;
+    }
     if (act === "add-bonus-subtask") { this._addBonusSubtask(); return; }
     if (act === "remove-bonus-subtask") { this._removeBonusSubtask(Number(t.dataset.idx)); return; }
 
@@ -746,6 +778,18 @@ class TaskMatePanel extends HTMLElement {
       if (bcField === "metric") this._render(); // re-render to show/hide value input for bool metrics
       return;
     }
+    // Scheduled-change draft (#675) lives beside the dialog data, not in it —
+    // it is a separate record, not a property of the chore being edited.
+    if (this._dialog && t.dataset.field && t.dataset.field.startsWith("_sched_")) {
+      const key = t.dataset.field.slice("_sched_".length);
+      const draft = this._schedDraft();
+      draft[key] = t.value;
+      // Switching field changes which value control is shown, and any list
+      // selection from the previous field no longer applies.
+      if (key === "field") { draft.value = ""; draft.value_list = []; this._render(); }
+      return;
+    }
+
     // Dialog field
     if (this._dialog && t.dataset.field) {
       const field = t.dataset.field;
@@ -4597,6 +4641,7 @@ class TaskMatePanel extends HTMLElement {
             ${this._switch(this._t("panel.chore_enabled_label"), "enabled", d.enabled !== false)}
           </div>
         </details>`,
+        this._dialog.mode === "edit" ? this._renderScheduledChanges(d) : "",
         `<details class="tm-advanced" data-section="weather"${this._dialog._openAdvanced?.has("weather") ? " open" : ""}>
           <summary>${this._t("panel.chore_advanced_weather")}</summary>
           <div>
@@ -4628,6 +4673,172 @@ class TaskMatePanel extends HTMLElement {
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-chore">${this._t("panel.btn_save")}</button>`
     );
+  }
+
+  /**
+   * Scheduled config changes (#675) — queue an edit for a future date.
+   * Edit-only: a chore has to exist before a change can be queued against it.
+   */
+  _renderScheduledChanges(d) {
+    const pending = (this._state.scheduled_changes || [])
+      .filter(c => c.chore_id === d.id && !c.applied)
+      .sort((a, b) => a.apply_on.localeCompare(b.apply_on));
+    const applied = (this._state.scheduled_changes || [])
+      .filter(c => c.chore_id === d.id && c.applied)
+      .sort((a, b) => b.apply_on.localeCompare(a.apply_on))
+      .slice(0, 5);
+    const draft = this._dialog._schedDraft || {};
+    const open = this._dialog._openAdvanced?.has("scheduled");
+    const children = this._state.children || [];
+
+    const describe = (changes) => Object.entries(changes || {})
+      .map(([f, v]) => {
+        const label = this._t("panel.sched_field_" + f);
+        const value = f === "assigned_to"
+          ? (v || []).map(id => this._esc((children.find(c => c.id === id) || {}).name || id)).join(", ")
+              || this._t("panel.sched_value_nobody")
+          : Array.isArray(v) ? v.join(", ")
+          : typeof v === "boolean" ? this._t(v ? "panel.sched_value_yes" : "panel.sched_value_no")
+          : this._esc(String(v));
+        return `${label}: <strong>${value}</strong>`;
+      }).join(" · ");
+
+    return `<details class="tm-advanced" data-section="scheduled"${open ? " open" : ""}>
+      <summary>${this._t("panel.chore_advanced_scheduled")}${pending.length ? ` <span class="tm-sched-count">${pending.length}</span>` : ""}</summary>
+      <div>
+        <span class="tm-field-hint" style="margin-bottom:8px;display:block">${this._t("panel.chore_scheduled_intro")}</span>
+        ${pending.length ? `
+          <div class="tm-sched-list">
+            ${pending.map(c => `
+              <div class="tm-sched-row">
+                <div class="tm-sched-when">${this._esc(c.apply_on)}</div>
+                <div class="tm-sched-what">${describe(c.changes)}${c.note ? `<div class="tm-sched-note">${this._esc(c.note)}</div>` : ""}</div>
+                <button type="button" class="tm-btn tm-btn-icon" data-act="remove-scheduled" data-id="${this._esc(c.id)}"
+                        title="${this._t("panel.tooltip_remove")}">✕</button>
+              </div>
+            `).join("")}
+          </div>
+        ` : `<span class="tm-field-hint">${this._t("panel.chore_scheduled_none")}</span>`}
+
+        <div class="tm-sched-add">
+          <div class="tm-field-row">
+            ${this._dateField(this._t("panel.sched_date_label"), "_sched_apply_on", draft.apply_on || "")}
+            ${this._select(this._t("panel.sched_field_label"), "_sched_field", draft.field || "points",
+              SCHEDULED_FIELDS.map(f => ({ v: f.v, lk: "panel.sched_field_" + f.v })))}
+          </div>
+          ${this._renderScheduledValueInput(draft, children)}
+          ${this._field(this._t("panel.sched_note_label"), "_sched_note", draft.note || "", "text",
+            this._t("panel.sched_note_hint"))}
+          <button type="button" class="tm-btn" data-act="add-scheduled">${this._t("panel.btn_add_scheduled")}</button>
+        </div>
+
+        ${applied.length ? `
+          <div class="tm-sched-applied">
+            <span class="tm-field-label">${this._t("panel.chore_scheduled_history")}</span>
+            ${applied.map(c => `
+              <div class="tm-sched-row tm-sched-done">
+                <div class="tm-sched-when">${this._esc(c.apply_on)}</div>
+                <div class="tm-sched-what">${describe(c.changes)}</div>
+                <span class="tm-sched-tick" title="${this._t("panel.chore_scheduled_applied")}">✓</span>
+              </div>
+            `).join("")}
+          </div>
+        ` : ""}
+      </div>
+    </details>`;
+  }
+
+  /** The value control depends on which field is being scheduled. */
+  _renderScheduledValueInput(draft, children) {
+    const field = draft.field || "points";
+    const spec = SCHEDULED_FIELDS.find(f => f.v === field) || SCHEDULED_FIELDS[0];
+    if (spec.kind === "children") {
+      const picked = draft.value_list || [];
+      return `<div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.sched_value_label")}</span>
+        <div class="tm-chip-row">
+          ${children.map(c => `
+            <button type="button" class="tm-chip-btn ${picked.includes(c.id) ? "tm-chip-on" : ""}"
+                    data-act="toggle-scheduled-child" data-id="${this._esc(c.id)}">${this._esc(c.name)}</button>
+          `).join("")}
+        </div>
+      </div>`;
+    }
+    if (spec.kind === "days") {
+      const picked = draft.value_list || [];
+      return `<div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.sched_value_label")}</span>
+        <div class="tm-chip-row">
+          ${DAYS.map(day => `
+            <button type="button" class="tm-chip-btn ${picked.includes(day.v) ? "tm-chip-on" : ""}"
+                    data-act="toggle-scheduled-day" data-id="${day.v}">${this._t(day.lk)}</button>
+          `).join("")}
+        </div>
+      </div>`;
+    }
+    if (spec.kind === "bool") {
+      return this._select(this._t("panel.sched_value_label"), "_sched_value", draft.value ?? "true",
+        [{ v: "true", lk: "panel.sched_value_yes" }, { v: "false", lk: "panel.sched_value_no" }]);
+    }
+    if (spec.kind === "select") {
+      return this._select(this._t("panel.sched_value_label"), "_sched_value", draft.value ?? spec.options[0].v, spec.options);
+    }
+    return this._field(this._t("panel.sched_value_label"), "_sched_value", draft.value ?? "",
+      spec.kind === "number" ? "number" : "text");
+  }
+
+  _schedDraft() {
+    if (!this._dialog._schedDraft) this._dialog._schedDraft = { field: "points", value_list: [] };
+    return this._dialog._schedDraft;
+  }
+
+  _toggleScheduledListValue(value) {
+    const draft = this._schedDraft();
+    const list = [...(draft.value_list || [])];
+    const i = list.indexOf(value);
+    if (i >= 0) list.splice(i, 1); else list.push(value);
+    draft.value_list = list;
+    this._render();
+  }
+
+  async _addScheduledChange() {
+    const d = this._dialog.data;
+    const draft = this._schedDraft();
+    const spec = SCHEDULED_FIELDS.find(f => f.v === (draft.field || "points")) || SCHEDULED_FIELDS[0];
+    if (!draft.apply_on) { this._showToast("err", this._t("panel.toast_sched_date_required")); return; }
+
+    let value;
+    if (spec.kind === "children" || spec.kind === "days") {
+      value = draft.value_list || [];
+    } else if (spec.kind === "bool") {
+      value = (draft.value ?? "true") === "true";
+    } else if (spec.kind === "number") {
+      if (draft.value === "" || draft.value == null) { this._showToast("err", this._t("panel.toast_sched_value_required")); return; }
+      value = Number(draft.value);
+    } else {
+      value = draft.value ?? "";
+    }
+
+    const { ok, err } = await this._callWS({
+      type: "taskmate/scheduled/add",
+      chore_id: d.id,
+      apply_on: draft.apply_on,
+      changes: { [spec.v]: value },
+      note: draft.note || "",
+    });
+    if (!ok) { this._showToast("err", err); return; }
+    this._dialog._schedDraft = { field: spec.v, value_list: [] };
+    this._showToast("ok", this._t("panel.toast_sched_added"));
+    await this._fetchState();
+    this._render();
+  }
+
+  async _removeScheduledChange(changeId) {
+    const { ok, err } = await this._callWS({ type: "taskmate/scheduled/remove", change_id: changeId });
+    if (!ok) { this._showToast("err", err); return; }
+    this._showToast("ok", this._t("panel.toast_sched_removed"));
+    await this._fetchState();
+    this._render();
   }
 
   _renderRewardDialog() {
@@ -6284,6 +6495,33 @@ class TaskMatePanel extends HTMLElement {
       }
 
       /* Chip multi-select */
+      /* Scheduled config changes (#675) */
+      .tm-sched-count {
+        display: inline-block; min-width: 18px; padding: 0 5px;
+        background: var(--tm-accent); color: #fff;
+        border-radius: 999px; font-size: 11px; font-weight: 700;
+        text-align: center; vertical-align: middle;
+      }
+      .tm-sched-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+      .tm-sched-row {
+        display: flex; align-items: flex-start; gap: 10px;
+        padding: 8px 10px; border-radius: 8px;
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+      }
+      .tm-sched-when {
+        font-variant-numeric: tabular-nums; font-weight: 700;
+        font-size: 12.5px; white-space: nowrap; padding-top: 1px;
+      }
+      .tm-sched-what { flex: 1; font-size: 12.5px; line-height: 1.5; }
+      .tm-sched-note { color: var(--tm-text-muted); font-size: 11.5px; margin-top: 2px; }
+      .tm-sched-add {
+        border-top: 1px solid var(--tm-border);
+        padding-top: 10px; margin-top: 4px;
+      }
+      .tm-sched-applied { margin-top: 14px; }
+      .tm-sched-done { opacity: 0.65; }
+      .tm-sched-tick { color: var(--tm-success, #2e7d32); font-weight: 800; }
+
       .tm-chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
       .tm-chip-btn {
         background: var(--tm-surface-0);
