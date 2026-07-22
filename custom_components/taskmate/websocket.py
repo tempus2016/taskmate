@@ -390,6 +390,8 @@ async def _ws_add_child(hass, connection, msg, coordinator):
     vol.Optional("unavailability_entity"): str,
     vol.Optional("pause_streak_when_unavailable"): bool,
     vol.Optional("linked_user_id"): str,
+    vol.Optional("is_guest"): bool,
+    vol.Optional("guest_expires_on"): str,
 })
 @websocket_api.async_response
 @_admin_only
@@ -412,6 +414,19 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.pause_streak_when_unavailable = bool(msg["pause_streak_when_unavailable"])
     if "linked_user_id" in msg:
         existing.linked_user_id = _opt_str(msg["linked_user_id"])
+    if "is_guest" in msg or "guest_expires_on" in msg:
+        # Routed through the coordinator so the expiry is validated and an
+        # archived guest is un-archived when promoted to a family member.
+        try:
+            await coordinator.async_set_guest(
+                existing.id,
+                bool(msg.get("is_guest", existing.is_guest)),
+                _opt_str(msg.get("guest_expires_on", existing.guest_expires_on)),
+            )
+        except ValueError as err:
+            connection.send_error(msg["id"], "invalid_format", str(err))
+            return
+        existing = coordinator.storage.get_child(msg["child_id"])
     await coordinator.async_update_child(existing)
     connection.send_result(msg["id"], {"id": existing.id})
 

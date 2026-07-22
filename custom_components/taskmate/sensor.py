@@ -159,6 +159,9 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
             "name": c.name,
             "points": c.points,
             "pending_points": pending.get(c.id, 0),
+            # Guest profiles (#690): cards filter these out of competitive views.
+            **({"is_guest": True, "guest_expires_on": getattr(c, "guest_expires_on", "")}
+               if getattr(c, "is_guest", False) else {}),
             # Chore roulette (#677): today's pick + spins left, so the card can
             # show the result and disable the button once the allowance is used.
             **(

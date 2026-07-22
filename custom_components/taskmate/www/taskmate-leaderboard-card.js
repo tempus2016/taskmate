@@ -319,7 +319,7 @@ class TaskMateLeaderboardCard extends LitElement {
     if (entity.state === "unavailable" || entity.state === "unknown") return html`<ha-card><div class="error-state"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t('common.unavailable')}</div></div></ha-card>`;
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    const children = [...(attrs.children || [])];
+    const children = [...(attrs.children || [])].filter(c => !c.is_guest);
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t('common.points');
 
@@ -593,7 +593,7 @@ class TaskMateLeaderboardCard extends LitElement {
     }
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    const children = [...(attrs.children || [])];
+    const children = [...(attrs.children || [])].filter(c => !c.is_guest);
     const pointsName = attrs.points_name || this._t('common.points');
 
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
