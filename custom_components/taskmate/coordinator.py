@@ -66,6 +66,12 @@ class TaskMateCoordinator(
         self._unsub_prune: Callable[[], None] | None = None
         self._unsub_availability: Callable[[], None] | None = None
         self._tracked_availability_entities: set[str] = set()
+        self._tracked_visibility_entities: set[str] = set()
+        # Bumped whenever a tracked external entity (child availability, chore
+        # visibility, chore weather) changes state. The data snapshot is reused
+        # while storage.data_version is unchanged, so sensors that derive
+        # attributes from live entity state need this to invalidate their cache.
+        self.external_state_version: int = 0
         self._unsub_surprise: Callable[[], None] | None = None
         self._unsub_weekly: Callable[[], None] | None = None
         self._unsub_mandatory: list[Callable[[], None]] = []

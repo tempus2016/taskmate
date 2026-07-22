@@ -1181,6 +1181,13 @@ class ChoresMixin:
         if not self._is_visibility_entity_active(visibility_entity, visibility_state, visibility_operator):
             return False
 
+        # Weather gate (#673): an outdoor chore stays hidden while the chosen
+        # weather entity reports unsuitable conditions. Because this sits in the
+        # availability path, a rained-off chore also stops counting as a
+        # mandatory miss and can't break a streak.
+        if not self._is_weather_ok_for_chore(chore):
+            return False
+
         # Chore dependencies (FEAT-1): this chore unlocks only once every chore
         # it depends on has an approved completion today by this same child.
         depends_on = getattr(chore, 'depends_on', []) or []

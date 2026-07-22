@@ -94,6 +94,24 @@ const VISIBILITY_OPS = [
   { v: "lt",         lk: "panel.vis_lt" },
 ];
 
+// Adverse HA weather conditions a chore can be blocked by. The pleasant ones
+// (sunny, clear-night, partlycloudy) are deliberately omitted — nobody rains
+// off "mow the lawn" because it's sunny.
+const WEATHER_CONDITIONS = [
+  { v: "rainy",          icon: "mdi:weather-rainy" },
+  { v: "pouring",        icon: "mdi:weather-pouring" },
+  { v: "snowy",          icon: "mdi:weather-snowy" },
+  { v: "snowy-rainy",    icon: "mdi:weather-snowy-rainy" },
+  { v: "hail",           icon: "mdi:weather-hail" },
+  { v: "lightning",      icon: "mdi:weather-lightning" },
+  { v: "lightning-rainy", icon: "mdi:weather-lightning-rainy" },
+  { v: "fog",            icon: "mdi:weather-fog" },
+  { v: "windy",          icon: "mdi:weather-windy" },
+  { v: "windy-variant",  icon: "mdi:weather-windy-variant" },
+  { v: "cloudy",         icon: "mdi:weather-cloudy" },
+  { v: "exceptional",    icon: "mdi:alert-outline" },
+];
+
 const COMPLETION_SOUNDS = [
   "none", "coin", "levelup", "fanfare", "chime", "powerup", "undo",
   "fart1", "fart2", "fart3", "fart4", "fart5", "fart6", "fart7",
@@ -483,6 +501,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "toggle-assigned")   { this._toggleArrayField("assigned_to", t.dataset.id); return; }
     if (act === "toggle-depends")    { this._toggleArrayField("depends_on", t.dataset.id); return; }
     if (act === "toggle-calendar")   { this._toggleArrayField("publish_calendar_entities", t.dataset.id); return; }
+    if (act === "toggle-weather-condition") { this._toggleArrayField("weather_block_conditions", t.dataset.id); return; }
     if (act === "add-bonus-subtask") { this._addBonusSubtask(); return; }
     if (act === "remove-bonus-subtask") { this._removeBonusSubtask(Number(t.dataset.idx)); return; }
 
@@ -1251,6 +1270,8 @@ class TaskMatePanel extends HTMLElement {
       manual_start_child_id: "",
       require_availability: false,
       visibility_entity: "", visibility_state: "on", visibility_operator: "none",
+      weather_entity: "", weather_block_conditions: [],
+      weather_temp_min: "", weather_temp_max: "", weather_wind_max: "",
       enabled: true,
       expires_on: "",
       due_time: "", early_bonus: 0, late_penalty: 0,
@@ -1271,6 +1292,11 @@ class TaskMatePanel extends HTMLElement {
         depends_on: [...(c.depends_on || [])],
         bonus_subtasks: (c.bonus_subtasks || []).map(b => ({...b})),
         visibility_operator: c.visibility_operator || "none",
+        weather_block_conditions: [...(c.weather_block_conditions || [])],
+        // null/undefined limits render as an empty input, not "null"
+        weather_temp_min: c.weather_temp_min ?? "",
+        weather_temp_max: c.weather_temp_max ?? "",
+        weather_wind_max: c.weather_wind_max ?? "",
         manual_start_child_id: "",
       } });
     } else {
@@ -1305,6 +1331,11 @@ class TaskMatePanel extends HTMLElement {
       visibility_entity: d.visibility_entity || "",
       visibility_state: d.visibility_state || "on",
       visibility_operator: d.visibility_operator || "none",
+      weather_entity: d.weather_entity || "",
+      weather_block_conditions: d.weather_block_conditions || [],
+      weather_temp_min: this._optNum(d.weather_temp_min),
+      weather_temp_max: this._optNum(d.weather_temp_max),
+      weather_wind_max: this._optNum(d.weather_wind_max),
       enabled: d.enabled !== false,
       expires_on: (d.expires_on || "").trim(),
       due_time: (d.due_time || "").trim(),
@@ -4566,6 +4597,33 @@ class TaskMatePanel extends HTMLElement {
             ${this._switch(this._t("panel.chore_enabled_label"), "enabled", d.enabled !== false)}
           </div>
         </details>`,
+        `<details class="tm-advanced" data-section="weather"${this._dialog._openAdvanced?.has("weather") ? " open" : ""}>
+          <summary>${this._t("panel.chore_advanced_weather")}</summary>
+          <div>
+            <span class="tm-field-hint" style="margin-bottom:8px;display:block">${this._t("panel.chore_weather_intro")}</span>
+            ${this._entityPickerField(this._t("panel.chore_weather_entity_label"), "weather_entity", d.weather_entity, ["weather"],
+              this._t("panel.chore_weather_entity_hint"))}
+            ${d.weather_entity ? `
+              <div class="tm-field">
+                <span class="tm-field-label">${this._t("panel.chore_weather_conditions_label")}</span>
+                <div class="tm-chip-row">
+                  ${WEATHER_CONDITIONS.map(w => `
+                    <button type="button" class="tm-chip-btn ${(d.weather_block_conditions || []).includes(w.v) ? "tm-chip-on" : ""}" data-act="toggle-weather-condition" data-id="${w.v}">
+                      <ha-icon icon="${w.icon}" style="--mdc-icon-size:16px;margin-right:4px"></ha-icon>${this._t("weather.condition_" + w.v.replace(/-/g, "_"))}
+                    </button>
+                  `).join("")}
+                </div>
+                <span class="tm-field-hint">${this._t("panel.chore_weather_conditions_hint")}</span>
+              </div>
+              <div class="tm-field-row">
+                ${this._field(this._t("panel.chore_weather_temp_min_label"), "weather_temp_min", d.weather_temp_min, "number", this._t("panel.chore_weather_temp_min_hint"))}
+                ${this._field(this._t("panel.chore_weather_temp_max_label"), "weather_temp_max", d.weather_temp_max, "number", this._t("panel.chore_weather_temp_max_hint"))}
+              </div>
+              ${this._field(this._t("panel.chore_weather_wind_max_label"), "weather_wind_max", d.weather_wind_max, "number", this._t("panel.chore_weather_wind_max_hint"))}
+              <span class="tm-field-hint">${this._t("panel.chore_weather_failopen_hint")}</span>
+            ` : ""}
+          </div>
+        </details>`,
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-chore">${this._t("panel.btn_save")}</button>`
@@ -5160,6 +5218,14 @@ class TaskMatePanel extends HTMLElement {
     return String(str == null ? "" : str)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  // Optional numeric field: "" clears the limit (sent as null). 0 is a real
+  // threshold — a 0 °C minimum is meaningful — so it can't stand in for "unset".
+  _optNum(value) {
+    if (value === "" || value === null || value === undefined) return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
   }
 
   // Security defense-in-depth: only ever emit our own auth-gated photo endpoint

@@ -6,7 +6,9 @@ TEMPLATE_CHORE_FIELDS = (
     "daily_limit", "completion_sound", "schedule_mode", "due_days",
     "recurrence", "recurrence_day", "recurrence_start", "first_occurrence_mode",
     "assignment_mode", "require_availability", "visibility_entity",
-    "visibility_state", "visibility_operator", "task_type",
+    "visibility_state", "visibility_operator",
+    "weather_entity", "weather_block_conditions", "weather_temp_min",
+    "weather_temp_max", "weather_wind_max", "task_type",
     "timed_rate_points", "timed_rate_minutes", "timed_max_daily_minutes",
 )
 
