@@ -93,3 +93,35 @@ class TestPreReaderCard:
             data = json.loads(path.read_text(encoding="utf-8"))
             missing = sorted(k for k in keys if k not in data)
             assert missing == [], f"{path.name} missing {missing}"
+
+
+class TestPreReaderRendersOnEveryDesign:
+    """Pre-reader mode was wired into the classic render path only.
+
+    `render()` returns `_renderDesigned(design)` before reaching the classic
+    branch, so `pre_reader: true` was silently ignored on playroom, console,
+    cleanpro and accessible — and accessible is precisely the style a child who
+    needs picture tiles is most likely to be using.
+    """
+
+    import pathlib as _pathlib
+
+    SOURCE = (
+        _pathlib.Path(__file__).resolve().parent.parent
+        / "custom_components" / "taskmate" / "www" / "taskmate-child-card.js"
+    ).read_text(encoding="utf-8")
+
+    def _designed_region(self) -> str:
+        start = self.SOURCE.index("_renderDesigned(design) {")
+        end = self.SOURCE.index("\n  _designHeaderFull(", start)
+        return self.SOURCE[start:end]
+
+    def test_designed_styles_honour_pre_reader(self):
+        region = self._designed_region()
+        assert "pre_reader" in region, (
+            "the designed render path never checks config.pre_reader, so "
+            "pre-reader mode does nothing on any style but classic"
+        )
+
+    def test_designed_styles_render_the_picture_tiles(self):
+        assert "_renderPreReaderTile(" in self._designed_region()

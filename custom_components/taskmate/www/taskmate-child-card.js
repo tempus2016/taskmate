@@ -2421,10 +2421,20 @@ class TaskMateChildCard extends LitElement {
           <ha-icon icon="mdi:clock-outline"></ha-icon>${countdown.label}</span>` : ""}
       </div>`;
 
-    const body =
-      design === "playroom" ? this._designPlayroom(child, rows, remaining, tone) :
-      design === "console"  ? this._designConsole(child, rows, remaining, tone) :
-                              this._designCleanpro(child, rows, remaining, tone);
+    // Pre-reader mode replaces the chore list with picture tiles. It has to be
+    // handled here as well as in the classic path, or `pre_reader: true` is
+    // silently ignored under every designed style — including accessible,
+    // which is the one a child who needs picture tiles is most likely on.
+    // The tiles keep the designed shell (header, tokens) around them.
+    const body = this.config.pre_reader === true
+      ? html`
+        <div class="pre-reader-grid">
+          ${childChores.map((chore, index) =>
+            this._renderPreReaderTile(chore, child, todaysCompletions, index))}
+        </div>`
+      : design === "playroom" ? this._designPlayroom(child, rows, remaining, tone) :
+        design === "console"  ? this._designConsole(child, rows, remaining, tone) :
+                                this._designCleanpro(child, rows, remaining, tone);
 
     return html`<ha-card class="tmd" style="--hd:${hd}">
       ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints, pointsIcon)}
