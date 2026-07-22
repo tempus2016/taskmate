@@ -4,6 +4,10 @@
  * `photo_gallery` attribute and renders thumbnails. A card's <img> can't send a
  * bearer token, so each photo path is signed via the `auth/sign_path` WS command
  * before use.
+ *
+ * Single layout, so it consumes the design tokens directly (like the routine
+ * card). Every --tmd-* reference has the card's original value as its fallback,
+ * so classic — which defines no tokens — renders exactly as it did before.
  */
 
 const LitElement = customElements.get("hui-masonry-view")
@@ -14,6 +18,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+const DEFAULT_ACCENT = "#5d6d7e";
 
 class TaskMatePhotoGalleryCard extends LitElement {
   static get properties() {
@@ -44,6 +49,25 @@ class TaskMatePhotoGalleryCard extends LitElement {
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
+  }
+
+  /**
+   * Resolve the active design, stamp data-tm-design on the host, and set the
+   * header accent. The accent is an inline host property, not a template
+   * <style>: a shadow tree's <style> is ordered before adoptedStyleSheets, so
+   * it loses to the :host default in static styles(). Header stays full-colour
+   * in every style per the house rule.
+   */
+  _applyDesign() {
+    if (window.__taskmate_design) {
+      window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity);
+    }
+    const configured = this.config.header_color;
+    if (typeof configured === "string" && /^#[0-9a-fA-F]{3,8}$/.test(configured)) {
+      this.style.setProperty("--pg-accent", _safeColor(configured, DEFAULT_ACCENT));
+    } else {
+      this.style.removeProperty("--pg-accent");
+    }
   }
 
   // Open the shared in-page lightbox; fall through to the href if it's absent.
@@ -85,22 +109,22 @@ class TaskMatePhotoGalleryCard extends LitElement {
 
   render() {
     if (!this.hass || !this.config) return html``;
+    this._applyDesign();
     const entity = this.hass.states[this.config.entity];
     if (!entity) {
-      return html`<ha-card><div class="empty"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t("common.entity_not_found", { entity: this.config.entity })}</div></div></ha-card>`;
+      return html`<ha-card><div class="pg-empty"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t("common.entity_not_found", { entity: this.config.entity })}</div></div></ha-card>`;
     }
     const items = this._gallery();
     return html`
       <ha-card>
-        <style>:host { --tm-gallery-header: ${_safeColor(this.config.header_color, "#5d6d7e")}; }</style>
-        <div class="card-header" style="background: var(--tm-gallery-header);">
+        <div class="pg-head">
           <ha-icon icon="mdi:image-multiple"></ha-icon>
           <span>${this.config.title || this._t("gallery.default_title")}</span>
         </div>
         ${items.length === 0
-          ? html`<div class="empty"><ha-icon icon="mdi:camera-off"></ha-icon><div>${this._t("gallery.empty")}</div></div>`
+          ? html`<div class="pg-empty"><ha-icon icon="mdi:camera-off"></ha-icon><div>${this._t("gallery.empty")}</div></div>`
           : html`
-            <div class="grid">
+            <div class="pg-grid">
               ${items.map((it) => this._tile(it))}
             </div>`}
       </ha-card>
@@ -111,12 +135,12 @@ class TaskMatePhotoGalleryCard extends LitElement {
     const src = this._signed[it.photo_url];
     const when = this._formatDate(it.completed_at);
     return html`
-      <div class="tile" title="${it.chore_name} — ${it.child_name}">
+      <div class="pg-tile" title="${it.chore_name} — ${it.child_name}">
         ${src
           ? html`<a href="${src}" target="_blank" rel="noopener"
               @click="${(e) => this._openPhoto(e, src, [it.chore_name, it.child_name, when].filter(Boolean).join(" · "))}"><img src="${src}" alt="${it.chore_name}" loading="lazy"></a>`
-          : html`<div class="ph"><ha-icon icon="mdi:image"></ha-icon></div>`}
-        <div class="cap">
+          : html`<div class="pg-ph"><ha-icon icon="mdi:image"></ha-icon></div>`}
+        <div class="pg-cap">
           <span class="who">${it.child_name}</span>
           <span class="what">${it.chore_name}</span>
           <span class="when">${when}${it.approved ? "" : " · " + this._t("gallery.pending")}</span>
@@ -134,27 +158,51 @@ class TaskMatePhotoGalleryCard extends LitElement {
   }
 
   static get styles() {
-    return css`
-      ha-card { overflow: hidden; }
-      .card-header {
-        display: flex; align-items: center; gap: 8px;
-        padding: 12px 16px; color: #fff; font-weight: 600;
+    // Layout classes carry a pg- prefix because the shared design kit defines
+    // its own .grid; a bare .grid here would pick up the kit's rules under a
+    // designed style. Base styles come after the kit in static styles(), so
+    // they win at equal specificity.
+    const base = css`
+      :host { --pg-accent: var(--tmd-accent, #5d6d7e); }
+      ha-card {
+        overflow: hidden;
+        background: var(--tmd-surface, var(--ha-card-background, var(--card-background-color, #fff)));
+        color: var(--tmd-text, var(--primary-text-color));
+        border-radius: var(--tmd-radius, var(--ha-card-border-radius, 12px));
+        font-family: var(--tmd-font-body, inherit);
       }
-      .grid {
+      .pg-head {
+        display: flex; align-items: center; gap: 8px;
+        padding: 12px 16px; color: var(--tmd-hd-text, #fff); font-weight: 600;
+        background: var(--pg-accent);
+        font-family: var(--tmd-font-display, inherit);
+      }
+      .pg-grid {
         display: grid; gap: 10px; padding: 14px;
         grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
       }
-      .tile { display: flex; flex-direction: column; border-radius: 8px; overflow: hidden; background: var(--secondary-background-color, #f5f5f5); }
-      .tile img, .tile .ph {
+      .pg-tile {
+        display: flex; flex-direction: column;
+        border-radius: var(--tmd-radius-sm, 8px); overflow: hidden;
+        background: var(--tmd-surface-2, var(--secondary-background-color, #f5f5f5));
+        border: 1px solid var(--tmd-border, transparent);
+      }
+      .pg-tile img, .pg-tile .pg-ph {
         width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block;
       }
-      .tile .ph { display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color); }
-      .cap { padding: 6px 8px; display: flex; flex-direction: column; gap: 1px; font-size: 0.72rem; }
-      .cap .who { font-weight: 600; }
-      .cap .what { color: var(--primary-text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .cap .when { color: var(--secondary-text-color); }
-      .empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px 16px; color: var(--secondary-text-color); }
+      .pg-tile .pg-ph { display: flex; align-items: center; justify-content: center; color: var(--tmd-dim, var(--secondary-text-color)); }
+      .pg-cap { padding: 6px 8px; display: flex; flex-direction: column; gap: 1px; font-size: 0.72rem; }
+      .pg-cap .who { font-weight: 600; }
+      .pg-cap .what { color: var(--tmd-text, var(--primary-text-color)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .pg-cap .when { color: var(--tmd-dim, var(--secondary-text-color)); }
+      .pg-empty {
+        display: flex; flex-direction: column; align-items: center; gap: 8px;
+        padding: 32px 16px; color: var(--tmd-dim, var(--secondary-text-color));
+      }
     `;
+    const tokens = window.__taskmate_design && window.__taskmate_design.styles
+      ? window.__taskmate_design.styles() : null;
+    return tokens ? [tokens, base] : base;
   }
 }
 

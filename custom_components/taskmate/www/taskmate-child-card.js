@@ -608,6 +608,23 @@ class TaskMateChildCard extends LitElement {
         width: 18px; height: 18px; border-radius: 50%;
         background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center;
       }
+
+      /* Designed-header avatar wrapper: mirror of the classic avatar-container
+         so the picker works under every design, not just classic. The picker
+         itself (.avatar-picker) is absolute, so the header is the positioned
+         anchor. Base styles here win over the shared kit's .tmd-hd because the
+         card includes them after the kit in static styles(). */
+      .tmd-hd { position: relative; }
+      .tmd-av-wrap { position: relative; display: inline-flex; align-items: center; flex: none; }
+      .tmd-av-wrap.avatar-clickable { cursor: pointer; }
+      .tmd-av-edit {
+        position: absolute; bottom: -2px; right: -2px;
+        width: 15px; height: 15px; border-radius: 50%;
+        background: var(--tmd-accent, #7c3aed); color: #fff;
+        display: grid; place-items: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      }
+      .tmd-av-edit ha-icon { --mdc-icon-size: 10px; color: #fff; }
       .avatar-edit-dot ha-icon { --mdc-icon-size: 12px; color: white; }
       .avatar-picker {
         position: absolute; z-index: 20; margin-top: 56px;
@@ -2476,13 +2493,25 @@ class TaskMateChildCard extends LitElement {
       ? (child.level ? `${this._t("child.level_label", { level: child.level })} · ${remaining} ACTIVE` : `${remaining} ACTIVE`)
       : design === "cleanpro" ? `${remaining} / ${total}`
       : `${remaining} · ${this._t("child.todays_chores")}`;
+    // Avatar picker: classic makes the avatar tappable; the designed header
+    // must too, or the picker only ever works on classic. Same eligibility
+    // rule (allow_avatar_change + more than one unlocked option).
+    const opts = child.avatar_options || [];
+    const canChange = this.config.allow_avatar_change !== false
+      && opts.filter(o => o.unlocked).length > 1;
     return html`
       <div class="tmd-hd">
-        ${this._av(child, tone, 34)}
+        <div class="tmd-av-wrap ${canChange ? "avatar-clickable" : ""}"
+             @click=${canChange ? () => this._toggleAvatarPicker() : null}
+             title="${canChange ? this._t("child.avatar_change") : ""}">
+          ${this._av(child, tone, 34)}
+          ${canChange ? html`<span class="tmd-av-edit"><ha-icon icon="mdi:pencil"></ha-icon></span>` : ""}
+        </div>
         <span class="tt">${title}<small>${sub}</small></span>
         ${remaining === 0 && total > 0 ? html`<span class="pill">🎉</span>` : ""}
         ${pendingPoints > 0 ? html`<span class="tmd-pending">
           <ha-icon icon="mdi:timer-sand"></ha-icon>+${pendingPoints}</span>` : ""}
+        ${canChange && this._avatarPickerOpen ? this._renderAvatarPicker(child, opts) : ""}
       </div>`;
   }
 
