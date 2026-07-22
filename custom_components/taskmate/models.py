@@ -68,6 +68,21 @@ def format_datetime(dt: datetime | None) -> str | None:
     return utc_dt.isoformat().replace("+00:00", "Z")
 
 
+def optional_float(value: Any) -> float | None:
+    """Coerce a stored/user value to a float, or None when it isn't set.
+
+    Used for limits where 0 is a meaningful value (a 0 °C threshold is real),
+    so the usual "0 means off" sentinel can't be used. Empty strings and
+    unparseable values both read as "no limit".
+    """
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 @dataclass
 class TimedSession:
     """Tracks an active or paused timed-task session."""
@@ -251,6 +266,16 @@ class Chore:
     visibility_entity: str = ""  # optional: entity_id to check for visibility
     visibility_state: str = "on"  # state/value that makes chore visible (e.g. "on", "true", "123")
     visibility_operator: str = "equals"  # equals, gte, lte, gt, lt, not_equals
+    # Weather-aware chores (#673): hide an outdoor chore while the chosen
+    # weather.* entity reports unsuitable conditions. Every limit is optional
+    # and evaluation is fail-open — a missing or unavailable entity never hides
+    # a chore. Temperature/wind limits are read from the entity's attributes in
+    # whatever unit HA reports them (native_temperature/wind_speed_unit).
+    weather_entity: str = ""
+    weather_block_conditions: list[str] = field(default_factory=list)  # e.g. ["rainy", "pouring"]
+    weather_temp_min: float | None = None  # block below this temperature
+    weather_temp_max: float | None = None  # block above this temperature
+    weather_wind_max: float | None = None  # block above this wind speed
     # One-shot chore fields
     enabled: bool = True  # False = soft-disabled (completed or expired)
     disabled_for: list[str] = field(default_factory=list)  # Child IDs this chore is disabled for
@@ -321,6 +346,11 @@ class Chore:
             visibility_entity=data.get("visibility_entity", ""),
             visibility_state=data.get("visibility_state", "on"),
             visibility_operator=data.get("visibility_operator", "equals"),
+            weather_entity=data.get("weather_entity", ""),
+            weather_block_conditions=list(data.get("weather_block_conditions", [])),
+            weather_temp_min=optional_float(data.get("weather_temp_min")),
+            weather_temp_max=optional_float(data.get("weather_temp_max")),
+            weather_wind_max=optional_float(data.get("weather_wind_max")),
             enabled=data.get("enabled", True),
             disabled_for=list(data.get("disabled_for", [])),
             depends_on=list(data.get("depends_on", []) or []),
@@ -376,6 +406,11 @@ class Chore:
             "visibility_entity": self.visibility_entity,
             "visibility_state": self.visibility_state,
             "visibility_operator": self.visibility_operator,
+            "weather_entity": self.weather_entity,
+            "weather_block_conditions": self.weather_block_conditions,
+            "weather_temp_min": self.weather_temp_min,
+            "weather_temp_max": self.weather_temp_max,
+            "weather_wind_max": self.weather_wind_max,
             "enabled": self.enabled,
             "disabled_for": self.disabled_for,
             "depends_on": self.depends_on,

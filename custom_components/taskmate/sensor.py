@@ -260,6 +260,19 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
             record["visibility_entity"] = visibility_entity
             record["visibility_operator"] = getattr(c, 'visibility_operator', 'equals')
             record["visibility_state"] = getattr(c, 'visibility_state', 'on')
+        weather_entity = getattr(c, 'weather_entity', '')
+        if weather_entity:
+            record["weather_entity"] = weather_entity
+            record["weather_block_conditions"] = list(getattr(c, 'weather_block_conditions', []) or [])
+            for limit in ("weather_temp_min", "weather_temp_max", "weather_wind_max"):
+                value = getattr(c, limit, None)
+                if value is not None:
+                    record[limit] = value
+            # Why it's hidden, so the panel can say "rained off" instead of
+            # just dropping the chore out of the list.
+            reason = coordinator.weather_block_reason(c)
+            if reason:
+                record["weather_blocked"] = reason
         disabled_for = getattr(c, 'disabled_for', [])
         if disabled_for:
             record["disabled_for"] = disabled_for
@@ -691,16 +704,20 @@ class _CachedAttrsSensor(TaskMateBaseSensor):
     def __init__(self, coordinator: TaskMateCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator, entry)
         self._cached_attrs: dict | None = None
-        self._cached_data_id: int | None = None
+        self._cached_key: tuple[int, int] | None = None
 
     @property
     def extra_state_attributes(self) -> dict:
-        data_id = id(self.coordinator.data)
-        if self._cached_data_id == data_id and self._cached_attrs is not None:
+        # The coordinator reuses one snapshot object while storage.data_version
+        # is unchanged, so id(data) alone would pin these attributes forever
+        # when only an external entity moved — stranding the visibility and
+        # weather gates on stale state. external_state_version covers that.
+        key = (id(self.coordinator.data), getattr(self.coordinator, "external_state_version", 0))
+        if self._cached_key == key and self._cached_attrs is not None:
             return self._cached_attrs
         attrs = self._build_attributes()
         self._cached_attrs = attrs
-        self._cached_data_id = data_id
+        self._cached_key = key
         return attrs
 
     def _build_attributes(self) -> dict:  # pragma: no cover - abstract

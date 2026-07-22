@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.core import callback
 from homeassistant.util import dt as dt_util
 
-from .models import Chore
+from .models import Chore, optional_float
 
 if TYPE_CHECKING:
     pass
@@ -22,35 +22,61 @@ class AssignmentsMixin:
     """Mixin providing assignment rotation, availability, and visibility logic."""
 
     def _refresh_tracked_availability_entities(self) -> None:
-        """Rebuild the cached set of entities that gate child availability.
+        """Rebuild the cached set of external entities TaskMate reacts to.
 
-        Children only change via mutations (which trigger a coordinator
-        refresh), so this is rebuilt on refresh rather than on every bus
-        state_changed event — which fires for every entity in HA (PERF-5).
+        Two groups, kept apart because they trigger different work:
+
+          * child availability/unavailability entities — a change here can
+            re-assign a rotation chore, so it schedules a re-evaluation;
+          * chore visibility and weather entities — a change here only alters
+            what's *visible*, so it just invalidates the sensor attribute cache.
+
+        Children and chores only change via mutations (which trigger a
+        coordinator refresh), so this is rebuilt on refresh rather than on
+        every bus state_changed event — which fires for every entity in HA
+        (PERF-5).
         """
-        tracked: set[str] = set()
+        availability: set[str] = set()
         for c in self.storage.get_children():
             if getattr(c, "availability_entity", ""):
-                tracked.add(c.availability_entity)
+                availability.add(c.availability_entity)
             if getattr(c, "unavailability_entity", ""):
-                tracked.add(c.unavailability_entity)
-        self._tracked_availability_entities = tracked
+                availability.add(c.unavailability_entity)
+        self._tracked_availability_entities = availability
+
+        visibility: set[str] = set()
+        for chore in self.storage.get_chores():
+            if getattr(chore, "visibility_entity", ""):
+                visibility.add(chore.visibility_entity)
+            if getattr(chore, "weather_entity", ""):
+                visibility.add(chore.weather_entity)
+        self._tracked_visibility_entities = visibility
 
     @callback
     def _availability_state_changed(self, event: Any) -> None:
-        """Cheap bus-filter: dispatch a re-eval only when a tracked entity changes.
+        """Cheap bus-filter: react only when a tracked entity changes.
 
         Decorated @callback so it runs on the event loop (a plain listener runs
         in the executor, where async_create_task raises) and reads the cached
-        tracked-entity set rather than rescanning all children per event.
+        tracked-entity sets rather than rescanning all children per event.
         """
         data = getattr(event, "data", None) or {}
         entity_id = data.get("entity_id")
         if not entity_id:
             return
-        if entity_id not in getattr(self, "_tracked_availability_entities", set()):
+
+        is_availability = entity_id in getattr(self, "_tracked_availability_entities", set())
+        is_visibility = entity_id in getattr(self, "_tracked_visibility_entities", set())
+        if not (is_availability or is_visibility):
             return
-        self.hass.async_create_task(self._async_reevaluate_availability())
+
+        # The data snapshot is reused while storage.data_version is unchanged,
+        # so without this the chores/availability sensors would keep serving
+        # attributes computed against the old entity state.
+        self.external_state_version += 1
+
+        if is_availability:
+            self.hass.async_create_task(self._async_reevaluate_availability())
 
     async def _async_reevaluate_availability(self) -> None:
         """Re-run assignment for require_availability chores when availability flips.
@@ -181,6 +207,61 @@ class AssignmentsMixin:
                     return True
 
         return False
+
+    # Reasons a weather-gated chore is currently hidden. Returned by
+    # _weather_block_reason so the panel and sensor can explain the gap
+    # rather than silently dropping the chore off the list.
+    WEATHER_REASON_CONDITION = "condition"
+    WEATHER_REASON_TEMP_LOW = "temp_low"
+    WEATHER_REASON_TEMP_HIGH = "temp_high"
+    WEATHER_REASON_WIND = "wind"
+
+    def weather_block_reason(self, chore) -> str | None:
+        """Return why the weather blocks this chore right now, else ``None``.
+
+        Fail-open at every step: no entity configured, an entity that doesn't
+        exist, an unavailable/unknown state, or a missing attribute all mean
+        "not blocked". A weather integration going offline must never silently
+        hide the family's chores.
+        """
+        entity_id = (getattr(chore, "weather_entity", "") or "").strip()
+        if not entity_id:
+            return None
+
+        state_obj = self.hass.states.get(entity_id)
+        if state_obj is None or state_obj.state in ("unavailable", "unknown", None, ""):
+            _LOGGER.debug(
+                "Weather entity '%s' unavailable, not blocking chore '%s'",
+                entity_id, getattr(chore, "name", ""),
+            )
+            return None
+
+        blocked = [str(c).lower() for c in (getattr(chore, "weather_block_conditions", []) or [])]
+        if blocked and state_obj.state.lower() in blocked:
+            return self.WEATHER_REASON_CONDITION
+
+        attrs = getattr(state_obj, "attributes", {}) or {}
+
+        temp = optional_float(attrs.get("temperature"))
+        if temp is not None:
+            temp_min = optional_float(getattr(chore, "weather_temp_min", None))
+            if temp_min is not None and temp < temp_min:
+                return self.WEATHER_REASON_TEMP_LOW
+            temp_max = optional_float(getattr(chore, "weather_temp_max", None))
+            if temp_max is not None and temp > temp_max:
+                return self.WEATHER_REASON_TEMP_HIGH
+
+        wind = optional_float(attrs.get("wind_speed"))
+        if wind is not None:
+            wind_max = optional_float(getattr(chore, "weather_wind_max", None))
+            if wind_max is not None and wind > wind_max:
+                return self.WEATHER_REASON_WIND
+
+        return None
+
+    def _is_weather_ok_for_chore(self, chore) -> bool:
+        """True when current weather permits this chore (or no gate is set)."""
+        return self.weather_block_reason(chore) is None
 
     def _is_child_available(self, child_id: str) -> bool:
         """Return True when the child should receive chores today.

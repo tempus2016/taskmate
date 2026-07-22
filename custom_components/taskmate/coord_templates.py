@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from .models import Chore, generate_id
+from .models import Chore, generate_id, optional_float
 from .templates import BUILT_IN_IDS, BUILT_IN_TEMPLATES, TEMPLATE_CHORE_FIELDS
 
 if TYPE_CHECKING:
@@ -54,6 +54,11 @@ class TemplatesMixin:
                 visibility_entity=chore_def.get("visibility_entity", ""),
                 visibility_state=chore_def.get("visibility_state", "on"),
                 visibility_operator=chore_def.get("visibility_operator", "equals"),
+                weather_entity=chore_def.get("weather_entity", ""),
+                weather_block_conditions=list(chore_def.get("weather_block_conditions", [])),
+                weather_temp_min=optional_float(chore_def.get("weather_temp_min")),
+                weather_temp_max=optional_float(chore_def.get("weather_temp_max")),
+                weather_wind_max=optional_float(chore_def.get("weather_wind_max")),
                 task_type=chore_def.get("task_type", "standard"),
                 timed_rate_points=chore_def.get("timed_rate_points", 10),
                 timed_rate_minutes=chore_def.get("timed_rate_minutes", 5),

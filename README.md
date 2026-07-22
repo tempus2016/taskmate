@@ -37,6 +37,7 @@
 - [Chore Scheduling](#chore-scheduling)
 - [Chore Dependencies](#chore-dependencies)
 - [Dynamic Chore Visibility](#dynamic-chore-visibility)
+- [Weather-Aware Chores](#weather-aware-chores)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -289,6 +290,35 @@ When you create or edit a chore, set the **Visibility Entity** (e.g., `binary_se
 - Tasks only when home alone (entity not set to `away`)
 - Tasks only during school days (custom `input_boolean.school_day`)
 - Tasks only when a family member is home (entity is `home`)
+ 
+---
+ 
+## Weather-Aware Chores
+ 
+Outdoor chores can hide themselves when the weather is unsuitable. Open a chore and expand **Advanced — weather conditions**.
+ 
+| Setting | Effect |
+|---|---|
+| **Weather entity** | The `weather.*` entity to read. Leave empty to ignore the weather entirely. |
+| **Hide when the weather is** | Any number of conditions — rainy, pouring, snowy, sleet, hail, lightning, thunderstorm, fog, windy, very windy, cloudy, severe. |
+| **Minimum / maximum temperature** | Hide below / above this. Leave empty for no limit. |
+| **Maximum wind speed** | Hide above this. Leave empty for no limit. |
+ 
+Temperature and wind limits are read from the weather entity's `temperature` and `wind_speed` attributes, in whatever units your entity reports.
+ 
+### Key Points
+ 
+- **A rained-off chore is not a missed chore.** The check sits in the same availability path as scheduling, so a hidden chore does not raise a mandatory-miss review item and does not break a streak.
+- **Fail-open.** A missing entity, an `unavailable`/`unknown` state, or an absent attribute all leave the chore visible. A weather integration going offline never hides the family's chores.
+- **0 is a real limit.** Leave a limit blank to disable it — `0` means 0°, not "off".
+- Conditions are checked first, then temperature, then wind.
+ 
+### Common Use Cases
+ 
+- Mow the lawn — hide on `rainy` and `pouring`
+- Wash the car — hide below 2°
+- Put the bins out — hide above 40 km/h wind
+- Water the plants — hide on `rainy` (nature did it for you)
  
 ---
  
