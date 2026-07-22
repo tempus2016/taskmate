@@ -109,10 +109,19 @@ class TaskMateParentDashboardCard extends LitElement {
         display: flex;
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
         background: var(--secondary-background-color, #f5f5f5);
+        /* Flex items refuse to shrink below their content, so on a narrow card
+           the last tab used to be clipped off the edge with no way to reach it.
+           Wrapping keeps every tab visible without asking the parent to
+           discover a horizontal swipe on a card that doesn't look scrollable. */
+        flex-wrap: wrap;
       }
 
       .tab-btn {
-        flex: 1; padding: 10px 8px;
+        /* Grow to fill a wide card, but keep the label intact when narrow. */
+        flex: 1 0 auto;
+        min-width: 0;
+        white-space: nowrap;
+        padding: 10px 8px;
         background: none; border: none;
         font-size: 0.78rem; font-weight: 600;
         color: var(--secondary-text-color);

@@ -2351,6 +2351,10 @@ class TaskMatePanel extends HTMLElement {
       ]},
       { head: this._t("panel.nav_system"), items: [
         { id: "notifications", label: this._t("panel.tab_notifications"), icon: "mdi:bell-outline" },
+        // The audit view has always been implemented (and documented in the
+        // wiki), but it was never listed here — and the nav is built solely
+        // from this list, so there was no way to open it.
+        { id: "audit", label: this._t("panel.tab_audit"), icon: "mdi:history" },
         { id: "settings", label: this._t("panel.tab_settings"), icon: "mdi:cog-outline" },
       ]},
     ].map(g => ({
@@ -2882,7 +2886,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-child-name">
             <h3>${this._esc(child.name || this._t("panel.child_unnamed"))}</h3>
             ${this._idBadge(child.id)}
-            <div class="tm-meta">${child.availability_entity ? `<code>${this._esc(child.availability_entity)}</code>${child.availability_inverted ? ` <em>${this._t("panel.child_inverted")}</em>` : ""}` : `${this._t("panel.child_no_availability")}`}${child.unavailability_entity ? ` · ${this._t("panel.child_busy_label")} <code>${this._esc(child.unavailability_entity)}</code>` : ""}</div>
+            <div class="tm-meta">${child.availability_entity ? `<code title="${this._esc(child.availability_entity)}">${this._esc(child.availability_entity)}</code>${child.availability_inverted ? ` <em>${this._t("panel.child_inverted")}</em>` : ""}` : `${this._t("panel.child_no_availability")}`}${child.unavailability_entity ? ` · ${this._t("panel.child_busy_label")} <code title="${this._esc(child.unavailability_entity)}">${this._esc(child.unavailability_entity)}</code>` : ""}</div>
           </div>
         </div>
         <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr;">
@@ -6131,6 +6135,10 @@ class TaskMatePanel extends HTMLElement {
         background: var(--tm-warning-soft);
         color: var(--tm-warning);
         border: 1px solid var(--tm-warning-border);
+        /* 24px high is too small to hit reliably on a phone; this is the
+           panel's only route to the pending-approvals queue. */
+        min-height: 32px;
+        box-sizing: border-box;
         padding: 4px 12px 4px 10px;
         border-radius: 999px;
         font-size: 12px; font-weight: 500;
@@ -6318,7 +6326,10 @@ class TaskMatePanel extends HTMLElement {
       .tm-child-name { min-width: 0; flex: 1; }
       .tm-child-name h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
       .tm-meta { color: var(--tm-text-faint); font-size: 12px; margin-top: 2px; word-break: break-word; }
-      .tm-meta code { font-family: ui-monospace, "SF Mono", Menlo, monospace; background: var(--tm-surface-2); padding: 1px 6px; border-radius: 4px; font-size: 11px; color: var(--tm-text-muted); }
+      /* Entity ids are long and unbreakable. Left to wrap they split mid-token
+         and tear the pill background across two lines, so truncate instead —
+         the full value is on the title attribute. */
+      .tm-meta code { font-family: ui-monospace, "SF Mono", Menlo, monospace; background: var(--tm-surface-2); padding: 1px 6px; border-radius: 4px; font-size: 11px; color: var(--tm-text-muted); display: inline-block; max-width: 100%; vertical-align: bottom; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .tm-text-muted { color: var(--tm-text-muted); }
 
       .tm-stats-row {
