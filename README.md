@@ -43,7 +43,7 @@
 - [Routine Mode](#routine-mode)
 - [Chore Roulette](#chore-roulette)
 - [Timed Unlock Rewards](#timed-unlock-rewards)
-- [Insights — Fairness, Friction & Week Ahead](#insights--fairness-friction--week-ahead)
+- [Insights — Fairness, Friction, Week Ahead & Health](#insights--fairness-friction-week-ahead--health)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -470,7 +470,7 @@ Spend points to unlock something for a while — the TV, the console socket, a w
  
 ---
  
-## Insights — Fairness, Friction & Week Ahead
+## Insights — Fairness, Friction, Week Ahead & Health
  
 **TaskMate panel → Insights.** Answers the question the raw numbers don't: *am I dumping everything on the eldest?*
  
@@ -505,6 +505,20 @@ The third view projects the next 7 / 14 / 28 days from each chore's schedule: ho
 Rotation is projected using the same daily-assignment computation the integration itself uses, so alternating / random / balanced picks match what will really happen rather than an independent guess that could drift.
  
 **It's a ceiling, not a forecast.** A chore open to everyone is counted for *each* eligible child, because the schedule cannot know who'll get there first. Weather, dependencies and availability aren't projected either — they depend on the day. Points that aren't assigned to anyone are called out separately.
+ 
+### Health — is anything broken?
+ 
+The fourth view checks the setup itself and reports storage size and entity counts.
+ 
+| Check | Severity |
+|---|---|
+| A chore depends on a chore that no longer exists (it can never unlock) | **Error** |
+| A chore or reward is assigned to a deleted child | Warning |
+| A chore references a visibility/weather entity that doesn't exist | Warning |
+| A reward unlocks an entity no longer on the allowlist (nothing will happen) | Warning |
+| A child has no chores; completion records for deleted chores; a very large history | Note |
+ 
+Every issue carries a plain sentence and a **Show me** button that jumps to where it lives — a diagnostic that only says "3 problems" isn't one you can act on. Notes alone still count as healthy.
  
 ---
  
