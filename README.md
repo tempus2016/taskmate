@@ -1819,6 +1819,41 @@ Beyond the sensors above, TaskMate also exposes:
  
 ## Changelog
  
+### v5.0.0
+ 
+The largest release so far: fourteen new features across chores, rewards, cards, notifications and the admin panel. Nothing is removed and no configuration changes — existing setups upgrade untouched. The major version marks the size of the addition, not a breaking change.
+
+**New — chores**
+- **Weather-aware chores** — outdoor chores hide themselves when the weather is unsuitable. Open a chore and expand **Advanced — weather conditions** to pick the conditions it needs. ([#692](https://github.com/tempus2016/taskmate/pull/692))
+- **Reactive chores with deadlines and a speed bonus** — a chore raised by an automation that must be done *now*: "the washing machine finished — empty it within 30 minutes." Beat the deadline and the child earns a bonus. ([#693](https://github.com/tempus2016/taskmate/pull/693))
+- **Scheduled config changes** — queue an edit to take effect on a future date: *"from 1 September this chore is worth 20 points"*, *"from November it's disabled for the winter"*. ([#694](https://github.com/tempus2016/taskmate/pull/694))
+- **Chore roulette** — an opt-in nudge for the child who has stalled: spin once, get a random outstanding chore, and earn a multiplier on it if they do it. Off by default. ([#696](https://github.com/tempus2016/taskmate/pull/696))
+
+**New — rewards**
+- **Timed unlock rewards** — spend points to unlock something for a while: the TV, the console socket, a wifi group. Approving the claim turns the entity on and a timer turns it back off. Gated by a parent allowlist, so a child can only ever unlock what you have permitted. ([#697](https://github.com/tempus2016/taskmate/pull/697))
+
+**New — cards**
+- **Routine mode** — a guided, one-task-at-a-time flow for morning and bedtime. The child card is a checklist, which is good for scanning but poor for walking a five-year-old through getting ready. Routine mode shows a single task with a big **Done** button, a progress bar, and a celebration at the end. ([#695](https://github.com/tempus2016/taskmate/pull/695))
+- **Pre-reader mode** — a picture-only child card for children who can't read yet. No chore names, no numbers: a big icon, a row of stars for the points, and a huge tick when it's done. ([#702](https://github.com/tempus2016/taskmate/pull/702))
+- **Accessible design style** — a fifth per-card design alongside Classic, Playroom, Console and Clean Pro. High contrast, the Okabe-Ito colour-blind-safe palette, and Atkinson Hyperlegible type. Pick it per card or as the global default. ([#704](https://github.com/tempus2016/taskmate/pull/704))
+
+**New — admin panel**
+- **Insights** — four reports answering the questions the raw numbers don't. **Fairness**: am I dumping everything on the eldest? **Friction**: which chores are quietly never getting done? **Week ahead**: what points are actually available in the next seven days? **Health**: is anything misconfigured? ([#698](https://github.com/tempus2016/taskmate/pull/698), [#699](https://github.com/tempus2016/taskmate/pull/699), [#700](https://github.com/tempus2016/taskmate/pull/700), [#701](https://github.com/tempus2016/taskmate/pull/701))
+
+**New — notifications**
+- **Evidence photo attached to the approval push** — the photo a child submits as proof now arrives in the notification itself, so you can approve from the lock screen without opening the app. ([#705](https://github.com/tempus2016/taskmate/pull/705))
+- **Multi-parent approval routing** — by default every approval buzzes every parent. You can now route approvals to whoever is currently home, or share them round-robin. ([#706](https://github.com/tempus2016/taskmate/pull/706))
+
+**New — everything else**
+- **Read aloud** — speak a child's outstanding chores to a media player: *"Ella, you have three things left: make your bed, brush your teeth and pack your bag."* ([#703](https://github.com/tempus2016/taskmate/pull/703))
+- **Shareable template packs** — export your custom chore templates as a JSON pack, and import one somebody else made. ([#707](https://github.com/tempus2016/taskmate/pull/707))
+- **Printable weekly chart** — a fridge-ready A4 chore chart with a box to tick against every task. ([#708](https://github.com/tempus2016/taskmate/pull/708))
+- **Guest child profiles** — a visiting cousin gets a temporary profile that expires on its own and stays out of the family leaderboard. ([#710](https://github.com/tempus2016/taskmate/pull/710))
+ 
+**Fixes**
+- **Routine mode now honours the card design setting** — the new routine card shipped without design-system wiring, so it accepted `card_design` and silently ignored it, rendering identically under every style. It now follows the per-card and global design setting like every other card, including the new Accessible style, and has a design picker in its editor. ([#722](https://github.com/tempus2016/taskmate/pull/722), fixes [#721](https://github.com/tempus2016/taskmate/issues/721))
+- **Two high-severity dev-dependency advisories resolved** — build tooling only; nothing shipped to Home Assistant was affected. ([#711](https://github.com/tempus2016/taskmate/pull/711))
+ 
 ### v4.5.1
  
 **Improved**
