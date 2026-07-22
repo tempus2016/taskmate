@@ -1628,5 +1628,16 @@
   "panel.settings_roulette_enabled": "Ativar roleta de tarefas",
   "panel.settings_roulette_enabled_hint": "Permite que uma criança gire por uma tarefa pendente aleatória que vale pontos extras.",
   "panel.settings_roulette_multiplier": "Multiplicador de pontos",
-  "panel.settings_roulette_spins": "Giros por dia"
+  "panel.settings_roulette_spins": "Giros por dia",
+  "panel.settings_unlock_allowlist": "Lista de permissões de desbloqueio",
+  "panel.settings_unlock_allowlist_hint": "Só estas entidades podem ser desbloqueadas por uma recompensa. Nada é permitido até você adicionar algo aqui.",
+  "panel.settings_unlock_allowlist_empty": "Nada permitido ainda.",
+  "panel.settings_unlock_allowlist_add": "Procurar uma entidade para permitir",
+  "panel.reward_unlock_section": "Avançado — desbloqueio temporário",
+  "panel.reward_unlock_intro": "Liga algo quando esta recompensa for aprovada e desliga de novo após um tempo definido.",
+  "panel.reward_unlock_none": "Nada",
+  "panel.reward_unlock_entity": "Desbloquear",
+  "panel.reward_unlock_minutes": "Por quanto tempo (minutos)",
+  "panel.reward_unlock_minutes_hint": "0 = deixar ligado; você terá de desligar.",
+  "panel.reward_unlock_no_allowlist": "Adicione primeiro uma entidade à lista de permissões nas Configurações."
 }

@@ -1628,5 +1628,16 @@
   "panel.settings_roulette_enabled": "Aufgaben-Roulette aktivieren",
   "panel.settings_roulette_enabled_hint": "Ein Kind kann für eine zufällige offene Aufgabe mit Extrapunkten drehen.",
   "panel.settings_roulette_multiplier": "Punkte-Multiplikator",
-  "panel.settings_roulette_spins": "Drehungen pro Tag"
+  "panel.settings_roulette_spins": "Drehungen pro Tag",
+  "panel.settings_unlock_allowlist": "Freischalt-Positivliste",
+  "panel.settings_unlock_allowlist_hint": "Nur diese Entitäten dürfen von einer Belohnung freigeschaltet werden. Bis du hier etwas hinzufügst, ist nichts erlaubt.",
+  "panel.settings_unlock_allowlist_empty": "Noch nichts erlaubt.",
+  "panel.settings_unlock_allowlist_add": "Entität zum Erlauben suchen",
+  "panel.reward_unlock_section": "Erweitert — zeitlich begrenzte Freischaltung",
+  "panel.reward_unlock_intro": "Schaltet etwas ein, wenn diese Belohnung genehmigt wird, und nach einer festgelegten Zeit wieder aus.",
+  "panel.reward_unlock_none": "Nichts",
+  "panel.reward_unlock_entity": "Freischalten",
+  "panel.reward_unlock_minutes": "Wie lange (Minuten)",
+  "panel.reward_unlock_minutes_hint": "0 = eingeschaltet lassen; du musst selbst ausschalten.",
+  "panel.reward_unlock_no_allowlist": "Füge zuerst in den Einstellungen eine Entität zur Freischalt-Positivliste hinzu."
 }

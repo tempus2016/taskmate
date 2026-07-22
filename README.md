@@ -42,6 +42,7 @@
 - [Scheduled Config Changes](#scheduled-config-changes)
 - [Routine Mode](#routine-mode)
 - [Chore Roulette](#chore-roulette)
+- [Timed Unlock Rewards](#timed-unlock-rewards)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -442,6 +443,29 @@ show_roulette: true
 - A multiplier below 1 is clamped to 1 — spinning should never punish the child.
  
 Children spin via the `taskmate.spin_roulette` service (`child_id`), which the card calls for them.
+ 
+---
+ 
+## Timed Unlock Rewards
+ 
+Spend points to unlock something for a while — the TV, the console socket, a wifi group. Approving the claim turns the entity on; a timer turns it back off.
+ 
+**Two deliberate limits** keep this from becoming "a reward can do anything to your house":
+ 
+1. A reward can only **turn one entity on and back off**. There is no free-form service call, no payload, no template.
+2. The entity must be on your **allowlist**.
+ 
+### Setting It Up
+ 
+1. **Settings → Unlock allowlist** — add the entities a reward may touch. An entry can be a full entity id (`switch.xbox`) or a bare domain (`switch`) to permit everything in it. **An empty allowlist permits nothing** — this gates household devices, so the safe default when unconfigured is "no".
+2. Open a reward, expand **Advanced — timed unlock**, pick an allowlisted entity and a duration (up to 24 hours; `0` leaves it on for you to turn off yourself).
+ 
+### Key Points
+ 
+- The allowlist is checked **when the reward is saved and again when it fires** — you can revoke an entity later and any reward pointing at it quietly stops unlocking rather than breaking.
+- Active unlocks are **persisted**. A Home Assistant restart mid-unlock re-arms the timer; anything already past due is turned off at startup. A restart can never strand the television on.
+- Turning something **off** is never gated by the allowlist — a revert is always safe.
+- Fires `taskmate_unlock_started` and `taskmate_unlock_ended` (`entity_id`, `reward_id`, `reward_name`, `child_id`, `child_name`, `started_at`, `revert_at`).
  
 ---
  

@@ -468,7 +468,16 @@ class TaskMatePanel extends HTMLElement {
     if (act === "close-mobile-nav")  { this._mobileNavOpen = false; this._render(); return; }
     if (act === "close-dialog") { this._closeDialog(); return; }
     if (act === "clear-field") { this._setEntityField(t.dataset.field, ""); this._render(); return; }
-    if (act === "pick-entity") { this._setEntityField(t.dataset.field, t.dataset.value); this._closeEntityDropdown(); this._render(); return; }
+    if (act === "pick-entity") {
+      // The allowlist picker (#678) isn't a dialog field — picking there adds
+      // the entity to the saved list rather than writing into _dialog.data.
+      if (t.dataset.field === "_allowlist_pick") {
+        this._closeEntityDropdown();
+        this._addToAllowlist(t.dataset.value);
+        return;
+      }
+      this._setEntityField(t.dataset.field, t.dataset.value); this._closeEntityDropdown(); this._render(); return;
+    }
     if (act === "scrim") {
       if (e.target === this.querySelector(".tm-scrim")) this._closeDialog();
       return;
@@ -529,6 +538,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "toggle-depends")    { this._toggleArrayField("depends_on", t.dataset.id); return; }
     if (act === "toggle-calendar")   { this._toggleArrayField("publish_calendar_entities", t.dataset.id); return; }
     if (act === "toggle-weather-condition") { this._toggleArrayField("weather_block_conditions", t.dataset.id); return; }
+    if (act === "remove-allowlist")         { this._removeFromAllowlist(t.dataset.id); return; }
     if (act === "add-scheduled")            { this._addScheduledChange(); return; }
     if (act === "remove-scheduled")         { this._removeScheduledChange(t.dataset.id); return; }
     if (act === "toggle-scheduled-child" || act === "toggle-scheduled-day") {
@@ -1431,7 +1441,8 @@ class TaskMatePanel extends HTMLElement {
     const blank = { name: "", description: "", cost: 50, icon: "mdi:gift",
       assigned_to: [], is_jackpot: false, pool_enabled: false,
       quantity_str: "", expires_at: "",
-      restock_enabled: false, restock_amount: 0, restock_period: "weekly" };
+      restock_enabled: false, restock_amount: 0, restock_period: "weekly",
+      unlock_entity: "", unlock_minutes: 30 };
     if (id) {
       const r = (this._state.rewards || []).find(x => x.id === id);
       if (!r) return;
@@ -1463,6 +1474,8 @@ class TaskMatePanel extends HTMLElement {
       quantity: qty,
       expires_at: (d.expires_at || "").trim() || null,
       restock_enabled: !!d.restock_enabled,
+      unlock_entity: d.unlock_entity || "",
+      unlock_minutes: Math.max(0, Number(d.unlock_minutes) || 0),
       restock_amount: Math.max(0, Number(d.restock_amount) || 0),
       restock_period: d.restock_period || "weekly",
     };
@@ -3871,6 +3884,22 @@ class TaskMatePanel extends HTMLElement {
                 <label>${this._t("panel.settings_surprise_max")}<input type="number" class="tm-input" step="1" min="0" data-setting="surprise_bonus_max" value="${s.surprise_bonus_max ?? 20}"></label>
               </div>
             </div>
+            <div class="tm-setting-row tm-setting-stack">
+              <div class="tm-setting-label">${this._t("panel.settings_unlock_allowlist")}<small>${this._t("panel.settings_unlock_allowlist_hint")}</small></div>
+              <div class="tm-allowlist">
+                ${(s.unlock_allowlist || []).map(e => `
+                  <span class="tm-allow-chip">
+                    ${this._esc(e)}
+                    <button type="button" data-act="remove-allowlist" data-id="${this._esc(e)}" title="${this._t("panel.tooltip_remove")}">✕</button>
+                  </span>
+                `).join("") || `<span class="tm-field-hint">${this._t("panel.settings_unlock_allowlist_empty")}</span>`}
+              </div>
+              <div class="tm-field-row" style="margin-top:8px">
+                ${this._entityPickerField("", "_allowlist_pick", "",
+                  ["switch", "light", "media_player", "input_boolean", "automation", "script", "fan", "climate"],
+                  this._t("panel.settings_unlock_allowlist_add"))}
+              </div>
+            </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_roulette_enabled")}<small>${this._t("panel.settings_roulette_enabled_hint")}</small></div>
               <ha-switch data-setting="roulette_enabled" ${s.roulette_enabled ? "checked" : ""}></ha-switch>
@@ -4812,6 +4841,24 @@ class TaskMatePanel extends HTMLElement {
     this._render();
   }
 
+  async _saveAllowlist(list) {
+    const { ok, err } = await this._callWS({ type: "taskmate/update_settings", unlock_allowlist: list });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    this._render();
+  }
+
+  _removeFromAllowlist(entityId) {
+    const current = (this._state.settings || {}).unlock_allowlist || [];
+    this._saveAllowlist(current.filter(e => e !== entityId));
+  }
+
+  _addToAllowlist(entityId) {
+    const current = (this._state.settings || {}).unlock_allowlist || [];
+    if (!entityId || current.includes(entityId)) return;
+    this._saveAllowlist([...current, entityId]);
+  }
+
   async _addScheduledChange() {
     const d = this._dialog.data;
     const draft = this._schedDraft();
@@ -4898,10 +4945,37 @@ class TaskMatePanel extends HTMLElement {
             { v: "monthly", l: this._t("panel.reward_restock_monthly") },
           ])}
         </div>`,
+        this._renderRewardUnlock(d),
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-reward">${this._t("panel.btn_save")}</button>`
     );
+  }
+
+  /**
+   * Timed unlock (#678). Only offers entities the parent has allowlisted in
+   * Settings — a reward must not be able to reach arbitrary devices.
+   */
+  _renderRewardUnlock(d) {
+    const allow = (this._state.settings || {}).unlock_allowlist || [];
+    const open = this._dialog._openAdvanced?.has("unlock");
+    if (!allow.length) {
+      return `<details class="tm-advanced" data-section="unlock"${open ? " open" : ""}>
+        <summary>${this._t("panel.reward_unlock_section")}</summary>
+        <div><span class="tm-field-hint">${this._t("panel.reward_unlock_no_allowlist")}</span></div>
+      </details>`;
+    }
+    const options = [{ v: "", lk: "panel.reward_unlock_none" }]
+      .concat(allow.map(e => ({ v: e, l: e })));
+    return `<details class="tm-advanced" data-section="unlock"${open ? " open" : ""}>
+      <summary>${this._t("panel.reward_unlock_section")}</summary>
+      <div>
+        <span class="tm-field-hint" style="margin-bottom:8px;display:block">${this._t("panel.reward_unlock_intro")}</span>
+        ${this._select(this._t("panel.reward_unlock_entity"), "unlock_entity", d.unlock_entity || "", options)}
+        ${d.unlock_entity ? this._field(this._t("panel.reward_unlock_minutes"), "unlock_minutes",
+          d.unlock_minutes ?? 30, "number", this._t("panel.reward_unlock_minutes_hint")) : ""}
+      </div>
+    </details>`;
   }
 
   _renderAvatarCatalogDialog() {
@@ -6506,6 +6580,20 @@ class TaskMatePanel extends HTMLElement {
       }
 
       /* Chip multi-select */
+      /* Timed unlock allowlist (#678) */
+      .tm-setting-stack { flex-direction: column; align-items: stretch; }
+      .tm-allowlist { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+      .tm-allow-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+        border-radius: 999px; padding: 4px 6px 4px 12px;
+        font-size: 12.5px; font-family: var(--tm-mono, monospace);
+      }
+      .tm-allow-chip button {
+        background: none; border: 0; cursor: pointer; padding: 0 2px;
+        color: var(--tm-text-muted); font-size: 13px; line-height: 1;
+      }
+
       /* Scheduled config changes (#675) */
       .tm-sched-count {
         display: inline-block; min-width: 18px; padding: 0 5px;

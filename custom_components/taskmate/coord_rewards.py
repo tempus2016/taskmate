@@ -409,6 +409,9 @@ class RewardsMixin:
                         "pending_reward_claim", claim_id
                     )
 
+                # Timed unlock (#678): allowlisted entity on, auto-off later.
+                await self.async_start_unlock(reward, child)
+
                 self.hass.bus.async_fire("taskmate_reward_approved", {
                     "child_id": child.id, "child_name": child.name,
                     "reward_id": reward.id, "reward_name": reward.name,
