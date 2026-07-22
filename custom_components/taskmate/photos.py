@@ -123,9 +123,14 @@ def sign_photo_url(hass, photo_url: str, expiration_hours: int = 24) -> str:
         return photo_url
     from datetime import timedelta
 
-    from homeassistant.components.http.auth import async_sign_path
-
     try:
+        # Import inside the try: this is called on the completion path now
+        # (#686 signs the evidence photo for the approval push), and an
+        # ImportError escaping here would fail the completion itself — which
+        # is exactly what "never break delivery over a signing hiccup" is
+        # meant to prevent.
+        from homeassistant.components.http.auth import async_sign_path
+
         return async_sign_path(hass, photo_url, timedelta(hours=expiration_hours))
     except Exception:  # noqa: BLE001 - never break state delivery over a signing hiccup
         _LOGGER.debug("Could not sign photo URL %s", photo_url, exc_info=True)

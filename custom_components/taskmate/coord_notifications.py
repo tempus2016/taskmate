@@ -291,6 +291,18 @@ class NotificationCoordinator:
             return
 
         data: dict[str, Any] = {"title": "TaskMate", "message": message}
+
+        # Evidence photo (#686): attach it so a parent can approve from the
+        # lock screen while actually looking at the tidied room. The URL is
+        # pre-signed by the caller, because the companion app fetches
+        # attachments without the user's bearer token.
+        photo_url = context.get("photo_url") or ""
+        attach_photo = bool(photo_url) and service.startswith("mobile_app")
+
+        # Build the mobile-app payload once: the action buttons and the photo
+        # are independent, so a completion with no entry id still gets its
+        # picture, and a photo-less approval still gets its buttons.
+        push: dict[str, Any] = {}
         if meta.actionable:
             entry_id = context.get("entry_id")
             # Tap actions only render on the HA mobile app. Other backends
@@ -300,15 +312,23 @@ class NotificationCoordinator:
                 if entry_id:
                     # `tag` lets us dismiss this push later (clear_approval) once
                     # the item is reviewed — see _approval_tag.
-                    data["data"] = {
-                        "tag": _approval_tag(entry_id),
-                        "actions": [
-                            {"action": f"TASKMATE_APPROVE_{entry_id}", "title": "Approve"},
-                            {"action": f"TASKMATE_REJECT_{entry_id}",  "title": "Reject"},
-                        ]
-                    }
+                    push["tag"] = _approval_tag(entry_id)
+                    push["actions"] = [
+                        {"action": f"TASKMATE_APPROVE_{entry_id}", "title": "Approve"},
+                        {"action": f"TASKMATE_REJECT_{entry_id}",  "title": "Reject"},
+                    ]
             else:
                 data["message"] = f"{message} {_APPROVE_IN_PANEL_HINT}"
+
+        if attach_photo:
+            # "image" renders inline on Android; iOS needs it under
+            # attachment.url. Sending both keeps one payload working on either.
+            push["image"] = photo_url
+            push["attachment"] = {"url": photo_url, "content-type": "jpeg"}
+
+        if push:
+            data["data"] = push
+
         try:
             await self.hass.services.async_call(domain, service, data, blocking=False)
         except Exception as err:  # noqa: BLE001
