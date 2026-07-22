@@ -1680,5 +1680,14 @@
   "panel.insights_suggest_reassign": "Gi den til noen andre",
   "panel.insights_suggest_keep": "La den være",
   "panel.insights_outstanding_misses": "Uavklarte glemte pliktoppgaver",
-  "panel.insights_friction_note": "Avvisninger er ikke listet: TaskMate sletter en fullføring når du avviser den, så det finnes ingen historikk. Forventede tall er omtrentlige — rotasjon, avhengigheter og vær spilles ikke av på nytt."
+  "panel.insights_friction_note": "Avvisninger er ikke listet: TaskMate sletter en fullføring når du avviser den, så det finnes ingen historikk. Forventede tall er omtrentlige — rotasjon, avhengigheter og vær spilles ikke av på nytt.",
+  "panel.insights_view_projection": "Uka som kommer",
+  "panel.insights_projection_title": "Hva står for tur?",
+  "panel.insights_projection_intro": "{start} til {end}, basert på timeplanen til hver oppgave.",
+  "panel.insights_next_days": "Neste {days} dager",
+  "panel.insights_col_day": "Dag",
+  "panel.insights_projected_earn": "opptil {points} {name}",
+  "panel.insights_projected_total": "ville nå {total}",
+  "panel.insights_projection_unassigned": "{points} poeng er ikke tildelt noen.",
+  "panel.insights_projection_note": "Et tak, ikke en prognose: oppgaver åpne for alle telles for hvert aktuelt barn, siden timeplanen ikke kan vite hvem som rekker først. Vær, avhengigheter og tilgjengelighet framskrives ikke — de avhenger av dagen."
 }

@@ -19,6 +19,8 @@ _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_WINDOW_DAYS = 7
 FRICTION_WINDOW_DAYS = 30
+PROJECTION_DAYS = 7
+MAX_PROJECTION_DAYS = 28
 MAX_WINDOW_DAYS = 90
 
 # A child's share of the family workload may sit this many percentage points
@@ -295,3 +297,136 @@ class ReportsMixin:
         if verdict == "struggling":
             return "reprice"
         return "keep"
+
+    # ── Projection (#681) ────────────────────────────────────────────────
+
+    def _chore_falls_on(self, chore, day: date) -> bool:
+        """Would this chore come up on ``day`` under its schedule alone?
+
+        Schedule only. Entity-driven gates (weather, visibility, availability)
+        are current-state facts that can't be known for a future date, so the
+        projection is explicitly "what the calendar says", not a promise.
+        """
+        mode = getattr(chore, "schedule_mode", "specific_days")
+        if mode == "one_shot":
+            created = getattr(chore, "created_date", "")
+            try:
+                return bool(created) and date.fromisoformat(created) == day
+            except (TypeError, ValueError):
+                return False
+
+        expires = getattr(chore, "expires_on", "")
+        if expires:
+            try:
+                if day > date.fromisoformat(expires):
+                    return False
+            except (TypeError, ValueError):
+                pass
+
+        if mode == "recurring":
+            period_days = {
+                "every_2_days": 2, "weekly": 7, "every_2_weeks": 14,
+                "monthly": 30, "every_3_months": 91, "every_6_months": 182,
+            }.get(getattr(chore, "recurrence", "weekly"), 7)
+            anchor_raw = getattr(chore, "recurrence_start", "") or ""
+            try:
+                anchor = date.fromisoformat(anchor_raw) if anchor_raw else None
+            except (TypeError, ValueError):
+                anchor = None
+            if anchor is None:
+                # No anchor: fall back to the weekday, or treat weekly as "once
+                # a week from today" so the projection isn't silently empty.
+                wanted = (getattr(chore, "recurrence_day", "") or "").lower()
+                if wanted:
+                    return day.strftime("%A").lower() == wanted
+                return ((day - dt_util.as_local(dt_util.now()).date()).days % period_days) == 0
+            return ((day - anchor).days % period_days) == 0
+
+        due_days = [d.lower() for d in (getattr(chore, "due_days", []) or [])]
+        if not due_days:
+            return True
+        return day.strftime("%A").lower() in due_days
+
+    def projection_report(self, days: int | None = None) -> dict[str, Any]:
+        """What the week ahead looks like: who gets what, and worth how much.
+
+        Rotation is projected with the coordinator's own daily-assignment
+        computation per day, so alternating/random/balanced picks match what
+        will really happen rather than an independent guess that could drift.
+        """
+        try:
+            span = int(days) if days is not None else PROJECTION_DAYS
+        except (TypeError, ValueError):
+            span = PROJECTION_DAYS
+        span = max(1, min(span, MAX_PROJECTION_DAYS))
+
+        today = dt_util.as_local(dt_util.now()).date()
+        children = self.storage.get_children()
+        chores = [c for c in self.storage.get_chores() if getattr(c, "enabled", True)]
+
+        totals = {c.id: {"id": c.id, "name": c.name, "points": 0, "chores": 0} for c in children}
+        unassigned_points = 0
+        day_rows = []
+
+        for offset in range(span):
+            day = today + timedelta(days=offset)
+            daily_assignments = self._compute_daily_assignments(day)
+            per_day = {c.id: {"points": 0, "chores": 0} for c in children}
+            day_unassigned = 0
+
+            for chore in chores:
+                if not self._chore_falls_on(chore, day):
+                    continue
+                value = self.effective_chore_points(chore)
+                mode = getattr(chore, "assignment_mode", "everyone")
+
+                if mode in ("everyone", "first_come"):
+                    # Anyone in the pool may do it; credit the pool rather than
+                    # inventing a winner the schedule can't know.
+                    pool = list(getattr(chore, "assigned_to", []) or []) or [c.id for c in children]
+                    for child_id in pool:
+                        if child_id in per_day:
+                            per_day[child_id]["points"] += value
+                            per_day[child_id]["chores"] += 1
+                elif mode == "unassigned":
+                    day_unassigned += value
+                else:
+                    child_id = daily_assignments.get(chore.id, "")
+                    if child_id and child_id in per_day:
+                        per_day[child_id]["points"] += value
+                        per_day[child_id]["chores"] += 1
+                    else:
+                        day_unassigned += value
+
+            for child_id, figures in per_day.items():
+                totals[child_id]["points"] += figures["points"]
+                totals[child_id]["chores"] += figures["chores"]
+            unassigned_points += day_unassigned
+
+            day_rows.append({
+                "date": day.isoformat(),
+                "weekday": day.strftime("%A").lower(),
+                "children": [
+                    {"id": cid, "points": f["points"], "chores": f["chores"]}
+                    for cid, f in per_day.items()
+                ],
+                "unassigned_points": day_unassigned,
+            })
+
+        for child in children:
+            entry = totals[child.id]
+            entry["current_points"] = int(getattr(child, "points", 0) or 0)
+            entry["projected_total"] = entry["current_points"] + entry["points"]
+
+        return {
+            "days": span,
+            "start": today.isoformat(),
+            "end": (today + timedelta(days=span - 1)).isoformat(),
+            "generated_at": dt_util.now().isoformat(),
+            "children": sorted(totals.values(), key=lambda r: (-r["points"], r["name"])),
+            "by_day": day_rows,
+            "unassigned_points": unassigned_points,
+            # Shared-pool chores are credited to every eligible child, so the
+            # per-child figures are a ceiling, not a forecast. Say so.
+            "is_ceiling": True,
+        }

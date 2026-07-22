@@ -1680,5 +1680,14 @@
   "panel.insights_suggest_reassign": "Gje henne til nokon andre",
   "panel.insights_suggest_keep": "La henne vere",
   "panel.insights_outstanding_misses": "Uavklarte gløymde pliktoppgåver",
-  "panel.insights_friction_note": "Avvisingar er ikkje lista: TaskMate slettar ei fullføring når du avviser henne, så det finst ingen historikk. Venta tal er omtrentlege — rotasjon, avhengnader og ver vert ikkje spelte av på nytt."
+  "panel.insights_friction_note": "Avvisingar er ikkje lista: TaskMate slettar ei fullføring når du avviser henne, så det finst ingen historikk. Venta tal er omtrentlege — rotasjon, avhengnader og ver vert ikkje spelte av på nytt.",
+  "panel.insights_view_projection": "Veka som kjem",
+  "panel.insights_projection_title": "Kva står for tur?",
+  "panel.insights_projection_intro": "{start} til {end}, basert på timeplanen til kvar oppgåve.",
+  "panel.insights_next_days": "Neste {days} dagar",
+  "panel.insights_col_day": "Dag",
+  "panel.insights_projected_earn": "opptil {points} {name}",
+  "panel.insights_projected_total": "ville nå {total}",
+  "panel.insights_projection_unassigned": "{points} poeng er ikkje tildelte nokon.",
+  "panel.insights_projection_note": "Eit tak, ikkje ein prognose: oppgåver opne for alle vert talde for kvart aktuelt barn, sidan timeplanen ikkje kan vite kven som rekk først. Ver, avhengnader og tilgjenge vert ikkje framskrivne — dei kjem an på dagen."
 }

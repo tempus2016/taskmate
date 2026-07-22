@@ -544,6 +544,12 @@ class TaskMatePanel extends HTMLElement {
       this._render();
       return;
     }
+    if (act === "projection-window") {
+      this._projectionDays = Number(t.dataset.id);
+      this._projection = null;
+      this._loadProjection(this._projectionDays);
+      return;
+    }
     if (act === "friction-window") {
       this._frictionDays = Number(t.dataset.id);
       this._friction = null;
@@ -2512,14 +2518,16 @@ class TaskMatePanel extends HTMLElement {
     const view = this._insightView || "fairness";
     const switcher = `
       <div class="tm-chip-row" style="margin-bottom:14px">
-        ${["fairness", "friction"].map(v => `
+        ${["fairness", "friction", "projection"].map(v => `
           <button type="button" class="tm-chip-btn ${v === view ? "tm-chip-on" : ""}"
                   data-act="insights-view" data-id="${v}">
             ${this._t("panel.insights_view_" + v)}
           </button>
         `).join("")}
       </div>`;
-    return switcher + (view === "friction" ? this._renderFrictionReport() : this._renderFairnessReport());
+    if (view === "friction") return switcher + this._renderFrictionReport();
+    if (view === "projection") return switcher + this._renderProjectionReport();
+    return switcher + this._renderFairnessReport();
   }
 
   /**
@@ -2587,6 +2595,88 @@ class TaskMatePanel extends HTMLElement {
         `}
       </div>
     `;
+  }
+
+  /**
+   * Projection (#681): what the week ahead looks like. A ceiling rather than
+   * a forecast — shared-pool chores are credited to every eligible child,
+   * because the schedule can't know who will actually get there first.
+   */
+  _renderProjectionReport() {
+    const report = this._projection;
+    if (!report) {
+      this._loadProjection(this._projectionDays || 7);
+      return `<div class="tm-card"><div class="tm-empty">${this._t("panel.insights_loading")}</div></div>`;
+    }
+    const days = this._projectionDays || 7;
+    const kids = report.children;
+    const maxPoints = Math.max(1, ...kids.map(k => k.points));
+    const pointsName = this._state.settings?.points_name || this._t("common.points");
+
+    return `
+      <div class="tm-card">
+        <div class="tm-card-head">
+          <h2>${this._t("panel.insights_projection_title")}</h2>
+          <div class="tm-chip-row">
+            ${[7, 14, 28].map(d => `
+              <button type="button" class="tm-chip-btn ${d === days ? "tm-chip-on" : ""}"
+                      data-act="projection-window" data-id="${d}">
+                ${this._t("panel.insights_next_days", { days: d })}
+              </button>
+            `).join("")}
+          </div>
+        </div>
+        <span class="tm-field-hint">${this._t("panel.insights_projection_intro", { start: report.start, end: report.end })}</span>
+
+        <div class="tm-proj-totals">
+          ${kids.map(k => `
+            <div class="tm-proj-kid">
+              <div class="tm-fair-name">${this._esc(k.name)}</div>
+              <div class="tm-fair-bar"><i style="width:${Math.round(k.points / maxPoints * 100)}%"></i></div>
+              <div class="tm-fair-figs">
+                ${this._t("panel.insights_projected_earn", { points: k.points, name: this._esc(pointsName) })}
+                · ${k.chores} ${this._t(k.chores === 1 ? "panel.insights_chore" : "panel.insights_chores")}
+                · ${this._t("panel.insights_projected_total", { total: k.projected_total })}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+
+        ${report.unassigned_points > 0 ? `
+          <div class="tm-verdict tm-verdict-warn">
+            ${this._t("panel.insights_projection_unassigned", { points: report.unassigned_points })}
+          </div>` : ""}
+
+        <table class="tm-table tm-projection">
+          <thead><tr>
+            <th>${this._t("panel.insights_col_day")}</th>
+            ${kids.map(k => `<th>${this._esc(k.name)}</th>`).join("")}
+          </tr></thead>
+          <tbody>
+            ${report.by_day.map(d => `
+              <tr>
+                <td><strong>${this._t("panel.day_" + d.weekday.slice(0, 3))}</strong> <span class="tm-proj-date">${d.date.slice(5)}</span></td>
+                ${kids.map(k => {
+                  const cell = d.children.find(c => c.id === k.id) || { points: 0, chores: 0 };
+                  return `<td>${cell.chores ? `${cell.points} <span class="tm-proj-count">(${cell.chores})</span>` : "—"}</td>`;
+                }).join("")}
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <span class="tm-field-hint">${this._t("panel.insights_projection_note")}</span>
+      </div>
+    `;
+  }
+
+  async _loadProjection(days) {
+    if (this._projectionLoading) return;
+    this._projectionLoading = true;
+    const { ok, res, err } = await this._callWS({ type: "taskmate/reports/projection", days });
+    this._projectionLoading = false;
+    if (!ok) { this._showToast("err", err); return; }
+    this._projection = res;
+    this._render();
   }
 
   async _loadFriction(days) {
@@ -6805,6 +6895,15 @@ class TaskMatePanel extends HTMLElement {
         .tm-fair-row { grid-template-columns: 1fr auto; }
         .tm-fair-bar { grid-column: 1 / -1; }
       }
+
+      /* Projection report (#681) */
+      .tm-proj-totals { display: flex; flex-direction: column; gap: 12px; margin: 12px 0 16px; }
+      .tm-proj-kid { display: grid; grid-template-columns: 120px 1fr; gap: 6px 12px; align-items: center; }
+      .tm-proj-kid .tm-fair-figs { grid-column: 2; }
+      .tm-projection td, .tm-projection th { font-size: 13px; text-align: center; }
+      .tm-projection td:first-child, .tm-projection th:first-child { text-align: left; }
+      .tm-proj-date { color: var(--tm-text-muted); font-size: 11.5px; }
+      .tm-proj-count { color: var(--tm-text-muted); font-size: 11.5px; }
 
       /* Friction report (#680) */
       .tm-friction td, .tm-friction th { font-size: 13px; }

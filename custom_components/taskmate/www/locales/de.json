@@ -1680,5 +1680,14 @@
   "panel.insights_suggest_reassign": "Jemand anderem geben",
   "panel.insights_suggest_keep": "So lassen",
   "panel.insights_outstanding_misses": "Offene versäumte Pflichtaufgaben",
-  "panel.insights_friction_note": "Ablehnungen sind nicht aufgeführt: TaskMate löscht eine Erledigung, wenn du sie ablehnst, es gibt also keinen Verlauf dazu. Die erwarteten Werte sind Näherungen — Rotation, Abhängigkeiten und Wetter werden nicht nachgestellt."
+  "panel.insights_friction_note": "Ablehnungen sind nicht aufgeführt: TaskMate löscht eine Erledigung, wenn du sie ablehnst, es gibt also keinen Verlauf dazu. Die erwarteten Werte sind Näherungen — Rotation, Abhängigkeiten und Wetter werden nicht nachgestellt.",
+  "panel.insights_view_projection": "Kommende Woche",
+  "panel.insights_projection_title": "Was steht an?",
+  "panel.insights_projection_intro": "{start} bis {end}, basierend auf dem Zeitplan jeder Aufgabe.",
+  "panel.insights_next_days": "Nächste {days} Tage",
+  "panel.insights_col_day": "Tag",
+  "panel.insights_projected_earn": "bis zu {points} {name}",
+  "panel.insights_projected_total": "käme auf {total}",
+  "panel.insights_projection_unassigned": "{points} Punkte sind niemandem zugewiesen.",
+  "panel.insights_projection_note": "Eine Obergrenze, keine Prognose: Aufgaben für alle werden jedem berechtigten Kind angerechnet, da der Zeitplan nicht wissen kann, wer zuerst da ist. Wetter, Abhängigkeiten und Verfügbarkeit werden nicht vorhergesagt — sie hängen vom Tag ab."
 }
