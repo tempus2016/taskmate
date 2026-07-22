@@ -159,6 +159,17 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
             "name": c.name,
             "points": c.points,
             "pending_points": pending.get(c.id, 0),
+            # Chore roulette (#677): today's pick + spins left, so the card can
+            # show the result and disable the button once the allowance is used.
+            **(
+                {
+                    "roulette": {
+                        **(coordinator.roulette_selection(c.id) or {}),
+                        "spins_left": coordinator.roulette_spins_left(c.id),
+                    }
+                }
+                if coordinator.roulette_enabled() else {}
+            ),
             "committed_points": committed_amount,
             "allocated_points": allocated.get(c.id, 0),
             # Allocations were deducted from child.points already, so spendable

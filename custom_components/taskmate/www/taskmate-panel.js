@@ -3872,6 +3872,17 @@ class TaskMatePanel extends HTMLElement {
               </div>
             </div>
             <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_roulette_enabled")}<small>${this._t("panel.settings_roulette_enabled_hint")}</small></div>
+              <ha-switch data-setting="roulette_enabled" ${s.roulette_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_roulette_section")}</div>
+              <div class="tm-difficulty-mults">
+                <label>${this._t("panel.settings_roulette_multiplier")}<input type="number" class="tm-input" step="0.5" min="1" max="5" data-setting="roulette_multiplier" value="${s.roulette_multiplier ?? 2}"></label>
+                <label>${this._t("panel.settings_roulette_spins")}<input type="number" class="tm-input" step="1" min="1" max="10" data-setting="roulette_daily_spins" value="${s.roulette_daily_spins ?? 1}"></label>
+              </div>
+            </div>
+            <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_decay_enabled_label")}<small>${this._t("panel.settings_decay_enabled_hint")}</small></div>
               <ha-switch data-setting="points_decay_enabled" ${s.points_decay_enabled ? "checked" : ""}></ha-switch>
             </div>

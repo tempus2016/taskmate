@@ -41,6 +41,7 @@
 - [Reactive Chores (Deadlines & Speed Bonus)](#reactive-chores-deadlines--speed-bonus)
 - [Scheduled Config Changes](#scheduled-config-changes)
 - [Routine Mode](#routine-mode)
+- [Chore Roulette](#chore-roulette)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -414,6 +415,33 @@ title: Vaiha's morning     # optional
 - Chores needing approval show "waiting for a grown-up" and their points are totalled separately on the finish screen.
 - The finish screen totals what was earned **in that run**, not the whole day.
 - An empty period shows a "nothing to do" state rather than an empty list.
+ 
+---
+ 
+## Chore Roulette
+ 
+An opt-in nudge for the child who has stalled: spin once, get a random outstanding chore, and earn a multiplier on it if they do it.
+ 
+Enable it in **Settings** (off by default) and set the multiplier and how many spins a child gets per day. Then add `show_roulette: true` to a child card:
+ 
+```yaml
+type: custom:taskmate-child-card
+entity: sensor.taskmate_overview
+child_id: <child_id>
+show_roulette: true
+```
+ 
+### Key Points
+ 
+- **Doubly opt-in.** It needs both the global setting *and* `show_roulette: true` on the card, so an existing dashboard never sprouts a new button unasked.
+- Roulette only ever picks a chore the child is **actually allowed to do right now** — it runs the same availability check as everything else, so the weather gate, deadlines, dependencies and rotation are all respected.
+- The pick is recorded **per child, per day**. It survives a reload, can't be re-rolled past the daily allowance, and expires overnight.
+- A re-spin moves to a different chore where one is available, rather than handing back the same one.
+- The multiplier is applied at completion, and **stacks** with the difficulty multiplier and any speed bonus.
+- Spinning fires `taskmate_roulette_spun` (`child_id`, `child_name`, `chore_id`, `chore_name`, `multiplier`, `timestamp`).
+- A multiplier below 1 is clamped to 1 — spinning should never punish the child.
+ 
+Children spin via the `taskmate.spin_roulette` service (`child_id`), which the card calls for them.
  
 ---
  

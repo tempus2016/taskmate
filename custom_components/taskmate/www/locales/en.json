@@ -1620,5 +1620,13 @@
   "routine.skipped_note": "{count} left for later.",
   "routine.start_again": "Start again",
   "routine.empty_title": "Nothing to do",
-  "routine.empty_body": "This routine is already finished."
+  "routine.empty_body": "This routine is already finished.",
+  "child.roulette_spin": "Spin for a ×{multiplier} chore",
+  "child.roulette_respin": "Spin again ({count} left)",
+  "child.roulette_no_spins": "No spins left today",
+  "panel.settings_roulette_section": "Chore roulette",
+  "panel.settings_roulette_enabled": "Enable chore roulette",
+  "panel.settings_roulette_enabled_hint": "Lets a child spin for a random outstanding chore worth extra points.",
+  "panel.settings_roulette_multiplier": "Points multiplier",
+  "panel.settings_roulette_spins": "Spins per day"
 }

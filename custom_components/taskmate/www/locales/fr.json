@@ -1620,5 +1620,13 @@
   "routine.skipped_note": "{count} laissée(s) pour plus tard.",
   "routine.start_again": "Recommencer",
   "routine.empty_title": "Rien à faire",
-  "routine.empty_body": "Cette routine est déjà terminée."
+  "routine.empty_body": "Cette routine est déjà terminée.",
+  "child.roulette_spin": "Tourner pour une tâche ×{multiplier}",
+  "child.roulette_respin": "Tourner encore ({count} restant)",
+  "child.roulette_no_spins": "Plus de tours aujourd'hui",
+  "panel.settings_roulette_section": "Roulette des tâches",
+  "panel.settings_roulette_enabled": "Activer la roulette des tâches",
+  "panel.settings_roulette_enabled_hint": "Permet à un enfant de tirer une tâche au hasard valant plus de points.",
+  "panel.settings_roulette_multiplier": "Multiplicateur de points",
+  "panel.settings_roulette_spins": "Tours par jour"
 }

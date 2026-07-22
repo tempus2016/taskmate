@@ -705,10 +705,14 @@ class ChoresMixin:
         if requires_photo and not as_parent and not (photo_url or "").strip():
             raise ValueError("This chore requires a photo as evidence.")
         auto_approve = as_parent or (not chore.requires_approval and not requires_photo)
-        effective_points = self._apply_speed_bonus(
+        effective_points = self._apply_roulette_multiplier(
             chore,
-            self._apply_time_adjustment(chore, self.effective_chore_points(chore), now),
-            now,
+            child_id,
+            self._apply_speed_bonus(
+                chore,
+                self._apply_time_adjustment(chore, self.effective_chore_points(chore), now),
+                now,
+            ),
         )
 
         completion = ChoreCompletion(

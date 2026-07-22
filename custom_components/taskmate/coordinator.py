@@ -26,6 +26,7 @@ from .coord_notifications import NotificationCoordinator
 from .coord_points import PointsMixin
 from .coord_quests import QuestsMixin
 from .coord_rewards import RewardsMixin
+from .coord_roulette import RouletteMixin
 from .coord_scheduled import ScheduledChangesMixin
 from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
@@ -48,6 +49,7 @@ class TaskMateCoordinator(
     CalendarMixin,
     TemplatesMixin,
     ScheduledChangesMixin,
+    RouletteMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -652,6 +654,7 @@ class TaskMateCoordinator(
         """
         steps = [
             self.async_apply_due_scheduled_changes,
+            self.async_prune_roulette_state,
             self._async_check_streaks,
             self._async_expire_one_shot_chores,
             self._async_expire_dated_chores,

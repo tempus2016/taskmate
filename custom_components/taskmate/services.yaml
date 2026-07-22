@@ -702,6 +702,19 @@ add_chore:
           max: 10000
           mode: box
 
+spin_roulette:
+  name: Spin Chore Roulette
+  description: >-
+    Pick a random outstanding chore for a child at a points multiplier. Opt-in — enable it and set
+    the multiplier and daily spin allowance in the TaskMate panel settings.
+  fields:
+    child_id:
+      name: Child ID
+      description: The ID of the child spinning
+      required: true
+      selector:
+        text:
+
 skip_chore:
   name: Skip Chore
   description: Skip today's assigned child for a rotating chore and move the pointer to the next child in the pool. Ephemeral — tomorrow the rotation resumes its normal schedule.
