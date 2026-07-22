@@ -21,6 +21,7 @@ from .coord_badges import BadgeCoordinator
 from .coord_calendar import CalendarMixin
 from .coord_challenges import ChallengesMixin
 from .coord_chores import ChoresMixin
+from .coord_guests import GuestsMixin
 from .coord_mandatory import MandatoryMixin
 from .coord_notifications import NotificationCoordinator
 from .coord_points import PointsMixin
@@ -55,6 +56,7 @@ class TaskMateCoordinator(
     ReportsMixin,
     RouletteMixin,
     ReadAloudMixin,
+    GuestsMixin,
     UnlocksMixin,
     DataUpdateCoordinator,
 ):
@@ -666,6 +668,7 @@ class TaskMateCoordinator(
         steps = [
             self.async_apply_due_scheduled_changes,
             self.async_prune_roulette_state,
+            self.async_archive_expired_guests,
             self._async_check_streaks,
             self._async_expire_one_shot_chores,
             self._async_expire_dated_chores,

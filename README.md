@@ -50,6 +50,7 @@
 - [Multi-Parent Approval Routing](#multi-parent-approval-routing)
 - [Sharing Template Packs](#sharing-template-packs)
 - [Printable Weekly Chart](#printable-weekly-chart)
+- [Guest Child Profiles](#guest-child-profiles)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -654,6 +655,22 @@ A fridge-ready A4 chore chart with a box to tick against every task.
 - Chores with no assignee appear for every child; assigned ones only for theirs.
 - Children with nothing assigned are left off entirely rather than printing an empty row.
 - Chore names are HTML-escaped: they're user input landing in a document.
+ 
+---
+ 
+## Guest Child Profiles
+ 
+A visiting cousin gets a temporary child profile that expires on its own and stays out of the family leaderboard.
+ 
+Set **Guest** and an end date on a child (`is_guest`, `guest_expires_on`).
+ 
+### Key Points
+ 
+- **Guests don't compete.** They're excluded from the leaderboard — a cousin here for a week shouldn't win the month, and their leaving shouldn't read as a loss.
+- **No end date means no expiry.** You may not know how long the visit is, and silently archiving someone mid-stay would be worse than leaving the profile up.
+- **Expired guests are archived, not deleted.** The visit's completions stay in history, and next summer the same guest can be reactivated rather than rebuilt. Archiving reuses the existing availability plumbing, so every chore and streak path already treats them as away.
+- **Promoting a guest to a family member** clears the end date and un-archives them — someone who moves in shouldn't stay invisible.
+- Archiving fires `taskmate_guest_archived`.
  
 ---
  

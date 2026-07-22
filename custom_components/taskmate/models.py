@@ -174,6 +174,10 @@ class Child:
     quiet_hours_start: str = ""  # "HH:MM" — start of do-not-disturb window; empty = no quiet hours
     quiet_hours_end: str = ""    # "HH:MM" — end of do-not-disturb window; start>end means overnight
     level: int = 1  # cached XP level (derived from total_points_earned)
+    # Guest profiles (#690): a visiting cousin gets a temporary child that
+    # expires on its own and stays out of the family leaderboard.
+    is_guest: bool = False
+    guest_expires_on: str = ""  # ISO date; profile auto-archives the day after
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -193,6 +197,8 @@ class Child:
             streak_paused=data.get("streak_paused", False),
             streak_milestones_achieved=list(data.get("streak_milestones_achieved", [])),
             awarded_perfect_weeks=list(data.get("awarded_perfect_weeks", [])),
+            is_guest=bool(data.get("is_guest", False)),
+            guest_expires_on=str(data.get("guest_expires_on", "") or ""),
             availability_entity=data.get("availability_entity", ""),
             availability_inverted=data.get("availability_inverted", False),
             unavailability_entity=data.get("unavailability_entity", ""),
@@ -223,6 +229,8 @@ class Child:
             "streak_paused": self.streak_paused,
             "streak_milestones_achieved": self.streak_milestones_achieved,
             "awarded_perfect_weeks": self.awarded_perfect_weeks,
+            "is_guest": self.is_guest,
+            "guest_expires_on": self.guest_expires_on,
             "availability_entity": self.availability_entity,
             "availability_inverted": self.availability_inverted,
             "unavailability_entity": self.unavailability_entity,
