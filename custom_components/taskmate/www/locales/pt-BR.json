@@ -1567,5 +1567,8 @@
   "weather.condition_windy": "Ventando",
   "weather.condition_windy_variant": "Muito vento",
   "weather.condition_cloudy": "Nublado",
-  "weather.condition_exceptional": "Tempo severo"
+  "weather.condition_exceptional": "Tempo severo",
+  "child.deadline_minutes": "faltam {mins} min",
+  "child.deadline_hours": "faltam {hours}h {mins}m",
+  "child.deadline_title": "Faça isso antes de o tempo acabar"
 }

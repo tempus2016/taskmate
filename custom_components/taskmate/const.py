@@ -310,6 +310,8 @@ ATTR_CHORE_ASSIGNED_TO: Final = "assigned_to"
 ATTR_CHORE_TIME_CATEGORY: Final = "time_category"
 ATTR_CHORE_ONE_SHOT: Final = "one_shot"
 ATTR_CHORE_REQUIRES_APPROVAL: Final = "requires_approval"
+ATTR_CHORE_EXPIRES_IN_MINUTES: Final = "expires_in_minutes"
+ATTR_CHORE_SPEED_BONUS_POINTS: Final = "speed_bonus_points"
 ATTR_BONUS_SUBTASK_ID: Final = "bonus_subtask_id"
 
 # Badge attributes

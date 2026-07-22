@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import logging
+from datetime import timedelta
 from functools import wraps
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ServiceValidationError, Unauthorized
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_set_service_schema
+from homeassistant.util import dt as dt_util
 
 from .const import (
     ATTR_AS_PARENT,
@@ -39,12 +41,14 @@ from .const import (
     ATTR_CHILD_ID,
     ATTR_CHORE_ASSIGNED_TO,
     ATTR_CHORE_DESCRIPTION,
+    ATTR_CHORE_EXPIRES_IN_MINUTES,
     ATTR_CHORE_ID,
     ATTR_CHORE_NAME,
     ATTR_CHORE_ONE_SHOT,
     ATTR_CHORE_ORDER,
     ATTR_CHORE_POINTS,
     ATTR_CHORE_REQUIRES_APPROVAL,
+    ATTR_CHORE_SPEED_BONUS_POINTS,
     ATTR_CHORE_TIME_CATEGORY,
     ATTR_PENALTY_ASSIGNED_TO,
     ATTR_PENALTY_DESCRIPTION,
@@ -882,7 +886,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         if not coordinator:
             _LOGGER.error("No TaskMate coordinator available")
             return
-        schedule_mode = "one_shot" if call.data.get(ATTR_CHORE_ONE_SHOT, False) else "specific_days"
+        expires_in = call.data.get(ATTR_CHORE_EXPIRES_IN_MINUTES, 0) or 0
+        # A chore with a deadline is inherently a one-off — it exists to be done
+        # now, so it should never linger into tomorrow.
+        one_shot = call.data.get(ATTR_CHORE_ONE_SHOT, False) or bool(expires_in)
+        schedule_mode = "one_shot" if one_shot else "specific_days"
+        deadline_at = ""
+        if expires_in:
+            deadline_at = (dt_util.now() + timedelta(minutes=expires_in)).isoformat()
         await coordinator.async_add_chore(
             name=call.data[ATTR_CHORE_NAME],
             description=call.data.get(ATTR_CHORE_DESCRIPTION, ""),
@@ -892,6 +903,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             requires_approval=call.data.get(ATTR_CHORE_REQUIRES_APPROVAL, True),
             difficulty=call.data.get("difficulty", "medium"),
             schedule_mode=schedule_mode,
+            deadline_at=deadline_at,
+            speed_bonus_points=call.data.get(ATTR_CHORE_SPEED_BONUS_POINTS, 0),
         )
 
     async def handle_add_badge(call: ServiceCall) -> None:
@@ -1398,6 +1411,10 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             vol.Optional("difficulty", default=DEFAULT_DIFFICULTY): vol.In(DIFFICULTY_TIERS),
             vol.Optional(ATTR_CHORE_ONE_SHOT, default=False): cv.boolean,
             vol.Optional(ATTR_CHORE_REQUIRES_APPROVAL, default=True): cv.boolean,
+            vol.Optional(ATTR_CHORE_EXPIRES_IN_MINUTES, default=0): vol.All(
+                cv.positive_int, vol.Range(max=10080)
+            ),
+            vol.Optional(ATTR_CHORE_SPEED_BONUS_POINTS, default=0): cv.positive_int,
         }),
     )
 

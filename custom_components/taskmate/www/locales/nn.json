@@ -1567,5 +1567,8 @@
   "weather.condition_windy": "Vindfullt",
   "weather.condition_windy_variant": "Svært vindfullt",
   "weather.condition_cloudy": "Skya",
-  "weather.condition_exceptional": "Ekstremver"
+  "weather.condition_exceptional": "Ekstremver",
+  "child.deadline_minutes": "{mins} min att",
+  "child.deadline_hours": "{hours}t {mins}m att",
+  "child.deadline_title": "Gjer dette før tida renn ut"
 }
