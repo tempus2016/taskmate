@@ -1680,5 +1680,14 @@
   "panel.insights_suggest_reassign": "Dar para outra pessoa",
   "panel.insights_suggest_keep": "Deixar como está",
   "panel.insights_outstanding_misses": "Falhas obrigatórias pendentes",
-  "panel.insights_friction_note": "As rejeições não são listadas: o TaskMate apaga a conclusão quando você a rejeita, então não há histórico. Os valores esperados são aproximados — rotação, dependências e clima não são reproduzidos."
+  "panel.insights_friction_note": "As rejeições não são listadas: o TaskMate apaga a conclusão quando você a rejeita, então não há histórico. Os valores esperados são aproximados — rotação, dependências e clima não são reproduzidos.",
+  "panel.insights_view_projection": "Semana seguinte",
+  "panel.insights_projection_title": "O que vem por aí?",
+  "panel.insights_projection_intro": "{start} a {end}, com base na programação de cada tarefa.",
+  "panel.insights_next_days": "Próximos {days} dias",
+  "panel.insights_col_day": "Dia",
+  "panel.insights_projected_earn": "até {points} {name}",
+  "panel.insights_projected_total": "chegaria a {total}",
+  "panel.insights_projection_unassigned": "{points} pontos não estão atribuídos a ninguém.",
+  "panel.insights_projection_note": "Um teto, não uma previsão: tarefas abertas a todos são contadas para cada criança elegível, já que a programação não sabe quem chega primeiro. Clima, dependências e disponibilidade não são projetados — dependem do dia."
 }

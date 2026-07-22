@@ -1680,5 +1680,14 @@
   "panel.insights_suggest_reassign": "La confier à un autre",
   "panel.insights_suggest_keep": "Ne rien changer",
   "panel.insights_outstanding_misses": "Manquements obligatoires en attente",
-  "panel.insights_friction_note": "Les refus ne sont pas listés : TaskMate supprime une validation quand vous la refusez, il n'y a donc pas d'historique. Les valeurs attendues sont approximatives — rotation, dépendances et météo ne sont pas rejouées."
+  "panel.insights_friction_note": "Les refus ne sont pas listés : TaskMate supprime une validation quand vous la refusez, il n'y a donc pas d'historique. Les valeurs attendues sont approximatives — rotation, dépendances et météo ne sont pas rejouées.",
+  "panel.insights_view_projection": "Semaine à venir",
+  "panel.insights_projection_title": "Qu'est-ce qui arrive ?",
+  "panel.insights_projection_intro": "Du {start} au {end}, d'après le planning de chaque tâche.",
+  "panel.insights_next_days": "{days} prochains jours",
+  "panel.insights_col_day": "Jour",
+  "panel.insights_projected_earn": "jusqu'à {points} {name}",
+  "panel.insights_projected_total": "atteindrait {total}",
+  "panel.insights_projection_unassigned": "{points} points ne sont attribués à personne.",
+  "panel.insights_projection_note": "Un plafond, pas une prévision : les tâches ouvertes à tous sont comptées pour chaque enfant éligible, le planning ne pouvant savoir qui arrivera en premier. Météo, dépendances et disponibilité ne sont pas projetées — elles dépendent du jour."
 }

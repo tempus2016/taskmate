@@ -43,7 +43,7 @@
 - [Routine Mode](#routine-mode)
 - [Chore Roulette](#chore-roulette)
 - [Timed Unlock Rewards](#timed-unlock-rewards)
-- [Insights — Fairness & Friction](#insights--fairness--friction)
+- [Insights — Fairness, Friction & Week Ahead](#insights--fairness-friction--week-ahead)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -470,7 +470,7 @@ Spend points to unlock something for a while — the TV, the console socket, a w
  
 ---
  
-## Insights — Fairness & Friction
+## Insights — Fairness, Friction & Week Ahead
  
 **TaskMate panel → Insights.** Answers the question the raw numbers don't: *am I dumping everything on the eldest?*
  
@@ -497,6 +497,14 @@ The second Insights view judges each **chore** rather than each child: how often
 Chores with outstanding mandatory misses show a ⚠ count, and the report leads with a **suggestion** rather than just a diagnosis — a stalling chore that already pays well doesn't need more points, it needs a different child.
  
 **What it can't tell you:** TaskMate deletes a completion when you reject it, and removes a mandatory miss once you resolve it, so neither rejection counts nor historical miss counts exist to be reported. The report says so rather than quietly omitting them. Expected counts are approximate — they don't replay rotation, dependencies, weather or vacations.
+ 
+### Week ahead — what's coming up
+ 
+The third view projects the next 7 / 14 / 28 days from each chore's schedule: how many chores and points are heading each child's way, what balance they'd reach, and a day-by-day grid.
+ 
+Rotation is projected using the same daily-assignment computation the integration itself uses, so alternating / random / balanced picks match what will really happen rather than an independent guess that could drift.
+ 
+**It's a ceiling, not a forecast.** A chore open to everyone is counted for *each* eligible child, because the schedule cannot know who'll get there first. Weather, dependencies and availability aren't projected either — they depend on the day. Points that aren't assigned to anyone are called out separately.
  
 ---
  

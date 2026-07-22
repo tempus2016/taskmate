@@ -1680,5 +1680,14 @@
   "panel.insights_suggest_reassign": "Give it to someone else",
   "panel.insights_suggest_keep": "Leave it alone",
   "panel.insights_outstanding_misses": "Outstanding mandatory misses",
-  "panel.insights_friction_note": "Rejections aren't listed: TaskMate deletes a completion when you reject it, so there's no rejection history to count. Expected counts are approximate — they don't replay rotation, dependencies or weather."
+  "panel.insights_friction_note": "Rejections aren't listed: TaskMate deletes a completion when you reject it, so there's no rejection history to count. Expected counts are approximate — they don't replay rotation, dependencies or weather.",
+  "panel.insights_view_projection": "Week ahead",
+  "panel.insights_projection_title": "What's coming up?",
+  "panel.insights_projection_intro": "{start} to {end}, based on each chore's schedule.",
+  "panel.insights_next_days": "Next {days} days",
+  "panel.insights_col_day": "Day",
+  "panel.insights_projected_earn": "up to {points} {name}",
+  "panel.insights_projected_total": "would reach {total}",
+  "panel.insights_projection_unassigned": "{points} points aren't assigned to anyone.",
+  "panel.insights_projection_note": "A ceiling, not a forecast: chores open to everyone are counted for each eligible child, since the schedule can't know who'll get there first. Weather, dependencies and availability aren't projected — they depend on the day."
 }
