@@ -43,6 +43,7 @@
 - [Routine Mode](#routine-mode)
 - [Chore Roulette](#chore-roulette)
 - [Timed Unlock Rewards](#timed-unlock-rewards)
+- [Insights — Fairness Report](#insights--fairness-report)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -466,6 +467,21 @@ Spend points to unlock something for a while — the TV, the console socket, a w
 - Active unlocks are **persisted**. A Home Assistant restart mid-unlock re-arms the timer; anything already past due is turned off at startup. A restart can never strand the television on.
 - Turning something **off** is never gated by the allowlist — a revert is always safe.
 - Fires `taskmate_unlock_started` and `taskmate_unlock_ended` (`entity_id`, `reward_id`, `reward_name`, `child_id`, `child_name`, `started_at`, `revert_at`).
+ 
+---
+ 
+## Insights — Fairness Report
+ 
+**TaskMate panel → Insights.** Answers the question the raw numbers don't: *am I dumping everything on the eldest?*
+ 
+For a chosen window (7, 14 or 30 days) it shows each child's completed chores, points earned, share of the family total, and how many distinct days they were active — with a marker showing where an even split would sit.
+ 
+### Key Points
+ 
+- **Judged on chore count, not points.** A pricier chore shouldn't be able to hide an uneven split. Points are shown alongside because the two can disagree: three quick jobs versus one hard one is balanced by points and lopsided by count, and only you can say which you meant.
+- Flagged as *doing more* / *doing less* when a child is more than **15 percentage points** off an even share. Wide enough that normal week-to-week variation doesn't nag; narrow enough to catch a real imbalance.
+- **Only approved, non-bonus completions count.** Unapproved work isn't yet work you've agreed happened, and bonus sub-tasks hang off a chore that's already counted.
+- Computed on demand, never cached — a stale report is worse than a slow one.
  
 ---
  

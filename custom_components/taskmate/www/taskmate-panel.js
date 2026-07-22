@@ -21,6 +21,7 @@ const PANEL_VERSION = (() => {
 const TABS = [
   { id: "children",  lk: "panel.tab_children" },
   { id: "activity",  lk: "panel.tab_activity" },
+  { id: "insights",  lk: "panel.tab_insights" },
   { id: "chores",    lk: "panel.tab_chores" },
   { id: "rewards",   lk: "panel.tab_rewards" },
   { id: "penalties", lk: "panel.tab_penalties" },
@@ -538,6 +539,12 @@ class TaskMatePanel extends HTMLElement {
     if (act === "toggle-depends")    { this._toggleArrayField("depends_on", t.dataset.id); return; }
     if (act === "toggle-calendar")   { this._toggleArrayField("publish_calendar_entities", t.dataset.id); return; }
     if (act === "toggle-weather-condition") { this._toggleArrayField("weather_block_conditions", t.dataset.id); return; }
+    if (act === "insights-window") {
+      this._insightDays = Number(t.dataset.id);
+      this._fairness = null;
+      this._loadFairness(this._insightDays);
+      return;
+    }
     if (act === "remove-allowlist")         { this._removeFromAllowlist(t.dataset.id); return; }
     if (act === "add-scheduled")            { this._addScheduledChange(); return; }
     if (act === "remove-scheduled")         { this._removeScheduledChange(t.dataset.id); return; }
@@ -2301,6 +2308,7 @@ class TaskMatePanel extends HTMLElement {
     return [
       { head: this._t("panel.nav_today"), items: [
         { id: "activity", label: this._t("panel.tab_activity"), icon: "mdi:pulse" },
+        { id: "insights", label: this._t("panel.tab_insights"), icon: "mdi:chart-box-outline" },
       ]},
       { head: this._t("panel.nav_manage"), items: [
         { id: "children",  label: this._t("panel.tab_children"),  icon: "mdi:account-multiple" },
@@ -2467,6 +2475,7 @@ class TaskMatePanel extends HTMLElement {
     switch (this._activeTab) {
       case "children":  return this._renderChildrenTab();
       case "activity":  return this._renderActivityTab();
+      case "insights":  return this._renderInsightsTab();
       case "chores":    return this._renderChoresTab();
       case "rewards":   return this._renderRewardsTab();
       case "penalties": return this._renderPenBonTab("penalty");
@@ -2481,6 +2490,80 @@ class TaskMatePanel extends HTMLElement {
       case "settings":      return this._renderSettingsTab();
       default:          return `<div class="tm-card">${this._t("panel.tab_unknown")}</div>`;
     }
+  }
+
+  /**
+   * Insight reports (#679). Computed on demand rather than stored — a stale
+   * cached report is worse than a slow one — so the tab fetches when opened
+   * and when the window changes.
+   */
+  _renderInsightsTab() {
+    const days = this._insightDays || 7;
+    const report = this._fairness;
+    if (!report) {
+      this._loadFairness(days);
+      return `<div class="tm-card"><div class="tm-empty">${this._t("panel.insights_loading")}</div></div>`;
+    }
+
+    const windows = [7, 14, 30];
+    const maxShare = Math.max(1, ...report.children.map(c => c.share_completions));
+
+    return `
+      <div class="tm-card">
+        <div class="tm-card-head">
+          <h2>${this._t("panel.insights_fairness_title")}</h2>
+          <div class="tm-chip-row">
+            ${windows.map(d => `
+              <button type="button" class="tm-chip-btn ${d === days ? "tm-chip-on" : ""}"
+                      data-act="insights-window" data-id="${d}">
+                ${this._t("panel.insights_last_days", { days: d })}
+              </button>
+            `).join("")}
+          </div>
+        </div>
+        <span class="tm-field-hint">${this._t("panel.insights_fairness_intro", {
+          start: report.start, end: report.end, fair: report.fair_share,
+        })}</span>
+
+        ${report.total_completions === 0 ? `
+          <div class="tm-empty">${this._t("panel.insights_no_data")}</div>
+        ` : `
+          <div class="tm-verdict tm-verdict-${report.balanced ? "ok" : "warn"}">
+            ${report.balanced
+              ? this._t("panel.insights_balanced")
+              : this._t("panel.insights_unbalanced")}
+          </div>
+          <div class="tm-fairness">
+            ${report.children.map(c => `
+              <div class="tm-fair-row">
+                <div class="tm-fair-name">${this._esc(c.name)}</div>
+                <div class="tm-fair-bar">
+                  <i class="tm-fair-${c.status}" style="width:${Math.round(c.share_completions / maxShare * 100)}%"></i>
+                  <span class="tm-fair-target" style="left:${Math.round(report.fair_share / maxShare * 100)}%"></span>
+                </div>
+                <div class="tm-fair-figs">
+                  <strong>${c.completions}</strong> ${this._t(c.completions === 1 ? "panel.insights_chore" : "panel.insights_chores")}
+                  · ${c.points} ${this._esc(this._state.settings?.points_name || this._t("common.points"))}
+                  · ${c.share_completions}%
+                </div>
+                <div class="tm-fair-status tm-fair-${c.status}">${this._t("panel.insights_status_" + c.status)}</div>
+              </div>
+            `).join("")}
+          </div>
+          <span class="tm-field-hint">${this._t("panel.insights_fairness_note", { tolerance: report.tolerance })}</span>
+        `}
+      </div>
+    `;
+  }
+
+  async _loadFairness(days) {
+    if (this._fairnessLoading) return;
+    this._fairnessLoading = true;
+    const { ok, res, err } = await this._callWS({ type: "taskmate/reports/fairness", days });
+    this._fairnessLoading = false;
+    if (!ok) { this._showToast("err", err); return; }
+    this._fairness = res;
+    this._render();
   }
 
   _searchBox(placeholder) {
@@ -6580,6 +6663,47 @@ class TaskMatePanel extends HTMLElement {
       }
 
       /* Chip multi-select */
+      /* Insight reports (#679) */
+      .tm-verdict {
+        border-radius: 10px; padding: 10px 14px; margin: 10px 0 14px;
+        font-weight: 700; font-size: 13.5px;
+      }
+      .tm-verdict-ok { background: rgba(46, 125, 50, 0.12); color: #2e7d32; }
+      .tm-verdict-warn { background: rgba(239, 108, 0, 0.14); color: #ef6c00; }
+      .tm-fairness { display: flex; flex-direction: column; gap: 14px; }
+      .tm-fair-row { display: grid; grid-template-columns: 120px 1fr auto; gap: 10px 12px; align-items: center; }
+      .tm-fair-name { font-weight: 700; font-size: 14px; }
+      .tm-fair-bar {
+        position: relative; height: 14px; border-radius: 99px;
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border);
+        overflow: visible;
+      }
+      .tm-fair-bar > i {
+        display: block; height: 100%; border-radius: 99px;
+        background: var(--tm-accent); min-width: 2px;
+      }
+      .tm-fair-bar > i.tm-fair-over { background: #ef6c00; }
+      .tm-fair-bar > i.tm-fair-under { background: #7e57c2; }
+      .tm-fair-bar > i.tm-fair-balanced { background: #2e7d32; }
+      /* Marks where an even split would sit, so "fair" is visible not implied. */
+      .tm-fair-target {
+        position: absolute; top: -3px; width: 2px; height: 20px;
+        background: var(--tm-text-muted); opacity: 0.65;
+      }
+      .tm-fair-figs { grid-column: 2; font-size: 12.5px; color: var(--tm-text-muted); }
+      .tm-fair-status {
+        font-size: 11.5px; font-weight: 800; text-transform: uppercase;
+        letter-spacing: 0.03em; white-space: nowrap;
+      }
+      .tm-fair-status.tm-fair-over { color: #ef6c00; }
+      .tm-fair-status.tm-fair-under { color: #7e57c2; }
+      .tm-fair-status.tm-fair-balanced { color: #2e7d32; }
+      .tm-fair-status.tm-fair-idle { color: var(--tm-text-muted); }
+      @media (max-width: 640px) {
+        .tm-fair-row { grid-template-columns: 1fr auto; }
+        .tm-fair-bar { grid-column: 1 / -1; }
+      }
+
       /* Timed unlock allowlist (#678) */
       .tm-setting-stack { flex-direction: column; align-items: stretch; }
       .tm-allowlist { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }

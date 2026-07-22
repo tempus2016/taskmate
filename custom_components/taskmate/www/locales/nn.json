@@ -1639,5 +1639,20 @@
   "panel.reward_unlock_entity": "Lås opp",
   "panel.reward_unlock_minutes": "Kor lenge (minutt)",
   "panel.reward_unlock_minutes_hint": "0 = la han stå på; du må slå av sjølv.",
-  "panel.reward_unlock_no_allowlist": "Legg først til ein entitet i løyvelista under Innstillingar."
+  "panel.reward_unlock_no_allowlist": "Legg først til ein entitet i løyvelista under Innstillingar.",
+  "panel.tab_insights": "Innsikt",
+  "panel.insights_loading": "Reknar ut…",
+  "panel.insights_fairness_title": "Kven gjer jobben?",
+  "panel.insights_fairness_intro": "{start} til {end}. Ei jamn fordeling ville vore {fair}% kvar.",
+  "panel.insights_last_days": "Siste {days} dagar",
+  "panel.insights_no_data": "Ingen godkjende oppgåver i denne perioden enno.",
+  "panel.insights_balanced": "Ser ganske jamt fordelt ut.",
+  "panel.insights_unbalanced": "Arbeidet er ujamt fordelt.",
+  "panel.insights_chores": "oppgåver",
+  "panel.insights_status_over": "Gjer meir",
+  "panel.insights_status_under": "Gjer mindre",
+  "panel.insights_status_balanced": "Jamt",
+  "panel.insights_status_idle": "Ingenting enno",
+  "panel.insights_fairness_note": "Vurdert på tal oppgåver, ikkje poeng, så ei dyrare oppgåve ikkje skjuler ei skeiv fordeling. Markert når eit barn er meir enn {tolerance} poeng unna ein lik del.",
+  "panel.insights_chore": "oppgåve"
 }

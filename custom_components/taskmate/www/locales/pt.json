@@ -1639,5 +1639,20 @@
   "panel.reward_unlock_entity": "Desbloquear",
   "panel.reward_unlock_minutes": "Durante quanto tempo (minutos)",
   "panel.reward_unlock_minutes_hint": "0 = deixar ligado; terás de desligar tu.",
-  "panel.reward_unlock_no_allowlist": "Adiciona primeiro uma entidade à lista de permissões nas Definições."
+  "panel.reward_unlock_no_allowlist": "Adiciona primeiro uma entidade à lista de permissões nas Definições.",
+  "panel.tab_insights": "Análises",
+  "panel.insights_loading": "A calcular…",
+  "panel.insights_fairness_title": "Quem está a fazer o trabalho?",
+  "panel.insights_fairness_intro": "{start} a {end}. Uma divisão igual seria {fair}% para cada.",
+  "panel.insights_last_days": "Últimos {days} dias",
+  "panel.insights_no_data": "Ainda sem tarefas aprovadas neste período.",
+  "panel.insights_balanced": "Parece bastante equilibrado.",
+  "panel.insights_unbalanced": "A carga está desequilibrada.",
+  "panel.insights_chores": "tarefas",
+  "panel.insights_status_over": "Faz mais",
+  "panel.insights_status_under": "Faz menos",
+  "panel.insights_status_balanced": "Equilibrado",
+  "panel.insights_status_idle": "Ainda nada",
+  "panel.insights_fairness_note": "Avaliado pelo número de tarefas, não por pontos, para que uma tarefa mais cara não esconda uma divisão desigual. Assinalado quando uma criança está a mais de {tolerance} pontos de uma parte igual.",
+  "panel.insights_chore": "tarefa"
 }
