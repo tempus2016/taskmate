@@ -48,6 +48,7 @@
 - [Read Aloud](#read-aloud)
 - [Accessible Design Style](#accessible-design-style)
 - [Multi-Parent Approval Routing](#multi-parent-approval-routing)
+- [Sharing Template Packs](#sharing-template-packs)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -610,6 +611,27 @@ An unseen approval is worse than a redundant buzz, so:
 - **Round-robin state pointing at a deleted parent** → starts from the beginning rather than wedging.
  
 Round-robin position is tracked **per notification type**, so a reward claim doesn't advance the chore-approval rotation. Child notifications are never affected by any of this — a reminder for a child must always reach that child.
+ 
+---
+ 
+## Sharing Template Packs
+ 
+Export your custom chore templates as a JSON pack and import one somebody else made.
+ 
+- **Export** — `taskmate/templates/export` returns a pack (all custom templates, or a chosen subset). Built-ins are excluded: they ship with TaskMate, so exporting them would only create duplicates on the other end.
+- **Import** — `taskmate/templates/import` takes a pack object.
+ 
+### Import is treated as untrusted
+ 
+A pack is arbitrary JSON from someone else, so:
+ 
+- **Unknown chore fields are dropped**, not carried through. A shared pack cannot set runtime state (rotation anchors, skip dates) or anything the panel wouldn't let you set by hand.
+- Format and version are checked. A pack from a newer TaskMate says so plainly rather than being half-imported.
+- Sizes are capped (50 templates, 200 chores each) and long names truncated rather than rejected.
+- **A clashing name is suffixed, never overwritten** — `Morning routine (2)`. An import must not silently replace something your family built.
+- A pack that fails validation writes **nothing**.
+ 
+**No URL importing.** Packs are imported from pasted or uploaded JSON only. Fetching arbitrary URLs from inside your home network would make TaskMate an SSRF vector; you can still paste a gist's raw contents.
  
 ---
  

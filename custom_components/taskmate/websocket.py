@@ -135,6 +135,8 @@ WS_TEMPLATES_APPLY: Final      = "taskmate/templates/apply"
 WS_TEMPLATES_SAVE_FROM: Final  = "taskmate/templates/save_from_chores"
 WS_TEMPLATES_CREATE: Final     = "taskmate/templates/create"
 WS_TEMPLATES_UPDATE: Final     = "taskmate/templates/update"
+WS_TEMPLATES_EXPORT: Final     = "taskmate/templates/export"
+WS_TEMPLATES_IMPORT: Final     = "taskmate/templates/import"
 WS_TEMPLATES_DELETE: Final     = "taskmate/templates/delete"
 
 # Notifications
@@ -185,7 +187,8 @@ WS_CONFIG_IMPORT: Final = "taskmate/config/import"
 # Everything else routed through @_admin_only mutates state and is logged.
 _AUDIT_EXCLUDE: Final = {
     WS_GET_STATE, WS_NOTIF_GET_STATE, WS_NOTIF_LIST_NOTIFY,
-    WS_TEMPLATES_LIST, WS_TEMPLATES_GET, WS_AUDIT_LIST, WS_AUDIT_CLEAR,
+    WS_TEMPLATES_LIST, WS_TEMPLATES_GET, WS_TEMPLATES_EXPORT,
+    WS_AUDIT_LIST, WS_AUDIT_CLEAR,
     WS_CONFIG_EXPORT, WS_SCHEDULED_LIST, WS_REPORT_FAIRNESS, WS_REPORT_FRICTION, WS_REPORT_PROJECTION, WS_REPORT_HEALTH,
 }
 
@@ -657,6 +660,31 @@ async def _ws_report_friction(hass, connection, msg, coordinator):
 @_admin_only
 async def _ws_report_projection(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], coordinator.projection_report(msg.get("days")))
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TEMPLATES_EXPORT,
+    vol.Optional("template_ids"): [str],
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_templates_export(hass, connection, msg, coordinator):
+    connection.send_result(msg["id"], coordinator.export_templates(msg.get("template_ids")))
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): WS_TEMPLATES_IMPORT,
+    vol.Required("pack"): dict,
+})
+@websocket_api.async_response
+@_admin_only
+async def _ws_templates_import(hass, connection, msg, coordinator):
+    try:
+        result = await coordinator.async_import_pack(msg["pack"])
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid_format", str(err))
+        return
+    connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command({vol.Required("type"): WS_REPORT_HEALTH})
@@ -2221,6 +2249,7 @@ _COMMANDS = (
     _ws_add_chore, _ws_update_chore, _ws_remove_chore, _ws_clone_chore,
     _ws_scheduled_list, _ws_scheduled_add, _ws_scheduled_remove,
     _ws_report_fairness, _ws_report_friction, _ws_report_projection, _ws_report_health,
+    _ws_templates_export, _ws_templates_import,
     _ws_bulk_chore_action, _ws_gift_points,
     _ws_request_swap, _ws_approve_swap, _ws_reject_swap,
     _ws_config_export, _ws_config_import,
