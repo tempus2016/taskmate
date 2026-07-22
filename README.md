@@ -40,6 +40,7 @@
 - [Weather-Aware Chores](#weather-aware-chores)
 - [Reactive Chores (Deadlines & Speed Bonus)](#reactive-chores-deadlines--speed-bonus)
 - [Scheduled Config Changes](#scheduled-config-changes)
+- [Routine Mode](#routine-mode)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -382,6 +383,37 @@ Runtime state (rotation anchors, skip dates, calendar publish history) deliberat
 - **Applied changes are kept**, not deleted, and shown under "Already applied". A config change that happens silently is worse than one that doesn't happen at all.
 - Applying fires a `taskmate_scheduled_change_applied` event (`change_id`, `chore_id`, `chore_name`, `changes`, `timestamp`).
 - Deleting a chore removes its queued changes.
+ 
+---
+ 
+## Routine Mode
+ 
+A guided, one-task-at-a-time flow for morning and bedtime routines. The child card is a checklist — good for scanning, poor for walking a five-year-old through getting ready. Routine mode shows a single task at a time with a big **Done** button, a progress bar and a celebration at the end.
+ 
+Add the **TaskMate Routine** card:
+ 
+```yaml
+type: custom:taskmate-routine-card
+entity: sensor.taskmate_overview
+child_id: <child_id>
+time_category: morning     # morning | afternoon | evening | night | anytime | all
+title: Vaiha's morning     # optional
+```
+ 
+| Control | Effect |
+|---|---|
+| **Done** | Completes the chore and moves to the next one. |
+| **Skip for now** | Moves on without completing — the task stays outstanding. |
+| **Back** | Returns to the previous task, so a mis-tap is recoverable. |
+ 
+### Key Points
+ 
+- Availability comes from the integration's own chore-availability matrix, so the weather gate, reactive deadlines, dependencies, rotation and vacation mode are all honoured automatically.
+- Tasks appear in the child's configured chore order.
+- **`time_category` is exact.** A `morning` routine shows only morning chores — `anytime` chores are *not* mixed in, because a routine is a specific sequence. Use `all` if you want everything.
+- Chores needing approval show "waiting for a grown-up" and their points are totalled separately on the finish screen.
+- The finish screen totals what was earned **in that run**, not the whole day.
+- An empty period shows a "nothing to do" state rather than an empty list.
  
 ---
  
