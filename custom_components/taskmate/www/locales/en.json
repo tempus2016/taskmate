@@ -1639,5 +1639,20 @@
   "panel.reward_unlock_entity": "Unlock",
   "panel.reward_unlock_minutes": "For how long (minutes)",
   "panel.reward_unlock_minutes_hint": "0 = leave it on; you'll need to turn it off yourself.",
-  "panel.reward_unlock_no_allowlist": "Add an entity to the unlock allowlist in Settings first."
+  "panel.reward_unlock_no_allowlist": "Add an entity to the unlock allowlist in Settings first.",
+  "panel.tab_insights": "Insights",
+  "panel.insights_loading": "Working it out…",
+  "panel.insights_fairness_title": "Who's doing the work?",
+  "panel.insights_fairness_intro": "{start} to {end}. An even split would be {fair}% each.",
+  "panel.insights_last_days": "Last {days} days",
+  "panel.insights_no_data": "No approved chores in this period yet.",
+  "panel.insights_balanced": "Looks fairly balanced.",
+  "panel.insights_unbalanced": "The workload is uneven.",
+  "panel.insights_chores": "chores",
+  "panel.insights_status_over": "Doing more",
+  "panel.insights_status_under": "Doing less",
+  "panel.insights_status_balanced": "Balanced",
+  "panel.insights_status_idle": "Nothing yet",
+  "panel.insights_fairness_note": "Judged on chore count, not points, so a pricier chore doesn't hide an uneven split. Flagged when a child is more than {tolerance} points off an even share.",
+  "panel.insights_chore": "chore"
 }

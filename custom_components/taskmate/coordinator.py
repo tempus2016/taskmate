@@ -25,6 +25,7 @@ from .coord_mandatory import MandatoryMixin
 from .coord_notifications import NotificationCoordinator
 from .coord_points import PointsMixin
 from .coord_quests import QuestsMixin
+from .coord_reports import ReportsMixin
 from .coord_rewards import RewardsMixin
 from .coord_roulette import RouletteMixin
 from .coord_scheduled import ScheduledChangesMixin
@@ -50,6 +51,7 @@ class TaskMateCoordinator(
     CalendarMixin,
     TemplatesMixin,
     ScheduledChangesMixin,
+    ReportsMixin,
     RouletteMixin,
     UnlocksMixin,
     DataUpdateCoordinator,

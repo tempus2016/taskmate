@@ -1639,5 +1639,20 @@
   "panel.reward_unlock_entity": "Déverrouiller",
   "panel.reward_unlock_minutes": "Pendant combien de temps (minutes)",
   "panel.reward_unlock_minutes_hint": "0 = laisser allumé ; vous devrez l'éteindre vous-même.",
-  "panel.reward_unlock_no_allowlist": "Ajoutez d'abord une entité à la liste d'autorisation dans les Réglages."
+  "panel.reward_unlock_no_allowlist": "Ajoutez d'abord une entité à la liste d'autorisation dans les Réglages.",
+  "panel.tab_insights": "Analyses",
+  "panel.insights_loading": "Calcul en cours…",
+  "panel.insights_fairness_title": "Qui fait le travail ?",
+  "panel.insights_fairness_intro": "Du {start} au {end}. Une répartition égale serait de {fair}% chacun.",
+  "panel.insights_last_days": "{days} derniers jours",
+  "panel.insights_no_data": "Aucune tâche validée sur cette période.",
+  "panel.insights_balanced": "Cela semble équilibré.",
+  "panel.insights_unbalanced": "La charge est déséquilibrée.",
+  "panel.insights_chores": "tâches",
+  "panel.insights_status_over": "En fait plus",
+  "panel.insights_status_under": "En fait moins",
+  "panel.insights_status_balanced": "Équilibré",
+  "panel.insights_status_idle": "Rien encore",
+  "panel.insights_fairness_note": "Évalué sur le nombre de tâches, pas les points, pour qu'une tâche mieux payée ne masque pas un déséquilibre. Signalé au-delà de {tolerance} points d'écart avec une part égale.",
+  "panel.insights_chore": "tâche"
 }

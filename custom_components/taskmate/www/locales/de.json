@@ -1639,5 +1639,20 @@
   "panel.reward_unlock_entity": "Freischalten",
   "panel.reward_unlock_minutes": "Wie lange (Minuten)",
   "panel.reward_unlock_minutes_hint": "0 = eingeschaltet lassen; du musst selbst ausschalten.",
-  "panel.reward_unlock_no_allowlist": "Füge zuerst in den Einstellungen eine Entität zur Freischalt-Positivliste hinzu."
+  "panel.reward_unlock_no_allowlist": "Füge zuerst in den Einstellungen eine Entität zur Freischalt-Positivliste hinzu.",
+  "panel.tab_insights": "Einblicke",
+  "panel.insights_loading": "Wird berechnet…",
+  "panel.insights_fairness_title": "Wer macht die Arbeit?",
+  "panel.insights_fairness_intro": "{start} bis {end}. Gleichmäßig verteilt wären {fair}% pro Kind.",
+  "panel.insights_last_days": "Letzte {days} Tage",
+  "panel.insights_no_data": "In diesem Zeitraum noch keine bestätigten Aufgaben.",
+  "panel.insights_balanced": "Wirkt recht ausgewogen.",
+  "panel.insights_unbalanced": "Die Arbeit ist ungleich verteilt.",
+  "panel.insights_chores": "Aufgaben",
+  "panel.insights_status_over": "Macht mehr",
+  "panel.insights_status_under": "Macht weniger",
+  "panel.insights_status_balanced": "Ausgewogen",
+  "panel.insights_status_idle": "Noch nichts",
+  "panel.insights_fairness_note": "Bewertet nach Anzahl der Aufgaben, nicht nach Punkten, damit eine teurere Aufgabe keine ungleiche Verteilung verdeckt. Markiert, wenn ein Kind mehr als {tolerance} Punkte von einem gleichen Anteil abweicht.",
+  "panel.insights_chore": "Aufgabe"
 }
