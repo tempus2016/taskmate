@@ -137,3 +137,132 @@ class TemplatesMixin:
             raise ValueError(f"Cannot delete built-in template '{template_id}'")
         self.storage.remove_custom_template(template_id)
         await self.storage.async_save()
+
+    # ── Pack import / export (#688) ──────────────────────────────────────
+
+    PACK_FORMAT = "taskmate.template-pack"
+    PACK_VERSION = 1
+    MAX_PACK_TEMPLATES = 50
+    MAX_PACK_CHORES = 200
+
+    def export_templates(self, template_ids: list[str] | None = None) -> dict:
+        """Build a shareable pack from custom templates.
+
+        Built-ins are excluded: they ship with TaskMate, so exporting them
+        would just create duplicates on the other end.
+        """
+        wanted = set(template_ids or [])
+        packed = []
+        for tpl in self.storage.get_custom_templates():
+            if wanted and tpl.get("id") not in wanted:
+                continue
+            packed.append({
+                "name": tpl.get("name", ""),
+                "icon": tpl.get("icon", "mdi:clipboard-list-outline"),
+                "chores": [
+                    {k: v for k, v in chore.items() if k in TEMPLATE_CHORE_FIELDS}
+                    for chore in tpl.get("chores", [])
+                ],
+            })
+
+        from homeassistant.util import dt as dt_util
+        return {
+            "format": self.PACK_FORMAT,
+            "version": self.PACK_VERSION,
+            "exported_at": dt_util.now().isoformat(),
+            "templates": packed,
+        }
+
+    def _validate_pack(self, pack: dict) -> list[dict]:
+        """Validate an untrusted pack, returning clean template dicts.
+
+        A pack is arbitrary user-supplied JSON, so everything is checked and
+        every unknown chore field is dropped rather than trusted — a shared
+        pack must not be able to set runtime state or fields the panel
+        wouldn't let you set by hand.
+        """
+        if not isinstance(pack, dict):
+            raise ValueError("That doesn't look like a TaskMate pack")
+        if pack.get("format") != self.PACK_FORMAT:
+            raise ValueError("Not a TaskMate template pack")
+        try:
+            version = int(pack.get("version", 0))
+        except (TypeError, ValueError) as err:
+            raise ValueError("Pack version is not a number") from err
+        if version > self.PACK_VERSION:
+            raise ValueError(
+                f"This pack needs a newer TaskMate (pack version {version}, "
+                f"this one understands {self.PACK_VERSION})"
+            )
+
+        templates = pack.get("templates")
+        if not isinstance(templates, list) or not templates:
+            raise ValueError("Pack contains no templates")
+        if len(templates) > self.MAX_PACK_TEMPLATES:
+            raise ValueError(f"Pack has too many templates (max {self.MAX_PACK_TEMPLATES})")
+
+        clean: list[dict] = []
+        for entry in templates:
+            if not isinstance(entry, dict):
+                raise ValueError("Pack contains a malformed template")
+            name = str(entry.get("name", "")).strip()
+            if not name:
+                raise ValueError("A template in the pack has no name")
+
+            raw_chores = entry.get("chores")
+            if not isinstance(raw_chores, list) or not raw_chores:
+                raise ValueError(f"Template '{name}' has no chores")
+            if len(raw_chores) > self.MAX_PACK_CHORES:
+                raise ValueError(f"Template '{name}' has too many chores")
+
+            chores = []
+            for raw in raw_chores:
+                if not isinstance(raw, dict):
+                    raise ValueError(f"Template '{name}' has a malformed chore")
+                chore_name = str(raw.get("name", "")).strip()
+                if not chore_name:
+                    raise ValueError(f"A chore in '{name}' has no name")
+                # Whitelist: unknown keys are dropped, never carried through.
+                cleaned = {k: v for k, v in raw.items() if k in TEMPLATE_CHORE_FIELDS}
+                cleaned["name"] = chore_name[:200]
+                chores.append(cleaned)
+
+            clean.append({
+                "name": name[:120],
+                "icon": str(entry.get("icon", "") or "mdi:clipboard-list-outline"),
+                "chores": chores,
+            })
+        return clean
+
+    async def async_import_pack(self, pack: dict) -> dict:
+        """Import a validated pack as custom templates. Returns a summary.
+
+        Names that already exist are suffixed rather than overwritten — an
+        import should never silently replace something the family built.
+        """
+        clean = self._validate_pack(pack)
+        existing = {t.get("name", "") for t in self.storage.get_custom_templates()}
+
+        created = []
+        for tpl in clean:
+            name = tpl["name"]
+            if name in existing:
+                suffix = 2
+                while f"{name} ({suffix})" in existing:
+                    suffix += 1
+                name = f"{name} ({suffix})"
+            existing.add(name)
+
+            record = {
+                "id": generate_id(),
+                "name": name,
+                "icon": tpl["icon"],
+                "builtin": False,
+                "chores": tpl["chores"],
+            }
+            self.storage.add_custom_template(record)
+            created.append({"id": record["id"], "name": name, "chores": len(tpl["chores"])})
+
+        await self.storage.async_save()
+        await self.async_refresh()
+        return {"imported": len(created), "templates": created}
