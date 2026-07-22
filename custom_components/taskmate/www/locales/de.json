@@ -1620,5 +1620,13 @@
   "routine.skipped_note": "{count} für später übrig.",
   "routine.start_again": "Neu starten",
   "routine.empty_title": "Nichts zu tun",
-  "routine.empty_body": "Diese Routine ist schon erledigt."
+  "routine.empty_body": "Diese Routine ist schon erledigt.",
+  "child.roulette_spin": "Für eine ×{multiplier}-Aufgabe drehen",
+  "child.roulette_respin": "Nochmal drehen (noch {count})",
+  "child.roulette_no_spins": "Heute keine Drehungen mehr",
+  "panel.settings_roulette_section": "Aufgaben-Roulette",
+  "panel.settings_roulette_enabled": "Aufgaben-Roulette aktivieren",
+  "panel.settings_roulette_enabled_hint": "Ein Kind kann für eine zufällige offene Aufgabe mit Extrapunkten drehen.",
+  "panel.settings_roulette_multiplier": "Punkte-Multiplikator",
+  "panel.settings_roulette_spins": "Drehungen pro Tag"
 }

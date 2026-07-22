@@ -100,6 +100,7 @@ from .const import (
     SERVICE_SET_CHORE_MANUAL_START,
     SERVICE_SET_CHORE_ORDER,
     SERVICE_SKIP_CHORE,
+    SERVICE_SPIN_ROULETTE,
     SERVICE_START_TIMED_TASK,
     SERVICE_STOP_TIMED_TASK,
     SERVICE_TEST_NOTIFICATION,
@@ -622,6 +623,21 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         requester_id = call.data["requester_id"]
         await _async_require_linked_child(hass, call, coordinator, requester_id)
         await coordinator.async_request_swap(call.data["chore_id"], requester_id)
+
+    async def handle_spin_roulette(call: ServiceCall) -> None:
+        """A child spins for a random chore at a multiplier (#677)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        child_id = call.data[ATTR_CHILD_ID]
+        await _async_require_linked_child(hass, call, coordinator, child_id)
+        try:
+            await coordinator.async_spin_roulette(child_id)
+        except ValueError as err:
+            # Roulette off, no spins left, nothing to spin for — all normal
+            # states the child should be told about, not server errors.
+            raise ServiceValidationError(str(err)) from err
 
     async def handle_choose_avatar(call: ServiceCall) -> None:
         """A child switches to an avatar they've unlocked."""
@@ -1199,6 +1215,13 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Required("requester_id"): cv.string,
             }
         ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_SPIN_ROULETTE,
+        _safe(handle_spin_roulette),
+        schema=vol.Schema({vol.Required(ATTR_CHILD_ID): cv.string}),
     )
 
     hass.services.async_register(

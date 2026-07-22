@@ -1620,5 +1620,13 @@
   "routine.skipped_note": "{count} igjen til senere.",
   "routine.start_again": "Start på nytt",
   "routine.empty_title": "Ingenting å gjøre",
-  "routine.empty_body": "Denne rutinen er allerede ferdig."
+  "routine.empty_body": "Denne rutinen er allerede ferdig.",
+  "child.roulette_spin": "Spinn for en ×{multiplier}-oppgave",
+  "child.roulette_respin": "Spinn igjen ({count} igjen)",
+  "child.roulette_no_spins": "Ingen spinn igjen i dag",
+  "panel.settings_roulette_section": "Oppgaveroulette",
+  "panel.settings_roulette_enabled": "Slå på oppgaveroulette",
+  "panel.settings_roulette_enabled_hint": "Lar et barn spinne for en tilfeldig gjenstående oppgave verdt ekstra poeng.",
+  "panel.settings_roulette_multiplier": "Poengmultiplikator",
+  "panel.settings_roulette_spins": "Spinn per dag"
 }

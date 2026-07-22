@@ -1193,6 +1193,43 @@ class TaskMateChildCard extends LitElement {
         width: 6px;
         background: var(--fun-red);
       }
+      /* Chore roulette (#677) */
+      .roulette {
+        display: flex; flex-direction: column; gap: 8px;
+        margin: 4px 0 12px;
+      }
+      .roulette-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        background: linear-gradient(135deg, #8e44ad, #c0392b);
+        color: #fff; border: 0; border-radius: 14px;
+        padding: 12px 16px; font-family: inherit; font-size: 0.95rem;
+        font-weight: 800; cursor: pointer; width: 100%;
+      }
+      .roulette-btn:disabled { opacity: 0.55; cursor: default; }
+      .roulette-btn.is-spinning ha-icon { animation: tm-roulette-spin 0.6s linear infinite; }
+      @keyframes tm-roulette-spin { to { transform: rotate(360deg); } }
+      .roulette-result {
+        display: flex; align-items: center; gap: 8px;
+        background: rgba(142, 68, 173, 0.12);
+        border: 1px solid rgba(142, 68, 173, 0.35);
+        border-radius: 12px; padding: 8px 12px;
+      }
+      .roulette-mult {
+        background: #8e44ad; color: #fff;
+        border-radius: 8px; padding: 2px 8px;
+        font-weight: 900; font-size: 0.85rem;
+      }
+      .roulette-name { flex: 1; font-weight: 700; font-size: 0.95rem; }
+      .roulette-worth {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-weight: 800; color: #8e44ad;
+      }
+      .roulette-worth ha-icon { --mdc-icon-size: 16px; }
+      .roulette-spent {
+        text-align: center; font-size: 0.8rem;
+        color: var(--secondary-text-color); opacity: 0.8;
+      }
+
       /* Reactive-chore countdown (#674). Amber by default, red under 5 min.
          On its own line, not inline in .chore-name — that name ellipsises, and
          a long one clipped the badge down to just the bonus. */
@@ -2128,6 +2165,7 @@ class TaskMateChildCard extends LitElement {
                     ` : '';
                   })() : ''}
                 </div>
+                ${this._renderRoulette(child, childChores, pointsIcon)}
                 ${childChores.map((chore, index) => html`
                   ${chore.task_type === 'timed'
                     ? this._renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, index)
@@ -3045,6 +3083,69 @@ class TaskMateChildCard extends LitElement {
         ⏱ ${label}${bonus ? html` <span class="deadline-bonus">+${bonus}</span>` : ''}
       </span>
     `;
+  }
+
+  /**
+   * Chore roulette (#677) — an opt-in nudge for the child who has stalled.
+   * Only renders when the parent enabled it in settings AND the card opts in,
+   * so an existing dashboard never sprouts a new button unasked.
+   */
+  _renderRoulette(child, childChores, pointsIcon) {
+    if (this.config.show_roulette !== true) return '';
+    const roulette = child.roulette;
+    if (!roulette) return '';  // switched off in settings
+
+    const picked = roulette.chore_id
+      ? childChores.find(c => String(c.id) === String(roulette.chore_id))
+      : null;
+    const spinsLeft = roulette.spins_left ?? 0;
+    const multiplier = roulette.multiplier || 2;
+    const spinning = this._spinning === child.id;
+
+    return html`
+      <div class="roulette">
+        ${picked ? html`
+          <div class="roulette-result">
+            <span class="roulette-mult">×${multiplier}</span>
+            <span class="roulette-name">${picked.name}</span>
+            <span class="roulette-worth">
+              <ha-icon icon="${pointsIcon}"></ha-icon>
+              ${Math.round((picked.effective_points ?? picked.points ?? 0) * multiplier)}
+            </span>
+          </div>
+        ` : ''}
+        ${spinsLeft > 0 ? html`
+          <button class="roulette-btn ${spinning ? 'is-spinning' : ''}"
+                  ?disabled=${spinning || childChores.length === 0}
+                  @click=${() => this._spinRoulette(child)}>
+            <ha-icon icon="mdi:dice-multiple"></ha-icon>
+            ${picked
+              ? this._t('child.roulette_respin', { count: spinsLeft })
+              : this._t('child.roulette_spin', { multiplier })}
+          </button>
+        ` : html`
+          <div class="roulette-spent">${this._t('child.roulette_no_spins')}</div>
+        `}
+      </div>
+    `;
+  }
+
+  async _spinRoulette(child) {
+    if (this._spinning) return;
+    this._spinning = child.id;
+    this.requestUpdate();
+    try {
+      await this.hass.callService('taskmate', 'spin_roulette', { child_id: child.id });
+    } catch (err) {
+      // "No spins left" / "Nothing left to spin for" arrive here as
+      // ServiceValidationError — show them rather than failing silently.
+      this.dispatchEvent(new CustomEvent('hass-notification', {
+        detail: { message: String(err?.message || err) }, bubbles: true, composed: true,
+      }));
+    } finally {
+      this._spinning = null;
+      this.requestUpdate();
+    }
   }
 
   _renderChoreCard(chore, child, pointsIcon, todaysCompletions = [], choreIndex = 0) {
