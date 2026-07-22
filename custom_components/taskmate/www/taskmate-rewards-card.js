@@ -1725,7 +1725,7 @@ class TaskMateRewardsCard extends LitElement {
     // Calculate weighted segments - each segment width = (child's share of goal) * (their progress %)
     // This way, if a child has 50% share and is at 100% progress, they fill 50% of the bar
     const segments = childContributions.map((contrib) => {
-      let width = 0;
+      let width;
       if (hasWeightedData && contrib.shareOfGoal > 0) {
         // Weighted: segment width = share of goal * progress percentage
         // e.g., 40% share at 50% progress = 20% of bar filled

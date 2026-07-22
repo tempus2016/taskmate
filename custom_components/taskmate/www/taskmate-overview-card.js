@@ -411,7 +411,7 @@ class TaskMateOverviewCard extends LitElement {
     // full pending list (resolved via companion) so the count keeps including
     // completions left pending from a previous day; fall back to today's
     // completions only on older backends.
-    let pendingApprovals = 0;
+    let pendingApprovals;
     if (this.config.approvals_entity) {
       const appEntity = this.hass.states[this.config.approvals_entity];
       pendingApprovals = appEntity?.attributes?.chore_completions?.length || 0;
@@ -517,7 +517,7 @@ class TaskMateOverviewCard extends LitElement {
       </ha-card>`;
     }
 
-    let pendingApprovals = 0;
+    let pendingApprovals;
     if (this.config.approvals_entity) {
       const appEntity = this.hass.states[this.config.approvals_entity];
       pendingApprovals = appEntity?.attributes?.chore_completions?.length || 0;
