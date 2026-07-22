@@ -759,7 +759,10 @@ class ChoresMixin:
 
         # Fire approval notification only if it stays pending
         if not auto_approve:
-            await self._async_notify_pending_approval(child.name, chore.name, chore.points, completion_id=completion.id)
+            await self._async_notify_pending_approval(
+                child.name, chore.name, chore.points,
+                completion_id=completion.id, photo_url=completion.photo_url,
+            )
 
         await self.async_refresh()
 

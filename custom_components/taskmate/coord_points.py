@@ -1013,7 +1013,7 @@ class PointsMixin:
 
     async def _async_notify_pending_approval(
         self, child_name: str, chore_name: str, points: int,
-        completion_id: str | None = None,
+        completion_id: str | None = None, photo_url: str = "",
     ) -> None:
         await self.notifications.fire(
             "pending_chore_approval",
@@ -1023,6 +1023,9 @@ class PointsMixin:
                 "chore_name": chore_name,
                 "points": points,
                 "points_name": self.storage.get_points_name(),
+                # Evidence photo (#686). Signed here rather than in the
+                # notifier so the notifier stays free of photo specifics.
+                "photo_url": photos.sign_photo_url(self.hass, photo_url) if photo_url else "",
             },
         )
 

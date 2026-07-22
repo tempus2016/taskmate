@@ -988,6 +988,9 @@ See the [Allowance wiki page](https://github.com/tempus2016/taskmate/wiki/Allowa
 ---
 
 ## Photo Proof
+ 
+Evidence photos are attached to the **approval push notification** on the HA companion app, so a parent can approve from the lock screen while actually looking at the tidied room. The URL is signed (24h) because the app fetches attachments without the user's bearer token — an unsigned URL returns 401. Android reads `data.image` and iOS reads `data.attachment.url`; both are sent so one payload works on either. Non-mobile backends (Telegram, email, persistent) get no attachment, since they'd render a raw payload rather than a picture.
+ 
 
 Photo proof lets a chore require evidence before it counts. Turn on **Require photo proof** (`require_photo`) in the chore dialog and that chore's completions **always** go through parent approval — even if Requires Approval is off — and any photo attached is shown to the parent as a thumbnail when they review it.
 
