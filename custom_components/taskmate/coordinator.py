@@ -649,6 +649,7 @@ class TaskMateCoordinator(
             self._async_check_streaks,
             self._async_expire_one_shot_chores,
             self._async_expire_dated_chores,
+            self._async_expire_deadline_chores,
             self._async_restock_rewards,
             self._async_expire_rewards,
             self._async_decay_points,
@@ -704,6 +705,11 @@ class TaskMateCoordinator(
         # May stop sessions (mutates + saves -> bumps the version), so run first.
         await self._async_auto_stop_capped_sessions()
         await self._async_check_family_goal()
+        # Reactive-chore deadlines are minutes long, so they can't wait for
+        # midnight maintenance like the date-based expiries do. refresh=False:
+        # we are already inside the refresh, and the snapshot below picks the
+        # change up in this same tick.
+        await self._async_expire_deadline_chores(refresh=False)
         self._refresh_tracked_availability_entities()
         version = self.storage.data_version
         cached = getattr(self, "_data_snapshot_cache", None)

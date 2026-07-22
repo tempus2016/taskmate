@@ -273,6 +273,12 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
             reason = coordinator.weather_block_reason(c)
             if reason:
                 record["weather_blocked"] = reason
+        deadline_at = getattr(c, 'deadline_at', '')
+        if deadline_at:
+            record["deadline_at"] = deadline_at
+            speed_bonus = getattr(c, 'speed_bonus_points', 0)
+            if speed_bonus:
+                record["speed_bonus_points"] = speed_bonus
         disabled_for = getattr(c, 'disabled_for', [])
         if disabled_for:
             record["disabled_for"] = disabled_for

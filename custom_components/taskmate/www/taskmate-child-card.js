@@ -91,9 +91,17 @@ class TaskMateChildCard extends LitElement {
       || this.hass?.states?.[this.config?.entity]?.attributes || {};
     const sessions = attrs.active_timed_sessions || [];
     const hasRunning = sessions.some(s => s.state === 'running' && s.child_id === this.config?.child_id);
-    if (hasRunning && !this._timerInterval) {
+    // A reactive chore's countdown (#674) has to keep ticking too, otherwise it
+    // sits on a stale minute until the next coordinator push.
+    const now = Date.now();
+    const hasDeadline = (attrs.chores || []).some(c => {
+      if (!c.deadline_at) return false;
+      const at = new Date(c.deadline_at).getTime();
+      return !Number.isNaN(at) && at > now;
+    });
+    if ((hasRunning || hasDeadline) && !this._timerInterval) {
       this._timerInterval = setInterval(() => { this._timerTick++; this.requestUpdate(); }, 1000);
-    } else if (!hasRunning && this._timerInterval) {
+    } else if (!hasRunning && !hasDeadline && this._timerInterval) {
       this._stopTimerTick();
     }
   }
@@ -1185,6 +1193,35 @@ class TaskMateChildCard extends LitElement {
         width: 6px;
         background: var(--fun-red);
       }
+      /* Reactive-chore countdown (#674). Amber by default, red under 5 min.
+         On its own line, not inline in .chore-name — that name ellipsises, and
+         a long one clipped the badge down to just the bonus. */
+      .deadline-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+        align-self: flex-start;
+        background: rgba(255, 152, 0, 0.18);
+        color: #ef6c00;
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        border-radius: 8px;
+        padding: 2px 7px;
+        white-space: nowrap;
+        width: fit-content;
+      }
+      .deadline-badge.deadline-urgent {
+        background: var(--fun-red);
+        color: #fff;
+      }
+      .deadline-bonus {
+        opacity: 0.85;
+        font-weight: 900;
+      }
+
       .mandatory-badge {
         display: inline-flex;
         align-items: center;
@@ -2982,6 +3019,34 @@ class TaskMateChildCard extends LitElement {
     `;
   }
 
+  /**
+   * Countdown badge for a reactive chore (#674) — "empty the washing machine
+   * within 30 minutes". Reads the deadline fresh on every render, so it ticks
+   * down with the coordinator's updates. Hidden once the chore is done.
+   */
+  _renderDeadlineBadge(chore, isCompletedForToday) {
+    if (!chore.deadline_at || isCompletedForToday) return '';
+    const deadline = new Date(chore.deadline_at);
+    if (Number.isNaN(deadline.getTime())) return '';
+    const msLeft = deadline.getTime() - Date.now();
+    if (msLeft <= 0) return '';
+
+    const minsLeft = Math.ceil(msLeft / 60000);
+    const label = minsLeft >= 60
+      ? this._t('child.deadline_hours', { hours: Math.floor(minsLeft / 60), mins: minsLeft % 60 })
+      : this._t('child.deadline_minutes', { mins: minsLeft });
+    // Under five minutes is the point at which it's worth shouting about.
+    const urgent = minsLeft <= 5;
+    const bonus = chore.speed_bonus_points || 0;
+
+    return html`
+      <span class="deadline-badge ${urgent ? 'deadline-urgent' : ''}"
+            title="${this._t('child.deadline_title')}">
+        ⏱ ${label}${bonus ? html` <span class="deadline-bonus">+${bonus}</span>` : ''}
+      </span>
+    `;
+  }
+
   _renderChoreCard(chore, child, pointsIcon, todaysCompletions = [], choreIndex = 0) {
     const isLoading = this._loading[chore.id];
     const isCelebrating = this._celebrating === chore.id;
@@ -3095,6 +3160,7 @@ class TaskMateChildCard extends LitElement {
           </div>
           <div class="chore-details">
             <div class="chore-name">${chore.name}${chore.mandatory ? html`<span class="mandatory-badge">⚠ ${this._t('child.mandatory')}</span>` : ''}</div>
+            ${this._renderDeadlineBadge(chore, isCompletedForToday)}
             ${chore.difficulty ? html`<span class="difficulty-badge difficulty-${chore.difficulty}">${this._t('child.difficulty_' + chore.difficulty) || chore.difficulty}</span>` : ''}
             ${this.config.show_description && chore.description ? html`
               <div class="chore-description">${chore.description}</div>

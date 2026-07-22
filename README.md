@@ -38,6 +38,7 @@
 - [Chore Dependencies](#chore-dependencies)
 - [Dynamic Chore Visibility](#dynamic-chore-visibility)
 - [Weather-Aware Chores](#weather-aware-chores)
+- [Reactive Chores (Deadlines & Speed Bonus)](#reactive-chores-deadlines--speed-bonus)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -319,6 +320,43 @@ Temperature and wind limits are read from the weather entity's `temperature` and
 - Wash the car — hide below 2°
 - Put the bins out — hide above 40 km/h wind
 - Water the plants — hide on `rainy` (nature did it for you)
+ 
+---
+ 
+## Reactive Chores (Deadlines & Speed Bonus)
+ 
+A chore raised by an automation that must be done *now*: "the washing machine finished — empty it within 30 minutes."
+ 
+Call `taskmate.add_chore` with `expires_in_minutes`:
+ 
+```yaml
+triggers:
+  - trigger: state
+    entity_id: sensor.washing_machine_status
+    to: "finished"
+actions:
+  - action: taskmate.add_chore
+    data:
+      name: Empty the washing machine
+      points: 10
+      assigned_to: ["<child_id>"]
+      requires_approval: false
+      expires_in_minutes: 30
+      speed_bonus_points: 5
+```
+ 
+| Field | Effect |
+|---|---|
+| `expires_in_minutes` | Deadline this many minutes from now. `0` = no deadline (a normal chore). Max 10080 (a week). |
+| `speed_bonus_points` | Extra points if the chore is completed before the deadline. |
+ 
+### How It Works
+ 
+- A chore with a deadline is automatically **one-shot** — it exists to be done now and never carries into tomorrow.
+- The child card shows a live **countdown badge** — amber, turning red under five minutes — with the speed bonus alongside it.
+- Beat the deadline and `speed_bonus_points` is added on top of the normal award. This **stacks** with the early-bonus/late-penalty of `due_time` if the chore has one.
+- Miss it and the chore disappears and is soft-disabled. The sweep runs on the 30-second poll, so a 30-minute chore doesn't sit on the card until midnight.
+- Expiry fires a `taskmate_chore_expired` event (`chore_id`, `chore_name`, `deadline_at`, `timestamp`) so an automation can nag, re-raise it, or just log the miss.
  
 ---
  

@@ -63,6 +63,8 @@ class ChoresMixin:
         publish_calendar_entities: list[str] | None = None,
         require_availability: bool = False,
         manual_start_child_id: str = "",
+        deadline_at: str = "",
+        speed_bonus_points: int = 0,
     ) -> Chore:
         """Add a new chore."""
         # One-shot chores: force daily_limit=1, set created_date to today
@@ -112,6 +114,8 @@ class ChoresMixin:
             assignment_rotation_anchor=assignment_rotation_anchor,
             publish_calendar_entities=list(publish_calendar_entities or []),
             require_availability=require_availability,
+            deadline_at=deadline_at,
+            speed_bonus_points=max(0, int(speed_bonus_points or 0)),
         )
         # Cache today's active child so the card can show it immediately
         active = self._compute_active_children(chore, today)
@@ -182,6 +186,82 @@ class ChoresMixin:
         self.storage.remove_swap_request(req_id)
         await self.storage.async_save()
         await self.async_refresh()
+
+    def chore_deadline(self, chore) -> datetime | None:
+        """A reactive chore's deadline as an aware datetime, or None if unset."""
+        raw = (getattr(chore, "deadline_at", "") or "").strip()
+        if not raw:
+            return None
+        try:
+            parsed = datetime.fromisoformat(raw)
+        except (ValueError, TypeError):
+            _LOGGER.warning(
+                "Chore '%s' has an unparseable deadline_at %r — ignoring it",
+                getattr(chore, "name", ""), raw,
+            )
+            return None
+        # A naive value came from hand-edited storage; treat it as local time
+        # rather than silently comparing across timezones.
+        if parsed.tzinfo is None:
+            return dt_util.as_local(parsed.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE))
+        return dt_util.as_local(parsed)
+
+    def chore_deadline_passed(self, chore, now: datetime | None = None) -> bool:
+        """True when this chore had a deadline and it has already gone."""
+        deadline = self.chore_deadline(chore)
+        if deadline is None:
+            return False
+        return dt_util.as_local(now or dt_util.now()) > deadline
+
+    async def _async_expire_deadline_chores(self, refresh: bool = True) -> None:
+        """Soft-disable reactive chores whose deadline has passed.
+
+        Runs on the 30s poll as well as at midnight — a 30-minute "empty the
+        washing machine" chore must not sit on the card until tomorrow.
+
+        ``refresh=False`` is required when calling this from inside
+        ``_async_update_data``: that *is* the refresh, and asking the
+        coordinator to refresh re-entrantly deadlocks it. The caller there
+        builds its snapshot after us anyway, and our save has already bumped
+        ``data_version``, so the disabled chore lands in the same tick.
+        """
+        now = dt_util.now()
+        changed = False
+        for chore in self.storage.get_chores():
+            if not getattr(chore, "enabled", True):
+                continue
+            if not self.chore_deadline_passed(chore, now):
+                continue
+            chore.enabled = False
+            self.storage.update_chore(chore)
+            changed = True
+            _LOGGER.info(
+                "Reactive chore '%s' expired (deadline %s)",
+                chore.name, getattr(chore, "deadline_at", ""),
+            )
+            self.hass.bus.async_fire(
+                "taskmate_chore_expired",
+                {
+                    "chore_id": chore.id,
+                    "chore_name": chore.name,
+                    "deadline_at": getattr(chore, "deadline_at", ""),
+                    "timestamp": now.isoformat(),
+                },
+            )
+        if changed:
+            await self.storage.async_save()
+            if refresh:
+                await self.async_refresh()
+
+    def _apply_speed_bonus(self, chore, base: int, completed_at) -> int:
+        """Add a reactive chore's speed bonus when its deadline was beaten."""
+        bonus = int(getattr(chore, "speed_bonus_points", 0) or 0)
+        if bonus <= 0:
+            return base
+        deadline = self.chore_deadline(chore)
+        if deadline is None or dt_util.as_local(completed_at) > deadline:
+            return base
+        return base + bonus
 
     def _apply_time_adjustment(self, chore, base: int, completed_at) -> int:
         """Apply a chore's early-bonus / late-penalty based on completion time."""
@@ -623,8 +703,10 @@ class ChoresMixin:
         if requires_photo and not as_parent and not (photo_url or "").strip():
             raise ValueError("This chore requires a photo as evidence.")
         auto_approve = as_parent or (not chore.requires_approval and not requires_photo)
-        effective_points = self._apply_time_adjustment(
-            chore, self.effective_chore_points(chore), now
+        effective_points = self._apply_speed_bonus(
+            chore,
+            self._apply_time_adjustment(chore, self.effective_chore_points(chore), now),
+            now,
         )
 
         completion = ChoreCompletion(
@@ -1186,6 +1268,11 @@ class ChoresMixin:
         # availability path, a rained-off chore also stops counting as a
         # mandatory miss and can't break a streak.
         if not self._is_weather_ok_for_chore(chore):
+            return False
+
+        # Reactive chores (#674): once the deadline passes the chore is gone,
+        # even before the next sweep soft-disables it.
+        if self.chore_deadline_passed(chore):
             return False
 
         # Chore dependencies (FEAT-1): this chore unlocks only once every chore

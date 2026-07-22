@@ -1567,5 +1567,8 @@
   "weather.condition_windy": "Venteux",
   "weather.condition_windy_variant": "Très venteux",
   "weather.condition_cloudy": "Nuageux",
-  "weather.condition_exceptional": "Conditions extrêmes"
+  "weather.condition_exceptional": "Conditions extrêmes",
+  "child.deadline_minutes": "{mins} min restantes",
+  "child.deadline_hours": "{hours} h {mins} min restantes",
+  "child.deadline_title": "À faire avant la fin du temps imparti"
 }

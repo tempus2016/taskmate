@@ -1567,5 +1567,8 @@
   "weather.condition_windy": "Windy",
   "weather.condition_windy_variant": "Very windy",
   "weather.condition_cloudy": "Cloudy",
-  "weather.condition_exceptional": "Severe"
+  "weather.condition_exceptional": "Severe",
+  "child.deadline_minutes": "{mins} min left",
+  "child.deadline_hours": "{hours}h {mins}m left",
+  "child.deadline_title": "Do this before the time runs out"
 }

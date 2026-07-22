@@ -677,6 +677,30 @@ add_chore:
       default: true
       selector:
         boolean:
+    expires_in_minutes:
+      name: Expires in (minutes)
+      description: >-
+        Make this a reactive chore with a deadline this many minutes from now — e.g. the washing
+        machine finished, empty it within 30 minutes. The chore disappears and is disabled once the
+        deadline passes. 0 = no deadline.
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 10080
+          mode: box
+          unit_of_measurement: min
+    speed_bonus_points:
+      name: Speed bonus points
+      description: Extra points awarded if the chore is completed before the deadline. Needs expires_in_minutes.
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 10000
+          mode: box
 
 skip_chore:
   name: Skip Chore

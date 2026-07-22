@@ -282,6 +282,12 @@ class Chore:
     depends_on: list[str] = field(default_factory=list)  # Chore IDs that must be approved-completed today before this is available
     created_date: str = ""  # ISO date for one-shot expiry, e.g. "2026-04-16"
     expires_on: str = ""  # optional ISO end date; chore auto-disables the day after
+    # Reactive chores (#674): a short-lived chore raised by an automation, e.g.
+    # "the washing machine finished — empty it within 30 minutes". deadline_at
+    # is an ISO datetime after which the chore is unavailable and gets
+    # soft-disabled; beat it and speed_bonus_points is added to the award.
+    deadline_at: str = ""
+    speed_bonus_points: int = 0
     # Time-of-day incentive: when due_time (HH:MM) is set, a completion at/before
     # it earns +early_bonus, after it loses late_penalty (applied to the award).
     due_time: str = ""
@@ -351,6 +357,8 @@ class Chore:
             weather_temp_min=optional_float(data.get("weather_temp_min")),
             weather_temp_max=optional_float(data.get("weather_temp_max")),
             weather_wind_max=optional_float(data.get("weather_wind_max")),
+            deadline_at=data.get("deadline_at", ""),
+            speed_bonus_points=int(data.get("speed_bonus_points", 0) or 0),
             enabled=data.get("enabled", True),
             disabled_for=list(data.get("disabled_for", [])),
             depends_on=list(data.get("depends_on", []) or []),
@@ -411,6 +419,8 @@ class Chore:
             "weather_temp_min": self.weather_temp_min,
             "weather_temp_max": self.weather_temp_max,
             "weather_wind_max": self.weather_wind_max,
+            "deadline_at": self.deadline_at,
+            "speed_bonus_points": self.speed_bonus_points,
             "enabled": self.enabled,
             "disabled_for": self.disabled_for,
             "depends_on": self.depends_on,

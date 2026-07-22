@@ -1567,5 +1567,8 @@
   "weather.condition_windy": "Windig",
   "weather.condition_windy_variant": "Sehr windig",
   "weather.condition_cloudy": "Bewölkt",
-  "weather.condition_exceptional": "Unwetter"
+  "weather.condition_exceptional": "Unwetter",
+  "child.deadline_minutes": "noch {mins} Min.",
+  "child.deadline_hours": "noch {hours} Std. {mins} Min.",
+  "child.deadline_title": "Erledige das, bevor die Zeit abläuft"
 }
