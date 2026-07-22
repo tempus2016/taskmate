@@ -89,6 +89,7 @@ from .const import (
     SERVICE_PAUSE_TIMED_TASK,
     SERVICE_POSTPONE_MANDATORY_CHORE,
     SERVICE_PREVIEW_SOUND,
+    SERVICE_READ_ALOUD,
     SERVICE_RECORD_ALLOWANCE_PAYOUT,
     SERVICE_REJECT_CHORE,
     SERVICE_REJECT_REWARD,
@@ -623,6 +624,22 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         requester_id = call.data["requester_id"]
         await _async_require_linked_child(hass, call, coordinator, requester_id)
         await coordinator.async_request_swap(call.data["chore_id"], requester_id)
+
+    async def handle_read_aloud(call: ServiceCall) -> None:
+        """Speak a child's outstanding chores to a media player (#684)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        try:
+            await coordinator.async_read_aloud(
+                child_id=call.data[ATTR_CHILD_ID],
+                media_player=call.data.get("media_player", ""),
+                tts_entity=call.data.get("tts_entity", ""),
+                message=call.data.get("message", ""),
+            )
+        except ValueError as err:
+            raise ServiceValidationError(str(err)) from err
 
     async def handle_spin_roulette(call: ServiceCall) -> None:
         """A child spins for a random chore at a multiplier (#677)."""
@@ -1215,6 +1232,18 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Required("requester_id"): cv.string,
             }
         ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_READ_ALOUD,
+        _safe(handle_read_aloud),
+        schema=vol.Schema({
+            vol.Required(ATTR_CHILD_ID): cv.string,
+            vol.Optional("media_player", default=""): cv.string,
+            vol.Optional("tts_entity", default=""): cv.string,
+            vol.Optional("message", default=""): cv.string,
+        }),
     )
 
     hass.services.async_register(

@@ -31,6 +31,7 @@ from .coord_roulette import RouletteMixin
 from .coord_scheduled import ScheduledChangesMixin
 from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
+from .coord_tts import ReadAloudMixin
 from .coord_unlocks import UnlocksMixin
 from .models import Child
 from .storage import TaskMateStorage
@@ -53,6 +54,7 @@ class TaskMateCoordinator(
     ScheduledChangesMixin,
     ReportsMixin,
     RouletteMixin,
+    ReadAloudMixin,
     UnlocksMixin,
     DataUpdateCoordinator,
 ):

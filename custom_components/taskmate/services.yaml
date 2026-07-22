@@ -702,6 +702,38 @@ add_chore:
           max: 10000
           mode: box
 
+read_aloud:
+  name: Read Chores Aloud
+  description: >-
+    Speak a child's outstanding chores to a media player — "Ella, you have three things left...".
+    Wording is set by the read-aloud templates in the TaskMate panel settings.
+  fields:
+    child_id:
+      name: Child ID
+      required: true
+      selector:
+        text:
+    media_player:
+      name: Media player
+      description: Where to speak. Falls back to the default set in Settings.
+      required: false
+      selector:
+        entity:
+          domain: media_player
+    tts_entity:
+      name: Text-to-speech entity
+      description: Which TTS service to use. Falls back to Settings, then to the only one installed.
+      required: false
+      selector:
+        entity:
+          domain: tts
+    message:
+      name: Message override
+      description: Say this instead of the generated summary.
+      required: false
+      selector:
+        text:
+
 spin_roulette:
   name: Spin Chore Roulette
   description: >-

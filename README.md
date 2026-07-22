@@ -45,6 +45,7 @@
 - [Timed Unlock Rewards](#timed-unlock-rewards)
 - [Insights — Fairness, Friction, Week Ahead & Health](#insights--fairness-friction-week-ahead--health)
 - [Pre-Reader Mode](#pre-reader-mode)
+- [Read Aloud](#read-aloud)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -541,6 +542,36 @@ pre_reader_labels: false   # optional; adds the chore name back under each tile
 - **Points are shown as stars, not digits** (1–5, scaled from the chore's value). A four-year-old can count pictures.
 - Tiles are at least 128 px with a large tap target, and a **done tile stays tappable** so a mis-tap can be undone, exactly as on the standard card.
 - **Opt-in.** An existing dashboard never turns into pictures on its own, and names stay off unless you ask for them.
+ 
+---
+ 
+## Read Aloud
+ 
+Speak a child's outstanding chores to a media player — *"Ella, you have three things left: make your bed, brush your teeth and pack your bag."*
+ 
+```yaml
+action: taskmate.read_aloud
+data:
+  child_id: <child_id>
+  media_player: media_player.kitchen   # optional; falls back to the Settings default
+  tts_entity: tts.piper                # optional; falls back to Settings, then the only one installed
+  message: "Dinner is ready"           # optional; says this instead of the summary
+```
+ 
+### Wording
+ 
+The sentence comes from **parent-editable templates** in Settings, not from TaskMate's translations. The frontend locales don't reach the backend, and a family may well want phrasing that isn't one of the eight shipped languages.
+ 
+| Setting | Default | Placeholders |
+|---|---|---|
+| `read_aloud_template` | `{name}, you have {count} things left: {chores}.` | `{name}` `{count}` `{chores}` |
+| `read_aloud_one_template` | `{name}, you have one thing left: {chores}.` | same |
+| `read_aloud_done_template` | `{name}, you're all done. Nice one!` | same |
+| `read_aloud_joiner` | `and` | joins the last two chores |
+ 
+A template with a bad placeholder logs a warning and falls back to the built-in wording rather than silencing the feature.
+ 
+Fires `taskmate_read_aloud` (`child_id`, `media_player`, `tts_entity`, `message`).
  
 ---
  
