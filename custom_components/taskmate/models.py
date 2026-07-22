@@ -1132,6 +1132,9 @@ class ParentRecipient:
     name: str
     notify_service: str
     enabled: bool = True
+    # Presence entity for "whoever is home" routing (#687). Empty means this
+    # parent is always considered available.
+    presence_entity: str = ""
     id: str = field(default_factory=lambda: f"parent:{generate_id()}")
 
     @classmethod
@@ -1141,6 +1144,7 @@ class ParentRecipient:
             name=data.get("name", ""),
             notify_service=data.get("notify_service", ""),
             enabled=bool(data.get("enabled", True)),
+            presence_entity=str(data.get("presence_entity", "") or ""),
             id=rid,
         )
 
@@ -1148,6 +1152,7 @@ class ParentRecipient:
         return {
             "id": self.id,
             "name": self.name,
+            "presence_entity": self.presence_entity,
             "notify_service": self.notify_service,
             "enabled": self.enabled,
         }

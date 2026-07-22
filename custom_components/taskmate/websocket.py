@@ -1254,7 +1254,7 @@ _SUBKEY_SETTINGS = {
     "perfect_week_bonus", "streak_milestones",
     "streak_requires_all_chores", "perfect_week_requires_all_chores",
     "difficulty_multiplier_easy", "difficulty_multiplier_medium", "difficulty_multiplier_hard",
-    "unlock_allowlist",
+    "unlock_allowlist", "parent_routing",
     "read_aloud_media_player", "read_aloud_tts_entity", "read_aloud_template",
     "read_aloud_one_template", "read_aloud_done_template", "read_aloud_joiner",
     "roulette_enabled", "roulette_multiplier", "roulette_daily_spins",
@@ -1418,6 +1418,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("difficulty_multiplier_medium"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("difficulty_multiplier_hard"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("unlock_allowlist"): [str],
+    vol.Optional("parent_routing"): vol.In(["all", "home", "round_robin"]),
     vol.Optional("read_aloud_media_player"): str,
     vol.Optional("read_aloud_tts_entity"): str,
     vol.Optional("read_aloud_template"): vol.All(str, vol.Length(max=300)),
@@ -1925,6 +1926,7 @@ async def ws_notif_set_child_quiet(hass, connection, msg, coordinator):
     vol.Required("name"): str,
     vol.Required("notify_service"): str,
     vol.Optional("enabled", default=True): bool,
+    vol.Optional("presence_entity", default=""): str,
 })
 @websocket_api.async_response
 @_admin_only
@@ -1942,6 +1944,7 @@ async def ws_notif_upsert_parent(hass, connection, msg, coordinator):
         existing.name = msg["name"]
         existing.notify_service = msg["notify_service"]
         existing.enabled = msg["enabled"]
+        existing.presence_entity = msg.get("presence_entity", "")
         await c.notifications.upsert_parent(existing)
         connection.send_result(msg["id"], existing.to_dict())
     else:
@@ -1949,6 +1952,7 @@ async def ws_notif_upsert_parent(hass, connection, msg, coordinator):
             name=msg["name"],
             notify_service=msg["notify_service"],
             enabled=msg["enabled"],
+            presence_entity=msg.get("presence_entity", ""),
         )
         await c.notifications.upsert_parent(p)
         connection.send_result(msg["id"], p.to_dict())
