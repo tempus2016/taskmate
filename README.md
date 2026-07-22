@@ -47,6 +47,7 @@
 - [Pre-Reader Mode](#pre-reader-mode)
 - [Read Aloud](#read-aloud)
 - [Accessible Design Style](#accessible-design-style)
+- [Multi-Parent Approval Routing](#multi-parent-approval-routing)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -584,6 +585,31 @@ A fifth per-card design alongside Classic, Playroom, Console and Clean Pro — p
 - **High contrast.** Near-black on white (~19:1, comfortably past WCAG AAA), with heavy borders so meaning never rests on hue alone.
 - **Dyslexia-friendly type.** Atkinson Hyperlegible, drawn for low vision — its letterforms stay distinct where similar glyphs (I/l/1, O/0) usually collapse.
 - **Dark variant included.** `#0A0A0A` rather than pure black, which blooms on OLED and is harsh with astigmatism.
+ 
+---
+ 
+## Multi-Parent Approval Routing
+ 
+By default every approval buzzes every parent. Two other modes are available via the `parent_routing` setting:
+ 
+| Mode | Behaviour |
+|---|---|
+| `all` *(default)* | Every enabled parent, as before |
+| `home` | Only parents whose presence entity says they're here |
+| `round_robin` | One parent per notification, rotating |
+ 
+Give each parent a **presence entity** (`device_tracker.*`, `person.*`, anything that reads `home`/`on`/`true`/`present`) in the notification settings.
+ 
+### Every fallback errs towards over-notifying
+ 
+An unseen approval is worse than a redundant buzz, so:
+ 
+- **Nobody home** → everyone is told, not nobody.
+- **No presence entity set** → that parent counts as available and is never silently cut out.
+- **Broken or unavailable presence sensor** → fails open.
+- **Round-robin state pointing at a deleted parent** → starts from the beginning rather than wedging.
+ 
+Round-robin position is tracked **per notification type**, so a reward claim doesn't advance the chore-approval rotation. Child notifications are never affected by any of this — a reminder for a child must always reach that child.
  
 ---
  

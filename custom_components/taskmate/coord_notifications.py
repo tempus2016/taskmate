@@ -159,7 +159,14 @@ class NotificationCoordinator:
         recipients_fired: list[str] = []
         message = self._render_template(meta, context)
 
+        # Multi-parent routing (#687): thin the PARENT recipients down per the
+        # configured policy. Child routes are never touched — a reminder for a
+        # child must always reach that child.
+        allowed_parents = self._route_parents(type_id, cfg, only_recipients)
+
         for recipient_id, route in cfg.routes.items():
+            if recipient_id.startswith("parent:") and recipient_id not in allowed_parents:
+                continue
             if not route.enabled:
                 continue
             if only_recipients is not None and recipient_id not in only_recipients:
@@ -183,6 +190,68 @@ class NotificationCoordinator:
         # only when a recipient is explicitly routed to notify.persistent_
         # notification, flowing through _send_to like any other channel.
         self._fire_bus_event(type_id, context, recipients_fired)
+
+    # ── Multi-parent routing (#687) ──────────────────────────────────────
+
+    PARENT_ROUTING_MODES = ("all", "home", "round_robin")
+
+    def parent_routing_mode(self) -> str:
+        mode = str(self.storage.get_setting("parent_routing", "all") or "all")
+        return mode if mode in self.PARENT_ROUTING_MODES else "all"
+
+    def _parent_is_home(self, recipient_id: str) -> bool:
+        """True when this parent's presence entity says they're here.
+
+        No entity configured means "always available" — a parent who hasn't
+        set one up shouldn't be silently excluded from every approval.
+        """
+        parent = next(
+            (p for p in self.storage.get_parent_recipients() if p.id == recipient_id), None,
+        )
+        entity_id = (getattr(parent, "presence_entity", "") or "").strip() if parent else ""
+        if not entity_id:
+            return True
+        state = self.hass.states.get(entity_id)
+        if state is None or state.state in ("unavailable", "unknown", None, ""):
+            # Fail open: a broken presence sensor must not stop approvals.
+            return True
+        return str(state.state).lower() in ("home", "on", "true", "present")
+
+    def _route_parents(
+        self, type_id: str, cfg, only_recipients: set[str] | None,
+    ) -> set[str]:
+        """Which parent recipient ids should receive this notification."""
+        candidates = [
+            rid for rid, route in cfg.routes.items()
+            if rid.startswith("parent:") and route.enabled
+            and (only_recipients is None or rid in only_recipients)
+        ]
+        if not candidates:
+            return set()
+
+        mode = self.parent_routing_mode()
+        if mode == "all":
+            return set(candidates)
+
+        if mode == "home":
+            at_home = [rid for rid in candidates if self._parent_is_home(rid)]
+            # Nobody home: tell everyone rather than nobody. An unseen approval
+            # is worse than a redundant buzz.
+            return set(at_home or candidates)
+
+        # round_robin — one parent per notification, rotating.
+        ordered = sorted(candidates)
+        state = self.storage.get_setting("parent_routing_state", {})
+        state = dict(state) if isinstance(state, dict) else {}
+        last = state.get(type_id)
+        try:
+            start = ordered.index(last) + 1 if last in ordered else 0
+        except ValueError:
+            start = 0
+        chosen = ordered[start % len(ordered)]
+        state[type_id] = chosen
+        self.storage.set_setting("parent_routing_state", state)
+        return {chosen}
 
     async def send_test(self, type_id: str) -> list[str]:
         """Send a sample notification of ``type_id`` to its enabled routes.
