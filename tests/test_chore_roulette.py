@@ -231,3 +231,50 @@ class TestMultiplier:
             if k == "roulette_state" else {"roulette_enabled": True}.get(k, d)
         )):
             assert coord._apply_roulette_multiplier(chore, "kid1", 10) == 20
+
+
+class TestRouletteRendersOnEveryDesign:
+    """The spin button only ever rendered on the classic card.
+
+    `_renderRoulette` was called once, from the classic branch of render().
+    `_renderDesigned` returns before that branch is reached, so a family using
+    playroom, console, cleanpro or accessible had `show_roulette: true` in
+    their config and no button on screen — with nothing logged to explain it.
+    """
+
+    import pathlib as _pathlib
+
+    SOURCE = (
+        _pathlib.Path(__file__).resolve().parent.parent
+        / "custom_components" / "taskmate" / "www" / "taskmate-child-card.js"
+    ).read_text(encoding="utf-8")
+
+    def _designed_region(self) -> str:
+        start = self.SOURCE.index("_renderDesigned(design) {")
+        # End at the *definition* of the next method, not the call to it that
+        # appears inside this one.
+        end = self.SOURCE.index("\n  _designHeaderFull(", start)
+        return self.SOURCE[start:end]
+
+    def _classic_region(self) -> str:
+        start = self.SOURCE.index("  render() {")
+        end = self.SOURCE.index("_renderDesigned(design) {")
+        return self.SOURCE[start:end]
+
+    def test_classic_renders_the_roulette(self):
+        assert "this._renderRoulette(" in self._classic_region()
+
+    def test_designed_styles_render_the_roulette(self):
+        assert "this._renderRoulette(" in self._designed_region(), (
+            "the designed render path never calls _renderRoulette, so the spin "
+            "button is invisible on playroom / console / cleanpro / accessible"
+        )
+
+    def test_roulette_styling_follows_the_active_design(self):
+        """Hard-coded purple ignores the design tokens, so the button looked
+        pasted-on under every style but classic."""
+        import re
+
+        block = re.search(r"\.roulette-btn \{([^}]*)\}", self.SOURCE)
+        assert block, "could not find the .roulette-btn rule"
+        assert "var(--tmd-" in block.group(1)
