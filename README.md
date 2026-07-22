@@ -43,7 +43,7 @@
 - [Routine Mode](#routine-mode)
 - [Chore Roulette](#chore-roulette)
 - [Timed Unlock Rewards](#timed-unlock-rewards)
-- [Insights — Fairness Report](#insights--fairness-report)
+- [Insights — Fairness & Friction](#insights--fairness--friction)
 - [Bonus Points System](#bonus-points-system)
 - [Notifications](#notifications)
 - [Quiet Hours](#quiet-hours)
@@ -470,7 +470,7 @@ Spend points to unlock something for a while — the TV, the console socket, a w
  
 ---
  
-## Insights — Fairness Report
+## Insights — Fairness & Friction
  
 **TaskMate panel → Insights.** Answers the question the raw numbers don't: *am I dumping everything on the eldest?*
  
@@ -482,6 +482,21 @@ For a chosen window (7, 14 or 30 days) it shows each child's completed chores, p
 - Flagged as *doing more* / *doing less* when a child is more than **15 percentage points** off an even share. Wide enough that normal week-to-week variation doesn't nag; narrow enough to catch a real imbalance.
 - **Only approved, non-bonus completions count.** Unapproved work isn't yet work you've agreed happened, and bonus sub-tasks hang off a chore that's already counted.
 - Computed on demand, never cached — a stale report is worse than a slow one.
+ 
+### Friction — what isn't working
+ 
+The second Insights view judges each **chore** rather than each child: how often it actually gets done versus how often it came up, over 14 / 30 / 90 days.
+ 
+| Verdict | Meaning | Suggestion |
+|---|---|---|
+| **Never done** | No completion on record, ever | Retire it |
+| **Stalling** | Done under 20% of the time it came up | Retire if long dead, otherwise raise the points or reassign |
+| **Patchy** | Done 20–60% of the time | Raise the points |
+| **Fine** | Done 60%+ of the time | Leave it alone |
+ 
+Chores with outstanding mandatory misses show a ⚠ count, and the report leads with a **suggestion** rather than just a diagnosis — a stalling chore that already pays well doesn't need more points, it needs a different child.
+ 
+**What it can't tell you:** TaskMate deletes a completion when you reject it, and removes a mandatory miss once you resolve it, so neither rejection counts nor historical miss counts exist to be reported. The report says so rather than quietly omitting them. Expected counts are approximate — they don't replay rotation, dependencies, weather or vacations.
  
 ---
  

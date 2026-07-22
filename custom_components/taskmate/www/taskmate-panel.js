@@ -539,6 +539,17 @@ class TaskMatePanel extends HTMLElement {
     if (act === "toggle-depends")    { this._toggleArrayField("depends_on", t.dataset.id); return; }
     if (act === "toggle-calendar")   { this._toggleArrayField("publish_calendar_entities", t.dataset.id); return; }
     if (act === "toggle-weather-condition") { this._toggleArrayField("weather_block_conditions", t.dataset.id); return; }
+    if (act === "insights-view") {
+      this._insightView = t.dataset.id;
+      this._render();
+      return;
+    }
+    if (act === "friction-window") {
+      this._frictionDays = Number(t.dataset.id);
+      this._friction = null;
+      this._loadFriction(this._frictionDays);
+      return;
+    }
     if (act === "insights-window") {
       this._insightDays = Number(t.dataset.id);
       this._fairness = null;
@@ -2498,6 +2509,97 @@ class TaskMatePanel extends HTMLElement {
    * and when the window changes.
    */
   _renderInsightsTab() {
+    const view = this._insightView || "fairness";
+    const switcher = `
+      <div class="tm-chip-row" style="margin-bottom:14px">
+        ${["fairness", "friction"].map(v => `
+          <button type="button" class="tm-chip-btn ${v === view ? "tm-chip-on" : ""}"
+                  data-act="insights-view" data-id="${v}">
+            ${this._t("panel.insights_view_" + v)}
+          </button>
+        `).join("")}
+      </div>`;
+    return switcher + (view === "friction" ? this._renderFrictionReport() : this._renderFairnessReport());
+  }
+
+  /**
+   * Friction (#680): which chores aren't working, and what to do about each.
+   * Deliberately leads with a suggestion rather than just a diagnosis.
+   */
+  _renderFrictionReport() {
+    const report = this._friction;
+    if (!report) {
+      this._loadFriction(this._frictionDays || 30);
+      return `<div class="tm-card"><div class="tm-empty">${this._t("panel.insights_loading")}</div></div>`;
+    }
+    const days = this._frictionDays || 30;
+    const problems = report.chores.filter(c => c.verdict !== "fine");
+
+    return `
+      <div class="tm-card">
+        <div class="tm-card-head">
+          <h2>${this._t("panel.insights_friction_title")}</h2>
+          <div class="tm-chip-row">
+            ${[14, 30, 90].map(d => `
+              <button type="button" class="tm-chip-btn ${d === days ? "tm-chip-on" : ""}"
+                      data-act="friction-window" data-id="${d}">
+                ${this._t("panel.insights_last_days", { days: d })}
+              </button>
+            `).join("")}
+          </div>
+        </div>
+        <span class="tm-field-hint">${this._t("panel.insights_friction_intro", { start: report.start, end: report.end })}</span>
+
+        ${report.chores.length === 0 ? `
+          <div class="tm-empty">${this._t("panel.insights_friction_none")}</div>
+        ` : `
+          <div class="tm-verdict tm-verdict-${report.problem_count ? "warn" : "ok"}">
+            ${report.problem_count
+              ? this._t("panel.insights_friction_problems", { count: report.problem_count })
+              : this._t("panel.insights_friction_healthy")}
+          </div>
+          <table class="tm-table tm-friction">
+            <thead><tr>
+              <th>${this._t("panel.insights_col_chore")}</th>
+              <th>${this._t("panel.insights_col_done")}</th>
+              <th>${this._t("panel.insights_col_rate")}</th>
+              <th>${this._t("panel.insights_col_last")}</th>
+              <th>${this._t("panel.insights_col_verdict")}</th>
+              <th>${this._t("panel.insights_col_suggestion")}</th>
+            </tr></thead>
+            <tbody>
+              ${(problems.length ? problems : report.chores).map(c => `
+                <tr>
+                  <td><strong>${this._esc(c.name)}</strong>${c.outstanding_misses
+                    ? ` <span class="tm-fric-misses" title="${this._t("panel.insights_outstanding_misses")}">⚠ ${c.outstanding_misses}</span>` : ""}</td>
+                  <td>${c.completed}${c.expected ? ` / ${c.expected}` : ""}</td>
+                  <td>${c.rate === null ? "—" : c.rate + "%"}</td>
+                  <td>${c.days_since === null
+                    ? this._t("panel.insights_never")
+                    : this._t("panel.insights_days_ago", { days: c.days_since })}</td>
+                  <td><span class="tm-fric-verdict tm-fric-${c.verdict}">${this._t("panel.insights_verdict_" + c.verdict)}</span></td>
+                  <td>${this._t("panel.insights_suggest_" + c.suggestion)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+          <span class="tm-field-hint">${this._t("panel.insights_friction_note")}</span>
+        `}
+      </div>
+    `;
+  }
+
+  async _loadFriction(days) {
+    if (this._frictionLoading) return;
+    this._frictionLoading = true;
+    const { ok, res, err } = await this._callWS({ type: "taskmate/reports/friction", days });
+    this._frictionLoading = false;
+    if (!ok) { this._showToast("err", err); return; }
+    this._friction = res;
+    this._render();
+  }
+
+  _renderFairnessReport() {
     const days = this._insightDays || 7;
     const report = this._fairness;
     if (!report) {
@@ -6703,6 +6805,19 @@ class TaskMatePanel extends HTMLElement {
         .tm-fair-row { grid-template-columns: 1fr auto; }
         .tm-fair-bar { grid-column: 1 / -1; }
       }
+
+      /* Friction report (#680) */
+      .tm-friction td, .tm-friction th { font-size: 13px; }
+      .tm-fric-verdict {
+        display: inline-block; padding: 2px 8px; border-radius: 999px;
+        font-size: 11.5px; font-weight: 800; text-transform: uppercase;
+      }
+      .tm-fric-never    { background: rgba(198, 40, 40, 0.14); color: #c62828; }
+      .tm-fric-stalling { background: rgba(239, 108, 0, 0.16); color: #ef6c00; }
+      .tm-fric-struggling { background: rgba(251, 192, 45, 0.20); color: #a67c00; }
+      .tm-fric-fine     { background: rgba(46, 125, 50, 0.14); color: #2e7d32; }
+      .tm-fric-unknown  { background: var(--tm-surface-0); color: var(--tm-text-muted); }
+      .tm-fric-misses { color: #ef6c00; font-weight: 800; font-size: 12px; }
 
       /* Timed unlock allowlist (#678) */
       .tm-setting-stack { flex-direction: column; align-items: stretch; }
