@@ -1819,6 +1819,18 @@ Beyond the sensors above, TaskMate also exposes:
  
 ## Changelog
  
+### v5.0.1
+ 
+A bug-fix release. All of v5.0.0's new features work as documented; upgrade is drop-in with no configuration changes.
+
+**Fixes**
+- **The admin panel's Audit log is reachable again** — the Audit view was fully built but missing from the sidebar navigation, so there was no way to open it. It now appears in the panel's **System** group. ([#726](https://github.com/tempus2016/taskmate/pull/726))
+- **Narrow-width layout fixes in the admin panel** — on a phone the Parent Dashboard card lost its **Points** tab off the edge (it now wraps), entity-id chips tore across two lines (they now truncate cleanly), and the pending-approvals pill is a larger tap target. ([#726](https://github.com/tempus2016/taskmate/pull/726))
+- **Chore roulette now shows on every card design** — the spin button rendered on the Classic child card only. It now appears under Playroom, Console, Clean Pro and Accessible too, taking each design's accent colour. ([#728](https://github.com/tempus2016/taskmate/pull/728))
+- **Pre-reader mode now works on every card design** — `pre_reader: true` was silently ignored on any style but Classic. The picture tiles now render under all five designs, so pre-reader pairs correctly with the Accessible style. ([#728](https://github.com/tempus2016/taskmate/pull/728))
+- **The Photo Gallery and Family Goal cards now follow `card_design`** — both cards ignored the design setting and always rendered in the Classic look. They now take the active design's colours and fonts like every other card. ([#731](https://github.com/tempus2016/taskmate/pull/731))
+- **The avatar picker works on every card design** — tapping a child's avatar to switch it worked on the Classic child card only. It now opens under all five designs. ([#731](https://github.com/tempus2016/taskmate/pull/731))
+ 
 ### v5.0.0
  
 The largest release so far: fourteen new features across chores, rewards, cards, notifications and the admin panel. Nothing is removed and no configuration changes — existing setups upgrade untouched. The major version marks the size of the addition, not a breaking change.
