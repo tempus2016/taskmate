@@ -709,6 +709,15 @@ class NotificationCoordinator:
         await self.storage.async_save()
         await self.async_setup_schedules()
 
+    async def set_nav_url(self, type_id: str | None, nav_url: str) -> None:
+        """Set the tap target — global (type_id falsy) or per notification type."""
+        nav_url = (nav_url or "").strip()
+        if type_id:
+            self.storage.set_notification_nav_url(type_id, nav_url)
+        else:
+            self.storage.set_setting("notification_nav_url", nav_url)
+        await self.storage.async_save()
+
     def _has_outstanding_chores_today(self, child_id: str) -> bool:
         """Returns True if the child has at least one chore assigned today
         that has no approved/pending completion yet."""
