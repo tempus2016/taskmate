@@ -99,3 +99,9 @@ async def test_custom_notification_crud(storage):
 
     storage.delete_custom_notification(n.id)
     assert storage.get_custom_notifications() == []
+
+
+@pytest.mark.asyncio
+async def test_set_notification_nav_url(storage):
+    storage.set_notification_nav_url("badge_earned", "/taskmate")
+    assert storage.get_notification_config("badge_earned").nav_url == "/taskmate"
