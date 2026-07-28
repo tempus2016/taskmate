@@ -158,6 +158,7 @@ class NotificationCoordinator:
 
         recipients_fired: list[str] = []
         message = self._render_template(meta, context)
+        nav_url = self._resolve_nav_url(cfg)
 
         # Multi-parent routing (#687): thin the PARENT recipients down per the
         # configured policy. Child routes are never touched — a reminder for a
@@ -179,7 +180,7 @@ class NotificationCoordinator:
             notify_service = self._resolve_notify_service(recipient_id)
             if not notify_service:
                 continue
-            await self._send_to(notify_service, message, meta, context)
+            await self._send_to(notify_service, message, meta, context, nav_url)
             recipients_fired.append(recipient_id)
 
         # NOTE: deliberately no unconditional persistent_notification here.
@@ -283,6 +284,7 @@ class NotificationCoordinator:
         }
         message = "[TEST] " + self._render_template(meta, ctx)
         cfg = self.storage.get_notification_config(type_id)
+        nav_url = self._resolve_nav_url(cfg)
         sent: list[str] = []
         for recipient_id, route in cfg.routes.items():
             if not route.enabled:
@@ -290,7 +292,7 @@ class NotificationCoordinator:
             notify_service = self._resolve_notify_service(recipient_id)
             if not notify_service:
                 continue
-            await self._send_to(notify_service, message, meta, ctx)
+            await self._send_to(notify_service, message, meta, ctx, nav_url)
             sent.append(recipient_id)
         await self._fire_persistent_notification(type_id, message)
         return sent
@@ -307,6 +309,13 @@ class NotificationCoordinator:
         return _is_within_quiet_hours(
             child.quiet_hours_start, child.quiet_hours_end, dt_util.now()
         )
+
+    def _resolve_nav_url(self, cfg) -> str:
+        """Tap target for this notification: per-type override, else global default."""
+        per_type = (getattr(cfg, "nav_url", "") or "").strip()
+        if per_type:
+            return per_type
+        return str(self.storage.get_setting("notification_nav_url", "/taskmate") or "").strip()
 
     def _resolve_notify_service(self, recipient_id: str) -> str:
         if recipient_id.startswith("child:"):
@@ -349,7 +358,7 @@ class NotificationCoordinator:
 
     async def _send_to(
         self, notify_service: str, message: str,
-        meta: "NotificationTypeMeta", context: dict[str, Any],
+        meta: "NotificationTypeMeta", context: dict[str, Any], nav_url: str = "",
     ) -> None:
         domain, service = (
             notify_service.split(".", 1) if "." in notify_service
@@ -394,6 +403,13 @@ class NotificationCoordinator:
             # attachment.url. Sending both keeps one payload working on either.
             push["image"] = photo_url
             push["attachment"] = {"url": photo_url, "content-type": "jpeg"}
+
+        # Tap target (#734): open a chosen place when the notification body is
+        # tapped. clickAction=Android, url=iOS — the same value works on both.
+        # Only the mobile app honours these; other backends ignore data, so skip.
+        if nav_url and service.startswith("mobile_app"):
+            push["clickAction"] = nav_url
+            push["url"] = nav_url
 
         if push:
             data["data"] = push
