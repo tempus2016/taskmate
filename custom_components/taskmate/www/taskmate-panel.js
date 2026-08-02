@@ -676,6 +676,8 @@ class TaskMatePanel extends HTMLElement {
     if (act === "notif-set-parent-notify"){ /* handled in _onChange */ return; }
     if (act === "notif-rename-parent")    { /* handled in _onChange */ return; }
     if (act === "notif-set-streak-cutoff"){ /* handled in _onChange */ return; }
+    if (act === "notif-set-nav-url-global"){ /* handled in _onChange */ return; }
+    if (act === "notif-set-nav-url-type")  { /* handled in _onChange */ return; }
     if (act === "notif-add-parent")       { this._notifAddParent(); return; }
     if (act === "notif-delete-parent")    { this._notifDeleteParent(t.dataset.parentId); return; }
     if (act === "notif-add-custom")       { this._notifAddCustom(); return; }
@@ -913,6 +915,14 @@ class TaskMatePanel extends HTMLElement {
     }
     if (t.dataset.act === "notif-set-streak-cutoff") {
       this._notifSetStreakCutoff(t.value);
+      return;
+    }
+    if (t.dataset.act === "notif-set-nav-url-global") {
+      this._notifSetNavUrl(null, t.value);
+      return;
+    }
+    if (t.dataset.act === "notif-set-nav-url-type") {
+      this._notifSetNavUrl(t.dataset.typeId, t.value);
       return;
     }
     if (t.dataset.act === "notif-set-escalation") {
@@ -2097,6 +2107,13 @@ class TaskMatePanel extends HTMLElement {
 
   async _notifSetStreakCutoff(time) {
     await this._callWS({ type: "taskmate/notifications/set_streak_cutoff", time });
+    await this._fetchState();
+  }
+
+  async _notifSetNavUrl(typeId, navUrl) {
+    const payload = { type: "taskmate/notifications/set_nav_url", nav_url: navUrl || "" };
+    if (typeId) payload.type_id = typeId;
+    await this._callWS(payload);
     await this._fetchState();
   }
 
@@ -4578,6 +4595,13 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-card" style="margin-bottom:16px">
         <h3>${this._t("panel.notif_section_matrix")}</h3>
         <p class="tm-meta">${this._t("panel.notif_section_matrix_desc")}</p>
+        <div class="tm-meta" style="margin:4px 0 12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+          <label style="font-weight:500">${this._t("panel.notif_nav_url_global_label")}</label>
+          <input type="text" class="tm-input" style="flex:1;min-width:180px"
+                 value="${this._esc((ns.settings && ns.settings.notification_nav_url) || "")}"
+                 data-act="notif-set-nav-url-global" placeholder="/taskmate">
+          <div class="tm-meta" style="flex-basis:100%">${this._t("panel.notif_nav_url_global_hint")}</div>
+        </div>
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead>
@@ -4629,6 +4653,12 @@ class TaskMatePanel extends HTMLElement {
                 <button type="button" class="tm-btn" data-act="notif-send-test" data-type-id="${this._esc(t.id)}" style="padding:2px 10px;font-size:12px">
                   <ha-icon icon="mdi:send" style="--mdc-icon-size:14px"></ha-icon> ${this._t("panel.notif_send_test")}
                 </button>
+              </div>
+              <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
+                <input type="text" class="tm-notif-time-input" style="width:150px"
+                       value="${this._esc(c.nav_url || "")}"
+                       data-act="notif-set-nav-url-type" data-type-id="${this._esc(t.id)}"
+                       placeholder="${this._t("panel.notif_nav_url_row_placeholder")}">
               </div>
             </div>
           </div>

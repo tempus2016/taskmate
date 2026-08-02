@@ -299,3 +299,33 @@ async def test_get_state_no_coordinator(hass):
     connection.send_error.assert_called_once()
     args, _ = connection.send_error.call_args
     assert args[1] == "no_coordinator"
+
+
+@pytest.mark.asyncio
+async def test_set_nav_url_global(setup, hass):
+    coord = setup
+    connection = MagicMock()
+    msg = {"id": 20, "type": "taskmate/notifications/set_nav_url", "nav_url": "/taskmate"}
+    await ws.ws_notif_set_nav_url(hass, connection, msg)
+    args, _ = connection.send_result.call_args
+    assert args[1] == {"ok": True}
+    assert coord.storage.get_setting("notification_nav_url") == "/taskmate"
+
+
+@pytest.mark.asyncio
+async def test_set_nav_url_per_type(setup, hass):
+    coord = setup
+    connection = MagicMock()
+    msg = {"id": 21, "type": "taskmate/notifications/set_nav_url",
+           "type_id": "badge_earned", "nav_url": "/lovelace/x"}
+    await ws.ws_notif_set_nav_url(hass, connection, msg)
+    assert coord.storage.get_notification_config("badge_earned").nav_url == "/lovelace/x"
+
+
+@pytest.mark.asyncio
+async def test_get_state_includes_nav_url(setup, hass):
+    connection = MagicMock()
+    msg = {"id": 22, "type": "taskmate/notifications/get_state"}
+    await ws.ws_notif_get_state(hass, connection, msg)
+    state = connection.send_result.call_args[0][1]
+    assert state["settings"]["notification_nav_url"] == "/taskmate"
