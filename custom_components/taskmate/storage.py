@@ -728,6 +728,11 @@ class TaskMateStorage:
         cfg.master_enabled = enabled
         self._data.setdefault("notification_config", {})[type_id] = cfg.to_dict()
 
+    def set_notification_nav_url(self, type_id: str, nav_url: str) -> None:
+        cfg = self.get_notification_config(type_id)
+        cfg.nav_url = nav_url
+        self._data.setdefault("notification_config", {})[type_id] = cfg.to_dict()
+
     def set_notification_route(
         self, type_id: str, recipient_id: str, route: NotificationRoute
     ) -> None:

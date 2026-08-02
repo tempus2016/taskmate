@@ -218,3 +218,83 @@ async def test_clear_approval_noop_without_entry_id(coord, hass):
     await coord.clear_approval("pending_chore_approval", "")
 
     assert not hass.services.async_call.call_args_list
+
+
+def _notify_data(hass):
+    calls = [c for c in hass.services.async_call.call_args_list if c[0][0] == "notify"]
+    assert calls, "no notify call made"
+    return calls[0][0][2]
+
+
+@pytest.mark.asyncio
+async def test_nav_url_global_default_applied(coord, hass):
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(p)
+    coord.storage.set_notification_master("badge_earned", True)
+    coord.storage.set_notification_route("badge_earned", p.id, NotificationRoute(enabled=True))
+    await coord.fire("badge_earned", {"child_name": "M", "badge_name": "Star"})
+    data = _notify_data(hass)["data"]
+    assert data["clickAction"] == "/taskmate"
+    assert data["url"] == "/taskmate"
+
+
+@pytest.mark.asyncio
+async def test_nav_url_per_type_overrides_global(coord, hass):
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(p)
+    coord.storage.set_notification_master("badge_earned", True)
+    coord.storage.set_notification_route("badge_earned", p.id, NotificationRoute(enabled=True))
+    coord.storage.set_notification_nav_url("badge_earned", "/lovelace/parents")
+    await coord.fire("badge_earned", {"child_name": "M", "badge_name": "Star"})
+    data = _notify_data(hass)["data"]
+    assert data["clickAction"] == "/lovelace/parents"
+    assert data["url"] == "/lovelace/parents"
+
+
+@pytest.mark.asyncio
+async def test_nav_url_empty_emits_no_keys(coord, hass):
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    coord.storage.set_setting("notification_nav_url", "")  # clear the global default
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(p)
+    coord.storage.set_notification_master("badge_earned", True)
+    coord.storage.set_notification_route("badge_earned", p.id, NotificationRoute(enabled=True))
+    await coord.fire("badge_earned", {"child_name": "M", "badge_name": "Star"})
+    payload = _notify_data(hass)
+    assert "clickAction" not in payload.get("data", {})
+    assert "url" not in payload.get("data", {})
+
+
+@pytest.mark.asyncio
+async def test_nav_url_only_for_mobile_app(coord, hass):
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    p = ParentRecipient(name="Lisa", notify_service="notify.telegram_lisa")
+    coord.storage.upsert_parent_recipient(p)
+    coord.storage.set_notification_master("badge_earned", True)
+    coord.storage.set_notification_route("badge_earned", p.id, NotificationRoute(enabled=True))
+    await coord.fire("badge_earned", {"child_name": "M", "badge_name": "Star"})
+    payload = _notify_data(hass)
+    assert "clickAction" not in payload.get("data", {})
+
+
+@pytest.mark.asyncio
+async def test_nav_url_coexists_with_action_buttons(coord, hass):
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(p)
+    coord.storage.set_notification_master("pending_chore_approval", True)
+    coord.storage.set_notification_route("pending_chore_approval", p.id, NotificationRoute(enabled=True))
+    await coord.fire("pending_chore_approval", {
+        "entry_id": "c-1", "child_name": "Maria", "chore_name": "Bin",
+        "points": 10, "points_name": "Stars",
+    })
+    data = _notify_data(hass)["data"]
+    assert data["clickAction"] == "/taskmate"
+    assert "actions" in data
