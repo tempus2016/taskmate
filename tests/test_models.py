@@ -644,3 +644,18 @@ def test_custom_notification_round_trip():
     assert restored.id == n.id
     assert restored.day_mask == 0b1111111
     assert restored.recipient_ids == ["child:abc", "parent:xyz"]
+
+
+def test_notification_config_nav_url_roundtrip():
+    from custom_components.taskmate.models import NotificationConfig
+    cfg = NotificationConfig(type_id="badge_earned", nav_url="/lovelace/parents")
+    d = cfg.to_dict()
+    assert d["nav_url"] == "/lovelace/parents"
+    assert NotificationConfig.from_dict(d).nav_url == "/lovelace/parents"
+
+
+def test_notification_config_nav_url_omitted_when_empty():
+    from custom_components.taskmate.models import NotificationConfig
+    cfg = NotificationConfig(type_id="badge_earned")
+    assert "nav_url" not in cfg.to_dict()
+    assert NotificationConfig.from_dict({"type_id": "x"}).nav_url == ""
