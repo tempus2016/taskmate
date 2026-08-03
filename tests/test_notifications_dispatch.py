@@ -236,8 +236,8 @@ async def test_nav_url_global_default_applied(coord, hass):
     coord.storage.set_notification_route("badge_earned", p.id, NotificationRoute(enabled=True))
     await coord.fire("badge_earned", {"child_name": "M", "badge_name": "Star"})
     data = _notify_data(hass)["data"]
-    assert data["clickAction"] == "/taskmate"
-    assert data["url"] == "/taskmate"
+    assert data["clickAction"] == "/taskmate-admin"
+    assert data["url"] == "/taskmate-admin"
 
 
 @pytest.mark.asyncio
@@ -296,5 +296,5 @@ async def test_nav_url_coexists_with_action_buttons(coord, hass):
         "points": 10, "points_name": "Stars",
     })
     data = _notify_data(hass)["data"]
-    assert data["clickAction"] == "/taskmate"
+    assert data["clickAction"] == "/taskmate-admin"
     assert "actions" in data

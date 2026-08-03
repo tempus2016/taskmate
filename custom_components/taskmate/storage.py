@@ -8,7 +8,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
-from .const import DOMAIN
+from .const import DEFAULT_NOTIFICATION_NAV_URL, DOMAIN
 from .models import (
     AwardedBadge,
     Badge,
@@ -130,6 +130,8 @@ class TaskMateStorage:
         if "notifications_migration_done" not in self._data:
             self._run_notifications_migration()
             self._data["notifications_migration_done"] = True
+
+        self._migrate_nav_url_default()
 
         # Badge migration / seeding
         self._seed_builtin_badges(is_fresh=is_fresh)
@@ -663,6 +665,20 @@ class TaskMateStorage:
 
         if is_fresh:
             self._data["badges_backfill_pending"] = True
+
+    def _migrate_nav_url_default(self) -> None:
+        """Rewrite the broken v5.0.2 notification tap target.
+
+        v5.0.2 shipped "/taskmate" as the default, but the panel lives at
+        /taskmate-admin (/taskmate is the static-files prefix and 403s), so a
+        persisted "/taskmate" is broken for every install. Idempotent.
+        """
+        settings = self._data.get("settings", {}) or {}
+        if settings.get("notification_nav_url") == "/taskmate":
+            settings["notification_nav_url"] = DEFAULT_NOTIFICATION_NAV_URL
+        for cfg in (self._data.get("notification_config", {}) or {}).values():
+            if isinstance(cfg, dict) and cfg.get("nav_url") == "/taskmate":
+                cfg["nav_url"] = DEFAULT_NOTIFICATION_NAV_URL
 
     def _run_notifications_migration(self) -> None:
         """Seed parent_recipients + notification_config from legacy notify_service.

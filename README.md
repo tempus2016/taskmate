@@ -1824,9 +1824,9 @@ Beyond the sensors above, TaskMate also exposes:
 Adds a navigation target to notifications, so tapping one opens a place of your choosing.
 
 **New**
-- **Tap a notification to jump straight to a screen** — TaskMate mobile notifications now carry a navigation target. Set a global default under **Notifications → When tapped, open** (defaults to the TaskMate panel, `/taskmate`), and override it per notification type — for example, send pending-approval alerts straight to a parents' approval dashboard. Accepts a Lovelace path like `/taskmate` or `/lovelace/parents`, a full URL, or `noAction` to disable navigation. Works on the Home Assistant companion app (Android `clickAction` + iOS `url`) and sits alongside the existing Approve/Reject buttons. Strings are translated into all supported languages. ([#735](https://github.com/tempus2016/taskmate/pull/735), closes [#734](https://github.com/tempus2016/taskmate/issues/734))
+- **Tap a notification to jump straight to a screen** — TaskMate mobile notifications now carry a navigation target. Set a global default under **Notifications → When tapped, open** (defaults to the TaskMate panel, `/taskmate-admin`), and override it per notification type — for example, send pending-approval alerts straight to a parents' approval dashboard. Accepts a Lovelace path like `/taskmate-admin` or `/lovelace/parents`, a full URL, or `noAction` to disable navigation. Works on the Home Assistant companion app (Android `clickAction` + iOS `url`) and sits alongside the existing Approve/Reject buttons. Strings are translated into all supported languages. ([#735](https://github.com/tempus2016/taskmate/pull/735), closes [#734](https://github.com/tempus2016/taskmate/issues/734))
 
-**Note on upgrade:** notification taps now open the TaskMate panel (`/taskmate`) by default. If you preferred the previous behaviour (open wherever the app was last), clear the **When tapped, open** field or set it to `noAction`.
+**Note on upgrade:** notification taps now open the TaskMate panel (`/taskmate-admin`) by default. If you preferred the previous behaviour (open wherever the app was last), clear the **When tapped, open** field or set it to `noAction`.
 
 ### v5.0.1
  

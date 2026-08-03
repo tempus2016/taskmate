@@ -19,6 +19,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.event import async_track_time_change
 
 from .const import (
+    DEFAULT_NOTIFICATION_NAV_URL,
     NOTIF_TYPE_ALL_CHORES_DONE,
     NOTIF_TYPE_BADGE_EARNED,
     NOTIF_TYPE_BEDTIME_REMINDER,
@@ -86,6 +87,27 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {
     t.id: t for t in NOTIFICATION_TYPES
 }
+
+
+def _validate_nav_url(value: str) -> str:
+    """Normalise and vet a notification tap target.
+
+    The tap target is opened on the *recipient's* device, so only dashboard
+    paths, web URLs and the companion app's noAction sentinel are allowed —
+    never intent:// / app:// / homeassistant:// style deep links.
+    """
+    value = (value or "").strip()
+    if value in ("", "noAction"):
+        return value
+    if value.lower().startswith(("http://", "https://")):
+        return value
+    if (
+        value.startswith("/")
+        and not value.startswith("//")
+        and not any(ord(c) <= 32 or ord(c) == 127 for c in value)
+    ):
+        return value
+    raise ValueError("nav_url must be a /path, an http(s) URL, or noAction")
 
 
 def _parse_hhmm(value: str) -> tuple[int, int] | None:
@@ -315,7 +337,11 @@ class NotificationCoordinator:
         per_type = (getattr(cfg, "nav_url", "") or "").strip()
         if per_type:
             return per_type
-        return str(self.storage.get_setting("notification_nav_url", "/taskmate") or "").strip()
+        return str(
+            self.storage.get_setting(
+                "notification_nav_url", DEFAULT_NOTIFICATION_NAV_URL
+            ) or ""
+        ).strip()
 
     def _resolve_notify_service(self, recipient_id: str) -> str:
         if recipient_id.startswith("child:"):
@@ -711,8 +737,10 @@ class NotificationCoordinator:
 
     async def set_nav_url(self, type_id: str | None, nav_url: str) -> None:
         """Set the tap target — global (type_id falsy) or per notification type."""
-        nav_url = (nav_url or "").strip()
+        nav_url = _validate_nav_url(nav_url)
         if type_id:
+            if type_id not in NOTIFICATION_TYPES_BY_ID:
+                raise ValueError(f"Unknown notification type {type_id}")
             self.storage.set_notification_nav_url(type_id, nav_url)
         else:
             self.storage.set_setting("notification_nav_url", nav_url)

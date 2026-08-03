@@ -872,7 +872,7 @@
   "panel.notif_section_recipients_desc": "Associe cada criança e encarregado a um serviço de notificação do Home Assistant. Deixe em branco para ignorar notificações para essa pessoa.",
   "panel.notif_streak_cutoff_label": "Limite",
   "panel.notif_nav_url_global_label": "Ao tocar, abrir",
-  "panel.notif_nav_url_global_hint": "Para onde uma notificação tocada abre: um caminho como /taskmate ou /lovelace/parents, um URL completo ou noAction. Aplica-se a todas as notificações, salvo substituição por tipo abaixo.",
+  "panel.notif_nav_url_global_hint": "Para onde uma notificação tocada abre: um caminho como /taskmate-admin ou /lovelace/parents, um URL completo ou noAction. Aplica-se a todas as notificações, salvo substituição por tipo abaixo.",
   "panel.notif_nav_url_row_placeholder": "Usa o padrão global",
   "panel.notif_tab_title": "Notificações",
   "panel.template_assignment_mode_label": "Modo de atribuição",

@@ -867,7 +867,7 @@
   "panel.notif_section_recipients_desc": "Weise jedem Kind und Elternteil einen Home Assistant Benachrichtigungsdienst zu. Leer lassen, um Benachrichtigungen für diese Person zu überspringen.",
   "panel.notif_streak_cutoff_label": "Frist",
   "panel.notif_nav_url_global_label": "Beim Tippen öffnen",
-  "panel.notif_nav_url_global_hint": "Wohin eine angetippte Benachrichtigung führt: ein Pfad wie /taskmate oder /lovelace/parents, eine vollständige URL oder noAction. Gilt für alle Benachrichtigungen, sofern unten nicht pro Typ überschrieben.",
+  "panel.notif_nav_url_global_hint": "Wohin eine angetippte Benachrichtigung führt: ein Pfad wie /taskmate-admin oder /lovelace/parents, eine vollständige URL oder noAction. Gilt für alle Benachrichtigungen, sofern unten nicht pro Typ überschrieben.",
   "panel.notif_nav_url_row_placeholder": "Nutzt globalen Standard",
   "panel.notif_tab_title": "Benachrichtigungen",
   "panel.template_assignment_mode_label": "Zuweisungsmodus",
