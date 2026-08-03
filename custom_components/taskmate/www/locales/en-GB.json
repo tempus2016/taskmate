@@ -917,7 +917,7 @@
   "panel.notif_section_recipients_desc": "Map each child and parent to a Home Assistant notify service. Leave blank to skip notifications for that person.",
   "panel.notif_streak_cutoff_label": "Cutoff",
   "panel.notif_nav_url_global_label": "When tapped, open",
-  "panel.notif_nav_url_global_hint": "Where a tapped notification opens: a path like /taskmate or /lovelace/parents, a full URL, or noAction. Applies to all notifications unless overridden per type below.",
+  "panel.notif_nav_url_global_hint": "Where a tapped notification opens: a path like /taskmate-admin or /lovelace/parents, a full URL, or noAction. Applies to all notifications unless overridden per type below.",
   "panel.notif_nav_url_row_placeholder": "Uses global default",
   "panel.notif_send_test": "Send test",
   "panel.notif_test_sent": "Test sent to {count} recipient(s) + persistent notification",

@@ -72,4 +72,4 @@ async def test_send_test_carries_nav_url(coord, hass):
     await coord.send_test("badge_earned")
     calls = [c for c in hass.services.async_call.call_args_list
              if c[0][0] == "notify" and c[0][1].startswith("mobile_app")]
-    assert calls and calls[0][0][2]["data"]["clickAction"] == "/taskmate"
+    assert calls and calls[0][0][2]["data"]["clickAction"] == "/taskmate-admin"

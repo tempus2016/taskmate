@@ -57,7 +57,13 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant
 
 from . import photos
-from .const import DEFAULT_TIME_PERIODS, DOMAIN, MAX_TIME_PERIODS, TIME_CATEGORY_ICONS
+from .const import (
+    DEFAULT_NOTIFICATION_NAV_URL,
+    DEFAULT_TIME_PERIODS,
+    DOMAIN,
+    MAX_TIME_PERIODS,
+    TIME_CATEGORY_ICONS,
+)
 from .coordinator import TaskMateCoordinator
 from .models import BonusSubTask, Reward
 
@@ -1910,7 +1916,9 @@ async def ws_notif_get_state(hass, connection, msg, coordinator):
             "streak_at_risk_cutoff_time": c.storage.get_streak_at_risk_cutoff(),
             "mandatory_escalation_reminder_minutes": c.storage.get_escalation_reminder_minutes(),
             "mandatory_escalation_parent_minutes": c.storage.get_escalation_parent_minutes(),
-            "notification_nav_url": c.storage.get_setting("notification_nav_url", "/taskmate"),
+            "notification_nav_url": c.storage.get_setting(
+                "notification_nav_url", DEFAULT_NOTIFICATION_NAV_URL
+            ),
         },
     }
     connection.send_result(msg["id"], state)

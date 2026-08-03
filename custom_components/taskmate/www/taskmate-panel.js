@@ -4599,7 +4599,7 @@ class TaskMatePanel extends HTMLElement {
           <label style="font-weight:500">${this._t("panel.notif_nav_url_global_label")}</label>
           <input type="text" class="tm-input" style="flex:1;min-width:180px"
                  value="${this._esc((ns.settings && ns.settings.notification_nav_url) || "")}"
-                 data-act="notif-set-nav-url-global" placeholder="/taskmate">
+                 data-act="notif-set-nav-url-global" placeholder="/taskmate-admin">
           <div class="tm-meta" style="flex-basis:100%">${this._t("panel.notif_nav_url_global_hint")}</div>
         </div>
         <div class="tm-table-wrap">

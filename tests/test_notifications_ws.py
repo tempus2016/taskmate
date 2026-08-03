@@ -323,9 +323,58 @@ async def test_set_nav_url_per_type(setup, hass):
 
 
 @pytest.mark.asyncio
+async def test_set_nav_url_rejects_dangerous_schemes(setup, hass):
+    coord = setup
+    for bad in (
+        "javascript:alert(1)",
+        "intent://scan/#Intent;scheme=zxing;end",
+        "app://com.evil.app",
+        "homeassistant://call_service/light.turn_off",
+        "//evil.example/phish",
+        "ftp://evil.example",
+    ):
+        connection = MagicMock()
+        msg = {"id": 23, "type": "taskmate/notifications/set_nav_url", "nav_url": bad}
+        await ws.ws_notif_set_nav_url(hass, connection, msg)
+        connection.send_result.assert_not_called()
+        args, _ = connection.send_error.call_args
+        assert args[1] == "invalid", bad
+    assert not coord.storage.get_setting("notification_nav_url")
+
+
+@pytest.mark.asyncio
+async def test_set_nav_url_accepts_noaction_and_https(setup, hass):
+    coord = setup
+    connection = MagicMock()
+    msg = {"id": 24, "type": "taskmate/notifications/set_nav_url",
+           "nav_url": "noAction"}
+    await ws.ws_notif_set_nav_url(hass, connection, msg)
+    assert coord.storage.get_setting("notification_nav_url") == "noAction"
+
+    connection = MagicMock()
+    msg = {"id": 25, "type": "taskmate/notifications/set_nav_url",
+           "nav_url": "https://example.com/dash"}
+    await ws.ws_notif_set_nav_url(hass, connection, msg)
+    assert coord.storage.get_setting("notification_nav_url") == "https://example.com/dash"
+
+
+@pytest.mark.asyncio
+async def test_set_nav_url_rejects_unknown_type_id(setup, hass):
+    coord = setup
+    connection = MagicMock()
+    msg = {"id": 26, "type": "taskmate/notifications/set_nav_url",
+           "type_id": "not_a_type", "nav_url": "/lovelace/x"}
+    await ws.ws_notif_set_nav_url(hass, connection, msg)
+    connection.send_result.assert_not_called()
+    args, _ = connection.send_error.call_args
+    assert args[1] == "invalid"
+    assert "not_a_type" not in coord.storage.get_all_notification_configs()
+
+
+@pytest.mark.asyncio
 async def test_get_state_includes_nav_url(setup, hass):
     connection = MagicMock()
     msg = {"id": 22, "type": "taskmate/notifications/get_state"}
     await ws.ws_notif_get_state(hass, connection, msg)
     state = connection.send_result.call_args[0][1]
-    assert state["settings"]["notification_nav_url"] == "/taskmate"
+    assert state["settings"]["notification_nav_url"] == "/taskmate-admin"

@@ -867,7 +867,7 @@
   "panel.notif_section_recipients_desc": "Koble hvert barn og foresatt til en Home Assistant-varslingstjeneste. La stå tomt for å hoppe over varsler for den personen.",
   "panel.notif_streak_cutoff_label": "Grense",
   "panel.notif_nav_url_global_label": "Ved trykk, åpne",
-  "panel.notif_nav_url_global_hint": "Hvor et trykk på et varsel åpner: en sti som /taskmate eller /lovelace/parents, en full URL, eller noAction. Gjelder alle varsler med mindre det overstyres per type nedenfor.",
+  "panel.notif_nav_url_global_hint": "Hvor et trykk på et varsel åpner: en sti som /taskmate-admin eller /lovelace/parents, en full URL, eller noAction. Gjelder alle varsler med mindre det overstyres per type nedenfor.",
   "panel.notif_nav_url_row_placeholder": "Bruker global standard",
   "panel.notif_tab_title": "Varsler",
   "panel.template_assignment_mode_label": "Tildelingsmodus",
