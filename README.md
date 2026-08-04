@@ -1819,6 +1819,19 @@ Beyond the sensors above, TaskMate also exposes:
  
 ## Changelog
  
+### v5.0.3
+
+A fix release for the v5.0.2 tap-to-open notification feature.
+
+**Fixes**
+- **Notification taps now actually open the TaskMate panel** — v5.0.2's default tap target pointed at `/taskmate`, which is the integration's static-files path rather than the panel, so tapping a notification landed on a "403: Forbidden" page. The default is now `/taskmate-admin`, and a one-time migration corrects any stored `/taskmate` value (global or per-type) on upgrade; a deliberately different target is left untouched. ([#741](https://github.com/tempus2016/taskmate/pull/741))
+
+**Security hardening**
+- **Tap targets are vetted when saved** — the **When tapped, open** field now accepts only dashboard paths (`/…`), `http(s)://` URLs, or `noAction`. Because the target opens on the *recipient's* phone, app-scheme deep links (`intent://`, `app://`, `homeassistant://`, …) and protocol-relative `//host` values are rejected, and unknown notification type ids can no longer write stray keys into storage. ([#741](https://github.com/tempus2016/taskmate/pull/741))
+
+**Maintenance**
+- CI and dev-dependency updates. ([#736](https://github.com/tempus2016/taskmate/pull/736), [#737](https://github.com/tempus2016/taskmate/pull/737), [#738](https://github.com/tempus2016/taskmate/pull/738))
+
 ### v5.0.2
  
 Adds a navigation target to notifications, so tapping one opens a place of your choosing.
