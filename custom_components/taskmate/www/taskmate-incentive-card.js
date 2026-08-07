@@ -466,6 +466,28 @@ export function createIncentiveCard(P) {
       return this._getAttrs().points_name || this._t("common.stars");
     }
 
+    /* ── Roles (#749) ──────────────────────────────────────────────────────
+       Applying an existing bonus/penalty is a day-to-day parent action, so
+       admins *and* TaskMate parents get the Apply buttons. Defining one is
+       structural config, so the manage controls (pencil, add/edit/delete) are
+       admin-only — matching the `_parent` / `_admin` service gates. A child on
+       a shared tablet sees the list with no buttons. */
+
+    _canApply() {
+      return window.__taskmate_is_parent(this.hass);
+    }
+
+    _canManage() {
+      return !!this.hass?.user?.is_admin;
+    }
+
+    _toggleEditMode() {
+      if (!this._canManage()) return;
+      this._editMode = !this._editMode;
+      this._editingBonus = null;
+      this._showNewForm = false;
+    }
+
     _getVisibleBonuses() {
       const child = this._getSelectedChild();
       if (!child) return this._getBonuses();
@@ -482,7 +504,7 @@ export function createIncentiveCard(P) {
 
     async _applyBonus(bonus) {
       const child = this._getSelectedChild();
-      if (!child) return;
+      if (!child || !this._canApply()) return;
       const key = bonus.id;
       if (this._loading[key]) return;
       this._loading = { ...this._loading, [key]: true };
@@ -630,7 +652,7 @@ export function createIncentiveCard(P) {
                 <ha-icon icon="mdi:trash-can-outline"></ha-icon>
               </button>
             </div>
-          ` : html`
+          ` : this._canApply() ? html`
             <button class="apply-btn"
                     ?disabled=${isLoading || !child}
                     @click=${() => this._applyBonus(b)}>
@@ -639,7 +661,7 @@ export function createIncentiveCard(P) {
                 : html`<ha-icon icon="${P.applyIcon}"></ha-icon> ${this._t('common.apply')}`
               }
             </button>
-          `}
+          ` : ""}
         </div>
         ${isEditing ? this._renderEditForm() : ""}
       `;
@@ -745,10 +767,12 @@ export function createIncentiveCard(P) {
               ${bonuses.length ? html`
                 <span class="bonus-count">${bonuses.length}</span>
               ` : ""}
-              <button class="icon-btn ${this._editMode ? "active" : ""}" title="${this._tp('manage_title')}"
-                      @click=${() => { this._editMode = !this._editMode; this._editingBonus = null; this._showNewForm = false; }}>
-                <ha-icon icon="mdi:pencil"></ha-icon>
-              </button>
+              ${this._canManage() ? html`
+                <button class="icon-btn ${this._editMode ? "active" : ""}" title="${this._tp('manage_title')}"
+                        @click=${this._toggleEditMode}>
+                  <ha-icon icon="mdi:pencil"></ha-icon>
+                </button>
+              ` : ""}
             </div>
           </div>
 
@@ -776,7 +800,7 @@ export function createIncentiveCard(P) {
                 `}
             ` : ""}
 
-            ${child && !this._editMode ? html`
+            ${child && !this._editMode && this._canApply() ? html`
               <div style="text-align:center; font-size:0.8rem; color:var(--text-secondary); padding-top:4px;">
                 ${this._tp('applying_to', { childName: child.name, points: child.points, pointsName: this._getPointsName() })}
               </div>
@@ -831,6 +855,7 @@ export function createIncentiveCard(P) {
     }
 
     _designApplyBtn(b, klass) {
+      if (!this._canApply()) return "";
       const child = this._getSelectedChild();
       const isLoading = this._loading[b.id];
       return html`
@@ -955,11 +980,13 @@ export function createIncentiveCard(P) {
           <span class="ic">${icon}</span>
           <span class="tt">${this.config.title || this._tp('default_title')}${
             bonuses.length ? html`<small>${bonuses.length}</small>` : ""}</span>
-          <button class="btn ghost sm" style="margin-left:auto"
-                  title="${this._tp('manage_title')}"
-                  @click=${() => { this._editMode = !this._editMode; this._editingBonus = null; this._showNewForm = false; }}>
-            <ha-icon icon="mdi:pencil"></ha-icon>
-          </button>
+          ${this._canManage() ? html`
+            <button class="btn ghost sm" style="margin-left:auto"
+                    title="${this._tp('manage_title')}"
+                    @click=${this._toggleEditMode}>
+              <ha-icon icon="mdi:pencil"></ha-icon>
+            </button>
+          ` : ""}
         </div>`;
 
       const rows = design === "playroom"
@@ -984,7 +1011,7 @@ export function createIncentiveCard(P) {
                   <ha-icon icon="mdi:plus"></ha-icon> ${this._tp('new_bonus')}
                 </button>`)
           : ""}
-        ${child && !this._editMode
+        ${child && !this._editMode && this._canApply()
           ? html`<div class="d-foot">${this._tp('applying_to', { childName: child.name, points: child.points, pointsName: this._getPointsName() })}</div>`
           : ""}`;
 

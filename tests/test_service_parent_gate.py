@@ -70,3 +70,93 @@ async def test_rejects_unknown_user(monkeypatch):
     _coord_with_parents(["uid-mum"], monkeypatch)
     with pytest.raises(tm.Unauthorized):
         await tm._async_require_parent(_hass(None), _call("uid-ghost"))
+
+
+# ---------------------------------------------------------------------------
+# Which gate each service is actually wired to (#749)
+#
+# The gate function above was correct all along; three day-to-day actions were
+# just never moved onto it, so a TaskMate parent tapping Apply on a bonus got
+# "Failed to perform the action taskmate/apply_bonus. Unauthorized" while the
+# quick +points buttons on the same card worked.
+# ---------------------------------------------------------------------------
+
+
+class _Services:
+    """Capture the registered handler for each service name."""
+
+    def __init__(self):
+        self.handlers = {}
+
+    def async_register(self, domain, name, handler, schema=None):
+        self.handlers[name] = handler
+
+
+async def _handlers(user, parent_ids, monkeypatch):
+    """Register the real services against a fake hass and a fake coordinator."""
+    coordinator = MagicMock()
+    coordinator.storage.get_parent_user_ids = MagicMock(return_value=list(parent_ids))
+    coordinator.async_record_audit = AsyncMock()
+    for method in (
+        "async_apply_bonus", "async_apply_penalty", "async_remove_points",
+        "async_add_bonus", "async_update_bonus", "async_remove_bonus",
+    ):
+        setattr(coordinator, method, AsyncMock())
+    monkeypatch.setattr(tm, "_get_coordinator", lambda hass: coordinator)
+
+    services = _Services()
+    hass = MagicMock()
+    hass.services = services
+    hass.auth.async_get_user = AsyncMock(return_value=user)
+    await tm._async_register_services(hass)
+    return services.handlers, coordinator
+
+
+def _service_call(user_id, data):
+    call = MagicMock()
+    call.context.user_id = user_id
+    call.data = data
+    return call
+
+
+PARENT_ACTIONS = [
+    (tm.SERVICE_APPLY_BONUS, {"bonus_id": "b1", "child_id": "c1"}, "async_apply_bonus"),
+    (tm.SERVICE_APPLY_PENALTY, {"penalty_id": "p1", "child_id": "c1"}, "async_apply_penalty"),
+    (tm.SERVICE_REMOVE_POINTS, {"child_id": "c1", "points": 5, "reason": ""}, "async_remove_points"),
+]
+
+
+@pytest.mark.parametrize(("service", "data", "method"), PARENT_ACTIONS)
+@pytest.mark.asyncio
+async def test_parent_may_apply_incentives(service, data, method, monkeypatch):
+    """A non-admin TaskMate parent can apply a bonus/penalty and deduct points."""
+    mum = MagicMock(is_admin=False)
+    handlers, coordinator = await _handlers(mum, ["uid-mum"], monkeypatch)
+
+    await handlers[service](_service_call("uid-mum", data))
+
+    getattr(coordinator, method).assert_awaited()
+
+
+@pytest.mark.parametrize(("service", "data", "method"), PARENT_ACTIONS)
+@pytest.mark.asyncio
+async def test_non_parent_may_not_apply_incentives(service, data, method, monkeypatch):
+    """A child (non-admin, not a listed parent) is still rejected."""
+    kid = MagicMock(is_admin=False)
+    handlers, coordinator = await _handlers(kid, ["uid-mum"], monkeypatch)
+
+    with pytest.raises(tm.Unauthorized):
+        await handlers[service](_service_call("uid-child", data))
+
+    getattr(coordinator, method).assert_not_awaited()
+
+
+@pytest.mark.parametrize("service", ["add_bonus", "update_bonus", "remove_bonus"])
+@pytest.mark.asyncio
+async def test_defining_incentives_stays_admin_only(service, monkeypatch):
+    """Creating/editing/deleting a bonus is structural config: admin only."""
+    mum = MagicMock(is_admin=False)
+    handlers, _ = await _handlers(mum, ["uid-mum"], monkeypatch)
+
+    with pytest.raises(tm.Unauthorized):
+        await handlers[service](_service_call("uid-mum", {"bonus_id": "b1", "name": "x", "points": 5}))
