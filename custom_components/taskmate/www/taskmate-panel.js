@@ -5933,8 +5933,20 @@ class TaskMatePanel extends HTMLElement {
 
   _styles() {
     return `<style>
+      /* Fill the panel area without depending on a percentage-height chain.
+         HA nests us as taskmate-panel → ha-panel-custom → partial-panel-resolver
+         → ha-drawer, and the middle two are display:inline / height:auto. A
+         height:100% here only resolves while some ancestor happens to carry a
+         definite height; where it doesn't, the shell collapses to its content
+         height and the nav column visibly stops partway down every short page
+         (#754). A flex column of exactly 100dvh is immune to the ancestor
+         chain: panel_custom gives the element the whole viewport — HA draws no
+         toolbar above it — so 100dvh is the full panel area, not an overflow.
+         It must be height, not min-height: the shell scrolls its own body,
+         and a floor-only rule would let a long section (Settings) grow the
+         panel past the viewport and scroll the nav column off the page. */
       taskmate-panel {
-        display: block; height: 100%;
+        display: flex; flex-direction: column; height: 100dvh;
 
         --tm-bg:            var(--primary-background-color, #fafafa);
         --tm-surface-0:     var(--card-background-color, #fff);
@@ -6002,7 +6014,11 @@ class TaskMatePanel extends HTMLElement {
       .tm-shell {
         display: grid;
         grid-template-columns: var(--tm-sidebar-w) 1fr;
-        height: 100%;
+        /* Flex to fill the panel rather than height:100% — see the note on
+           taskmate-panel above (#754). min-height:0 lets the grid shrink
+           instead of being forced to its content height. */
+        flex: 1 1 auto;
+        min-height: 0;
         position: relative;
         overflow: hidden;
       }
