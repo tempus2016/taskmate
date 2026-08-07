@@ -1403,12 +1403,14 @@ class TaskMatePanel extends HTMLElement {
   }
 
   async _doSaveChore() {
+    this._syncIconPickers();
     const d = this._dialog.data;
     if (!d.name || !d.name.trim()) { this._showToast("err", this._t("panel.toast_name_required")); return; }
     const wasAdd = this._dialog.mode === "add";
     const base = {
       name: d.name.trim(),
       description: d.description || "",
+      icon: d.icon || "",
       points: Number(d.points) || 0,
       assigned_to: d.assigned_to || [],
       requires_approval: !!d.requires_approval,

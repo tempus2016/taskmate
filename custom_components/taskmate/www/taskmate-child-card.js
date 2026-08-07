@@ -884,7 +884,7 @@ class TaskMateChildCard extends LitElement {
         overflow: hidden;
       }
 
-      /* Chore number wrapper (icon removed) */
+      /* Chore number wrapper — holds the number-or-picture badge */
       .chore-number-wrapper {
         display: flex;
         align-items: center;
@@ -910,6 +910,14 @@ class TaskMateChildCard extends LitElement {
         transition: transform 0.2s ease;
         font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
         flex-shrink: 0;
+      }
+
+      /* A chore picture sits where the digit would, so it has to carry the
+         same white-on-colour weight the numeral gets from its text-shadow. */
+      .chore-number-badge ha-icon {
+        --mdc-icon-size: 22px;
+        color: #fff;
+        filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.25));
       }
 
       .chore-card:hover .chore-number-badge {
@@ -1145,10 +1153,6 @@ class TaskMateChildCard extends LitElement {
           rgba(46, 204, 113, 0.25) 0%,
           rgba(39, 174, 96, 0.35) 100%) !important;
         filter: saturate(0.7);
-      }
-
-      .chore-card.completed .chore-icon-container {
-        background: rgba(255, 255, 255, 0.8);
       }
 
       .chore-card.completed .chore-name {
@@ -1618,6 +1622,7 @@ class TaskMateChildCard extends LitElement {
         .chore-card { padding: 10px 12px; gap: 8px; min-height: 54px; flex-wrap: nowrap; }
         .chore-info { flex: 1; min-width: 0; overflow: hidden; }
         .chore-number-badge { width: 30px; height: 30px; min-width: 30px; font-size: 1rem; }
+        .chore-number-badge ha-icon { --mdc-icon-size: 18px; }
         .chore-name { font-size: 0.95rem; }
         .chore-points { font-size: 0.82rem; }
         .chore-checkbox { width: 34px; height: 34px; min-width: 34px; border-radius: 8px; }
@@ -1978,6 +1983,15 @@ class TaskMateChildCard extends LitElement {
       .tmd-undochip:hover { filter: brightness(0.97); }
       .tmd-undochip[disabled] { opacity: 0.6; cursor: default; }
       .q-undo { background: var(--tmd-surface-2); color: var(--tmd-dim); border: 1px solid var(--tmd-border); padding: 7px 10px; font-size: 14px; }
+
+      /* Designed: an explicit chore picture in the glyph slot. The emoji it
+         replaces is sized by font-size, which an ha-icon ignores, so each row
+         type restates its own size. Inherits the row accent so the icon reads
+         as part of the style rather than a pasted-in glyph. */
+      .tmd-glyph-icon { color: var(--ac, var(--tmd-accent)); display: block; }
+      .tmd-chore .ch-emoji .tmd-glyph-icon { --mdc-icon-size: 22px; }
+      .tmd-quest .q-emoji .tmd-glyph-icon { --mdc-icon-size: 19px; }
+      .tmd-check .c-emoji .tmd-glyph-icon { --mdc-icon-size: 18px; }
 
       /* Designed: pending-points + countdown chips on the header/section */
       .tmd-pending {
@@ -2342,6 +2356,20 @@ class TaskMateChildCard extends LitElement {
     return "⭐";
   }
 
+  /** What a designed chore row shows in its glyph slot.
+   *
+   * An explicit picture wins over the keyword guess (#745) — otherwise
+   * choosing mdi:watering-can changed nothing, because _choreEmoji only ever
+   * matched on words. The guess stays as the fallback so chores with no
+   * picture, which is all of them until someone sets one, look as they did.
+   * The icon inherits the row's accent so it reads as part of the style.
+   */
+  _choreGlyph(chore) {
+    return chore.icon
+      ? html`<ha-icon icon="${chore.icon}" class="tmd-glyph-icon"></ha-icon>`
+      : this._choreEmoji(chore);
+  }
+
   /** Mirror of _renderChoreCard's "completed today" detection, designed branch only. */
   _isChoreDone(chore, child, todaysCompletions) {
     const childCompletionsToday = (todaysCompletions || []).filter(
@@ -2421,7 +2449,7 @@ class TaskMateChildCard extends LitElement {
       return {
         chore, child, done, loading, onAct, index: i, dimmed,
         tone: this._designTone(i),
-        emoji: this._choreEmoji(chore),
+        glyph: this._choreGlyph(chore),
         points: chore.effective_points ?? chore.points,
         timed: chore.task_type === "timed",
         mandatory: chore.mandatory === true,
@@ -2579,7 +2607,7 @@ class TaskMateChildCard extends LitElement {
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
         <div class="tmd-chore ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""}" style="--ac:${r.tone}">
           <div class="num-badge" style="${r.done ? "--ac:var(--tmd-good)" : ""}">${r.done ? "✓" : r.index + 1}</div>
-          <span class="ch-emoji">${r.emoji}</span>
+          <span class="ch-emoji">${r.glyph}</span>
           <div class="ch-mid">
             <div class="ch-name">${r.chore.name}</div>
             ${r.done ? "" : html`<div class="chip soft" style="margin-top:3px">+${r.points} ⭐</div>`}
@@ -2599,7 +2627,7 @@ class TaskMateChildCard extends LitElement {
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
         <div class="tmd-quest ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""}" style="--ac:${r.tone}">
           <div class="num q-num" style="${r.done ? "color:var(--tmd-good)" : ""}">${r.done ? "✓" : String(r.index + 1).padStart(2, "0")}</div>
-          <span class="q-emoji">${r.emoji}</span>
+          <span class="q-emoji">${r.glyph}</span>
           <div class="q-mid">
             <div class="q-name">${r.chore.name}</div>
             ${r.done
@@ -2621,7 +2649,7 @@ class TaskMateChildCard extends LitElement {
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
         <div class="tmd-check ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""}" style="--ac:${r.tone}">
           <div class="c-num" style="${r.done ? "--ac:var(--tmd-good)" : ""}">${r.done ? "✓" : r.index + 1}</div>
-          <span class="c-emoji">${r.emoji}</span>
+          <span class="c-emoji">${r.glyph}</span>
           <div class="c-mid">
             <div class="c-name">${r.chore.name}</div>
             ${this._designChoreMeta(r)}
@@ -3299,6 +3327,23 @@ class TaskMateChildCard extends LitElement {
     `;
   }
 
+  /** The coloured badge at the head of a chore row.
+   *
+   * A chore's picture takes the digit's place when one is set (#745) — the
+   * number is only positional, whereas the icon is what a child actually
+   * recognises. Chores with no picture keep their number, which is every
+   * chore that predates the field. Shared by the standard and timed rows so
+   * a picture can't work on one and be invisible on the other.
+   */
+  _choreNumberBadge(chore, colorClass, choreNumber) {
+    return html`
+      <div class="chore-number-badge ${colorClass}">
+        ${chore.icon
+          ? html`<ha-icon icon="${chore.icon}"></ha-icon>`
+          : choreNumber}
+      </div>`;
+  }
+
   _renderChoreCard(chore, child, pointsIcon, todaysCompletions = [], choreIndex = 0) {
     const isLoading = this._loading[chore.id];
     const isCelebrating = this._celebrating === chore.id;
@@ -3408,7 +3453,7 @@ class TaskMateChildCard extends LitElement {
       >
         <div class="chore-info">
           <div class="chore-number-wrapper">
-            <div class="chore-number-badge ${colorClass}">${choreNumber}</div>
+            ${this._choreNumberBadge(chore, colorClass, choreNumber)}
           </div>
           <div class="chore-details">
             <div class="chore-name">${chore.name}${chore.mandatory ? html`<span class="mandatory-badge">⚠ ${this._t('child.mandatory')}</span>` : ''}</div>
@@ -3535,7 +3580,7 @@ class TaskMateChildCard extends LitElement {
       <div class="timed-chore-card ${state} ${isLoading ? 'loading' : ''}">
         <div class="timed-top-row">
           <div class="chore-number-wrapper">
-            <div class="chore-number-badge ${colorClass}">${choreNumber}</div>
+            ${this._choreNumberBadge(chore, colorClass, choreNumber)}
           </div>
           <div class="chore-details">
             <div class="chore-name">${chore.name}</div>
