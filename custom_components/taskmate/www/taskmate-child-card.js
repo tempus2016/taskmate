@@ -43,9 +43,11 @@ class TaskMateChildCard extends LitElement {
 
   shouldUpdate(changedProps) {
     if (changedProps.has("hass")) {
-      return window.__taskmate_hasChanged
+      const flashed = this._trackEarnedBadges();
+      const relevant = window.__taskmate_hasChanged
         ? window.__taskmate_hasChanged(changedProps.get("hass"), this.hass, this.config?.entity)
         : true;
+      return flashed || relevant;
     }
     return true;
   }
@@ -66,19 +68,17 @@ class TaskMateChildCard extends LitElement {
     // Badge strip state
     this._earnedBadges = [];
     this._justEarnedBadge = null;
-    this._badgeEventUnsub = null;
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    this._subscribeBadgeEvents();
+    this._seenBadgeIds = null;
+    this._justEarnedTimeout = null;
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this._stopTimerTick();
-    this._badgeEventUnsub?.();
-    this._badgeEventUnsub = null;
+    if (this._justEarnedTimeout) {
+      clearTimeout(this._justEarnedTimeout);
+      this._justEarnedTimeout = null;
+    }
     if (this._audioContext) {
       this._audioContext.close().catch(() => {});
       this._audioContext = null;
@@ -118,27 +118,37 @@ class TaskMateChildCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
-  _subscribeBadgeEvents() {
-    if (this._badgeEventUnsub || this._badgeSubscribing) return;
-    if (!this.hass?.connection) return;
-    this._badgeSubscribing = true;
-    this.hass.connection.subscribeEvents((event) => {
-      const data = event.data || {};
-      const configChild = this.config?.child_id;
-      if (configChild && data.child_id && String(data.child_id) !== String(configChild)) return;
-      if (data.badge_id) {
-        this._justEarnedBadge = String(data.badge_id);
-        this.requestUpdate();
-        setTimeout(() => { this._justEarnedBadge = null; this.requestUpdate(); }, 1800);
-      }
-    }, "taskmate_badge_earned").then(unsub => {
-      this._badgeSubscribing = false;
-      if (!this.isConnected) {
-        unsub();
-        return;
-      }
-      this._badgeEventUnsub = unsub;
-    }).catch(() => { this._badgeSubscribing = false; });
+  /* Newly-earned badges are detected by diffing this child's badges sensor
+     `earned` list across hass updates (#752). The card used to subscribe to the
+     custom `taskmate_badge_earned` event, but Home Assistant refuses a
+     custom-event subscription from a non-admin user — logging an error every
+     time — so the strip never lit up for a child. `state_changed` is
+     allowlisted for everyone, so the diff works for every user. */
+  _trackEarnedBadges() {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
+      || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    const child = (attrs.children || []).find(c => c.id === this.config?.child_id)
+      || (!this.config?.child_id && (attrs.children || [])[0]);
+    const earned = this._resolveBadgesEntity(child)?.attributes?.earned;
+    if (!Array.isArray(earned)) return false;
+    const ids = new Set(earned.map(b => window.__taskmate_badge_id(b)).filter(Boolean));
+
+    // First observation is the baseline — never flash a badge earned earlier.
+    if (this._seenBadgeIds === null) {
+      this._seenBadgeIds = ids;
+      return false;
+    }
+    const fresh = [...ids].filter(id => !this._seenBadgeIds.has(id));
+    this._seenBadgeIds = ids;
+    if (!fresh.length) return false;
+
+    this._justEarnedBadge = fresh[0];
+    clearTimeout(this._justEarnedTimeout);
+    this._justEarnedTimeout = setTimeout(() => {
+      this._justEarnedBadge = null;
+      this.requestUpdate();
+    }, 1800);
+    return true;
   }
 
   _tierColor(tier) {
@@ -2205,7 +2215,7 @@ class TaskMateChildCard extends LitElement {
           <div class="badge-strip" @click=${() => this._openBadgesView()} title="${this._t('badges.label')}">
             <span class="badge-strip-label">${this._t('badges.label')}</span>
             ${earnedBadges.slice(0, 5).map(b => html`
-              <div class="badge-mini tier-${b.tier} ${this._justEarnedBadge && String(this._justEarnedBadge) === String(b.id) ? 'just-earned' : ''}"
+              <div class="badge-mini tier-${b.tier} ${this._justEarnedBadge === window.__taskmate_badge_id(b) ? 'just-earned' : ''}"
                 style="--t: ${this._tierColor(b.tier)}">
                 <ha-icon icon="${b.icon || 'mdi:medal'}"></ha-icon>
               </div>
@@ -2465,7 +2475,7 @@ class TaskMateChildCard extends LitElement {
           <div class="tmd-badges" @click=${() => this._openBadgesView()} title="${this._t("badges.label")}">
             <span class="lbl">${this._t("badges.label")}</span>
             ${earnedBadges.slice(0, 5).map(b => html`
-              <div class="tmd-badge-mini ${this._justEarnedBadge && String(this._justEarnedBadge) === String(b.id) ? "just-earned" : ""}"
+              <div class="tmd-badge-mini ${this._justEarnedBadge === window.__taskmate_badge_id(b) ? "just-earned" : ""}"
                 style="--t:${this._tierColor(b.tier)}">
                 <ha-icon icon="${b.icon || "mdi:medal"}"></ha-icon>
               </div>`)}
