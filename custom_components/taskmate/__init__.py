@@ -306,11 +306,13 @@ async def _async_require_admin(hass: HomeAssistant, call: ServiceCall) -> None:
 async def _async_require_parent(hass: HomeAssistant, call: ServiceCall) -> None:
     """Reject user-initiated calls that aren't from an admin or a TaskMate parent.
 
-    Day-to-day parent actions (approve/reject, gift/adjust points, confirm
-    rewards/allowance, award badges, complete-as-parent) accept non-admin HA
-    users listed in ``parent_user_ids`` (issue #661). Context-less calls
-    (automations, scripts) pass. Structural config stays on
-    ``_async_require_admin``.
+    Day-to-day parent actions (approve/reject, gift/adjust points, apply a
+    bonus or penalty, confirm rewards/allowance, award badges,
+    complete-as-parent) accept non-admin HA users listed in ``parent_user_ids``
+    (issue #661). Context-less calls (automations, scripts) pass. Structural
+    config — including *defining* bonuses and penalties — stays on
+    ``_async_require_admin``; only applying an existing one is a parent action
+    (issue #749).
     """
     if not call.context.user_id:
         return
@@ -1324,7 +1326,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_REMOVE_POINTS,
-        _admin(handle_remove_points),
+        _parent(handle_remove_points),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHILD_ID): cv.string,
@@ -1399,7 +1401,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_APPLY_PENALTY,
-        _admin(handle_apply_penalty),
+        _parent(handle_apply_penalty),
         schema=vol.Schema({
             vol.Required(ATTR_PENALTY_ID): cv.string,
             vol.Required(ATTR_CHILD_ID): cv.string,
@@ -1443,7 +1445,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_APPLY_BONUS,
-        _admin(handle_apply_bonus),
+        _parent(handle_apply_bonus),
         schema=vol.Schema({
             vol.Required(ATTR_BONUS_ID): cv.string,
             vol.Required(ATTR_CHILD_ID): cv.string,
