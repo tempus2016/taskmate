@@ -96,6 +96,23 @@
   window.__taskmate_is_parent = isTaskmateParent;
 
   /**
+   * Stable id of a badge entry from the badges sensor.
+   *
+   * ChildBadgesSensor publishes earned/available entries keyed `badge_id`, but
+   * several card templates were written against `b.id` — undefined on those
+   * entries, so every "is this the badge that was just earned?" test compared
+   * against the string "undefined" and never matched (#752). Read the id
+   * through this helper so both spellings work.
+   */
+  function badgeId(badge) {
+    if (!badge) return "";
+    const id = badge.badge_id != null ? badge.badge_id : badge.id;
+    return id != null ? String(id) : "";
+  }
+
+  window.__taskmate_badge_id = badgeId;
+
+  /**
    * Event-driven update guard for LitElement cards.
    *
    * HA sets a new `hass` object on every card whenever ANY entity changes.
