@@ -21,6 +21,7 @@ WWW = (
     / "custom_components" / "taskmate" / "www"
 )
 PANEL = (WWW / "taskmate-panel.js").read_text(encoding="utf-8")
+ACTIVITY_CARD = (WWW / "taskmate-activity-card.js").read_text(encoding="utf-8")
 
 
 def test_quick_point_amounts_is_a_whitelisted_setting():
@@ -164,3 +165,25 @@ def test_blank_reason_is_not_sent_as_an_empty_string():
     assert block, "could not find _saveAdjustDialog"
     body = block.group(1)
     assert "trim()" in body, "a whitespace-only reason must not be stored"
+
+
+def test_both_readers_translate_the_stored_reason():
+    # The panel and the Lovelace activity card each keep their own reason map;
+    # a reason added to one and not the other renders as raw English.
+    for name, src in (("panel", PANEL), ("activity-card", ACTIVITY_CARD)):
+        assert "Admin panel adjustment" in src, f"{name} does not recognise the reason"
+        assert "activity.reason_admin_adjustment" in src, f"{name} has no translation lookup"
+
+
+def test_the_written_reason_matches_the_translated_reason():
+    # The string _doAdjustPoints stores must be the string the readers match on.
+    written = re.findall(r'reason = "([^"]+)"', PANEL)
+    assert "Admin panel adjustment" in written
+
+
+def test_manual_adjustments_stay_undoable():
+    # _UNDO_DENY_PREFIXES is for derived transactions only. A manual adjustment
+    # is exactly the kind of thing a parent needs to be able to reverse.
+    block = re.search(r"_UNDO_DENY_PREFIXES\(\) \{(.*?)\n  \}", ACTIVITY_CARD, re.S)
+    assert block, "could not find _UNDO_DENY_PREFIXES"
+    assert "Admin panel" not in block.group(1)
