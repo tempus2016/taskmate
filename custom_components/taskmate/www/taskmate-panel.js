@@ -330,6 +330,27 @@ class TaskMatePanel extends HTMLElement {
     return fn ? fn(this._hass, key, params) : key;
   }
 
+  // Reason prefixes for *derived* (automatic) transactions, which can't be
+  // undone in isolation — mirrors the backend deny-list in coord_points.py and
+  // the copy in taskmate-activity-card.js. Everything else (penalty, bonus,
+  // gift, manual add/remove) is reversible.
+  //
+  // This is a deny-list, NOT an allow-list (#761): manual adjustments carry
+  // arbitrary or empty reasons, so they cannot be recognised positively.
+  // tests/test_panel_undo_deny_list.py pins all three copies together.
+  static get _UNDO_DENY_PREFIXES() {
+    return [
+      "Weekend bonus", "Streak milestone bonus", "Perfect week bonus",
+      "Allocated to pool:", "Pool refund", "Points decay",
+      "Savings interest", "Badge",
+    ];
+  }
+
+  _txnReversible(reason) {
+    const r = reason || "";
+    return !TaskMatePanel._UNDO_DENY_PREFIXES.some(p => r.startsWith(p));
+  }
+
   // Transaction reasons are stored in English in the DB (e.g. "Penalty: Messy room").
   // Mirror the activity-card mapping so panel views render in the user's language.
   _translateReason(reason) {
@@ -3120,7 +3141,7 @@ class TaskMatePanel extends HTMLElement {
               <tbody>
                 ${[...transactions].reverse().map(t => {
                   const child = childById[t.child_id];
-                  const undoable = typeof t.reason === "string" && (t.reason.startsWith("Penalty: ") || t.reason.startsWith("Bonus: "));
+                  const undoable = this._txnReversible(t.reason);
                   return `
                     <tr class="tm-row">
                       <td class="tm-meta">${this._esc(this._timeAgo(t.created_at))}</td>
