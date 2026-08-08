@@ -1336,7 +1336,7 @@ _ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro", "accessib
 _SUBKEY_SETTINGS = {
     "history_days", "streak_reset_mode", "card_design",
     "weekend_multiplier", "streak_milestones_enabled", "perfect_week_enabled",
-    "perfect_week_bonus", "streak_milestones",
+    "perfect_week_bonus", "streak_milestones", "quick_point_amounts",
     "streak_requires_all_chores", "perfect_week_requires_all_chores",
     "difficulty_multiplier_easy", "difficulty_multiplier_medium", "difficulty_multiplier_hard",
     "unlock_allowlist", "parent_routing",
@@ -1539,6 +1539,10 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("family_goal_target"): vol.All(vol.Coerce(int), vol.Range(min=1, max=10000000)),
     vol.Optional("family_goal_reward"): vol.All(str, vol.Length(max=200)),
     vol.Optional("streak_milestones"): str,
+    # Comma-separated quick point-adjust amounts, e.g. "5, 10, 20" (#746). Kept a
+    # string like streak_milestones so the panel's generic settings collector can
+    # round-trip it as a plain text input; the panel parses and bounds it.
+    vol.Optional("quick_point_amounts"): vol.All(str, vol.Length(max=60)),
     vol.Optional("notify_service"): str,
     vol.Optional("calendar_projection_days"): vol.All(int, vol.Range(min=1, max=90)),
     vol.Optional("vacation_calendar"): str,
