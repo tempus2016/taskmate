@@ -79,3 +79,57 @@ def test_settings_tab_exposes_the_amounts_field():
     assert 'data-setting="quick_point_amounts"' in PANEL
     assert "panel.settings_quick_points_label" in PANEL
     assert "panel.settings_quick_points_hint" in PANEL
+
+
+def _strip_body() -> str:
+    block = re.search(r"_renderAdjustStrip\(child, pointsName\) \{(.*?)\n  \}", PANEL, re.S)
+    assert block, "could not find _renderAdjustStrip"
+    return block.group(1)
+
+
+def test_child_card_calls_the_adjust_strip():
+    # The markup lives in _renderAdjustStrip; the card must actually invoke it,
+    # or the strip exists but never renders.
+    block = re.search(r"_renderChildCard\(child, pointsName\) \{(.*?)\n  \}", PANEL, re.S)
+    assert block, "could not find _renderChildCard"
+    assert "_renderAdjustStrip(child, pointsName)" in block.group(1)
+
+
+def test_adjust_strip_renders_both_directions_and_the_custom_button():
+    body = _strip_body()
+    assert "tm-points-adjust" in body
+    assert 'data-act="adjust-points"' in body
+    assert 'data-act="adjust-points-custom"' in body
+    assert "_quickPointAmounts()" in body, "the strip must read the configured amounts"
+
+
+def test_adjust_actions_are_wired_into_the_click_dispatch():
+    # A data-act with no dispatch entry is a dead button.
+    assert re.search(r'act === "adjust-points"\s*\)', PANEL)
+    assert re.search(r'act === "adjust-points-custom"\s*\)', PANEL)
+
+
+def test_adjust_handler_picks_the_service_from_the_sign():
+    block = re.search(r"async _doAdjustPoints\((.*?)\n  \}", PANEL, re.S)
+    assert block, "could not find _doAdjustPoints"
+    body = block.group(1)
+    assert "add_points" in body and "remove_points" in body
+    assert "Math.abs" in body, "the service takes a positive magnitude"
+    assert "_adjustBusy" in body, "must guard against double-submit"
+
+
+def test_adjust_buttons_are_labelled_for_screen_readers():
+    # The visible text is only ever a signed number, so every button in the
+    # strip needs a real label naming amount, direction and child.
+    body = _strip_body()
+    assert body.count("aria-label") >= 2, "both the amount buttons and ⋯ need labels"
+    assert "panel.adjust_add_title" in body
+    assert "panel.adjust_remove_title" in body
+    assert "panel.adjust_custom_title" in body
+
+
+def test_adjust_strip_has_styles():
+    assert ".tm-points-adjust {" in PANEL
+    # The set wrapper is what stops ⋯ orphaning onto its own row on a narrow card.
+    assert ".tm-points-adjust-set {" in PANEL
+    assert "tm-points-adjust-set" in _strip_body()
