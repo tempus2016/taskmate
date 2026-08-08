@@ -4197,6 +4197,10 @@ class TaskMatePanel extends HTMLElement {
                 ${["classic","playroom","console","cleanpro"].map(v => `<option value="${v}" ${v === (s.card_design || "classic") ? "selected" : ""}>${this._esc(this._t("common.design." + v))}</option>`).join("")}
               </select>
             </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_quick_points_label")}<small>${this._t("panel.settings_quick_points_hint")}</small></div>
+              <input type="text" class="tm-input" data-setting="quick_point_amounts" value="${this._esc(s.quick_point_amounts == null ? "" : s.quick_point_amounts)}" placeholder="5, 10, 20">
+            </div>
           </div>
         </div>
 
@@ -5927,6 +5931,20 @@ class TaskMatePanel extends HTMLElement {
   _fmtNum(n) {
     if (n == null) return "0";
     return new Intl.NumberFormat().format(n);
+  }
+
+  // Quick point-adjust amounts (#746). Stored as a comma-separated string like
+  // "5, 10, 20" — same shape as streak_milestones — so the generic settings
+  // collector can round-trip it as a plain text input. Junk degrades to the
+  // default rather than rendering a broken button row.
+  _quickPointAmounts() {
+    const raw = (this._state.settings || {}).quick_point_amounts;
+    const parsed = String(raw == null ? "" : raw)
+      .split(",")
+      .map(p => Number(p.trim()))
+      .filter(n => Number.isInteger(n) && n >= 1 && n <= 10000);
+    const unique = [...new Set(parsed)].slice(0, 3);
+    return unique.length ? unique : [5, 10, 20];
   }
 
   _mdi(name) {

@@ -1,6 +1,9 @@
 """The family-wide quick point-adjustment amounts setting (#746)."""
 from __future__ import annotations
 
+import pathlib
+import re
+
 import pytest
 import voluptuous as vol
 
@@ -12,6 +15,12 @@ from custom_components.taskmate.websocket import (
 )
 
 from .test_assignment_modes import _coord
+
+WWW = (
+    pathlib.Path(__file__).resolve().parent.parent
+    / "custom_components" / "taskmate" / "www"
+)
+PANEL = (WWW / "taskmate-panel.js").read_text(encoding="utf-8")
 
 
 def test_quick_point_amounts_is_a_whitelisted_setting():
@@ -51,3 +60,22 @@ def test_snapshot_reflects_a_stored_value():
     coord.storage.data = {"settings": {"quick_point_amounts": "2, 25, 100"}}
     snap = _build_state_snapshot(coord)
     assert snap["settings"]["quick_point_amounts"] == "2, 25, 100"
+
+
+def test_panel_has_the_amounts_parser():
+    assert "_quickPointAmounts()" in PANEL
+
+
+def test_parser_caps_at_three_amounts_and_defaults():
+    block = re.search(r"_quickPointAmounts\(\) \{(.*?)\n  \}", PANEL, re.S)
+    assert block, "could not find _quickPointAmounts"
+    body = block.group(1)
+    assert ".slice(0, 3)" in body, "must cap at three amounts"
+    assert "[5, 10, 20]" in body, "must fall back to the default list"
+    assert "10000" in body, "must bound amounts at 10000"
+
+
+def test_settings_tab_exposes_the_amounts_field():
+    assert 'data-setting="quick_point_amounts"' in PANEL
+    assert "panel.settings_quick_points_label" in PANEL
+    assert "panel.settings_quick_points_hint" in PANEL
