@@ -498,6 +498,8 @@ class TaskMatePanel extends HTMLElement {
     if (act === "save-gift")    { this._doGiftPoints(); return; }
     if (act === "adjust-points") { this._doAdjustPoints(t.dataset.id, Number(t.dataset.delta)); return; }
     if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
+    if (act === "save-adjust-add")    { this._saveAdjustDialog(1); return; }
+    if (act === "save-adjust-remove") { this._saveAdjustDialog(-1); return; }
     if (act === "edit-child")   { this._openChildDialog(t.dataset.id); return; }
     if (act === "delete-child") { this._confirmDelete("child", t.dataset.id); return; }
     if (act === "save-child")   { this._doSaveChild(); return; }
@@ -4810,6 +4812,41 @@ class TaskMatePanel extends HTMLElement {
     this._showToast("ok", this._t("panel.gift_sent"));
   }
 
+  _openAdjustDialog(childId) {
+    const child = (this._state.children || []).find(c => c.id === childId);
+    if (!child) return;
+    this._openDialog({ kind: "adjust", data: { child_id: childId, points: 10, reason: "" } });
+  }
+
+  _renderAdjustDialog() {
+    const d = this._dialog.data;
+    const child = (this._state.children || []).find(c => c.id === d.child_id) || {};
+    return this._dialogShell(
+      this._t("panel.adjust_dialog_title", { name: child.name || this._t("panel.child_unnamed") }),
+      [
+        this._field(this._t("panel.adjust_amount"), "points", d.points, "number"),
+        this._field(this._t("panel.adjust_reason"), "reason", d.reason, "text"),
+      ].join(""),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-danger" data-act="save-adjust-remove">${this._t("panel.adjust_remove")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-adjust-add">${this._t("panel.adjust_add")}</button>`
+    );
+  }
+
+  // `sign` is +1 or -1, taken from which footer button was pressed, so the
+  // dialog needs no direction control of its own.
+  async _saveAdjustDialog(sign) {
+    const d = this._dialog.data;
+    const amount = Number(d.points);
+    if (!Number.isInteger(amount) || amount < 1 || amount > 10000) {
+      this._showToast("err", this._t("panel.adjust_err_amount"));
+      return;
+    }
+    const reason = String(d.reason || "").trim() || "Admin panel adjustment";
+    const ok = await this._doAdjustPoints(d.child_id, sign * amount, reason);
+    if (ok) this._closeDialog(true);
+  }
+
   // Manual point adjustment (#746). The busy key is the CHILD, not the button,
   // so a laggy tablet can neither double-award one amount nor race +5 against
   // −10 on the same balance.
@@ -4882,6 +4919,7 @@ class TaskMatePanel extends HTMLElement {
   _renderDialog() {
     if (this._dialog.kind === "swap")         return this._renderSwapDialog();
     if (this._dialog.kind === "gift")         return this._renderGiftDialog();
+    if (this._dialog.kind === "adjust")       return this._renderAdjustDialog();
     if (this._dialog.kind === "child")        return this._renderChildDialog();
     if (this._dialog.kind === "chore")        return this._renderChoreDialog();
     if (this._dialog.kind === "reward")       return this._renderRewardDialog();

@@ -133,3 +133,34 @@ def test_adjust_strip_has_styles():
     # The set wrapper is what stops ⋯ orphaning onto its own row on a narrow card.
     assert ".tm-points-adjust-set {" in PANEL
     assert "tm-points-adjust-set" in _strip_body()
+
+
+def test_adjust_dialog_is_registered_in_the_kind_dispatch():
+    # A render function with no dispatch entry never opens.
+    assert re.search(r'this\._dialog\.kind === "adjust"', PANEL)
+    assert "_renderAdjustDialog()" in PANEL
+
+
+def test_adjust_dialog_has_amount_and_reason_fields():
+    block = re.search(r"_renderAdjustDialog\(\) \{(.*?)\n  \}", PANEL, re.S)
+    assert block, "could not find _renderAdjustDialog"
+    body = block.group(1)
+    assert "panel.adjust_amount" in body
+    assert "panel.adjust_reason" in body
+    assert "panel.adjust_dialog_title" in body
+
+
+def test_adjust_dialog_offers_both_directions():
+    block = re.search(r"_renderAdjustDialog\(\) \{(.*?)\n  \}", PANEL, re.S)
+    body = block.group(1)
+    assert 'data-act="save-adjust-add"' in body
+    assert 'data-act="save-adjust-remove"' in body
+    assert re.search(r'act === "save-adjust-add"\s*\)', PANEL)
+    assert re.search(r'act === "save-adjust-remove"\s*\)', PANEL)
+
+
+def test_blank_reason_is_not_sent_as_an_empty_string():
+    block = re.search(r"async _saveAdjustDialog\((.*?)\n  \}", PANEL, re.S)
+    assert block, "could not find _saveAdjustDialog"
+    body = block.group(1)
+    assert "trim()" in body, "a whitespace-only reason must not be stored"
