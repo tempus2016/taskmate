@@ -352,6 +352,11 @@ class TaskMatePanel extends HTMLElement {
     if (reason.startsWith('Perfect week bonus!')) {
       return this._t('activity.reason_perfect_week');
     }
+    // Manual adjustment from the admin panel (#746). An exact match rather than a
+    // prefix: unlike "Bonus: <name>" there is no trailing detail to extract.
+    if (reason === 'Admin panel adjustment') {
+      return this._t('activity.reason_admin_adjustment');
+    }
     const weekendMatch = reason.match(/^Weekend bonus \(×(\d+)\)$/);
     if (weekendMatch) {
       return this._t('activity.reason_weekend_bonus', { multiplier: weekendMatch[1] });
@@ -496,6 +501,10 @@ class TaskMatePanel extends HTMLElement {
     if (act === "add-child")    { this._openChildDialog(null); return; }
     if (act === "gift-points")  { this._openGiftDialog(); return; }
     if (act === "save-gift")    { this._doGiftPoints(); return; }
+    if (act === "adjust-points") { this._doAdjustPoints(t.dataset.id, Number(t.dataset.delta)); return; }
+    if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
+    if (act === "save-adjust-add")    { this._saveAdjustDialog(1); return; }
+    if (act === "save-adjust-remove") { this._saveAdjustDialog(-1); return; }
     if (act === "edit-child")   { this._openChildDialog(t.dataset.id); return; }
     if (act === "delete-child") { this._confirmDelete("child", t.dataset.id); return; }
     if (act === "save-child")   { this._doSaveChild(); return; }
@@ -2914,6 +2923,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.total_points_earned || 0)}</div><div class="tm-stat-label">${this._t("panel.child_stat_earned")}</div></div>
           <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.total_chores_completed || 0)}</div><div class="tm-stat-label">${this._t("panel.child_stat_done")}</div></div>
         </div>
+        ${this._renderAdjustStrip(child, pointsName)}
         <div class="tm-card-foot">
           <button type="button" class="tm-btn tm-btn-sm" data-act="edit-child" data-id="${this._esc(child.id)}">${this._t("panel.btn_edit")}</button>
           <button type="button" class="tm-btn tm-btn-sm" data-act="reorder-chores-for-child" data-id="${this._esc(child.id)}" title="${this._t("panel.chore_order_title")}">⇅ ${this._t("panel.chore_order_title")}</button>
@@ -2921,6 +2931,36 @@ class TaskMatePanel extends HTMLElement {
         </div>
       </article>
     `;
+  }
+
+  // Manual point adjustment (#746). Minus amounts descend and plus amounts
+  // ascend so the two smallest meet in the middle and the row reads outward
+  // from zero. The two `-set` spans are load-bearing: with all seven buttons as
+  // direct flex children, a narrow card wraps only the last one and orphans ⋯
+  // on a row of its own. Grouping makes each side wrap as a whole unit.
+  _renderAdjustStrip(child, pointsName) {
+    const amounts = this._quickPointAmounts();
+    const id = this._esc(child.id);
+    const name = child.name || this._t("panel.child_unnamed");
+    const btn = (delta) => {
+      const amount = Math.abs(delta);
+      const label = this._t(delta < 0 ? "panel.adjust_remove_title" : "panel.adjust_add_title",
+                            { amount, points: pointsName, child: name });
+      return `<button type="button" class="tm-btn tm-btn-sm ${delta < 0 ? "tm-btn-danger" : "tm-btn-raised"}"
+                data-act="adjust-points" data-id="${id}" data-delta="${delta}"
+                title="${this._esc(label)}" aria-label="${this._esc(label)}">${delta < 0 ? "−" : "+"}${amount}</button>`;
+    };
+    const customLabel = this._t("panel.adjust_custom_title", { child: name });
+    return `
+      <div class="tm-points-adjust">
+        <span class="tm-points-adjust-set">${amounts.slice().reverse().map(a => btn(-a)).join("")}</span>
+        <span class="tm-points-adjust-gap"></span>
+        <span class="tm-points-adjust-set">
+          ${amounts.map(a => btn(a)).join("")}
+          <button type="button" class="tm-btn tm-btn-sm" data-act="adjust-points-custom" data-id="${id}"
+                  title="${this._esc(customLabel)}" aria-label="${this._esc(customLabel)}">⋯</button>
+        </span>
+      </div>`;
   }
 
   // -- Activity tab ------------------------------------------------------
@@ -4197,6 +4237,10 @@ class TaskMatePanel extends HTMLElement {
                 ${["classic","playroom","console","cleanpro"].map(v => `<option value="${v}" ${v === (s.card_design || "classic") ? "selected" : ""}>${this._esc(this._t("common.design." + v))}</option>`).join("")}
               </select>
             </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_quick_points_label")}<small>${this._t("panel.settings_quick_points_hint")}</small></div>
+              <input type="text" class="tm-input" data-setting="quick_point_amounts" value="${this._esc(s.quick_point_amounts == null ? "" : s.quick_point_amounts)}" placeholder="5, 10, 20">
+            </div>
           </div>
         </div>
 
@@ -4773,6 +4817,73 @@ class TaskMatePanel extends HTMLElement {
     this._showToast("ok", this._t("panel.gift_sent"));
   }
 
+  _openAdjustDialog(childId) {
+    const child = (this._state.children || []).find(c => c.id === childId);
+    if (!child) return;
+    this._openDialog({ kind: "adjust", data: { child_id: childId, points: 10, reason: "" } });
+  }
+
+  _renderAdjustDialog() {
+    const d = this._dialog.data;
+    const child = (this._state.children || []).find(c => c.id === d.child_id) || {};
+    return this._dialogShell(
+      this._t("panel.adjust_dialog_title", { name: child.name || this._t("panel.child_unnamed") }),
+      [
+        this._field(this._t("panel.adjust_amount"), "points", d.points, "number"),
+        this._field(this._t("panel.adjust_reason"), "reason", d.reason, "text"),
+      ].join(""),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-danger" data-act="save-adjust-remove">${this._t("panel.adjust_remove")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-adjust-add">${this._t("panel.adjust_add")}</button>`
+    );
+  }
+
+  // `sign` is +1 or -1, taken from which footer button was pressed, so the
+  // dialog needs no direction control of its own.
+  async _saveAdjustDialog(sign) {
+    const d = this._dialog.data;
+    const amount = Number(d.points);
+    if (!Number.isInteger(amount) || amount < 1 || amount > 10000) {
+      this._showToast("err", this._t("panel.adjust_err_amount"));
+      return;
+    }
+    const reason = String(d.reason || "").trim() || "Admin panel adjustment";
+    const ok = await this._doAdjustPoints(d.child_id, sign * amount, reason);
+    if (ok) this._closeDialog(true);
+  }
+
+  // Manual point adjustment (#746). The busy key is the CHILD, not the button,
+  // so a laggy tablet can neither double-award one amount nor race +5 against
+  // −10 on the same balance.
+  async _doAdjustPoints(childId, delta, reason = "Admin panel adjustment") {
+    const amount = Math.abs(Number(delta) || 0);
+    if (!childId || !Number.isInteger(amount) || amount < 1 || amount > 10000) {
+      this._showToast("err", this._t("panel.adjust_err_amount"));
+      return false;
+    }
+    if (!this._adjustBusy) this._adjustBusy = new Set();
+    if (this._adjustBusy.has(childId)) return false;
+    this._adjustBusy.add(childId);
+    try {
+      const service = delta > 0 ? "add_points" : "remove_points";
+      const data = { child_id: childId, points: amount };
+      if (reason) data.reason = reason;
+      const { ok, err } = await this._callService(service, data);
+      if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return false; }
+      await this._fetchState();
+      const child = (this._state.children || []).find(c => c.id === childId);
+      this._showToast("ok", this._t("panel.adjust_done", {
+        sign: delta > 0 ? "+" : "−",
+        amount,
+        points: this._state.settings.points_name || this._t("common.points"),
+        child: (child && child.name) || "",
+      }));
+      return true;
+    } finally {
+      this._adjustBusy.delete(childId);
+    }
+  }
+
   _openSwapDialog(choreId) {
     const c = (this._state.chores || []).find(x => x.id === choreId);
     if (!c) return;
@@ -4813,6 +4924,7 @@ class TaskMatePanel extends HTMLElement {
   _renderDialog() {
     if (this._dialog.kind === "swap")         return this._renderSwapDialog();
     if (this._dialog.kind === "gift")         return this._renderGiftDialog();
+    if (this._dialog.kind === "adjust")       return this._renderAdjustDialog();
     if (this._dialog.kind === "child")        return this._renderChildDialog();
     if (this._dialog.kind === "chore")        return this._renderChoreDialog();
     if (this._dialog.kind === "reward")       return this._renderRewardDialog();
@@ -5929,6 +6041,20 @@ class TaskMatePanel extends HTMLElement {
     return new Intl.NumberFormat().format(n);
   }
 
+  // Quick point-adjust amounts (#746). Stored as a comma-separated string like
+  // "5, 10, 20" — same shape as streak_milestones — so the generic settings
+  // collector can round-trip it as a plain text input. Junk degrades to the
+  // default rather than rendering a broken button row.
+  _quickPointAmounts() {
+    const raw = (this._state.settings || {}).quick_point_amounts;
+    const parsed = String(raw == null ? "" : raw)
+      .split(",")
+      .map(p => Number(p.trim()))
+      .filter(n => Number.isInteger(n) && n >= 1 && n <= 10000);
+    const unique = [...new Set(parsed)].slice(0, 3);
+    return unique.length ? unique : [5, 10, 20];
+  }
+
   _mdi(name) {
     return `<ha-icon icon="${this._esc(name || "mdi:account-circle")}"></ha-icon>`;
   }
@@ -6407,6 +6533,18 @@ class TaskMatePanel extends HTMLElement {
         letter-spacing: 0.01em;
       }
       .tm-stat-highlight .tm-stat-value { color: var(--tm-gold); }
+
+      /* Manual point adjustment strip on child cards (#746). Each -set is a
+         nowrap group so the row folds as "minus / plus + ⋯" on a narrow card
+         instead of orphaning the ⋯ button on a line of its own. */
+      .tm-points-adjust {
+        display: flex; gap: 4px; flex-wrap: wrap;
+        align-items: center;
+        padding-top: 10px;
+      }
+      .tm-points-adjust-set { display: flex; gap: 4px; align-items: center; }
+      .tm-points-adjust-gap { flex: 1 1 8px; min-width: 4px; }
+      .tm-points-adjust .tm-btn { min-width: 40px; justify-content: center; padding-inline: 8px; }
 
       .tm-card-foot {
         display: flex; gap: 6px;

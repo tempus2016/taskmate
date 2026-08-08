@@ -85,6 +85,11 @@ class TaskMateActivityCard extends LitElement {
     if (reason.startsWith('Perfect week bonus!')) {
       return this._t('activity.reason_perfect_week');
     }
+    // Manual adjustment from the admin panel (#746). Deliberately NOT in
+    // _UNDO_DENY_PREFIXES — a manual adjustment must stay reversible.
+    if (reason === 'Admin panel adjustment') {
+      return this._t('activity.reason_admin_adjustment');
+    }
     const weekendMatch = reason.match(/^Weekend bonus \(×(\d+)\)$/);
     if (weekendMatch) {
       return this._t('activity.reason_weekend_bonus', { multiplier: weekendMatch[1] });
