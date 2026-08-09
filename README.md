@@ -43,6 +43,7 @@
 - [Routine Mode](#routine-mode)
 - [Chore Roulette](#chore-roulette)
 - [Timed Unlock Rewards](#timed-unlock-rewards)
+- [External Lock-Screen Shops](#external-lock-screen-shops)
 - [Insights — Fairness, Friction, Week Ahead & Health](#insights--fairness-friction-week-ahead--health)
 - [Pre-Reader Mode](#pre-reader-mode)
 - [Read Aloud](#read-aloud)
@@ -474,9 +475,60 @@ Spend points to unlock something for a while — the TV, the console socket, a w
 - Active unlocks are **persisted**. A Home Assistant restart mid-unlock re-arms the timer; anything already past due is turned off at startup. A restart can never strand the television on.
 - Turning something **off** is never gated by the allowlist — a revert is always safe.
 - Fires `taskmate_unlock_started` and `taskmate_unlock_ended` (`entity_id`, `reward_id`, `reward_name`, `child_id`, `child_name`, `started_at`, `revert_at`).
- 
+
 ---
- 
+
+## External Lock-Screen Shops
+
+TaskMate can remain the points and approval authority when a separate
+lock-screen, kiosk, or parental-control integration presents the purchase UI.
+The external system should submit the child's normal TaskMate reward claim, but
+must only unlock a device after a parent has approved it.
+
+### Reward event lifecycle
+
+| Event | When it fires | Correlation fields |
+|---|---|---|
+| `taskmate_reward_claimed` | A child creates a pending claim; no points have been deducted. | `claim_id`, `child_id`, `reward_id`, `cost` |
+| `taskmate_reward_approved` | A parent approves the claim and TaskMate has deducted its cost. | `claim_id`, `child_id`, `reward_id`, `cost` |
+| `taskmate_reward_rejected` | A parent rejects the pending claim; no points have been deducted. | `claim_id`, `child_id`, `reward_id` |
+
+Use `claim_id` to update a pending purchase indicator or deduplicate an
+external handler. Do not debit points, create a second TaskMate claim, or
+unlock a device in response to `taskmate_reward_claimed`.
+
+### Safe automation pattern
+
+For each reward-to-device mapping, filter both the child and reward IDs, then
+perform an idempotent action only on `taskmate_reward_approved`. This example
+releases a child-specific pause switch; replace the IDs with your own.
+
+```yaml
+alias: Release Alex PC after approved TaskMate reward
+mode: single
+triggers:
+  - trigger: event
+    event_type: taskmate_reward_approved
+conditions:
+  - condition: template
+    value_template: >-
+      {{ trigger.event.data.child_id == "alex-child-id"
+         and trigger.event.data.reward_id == "pc-time-reward-id" }}
+actions:
+  - action: switch.turn_off
+    target:
+      entity_id: switch.alex_pc_blocked
+```
+
+Keep a single unlock owner. Use either TaskMate's built-in **Timed Unlock** for
+the reward or an external approval automation such as the one above, never
+both. If the external action fails, leave the purchase record intact and alert
+a parent to resolve it; silently retrying by creating another claim can charge
+the child twice. Unknown child/reward mappings should fail closed and do
+nothing.
+
+---
+
 ## Insights — Fairness, Friction, Week Ahead & Health
  
 **TaskMate panel → Insights.** Answers the question the raw numbers don't: *am I dumping everything on the eldest?*

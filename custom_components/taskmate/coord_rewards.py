@@ -415,6 +415,7 @@ class RewardsMixin:
                 self.hass.bus.async_fire("taskmate_reward_approved", {
                     "child_id": child.id, "child_name": child.name,
                     "reward_id": reward.id, "reward_name": reward.name,
+                    "claim_id": claim.id,
                     "cost": effective_cost,
                     "timestamp": dt_util.now().isoformat(),
                 })
@@ -439,6 +440,7 @@ class RewardsMixin:
                 "child_name": getattr(child, "name", ""),
                 "reward_id": claim.reward_id,
                 "reward_name": getattr(reward, "name", ""),
+                "claim_id": claim.id,
                 "timestamp": dt_util.now().isoformat(),
             })
             # Dismiss the mobile approval push for this reviewed claim.

@@ -76,7 +76,9 @@ def test_reward_rejected_event():
     run(coord.async_reject_reward("cl1"))
     calls = _fired(coord, "taskmate_reward_rejected")
     assert len(calls) == 1
-    assert calls[0][0][1]["reward_name"] == "Ice cream"
+    payload = calls[0][0][1]
+    assert payload["reward_name"] == "Ice cream"
+    assert payload["claim_id"] == "cl1"
 
 
 def test_reward_approved_event_wallet_mode():
@@ -93,7 +95,9 @@ def test_reward_approved_event_wallet_mode():
     run(coord.async_approve_reward("cl1"))
     calls = _fired(coord, "taskmate_reward_approved")
     assert len(calls) == 1
-    assert calls[0][0][1]["reward_name"] == "Movie" and calls[0][0][1]["cost"] == 20
+    payload = calls[0][0][1]
+    assert payload["reward_name"] == "Movie" and payload["cost"] == 20
+    assert payload["claim_id"] == "cl1"
 
 
 def test_chore_rejected_event():
