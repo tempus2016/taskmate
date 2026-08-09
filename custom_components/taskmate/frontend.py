@@ -118,6 +118,10 @@ async def async_register_frontend(hass: HomeAssistant) -> None:
     from .http_photos import async_register_photo_views
     async_register_photo_views(hass)
 
+    # Admin-gated upload / authenticated serve for chore pictures (#750).
+    from .http_images import async_register_image_views
+    async_register_image_views(hass)
+
     # Token-gated ICS calendar feed (FEAT-10).
     from .http_calendar import async_register_calendar_view
     async_register_calendar_view(hass)

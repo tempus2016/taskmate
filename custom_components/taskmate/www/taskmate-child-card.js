@@ -914,6 +914,24 @@ class TaskMateChildCard extends LitElement {
 
       /* A chore picture sits where the digit would, so it has to carry the
          same white-on-colour weight the numeral gets from its text-shadow. */
+      /* Uploaded chore pictures (#750). min-width/min-height:0 is load-bearing:
+         grid and flex items default to min-*:auto, whose content-based minimum
+         is the image's intrinsic aspect ratio, so without it a PORTRAIT photo
+         overflows a square slot (measured 64x90 in a 64x64 pre-reader tile)
+         because that minimum beats height:100%. Landscape photos hide it. */
+      .chore-badge-img {
+        width: 100%; height: 100%; min-width: 0; min-height: 0;
+        object-fit: cover; border-radius: inherit; display: block;
+      }
+      .tmd-glyph-img {
+        width: 1.4em; height: 1.4em; min-width: 0; min-height: 0;
+        object-fit: cover; border-radius: 6px; display: block;
+      }
+      .pre-tile-icon img {
+        width: 100%; height: 100%; min-width: 0; min-height: 0;
+        object-fit: cover; border-radius: 12px; display: block;
+      }
+
       .chore-number-badge ha-icon {
         --mdc-icon-size: 22px;
         color: #fff;
@@ -2365,9 +2383,14 @@ class TaskMateChildCard extends LitElement {
    * The icon inherits the row's accent so it reads as part of the style.
    */
   _choreGlyph(chore) {
-    return chore.icon
-      ? html`<ha-icon icon="${chore.icon}" class="tmd-glyph-icon"></ha-icon>`
-      : this._choreEmoji(chore);
+    const v = window.__taskmate_chore_visual(chore);
+    if (v.kind === "image") {
+      return html`<img class="tmd-glyph-img" src="${v.url}" alt="" loading="lazy">`;
+    }
+    if (v.kind === "icon") {
+      return html`<ha-icon icon="${v.icon}" class="tmd-glyph-icon"></ha-icon>`;
+    }
+    return this._choreEmoji(chore);
   }
 
   /** Mirror of _renderChoreCard's "completed today" detection, designed branch only. */
@@ -3302,7 +3325,8 @@ class TaskMateChildCard extends LitElement {
     const points = chore.effective_points ?? chore.points ?? 0;
     const stars = Math.max(1, Math.min(5, Math.round(points / 2) || 1));
 
-    const icon = chore.icon
+    const v = window.__taskmate_chore_visual(chore);
+    const icon = (v.kind === "icon" ? v.icon : "")
       || this._getTimeCategoryIcon(chore.time_category)
       || 'mdi:checkbox-marked-circle-outline';
 
@@ -3316,7 +3340,11 @@ class TaskMateChildCard extends LitElement {
           ? this._handleUndo(chore, child, childCompletionsToday)
           : this._handleComplete(chore, child))}
       >
-        <div class="pre-tile-icon"><ha-icon icon="${icon}"></ha-icon></div>
+        <div class="pre-tile-icon">
+          ${v.kind === "image"
+            ? html`<img src="${v.url}" alt="" loading="lazy">`
+            : html`<ha-icon icon="${icon}"></ha-icon>`}
+        </div>
         ${isDone ? html`<div class="pre-tile-tick"><ha-icon icon="mdi:check-bold"></ha-icon></div>` : ''}
         <div class="pre-tile-stars">
           ${Array.from({ length: stars }, () => html`<ha-icon icon="mdi:star"></ha-icon>`)}
@@ -3336,11 +3364,14 @@ class TaskMateChildCard extends LitElement {
    * a picture can't work on one and be invisible on the other.
    */
   _choreNumberBadge(chore, colorClass, choreNumber) {
+    const v = window.__taskmate_chore_visual(chore);
     return html`
       <div class="chore-number-badge ${colorClass}">
-        ${chore.icon
-          ? html`<ha-icon icon="${chore.icon}"></ha-icon>`
-          : choreNumber}
+        ${v.kind === "image"
+          ? html`<img class="chore-badge-img" src="${v.url}" alt="" loading="lazy">`
+          : v.kind === "icon"
+            ? html`<ha-icon icon="${v.icon}"></ha-icon>`
+            : choreNumber}
       </div>`;
   }
 

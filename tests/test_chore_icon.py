@@ -91,7 +91,15 @@ class TestClassicRowShowsTheIcon:
         )
 
     def test_badge_renders_the_icon_when_one_is_set(self):
-        assert "chore.icon" in self._badge_source()
+        # #750 moved the icon/image/fallback decision into the shared resolver
+        # window.__taskmate_chore_visual, so the badge no longer reads
+        # chore.icon directly. The guarantee is unchanged: an icon still shows
+        # when one is set. Precedence itself is pinned in
+        # tests/test_chore_image_rendering.py.
+        badge = self._badge_source()
+        assert "__taskmate_chore_visual" in badge
+        assert 'v.kind === "icon"' in badge
+        assert "<ha-icon icon=" in badge
 
     def test_badge_falls_back_to_the_number(self):
         """Chores with no picture — i.e. every chore that exists today — must
@@ -132,9 +140,15 @@ class TestDesignedRowsPreferTheExplicitIcon:
         assert CARD.count("r.glyph") >= 3
 
     def test_resolver_prefers_the_icon_over_the_guess(self):
+        # As above: since #750 the icon arrives via __taskmate_chore_visual
+        # rather than a direct chore.icon read. The ordering that matters —
+        # icon beats the keyword-guessed emoji — is still asserted here, and
+        # image-beats-icon is asserted in test_chore_image_rendering.py.
         assert "_choreGlyph(chore)" in CARD
         glyph = _method_source(CARD, "  _choreGlyph(chore) {", "  /** Mirror of _renderChoreCard")
-        assert "chore.icon" in glyph
+        assert "__taskmate_chore_visual" in glyph
+        assert 'v.kind === "icon"' in glyph
+        assert glyph.index('v.kind === "icon"') < glyph.index("_choreEmoji(chore)")
         assert "_choreEmoji(chore)" in glyph
 
     def test_designed_icon_is_sized_per_row_type(self):

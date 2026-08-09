@@ -275,7 +275,12 @@ class TaskMateRoutineCard extends LitElement {
         </div>
 
         <div class="body">
-          <div class="icon"><ha-icon icon="${chore.icon || "mdi:checkbox-marked-circle-outline"}"></ha-icon></div>
+          ${(() => {
+            const v = window.__taskmate_chore_visual(chore);
+            return v.kind === "image"
+              ? html`<div class="icon"><img class="chore-icon-img" src="${v.url}" alt="" loading="lazy"></div>`
+              : html`<div class="icon"><ha-icon icon="${v.kind === "icon" ? v.icon : "mdi:checkbox-marked-circle-outline"}"></ha-icon></div>`;
+          })()}
           <div class="task">${chore.name}</div>
           ${chore.description ? html`<div class="desc">${chore.description}</div>` : ""}
           <div class="points">
@@ -440,6 +445,13 @@ class TaskMateRoutineCard extends LitElement {
         text-align: center;
         padding: 20px 26px 8px;
         gap: 14px;
+      }
+      /* Uploaded chore picture (#750). .icon IS a sized box (128px, 104px on
+         small screens), so 100% is correct here. min-*:0 stops a portrait
+         photo overflowing it via the grid min-*:auto intrinsic-ratio minimum. */
+      .icon .chore-icon-img {
+        width: 100%; height: 100%; min-width: 0; min-height: 0;
+        object-fit: cover; border-radius: inherit; display: block;
       }
       .icon {
         width: 128px; height: 128px;
