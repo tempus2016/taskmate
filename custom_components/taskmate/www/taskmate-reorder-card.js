@@ -224,6 +224,20 @@ class TaskMateReorderCard extends LitElement {
         font-weight: 600;
       }
 
+      /* Uploaded chore picture (#750). Sized explicitly, NOT width:100%:
+         .chore-icon is applied straight to the element with no wrapper box, so
+         a percentage would resolve against the flex row and stretch the photo
+         across it. min-*:0 stops a portrait photo overflowing the square slot
+         via the grid/flex min-*:auto intrinsic-ratio minimum. */
+      .chore-icon-img {
+        width: 24px; height: 24px; min-width: 0; min-height: 0;
+        flex: 0 0 24px;
+        object-fit: cover; border-radius: 6px; display: block;
+      }
+      /* The designed row nests the glyph in a content-sized <span class="d-emoji">. */
+      .d-emoji .chore-icon-img {
+        width: 20px; height: 20px; flex: 0 0 20px; border-radius: 5px;
+      }
       .chore-icon {
         --mdc-icon-size: 24px;
         color: var(--secondary-text-color);
@@ -911,10 +925,13 @@ class TaskMateReorderCard extends LitElement {
   _renderDesignedChoreItem(chore, index, total, category, pointsIcon) {
     const isFirst = index === 0;
     const isLast = index === total - 1;
-    const choreIcon = chore.icon || "mdi:broom";
-    const emoji = choreIcon.startsWith("mdi:")
-      ? html`<ha-icon icon="${choreIcon}"></ha-icon>`
-      : html`${choreIcon}`;
+    const v = window.__taskmate_chore_visual(chore);
+    const choreIcon = (v.kind === "icon" ? v.icon : "") || "mdi:broom";
+    const emoji = v.kind === "image"
+      ? html`<img class="chore-icon-img" src="${v.url}" alt="" loading="lazy">`
+      : choreIcon.startsWith("mdi:")
+        ? html`<ha-icon icon="${choreIcon}"></ha-icon>`
+        : html`${choreIcon}`;
 
     return html`
       <div
@@ -972,7 +989,12 @@ class TaskMateReorderCard extends LitElement {
           <ha-icon icon="mdi:drag-vertical"></ha-icon>
         </div>
         <span class="order-number">${index + 1}</span>
-        <ha-icon class="chore-icon" icon="${chore.icon || "mdi:broom"}"></ha-icon>
+        ${(() => {
+          const v = window.__taskmate_chore_visual(chore);
+          return v.kind === "image"
+            ? html`<img class="chore-icon chore-icon-img" src="${v.url}" alt="" loading="lazy">`
+            : html`<ha-icon class="chore-icon" icon="${v.kind === "icon" ? v.icon : "mdi:broom"}"></ha-icon>`;
+        })()}
         <div class="chore-info">
           <span class="chore-name">${chore.name}</span>
           <span class="chore-points">
