@@ -126,3 +126,49 @@ def test_image_slots_neutralise_the_min_size_trap():
                 f"{name} card image rule missing min-*:0 — a portrait photo "
                 f"will overflow its slot: {' '.join(rule.split())[:120]}"
             )
+
+
+PANEL = (WWW / "taskmate-panel.js").read_text(encoding="utf-8")
+
+
+def test_panel_chore_dialog_has_an_image_well():
+    assert "_choreImageField(" in PANEL
+    assert "panel.chore_image_label" in PANEL
+
+
+def test_panel_upload_targets_the_image_endpoint():
+    assert "/api/taskmate/image" in PANEL
+
+
+def test_panel_downscales_before_upload():
+    # A 6MB phone photo must not be stored or re-downloaded on every render.
+    assert "toBlob" in PANEL and "drawImage" in PANEL
+    block = re.search(r"_downscaleChoreImage\(file\) \{(.*?)\n  \}", PANEL, re.S)
+    assert block, "could not find _downscaleChoreImage"
+    assert "512" in block.group(1)
+
+
+def test_panel_retries_once_on_a_stale_token():
+    block = re.search(r"async _uploadChoreImage\((.*?)\n  \}", PANEL, re.S)
+    assert block, "could not find _uploadChoreImage"
+    body = block.group(1)
+    assert "refreshAccessToken" in body, "the cached access token can go stale mid-session"
+    assert "401" in body
+
+
+def test_save_chore_carries_the_image_url():
+    block = re.search(r"async _doSaveChore\(\) \{(.*?)\n  \}", PANEL, re.S)
+    assert block, "could not find _doSaveChore"
+    assert "image_url" in block.group(1), (
+        "#755 was exactly this bug for `icon`: the payload is explicit, so a "
+        "field missing from it is silently dropped in the browser"
+    )
+
+
+def test_remove_only_clears_the_dialog_value():
+    # Deleting on click would destroy the picture even if the dialog is
+    # cancelled; the file is removed on save by the coordinator instead.
+    assert 'act === "chore-image-remove"' in PANEL
+    block = re.search(r'act === "chore-image-remove"\) \{(.*?)\n    \}', PANEL, re.S)
+    assert block, "could not find the remove handler"
+    assert "fetch(" not in block.group(1)

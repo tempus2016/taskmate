@@ -524,6 +524,14 @@ class TaskMatePanel extends HTMLElement {
     if (act === "save-gift")    { this._doGiftPoints(); return; }
     if (act === "adjust-points") { this._doAdjustPoints(t.dataset.id, Number(t.dataset.delta)); return; }
     if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
+    if (act === "chore-image-pick")   { this._pickChoreImage(); return; }
+    if (act === "chore-image-remove") {
+      // Clears the dialog value only — the file is deleted on save by the
+      // coordinator, so cancelling the dialog cannot destroy the picture.
+      this._dialog.data.image_url = "";
+      this._render();
+      return;
+    }
     if (act === "save-adjust-add")    { this._saveAdjustDialog(1); return; }
     if (act === "save-adjust-remove") { this._saveAdjustDialog(-1); return; }
     if (act === "edit-child")   { this._openChildDialog(t.dataset.id); return; }
@@ -1432,6 +1440,85 @@ class TaskMatePanel extends HTMLElement {
     }
   }
 
+  _pickChoreImage() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp";
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      if (file) this._uploadChoreImage(file);
+    });
+    input.click();
+  }
+
+  // Downscale to 512px before upload: these render in slots between 20 and
+  // 128px, so anything larger is bytes every device re-downloads for nothing.
+  _downscaleChoreImage(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const max = 512;
+        let { width, height } = img;
+        if (width > max || height > max) {
+          const scale = Math.min(max / width, max / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(b => (b ? resolve(b) : reject(new Error("encode failed"))), "image/jpeg", 0.8);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("decode failed")); };
+      img.src = url;
+    });
+  }
+
+  async _uploadChoreImage(file) {
+    if (this._choreImageBusy) return;
+    this._choreImageBusy = true;
+    this._render();
+    try {
+      const blob = await this._downscaleChoreImage(file);
+      const post = () => {
+        const token = this._hass && this._hass.auth && this._hass.auth.data
+          && this._hass.auth.data.access_token;
+        const fd = new FormData();
+        fd.append("file", blob, "chore.jpg");
+        return fetch("/api/taskmate/image", {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fd,
+        });
+      };
+      // The cached access token can go stale mid-session, so refresh and retry
+      // once on a 401 before giving up. Mirrors the child card's photo upload.
+      if (this._hass && this._hass.auth && this._hass.auth.expired
+        && this._hass.auth.refreshAccessToken) {
+        try { await this._hass.auth.refreshAccessToken(); } catch (e) { /* surfaced below */ }
+      }
+      let resp = await post();
+      if (resp.status === 401 && this._hass && this._hass.auth
+        && this._hass.auth.refreshAccessToken) {
+        await this._hass.auth.refreshAccessToken();
+        resp = await post();
+      }
+      if (resp.status === 413) { this._showToast("err", this._t("panel.chore_image_too_large")); return; }
+      if (resp.status === 400) { this._showToast("err", this._t("panel.chore_image_bad_type")); return; }
+      if (!resp.ok) { this._showToast("err", this._t("panel.chore_image_failed")); return; }
+      const body = await resp.json();
+      if (this._dialog && body.image_url) this._dialog.data.image_url = body.image_url;
+    } catch (err) {
+      this._showToast("err", this._t("panel.chore_image_failed"));
+    } finally {
+      this._choreImageBusy = false;
+      this._render();
+    }
+  }
+
   async _doSaveChore() {
     this._syncIconPickers();
     const d = this._dialog.data;
@@ -1441,6 +1528,7 @@ class TaskMatePanel extends HTMLElement {
       name: d.name.trim(),
       description: d.description || "",
       icon: d.icon || "",
+      image_url: d.image_url || "",
       points: Number(d.points) || 0,
       assigned_to: d.assigned_to || [],
       requires_approval: !!d.requires_approval,
@@ -5068,6 +5156,7 @@ class TaskMatePanel extends HTMLElement {
         `<div class="tm-field-row">
           ${this._field(this._t("panel.chore_description_label"), "description", d.description, "text")}
           ${this._iconPickerField(this._t("panel.chore_icon_label"), "icon", d.icon)}
+        ${this._choreImageField(d.image_url || "")}
         </div>`,
         this._select(this._t("panel.chore_task_type_label"), "task_type", d.task_type || "standard", [
           { v: "standard", l: this._t("panel.chore_task_type_standard") },
@@ -5839,6 +5928,27 @@ class TaskMatePanel extends HTMLElement {
       </div>`;
   }
 
+  /** The chore picture well (#750): thumbnail or empty state, Upload, Remove. */
+  _choreImageField(value) {
+    const busy = this._choreImageBusy;
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.chore_image_label")}</span>
+        <div class="tm-image-well">
+          ${value
+            ? `<img class="tm-image-thumb" src="${this._esc(value)}" alt="">`
+            : `<div class="tm-image-empty">${this._t("panel.chore_image_empty")}</div>`}
+          <div class="tm-image-actions">
+            <button type="button" class="tm-btn tm-btn-sm" data-act="chore-image-pick" ${busy ? "disabled" : ""}>
+              ${busy ? this._t("panel.chore_image_uploading") : this._t("panel.chore_image_upload")}
+            </button>
+            ${value ? `<button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="chore-image-remove">${this._t("panel.chore_image_remove")}</button>` : ""}
+          </div>
+        </div>
+        <span class="tm-field-hint">${this._t("panel.chore_image_hint")}</span>
+      </div>`;
+  }
+
   _iconPickerField(label, name, value) {
     return `
       <div class="tm-field">
@@ -6558,6 +6668,24 @@ class TaskMatePanel extends HTMLElement {
       /* Manual point adjustment strip on child cards (#746). Each -set is a
          nowrap group so the row folds as "minus / plus + ⋯" on a narrow card
          instead of orphaning the ⋯ button on a line of its own. */
+      /* Chore picture well (#750). */
+      .tm-image-well {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px; border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm); background: var(--tm-surface-2);
+      }
+      .tm-image-thumb {
+        width: 56px; height: 56px; min-width: 0; min-height: 0;
+        object-fit: cover; border-radius: var(--tm-radius-sm); display: block;
+        border: 1px solid var(--tm-border);
+      }
+      .tm-image-empty {
+        width: 56px; height: 56px; display: grid; place-items: center;
+        border: 1px dashed var(--tm-border); border-radius: var(--tm-radius-sm);
+        color: var(--tm-text-faint); font-size: 11px; text-align: center;
+      }
+      .tm-image-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
       .tm-points-adjust {
         display: flex; gap: 4px; flex-wrap: wrap;
         align-items: center;
