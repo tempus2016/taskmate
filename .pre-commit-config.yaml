@@ -1,0 +1,65 @@
+# Local pre-commit hooks — catch in a second what CI would otherwise catch in
+# five minutes. Optional for contributors; CI remains the source of truth.
+#
+#   pip install pre-commit && pre-commit install
+#   pre-commit run --all-files      # one-off sweep
+#
+# pre-commit.ci (the GitHub App) runs the same hooks on PRs and pushes an
+# autofix commit when a hook rewrites a file.
+
+ci:
+  autofix_commit_msg: "style: pre-commit.ci autofixes"
+  autoupdate_commit_msg: "chore(deps): pre-commit autoupdate"
+  autoupdate_schedule: monthly
+  # Node isn't available in the pre-commit.ci runner, and the data checks need
+  # the repo's own Python — both already run in GitHub Actions.
+  skip: [eslint, translation-parity, data-files]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        # Preserve the two-space markdown line break.
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-json
+      - id: check-yaml
+        # Blueprints use HA's !input tag, which plain YAML can't resolve.
+        exclude: ^blueprints/
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # Keep this rev in step with RUFF_VERSION in .github/workflows/lint.yml.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.12
+    hooks:
+      - id: ruff
+        args: [--fix]
+
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint (cards + panel)
+        entry: npm run lint --silent
+        language: system
+        pass_filenames: false
+        files: ^custom_components/taskmate/www/.*\.js$
+
+      - id: translation-parity
+        name: Every locale matches en.json
+        entry: python3 scripts/check_translations.py
+        language: system
+        pass_filenames: false
+        files: ^custom_components/taskmate/(translations|www/locales)/.*\.json$
+
+      - id: data-files
+        name: Blueprints, sentences and metadata parse
+        entry: python3 scripts/check_data_files.py
+        language: system
+        pass_filenames: false
+        files: ^(blueprints/|custom_sentences/|hacs\.json|custom_components/taskmate/manifest\.json)

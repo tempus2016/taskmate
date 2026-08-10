@@ -40,6 +40,16 @@ custom_components/taskmate/
 
 ## Development setup
 
+### One-click: dev container / Codespaces
+
+The repo ships a dev container. Open it in GitHub Codespaces, or in VS Code with
+the Dev Containers extension ("Reopen in Container"). Setup installs the test
+harness, ruff, ESLint and pre-commit, and creates a scratch HA config at
+`dev-config/` with the integration symlinked in — so `hass -c dev-config` gives
+you a real Home Assistant on port 8123 with your working copy live.
+
+### Manual
+
 The fastest loop is a real Home Assistant instance with the integration
 bind-mounted:
 
@@ -52,18 +62,35 @@ bind-mounted:
 
 ## Code quality
 
-Two checks gate every PR into `main`. Run them locally before pushing:
+Run these locally before pushing:
 
 ```bash
 # Lint (matches the "Ruff" CI check)
-ruff check .
+ruff check custom_components/taskmate tests scripts
+
+# Cards and panel (matches the "ESLint" CI check)
+npm ci && npm run lint
 
 # Tests (matches the "Run tests" CI check)
 pytest
+
+# Every locale matches en.json (matches the "Translation parity" CI check)
+python3 scripts/check_translations.py
+
+# Blueprints, sentences and packaging metadata parse (matches "Data files")
+python3 scripts/check_data_files.py
 ```
 
-`hassfest` and HACS validation also run in CI to keep the integration
-compliant.
+Or install the hooks once and let them run on commit:
+
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+`hassfest`, HACS validation, dependency review and a workflow-security audit
+(`zizmor`) also run in CI, alongside GitHub's CodeQL code scanning.
 
 ## Translations
 
@@ -74,6 +101,10 @@ be asked to include the translations.
 
 Backend strings live in `custom_components/taskmate/translations/` and
 `strings.json`; card strings live under `www/locales/`.
+
+This is enforced in CI: `scripts/check_translations.py` fails the build if any
+locale's key set differs from `en.json` in either catalogue. Run it locally to
+see exactly which keys are missing.
 
 ## Submitting a pull request
 

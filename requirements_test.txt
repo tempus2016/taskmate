@@ -9,3 +9,6 @@
 # 0.13.205 is the newest release compatible with the CI Python (3.12); 0.13.206+
 # require >=3.13. This is exactly what the previous unpinned install resolved to.
 pytest-homeassistant-custom-component==0.13.205
+
+# Coverage reporting for CI (Tests workflow renders a per-module summary).
+pytest-cov

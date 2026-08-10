@@ -9,3 +9,18 @@ ignore = [
     "E501",  # line length handled by formatter preference, not strict
     "E731",  # allow `_m = lambda ...` localisation helpers inside flow steps
 ]
+
+[tool.coverage.run]
+source = ["custom_components/taskmate"]
+branch = true
+omit = [
+    "custom_components/taskmate/www/*",
+    "tests/*",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

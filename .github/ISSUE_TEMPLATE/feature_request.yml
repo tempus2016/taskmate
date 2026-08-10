@@ -10,7 +10,7 @@ body:
     attributes:
       value: |
         Thanks for suggesting a new feature! Please fill in as much detail as you can — the more context you give, the easier it is to understand and implement.
-        
+
         Before submitting, please search [existing issues](https://github.com/tempus2016/taskmate/issues) to check if this has already been requested.
 
   # ── Feature Summary ───────────────────────────────────────────────────────────
@@ -132,7 +132,7 @@ body:
       label: Additional Context
       description: |
         Anything else that helps explain your situation — ages of children, how you currently use TaskMate, screenshots of what you'd like to see, mockups, etc.
-        
+
         You can drag and drop images directly into this box.
 
   # ── Checklist ─────────────────────────────────────────────────────────────────
