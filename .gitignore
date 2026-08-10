@@ -38,3 +38,11 @@ scripts/screenshots/
 
 # Node / JS tooling (CI-3)
 node_modules/
+
+# Dev container scratch HA config
+dev-config/
+
+# Coverage output
+.coverage
+coverage.xml
+htmlcov/

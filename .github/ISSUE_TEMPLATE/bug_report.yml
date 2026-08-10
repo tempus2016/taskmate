@@ -175,15 +175,15 @@ body:
     attributes:
       label: Home Assistant Logs
       description: |
-        Paste any relevant log output here. 
-        
+        Paste any relevant log output here.
+
         To get debug logs, add this to configuration.yaml, restart HA, reproduce the issue, then copy the logs from Settings → System → Logs:
         ```yaml
         logger:
           logs:
             custom_components.taskmate: debug
         ```
-        
+
         Filter by "taskmate" to find relevant entries.
       render: text
       placeholder: |
@@ -223,7 +223,7 @@ body:
       label: Additional Context
       description: |
         Anything else that might be relevant — screenshots, screen recordings, recent changes to your setup, etc.
-        
+
         You can drag and drop images directly into this text box.
 
   - type: checkboxes

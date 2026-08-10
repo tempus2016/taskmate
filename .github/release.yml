@@ -1,0 +1,46 @@
+# Groups GitHub's auto-generated release notes by label. This does not replace
+# the hand-written release notes — it shapes the "What's Changed" list that
+# GitHub appends when you click "Generate release notes", so dependency bumps
+# collapse into one section instead of padding the top of the list.
+changelog:
+  exclude:
+    labels:
+      - duplicate
+      - invalid
+      - wontfix
+      - stale
+    authors:
+      - dependabot
+  categories:
+    - title: New features
+      labels:
+        - enhancement
+
+    - title: Bug fixes
+      labels:
+        - bug
+
+    - title: Cards & UI
+      labels:
+        - cards
+
+    - title: Translations
+      labels:
+        - translations
+
+    - title: Documentation
+      labels:
+        - documentation
+
+    - title: CI & maintenance
+      labels:
+        - ci
+        - tests
+
+    - title: Dependencies
+      labels:
+        - dependencies
+
+    - title: Other changes
+      labels:
+        - "*"

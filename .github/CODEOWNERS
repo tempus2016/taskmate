@@ -1,0 +1,13 @@
+# Auto-requests review on every PR (including from forks) and makes the
+# ownership explicit. Matches the "codeowners" field in manifest.json.
+
+*                                   @tempus2016
+
+# Areas worth an explicit line — these are the ones where an outside PR is most
+# likely to land, and where a silent change is most expensive.
+/.github/                           @tempus2016
+/custom_components/taskmate/www/    @tempus2016
+/custom_components/taskmate/translations/ @tempus2016
+/blueprints/                        @tempus2016
+/hacs.json                          @tempus2016
+/custom_components/taskmate/manifest.json @tempus2016

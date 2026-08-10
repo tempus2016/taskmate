@@ -1,0 +1,66 @@
+name: Release guard
+
+# Two release rules that are otherwise only enforced by remembering them:
+#
+#   1. manifest.json's "version" must equal the tag exactly (including any
+#      -beta.N suffix) — HACS reads the manifest, not the tag.
+#   2. the release must carry taskmate.zip — hacs.json sets zip_release, so a
+#      release without that asset is uninstallable, and the asset's download
+#      count is the number HACS displays.
+#
+# release-zip.yml builds and uploads the zip on the same `published` event;
+# this workflow waits for it to land rather than racing it.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to re-check (e.g. v5.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  manifest-version:
+    name: Manifest version matches tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the released tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.event.release.tag_name }}
+          persist-credentials: false
+
+      - name: Compare manifest.json against the tag
+        env:
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: python3 scripts/check_release.py "$TAG"
+
+  zip-asset:
+    name: taskmate.zip attached
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for the HACS zip to be attached
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: |
+          for attempt in $(seq 1 10); do
+            assets=$(gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name' || true)
+            echo "attempt $attempt — assets: ${assets:-<none>}"
+            if printf '%s\n' "$assets" | grep -qx 'taskmate.zip'; then
+              echo "taskmate.zip is attached to $TAG."
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::error::taskmate.zip is missing from release $TAG — HACS installs will fail."
+          echo "Re-run the 'Attach HACS zip to release' workflow, then re-run this check."
+          exit 1

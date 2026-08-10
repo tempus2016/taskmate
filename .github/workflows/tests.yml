@@ -15,16 +15,9 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    name: Validate integration
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Hassfest validation
-        uses: home-assistant/actions/hassfest@a7c616ce81ccda50150bf1595786c71b1883fabb # master
+  # NOTE: hassfest lives in hassfest.yaml and runs on its own schedule + on
+  # every push/PR. It used to be duplicated here as a "validate" job; that ran
+  # the same action twice per PR for no extra signal.
 
   test:
     name: Run tests
@@ -33,11 +26,18 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
+          # The HA test harness pulls in homeassistant and its whole dependency
+          # tree — easily the slowest step in CI. Cache it against the pinned
+          # requirements file.
+          cache: "pip"
+          cache-dependency-path: requirements_test.txt
 
       - name: Install dependencies
         run: |
@@ -46,4 +46,47 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Run tests
-        run: pytest -v
+        run: pytest -v --cov --cov-report=term-missing --cov-report=xml --cov-report=html
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          if [ ! -f coverage.xml ]; then
+            echo "No coverage.xml produced — tests likely failed before finishing." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+
+          root = ET.parse("coverage.xml").getroot()
+          overall = float(root.get("line-rate", 0)) * 100
+          print("## Test coverage\n")
+          print(f"**Overall: {overall:.1f}%**\n")
+          print("| Module | Coverage | Missed |")
+          print("|---|---:|---:|")
+
+          rows = []
+          for cls in root.iter("class"):
+              lines = cls.find("lines")
+              if lines is None:
+                  continue
+              entries = list(lines)
+              if not entries:
+                  continue
+              missed = sum(1 for line in entries if line.get("hits") == "0")
+              rate = float(cls.get("line-rate", 0)) * 100
+              rows.append((rate, cls.get("filename"), missed))
+
+          # Worst-covered first — that's where the next test is worth writing.
+          for rate, filename, missed in sorted(rows)[:25]:
+              print(f"| `{filename}` | {rate:.0f}% | {missed} |")
+          PY
+
+      - name: Upload HTML coverage report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-html
+          path: htmlcov/
+          retention-days: 14
+          if-no-files-found: ignore
