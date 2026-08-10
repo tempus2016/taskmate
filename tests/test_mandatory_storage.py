@@ -1,4 +1,5 @@
 """Tests for the mandatory_misses storage collection (#532)."""
+
 from __future__ import annotations
 
 from custom_components.taskmate.models import MandatoryMiss
@@ -33,8 +34,10 @@ def test_update_miss():
 def test_replace_misses():
     s = _storage()
     s.add_mandatory_miss(MandatoryMiss(chore_id="c1", child_id="k1", due_date="d", period_id="morning", id="m1"))
-    s.replace_mandatory_misses([
-        MandatoryMiss(chore_id="c2", child_id="k2", due_date="d", period_id="evening", id="m2"),
-    ])
+    s.replace_mandatory_misses(
+        [
+            MandatoryMiss(chore_id="c2", child_id="k2", due_date="d", period_id="evening", id="m2"),
+        ]
+    )
     got = s.get_mandatory_misses()
     assert len(got) == 1 and got[0].id == "m2"

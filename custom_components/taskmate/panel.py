@@ -1,4 +1,5 @@
 """Sidebar panel registration for the TaskMate admin UI."""
+
 from __future__ import annotations
 
 import json

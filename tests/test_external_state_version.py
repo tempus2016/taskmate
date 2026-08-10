@@ -6,6 +6,7 @@ sensor that derives attributes from *live* entity state — chore visibility and
 the weather gate — would otherwise serve attributes computed against the old
 entity state until an unrelated TaskMate mutation happened to bump the version.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -35,14 +36,17 @@ def _event(entity_id):
 
 class TestTrackedEntities:
     def test_visibility_and_weather_entities_are_tracked(self):
-        coord = _coord(chores=[
-            Chore(name="Dishes", visibility_entity="binary_sensor.dishwasher"),
-            Chore(name="Mow", weather_entity="weather.home"),
-            Chore(name="Plain"),
-        ])
+        coord = _coord(
+            chores=[
+                Chore(name="Dishes", visibility_entity="binary_sensor.dishwasher"),
+                Chore(name="Mow", weather_entity="weather.home"),
+                Chore(name="Plain"),
+            ]
+        )
         coord._refresh_tracked_availability_entities()
         assert coord._tracked_visibility_entities == {
-            "binary_sensor.dishwasher", "weather.home",
+            "binary_sensor.dishwasher",
+            "weather.home",
         }
 
     def test_child_availability_entities_stay_separate(self):

@@ -8,6 +8,7 @@ Two fixes:
   parent-audience types whose routes are still empty, so the parent actually
   gets the notification.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
@@ -45,17 +46,15 @@ async def test_ensure_subscribes_parent_to_empty_parent_types(coord):
 @pytest.mark.asyncio
 async def test_ensure_does_not_override_existing_routes(coord):
     # A type already configured (even to someone else) is left untouched.
-    coord.storage.set_notification_route(
-        "pending_chore_approval", "child:abc", NotificationRoute(enabled=True)
-    )
+    coord.storage.set_notification_route("pending_chore_approval", "child:abc", NotificationRoute(enabled=True))
     p = ParentRecipient(name="John", notify_service="notify.mobile_app_john")
     coord.storage.upsert_parent_recipient(p)
 
     coord.ensure_parent_default_routes()
 
     routes = coord.storage.get_notification_config("pending_chore_approval").routes
-    assert p.id not in routes          # not forced in
-    assert "child:abc" in routes        # existing route preserved
+    assert p.id not in routes  # not forced in
+    assert "child:abc" in routes  # existing route preserved
 
 
 @pytest.mark.asyncio
@@ -75,11 +74,8 @@ async def test_fire_does_not_leak_persistent_notification(coord, hass):
 
     await coord.fire("pending_chore_approval", {"child_name": "Malia", "chore_name": "Tidy"})
 
-    persistent = [
-        c for c in hass.services.async_call.call_args_list
-        if c[0][0] == "persistent_notification"
-    ]
-    assert persistent == []            # the leak is gone
+    persistent = [c for c in hass.services.async_call.call_args_list if c[0][0] == "persistent_notification"]
+    assert persistent == []  # the leak is gone
     hass.services.async_call.assert_not_called()
 
 
@@ -93,8 +89,6 @@ async def test_fire_routes_to_subscribed_parent(coord, hass):
 
     await coord.fire("pending_chore_approval", {"child_name": "Malia", "chore_name": "Tidy"})
 
-    notify_calls = [
-        c for c in hass.services.async_call.call_args_list if c[0][0] == "notify"
-    ]
+    notify_calls = [c for c in hass.services.async_call.call_args_list if c[0][0] == "notify"]
     assert len(notify_calls) == 1
     assert notify_calls[0][0][1] == "mobile_app_john"

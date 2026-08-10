@@ -1,4 +1,5 @@
 """Tests for mandatory-miss detection (#532)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -40,8 +41,14 @@ DAY = dt.date(2026, 6, 21)
 
 
 def test_miss_created_for_incomplete_mandatory():
-    chore = Chore(name="Homework", mandatory=True, mandatory_penalty_points=5,
-                  time_category="afternoon", assigned_to=["k1"], id="c1")
+    chore = Chore(
+        name="Homework",
+        mandatory=True,
+        mandatory_penalty_points=5,
+        time_category="afternoon",
+        assigned_to=["k1"],
+        id="c1",
+    )
     coord = _coord([chore], [Child(name="Kid", id="k1")], [])
     n = run(coord.async_detect_mandatory_misses("afternoon", DAY))
     assert n == 1
@@ -51,31 +58,26 @@ def test_miss_created_for_incomplete_mandatory():
 
 
 def test_no_miss_when_completed_today():
-    chore = Chore(name="Homework", mandatory=True, time_category="afternoon",
-                  assigned_to=["k1"], id="c1")
-    comp = ChoreCompletion(chore_id="c1", child_id="k1",
-                           completed_at=dt.datetime(2026, 6, 21, 13, 0))
+    chore = Chore(name="Homework", mandatory=True, time_category="afternoon", assigned_to=["k1"], id="c1")
+    comp = ChoreCompletion(chore_id="c1", child_id="k1", completed_at=dt.datetime(2026, 6, 21, 13, 0))
     coord = _coord([chore], [Child(name="Kid", id="k1")], [comp])
     assert run(coord.async_detect_mandatory_misses("afternoon", DAY)) == 0
 
 
 def test_no_miss_for_non_mandatory():
-    chore = Chore(name="Extra", mandatory=False, time_category="afternoon",
-                  assigned_to=["k1"], id="c1")
+    chore = Chore(name="Extra", mandatory=False, time_category="afternoon", assigned_to=["k1"], id="c1")
     coord = _coord([chore], [Child(name="Kid", id="k1")], [])
     assert run(coord.async_detect_mandatory_misses("afternoon", DAY)) == 0
 
 
 def test_wrong_period_skipped():
-    chore = Chore(name="Homework", mandatory=True, time_category="morning",
-                  assigned_to=["k1"], id="c1")
+    chore = Chore(name="Homework", mandatory=True, time_category="morning", assigned_to=["k1"], id="c1")
     coord = _coord([chore], [Child(name="Kid", id="k1")], [])
     assert run(coord.async_detect_mandatory_misses("afternoon", DAY)) == 0
 
 
 def test_per_child_and_idempotent():
-    chore = Chore(name="Homework", mandatory=True, time_category="afternoon",
-                  assigned_to=["k1", "k2"], id="c1")
+    chore = Chore(name="Homework", mandatory=True, time_category="afternoon", assigned_to=["k1", "k2"], id="c1")
     coord = _coord([chore], [Child(name="A", id="k1"), Child(name="B", id="k2")], [])
     assert run(coord.async_detect_mandatory_misses("afternoon", DAY)) == 2
     existing = list(coord.storage._added)
@@ -84,7 +86,8 @@ def test_per_child_and_idempotent():
 
 
 def test_disabled_for_child_skipped():
-    chore = Chore(name="Homework", mandatory=True, time_category="afternoon",
-                  assigned_to=["k1"], disabled_for=["k1"], id="c1")
+    chore = Chore(
+        name="Homework", mandatory=True, time_category="afternoon", assigned_to=["k1"], disabled_for=["k1"], id="c1"
+    )
     coord = _coord([chore], [Child(name="Kid", id="k1")], [])
     assert run(coord.async_detect_mandatory_misses("afternoon", DAY)) == 0

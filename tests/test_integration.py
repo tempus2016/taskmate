@@ -8,6 +8,7 @@ TaskMateCoordinator, exercising the complete path:
   add reward → claim reward → approve reward → points deducted
   template apply → chores created
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -67,6 +68,7 @@ def _make_system(now=None):
         pass
 
     import custom_components.taskmate.coordinator as _mod
+
     coord._dt_now = now
     coord.async_refresh = _noop_refresh
 
@@ -82,9 +84,7 @@ class TestFullChoreLifecycle:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Make bed", points=5, requires_approval=False
-            ))
+            chore = run(coord.async_add_chore("Make bed", points=5, requires_approval=False))
 
         assert child.points == 0
 
@@ -103,9 +103,7 @@ class TestFullChoreLifecycle:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Bob"))
-            chore = run(coord.async_add_chore(
-                "Tidy room", points=10, requires_approval=True
-            ))
+            chore = run(coord.async_add_chore("Tidy room", points=10, requires_approval=True))
             completion = run(coord.async_complete_chore(chore.id, child.id))
 
         assert completion.approved is False
@@ -117,9 +115,7 @@ class TestFullChoreLifecycle:
 
         updated_child = storage.get_child(child.id)
         assert updated_child.points == 10
-        approved = next(
-            c for c in storage.get_completions() if c.id == completion.id
-        )
+        approved = next(c for c in storage.get_completions() if c.id == completion.id)
         assert approved.approved is True
         assert approved.points_awarded == 10
 
@@ -129,9 +125,7 @@ class TestFullChoreLifecycle:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Charlie"))
-            chore = run(coord.async_add_chore(
-                "Feed cat", points=3, requires_approval=False, daily_limit=1
-            ))
+            chore = run(coord.async_add_chore("Feed cat", points=3, requires_approval=False, daily_limit=1))
             run(coord.async_complete_chore(chore.id, child.id))
 
         # Hitting the daily limit is an expected soft rejection: silent no-op
@@ -148,9 +142,7 @@ class TestFullChoreLifecycle:
 
         with patch.object(_mod.dt_util, "now", return_value=day1):
             child = run(coord.async_add_child("Dana"))
-            chore = run(coord.async_add_chore(
-                "Brush teeth", points=2, requires_approval=False
-            ))
+            chore = run(coord.async_add_chore("Brush teeth", points=2, requires_approval=False))
             run(coord.async_complete_chore(chore.id, child.id))
 
         assert storage.get_child(child.id).current_streak == 1
@@ -170,9 +162,7 @@ class TestFullRewardLifecycle:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Eve"))
-            chore = run(coord.async_add_chore(
-                "Hoover", points=20, requires_approval=False
-            ))
+            chore = run(coord.async_add_chore("Hoover", points=20, requires_approval=False))
             run(coord.async_complete_chore(chore.id, child.id))
 
         assert storage.get_child(child.id).points == 20
@@ -258,9 +248,7 @@ class TestCustomTemplateLifecycle:
             chore2 = run(coord.async_add_chore("Task B", points=8))
 
         with patch.object(_mod.dt_util, "now", return_value=now):
-            template_id = run(coord.async_save_template_from_chores(
-                [chore1.id, chore2.id], "My Pack", "mdi:broom"
-            ))
+            template_id = run(coord.async_save_template_from_chores([chore1.id, chore2.id], "My Pack", "mdi:broom"))
 
         assert template_id is not None
 
@@ -282,9 +270,7 @@ class TestCustomTemplateLifecycle:
         now = _now()
 
         with patch.object(_mod.dt_util, "now", return_value=now):
-            template_id = run(coord.async_create_template(
-                "Temp Pack", "mdi:star", [{"name": "X", "points": 1}]
-            ))
+            template_id = run(coord.async_create_template("Temp Pack", "mdi:star", [{"name": "X", "points": 1}]))
 
         assert len(storage.get_custom_templates()) == 1
 
@@ -310,10 +296,9 @@ class TestOneShotChoreLifecycle:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Jack"))
-            chore = run(coord.async_add_chore(
-                "One-off task", points=5, requires_approval=False,
-                schedule_mode="one_shot"
-            ))
+            chore = run(
+                coord.async_add_chore("One-off task", points=5, requires_approval=False, schedule_mode="one_shot")
+            )
             run(coord.async_complete_chore(chore.id, child.id))
 
         updated_chore = storage.get_chore(chore.id)
@@ -335,9 +320,7 @@ class TestRemoveChildCascade:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Kate"))
-            chore = run(coord.async_add_chore(
-                "Wash hands", points=2, requires_approval=False
-            ))
+            chore = run(coord.async_add_chore("Wash hands", points=2, requires_approval=False))
             run(coord.async_complete_chore(chore.id, child.id))
 
         assert len(storage.get_completions()) == 1
@@ -359,9 +342,7 @@ class TestMultiChildInteraction:
         with patch.object(_mod.dt_util, "now", return_value=now):
             alice = run(coord.async_add_child("Alice"))
             bob = run(coord.async_add_child("Bob"))
-            chore = run(coord.async_add_chore(
-                "Set table", points=3, requires_approval=False
-            ))
+            chore = run(coord.async_add_chore("Set table", points=3, requires_approval=False))
             run(coord.async_complete_chore(chore.id, alice.id))
             run(coord.async_complete_chore(chore.id, bob.id))
 

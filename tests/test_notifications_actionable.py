@@ -1,4 +1,5 @@
 """Tests for actionable approval / reject flow."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
@@ -29,6 +30,7 @@ async def coord(hass):
 def _evt(action: str):
     class _E:
         data = {"action": action}
+
     return _E()
 
 

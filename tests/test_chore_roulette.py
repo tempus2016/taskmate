@@ -4,6 +4,7 @@ Opt-in nudge: spin once, get a random outstanding chore, earn a multiplier on
 it. The pick is recorded per child per day so it survives a reload, can't be
 re-rolled past the parent's allowance, and expires overnight.
 """
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -21,8 +22,7 @@ def _today():
     return dt_util.as_local(dt_util.now()).date().isoformat()
 
 
-def _coord(*, enabled=True, multiplier=2.0, spins=1, chores=None, children=None,
-           completions=None, available=True):
+def _coord(*, enabled=True, multiplier=2.0, spins=1, chores=None, children=None, completions=None, available=True):
     settings = {
         "roulette_enabled": enabled,
         "roulette_multiplier": multiplier,
@@ -40,6 +40,7 @@ def _coord(*, enabled=True, multiplier=2.0, spins=1, chores=None, children=None,
     # set_setting must actually persist so the spin result can be read back.
     def _set(key, value):
         settings[key] = value
+
     coord.storage.set_setting = MagicMock(side_effect=_set)
     coord.storage.get_setting = MagicMock(side_effect=lambda k, d="": settings.get(k, d))
     return coord
@@ -159,9 +160,12 @@ class TestSelectionLifetime:
         """The pick is for today only — it must not linger into tomorrow."""
         yesterday = (dt_util.as_local(dt_util.now()).date() - timedelta(days=1)).isoformat()
         coord = _coord()
-        coord.storage.set_setting("roulette_state", {
-            "kid1": {"date": yesterday, "chore_id": "a", "multiplier": 2.0, "spins": 1},
-        })
+        coord.storage.set_setting(
+            "roulette_state",
+            {
+                "kid1": {"date": yesterday, "chore_id": "a", "multiplier": 2.0, "spins": 1},
+            },
+        )
         assert coord.roulette_selection("kid1") is None
         assert coord.roulette_spins_left("kid1") == 1
 
@@ -169,10 +173,13 @@ class TestSelectionLifetime:
     async def test_prune_clears_stale_days(self):
         yesterday = (dt_util.as_local(dt_util.now()).date() - timedelta(days=1)).isoformat()
         coord = _coord()
-        coord.storage.set_setting("roulette_state", {
-            "kid1": {"date": yesterday, "chore_id": "a"},
-            "kid2": {"date": _today(), "chore_id": "b"},
-        })
+        coord.storage.set_setting(
+            "roulette_state",
+            {
+                "kid1": {"date": yesterday, "chore_id": "a"},
+                "kid2": {"date": _today(), "chore_id": "b"},
+            },
+        )
         assert await coord.async_prune_roulette_state() == 1
         remaining = coord.storage.get_setting("roulette_state", {})
         assert set(remaining) == {"kid2"}
@@ -206,8 +213,7 @@ class TestMultiplier:
     async def test_other_children_are_unaffected(self):
         """One child's spin must not inflate a sibling's award."""
         chore = Chore(name="A", id="a")
-        coord = _coord(chores=[chore],
-                       children=[Child(name="Kid", id="kid1"), Child(name="Sib", id="kid2")])
+        coord = _coord(chores=[chore], children=[Child(name="Kid", id="kid1"), Child(name="Sib", id="kid2")])
         await coord.async_spin_roulette("kid1")
         assert coord._apply_roulette_multiplier(chore, "kid2", 10) == 10
 
@@ -226,10 +232,15 @@ class TestMultiplier:
     async def test_corrupt_stored_multiplier_falls_back(self):
         chore = Chore(name="A", id="a")
         coord = _coord(chores=[chore])
-        with patch.object(coord.storage, "get_setting", side_effect=lambda k, d="": (
-            {"kid1": {"date": _today(), "chore_id": "a", "multiplier": "loads", "spins": 1}}
-            if k == "roulette_state" else {"roulette_enabled": True}.get(k, d)
-        )):
+        with patch.object(
+            coord.storage,
+            "get_setting",
+            side_effect=lambda k, d="": (
+                {"kid1": {"date": _today(), "chore_id": "a", "multiplier": "loads", "spins": 1}}
+                if k == "roulette_state"
+                else {"roulette_enabled": True}.get(k, d)
+            ),
+        ):
             assert coord._apply_roulette_multiplier(chore, "kid1", 10) == 20
 
 
@@ -246,7 +257,10 @@ class TestRouletteRendersOnEveryDesign:
 
     SOURCE = (
         _pathlib.Path(__file__).resolve().parent.parent
-        / "custom_components" / "taskmate" / "www" / "taskmate-child-card.js"
+        / "custom_components"
+        / "taskmate"
+        / "www"
+        / "taskmate-child-card.js"
     ).read_text(encoding="utf-8")
 
     def _designed_region(self) -> str:

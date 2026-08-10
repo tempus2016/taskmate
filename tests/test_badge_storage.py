@@ -1,4 +1,5 @@
 """Tests for badge storage layer."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock

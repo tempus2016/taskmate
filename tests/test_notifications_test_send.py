@@ -1,4 +1,5 @@
 """Tests for the test-notification (send_test) feature."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
@@ -70,6 +71,7 @@ async def test_send_test_carries_nav_url(coord, hass):
     coord.storage.upsert_parent_recipient(p)
     coord.storage.set_notification_route("badge_earned", p.id, NotificationRoute(enabled=True))
     await coord.send_test("badge_earned")
-    calls = [c for c in hass.services.async_call.call_args_list
-             if c[0][0] == "notify" and c[0][1].startswith("mobile_app")]
+    calls = [
+        c for c in hass.services.async_call.call_args_list if c[0][0] == "notify" and c[0][1].startswith("mobile_app")
+    ]
     assert calls and calls[0][0][2]["data"]["clickAction"] == "/taskmate-admin"

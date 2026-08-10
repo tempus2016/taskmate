@@ -3,6 +3,7 @@
 Covers async_claim_reward, async_approve_reward, and async_reject_reward,
 including the get_reward() method that was previously missing.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -37,9 +38,7 @@ def _make_coord(*, children=None, rewards=None, claims=None):
     storage.get_child = MagicMock(side_effect=lambda cid: _children.get(cid))
     storage.get_reward = MagicMock(side_effect=lambda rid: _rewards.get(rid))
     storage.get_reward_claims = MagicMock(return_value=_claims)
-    storage.get_pending_reward_claims = MagicMock(
-        return_value=[c for c in _claims if not c.approved]
-    )
+    storage.get_pending_reward_claims = MagicMock(return_value=[c for c in _claims if not c.approved])
     storage.update_child = MagicMock()
     storage.update_reward_claim = MagicMock()
     storage.add_reward_claim = MagicMock()
@@ -55,9 +54,8 @@ def _make_coord(*, children=None, rewards=None, claims=None):
     storage._data = {"reward_claims": [c.to_dict() for c in _claims]}
 
     def _remove_reward_claim(claim_id):
-        storage._data["reward_claims"] = [
-            c for c in storage._data["reward_claims"] if c.get("id") != claim_id
-        ]
+        storage._data["reward_claims"] = [c for c in storage._data["reward_claims"] if c.get("id") != claim_id]
+
     storage.remove_reward_claim = MagicMock(side_effect=_remove_reward_claim)
 
     coord.storage = storage
@@ -82,6 +80,7 @@ def _reward(cost=50):
 # get_reward
 # ---------------------------------------------------------------------------
 
+
 class TestGetReward:
     def test_returns_reward_when_found(self):
         reward = _reward()
@@ -97,6 +96,7 @@ class TestGetReward:
 # ---------------------------------------------------------------------------
 # async_claim_reward
 # ---------------------------------------------------------------------------
+
 
 class TestClaimReward:
     def test_claim_created_when_enough_points(self):
@@ -140,13 +140,17 @@ class TestClaimReward:
 # async_approve_reward
 # ---------------------------------------------------------------------------
 
+
 class TestApproveReward:
     def test_approval_deducts_points(self):
         child = _child(points=100)
         reward = _reward(cost=50)
-        claim = RewardClaim(reward_id="reward1", child_id="kid1",
-                            claimed_at=__import__("datetime").datetime.now(
-                                __import__("datetime").timezone.utc), id="claim1")
+        claim = RewardClaim(
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+            id="claim1",
+        )
         coord = _make_coord(children=[child], rewards=[reward], claims=[claim])
         run(coord.async_approve_reward("claim1"))
         assert child.points == 50
@@ -154,9 +158,12 @@ class TestApproveReward:
     def test_approval_raises_when_not_enough_points(self):
         child = _child(points=20)
         reward = _reward(cost=50)
-        claim = RewardClaim(reward_id="reward1", child_id="kid1",
-                            claimed_at=__import__("datetime").datetime.now(
-                                __import__("datetime").timezone.utc), id="claim1")
+        claim = RewardClaim(
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+            id="claim1",
+        )
         coord = _make_coord(children=[child], rewards=[reward], claims=[claim])
         with pytest.raises(ValueError, match="Not enough points"):
             run(coord.async_approve_reward("claim1"))
@@ -164,9 +171,12 @@ class TestApproveReward:
     def test_approval_marks_claim_approved(self):
         child = _child(points=100)
         reward = _reward(cost=50)
-        claim = RewardClaim(reward_id="reward1", child_id="kid1",
-                            claimed_at=__import__("datetime").datetime.now(
-                                __import__("datetime").timezone.utc), id="claim1")
+        claim = RewardClaim(
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+            id="claim1",
+        )
         coord = _make_coord(children=[child], rewards=[reward], claims=[claim])
         run(coord.async_approve_reward("claim1"))
         coord.storage.update_reward_claim.assert_called_once()
@@ -178,22 +188,26 @@ class TestApproveReward:
 # async_reject_reward
 # ---------------------------------------------------------------------------
 
+
 class TestRejectReward:
     def test_rejection_removes_claim(self):
         import datetime as dt
-        claim = RewardClaim(reward_id="reward1", child_id="kid1",
-                            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1")
+
+        claim = RewardClaim(
+            reward_id="reward1", child_id="kid1", claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1"
+        )
         coord = _make_coord(claims=[claim])
         run(coord.async_reject_reward("claim1"))
-        remaining = [c for c in coord.storage._data["reward_claims"]
-                     if c.get("id") == "claim1"]
+        remaining = [c for c in coord.storage._data["reward_claims"] if c.get("id") == "claim1"]
         assert remaining == []
 
     def test_rejection_does_not_deduct_points(self):
         import datetime as dt
+
         child = _child(points=100)
-        claim = RewardClaim(reward_id="reward1", child_id="kid1",
-                            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1")
+        claim = RewardClaim(
+            reward_id="reward1", child_id="kid1", claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1"
+        )
         coord = _make_coord(children=[child], claims=[claim])
         run(coord.async_reject_reward("claim1"))
         assert child.points == 100  # points were never deducted
@@ -269,14 +283,17 @@ class TestPoolModeApproval:
         """In beta2, allocations already deducted points at allocation time, so approval
         should NOT reduce child.points again — it only clears the allocation."""
         import datetime as dt
+
         # Simulate the state AFTER allocation: child.points already dropped to 50,
         # the allocation holds the 50 earmarked points.
         child = _child(points=50)
         reward = _reward(cost=50)
         existing = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=50)
         claim = RewardClaim(
-            reward_id="reward1", child_id="kid1",
-            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc),
+            id="claim1",
         )
         coord = _make_coord(children=[child], rewards=[reward], claims=[claim])
         coord.storage.get_pool_allocation = MagicMock(return_value=existing)
@@ -295,17 +312,18 @@ class TestPoolClaimDoesNotBlockOtherAllocations:
 
     def test_allocation_to_other_pool_reward_while_first_awaits_approval(self):
         import datetime as dt
+
         # Child started with 100; 50 already allocated to reward1 (pool-filled).
         # Visible points dropped to 50, and reward1 is claimed but unapproved.
         child = _child(points=50)
         reward1 = Reward(name="Movie", cost=50, id="reward1")
         reward2 = Reward(name="Toy", cost=50, id="reward2")
-        filled_alloc = PoolAllocation(
-            child_id="kid1", reward_id="reward1", allocated_points=50
-        )
+        filled_alloc = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=50)
         claim = RewardClaim(
-            reward_id="reward1", child_id="kid1",
-            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc),
+            id="claim1",
         )
         coord = _make_coord(children=[child], rewards=[reward1, reward2], claims=[claim])
 
@@ -313,6 +331,7 @@ class TestPoolClaimDoesNotBlockOtherAllocations:
             if reward_id == "reward1":
                 return filled_alloc
             return None
+
         coord.storage.get_pool_allocation = MagicMock(side_effect=_get_alloc)
 
         # Allocating to a different pool reward should succeed — the pending
@@ -325,13 +344,16 @@ class TestPoolClaimDoesNotBlockOtherAllocations:
     def test_wallet_claim_still_blocks_pool_allocation(self):
         """Sanity check: a non-pool-mode pending claim should still reserve points."""
         import datetime as dt
+
         child = _child(points=50)
         reward1 = Reward(name="Movie", cost=40, id="reward1")
         reward2 = Reward(name="Toy", cost=30, id="reward2")
         # No allocation → claim is wallet-mode and its cost IS committed.
         claim = RewardClaim(
-            reward_id="reward1", child_id="kid1",
-            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc),
+            id="claim1",
         )
         coord = _make_coord(children=[child], rewards=[reward1, reward2], claims=[claim])
         # spendable = 50 − 40 = 10, so requesting 30 is capped to 10.
@@ -341,35 +363,44 @@ class TestPoolClaimDoesNotBlockOtherAllocations:
 
     def test_is_pool_mode_claim_detects_filled_allocation(self):
         import datetime as dt
+
         reward = _reward(cost=50)
         coord = _make_coord(rewards=[reward])
         filled = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=50)
         coord.storage.get_pool_allocation = MagicMock(return_value=filled)
         claim = RewardClaim(
-            reward_id="reward1", child_id="kid1",
-            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc),
+            id="claim1",
         )
         assert coord.is_pool_mode_claim(claim) is True
 
     def test_is_pool_mode_claim_false_for_partial_allocation(self):
         import datetime as dt
+
         reward = _reward(cost=50)
         coord = _make_coord(rewards=[reward])
         partial = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=20)
         coord.storage.get_pool_allocation = MagicMock(return_value=partial)
         claim = RewardClaim(
-            reward_id="reward1", child_id="kid1",
-            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc),
+            id="claim1",
         )
         assert coord.is_pool_mode_claim(claim) is False
 
     def test_is_pool_mode_claim_false_without_allocation(self):
         import datetime as dt
+
         reward = _reward(cost=50)
         coord = _make_coord(rewards=[reward])
         claim = RewardClaim(
-            reward_id="reward1", child_id="kid1",
-            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc),
+            id="claim1",
         )
         assert coord.is_pool_mode_claim(claim) is False
 
@@ -456,18 +487,21 @@ class TestPoolOverallocationRefund:
 
         # Total was 80, cost dropped to 60 → overshoot 20 refunded from kidB (newer id).
         assert child_b.points == 20  # full refund of 20
-        assert child_a.points == 0   # untouched
+        assert child_a.points == 0  # untouched
 
     def test_approve_refunds_overshoot_on_redeem(self):
         # Pre-existing over-allocation: child put 11 into a pool that costs 10.
         # On approval, the 1-point overshoot must be refunded to the wallet.
         import datetime as dt
+
         child = _child(points=89)  # 100 earned − 11 allocated = 89
         reward = _reward(cost=10)
         over_alloc = PoolAllocation(child_id="kid1", reward_id="reward1", allocated_points=11)
         claim = RewardClaim(
-            reward_id="reward1", child_id="kid1",
-            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc),
+            id="claim1",
         )
         coord = _make_coord(children=[child], rewards=[reward], claims=[claim])
         coord.storage.get_pool_allocation = MagicMock(return_value=over_alloc)
@@ -487,11 +521,14 @@ class TestRewardStockAndExpiration:
 
     def test_approve_decrements_quantity(self):
         import datetime as dt
+
         child = _child(points=100)
         reward = Reward(name="Unique toy", cost=50, quantity=2, id="reward1")
         claim = RewardClaim(
-            reward_id="reward1", child_id="kid1",
-            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc),
+            id="claim1",
         )
         coord = _make_coord(children=[child], rewards=[reward], claims=[claim])
         run(coord.async_approve_reward("claim1"))
@@ -500,11 +537,14 @@ class TestRewardStockAndExpiration:
 
     def test_unlimited_quantity_not_decremented(self):
         import datetime as dt
+
         child = _child(points=100)
         reward = Reward(name="Ice cream", cost=50, quantity=None, id="reward1")
         claim = RewardClaim(
-            reward_id="reward1", child_id="kid1",
-            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=dt.datetime.now(dt.timezone.utc),
+            id="claim1",
         )
         coord = _make_coord(children=[child], rewards=[reward], claims=[claim])
         run(coord.async_approve_reward("claim1"))
@@ -515,18 +555,26 @@ class TestRewardStockAndExpiration:
         pre-allocated points on the same reward. On approval the reward hits 0
         and child B's allocation must be refunded to their wallet."""
         import datetime as dt
+
         child_a = Child(name="A", points=100, id="kidA")
         child_b = Child(name="B", points=50, id="kidB")
         reward = Reward(name="Unique toy", cost=50, quantity=1, id="reward1")
         alloc_b = PoolAllocation(
-            child_id="kidB", reward_id="reward1", allocated_points=20, id="alloc_b",
+            child_id="kidB",
+            reward_id="reward1",
+            allocated_points=20,
+            id="alloc_b",
         )
         claim = RewardClaim(
-            reward_id="reward1", child_id="kidA",
-            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+            reward_id="reward1",
+            child_id="kidA",
+            claimed_at=dt.datetime.now(dt.timezone.utc),
+            id="claim1",
         )
         coord = _make_coord(
-            children=[child_a, child_b], rewards=[reward], claims=[claim],
+            children=[child_a, child_b],
+            rewards=[reward],
+            claims=[claim],
         )
         # Child A is redeeming from their wallet; allocations belong to B.
         coord.storage.get_pool_allocation = MagicMock(return_value=None)
@@ -544,28 +592,33 @@ class TestRewardStockAndExpiration:
         the pool-mode redeem path, so when quantity hits 0 there's nothing
         left to refund. Points stay spent on the reward."""
         import datetime as dt
+
         child_a = Child(name="A", points=0, id="kidA")
         child_b = Child(name="B", points=0, id="kidB")
         reward = Reward(name="Shared prize", cost=80, quantity=1, is_jackpot=True, id="rewardJ")
         alloc_a = PoolAllocation(child_id="kidA", reward_id="rewardJ", allocated_points=50, id="a1")
         alloc_b = PoolAllocation(child_id="kidB", reward_id="rewardJ", allocated_points=30, id="a2")
         claim = RewardClaim(
-            reward_id="rewardJ", child_id="kidA",
-            claimed_at=dt.datetime.now(dt.timezone.utc), id="claim1",
+            reward_id="rewardJ",
+            child_id="kidA",
+            claimed_at=dt.datetime.now(dt.timezone.utc),
+            id="claim1",
         )
         coord = _make_coord(
-            children=[child_a, child_b], rewards=[reward], claims=[claim],
+            children=[child_a, child_b],
+            rewards=[reward],
+            claims=[claim],
         )
         coord.storage.get_total_allocated_for_reward = MagicMock(return_value=80)
 
         # Stateful mock: allocations shrink as storage.remove_pool_allocation
         # is called, mirroring the real storage behaviour.
         allocs = {("kidA", "rewardJ"): alloc_a, ("kidB", "rewardJ"): alloc_b}
-        coord.storage.get_pool_allocations = MagicMock(
-            side_effect=lambda: list(allocs.values())
-        )
+        coord.storage.get_pool_allocations = MagicMock(side_effect=lambda: list(allocs.values()))
+
         def _remove(child_id, reward_id):
             allocs.pop((child_id, reward_id), None)
+
         coord.storage.remove_pool_allocation = MagicMock(side_effect=_remove)
 
         run(coord.async_approve_reward("claim1"))
@@ -649,27 +702,21 @@ class TestJackpotImpliesPoolMode:
 
     def test_add_jackpot_forces_pool_enabled(self):
         coord = _make_coord()
-        reward = run(coord.async_add_reward(
-            name="Family Trip", cost=100, is_jackpot=True, pool_enabled=False
-        ))
+        reward = run(coord.async_add_reward(name="Family Trip", cost=100, is_jackpot=True, pool_enabled=False))
         assert reward.pool_enabled is True
         assert coord.storage.add_reward.call_args.args[0].pool_enabled is True
 
     def test_update_jackpot_forces_pool_enabled(self):
-        existing = Reward(name="Trip", cost=100, is_jackpot=True,
-                          pool_enabled=False, id="rwJ")
+        existing = Reward(name="Trip", cost=100, is_jackpot=True, pool_enabled=False, id="rwJ")
         coord = _make_coord(rewards=[existing])
-        edited = Reward(name="Trip", cost=100, is_jackpot=True,
-                        pool_enabled=False, id="rwJ")
+        edited = Reward(name="Trip", cost=100, is_jackpot=True, pool_enabled=False, id="rwJ")
         run(coord.async_update_reward(edited))
         assert edited.pool_enabled is True
         assert coord.storage.update_reward.call_args.args[0].pool_enabled is True
 
     def test_non_jackpot_pool_flag_left_untouched(self):
         coord = _make_coord()
-        reward = run(coord.async_add_reward(
-            name="Ice cream", cost=10, is_jackpot=False, pool_enabled=False
-        ))
+        reward = run(coord.async_add_reward(name="Ice cream", cost=10, is_jackpot=False, pool_enabled=False))
         assert reward.pool_enabled is False
 
 
@@ -677,12 +724,13 @@ class TestJackpotImpliesPoolMode:
 # async_remove_reward — refund outstanding pool allocations (#564)
 # ---------------------------------------------------------------------------
 
+
 class TestRemoveRewardRefundsPool:
     def test_delete_refunds_pool_allocations_to_wallets(self):
         # Points were deducted at allocation time; deleting the reward must
         # return each contributor's earmarked points to their wallet (#564).
-        child_a = Child(name="A", points=70, id="A")   # 30 earmarked earlier
-        child_b = Child(name="B", points=46, id="B")   # 25 earmarked earlier
+        child_a = Child(name="A", points=70, id="A")  # 30 earmarked earlier
+        child_b = Child(name="B", points=46, id="B")  # 25 earmarked earlier
         reward = Reward(name="Family Trip", cost=800, is_jackpot=True, id="rewardJ")
         coord = _make_coord(children=[child_a, child_b], rewards=[reward])
         alloc_a = PoolAllocation(child_id="A", reward_id="rewardJ", allocated_points=30, id="pa1")
@@ -691,8 +739,8 @@ class TestRemoveRewardRefundsPool:
 
         run(coord.async_remove_reward("rewardJ"))
 
-        assert child_a.points == 100   # 70 + 30 refunded
-        assert child_b.points == 71    # 46 + 25 refunded
+        assert child_a.points == 100  # 70 + 30 refunded
+        assert child_b.points == 71  # 46 + 25 refunded
         assert coord.storage.add_points_transaction.call_count == 2
         coord.storage.remove_reward.assert_called_once_with("rewardJ")
 

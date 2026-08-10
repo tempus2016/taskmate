@@ -5,6 +5,7 @@ recurrence/assignment engine + ``_is_child_on_vacation``. These tests drive a
 real coordinator (mocked storage) so the actual scheduling logic runs, and
 exercise the calendar's event builder directly.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime

@@ -1,4 +1,5 @@
 """The family-wide quick point-adjustment amounts setting (#746)."""
+
 from __future__ import annotations
 
 import pathlib
@@ -16,10 +17,7 @@ from custom_components.taskmate.websocket import (
 
 from .test_assignment_modes import _coord
 
-WWW = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "custom_components" / "taskmate" / "www"
-)
+WWW = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "www"
 PANEL = (WWW / "taskmate-panel.js").read_text(encoding="utf-8")
 ACTIVITY_CARD = (WWW / "taskmate-activity-card.js").read_text(encoding="utf-8")
 

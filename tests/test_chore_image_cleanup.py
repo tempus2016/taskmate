@@ -1,13 +1,13 @@
 """Chore images are deleted with the chore, and on replace (#750)."""
+
 from __future__ import annotations
 
 import pathlib
 import re
 
-SRC = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "custom_components" / "taskmate" / "coord_chores.py"
-).read_text(encoding="utf-8")
+SRC = (pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "coord_chores.py").read_text(
+    encoding="utf-8"
+)
 
 
 def _body(name: str) -> str:
@@ -15,15 +15,13 @@ def _body(name: str) -> str:
     # index() is safe here (unlike the JS method helpers, where the first
     # occurrence of a bare name is often a call site).
     start = SRC.index(f"async def {name}(")
-    nxt = re.search(r"\n    (async def|def) ", SRC[start + 10:])
-    return SRC[start: start + 10 + nxt.start()] if nxt else SRC[start:]
+    nxt = re.search(r"\n    (async def|def) ", SRC[start + 10 :])
+    return SRC[start : start + 10 + nxt.start()] if nxt else SRC[start:]
 
 
 def test_removing_a_chore_deletes_its_image():
     body = _body("async_remove_chore")
-    assert "_async_release_image" in body, (
-        "taskmate_images is never orphan-swept, so an undeleted file leaks forever"
-    )
+    assert "_async_release_image" in body, "taskmate_images is never orphan-swept, so an undeleted file leaks forever"
 
 
 def test_replacing_an_image_deletes_the_previous_file():
@@ -52,11 +50,8 @@ def test_the_release_helper_is_the_only_thing_that_unlinks():
 
 def test_the_images_dir_is_not_in_the_photo_sweeper():
     coordinator = (
-        pathlib.Path(__file__).resolve().parent.parent
-        / "custom_components" / "taskmate" / "coordinator.py"
+        pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "coordinator.py"
     ).read_text(encoding="utf-8")
     start = coordinator.index("async def _async_sweep_orphan_photos")
-    body = coordinator[start:start + 800]
-    assert "image" not in body, (
-        "chore images must not be swept — they are config, not evidence"
-    )
+    body = coordinator[start : start + 800]
+    assert "image" not in body, "chore images must not be swept — they are config, not evidence"

@@ -1,4 +1,5 @@
 """Tests for mandatory-miss resolution actions (#532)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -42,8 +43,9 @@ def _coord(miss):
 
 
 def _miss(period="morning", penalty=5):
-    return MandatoryMiss(chore_id="c1", child_id="k1", due_date="2026-06-21",
-                         period_id=period, penalty_points=penalty, id="m1")
+    return MandatoryMiss(
+        chore_id="c1", child_id="k1", due_date="2026-06-21", period_id=period, penalty_points=penalty, id="m1"
+    )
 
 
 def test_apply_penalty_deducts_and_removes():

@@ -2,6 +2,7 @@
 approval must advance the quest at completion time (auto-approve), not only
 through the parent-approval path.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -36,9 +37,7 @@ def _coord(chore, quests, child):
     storage.async_save = AsyncMock()
     # Quest plumbing (real QuestsMixin runs against these)
     storage.get_quests = MagicMock(return_value=quests)
-    storage.get_quest_child_progress = MagicMock(
-        side_effect=lambda qid, cid: progress.get(qid, {}).get(cid, {})
-    )
+    storage.get_quest_child_progress = MagicMock(side_effect=lambda qid, cid: progress.get(qid, {}).get(cid, {}))
     storage.set_quest_child_progress = MagicMock(
         side_effect=lambda qid, cid, p: progress.setdefault(qid, {}).__setitem__(cid, p)
     )

@@ -1,4 +1,5 @@
 """Tests for badge service handlers (via coordinator methods)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock

@@ -4,6 +4,7 @@ A visiting cousin gets a temporary child that expires on its own and stays out
 of the family leaderboard. Archived rather than deleted, so the visit's
 history survives and the same guest can come back next summer.
 """
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -185,12 +186,20 @@ class TestModel:
 class TestCardFiltering:
     def test_leaderboard_card_filters_guests(self):
         import pathlib
-        card = (pathlib.Path(__file__).resolve().parent.parent / "custom_components"
-                / "taskmate" / "www" / "taskmate-leaderboard-card.js").read_text(encoding="utf-8")
+
+        card = (
+            pathlib.Path(__file__).resolve().parent.parent
+            / "custom_components"
+            / "taskmate"
+            / "www"
+            / "taskmate-leaderboard-card.js"
+        ).read_text(encoding="utf-8")
         assert card.count("filter(c => !c.is_guest)") == 2
 
     def test_sensor_exposes_the_flag(self):
         import pathlib
-        sensor = (pathlib.Path(__file__).resolve().parent.parent / "custom_components"
-                  / "taskmate" / "sensor.py").read_text(encoding="utf-8")
+
+        sensor = (
+            pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "sensor.py"
+        ).read_text(encoding="utf-8")
         assert '"is_guest": True' in sensor

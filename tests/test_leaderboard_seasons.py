@@ -1,4 +1,5 @@
 """Tests for leaderboard seasons (FEAT-2)."""
+
 from __future__ import annotations
 
 import datetime as dt
@@ -25,8 +26,9 @@ async def test_positive_transactions_accumulate_per_month(hass):
     # Negative (penalty/spend) does not count toward earned-season points.
     s.add_points_transaction(PointsTransaction(child_id="k1", points=-3, created_at=when))
     # Different month is bucketed separately.
-    s.add_points_transaction(PointsTransaction(
-        child_id="k1", points=99, created_at=dt.datetime(2026, 5, 1, 9, 0, tzinfo=UTC)))
+    s.add_points_transaction(
+        PointsTransaction(child_id="k1", points=99, created_at=dt.datetime(2026, 5, 1, 9, 0, tzinfo=UTC))
+    )
 
     assert s.get_season_points("2026-04") == {"k1": 15, "k2": 7}
     assert s.get_season_points("2026-05") == {"k1": 99}
@@ -48,13 +50,16 @@ def test_standings_ranked_desc_with_rank():
     c = _coord(kids, {"2026-04": {"k1": 5, "k2": 20}})
     rows = c.get_season_standings("2026-04")
     assert [(r["name"], r["points"], r["rank"]) for r in rows] == [
-        ("Sam", 20, 1), ("Alex", 5, 2), ("Mo", 0, 3),
+        ("Sam", 20, 1),
+        ("Alex", 5, 2),
+        ("Mo", 0, 3),
     ]
 
 
 @pytest.mark.asyncio
 async def test_finalize_records_champion_and_notifies(monkeypatch):
     from tests.conftest import dt_util_mock
+
     kids = [Child(name="Alex", id="k1"), Child(name="Sam", id="k2")]
     c = _coord(kids, {"2026-04": {"k1": 30, "k2": 12}})
     c.storage.add_season_champion = MagicMock()
@@ -74,6 +79,7 @@ async def test_finalize_records_champion_and_notifies(monkeypatch):
 @pytest.mark.asyncio
 async def test_finalize_skips_when_no_points(monkeypatch):
     from tests.conftest import dt_util_mock
+
     c = _coord([Child(name="Alex", id="k1")], {"2026-04": {}})
     c.storage.add_season_champion = MagicMock()
     c.storage.async_save = AsyncMock()
@@ -88,8 +94,10 @@ async def test_finalize_skips_when_no_points(monkeypatch):
 @pytest.mark.asyncio
 async def test_finalize_is_idempotent_for_month(monkeypatch):
     from tests.conftest import dt_util_mock
-    c = _coord([Child(name="Alex", id="k1")], {"2026-04": {"k1": 5}},
-               champions=[{"month": "2026-04", "child_id": "k1"}])
+
+    c = _coord(
+        [Child(name="Alex", id="k1")], {"2026-04": {"k1": 5}}, champions=[{"month": "2026-04", "child_id": "k1"}]
+    )
     c.storage.add_season_champion = MagicMock()
     c.storage.async_save = AsyncMock()
     c.hass = MagicMock()

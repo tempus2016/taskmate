@@ -1,4 +1,5 @@
 """Select platform — expose key choice TaskMate settings as entities (FEAT-9)."""
+
 from __future__ import annotations
 
 from homeassistant.components.select import SelectEntity
@@ -14,13 +15,17 @@ from .coordinator import TaskMateCoordinator
 # (setting_key, translation_key, options, default, icon)
 _SELECTS = [
     ("streak_reset_mode", "streak_reset_mode", ["reset", "pause"], "reset", "mdi:restart"),
-    ("card_design", "card_design", ["classic", "playroom", "console", "cleanpro", "accessible"], "classic", "mdi:palette"),
+    (
+        "card_design",
+        "card_design",
+        ["classic", "playroom", "console", "cleanpro", "accessible"],
+        "classic",
+        "mdi:palette",
+    ),
 ]
 
 
-async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
-) -> None:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up the TaskMate setting-select entities."""
     coordinator: TaskMateCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(TaskMateSettingSelect(coordinator, entry, *cfg) for cfg in _SELECTS)

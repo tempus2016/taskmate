@@ -4,6 +4,7 @@ The gate lives in ``is_chore_available_for_child`` so a rained-off chore also
 stops counting as a mandatory miss and can't break a streak. Every path is
 fail-open: a broken weather integration must never hide the family's chores.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -45,9 +46,16 @@ class TestOptionalFloat:
     def test_unset_values_read_as_none(self, value):
         assert optional_float(value) is None
 
-    @pytest.mark.parametrize(("value", "expected"), [
-        (0, 0.0), ("0", 0.0), (-5, -5.0), ("12.5", 12.5), (3, 3.0),
-    ])
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            (0, 0.0),
+            ("0", 0.0),
+            (-5, -5.0),
+            ("12.5", 12.5),
+            (3, 3.0),
+        ],
+    )
     def test_numeric_values_survive(self, value, expected):
         assert optional_float(value) == expected
 
@@ -108,7 +116,9 @@ class TestWeatherBlockReason:
     def test_condition_takes_precedence_over_limits(self):
         coord = _coord_with_weather(_weather_state("pouring", temperature=-5, wind_speed=99))
         chore = _chore(
-            weather_block_conditions=["pouring"], weather_temp_min=0, weather_wind_max=20,
+            weather_block_conditions=["pouring"],
+            weather_temp_min=0,
+            weather_wind_max=20,
         )
         assert coord.weather_block_reason(chore) == coord.WEATHER_REASON_CONDITION
 
@@ -189,10 +199,15 @@ class TestWeatherRoundTrip:
 
     def test_string_limits_are_coerced(self):
         """The panel sends numbers, but hand-edited storage may hold strings."""
-        restored = Chore.from_dict({
-            "name": "Chore", "weather_entity": "weather.home",
-            "weather_temp_min": "5.5", "weather_temp_max": "", "weather_wind_max": None,
-        })
+        restored = Chore.from_dict(
+            {
+                "name": "Chore",
+                "weather_entity": "weather.home",
+                "weather_temp_min": "5.5",
+                "weather_temp_max": "",
+                "weather_wind_max": None,
+            }
+        )
         assert restored.weather_temp_min == 5.5
         assert restored.weather_temp_max is None
         assert restored.weather_wind_max is None

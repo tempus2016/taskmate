@@ -4,6 +4,7 @@ We test pure logic methods (streak tracking, milestone bonuses, perfect week,
 prune history, recurrence availability) by constructing a coordinator with a
 fully mocked storage layer, avoiding any real Home Assistant dependencies.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -22,6 +23,7 @@ UTC = timezone.utc
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _date(year: int, month: int, day: int) -> dt.datetime:
     return dt.datetime(year, month, day, 12, 0, 0, tzinfo=UTC)
@@ -82,9 +84,7 @@ def _make_coord(
     storage._data = {"completions": [c.to_dict() for c in _completions]}
     # Wire up replace_completions to update _data like the real implementation
     storage.replace_completions = MagicMock(
-        side_effect=lambda comps: storage._data.__setitem__(
-            "completions", [c.to_dict() for c in comps]
-        )
+        side_effect=lambda comps: storage._data.__setitem__("completions", [c.to_dict() for c in comps])
     )
 
     coord.storage = storage
@@ -104,6 +104,7 @@ def run(coro):
 # ---------------------------------------------------------------------------
 # parse_milestone_setting
 # ---------------------------------------------------------------------------
+
 
 class TestParseMilestoneSetting:
     def test_empty_string_returns_empty_dict(self):
@@ -155,11 +156,13 @@ class TestParseMilestoneSetting:
 # _award_points — streak tracking
 # ---------------------------------------------------------------------------
 
+
 class TestAwardPointsStreakTracking:
     """dt_util.now() is patched to control the 'current date' seen by _award_points."""
 
     def _run_award(self, coord, child, points, now_dt, completion_date=None):
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=now_dt):
             run(coord._award_points(child, points, completion_date=completion_date))
 
@@ -242,9 +245,11 @@ class TestAwardPointsStreakTracking:
 # _award_points — weekend multiplier
 # ---------------------------------------------------------------------------
 
+
 class TestAwardPointsWeekendMultiplier:
     def _run_award(self, coord, child, points, now_dt, completion_date=None):
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=now_dt):
             run(coord._award_points(child, points, completion_date=completion_date))
 
@@ -284,9 +289,11 @@ class TestAwardPointsWeekendMultiplier:
 # _award_points — streak milestone bonuses
 # ---------------------------------------------------------------------------
 
+
 class TestAwardPointsMilestoneBonuses:
     def _run_award(self, coord, child, points, now_dt):
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=now_dt):
             run(coord._award_points(child, points))
 
@@ -356,9 +363,11 @@ class TestAwardPointsMilestoneBonuses:
 # _async_check_streaks
 # ---------------------------------------------------------------------------
 
+
 class TestCheckStreaks:
     def _run_check(self, coord, now_dt):
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=now_dt):
             run(coord._async_check_streaks())
 
@@ -419,6 +428,7 @@ class TestCheckStreaks:
 # _async_check_perfect_week
 # ---------------------------------------------------------------------------
 
+
 class TestCheckPerfectWeek:
     def _make_completion(self, child_id: str, date_str: str) -> ChoreCompletion:
         return ChoreCompletion(
@@ -431,6 +441,7 @@ class TestCheckPerfectWeek:
 
     def _run_check(self, coord, now_dt):
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=now_dt):
             run(coord._async_check_perfect_week())
 
@@ -439,8 +450,13 @@ class TestCheckPerfectWeek:
         child = _make_child(points=50)
         child.id = "kid1"
         last_week_dates = [
-            "2024-03-11", "2024-03-12", "2024-03-13",
-            "2024-03-14", "2024-03-15", "2024-03-16", "2024-03-17",
+            "2024-03-11",
+            "2024-03-12",
+            "2024-03-13",
+            "2024-03-14",
+            "2024-03-15",
+            "2024-03-16",
+            "2024-03-17",
         ]
         completions = [self._make_completion("kid1", d) for d in last_week_dates]
 
@@ -462,8 +478,13 @@ class TestCheckPerfectWeek:
         child = _make_child(points=50, awarded_perfect_weeks=["2024-03-11"])
         child.id = "kid1"
         last_week_dates = [
-            "2024-03-11", "2024-03-12", "2024-03-13",
-            "2024-03-14", "2024-03-15", "2024-03-16", "2024-03-17",
+            "2024-03-11",
+            "2024-03-12",
+            "2024-03-13",
+            "2024-03-14",
+            "2024-03-15",
+            "2024-03-16",
+            "2024-03-17",
         ]
         completions = [self._make_completion("kid1", d) for d in last_week_dates]
 
@@ -482,8 +503,7 @@ class TestCheckPerfectWeek:
         # Missing Sunday 2024-03-17
         completions = [
             self._make_completion("kid1", d)
-            for d in ["2024-03-11", "2024-03-12", "2024-03-13",
-                      "2024-03-14", "2024-03-15", "2024-03-16"]
+            for d in ["2024-03-11", "2024-03-12", "2024-03-13", "2024-03-14", "2024-03-15", "2024-03-16"]
         ]
         coord = _make_coord(
             settings={"perfect_week_enabled": "true", "perfect_week_bonus": "50"},
@@ -498,8 +518,13 @@ class TestCheckPerfectWeek:
         child = _make_child(points=50)
         child.id = "kid1"
         last_week_dates = [
-            "2024-03-11", "2024-03-12", "2024-03-13",
-            "2024-03-14", "2024-03-15", "2024-03-16", "2024-03-17",
+            "2024-03-11",
+            "2024-03-12",
+            "2024-03-13",
+            "2024-03-14",
+            "2024-03-15",
+            "2024-03-16",
+            "2024-03-17",
         ]
         completions = [self._make_completion("kid1", d) for d in last_week_dates]
         coord = _make_coord(
@@ -528,10 +553,9 @@ class TestCheckPerfectWeek:
 # async_prune_history
 # ---------------------------------------------------------------------------
 
+
 class TestPruneHistory:
-    def _make_completion(
-        self, *, approved: bool, days_old: int, now: dt.datetime
-    ) -> ChoreCompletion:
+    def _make_completion(self, *, approved: bool, days_old: int, now: dt.datetime) -> ChoreCompletion:
         completed_at = now - dt.timedelta(days=days_old)
         return ChoreCompletion(
             chore_id="chore1",
@@ -549,6 +573,7 @@ class TestPruneHistory:
         coord = _make_coord(completions=[old_approved, recent_approved])
 
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_prune_history(days=90))
 
@@ -564,6 +589,7 @@ class TestPruneHistory:
         coord = _make_coord(completions=[old_pending])
 
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_prune_history(days=90))
 
@@ -577,6 +603,7 @@ class TestPruneHistory:
         coord = _make_coord(completions=[recent])
 
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_prune_history(days=90))
 
@@ -586,6 +613,7 @@ class TestPruneHistory:
 # ---------------------------------------------------------------------------
 # is_chore_available_for_child
 # ---------------------------------------------------------------------------
+
 
 class TestChoreAvailability:
     def _make_recurring_chore(
@@ -606,6 +634,7 @@ class TestChoreAvailability:
 
     def _run(self, coord, chore, child_id, now_dt):
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=now_dt):
             return coord.is_chore_available_for_child(chore, child_id)
 
@@ -626,9 +655,7 @@ class TestChoreAvailability:
     def test_mode_b_completed_within_window_not_available(self):
         coord = _make_coord()
         # Last completed 3 days ago, window is 7 days
-        coord.storage.get_last_completed = MagicMock(
-            return_value={"current": "2024-03-17T12:00:00+00:00"}
-        )
+        coord.storage.get_last_completed = MagicMock(return_value={"current": "2024-03-17T12:00:00+00:00"})
         chore = self._make_recurring_chore(recurrence="weekly")
         now = _date(2024, 3, 20)  # 3 days after last completion
         assert self._run(coord, chore, "kid1", now) is False
@@ -636,9 +663,7 @@ class TestChoreAvailability:
     def test_mode_b_completed_outside_window_available(self):
         coord = _make_coord()
         # Last completed 8 days ago, window is 7 days
-        coord.storage.get_last_completed = MagicMock(
-            return_value={"current": "2024-03-12T12:00:00+00:00"}
-        )
+        coord.storage.get_last_completed = MagicMock(return_value={"current": "2024-03-12T12:00:00+00:00"})
         chore = self._make_recurring_chore(recurrence="weekly")
         now = _date(2024, 3, 20)  # 8 days after
         assert self._run(coord, chore, "kid1", now) is True
@@ -671,9 +696,7 @@ class TestChoreAvailability:
     def test_every_2_days_recurrence(self):
         coord = _make_coord()
         # Last completed yesterday — not yet available (needs 2 days)
-        coord.storage.get_last_completed = MagicMock(
-            return_value={"current": "2024-03-19T12:00:00+00:00"}
-        )
+        coord.storage.get_last_completed = MagicMock(return_value={"current": "2024-03-19T12:00:00+00:00"})
         chore = self._make_recurring_chore(recurrence="every_2_days")
         now = _date(2024, 3, 20)  # only 1 day since last — not available yet
         assert self._run(coord, chore, "kid1", now) is False
@@ -684,13 +707,11 @@ class TestChoreAvailability:
             name="Visibility chore",
             schedule_mode="specific_days",
             visibility_entity="binary_sensor.dishwasher_running",
-            visibility_state="on"
+            visibility_state="on",
         )
         coord.storage.get_last_completed = MagicMock(return_value={})
         # Mock entity state matching visibility_state
-        coord.hass.states.get = MagicMock(
-            return_value=MagicMock(state='on')
-        )
+        coord.hass.states.get = MagicMock(return_value=MagicMock(state="on"))
         now = _date(2024, 3, 20)
         assert self._run(coord, chore, "kid1", now) is True
 
@@ -700,13 +721,11 @@ class TestChoreAvailability:
             name="Visibility chore",
             schedule_mode="specific_days",
             visibility_entity="binary_sensor.dishwasher_running",
-            visibility_state="on"
+            visibility_state="on",
         )
         coord.storage.get_last_completed = MagicMock(return_value={})
         # Mock entity state NOT matching visibility_state
-        coord.hass.states.get = MagicMock(
-            return_value=MagicMock(state='off')
-        )
+        coord.hass.states.get = MagicMock(return_value=MagicMock(state="off"))
         now = _date(2024, 3, 20)
         assert self._run(coord, chore, "kid1", now) is False
 
@@ -716,13 +735,11 @@ class TestChoreAvailability:
             name="Visibility chore",
             schedule_mode="specific_days",
             visibility_entity="sensor.temperature",
-            visibility_state="123"
+            visibility_state="123",
         )
         coord.storage.get_last_completed = MagicMock(return_value={})
         # Mock entity state as numeric string
-        coord.hass.states.get = MagicMock(
-            return_value=MagicMock(state='123')
-        )
+        coord.hass.states.get = MagicMock(return_value=MagicMock(state="123"))
         now = _date(2024, 3, 20)
         assert self._run(coord, chore, "kid1", now) is True
 
@@ -732,7 +749,7 @@ class TestChoreAvailability:
             name="Visibility chore",
             schedule_mode="specific_days",
             visibility_entity="binary_sensor.nonexistent",
-            visibility_state="on"
+            visibility_state="on",
         )
         coord.storage.get_last_completed = MagicMock(return_value={})
         # Mock entity doesn't exist (get returns None)
@@ -744,14 +761,11 @@ class TestChoreAvailability:
     def test_visibility_entity_numeric_gte(self):
         coord = _make_coord()
         chore = Chore(
-            name="Power chore",
-            schedule_mode="specific_days",
-            visibility_entity="sensor.power",
-            visibility_state=">=10"
+            name="Power chore", schedule_mode="specific_days", visibility_entity="sensor.power", visibility_state=">=10"
         )
         coord.storage.get_last_completed = MagicMock(return_value={})
         coord.hass.states.get = MagicMock(
-            return_value=MagicMock(state='15')  # 15 >= 10
+            return_value=MagicMock(state="15")  # 15 >= 10
         )
         now = _date(2024, 3, 20)
         assert self._run(coord, chore, "kid1", now) is True
@@ -759,14 +773,11 @@ class TestChoreAvailability:
     def test_visibility_entity_numeric_gte_false(self):
         coord = _make_coord()
         chore = Chore(
-            name="Power chore",
-            schedule_mode="specific_days",
-            visibility_entity="sensor.power",
-            visibility_state=">=10"
+            name="Power chore", schedule_mode="specific_days", visibility_entity="sensor.power", visibility_state=">=10"
         )
         coord.storage.get_last_completed = MagicMock(return_value={})
         coord.hass.states.get = MagicMock(
-            return_value=MagicMock(state='0')  # 0 >= 10 is False
+            return_value=MagicMock(state="0")  # 0 >= 10 is False
         )
         now = _date(2024, 3, 20)
         assert self._run(coord, chore, "kid1", now) is False
@@ -777,11 +788,11 @@ class TestChoreAvailability:
             name="Temperature chore",
             schedule_mode="specific_days",
             visibility_entity="sensor.temperature",
-            visibility_state="<20"
+            visibility_state="<20",
         )
         coord.storage.get_last_completed = MagicMock(return_value={})
         coord.hass.states.get = MagicMock(
-            return_value=MagicMock(state='15')  # 15 < 20
+            return_value=MagicMock(state="15")  # 15 < 20
         )
         now = _date(2024, 3, 20)
         assert self._run(coord, chore, "kid1", now) is True
@@ -791,11 +802,13 @@ class TestChoreAvailability:
 # One-Shot Chore Tests
 # ---------------------------------------------------------------------------
 
+
 class TestOneShotChores:
     """Tests for one-shot (non-recurring) chore functionality."""
 
     def _run(self, coord, chore, child_id, now_dt):
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=now_dt):
             return coord.is_chore_available_for_child(chore, child_id)
 
@@ -950,6 +963,7 @@ class TestOneShotChores:
 # Career Score
 # ---------------------------------------------------------------------------
 
+
 class TestCareerScore:
     """Tests for career_score tracking across coordinator operations."""
 
@@ -960,6 +974,7 @@ class TestCareerScore:
         coord.storage.get_child = MagicMock(return_value=child)
 
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
             run(coord.async_add_points(child.id, 10, reason="Bonus: Tidied room"))
 
@@ -975,6 +990,7 @@ class TestCareerScore:
         coord.storage.get_child = MagicMock(return_value=child)
 
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
             run(coord.async_remove_points(child.id, 15, reason="Penalty: Not tidying"))
 
@@ -990,6 +1006,7 @@ class TestCareerScore:
         coord.storage.get_child = MagicMock(return_value=child)
 
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
             run(coord.async_remove_points(child.id, 20, reason="Admin correction"))
 
@@ -1005,6 +1022,7 @@ class TestCareerScore:
         coord.storage.get_child = MagicMock(return_value=child)
 
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
             run(coord.async_remove_points(child.id, 30, reason="Allocated to pool: Bike"))
 
@@ -1015,9 +1033,12 @@ class TestCareerScore:
         child = _make_child(points=50, current_streak=1, last_completion_date="2024-03-19")
         child.career_score = 50
         child.total_penalties_received = 0
-        coord = _make_coord(children=[child], settings={"weekend_multiplier": "1.0", "streak_milestones_enabled": "false"})
+        coord = _make_coord(
+            children=[child], settings={"weekend_multiplier": "1.0", "streak_milestones_enabled": "false"}
+        )
 
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
             total = run(coord._award_points(child, 10))
 
@@ -1035,6 +1056,7 @@ class TestCareerScore:
         )
 
         import custom_components.taskmate.coordinator as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=_date(2024, 3, 20)):
             run(coord._award_points(child, 5))
 
@@ -1047,6 +1069,7 @@ class TestCareerScore:
 # ---------------------------------------------------------------------------
 # _reverse_completion_awards — milestone bonus reversal (ERR-1)
 # ---------------------------------------------------------------------------
+
 
 class TestReverseCompletionMilestones:
     def test_reject_reverses_milestone_bonus(self):
@@ -1105,6 +1128,7 @@ class TestReverseCompletionMilestones:
 # FEAT-7: negative-balance policy
 # ---------------------------------------------------------------------------
 
+
 class TestNegativeBalancePolicy:
     def test_remove_points_floors_at_zero_by_default(self):
         child = _make_child(points=5)
@@ -1122,6 +1146,7 @@ class TestNegativeBalancePolicy:
 # ---------------------------------------------------------------------------
 # SEC-6: coordinator-layer guard against negative point arguments
 # ---------------------------------------------------------------------------
+
 
 class TestPointArgSignGuard:
     def test_add_points_rejects_negative(self):

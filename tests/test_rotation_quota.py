@@ -7,6 +7,7 @@ pool member by completing the chore once per child_id. These lock the fix:
 - once the rotation is done for the day no further pool member can complete;
 - a parent (as_parent) may still complete on behalf of the off-rotation child.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -54,6 +55,7 @@ def _make_system():
     coord.async_refresh = AsyncMock()
 
     import custom_components.taskmate.coordinator as _mod
+
     return coord, storage, _mod
 
 
@@ -61,10 +63,15 @@ def _alternating_chore(coord, _mod, now):
     with patch.object(_mod.dt_util, "now", return_value=now):
         alice = run(coord.async_add_child("Alice"))
         bob = run(coord.async_add_child("Bob"))
-        chore = run(coord.async_add_chore(
-            "Dishes", points=10, requires_approval=False,
-            assignment_mode="alternating", assigned_to=[alice.id, bob.id],
-        ))
+        chore = run(
+            coord.async_add_chore(
+                "Dishes",
+                points=10,
+                requires_approval=False,
+                assignment_mode="alternating",
+                assigned_to=[alice.id, bob.id],
+            )
+        )
     active = coord._compute_active_children(chore)[0]
     inactive = next(c.id for c in (alice, bob) if c.id != active)
     return chore, active, inactive

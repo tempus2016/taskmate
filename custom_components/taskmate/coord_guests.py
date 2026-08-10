@@ -7,6 +7,7 @@ season standings or leave a stale profile behind.
 "Archived" rather than deleted: the visit's completions stay in history, and
 next summer the same guest can be reactivated instead of rebuilt.
 """
+
 from __future__ import annotations
 
 import logging
@@ -40,7 +41,8 @@ class GuestsMixin:
         except (TypeError, ValueError):
             _LOGGER.warning(
                 "Guest %s has an unparseable expiry %r — treating as open-ended",
-                getattr(child, "name", ""), raw,
+                getattr(child, "name", ""),
+                raw,
             )
             return False
         return (on or dt_util.as_local(dt_util.now()).date()) > ends
@@ -74,8 +76,7 @@ class GuestsMixin:
             child.pause_streak_when_unavailable = True
             self.storage.update_child(child)
             archived.append(child.name)
-            _LOGGER.info("Archived guest profile '%s' (stay ended %s)",
-                         child.name, child.guest_expires_on)
+            _LOGGER.info("Archived guest profile '%s' (stay ended %s)", child.name, child.guest_expires_on)
             self.hass.bus.async_fire(
                 "taskmate_guest_archived",
                 {
@@ -93,7 +94,10 @@ class GuestsMixin:
         return archived
 
     async def async_set_guest(
-        self, child_id: str, is_guest: bool, expires_on: str = "",
+        self,
+        child_id: str,
+        is_guest: bool,
+        expires_on: str = "",
     ) -> None:
         """Mark a child as a guest (or back to a family member)."""
         child = self.storage.get_child(child_id)

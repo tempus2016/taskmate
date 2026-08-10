@@ -3,6 +3,7 @@
 We use an in-memory FakeStore (defined in conftest) so no filesystem I/O
 occurs and no real Home Assistant is required.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -18,6 +19,7 @@ UTC = timezone.utc
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def run(coro):
     loop = asyncio.new_event_loop()
@@ -48,6 +50,7 @@ def _make_storage(initial_data: dict | None = None) -> TaskMateStorage:
 # ---------------------------------------------------------------------------
 # async_load — defaults and migration
 # ---------------------------------------------------------------------------
+
 
 class TestAsyncLoad:
     def test_fresh_load_creates_default_structure(self):
@@ -81,13 +84,24 @@ class TestAsyncLoad:
 
     def test_existing_data_preserved_on_load(self):
         existing = {
-            "children": [{"name": "Alice", "id": "abc", "points": 100,
-                           "total_points_earned": 100, "total_chores_completed": 5,
-                           "current_streak": 2, "best_streak": 5, "avatar": "mdi:account-circle",
-                           "pending_rewards": [], "chore_order": [],
-                           "last_completion_date": "2024-03-19",
-                           "streak_paused": False,
-                           "streak_milestones_achieved": [], "awarded_perfect_weeks": []}],
+            "children": [
+                {
+                    "name": "Alice",
+                    "id": "abc",
+                    "points": 100,
+                    "total_points_earned": 100,
+                    "total_chores_completed": 5,
+                    "current_streak": 2,
+                    "best_streak": 5,
+                    "avatar": "mdi:account-circle",
+                    "pending_rewards": [],
+                    "chore_order": [],
+                    "last_completion_date": "2024-03-19",
+                    "streak_paused": False,
+                    "streak_milestones_achieved": [],
+                    "awarded_perfect_weeks": [],
+                }
+            ],
             "chores": [],
             "rewards": [],
             "completions": [],
@@ -106,6 +120,7 @@ class TestAsyncLoad:
 # ---------------------------------------------------------------------------
 # _migrate_assigned_to_child_ids
 # ---------------------------------------------------------------------------
+
 
 class TestMigrateAssignedTo:
     def _build_storage_with_data(self, children_raw, chores_raw):
@@ -148,12 +163,19 @@ class TestMigrateAssignedTo:
 # Children CRUD
 # ---------------------------------------------------------------------------
 
+
 class TestChildrenCrud:
     def _storage(self):
         s = _make_storage()
-        s._data = {"children": [], "chores": [], "rewards": [],
-                   "completions": [], "reward_claims": [], "points_transactions": [],
-                   "last_completed": {}}
+        s._data = {
+            "children": [],
+            "chores": [],
+            "rewards": [],
+            "completions": [],
+            "reward_claims": [],
+            "points_transactions": [],
+            "last_completed": {},
+        }
         return s
 
     def test_add_then_get(self):
@@ -203,6 +225,7 @@ class TestChildrenCrud:
 # ---------------------------------------------------------------------------
 # last_completed store
 # ---------------------------------------------------------------------------
+
 
 class TestLastCompleted:
     def _storage(self):
@@ -254,6 +277,7 @@ class TestLastCompleted:
 # Points transactions — 200-item cap
 # ---------------------------------------------------------------------------
 
+
 class TestPointsTransactionCap:
     def _storage(self):
         s = _make_storage()
@@ -262,6 +286,7 @@ class TestPointsTransactionCap:
 
     def test_transactions_capped_at_200(self):
         from custom_components.taskmate.models import PointsTransaction
+
         storage = self._storage()
         for i in range(210):
             tx = PointsTransaction(
@@ -275,6 +300,7 @@ class TestPointsTransactionCap:
 
     def test_most_recent_transactions_kept(self):
         from custom_components.taskmate.models import PointsTransaction
+
         storage = self._storage()
         for i in range(205):
             tx = PointsTransaction(
@@ -286,13 +312,14 @@ class TestPointsTransactionCap:
             storage.add_points_transaction(tx)
         # The last 200 entries should be kept (indices 5..204)
         kept_points = [t["points"] for t in storage._data["points_transactions"]]
-        assert kept_points[0] == 5   # oldest kept
+        assert kept_points[0] == 5  # oldest kept
         assert kept_points[-1] == 204  # most recent
 
 
 # ---------------------------------------------------------------------------
 # get_pending_completions
 # ---------------------------------------------------------------------------
+
 
 class TestGetPendingCompletions:
     def _storage(self):
@@ -303,12 +330,15 @@ class TestGetPendingCompletions:
     def test_returns_only_unapproved(self):
         storage = self._storage()
         approved = ChoreCompletion(
-            chore_id="c1", child_id="k1",
+            chore_id="c1",
+            child_id="k1",
             completed_at=dt.datetime(2024, 3, 19, 12, 0, 0, tzinfo=UTC),
-            approved=True, points_awarded=10,
+            approved=True,
+            points_awarded=10,
         )
         pending = ChoreCompletion(
-            chore_id="c1", child_id="k1",
+            chore_id="c1",
+            child_id="k1",
             completed_at=dt.datetime(2024, 3, 20, 12, 0, 0, tzinfo=UTC),
             approved=False,
         )
@@ -321,7 +351,8 @@ class TestGetPendingCompletions:
     def test_empty_when_all_approved(self):
         storage = self._storage()
         comp = ChoreCompletion(
-            chore_id="c1", child_id="k1",
+            chore_id="c1",
+            child_id="k1",
             completed_at=dt.datetime(2024, 3, 20, 12, 0, 0, tzinfo=UTC),
             approved=True,
         )
@@ -332,6 +363,7 @@ class TestGetPendingCompletions:
 # ---------------------------------------------------------------------------
 # Settings helpers
 # ---------------------------------------------------------------------------
+
 
 class TestSettings:
     def _storage(self):
@@ -374,12 +406,22 @@ class TestPoolSemanticsV2Migration:
     def test_beta1_install_has_points_adjusted_on_upgrade(self):
         existing = {
             "children": [
-                {"id": "kid1", "name": "Alice", "points": 31,
-                 "total_points_earned": 100, "total_chores_completed": 5,
-                 "current_streak": 0, "best_streak": 0, "avatar": "mdi:account-circle",
-                 "pending_rewards": [], "chore_order": [],
-                 "last_completion_date": None, "streak_paused": False,
-                 "streak_milestones_achieved": [], "awarded_perfect_weeks": []},
+                {
+                    "id": "kid1",
+                    "name": "Alice",
+                    "points": 31,
+                    "total_points_earned": 100,
+                    "total_chores_completed": 5,
+                    "current_streak": 0,
+                    "best_streak": 0,
+                    "avatar": "mdi:account-circle",
+                    "pending_rewards": [],
+                    "chore_order": [],
+                    "last_completion_date": None,
+                    "streak_paused": False,
+                    "streak_milestones_achieved": [],
+                    "awarded_perfect_weeks": [],
+                },
             ],
             "chores": [],
             "rewards": [],
@@ -390,7 +432,8 @@ class TestPoolSemanticsV2Migration:
                 {"id": "a1", "child_id": "kid1", "reward_id": "r1", "allocated_points": 20},
                 {"id": "a2", "child_id": "kid1", "reward_id": "r2", "allocated_points": 5},
             ],
-            "points_name": "Stars", "points_icon": "mdi:star",
+            "points_name": "Stars",
+            "points_icon": "mdi:star",
         }
         storage = _make_storage(initial_data=existing)
         run(storage.async_load())
@@ -402,19 +445,33 @@ class TestPoolSemanticsV2Migration:
     def test_already_migrated_is_idempotent(self):
         existing = {
             "children": [
-                {"id": "kid1", "name": "Alice", "points": 10,
-                 "total_points_earned": 100, "total_chores_completed": 5,
-                 "current_streak": 0, "best_streak": 0, "avatar": "mdi:account-circle",
-                 "pending_rewards": [], "chore_order": [],
-                 "last_completion_date": None, "streak_paused": False,
-                 "streak_milestones_achieved": [], "awarded_perfect_weeks": []},
+                {
+                    "id": "kid1",
+                    "name": "Alice",
+                    "points": 10,
+                    "total_points_earned": 100,
+                    "total_chores_completed": 5,
+                    "current_streak": 0,
+                    "best_streak": 0,
+                    "avatar": "mdi:account-circle",
+                    "pending_rewards": [],
+                    "chore_order": [],
+                    "last_completion_date": None,
+                    "streak_paused": False,
+                    "streak_milestones_achieved": [],
+                    "awarded_perfect_weeks": [],
+                },
             ],
-            "chores": [], "rewards": [], "completions": [],
-            "reward_claims": [], "points_transactions": [],
+            "chores": [],
+            "rewards": [],
+            "completions": [],
+            "reward_claims": [],
+            "points_transactions": [],
             "pool_allocations": [
                 {"id": "a1", "child_id": "kid1", "reward_id": "r1", "allocated_points": 20},
             ],
-            "points_name": "Stars", "points_icon": "mdi:star",
+            "points_name": "Stars",
+            "points_icon": "mdi:star",
             "_pool_semantics_version": 2,
         }
         storage = _make_storage(initial_data=existing)
@@ -425,19 +482,33 @@ class TestPoolSemanticsV2Migration:
     def test_zero_points_does_not_go_negative(self):
         existing = {
             "children": [
-                {"id": "kid1", "name": "Alice", "points": 5,
-                 "total_points_earned": 100, "total_chores_completed": 5,
-                 "current_streak": 0, "best_streak": 0, "avatar": "mdi:account-circle",
-                 "pending_rewards": [], "chore_order": [],
-                 "last_completion_date": None, "streak_paused": False,
-                 "streak_milestones_achieved": [], "awarded_perfect_weeks": []},
+                {
+                    "id": "kid1",
+                    "name": "Alice",
+                    "points": 5,
+                    "total_points_earned": 100,
+                    "total_chores_completed": 5,
+                    "current_streak": 0,
+                    "best_streak": 0,
+                    "avatar": "mdi:account-circle",
+                    "pending_rewards": [],
+                    "chore_order": [],
+                    "last_completion_date": None,
+                    "streak_paused": False,
+                    "streak_milestones_achieved": [],
+                    "awarded_perfect_weeks": [],
+                },
             ],
-            "chores": [], "rewards": [], "completions": [],
-            "reward_claims": [], "points_transactions": [],
+            "chores": [],
+            "rewards": [],
+            "completions": [],
+            "reward_claims": [],
+            "points_transactions": [],
             "pool_allocations": [
                 {"id": "a1", "child_id": "kid1", "reward_id": "r1", "allocated_points": 99},
             ],
-            "points_name": "Stars", "points_icon": "mdi:star",
+            "points_name": "Stars",
+            "points_icon": "mdi:star",
         }
         storage = _make_storage(initial_data=existing)
         run(storage.async_load())
@@ -449,21 +520,36 @@ class TestPoolSemanticsV2Migration:
 # Career score migration
 # ---------------------------------------------------------------------------
 
+
 class TestCareerScoreMigration:
     def test_migration_sets_career_score_from_total_earned(self):
         existing = {
             "children": [
-                {"id": "kid1", "name": "Alice", "points": 80,
-                 "total_points_earned": 200, "total_chores_completed": 15,
-                 "current_streak": 0, "best_streak": 0, "avatar": "mdi:account-circle",
-                 "pending_rewards": [], "chore_order": [],
-                 "last_completion_date": None, "streak_paused": False,
-                 "streak_milestones_achieved": [], "awarded_perfect_weeks": []},
+                {
+                    "id": "kid1",
+                    "name": "Alice",
+                    "points": 80,
+                    "total_points_earned": 200,
+                    "total_chores_completed": 15,
+                    "current_streak": 0,
+                    "best_streak": 0,
+                    "avatar": "mdi:account-circle",
+                    "pending_rewards": [],
+                    "chore_order": [],
+                    "last_completion_date": None,
+                    "streak_paused": False,
+                    "streak_milestones_achieved": [],
+                    "awarded_perfect_weeks": [],
+                },
             ],
-            "chores": [], "rewards": [], "completions": [],
-            "reward_claims": [], "points_transactions": [],
+            "chores": [],
+            "rewards": [],
+            "completions": [],
+            "reward_claims": [],
+            "points_transactions": [],
             "pool_allocations": [],
-            "points_name": "Stars", "points_icon": "mdi:star",
+            "points_name": "Stars",
+            "points_icon": "mdi:star",
         }
         storage = _make_storage(initial_data=existing)
         run(storage.async_load())
@@ -475,18 +561,33 @@ class TestCareerScoreMigration:
     def test_migration_runs_only_once(self):
         existing = {
             "children": [
-                {"id": "kid1", "name": "Alice", "points": 80,
-                 "total_points_earned": 200, "total_chores_completed": 15,
-                 "current_streak": 0, "best_streak": 0, "avatar": "mdi:account-circle",
-                 "pending_rewards": [], "chore_order": [],
-                 "last_completion_date": None, "streak_paused": False,
-                 "streak_milestones_achieved": [], "awarded_perfect_weeks": [],
-                 "career_score": 150, "total_penalties_received": 50},
+                {
+                    "id": "kid1",
+                    "name": "Alice",
+                    "points": 80,
+                    "total_points_earned": 200,
+                    "total_chores_completed": 15,
+                    "current_streak": 0,
+                    "best_streak": 0,
+                    "avatar": "mdi:account-circle",
+                    "pending_rewards": [],
+                    "chore_order": [],
+                    "last_completion_date": None,
+                    "streak_paused": False,
+                    "streak_milestones_achieved": [],
+                    "awarded_perfect_weeks": [],
+                    "career_score": 150,
+                    "total_penalties_received": 50,
+                },
             ],
-            "chores": [], "rewards": [], "completions": [],
-            "reward_claims": [], "points_transactions": [],
+            "chores": [],
+            "rewards": [],
+            "completions": [],
+            "reward_claims": [],
+            "points_transactions": [],
             "pool_allocations": [],
-            "points_name": "Stars", "points_icon": "mdi:star",
+            "points_name": "Stars",
+            "points_icon": "mdi:star",
             "_career_score_initialized": True,
         }
         storage = _make_storage(initial_data=existing)
@@ -505,6 +606,7 @@ class TestCareerScoreMigration:
 # ---------------------------------------------------------------------------
 # Career score history management
 # ---------------------------------------------------------------------------
+
 
 class TestCareerScoreHistory:
     def _loaded_storage(self):
@@ -571,6 +673,7 @@ class TestCareerScoreHistory:
 # ---------------------------------------------------------------------------
 # parent_user_ids — non-admin parent role (#661)
 # ---------------------------------------------------------------------------
+
 
 class TestParentUserIds:
     def test_default_empty(self):

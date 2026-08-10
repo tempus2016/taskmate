@@ -15,6 +15,7 @@ to keep in sync:
 Read-only for now: completing a chore from the calendar is intentionally not
 supported.
 """
+
 from __future__ import annotations
 
 import logging
@@ -67,9 +68,7 @@ async def async_setup_entry(
     coordinator.async_add_listener(_async_add_new)
 
 
-def _chore_applies_to_child(
-    coordinator: TaskMateCoordinator, chore: Chore, child_id: str, day: date
-) -> bool:
+def _chore_applies_to_child(coordinator: TaskMateCoordinator, chore: Chore, child_id: str, day: date) -> bool:
     """True if ``chore`` is scheduled for ``child_id`` on ``day``.
 
     Combines the recurrence schedule with the assignment engine so the calendar
@@ -165,9 +164,7 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
             return []
         return self._build_events(child, start_date.date(), end_date.date())
 
-    def _build_events(
-        self, child: Child, start_day: date, end_day: date
-    ) -> list[CalendarEvent]:
+    def _build_events(self, child: Child, start_day: date, end_day: date) -> list[CalendarEvent]:
         coord = self.coordinator
         events: list[CalendarEvent] = []
 
@@ -197,25 +194,27 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
                 for chore in chores:
                     if not _chore_applies_to_child(coord, chore, child.id, day):
                         continue
-                    window = coord._time_category_window(
-                        getattr(chore, "time_category", "anytime"), day
-                    )
+                    window = coord._time_category_window(getattr(chore, "time_category", "anytime"), day)
                     desc = _chore_description(chore)
                     if window is None:
-                        events.append(CalendarEvent(
-                            start=day,
-                            end=day + timedelta(days=1),
-                            summary=chore.name,
-                            description=desc,
-                        ))
+                        events.append(
+                            CalendarEvent(
+                                start=day,
+                                end=day + timedelta(days=1),
+                                summary=chore.name,
+                                description=desc,
+                            )
+                        )
                     else:
                         start_dt, end_dt = window
-                        events.append(CalendarEvent(
-                            start=start_dt.replace(tzinfo=tz),
-                            end=end_dt.replace(tzinfo=tz),
-                            summary=chore.name,
-                            description=desc,
-                        ))
+                        events.append(
+                            CalendarEvent(
+                                start=start_dt.replace(tzinfo=tz),
+                                end=end_dt.replace(tzinfo=tz),
+                                summary=chore.name,
+                                description=desc,
+                            )
+                        )
             day += timedelta(days=1)
 
         return events

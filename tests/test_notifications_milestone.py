@@ -1,4 +1,5 @@
 """Tests that reaching a streak milestone fires the streak_milestone notification."""
+
 from __future__ import annotations
 
 import asyncio
@@ -28,6 +29,7 @@ def _coord(settings):
 
 def _run_award(coord, child, now_dt):
     import custom_components.taskmate.coordinator as _mod
+
     with patch.object(_mod.dt_util, "now", return_value=now_dt):
         loop = asyncio.new_event_loop()
         try:

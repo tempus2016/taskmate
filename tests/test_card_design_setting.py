@@ -1,4 +1,5 @@
 """Tests for the global default card-design setting (per-card design styles)."""
+
 from __future__ import annotations
 
 from custom_components.taskmate.models import Child
@@ -68,6 +69,7 @@ def _settings_schema():
     import voluptuous as vol
 
     from custom_components.taskmate.websocket import _UPDATE_SETTINGS_SCHEMA, WS_UPDATE_SETTINGS
+
     return vol.Schema(_UPDATE_SETTINGS_SCHEMA, extra=vol.ALLOW_EXTRA), WS_UPDATE_SETTINGS
 
 
@@ -82,6 +84,7 @@ def test_update_settings_schema_accepts_card_design():
 def test_update_settings_schema_rejects_bad_card_design():
     import pytest
     import voluptuous as vol
+
     schema, cmd = _settings_schema()
     with pytest.raises(vol.Invalid):
         schema({"type": cmd, "id": 1, "card_design": "bogus"})
@@ -96,6 +99,7 @@ def test_every_routed_setting_is_in_the_schema():
         _TOP_LEVEL_SETTINGS,
         _UPDATE_SETTINGS_SCHEMA,
     )
+
     schema_keys = {str(k) for k in _UPDATE_SETTINGS_SCHEMA}
     routed = _SUBKEY_SETTINGS | _TOP_LEVEL_SETTINGS
     missing = routed - schema_keys

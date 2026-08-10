@@ -1,4 +1,5 @@
 """Tests for completing a chore on behalf of a child (as_parent flag)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -48,6 +49,7 @@ def _make_system(now=None):
     coord._unsub_availability = None
 
     import custom_components.taskmate.coordinator as _mod
+
     coord._dt_now = now
     coord.async_refresh = AsyncMock()
     # Isolate the completion logic from the notification subsystem.
@@ -62,10 +64,15 @@ class TestCompleteOnBehalf:
         now = _now()
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Dishes", points=10, requires_approval=True,
-                schedule_mode="specific_days", assigned_to=[child.id],
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Dishes",
+                    points=10,
+                    requires_approval=True,
+                    schedule_mode="specific_days",
+                    assigned_to=[child.id],
+                )
+            )
             run(coord.async_complete_chore(chore.id, child.id, as_parent=True))
 
         comps = storage.get_completions()
@@ -79,10 +86,15 @@ class TestCompleteOnBehalf:
         now = _now()
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Dishes", points=10, requires_approval=True,
-                schedule_mode="specific_days", assigned_to=[child.id],
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Dishes",
+                    points=10,
+                    requires_approval=True,
+                    schedule_mode="specific_days",
+                    assigned_to=[child.id],
+                )
+            )
             run(coord.async_complete_chore(chore.id, child.id, as_parent=False))
 
         comps = storage.get_completions()
@@ -96,10 +108,15 @@ class TestCompleteOnBehalf:
         now = _now()
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Dishes", points=10, requires_approval=True,
-                schedule_mode="specific_days", assigned_to=[child.id],
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Dishes",
+                    points=10,
+                    requires_approval=True,
+                    schedule_mode="specific_days",
+                    assigned_to=[child.id],
+                )
+            )
             run(coord.async_complete_chore(chore.id, child.id, as_parent=True))
             # Daily limit reached is a soft rejection even via as_parent: no-op.
             result = run(coord.async_complete_chore(chore.id, child.id, as_parent=True))
@@ -111,10 +128,15 @@ class TestCompleteOnBehalf:
         now = _now()
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Paint fence", points=20, requires_approval=True,
-                schedule_mode="one_shot", assigned_to=[child.id],
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Paint fence",
+                    points=20,
+                    requires_approval=True,
+                    schedule_mode="one_shot",
+                    assigned_to=[child.id],
+                )
+            )
             run(coord.async_complete_chore(chore.id, child.id, as_parent=True))
 
         updated = storage.get_chore(chore.id)

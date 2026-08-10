@@ -1,4 +1,5 @@
 """Reward operations mixin for TaskMateCoordinator."""
+
 from __future__ import annotations
 
 import logging
@@ -82,15 +83,11 @@ class RewardsMixin:
         if old and reward.cost < old.cost:
             self._refund_pool_excess(reward, "Pool refund (reward cost reduced)")
         became_unavailable = (
-            self._reward_is_unavailable(reward)
-            and old is not None
-            and not self._reward_is_unavailable(old)
+            self._reward_is_unavailable(reward) and old is not None and not self._reward_is_unavailable(old)
         )
         if became_unavailable:
             reason = (
-                "Pool refund (reward expired)"
-                if self._reward_is_expired(reward)
-                else "Pool refund (reward sold out)"
+                "Pool refund (reward expired)" if self._reward_is_expired(reward) else "Pool refund (reward sold out)"
             )
             self._refund_all_pool_allocations(reward, reason)
         await self.storage.async_save()
@@ -140,8 +137,7 @@ class RewardsMixin:
         stays consistent with cost-reduction refunds.
         """
         allocations = [
-            a for a in self.storage.get_pool_allocations()
-            if a.reward_id == reward.id and a.allocated_points > 0
+            a for a in self.storage.get_pool_allocations() if a.reward_id == reward.id and a.allocated_points > 0
         ]
         for alloc in allocations:
             self._apply_pool_refund(alloc, alloc.allocated_points, reward, reason)
@@ -154,8 +150,7 @@ class RewardsMixin:
         until the combined total matches the cost.
         """
         allocations = [
-            a for a in self.storage.get_pool_allocations()
-            if a.reward_id == reward.id and a.allocated_points > 0
+            a for a in self.storage.get_pool_allocations() if a.reward_id == reward.id and a.allocated_points > 0
         ]
         if not allocations:
             return
@@ -173,13 +168,9 @@ class RewardsMixin:
         else:
             for alloc in allocations:
                 if alloc.allocated_points > reward.cost:
-                    self._apply_pool_refund(
-                        alloc, alloc.allocated_points - reward.cost, reward, reason
-                    )
+                    self._apply_pool_refund(alloc, alloc.allocated_points - reward.cost, reward, reason)
 
-    def _apply_pool_refund(
-        self, allocation: PoolAllocation, refund: int, reward: Reward, reason: str
-    ) -> None:
+    def _apply_pool_refund(self, allocation: PoolAllocation, refund: int, reward: Reward, reason: str) -> None:
         """Refund `refund` points from `allocation` back to the child's wallet.
 
         Updates or removes the allocation record and writes an audit transaction.
@@ -196,19 +187,23 @@ class RewardsMixin:
         if remaining <= 0:
             self.storage.remove_pool_allocation(allocation.child_id, allocation.reward_id)
         else:
-            self.storage.upsert_pool_allocation(PoolAllocation(
-                child_id=allocation.child_id,
-                reward_id=allocation.reward_id,
-                allocated_points=remaining,
-                id=allocation.id,
-            ))
+            self.storage.upsert_pool_allocation(
+                PoolAllocation(
+                    child_id=allocation.child_id,
+                    reward_id=allocation.reward_id,
+                    allocated_points=remaining,
+                    id=allocation.id,
+                )
+            )
 
-        self.storage.add_points_transaction(PointsTransaction(
-            child_id=allocation.child_id,
-            points=refund,
-            reason=f"{reason}: {reward.name}",
-            created_at=dt_util.now(),
-        ))
+        self.storage.add_points_transaction(
+            PointsTransaction(
+                child_id=allocation.child_id,
+                points=refund,
+                reason=f"{reason}: {reward.name}",
+                created_at=dt_util.now(),
+            )
+        )
 
     async def async_claim_reward(self, reward_id: str, child_id: str) -> RewardClaim:
         """Child claims a reward — creates a pending claim awaiting parent approval.
@@ -261,9 +256,7 @@ class RewardsMixin:
             available_points = child.points - committed
 
             if available_points < effective_cost:
-                raise ValueError(
-                    f"Not enough points. Need {effective_cost}, have {available_points} available"
-                )
+                raise ValueError(f"Not enough points. Need {effective_cost}, have {available_points} available")
 
         claim = RewardClaim(
             reward_id=reward_id,
@@ -287,7 +280,10 @@ class RewardsMixin:
         await self.storage.async_save()
         await self.async_refresh()
         await self._async_notify_pending_reward_claim(
-            child.name, reward.name, reward.cost, claim_id=claim.id,
+            child.name,
+            reward.name,
+            reward.cost,
+            claim_id=claim.id,
         )
         return claim
 
@@ -297,6 +293,7 @@ class RewardsMixin:
         if period == "monthly":
             return today.replace(day=1)
         from datetime import timedelta
+
         return today - timedelta(days=today.weekday())  # Monday of this week
 
     def _spent_in_period(self, child_id: str) -> int:
@@ -324,9 +321,7 @@ class RewardsMixin:
         if cap <= 0:
             return
         if self._spent_in_period(child_id) + cost > cap:
-            raise ValueError(
-                f"Spending cap reached: {cap} per period already used"
-            )
+            raise ValueError(f"Spending cap reached: {cap} per period already used")
 
     async def async_approve_reward(self, claim_id: str) -> None:
         """Approve a reward claim and deduct points from the child.
@@ -371,7 +366,8 @@ class RewardsMixin:
                     self._refund_pool_excess(reward, "Pool refund on redeem")
                     if reward.is_jackpot:
                         jackpot_allocs = [
-                            a for a in self.storage.get_pool_allocations()
+                            a
+                            for a in self.storage.get_pool_allocations()
                             if a.reward_id == claim.reward_id and a.allocated_points > 0
                         ]
                         for alloc in jackpot_allocs:
@@ -381,9 +377,7 @@ class RewardsMixin:
                 else:
                     # Wallet mode: deduct directly from child.points
                     if child.points < effective_cost:
-                        raise ValueError(
-                            f"Not enough points to approve. Need {effective_cost}, have {child.points}"
-                        )
+                        raise ValueError(f"Not enough points to approve. Need {effective_cost}, have {child.points}")
                     child.points -= effective_cost
                     self.storage.update_child(child)
 
@@ -393,9 +387,7 @@ class RewardsMixin:
                     if reward.quantity == 0:
                         # Last unit claimed — refund any points other children
                         # still have earmarked for this reward's pool.
-                        self._refund_all_pool_allocations(
-                            reward, "Pool refund (reward sold out)"
-                        )
+                        self._refund_all_pool_allocations(reward, "Pool refund (reward sold out)")
 
                 claim.approved = True
                 claim.approved_at = dt_util.now()
@@ -405,20 +397,23 @@ class RewardsMixin:
 
                 # Dismiss the mobile approval push now this claim is reviewed.
                 if getattr(self, "notifications", None):
-                    await self.notifications.clear_approval(
-                        "pending_reward_claim", claim_id
-                    )
+                    await self.notifications.clear_approval("pending_reward_claim", claim_id)
 
                 # Timed unlock (#678): allowlisted entity on, auto-off later.
                 await self.async_start_unlock(reward, child)
 
-                self.hass.bus.async_fire("taskmate_reward_approved", {
-                    "child_id": child.id, "child_name": child.name,
-                    "reward_id": reward.id, "reward_name": reward.name,
-                    "claim_id": claim.id,
-                    "cost": effective_cost,
-                    "timestamp": dt_util.now().isoformat(),
-                })
+                self.hass.bus.async_fire(
+                    "taskmate_reward_approved",
+                    {
+                        "child_id": child.id,
+                        "child_name": child.name,
+                        "reward_id": reward.id,
+                        "reward_name": reward.name,
+                        "claim_id": claim.id,
+                        "cost": effective_cost,
+                        "timestamp": dt_util.now().isoformat(),
+                    },
+                )
 
                 if getattr(self, "badges", None):
                     await self.badges.evaluate_for_child(claim.child_id, "reward_redeemed")
@@ -435,23 +430,22 @@ class RewardsMixin:
         if claim:
             reward = self.get_reward(claim.reward_id)
             child = self.get_child(claim.child_id)
-            self.hass.bus.async_fire("taskmate_reward_rejected", {
-                "child_id": claim.child_id,
-                "child_name": getattr(child, "name", ""),
-                "reward_id": claim.reward_id,
-                "reward_name": getattr(reward, "name", ""),
-                "claim_id": claim.id,
-                "timestamp": dt_util.now().isoformat(),
-            })
+            self.hass.bus.async_fire(
+                "taskmate_reward_rejected",
+                {
+                    "child_id": claim.child_id,
+                    "child_name": getattr(child, "name", ""),
+                    "reward_id": claim.reward_id,
+                    "reward_name": getattr(reward, "name", ""),
+                    "claim_id": claim.id,
+                    "timestamp": dt_util.now().isoformat(),
+                },
+            )
             # Dismiss the mobile approval push for this reviewed claim.
             if getattr(self, "notifications", None):
-                await self.notifications.clear_approval(
-                    "pending_reward_claim", claim_id
-                )
+                await self.notifications.clear_approval("pending_reward_claim", claim_id)
 
-    async def async_allocate_points_to_pool(
-        self, child_id: str, reward_id: str, points: int
-    ) -> PoolAllocation:
+    async def async_allocate_points_to_pool(self, child_id: str, reward_id: str, points: int) -> PoolAllocation:
         """Move `points` from a child's spendable balance into a reward pool.
 
         Deducts immediately from child.points so the visible balance reflects the
@@ -539,6 +533,7 @@ class RewardsMixin:
         ``restock_last`` stamp guards against restocking twice in a day.
         """
         from homeassistant.util import dt as dt_util
+
         today = dt_util.now().date()
         today_iso = today.isoformat()
         changed = False
@@ -577,8 +572,7 @@ class RewardsMixin:
             if not self._reward_is_expired(reward):
                 continue
             allocations_before = [
-                a for a in self.storage.get_pool_allocations()
-                if a.reward_id == reward.id and a.allocated_points > 0
+                a for a in self.storage.get_pool_allocations() if a.reward_id == reward.id and a.allocated_points > 0
             ]
             if not allocations_before:
                 continue
@@ -586,7 +580,9 @@ class RewardsMixin:
             changed = True
             _LOGGER.info(
                 "Reward '%s' expired on %s — refunded %d pool allocation(s)",
-                reward.name, reward.expires_at, len(allocations_before),
+                reward.name,
+                reward.expires_at,
+                len(allocations_before),
             )
 
         if changed:

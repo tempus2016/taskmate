@@ -1,4 +1,5 @@
 """Tests for the pure chore-image storage helpers (custom_components.taskmate.images)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -43,6 +44,7 @@ def test_detect_allowed_ext_rejects_heic():
     # photos.py accepts HEIC for evidence, but a browser can't render it and a
     # chore image is only ever displayed, so storing one yields a broken image.
     from custom_components.taskmate import photos
+
     assert photos.detect_image_ext(HEIC) == "heic"
     assert images.detect_allowed_ext(HEIC) is None
 
@@ -60,7 +62,7 @@ def test_is_taskmate_image_url_rejects_everything_else():
     for bad in (
         "",
         None,
-        "/api/taskmate/photo/" + "a" * 32 + ".jpg",   # the OTHER store
+        "/api/taskmate/photo/" + "a" * 32 + ".jpg",  # the OTHER store
         "/api/taskmate/image/../../secret.txt",
         "/api/taskmate/image/sub/dir.jpg",
         "/api/taskmate/image/short.jpg",

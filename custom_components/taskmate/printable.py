@@ -8,6 +8,7 @@ the width.
 Pure string building with no HA imports, so the layout is unit-testable
 without a Home Assistant install.
 """
+
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -60,10 +61,7 @@ def build_chart(
     for child in children:
         child_id = str(child.get("id", ""))
         # A chore with an empty assigned_to belongs to everyone.
-        mine = [
-            c for c in chores
-            if not (c.get("assigned_to") or []) or child_id in (c.get("assigned_to") or [])
-        ]
+        mine = [c for c in chores if not (c.get("assigned_to") or []) or child_id in (c.get("assigned_to") or [])]
         if not mine:
             continue
 
@@ -75,21 +73,14 @@ def build_chart(
                 f'<span class="name">{escape(str(c.get("name", "")))}</span></div>'
                 for c in todays
             )
-            cells.append(f'<td>{boxes or "&nbsp;"}</td>')
-        rows.append(
-            f'<tr><th class="who">{escape(str(child.get("name", "")))}</th>'
-            + "".join(cells) + "</tr>"
-        )
+            cells.append(f"<td>{boxes or '&nbsp;'}</td>")
+        rows.append(f'<tr><th class="who">{escape(str(child.get("name", "")))}</th>' + "".join(cells) + "</tr>")
 
     header = "".join(
-        f'<th><span class="dow">{DAY_NAMES[d.weekday()][:3]}</span>'
-        f'<span class="dom">{d.day}</span></th>'
-        for d in days
+        f'<th><span class="dow">{DAY_NAMES[d.weekday()][:3]}</span><span class="dom">{d.day}</span></th>' for d in days
     )
     week_label = f"{start.strftime('%d %b')} – {(start + timedelta(days=6)).strftime('%d %b %Y')}"
-    body = "".join(rows) or (
-        '<tr><td colspan="8" class="empty">No chores to show for this week.</td></tr>'
-    )
+    body = "".join(rows) or ('<tr><td colspan="8" class="empty">No chores to show for this week.</td></tr>')
 
     return f"""<!DOCTYPE html>
 <html lang="en">

@@ -4,6 +4,7 @@
 the same file on disk as its source. Deleting or re-picturing either copy must
 not unlink a file the other one is still showing.
 """
+
 from __future__ import annotations
 
 import asyncio

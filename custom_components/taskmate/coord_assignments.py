@@ -1,4 +1,5 @@
 """Assignment operations mixin for TaskMateCoordinator."""
+
 from __future__ import annotations
 
 import asyncio
@@ -118,9 +119,15 @@ class AssignmentsMixin:
             await self.storage.async_save()
             await self.async_refresh()
 
-    _AVAILABLE_STATES: frozenset[str] = frozenset({
-        "on", "home", "available", "present", "true",
-    })
+    _AVAILABLE_STATES: frozenset[str] = frozenset(
+        {
+            "on",
+            "home",
+            "available",
+            "present",
+            "true",
+        }
+    )
 
     def _is_visibility_entity_active(
         self, visibility_entity: str, visibility_state: str, visibility_operator: str = "equals"
@@ -201,7 +208,7 @@ class AssignmentsMixin:
             return True
 
         # Check attributes for a matching value
-        if hasattr(state_obj, 'attributes') and state_obj.attributes:
+        if hasattr(state_obj, "attributes") and state_obj.attributes:
             for attr_value in state_obj.attributes.values():
                 if str(attr_value).lower() == parsed_state.lower():
                     return True
@@ -232,7 +239,8 @@ class AssignmentsMixin:
         if state_obj is None or state_obj.state in ("unavailable", "unknown", None, ""):
             _LOGGER.debug(
                 "Weather entity '%s' unavailable, not blocking chore '%s'",
-                entity_id, getattr(chore, "name", ""),
+                entity_id,
+                getattr(chore, "name", ""),
             )
             return None
 
@@ -458,9 +466,7 @@ class AssignmentsMixin:
 
         return result
 
-    def _apply_sticky_policy(
-        self, group, chore_by_id: dict[str, Chore], result: dict[str, str]
-    ) -> None:
+    def _apply_sticky_policy(self, group, chore_by_id: dict[str, Chore], result: dict[str, str]) -> None:
         """Force followers onto the leader chore's assignee (when in pool)."""
         leader_id = group.chore_ids[0]
         leader_child = result.get(leader_id)
@@ -478,12 +484,12 @@ class AssignmentsMixin:
             else:
                 _LOGGER.debug(
                     "STICKY fallback: leader %s assigned to %s not in follower %s pool",
-                    leader_id, leader_child, follower_id,
+                    leader_id,
+                    leader_child,
+                    follower_id,
                 )
 
-    def _apply_spread_policy(
-        self, group, chore_by_id: dict[str, Chore], result: dict[str, str]
-    ) -> None:
+    def _apply_spread_policy(self, group, chore_by_id: dict[str, Chore], result: dict[str, str]) -> None:
         """Assign group members to distinct children; wraps when pool < group size."""
         used: set[str] = set()
         for chore_id in group.chore_ids:
@@ -529,17 +535,18 @@ class AssignmentsMixin:
         size = len(pool)
         # Cache per-call so the same child isn't queried twice in a scan.
         cache: dict[str, bool] = {}
+
         def available(cid: str) -> bool:
             if cid not in cache:
                 cache[cid] = self._is_child_available(cid)
             return cache[cid]
+
         for step in range(size):
             cid = pool[(start_idx + step) % size]
             if available(cid):
                 return cid
         _LOGGER.debug(
-            "Availability skip: no available child in pool %s for chore, "
-            "hiding chore (all children unavailable)",
+            "Availability skip: no available child in pool %s for chore, hiding chore (all children unavailable)",
             pool,
         )
         return ""
@@ -557,7 +564,7 @@ class AssignmentsMixin:
         active child still has uncompleted bonus sub-tasks for today, keep
         the chore visible (return False) so they remain reachable.
         """
-        if getattr(chore, 'assignment_mode', 'everyone') == 'everyone':
+        if getattr(chore, "assignment_mode", "everyone") == "everyone":
             return False
         # PERF-1: result depends only on the chore; memoize per availability build.
         cache = getattr(self, "_avail_cache", None)
@@ -573,7 +580,7 @@ class AssignmentsMixin:
         if not pool:
             return False
         today = dt_util.as_local(dt_util.now()).date()
-        active_child_id = getattr(chore, 'assignment_current_child_id', '') or ''
+        active_child_id = getattr(chore, "assignment_current_child_id", "") or ""
         completions_today = 0
         completed_bonus_ids_today: set[str] = set()
         for comp in self._cached_completions():
@@ -581,14 +588,14 @@ class AssignmentsMixin:
                 continue
             comp_dt = comp.completed_at
             try:
-                if hasattr(comp_dt, 'astimezone'):
+                if hasattr(comp_dt, "astimezone"):
                     comp_dt = dt_util.as_local(comp_dt)
-                comp_date = comp_dt.date() if hasattr(comp_dt, 'date') else None
+                comp_date = comp_dt.date() if hasattr(comp_dt, "date") else None
             except (AttributeError, TypeError, ValueError):
                 continue
             if comp_date != today:
                 continue
-            bonus_id = getattr(comp, 'bonus_subtask_id', None)
+            bonus_id = getattr(comp, "bonus_subtask_id", None)
             if bonus_id:
                 # Bonus completions don't count toward the parent's daily
                 # quota; track them only to decide whether the active child
@@ -601,16 +608,16 @@ class AssignmentsMixin:
             if comp.child_id in pool or comp.child_id == "__parent__":
                 completions_today += 1
         # first_come is a single-winner race: clamp any mis-configured quota to 1.
-        if getattr(chore, 'assignment_mode', 'everyone') == 'first_come':
+        if getattr(chore, "assignment_mode", "everyone") == "first_come":
             daily_limit = 1
         else:
-            daily_limit = getattr(chore, 'daily_limit', 1) or 1
+            daily_limit = getattr(chore, "daily_limit", 1) or 1
         if completions_today < daily_limit:
             return False
-        bonus_subtasks = getattr(chore, 'bonus_subtasks', None) or []
+        bonus_subtasks = getattr(chore, "bonus_subtasks", None) or []
         if bonus_subtasks and active_child_id:
             for bst in bonus_subtasks:
-                bst_id = getattr(bst, 'id', None)
+                bst_id = getattr(bst, "id", None)
                 if bst_id and bst_id not in completed_bonus_ids_today:
                     return False
         return True

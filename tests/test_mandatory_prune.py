@@ -1,4 +1,5 @@
 """Tests for orphan mandatory-miss pruning (#532)."""
+
 from __future__ import annotations
 
 import asyncio

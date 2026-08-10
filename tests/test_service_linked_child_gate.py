@@ -7,6 +7,7 @@ allocate_points_to_pool, timed tasks, bonus subtasks) accept an arbitrary
 linked user (admins and context-less calls always pass). Children with no link
 keep the default open/kiosk behaviour.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -96,15 +97,11 @@ async def test_unlinked_child_blocks_known_other_child():
     """SEC-4: a user linked to a different child can't act via an unlinked child."""
     coord = _coordinator("", others=[MagicMock(linked_user_id="uid-sibling")])
     with pytest.raises(tm.Unauthorized):
-        await tm._async_require_linked_child(
-            _hass(MagicMock(is_admin=False)), _call("uid-sibling"), coord, "child-1"
-        )
+        await tm._async_require_linked_child(_hass(MagicMock(is_admin=False)), _call("uid-sibling"), coord, "child-1")
 
 
 @pytest.mark.asyncio
 async def test_unlinked_child_admin_still_allowed_with_other_links():
     """An admin is allowed through an unlinked child even when other links exist."""
     coord = _coordinator("", others=[MagicMock(linked_user_id="uid-sibling")])
-    await tm._async_require_linked_child(
-        _hass(MagicMock(is_admin=True)), _call("uid-parent"), coord, "child-1"
-    )
+    await tm._async_require_linked_child(_hass(MagicMock(is_admin=True)), _call("uid-parent"), coord, "child-1")

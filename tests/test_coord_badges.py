@@ -1,4 +1,5 @@
 """Tests for coord_badges."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -144,10 +145,13 @@ class TestTriggerMap:
         assert badge_relevant_to_trigger(b, "chore_completed") is True
 
     def test_chore_trigger_matches_compound_badge(self):
-        b = Badge(name="x", criteria=[
-            BadgeCriterion("total_chores", ">=", 10),
-            BadgeCriterion("total_points", ">=", 100),
-        ])
+        b = Badge(
+            name="x",
+            criteria=[
+                BadgeCriterion("total_chores", ">=", 10),
+                BadgeCriterion("total_points", ">=", 100),
+            ],
+        )
         assert badge_relevant_to_trigger(b, "chore_completed") is True
 
     def test_no_criteria_only_matches_manual(self):
@@ -515,8 +519,10 @@ class TestNotifications:
         child = Child(name="Mia", total_points_earned=100)
         child.id = "c1"
         coord.storage.get_child.return_value = child
+
         def _get_badge(bid):
             return {"b1": b1, "b2": b2, "b3": b3}.get(bid)
+
         coord.storage.get_badge.side_effect = _get_badge
         coord.storage.get_badges.return_value = [b1, b2, b3]
         coord.storage.get_reward_claims.return_value = []
@@ -557,8 +563,14 @@ class TestCriterionMet:
 
 class TestCombinatorEval:
     def _setup(self, coord, child_kwargs, badges):
-        kwargs = {"name": "Mia", "total_points_earned": 0, "total_chores_completed": 0,
-                  "current_streak": 0, "best_streak": 0, "awarded_perfect_weeks": []}
+        kwargs = {
+            "name": "Mia",
+            "total_points_earned": 0,
+            "total_chores_completed": 0,
+            "current_streak": 0,
+            "best_streak": 0,
+            "awarded_perfect_weeks": [],
+        }
         kwargs.update(child_kwargs)
         child = Child(**kwargs)
         child.id = "c1"
@@ -569,27 +581,34 @@ class TestCombinatorEval:
         coord.storage.get_awarded_badges_for_child.return_value = []
 
     async def test_and_requires_all(self, coord):
-        b = Badge(name="AND", combinator="AND", criteria=[
-            BadgeCriterion("total_points", ">=", 100),
-            BadgeCriterion("total_chores", ">=", 50),
-        ])
+        b = Badge(
+            name="AND",
+            combinator="AND",
+            criteria=[
+                BadgeCriterion("total_points", ">=", 100),
+                BadgeCriterion("total_chores", ">=", 50),
+            ],
+        )
         b.id = "b1"
         self._setup(coord, {"total_points_earned": 150, "total_chores_completed": 10}, [b])
         assert await coord.evaluate_for_child("c1", "manual") == []
 
     async def test_or_awards_on_any(self, coord):
-        b = Badge(name="OR", combinator="OR", criteria=[
-            BadgeCriterion("total_points", ">=", 100),
-            BadgeCriterion("total_chores", ">=", 50),
-        ])
+        b = Badge(
+            name="OR",
+            combinator="OR",
+            criteria=[
+                BadgeCriterion("total_points", ">=", 100),
+                BadgeCriterion("total_chores", ">=", 50),
+            ],
+        )
         b.id = "b1"
         self._setup(coord, {"total_points_earned": 150, "total_chores_completed": 10}, [b])
         awards = await coord.evaluate_for_child("c1", "manual")
         assert len(awards) == 1
 
     async def test_operator_eq_in_eval(self, coord):
-        b = Badge(name="exactly 7", combinator="AND",
-                  criteria=[BadgeCriterion("current_streak", "==", 7)])
+        b = Badge(name="exactly 7", combinator="AND", criteria=[BadgeCriterion("current_streak", "==", 7)])
         b.id = "b1"
         self._setup(coord, {"current_streak": 7}, [b])
         assert len(await coord.evaluate_for_child("c1", "manual")) == 1

@@ -1,4 +1,5 @@
 """Calendar operations mixin for TaskMateCoordinator."""
+
 from __future__ import annotations
 
 import asyncio
@@ -55,13 +56,15 @@ class CalendarMixin:
                 pid = str(entry.get("id") or "").strip()
                 if not pid or pid == "anytime" or start is None or end is None:
                     continue
-                periods.append({
-                    "id": pid,
-                    "label": str(entry.get("label") or "").strip(),
-                    "start": start.strftime("%H:%M"),
-                    "end": end.strftime("%H:%M"),
-                    "icon": str(entry.get("icon") or "") or TIME_CATEGORY_ICONS.get(pid, "mdi:clock-outline"),
-                })
+                periods.append(
+                    {
+                        "id": pid,
+                        "label": str(entry.get("label") or "").strip(),
+                        "start": start.strftime("%H:%M"),
+                        "end": end.strftime("%H:%M"),
+                        "icon": str(entry.get("icon") or "") or TIME_CATEGORY_ICONS.get(pid, "mdi:clock-outline"),
+                    }
+                )
             if periods:
                 return sorted(periods, key=lambda p: p["start"])
 
@@ -74,13 +77,15 @@ class CalendarMixin:
             end_str = self.storage.get_setting(f"time_{pid}_end", default["end"])
             start = self._parse_hhmm(start_str) or self._parse_hhmm(default["start"])
             end = self._parse_hhmm(end_str) or self._parse_hhmm(default["end"])
-            periods.append({
-                "id": pid,
-                "label": "",
-                "start": start.strftime("%H:%M"),
-                "end": end.strftime("%H:%M"),
-                "icon": default["icon"],
-            })
+            periods.append(
+                {
+                    "id": pid,
+                    "label": "",
+                    "start": start.strftime("%H:%M"),
+                    "end": end.strftime("%H:%M"),
+                    "icon": default["icon"],
+                }
+            )
         return sorted(periods, key=lambda p: p["start"])
 
     def _get_time_boundaries(self) -> dict[str, tuple[time, time] | None]:
@@ -109,9 +114,9 @@ class CalendarMixin:
     def _calendar_projection_days(self) -> int:
         """Return the configured projection horizon, clamped to the allowed range."""
         try:
-            raw = int(float(self.storage.get_setting(
-                "calendar_projection_days", str(DEFAULT_CALENDAR_PROJECTION_DAYS)
-            )))
+            raw = int(
+                float(self.storage.get_setting("calendar_projection_days", str(DEFAULT_CALENDAR_PROJECTION_DAYS)))
+            )
         except (TypeError, ValueError):
             raw = DEFAULT_CALENDAR_PROJECTION_DAYS
         return max(MIN_CALENDAR_PROJECTION_DAYS, min(MAX_CALENDAR_PROJECTION_DAYS, raw))
@@ -204,9 +209,7 @@ class CalendarMixin:
     def _build_event_payload(self, chore: Chore, day: date, summary: str) -> dict:
         """Build the calendar.create_event payload for one (chore, day)."""
         description = self._chore_event_marker(chore)
-        window = self._time_category_window(
-            getattr(chore, "time_category", "anytime"), day
-        )
+        window = self._time_category_window(getattr(chore, "time_category", "anytime"), day)
         if window is None:
             return {
                 "summary": summary,

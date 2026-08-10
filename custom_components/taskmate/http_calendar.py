@@ -5,6 +5,7 @@ is public-by-URL and authenticated by an unguessable per-instance token in the
 ``?token=`` query param (compared in constant time). It serves a read-only feed
 of upcoming chores; no mutation is possible.
 """
+
 from __future__ import annotations
 
 import hmac
@@ -28,6 +29,7 @@ HTTP_CAL_REGISTERED = "calendar_http_registered"
 
 def _get_coordinator(hass: HomeAssistant):
     from .coordinator import TaskMateCoordinator
+
     for value in hass.data.get(DOMAIN, {}).values():
         if isinstance(value, TaskMateCoordinator):
             return value

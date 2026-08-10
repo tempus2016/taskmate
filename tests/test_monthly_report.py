@@ -1,4 +1,5 @@
 """Tests for the monthly report (FEAT-14)."""
+
 from __future__ import annotations
 
 import datetime as dt
@@ -24,19 +25,25 @@ def _coord(children, completions):
 
 
 def _comp(child_id, when, approved=True, points=10, bonus=""):
-    return ChoreCompletion(chore_id="x", child_id=child_id, completed_at=when,
-                           approved=approved, points_awarded=points, bonus_subtask_id=bonus)
+    return ChoreCompletion(
+        chore_id="x",
+        child_id=child_id,
+        completed_at=when,
+        approved=approved,
+        points_awarded=points,
+        bonus_subtask_id=bonus,
+    )
 
 
 def test_monthly_report_counts_only_in_range_and_approved():
     kid = Child(name="Alex", id="k1", level=4, best_streak=9)
     comps = [
-        _comp("k1", dt.datetime(2026, 4, 5, 9, 0, tzinfo=UTC)),    # in range
-        _comp("k1", dt.datetime(2026, 4, 20, 9, 0, tzinfo=UTC)),   # in range
-        _comp("k1", dt.datetime(2026, 3, 31, 9, 0, tzinfo=UTC)),   # before
-        _comp("k1", dt.datetime(2026, 5, 1, 9, 0, tzinfo=UTC)),    # after
+        _comp("k1", dt.datetime(2026, 4, 5, 9, 0, tzinfo=UTC)),  # in range
+        _comp("k1", dt.datetime(2026, 4, 20, 9, 0, tzinfo=UTC)),  # in range
+        _comp("k1", dt.datetime(2026, 3, 31, 9, 0, tzinfo=UTC)),  # before
+        _comp("k1", dt.datetime(2026, 5, 1, 9, 0, tzinfo=UTC)),  # after
         _comp("k1", dt.datetime(2026, 4, 10, 9, 0, tzinfo=UTC), approved=False),  # pending
-        _comp("k1", dt.datetime(2026, 4, 11, 9, 0, tzinfo=UTC), bonus="b1"),      # bonus
+        _comp("k1", dt.datetime(2026, 4, 11, 9, 0, tzinfo=UTC), bonus="b1"),  # bonus
     ]
     c = _coord([kid], comps)
     out = c._build_monthly_report(date(2026, 4, 1), date(2026, 4, 30))
@@ -51,6 +58,7 @@ def test_monthly_report_empty_without_children():
 @pytest.mark.asyncio
 async def test_send_monthly_report_targets_previous_month(monkeypatch):
     from tests.conftest import dt_util_mock
+
     kid = Child(name="Alex", id="k1")
     comp = _comp("k1", dt.datetime(2026, 4, 15, 9, 0, tzinfo=UTC))
     c = _coord([kid], [comp])

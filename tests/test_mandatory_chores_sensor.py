@@ -1,5 +1,6 @@
 """The chores sensor list must carry the mandatory flag so the child card
 can render the badge/styling (#532 regression guard)."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -15,8 +16,7 @@ def _coord():
 
 
 def test_mandatory_chore_emits_flag_and_penalty():
-    chore = Chore(name="Homework", points=8, mandatory=True,
-                  mandatory_penalty_points=10, id="c1")
+    chore = Chore(name="Homework", points=8, mandatory=True, mandatory_penalty_points=10, id="c1")
     out = _build_chores_list(_coord(), {"chores": [chore]})
     rec = out[0]
     assert rec["mandatory"] is True
@@ -31,8 +31,7 @@ def test_non_mandatory_chore_omits_flag():
 
 
 def test_mandatory_with_zero_penalty_omits_penalty_key():
-    chore = Chore(name="Brush teeth", points=3, mandatory=True,
-                  mandatory_penalty_points=0, id="c3")
+    chore = Chore(name="Brush teeth", points=3, mandatory=True, mandatory_penalty_points=0, id="c3")
     rec = _build_chores_list(_coord(), {"chores": [chore]})[0]
     assert rec["mandatory"] is True
     assert "mandatory_penalty_points" not in rec

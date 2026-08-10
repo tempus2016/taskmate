@@ -4,6 +4,7 @@ Send approvals to whoever is home, or round-robin between parents, instead of
 buzzing everyone every time. Every fallback errs towards over-notifying: an
 unseen approval is worse than a redundant buzz.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -19,8 +20,7 @@ def _notifier(parents=(), settings=None, states=None):
     hass = MagicMock()
     hass.services.async_call = AsyncMock()
     known = dict(states or {})
-    hass.states.get = MagicMock(
-        side_effect=lambda e: MagicMock(state=known[e]) if e in known else None)
+    hass.states.get = MagicMock(side_effect=lambda e: MagicMock(state=known[e]) if e in known else None)
     storage = MagicMock()
     storage.get_setting = MagicMock(side_effect=lambda k, d="": conf.get(k, d))
     storage.set_setting = MagicMock(side_effect=lambda k, v: conf.__setitem__(k, v))
@@ -37,10 +37,8 @@ def _cfg(*recipient_ids, enabled=True):
     return cfg
 
 
-DAD = ParentRecipient(name="Dad", notify_service="notify.dad", id="parent:dad",
-                      presence_entity="device_tracker.dad")
-MUM = ParentRecipient(name="Mum", notify_service="notify.mum", id="parent:mum",
-                      presence_entity="device_tracker.mum")
+DAD = ParentRecipient(name="Dad", notify_service="notify.dad", id="parent:dad", presence_entity="device_tracker.dad")
+MUM = ParentRecipient(name="Mum", notify_service="notify.mum", id="parent:mum", presence_entity="device_tracker.mum")
 NOENT = ParentRecipient(name="Gran", notify_service="notify.gran", id="parent:gran")
 
 

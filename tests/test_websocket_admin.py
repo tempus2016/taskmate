@@ -3,6 +3,7 @@
 Every panel command — including the notification handlers — must reject
 non-admin users with ERR_UNAUTHORIZED before touching any data.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -20,9 +21,11 @@ async def setup(hass):
     coord.hass = hass
     coord.entry_id = "ws_admin_test"
     from custom_components.taskmate.storage import TaskMateStorage
+
     coord.storage = TaskMateStorage(hass, "ws_admin_test")
     await coord.storage.async_load()
     from custom_components.taskmate.coord_notifications import NotificationCoordinator
+
     coord.notifications = NotificationCoordinator(hass, coord.storage)
     coord.notifications.coordinator = coord
     hass.data = {DOMAIN: {"ws_admin_test": coord}}
@@ -86,8 +89,10 @@ async def test_notification_handler_allows_admin(setup, hass):
     coord = setup
     connection = _admin_connection()
     msg = {
-        "id": 3, "type": "test",
-        "type_id": "bedtime_reminder", "enabled": True,
+        "id": 3,
+        "type": "test",
+        "type_id": "bedtime_reminder",
+        "enabled": True,
     }
     await ws.ws_notif_set_master(hass, connection, msg)
 

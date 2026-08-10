@@ -1,4 +1,5 @@
 """Tests for the allowance payout ledger (FEAT-3)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock

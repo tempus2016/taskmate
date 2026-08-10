@@ -8,6 +8,7 @@ strings. TaskMate's frontend locales don't reach the backend, and a family may
 well want wording that isn't any of the eight shipped languages — so the
 templates are settings, documented with their placeholders.
 """
+
 from __future__ import annotations
 
 import logging
@@ -29,7 +30,7 @@ class ReadAloudMixin:
         return str(value).strip() or default
 
     def _join_chore_names(self, names: list[str]) -> str:
-        """"a, b and c" — spoken lists need a conjunction, not commas."""
+        """ "a, b and c" — spoken lists need a conjunction, not commas."""
         joiner = self._tts_setting("read_aloud_joiner", DEFAULT_JOINER)
         if not names:
             return ""
@@ -55,7 +56,9 @@ class ReadAloudMixin:
 
         try:
             return template.format(
-                name=child.name, count=len(names), chores=self._join_chore_names(names),
+                name=child.name,
+                count=len(names),
+                chores=self._join_chore_names(names),
             )
         except (KeyError, IndexError, ValueError):
             # A parent-edited template with a bad placeholder must not silence
@@ -65,12 +68,12 @@ class ReadAloudMixin:
                 template,
             )
             fallback = (
-                DEFAULT_DONE_TEMPLATE if not names
-                else DEFAULT_ONE_TEMPLATE if len(names) == 1
-                else DEFAULT_TEMPLATE
+                DEFAULT_DONE_TEMPLATE if not names else DEFAULT_ONE_TEMPLATE if len(names) == 1 else DEFAULT_TEMPLATE
             )
             return fallback.format(
-                name=child.name, count=len(names), chores=self._join_chore_names(names),
+                name=child.name,
+                count=len(names),
+                chores=self._join_chore_names(names),
             )
 
     def _resolve_tts_entity(self, explicit: str = "") -> str:
@@ -82,27 +85,24 @@ class ReadAloudMixin:
             return configured
         # Single-TTS households are the common case; picking the only one
         # beats making them configure it.
-        candidates = sorted(
-            state.entity_id for state in self.hass.states.async_all("tts")
-        )
+        candidates = sorted(state.entity_id for state in self.hass.states.async_all("tts"))
         return candidates[0] if candidates else ""
 
     async def async_read_aloud(
-        self, child_id: str, media_player: str = "", tts_entity: str = "",
+        self,
+        child_id: str,
+        media_player: str = "",
+        tts_entity: str = "",
         message: str = "",
     ) -> str:
         """Speak a child's outstanding chores. Returns what was said."""
         target = media_player or self._tts_setting("read_aloud_media_player", "")
         if not target:
-            raise ValueError(
-                "No media player given, and no default set in Settings"
-            )
+            raise ValueError("No media player given, and no default set in Settings")
 
         speaker = self._resolve_tts_entity(tts_entity)
         if not speaker:
-            raise ValueError(
-                "No text-to-speech entity found. Set one in Settings or pass tts_entity."
-            )
+            raise ValueError("No text-to-speech entity found. Set one in Settings or pass tts_entity.")
 
         text = message.strip() or self.build_read_aloud_message(child_id)
 
@@ -110,7 +110,8 @@ class ReadAloudMixin:
         # caller. This is a service a parent invokes deliberately; "it silently
         # did nothing" is the worst possible answer.
         await self.hass.services.async_call(
-            "tts", "speak",
+            "tts",
+            "speak",
             {
                 "entity_id": speaker,
                 "media_player_entity_id": target,

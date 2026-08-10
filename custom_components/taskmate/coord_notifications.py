@@ -9,6 +9,7 @@ All TaskMate notifications flow through this module. It owns:
 Other coordinators MUST NOT call notify.* / persistent_notification directly
 once this module is in place. They call self.notifications.fire(...).
 """
+
 from __future__ import annotations
 
 import logging
@@ -59,34 +60,32 @@ def _approval_tag(entry_id: str) -> str:
 @dataclass(frozen=True)
 class NotificationTypeMeta:
     id: str
-    audience: str            # "child" | "parent" | "both"
-    time_gated: bool         # has its own scheduled callback
-    per_recipient_time: bool # if True, route.time controls the schedule per recipient
-    actionable: bool         # carries Approve/Reject mobile actions
-    default_enabled: bool    # default master_enabled state at install
+    audience: str  # "child" | "parent" | "both"
+    time_gated: bool  # has its own scheduled callback
+    per_recipient_time: bool  # if True, route.time controls the schedule per recipient
+    actionable: bool  # carries Approve/Reject mobile actions
+    default_enabled: bool  # default master_enabled state at install
 
 
 NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
-    NotificationTypeMeta(NOTIF_TYPE_BEDTIME_REMINDER,       "child",  True,  True,  False, False),
-    NotificationTypeMeta(NOTIF_TYPE_STREAK_AT_RISK,         "child",  True,  False, False, False),
-    NotificationTypeMeta(NOTIF_TYPE_ALL_CHORES_DONE,        "both",   False, False, False, False),
-    NotificationTypeMeta(NOTIF_TYPE_BADGE_EARNED,           "both",   False, False, False, True),
-    NotificationTypeMeta(NOTIF_TYPE_PENDING_CHORE_APPROVAL, "parent", False, False, True,  True),
-    NotificationTypeMeta(NOTIF_TYPE_PENDING_REWARD_CLAIM,   "parent", False, False, True,  True),
-    NotificationTypeMeta(NOTIF_TYPE_STREAK_MILESTONE,       "both",   False, False, False, False),
-    NotificationTypeMeta(NOTIF_TYPE_LEVEL_UP,               "both",   False, False, False, False),
-    NotificationTypeMeta(NOTIF_TYPE_WEEKLY_DIGEST,          "parent", False, False, False, False),
-    NotificationTypeMeta(NOTIF_TYPE_CELEBRATION,            "both",   False, False, False, False),
-    NotificationTypeMeta(NOTIF_TYPE_MANDATORY_REMINDER,     "child",  False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_BEDTIME_REMINDER, "child", True, True, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_STREAK_AT_RISK, "child", True, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_ALL_CHORES_DONE, "both", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_BADGE_EARNED, "both", False, False, False, True),
+    NotificationTypeMeta(NOTIF_TYPE_PENDING_CHORE_APPROVAL, "parent", False, False, True, True),
+    NotificationTypeMeta(NOTIF_TYPE_PENDING_REWARD_CLAIM, "parent", False, False, True, True),
+    NotificationTypeMeta(NOTIF_TYPE_STREAK_MILESTONE, "both", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_LEVEL_UP, "both", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_WEEKLY_DIGEST, "parent", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_CELEBRATION, "both", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_MANDATORY_REMINDER, "child", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_MANDATORY_PARENT_ALERT, "parent", False, False, False, False),
-    NotificationTypeMeta(NOTIF_TYPE_MONTHLY_REPORT,         "parent", False, False, False, False),
-    NotificationTypeMeta(NOTIF_TYPE_SEASON_CHAMPION,        "both",   False, False, False, False),
-    NotificationTypeMeta(NOTIF_TYPE_FAMILY_GOAL_REACHED,    "both",   False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_MONTHLY_REPORT, "parent", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_SEASON_CHAMPION, "both", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_FAMILY_GOAL_REACHED, "both", False, False, False, False),
 ]
 
-NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {
-    t.id: t for t in NOTIFICATION_TYPES
-}
+NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
 
 
 def _validate_nav_url(value: str) -> str:
@@ -101,11 +100,7 @@ def _validate_nav_url(value: str) -> str:
         return value
     if value.lower().startswith(("http://", "https://")):
         return value
-    if (
-        value.startswith("/")
-        and not value.startswith("//")
-        and not any(ord(c) <= 32 or ord(c) == 127 for c in value)
-    ):
+    if value.startswith("/") and not value.startswith("//") and not any(ord(c) <= 32 or ord(c) == 127 for c in value):
         return value
     raise ValueError("nav_url must be a /path, an http(s) URL, or noAction")
 
@@ -145,6 +140,7 @@ def _is_within_quiet_hours(start: str, end: str, now) -> bool:
 
 class _SafeDict(dict):
     """str.format_map dict that leaves missing keys as `{key}` literal."""
+
     def __missing__(self, key: str) -> str:
         return "{" + key + "}"
 
@@ -155,11 +151,13 @@ class NotificationCoordinator:
     def __init__(self, hass: HomeAssistant, storage) -> None:
         self.hass = hass
         self.storage = storage
-        self._scheduled_unsubs: list = []     # cancellation handles for time triggers
+        self._scheduled_unsubs: list = []  # cancellation handles for time triggers
         self.coordinator: Any = None
 
     async def fire(
-        self, type_id: str, context: dict[str, Any],
+        self,
+        type_id: str,
+        context: dict[str, Any],
         only_recipients: set[str] | None = None,
     ) -> None:
         """Dispatch a notification of the given type with the given context.
@@ -229,7 +227,8 @@ class NotificationCoordinator:
         set one up shouldn't be silently excluded from every approval.
         """
         parent = next(
-            (p for p in self.storage.get_parent_recipients() if p.id == recipient_id), None,
+            (p for p in self.storage.get_parent_recipients() if p.id == recipient_id),
+            None,
         )
         entity_id = (getattr(parent, "presence_entity", "") or "").strip() if parent else ""
         if not entity_id:
@@ -241,13 +240,16 @@ class NotificationCoordinator:
         return str(state.state).lower() in ("home", "on", "true", "present")
 
     def _route_parents(
-        self, type_id: str, cfg, only_recipients: set[str] | None,
+        self,
+        type_id: str,
+        cfg,
+        only_recipients: set[str] | None,
     ) -> set[str]:
         """Which parent recipient ids should receive this notification."""
         candidates = [
-            rid for rid, route in cfg.routes.items()
-            if rid.startswith("parent:") and route.enabled
-            and (only_recipients is None or rid in only_recipients)
+            rid
+            for rid, route in cfg.routes.items()
+            if rid.startswith("parent:") and route.enabled and (only_recipients is None or rid in only_recipients)
         ]
         if not candidates:
             return set()
@@ -328,20 +330,15 @@ class NotificationCoordinator:
         if child is None:
             return False
         from homeassistant.util import dt as dt_util
-        return _is_within_quiet_hours(
-            child.quiet_hours_start, child.quiet_hours_end, dt_util.now()
-        )
+
+        return _is_within_quiet_hours(child.quiet_hours_start, child.quiet_hours_end, dt_util.now())
 
     def _resolve_nav_url(self, cfg) -> str:
         """Tap target for this notification: per-type override, else global default."""
         per_type = (getattr(cfg, "nav_url", "") or "").strip()
         if per_type:
             return per_type
-        return str(
-            self.storage.get_setting(
-                "notification_nav_url", DEFAULT_NOTIFICATION_NAV_URL
-            ) or ""
-        ).strip()
+        return str(self.storage.get_setting("notification_nav_url", DEFAULT_NOTIFICATION_NAV_URL) or "").strip()
 
     def _resolve_notify_service(self, recipient_id: str) -> str:
         if recipient_id.startswith("child:"):
@@ -358,21 +355,21 @@ class NotificationCoordinator:
         # Built-in types use a baked-in default; will be replaced by translations
         # in a later task. For now use a safe English fallback so dispatch works.
         templates = {
-            NOTIF_TYPE_BEDTIME_REMINDER:       "{child_name}, you still have chores to do before bedtime.",
-            NOTIF_TYPE_STREAK_AT_RISK:         "{child_name}, complete a chore today to keep your {streak}-day streak!",
-            NOTIF_TYPE_ALL_CHORES_DONE:        "{child_name} finished every chore today!",
-            NOTIF_TYPE_BADGE_EARNED:           "{child_name} earned the {badge_name} badge!",
+            NOTIF_TYPE_BEDTIME_REMINDER: "{child_name}, you still have chores to do before bedtime.",
+            NOTIF_TYPE_STREAK_AT_RISK: "{child_name}, complete a chore today to keep your {streak}-day streak!",
+            NOTIF_TYPE_ALL_CHORES_DONE: "{child_name} finished every chore today!",
+            NOTIF_TYPE_BADGE_EARNED: "{child_name} earned the {badge_name} badge!",
             NOTIF_TYPE_PENDING_CHORE_APPROVAL: "{child_name} completed '{chore_name}' (+{points} {points_name}) — awaiting approval.",
-            NOTIF_TYPE_PENDING_REWARD_CLAIM:   "{child_name} claimed '{reward_name}' ({cost} {points_name}) — awaiting approval.",
-            NOTIF_TYPE_STREAK_MILESTONE:       "{child_name} hit a {days}-day streak — +{points} {points_name}!",
-            NOTIF_TYPE_LEVEL_UP:               "{child_name} reached level {level}! 🎉",
-            NOTIF_TYPE_WEEKLY_DIGEST:          "TaskMate weekly digest:\n{summary}",
-            NOTIF_TYPE_CELEBRATION:            "🎉 {message}",
-            NOTIF_TYPE_MANDATORY_REMINDER:     "{child_name}, you still need to do '{chore_name}'.",
+            NOTIF_TYPE_PENDING_REWARD_CLAIM: "{child_name} claimed '{reward_name}' ({cost} {points_name}) — awaiting approval.",
+            NOTIF_TYPE_STREAK_MILESTONE: "{child_name} hit a {days}-day streak — +{points} {points_name}!",
+            NOTIF_TYPE_LEVEL_UP: "{child_name} reached level {level}! 🎉",
+            NOTIF_TYPE_WEEKLY_DIGEST: "TaskMate weekly digest:\n{summary}",
+            NOTIF_TYPE_CELEBRATION: "🎉 {message}",
+            NOTIF_TYPE_MANDATORY_REMINDER: "{child_name}, you still need to do '{chore_name}'.",
             NOTIF_TYPE_MANDATORY_PARENT_ALERT: "{child_name} still hasn't done the mandatory chore '{chore_name}'.",
-            NOTIF_TYPE_MONTHLY_REPORT:         "TaskMate {month} report:\n{summary}",
-            NOTIF_TYPE_SEASON_CHAMPION:        "🏆 {child_name} won the {month} leaderboard with {points} {points_name}!",
-            NOTIF_TYPE_FAMILY_GOAL_REACHED:    "🎉 Family goal reached: {goal_name}! Time for {goal_reward}.",
+            NOTIF_TYPE_MONTHLY_REPORT: "TaskMate {month} report:\n{summary}",
+            NOTIF_TYPE_SEASON_CHAMPION: "🏆 {child_name} won the {month} leaderboard with {points} {points_name}!",
+            NOTIF_TYPE_FAMILY_GOAL_REACHED: "🎉 Family goal reached: {goal_name}! Time for {goal_reward}.",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:
@@ -383,13 +380,14 @@ class NotificationCoordinator:
             return tpl
 
     async def _send_to(
-        self, notify_service: str, message: str,
-        meta: "NotificationTypeMeta", context: dict[str, Any], nav_url: str = "",
+        self,
+        notify_service: str,
+        message: str,
+        meta: "NotificationTypeMeta",
+        context: dict[str, Any],
+        nav_url: str = "",
     ) -> None:
-        domain, service = (
-            notify_service.split(".", 1) if "." in notify_service
-            else ("notify", notify_service)
-        )
+        domain, service = notify_service.split(".", 1) if "." in notify_service else ("notify", notify_service)
         if domain != "notify":
             _LOGGER.warning("notify_service must be notify.*, got %s", notify_service)
             return
@@ -419,7 +417,7 @@ class NotificationCoordinator:
                     push["tag"] = _approval_tag(entry_id)
                     push["actions"] = [
                         {"action": f"TASKMATE_APPROVE_{entry_id}", "title": "Approve"},
-                        {"action": f"TASKMATE_REJECT_{entry_id}",  "title": "Reject"},
+                        {"action": f"TASKMATE_REJECT_{entry_id}", "title": "Reject"},
                     ]
             else:
                 data["message"] = f"{message} {_APPROVE_IN_PANEL_HINT}"
@@ -472,10 +470,7 @@ class NotificationCoordinator:
             notify_service = self._resolve_notify_service(recipient_id)
             if not notify_service:
                 continue
-            domain, service = (
-                notify_service.split(".", 1) if "." in notify_service
-                else ("notify", notify_service)
-            )
+            domain, service = notify_service.split(".", 1) if "." in notify_service else ("notify", notify_service)
             if domain != "notify" or not service.startswith("mobile_app"):
                 continue
             if service in cleared_services:
@@ -483,7 +478,8 @@ class NotificationCoordinator:
             cleared_services.add(service)
             try:
                 await self.hass.services.async_call(
-                    "notify", service,
+                    "notify",
+                    service,
                     {"message": "clear_notification", "data": {"tag": tag}},
                     blocking=False,
                 )
@@ -492,7 +488,8 @@ class NotificationCoordinator:
 
     async def _fire_persistent_notification(self, type_id: str, message: str) -> None:
         await self.hass.services.async_call(
-            "persistent_notification", "create",
+            "persistent_notification",
+            "create",
             {
                 "title": "TaskMate",
                 "message": message,
@@ -516,7 +513,7 @@ class NotificationCoordinator:
             return
 
         if action.startswith("TASKMATE_APPROVE_"):
-            entry_id = action[len("TASKMATE_APPROVE_"):]
+            entry_id = action[len("TASKMATE_APPROVE_") :]
             try:
                 await coordinator.async_approve_chore(entry_id)
                 return
@@ -527,7 +524,7 @@ class NotificationCoordinator:
             except (ValueError, KeyError):
                 _LOGGER.info("Mobile action %s — entry not found", action)
         elif action.startswith("TASKMATE_REJECT_"):
-            entry_id = action[len("TASKMATE_REJECT_"):]
+            entry_id = action[len("TASKMATE_REJECT_") :]
             try:
                 await coordinator.async_reject_chore(entry_id)
                 return
@@ -591,7 +588,11 @@ class NotificationCoordinator:
             _LOGGER.warning("Invalid time %r — skipping schedule", hhmm)
             return
         unsub = async_track_time_change(
-            self.hass, callback, hour=hour, minute=minute, second=0,
+            self.hass,
+            callback,
+            hour=hour,
+            minute=minute,
+            second=0,
         )
         self._scheduled_unsubs.append(unsub)
 
@@ -606,10 +607,12 @@ class NotificationCoordinator:
                 "bedtime_reminder",
                 {"child_name": child.name, "child_id": child_id},
             )
+
         return _cb
 
     async def _streak_at_risk_callback(self, now) -> None:
         from homeassistant.util import dt as dt_util
+
         today = dt_util.now().date().isoformat()
         for child in self.storage.get_children():
             if (child.current_streak or 0) < 2:
@@ -628,6 +631,7 @@ class NotificationCoordinator:
     def _make_custom_callback(self, custom_id: str):
         async def _cb(now):
             from homeassistant.util import dt as dt_util
+
             n = next(
                 (c for c in self.storage.get_custom_notifications() if c.id == custom_id),
                 None,
@@ -659,7 +663,8 @@ class NotificationCoordinator:
                     message = n.message_template
                 service_name = notify_service.split(".", 1)[1] if "." in notify_service else notify_service
                 await self.hass.services.async_call(
-                    "notify", service_name,
+                    "notify",
+                    service_name,
                     {"title": "TaskMate", "message": message},
                     blocking=False,
                 )
@@ -667,6 +672,7 @@ class NotificationCoordinator:
                 "taskmate_custom_notification",
                 {"id": n.id, "name": n.name, "recipients": n.recipient_ids},
             )
+
         return _cb
 
     # ------------------------------------------------------------------
@@ -702,9 +708,7 @@ class NotificationCoordinator:
             if self.storage.get_notification_config(meta.id).routes:
                 continue  # already configured — leave it alone
             for p in parents:
-                self.storage.set_notification_route(
-                    meta.id, p.id, NotificationRoute(enabled=True)
-                )
+                self.storage.set_notification_route(meta.id, p.id, NotificationRoute(enabled=True))
                 changed = True
         return changed
 
@@ -750,13 +754,14 @@ class NotificationCoordinator:
         """Returns True if the child has at least one chore assigned today
         that has no approved/pending completion yet."""
         from homeassistant.util import dt as dt_util
+
         today = dt_util.now().date()
         chores = self.storage.get_chores()
         completions = self.storage.get_completions()
         completed_today = {
-            c.chore_id for c in completions
-            if c.child_id == child_id
-            and dt_util.as_local(c.completed_at).date() == today
+            c.chore_id
+            for c in completions
+            if c.child_id == child_id and dt_util.as_local(c.completed_at).date() == today
         }
         for chore in chores:
             if not chore.assigned_to or child_id not in chore.assigned_to:

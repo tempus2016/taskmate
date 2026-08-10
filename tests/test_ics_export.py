@@ -1,4 +1,5 @@
 """Tests for ICS calendar export (FEAT-10)."""
+
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
@@ -33,11 +34,22 @@ def test_make_uid_stable_and_scoped():
 
 def test_build_calendar_allday_and_timed():
     events = [
-        {"uid": "u1@taskmate", "summary": "Dishes — Alex", "description": "d",
-         "start": date(2026, 4, 1), "end": date(2026, 4, 2), "all_day": True},
-        {"uid": "u2@taskmate", "summary": "Walk, dog", "description": "",
-         "start": datetime(2026, 4, 1, 17, 0, tzinfo=UTC),
-         "end": datetime(2026, 4, 1, 18, 0, tzinfo=UTC), "all_day": False},
+        {
+            "uid": "u1@taskmate",
+            "summary": "Dishes — Alex",
+            "description": "d",
+            "start": date(2026, 4, 1),
+            "end": date(2026, 4, 2),
+            "all_day": True,
+        },
+        {
+            "uid": "u2@taskmate",
+            "summary": "Walk, dog",
+            "description": "",
+            "start": datetime(2026, 4, 1, 17, 0, tzinfo=UTC),
+            "end": datetime(2026, 4, 1, 18, 0, tzinfo=UTC),
+            "all_day": False,
+        },
     ]
     out = ics.build_calendar(events, NOW)
     assert out.startswith("BEGIN:VCALENDAR\r\n")
@@ -46,7 +58,7 @@ def test_build_calendar_allday_and_timed():
     assert "DTSTART;VALUE=DATE:20260401" in out
     assert "DTEND;VALUE=DATE:20260402" in out
     assert "DTSTART:20260401T170000Z" in out
-    assert "SUMMARY:Walk\\, dog" in out          # comma escaped
+    assert "SUMMARY:Walk\\, dog" in out  # comma escaped
     assert "UID:u1@taskmate" in out
     assert "DTSTAMP:20260401T080000Z" in out
 

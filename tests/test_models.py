@@ -1,4 +1,5 @@
 """Tests for custom_components.taskmate.models."""
+
 from __future__ import annotations
 
 import datetime as dt
@@ -23,6 +24,7 @@ UTC = timezone.utc
 # ---------------------------------------------------------------------------
 # parse_datetime
 # ---------------------------------------------------------------------------
+
 
 class TestParseDatetime:
     def test_none_returns_none(self):
@@ -60,6 +62,7 @@ class TestParseDatetime:
 # format_datetime
 # ---------------------------------------------------------------------------
 
+
 class TestFormatDatetime:
     def test_none_returns_none(self):
         assert format_datetime(None) is None
@@ -89,6 +92,7 @@ class TestFormatDatetime:
 # ---------------------------------------------------------------------------
 # Child
 # ---------------------------------------------------------------------------
+
 
 class TestChild:
     def test_defaults(self):
@@ -170,6 +174,7 @@ class TestChildAvailability:
 # ---------------------------------------------------------------------------
 # Chore
 # ---------------------------------------------------------------------------
+
 
 class TestChore:
     def test_defaults(self):
@@ -256,6 +261,7 @@ class TestChoreSkipFields:
 class TestTaskGroup:
     def test_defaults(self):
         from custom_components.taskmate.models import TaskGroup
+
         g = TaskGroup(name="Cat litter")
         assert g.policy == "sticky"
         assert g.chore_ids == []
@@ -263,6 +269,7 @@ class TestTaskGroup:
 
     def test_roundtrip(self):
         from custom_components.taskmate.models import TaskGroup
+
         g = TaskGroup(name="Cat litter", policy="spread", chore_ids=["c1", "c2"], id="g1")
         restored = TaskGroup.from_dict(g.to_dict())
         assert restored.name == g.name
@@ -274,6 +281,7 @@ class TestTaskGroup:
 # ---------------------------------------------------------------------------
 # Reward
 # ---------------------------------------------------------------------------
+
 
 class TestReward:
     def test_defaults(self):
@@ -335,6 +343,7 @@ class TestReward:
 # ChoreCompletion
 # ---------------------------------------------------------------------------
 
+
 class TestChoreCompletion:
     def test_roundtrip(self):
         comp = ChoreCompletion(
@@ -387,6 +396,7 @@ class TestChoreCompletion:
 # RewardClaim
 # ---------------------------------------------------------------------------
 
+
 class TestRewardClaim:
     def test_roundtrip(self):
         claim = RewardClaim(
@@ -419,6 +429,7 @@ class TestRewardClaim:
 # PointsTransaction
 # ---------------------------------------------------------------------------
 
+
 class TestPointsTransaction:
     def test_roundtrip(self):
         tx = PointsTransaction(
@@ -448,6 +459,7 @@ class TestPointsTransaction:
 # ---------------------------------------------------------------------------
 # Chore one-shot fields
 # ---------------------------------------------------------------------------
+
 
 class TestChoreOneShotFields:
     def test_new_fields_defaults(self):
@@ -506,6 +518,7 @@ class TestChoreOneShotFields:
 # ---------------------------------------------------------------------------
 # Bonus model
 # ---------------------------------------------------------------------------
+
 
 class TestBonus:
     def test_defaults(self):
@@ -600,6 +613,7 @@ def test_child_notify_service_defaults_none():
 
 def test_parent_recipient_round_trip():
     from custom_components.taskmate.models import ParentRecipient
+
     p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
     assert p.id.startswith("parent:")
     assert p.enabled is True
@@ -611,6 +625,7 @@ def test_parent_recipient_round_trip():
 
 def test_notification_route_round_trip():
     from custom_components.taskmate.models import NotificationRoute
+
     r = NotificationRoute(enabled=True, time="19:30")
     d = r.to_dict()
     assert d == {"enabled": True, "time": "19:30"}
@@ -620,6 +635,7 @@ def test_notification_route_round_trip():
 
 def test_notification_config_round_trip():
     from custom_components.taskmate.models import NotificationConfig, NotificationRoute
+
     cfg = NotificationConfig(
         type_id="bedtime_reminder",
         master_enabled=True,
@@ -632,6 +648,7 @@ def test_notification_config_round_trip():
 
 def test_custom_notification_round_trip():
     from custom_components.taskmate.models import CustomNotification
+
     n = CustomNotification(
         name="Brush teeth",
         message_template="Time to brush, {child_name}!",
@@ -648,6 +665,7 @@ def test_custom_notification_round_trip():
 
 def test_notification_config_nav_url_roundtrip():
     from custom_components.taskmate.models import NotificationConfig
+
     cfg = NotificationConfig(type_id="badge_earned", nav_url="/lovelace/parents")
     d = cfg.to_dict()
     assert d["nav_url"] == "/lovelace/parents"
@@ -656,6 +674,7 @@ def test_notification_config_nav_url_roundtrip():
 
 def test_notification_config_nav_url_omitted_when_empty():
     from custom_components.taskmate.models import NotificationConfig
+
     cfg = NotificationConfig(type_id="badge_earned")
     assert "nav_url" not in cfg.to_dict()
     assert NotificationConfig.from_dict({"type_id": "x"}).nav_url == ""

@@ -4,6 +4,7 @@ All homeassistant stubs are installed into sys.modules here, at module-load
 time, so that any subsequent `from custom_components.taskmate.xxx import …`
 statements resolve without needing a real HA installation.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -23,6 +24,7 @@ _UTC = _dt.timezone.utc
 
 # ── homeassistant.core ──────────────────────────────────────────────────────
 
+
 class FakeHass:
     """Minimal mock of HomeAssistant."""
 
@@ -40,11 +42,12 @@ class FakeHass:
 
 _ha_core = MagicMock()
 _ha_core.HomeAssistant = FakeHass
-_ha_core.callback = lambda f: f      # pass-through decorator
+_ha_core.callback = lambda f: f  # pass-through decorator
 _ha_core.ServiceCall = MagicMock
 
 
 # ── homeassistant.helpers.update_coordinator ────────────────────────────────
+
 
 class FakeDataUpdateCoordinator:
     """Minimal base class that TaskMateCoordinator inherits from."""
@@ -71,6 +74,7 @@ _ha_coordinator.CoordinatorEntity = FakeCoordinatorEntity
 
 # ── homeassistant.helpers.storage ───────────────────────────────────────────
 
+
 class FakeStore:
     """In-memory Store substitute that avoids the filesystem."""
 
@@ -95,6 +99,7 @@ _ha_storage_mod.Store = FakeStore
 # ── homeassistant.components.websocket_api ───────────────────────────────────
 # Decorators must be pass-throughs so handler functions remain awaitable in tests.
 
+
 def _ws_command_decorator(schema):
     """Return the handler unchanged — schema is ignored in tests."""
     return lambda f: f
@@ -116,6 +121,7 @@ _ha_websocket_api.const = _ha_websocket_api_const
 
 
 # ── homeassistant.exceptions ────────────────────────────────────────────────
+
 
 class FakeUnauthorized(Exception):
     """Stand-in for homeassistant.exceptions.Unauthorized."""
@@ -146,6 +152,7 @@ _ha_event.async_track_time_change = MagicMock(return_value=lambda: None)
 # sensor.py pulls SensorEntity + SensorStateClass + DeviceInfo. These are only
 # ever touched for type hints and base-class inheritance; a MagicMock class
 # suffices for unit tests.
+
 
 class _FakeSensorEntity:
     pass
@@ -361,6 +368,7 @@ sys.modules.update(
 # ---------------------------------------------------------------------------
 # Pytest fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def hass():

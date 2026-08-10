@@ -4,6 +4,7 @@ Lets the points-bearing knobs be read and changed from automations/scripts and
 the HA UI without a service call. Values are persisted through the same
 settings store the panel uses, so panel and entity stay in sync.
 """
+
 from __future__ import annotations
 
 from homeassistant.components.number import NumberEntity, NumberMode
@@ -23,9 +24,7 @@ _NUMBERS = [
 ]
 
 
-async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
-) -> None:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up the TaskMate setting-number entities."""
     coordinator: TaskMateCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(TaskMateSettingNumber(coordinator, entry, *cfg) for cfg in _NUMBERS)

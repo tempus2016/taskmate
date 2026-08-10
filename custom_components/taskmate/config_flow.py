@@ -7,6 +7,7 @@ is handled entirely by the dedicated TaskMate admin panel at
 all of its functionality is available in the panel, and all data is stored in
 the integration's own ``Store`` rather than in ``config_entry.options``.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -24,9 +25,7 @@ class TaskMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
 

@@ -1,4 +1,5 @@
 """Sensor platform for TaskMate integration."""
+
 from __future__ import annotations
 
 import logging
@@ -85,9 +86,7 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
     for comp in pending_completions:
         chore = chore_lookup.get(comp.chore_id)
         if chore:
-            pending_points_by_child[comp.child_id] = (
-                pending_points_by_child.get(comp.child_id, 0) + chore.points
-            )
+            pending_points_by_child[comp.child_id] = pending_points_by_child.get(comp.child_id, 0) + chore.points
 
     # Committed points per child (reward claims awaiting approval = points reserved).
     # Pool-mode pending claims are skipped because their cost was already deducted
@@ -98,9 +97,7 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
             continue
         reward = reward_lookup.get(rc.reward_id)
         if reward:
-            committed_points_by_child[rc.child_id] = (
-                committed_points_by_child.get(rc.child_id, 0) + reward.cost
-            )
+            committed_points_by_child[rc.child_id] = committed_points_by_child.get(rc.child_id, 0) + reward.cost
 
     # Pool allocation lookups for v3.0 pool mode.
     pool_by_child_reward: dict[str, dict[str, int]] = {}
@@ -108,12 +105,8 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
     total_allocated_by_child: dict[str, int] = {}
     for pa in pool_alloc_objs:
         pool_by_child_reward.setdefault(pa.child_id, {})[pa.reward_id] = pa.allocated_points
-        pool_total_by_reward[pa.reward_id] = (
-            pool_total_by_reward.get(pa.reward_id, 0) + pa.allocated_points
-        )
-        total_allocated_by_child[pa.child_id] = (
-            total_allocated_by_child.get(pa.child_id, 0) + pa.allocated_points
-        )
+        pool_total_by_reward[pa.reward_id] = pool_total_by_reward.get(pa.reward_id, 0) + pa.allocated_points
+        total_allocated_by_child[pa.child_id] = total_allocated_by_child.get(pa.child_id, 0) + pa.allocated_points
 
     common = {
         "data_id": data_id,
@@ -151,51 +144,57 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
     for c in children:
         committed_amount = committed.get(c.id, 0)
         lvl = coordinator.level_info(c)
-        summary.append({
-            "level": lvl["level"],
-            "level_progress": lvl["progress"],
-            "level_target": lvl["target"],
-            "id": c.id,
-            "name": c.name,
-            "points": c.points,
-            "pending_points": pending.get(c.id, 0),
-            # Guest profiles (#690): cards filter these out of competitive views.
-            **({"is_guest": True, "guest_expires_on": getattr(c, "guest_expires_on", "")}
-               if getattr(c, "is_guest", False) else {}),
-            # Chore roulette (#677): today's pick + spins left, so the card can
-            # show the result and disable the button once the allowance is used.
-            **(
-                {
-                    "roulette": {
-                        **(coordinator.roulette_selection(c.id) or {}),
-                        "spins_left": coordinator.roulette_spins_left(c.id),
+        summary.append(
+            {
+                "level": lvl["level"],
+                "level_progress": lvl["progress"],
+                "level_target": lvl["target"],
+                "id": c.id,
+                "name": c.name,
+                "points": c.points,
+                "pending_points": pending.get(c.id, 0),
+                # Guest profiles (#690): cards filter these out of competitive views.
+                **(
+                    {"is_guest": True, "guest_expires_on": getattr(c, "guest_expires_on", "")}
+                    if getattr(c, "is_guest", False)
+                    else {}
+                ),
+                # Chore roulette (#677): today's pick + spins left, so the card can
+                # show the result and disable the button once the allowance is used.
+                **(
+                    {
+                        "roulette": {
+                            **(coordinator.roulette_selection(c.id) or {}),
+                            "spins_left": coordinator.roulette_spins_left(c.id),
+                        }
                     }
-                }
-                if coordinator.roulette_enabled() else {}
-            ),
-            "committed_points": committed_amount,
-            "allocated_points": allocated.get(c.id, 0),
-            # Allocations were deducted from child.points already, so spendable
-            # only needs to account for pending-claim commitments.
-            "spendable_balance": max(0, c.points - committed_amount),
-            "chore_order": c.chore_order,
-            "current_streak": getattr(c, 'current_streak', 0) or 0,
-            "best_streak": getattr(c, 'best_streak', 0) or 0,
-            "season_points": int(season.get(c.id, 0)),
-            "total_points_earned": getattr(c, 'total_points_earned', 0) or 0,
-            "total_chores_completed": getattr(c, 'total_chores_completed', 0) or 0,
-            "avatar": getattr(c, 'avatar', 'mdi:account-circle') or 'mdi:account-circle',
-            "last_completion_date": getattr(c, 'last_completion_date', None),
-            "streak_paused": getattr(c, 'streak_paused', False),
-            "on_vacation": coordinator._is_child_on_vacation(c),
-            "streak_milestones_achieved": getattr(c, 'streak_milestones_achieved', None) or [],
-            "awarded_perfect_weeks": getattr(c, 'awarded_perfect_weeks', None) or [],
-            "career_score": getattr(c, 'career_score', 0) or 0,
-            "total_penalties_received": getattr(c, 'total_penalties_received', 0) or 0,
-            "quests": coordinator.quest_progress_for_child(c.id),
-            "avatar_options": coordinator.avatar_options_for_child(c),
-            "challenges": coordinator.challenge_progress_for_child(c.id),
-        })
+                    if coordinator.roulette_enabled()
+                    else {}
+                ),
+                "committed_points": committed_amount,
+                "allocated_points": allocated.get(c.id, 0),
+                # Allocations were deducted from child.points already, so spendable
+                # only needs to account for pending-claim commitments.
+                "spendable_balance": max(0, c.points - committed_amount),
+                "chore_order": c.chore_order,
+                "current_streak": getattr(c, "current_streak", 0) or 0,
+                "best_streak": getattr(c, "best_streak", 0) or 0,
+                "season_points": int(season.get(c.id, 0)),
+                "total_points_earned": getattr(c, "total_points_earned", 0) or 0,
+                "total_chores_completed": getattr(c, "total_chores_completed", 0) or 0,
+                "avatar": getattr(c, "avatar", "mdi:account-circle") or "mdi:account-circle",
+                "last_completion_date": getattr(c, "last_completion_date", None),
+                "streak_paused": getattr(c, "streak_paused", False),
+                "on_vacation": coordinator._is_child_on_vacation(c),
+                "streak_milestones_achieved": getattr(c, "streak_milestones_achieved", None) or [],
+                "awarded_perfect_weeks": getattr(c, "awarded_perfect_weeks", None) or [],
+                "career_score": getattr(c, "career_score", 0) or 0,
+                "total_penalties_received": getattr(c, "total_penalties_received", 0) or 0,
+                "quests": coordinator.quest_progress_for_child(c.id),
+                "avatar_options": coordinator.avatar_options_for_child(c),
+                "challenges": coordinator.challenge_progress_for_child(c.id),
+            }
+        )
     return summary
 
 
@@ -223,61 +222,61 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
             "time_category": c.time_category,
             "assigned_to": assigned_to,
             "depends_on": depends_on,
-            "schedule_mode": getattr(c, 'schedule_mode', 'specific_days'),
-            "enabled": getattr(c, 'enabled', True),
-            "assignment_mode": getattr(c, 'assignment_mode', 'everyone'),
+            "schedule_mode": getattr(c, "schedule_mode", "specific_days"),
+            "enabled": getattr(c, "enabled", True),
+            "assignment_mode": getattr(c, "assignment_mode", "everyone"),
         }
         # Difficulty tier + the points it actually awards. Emitted only when
         # non-default (medium / ×1.0) so simple chores stay compact.
-        difficulty = getattr(c, 'difficulty', 'medium') or 'medium'
-        if difficulty != 'medium':
+        difficulty = getattr(c, "difficulty", "medium") or "medium"
+        if difficulty != "medium":
             record["difficulty"] = difficulty
         effective_points = coordinator.effective_chore_points(c)
         if effective_points != c.points:
             record["effective_points"] = effective_points
         # Optional fields — emit only when non-default to save bytes.
-        description = getattr(c, 'description', '') or ''
+        description = getattr(c, "description", "") or ""
         if description:
             record["description"] = description
-        daily_limit = getattr(c, 'daily_limit', 1)
+        daily_limit = getattr(c, "daily_limit", 1)
         if daily_limit != 1:
             record["daily_limit"] = daily_limit
-        claim_allowance_minutes = getattr(c, 'claim_allowance_minutes', 0) or 0
+        claim_allowance_minutes = getattr(c, "claim_allowance_minutes", 0) or 0
         if claim_allowance_minutes:
             record["claim_allowance_minutes"] = claim_allowance_minutes
-        due_days = getattr(c, 'due_days', []) or []
+        due_days = getattr(c, "due_days", []) or []
         if due_days:
             record["due_days"] = due_days
-        requires_approval = getattr(c, 'requires_approval', True)
+        requires_approval = getattr(c, "requires_approval", True)
         if not requires_approval:
             record["requires_approval"] = False
         # Mandatory chores (#532): emit only when set so the child card can
         # show the mandatory styling/badge. penalty rides along when non-zero.
-        if getattr(c, 'mandatory', False):
+        if getattr(c, "mandatory", False):
             record["mandatory"] = True
-            penalty = getattr(c, 'mandatory_penalty_points', 0) or 0
+            penalty = getattr(c, "mandatory_penalty_points", 0) or 0
             if penalty:
                 record["mandatory_penalty_points"] = penalty
-        if getattr(c, 'require_photo', False):
+        if getattr(c, "require_photo", False):
             record["require_photo"] = True
-        recurrence = getattr(c, 'recurrence', 'weekly')
-        if recurrence != 'weekly':
+        recurrence = getattr(c, "recurrence", "weekly")
+        if recurrence != "weekly":
             record["recurrence"] = recurrence
-        recurrence_day = getattr(c, 'recurrence_day', '')
+        recurrence_day = getattr(c, "recurrence_day", "")
         if recurrence_day:
             record["recurrence_day"] = recurrence_day
-        recurrence_start = getattr(c, 'recurrence_start', '')
+        recurrence_start = getattr(c, "recurrence_start", "")
         if recurrence_start:
             record["recurrence_start"] = recurrence_start
-        visibility_entity = getattr(c, 'visibility_entity', '')
+        visibility_entity = getattr(c, "visibility_entity", "")
         if visibility_entity:
             record["visibility_entity"] = visibility_entity
-            record["visibility_operator"] = getattr(c, 'visibility_operator', 'equals')
-            record["visibility_state"] = getattr(c, 'visibility_state', 'on')
-        weather_entity = getattr(c, 'weather_entity', '')
+            record["visibility_operator"] = getattr(c, "visibility_operator", "equals")
+            record["visibility_state"] = getattr(c, "visibility_state", "on")
+        weather_entity = getattr(c, "weather_entity", "")
         if weather_entity:
             record["weather_entity"] = weather_entity
-            record["weather_block_conditions"] = list(getattr(c, 'weather_block_conditions', []) or [])
+            record["weather_block_conditions"] = list(getattr(c, "weather_block_conditions", []) or [])
             for limit in ("weather_temp_min", "weather_temp_max", "weather_wind_max"):
                 value = getattr(c, limit, None)
                 if value is not None:
@@ -287,44 +286,41 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
             reason = coordinator.weather_block_reason(c)
             if reason:
                 record["weather_blocked"] = reason
-        deadline_at = getattr(c, 'deadline_at', '')
+        deadline_at = getattr(c, "deadline_at", "")
         if deadline_at:
             record["deadline_at"] = deadline_at
-            speed_bonus = getattr(c, 'speed_bonus_points', 0)
+            speed_bonus = getattr(c, "speed_bonus_points", 0)
             if speed_bonus:
                 record["speed_bonus_points"] = speed_bonus
-        disabled_for = getattr(c, 'disabled_for', [])
+        disabled_for = getattr(c, "disabled_for", [])
         if disabled_for:
             record["disabled_for"] = disabled_for
-        created_date = getattr(c, 'created_date', '')
+        created_date = getattr(c, "created_date", "")
         if created_date:
             record["created_date"] = created_date
-        assignment_current_child_id = getattr(c, 'assignment_current_child_id', '')
+        assignment_current_child_id = getattr(c, "assignment_current_child_id", "")
         if assignment_current_child_id:
             record["assignment_current_child_id"] = assignment_current_child_id
-        icon = getattr(c, 'icon', '')
+        icon = getattr(c, "icon", "")
         if icon:
             record["icon"] = icon
         # Signed so the card's <img> loads; emitted only when set, matching
         # `icon` above, to keep records under the 16KB recorder limit.
-        image_url = getattr(c, 'image_url', '')
+        image_url = getattr(c, "image_url", "")
         if image_url:
             record["image_url"] = images.sign_image_url(common["hass"], image_url)
-        completion_sound = getattr(c, 'completion_sound', 'coin')
-        if completion_sound and completion_sound != 'coin':
+        completion_sound = getattr(c, "completion_sound", "coin")
+        if completion_sound and completion_sound != "coin":
             record["completion_sound"] = completion_sound
-        task_type = getattr(c, 'task_type', 'standard')
+        task_type = getattr(c, "task_type", "standard")
         if task_type == "timed":
             record["task_type"] = "timed"
-            record["timed_rate_points"] = getattr(c, 'timed_rate_points', 10)
-            record["timed_rate_minutes"] = getattr(c, 'timed_rate_minutes', 5)
-            record["timed_max_daily_minutes"] = getattr(c, 'timed_max_daily_minutes', 0)
-        bonus_subtasks = getattr(c, 'bonus_subtasks', [])
+            record["timed_rate_points"] = getattr(c, "timed_rate_points", 10)
+            record["timed_rate_minutes"] = getattr(c, "timed_rate_minutes", 5)
+            record["timed_max_daily_minutes"] = getattr(c, "timed_max_daily_minutes", 0)
+        bonus_subtasks = getattr(c, "bonus_subtasks", [])
         if bonus_subtasks:
-            record["bonus_subtasks"] = [
-                {"id": b.id, "name": b.name, "points": b.points}
-                for b in bonus_subtasks
-            ]
+            record["bonus_subtasks"] = [{"id": b.id, "name": b.name, "points": b.points} for b in bonus_subtasks]
         chores_list.append(record)
     return chores_list
 
@@ -356,9 +352,9 @@ def _build_todays_completions(common: dict) -> list[dict]:
     out = []
     for comp in common["all_completions"]:
         comp_dt = comp.completed_at
-        if hasattr(comp_dt, 'astimezone'):
+        if hasattr(comp_dt, "astimezone"):
             comp_dt = dt_util.as_local(comp_dt)
-        comp_date = comp_dt.date() if hasattr(comp_dt, 'date') else comp_dt
+        comp_date = comp_dt.date() if hasattr(comp_dt, "date") else comp_dt
         if comp_date != today:
             continue
         matched_chore = chore_lookup.get(comp.chore_id)
@@ -379,11 +375,15 @@ def _build_todays_completions(common: dict) -> list[dict]:
             "completion_id": comp.id,
             "chore_id": comp.chore_id,
             "child_id": comp.child_id,
-            "child_name": "Parent" if comp.child_id == "__parent__" else (child_lookup[comp.child_id].name if comp.child_id in child_lookup else ""),
+            "child_name": "Parent"
+            if comp.child_id == "__parent__"
+            else (child_lookup[comp.child_id].name if comp.child_id in child_lookup else ""),
             "chore_name": display_name,
             "points": display_points,
             "approved": comp.approved,
-            "completed_at": comp.completed_at.isoformat() if hasattr(comp.completed_at, 'isoformat') else str(comp.completed_at),
+            "completed_at": comp.completed_at.isoformat()
+            if hasattr(comp.completed_at, "isoformat")
+            else str(comp.completed_at),
             "bonus_subtask_id": bonus_subtask_id,
         }
         if timed_secs > 0:
@@ -402,7 +402,7 @@ def _build_active_timed_sessions(coordinator: TaskMateCoordinator) -> list[dict]
     sessions = coordinator.data.get("timed_sessions", [])
     out = []
     for s in sessions:
-        if hasattr(s, 'state'):
+        if hasattr(s, "state"):
             state = s.state
             if state not in ("running", "paused"):
                 continue
@@ -412,13 +412,15 @@ def _build_active_timed_sessions(coordinator: TaskMateCoordinator) -> list[dict]
                 last_seg = segments[-1]
                 if isinstance(last_seg, dict) and last_seg.get("end") is None:
                     current_segment_start = last_seg.get("start", "")
-            out.append({
-                "chore_id": s.chore_id,
-                "child_id": s.child_id,
-                "state": state,
-                "total_seconds_today": s.total_seconds_today,
-                "current_segment_start": current_segment_start,
-            })
+            out.append(
+                {
+                    "chore_id": s.chore_id,
+                    "child_id": s.child_id,
+                    "state": state,
+                    "total_seconds_today": s.total_seconds_today,
+                    "current_segment_start": current_segment_start,
+                }
+            )
         else:
             state = s.get("state", "stopped") if isinstance(s, dict) else "stopped"
             if state not in ("running", "paused"):
@@ -429,13 +431,15 @@ def _build_active_timed_sessions(coordinator: TaskMateCoordinator) -> list[dict]
                 last_seg = segments[-1]
                 if isinstance(last_seg, dict) and last_seg.get("end") is None:
                     current_segment_start = last_seg.get("start", "")
-            out.append({
-                "chore_id": s.get("chore_id", "") if isinstance(s, dict) else "",
-                "child_id": s.get("child_id", "") if isinstance(s, dict) else "",
-                "state": state,
-                "total_seconds_today": s.get("total_seconds_today", 0) if isinstance(s, dict) else 0,
-                "current_segment_start": current_segment_start,
-            })
+            out.append(
+                {
+                    "chore_id": s.get("chore_id", "") if isinstance(s, dict) else "",
+                    "child_id": s.get("child_id", "") if isinstance(s, dict) else "",
+                    "state": state,
+                    "total_seconds_today": s.get("total_seconds_today", 0) if isinstance(s, dict) else 0,
+                    "current_segment_start": current_segment_start,
+                }
+            )
     return out
 
 
@@ -448,20 +452,12 @@ def _build_rewards_list(common: dict) -> list[dict]:
     today = dt_util.now().date()
     out = []
     for r in rewards:
-        assigned = (
-            r.assigned_to
-            if isinstance(r.assigned_to, list) and r.assigned_to
-            else [c.id for c in children]
-        )
+        assigned = r.assigned_to if isinstance(r.assigned_to, list) and r.assigned_to else [c.id for c in children]
         calculated_costs = {child_id: r.cost for child_id in assigned}
-        reward_pool_allocations = {
-            cid: pool_by_child_reward.get(cid, {}).get(r.id, 0) for cid in assigned
-        }
-        jackpot_pool_total = (
-            pool_total_by_reward.get(r.id, 0) if getattr(r, 'is_jackpot', False) else None
-        )
-        quantity = getattr(r, 'quantity', None)
-        expires_at = getattr(r, 'expires_at', None)
+        reward_pool_allocations = {cid: pool_by_child_reward.get(cid, {}).get(r.id, 0) for cid in assigned}
+        jackpot_pool_total = pool_total_by_reward.get(r.id, 0) if getattr(r, "is_jackpot", False) else None
+        quantity = getattr(r, "quantity", None)
+        expires_at = getattr(r, "expires_at", None)
         is_sold_out = quantity is not None and quantity <= 0
         is_expired = False
         days_until_expiry: int | None = None
@@ -472,25 +468,27 @@ def _build_rewards_list(common: dict) -> list[dict]:
                 days_until_expiry = (deadline - today).days
             except (TypeError, ValueError):
                 pass
-        out.append({
-            "id": r.id,
-            "name": r.name,
-            "cost": r.cost,
-            "description": getattr(r, 'description', ''),
-            "icon": r.icon,
-            "assigned_to": r.assigned_to if isinstance(r.assigned_to, list) else [],
-            "is_jackpot": getattr(r, 'is_jackpot', False),
-            "pool_enabled": getattr(r, 'pool_enabled', False),
-            "calculated_costs": calculated_costs,
-            "pool_allocations": reward_pool_allocations,
-            "jackpot_pool_total": jackpot_pool_total,
-            "quantity": quantity,
-            "expires_at": expires_at,
-            "is_sold_out": is_sold_out,
-            "is_expired": is_expired,
-            "is_available": not (is_sold_out or is_expired),
-            "days_until_expiry": days_until_expiry,
-        })
+        out.append(
+            {
+                "id": r.id,
+                "name": r.name,
+                "cost": r.cost,
+                "description": getattr(r, "description", ""),
+                "icon": r.icon,
+                "assigned_to": r.assigned_to if isinstance(r.assigned_to, list) else [],
+                "is_jackpot": getattr(r, "is_jackpot", False),
+                "pool_enabled": getattr(r, "pool_enabled", False),
+                "calculated_costs": calculated_costs,
+                "pool_allocations": reward_pool_allocations,
+                "jackpot_pool_total": jackpot_pool_total,
+                "quantity": quantity,
+                "expires_at": expires_at,
+                "is_sold_out": is_sold_out,
+                "is_expired": is_expired,
+                "is_available": not (is_sold_out or is_expired),
+                "days_until_expiry": days_until_expiry,
+            }
+        )
     return out
 
 
@@ -504,17 +502,19 @@ def _build_pending_reward_claims(common: dict) -> list[dict]:
         child = child_lookup.get(rc.child_id)
         if not reward or not child:
             continue
-        out.append({
-            "claim_id": rc.id,
-            "reward_id": rc.reward_id,
-            "child_id": rc.child_id,
-            "child_name": child.name,
-            "child_avatar": getattr(child, 'avatar', 'mdi:account-circle') or 'mdi:account-circle',
-            "reward_name": reward.name,
-            "reward_icon": reward.icon or 'mdi:gift',
-            "cost": reward.cost,
-            "claimed_at": rc.claimed_at.isoformat() if hasattr(rc.claimed_at, 'isoformat') else str(rc.claimed_at),
-        })
+        out.append(
+            {
+                "claim_id": rc.id,
+                "reward_id": rc.reward_id,
+                "child_id": rc.child_id,
+                "child_name": child.name,
+                "child_avatar": getattr(child, "avatar", "mdi:account-circle") or "mdi:account-circle",
+                "reward_name": reward.name,
+                "reward_icon": reward.icon or "mdi:gift",
+                "cost": reward.cost,
+                "claimed_at": rc.claimed_at.isoformat() if hasattr(rc.claimed_at, "isoformat") else str(rc.claimed_at),
+            }
+        )
     return out
 
 
@@ -536,16 +536,22 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
             rate_seconds = matched_chore.timed_rate_minutes * 60
             if rate_seconds > 0:
                 display_points = (timed_secs // rate_seconds) * matched_chore.timed_rate_points
-        out.append({
-            "completion_id": comp.id,
-            "chore_id": comp.chore_id,
-            "child_id": comp.child_id,
-            "child_name": "Parent" if comp.child_id == "__parent__" else (child_lookup[comp.child_id].name if comp.child_id in child_lookup else ""),
-            "chore_name": matched_chore.name if matched_chore else "",
-            "points": display_points,
-            "approved": comp.approved,
-            "completed_at": comp.completed_at.isoformat() if hasattr(comp.completed_at, 'isoformat') else str(comp.completed_at),
-        })
+        out.append(
+            {
+                "completion_id": comp.id,
+                "chore_id": comp.chore_id,
+                "child_id": comp.child_id,
+                "child_name": "Parent"
+                if comp.child_id == "__parent__"
+                else (child_lookup[comp.child_id].name if comp.child_id in child_lookup else ""),
+                "chore_name": matched_chore.name if matched_chore else "",
+                "points": display_points,
+                "approved": comp.approved,
+                "completed_at": comp.completed_at.isoformat()
+                if hasattr(comp.completed_at, "isoformat")
+                else str(comp.completed_at),
+            }
+        )
     return out
 
 
@@ -558,21 +564,23 @@ def _build_photo_gallery(common: dict, limit: int = 40) -> list[dict]:
     """
     child_lookup = common["child_lookup"]
     chore_lookup = common["chore_lookup"]
-    with_photos = [
-        c for c in common["all_completions"] if getattr(c, "photo_url", "")
-    ]
+    with_photos = [c for c in common["all_completions"] if getattr(c, "photo_url", "")]
     recent = sorted(with_photos, key=lambda c: c.completed_at, reverse=True)[:limit]
     out = []
     for comp in recent:
         chore = chore_lookup.get(comp.chore_id)
-        out.append({
-            "completion_id": comp.id,
-            "child_name": child_lookup[comp.child_id].name if comp.child_id in child_lookup else "",
-            "chore_name": chore.name if chore else "",
-            "approved": comp.approved,
-            "completed_at": comp.completed_at.isoformat() if hasattr(comp.completed_at, "isoformat") else str(comp.completed_at),
-            "photo_url": comp.photo_url,
-        })
+        out.append(
+            {
+                "completion_id": comp.id,
+                "child_name": child_lookup[comp.child_id].name if comp.child_id in child_lookup else "",
+                "chore_name": chore.name if chore else "",
+                "approved": comp.approved,
+                "completed_at": comp.completed_at.isoformat()
+                if hasattr(comp.completed_at, "isoformat")
+                else str(comp.completed_at),
+                "photo_url": comp.photo_url,
+            }
+        )
     return out
 
 
@@ -593,15 +601,17 @@ def _build_recent_transactions(common: dict, limit: int = 20) -> list[dict]:
         child = child_lookup.get(t.child_id)
         if not child:
             continue
-        events.append({
-            "transaction_id": t.id,
-            "type": "points_added" if t.points > 0 else "points_removed",
-            "child_id": t.child_id,
-            "child_name": child.name,
-            "points": t.points,
-            "reason": t.reason or "",
-            "created_at": t.created_at.isoformat() if hasattr(t.created_at, 'isoformat') else str(t.created_at),
-        })
+        events.append(
+            {
+                "transaction_id": t.id,
+                "type": "points_added" if t.points > 0 else "points_removed",
+                "child_id": t.child_id,
+                "child_name": child.name,
+                "points": t.points,
+                "reason": t.reason or "",
+                "created_at": t.created_at.isoformat() if hasattr(t.created_at, "isoformat") else str(t.created_at),
+            }
+        )
 
     for rc in all_reward_claims:
         child = child_lookup.get(rc.child_id)
@@ -610,43 +620,51 @@ def _build_recent_transactions(common: dict, limit: int = 20) -> list[dict]:
             continue
         event_type = "reward_approved" if rc.approved else "reward_claimed"
         timestamp = rc.approved_at if rc.approved and rc.approved_at else rc.claimed_at
-        events.append({
-            "transaction_id": rc.id,
-            "type": event_type,
-            "child_id": rc.child_id,
-            "child_name": child.name,
-            "reward_id": rc.reward_id,
-            "reward_name": reward.name,
-            "reward_icon": reward.icon or "mdi:gift",
-            "points": -reward.cost,
-            "approved": rc.approved,
-            "created_at": timestamp.isoformat() if hasattr(timestamp, 'isoformat') else str(timestamp),
-        })
+        events.append(
+            {
+                "transaction_id": rc.id,
+                "type": event_type,
+                "child_id": rc.child_id,
+                "child_name": child.name,
+                "reward_id": rc.reward_id,
+                "reward_name": reward.name,
+                "reward_icon": reward.icon or "mdi:gift",
+                "points": -reward.cost,
+                "approved": rc.approved,
+                "created_at": timestamp.isoformat() if hasattr(timestamp, "isoformat") else str(timestamp),
+            }
+        )
 
     events.sort(key=lambda e: e["created_at"], reverse=True)
     return events[:limit]
 
 
 def _build_penalties_list(common: dict) -> list[dict]:
-    return [{
-        "id": p.id,
-        "name": p.name,
-        "points": p.points,
-        "description": p.description,
-        "icon": p.icon,
-        "assigned_to": p.assigned_to or [],
-    } for p in common["data"].get("penalties", [])]
+    return [
+        {
+            "id": p.id,
+            "name": p.name,
+            "points": p.points,
+            "description": p.description,
+            "icon": p.icon,
+            "assigned_to": p.assigned_to or [],
+        }
+        for p in common["data"].get("penalties", [])
+    ]
 
 
 def _build_bonuses_list(common: dict) -> list[dict]:
-    return [{
-        "id": b.id,
-        "name": b.name,
-        "points": b.points,
-        "description": b.description,
-        "icon": b.icon,
-        "assigned_to": b.assigned_to or [],
-    } for b in common["data"].get("bonuses", [])]
+    return [
+        {
+            "id": b.id,
+            "name": b.name,
+            "points": b.points,
+            "description": b.description,
+            "icon": b.icon,
+            "assigned_to": b.assigned_to or [],
+        }
+        for b in common["data"].get("bonuses", [])
+    ]
 
 
 async def async_setup_entry(
@@ -795,8 +813,10 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
 
         # Legacy shape kept for cards that still read the four fixed keys.
         legacy_defaults = {
-            "morning": ("06:00", "12:00"), "afternoon": ("12:00", "17:00"),
-            "evening": ("17:00", "21:00"), "night": ("21:00", "23:59"),
+            "morning": ("06:00", "12:00"),
+            "afternoon": ("12:00", "17:00"),
+            "evening": ("17:00", "21:00"),
+            "night": ("21:00", "23:59"),
         }
         time_boundaries = {}
         for cat, (def_start, def_end) in legacy_defaults.items():
@@ -813,7 +833,8 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "perfect_week_enabled": settings.get("perfect_week_enabled", "true") == "true",
             "perfect_week_bonus": _safe_int(settings.get("perfect_week_bonus"), 50),
             "streak_requires_all_chores": settings.get("streak_requires_all_chores", "false") in (True, "true"),
-            "perfect_week_requires_all_chores": settings.get("perfect_week_requires_all_chores", "false") in (True, "true"),
+            "perfect_week_requires_all_chores": settings.get("perfect_week_requires_all_chores", "false")
+            in (True, "true"),
             "total_children": len(children),
             "total_chores": len(chores),
             "total_rewards": len(rewards),
@@ -1117,6 +1138,7 @@ class ChildStatsSensor(TaskMateBaseSensor):
         # drop it once any pool member has completed it today (so a parent
         # crediting the off-rotation child clears the chore for everyone).
         chores = self.coordinator.data.get("chores", [])
+
         def _included(c):
             if not (child.id in c.assigned_to or not c.assigned_to):
                 return False
@@ -1128,6 +1150,7 @@ class ChildStatsSensor(TaskMateBaseSensor):
                 if self.coordinator._is_rotation_done_today(c):
                     return False
             return True
+
         assigned_chores = [c for c in chores if _included(c)]
 
         return {
@@ -1141,7 +1164,10 @@ class ChildStatsSensor(TaskMateBaseSensor):
             "best_streak": child.best_streak,
             "career_score": child.career_score,
             "total_penalties_received": child.total_penalties_received,
-            "assigned_chores": [{"id": c.id, "name": c.name, "points": c.points, "time_category": c.time_category} for c in assigned_chores],
+            "assigned_chores": [
+                {"id": c.id, "name": c.name, "points": c.points, "time_category": c.time_category}
+                for c in assigned_chores
+            ],
             "chore_order": child.chore_order,
         }
 
@@ -1166,9 +1192,7 @@ class ChildBadgesSensor(TaskMateBaseSensor):
     @property
     def native_value(self) -> int:
         """Number of badges earned by this child."""
-        return len(
-            self.coordinator.storage.get_awarded_badges_for_child(self.child_id)
-        )
+        return len(self.coordinator.storage.get_awarded_badges_for_child(self.child_id))
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -1180,10 +1204,7 @@ class ChildBadgesSensor(TaskMateBaseSensor):
             return {"earned": [], "available": [], "total_badges": 0}
 
         all_badges = [b for b in storage.get_badges() if b.enabled]
-        applicable = [
-            b for b in all_badges
-            if not b.assigned_to or self.child_id in b.assigned_to
-        ]
+        applicable = [b for b in all_badges if not b.assigned_to or self.child_id in b.assigned_to]
 
         awarded_records = storage.get_awarded_badges_for_child(self.child_id)
         record_by_id = {a.badge_id: a for a in awarded_records}
@@ -1193,15 +1214,17 @@ class ChildBadgesSensor(TaskMateBaseSensor):
         for b in applicable:
             if b.id in record_by_id:
                 rec = record_by_id[b.id]
-                earned.append({
-                    "badge_id": b.id,
-                    "name": b.name,
-                    "icon": b.icon,
-                    "tier": b.tier,
-                    "earned_at": rec.earned_at.isoformat() if rec.earned_at else None,
-                    "manually_awarded": rec.manually_awarded,
-                    "silent": rec.silent,
-                })
+                earned.append(
+                    {
+                        "badge_id": b.id,
+                        "name": b.name,
+                        "icon": b.icon,
+                        "tier": b.tier,
+                        "earned_at": rec.earned_at.isoformat() if rec.earned_at else None,
+                        "manually_awarded": rec.manually_awarded,
+                        "silent": rec.silent,
+                    }
+                )
             else:
                 if not b.criteria:
                     progress_pct = 0
@@ -1212,16 +1235,16 @@ class ChildBadgesSensor(TaskMateBaseSensor):
                         target = max(c.value, 1)
                         pcts.append(min(100, int(100 * cur / target)))
                     progress_pct = min(pcts) if pcts else 0
-                available.append({
-                    "badge_id": b.id,
-                    "name": b.name,
-                    "icon": b.icon,
-                    "tier": b.tier,
-                    "progress_pct": progress_pct,
-                    "criteria_summary": ", ".join(
-                        f"{c.metric} >= {c.value}" for c in b.criteria
-                    ),
-                })
+                available.append(
+                    {
+                        "badge_id": b.id,
+                        "name": b.name,
+                        "icon": b.icon,
+                        "tier": b.tier,
+                        "progress_pct": progress_pct,
+                        "criteria_summary": ", ".join(f"{c.metric} >= {c.value}" for c in b.criteria),
+                    }
+                )
 
         earned.sort(key=lambda e: e.get("earned_at") or "", reverse=True)
 
@@ -1274,9 +1297,7 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                 # list render them identically.
                 bonus_subtask_id = getattr(comp, "bonus_subtask_id", "") or ""
                 if bonus_subtask_id:
-                    subtask = next(
-                        (b for b in chore.bonus_subtasks if b.id == bonus_subtask_id), None
-                    )
+                    subtask = next((b for b in chore.bonus_subtasks if b.id == bonus_subtask_id), None)
                     chore_name = f"{chore.name} › {subtask.name}" if subtask else chore.name
                     pts = subtask.points if subtask else 0
                 else:
@@ -1303,9 +1324,7 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                     detail["timed_duration_seconds"] = timed_secs
                 photo = getattr(comp, "photo_url", "") or ""
                 if photo:
-                    detail["photo_url"] = photos.sign_photo_url(
-                        self.coordinator.hass, photo
-                    )
+                    detail["photo_url"] = photos.sign_photo_url(self.coordinator.hass, photo)
                 completion_details.append(detail)
 
         reward_details = []
@@ -1313,16 +1332,18 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
             child = self.coordinator.get_child(claim.child_id)
             reward = self.coordinator.get_reward(claim.reward_id)
             if child and reward:
-                reward_details.append({
-                    "claim_id": claim.id,
-                    "type": "reward",
-                    "child_name": child.name,
-                    "child_id": child.id,
-                    "reward_name": reward.name,
-                    "reward_id": reward.id,
-                    "cost": reward.cost,
-                    "claimed_at": claim.claimed_at.isoformat(),
-                })
+                reward_details.append(
+                    {
+                        "claim_id": claim.id,
+                        "type": "reward",
+                        "child_name": child.name,
+                        "child_id": child.id,
+                        "reward_name": reward.name,
+                        "reward_id": reward.id,
+                        "cost": reward.cost,
+                        "claimed_at": claim.claimed_at.isoformat(),
+                    }
+                )
 
         mandatory_misses = self.coordinator.mandatory_misses_state()
         return {

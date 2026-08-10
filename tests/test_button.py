@@ -4,6 +4,7 @@ Buttons are thin wrappers over coordinator methods; we verify identity
 (unique_id/name), icon resolution, attributes, and that a press dispatches
 the right coordinator call. A stubbed coordinator avoids any HA runtime.
 """
+
 from __future__ import annotations
 
 import asyncio

@@ -8,6 +8,7 @@ Two views, both auth-gated by ``HomeAssistantView`` (so photos are never public)
 Pure path/validation logic lives in :mod:`.photos` (unit-tested); this module is
 the thin aiohttp wrapper, verified on the dev HA instance.
 """
+
 from __future__ import annotations
 
 import logging
@@ -37,9 +38,7 @@ class TaskMatePhotoUploadView(HomeAssistantView):
     async def post(self, request: web.Request) -> web.Response:
         # Cheap pre-check on the declared length before reading the body.
         if request.content_length and request.content_length > photos.MAX_UPLOAD_BYTES:
-            return self.json_message(
-                "File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE
-            )
+            return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
 
         try:
             reader = await request.multipart()
@@ -61,22 +60,16 @@ class TaskMatePhotoUploadView(HomeAssistantView):
                 break
             data.extend(chunk)
             if len(data) > photos.MAX_UPLOAD_BYTES:
-                return self.json_message(
-                    "File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE
-                )
+                return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
 
         ext = photos.detect_image_ext(bytes(data))
         if ext is None:
             return self.json_message("Not a valid image", HTTPStatus.BAD_REQUEST)
 
         # DoS guard: reject if the photo store is already at its disk budget.
-        used = await self.hass.async_add_executor_job(
-            photos.total_photos_bytes, self.hass
-        )
+        used = await self.hass.async_add_executor_job(photos.total_photos_bytes, self.hass)
         if used + len(data) > photos.MAX_TOTAL_BYTES:
-            return self.json_message(
-                "Photo storage full", HTTPStatus.INSUFFICIENT_STORAGE
-            )
+            return self.json_message("Photo storage full", HTTPStatus.INSUFFICIENT_STORAGE)
 
         name = f"{uuid.uuid4().hex}.{ext}"
         directory = photos.photos_path(self.hass)
@@ -90,9 +83,7 @@ class TaskMatePhotoUploadView(HomeAssistantView):
             await self.hass.async_add_executor_job(_write)
         except OSError as err:
             _LOGGER.error("Failed to store evidence photo: %s", err)
-            return self.json_message(
-                "Could not store photo", HTTPStatus.INTERNAL_SERVER_ERROR
-            )
+            return self.json_message("Could not store photo", HTTPStatus.INTERNAL_SERVER_ERROR)
 
         return self.json({"photo_url": f"{photos.URL_PREFIX}/{name}"})
 
