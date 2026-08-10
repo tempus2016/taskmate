@@ -456,21 +456,46 @@ class ChoresMixin:
                 chore, cleanup_entities, today, summary_prefixes=extra_prefixes,
             )
         self.storage.update_chore(chore)
-        # Replacing or clearing the picture orphans the old file; delete it.
+        # Replacing or clearing the picture orphans the old file; delete it —
+        # unless a clone still shows it (#768).
         if prev_image and prev_image != (chore.image_url or ""):
-            await images.async_delete_image(self.hass, prev_image)
+            await self._async_release_image(prev_image, excluding_chore_id=chore.id)
         await self._publish_chore_to_calendars(chore, today)
         await self.storage.async_save()
         await self.async_refresh()
+
+    async def _async_release_image(
+        self, image_url: str, *, excluding_chore_id: str = ""
+    ) -> None:
+        """Delete a chore image file, but only if nothing else still shows it.
+
+        `async_clone_chore` copies `image_url` straight from the source, so two
+        chores routinely share one file on disk. Unlinking on the first delete
+        or re-picture would leave the other chore rendering a broken image
+        (#768). `excluding_chore_id` skips the chore being edited or removed —
+        on the update path storage already holds its new value, and on the
+        remove path it is about to go, so neither counts as a reference.
+        """
+        if not image_url:
+            return
+        for other in self.storage.get_chores():
+            if other.id == excluding_chore_id:
+                continue
+            if (getattr(other, "image_url", "") or "") == image_url:
+                return
+        await images.async_delete_image(self.hass, image_url)
 
     async def async_remove_chore(self, chore_id: str) -> None:
         """Remove a chore and all associated data."""
         existing = self.storage.get_chore(chore_id)
         if existing is not None and getattr(existing, "publish_calendar_entities", []):
             await self._cleanup_chore_from_calendars(existing)
-        # Nothing sweeps taskmate_images, so the file has to go with the chore.
+        # Nothing sweeps taskmate_images, so the file has to go with the chore —
+        # unless a clone still shows it (#768).
         if existing is not None and getattr(existing, "image_url", ""):
-            await images.async_delete_image(self.hass, existing.image_url)
+            await self._async_release_image(
+                existing.image_url, excluding_chore_id=chore_id
+            )
         self.storage.remove_chore(chore_id)
         self.storage.remove_completions_for_chore(chore_id)
         self.storage.remove_last_completed_for_chore(chore_id)

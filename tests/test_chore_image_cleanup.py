@@ -21,14 +21,14 @@ def _body(name: str) -> str:
 
 def test_removing_a_chore_deletes_its_image():
     body = _body("async_remove_chore")
-    assert "async_delete_image" in body, (
+    assert "_async_release_image" in body, (
         "taskmate_images is never orphan-swept, so an undeleted file leaks forever"
     )
 
 
 def test_replacing_an_image_deletes_the_previous_file():
     body = _body("async_update_chore")
-    assert "async_delete_image" in body
+    assert "_async_release_image" in body
     # Must compare against the pre-update value, which the method already
     # captures as `existing` for the calendar cleanup.
     assert "existing" in body
@@ -39,8 +39,15 @@ def test_cleanup_uses_the_value_captured_before_storage_is_mutated():
     # from the `existing` snapshot taken before that, not re-read afterwards.
     body = _body("async_update_chore")
     existing_at = body.index("existing = self.storage.get_chore")
-    delete_at = body.index("async_delete_image")
+    delete_at = body.index("_async_release_image")
     assert existing_at < delete_at
+
+
+def test_the_release_helper_is_the_only_thing_that_unlinks():
+    # Both cleanup paths must go through _async_release_image so the shared-file
+    # check (#768) can never be bypassed by a new call site.
+    assert SRC.count("images.async_delete_image") == 1
+    assert "async_delete_image" in _body("_async_release_image")
 
 
 def test_the_images_dir_is_not_in_the_photo_sweeper():
