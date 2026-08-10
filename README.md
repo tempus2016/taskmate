@@ -1819,6 +1819,26 @@ Beyond the sensors above, TaskMate also exposes:
  
 ## Changelog
  
+### v5.1.0
+
+Two features aimed at the two things you do most: **give a chore a real photograph**, and **adjust a child's points without leaving the panel**. Plus a correlation id for anyone wiring TaskMate into something else. No configuration changes — upgrade is drop-in.
+
+**New — chores**
+- **Upload a picture for a chore** — the **Picture** field in the chore editor now takes a photograph, not just an icon from the list. Upload a JPEG, PNG or WebP (up to 2 MB) and it replaces the icon everywhere the chore appears: the child card, the routine card, the reorder card and the panel. A photo of *your* dishwasher beats a generic plate outline, and for a pre-reader it's the difference between recognising the task and guessing. Files are stored locally alongside your config, served over signed URLs, and deleted with the chore. ([#763](https://github.com/tempus2016/taskmate/pull/763), closes [#750](https://github.com/tempus2016/taskmate/issues/750))
+
+**New — admin panel**
+- **Adjust points from the Children page** — every child card now has a row of quick buttons (**−20 −10 −5 / +5 +10 +20** by default) plus **⋯** for a custom amount with an optional reason. Awarding a few points for something off-list, or docking some, no longer means building a service call. Set your own amounts in **Settings → Quick point amounts**. ([#760](https://github.com/tempus2016/taskmate/pull/760), closes [#746](https://github.com/tempus2016/taskmate/issues/746))
+
+**New — automations**
+- **`claim_id` on the reward approved and rejected events** — `taskmate_reward_claimed` already carried a `claim_id`; its two outcome events now carry the same value. An external shop, kiosk or lock-screen integration can follow one claim from request to outcome instead of guessing from child and reward ids. Rejection in particular had no other signal: a rejected claim is deleted outright, so it never reaches the activity feed. See the new [External Lock-Screen Shops](https://github.com/tempus2016/taskmate/wiki/External-Lock-Screen-Shops) wiki page for the safe pattern. Thanks to [@jr551](https://github.com/jr551) for the contribution. ([#764](https://github.com/tempus2016/taskmate/pull/764))
+
+**Fixes**
+- **Manual point adjustments can be undone again** — **Undo** in the panel's activity feed refused every manual add or remove. The check was an allow-list of known reasons, and a manual adjustment carries whatever reason you typed (or none), so it never matched. It is now a deny-list of the derived transactions that genuinely must not be undone — weekend bonuses, streak milestones, pool allocations — and everything else is reversible. ([#762](https://github.com/tempus2016/taskmate/pull/762), closes [#761](https://github.com/tempus2016/taskmate/issues/761))
+- **Duplicating a chore no longer destroys its picture** — a duplicated chore points at the same image file as the original, and deleting or re-picturing either copy unlinked that file, leaving the other chore showing a broken image with nothing in the log. The file is now kept until the last chore referencing it goes. ([#769](https://github.com/tempus2016/taskmate/pull/769), closes [#768](https://github.com/tempus2016/taskmate/issues/768))
+
+**Internal**
+- The test suite no longer depends on file ordering — twelve tests failed in a full run on Python 3.11 while passing in isolation, because two files used `asyncio.get_event_loop()` after another test had already closed the loop. ([#766](https://github.com/tempus2016/taskmate/pull/766), closes [#765](https://github.com/tempus2016/taskmate/issues/765))
+
 ### v5.0.4
 
 A fix release. Five bugs, three of them long-standing and invisible: a control that only admins could use, a badge highlight that had never fired for anyone, and a Picture dropdown that discarded what you picked. No configuration changes — upgrade is drop-in.
