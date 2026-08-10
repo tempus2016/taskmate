@@ -1,4 +1,5 @@
 """Tests for config export / import (backup & restore)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -48,20 +49,24 @@ async def test_import_strips_foreign_photo_url(hass):
     """SEC-5: a crafted backup can't smuggle a non-TaskMate photo_url."""
     storage = TaskMateStorage(hass, "sec5")
     await storage.async_load()
-    storage.import_data({
-        "completions": [
-            {"id": "c1", "chore_id": "x", "child_id": "k",
-             "photo_url": "javascript:alert(1)"},
-            {"id": "c2", "chore_id": "x", "child_id": "k",
-             "photo_url": "https://evil.example/p.png"},
-            {"id": "c3", "chore_id": "x", "child_id": "k",
-             "photo_url": "/api/taskmate/photo/" + "a" * 32 + ".jpg"},  # one of ours
-            {"id": "c4", "chore_id": "x", "child_id": "k", "photo_url": ""},
-        ],
-    })
+    storage.import_data(
+        {
+            "completions": [
+                {"id": "c1", "chore_id": "x", "child_id": "k", "photo_url": "javascript:alert(1)"},
+                {"id": "c2", "chore_id": "x", "child_id": "k", "photo_url": "https://evil.example/p.png"},
+                {
+                    "id": "c3",
+                    "chore_id": "x",
+                    "child_id": "k",
+                    "photo_url": "/api/taskmate/photo/" + "a" * 32 + ".jpg",
+                },  # one of ours
+                {"id": "c4", "chore_id": "x", "child_id": "k", "photo_url": ""},
+            ],
+        }
+    )
     by_id = {c["id"]: c for c in storage._data["completions"]}
-    assert by_id["c1"]["photo_url"] == ""   # dangerous scheme stripped
-    assert by_id["c2"]["photo_url"] == ""   # foreign host stripped
+    assert by_id["c1"]["photo_url"] == ""  # dangerous scheme stripped
+    assert by_id["c2"]["photo_url"] == ""  # foreign host stripped
     assert by_id["c3"]["photo_url"] == "/api/taskmate/photo/" + "a" * 32 + ".jpg"  # kept
     assert by_id["c4"]["photo_url"] == ""
 
@@ -121,4 +126,5 @@ def test_export_import_round_trip(hass):
         storage.import_data(snap)
         assert [c.id for c in storage.get_children()] == ["c1"]
         assert [c.id for c in storage.get_chores()] == ["ch1"]
+
     run(_go())

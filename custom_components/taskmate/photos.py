@@ -7,6 +7,7 @@ real HA install. The aiohttp views live in ``http_photos.py``.
 Photos are stored as ``<32 hex>.<ext>`` under ``<config>/taskmate_photos`` and
 served (auth-gated) at ``/api/taskmate/photo/<name>``.
 """
+
 from __future__ import annotations
 
 import logging
@@ -86,7 +87,7 @@ def is_taskmate_photo_url(photo_url: str) -> bool:
     prefix = URL_PREFIX + "/"
     if not photo_url.startswith(prefix):
         return False
-    return bool(FILENAME_RE.match(photo_url[len(prefix):]))
+    return bool(FILENAME_RE.match(photo_url[len(prefix) :]))
 
 
 def photo_file_for_url(hass, photo_url: str) -> Path | None:
@@ -101,7 +102,7 @@ def photo_file_for_url(hass, photo_url: str) -> Path | None:
     prefix = URL_PREFIX + "/"
     if not photo_url.startswith(prefix):
         return None
-    name = photo_url[len(prefix):]
+    name = photo_url[len(prefix) :]
     if not FILENAME_RE.match(name):
         return None
     return photos_path(hass) / name
@@ -181,10 +182,7 @@ async def async_sweep_orphan_photos(hass, referenced_urls, max_age_hours: int = 
     Returns the number of files deleted.
     """
     prefix = URL_PREFIX + "/"
-    referenced = {
-        url[len(prefix):] for url in referenced_urls
-        if url and url.startswith(prefix)
-    }
+    referenced = {url[len(prefix) :] for url in referenced_urls if url and url.startswith(prefix)}
     directory = photos_path(hass)
 
     def _sweep() -> int:

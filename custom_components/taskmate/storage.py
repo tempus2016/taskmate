@@ -1,4 +1,5 @@
 """Storage management for TaskMate integration."""
+
 from __future__ import annotations
 
 import logging
@@ -182,8 +183,8 @@ class TaskMateStorage:
         self._data["_pool_semantics_version"] = 2
         if adjusted:
             _LOGGER.info(
-                "TaskMate: migrated %d pool allocation(s) to beta2 semantics "
-                "(points now deducted at allocation time)", adjusted
+                "TaskMate: migrated %d pool allocation(s) to beta2 semantics (points now deducted at allocation time)",
+                adjusted,
             )
         await self.async_save()
 
@@ -232,15 +233,13 @@ class TaskMateStorage:
                         "Migrating chore '%s' assigned_to: '%s' -> '%s' (name to ID)",
                         chore.get("name", "unknown"),
                         assignment,
-                        name_to_id[assignment]
+                        name_to_id[assignment],
                     )
                 else:
                     # Unknown value, keep it but log a warning
                     new_assigned_to.append(assignment)
                     _LOGGER.warning(
-                        "Chore '%s' has unknown assigned_to value: '%s'",
-                        chore.get("name", "unknown"),
-                        assignment
+                        "Chore '%s' has unknown assigned_to value: '%s'", chore.get("name", "unknown"), assignment
                     )
 
             if chore_modified:
@@ -269,10 +268,7 @@ class TaskMateStorage:
 
         self._data["_career_score_initialized"] = True
         if children:
-            _LOGGER.info(
-                "TaskMate: initialized career_score for %d child(ren) "
-                "from total_points_earned", len(children)
-            )
+            _LOGGER.info("TaskMate: initialized career_score for %d child(ren) from total_points_earned", len(children))
         await self.async_save()
 
     async def async_save(self) -> None:
@@ -336,9 +332,7 @@ class TaskMateStorage:
 
     def remove_child(self, child_id: str) -> None:
         """Remove a child and cascade-delete their awarded badges."""
-        self._data["children"] = [
-            c for c in self._data.get("children", []) if c.get("id") != child_id
-        ]
+        self._data["children"] = [c for c in self._data.get("children", []) if c.get("id") != child_id]
         self.remove_awards_for_child(child_id)
 
     # Chores management
@@ -370,9 +364,7 @@ class TaskMateStorage:
 
     def remove_chore(self, chore_id: str) -> None:
         """Remove a chore."""
-        self._data["chores"] = [
-            c for c in self._data.get("chores", []) if c.get("id") != chore_id
-        ]
+        self._data["chores"] = [c for c in self._data.get("chores", []) if c.get("id") != chore_id]
         order = self._data.get("chore_display_order", [])
         if chore_id in order:
             order.remove(chore_id)
@@ -414,9 +406,7 @@ class TaskMateStorage:
 
     def remove_reward(self, reward_id: str) -> None:
         """Remove a reward."""
-        self._data["rewards"] = [
-            r for r in self._data.get("rewards", []) if r.get("id") != reward_id
-        ]
+        self._data["rewards"] = [r for r in self._data.get("rewards", []) if r.get("id") != reward_id]
 
     # Completions management
     def get_completions(self) -> list[ChoreCompletion]:
@@ -447,9 +437,7 @@ class TaskMateStorage:
 
     def remove_completion(self, completion_id: str) -> None:
         """Remove a completion record."""
-        self._data["completions"] = [
-            c for c in self._data.get("completions", []) if c.get("id") != completion_id
-        ]
+        self._data["completions"] = [c for c in self._data.get("completions", []) if c.get("id") != completion_id]
 
     # Mandatory-miss management (#532)
     def get_mandatory_misses(self) -> list[MandatoryMiss]:
@@ -470,9 +458,7 @@ class TaskMateStorage:
 
     def remove_mandatory_miss(self, miss_id: str) -> None:
         """Remove a mandatory-miss item by id."""
-        self._data["mandatory_misses"] = [
-            m for m in self._data.get("mandatory_misses", []) if m.get("id") != miss_id
-        ]
+        self._data["mandatory_misses"] = [m for m in self._data.get("mandatory_misses", []) if m.get("id") != miss_id]
 
     def replace_mandatory_misses(self, misses: list[MandatoryMiss]) -> None:
         """Replace the whole mandatory-miss collection."""
@@ -507,9 +493,7 @@ class TaskMateStorage:
 
     def remove_reward_claim(self, claim_id: str) -> None:
         """Remove a reward claim."""
-        self._data["reward_claims"] = [
-            c for c in self._data.get("reward_claims", []) if c.get("id") != claim_id
-        ]
+        self._data["reward_claims"] = [c for c in self._data.get("reward_claims", []) if c.get("id") != claim_id]
 
     # Penalties management
     def get_penalties(self) -> list[Penalty]:
@@ -538,9 +522,7 @@ class TaskMateStorage:
 
     def remove_penalty(self, penalty_id: str) -> None:
         """Remove a penalty."""
-        self._data["penalties"] = [
-            p for p in self._data.get("penalties", []) if p.get("id") != penalty_id
-        ]
+        self._data["penalties"] = [p for p in self._data.get("penalties", []) if p.get("id") != penalty_id]
 
     # Bonuses management
     def get_bonuses(self) -> list[Bonus]:
@@ -569,9 +551,7 @@ class TaskMateStorage:
 
     def remove_bonus(self, bonus_id: str) -> None:
         """Remove a bonus."""
-        self._data["bonuses"] = [
-            b for b in self._data.get("bonuses", []) if b.get("id") != bonus_id
-        ]
+        self._data["bonuses"] = [b for b in self._data.get("bonuses", []) if b.get("id") != bonus_id]
 
     # Badges management
     def get_badges(self) -> list[Badge]:
@@ -600,9 +580,7 @@ class TaskMateStorage:
 
     def remove_badge(self, badge_id: str) -> None:
         """Remove a badge and cascade-delete its awards."""
-        self._data["badges"] = [
-            b for b in self._data.get("badges", []) if b.get("id") != badge_id
-        ]
+        self._data["badges"] = [b for b in self._data.get("badges", []) if b.get("id") != badge_id]
         self.remove_awards_for_badge(badge_id)
 
     # Awarded badges management
@@ -620,9 +598,7 @@ class TaskMateStorage:
 
     def remove_awarded_badge(self, awarded_id: str) -> None:
         """Remove an awarded-badge record by id."""
-        self._data["awarded_badges"] = [
-            a for a in self._data.get("awarded_badges", []) if a.get("id") != awarded_id
-        ]
+        self._data["awarded_badges"] = [a for a in self._data.get("awarded_badges", []) if a.get("id") != awarded_id]
 
     def remove_awards_for_badge(self, badge_id: str) -> None:
         """Cascade-delete all awards referencing a badge id."""
@@ -705,9 +681,7 @@ class TaskMateStorage:
             cfg = NotificationConfig(
                 type_id=tid,
                 master_enabled=True,
-                routes={
-                    seeded_parent_id: NotificationRoute(enabled=True)
-                } if seeded_parent_id else {},
+                routes={seeded_parent_id: NotificationRoute(enabled=True)} if seeded_parent_id else {},
             )
             nc[tid] = cfg.to_dict()
 
@@ -728,8 +702,7 @@ class TaskMateStorage:
 
     def delete_parent_recipient(self, parent_id: str) -> None:
         self._data["parent_recipients"] = [
-            r for r in self._data.get("parent_recipients", [])
-            if r.get("id") != parent_id
+            r for r in self._data.get("parent_recipients", []) if r.get("id") != parent_id
         ]
 
     # --- notification config ---
@@ -749,9 +722,7 @@ class TaskMateStorage:
         cfg.nav_url = nav_url
         self._data.setdefault("notification_config", {})[type_id] = cfg.to_dict()
 
-    def set_notification_route(
-        self, type_id: str, recipient_id: str, route: NotificationRoute
-    ) -> None:
+    def set_notification_route(self, type_id: str, recipient_id: str, route: NotificationRoute) -> None:
         cfg = self.get_notification_config(type_id)
         cfg.routes[recipient_id] = route
         self._data.setdefault("notification_config", {})[type_id] = cfg.to_dict()
@@ -764,10 +735,7 @@ class TaskMateStorage:
 
     # --- custom notifications ---
     def get_custom_notifications(self) -> list[CustomNotification]:
-        return [
-            CustomNotification.from_dict(d)
-            for d in self._data.get("custom_notifications", [])
-        ]
+        return [CustomNotification.from_dict(d) for d in self._data.get("custom_notifications", [])]
 
     def upsert_custom_notification(self, n: CustomNotification) -> None:
         rows = self._data.setdefault("custom_notifications", [])
@@ -779,15 +747,12 @@ class TaskMateStorage:
 
     def delete_custom_notification(self, custom_id: str) -> None:
         self._data["custom_notifications"] = [
-            r for r in self._data.get("custom_notifications", [])
-            if r.get("id") != custom_id
+            r for r in self._data.get("custom_notifications", []) if r.get("id") != custom_id
         ]
 
     # --- streak-at-risk cutoff ---
     def get_streak_at_risk_cutoff(self) -> str:
-        return (self._data.get("settings", {}) or {}).get(
-            "streak_at_risk_cutoff_time", "20:00"
-        )
+        return (self._data.get("settings", {}) or {}).get("streak_at_risk_cutoff_time", "20:00")
 
     def set_streak_at_risk_cutoff(self, hhmm: str) -> None:
         self._data.setdefault("settings", {})["streak_at_risk_cutoff_time"] = hhmm
@@ -811,16 +776,14 @@ class TaskMateStorage:
     def get_escalation_reminder_minutes(self) -> int:
         """Minutes after a mandatory miss before the child reminder escalates."""
         try:
-            return max(1, int((self._data.get("settings", {}) or {}).get(
-                "mandatory_escalation_reminder_minutes", 30)))
+            return max(1, int((self._data.get("settings", {}) or {}).get("mandatory_escalation_reminder_minutes", 30)))
         except (TypeError, ValueError):
             return 30
 
     def get_escalation_parent_minutes(self) -> int:
         """Minutes after a mandatory miss before the parent alert escalates."""
         try:
-            return max(1, int((self._data.get("settings", {}) or {}).get(
-                "mandatory_escalation_parent_minutes", 120)))
+            return max(1, int((self._data.get("settings", {}) or {}).get("mandatory_escalation_parent_minutes", 120)))
         except (TypeError, ValueError):
             return 120
 
@@ -863,9 +826,7 @@ class TaskMateStorage:
 
     def remove_task_group(self, group_id: str) -> None:
         """Remove a task group."""
-        self._data["task_groups"] = [
-            g for g in self._data.get("task_groups", []) if g.get("id") != group_id
-        ]
+        self._data["task_groups"] = [g for g in self._data.get("task_groups", []) if g.get("id") != group_id]
 
     def remove_chore_from_task_groups(self, chore_id: str) -> None:
         """Strip a chore ID from every group (used on chore delete)."""
@@ -921,9 +882,7 @@ class TaskMateStorage:
         # the single choke point all awards flow through — the rolling 200-cap on
         # transactions makes them unreliable for a monthly total (FEAT-2).
         if transaction.points > 0:
-            self.record_season_points(
-                transaction.child_id, transaction.points, transaction.created_at
-            )
+            self.record_season_points(transaction.child_id, transaction.points, transaction.created_at)
 
         # Keep only the last 200 transactions to avoid unbounded storage growth
         if len(self._data["points_transactions"]) > 200:
@@ -1041,9 +1000,7 @@ class TaskMateStorage:
         self.add_quest(quest)
 
     def remove_quest(self, quest_id: str) -> None:
-        self._data["quests"] = [
-            q for q in self._data.get("quests", []) if q.get("id") != quest_id
-        ]
+        self._data["quests"] = [q for q in self._data.get("quests", []) if q.get("id") != quest_id]
         # Drop any progress tracked for this quest
         prog = self._data.get("quest_progress", {})
         prog.pop(quest_id, None)
@@ -1084,9 +1041,7 @@ class TaskMateStorage:
         self.add_challenge(challenge)
 
     def remove_challenge(self, challenge_id: str) -> None:
-        self._data["challenges"] = [
-            c for c in self._data.get("challenges", []) if c.get("id") != challenge_id
-        ]
+        self._data["challenges"] = [c for c in self._data.get("challenges", []) if c.get("id") != challenge_id]
         self._data.get("challenge_progress", {}).pop(challenge_id, None)
 
     def get_challenge_progress(self) -> dict:
@@ -1107,6 +1062,7 @@ class TaskMateStorage:
     def export_data(self) -> dict:
         """Return a deep copy of the full stored data (for backup/export)."""
         import copy
+
         return copy.deepcopy(self._data)
 
     def import_data(self, data: dict) -> None:
@@ -1116,14 +1072,29 @@ class TaskMateStorage:
         a partial import.
         """
         import copy
+
         if not isinstance(data, dict):
             raise ValueError("import data must be an object")
         self._data = copy.deepcopy(data)
         list_keys = (
-            "children", "chores", "rewards", "penalties", "bonuses",
-            "task_groups", "completions", "mandatory_misses", "reward_claims", "points_transactions",
-            "pool_allocations", "badges", "awarded_badges", "parent_recipients",
-            "audit_log", "timed_sessions", "quests", "challenges",
+            "children",
+            "chores",
+            "rewards",
+            "penalties",
+            "bonuses",
+            "task_groups",
+            "completions",
+            "mandatory_misses",
+            "reward_claims",
+            "points_transactions",
+            "pool_allocations",
+            "badges",
+            "awarded_badges",
+            "parent_recipients",
+            "audit_log",
+            "timed_sessions",
+            "quests",
+            "challenges",
         )
         for k in list_keys:
             if not isinstance(self._data.get(k), list):
@@ -1146,6 +1117,7 @@ class TaskMateStorage:
         well-formed photo URLs so the panel never renders a foreign/dangerous one.
         """
         from .photos import is_taskmate_photo_url
+
         for comp in self._data.get("completions", []):
             if not isinstance(comp, dict):
                 continue
@@ -1163,21 +1135,15 @@ class TaskMateStorage:
 
     def remove_completions_for_child(self, child_id: str) -> None:
         """Remove all completions for a given child."""
-        self._data["completions"] = [
-            c for c in self._data.get("completions", []) if c.get("child_id") != child_id
-        ]
+        self._data["completions"] = [c for c in self._data.get("completions", []) if c.get("child_id") != child_id]
 
     def remove_completions_for_chore(self, chore_id: str) -> None:
         """Remove all completions for a given chore."""
-        self._data["completions"] = [
-            c for c in self._data.get("completions", []) if c.get("chore_id") != chore_id
-        ]
+        self._data["completions"] = [c for c in self._data.get("completions", []) if c.get("chore_id") != chore_id]
 
     def remove_reward_claims_for_child(self, child_id: str) -> None:
         """Remove all reward claims for a given child."""
-        self._data["reward_claims"] = [
-            c for c in self._data.get("reward_claims", []) if c.get("child_id") != child_id
-        ]
+        self._data["reward_claims"] = [c for c in self._data.get("reward_claims", []) if c.get("child_id") != child_id]
 
     def remove_reward_claims_for_reward(self, reward_id: str) -> None:
         """Remove all reward claims for a given reward."""
@@ -1209,7 +1175,8 @@ class TaskMateStorage:
     def remove_pool_allocation(self, child_id: str, reward_id: str) -> None:
         """Remove a pool allocation for a specific (child, reward) pair."""
         self._data["pool_allocations"] = [
-            a for a in self._data.get("pool_allocations", [])
+            a
+            for a in self._data.get("pool_allocations", [])
             if not (a.get("child_id") == child_id and a.get("reward_id") == reward_id)
         ]
 
@@ -1309,18 +1276,22 @@ class TaskMateStorage:
     def get_timed_session(self, chore_id: str, child_id: str, session_date: str) -> TimedSession | None:
         """Get a timed session for a specific chore/child/date."""
         for s in self._data.get("timed_sessions", []):
-            if (s.get("chore_id") == chore_id
-                    and s.get("child_id") == child_id
-                    and s.get("session_date") == session_date):
+            if (
+                s.get("chore_id") == chore_id
+                and s.get("child_id") == child_id
+                and s.get("session_date") == session_date
+            ):
                 return TimedSession.from_dict(s)
         return None
 
     def get_active_timed_session(self, chore_id: str, child_id: str) -> TimedSession | None:
         """Get a running or paused session for a chore/child pair."""
         for s in self._data.get("timed_sessions", []):
-            if (s.get("chore_id") == chore_id
-                    and s.get("child_id") == child_id
-                    and s.get("state") in ("running", "paused")):
+            if (
+                s.get("chore_id") == chore_id
+                and s.get("child_id") == child_id
+                and s.get("state") in ("running", "paused")
+            ):
                 return TimedSession.from_dict(s)
         return None
 
@@ -1335,10 +1306,7 @@ class TaskMateStorage:
 
     def remove_timed_session(self, session_id: str) -> None:
         """Remove a timed session."""
-        self._data["timed_sessions"] = [
-            s for s in self._data.get("timed_sessions", [])
-            if s.get("id") != session_id
-        ]
+        self._data["timed_sessions"] = [s for s in self._data.get("timed_sessions", []) if s.get("id") != session_id]
 
     # Generic settings
     def get_setting(self, key: str, default: Any = "") -> Any:

@@ -1,4 +1,5 @@
 """Tests for NotificationCoordinator dispatch."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
@@ -46,10 +47,7 @@ async def test_fire_routes_only_to_enabled_recipients(coord, hass):
 
     await coord.fire("badge_earned", {"child_name": "M", "badge_name": "Star"})
 
-    notify_calls = [
-        c for c in hass.services.async_call.call_args_list
-        if c[0][0] == "notify"
-    ]
+    notify_calls = [c for c in hass.services.async_call.call_args_list if c[0][0] == "notify"]
     assert len(notify_calls) == 1
     assert notify_calls[0][0][1] == "john"
 
@@ -66,10 +64,7 @@ async def test_fire_renders_template_safely_with_missing_key(coord, hass):
     # Missing badge_name key — should not raise; literal "{badge_name}" stays
     await coord.fire("badge_earned", {"child_name": "M"})
 
-    msg = next(
-        c for c in hass.services.async_call.call_args_list
-        if c[0][0] == "notify"
-    )[0][2]["message"]
+    msg = next(c for c in hass.services.async_call.call_args_list if c[0][0] == "notify")[0][2]["message"]
     assert "{badge_name}" in msg
     assert "M" in msg
 
@@ -112,15 +107,19 @@ async def test_pending_chore_approval_dispatches_actionable(coord, hass):
     # are seeded from the migration helper. Re-seed for the test:
     coord.storage.set_notification_master("pending_chore_approval", True)
     coord.storage.set_notification_route(
-        "pending_chore_approval", p.id, NotificationRoute(enabled=True),
+        "pending_chore_approval",
+        p.id,
+        NotificationRoute(enabled=True),
     )
 
     await coord.fire(
         "pending_chore_approval",
         {
             "entry_id": "completion-123",
-            "child_name": "Maria", "chore_name": "Bin",
-            "points": 10, "points_name": "Stars",
+            "child_name": "Maria",
+            "chore_name": "Bin",
+            "points": 10,
+            "points_name": "Stars",
         },
     )
 
@@ -128,7 +127,7 @@ async def test_pending_chore_approval_dispatches_actionable(coord, hass):
     assert len(notify_calls) == 1
     data = notify_calls[0][0][2]["data"]
     assert {"action": "TASKMATE_APPROVE_completion-123", "title": "Approve"} in data["actions"]
-    assert {"action": "TASKMATE_REJECT_completion-123",  "title": "Reject"} in data["actions"]
+    assert {"action": "TASKMATE_REJECT_completion-123", "title": "Reject"} in data["actions"]
 
 
 @pytest.mark.asyncio
@@ -141,15 +140,19 @@ async def test_pending_approval_push_carries_clear_tag(coord, hass):
     coord.storage.upsert_parent_recipient(p)
     coord.storage.set_notification_master("pending_chore_approval", True)
     coord.storage.set_notification_route(
-        "pending_chore_approval", p.id, NotificationRoute(enabled=True),
+        "pending_chore_approval",
+        p.id,
+        NotificationRoute(enabled=True),
     )
 
     await coord.fire(
         "pending_chore_approval",
         {
             "entry_id": "completion-123",
-            "child_name": "Maria", "chore_name": "Bin",
-            "points": 10, "points_name": "Stars",
+            "child_name": "Maria",
+            "chore_name": "Bin",
+            "points": 10,
+            "points_name": "Stars",
         },
     )
 
@@ -171,10 +174,14 @@ async def test_clear_approval_targets_only_mobile_app(coord, hass):
     coord.storage.upsert_parent_recipient(other)
     coord.storage.set_notification_master("pending_chore_approval", True)
     coord.storage.set_notification_route(
-        "pending_chore_approval", mobile.id, NotificationRoute(enabled=True),
+        "pending_chore_approval",
+        mobile.id,
+        NotificationRoute(enabled=True),
     )
     coord.storage.set_notification_route(
-        "pending_chore_approval", other.id, NotificationRoute(enabled=True),
+        "pending_chore_approval",
+        other.id,
+        NotificationRoute(enabled=True),
     )
 
     await coord.clear_approval("pending_chore_approval", "completion-123")
@@ -196,7 +203,9 @@ async def test_clear_approval_skips_when_master_disabled(coord, hass):
     coord.storage.upsert_parent_recipient(mobile)
     coord.storage.set_notification_master("pending_chore_approval", False)
     coord.storage.set_notification_route(
-        "pending_chore_approval", mobile.id, NotificationRoute(enabled=True),
+        "pending_chore_approval",
+        mobile.id,
+        NotificationRoute(enabled=True),
     )
 
     await coord.clear_approval("pending_chore_approval", "completion-123")
@@ -212,7 +221,9 @@ async def test_clear_approval_noop_without_entry_id(coord, hass):
     coord.storage.upsert_parent_recipient(mobile)
     coord.storage.set_notification_master("pending_chore_approval", True)
     coord.storage.set_notification_route(
-        "pending_chore_approval", mobile.id, NotificationRoute(enabled=True),
+        "pending_chore_approval",
+        mobile.id,
+        NotificationRoute(enabled=True),
     )
 
     await coord.clear_approval("pending_chore_approval", "")
@@ -291,10 +302,16 @@ async def test_nav_url_coexists_with_action_buttons(coord, hass):
     coord.storage.upsert_parent_recipient(p)
     coord.storage.set_notification_master("pending_chore_approval", True)
     coord.storage.set_notification_route("pending_chore_approval", p.id, NotificationRoute(enabled=True))
-    await coord.fire("pending_chore_approval", {
-        "entry_id": "c-1", "child_name": "Maria", "chore_name": "Bin",
-        "points": 10, "points_name": "Stars",
-    })
+    await coord.fire(
+        "pending_chore_approval",
+        {
+            "entry_id": "c-1",
+            "child_name": "Maria",
+            "chore_name": "Bin",
+            "points": 10,
+            "points_name": "Stars",
+        },
+    )
     data = _notify_data(hass)["data"]
     assert data["clickAction"] == "/taskmate-admin"
     assert "actions" in data

@@ -1,4 +1,5 @@
 """Tests for taskmate_* event bus emissions."""
+
 from __future__ import annotations
 
 import asyncio
@@ -55,6 +56,7 @@ def _make_system(now=None):
         pass
 
     import custom_components.taskmate.coordinator as _mod
+
     coord._dt_now = now
     coord.async_refresh = _noop_refresh
 
@@ -70,19 +72,14 @@ class TestChoreCompletedEvent:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Make bed", points=5, requires_approval=False
-            ))
+            chore = run(coord.async_add_chore("Make bed", points=5, requires_approval=False))
 
         coord.hass.bus.async_fire = MagicMock()
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_complete_chore(chore.id, child.id))
 
-        fires = [
-            c for c in coord.hass.bus.async_fire.call_args_list
-            if c[0][0] == "taskmate_chore_completed"
-        ]
+        fires = [c for c in coord.hass.bus.async_fire.call_args_list if c[0][0] == "taskmate_chore_completed"]
         assert len(fires) >= 1
         payload = fires[0][0][1]
         assert payload["child_id"] == child.id
@@ -98,19 +95,14 @@ class TestChoreCompletedEvent:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Bob"))
-            chore = run(coord.async_add_chore(
-                "Tidy room", points=10, requires_approval=True
-            ))
+            chore = run(coord.async_add_chore("Tidy room", points=10, requires_approval=True))
 
         coord.hass.bus.async_fire = MagicMock()
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_complete_chore(chore.id, child.id))
 
-        fires = [
-            c for c in coord.hass.bus.async_fire.call_args_list
-            if c[0][0] == "taskmate_chore_completed"
-        ]
+        fires = [c for c in coord.hass.bus.async_fire.call_args_list if c[0][0] == "taskmate_chore_completed"]
         assert len(fires) >= 1
         payload = fires[0][0][1]
         assert payload["child_id"] == child.id
@@ -127,9 +119,7 @@ class TestChoreApprovedEvent:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Carol"))
-            chore = run(coord.async_add_chore(
-                "Wash dishes", points=8, requires_approval=True
-            ))
+            chore = run(coord.async_add_chore("Wash dishes", points=8, requires_approval=True))
             completion = run(coord.async_complete_chore(chore.id, child.id))
 
         coord.hass.bus.async_fire = MagicMock()
@@ -137,10 +127,7 @@ class TestChoreApprovedEvent:
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_approve_chore(completion.id))
 
-        fires = [
-            c for c in coord.hass.bus.async_fire.call_args_list
-            if c[0][0] == "taskmate_chore_approved"
-        ]
+        fires = [c for c in coord.hass.bus.async_fire.call_args_list if c[0][0] == "taskmate_chore_approved"]
         assert len(fires) >= 1
         payload = fires[0][0][1]
         assert payload["child_id"] == child.id
@@ -155,9 +142,7 @@ class TestChoreApprovedEvent:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Dave"))
-            chore = run(coord.async_add_chore(
-                "Feed dog", points=6, requires_approval=True
-            ))
+            chore = run(coord.async_add_chore("Feed dog", points=6, requires_approval=True))
             completion = run(coord.async_complete_chore(chore.id, child.id))
 
         coord.hass.bus.async_fire = MagicMock()
@@ -165,10 +150,7 @@ class TestChoreApprovedEvent:
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_approve_chore(completion.id))
 
-        completed_fires = [
-            c for c in coord.hass.bus.async_fire.call_args_list
-            if c[0][0] == "taskmate_chore_completed"
-        ]
+        completed_fires = [c for c in coord.hass.bus.async_fire.call_args_list if c[0][0] == "taskmate_chore_completed"]
         assert len(completed_fires) == 0
 
 
@@ -181,9 +163,7 @@ class TestRewardClaimedEvent:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Eve"))
-            chore = run(coord.async_add_chore(
-                "Homework", points=100, requires_approval=False
-            ))
+            chore = run(coord.async_add_chore("Homework", points=100, requires_approval=False))
             run(coord.async_complete_chore(chore.id, child.id))
             reward = run(coord.async_add_reward("Movie night", cost=50))
 
@@ -192,10 +172,7 @@ class TestRewardClaimedEvent:
         with patch.object(_mod.dt_util, "now", return_value=now):
             claim = run(coord.async_claim_reward(reward.id, child.id))
 
-        fires = [
-            c for c in coord.hass.bus.async_fire.call_args_list
-            if c[0][0] == "taskmate_reward_claimed"
-        ]
+        fires = [c for c in coord.hass.bus.async_fire.call_args_list if c[0][0] == "taskmate_reward_claimed"]
         assert len(fires) >= 1
         payload = fires[0][0][1]
         assert payload["child_id"] == child.id
@@ -214,19 +191,14 @@ class TestStreakUpdatedEvent:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Faye"))
-            chore = run(coord.async_add_chore(
-                "Brush teeth", points=3, requires_approval=False
-            ))
+            chore = run(coord.async_add_chore("Brush teeth", points=3, requires_approval=False))
 
         coord.hass.bus.async_fire = MagicMock()
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_complete_chore(chore.id, child.id))
 
-        fires = [
-            c for c in coord.hass.bus.async_fire.call_args_list
-            if c[0][0] == "taskmate_streak_updated"
-        ]
+        fires = [c for c in coord.hass.bus.async_fire.call_args_list if c[0][0] == "taskmate_streak_updated"]
         assert len(fires) >= 1
         payload = fires[0][0][1]
         assert payload["child_id"] == child.id
@@ -242,9 +214,7 @@ class TestStreakUpdatedEvent:
 
         with patch.object(_mod.dt_util, "now", return_value=day1):
             child = run(coord.async_add_child("Grace"))
-            chore = run(coord.async_add_chore(
-                "Read book", points=4, requires_approval=False
-            ))
+            chore = run(coord.async_add_chore("Read book", points=4, requires_approval=False))
             run(coord.async_complete_chore(chore.id, child.id))
 
         coord.hass.bus.async_fire = MagicMock()
@@ -252,10 +222,7 @@ class TestStreakUpdatedEvent:
         with patch.object(_mod.dt_util, "now", return_value=day2):
             run(coord.async_complete_chore(chore.id, child.id))
 
-        fires = [
-            c for c in coord.hass.bus.async_fire.call_args_list
-            if c[0][0] == "taskmate_streak_updated"
-        ]
+        fires = [c for c in coord.hass.bus.async_fire.call_args_list if c[0][0] == "taskmate_streak_updated"]
         assert len(fires) >= 1
         payload = fires[0][0][1]
         assert payload["current_streak"] == 2

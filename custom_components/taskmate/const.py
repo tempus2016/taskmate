@@ -1,4 +1,5 @@
 """Constants for TaskMate integration."""
+
 from typing import Final
 
 DOMAIN: Final = "taskmate"
@@ -131,10 +132,10 @@ TIME_CATEGORY_ICONS: Final = {
 # always available) and never appears in this list. An empty label means
 # "use the translated built-in name for this id".
 DEFAULT_TIME_PERIODS: Final = [
-    {"id": "morning",   "label": "", "start": "06:00", "end": "12:00", "icon": "mdi:weather-sunny"},
+    {"id": "morning", "label": "", "start": "06:00", "end": "12:00", "icon": "mdi:weather-sunny"},
     {"id": "afternoon", "label": "", "start": "12:00", "end": "17:00", "icon": "mdi:white-balance-sunny"},
-    {"id": "evening",   "label": "", "start": "17:00", "end": "21:00", "icon": "mdi:weather-sunset"},
-    {"id": "night",     "label": "", "start": "21:00", "end": "23:59", "icon": "mdi:weather-night"},
+    {"id": "evening", "label": "", "start": "17:00", "end": "21:00", "icon": "mdi:weather-sunset"},
+    {"id": "night", "label": "", "start": "21:00", "end": "23:59", "icon": "mdi:weather-night"},
 ]
 
 MAX_TIME_PERIODS: Final = 24
@@ -340,24 +341,24 @@ STATE_CLAIMED: Final = "claimed"
 # Most sounds are synthesized via Web Audio API
 # Fart sounds are CC0 audio files from BigSoundBank.com and GfxSounds.com
 COMPLETION_SOUND_OPTIONS: Final = [
-    "none",        # No sound
-    "coin",        # Coin collect sound
-    "levelup",     # Level up / success sound
-    "fanfare",     # Celebratory fanfare
-    "chime",       # Simple chime
-    "powerup",     # Power up sound
-    "undo",        # Sad/descending "womp womp" for undo actions
-    "fart1",       # Flatulence 1 (short)
-    "fart2",       # Flatulence 2 (short)
-    "fart3",       # Flatulence 3 (short)
-    "fart4",       # Pony flatulence 2 (~3 sec)
-    "fart5",       # Flatulence 4 - discreet (short)
-    "fart6",       # Prout'cochons 1 - pig game sound (short)
-    "fart7",       # Prout'cochons 2 - pig game sound (short)
-    "fart8",       # Prout'cochons 3 - pig game sound (short)
-    "fart9",       # Pony flatulence 1 (short)
-    "fart10",      # Baby fart (short)
-    "fart_random", # Random fart - picks a random fart sound each time!
+    "none",  # No sound
+    "coin",  # Coin collect sound
+    "levelup",  # Level up / success sound
+    "fanfare",  # Celebratory fanfare
+    "chime",  # Simple chime
+    "powerup",  # Power up sound
+    "undo",  # Sad/descending "womp womp" for undo actions
+    "fart1",  # Flatulence 1 (short)
+    "fart2",  # Flatulence 2 (short)
+    "fart3",  # Flatulence 3 (short)
+    "fart4",  # Pony flatulence 2 (~3 sec)
+    "fart5",  # Flatulence 4 - discreet (short)
+    "fart6",  # Prout'cochons 1 - pig game sound (short)
+    "fart7",  # Prout'cochons 2 - pig game sound (short)
+    "fart8",  # Prout'cochons 3 - pig game sound (short)
+    "fart9",  # Pony flatulence 1 (short)
+    "fart10",  # Baby fart (short)
+    "fart_random",  # Random fart - picks a random fart sound each time!
 ]
 
 # Default completion sound
@@ -377,22 +378,22 @@ DEFAULT_DIFFICULTY: Final = "medium"
 DEFAULT_DIFFICULTY_MULTIPLIERS: Final = {"easy": 0.5, "medium": 1.0, "hard": 2.0}
 
 # --- Notification type IDs (v3.9.0) ---
-NOTIF_TYPE_BEDTIME_REMINDER:        Final = "bedtime_reminder"
-NOTIF_TYPE_STREAK_AT_RISK:          Final = "streak_at_risk"
-NOTIF_TYPE_ALL_CHORES_DONE:         Final = "all_chores_done"
-NOTIF_TYPE_BADGE_EARNED:            Final = "badge_earned"
-NOTIF_TYPE_PENDING_CHORE_APPROVAL:  Final = "pending_chore_approval"
-NOTIF_TYPE_PENDING_REWARD_CLAIM:    Final = "pending_reward_claim"
-NOTIF_TYPE_STREAK_MILESTONE:        Final = "streak_milestone"
-NOTIF_TYPE_LEVEL_UP:                Final = "level_up"
-NOTIF_TYPE_WEEKLY_DIGEST:           Final = "weekly_digest"
-NOTIF_TYPE_CELEBRATION:             Final = "celebration"
-NOTIF_TYPE_MANDATORY_REMINDER:      Final = "mandatory_reminder"
-NOTIF_TYPE_MANDATORY_PARENT_ALERT:  Final = "mandatory_parent_alert"
-NOTIF_TYPE_MONTHLY_REPORT:          Final = "monthly_report"
-NOTIF_TYPE_SEASON_CHAMPION:         Final = "season_champion"
-NOTIF_TYPE_FAMILY_GOAL_REACHED:     Final = "family_goal_reached"
+NOTIF_TYPE_BEDTIME_REMINDER: Final = "bedtime_reminder"
+NOTIF_TYPE_STREAK_AT_RISK: Final = "streak_at_risk"
+NOTIF_TYPE_ALL_CHORES_DONE: Final = "all_chores_done"
+NOTIF_TYPE_BADGE_EARNED: Final = "badge_earned"
+NOTIF_TYPE_PENDING_CHORE_APPROVAL: Final = "pending_chore_approval"
+NOTIF_TYPE_PENDING_REWARD_CLAIM: Final = "pending_reward_claim"
+NOTIF_TYPE_STREAK_MILESTONE: Final = "streak_milestone"
+NOTIF_TYPE_LEVEL_UP: Final = "level_up"
+NOTIF_TYPE_WEEKLY_DIGEST: Final = "weekly_digest"
+NOTIF_TYPE_CELEBRATION: Final = "celebration"
+NOTIF_TYPE_MANDATORY_REMINDER: Final = "mandatory_reminder"
+NOTIF_TYPE_MANDATORY_PARENT_ALERT: Final = "mandatory_parent_alert"
+NOTIF_TYPE_MONTHLY_REPORT: Final = "monthly_report"
+NOTIF_TYPE_SEASON_CHAMPION: Final = "season_champion"
+NOTIF_TYPE_FAMILY_GOAL_REACHED: Final = "family_goal_reached"
 
 # Default notification tap target. Must match PANEL_URL_PATH in panel.py —
 # a bare /taskmate is the static-files prefix and returns 403, not the panel.
-DEFAULT_NOTIFICATION_NAV_URL:       Final = "/taskmate-admin"
+DEFAULT_NOTIFICATION_NAV_URL: Final = "/taskmate-admin"

@@ -4,6 +4,7 @@ Pure-ish helpers that turn the chore calendar projection into an RFC 5545 feed a
 calendar app (Google/Apple/Outlook) can subscribe to. Token auth + the HTTP view
 live in ``http_calendar.py``; this module only builds text.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -14,13 +15,7 @@ PRODID = "-//TaskMate//Chores//EN"
 
 def _escape(text: str) -> str:
     """Escape a value per RFC 5545 (backslash, comma, semicolon, newline)."""
-    return (
-        str(text)
-        .replace("\\", "\\\\")
-        .replace("\n", "\\n")
-        .replace(",", "\\,")
-        .replace(";", "\\;")
-    )
+    return str(text).replace("\\", "\\\\").replace("\n", "\\n").replace(",", "\\,").replace(";", "\\;")
 
 
 def _fold(line: str) -> str:
@@ -97,31 +92,39 @@ def build_chore_events(coordinator, start_day: date, end_day: date) -> list[dict
                 for chore in chores:
                     if not _chore_applies_to_child(coordinator, chore, child.id, day):
                         continue
-                    window = coordinator._time_category_window(
-                        getattr(chore, "time_category", "anytime"), day
-                    )
+                    window = coordinator._time_category_window(getattr(chore, "time_category", "anytime"), day)
                     summary = f"{chore.name} — {child.name}"
                     desc = _chore_description(chore)
                     if window is None:
-                        events.append({
-                            "uid": make_uid(chore.id, child.id, day.isoformat(), "allday"),
-                            "summary": summary, "description": desc,
-                            "start": day, "end": day + timedelta(days=1), "all_day": True,
-                        })
+                        events.append(
+                            {
+                                "uid": make_uid(chore.id, child.id, day.isoformat(), "allday"),
+                                "summary": summary,
+                                "description": desc,
+                                "start": day,
+                                "end": day + timedelta(days=1),
+                                "all_day": True,
+                            }
+                        )
                     else:
                         start_dt, end_dt = window
-                        events.append({
-                            "uid": make_uid(chore.id, child.id, day.isoformat(), "timed"),
-                            "summary": summary, "description": desc,
-                            "start": _ensure_aware(start_dt),
-                            "end": _ensure_aware(end_dt), "all_day": False,
-                        })
+                        events.append(
+                            {
+                                "uid": make_uid(chore.id, child.id, day.isoformat(), "timed"),
+                                "summary": summary,
+                                "description": desc,
+                                "start": _ensure_aware(start_dt),
+                                "end": _ensure_aware(end_dt),
+                                "all_day": False,
+                            }
+                        )
             day += timedelta(days=1)
     return events
 
 
 def _ensure_aware(dt: datetime) -> datetime:
     from homeassistant.util import dt as dt_util
+
     if dt.tzinfo is None:
         return dt.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
     return dt

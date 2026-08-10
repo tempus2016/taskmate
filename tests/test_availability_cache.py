@@ -1,4 +1,5 @@
 """PERF-1: availability_build_scope memoizes per-chore work and completions."""
+
 from __future__ import annotations
 
 import datetime as dt
@@ -28,14 +29,13 @@ def _coord(chores, completions=None):
 
 def test_scope_fetches_completions_once_across_many_lookups():
     # depends_on forces is_chore_available_for_child to read completions.
-    chores = [
-        Chore(name=f"c{i}", assigned_to=["k1"], depends_on=["dep"], id=f"id{i}")
-        for i in range(5)
-    ]
+    chores = [Chore(name=f"c{i}", assigned_to=["k1"], depends_on=["dep"], id=f"id{i}") for i in range(5)]
     coord = _coord(chores)
 
-    with patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NOW), \
-         patch("custom_components.taskmate.coord_assignments.dt_util.now", return_value=NOW):
+    with (
+        patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NOW),
+        patch("custom_components.taskmate.coord_assignments.dt_util.now", return_value=NOW),
+    ):
         with coord.availability_build_scope():
             for c in chores:
                 for kid in ("k1", "k2", "k3"):
@@ -51,8 +51,10 @@ def test_rotation_done_memoized_per_chore():
     coord._is_rotation_done_today_uncached = MagicMock(return_value=False)
     coord._compute_active_children_uncached = MagicMock(return_value=["k1", "k2"])
 
-    with patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NOW), \
-         patch("custom_components.taskmate.coord_assignments.dt_util.now", return_value=NOW):
+    with (
+        patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NOW),
+        patch("custom_components.taskmate.coord_assignments.dt_util.now", return_value=NOW),
+    ):
         with coord.availability_build_scope():
             for kid in ("k1", "k2"):
                 coord.is_chore_available_for_child(chore, kid)
@@ -65,8 +67,10 @@ def test_rotation_done_memoized_per_chore():
 def test_no_scope_means_no_cache_state_leaks():
     chore = Chore(name="x", assigned_to=["k1"], depends_on=["dep"], id="x1")
     coord = _coord([chore])
-    with patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NOW), \
-         patch("custom_components.taskmate.coord_assignments.dt_util.now", return_value=NOW):
+    with (
+        patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NOW),
+        patch("custom_components.taskmate.coord_assignments.dt_util.now", return_value=NOW),
+    ):
         coord.is_chore_available_for_child(chore, "k1")
     # Outside a scope the cache is never created; storage is queried directly.
     assert getattr(coord, "_avail_cache", None) is None

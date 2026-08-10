@@ -5,6 +5,7 @@ a lifetime-points total, or a best-streak length — or ``free`` for always
 available). Children unlock avatars by hitting those milestones and can switch
 to any avatar they've unlocked; parents can set any catalogue avatar.
 """
+
 from __future__ import annotations
 
 import logging
@@ -14,14 +15,14 @@ _LOGGER = logging.getLogger(__name__)
 # Shipped defaults so the feature is useful out of the box. Parents can replace
 # the whole list from the panel.
 DEFAULT_AVATAR_CATALOG: list[dict] = [
-    {"id": "starter", "label": "Starter",   "icon": "mdi:account-circle", "unlock_type": "free",   "unlock_value": 0},
-    {"id": "rocket",  "label": "Rocket",    "icon": "mdi:rocket-launch",  "unlock_type": "level",  "unlock_value": 3},
-    {"id": "robot",   "label": "Robot",     "icon": "mdi:robot-happy",    "unlock_type": "level",  "unlock_value": 5},
-    {"id": "ninja",   "label": "Ninja",     "icon": "mdi:ninja",          "unlock_type": "level",  "unlock_value": 10},
-    {"id": "crown",   "label": "Royalty",   "icon": "mdi:crown",          "unlock_type": "points", "unlock_value": 500},
-    {"id": "trophy",  "label": "Champion",  "icon": "mdi:trophy",         "unlock_type": "points", "unlock_value": 1000},
-    {"id": "fire",    "label": "On Fire",   "icon": "mdi:fire",           "unlock_type": "streak", "unlock_value": 7},
-    {"id": "diamond", "label": "Diamond",   "icon": "mdi:diamond-stone",  "unlock_type": "streak", "unlock_value": 30},
+    {"id": "starter", "label": "Starter", "icon": "mdi:account-circle", "unlock_type": "free", "unlock_value": 0},
+    {"id": "rocket", "label": "Rocket", "icon": "mdi:rocket-launch", "unlock_type": "level", "unlock_value": 3},
+    {"id": "robot", "label": "Robot", "icon": "mdi:robot-happy", "unlock_type": "level", "unlock_value": 5},
+    {"id": "ninja", "label": "Ninja", "icon": "mdi:ninja", "unlock_type": "level", "unlock_value": 10},
+    {"id": "crown", "label": "Royalty", "icon": "mdi:crown", "unlock_type": "points", "unlock_value": 500},
+    {"id": "trophy", "label": "Champion", "icon": "mdi:trophy", "unlock_type": "points", "unlock_value": 1000},
+    {"id": "fire", "label": "On Fire", "icon": "mdi:fire", "unlock_type": "streak", "unlock_value": 7},
+    {"id": "diamond", "label": "Diamond", "icon": "mdi:diamond-stone", "unlock_type": "streak", "unlock_value": 30},
 ]
 
 
@@ -67,13 +68,15 @@ class AvatarsMixin:
                 req = f"{value}-day streak"
             else:
                 req = ""
-            out.append({
-                "id": entry.get("id", entry.get("icon")),
-                "label": entry.get("label", ""),
-                "icon": entry.get("icon"),
-                "unlocked": self._avatar_unlocked(entry, child),
-                "requirement": req,
-            })
+            out.append(
+                {
+                    "id": entry.get("id", entry.get("icon")),
+                    "label": entry.get("label", ""),
+                    "icon": entry.get("icon"),
+                    "unlocked": self._avatar_unlocked(entry, child),
+                    "requirement": req,
+                }
+            )
         return out
 
     async def async_update_avatar_catalog(self, catalog: list[dict]) -> None:
@@ -83,13 +86,15 @@ class AvatarsMixin:
             icon = (a.get("icon") or "").strip()
             if not icon:
                 continue
-            cleaned.append({
-                "id": (a.get("id") or icon).strip(),
-                "label": (a.get("label") or "").strip(),
-                "icon": icon,
-                "unlock_type": a.get("unlock_type", "free"),
-                "unlock_value": int(a.get("unlock_value", 0) or 0),
-            })
+            cleaned.append(
+                {
+                    "id": (a.get("id") or icon).strip(),
+                    "label": (a.get("label") or "").strip(),
+                    "icon": icon,
+                    "unlock_type": a.get("unlock_type", "free"),
+                    "unlock_value": int(a.get("unlock_value", 0) or 0),
+                }
+            )
         self.storage.set_setting("avatar_catalog", cleaned)
         await self.storage.async_save()
         await self.async_refresh()

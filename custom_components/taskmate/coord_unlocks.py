@@ -16,6 +16,7 @@ Active unlocks are persisted. A Home Assistant restart mid-unlock must not
 strand the television on: anything already past due is reverted at startup and
 anything still running is re-armed.
 """
+
 from __future__ import annotations
 
 import logging
@@ -68,8 +69,7 @@ class UnlocksMixin:
             return "", 0
         if not self.is_unlock_allowed(entity_id):
             raise ValueError(
-                f"'{entity_id}' is not on the unlock allowlist. "
-                "Add it in Settings before using it as a reward."
+                f"'{entity_id}' is not on the unlock allowlist. Add it in Settings before using it as a reward."
             )
         try:
             mins = int(minutes or 0)
@@ -102,15 +102,18 @@ class UnlocksMixin:
 
         if not self.is_unlock_allowed(entity_id):
             _LOGGER.warning(
-                "Reward '%s' wanted to unlock '%s', which is no longer on the "
-                "allowlist — skipping",
-                reward.name, entity_id,
+                "Reward '%s' wanted to unlock '%s', which is no longer on the allowlist — skipping",
+                reward.name,
+                entity_id,
             )
             return None
 
         minutes = int(getattr(reward, "unlock_minutes", 0) or 0)
         await self.hass.services.async_call(
-            "homeassistant", "turn_on", {"entity_id": entity_id}, blocking=False,
+            "homeassistant",
+            "turn_on",
+            {"entity_id": entity_id},
+            blocking=False,
         )
 
         record: dict[str, Any] = {
@@ -134,7 +137,10 @@ class UnlocksMixin:
 
         _LOGGER.info(
             "Unlocked %s for %s (%s) for %s minutes",
-            entity_id, child.name, reward.name, minutes or "no auto-revert",
+            entity_id,
+            child.name,
+            reward.name,
+            minutes or "no auto-revert",
         )
         self.hass.bus.async_fire("taskmate_unlock_started", dict(record))
         return record
@@ -143,23 +149,24 @@ class UnlocksMixin:
         async def _revert(_now) -> None:
             await self.async_revert_unlock(record)
 
-        self._unlock_timers.append(
-            async_track_point_in_time(self.hass, _revert, when)
-        )
+        self._unlock_timers.append(async_track_point_in_time(self.hass, _revert, when))
 
     async def async_revert_unlock(self, record: dict[str, Any]) -> None:
         """Turn the entity back off and drop the record."""
         entity_id = record.get("entity_id", "")
         if entity_id:
             await self.hass.services.async_call(
-                "homeassistant", "turn_off", {"entity_id": entity_id}, blocking=False,
+                "homeassistant",
+                "turn_off",
+                {"entity_id": entity_id},
+                blocking=False,
             )
             _LOGGER.info("Re-locked %s", entity_id)
 
         remaining = [
-            u for u in self.active_unlocks()
-            if not (u.get("entity_id") == entity_id
-                    and u.get("revert_at") == record.get("revert_at"))
+            u
+            for u in self.active_unlocks()
+            if not (u.get("entity_id") == entity_id and u.get("revert_at") == record.get("revert_at"))
         ]
         self._store_unlocks(remaining)
         await self.storage.async_save()
@@ -197,7 +204,10 @@ class UnlocksMixin:
             entity_id = record.get("entity_id", "")
             if entity_id:
                 await self.hass.services.async_call(
-                    "homeassistant", "turn_off", {"entity_id": entity_id}, blocking=False,
+                    "homeassistant",
+                    "turn_off",
+                    {"entity_id": entity_id},
+                    blocking=False,
                 )
                 _LOGGER.info("Re-locked %s after restart (unlock had expired)", entity_id)
 

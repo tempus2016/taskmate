@@ -5,15 +5,13 @@ works on classic and is invisible on the other four styles, three times over,
 and #755 was itself a fix for exactly that. Sites 1-2 and 4-5 below are each a
 classic/designed pair.
 """
+
 from __future__ import annotations
 
 import pathlib
 import re
 
-WWW = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "custom_components" / "taskmate" / "www"
-)
+WWW = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "www"
 DESIGN = (WWW / "taskmate-design.js").read_text(encoding="utf-8")
 CHILD = (WWW / "taskmate-child-card.js").read_text(encoding="utf-8")
 REORDER = (WWW / "taskmate-reorder-card.js").read_text(encoding="utf-8")
@@ -38,7 +36,8 @@ def test_the_resolver_implements_image_over_icon_over_none():
     # has to tolerate that idiom between the `=` and the `function`.
     block = re.search(
         rf"{RESOLVER}\s*=\s*(?:window\.\w+\s*\|\|\s*)?function[^{{]*\{{(.*?)\n  \}};",
-        DESIGN, re.S,
+        DESIGN,
+        re.S,
     )
     assert block, "could not find the resolver body"
     body = block.group(1)
@@ -56,8 +55,8 @@ def _fn(src: str, name: str) -> str:
     m = re.search(rf"\n  {re.escape(name)}\(", src)
     assert m, f"no definition of {name}"
     start = m.start() + 1
-    nxt = re.search(r"\n  [_a-zA-Z]+\(", src[start + 10:])
-    return src[start: start + 10 + nxt.start()] if nxt else src[start:]
+    nxt = re.search(r"\n  [_a-zA-Z]+\(", src[start + 10 :])
+    return src[start : start + 10 + nxt.start()] if nxt else src[start:]
 
 
 def test_child_card_classic_badge_uses_the_resolver():
@@ -78,9 +77,7 @@ def test_reorder_card_designed_item_uses_the_resolver():
 
 def test_reorder_card_has_two_resolving_paths():
     # The classic path is a separate render function from the designed one.
-    assert REORDER.count(RESOLVER) >= 2, (
-        "both reorder paths must resolve, or the image works on one style only"
-    )
+    assert REORDER.count(RESOLVER) >= 2, "both reorder paths must resolve, or the image works on one style only"
 
 
 def test_routine_card_uses_the_resolver():

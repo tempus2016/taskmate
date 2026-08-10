@@ -1,4 +1,5 @@
 """PERF-3: async_save debounces; async_save_now writes through."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -60,6 +61,7 @@ async def test_repeated_saves_each_bump_version_and_debounce():
 @pytest.mark.asyncio
 async def test_shutdown_flushes_pending_save():
     from custom_components.taskmate.coordinator import TaskMateCoordinator
+
     coord = object.__new__(TaskMateCoordinator)
     coord.storage = MagicMock()
     coord.storage.async_save_now = AsyncMock()

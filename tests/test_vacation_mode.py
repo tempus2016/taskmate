@@ -4,6 +4,7 @@ A vacation period is an inclusive date range during which chores are paused
 (unavailable) and streaks are frozen — a missed day inside a vacation never
 breaks a streak. Periods are stored as the ``vacation_periods`` setting.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -54,9 +55,9 @@ class TestVacationLookup:
 
     def test_inside_range_inclusive_bounds(self):
         coord = _make_coord({"vacation_periods": VAC})
-        assert coord.is_vacation_day(date(2026, 7, 10)) is True   # start
-        assert coord.is_vacation_day(date(2026, 7, 20)) is True   # end
-        assert coord.is_vacation_day(date(2026, 7, 15)) is True   # middle
+        assert coord.is_vacation_day(date(2026, 7, 10)) is True  # start
+        assert coord.is_vacation_day(date(2026, 7, 20)) is True  # end
+        assert coord.is_vacation_day(date(2026, 7, 15)) is True  # middle
 
     def test_outside_range(self):
         coord = _make_coord({"vacation_periods": VAC})
@@ -69,19 +70,27 @@ class TestVacationLookup:
         assert p and p["name"] == "Summer"
 
     def test_malformed_entries_ignored(self):
-        coord = _make_coord({"vacation_periods": [
-            {"name": "bad", "start": "not-a-date", "end": "2026-07-20"},
-            "garbage",
-            VAC[0],
-        ]})
+        coord = _make_coord(
+            {
+                "vacation_periods": [
+                    {"name": "bad", "start": "not-a-date", "end": "2026-07-20"},
+                    "garbage",
+                    VAC[0],
+                ]
+            }
+        )
         periods = coord.get_vacation_periods()
         assert len(periods) == 1
         assert periods[0]["name"] == "Summer"
 
     def test_reversed_dates_are_swapped(self):
-        coord = _make_coord({"vacation_periods": [
-            {"id": "x", "name": "Oops", "start": "2026-07-20", "end": "2026-07-10"},
-        ]})
+        coord = _make_coord(
+            {
+                "vacation_periods": [
+                    {"id": "x", "name": "Oops", "start": "2026-07-20", "end": "2026-07-10"},
+                ]
+            }
+        )
         p = coord.get_vacation_periods()[0]
         assert p["start"] == "2026-07-10"
         assert p["end"] == "2026-07-20"
@@ -115,6 +124,7 @@ class TestStreakGapForgiveness:
 class TestStreakCheckFreezes:
     def _run_check(self, coord, now_dt):
         import custom_components.taskmate.coord_points as _mod
+
         with patch.object(_mod.dt_util, "now", return_value=now_dt):
             run(coord._async_check_streaks())
 
@@ -141,17 +151,21 @@ class TestValidateVacationPeriods:
         assert err is None and periods == []
 
     def test_valid_entry(self):
-        periods, err = _validate_vacation_periods([
-            {"name": "Trip", "start": "2026-08-01", "end": "2026-08-05"},
-        ])
+        periods, err = _validate_vacation_periods(
+            [
+                {"name": "Trip", "start": "2026-08-01", "end": "2026-08-05"},
+            ]
+        )
         assert err is None
         assert periods[0]["name"] == "Trip"
         assert periods[0]["id"]  # generated
 
     def test_reversed_swapped(self):
-        periods, err = _validate_vacation_periods([
-            {"name": "x", "start": "2026-08-05", "end": "2026-08-01"},
-        ])
+        periods, err = _validate_vacation_periods(
+            [
+                {"name": "x", "start": "2026-08-05", "end": "2026-08-01"},
+            ]
+        )
         assert err is None
         assert periods[0]["start"] == "2026-08-01"
         assert periods[0]["end"] == "2026-08-05"
@@ -165,9 +179,11 @@ class TestValidateVacationPeriods:
         assert periods is None and err
 
     def test_sorted_by_start(self):
-        periods, err = _validate_vacation_periods([
-            {"name": "B", "start": "2026-09-01", "end": "2026-09-02"},
-            {"name": "A", "start": "2026-08-01", "end": "2026-08-02"},
-        ])
+        periods, err = _validate_vacation_periods(
+            [
+                {"name": "B", "start": "2026-09-01", "end": "2026-09-02"},
+                {"name": "A", "start": "2026-08-01", "end": "2026-08-02"},
+            ]
+        )
         assert err is None
         assert [p["name"] for p in periods] == ["A", "B"]

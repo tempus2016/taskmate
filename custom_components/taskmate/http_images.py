@@ -6,6 +6,7 @@ only the admin panel uploads, so allowing any authenticated household member to
 write files to disk would weaken the existing posture for no benefit. Serving
 stays plain-authenticated, matching photos.
 """
+
 from __future__ import annotations
 
 import logging
@@ -40,9 +41,7 @@ class TaskMateImageUploadView(HomeAssistantView):
 
         # Cheap pre-check on the declared length before reading the body.
         if request.content_length and request.content_length > images.MAX_UPLOAD_BYTES:
-            return self.json_message(
-                "File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE
-            )
+            return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
 
         try:
             reader = await request.multipart()
@@ -63,23 +62,15 @@ class TaskMateImageUploadView(HomeAssistantView):
                 break
             data.extend(chunk)
             if len(data) > images.MAX_UPLOAD_BYTES:
-                return self.json_message(
-                    "File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE
-                )
+                return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
 
         ext = images.detect_allowed_ext(bytes(data))
         if ext is None:
-            return self.json_message(
-                "Not a supported image (JPEG, PNG or WebP)", HTTPStatus.BAD_REQUEST
-            )
+            return self.json_message("Not a supported image (JPEG, PNG or WebP)", HTTPStatus.BAD_REQUEST)
 
-        used = await self.hass.async_add_executor_job(
-            images.total_images_bytes, self.hass
-        )
+        used = await self.hass.async_add_executor_job(images.total_images_bytes, self.hass)
         if used + len(data) > images.MAX_TOTAL_BYTES:
-            return self.json_message(
-                "Image storage full", HTTPStatus.INSUFFICIENT_STORAGE
-            )
+            return self.json_message("Image storage full", HTTPStatus.INSUFFICIENT_STORAGE)
 
         name = f"{uuid.uuid4().hex}.{ext}"
         directory = images.images_path(self.hass)
@@ -93,9 +84,7 @@ class TaskMateImageUploadView(HomeAssistantView):
             await self.hass.async_add_executor_job(_write)
         except OSError as err:
             _LOGGER.error("Failed to store chore image: %s", err)
-            return self.json_message(
-                "Could not store image", HTTPStatus.INTERNAL_SERVER_ERROR
-            )
+            return self.json_message("Could not store image", HTTPStatus.INTERNAL_SERVER_ERROR)
 
         return self.json({"image_url": f"{images.URL_PREFIX}/{name}"})
 

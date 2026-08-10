@@ -1,4 +1,5 @@
 """Tests for time-gated notification scheduling."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
@@ -24,16 +25,17 @@ async def coord(hass):
 async def test_async_setup_registers_one_callback_per_enabled_bedtime_route(coord, hass):
     child = Child(name="Maria")
     child.notify_service = "notify.maria"
-    coord.storage.add_child(child) if hasattr(coord.storage, "add_child") else coord.storage._data.setdefault("children", []).append(child.to_dict())
+    coord.storage.add_child(child) if hasattr(coord.storage, "add_child") else coord.storage._data.setdefault(
+        "children", []
+    ).append(child.to_dict())
     coord.storage.set_notification_master("bedtime_reminder", True)
     coord.storage.set_notification_route(
-        "bedtime_reminder", f"child:{child.id}",
+        "bedtime_reminder",
+        f"child:{child.id}",
         NotificationRoute(enabled=True, time="19:30"),
     )
 
-    with patch(
-        "custom_components.taskmate.coord_notifications.async_track_time_change"
-    ) as track:
+    with patch("custom_components.taskmate.coord_notifications.async_track_time_change") as track:
         track.return_value = lambda: None
         await coord.async_setup_schedules()
         assert track.called
@@ -60,6 +62,7 @@ async def test_async_reload_schedules_cancels_old_and_re_registers(coord, hass):
 @pytest.mark.asyncio
 async def test_bedtime_skips_when_no_outstanding_chores(coord, hass):
     from datetime import datetime
+
     child = Child(name="M", notify_service="notify.m")
     coord.storage._data.setdefault("children", []).append(child.to_dict())
     # No chores assigned to this child → no outstanding work
@@ -74,6 +77,7 @@ async def test_streak_at_risk_skips_when_completed_today(coord, hass):
     from datetime import datetime
 
     from homeassistant.util import dt as dt_util
+
     today = dt_util.now().date().isoformat()
     child = Child(name="M", current_streak=5, last_completion_date=today)
     coord.storage._data.setdefault("children", []).append(child.to_dict())
@@ -85,6 +89,7 @@ async def test_streak_at_risk_skips_when_completed_today(coord, hass):
 @pytest.mark.asyncio
 async def test_streak_at_risk_skips_when_streak_below_two(coord, hass):
     from datetime import datetime
+
     child = Child(name="M", current_streak=1)
     coord.storage._data.setdefault("children", []).append(child.to_dict())
     coord.fire = AsyncMock()
@@ -95,6 +100,7 @@ async def test_streak_at_risk_skips_when_streak_below_two(coord, hass):
 @pytest.mark.asyncio
 async def test_streak_at_risk_fires_when_streak_active_and_not_extended(coord, hass):
     from datetime import datetime
+
     child = Child(name="M", current_streak=5, last_completion_date="2024-01-01")
     coord.storage._data.setdefault("children", []).append(child.to_dict())
     coord.fire = AsyncMock()
@@ -110,10 +116,14 @@ async def test_custom_skips_when_day_mask_excludes_today(coord, hass, monkeypatc
     from datetime import datetime
 
     from custom_components.taskmate.models import CustomNotification
+
     # day_mask=0 means no day enabled
     n = CustomNotification(
-        name="X", message_template="hi", time="20:00",
-        day_mask=0, recipient_ids=["child:abc"],
+        name="X",
+        message_template="hi",
+        time="20:00",
+        day_mask=0,
+        recipient_ids=["child:abc"],
     )
     coord.storage.upsert_custom_notification(n)
 
@@ -130,14 +140,18 @@ async def test_custom_fires_when_today_bit_set(coord, hass):
     from homeassistant.util import dt as dt_util
 
     from custom_components.taskmate.models import CustomNotification
+
     today_bit = 1 << dt_util.now().date().weekday()
 
     child = Child(name="M", notify_service="notify.m")
     coord.storage._data.setdefault("children", []).append(child.to_dict())
 
     n = CustomNotification(
-        name="X", message_template="hi {child_name}", time="20:00",
-        day_mask=today_bit, recipient_ids=[f"child:{child.id}"],
+        name="X",
+        message_template="hi {child_name}",
+        time="20:00",
+        day_mask=today_bit,
+        recipient_ids=[f"child:{child.id}"],
     )
     coord.storage.upsert_custom_notification(n)
 

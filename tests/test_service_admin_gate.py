@@ -5,6 +5,7 @@ backend, not just hide the control in the UI. These cover the shared
 `_async_require_admin` helper that both the `_admin` wrapper and the
 as_parent branch use.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -57,6 +58,7 @@ async def test_rejects_unknown_user():
 # ---------------------------------------------------------------------------
 # SEC-3: mutating service calls are recorded in the admin audit log
 # ---------------------------------------------------------------------------
+
 
 def _audit_call(user_id, service, data):
     call = MagicMock()

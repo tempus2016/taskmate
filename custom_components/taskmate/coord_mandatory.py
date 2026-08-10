@@ -1,4 +1,5 @@
 """Mandatory-chore detection, scheduling, and resolution (#532)."""
+
 from __future__ import annotations
 
 import logging
@@ -64,10 +65,7 @@ class MandatoryMixin:
 
     async def async_detect_mandatory_misses(self, period_id: str, day: date) -> int:
         """Create misses for due+incomplete mandatory chores in `period_id`."""
-        existing = {
-            (m.chore_id, m.child_id, m.due_date)
-            for m in self.storage.get_mandatory_misses()
-        }
+        existing = {(m.chore_id, m.child_id, m.due_date) for m in self.storage.get_mandatory_misses()}
         created = 0
         for chore in self.storage.get_chores():
             if not getattr(chore, "mandatory", False):
@@ -94,11 +92,17 @@ class MandatoryMixin:
                 )
                 self.storage.add_mandatory_miss(miss)
                 created += 1
-                self.hass.bus.async_fire("taskmate_mandatory_missed", {
-                    "miss_id": miss.id, "chore_id": chore.id, "child_id": child_id,
-                    "period_id": period_id, "penalty_points": miss.penalty_points,
-                    "timestamp": dt_util.now().isoformat(),
-                })
+                self.hass.bus.async_fire(
+                    "taskmate_mandatory_missed",
+                    {
+                        "miss_id": miss.id,
+                        "chore_id": chore.id,
+                        "child_id": child_id,
+                        "period_id": period_id,
+                        "penalty_points": miss.penalty_points,
+                        "timestamp": dt_util.now().isoformat(),
+                    },
+                )
         if created:
             await self.storage.async_save()
             await self.async_refresh()
@@ -132,15 +136,22 @@ class MandatoryMixin:
         name = getattr(chore, "name", "chore")
         if miss.penalty_points > 0:
             await self.async_remove_points(
-                miss.child_id, miss.penalty_points,
+                miss.child_id,
+                miss.penalty_points,
                 reason=f"Penalty: {name} (missed mandatory)",
             )
         self.storage.remove_mandatory_miss(miss_id)
         await self.storage.async_save()
-        self.hass.bus.async_fire("taskmate_mandatory_penalty_applied", {
-            "miss_id": miss_id, "chore_id": miss.chore_id, "child_id": miss.child_id,
-            "points": miss.penalty_points, "timestamp": dt_util.now().isoformat(),
-        })
+        self.hass.bus.async_fire(
+            "taskmate_mandatory_penalty_applied",
+            {
+                "miss_id": miss_id,
+                "chore_id": miss.chore_id,
+                "child_id": miss.child_id,
+                "points": miss.penalty_points,
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
         await self.async_refresh()
 
     async def async_postpone_mandatory_chore(self, miss_id: str) -> None:
@@ -156,10 +167,16 @@ class MandatoryMixin:
         # else: no window left today -> let normal scheduling resurface tomorrow
         self.storage.remove_mandatory_miss(miss_id)
         await self.storage.async_save()
-        self.hass.bus.async_fire("taskmate_mandatory_postponed", {
-            "miss_id": miss_id, "chore_id": miss.chore_id, "child_id": miss.child_id,
-            "next_period": nxt or "", "timestamp": dt_util.now().isoformat(),
-        })
+        self.hass.bus.async_fire(
+            "taskmate_mandatory_postponed",
+            {
+                "miss_id": miss_id,
+                "chore_id": miss.chore_id,
+                "child_id": miss.child_id,
+                "next_period": nxt or "",
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
         await self.async_refresh()
 
     async def async_dismiss_mandatory_chore(self, miss_id: str) -> None:
@@ -168,10 +185,15 @@ class MandatoryMixin:
             return
         self.storage.remove_mandatory_miss(miss_id)
         await self.storage.async_save()
-        self.hass.bus.async_fire("taskmate_mandatory_dismissed", {
-            "miss_id": miss_id, "chore_id": miss.chore_id, "child_id": miss.child_id,
-            "timestamp": dt_util.now().isoformat(),
-        })
+        self.hass.bus.async_fire(
+            "taskmate_mandatory_dismissed",
+            {
+                "miss_id": miss_id,
+                "chore_id": miss.chore_id,
+                "child_id": miss.child_id,
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
         await self.async_refresh()
 
     # ---- escalation (FEAT-6) ----------------------------------------------
@@ -225,12 +247,14 @@ class MandatoryMixin:
             for stage in range(miss.escalation_stage + 1, target + 1):
                 if stage in (1, 2):
                     await self.notifications.fire(
-                        NOTIF_TYPE_MANDATORY_REMINDER, ctx,
+                        NOTIF_TYPE_MANDATORY_REMINDER,
+                        ctx,
                         only_recipients={f"child:{miss.child_id}"},
                     )
                 elif stage == 3:
                     await self.notifications.fire(
-                        NOTIF_TYPE_MANDATORY_PARENT_ALERT, ctx,
+                        NOTIF_TYPE_MANDATORY_PARENT_ALERT,
+                        ctx,
                     )
             miss.escalation_stage = target
             self.storage.update_mandatory_miss(miss)
@@ -261,13 +285,17 @@ class MandatoryMixin:
             unsub = async_track_time_change(
                 self.hass,
                 self._make_mandatory_period_cb(period_id),
-                hour=hour, minute=minute, second=10,
+                hour=hour,
+                minute=minute,
+                second=10,
             )
             self._unsub_mandatory.append(unsub)
         # Reminder escalation ladder (FEAT-6) — re-evaluate open misses on a tick.
         self._unsub_mandatory.append(
             async_track_time_interval(
-                self.hass, self._escalation_tick, _ESCALATION_INTERVAL,
+                self.hass,
+                self._escalation_tick,
+                _ESCALATION_INTERVAL,
             )
         )
 
@@ -278,9 +306,8 @@ class MandatoryMixin:
     def _make_mandatory_period_cb(self, period_id: str):
         @callback
         def _cb(now: datetime) -> None:
-            self.hass.async_create_task(
-                self.async_detect_mandatory_misses(period_id, dt_util.now().date())
-            )
+            self.hass.async_create_task(self.async_detect_mandatory_misses(period_id, dt_util.now().date()))
+
         return _cb
 
     def disarm_mandatory_schedules(self) -> None:

@@ -8,6 +8,7 @@ the example sentences in ``custom_sentences/<lang>/taskmate.yaml`` into your HA
 config (see custom_sentences/README.md). The speech-building logic is kept in
 pure helpers so it is unit-testable without the conversation stack.
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,6 +28,7 @@ INTENT_POINTS = "TaskMatePoints"
 
 def _get_coordinator(hass: HomeAssistant):
     from .coordinator import TaskMateCoordinator
+
     for value in hass.data.get(DOMAIN, {}).values():
         if isinstance(value, TaskMateCoordinator):
             return value

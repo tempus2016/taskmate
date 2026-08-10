@@ -1,4 +1,5 @@
 """Data models for TaskMate integration."""
+
 from __future__ import annotations
 
 import logging
@@ -24,6 +25,7 @@ def generate_id() -> str:
 def dt_util_now_iso() -> str:
     """Current local time as an ISO string (module-level so dataclass defaults can use it)."""
     from homeassistant.util import dt as dt_util
+
     return dt_util.now().isoformat()
 
 
@@ -172,7 +174,7 @@ class Child:
     notify_service: str | None = None
     linked_user_id: str = ""  # HA user id; when set, only that user (or an admin) may self-serve as this child
     quiet_hours_start: str = ""  # "HH:MM" — start of do-not-disturb window; empty = no quiet hours
-    quiet_hours_end: str = ""    # "HH:MM" — end of do-not-disturb window; start>end means overnight
+    quiet_hours_end: str = ""  # "HH:MM" — end of do-not-disturb window; start>end means overnight
     level: int = 1  # cached XP level (derived from total_points_earned)
     # Guest profiles (#690): a visiting cousin gets a temporary child that
     # expires on its own and stays out of the family leaderboard.
@@ -265,7 +267,9 @@ class Chore:
     # Optional uploaded photograph (#750). Takes precedence over `icon` at
     # every render site; stored as a /api/taskmate/image/<name> URL.
     image_url: str = ""
-    difficulty: str = "medium"  # easy | medium | hard — scales awarded points by the tier multiplier (medium = ×1.0 baseline)
+    difficulty: str = (
+        "medium"  # easy | medium | hard — scales awarded points by the tier multiplier (medium = ×1.0 baseline)
+    )
     # Scheduling
     # schedule_mode: "specific_days" = show on selected days of week (Mode A)
     #                "recurring"     = rolling window recurrence (Mode B)
@@ -273,7 +277,7 @@ class Chore:
     due_days: list[str] = field(default_factory=list)  # Mode A: days to show chore
     # Mode B fields
     recurrence: str = "weekly"  # every_2_days | weekly | every_2_weeks | monthly | every_3_months | every_6_months
-    recurrence_day: str = ""    # optional: which day of week for weekly/every_2_weeks
+    recurrence_day: str = ""  # optional: which day of week for weekly/every_2_weeks
     recurrence_start: str = ""  # optional: ISO date anchor for every_2_days
     first_occurrence_mode: str = "available_immediately"  # available_immediately | wait_for_first_occurrence
     # Dynamic visibility
@@ -293,7 +297,9 @@ class Chore:
     # One-shot chore fields
     enabled: bool = True  # False = soft-disabled (completed or expired)
     disabled_for: list[str] = field(default_factory=list)  # Child IDs this chore is disabled for
-    depends_on: list[str] = field(default_factory=list)  # Chore IDs that must be approved-completed today before this is available
+    depends_on: list[str] = field(
+        default_factory=list
+    )  # Chore IDs that must be approved-completed today before this is available
     created_date: str = ""  # ISO date for one-shot expiry, e.g. "2026-04-16"
     expires_on: str = ""  # optional ISO end date; chore auto-disables the day after
     # Reactive chores (#674): a short-lived chore raised by an automation, e.g.
@@ -316,7 +322,9 @@ class Chore:
     # Dynamic assignment (sibling rotation)
     assignment_mode: str = "everyone"  # everyone | alternating | random
     assignment_rotation_anchor: str = ""  # ISO date; day-0 of the rotation for alternating
-    assignment_current_child_id: str = ""  # cached active child ID for today (computed at midnight and on create/update)
+    assignment_current_child_id: str = (
+        ""  # cached active child ID for today (computed at midnight and on create/update)
+    )
     require_availability: bool = False  # When True, skip children whose availability entity says they're unavailable
     # Skip state (ephemeral: cleared at midnight when skip_date != today)
     skip_date: str = ""  # ISO date the skip applies to ("" = no active skip)
@@ -561,7 +569,7 @@ class Quest:
     name: str
     description: str = ""
     icon: str = "mdi:map-marker-path"
-    steps: list[str] = field(default_factory=list)   # ordered chore IDs
+    steps: list[str] = field(default_factory=list)  # ordered chore IDs
     bonus_points: int = 25
     assigned_to: list[str] = field(default_factory=list)  # child IDs; empty = all
     repeatable: bool = False
@@ -609,8 +617,8 @@ class Challenge:
     name: str
     description: str = ""
     icon: str = "mdi:trophy-outline"
-    scope: str = "daily"          # daily | weekly
-    metric: str = "chores"        # chores | points
+    scope: str = "daily"  # daily | weekly
+    metric: str = "chores"  # chores | points
     target: int = 3
     bonus_points: int = 15
     assigned_to: list[str] = field(default_factory=list)  # child IDs; empty = all
@@ -708,8 +716,8 @@ class MandatoryMiss:
 
     chore_id: str
     child_id: str
-    due_date: str          # ISO date the chore was missed
-    period_id: str         # the window that closed ("anytime" for all-day)
+    due_date: str  # ISO date the chore was missed
+    period_id: str  # the window that closed ("anytime" for all-day)
     penalty_points: int = 0
     postpone_count: int = 0
     escalation_stage: int = 0  # 0=none 1=nudged 2=reminded 3=parent-alerted (FEAT-6)
@@ -1207,10 +1215,7 @@ class NotificationConfig:
         return cls(
             type_id=data.get("type_id", ""),
             master_enabled=bool(data.get("master_enabled", False)),
-            routes={
-                rid: NotificationRoute.from_dict(rdata)
-                for rid, rdata in raw_routes.items()
-            },
+            routes={rid: NotificationRoute.from_dict(rdata) for rid, rdata in raw_routes.items()},
             nav_url=data.get("nav_url", "") or "",
         )
 
@@ -1231,8 +1236,8 @@ class CustomNotification:
 
     name: str
     message_template: str
-    time: str                         # "HH:MM"
-    day_mask: int = 0b1111111         # bit0=Mon … bit6=Sun
+    time: str  # "HH:MM"
+    day_mask: int = 0b1111111  # bit0=Mon … bit6=Sun
     recipient_ids: list[str] = field(default_factory=list)
     enabled: bool = True
     id: str = field(default_factory=generate_id)

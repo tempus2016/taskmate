@@ -1,4 +1,5 @@
 """Tests for avatar unlockables."""
+
 from __future__ import annotations
 
 import asyncio
@@ -47,14 +48,14 @@ def test_unlock_by_level_points_streak():
     child = Child(name="A", id="a", total_points_earned=500, best_streak=7)
     coord = _coord(child)  # level = 500//100+1 = 6
     opts = {o["icon"]: o for o in coord.avatar_options_for_child(child)}
-    assert opts["mdi:account-circle"]["unlocked"]          # free
-    assert opts["mdi:rocket-launch"]["unlocked"]           # level 3
-    assert opts["mdi:robot-happy"]["unlocked"]             # level 5
-    assert not opts["mdi:ninja"]["unlocked"]               # level 10
-    assert opts["mdi:crown"]["unlocked"]                   # 500 points
-    assert not opts["mdi:trophy"]["unlocked"]              # 1000 points
-    assert opts["mdi:fire"]["unlocked"]                    # 7-day streak
-    assert not opts["mdi:diamond-stone"]["unlocked"]       # 30-day streak
+    assert opts["mdi:account-circle"]["unlocked"]  # free
+    assert opts["mdi:rocket-launch"]["unlocked"]  # level 3
+    assert opts["mdi:robot-happy"]["unlocked"]  # level 5
+    assert not opts["mdi:ninja"]["unlocked"]  # level 10
+    assert opts["mdi:crown"]["unlocked"]  # 500 points
+    assert not opts["mdi:trophy"]["unlocked"]  # 1000 points
+    assert opts["mdi:fire"]["unlocked"]  # 7-day streak
+    assert not opts["mdi:diamond-stone"]["unlocked"]  # 30-day streak
 
 
 def test_child_cannot_select_locked_avatar():
@@ -87,10 +88,14 @@ def test_set_unknown_avatar_rejected():
 
 def test_update_catalog_filters_iconless_rows():
     coord = _coord(Child(name="A", id="a"))
-    run(coord.async_update_avatar_catalog([
-        {"label": "No icon", "icon": "", "unlock_type": "free"},
-        {"label": "Good", "icon": "mdi:star", "unlock_type": "level", "unlock_value": "4"},
-    ]))
+    run(
+        coord.async_update_avatar_catalog(
+            [
+                {"label": "No icon", "icon": "", "unlock_type": "free"},
+                {"label": "Good", "icon": "mdi:star", "unlock_type": "level", "unlock_value": "4"},
+            ]
+        )
+    )
     cat = coord._settings["avatar_catalog"]
     assert len(cat) == 1
     assert cat[0]["icon"] == "mdi:star"
@@ -111,7 +116,10 @@ class TestAvatarPickerOnEveryDesign:
 
     SOURCE = (
         _pathlib.Path(__file__).resolve().parent.parent
-        / "custom_components" / "taskmate" / "www" / "taskmate-child-card.js"
+        / "custom_components"
+        / "taskmate"
+        / "www"
+        / "taskmate-child-card.js"
     ).read_text(encoding="utf-8")
 
     def _designed_region(self) -> str:
@@ -120,15 +128,14 @@ class TestAvatarPickerOnEveryDesign:
         return self.SOURCE[start:end]
 
     def test_classic_opens_the_picker(self):
-        classic = self.SOURCE[self.SOURCE.index("  render() {"):self.SOURCE.index("_renderDesigned(design) {")]
+        classic = self.SOURCE[self.SOURCE.index("  render() {") : self.SOURCE.index("_renderDesigned(design) {")]
         assert "_toggleAvatarPicker()" in classic
         assert "_renderAvatarPicker(" in classic
 
     def test_designed_header_opens_the_picker(self):
         region = self._designed_region()
         assert "_toggleAvatarPicker()" in region, (
-            "the designed header never wires the avatar to the picker, so it "
-            "does nothing on any style but classic"
+            "the designed header never wires the avatar to the picker, so it does nothing on any style but classic"
         )
 
     def test_designed_header_renders_the_picker(self):

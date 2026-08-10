@@ -1,4 +1,5 @@
 """Tests for dated chore expiry (expires_on)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -30,15 +31,17 @@ def _coord(chores):
 
 def _run_on(coord, date_obj):
     ndt = dt.datetime(date_obj.year, date_obj.month, date_obj.day, 0, 5)
-    with patch("homeassistant.util.dt.now", return_value=ndt), \
-         patch("homeassistant.util.dt.as_local", side_effect=lambda d: d):
+    with (
+        patch("homeassistant.util.dt.now", return_value=ndt),
+        patch("homeassistant.util.dt.as_local", side_effect=lambda d: d),
+    ):
         run(coord._async_expire_dated_chores())
 
 
 def test_expires_after_date():
     c = Chore(name="Summer job", expires_on="2026-06-16", enabled=True, id="c1")
     coord = _coord([c])
-    _run_on(coord, dt.date(2026, 6, 17))   # day after expiry
+    _run_on(coord, dt.date(2026, 6, 17))  # day after expiry
     assert c.enabled is False
     coord.storage.update_chore.assert_called_once()
 
@@ -46,7 +49,7 @@ def test_expires_after_date():
 def test_still_enabled_on_expiry_day():
     c = Chore(name="Lasts today", expires_on="2026-06-17", enabled=True, id="c1")
     coord = _coord([c])
-    _run_on(coord, dt.date(2026, 6, 17))   # inclusive — still valid
+    _run_on(coord, dt.date(2026, 6, 17))  # inclusive — still valid
     assert c.enabled is True
     coord.storage.update_chore.assert_not_called()
 

@@ -4,6 +4,7 @@ Export custom templates as a shareable pack; import one that somebody else
 made. A pack is arbitrary user-supplied JSON, so import validates everything
 and drops every field it doesn't recognise.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -28,17 +29,22 @@ def _coord(custom=()):
 
 def _tpl(name="Morning", chores=None, tid="t1"):
     return {
-        "id": tid, "name": name, "icon": "mdi:sun", "builtin": False,
+        "id": tid,
+        "name": name,
+        "icon": "mdi:sun",
+        "builtin": False,
         "chores": chores or [{"name": "Make bed", "points": 2, "time_category": "morning"}],
     }
 
 
 def _pack(templates=None, **over):
     pack = {
-        "format": PACK_FORMAT, "version": 1,
-        "templates": templates if templates is not None else [
-            {"name": "Shared routine", "icon": "mdi:sun",
-             "chores": [{"name": "Make bed", "points": 2}]},
+        "format": PACK_FORMAT,
+        "version": 1,
+        "templates": templates
+        if templates is not None
+        else [
+            {"name": "Shared routine", "icon": "mdi:sun", "chores": [{"name": "Make bed", "points": 2}]},
         ],
     }
     pack.update(over)
@@ -109,9 +115,16 @@ class TestImportValidation:
 
     def test_drops_unknown_chore_fields(self):
         """A shared pack must not be able to set fields the panel wouldn't."""
-        pack = _pack(templates=[{"name": "T", "chores": [
-            {"name": "c", "points": 3, "assignment_current_child_id": "kid1", "enabled": False},
-        ]}])
+        pack = _pack(
+            templates=[
+                {
+                    "name": "T",
+                    "chores": [
+                        {"name": "c", "points": 3, "assignment_current_child_id": "kid1", "enabled": False},
+                    ],
+                }
+            ]
+        )
         chore = _coord()._validate_pack(pack)[0]["chores"][0]
         assert "assignment_current_child_id" not in chore
         assert chore["points"] == 3
@@ -166,10 +179,21 @@ class TestImport:
 class TestRoundTrip:
     @pytest.mark.asyncio
     async def test_export_then_import_preserves_the_template(self):
-        source = _coord([_tpl(chores=[
-            {"name": "Make bed", "points": 2, "time_category": "morning",
-             "due_days": ["monday"], "requires_approval": False},
-        ])])
+        source = _coord(
+            [
+                _tpl(
+                    chores=[
+                        {
+                            "name": "Make bed",
+                            "points": 2,
+                            "time_category": "morning",
+                            "due_days": ["monday"],
+                            "requires_approval": False,
+                        },
+                    ]
+                )
+            ]
+        )
         pack = source.export_templates()
 
         target = _coord()

@@ -5,6 +5,7 @@ Python can usefully guard is that every card TaskMate claims to ship actually
 exists on disk, and that the new one is wired into the resource list — a card
 listed but missing 404s on every dashboard load.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -114,9 +115,7 @@ class TestDesignSystem:
 
     def test_stamps_the_design_attribute_on_its_host(self):
         """var(--tmd-*) resolves only below an element carrying the attribute."""
-        assert re.search(r"__taskmate_design\s*\.\s*apply\(", self.SOURCE) or (
-            "apply(this" in self.SOURCE
-        )
+        assert re.search(r"__taskmate_design\s*\.\s*apply\(", self.SOURCE) or ("apply(this" in self.SOURCE)
 
     def test_consumes_design_tokens_in_its_styles(self):
         """Hard-coded hexes ignore the active palette."""
@@ -131,15 +130,15 @@ class TestDesignSystem:
     def test_accessible_style_reaches_the_action_buttons(self):
         """Done/Back/Skip are the whole interface — if they keep hard-coded
         greens and greys the accessible palette has not actually applied."""
-        styles = self.SOURCE[self.SOURCE.index("static get styles()"):]
-        btn = styles[styles.index(".rt-done"):styles.index(".rt-row")]
+        styles = self.SOURCE[self.SOURCE.index("static get styles()") :]
+        btn = styles[styles.index(".rt-done") : styles.index(".rt-row")]
         assert "var(--tmd-" in btn, "the primary Done button ignores the design tokens"
 
     def test_layout_classes_do_not_collide_with_the_shared_kit(self):
         """The kit's own .btn/.bar rules are design-qualified, so they outrank
         an unprefixed .btn-done here and repaint the primary action."""
         kit = (WWW / "taskmate-design.js").read_text(encoding="utf-8")
-        template = self.SOURCE[self.SOURCE.index("render()"):self.SOURCE.index("static get styles()")]
+        template = self.SOURCE[self.SOURCE.index("render()") : self.SOURCE.index("static get styles()")]
         used = set(re.findall(r'class="([^"$]+)"', template))
         classes = {c for group in used for c in group.split()}
         for generic in ("btn", "bar"):

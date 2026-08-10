@@ -65,8 +65,9 @@ bind-mounted:
 Run these locally before pushing:
 
 ```bash
-# Lint (matches the "Ruff" CI check)
+# Lint and formatting (both match the "Ruff" CI check)
 ruff check custom_components/taskmate tests scripts
+ruff format --check custom_components/taskmate tests scripts   # drop --check to fix
 
 # Cards and panel (matches the "ESLint" CI check)
 npm ci && npm run lint

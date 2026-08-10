@@ -1,4 +1,5 @@
 """Tests for quests (chore chains)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -27,11 +28,11 @@ def _coord(quests, child):
     storage = MagicMock()
     storage.get_quests = MagicMock(return_value=quests)
     storage.get_quest = MagicMock(side_effect=lambda qid: next((q for q in quests if q.id == qid), None))
-    storage.get_quest_child_progress = MagicMock(
-        side_effect=lambda qid, cid: progress.get(qid, {}).get(cid, {})
-    )
+    storage.get_quest_child_progress = MagicMock(side_effect=lambda qid, cid: progress.get(qid, {}).get(cid, {}))
+
     def _set(qid, cid, p):
         progress.setdefault(qid, {})[cid] = p
+
     storage.set_quest_child_progress = MagicMock(side_effect=_set)
     storage.update_child = MagicMock()
     storage.add_points_transaction = MagicMock()
@@ -80,7 +81,7 @@ def test_repeatable_resets_to_zero():
     coord = _coord([q], child)
     run(coord._async_advance_quests("kid", "a"))
     prog = coord._progress["q1"]["kid"]
-    assert prog["step"] == 0           # reset
+    assert prog["step"] == 0  # reset
     assert prog["completed_count"] == 1
     assert child.points == 10
 

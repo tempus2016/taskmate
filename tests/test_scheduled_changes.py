@@ -4,6 +4,7 @@
 date, applied at midnight, and caught up at startup if Home Assistant was off
 on the day it came due.
 """
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -32,7 +33,8 @@ def _coord(chores=None, changes=None):
     coord.storage.update_chore = MagicMock(side_effect=lambda c: store.__setitem__(c.id, c))
     coord.storage.get_scheduled_changes = MagicMock(side_effect=lambda: list(queued))
     coord.storage.get_scheduled_change = MagicMock(
-        side_effect=lambda cid: next((c for c in queued if c.id == cid), None))
+        side_effect=lambda cid: next((c for c in queued if c.id == cid), None)
+    )
     coord.storage.add_scheduled_change = MagicMock(side_effect=queued.append)
 
     def _update(change):
@@ -41,9 +43,11 @@ def _coord(chores=None, changes=None):
                 queued[i] = change
                 return
         queued.append(change)
+
     coord.storage.update_scheduled_change = MagicMock(side_effect=_update)
     coord.storage.remove_scheduled_change = MagicMock(
-        side_effect=lambda cid: queued.__setitem__(slice(None), [c for c in queued if c.id != cid]))
+        side_effect=lambda cid: queued.__setitem__(slice(None), [c for c in queued if c.id != cid])
+    )
 
     coord.storage.async_save = AsyncMock()
     coord.async_refresh = AsyncMock()
@@ -189,8 +193,7 @@ class TestApplying:
     @pytest.mark.asyncio
     async def test_applied_change_is_not_reapplied(self):
         chore = Chore(name="Mow", points=99)
-        change = ScheduledChange(
-            chore_id=chore.id, apply_on=_day(-1), changes={"points": 20}, applied=True)
+        change = ScheduledChange(chore_id=chore.id, apply_on=_day(-1), changes={"points": 20}, applied=True)
         coord = _coord([chore], [change])
         assert await coord.async_apply_due_scheduled_changes() == 0
         assert chore.points == 99
@@ -198,8 +201,9 @@ class TestApplying:
     @pytest.mark.asyncio
     async def test_multiple_fields_in_one_change(self):
         chore = Chore(name="Mow", points=10, enabled=True, assigned_to=["a"])
-        change = ScheduledChange(chore_id=chore.id, apply_on=_day(0),
-                                 changes={"points": 20, "enabled": False, "assigned_to": ["b"]})
+        change = ScheduledChange(
+            chore_id=chore.id, apply_on=_day(0), changes={"points": 20, "enabled": False, "assigned_to": ["b"]}
+        )
         coord = _coord([chore], [change])
         await coord.async_apply_due_scheduled_changes()
         assert (chore.points, chore.enabled, chore.assigned_to) == (20, False, ["b"])
@@ -225,8 +229,7 @@ class TestApplying:
     async def test_unknown_field_is_skipped_at_apply_time(self):
         """Defence in depth: storage could have been hand-edited since queueing."""
         chore = Chore(name="Mow", points=10)
-        change = ScheduledChange(chore_id=chore.id, apply_on=_day(0),
-                                 changes={"points": 20, "skip_date": "2026-01-01"})
+        change = ScheduledChange(chore_id=chore.id, apply_on=_day(0), changes={"points": 20, "skip_date": "2026-01-01"})
         coord = _coord([chore], [change])
         await coord.async_apply_due_scheduled_changes()
         assert chore.points == 20
@@ -279,8 +282,7 @@ class TestListing:
 
 class TestModel:
     def test_round_trip(self):
-        change = ScheduledChange(chore_id="c1", apply_on="2026-09-01",
-                                 changes={"points": 20}, note="new school year")
+        change = ScheduledChange(chore_id="c1", apply_on="2026-09-01", changes={"points": 20}, note="new school year")
         restored = ScheduledChange.from_dict(change.to_dict())
         assert restored.chore_id == "c1"
         assert restored.apply_on == "2026-09-01"

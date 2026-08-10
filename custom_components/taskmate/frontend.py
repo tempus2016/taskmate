@@ -1,4 +1,5 @@
 """Frontend registration for TaskMate custom cards."""
+
 from __future__ import annotations
 
 import json
@@ -56,8 +57,8 @@ CARDS: Final = [
 # why blanket stale-cleanup was removed from async_register_cards).
 RETIRED_CARDS: Final = [
     "taskmate-task-groups-card.js",  # removed #452
-    "taskmate-templates-card.js",    # removed #448
-    "taskmate-reminders-card.js",    # removed #450
+    "taskmate-templates-card.js",  # removed #448
+    "taskmate-reminders-card.js",  # removed #450
 ]
 
 # JS modules loaded on every HA frontend page (config flow sound preview).
@@ -86,9 +87,7 @@ async def _async_get_version(hass: HomeAssistant) -> str:
     """Get version from manifest.json for cache busting (async-safe)."""
     manifest_path = Path(__file__).parent / "manifest.json"
     try:
-        content = await hass.async_add_executor_job(
-            manifest_path.read_text, "utf-8"
-        )
+        content = await hass.async_add_executor_job(manifest_path.read_text, "utf-8")
         return json.loads(content).get("version", "1.0.0")
     except (OSError, json.JSONDecodeError, AttributeError):
         return "1.0.0"
@@ -108,22 +107,23 @@ async def async_register_frontend(hass: HomeAssistant) -> None:
         return
 
     # Register the www folder as a static path
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(URL_BASE, str(www_path), False)]
-    )
+    await hass.http.async_register_static_paths([StaticPathConfig(URL_BASE, str(www_path), False)])
 
     _LOGGER.debug("Registered static path: %s -> %s", URL_BASE, www_path)
 
     # Authenticated upload/serve endpoints for chore evidence photos.
     from .http_photos import async_register_photo_views
+
     async_register_photo_views(hass)
 
     # Admin-gated upload / authenticated serve for chore pictures (#750).
     from .http_images import async_register_image_views
+
     async_register_image_views(hass)
 
     # Token-gated ICS calendar feed (FEAT-10).
     from .http_calendar import async_register_calendar_view
+
     async_register_calendar_view(hass)
 
     # Register global JS modules (loaded on all pages, including config flow)
@@ -205,9 +205,7 @@ async def async_register_cards(hass: HomeAssistant) -> None:
 
             if card_url not in existing:
                 # Card not registered yet — add it
-                await resources.async_create_item(
-                    {"url": versioned_url, "res_type": "module"}
-                )
+                await resources.async_create_item({"url": versioned_url, "res_type": "module"})
                 _LOGGER.info("TaskMate: added resource: %s", versioned_url)
             else:
                 item = existing[card_url]
@@ -220,7 +218,8 @@ async def async_register_cards(hass: HomeAssistant) -> None:
                     )
                     _LOGGER.info(
                         "TaskMate: updated resource: %s -> %s",
-                        current_url, versioned_url,
+                        current_url,
+                        versioned_url,
                     )
                 else:
                     _LOGGER.debug("TaskMate: resource up to date: %s", versioned_url)
@@ -237,13 +236,12 @@ async def async_register_cards(hass: HomeAssistant) -> None:
                     continue
                 try:
                     await resources.async_delete_item(item["id"])
-                    _LOGGER.info(
-                        "TaskMate: removed retired resource: %s", item.get("url")
-                    )
+                    _LOGGER.info("TaskMate: removed retired resource: %s", item.get("url"))
                 except (AttributeError, KeyError, TypeError, OSError) as err:
                     _LOGGER.warning(
                         "TaskMate: could not remove retired resource %s: %s",
-                        item.get("url"), err,
+                        item.get("url"),
+                        err,
                     )
 
     except (AttributeError, KeyError, TypeError, OSError) as err:

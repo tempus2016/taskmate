@@ -1,4 +1,5 @@
 """Tests for the family co-op goal (FEAT-4)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -34,8 +35,12 @@ def test_progress_is_combined_points():
 
 @pytest.mark.asyncio
 async def test_goal_fires_when_reached():
-    settings = {"family_goal_enabled": True, "family_goal_target": 300,
-                "family_goal_name": "Movie", "family_goal_reward": "popcorn"}
+    settings = {
+        "family_goal_enabled": True,
+        "family_goal_target": 300,
+        "family_goal_name": "Movie",
+        "family_goal_reward": "popcorn",
+    }
     c = _coord(_kids(150, 200), settings)  # 350 >= 300
     await c._async_check_family_goal()
     assert settings.get("family_goal_achieved") is True
@@ -57,8 +62,7 @@ async def test_goal_not_fired_below_target():
 
 @pytest.mark.asyncio
 async def test_goal_only_fires_once():
-    settings = {"family_goal_enabled": True, "family_goal_target": 100,
-                "family_goal_achieved": True}
+    settings = {"family_goal_enabled": True, "family_goal_target": 100, "family_goal_achieved": True}
     c = _coord(_kids(500), settings)
     await c._async_check_family_goal()
     c.notifications.fire.assert_not_awaited()

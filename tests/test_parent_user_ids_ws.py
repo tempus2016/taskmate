@@ -1,4 +1,5 @@
 """WS update_settings accepts and persists parent_user_ids (#661)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock

@@ -4,6 +4,7 @@ coord_timed.py had no direct test. We drive the coordinator methods with a
 stubbed storage layer (no real Home Assistant), covering the validation
 guards and the running/paused state transitions.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -52,6 +53,7 @@ def _patch_now():
 
 # ── start validation ─────────────────────────────────────────────────────────
 
+
 def test_start_unknown_chore_raises():
     coord = _coord(chore=None)
     with pytest.raises(ValueError):
@@ -89,9 +91,13 @@ def test_start_fresh_creates_running_session():
 
 
 def test_resume_paused_appends_segment():
-    paused = TimedSession(chore_id="cho1", child_id="ch1", state="paused",
-                          segments=[{"start": NOW.isoformat(), "end": NOW.isoformat()}],
-                          total_seconds_today=60)
+    paused = TimedSession(
+        chore_id="cho1",
+        child_id="ch1",
+        state="paused",
+        segments=[{"start": NOW.isoformat(), "end": NOW.isoformat()}],
+        total_seconds_today=60,
+    )
     coord = _coord(chore=_timed_chore(), child=Child(name="A", id="ch1"), active=paused)
     with _patch_now():
         run(coord.async_start_timed_task("cho1", "ch1"))
@@ -100,14 +106,14 @@ def test_resume_paused_appends_segment():
 
 
 def test_resume_blocked_by_daily_cap():
-    paused = TimedSession(chore_id="cho1", child_id="ch1", state="paused",
-                          segments=[], total_seconds_today=3600)
+    paused = TimedSession(chore_id="cho1", child_id="ch1", state="paused", segments=[], total_seconds_today=3600)
     coord = _coord(chore=_timed_chore(max_daily=30), child=Child(name="A", id="ch1"), active=paused)
     with pytest.raises(ValueError):
         run(coord.async_start_timed_task("cho1", "ch1"))
 
 
 # ── pause ────────────────────────────────────────────────────────────────────
+
 
 def test_pause_without_running_raises():
     coord = _coord(active=None)
@@ -117,8 +123,7 @@ def test_pause_without_running_raises():
 
 def test_pause_running_sets_paused_and_closes_segment():
     start = (NOW - dt.timedelta(minutes=5)).isoformat()
-    running = TimedSession(chore_id="cho1", child_id="ch1", state="running",
-                           segments=[{"start": start, "end": None}])
+    running = TimedSession(chore_id="cho1", child_id="ch1", state="running", segments=[{"start": start, "end": None}])
     coord = _coord(active=running)
     with _patch_now():
         run(coord.async_pause_timed_task("cho1", "ch1"))
@@ -128,6 +133,7 @@ def test_pause_running_sets_paused_and_closes_segment():
 
 
 # ── stop ─────────────────────────────────────────────────────────────────────
+
 
 def test_stop_without_active_raises():
     coord = _coord(active=None)

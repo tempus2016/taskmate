@@ -1,4 +1,5 @@
 """Tests for notification WebSocket commands."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -16,9 +17,11 @@ async def setup(hass):
     coord.hass = hass
     coord.entry_id = "ws_test"
     from custom_components.taskmate.storage import TaskMateStorage
+
     coord.storage = TaskMateStorage(hass, "ws_test")
     await coord.storage.async_load()
     from custom_components.taskmate.coord_notifications import NotificationCoordinator
+
     coord.notifications = NotificationCoordinator(hass, coord.storage)
     coord.notifications.coordinator = coord
     hass.data = {DOMAIN: {"ws_test": coord}}
@@ -46,8 +49,7 @@ async def test_get_state_returns_full_snapshot(setup, hass):
 async def test_set_master_enabled(setup, hass):
     coord = setup
     connection = MagicMock()
-    msg = {"id": 2, "type": "taskmate/notifications/set_master_enabled",
-           "type_id": "bedtime_reminder", "enabled": True}
+    msg = {"id": 2, "type": "taskmate/notifications/set_master_enabled", "type_id": "bedtime_reminder", "enabled": True}
     await ws.ws_notif_set_master(hass, connection, msg)
 
     args, _ = connection.send_result.call_args
@@ -61,7 +63,8 @@ async def test_set_route(setup, hass):
     coord = setup
     connection = MagicMock()
     msg = {
-        "id": 3, "type": "taskmate/notifications/set_route",
+        "id": 3,
+        "type": "taskmate/notifications/set_route",
         "type_id": "bedtime_reminder",
         "recipient_id": "child:abc",
         "enabled": True,
@@ -81,7 +84,8 @@ async def test_set_route(setup, hass):
 async def test_set_child_notify_not_found(setup, hass):
     connection = MagicMock()
     msg = {
-        "id": 4, "type": "taskmate/notifications/set_child_notify",
+        "id": 4,
+        "type": "taskmate/notifications/set_child_notify",
         "child_id": "nonexistent",
         "notify_service": "notify.test",
     }
@@ -95,12 +99,14 @@ async def test_set_child_notify_not_found(setup, hass):
 async def test_set_child_notify_success(setup, hass):
     coord = setup
     from custom_components.taskmate.models import Child
+
     c = Child(name="Maria")
     coord.storage.add_child(c)
 
     connection = MagicMock()
     msg = {
-        "id": 5, "type": "taskmate/notifications/set_child_notify",
+        "id": 5,
+        "type": "taskmate/notifications/set_child_notify",
         "child_id": c.id,
         "notify_service": "notify.marias_phone",
     }
@@ -118,8 +124,11 @@ async def test_upsert_parent_create(setup, hass):
     coord = setup
     connection = MagicMock()
     msg = {
-        "id": 6, "type": "taskmate/notifications/upsert_parent",
-        "name": "John", "notify_service": "notify.johns_phone", "enabled": True,
+        "id": 6,
+        "type": "taskmate/notifications/upsert_parent",
+        "name": "John",
+        "notify_service": "notify.johns_phone",
+        "enabled": True,
     }
     await ws.ws_notif_upsert_parent(hass, connection, msg)
 
@@ -135,14 +144,18 @@ async def test_upsert_parent_create(setup, hass):
 async def test_upsert_parent_update(setup, hass):
     coord = setup
     from custom_components.taskmate.models import ParentRecipient
+
     p = ParentRecipient(name="John", notify_service="notify.johns_phone")
     coord.storage.upsert_parent_recipient(p)
 
     connection = MagicMock()
     msg = {
-        "id": 7, "type": "taskmate/notifications/upsert_parent",
-        "parent_id": p.id, "name": "John Mac",
-        "notify_service": "notify.johns_phone", "enabled": True,
+        "id": 7,
+        "type": "taskmate/notifications/upsert_parent",
+        "parent_id": p.id,
+        "name": "John Mac",
+        "notify_service": "notify.johns_phone",
+        "enabled": True,
     }
     await ws.ws_notif_upsert_parent(hass, connection, msg)
 
@@ -156,9 +169,12 @@ async def test_upsert_parent_update(setup, hass):
 async def test_upsert_parent_update_not_found(setup, hass):
     connection = MagicMock()
     msg = {
-        "id": 8, "type": "taskmate/notifications/upsert_parent",
+        "id": 8,
+        "type": "taskmate/notifications/upsert_parent",
         "parent_id": "parent:doesnotexist",
-        "name": "Ghost", "notify_service": "notify.ghost", "enabled": True,
+        "name": "Ghost",
+        "notify_service": "notify.ghost",
+        "enabled": True,
     }
     await ws.ws_notif_upsert_parent(hass, connection, msg)
     connection.send_error.assert_called_once()
@@ -170,6 +186,7 @@ async def test_upsert_parent_update_not_found(setup, hass):
 async def test_delete_parent(setup, hass):
     coord = setup
     from custom_components.taskmate.models import ParentRecipient
+
     p = ParentRecipient(name="Lisa", notify_service="notify.lisas_phone")
     coord.storage.upsert_parent_recipient(p)
 
@@ -188,7 +205,8 @@ async def test_upsert_custom_create(setup, hass):
     coord = setup
     connection = MagicMock()
     msg = {
-        "id": 10, "type": "taskmate/notifications/upsert_custom",
+        "id": 10,
+        "type": "taskmate/notifications/upsert_custom",
         "name": "Brush teeth",
         "message_template": "Brush your teeth, {child_name}!",
         "time": "20:30",
@@ -210,6 +228,7 @@ async def test_upsert_custom_create(setup, hass):
 async def test_upsert_custom_update(setup, hass):
     coord = setup
     from custom_components.taskmate.models import CustomNotification
+
     n = CustomNotification(
         name="Brush teeth",
         message_template="Brush!",
@@ -219,7 +238,8 @@ async def test_upsert_custom_update(setup, hass):
 
     connection = MagicMock()
     msg = {
-        "id": 11, "type": "taskmate/notifications/upsert_custom",
+        "id": 11,
+        "type": "taskmate/notifications/upsert_custom",
         "custom_id": n.id,
         "name": "Brush teeth updated",
         "message_template": "Brush your teeth, {child_name}!",
@@ -240,6 +260,7 @@ async def test_upsert_custom_update(setup, hass):
 async def test_delete_custom(setup, hass):
     coord = setup
     from custom_components.taskmate.models import CustomNotification
+
     n = CustomNotification(
         name="Brush teeth",
         message_template="Brush!",
@@ -279,7 +300,8 @@ async def test_set_streak_cutoff(setup, hass):
     coord = setup
     connection = MagicMock()
     msg = {
-        "id": 14, "type": "taskmate/notifications/set_streak_cutoff",
+        "id": 14,
+        "type": "taskmate/notifications/set_streak_cutoff",
         "time": "19:45",
     }
     await ws.ws_notif_set_streak_cutoff(hass, connection, msg)
@@ -316,8 +338,7 @@ async def test_set_nav_url_global(setup, hass):
 async def test_set_nav_url_per_type(setup, hass):
     coord = setup
     connection = MagicMock()
-    msg = {"id": 21, "type": "taskmate/notifications/set_nav_url",
-           "type_id": "badge_earned", "nav_url": "/lovelace/x"}
+    msg = {"id": 21, "type": "taskmate/notifications/set_nav_url", "type_id": "badge_earned", "nav_url": "/lovelace/x"}
     await ws.ws_notif_set_nav_url(hass, connection, msg)
     assert coord.storage.get_notification_config("badge_earned").nav_url == "/lovelace/x"
 
@@ -346,14 +367,12 @@ async def test_set_nav_url_rejects_dangerous_schemes(setup, hass):
 async def test_set_nav_url_accepts_noaction_and_https(setup, hass):
     coord = setup
     connection = MagicMock()
-    msg = {"id": 24, "type": "taskmate/notifications/set_nav_url",
-           "nav_url": "noAction"}
+    msg = {"id": 24, "type": "taskmate/notifications/set_nav_url", "nav_url": "noAction"}
     await ws.ws_notif_set_nav_url(hass, connection, msg)
     assert coord.storage.get_setting("notification_nav_url") == "noAction"
 
     connection = MagicMock()
-    msg = {"id": 25, "type": "taskmate/notifications/set_nav_url",
-           "nav_url": "https://example.com/dash"}
+    msg = {"id": 25, "type": "taskmate/notifications/set_nav_url", "nav_url": "https://example.com/dash"}
     await ws.ws_notif_set_nav_url(hass, connection, msg)
     assert coord.storage.get_setting("notification_nav_url") == "https://example.com/dash"
 
@@ -362,8 +381,7 @@ async def test_set_nav_url_accepts_noaction_and_https(setup, hass):
 async def test_set_nav_url_rejects_unknown_type_id(setup, hass):
     coord = setup
     connection = MagicMock()
-    msg = {"id": 26, "type": "taskmate/notifications/set_nav_url",
-           "type_id": "not_a_type", "nav_url": "/lovelace/x"}
+    msg = {"id": 26, "type": "taskmate/notifications/set_nav_url", "type_id": "not_a_type", "nav_url": "/lovelace/x"}
     await ws.ws_notif_set_nav_url(hass, connection, msg)
     connection.send_result.assert_not_called()
     args, _ = connection.send_error.call_args

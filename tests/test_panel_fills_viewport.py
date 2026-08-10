@@ -11,15 +11,13 @@ stops partway down every section with little content (issue #754).
 Structural (grep over source) because the collapse depends on the surrounding
 Home Assistant frontend, which no unit test instantiates.
 """
+
 from __future__ import annotations
 
 import pathlib
 import re
 
-PANEL = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "custom_components" / "taskmate" / "www" / "taskmate-panel.js"
-)
+PANEL = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "www" / "taskmate-panel.js"
 
 
 def test_panel_stylesheet_is_not_cut_short_by_a_stray_backtick():
@@ -65,8 +63,7 @@ def test_panel_host_is_exactly_one_viewport_tall():
         "collapses to content height wherever the ancestor chain is auto"
     )
     assert re.search(r"height:\s*100%", rules) is None, (
-        "the panel host must not fall back on height:100% — that is the "
-        "percentage chain this fix removes"
+        "the panel host must not fall back on height:100% — that is the percentage chain this fix removes"
     )
     assert "min-height: 100dvh" not in rules, (
         "a floor-only rule lets a long section grow the panel past the "
@@ -85,11 +82,9 @@ def test_panel_host_is_a_flex_column():
 def test_shell_flexes_instead_of_claiming_a_percentage_height():
     rules = _block(".tm-shell")
     assert re.search(r"height:\s*100%", rules) is None, (
-        ".tm-shell must not use height:100%; it resolves to auto whenever the "
-        "ancestor chain has no definite height"
+        ".tm-shell must not use height:100%; it resolves to auto whenever the ancestor chain has no definite height"
     )
     assert "flex: 1 1 auto" in rules, ".tm-shell must flex to fill the panel"
     assert "min-height: 0" in rules, (
-        "a flex item defaults to min-height:auto, which would force the grid "
-        "back to its content height"
+        "a flex item defaults to min-height:auto, which would force the grid back to its content height"
     )

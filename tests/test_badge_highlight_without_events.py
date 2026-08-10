@@ -18,6 +18,7 @@ Two defects, one guard (issue #752):
 Structural (grep over source) because neither defect is visible to a
 functional test: the cards render perfectly either way.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -49,9 +50,7 @@ def test_no_card_subscribes_to_the_badge_event():
 
 def test_badge_id_helper_exists():
     src = _src("taskmate-attr-resolver.js")
-    assert "window.__taskmate_badge_id" in src, (
-        "the shared badge-id helper is gone; the cards depend on it"
-    )
+    assert "window.__taskmate_badge_id" in src, "the shared badge-id helper is gone; the cards depend on it"
 
 
 def test_badge_cards_read_the_id_through_the_helper():
@@ -78,7 +77,8 @@ def test_badge_cards_do_not_compare_against_the_undefined_id_field():
 def test_both_child_card_render_paths_highlight_the_new_badge():
     """Classic and designed paths each need the highlight (the recurring bug)."""
     hits = [
-        line for line in _src("taskmate-child-card.js").splitlines()
+        line
+        for line in _src("taskmate-child-card.js").splitlines()
         if "just-earned" in line and "__taskmate_badge_id" in line
     ]
     assert len(hits) >= 2, (

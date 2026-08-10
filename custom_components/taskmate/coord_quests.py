@@ -6,6 +6,7 @@ current step advances them. Finishing the final step awards the quest's bonus
 points, fires a ``taskmate_quest_completed`` event + celebration, and either
 resets progress (repeatable quests) or marks the quest complete for that child.
 """
+
 from __future__ import annotations
 
 import logging
@@ -72,17 +73,19 @@ class QuestsMixin:
             step = int(prog.get("step", 0))
             total = len(quest.steps)
             done = step >= total
-            out.append({
-                "quest_id": quest.id,
-                "name": quest.name,
-                "icon": quest.icon,
-                "total_steps": total,
-                "step": min(step, total),
-                "done": done,
-                "times_completed": int(prog.get("completed_count", 0)),
-                "bonus_points": quest.bonus_points,
-                "next_chore_id": quest.steps[step] if not done and step < total else "",
-            })
+            out.append(
+                {
+                    "quest_id": quest.id,
+                    "name": quest.name,
+                    "icon": quest.icon,
+                    "total_steps": total,
+                    "step": min(step, total),
+                    "done": done,
+                    "times_completed": int(prog.get("completed_count", 0)),
+                    "bonus_points": quest.bonus_points,
+                    "next_chore_id": quest.steps[step] if not done and step < total else "",
+                }
+            )
         return out
 
     # ── Progression ──────────────────────────────────────────────────────
@@ -129,24 +132,36 @@ class QuestsMixin:
             child.points += bonus
             child.total_points_earned += bonus
             child.career_score = child.total_points_earned - child.total_penalties_received
-            self.storage.add_points_transaction(PointsTransaction(
-                child_id=child.id, points=bonus,
-                reason=f"Quest complete: {quest.name}", created_at=dt_util.now(),
-            ))
+            self.storage.add_points_transaction(
+                PointsTransaction(
+                    child_id=child.id,
+                    points=bonus,
+                    reason=f"Quest complete: {quest.name}",
+                    created_at=dt_util.now(),
+                )
+            )
             if hasattr(self, "_maybe_level_up"):
                 await self._maybe_level_up(child)
             self.storage.update_child(child)
 
-        self.hass.bus.async_fire("taskmate_quest_completed", {
-            "child_id": child.id, "child_name": child.name,
-            "quest_id": quest.id, "quest_name": quest.name,
-            "bonus": bonus, "timestamp": dt_util.now().isoformat(),
-        })
+        self.hass.bus.async_fire(
+            "taskmate_quest_completed",
+            {
+                "child_id": child.id,
+                "child_name": child.name,
+                "quest_id": quest.id,
+                "quest_name": quest.name,
+                "bonus": bonus,
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
         if hasattr(self, "_celebrate"):
             await self._celebrate(
-                child, "quest_completed",
+                child,
+                "quest_completed",
                 f"{child.name} completed the quest '{quest.name}'!",
-                tier=3, extra={"quest_id": quest.id, "bonus": bonus},
+                tier=3,
+                extra={"quest_id": quest.id, "bonus": bonus},
             )
 
         # Repeatable quests start over; one-shot quests stay complete.

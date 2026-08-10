@@ -1,4 +1,5 @@
 """Tests for mandatory period-end scheduling (#532)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -18,11 +19,13 @@ def run(coro):
 
 def _coord():
     c = object.__new__(TaskMateCoordinator)
-    c.get_time_periods = MagicMock(return_value=[
-        {"id": "morning", "start": "06:00", "end": "12:00"},
-        {"id": "afternoon", "start": "12:00", "end": "17:00"},
-        {"id": "evening", "start": "17:00", "end": "21:00"},
-    ])
+    c.get_time_periods = MagicMock(
+        return_value=[
+            {"id": "morning", "start": "06:00", "end": "12:00"},
+            {"id": "afternoon", "start": "12:00", "end": "17:00"},
+            {"id": "evening", "start": "17:00", "end": "21:00"},
+        ]
+    )
     return c
 
 

@@ -1,4 +1,5 @@
 """Tests for badge dataclasses."""
+
 from __future__ import annotations
 
 from custom_components.taskmate.models import AwardedBadge, Badge, BadgeCriterion

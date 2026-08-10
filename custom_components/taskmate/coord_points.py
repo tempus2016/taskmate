@@ -1,4 +1,5 @@
 """Points operations mixin for TaskMateCoordinator."""
+
 from __future__ import annotations
 
 import logging
@@ -72,7 +73,7 @@ class PointsMixin:
             return req
 
         for child in children:
-            awarded_weeks = list(getattr(child, 'awarded_perfect_weeks', None) or [])
+            awarded_weeks = list(getattr(child, "awarded_perfect_weeks", None) or [])
 
             # Skip if already awarded for this week
             if week_key in awarded_weeks:
@@ -100,9 +101,7 @@ class PointsMixin:
             # counts only when EVERY chore due that day was done — not just one.
             if all_mode and derived_dates:
                 satisfied = all(
-                    self._all_due_chores_done(
-                        child.id, date.fromisoformat(d), include_rotation=False
-                    )
+                    self._all_due_chores_done(child.id, date.fromisoformat(d), include_rotation=False)
                     for d in derived_dates
                 )
             else:
@@ -113,9 +112,7 @@ class PointsMixin:
                 child.points += perfect_week_bonus
                 child.total_points_earned += perfect_week_bonus
                 child.career_score = child.total_points_earned - child.total_penalties_received
-                self.storage.append_career_score_snapshot(
-                    child.id, today.isoformat(), child.career_score
-                )
+                self.storage.append_career_score_snapshot(child.id, today.isoformat(), child.career_score)
                 self.storage.update_child(child)
 
                 transaction = PointsTransaction(
@@ -140,13 +137,17 @@ class PointsMixin:
                 if getattr(self, "badges", None):
                     await self.badges.evaluate_for_child(child.id, "perfect_week")
                 await self._celebrate(
-                    child, "perfect_week",
+                    child,
+                    "perfect_week",
                     f"{child.name} earned a perfect week — +{perfect_week_bonus}!",
-                    tier=3, extra={"bonus": perfect_week_bonus},
+                    tier=3,
+                    extra={"bonus": perfect_week_bonus},
                 )
                 _LOGGER.info(
                     "Perfect week bonus (%d pts) awarded to %s for week of %s",
-                    perfect_week_bonus, child.name, week_key,
+                    perfect_week_bonus,
+                    child.name,
+                    week_key,
                 )
 
         if changed:
@@ -213,17 +214,13 @@ class PointsMixin:
                 if streak_mode == "pause" or getattr(child, "streak_paused", False):
                     child.streak_paused = True
                     _LOGGER.info(
-                        "Streak paused for %s (last completion: %s, mode=%s)",
-                        child.name, last_date_str, streak_mode
+                        "Streak paused for %s (last completion: %s, mode=%s)", child.name, last_date_str, streak_mode
                     )
                 else:
                     # Default: reset to 0
                     child.current_streak = 0
                     child.streak_paused = False
-                    _LOGGER.info(
-                        "Streak reset for %s (last completion: %s, mode=reset)",
-                        child.name, last_date_str
-                    )
+                    _LOGGER.info("Streak reset for %s (last completion: %s, mode=reset)", child.name, last_date_str)
                 self.storage.update_child(child)
                 changed = True
 
@@ -243,9 +240,7 @@ class PointsMixin:
         child.career_score = child.total_points_earned - child.total_penalties_received
         await self._maybe_level_up(child)
         self.storage.update_child(child)
-        self.storage.append_career_score_snapshot(
-            child_id, date.today().isoformat(), child.career_score
-        )
+        self.storage.append_career_score_snapshot(child_id, date.today().isoformat(), child.career_score)
         # Log the manual transaction
         transaction = PointsTransaction(
             child_id=child_id,
@@ -279,9 +274,7 @@ class PointsMixin:
         if reason.startswith("Penalty: "):
             child.total_penalties_received += actual_deducted
             child.career_score = child.total_points_earned - child.total_penalties_received
-            self.storage.append_career_score_snapshot(
-                child_id, date.today().isoformat(), child.career_score
-            )
+            self.storage.append_career_score_snapshot(child_id, date.today().isoformat(), child.career_score)
         self.storage.update_child(child)
         # Log the manual transaction (negative points)
         transaction = PointsTransaction(
@@ -338,9 +331,7 @@ class PointsMixin:
         if reason.startswith("Gift to ") or reason.startswith("Gift from "):
             link_id = getattr(target, "link_id", "") or ""
             if not link_id:
-                raise ValueError(
-                    "This gift predates undo support and can't be reversed automatically."
-                )
+                raise ValueError("This gift predates undo support and can't be reversed automatically.")
             for leg in [t for t in txns if (getattr(t, "link_id", "") or "") == link_id]:
                 leg_child = self.get_child(leg.child_id)
                 if leg_child:
@@ -368,9 +359,7 @@ class PointsMixin:
         # points, so nothing else to reverse.
         child.career_score = child.total_points_earned - child.total_penalties_received
         self.storage.update_child(child)
-        self.storage.append_career_score_snapshot(
-            child.id, dt_util.now().date().isoformat(), child.career_score
-        )
+        self.storage.append_career_score_snapshot(child.id, dt_util.now().date().isoformat(), child.career_score)
         self.storage.remove_points_transaction(transaction_id)
         await self.storage.async_save()
         await self.async_refresh()
@@ -394,9 +383,7 @@ class PointsMixin:
         lvl = xp // step + 1
         return {"level": lvl, "progress": xp - (lvl - 1) * step, "target": step}
 
-    async def _celebrate(
-        self, child, kind: str, message: str, tier: int = 1, extra: dict | None = None
-    ) -> None:
+    async def _celebrate(self, child, kind: str, message: str, tier: int = 1, extra: dict | None = None) -> None:
         """Central celebration funnel for notable moments.
 
         Always fires a single ``taskmate_celebration`` event carrying a ``tier``
@@ -452,17 +439,30 @@ class PointsMixin:
         if new < old:
             return  # earned total dropped (e.g. undo); resync quietly
         for lvl in range(old + 1, new + 1):
-            self.hass.bus.async_fire("taskmate_level_up", {
-                "child_id": child.id, "child_name": child.name,
-                "level": lvl, "timestamp": dt_util.now().isoformat(),
-            })
+            self.hass.bus.async_fire(
+                "taskmate_level_up",
+                {
+                    "child_id": child.id,
+                    "child_name": child.name,
+                    "level": lvl,
+                    "timestamp": dt_util.now().isoformat(),
+                },
+            )
             if getattr(self, "notifications", None):
-                await self.notifications.fire("level_up", {
-                    "child_name": child.name, "child_id": child.id, "level": lvl,
-                })
+                await self.notifications.fire(
+                    "level_up",
+                    {
+                        "child_name": child.name,
+                        "child_id": child.id,
+                        "level": lvl,
+                    },
+                )
             await self._celebrate(
-                child, "level_up", f"{child.name} reached level {lvl}!",
-                tier=3 if lvl % 5 == 0 else 2, extra={"level": lvl},
+                child,
+                "level_up",
+                f"{child.name} reached level {lvl}!",
+                tier=3 if lvl % 5 == 0 else 2,
+                extra={"level": lvl},
             )
 
     async def async_gift_points(self, from_child_id: str, to_child_id: str, points: int) -> None:
@@ -481,9 +481,7 @@ class PointsMixin:
         if not sender or not recipient:
             raise ValueError("Sender or recipient not found")
         if (sender.points or 0) < points:
-            raise ValueError(
-                f"Not enough points: {sender.name} has {sender.points}, gift {points}"
-            )
+            raise ValueError(f"Not enough points: {sender.name} has {sender.points}, gift {points}")
         now = dt_util.now()
         sender.points -= points
         recipient.points += points
@@ -491,19 +489,35 @@ class PointsMixin:
         self.storage.update_child(recipient)
         # Shared link_id so undo can reverse both legs together.
         gift_link = generate_id()
-        self.storage.add_points_transaction(PointsTransaction(
-            child_id=sender.id, points=-points,
-            reason=f"Gift to {recipient.name}", created_at=now, link_id=gift_link,
-        ))
-        self.storage.add_points_transaction(PointsTransaction(
-            child_id=recipient.id, points=points,
-            reason=f"Gift from {sender.name}", created_at=now, link_id=gift_link,
-        ))
-        self.hass.bus.async_fire("taskmate_points_gifted", {
-            "from_child_id": sender.id, "from_child_name": sender.name,
-            "to_child_id": recipient.id, "to_child_name": recipient.name,
-            "points": points, "timestamp": now.isoformat(),
-        })
+        self.storage.add_points_transaction(
+            PointsTransaction(
+                child_id=sender.id,
+                points=-points,
+                reason=f"Gift to {recipient.name}",
+                created_at=now,
+                link_id=gift_link,
+            )
+        )
+        self.storage.add_points_transaction(
+            PointsTransaction(
+                child_id=recipient.id,
+                points=points,
+                reason=f"Gift from {sender.name}",
+                created_at=now,
+                link_id=gift_link,
+            )
+        )
+        self.hass.bus.async_fire(
+            "taskmate_points_gifted",
+            {
+                "from_child_id": sender.id,
+                "from_child_name": sender.name,
+                "to_child_id": recipient.id,
+                "to_child_name": recipient.name,
+                "points": points,
+                "timestamp": now.isoformat(),
+            },
+        )
         await self.storage.async_save()
         await self.async_refresh()
 
@@ -526,10 +540,7 @@ class PointsMixin:
             return
         period = self.storage.get_setting("points_decay_period", "monthly")
         today = dt_util.now().date()
-        due = (
-            (period == "weekly" and today.weekday() == 0)
-            or (period == "monthly" and today.day == 1)
-        )
+        due = (period == "weekly" and today.weekday() == 0) or (period == "monthly" and today.day == 1)
         if not due:
             return
         if self.storage.get_setting("points_decay_last", "") == today.isoformat():
@@ -544,14 +555,23 @@ class PointsMixin:
                 continue
             child.points = max(0, child.points - loss)
             self.storage.update_child(child)
-            self.storage.add_points_transaction(PointsTransaction(
-                child_id=child.id, points=-loss,
-                reason=f"Points decay (-{pct:.0f}%)", created_at=now,
-            ))
-            self.hass.bus.async_fire("taskmate_points_decay", {
-                "child_id": child.id, "child_name": child.name,
-                "points": loss, "timestamp": now.isoformat(),
-            })
+            self.storage.add_points_transaction(
+                PointsTransaction(
+                    child_id=child.id,
+                    points=-loss,
+                    reason=f"Points decay (-{pct:.0f}%)",
+                    created_at=now,
+                )
+            )
+            self.hass.bus.async_fire(
+                "taskmate_points_decay",
+                {
+                    "child_id": child.id,
+                    "child_name": child.name,
+                    "points": loss,
+                    "timestamp": now.isoformat(),
+                },
+            )
             changed = True
         self.storage.set_setting("points_decay_last", today.isoformat())
         if changed:
@@ -576,10 +596,7 @@ class PointsMixin:
             return
         period = self.storage.get_setting("interest_period", "weekly")
         today = dt_util.now().date()
-        due = (
-            (period == "weekly" and today.weekday() == 0)
-            or (period == "monthly" and today.day == 1)
-        )
+        due = (period == "weekly" and today.weekday() == 0) or (period == "monthly" and today.day == 1)
         if not due:
             return
         if self.storage.get_setting("interest_last", "") == today.isoformat():
@@ -592,10 +609,15 @@ class PointsMixin:
             if interest <= 0:
                 continue
             await self.async_add_points(child.id, interest, reason=f"Savings interest (+{pct:.0f}%)")
-            self.hass.bus.async_fire("taskmate_interest_paid", {
-                "child_id": child.id, "child_name": child.name,
-                "points": interest, "timestamp": dt_util.now().isoformat(),
-            })
+            self.hass.bus.async_fire(
+                "taskmate_interest_paid",
+                {
+                    "child_id": child.id,
+                    "child_name": child.name,
+                    "points": interest,
+                    "timestamp": dt_util.now().isoformat(),
+                },
+            )
         self.storage.set_setting("interest_last", today.isoformat())
         await self.storage.async_save()
 
@@ -613,17 +635,13 @@ class PointsMixin:
             if not part:
                 continue
             if ":" not in part:
-                raise ValueError(
-                    f"Invalid format '{part}' — use 'days:points' pairs, e.g. '7:10, 14:20'"
-                )
+                raise ValueError(f"Invalid format '{part}' — use 'days:points' pairs, e.g. '7:10, 14:20'")
             days_str, points_str = part.split(":", 1)
             try:
                 days = int(days_str.strip())
                 points = int(points_str.strip())
             except ValueError as err:
-                raise ValueError(
-                    f"Invalid numbers in '{part}' — days and points must be whole numbers"
-                ) from err
+                raise ValueError(f"Invalid numbers in '{part}' — days and points must be whole numbers") from err
             if days < 1:
                 raise ValueError(f"Days must be at least 1, got {days}")
             if points < 1:
@@ -718,7 +736,7 @@ class PointsMixin:
         today = now.date()
         effective_date = completion_date or today
         effective_date_str = effective_date.isoformat()
-        last_date_str = getattr(child, 'last_completion_date', None)
+        last_date_str = getattr(child, "last_completion_date", None)
 
         # ── Weekend multiplier ──────────────────────────────────────────────
         # Applied to base chore points only, based on completion date
@@ -740,7 +758,10 @@ class PointsMixin:
         if weekend_bonus > 0:
             _LOGGER.info(
                 "Weekend multiplier (%.1fx) applied for %s: +%d bonus on top of %d",
-                multiplier, child.name, weekend_bonus, points,
+                multiplier,
+                child.name,
+                weekend_bonus,
+                points,
             )
             # Log weekend bonus as a separate transaction for activity history
             transaction = PointsTransaction(
@@ -758,9 +779,7 @@ class PointsMixin:
         # day is done. The in-flight completion (chore_id) is counted as done
         # since it may not be persisted yet at this point in the flow.
         if advance_streak and self._setting_enabled("streak_requires_all_chores"):
-            if not self._all_due_chores_done(
-                child.id, effective_date, include_rotation=True, extra_done=chore_id
-            ):
+            if not self._all_due_chores_done(child.id, effective_date, include_rotation=True, extra_done=chore_id):
                 advance_streak = False
         if advance_streak:
             streak_mode = self.storage.get_setting("streak_reset_mode", "reset")
@@ -815,9 +834,7 @@ class PointsMixin:
         milestones_enabled = self.storage.get_setting("streak_milestones_enabled", "true") == "true"
         if advance_streak and milestones_enabled and child.current_streak > 0:
             # Parse custom milestone config
-            milestone_setting = self.storage.get_setting(
-                "streak_milestones", self.DEFAULT_STREAK_MILESTONES
-            )
+            milestone_setting = self.storage.get_setting("streak_milestones", self.DEFAULT_STREAK_MILESTONES)
             try:
                 milestones = self.parse_milestone_setting(milestone_setting)
             except ValueError:
@@ -836,7 +853,9 @@ class PointsMixin:
                     reached_milestones.append((days, bonus_pts))
                     _LOGGER.info(
                         "Streak milestone %d days reached for %s: +%d bonus",
-                        days, child.name, bonus_pts,
+                        days,
+                        child.name,
+                        bonus_pts,
                     )
 
             child.streak_milestones_achieved = sorted(achieved)
@@ -853,9 +872,7 @@ class PointsMixin:
                 )
                 self.storage.add_points_transaction(transaction)
 
-        self.storage.append_career_score_snapshot(
-            child.id, effective_date.isoformat(), child.career_score
-        )
+        self.storage.append_career_score_snapshot(child.id, effective_date.isoformat(), child.career_score)
         await self._maybe_level_up(child)
         self.storage.update_child(child)
 
@@ -877,9 +894,11 @@ class PointsMixin:
         # A big streak is a celebration moment too — epic at 30+ days.
         for days, _bonus_pts in reached_milestones:
             await self._celebrate(
-                child, "streak_milestone",
+                child,
+                "streak_milestone",
                 f"{child.name} hit a {days}-day streak!",
-                tier=3 if days >= 30 else 2, extra={"days": days},
+                tier=3 if days >= 30 else 2,
+                extra={"days": days},
             )
         return total_points
 
@@ -890,10 +909,7 @@ class PointsMixin:
         before = len(all_completions)
 
         # Keep completions newer than cutoff OR unapproved (pending)
-        to_keep = [
-            c for c in all_completions
-            if c.completed_at >= cutoff or not c.approved
-        ]
+        to_keep = [c for c in all_completions if c.completed_at >= cutoff or not c.approved]
 
         if len(to_keep) < before:
             kept_ids = {c.id for c in to_keep}
@@ -906,10 +922,7 @@ class PointsMixin:
                 if c.id not in kept_ids and getattr(c, "photo_url", ""):
                     await photos.async_delete_photo(self.hass, c.photo_url)
             await self.async_refresh()
-            _LOGGER.info(
-                "Pruned %d completions older than %d days",
-                before - len(to_keep), days
-            )
+            _LOGGER.info("Pruned %d completions older than %d days", before - len(to_keep), days)
 
     # Penalty operations
     async def async_add_penalty(
@@ -954,12 +967,17 @@ class PointsMixin:
         if not child:
             raise ValueError(f"Child {child_id} not found")
         await self.async_remove_points(child_id, penalty.points, reason=f"Penalty: {penalty.name}")
-        self.hass.bus.async_fire("taskmate_penalty_applied", {
-            "child_id": child.id, "child_name": child.name,
-            "penalty_id": penalty.id, "penalty_name": penalty.name,
-            "points": penalty.points,
-            "timestamp": dt_util.now().isoformat(),
-        })
+        self.hass.bus.async_fire(
+            "taskmate_penalty_applied",
+            {
+                "child_id": child.id,
+                "child_name": child.name,
+                "penalty_id": penalty.id,
+                "penalty_name": penalty.name,
+                "points": penalty.points,
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
 
     # Bonus operations
     async def async_add_bonus(
@@ -1004,16 +1022,25 @@ class PointsMixin:
         if not child:
             raise ValueError(f"Child {child_id} not found")
         await self.async_add_points(child_id, bonus.points, reason=f"Bonus: {bonus.name}")
-        self.hass.bus.async_fire("taskmate_bonus_applied", {
-            "child_id": child.id, "child_name": child.name,
-            "bonus_id": bonus.id, "bonus_name": bonus.name,
-            "points": bonus.points,
-            "timestamp": dt_util.now().isoformat(),
-        })
+        self.hass.bus.async_fire(
+            "taskmate_bonus_applied",
+            {
+                "child_id": child.id,
+                "child_name": child.name,
+                "bonus_id": bonus.id,
+                "bonus_name": bonus.name,
+                "points": bonus.points,
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
 
     async def _async_notify_pending_approval(
-        self, child_name: str, chore_name: str, points: int,
-        completion_id: str | None = None, photo_url: str = "",
+        self,
+        child_name: str,
+        chore_name: str,
+        points: int,
+        completion_id: str | None = None,
+        photo_url: str = "",
     ) -> None:
         await self.notifications.fire(
             "pending_chore_approval",
@@ -1030,7 +1057,10 @@ class PointsMixin:
         )
 
     async def _async_notify_pending_reward_claim(
-        self, child_name: str, reward_name: str, cost: int,
+        self,
+        child_name: str,
+        reward_name: str,
+        cost: int,
         claim_id: str | None = None,
     ) -> None:
         await self.notifications.fire(

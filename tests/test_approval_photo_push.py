@@ -4,6 +4,7 @@ A parent approving "tidy your room" from the lock screen should be able to see
 the room. The photo is signed before it reaches the notifier, because the
 companion app fetches attachments without the user's bearer token.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -91,14 +92,18 @@ class TestSigning:
         before the notifier sees it."""
         source = (
             __import__("pathlib").Path(__file__).resolve().parent.parent
-            / "custom_components" / "taskmate" / "coord_points.py"
+            / "custom_components"
+            / "taskmate"
+            / "coord_points.py"
         ).read_text(encoding="utf-8")
         assert "photos.sign_photo_url(self.hass, photo_url)" in source
 
     def test_completion_photo_is_passed_to_the_notifier(self):
         source = (
             __import__("pathlib").Path(__file__).resolve().parent.parent
-            / "custom_components" / "taskmate" / "coord_chores.py"
+            / "custom_components"
+            / "taskmate"
+            / "coord_chores.py"
         ).read_text(encoding="utf-8")
         assert "photo_url=completion.photo_url" in source
 
@@ -110,17 +115,21 @@ class TestSigningIsNeverFatal:
         its "never break delivery" contract exists to prevent."""
         source = (
             __import__("pathlib").Path(__file__).resolve().parent.parent
-            / "custom_components" / "taskmate" / "photos.py"
+            / "custom_components"
+            / "taskmate"
+            / "photos.py"
         ).read_text(encoding="utf-8")
-        body = source[source.index("def sign_photo_url"):source.index("async def async_delete_photo")]
+        body = source[source.index("def sign_photo_url") : source.index("async def async_delete_photo")]
         try_at = body.index("try:")
         import_at = body.index("from homeassistant.components.http.auth import async_sign_path")
         assert try_at < import_at, "the HA import must sit inside the try block"
 
     def test_unsignable_url_falls_back_to_the_original(self):
         from custom_components.taskmate import photos
+
         assert photos.sign_photo_url(None, "/api/taskmate/photo/x.jpg") == "/api/taskmate/photo/x.jpg"
 
     def test_foreign_urls_are_returned_untouched(self):
         from custom_components.taskmate import photos
+
         assert photos.sign_photo_url(None, "https://evil.example/x.jpg") == "https://evil.example/x.jpg"

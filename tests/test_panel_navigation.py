@@ -5,6 +5,7 @@ styles, websocket commands and a wiki page — but it was missing from
 `_sidebarGroups()`. The nav is built solely from that list, so there was no way
 to open it. Nothing failed; the tab was simply invisible.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -36,8 +37,7 @@ def _sidebar_ids() -> set[str]:
 class TestEveryViewIsReachable:
     def test_audit_is_in_the_sidebar(self):
         assert "audit" in _sidebar_ids(), (
-            "the audit view has a render case but no sidebar entry, so it "
-            "cannot be opened"
+            "the audit view has a render case but no sidebar entry, so it cannot be opened"
         )
 
     def test_every_rendered_view_has_a_sidebar_entry(self):
@@ -45,9 +45,7 @@ class TestEveryViewIsReachable:
         sidebar = _sidebar_ids()
         assert rendered, "expected to find render cases"
         unreachable = sorted(rendered - sidebar)
-        assert unreachable == [], (
-            f"views with a render case but no way to navigate to them: {unreachable}"
-        )
+        assert unreachable == [], f"views with a render case but no way to navigate to them: {unreachable}"
 
     def test_no_sidebar_entry_points_at_a_missing_view(self):
         """The mirror image: a nav item that renders nothing."""

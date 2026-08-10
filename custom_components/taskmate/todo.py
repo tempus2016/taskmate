@@ -5,6 +5,7 @@ today (via the shared get_due_chores_for_child). Checking an item off completes
 the chore, so the native HA to-do card and voice assistants can drive TaskMate
 without the custom cards.
 """
+
 from __future__ import annotations
 
 from homeassistant.components.todo import (
@@ -23,9 +24,7 @@ from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
 
 
-async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
-) -> None:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up a to-do list per child, adding new children as they appear."""
     coordinator: TaskMateCoordinator = hass.data[DOMAIN][entry.entry_id]
     tracked: set[str] = set()

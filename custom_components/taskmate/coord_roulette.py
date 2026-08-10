@@ -8,6 +8,7 @@ re-rolled until the parent's daily spin allowance resets. The multiplier is
 applied at completion time, next to the difficulty multiplier and the
 reactive-chore speed bonus.
 """
+
 from __future__ import annotations
 
 import logging
@@ -73,15 +74,16 @@ class RouletteMixin:
         """
         today = dt_util.as_local(dt_util.now()).date()
         done_today = {
-            c.chore_id for c in self.storage.get_completions()
+            c.chore_id
+            for c in self.storage.get_completions()
             if c.child_id == child_id
             and not getattr(c, "bonus_subtask_id", "")
             and dt_util.as_local(c.completed_at).date() == today
         }
         return [
-            chore for chore in self.storage.get_chores()
-            if chore.id not in done_today
-            and self.is_chore_available_for_child(chore, child_id)
+            chore
+            for chore in self.storage.get_chores()
+            if chore.id not in done_today and self.is_chore_available_for_child(chore, child_id)
         ]
 
     async def async_spin_roulette(self, child_id: str) -> dict[str, Any]:
@@ -154,8 +156,7 @@ class RouletteMixin:
         """Drop selections from previous days. Returns how many were cleared."""
         today = dt_util.as_local(dt_util.now()).date().isoformat()
         state = self._roulette_state()
-        keep = {cid: entry for cid, entry in state.items()
-                if isinstance(entry, dict) and entry.get("date") == today}
+        keep = {cid: entry for cid, entry in state.items() if isinstance(entry, dict) and entry.get("date") == today}
         removed = len(state) - len(keep)
         if removed:
             self.storage.set_setting("roulette_state", keep)

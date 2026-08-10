@@ -1,4 +1,5 @@
 """Tests for the celebration funnel (bigger celebration moments)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -31,8 +32,7 @@ def _coord(settings=None):
 
 
 def _fired_event(coord):
-    calls = [c for c in coord.hass.bus.async_fire.call_args_list
-             if c[0][0] == "taskmate_celebration"]
+    calls = [c for c in coord.hass.bus.async_fire.call_args_list if c[0][0] == "taskmate_celebration"]
     return calls
 
 

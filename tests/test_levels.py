@@ -1,4 +1,5 @@
 """Tests for the levels / XP system."""
+
 from __future__ import annotations
 
 import asyncio
@@ -45,7 +46,7 @@ def test_level_info():
 
 def test_custom_step():
     coord = _coord("50")
-    assert coord.level_for_xp(120) == 3   # 120 // 50 + 1
+    assert coord.level_for_xp(120) == 3  # 120 // 50 + 1
 
 
 def test_level_up_fires_event_and_notification():
