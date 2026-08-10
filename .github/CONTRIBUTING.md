@@ -89,8 +89,8 @@ pre-commit install
 pre-commit run --all-files
 ```
 
-`hassfest`, HACS validation, CodeQL, dependency review and a workflow-security
-audit (`zizmor`) also run in CI.
+`hassfest`, HACS validation, dependency review and a workflow-security audit
+(`zizmor`) also run in CI, alongside GitHub's CodeQL code scanning.
 
 ## Translations
 

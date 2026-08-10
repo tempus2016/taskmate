@@ -23,7 +23,6 @@
   <a href="https://github.com/tempus2016/taskmate/actions/workflows/tests.yml"><img src="https://github.com/tempus2016/taskmate/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
   <a href="https://github.com/tempus2016/taskmate/actions/workflows/lint.yml"><img src="https://github.com/tempus2016/taskmate/actions/workflows/lint.yml/badge.svg" alt="Lint"></a>
   <a href="https://github.com/tempus2016/taskmate/actions/workflows/data-checks.yml"><img src="https://github.com/tempus2016/taskmate/actions/workflows/data-checks.yml/badge.svg" alt="Data checks"></a>
-  <a href="https://github.com/tempus2016/taskmate/actions/workflows/codeql.yml"><img src="https://github.com/tempus2016/taskmate/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
   <a href="https://results.pre-commit.ci/latest/github/tempus2016/taskmate/main"><img src="https://results.pre-commit.ci/badge/github/tempus2016/taskmate/main.svg" alt="pre-commit.ci"></a>
 </p>
 
