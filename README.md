@@ -475,6 +475,8 @@ Spend points to unlock something for a while — the TV, the console socket, a w
 - Turning something **off** is never gated by the allowlist — a revert is always safe.
 - Fires `taskmate_unlock_started` and `taskmate_unlock_ended` (`entity_id`, `reward_id`, `reward_name`, `child_id`, `child_name`, `started_at`, `revert_at`).
 
+---
+
 ## Insights — Fairness, Friction, Week Ahead & Health
  
 **TaskMate panel → Insights.** Answers the question the raw numbers don't: *am I dumping everything on the eldest?*
