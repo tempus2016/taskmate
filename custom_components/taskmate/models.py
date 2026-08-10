@@ -262,6 +262,9 @@ class Chore:
     # Optional picture for the chore. Text-free pre-reader mode (#683) needs
     # one per chore; everything else falls back to the time-of-day icon.
     icon: str = ""
+    # Optional uploaded photograph (#750). Takes precedence over `icon` at
+    # every render site; stored as a /api/taskmate/image/<name> URL.
+    image_url: str = ""
     difficulty: str = "medium"  # easy | medium | hard — scales awarded points by the tier multiplier (medium = ×1.0 baseline)
     # Scheduling
     # schedule_mode: "specific_days" = show on selected days of week (Mode A)
@@ -354,6 +357,7 @@ class Chore:
             daily_limit=data.get("daily_limit", 1),
             completion_sound=data.get("completion_sound", "coin"),
             icon=str(data.get("icon", "") or ""),
+            image_url=str(data.get("image_url", "") or ""),
             difficulty=data.get("difficulty", "medium"),
             schedule_mode=schedule_mode,
             due_days=list(data.get("due_days", [])),
@@ -417,6 +421,7 @@ class Chore:
             "daily_limit": self.daily_limit,
             "completion_sound": self.completion_sound,
             "icon": self.icon,
+            "image_url": self.image_url,
             "difficulty": self.difficulty,
             "schedule_mode": self.schedule_mode,
             "due_days": self.due_days,

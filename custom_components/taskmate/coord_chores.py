@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
 
-from . import photos
+from . import images, photos
 from .models import Chore, ChoreCompletion, PointsTransaction
 
 if TYPE_CHECKING:
@@ -428,6 +428,7 @@ class ChoresMixin:
         existing = self.storage.get_chore(chore.id)
         prev_entities = list(getattr(existing, "publish_calendar_entities", []) or []) if existing else []
         prev_name = (existing.name if existing else "") or ""
+        prev_image = (getattr(existing, "image_url", "") or "") if existing else ""
         # Persist the incoming chore so _compute_daily_assignments sees the
         # latest pool / mode / etc. when applying group policies.
         self.storage.update_chore(chore)
@@ -455,6 +456,9 @@ class ChoresMixin:
                 chore, cleanup_entities, today, summary_prefixes=extra_prefixes,
             )
         self.storage.update_chore(chore)
+        # Replacing or clearing the picture orphans the old file; delete it.
+        if prev_image and prev_image != (chore.image_url or ""):
+            await images.async_delete_image(self.hass, prev_image)
         await self._publish_chore_to_calendars(chore, today)
         await self.storage.async_save()
         await self.async_refresh()
@@ -464,6 +468,9 @@ class ChoresMixin:
         existing = self.storage.get_chore(chore_id)
         if existing is not None and getattr(existing, "publish_calendar_entities", []):
             await self._cleanup_chore_from_calendars(existing)
+        # Nothing sweeps taskmate_images, so the file has to go with the chore.
+        if existing is not None and getattr(existing, "image_url", ""):
+            await images.async_delete_image(self.hass, existing.image_url)
         self.storage.remove_chore(chore_id)
         self.storage.remove_completions_for_chore(chore_id)
         self.storage.remove_last_completed_for_chore(chore_id)
