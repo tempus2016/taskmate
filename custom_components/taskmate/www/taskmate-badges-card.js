@@ -36,58 +36,54 @@ class TaskMateBadgesCard extends LitElement {
     super();
     this._filterTier = "all";
     this._justEarned = null;
-    this._unsubscribeEvents = null;
-    this._subscribing = false;
+    this._seenBadgeIds = null;
     this._justEarnedTimeout = null;
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    this._subscribeEvents();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this._unsubscribeEvents?.();
-    this._unsubscribeEvents = null;
     if (this._justEarnedTimeout) {
       clearTimeout(this._justEarnedTimeout);
       this._justEarnedTimeout = null;
     }
   }
 
-  _subscribeEvents() {
-    if (!this.hass) return;
-    if (this._unsubscribeEvents || this._subscribing) return;
-    this._subscribing = true;
-    this.hass.connection.subscribeEvents((event) => {
-      const data = event.data || {};
-      if (data.child_id && this.config?.child_id && String(data.child_id) !== String(this.config.child_id)) return;
-      if (data.badge_id) {
-        this._justEarned = String(data.badge_id);
-        this.requestUpdate();
-        this._justEarnedTimeout = setTimeout(() => {
-          this._justEarned = null;
-          this.requestUpdate();
-        }, 1800);
-      }
-    }, "taskmate_badge_earned").then(unsub => {
-      this._subscribing = false;
-      if (!this.isConnected) {
-        unsub();
-        return;
-      }
-      this._unsubscribeEvents = unsub;
-    }).catch(() => {
-      this._subscribing = false;
-    });
+  /* Newly-earned badges are detected by diffing the badges sensor's `earned`
+     list across hass updates (#752). The card used to subscribe to the custom
+     `taskmate_badge_earned` event, but Home Assistant refuses a custom-event
+     subscription from a non-admin user and logs an error every time — so the
+     highlight never fired for children, and the log filled up. `state_changed`
+     is allowlisted for everyone, so the diff works for every user. */
+  _trackEarnedBadges() {
+    const earned = this.hass?.states?.[this.config?.entity]?.attributes?.earned;
+    if (!Array.isArray(earned)) return false;
+    const ids = new Set(earned.map(b => window.__taskmate_badge_id(b)).filter(Boolean));
+
+    // First observation is the baseline — never flash a badge earned earlier.
+    if (this._seenBadgeIds === null) {
+      this._seenBadgeIds = ids;
+      return false;
+    }
+    const fresh = [...ids].filter(id => !this._seenBadgeIds.has(id));
+    this._seenBadgeIds = ids;
+    if (!fresh.length) return false;
+
+    this._justEarned = fresh[0];
+    clearTimeout(this._justEarnedTimeout);
+    this._justEarnedTimeout = setTimeout(() => {
+      this._justEarned = null;
+      this.requestUpdate();
+    }, 1800);
+    return true;
   }
 
   shouldUpdate(changedProps) {
     if (changedProps.has("hass")) {
-      return window.__taskmate_hasChanged
+      const flashed = this._trackEarnedBadges();
+      const relevant = window.__taskmate_hasChanged
         ? window.__taskmate_hasChanged(changedProps.get("hass"), this.hass, this.config?.entity)
         : true;
+      return flashed || relevant;
     }
     return true;
   }
@@ -557,7 +553,7 @@ class TaskMateBadgesCard extends LitElement {
   }
 
   _renderEarned(b) {
-    const justEarned = this._justEarned && String(this._justEarned) === String(b.id);
+    const justEarned = !!this._justEarned && this._justEarned === window.__taskmate_badge_id(b);
     return html`
       <div class="badge earned tier-${b.tier} ${justEarned ? 'just-earned' : ''}">
         ${b.point_bonus > 0 ? html`<div class="badge-bonus">+${b.point_bonus}</div>` : ''}

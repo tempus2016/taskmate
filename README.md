@@ -1819,6 +1819,18 @@ Beyond the sensors above, TaskMate also exposes:
  
 ## Changelog
  
+### v5.0.4
+
+A fix release. Five bugs, three of them long-standing and invisible: a control that only admins could use, a badge highlight that had never fired for anyone, and a Picture dropdown that discarded what you picked. No configuration changes — upgrade is drop-in.
+
+**Fixes**
+- **TaskMate parents can apply bonuses and penalties again** — a non-admin parent tapping **Apply** on the Bonuses or Penalties card got `Failed to perform the action taskmate/apply_bonus. Unauthorized`, while the quick **+points** buttons on the same card worked. When the parent role arrived in v4.5.0 the day-to-day actions moved to the parent gate, but `apply_bonus`, `apply_penalty` and `remove_points` were left admin-only. They now accept parents, like every other day-to-day action. Creating and editing bonuses and penalties stays admin-only — it is configuration, not a daily action. ([#751](https://github.com/tempus2016/taskmate/pull/751), closes [#749](https://github.com/tempus2016/taskmate/issues/749))
+- **The Bonuses and Penalties cards now respect who is looking at them** — the cards had no role check at all and rendered **Apply**, the manage pencil and the add/edit/delete controls for every user, including a child on a shared tablet. Parents and admins see **Apply**; only admins see the manage controls; a child sees the list read-only. ([#751](https://github.com/tempus2016/taskmate/pull/751))
+- **Badge earning no longer spams the Home Assistant log** — every dashboard load by a non-admin logged `Refusing to allow <user> to subscribe to event taskmate_badge_earned`. The Badges and Child cards subscribed to a custom event, which Home Assistant refuses for non-admin users. They now detect a new badge from the badges sensor instead, which works for everyone. ([#753](https://github.com/tempus2016/taskmate/pull/753), closes [#752](https://github.com/tempus2016/taskmate/issues/752))
+- **The "just earned" badge highlight now actually fires** — found while fixing the above: the highlight compared against a field the badges sensor does not publish, so it had never appeared for anyone, admin included. Earning a badge now flashes it on both the Badges card and the Child card's badge strip. ([#753](https://github.com/tempus2016/taskmate/pull/753))
+- **Chore pictures save and show up** — the **Picture** dropdown in the chore editor did nothing: the panel dropped the icon when saving, and no standard chore row rendered it if it had been saved. Classic shows the picture in place of the number inside the existing coloured badge; Playroom, Console, Clean Pro and Accessible show it in place of the guessed emoji. Chores with no picture look exactly as they do today. ([#755](https://github.com/tempus2016/taskmate/pull/755))
+- **The admin panel fills the window instead of stopping halfway** — on every section with little content (Templates, Insights and most others) the navigation column and content area stopped partway down the page, leaving bare background below. The panel sized itself through a chain of percentage heights that only resolves on some Home Assistant versions; it now sizes to the viewport directly. Long sections still scroll their content with the nav column fixed. ([#757](https://github.com/tempus2016/taskmate/pull/757), closes [#754](https://github.com/tempus2016/taskmate/issues/754))
+
 ### v5.0.3
 
 A fix release for the v5.0.2 tap-to-open notification feature.

@@ -15,7 +15,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from . import photos
+from . import images, photos
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
 from .models import Child
@@ -305,6 +305,11 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         icon = getattr(c, 'icon', '')
         if icon:
             record["icon"] = icon
+        # Signed so the card's <img> loads; emitted only when set, matching
+        # `icon` above, to keep records under the 16KB recorder limit.
+        image_url = getattr(c, 'image_url', '')
+        if image_url:
+            record["image_url"] = images.sign_image_url(common["hass"], image_url)
         completion_sound = getattr(c, 'completion_sound', 'coin')
         if completion_sound and completion_sound != 'coin':
             record["completion_sound"] = completion_sound

@@ -309,6 +309,24 @@
 
   window.__taskmate_design = { IDS, resolve, isDark, apply, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker };
 
+  /**
+   * The single place that decides what a chore looks like (#750).
+   *
+   * Precedence: uploaded picture → MDI icon → the call site's own fallback.
+   *
+   * Returns a plain descriptor rather than a template, for two reasons: this
+   * file has no ES-module imports and no Lit dependency and must keep it that
+   * way, and the `icon` case is not uniform across sites — the reorder card
+   * renders chore.icon as an <ha-icon> only when it starts with "mdi:" and as
+   * raw text otherwise, because the field can hold an emoji. A descriptor lets
+   * each site keep its existing icon and fallback handling untouched.
+   */
+  window.__taskmate_chore_visual = window.__taskmate_chore_visual || function (chore) {
+    if (chore && chore.image_url) return { kind: "image", url: chore.image_url };
+    if (chore && chore.icon) return { kind: "icon", icon: chore.icon };
+    return { kind: "none" };
+  };
+
   // ── Card-picker entity suggestions (HA 2026.6+) ────────────────────────────
   // Custom cards may add getEntitySuggestion(hass, entityId) to their
   // window.customCards entry; when a user picks an entity in the card picker,

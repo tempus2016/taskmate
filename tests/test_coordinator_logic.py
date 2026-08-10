@@ -907,9 +907,7 @@ class TestOneShotChores:
 
         now = _date(2024, 3, 20)  # Today
         with patch.object(_mod.dt_util, "now", return_value=now):
-            asyncio.get_event_loop().run_until_complete(
-                coord._async_expire_one_shot_chores()
-            )
+            run(coord._async_expire_one_shot_chores())
 
         assert chore.enabled is False
         coord.storage.update_chore.assert_called_once_with(chore)
@@ -926,9 +924,7 @@ class TestOneShotChores:
 
         now = _date(2024, 3, 20)
         with patch.object(_mod.dt_util, "now", return_value=now):
-            asyncio.get_event_loop().run_until_complete(
-                coord._async_expire_one_shot_chores()
-            )
+            run(coord._async_expire_one_shot_chores())
 
         assert chore.enabled is True
         coord.storage.update_chore.assert_not_called()
@@ -945,9 +941,7 @@ class TestOneShotChores:
 
         now = _date(2024, 3, 20)
         with patch.object(_mod.dt_util, "now", return_value=now):
-            asyncio.get_event_loop().run_until_complete(
-                coord._async_expire_one_shot_chores()
-            )
+            run(coord._async_expire_one_shot_chores())
 
         coord.storage.update_chore.assert_not_called()
 

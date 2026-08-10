@@ -56,7 +56,7 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant
 
-from . import photos
+from . import images, photos
 from .const import (
     DEFAULT_NOTIFICATION_NAV_URL,
     DEFAULT_TIME_PERIODS,
@@ -311,7 +311,13 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
     return {
         "version": "2",
         "children":         list(data.get("children", [])),
-        "chores":           list(data.get("chores", [])),
+        # Sign picture URLs so the panel's <img> loads — browsers do not
+        # send the bearer token on image requests, so a bare URL 401s.
+        "chores": [
+            {**c, "image_url": images.sign_image_url(coordinator.hass, c["image_url"])}
+            if c.get("image_url") else c
+            for c in data.get("chores", [])
+        ],
         "chore_display_order": list(data.get("chore_display_order", [])),
         "scheduled_changes": list(data.get("scheduled_changes", [])),
         "rewards":          list(data.get("rewards", [])),
@@ -477,13 +483,26 @@ async def _ws_list_ha_users(hass, connection, msg, coordinator):
 # Chores
 # ---------------------------------------------------------------------------
 
+def _image_url_or_blank(value):
+    """Accept a blank string (clears the picture) or one of our image URLs.
+
+    A bare predicate can't be used as a voluptuous validator: voluptuous treats
+    a callable as a coercer, so returning False would be a *value*, not a
+    rejection. This raises instead.
+    """
+    text = str(value or "")
+    if not text or images.is_taskmate_image_url(text):
+        return text
+    raise vol.Invalid("image_url must be a TaskMate image URL")
+
+
 # Fields the panel is allowed to set directly. Anything else (skip_date,
 # assignment_current_child_id, publish_calendar_published_dates, etc.) is
 # coordinator-managed runtime state and intentionally not exposed.
 _CHORE_EDITABLE_FIELDS = {
     "name", "description", "points", "assigned_to", "depends_on", "requires_approval",
     "time_category", "claim_allowance_minutes", "daily_limit", "completion_sound",
-    "icon", "difficulty",
+    "icon", "image_url", "difficulty",
     "schedule_mode", "due_days", "recurrence", "recurrence_day",
     "recurrence_start", "first_occurrence_mode", "visibility_entity",
     "visibility_state", "visibility_operator",
@@ -514,6 +533,7 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
         vol.Optional("completion_sound"): str,
         vol.Optional("icon"): str,
+        vol.Optional("image_url"): _image_url_or_blank,
         vol.Optional("difficulty"): vol.In(["easy", "medium", "hard"]),
         vol.Optional("schedule_mode"): vol.In(["specific_days", "recurring", "one_shot"]),
         vol.Optional("due_days"): [str],
@@ -1336,7 +1356,7 @@ _ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro", "accessib
 _SUBKEY_SETTINGS = {
     "history_days", "streak_reset_mode", "card_design",
     "weekend_multiplier", "streak_milestones_enabled", "perfect_week_enabled",
-    "perfect_week_bonus", "streak_milestones",
+    "perfect_week_bonus", "streak_milestones", "quick_point_amounts",
     "streak_requires_all_chores", "perfect_week_requires_all_chores",
     "difficulty_multiplier_easy", "difficulty_multiplier_medium", "difficulty_multiplier_hard",
     "unlock_allowlist", "parent_routing",
@@ -1539,6 +1559,10 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("family_goal_target"): vol.All(vol.Coerce(int), vol.Range(min=1, max=10000000)),
     vol.Optional("family_goal_reward"): vol.All(str, vol.Length(max=200)),
     vol.Optional("streak_milestones"): str,
+    # Comma-separated quick point-adjust amounts, e.g. "5, 10, 20" (#746). Kept a
+    # string like streak_milestones so the panel's generic settings collector can
+    # round-trip it as a plain text input; the panel parses and bounds it.
+    vol.Optional("quick_point_amounts"): vol.All(str, vol.Length(max=60)),
     vol.Optional("notify_service"): str,
     vol.Optional("calendar_projection_days"): vol.All(int, vol.Range(min=1, max=90)),
     vol.Optional("vacation_calendar"): str,

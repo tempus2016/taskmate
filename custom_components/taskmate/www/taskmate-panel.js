@@ -330,6 +330,27 @@ class TaskMatePanel extends HTMLElement {
     return fn ? fn(this._hass, key, params) : key;
   }
 
+  // Reason prefixes for *derived* (automatic) transactions, which can't be
+  // undone in isolation — mirrors the backend deny-list in coord_points.py and
+  // the copy in taskmate-activity-card.js. Everything else (penalty, bonus,
+  // gift, manual add/remove) is reversible.
+  //
+  // This is a deny-list, NOT an allow-list (#761): manual adjustments carry
+  // arbitrary or empty reasons, so they cannot be recognised positively.
+  // tests/test_panel_undo_deny_list.py pins all three copies together.
+  static get _UNDO_DENY_PREFIXES() {
+    return [
+      "Weekend bonus", "Streak milestone bonus", "Perfect week bonus",
+      "Allocated to pool:", "Pool refund", "Points decay",
+      "Savings interest", "Badge",
+    ];
+  }
+
+  _txnReversible(reason) {
+    const r = reason || "";
+    return !TaskMatePanel._UNDO_DENY_PREFIXES.some(p => r.startsWith(p));
+  }
+
   // Transaction reasons are stored in English in the DB (e.g. "Penalty: Messy room").
   // Mirror the activity-card mapping so panel views render in the user's language.
   _translateReason(reason) {
@@ -351,6 +372,11 @@ class TaskMatePanel extends HTMLElement {
     }
     if (reason.startsWith('Perfect week bonus!')) {
       return this._t('activity.reason_perfect_week');
+    }
+    // Manual adjustment from the admin panel (#746). An exact match rather than a
+    // prefix: unlike "Bonus: <name>" there is no trailing detail to extract.
+    if (reason === 'Admin panel adjustment') {
+      return this._t('activity.reason_admin_adjustment');
     }
     const weekendMatch = reason.match(/^Weekend bonus \(×(\d+)\)$/);
     if (weekendMatch) {
@@ -496,6 +522,18 @@ class TaskMatePanel extends HTMLElement {
     if (act === "add-child")    { this._openChildDialog(null); return; }
     if (act === "gift-points")  { this._openGiftDialog(); return; }
     if (act === "save-gift")    { this._doGiftPoints(); return; }
+    if (act === "adjust-points") { this._doAdjustPoints(t.dataset.id, Number(t.dataset.delta)); return; }
+    if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
+    if (act === "chore-image-pick")   { this._pickChoreImage(); return; }
+    if (act === "chore-image-remove") {
+      // Clears the dialog value only — the file is deleted on save by the
+      // coordinator, so cancelling the dialog cannot destroy the picture.
+      this._dialog.data.image_url = "";
+      this._render();
+      return;
+    }
+    if (act === "save-adjust-add")    { this._saveAdjustDialog(1); return; }
+    if (act === "save-adjust-remove") { this._saveAdjustDialog(-1); return; }
     if (act === "edit-child")   { this._openChildDialog(t.dataset.id); return; }
     if (act === "delete-child") { this._confirmDelete("child", t.dataset.id); return; }
     if (act === "save-child")   { this._doSaveChild(); return; }
@@ -1402,13 +1440,95 @@ class TaskMatePanel extends HTMLElement {
     }
   }
 
+  _pickChoreImage() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp";
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      if (file) this._uploadChoreImage(file);
+    });
+    input.click();
+  }
+
+  // Downscale to 512px before upload: these render in slots between 20 and
+  // 128px, so anything larger is bytes every device re-downloads for nothing.
+  _downscaleChoreImage(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const max = 512;
+        let { width, height } = img;
+        if (width > max || height > max) {
+          const scale = Math.min(max / width, max / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(b => (b ? resolve(b) : reject(new Error("encode failed"))), "image/jpeg", 0.8);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("decode failed")); };
+      img.src = url;
+    });
+  }
+
+  async _uploadChoreImage(file) {
+    if (this._choreImageBusy) return;
+    this._choreImageBusy = true;
+    this._render();
+    try {
+      const blob = await this._downscaleChoreImage(file);
+      const post = () => {
+        const token = this._hass && this._hass.auth && this._hass.auth.data
+          && this._hass.auth.data.access_token;
+        const fd = new FormData();
+        fd.append("file", blob, "chore.jpg");
+        return fetch("/api/taskmate/image", {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fd,
+        });
+      };
+      // The cached access token can go stale mid-session, so refresh and retry
+      // once on a 401 before giving up. Mirrors the child card's photo upload.
+      if (this._hass && this._hass.auth && this._hass.auth.expired
+        && this._hass.auth.refreshAccessToken) {
+        try { await this._hass.auth.refreshAccessToken(); } catch (e) { /* surfaced below */ }
+      }
+      let resp = await post();
+      if (resp.status === 401 && this._hass && this._hass.auth
+        && this._hass.auth.refreshAccessToken) {
+        await this._hass.auth.refreshAccessToken();
+        resp = await post();
+      }
+      if (resp.status === 413) { this._showToast("err", this._t("panel.chore_image_too_large")); return; }
+      if (resp.status === 400) { this._showToast("err", this._t("panel.chore_image_bad_type")); return; }
+      if (!resp.ok) { this._showToast("err", this._t("panel.chore_image_failed")); return; }
+      const body = await resp.json();
+      if (this._dialog && body.image_url) this._dialog.data.image_url = body.image_url;
+    } catch (err) {
+      this._showToast("err", this._t("panel.chore_image_failed"));
+    } finally {
+      this._choreImageBusy = false;
+      this._render();
+    }
+  }
+
   async _doSaveChore() {
+    this._syncIconPickers();
     const d = this._dialog.data;
     if (!d.name || !d.name.trim()) { this._showToast("err", this._t("panel.toast_name_required")); return; }
     const wasAdd = this._dialog.mode === "add";
     const base = {
       name: d.name.trim(),
       description: d.description || "",
+      icon: d.icon || "",
+      image_url: d.image_url || "",
       points: Number(d.points) || 0,
       assigned_to: d.assigned_to || [],
       requires_approval: !!d.requires_approval,
@@ -2912,6 +3032,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.total_points_earned || 0)}</div><div class="tm-stat-label">${this._t("panel.child_stat_earned")}</div></div>
           <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(child.total_chores_completed || 0)}</div><div class="tm-stat-label">${this._t("panel.child_stat_done")}</div></div>
         </div>
+        ${this._renderAdjustStrip(child, pointsName)}
         <div class="tm-card-foot">
           <button type="button" class="tm-btn tm-btn-sm" data-act="edit-child" data-id="${this._esc(child.id)}">${this._t("panel.btn_edit")}</button>
           <button type="button" class="tm-btn tm-btn-sm" data-act="reorder-chores-for-child" data-id="${this._esc(child.id)}" title="${this._t("panel.chore_order_title")}">⇅ ${this._t("panel.chore_order_title")}</button>
@@ -2919,6 +3040,36 @@ class TaskMatePanel extends HTMLElement {
         </div>
       </article>
     `;
+  }
+
+  // Manual point adjustment (#746). Minus amounts descend and plus amounts
+  // ascend so the two smallest meet in the middle and the row reads outward
+  // from zero. The two `-set` spans are load-bearing: with all seven buttons as
+  // direct flex children, a narrow card wraps only the last one and orphans ⋯
+  // on a row of its own. Grouping makes each side wrap as a whole unit.
+  _renderAdjustStrip(child, pointsName) {
+    const amounts = this._quickPointAmounts();
+    const id = this._esc(child.id);
+    const name = child.name || this._t("panel.child_unnamed");
+    const btn = (delta) => {
+      const amount = Math.abs(delta);
+      const label = this._t(delta < 0 ? "panel.adjust_remove_title" : "panel.adjust_add_title",
+                            { amount, points: pointsName, child: name });
+      return `<button type="button" class="tm-btn tm-btn-sm ${delta < 0 ? "tm-btn-danger" : "tm-btn-raised"}"
+                data-act="adjust-points" data-id="${id}" data-delta="${delta}"
+                title="${this._esc(label)}" aria-label="${this._esc(label)}">${delta < 0 ? "−" : "+"}${amount}</button>`;
+    };
+    const customLabel = this._t("panel.adjust_custom_title", { child: name });
+    return `
+      <div class="tm-points-adjust">
+        <span class="tm-points-adjust-set">${amounts.slice().reverse().map(a => btn(-a)).join("")}</span>
+        <span class="tm-points-adjust-gap"></span>
+        <span class="tm-points-adjust-set">
+          ${amounts.map(a => btn(a)).join("")}
+          <button type="button" class="tm-btn tm-btn-sm" data-act="adjust-points-custom" data-id="${id}"
+                  title="${this._esc(customLabel)}" aria-label="${this._esc(customLabel)}">⋯</button>
+        </span>
+      </div>`;
   }
 
   // -- Activity tab ------------------------------------------------------
@@ -3078,7 +3229,7 @@ class TaskMatePanel extends HTMLElement {
               <tbody>
                 ${[...transactions].reverse().map(t => {
                   const child = childById[t.child_id];
-                  const undoable = typeof t.reason === "string" && (t.reason.startsWith("Penalty: ") || t.reason.startsWith("Bonus: "));
+                  const undoable = this._txnReversible(t.reason);
                   return `
                     <tr class="tm-row">
                       <td class="tm-meta">${this._esc(this._timeAgo(t.created_at))}</td>
@@ -4195,6 +4346,10 @@ class TaskMatePanel extends HTMLElement {
                 ${["classic","playroom","console","cleanpro"].map(v => `<option value="${v}" ${v === (s.card_design || "classic") ? "selected" : ""}>${this._esc(this._t("common.design." + v))}</option>`).join("")}
               </select>
             </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_quick_points_label")}<small>${this._t("panel.settings_quick_points_hint")}</small></div>
+              <input type="text" class="tm-input" data-setting="quick_point_amounts" value="${this._esc(s.quick_point_amounts == null ? "" : s.quick_point_amounts)}" placeholder="5, 10, 20">
+            </div>
           </div>
         </div>
 
@@ -4771,6 +4926,73 @@ class TaskMatePanel extends HTMLElement {
     this._showToast("ok", this._t("panel.gift_sent"));
   }
 
+  _openAdjustDialog(childId) {
+    const child = (this._state.children || []).find(c => c.id === childId);
+    if (!child) return;
+    this._openDialog({ kind: "adjust", data: { child_id: childId, points: 10, reason: "" } });
+  }
+
+  _renderAdjustDialog() {
+    const d = this._dialog.data;
+    const child = (this._state.children || []).find(c => c.id === d.child_id) || {};
+    return this._dialogShell(
+      this._t("panel.adjust_dialog_title", { name: child.name || this._t("panel.child_unnamed") }),
+      [
+        this._field(this._t("panel.adjust_amount"), "points", d.points, "number"),
+        this._field(this._t("panel.adjust_reason"), "reason", d.reason, "text"),
+      ].join(""),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-danger" data-act="save-adjust-remove">${this._t("panel.adjust_remove")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-adjust-add">${this._t("panel.adjust_add")}</button>`
+    );
+  }
+
+  // `sign` is +1 or -1, taken from which footer button was pressed, so the
+  // dialog needs no direction control of its own.
+  async _saveAdjustDialog(sign) {
+    const d = this._dialog.data;
+    const amount = Number(d.points);
+    if (!Number.isInteger(amount) || amount < 1 || amount > 10000) {
+      this._showToast("err", this._t("panel.adjust_err_amount"));
+      return;
+    }
+    const reason = String(d.reason || "").trim() || "Admin panel adjustment";
+    const ok = await this._doAdjustPoints(d.child_id, sign * amount, reason);
+    if (ok) this._closeDialog(true);
+  }
+
+  // Manual point adjustment (#746). The busy key is the CHILD, not the button,
+  // so a laggy tablet can neither double-award one amount nor race +5 against
+  // −10 on the same balance.
+  async _doAdjustPoints(childId, delta, reason = "Admin panel adjustment") {
+    const amount = Math.abs(Number(delta) || 0);
+    if (!childId || !Number.isInteger(amount) || amount < 1 || amount > 10000) {
+      this._showToast("err", this._t("panel.adjust_err_amount"));
+      return false;
+    }
+    if (!this._adjustBusy) this._adjustBusy = new Set();
+    if (this._adjustBusy.has(childId)) return false;
+    this._adjustBusy.add(childId);
+    try {
+      const service = delta > 0 ? "add_points" : "remove_points";
+      const data = { child_id: childId, points: amount };
+      if (reason) data.reason = reason;
+      const { ok, err } = await this._callService(service, data);
+      if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return false; }
+      await this._fetchState();
+      const child = (this._state.children || []).find(c => c.id === childId);
+      this._showToast("ok", this._t("panel.adjust_done", {
+        sign: delta > 0 ? "+" : "−",
+        amount,
+        points: this._state.settings.points_name || this._t("common.points"),
+        child: (child && child.name) || "",
+      }));
+      return true;
+    } finally {
+      this._adjustBusy.delete(childId);
+    }
+  }
+
   _openSwapDialog(choreId) {
     const c = (this._state.chores || []).find(x => x.id === choreId);
     if (!c) return;
@@ -4811,6 +5033,7 @@ class TaskMatePanel extends HTMLElement {
   _renderDialog() {
     if (this._dialog.kind === "swap")         return this._renderSwapDialog();
     if (this._dialog.kind === "gift")         return this._renderGiftDialog();
+    if (this._dialog.kind === "adjust")       return this._renderAdjustDialog();
     if (this._dialog.kind === "child")        return this._renderChildDialog();
     if (this._dialog.kind === "chore")        return this._renderChoreDialog();
     if (this._dialog.kind === "reward")       return this._renderRewardDialog();
@@ -4933,6 +5156,7 @@ class TaskMatePanel extends HTMLElement {
         `<div class="tm-field-row">
           ${this._field(this._t("panel.chore_description_label"), "description", d.description, "text")}
           ${this._iconPickerField(this._t("panel.chore_icon_label"), "icon", d.icon)}
+        ${this._choreImageField(d.image_url || "")}
         </div>`,
         this._select(this._t("panel.chore_task_type_label"), "task_type", d.task_type || "standard", [
           { v: "standard", l: this._t("panel.chore_task_type_standard") },
@@ -5704,6 +5928,27 @@ class TaskMatePanel extends HTMLElement {
       </div>`;
   }
 
+  /** The chore picture well (#750): thumbnail or empty state, Upload, Remove. */
+  _choreImageField(value) {
+    const busy = this._choreImageBusy;
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.chore_image_label")}</span>
+        <div class="tm-image-well">
+          ${value
+            ? `<img class="tm-image-thumb" src="${this._esc(value)}" alt="">`
+            : `<div class="tm-image-empty">${this._t("panel.chore_image_empty")}</div>`}
+          <div class="tm-image-actions">
+            <button type="button" class="tm-btn tm-btn-sm" data-act="chore-image-pick" ${busy ? "disabled" : ""}>
+              ${busy ? this._t("panel.chore_image_uploading") : this._t("panel.chore_image_upload")}
+            </button>
+            ${value ? `<button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="chore-image-remove">${this._t("panel.chore_image_remove")}</button>` : ""}
+          </div>
+        </div>
+        <span class="tm-field-hint">${this._t("panel.chore_image_hint")}</span>
+      </div>`;
+  }
+
   _iconPickerField(label, name, value) {
     return `
       <div class="tm-field">
@@ -5927,14 +6172,40 @@ class TaskMatePanel extends HTMLElement {
     return new Intl.NumberFormat().format(n);
   }
 
+  // Quick point-adjust amounts (#746). Stored as a comma-separated string like
+  // "5, 10, 20" — same shape as streak_milestones — so the generic settings
+  // collector can round-trip it as a plain text input. Junk degrades to the
+  // default rather than rendering a broken button row.
+  _quickPointAmounts() {
+    const raw = (this._state.settings || {}).quick_point_amounts;
+    const parsed = String(raw == null ? "" : raw)
+      .split(",")
+      .map(p => Number(p.trim()))
+      .filter(n => Number.isInteger(n) && n >= 1 && n <= 10000);
+    const unique = [...new Set(parsed)].slice(0, 3);
+    return unique.length ? unique : [5, 10, 20];
+  }
+
   _mdi(name) {
     return `<ha-icon icon="${this._esc(name || "mdi:account-circle")}"></ha-icon>`;
   }
 
   _styles() {
     return `<style>
+      /* Fill the panel area without depending on a percentage-height chain.
+         HA nests us as taskmate-panel → ha-panel-custom → partial-panel-resolver
+         → ha-drawer, and the middle two are display:inline / height:auto. A
+         height:100% here only resolves while some ancestor happens to carry a
+         definite height; where it doesn't, the shell collapses to its content
+         height and the nav column visibly stops partway down every short page
+         (#754). A flex column of exactly 100dvh is immune to the ancestor
+         chain: panel_custom gives the element the whole viewport — HA draws no
+         toolbar above it — so 100dvh is the full panel area, not an overflow.
+         It must be height, not min-height: the shell scrolls its own body,
+         and a floor-only rule would let a long section (Settings) grow the
+         panel past the viewport and scroll the nav column off the page. */
       taskmate-panel {
-        display: block; height: 100%;
+        display: flex; flex-direction: column; height: 100dvh;
 
         --tm-bg:            var(--primary-background-color, #fafafa);
         --tm-surface-0:     var(--card-background-color, #fff);
@@ -6002,7 +6273,11 @@ class TaskMatePanel extends HTMLElement {
       .tm-shell {
         display: grid;
         grid-template-columns: var(--tm-sidebar-w) 1fr;
-        height: 100%;
+        /* Flex to fill the panel rather than height:100% — see the note on
+           taskmate-panel above (#754). min-height:0 lets the grid shrink
+           instead of being forced to its content height. */
+        flex: 1 1 auto;
+        min-height: 0;
         position: relative;
         overflow: hidden;
       }
@@ -6389,6 +6664,36 @@ class TaskMatePanel extends HTMLElement {
         letter-spacing: 0.01em;
       }
       .tm-stat-highlight .tm-stat-value { color: var(--tm-gold); }
+
+      /* Manual point adjustment strip on child cards (#746). Each -set is a
+         nowrap group so the row folds as "minus / plus + ⋯" on a narrow card
+         instead of orphaning the ⋯ button on a line of its own. */
+      /* Chore picture well (#750). */
+      .tm-image-well {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px; border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm); background: var(--tm-surface-2);
+      }
+      .tm-image-thumb {
+        width: 56px; height: 56px; min-width: 0; min-height: 0;
+        object-fit: cover; border-radius: var(--tm-radius-sm); display: block;
+        border: 1px solid var(--tm-border);
+      }
+      .tm-image-empty {
+        width: 56px; height: 56px; display: grid; place-items: center;
+        border: 1px dashed var(--tm-border); border-radius: var(--tm-radius-sm);
+        color: var(--tm-text-faint); font-size: 11px; text-align: center;
+      }
+      .tm-image-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+      .tm-points-adjust {
+        display: flex; gap: 4px; flex-wrap: wrap;
+        align-items: center;
+        padding-top: 10px;
+      }
+      .tm-points-adjust-set { display: flex; gap: 4px; align-items: center; }
+      .tm-points-adjust-gap { flex: 1 1 8px; min-width: 4px; }
+      .tm-points-adjust .tm-btn { min-width: 40px; justify-content: center; padding-inline: 8px; }
 
       .tm-card-foot {
         display: flex; gap: 6px;
