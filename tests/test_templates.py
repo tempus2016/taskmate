@@ -9,6 +9,15 @@ import pytest
 from custom_components.taskmate.storage import TaskMateStorage
 
 
+def run(coro):
+    """Run a coroutine synchronously."""
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
+
+
 @pytest.fixture
 def storage():
     """Create a storage instance with in-memory store."""
@@ -17,7 +26,7 @@ def storage():
     s._store = MagicMock()
     s._store.async_load = AsyncMock(return_value=None)
     s._store.async_save = AsyncMock()
-    asyncio.get_event_loop().run_until_complete(s.async_load())
+    run(s.async_load())
     return s
 
 
