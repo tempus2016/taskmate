@@ -4,6 +4,7 @@ A picture-only child card for children who can't read yet. The card itself is
 JavaScript; what Python guards is the icon field it depends on — a chore with
 no picture would leave a pre-reader looking at identical tiles.
 """
+
 from __future__ import annotations
 
 import json
@@ -19,7 +20,7 @@ CARD = (WWW / "taskmate-child-card.js").read_text(encoding="utf-8")
 def _tile_source() -> str:
     """The tile method body — sliced from its definition, not its call site."""
     start = CARD.index("  _renderPreReaderTile(chore, child, todaysCompletions = [], choreIndex = 0) {")
-    return CARD[start:CARD.index("_renderChoreCard(chore, child, pointsIcon", start)]
+    return CARD[start : CARD.index("_renderChoreCard(chore, child, pointsIcon", start)]
 
 
 class TestChoreIcon:
@@ -46,7 +47,10 @@ class TestChoreIcon:
         """The icon default is "", so a fallback keyed on the attribute being
         absent would leave every button blank."""
         button = (WWW.parent / "button.py").read_text(encoding="utf-8")
-        assert "getattr(chore, 'icon', \"\") or \"mdi:check-circle\"" in button
+        # Compare with quoting and whitespace normalised — the assertion is
+        # about the fallback being keyed on falsiness, not about formatting.
+        normalised = re.sub(r"\s+", "", button.replace("'", '"'))
+        assert 'getattr(chore,"icon","")or"mdi:check-circle"' in normalised
 
     def test_icon_is_exposed_to_the_cards(self):
         """Cards read chores from the sensor, so an unexposed field is invisible."""
@@ -108,7 +112,10 @@ class TestPreReaderRendersOnEveryDesign:
 
     SOURCE = (
         _pathlib.Path(__file__).resolve().parent.parent
-        / "custom_components" / "taskmate" / "www" / "taskmate-child-card.js"
+        / "custom_components"
+        / "taskmate"
+        / "www"
+        / "taskmate-child-card.js"
     ).read_text(encoding="utf-8")
 
     def _designed_region(self) -> str:
