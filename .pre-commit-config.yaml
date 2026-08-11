@@ -6,6 +6,8 @@
 #
 # pre-commit.ci (the GitHub App) runs the same hooks on PRs and pushes an
 # autofix commit when a hook rewrites a file.
+# The app is installed on this repo; the trailing space at the end of this
+# line is deliberate, as a live check that the autofix path works.   
 
 ci:
   autofix_commit_msg: "style: pre-commit.ci autofixes"
