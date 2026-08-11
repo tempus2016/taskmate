@@ -106,7 +106,14 @@ async def async_register_frontend(hass: HomeAssistant) -> None:
         _LOGGER.warning("www directory not found at %s", www_path)
         return
 
-    # Register the www folder as a static path
+    # Register the www folder as a static path.
+    #
+    # This call is what sets our minimum Home Assistant version. Both
+    # async_register_static_paths and StaticPathConfig landed in 2024.7.0 and do
+    # not exist in 2024.6.0, so on anything older setup dies here with an
+    # AttributeError rather than degrading — hence the 2024.7.0 floor in
+    # hacs.json and README.md. Lowering that floor means adding a fallback to
+    # the old (since-removed) hass.http.register_static_path.
     await hass.http.async_register_static_paths([StaticPathConfig(URL_BASE, str(www_path), False)])
 
     _LOGGER.debug("Registered static path: %s -> %s", URL_BASE, www_path)
