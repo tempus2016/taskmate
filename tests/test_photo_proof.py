@@ -24,6 +24,12 @@ def _coord(chore, child):
     coord.hass = MagicMock()
     coord.hass.bus = MagicMock()
     coord.hass.bus.async_fire = MagicMock()
+    # A real dict, not a MagicMock: completion signs the evidence photo via
+    # HA's async_sign_path, which reads hass.data[...]. Handed a mock it builds
+    # an unserializable JWT payload — sign_photo_url swallows that and returns
+    # the URL unsigned, but the test harness still flags the attempted mock
+    # serialization at teardown. An empty dict makes the lookup miss cleanly.
+    coord.hass.data = {}
     added = []
     storage = MagicMock()
     storage.get_chore = MagicMock(return_value=chore)
