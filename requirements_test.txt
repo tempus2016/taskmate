@@ -6,9 +6,10 @@
 # pytest-asyncio + voluptuous + aiohttp + pyyaml, so freezing this one line
 # freezes the whole test stack deterministically.
 #
-# 0.13.205 is the newest release compatible with the CI Python (3.12); 0.13.206+
-# require >=3.13. This is exactly what the previous unpinned install resolved to.
-pytest-homeassistant-custom-component==0.13.205
+# Keep this in step with the CI Python (3.14): 0.13.206+ require >=3.13 and
+# 0.13.317+ require >=3.14, so bumping the harness past those floors means
+# bumping python-version in the workflows too.
+pytest-homeassistant-custom-component==0.13.348
 
 # Coverage reporting for CI (Tests workflow renders a per-module summary).
 pytest-cov
