@@ -1,4 +1,5 @@
 """Tests for the photo-gallery sensor slice (FEAT-13)."""
+
 from __future__ import annotations
 
 import datetime as dt
@@ -19,8 +20,7 @@ def _common(children, completions):
 
 
 def _comp(cid, when, photo="", approved=True):
-    return ChoreCompletion(chore_id="x", child_id=cid, completed_at=when,
-                           approved=approved, photo_url=photo)
+    return ChoreCompletion(chore_id="x", child_id=cid, completed_at=when, approved=approved, photo_url=photo)
 
 
 def test_gallery_includes_only_photos_newest_first():

@@ -6,6 +6,7 @@ handlers in ``_safe`` so the frontend/WebSocket caller gets a clean failure
 result with the message instead of an unhandled error + traceback. A handler
 that already raises ``ServiceValidationError`` must pass through untouched.
 """
+
 from __future__ import annotations
 
 from types import SimpleNamespace

@@ -1,4 +1,5 @@
 """Tests for the weekly digest."""
+
 from __future__ import annotations
 
 import asyncio
@@ -32,8 +33,9 @@ def _coord(children, completions):
 
 
 def _comp(child, when, approved=True, pts=10, bonus=""):
-    return ChoreCompletion(chore_id="x", child_id=child, completed_at=when,
-                           approved=approved, points_awarded=pts, bonus_subtask_id=bonus)
+    return ChoreCompletion(
+        chore_id="x", child_id=child, completed_at=when, approved=approved, points_awarded=pts, bonus_subtask_id=bonus
+    )
 
 
 def test_digest_counts_this_week_only():
@@ -42,11 +44,17 @@ def test_digest_counts_this_week_only():
     last_week = dt.datetime(2026, 6, 8, 9, tzinfo=UTC)
     coord = _coord(
         [Child(name="Mia", id="a"), Child(name="Bo", id="b")],
-        [_comp("a", this_week, pts=10), _comp("a", this_week, pts=5),
-         _comp("a", last_week, pts=99), _comp("b", this_week, pts=7)],
+        [
+            _comp("a", this_week, pts=10),
+            _comp("a", this_week, pts=5),
+            _comp("a", last_week, pts=99),
+            _comp("b", this_week, pts=7),
+        ],
     )
-    with patch("homeassistant.util.dt.now", return_value=dt.datetime(2026, 6, 21, 18, tzinfo=UTC)), \
-         patch("homeassistant.util.dt.as_local", side_effect=lambda d: d):
+    with (
+        patch("homeassistant.util.dt.now", return_value=dt.datetime(2026, 6, 21, 18, tzinfo=UTC)),
+        patch("homeassistant.util.dt.as_local", side_effect=lambda d: d),
+    ):
         s = coord._build_weekly_digest()
     assert "Mia: 2 chores, 15 Stars" in s
     assert "Bo: 1 chores, 7 Stars" in s
@@ -55,11 +63,14 @@ def test_digest_counts_this_week_only():
 
 def test_digest_excludes_pending_and_bonus():
     now = dt.datetime(2026, 6, 17, 9, tzinfo=UTC)
-    coord = _coord([Child(name="Mia", id="a")],
-                   [_comp("a", now, approved=False, pts=10), _comp("a", now, bonus="sub", pts=5),
-                    _comp("a", now, pts=8)])
-    with patch("homeassistant.util.dt.now", return_value=dt.datetime(2026, 6, 21, 18, tzinfo=UTC)), \
-         patch("homeassistant.util.dt.as_local", side_effect=lambda d: d):
+    coord = _coord(
+        [Child(name="Mia", id="a")],
+        [_comp("a", now, approved=False, pts=10), _comp("a", now, bonus="sub", pts=5), _comp("a", now, pts=8)],
+    )
+    with (
+        patch("homeassistant.util.dt.now", return_value=dt.datetime(2026, 6, 21, 18, tzinfo=UTC)),
+        patch("homeassistant.util.dt.as_local", side_effect=lambda d: d),
+    ):
         s = coord._build_weekly_digest()
     assert "Mia: 1 chores, 8 Stars" in s
 

@@ -88,7 +88,9 @@ def check_metadata(problems: list[str]) -> None:
     # HACS is configured for zip_release — release-zip.yml must keep producing
     # this exact filename or the integration becomes uninstallable.
     if hacs.get("zip_release") and hacs.get("filename") != "taskmate.zip":
-        problems.append(f"hacs.json: zip_release is on but filename is '{hacs.get('filename')}', expected 'taskmate.zip'")
+        problems.append(
+            f"hacs.json: zip_release is on but filename is '{hacs.get('filename')}', expected 'taskmate.zip'"
+        )
 
     print(f"  OK    manifest version {manifest.get('version')}, hacs filename {hacs.get('filename')}")
 

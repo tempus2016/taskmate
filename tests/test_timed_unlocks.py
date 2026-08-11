@@ -5,6 +5,7 @@ becoming "a reward can do anything to your house": a reward can only turn one
 entity on and back off, and that entity must be on the parent's allowlist —
 checked at save time AND again when it actually fires.
 """
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -28,6 +29,7 @@ def _coord(allowlist=None, unlocks=None):
 
     def _set(key, value):
         settings[key] = value
+
     coord.storage.set_setting = MagicMock(side_effect=_set)
     coord.storage.get_setting = MagicMock(side_effect=lambda k, d="": settings.get(k, d))
     coord.storage.async_save = AsyncMock()
@@ -102,10 +104,12 @@ class TestStartingAnUnlock:
     async def test_unlock_turns_the_entity_on(self):
         coord = _coord(["switch.tv"])
         record = await coord.async_start_unlock(
-            _reward(unlock_entity="switch.tv", unlock_minutes=30), Child(name="Kid", id="k1"))
+            _reward(unlock_entity="switch.tv", unlock_minutes=30), Child(name="Kid", id="k1")
+        )
         assert record["entity_id"] == "switch.tv"
         coord.hass.services.async_call.assert_awaited_with(
-            "homeassistant", "turn_on", {"entity_id": "switch.tv"}, blocking=False)
+            "homeassistant", "turn_on", {"entity_id": "switch.tv"}, blocking=False
+        )
 
     @pytest.mark.asyncio
     async def test_reward_without_unlock_does_nothing(self):
@@ -118,7 +122,8 @@ class TestStartingAnUnlock:
         """The allowlist can change after a reward was created — re-check."""
         coord = _coord(["switch.something_else"])
         result = await coord.async_start_unlock(
-            _reward(unlock_entity="switch.tv", unlock_minutes=30), Child(name="Kid", id="k1"))
+            _reward(unlock_entity="switch.tv", unlock_minutes=30), Child(name="Kid", id="k1")
+        )
         assert result is None
         coord.hass.services.async_call.assert_not_awaited()
 
@@ -126,7 +131,8 @@ class TestStartingAnUnlock:
     async def test_unlock_is_persisted_so_a_restart_can_revert_it(self):
         coord = _coord(["switch.tv"])
         await coord.async_start_unlock(
-            _reward(unlock_entity="switch.tv", unlock_minutes=30), Child(name="Kid", id="k1"))
+            _reward(unlock_entity="switch.tv", unlock_minutes=30), Child(name="Kid", id="k1")
+        )
         assert len(coord.active_unlocks()) == 1
         coord.storage.async_save.assert_awaited()
 
@@ -134,7 +140,8 @@ class TestStartingAnUnlock:
     async def test_zero_minutes_does_not_schedule_a_revert(self):
         coord = _coord(["switch.tv"])
         record = await coord.async_start_unlock(
-            _reward(unlock_entity="switch.tv", unlock_minutes=0), Child(name="Kid", id="k1"))
+            _reward(unlock_entity="switch.tv", unlock_minutes=0), Child(name="Kid", id="k1")
+        )
         assert record["revert_at"] == ""
         assert coord.active_unlocks() == []
 
@@ -142,7 +149,8 @@ class TestStartingAnUnlock:
     async def test_starting_fires_an_event(self):
         coord = _coord(["switch.tv"])
         await coord.async_start_unlock(
-            _reward(unlock_entity="switch.tv", unlock_minutes=30), Child(name="Kid", id="k1"))
+            _reward(unlock_entity="switch.tv", unlock_minutes=30), Child(name="Kid", id="k1")
+        )
         event, payload = coord.hass.bus.async_fire.call_args[0]
         assert event == "taskmate_unlock_started"
         assert payload["child_name"] == "Kid"
@@ -153,17 +161,20 @@ class TestReverting:
     async def test_revert_turns_the_entity_off_and_clears_the_record(self):
         coord = _coord(["switch.tv"])
         record = await coord.async_start_unlock(
-            _reward(unlock_entity="switch.tv", unlock_minutes=30), Child(name="Kid", id="k1"))
+            _reward(unlock_entity="switch.tv", unlock_minutes=30), Child(name="Kid", id="k1")
+        )
         await coord.async_revert_unlock(record)
         coord.hass.services.async_call.assert_awaited_with(
-            "homeassistant", "turn_off", {"entity_id": "switch.tv"}, blocking=False)
+            "homeassistant", "turn_off", {"entity_id": "switch.tv"}, blocking=False
+        )
         assert coord.active_unlocks() == []
 
     @pytest.mark.asyncio
     async def test_revert_fires_an_event(self):
         coord = _coord(["switch.tv"])
         record = await coord.async_start_unlock(
-            _reward(unlock_entity="switch.tv", unlock_minutes=30), Child(name="Kid", id="k1"))
+            _reward(unlock_entity="switch.tv", unlock_minutes=30), Child(name="Kid", id="k1")
+        )
         coord.hass.bus.async_fire.reset_mock()
         await coord.async_revert_unlock(record)
         assert coord.hass.bus.async_fire.call_args[0][0] == "taskmate_unlock_ended"
@@ -178,7 +189,8 @@ class TestSurvivingARestart:
         coord = _coord(["switch.tv"], [{"entity_id": "switch.tv", "revert_at": past}])
         assert await coord.async_resume_unlocks() == 1
         coord.hass.services.async_call.assert_awaited_with(
-            "homeassistant", "turn_off", {"entity_id": "switch.tv"}, blocking=False)
+            "homeassistant", "turn_off", {"entity_id": "switch.tv"}, blocking=False
+        )
         assert coord.active_unlocks() == []
 
     @pytest.mark.asyncio
@@ -195,7 +207,8 @@ class TestSurvivingARestart:
         coord = _coord(["switch.tv"], [{"entity_id": "switch.tv", "revert_at": "whenever"}])
         assert await coord.async_resume_unlocks() == 1
         coord.hass.services.async_call.assert_awaited_with(
-            "homeassistant", "turn_off", {"entity_id": "switch.tv"}, blocking=False)
+            "homeassistant", "turn_off", {"entity_id": "switch.tv"}, blocking=False
+        )
 
     @pytest.mark.asyncio
     async def test_resume_reverts_even_if_no_longer_allowlisted(self):
@@ -204,7 +217,8 @@ class TestSurvivingARestart:
         coord = _coord([], [{"entity_id": "switch.tv", "revert_at": past}])
         assert await coord.async_resume_unlocks() == 1
         coord.hass.services.async_call.assert_awaited_with(
-            "homeassistant", "turn_off", {"entity_id": "switch.tv"}, blocking=False)
+            "homeassistant", "turn_off", {"entity_id": "switch.tv"}, blocking=False
+        )
 
     @pytest.mark.asyncio
     async def test_nothing_active_is_a_no_op(self):

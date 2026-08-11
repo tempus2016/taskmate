@@ -5,6 +5,7 @@ rewards/allowance, award badges, complete-as-parent) accept HA admins,
 context-less calls, *and* non-admin users listed in ``parent_user_ids``.
 Structural config stays on ``_async_require_admin``.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -98,8 +99,12 @@ async def _handlers(user, parent_ids, monkeypatch):
     coordinator.storage.get_parent_user_ids = MagicMock(return_value=list(parent_ids))
     coordinator.async_record_audit = AsyncMock()
     for method in (
-        "async_apply_bonus", "async_apply_penalty", "async_remove_points",
-        "async_add_bonus", "async_update_bonus", "async_remove_bonus",
+        "async_apply_bonus",
+        "async_apply_penalty",
+        "async_remove_points",
+        "async_add_bonus",
+        "async_update_bonus",
+        "async_remove_bonus",
     ):
         setattr(coordinator, method, AsyncMock())
     monkeypatch.setattr(tm, "_get_coordinator", lambda hass: coordinator)

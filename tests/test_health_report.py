@@ -4,6 +4,7 @@ Surfaces what is actually broken — orphaned references, config that can never
 work, entities that no longer exist — with a severity, a plain sentence and
 where to go and fix it.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -13,8 +14,18 @@ from custom_components.taskmate.models import Child, Chore, MandatoryMiss, Rewar
 from .test_coordinator_logic import _make_coord
 
 
-def _coord(children=(), chores=(), rewards=(), completions=(), *,
-           badges=(), scheduled=(), misses=(), allowlist=(), known_entities=()):
+def _coord(
+    children=(),
+    chores=(),
+    rewards=(),
+    completions=(),
+    *,
+    badges=(),
+    scheduled=(),
+    misses=(),
+    allowlist=(),
+    known_entities=(),
+):
     settings = {"unlock_allowlist": list(allowlist), "active_unlocks": []}
     coord = _make_coord(settings=settings, children=list(children), completions=list(completions))
     coord.storage.get_chores = MagicMock(return_value=list(chores))
@@ -70,18 +81,15 @@ class TestOrphans:
 
 class TestBrokenConfig:
     def test_missing_visibility_entity(self):
-        chore = Chore(name="Gated", id="c1", assigned_to=[KID.id],
-                      visibility_entity="binary_sensor.gone")
+        chore = Chore(name="Gated", id="c1", assigned_to=[KID.id], visibility_entity="binary_sensor.gone")
         assert "chore_missing_entity" in _codes(_coord([KID], [chore]).health_report())
 
     def test_missing_weather_entity(self):
-        chore = Chore(name="Outdoor", id="c1", assigned_to=[KID.id],
-                      weather_entity="weather.gone")
+        chore = Chore(name="Outdoor", id="c1", assigned_to=[KID.id], weather_entity="weather.gone")
         assert "chore_missing_entity" in _codes(_coord([KID], [chore]).health_report())
 
     def test_present_entity_is_not_flagged(self):
-        chore = Chore(name="Outdoor", id="c1", assigned_to=[KID.id],
-                      weather_entity="weather.home")
+        chore = Chore(name="Outdoor", id="c1", assigned_to=[KID.id], weather_entity="weather.home")
         report = _coord([KID], [chore], known_entities={"weather.home"}).health_report()
         assert "chore_missing_entity" not in _codes(report)
 
@@ -112,8 +120,7 @@ class TestBrokenConfig:
 class TestShape:
     def test_counts_are_reported(self):
         chore = Chore(name="Fine", id="c1", assigned_to=[KID.id])
-        misses = [MandatoryMiss(chore_id="c1", child_id=KID.id,
-                                due_date="2026-01-01", period_id="anytime")]
+        misses = [MandatoryMiss(chore_id="c1", child_id=KID.id, due_date="2026-01-01", period_id="anytime")]
         report = _coord([KID], [chore], misses=misses).health_report()
         assert report["counts"]["children"] == 1
         assert report["counts"]["chores"] == 1

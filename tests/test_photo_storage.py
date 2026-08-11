@@ -1,4 +1,5 @@
 """Tests for the pure evidence-photo storage helpers (custom_components.taskmate.photos)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -31,6 +32,7 @@ def _hass(tmp_path: Path):
 
 # ── detect_image_ext ────────────────────────────────────────────────────────
 
+
 def test_detect_jpeg():
     assert photos.detect_image_ext(b"\xff\xd8\xff\xe0\x00\x10JFIF") == "jpg"
 
@@ -56,6 +58,7 @@ def test_detect_rejects_non_image():
 
 # ── photo_file_for_url (path-traversal safety) ──────────────────────────────
 
+
 def test_photo_file_for_valid_url(tmp_path):
     hass = _hass(tmp_path)
     name = "0123456789abcdef0123456789abcdef.jpg"
@@ -80,6 +83,7 @@ def test_photo_file_for_url_rejects_traversal(tmp_path):
 
 # ── sign_photo_url (foreign/blank passthrough — no HA needed) ───────────────
 
+
 def test_sign_photo_url_passes_through_foreign(tmp_path):
     hass = _hass(tmp_path)
     # Foreign/blank URLs return unchanged without touching async_sign_path.
@@ -89,6 +93,7 @@ def test_sign_photo_url_passes_through_foreign(tmp_path):
 
 
 # ── async_delete_photo ──────────────────────────────────────────────────────
+
 
 def test_delete_photo_removes_file(tmp_path):
     hass = _hass(tmp_path)
@@ -115,6 +120,7 @@ def test_delete_photo_ignores_foreign_url(tmp_path):
 
 # ── quota + orphan sweep (SEC-2) ─────────────────────────────────────────────
 
+
 def _write_photo(tmp_path, name, data=b"x", age_hours=0):
     d = Path(tmp_path, photos.PHOTOS_DIR)
     d.mkdir(parents=True, exist_ok=True)
@@ -138,7 +144,7 @@ def test_total_photos_bytes(tmp_path):
 
 def test_sweep_removes_old_unreferenced_only(tmp_path):
     hass = _hass(tmp_path)
-    keep = "a" * 32 + ".jpg"        # old but referenced -> keep
+    keep = "a" * 32 + ".jpg"  # old but referenced -> keep
     orphan_old = "b" * 32 + ".jpg"  # old + unreferenced -> delete
     orphan_new = "c" * 32 + ".jpg"  # new + unreferenced -> keep (grace window)
     _write_photo(tmp_path, keep, age_hours=48)

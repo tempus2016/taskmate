@@ -7,6 +7,7 @@ completions, 50 transactions, 10 pending claims, penalties, bonuses) and
 asserts that each of the five global sensors stays below the 16384-byte
 limit for extra_state_attributes.
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -221,10 +222,13 @@ def _stress_coordinator():
     coord.is_chore_available_for_child = MagicMock(return_value=True)
     # Medium-difficulty chores award their base points (×1.0 baseline).
     coord.effective_chore_points = MagicMock(side_effect=lambda c: c.points)
-    coord.level_info = MagicMock(side_effect=lambda c: {
-        "level": (c.total_points_earned or 0) // 100 + 1,
-        "progress": (c.total_points_earned or 0) % 100, "target": 100,
-    })
+    coord.level_info = MagicMock(
+        side_effect=lambda c: {
+            "level": (c.total_points_earned or 0) // 100 + 1,
+            "progress": (c.total_points_earned or 0) % 100,
+            "target": 100,
+        }
+    )
     coord.storage = MagicMock()
     coord.storage.get_last_completed = MagicMock(return_value={"current": "2026-04-20T08:00:00Z"})
     return coord
@@ -238,8 +242,7 @@ def _bytes(obj) -> int:
 def _assert_slice_under_limit(name: str, attrs: dict) -> None:
     size = _bytes(attrs)
     assert size < MAX_ATTR_BYTES, (
-        f"{name} attribute payload is {size} bytes — exceeds the "
-        f"{MAX_ATTR_BYTES}-byte recorder limit"
+        f"{name} attribute payload is {size} bytes — exceeds the {MAX_ATTR_BYTES}-byte recorder limit"
     )
 
 
@@ -490,8 +493,12 @@ class TestPendingApprovalsSensor:
         chore.id = "ch1"
         yesterday = dt.datetime(2026, 6, 6, 18, 0, 0, tzinfo=UTC)
         comp = ChoreCompletion(
-            chore_id="ch1", child_id="c1", completed_at=yesterday,
-            approved=False, points_awarded=0, id="comp-yesterday",
+            chore_id="ch1",
+            child_id="c1",
+            completed_at=yesterday,
+            approved=False,
+            points_awarded=0,
+            id="comp-yesterday",
         )
         coord = self._coord([child], [chore], [comp])
         sensor = PendingApprovalsSensor(coord, _MockEntry())
@@ -508,9 +515,12 @@ class TestPendingApprovalsSensor:
         chore = Chore(name="Make bed", points=10, bonus_subtasks=[sub])
         chore.id = "ch1"
         comp = ChoreCompletion(
-            chore_id="ch1", child_id="c1",
+            chore_id="ch1",
+            child_id="c1",
             completed_at=dt.datetime(2026, 6, 7, 8, 0, 0, tzinfo=UTC),
-            approved=False, points_awarded=0, bonus_subtask_id="sub1",
+            approved=False,
+            points_awarded=0,
+            bonus_subtask_id="sub1",
             id="comp-bonus",
         )
         coord = self._coord([child], [chore], [comp])

@@ -4,6 +4,7 @@ Which chores aren't working, and what to do about each. Built only from
 signals TaskMate actually retains — rejections delete the completion and
 resolved mandatory misses are removed, so neither can be counted.
 """
+
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -58,8 +59,7 @@ class TestExpectedOccurrences:
 
     def test_specific_days_counts_matching_weekdays(self):
         coord = _coord()
-        chore = Chore(name="Mon/Fri", id="a", schedule_mode="specific_days",
-                      due_days=["monday", "friday"])
+        chore = Chore(name="Mon/Fri", id="a", schedule_mode="specific_days", due_days=["monday", "friday"])
         start = date(2026, 1, 5)  # a Monday
         assert coord._expected_occurrences(chore, start, start + timedelta(days=13)) == 4
 
@@ -179,10 +179,8 @@ class TestMandatoryMisses:
     def test_escalated_misses_are_counted_as_chasing(self):
         chore = Chore(name="Bins", id="a")
         misses = [
-            MandatoryMiss(chore_id="a", child_id="k", due_date="2026-01-01",
-                          period_id="anytime", escalation_stage=3),
-            MandatoryMiss(chore_id="a", child_id="k", due_date="2026-01-02",
-                          period_id="anytime", escalation_stage=1),
+            MandatoryMiss(chore_id="a", child_id="k", due_date="2026-01-01", period_id="anytime", escalation_stage=3),
+            MandatoryMiss(chore_id="a", child_id="k", due_date="2026-01-02", period_id="anytime", escalation_stage=1),
         ]
         coord = _coord([chore], [], None, misses)
         row = _row(coord.friction_report(), "a")

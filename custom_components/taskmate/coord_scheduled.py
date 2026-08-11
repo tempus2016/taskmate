@@ -8,6 +8,7 @@ Applied changes are kept rather than deleted so the panel can show what changed
 and when — a config change that happens silently is worse than one that doesn't
 happen at all.
 """
+
 from __future__ import annotations
 
 import logging
@@ -69,7 +70,11 @@ class ScheduledChangesMixin:
         return sorted(changes, key=lambda c: (c.apply_on, c.created_at))
 
     async def async_add_scheduled_change(
-        self, chore_id: str, apply_on: str, changes: dict[str, Any], note: str = "",
+        self,
+        chore_id: str,
+        apply_on: str,
+        changes: dict[str, Any],
+        note: str = "",
     ) -> ScheduledChange:
         """Queue a change. Validates the chore, the date and every field now."""
         if not self.storage.get_chore(chore_id):
@@ -87,7 +92,10 @@ class ScheduledChangesMixin:
         coerced = {f: coerce_scheduled_value(f, v) for f, v in changes.items()}
 
         change = ScheduledChange(
-            chore_id=chore_id, apply_on=apply_on, changes=coerced, note=note,
+            chore_id=chore_id,
+            apply_on=apply_on,
+            changes=coerced,
+            note=note,
         )
         self.storage.add_scheduled_change(change)
         await self.storage.async_save()
@@ -119,7 +127,8 @@ class ScheduledChangesMixin:
             except (TypeError, ValueError):
                 _LOGGER.warning(
                     "Scheduled change %s has an unparseable date %r — skipping",
-                    change.id, change.apply_on,
+                    change.id,
+                    change.apply_on,
                 )
                 continue
 
@@ -138,7 +147,8 @@ class ScheduledChangesMixin:
                 if field_name not in SCHEDULED_CHANGE_FIELDS:
                     _LOGGER.warning(
                         "Scheduled change %s targets unknown field '%s' — skipping it",
-                        change.id, field_name,
+                        change.id,
+                        field_name,
                     )
                     continue
                 setattr(chore, field_name, value)
@@ -151,7 +161,8 @@ class ScheduledChangesMixin:
 
             _LOGGER.info(
                 "Applied scheduled change to '%s': %s",
-                chore.name, ", ".join(f"{k}={v}" for k, v in change.changes.items()),
+                chore.name,
+                ", ".join(f"{k}={v}" for k, v in change.changes.items()),
             )
             self.hass.bus.async_fire(
                 "taskmate_scheduled_change_applied",

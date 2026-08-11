@@ -1,4 +1,5 @@
 """Badge evaluation engine and built-in catalogue."""
+
 from __future__ import annotations
 
 import logging
@@ -8,8 +9,9 @@ from .models import Badge, BadgeCriterion, Child
 _LOGGER = logging.getLogger(__name__)
 
 
-def _b(id_suffix: str, name: str, description: str, icon: str, tier: str,
-       point_bonus: int, metric: str, value: int) -> Badge:
+def _b(
+    id_suffix: str, name: str, description: str, icon: str, tier: str, point_bonus: int, metric: str, value: int
+) -> Badge:
     """Helper to build a built-in badge."""
     criteria = [BadgeCriterion(metric=metric, operator=">=", value=value)] if metric else []
     badge = Badge(
@@ -29,39 +31,116 @@ def _b(id_suffix: str, name: str, description: str, icon: str, tier: str,
 
 BUILTIN_CATALOGUE: list[Badge] = [
     # Bronze
-    _b("first_chore", "First Chore", "Complete your very first chore",
-       "mdi:check-circle", "bronze", 0, "first_chore", 1),
-    _b("first_reward", "First Reward", "Claim your first reward",
-       "mdi:gift", "bronze", 0, "first_reward", 1),
-    _b("100_points", "100 Points", "Earn 100 lifetime points",
-       "mdi:star", "bronze", 0, "total_points", 100),
-    _b("10_chores", "10 Chores Completed", "Complete 10 chores",
-       "mdi:checkbox-marked-circle", "bronze", 0, "total_chores", 10),
+    _b(
+        "first_chore",
+        "First Chore",
+        "Complete your very first chore",
+        "mdi:check-circle",
+        "bronze",
+        0,
+        "first_chore",
+        1,
+    ),
+    _b("first_reward", "First Reward", "Claim your first reward", "mdi:gift", "bronze", 0, "first_reward", 1),
+    _b("100_points", "100 Points", "Earn 100 lifetime points", "mdi:star", "bronze", 0, "total_points", 100),
+    _b(
+        "10_chores",
+        "10 Chores Completed",
+        "Complete 10 chores",
+        "mdi:checkbox-marked-circle",
+        "bronze",
+        0,
+        "total_chores",
+        10,
+    ),
     # Silver
-    _b("500_points", "500 Points", "Earn 500 lifetime points",
-       "mdi:star-circle", "silver", 25, "total_points", 500),
-    _b("50_chores", "50 Chores Completed", "Complete 50 chores",
-       "mdi:checkbox-multiple-marked-circle", "silver", 25, "total_chores", 50),
-    _b("3_day_streak", "3-Day Streak", "Complete chores 3 days in a row",
-       "mdi:fire", "silver", 25, "current_streak", 3),
-    _b("first_perfect_week", "First Perfect Week", "Complete a perfect week",
-       "mdi:calendar-star", "silver", 50, "perfect_weeks", 1),
+    _b("500_points", "500 Points", "Earn 500 lifetime points", "mdi:star-circle", "silver", 25, "total_points", 500),
+    _b(
+        "50_chores",
+        "50 Chores Completed",
+        "Complete 50 chores",
+        "mdi:checkbox-multiple-marked-circle",
+        "silver",
+        25,
+        "total_chores",
+        50,
+    ),
+    _b(
+        "3_day_streak", "3-Day Streak", "Complete chores 3 days in a row", "mdi:fire", "silver", 25, "current_streak", 3
+    ),
+    _b(
+        "first_perfect_week",
+        "First Perfect Week",
+        "Complete a perfect week",
+        "mdi:calendar-star",
+        "silver",
+        50,
+        "perfect_weeks",
+        1,
+    ),
     # Gold
-    _b("1000_points", "1000 Points", "Earn 1000 lifetime points",
-       "mdi:trophy", "gold", 100, "total_points", 1000),
-    _b("100_chores", "100 Chores Completed", "Complete 100 chores",
-       "mdi:trophy-variant", "gold", 100, "total_chores", 100),
-    _b("7_day_streak", "7-Day Streak", "Complete chores 7 days in a row",
-       "mdi:lightning-bolt", "gold", 50, "current_streak", 7),
-    _b("5_perfect_weeks", "5 Perfect Weeks", "Achieve 5 perfect weeks",
-       "mdi:calendar-multiple-check", "gold", 100, "perfect_weeks", 5),
+    _b("1000_points", "1000 Points", "Earn 1000 lifetime points", "mdi:trophy", "gold", 100, "total_points", 1000),
+    _b(
+        "100_chores",
+        "100 Chores Completed",
+        "Complete 100 chores",
+        "mdi:trophy-variant",
+        "gold",
+        100,
+        "total_chores",
+        100,
+    ),
+    _b(
+        "7_day_streak",
+        "7-Day Streak",
+        "Complete chores 7 days in a row",
+        "mdi:lightning-bolt",
+        "gold",
+        50,
+        "current_streak",
+        7,
+    ),
+    _b(
+        "5_perfect_weeks",
+        "5 Perfect Weeks",
+        "Achieve 5 perfect weeks",
+        "mdi:calendar-multiple-check",
+        "gold",
+        100,
+        "perfect_weeks",
+        5,
+    ),
     # Platinum
-    _b("5000_points", "5000 Points", "Earn 5000 lifetime points",
-       "mdi:diamond-stone", "platinum", 250, "total_points", 5000),
-    _b("30_day_streak", "30-Day Streak", "Complete chores 30 days in a row",
-       "mdi:crown", "platinum", 250, "current_streak", 30),
-    _b("10_perfect_weeks", "10 Perfect Weeks", "Achieve 10 perfect weeks",
-       "mdi:rainbow", "platinum", 250, "perfect_weeks", 10),
+    _b(
+        "5000_points",
+        "5000 Points",
+        "Earn 5000 lifetime points",
+        "mdi:diamond-stone",
+        "platinum",
+        250,
+        "total_points",
+        5000,
+    ),
+    _b(
+        "30_day_streak",
+        "30-Day Streak",
+        "Complete chores 30 days in a row",
+        "mdi:crown",
+        "platinum",
+        250,
+        "current_streak",
+        30,
+    ),
+    _b(
+        "10_perfect_weeks",
+        "10 Perfect Weeks",
+        "Achieve 10 perfect weeks",
+        "mdi:rainbow",
+        "platinum",
+        250,
+        "perfect_weeks",
+        10,
+    ),
 ]
 
 
@@ -80,10 +159,7 @@ def resolve_metric(metric: str, child: Child, storage) -> int:
     if metric == "first_chore":
         return 1 if (child.total_chores_completed or 0) >= 1 else 0
     if metric in ("total_rewards", "first_reward"):
-        approved_count = sum(
-            1 for c in storage.get_reward_claims()
-            if c.child_id == child.id and c.approved
-        )
+        approved_count = sum(1 for c in storage.get_reward_claims() if c.child_id == child.id and c.approved)
         if metric == "first_reward":
             return 1 if approved_count >= 1 else 0
         return approved_count
@@ -240,7 +316,9 @@ class BadgeCoordinator:
         self.storage.add_awarded_badge(award)
         if bonus > 0:
             await self.points_coord.async_add_points(
-                child_id, bonus, reason=f"Badge: {badge.name}",
+                child_id,
+                bonus,
+                reason=f"Badge: {badge.name}",
             )
         self.hass.bus.async_fire(
             "taskmate_badge_earned",
@@ -260,9 +338,7 @@ class BadgeCoordinator:
 
     async def revoke(self, awarded_id: str) -> bool:
         """Revoke an awarded badge; reverse bonus_credited if > 0."""
-        matching = [
-            a for a in self.storage.get_awarded_badges() if a.id == awarded_id
-        ]
+        matching = [a for a in self.storage.get_awarded_badges() if a.id == awarded_id]
         if not matching:
             return False
         award = matching[0]
@@ -288,7 +364,9 @@ class BadgeCoordinator:
         total = 0
         for child in self.storage.get_children():
             new_awards = await self.evaluate_for_child(
-                child.id, "manual", silent=True,
+                child.id,
+                "manual",
+                silent=True,
             )
             total += len(new_awards)
         return total

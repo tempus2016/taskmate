@@ -1,4 +1,5 @@
 """Tests for mandatory-chore model fields and the MandatoryMiss model (#532)."""
+
 from __future__ import annotations
 
 from custom_components.taskmate.models import Chore, MandatoryMiss
@@ -29,9 +30,14 @@ def test_mandatory_legacy_record_loads():
 
 def test_mandatory_miss_round_trip():
     m = MandatoryMiss(
-        chore_id="c1", child_id="k1", due_date="2026-06-21",
-        period_id="morning", penalty_points=5, postpone_count=1,
-        created_at="2026-06-21T12:00:00", id="m1",
+        chore_id="c1",
+        child_id="k1",
+        due_date="2026-06-21",
+        period_id="morning",
+        penalty_points=5,
+        postpone_count=1,
+        created_at="2026-06-21T12:00:00",
+        id="m1",
     )
     d = m.to_dict()
     m2 = MandatoryMiss.from_dict(d)

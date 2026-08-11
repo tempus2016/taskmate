@@ -7,6 +7,7 @@ views over completions, and a stale cached report is worse than a slow one.
 Fairness is the first; the shared window/aggregation helpers here are meant to
 carry the friction and projection reports too.
 """
+
 from __future__ import annotations
 
 import logging
@@ -89,8 +90,7 @@ class ReportsMixin:
         completions = self._completions_in_window(start, end)
 
         by_child: dict[str, dict[str, Any]] = {
-            c.id: {"id": c.id, "name": c.name, "completions": 0, "points": 0, "active_days": set()}
-            for c in children
+            c.id: {"id": c.id, "name": c.name, "completions": 0, "points": 0, "active_days": set()} for c in children
         }
         for comp in completions:
             entry = by_child.get(comp.child_id)
@@ -106,9 +106,7 @@ class ReportsMixin:
 
         rows = []
         for entry in by_child.values():
-            share_completions = (
-                entry["completions"] / total_completions * 100 if total_completions else 0.0
-            )
+            share_completions = entry["completions"] / total_completions * 100 if total_completions else 0.0
             share_points = entry["points"] / total_points * 100 if total_points else 0.0
             # Judge on chore count: it's the closest proxy for "how much did
             # they actually have to do", independent of how a chore is priced.
@@ -121,17 +119,19 @@ class ReportsMixin:
                 status = "under"
             else:
                 status = "balanced"
-            rows.append({
-                "id": entry["id"],
-                "name": entry["name"],
-                "completions": entry["completions"],
-                "points": entry["points"],
-                "share_completions": round(share_completions, 1),
-                "share_points": round(share_points, 1),
-                "delta": round(delta, 1),
-                "active_days": len(entry["active_days"]),
-                "status": status,
-            })
+            rows.append(
+                {
+                    "id": entry["id"],
+                    "name": entry["name"],
+                    "completions": entry["completions"],
+                    "points": entry["points"],
+                    "share_completions": round(share_completions, 1),
+                    "share_points": round(share_points, 1),
+                    "delta": round(delta, 1),
+                    "active_days": len(entry["active_days"]),
+                    "status": status,
+                }
+            )
 
         rows.sort(key=lambda r: (-r["completions"], r["name"]))
         return {
@@ -164,8 +164,12 @@ class ReportsMixin:
 
         if mode == "recurring":
             period_days = {
-                "every_2_days": 2, "weekly": 7, "every_2_weeks": 14,
-                "monthly": 30, "every_3_months": 91, "every_6_months": 182,
+                "every_2_days": 2,
+                "weekly": 7,
+                "every_2_weeks": 14,
+                "monthly": 30,
+                "every_3_months": 91,
+                "every_6_months": 182,
             }.get(getattr(chore, "recurrence", "weekly"), 7)
             return max(0, span // period_days)
 
@@ -173,16 +177,18 @@ class ReportsMixin:
         if not due_days:
             return span  # no restriction = every day
         wanted = {
-            "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
-            "friday": 4, "saturday": 5, "sunday": 6,
+            "monday": 0,
+            "tuesday": 1,
+            "wednesday": 2,
+            "thursday": 3,
+            "friday": 4,
+            "saturday": 5,
+            "sunday": 6,
         }
         targets = {wanted[d] for d in due_days if d in wanted}
         if not targets:
             return span
-        return sum(
-            1 for i in range(span)
-            if (start + timedelta(days=i)).weekday() in targets
-        )
+        return sum(1 for i in range(span) if (start + timedelta(days=i)).weekday() in targets)
 
     def friction_report(self, days: int | None = None) -> dict[str, Any]:
         """Which chores are not working, and what to do about them.
@@ -232,26 +238,26 @@ class ReportsMixin:
             else:
                 verdict = "stalling"
 
-            rows.append({
-                "id": chore.id,
-                "name": chore.name,
-                "points": int(getattr(chore, "points", 0) or 0),
-                "completed": done,
-                "expected": expected,
-                "rate": round(rate * 100, 1) if rate is not None else None,
-                "days_since": days_since,
-                "last_done": last_done.isoformat() if last_done else None,
-                "outstanding_misses": misses_by_chore.get(chore.id, 0),
-                "needed_chasing": chased_by_chore.get(chore.id, 0),
-                "verdict": verdict,
-                "suggestion": self._friction_suggestion(verdict, days_since, chore),
-            })
+            rows.append(
+                {
+                    "id": chore.id,
+                    "name": chore.name,
+                    "points": int(getattr(chore, "points", 0) or 0),
+                    "completed": done,
+                    "expected": expected,
+                    "rate": round(rate * 100, 1) if rate is not None else None,
+                    "days_since": days_since,
+                    "last_done": last_done.isoformat() if last_done else None,
+                    "outstanding_misses": misses_by_chore.get(chore.id, 0),
+                    "needed_chasing": chased_by_chore.get(chore.id, 0),
+                    "verdict": verdict,
+                    "suggestion": self._friction_suggestion(verdict, days_since, chore),
+                }
+            )
 
         # Worst first: never done, then lowest completion rate.
         order = {"never": 0, "stalling": 1, "struggling": 2, "unknown": 3, "fine": 4}
-        rows.sort(key=lambda r: (order.get(r["verdict"], 9),
-                                 r["rate"] if r["rate"] is not None else 0,
-                                 r["name"]))
+        rows.sort(key=lambda r: (order.get(r["verdict"], 9), r["rate"] if r["rate"] is not None else 0, r["name"]))
         return {
             "days": span,
             "start": start.isoformat(),
@@ -325,8 +331,12 @@ class ReportsMixin:
 
         if mode == "recurring":
             period_days = {
-                "every_2_days": 2, "weekly": 7, "every_2_weeks": 14,
-                "monthly": 30, "every_3_months": 91, "every_6_months": 182,
+                "every_2_days": 2,
+                "weekly": 7,
+                "every_2_weeks": 14,
+                "monthly": 30,
+                "every_3_months": 91,
+                "every_6_months": 182,
             }.get(getattr(chore, "recurrence", "weekly"), 7)
             anchor_raw = getattr(chore, "recurrence_start", "") or ""
             try:
@@ -403,15 +413,16 @@ class ReportsMixin:
                 totals[child_id]["chores"] += figures["chores"]
             unassigned_points += day_unassigned
 
-            day_rows.append({
-                "date": day.isoformat(),
-                "weekday": day.strftime("%A").lower(),
-                "children": [
-                    {"id": cid, "points": f["points"], "chores": f["chores"]}
-                    for cid, f in per_day.items()
-                ],
-                "unassigned_points": day_unassigned,
-            })
+            day_rows.append(
+                {
+                    "date": day.isoformat(),
+                    "weekday": day.strftime("%A").lower(),
+                    "children": [
+                        {"id": cid, "points": f["points"], "chores": f["chores"]} for cid, f in per_day.items()
+                    ],
+                    "unassigned_points": day_unassigned,
+                }
+            )
 
         for child in children:
             entry = totals[child.id]
@@ -454,48 +465,62 @@ class ReportsMixin:
         issues: list[dict[str, Any]] = []
 
         def add(severity: str, code: str, message: str, where: str, count: int = 1) -> None:
-            issues.append({
-                "severity": severity, "code": code,
-                "message": message, "where": where, "count": count,
-            })
+            issues.append(
+                {
+                    "severity": severity,
+                    "code": code,
+                    "message": message,
+                    "where": where,
+                    "count": count,
+                }
+            )
 
         # ── orphaned references ──────────────────────────────────────────
         orphan_assignees = [
-            c.name for c in chores
-            if any(cid not in child_ids for cid in (getattr(c, "assigned_to", []) or []))
+            c.name for c in chores if any(cid not in child_ids for cid in (getattr(c, "assigned_to", []) or []))
         ]
         if orphan_assignees:
-            add("warning", "chore_orphan_assignee",
+            add(
+                "warning",
+                "chore_orphan_assignee",
                 f"{len(orphan_assignees)} chore(s) are assigned to a child that no longer exists",
-                "chores", len(orphan_assignees))
+                "chores",
+                len(orphan_assignees),
+            )
 
         orphan_rewards = [
-            r.name for r in rewards
-            if any(cid not in child_ids for cid in (getattr(r, "assigned_to", []) or []))
+            r.name for r in rewards if any(cid not in child_ids for cid in (getattr(r, "assigned_to", []) or []))
         ]
         if orphan_rewards:
-            add("warning", "reward_orphan_assignee",
+            add(
+                "warning",
+                "reward_orphan_assignee",
                 f"{len(orphan_rewards)} reward(s) are assigned to a child that no longer exists",
-                "rewards", len(orphan_rewards))
+                "rewards",
+                len(orphan_rewards),
+            )
 
         orphan_deps = [
-            c.name for c in chores
-            if any(dep not in chore_ids for dep in (getattr(c, "depends_on", []) or []))
+            c.name for c in chores if any(dep not in chore_ids for dep in (getattr(c, "depends_on", []) or []))
         ]
         if orphan_deps:
-            add("error", "chore_orphan_dependency",
-                f"{len(orphan_deps)} chore(s) depend on a chore that no longer exists, "
-                "so they can never unlock",
-                "chores", len(orphan_deps))
+            add(
+                "error",
+                "chore_orphan_dependency",
+                f"{len(orphan_deps)} chore(s) depend on a chore that no longer exists, so they can never unlock",
+                "chores",
+                len(orphan_deps),
+            )
 
-        orphan_completions = sum(
-            1 for c in completions
-            if c.chore_id not in chore_ids or c.child_id not in child_ids
-        )
+        orphan_completions = sum(1 for c in completions if c.chore_id not in chore_ids or c.child_id not in child_ids)
         if orphan_completions:
-            add("info", "completion_orphan",
+            add(
+                "info",
+                "completion_orphan",
                 f"{orphan_completions} completion record(s) refer to a deleted chore or child",
-                "activity", orphan_completions)
+                "activity",
+                orphan_completions,
+            )
 
         # ── configuration that can't work ────────────────────────────────
         missing_entities = []
@@ -505,25 +530,38 @@ class ReportsMixin:
                 if entity_id and self.hass.states.get(entity_id) is None:
                     missing_entities.append(f"{chore.name} → {entity_id}")
         if missing_entities:
-            add("warning", "chore_missing_entity",
+            add(
+                "warning",
+                "chore_missing_entity",
                 f"{len(missing_entities)} chore(s) reference an entity that doesn't exist",
-                "chores", len(missing_entities))
+                "chores",
+                len(missing_entities),
+            )
 
         unlock_offlist = [
-            r.name for r in rewards
+            r.name
+            for r in rewards
             if (getattr(r, "unlock_entity", "") or "") and not self.is_unlock_allowed(r.unlock_entity)
         ]
         if unlock_offlist:
-            add("warning", "reward_unlock_not_allowed",
+            add(
+                "warning",
+                "reward_unlock_not_allowed",
                 f"{len(unlock_offlist)} reward(s) unlock an entity that is no longer on the "
                 "allowlist, so nothing will happen when they're approved",
-                "settings", len(unlock_offlist))
+                "settings",
+                len(unlock_offlist),
+            )
 
         no_chores = [c.name for c in children if not self._child_has_any_chore(c.id, chores)]
         if no_chores:
-            add("info", "child_without_chores",
+            add(
+                "info",
+                "child_without_chores",
                 f"{len(no_chores)} child/children have no chores assigned to them",
-                "children", len(no_chores))
+                "children",
+                len(no_chores),
+            )
 
         # ── size ─────────────────────────────────────────────────────────
         try:
@@ -534,10 +572,14 @@ class ReportsMixin:
         # The recorder refuses to store an attribute payload over 16KB, so a
         # large completion history is worth flagging before it bites.
         if len(completions) > 5000:
-            add("info", "large_history",
+            add(
+                "info",
+                "large_history",
                 f"{len(completions)} completion records stored; history pruning keeps "
                 "this in check but a large history slows every report",
-                "activity", len(completions))
+                "activity",
+                len(completions),
+            )
 
         severity_rank = {"error": 0, "warning": 1, "info": 2}
         issues.sort(key=lambda i: (severity_rank.get(i["severity"], 9), i["code"]))

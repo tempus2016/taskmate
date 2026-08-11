@@ -1,4 +1,5 @@
 """Tests for notification storage migration + CRUD."""
+
 from __future__ import annotations
 
 import pytest

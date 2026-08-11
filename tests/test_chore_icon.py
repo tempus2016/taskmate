@@ -12,6 +12,7 @@ Two independent faults sat behind that issue:
 The panel and the cards are JavaScript, so what Python can guard is the source
 itself — these assertions are what stop either half silently regressing.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -25,7 +26,7 @@ CARD = (WWW / "taskmate-child-card.js").read_text(encoding="utf-8")
 def _method_source(source: str, start_marker: str, end_marker: str) -> str:
     """Slice a method body out by its definition, not one of its call sites."""
     start = source.index(start_marker)
-    return source[start:source.index(end_marker, start)]
+    return source[start : source.index(end_marker, start)]
 
 
 def _save_chore_source() -> str:

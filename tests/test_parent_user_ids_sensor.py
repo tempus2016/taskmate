@@ -1,4 +1,5 @@
 """Overview sensor publishes parent_user_ids so cards can unlock controls (#661)."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock

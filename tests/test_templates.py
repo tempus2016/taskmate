@@ -1,4 +1,5 @@
 """Tests for chore template CRUD and apply logic."""
+
 from __future__ import annotations
 
 import asyncio
@@ -64,7 +65,13 @@ class TestStorageTemplates:
             storage.remove_custom_template("nope")
 
     def test_get_custom_template_by_id(self, storage):
-        tpl = {"id": "my_tpl", "name": "My Pack", "icon": "mdi:star", "builtin": False, "chores": [{"name": "X", "points": 1}]}
+        tpl = {
+            "id": "my_tpl",
+            "name": "My Pack",
+            "icon": "mdi:star",
+            "builtin": False,
+            "chores": [{"name": "X", "points": 1}],
+        }
         storage.add_custom_template(tpl)
         result = storage.get_custom_template("my_tpl")
         assert result is not None

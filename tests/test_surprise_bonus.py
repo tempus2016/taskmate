@@ -1,4 +1,5 @@
 """Tests for the daily surprise / random bonus roll."""
+
 from __future__ import annotations
 
 import asyncio
@@ -38,13 +39,17 @@ def test_disabled_does_nothing():
 
 def test_enabled_awards_when_roll_hits():
     coord = _coord(
-        {"surprise_bonus_enabled": True, "surprise_bonus_chance": "100",
-         "surprise_bonus_min": "5", "surprise_bonus_max": "5"},
+        {
+            "surprise_bonus_enabled": True,
+            "surprise_bonus_chance": "100",
+            "surprise_bonus_min": "5",
+            "surprise_bonus_max": "5",
+        },
         [Child(name="Mia", id="c1")],
     )
     import custom_components.taskmate.coordinator as mod
-    with patch.object(mod.random, "random", return_value=0.0), \
-         patch.object(mod.random, "randint", return_value=5):
+
+    with patch.object(mod.random, "random", return_value=0.0), patch.object(mod.random, "randint", return_value=5):
         run(coord._async_run_surprise_bonus())
     coord.async_add_points.assert_awaited_once()
     args = coord.async_add_points.await_args
@@ -60,6 +65,7 @@ def test_roll_miss_skips_child():
         [Child(name="Mia", id="c1")],
     )
     import custom_components.taskmate.coordinator as mod
+
     # random()*100 = 50 >= chance 10 -> miss
     with patch.object(mod.random, "random", return_value=0.5):
         run(coord._async_run_surprise_bonus())
@@ -68,29 +74,42 @@ def test_roll_miss_skips_child():
 
 def test_enabled_accepts_string_true():
     coord = _coord(
-        {"surprise_bonus_enabled": "true", "surprise_bonus_chance": "100",
-         "surprise_bonus_min": "8", "surprise_bonus_max": "8"},
+        {
+            "surprise_bonus_enabled": "true",
+            "surprise_bonus_chance": "100",
+            "surprise_bonus_min": "8",
+            "surprise_bonus_max": "8",
+        },
         [Child(name="Mia", id="c1")],
     )
     import custom_components.taskmate.coordinator as mod
-    with patch.object(mod.random, "random", return_value=0.0), \
-         patch.object(mod.random, "randint", return_value=8):
+
+    with patch.object(mod.random, "random", return_value=0.0), patch.object(mod.random, "randint", return_value=8):
         run(coord._async_run_surprise_bonus())
     coord.async_add_points.assert_awaited_once()
 
 
 def test_reversed_min_max_swapped():
     coord = _coord(
-        {"surprise_bonus_enabled": True, "surprise_bonus_chance": "100",
-         "surprise_bonus_min": "20", "surprise_bonus_max": "5"},
+        {
+            "surprise_bonus_enabled": True,
+            "surprise_bonus_chance": "100",
+            "surprise_bonus_min": "20",
+            "surprise_bonus_max": "5",
+        },
         [Child(name="Mia", id="c1")],
     )
     import custom_components.taskmate.coordinator as mod
+
     captured = {}
+
     def _randint(a, b):
         captured["lo"], captured["hi"] = a, b
         return a
-    with patch.object(mod.random, "random", return_value=0.0), \
-         patch.object(mod.random, "randint", side_effect=_randint):
+
+    with (
+        patch.object(mod.random, "random", return_value=0.0),
+        patch.object(mod.random, "randint", side_effect=_randint),
+    ):
         run(coord._async_run_surprise_bonus())
     assert captured["lo"] == 5 and captured["hi"] == 20  # swapped

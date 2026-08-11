@@ -4,6 +4,7 @@
 rather than a forecast — shared-pool chores are credited to every eligible
 child, because the schedule cannot know who will get there first.
 """
+
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -63,78 +64,100 @@ class TestScheduleMatching:
 
     def test_specific_weekday_only_appears_then(self):
         target = _today() + timedelta(days=2)
-        chore = Chore(name="Weekly", id="c", points=5, schedule_mode="specific_days",
-                      due_days=[target.strftime("%A").lower()])
+        chore = Chore(
+            name="Weekly", id="c", points=5, schedule_mode="specific_days", due_days=[target.strftime("%A").lower()]
+        )
         report = _coord([chore]).projection_report(7)
         assert _for(report, "a")["chores"] == 1
 
     def test_disabled_chores_are_skipped(self):
-        chore = Chore(name="Off", id="c", points=5, enabled=False,
-                      schedule_mode="specific_days", due_days=[])
+        chore = Chore(name="Off", id="c", points=5, enabled=False, schedule_mode="specific_days", due_days=[])
         assert _for(_coord([chore]).projection_report(3), "a")["chores"] == 0
 
     def test_expired_chore_stops_appearing(self):
         yesterday = (_today() - timedelta(days=1)).isoformat()
-        chore = Chore(name="Done", id="c", points=5, schedule_mode="specific_days",
-                      due_days=[], expires_on=yesterday)
+        chore = Chore(name="Done", id="c", points=5, schedule_mode="specific_days", due_days=[], expires_on=yesterday)
         assert _for(_coord([chore]).projection_report(3), "a")["chores"] == 0
 
     def test_one_shot_only_on_its_created_date(self):
-        chore = Chore(name="Once", id="c", points=5, schedule_mode="one_shot",
-                      created_date=_today().isoformat())
+        chore = Chore(name="Once", id="c", points=5, schedule_mode="one_shot", created_date=_today().isoformat())
         assert _for(_coord([chore]).projection_report(5), "a")["chores"] == 1
 
     def test_recurring_every_two_days_from_an_anchor(self):
-        chore = Chore(name="Rec", id="c", points=5, schedule_mode="recurring",
-                      recurrence="every_2_days", recurrence_start=_today().isoformat())
+        chore = Chore(
+            name="Rec",
+            id="c",
+            points=5,
+            schedule_mode="recurring",
+            recurrence="every_2_days",
+            recurrence_start=_today().isoformat(),
+        )
         # days 0, 2, 4, 6 of a 7-day window
         assert _for(_coord([chore]).projection_report(7), "a")["chores"] == 4
 
     def test_recurring_weekly_on_a_named_day(self):
         target = _today() + timedelta(days=3)
-        chore = Chore(name="Rec", id="c", points=5, schedule_mode="recurring",
-                      recurrence="weekly", recurrence_day=target.strftime("%A").lower())
+        chore = Chore(
+            name="Rec",
+            id="c",
+            points=5,
+            schedule_mode="recurring",
+            recurrence="weekly",
+            recurrence_day=target.strftime("%A").lower(),
+        )
         assert _for(_coord([chore]).projection_report(7), "a")["chores"] == 1
 
     def test_malformed_dates_do_not_crash(self):
-        chore = Chore(name="Odd", id="c", points=5, schedule_mode="recurring",
-                      recurrence="weekly", recurrence_start="not-a-date")
+        chore = Chore(
+            name="Odd", id="c", points=5, schedule_mode="recurring", recurrence="weekly", recurrence_start="not-a-date"
+        )
         assert isinstance(_coord([chore]).projection_report(3)["children"], list)
 
 
 class TestAssignment:
     def test_everyone_chore_credits_the_whole_pool(self):
         """A ceiling: the schedule can't know who gets there first."""
-        chore = Chore(name="Open", id="c", points=10, assignment_mode="everyone",
-                      schedule_mode="specific_days", due_days=[])
+        chore = Chore(
+            name="Open", id="c", points=10, assignment_mode="everyone", schedule_mode="specific_days", due_days=[]
+        )
         report = _coord([chore]).projection_report(1)
         assert _for(report, "a")["points"] == 10
         assert _for(report, "b")["points"] == 10
         assert report["is_ceiling"] is True
 
     def test_everyone_chore_respects_an_explicit_pool(self):
-        chore = Chore(name="Open", id="c", points=10, assignment_mode="everyone",
-                      assigned_to=["a"], schedule_mode="specific_days", due_days=[])
+        chore = Chore(
+            name="Open",
+            id="c",
+            points=10,
+            assignment_mode="everyone",
+            assigned_to=["a"],
+            schedule_mode="specific_days",
+            due_days=[],
+        )
         report = _coord([chore]).projection_report(1)
         assert _for(report, "a")["points"] == 10
         assert _for(report, "b")["points"] == 0
 
     def test_rotation_credits_only_the_days_assignee(self):
-        chore = Chore(name="Rota", id="c", points=10, assignment_mode="alternating",
-                      schedule_mode="specific_days", due_days=[])
+        chore = Chore(
+            name="Rota", id="c", points=10, assignment_mode="alternating", schedule_mode="specific_days", due_days=[]
+        )
         report = _coord([chore], assignments={"c": "b"}).projection_report(1)
         assert _for(report, "a")["points"] == 0
         assert _for(report, "b")["points"] == 10
 
     def test_rotation_with_no_assignee_counts_as_unassigned(self):
-        chore = Chore(name="Rota", id="c", points=10, assignment_mode="alternating",
-                      schedule_mode="specific_days", due_days=[])
+        chore = Chore(
+            name="Rota", id="c", points=10, assignment_mode="alternating", schedule_mode="specific_days", due_days=[]
+        )
         report = _coord([chore], assignments={}).projection_report(1)
         assert report["unassigned_points"] == 10
 
     def test_unassigned_mode_is_counted_separately(self):
-        chore = Chore(name="Spare", id="c", points=7, assignment_mode="unassigned",
-                      schedule_mode="specific_days", due_days=[])
+        chore = Chore(
+            name="Spare", id="c", points=7, assignment_mode="unassigned", schedule_mode="specific_days", due_days=[]
+        )
         report = _coord([chore]).projection_report(1)
         assert report["unassigned_points"] == 7
         assert _for(report, "a")["points"] == 0
@@ -149,8 +172,9 @@ class TestTotals:
         assert row["projected_total"] == 110
 
     def test_children_sorted_by_most_to_earn(self):
-        chore = Chore(name="Rota", id="c", points=10, assignment_mode="alternating",
-                      schedule_mode="specific_days", due_days=[])
+        chore = Chore(
+            name="Rota", id="c", points=10, assignment_mode="alternating", schedule_mode="specific_days", due_days=[]
+        )
         report = _coord([chore], assignments={"c": "b"}).projection_report(1)
         assert report["children"][0]["id"] == "b"
 
@@ -167,8 +191,7 @@ class TestTotals:
 
     def test_difficulty_multiplier_is_applied(self):
         """Projection must value a chore the same way completion will."""
-        chore = Chore(name="Hard", id="c", points=10, difficulty="hard",
-                      schedule_mode="specific_days", due_days=[])
+        chore = Chore(name="Hard", id="c", points=10, difficulty="hard", schedule_mode="specific_days", due_days=[])
         coord = _coord([chore])
         coord.effective_chore_points = MagicMock(return_value=20)
         assert _for(coord.projection_report(1), "a")["points"] == 20

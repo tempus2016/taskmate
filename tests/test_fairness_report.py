@@ -3,6 +3,7 @@
 Answers "am I dumping everything on the eldest?". Judged on chore count rather
 than points, so a pricier chore can't hide an uneven split.
 """
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -89,8 +90,7 @@ class TestWhatCounts:
 
 class TestBalance:
     def test_even_split_is_balanced(self):
-        coord = _coord(KIDS, [_completion("a"), _completion("a"),
-                              _completion("b"), _completion("b")])
+        coord = _coord(KIDS, [_completion("a"), _completion("a"), _completion("b"), _completion("b")])
         report = coord.fairness_report()
         assert report["balanced"] is True
         assert {r["status"] for r in report["children"]} == {"balanced"}
@@ -139,8 +139,7 @@ class TestFigures:
         assert _status(coord, "a") == "over"
 
     def test_active_days_counts_distinct_days(self):
-        coord = _coord(KIDS, [_completion("a", days_ago=0), _completion("a", days_ago=0),
-                              _completion("a", days_ago=2)])
+        coord = _coord(KIDS, [_completion("a", days_ago=0), _completion("a", days_ago=0), _completion("a", days_ago=2)])
         by_id = {r["id"]: r for r in coord.fairness_report()["children"]}
         assert by_id["a"]["active_days"] == 2
 

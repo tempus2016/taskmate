@@ -3,6 +3,7 @@
 is_chore_available_for_child is mocked so these isolate the *added* filtering:
 assigned_to membership, specific_days due_days, and the completed-today cap.
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -57,8 +58,8 @@ def test_excludes_completed_up_to_daily_limit():
         Chore(name="Twice", daily_limit=2, id="b"),
     ]
     comps = [
-        ChoreCompletion(chore_id="a", child_id="ch1", completed_at=NOW),       # Once done -> excluded
-        ChoreCompletion(chore_id="b", child_id="ch1", completed_at=NOW),       # Twice 1/2 -> still due
+        ChoreCompletion(chore_id="a", child_id="ch1", completed_at=NOW),  # Once done -> excluded
+        ChoreCompletion(chore_id="b", child_id="ch1", completed_at=NOW),  # Twice 1/2 -> still due
     ]
     assert _due(_coord(chores, comps)) == ["Twice"]
 
@@ -85,6 +86,7 @@ def test_unavailable_chores_excluded():
 # FEAT-1: chore dependency gating in is_chore_available_for_child
 # ---------------------------------------------------------------------------
 
+
 def _avail_coord(chore, child, completions):
     coord = object.__new__(TaskMateCoordinator)
     coord.storage = MagicMock()
@@ -102,8 +104,15 @@ def _avail(chore, child, completions):
 
 
 def _dep_chore():
-    return Chore(name="B", id="B", depends_on=["A"], schedule_mode="specific_days",
-                 due_days=[], assignment_mode="everyone", enabled=True)
+    return Chore(
+        name="B",
+        id="B",
+        depends_on=["A"],
+        schedule_mode="specific_days",
+        due_days=[],
+        assignment_mode="everyone",
+        enabled=True,
+    )
 
 
 def test_dependency_unmet_blocks_chore():

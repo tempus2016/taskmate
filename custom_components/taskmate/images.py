@@ -14,6 +14,7 @@ without a real HA install. The aiohttp views live in ``http_images.py``.
 Images are stored as ``<32 hex>.<ext>`` under ``<config>/taskmate_images`` and
 served (auth-gated) at ``/api/taskmate/image/<name>``.
 """
+
 from __future__ import annotations
 
 import logging
@@ -46,10 +47,20 @@ FILENAME_RE = re.compile(r"^[0-9a-f]{32}\.(jpg|png|webp)$")
 
 # Re-exported so http_images.py has a single import site for its serve view.
 __all__ = [
-    "ALLOWED_EXTS", "FILENAME_RE", "IMAGES_DIR", "MAX_TOTAL_BYTES",
-    "MAX_UPLOAD_BYTES", "URL_PREFIX", "async_delete_image", "content_type_for",
-    "detect_allowed_ext", "image_file_for_url", "images_path",
-    "is_taskmate_image_url", "sign_image_url", "total_images_bytes",
+    "ALLOWED_EXTS",
+    "FILENAME_RE",
+    "IMAGES_DIR",
+    "MAX_TOTAL_BYTES",
+    "MAX_UPLOAD_BYTES",
+    "URL_PREFIX",
+    "async_delete_image",
+    "content_type_for",
+    "detect_allowed_ext",
+    "image_file_for_url",
+    "images_path",
+    "is_taskmate_image_url",
+    "sign_image_url",
+    "total_images_bytes",
 ]
 
 
@@ -76,14 +87,14 @@ def is_taskmate_image_url(image_url: str) -> bool:
     prefix = URL_PREFIX + "/"
     if not image_url.startswith(prefix):
         return False
-    return bool(FILENAME_RE.match(image_url[len(prefix):]))
+    return bool(FILENAME_RE.match(image_url[len(prefix) :]))
 
 
 def image_file_for_url(hass, image_url: str) -> Path | None:
     """Map a ``/api/taskmate/image/<name>`` URL to its path, or None."""
     if not is_taskmate_image_url(image_url):
         return None
-    return images_path(hass) / image_url[len(URL_PREFIX) + 1:]
+    return images_path(hass) / image_url[len(URL_PREFIX) + 1 :]
 
 
 def sign_image_url(hass, image_url: str, expiration_hours: int = 24) -> str:

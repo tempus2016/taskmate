@@ -10,6 +10,7 @@ The check is structural (grep over source) because the behaviour is invisible
 to a functional test — a card that ignores the design tokens renders perfectly,
 just always in the classic look.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -57,12 +58,7 @@ def test_cards_that_name_the_design_layer_actually_use_it():
         src = f.read_text(encoding="utf-8")
         if "__taskmate_design" not in src:
             continue
-        uses_it = (
-            ".styles()" in src
-            or "editorOptions" in src
-            or ".apply(" in src
-            or ".resolve(" in src
-        )
+        uses_it = ".styles()" in src or "editorOptions" in src or ".apply(" in src or ".resolve(" in src
         if not uses_it:
             offenders.append(f.name)
     assert offenders == [], f"cards that name the design layer but never use it: {offenders}"

@@ -1,4 +1,5 @@
 """Tests for periodic savings interest."""
+
 from __future__ import annotations
 
 import asyncio
@@ -34,7 +35,9 @@ def _coord(settings, children):
 
 
 def _run_on(coord, date_obj):
-    with patch("homeassistant.util.dt.now", return_value=dt.datetime(date_obj.year, date_obj.month, date_obj.day, 0, 5)):
+    with patch(
+        "homeassistant.util.dt.now", return_value=dt.datetime(date_obj.year, date_obj.month, date_obj.day, 0, 5)
+    ):
         run(coord._async_apply_interest())
 
 
@@ -45,8 +48,10 @@ def test_disabled_noop():
 
 
 def test_weekly_interest_on_monday():
-    coord = _coord({"interest_enabled": True, "interest_period": "weekly", "interest_percent": "10"},
-                   [Child(name="A", points=100, id="c1")])
+    coord = _coord(
+        {"interest_enabled": True, "interest_period": "weekly", "interest_percent": "10"},
+        [Child(name="A", points=100, id="c1")],
+    )
     _run_on(coord, dt.date(2026, 6, 17))  # Wed -> none
     coord.async_add_points.assert_not_awaited()
     _run_on(coord, dt.date(2026, 6, 15))  # Mon -> 10
@@ -55,8 +60,10 @@ def test_weekly_interest_on_monday():
 
 
 def test_monthly_first_only():
-    coord = _coord({"interest_enabled": True, "interest_period": "monthly", "interest_percent": "5"},
-                   [Child(name="A", points=200, id="c1")])
+    coord = _coord(
+        {"interest_enabled": True, "interest_period": "monthly", "interest_percent": "5"},
+        [Child(name="A", points=200, id="c1")],
+    )
     _run_on(coord, dt.date(2026, 7, 2))
     coord.async_add_points.assert_not_awaited()
     _run_on(coord, dt.date(2026, 7, 1))
@@ -64,15 +71,19 @@ def test_monthly_first_only():
 
 
 def test_zero_balance_skipped():
-    coord = _coord({"interest_enabled": True, "interest_period": "monthly", "interest_percent": "5"},
-                   [Child(name="A", points=0, id="c1")])
+    coord = _coord(
+        {"interest_enabled": True, "interest_period": "monthly", "interest_percent": "5"},
+        [Child(name="A", points=0, id="c1")],
+    )
     _run_on(coord, dt.date(2026, 7, 1))
     coord.async_add_points.assert_not_awaited()
 
 
 def test_no_double_same_day():
-    coord = _coord({"interest_enabled": True, "interest_period": "monthly", "interest_percent": "5"},
-                   [Child(name="A", points=100, id="c1")])
+    coord = _coord(
+        {"interest_enabled": True, "interest_period": "monthly", "interest_percent": "5"},
+        [Child(name="A", points=100, id="c1")],
+    )
     _run_on(coord, dt.date(2026, 7, 1))
     _run_on(coord, dt.date(2026, 7, 1))
     assert coord.async_add_points.await_count == 1

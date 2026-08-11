@@ -8,6 +8,7 @@ Covers:
 - Scale smoke test: 50 chores x 5 children x 3 calendars run concurrently.
 - Storage round-trip keeps legacy chores backwards-compatible.
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -58,9 +59,11 @@ def _coord(children: list[Child], projection_days: int = 1) -> TaskMateCoordinat
 
     storage.get_chore = MagicMock(side_effect=_get_chore)
     storage.add_chore = MagicMock(side_effect=stored_chores.append)
-    storage.update_chore = MagicMock(side_effect=lambda chore: stored_chores.__setitem__(
-        next(i for i, c in enumerate(stored_chores) if c.id == chore.id), chore
-    ))
+    storage.update_chore = MagicMock(
+        side_effect=lambda chore: stored_chores.__setitem__(
+            next(i for i, c in enumerate(stored_chores) if c.id == chore.id), chore
+        )
+    )
     storage.async_save = AsyncMock()
 
     # Task group stubs — tests that don't touch groups still work because
@@ -94,7 +97,8 @@ def _coord(children: list[Child], projection_days: int = 1) -> TaskMateCoordinat
     storage.remove_chore_from_task_groups = MagicMock(
         side_effect=lambda cid: [
             setattr(g, "chore_ids", [c for c in g.chore_ids if c != cid])
-            for g in stored_task_groups if cid in (g.chore_ids or [])
+            for g in stored_task_groups
+            if cid in (g.chore_ids or [])
         ]
     )
 
@@ -126,8 +130,12 @@ def test_compute_active_alternating_rotates_day_by_day():
     # Three-child rotation wraps correctly
     c = Child(name="C")
     coord2 = _coord([a, b, c])
-    chore2 = Chore(name="Table", assigned_to=[a.id, b.id, c.id], assignment_mode="alternating",
-                   assignment_rotation_anchor=anchor.isoformat())
+    chore2 = Chore(
+        name="Table",
+        assigned_to=[a.id, b.id, c.id],
+        assignment_mode="alternating",
+        assignment_rotation_anchor=anchor.isoformat(),
+    )
     picks = [coord2._compute_active_children(chore2, anchor + dt.timedelta(days=i))[0] for i in range(4)]
     assert picks == [a.id, b.id, c.id, a.id]
 
@@ -158,8 +166,7 @@ def test_compute_active_random_varies_by_date():
     kids = [Child(name=f"K{i}") for i in range(5)]
     coord = _coord(kids)
     chore = Chore(name="Roulette", assigned_to=[c.id for c in kids], assignment_mode="random")
-    picks = {coord._compute_active_children(chore, date(2026, 4, 20) + dt.timedelta(days=i))[0]
-             for i in range(14)}
+    picks = {coord._compute_active_children(chore, date(2026, 4, 20) + dt.timedelta(days=i))[0] for i in range(14)}
     assert len(picks) >= 2
 
 
@@ -206,8 +213,10 @@ def test_rotation_chore_clears_for_pool_when_off_rotation_child_completes():
 
     # Parent credits B (off-rotation) — completion lands on B today.
     completion = ChoreCompletion(
-        chore_id=chore.id, child_id=b.id,
-        completed_at=dt_util_mock.now(), approved=True,
+        chore_id=chore.id,
+        child_id=b.id,
+        completed_at=dt_util_mock.now(),
+        approved=True,
     )
     coord.storage.get_completions = MagicMock(return_value=[completion])
 
@@ -251,8 +260,10 @@ def test_rotation_chore_with_pending_bonus_subtasks_stays_visible():
     # A completes the parent — daily_limit is filled (1/1) but the bonus
     # sub-task is still pending, so the chore must stay visible.
     parent_completion = ChoreCompletion(
-        chore_id=chore.id, child_id=a.id,
-        completed_at=dt_util_mock.now(), approved=True,
+        chore_id=chore.id,
+        child_id=a.id,
+        completed_at=dt_util_mock.now(),
+        approved=True,
     )
     coord.storage.get_completions = MagicMock(return_value=[parent_completion])
     assert coord._is_rotation_done_today(chore) is False
@@ -260,13 +271,13 @@ def test_rotation_chore_with_pending_bonus_subtasks_stays_visible():
 
     # Once A completes the bonus sub-task, the chore is fully done and hides.
     bonus_completion = ChoreCompletion(
-        chore_id=chore.id, child_id=a.id,
-        completed_at=dt_util_mock.now(), approved=True,
+        chore_id=chore.id,
+        child_id=a.id,
+        completed_at=dt_util_mock.now(),
+        approved=True,
         bonus_subtask_id=bonus.id,
     )
-    coord.storage.get_completions = MagicMock(
-        return_value=[parent_completion, bonus_completion]
-    )
+    coord.storage.get_completions = MagicMock(return_value=[parent_completion, bonus_completion])
     assert coord._is_rotation_done_today(chore) is True
     assert coord.is_chore_available_for_child(chore, a.id) is False
 
@@ -281,8 +292,10 @@ def test_rotation_chore_with_pending_bonus_subtasks_stays_visible():
     )
     chore_no_bonus.assignment_current_child_id = a.id
     plain_completion = ChoreCompletion(
-        chore_id=chore_no_bonus.id, child_id=a.id,
-        completed_at=dt_util_mock.now(), approved=True,
+        chore_id=chore_no_bonus.id,
+        child_id=a.id,
+        completed_at=dt_util_mock.now(),
+        approved=True,
     )
     coord.storage.get_completions = MagicMock(return_value=[plain_completion])
     assert coord._is_rotation_done_today(chore_no_bonus) is True
@@ -300,8 +313,10 @@ def test_everyone_mode_unaffected_by_rotation_done_helper():
     dt_util_mock._now = dt.datetime.combine(today, dt.time(12, 0), tzinfo=UTC)
     chore = Chore(name="Brush teeth", assigned_to=[a.id, b.id])  # default everyone
     completion = ChoreCompletion(
-        chore_id=chore.id, child_id=a.id,
-        completed_at=dt_util_mock.now(), approved=True,
+        chore_id=chore.id,
+        child_id=a.id,
+        completed_at=dt_util_mock.now(),
+        approved=True,
     )
     coord.storage.get_completions = MagicMock(return_value=[completion])
     assert coord._is_rotation_done_today(chore) is False
@@ -346,13 +361,15 @@ def test_async_add_chore_publishes_immediately():
     a, b = Child(name="A"), Child(name="B")
     coord = _coord([a, b])
     dt_util_mock._now = dt.datetime(2026, 4, 20, 10, 0, tzinfo=UTC)
-    chore = run_async(coord.async_add_chore(
-        name="Trash day",
-        assigned_to=[a.id, b.id],
-        assignment_mode="alternating",
-        assignment_rotation_anchor="2026-04-20",
-        publish_calendar_entities=["calendar.kids", "calendar.family"],
-    ))
+    chore = run_async(
+        coord.async_add_chore(
+            name="Trash day",
+            assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor="2026-04-20",
+            publish_calendar_entities=["calendar.kids", "calendar.family"],
+        )
+    )
     assert coord.hass.services.async_call.await_count == 2
     assert chore.publish_calendar_published_dates == ["2026-04-20"]
     assert chore.assignment_current_child_id == a.id
@@ -362,11 +379,13 @@ def test_async_update_chore_republishes_on_name_change():
     a = Child(name="A")
     coord = _coord([a])
     dt_util_mock._now = dt.datetime(2026, 4, 20, 10, 0, tzinfo=UTC)
-    chore = run_async(coord.async_add_chore(
-        name="Old",
-        assigned_to=[a.id],
-        publish_calendar_entities=["calendar.x"],
-    ))
+    chore = run_async(
+        coord.async_add_chore(
+            name="Old",
+            assigned_to=[a.id],
+            publish_calendar_entities=["calendar.x"],
+        )
+    )
     # One create_event from the initial add
     services = [c.args[1] for c in coord.hass.services.async_call.await_args_list]
     assert services == ["create_event"]
@@ -515,11 +534,13 @@ def test_update_chore_cleans_up_old_events_before_republishing():
     coord = _coord([a])
     dt_util_mock._now = dt.datetime(2026, 4, 20, 10, 0, tzinfo=UTC)
 
-    chore = run_async(coord.async_add_chore(
-        name="Old Name",
-        assigned_to=[a.id],
-        publish_calendar_entities=["calendar.x"],
-    ))
+    chore = run_async(
+        coord.async_add_chore(
+            name="Old Name",
+            assigned_to=[a.id],
+            publish_calendar_entities=["calendar.x"],
+        )
+    )
     marker = coord._chore_event_marker(chore)
     # 1 publish from create.
     assert coord.hass.services.async_call.await_count == 1
@@ -527,11 +548,16 @@ def test_update_chore_cleans_up_old_events_before_republishing():
     # Mock calendar.get_events to return one event that carries our marker.
     async def _service_side_effect(domain, service, data, *args, **kwargs):
         if service == "get_events":
-            return {data["entity_id"]: {"events": [
-                {"uid": "evt-abc", "summary": "Old Name — A", "description": marker},
-                {"uid": "evt-foreign", "summary": "Unrelated", "description": ""},
-            ]}}
+            return {
+                data["entity_id"]: {
+                    "events": [
+                        {"uid": "evt-abc", "summary": "Old Name — A", "description": marker},
+                        {"uid": "evt-foreign", "summary": "Unrelated", "description": ""},
+                    ]
+                }
+            }
         return None
+
     coord.hass.services.async_call.side_effect = _service_side_effect
 
     edited = coord.storage.get_chore(chore.id)
@@ -552,20 +578,27 @@ def test_remove_chore_cleans_up_events():
     a = Child(name="A")
     coord = _coord([a])
     dt_util_mock._now = dt.datetime(2026, 4, 20, 10, 0, tzinfo=UTC)
-    chore = run_async(coord.async_add_chore(
-        name="Trash",
-        assigned_to=[a.id],
-        publish_calendar_entities=["calendar.family"],
-    ))
+    chore = run_async(
+        coord.async_add_chore(
+            name="Trash",
+            assigned_to=[a.id],
+            publish_calendar_entities=["calendar.family"],
+        )
+    )
     marker = coord._chore_event_marker(chore)
 
     # Fake a stored event we previously published.
     async def _service_side_effect(domain, service, data, *args, **kwargs):
         if service == "get_events":
-            return {data["entity_id"]: {"events": [
-                {"uid": "evt-purge-me", "summary": "Trash — A", "description": marker},
-            ]}}
+            return {
+                data["entity_id"]: {
+                    "events": [
+                        {"uid": "evt-purge-me", "summary": "Trash — A", "description": marker},
+                    ]
+                }
+            }
         return None
+
     coord.hass.services.async_call.side_effect = _service_side_effect
     # Storage needs these mocks for async_remove_chore's cleanup pass
     coord.storage.remove_chore = MagicMock()
@@ -618,7 +651,7 @@ class _FakeEvent:
 
 def _states_lookup(mapping: dict[str, str]):
     """Build a hass.states.get(entity_id) stub from an {entity_id: state} dict."""
-    return MagicMock(side_effect=lambda eid: (_FakeState(mapping[eid]) if eid in mapping else None))
+    return MagicMock(side_effect=lambda eid: _FakeState(mapping[eid]) if eid in mapping else None)
 
 
 class TestAvailabilityAwareAssignment:
@@ -631,7 +664,8 @@ class TestAvailabilityAwareAssignment:
         coord.hass.states.get = _states_lookup({"binary_sensor.a": "off"})
         anchor = date(2026, 4, 20)
         chore = Chore(
-            name="X", assigned_to=[a.id, b.id],
+            name="X",
+            assigned_to=[a.id, b.id],
             assignment_mode="alternating",
             assignment_rotation_anchor=anchor.isoformat(),
         )
@@ -645,7 +679,8 @@ class TestAvailabilityAwareAssignment:
         coord.hass.states.get = _states_lookup({"binary_sensor.a": "off"})
         anchor = date(2026, 4, 20)
         chore = Chore(
-            name="X", assigned_to=[a.id, b.id],
+            name="X",
+            assigned_to=[a.id, b.id],
             assignment_mode="alternating",
             assignment_rotation_anchor=anchor.isoformat(),
             require_availability=True,
@@ -666,14 +701,18 @@ class TestAvailabilityAwareAssignment:
         coord.hass.states.get = _states_lookup({"binary_sensor.a": "on"})
         today = date(2026, 4, 20)
         base = Chore(
-            name="R", assigned_to=[a.id, b.id],
-            assignment_mode="random", require_availability=True,
+            name="R",
+            assigned_to=[a.id, b.id],
+            assignment_mode="random",
+            require_availability=True,
             id="reward_alpha",
         )
         original_pick = coord._compute_active_children(base, today)[0]
-        coord.hass.states.get = _states_lookup({
-            "binary_sensor.a": "off" if original_pick == a.id else "on",
-        })
+        coord.hass.states.get = _states_lookup(
+            {
+                "binary_sensor.a": "off" if original_pick == a.id else "on",
+            }
+        )
         # Only flip the originally picked child away — if it was A, A's sensor
         # is off; if it was B, A stays on and we'd expect no change.
         result = coord._compute_active_children(base, today)[0]
@@ -689,9 +728,13 @@ class TestAvailabilityAwareAssignment:
         coord.hass.states.get = _states_lookup({"binary_sensor.a": "off"})
         today = date(2026, 4, 20)
         chores = [
-            Chore(name=f"C{i}", assigned_to=[a.id, b.id],
-                  assignment_mode="balanced", require_availability=True,
-                  id=f"c{i}")
+            Chore(
+                name=f"C{i}",
+                assigned_to=[a.id, b.id],
+                assignment_mode="balanced",
+                require_availability=True,
+                id=f"c{i}",
+            )
             for i in range(4)
         ]
         for c in chores:
@@ -713,12 +756,11 @@ class TestAvailabilityAwareAssignment:
         a = Child(name="A", availability_entity="binary_sensor.a", id="kidA")
         b = Child(name="B", availability_entity="binary_sensor.b", id="kidB")
         coord = _coord([a, b])
-        coord.hass.states.get = _states_lookup(
-            {"binary_sensor.a": "off", "binary_sensor.b": "off"}
-        )
+        coord.hass.states.get = _states_lookup({"binary_sensor.a": "off", "binary_sensor.b": "off"})
         anchor = date(2026, 4, 20)
         chore = Chore(
-            name="X", assigned_to=[a.id, b.id],
+            name="X",
+            assigned_to=[a.id, b.id],
             assignment_mode="alternating",
             assignment_rotation_anchor=anchor.isoformat(),
             require_availability=True,
@@ -732,7 +774,8 @@ class TestAvailabilityAwareAssignment:
         coord.hass.states.get = _states_lookup({})  # nothing registered
         anchor = date(2026, 4, 20)
         chore = Chore(
-            name="X", assigned_to=[a.id, b.id],
+            name="X",
+            assigned_to=[a.id, b.id],
             assignment_mode="alternating",
             assignment_rotation_anchor=anchor.isoformat(),
             require_availability=True,
@@ -747,7 +790,8 @@ class TestAvailabilityAwareAssignment:
         coord.hass.states.get = _states_lookup({"binary_sensor.a": "unknown"})
         anchor = date(2026, 4, 20)
         chore = Chore(
-            name="X", assigned_to=[a.id, b.id],
+            name="X",
+            assigned_to=[a.id, b.id],
             assignment_mode="alternating",
             assignment_rotation_anchor=anchor.isoformat(),
             require_availability=True,
@@ -761,7 +805,8 @@ class TestAvailabilityAwareAssignment:
         coord.hass.states.get = MagicMock(return_value=None)
         anchor = date(2026, 4, 20)
         chore = Chore(
-            name="X", assigned_to=[a.id, b.id],
+            name="X",
+            assigned_to=[a.id, b.id],
             assignment_mode="alternating",
             assignment_rotation_anchor=anchor.isoformat(),
             require_availability=True,
@@ -776,7 +821,8 @@ class TestAvailabilityAwareAssignment:
         # Seed: A is home, chore picks A.
         coord.hass.states.get = _states_lookup({"binary_sensor.a": "on"})
         chore = Chore(
-            name="X", assigned_to=[a.id, b.id],
+            name="X",
+            assigned_to=[a.id, b.id],
             assignment_mode="alternating",
             assignment_rotation_anchor=anchor.isoformat(),
             require_availability=True,
@@ -798,7 +844,8 @@ class TestAvailabilityAwareAssignment:
         anchor = date(2026, 4, 20)
         coord.hass.states.get = _states_lookup({"binary_sensor.a": "off"})
         chore = Chore(
-            name="X", assigned_to=[a.id, b.id],
+            name="X",
+            assigned_to=[a.id, b.id],
             assignment_mode="alternating",
             assignment_rotation_anchor=anchor.isoformat(),
             require_availability=True,
@@ -809,10 +856,13 @@ class TestAvailabilityAwareAssignment:
 
         # Today in dt_util_mock is 2024-03-20 (see conftest).
         from custom_components.taskmate.models import ChoreCompletion
+
         today_dt = dt_util_mock.now()
         completion = ChoreCompletion(
-            chore_id="chore1", child_id=a.id,
-            completed_at=today_dt, approved=True,
+            chore_id="chore1",
+            child_id=a.id,
+            completed_at=today_dt,
+            approved=True,
         )
         coord.storage.get_completions = MagicMock(return_value=[completion])
 
@@ -833,9 +883,11 @@ class TestAvailabilityAwareAssignment:
         # short-circuits before scheduling).
         called = []
         original = coord.hass.async_create_task
+
         def _capture(coro):
             called.append(coro)
             return original(coro) if callable(original) else None
+
         coord.hass.async_create_task = _capture
         coord._availability_state_changed(event)
         assert called == []
@@ -845,11 +897,13 @@ class TestAvailabilityAwareAssignment:
 # Skip / Manual-start / Task group coverage
 # ---------------------------------------------------------------------------
 
+
 class TestSkipChore:
     """Skip advances today's rotation pointer; tomorrow resumes original schedule."""
 
     def test_skip_advances_alternating_pointer_today_only(self):
         from custom_components.taskmate.models import TaskGroup  # noqa: F401 (ensure importable)
+
         a, b, c = Child(name="A"), Child(name="B"), Child(name="C")
         coord = _coord([a, b, c])
         anchor = date(2026, 4, 20)
@@ -991,13 +1045,15 @@ class TestManualStart:
         coord = _coord([a, b, c])
         anchor = date(2026, 4, 20)
         dt_util_mock._now = dt.datetime.combine(anchor, dt.time(12, 0), tzinfo=UTC)
-        chore = run_async(coord.async_add_chore(
-            name="Bins",
-            assigned_to=[a.id, b.id, c.id],
-            assignment_mode="alternating",
-            assignment_rotation_anchor=anchor.isoformat(),
-            manual_start_child_id=b.id,
-        ))
+        chore = run_async(
+            coord.async_add_chore(
+                name="Bins",
+                assigned_to=[a.id, b.id, c.id],
+                assignment_mode="alternating",
+                assignment_rotation_anchor=anchor.isoformat(),
+                manual_start_child_id=b.id,
+            )
+        )
         # Pool should now start with B (today's active child).
         assert chore.assigned_to[0] == b.id
         assert chore.assignment_current_child_id == b.id
@@ -1010,12 +1066,14 @@ class TestManualStart:
         coord = _coord([a, b])
         today = date(2026, 4, 20)
         dt_util_mock._now = dt.datetime.combine(today, dt.time(12, 0), tzinfo=UTC)
-        chore = run_async(coord.async_add_chore(
-            name="Roulette",
-            assigned_to=[a.id, b.id],
-            assignment_mode="random",
-            manual_start_child_id=a.id,
-        ))
+        chore = run_async(
+            coord.async_add_chore(
+                name="Roulette",
+                assigned_to=[a.id, b.id],
+                assignment_mode="random",
+                manual_start_child_id=a.id,
+            )
+        )
         assert chore.assignment_current_child_id == a.id
 
 
@@ -1077,10 +1135,18 @@ class TestTaskGroups:
         a, b = Child(name="A"), Child(name="B")
         coord = _coord([a, b])
         today = date(2026, 4, 20)
-        c1 = Chore(name="AM", assigned_to=[a.id, b.id], assignment_mode="alternating",
-                   assignment_rotation_anchor=today.isoformat())
-        c2 = Chore(name="PM", assigned_to=[a.id, b.id], assignment_mode="alternating",
-                   assignment_rotation_anchor=today.isoformat())
+        c1 = Chore(
+            name="AM",
+            assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=today.isoformat(),
+        )
+        c2 = Chore(
+            name="PM",
+            assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=today.isoformat(),
+        )
         coord.storage.add_chore(c1)
         coord.storage.add_chore(c2)
         run_async(coord.async_add_task_group(name="Cat litter", policy="spread", chore_ids=[c1.id, c2.id]))
@@ -1102,9 +1168,7 @@ class TestTaskGroups:
             )
             coord.storage.add_chore(ch)
             chores.append(ch)
-        run_async(coord.async_add_task_group(
-            name="Big", policy="spread", chore_ids=[c.id for c in chores]
-        ))
+        run_async(coord.async_add_task_group(name="Big", policy="spread", chore_ids=[c.id for c in chores]))
 
         daily = coord._compute_daily_assignments(today)
         picks = [daily[c.id] for c in chores]
@@ -1121,9 +1185,7 @@ class TestTaskGroups:
         chore = Chore(name="Brush", assigned_to=[a.id, b.id])  # everyone
         coord.storage.add_chore(chore)
         try:
-            run_async(coord.async_add_task_group(
-                name="Bad", policy="sticky", chore_ids=[chore.id]
-            ))
+            run_async(coord.async_add_task_group(name="Bad", policy="sticky", chore_ids=[chore.id]))
         except ValueError as err:
             assert "everyone" in str(err).lower()
             return
@@ -1132,17 +1194,17 @@ class TestTaskGroups:
     def test_chore_cannot_belong_to_two_groups(self):
         a, b = Child(name="A"), Child(name="B")
         coord = _coord([a, b])
-        c1 = Chore(name="C1", assigned_to=[a.id, b.id], assignment_mode="alternating",
-                   assignment_rotation_anchor="2026-04-20")
-        c2 = Chore(name="C2", assigned_to=[a.id, b.id], assignment_mode="alternating",
-                   assignment_rotation_anchor="2026-04-20")
+        c1 = Chore(
+            name="C1", assigned_to=[a.id, b.id], assignment_mode="alternating", assignment_rotation_anchor="2026-04-20"
+        )
+        c2 = Chore(
+            name="C2", assigned_to=[a.id, b.id], assignment_mode="alternating", assignment_rotation_anchor="2026-04-20"
+        )
         coord.storage.add_chore(c1)
         coord.storage.add_chore(c2)
         run_async(coord.async_add_task_group(name="G1", policy="sticky", chore_ids=[c1.id, c2.id]))
         try:
-            run_async(coord.async_add_task_group(
-                name="G2", policy="spread", chore_ids=[c1.id]
-            ))
+            run_async(coord.async_add_task_group(name="G2", policy="spread", chore_ids=[c1.id]))
         except ValueError as err:
             assert "group" in str(err).lower()
             return
@@ -1151,10 +1213,12 @@ class TestTaskGroups:
     def test_skip_on_sticky_follower_rejected(self):
         a, b = Child(name="A"), Child(name="B")
         coord = _coord([a, b])
-        leader = Chore(name="L", assigned_to=[a.id, b.id], assignment_mode="alternating",
-                       assignment_rotation_anchor="2026-04-20")
-        follower = Chore(name="F", assigned_to=[a.id, b.id], assignment_mode="alternating",
-                         assignment_rotation_anchor="2026-04-20")
+        leader = Chore(
+            name="L", assigned_to=[a.id, b.id], assignment_mode="alternating", assignment_rotation_anchor="2026-04-20"
+        )
+        follower = Chore(
+            name="F", assigned_to=[a.id, b.id], assignment_mode="alternating", assignment_rotation_anchor="2026-04-20"
+        )
         coord.storage.add_chore(leader)
         coord.storage.add_chore(follower)
         run_async(coord.async_add_task_group(name="G", policy="sticky", chore_ids=[leader.id, follower.id]))
@@ -1171,8 +1235,12 @@ class TestTaskGroups:
         a, b = Child(name="A"), Child(name="B")
         coord = _coord([a, b])
         anchor = date(2026, 4, 20)
-        leader = Chore(name="L", assigned_to=[a.id, b.id], assignment_mode="alternating",
-                       assignment_rotation_anchor=anchor.isoformat())
+        leader = Chore(
+            name="L",
+            assigned_to=[a.id, b.id],
+            assignment_mode="alternating",
+            assignment_rotation_anchor=anchor.isoformat(),
+        )
         follower = Chore(name="F", assigned_to=[a.id, b.id], assignment_mode="random")
         coord.storage.add_chore(leader)
         coord.storage.add_chore(follower)
@@ -1198,10 +1266,12 @@ class TestRemoveChoreFromGroups:
     def test_remove_chore_strips_from_group(self):
         a, b = Child(name="A"), Child(name="B")
         coord = _coord([a, b])
-        c1 = Chore(name="C1", assigned_to=[a.id, b.id], assignment_mode="alternating",
-                   assignment_rotation_anchor="2026-04-20")
-        c2 = Chore(name="C2", assigned_to=[a.id, b.id], assignment_mode="alternating",
-                   assignment_rotation_anchor="2026-04-20")
+        c1 = Chore(
+            name="C1", assigned_to=[a.id, b.id], assignment_mode="alternating", assignment_rotation_anchor="2026-04-20"
+        )
+        c2 = Chore(
+            name="C2", assigned_to=[a.id, b.id], assignment_mode="alternating", assignment_rotation_anchor="2026-04-20"
+        )
         coord.storage.add_chore(c1)
         coord.storage.add_chore(c2)
         run_async(coord.async_add_task_group(name="G", policy="sticky", chore_ids=[c1.id, c2.id]))
@@ -1226,8 +1296,7 @@ def test_add_chore_accepts_first_come_mode():
     coord.storage.get_completions = MagicMock(return_value=[])
     dt_util_mock._now = dt.datetime.combine(date(2026, 4, 20), dt.time(9, 0), tzinfo=UTC)
 
-    chore = run_async(coord.async_add_chore(name="Feed cat", assigned_to=[a.id, b.id],
-                                            assignment_mode="first_come"))
+    chore = run_async(coord.async_add_chore(name="Feed cat", assigned_to=[a.id, b.id], assignment_mode="first_come"))
     assert chore.assignment_mode == "first_come"
     # first_come has no single active child cached.
     assert chore.assignment_current_child_id == ""
@@ -1270,8 +1339,7 @@ def test_first_come_first_claim_hides_for_others_and_reopens_on_reject():
     chore = Chore(name="Feed cat", assigned_to=[a.id, b.id], assignment_mode="first_come")
 
     # A claims (pending approval -- approved=False still fills the quota).
-    claim = ChoreCompletion(chore_id=chore.id, child_id=a.id,
-                            completed_at=dt_util_mock.now(), approved=False)
+    claim = ChoreCompletion(chore_id=chore.id, child_id=a.id, completed_at=dt_util_mock.now(), approved=False)
     coord.storage.get_completions = MagicMock(return_value=[claim])
     assert coord._is_rotation_done_today(chore) is True
     assert coord.is_chore_available_for_child(chore, a.id) is False
@@ -1293,10 +1361,8 @@ def test_first_come_clamps_quota_to_one_winner():
     today = date(2026, 4, 20)
     dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
     # Even if daily_limit is mis-set to 2, first_come allows only one winner.
-    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id],
-                  assignment_mode="first_come", daily_limit=2)
-    claim = ChoreCompletion(chore_id=chore.id, child_id=a.id,
-                            completed_at=dt_util_mock.now(), approved=True)
+    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id], assignment_mode="first_come", daily_limit=2)
+    claim = ChoreCompletion(chore_id=chore.id, child_id=a.id, completed_at=dt_util_mock.now(), approved=True)
     coord.storage.get_completions = MagicMock(return_value=[claim])
     assert coord._is_rotation_done_today(chore) is True
 
@@ -1325,13 +1391,11 @@ def test_first_come_loser_completion_is_rejected():
     coord.badges = None
     today = date(2026, 4, 20)
     dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
-    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id],
-                  assignment_mode="first_come", requires_approval=False)
+    chore = Chore(name="Feed cat", assigned_to=[a.id, b.id], assignment_mode="first_come", requires_approval=False)
     coord.storage.add_chore(chore)
 
     # A already won (completion on record).
-    winning = ChoreCompletion(chore_id=chore.id, child_id=a.id,
-                              completed_at=dt_util_mock.now(), approved=True)
+    winning = ChoreCompletion(chore_id=chore.id, child_id=a.id, completed_at=dt_util_mock.now(), approved=True)
     coord.storage.get_completions = MagicMock(return_value=[winning])
 
     # The race loser is a soft rejection: silent no-op (returns None), no points

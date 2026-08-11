@@ -3,6 +3,7 @@
 A sheet for the fridge. Pure string building, so the layout is testable
 without a Home Assistant install.
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -17,8 +18,7 @@ def _child(name="Ella", cid="a"):
 
 
 def _chore(name="Make bed", **over):
-    chore = {"name": name, "enabled": True, "schedule_mode": "specific_days",
-             "due_days": [], "assigned_to": []}
+    chore = {"name": name, "enabled": True, "schedule_mode": "specific_days", "due_days": [], "assigned_to": []}
     chore.update(over)
     return chore
 
@@ -73,13 +73,13 @@ class TestContent:
         assert 'class="tick"' in html
 
     def test_unassigned_chores_belong_to_everyone(self):
-        html = printable.build_chart([_child("Ella"), _child("Sam", "b")],
-                                     [_chore("Teeth", assigned_to=[])], MON)
+        html = printable.build_chart([_child("Ella"), _child("Sam", "b")], [_chore("Teeth", assigned_to=[])], MON)
         assert html.count("Teeth") == 14  # 7 days x 2 children
 
     def test_assigned_chores_only_reach_their_child(self):
-        html = printable.build_chart([_child("Ella", "a"), _child("Sam", "b")],
-                                     [_chore("Bins", assigned_to=["a"], due_days=["monday"])], MON)
+        html = printable.build_chart(
+            [_child("Ella", "a"), _child("Sam", "b")], [_chore("Bins", assigned_to=["a"], due_days=["monday"])], MON
+        )
         assert html.count("Bins") == 1
 
     def test_disabled_chores_are_omitted(self):
@@ -88,14 +88,14 @@ class TestContent:
 
     def test_one_shot_appears_only_on_its_date(self):
         html = printable.build_chart(
-            [_child()],
-            [_chore("Once", schedule_mode="one_shot", created_date=MON.isoformat())],
-            MON)
+            [_child()], [_chore("Once", schedule_mode="one_shot", created_date=MON.isoformat())], MON
+        )
         assert html.count("Once") == 1
 
     def test_children_with_no_chores_are_skipped(self):
-        html = printable.build_chart([_child("Ella", "a"), _child("Sam", "b")],
-                                     [_chore("Bins", assigned_to=["a"])], MON)
+        html = printable.build_chart(
+            [_child("Ella", "a"), _child("Sam", "b")], [_chore("Bins", assigned_to=["a"])], MON
+        )
         assert "Sam" not in html
 
     def test_empty_chart_says_so(self):
@@ -115,8 +115,8 @@ class TestSafety:
     def test_names_are_escaped(self):
         """A chore name is user input and lands in an HTML document."""
         html = printable.build_chart(
-            [_child('<script>alert(1)</script>')],
-            [_chore('<img src=x onerror=alert(1)>')], MON)
+            [_child("<script>alert(1)</script>")], [_chore("<img src=x onerror=alert(1)>")], MON
+        )
         # The payloads must survive only as inert text: no unescaped tag can
         # appear. "onerror=alert" still occurs as escaped text, which is fine —
         # what matters is that no "<img"/"<script" is emitted.

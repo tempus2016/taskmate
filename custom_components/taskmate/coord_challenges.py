@@ -5,6 +5,7 @@ points this week — and awards a one-off bonus when a child hits it. Progress
 and the award reset automatically when the period rolls over (a new day or a
 new Monday-anchored week).
 """
+
 from __future__ import annotations
 
 import logging
@@ -89,19 +90,21 @@ class ChallengesMixin:
             _, period_key = self._period_start_key(ch.scope)
             prog = self.storage.get_challenge_child_progress(ch.id, child_id)
             awarded = bool(prog.get("awarded")) and prog.get("period") == period_key
-            out.append({
-                "challenge_id": ch.id,
-                "name": ch.name,
-                "icon": ch.icon,
-                "scope": ch.scope,
-                "metric": ch.metric,
-                "target": ch.target,
-                "progress": min(value, ch.target),
-                "value": value,
-                "bonus_points": ch.bonus_points,
-                "complete": value >= ch.target,
-                "awarded": awarded,
-            })
+            out.append(
+                {
+                    "challenge_id": ch.id,
+                    "name": ch.name,
+                    "icon": ch.icon,
+                    "scope": ch.scope,
+                    "metric": ch.metric,
+                    "target": ch.target,
+                    "progress": min(value, ch.target),
+                    "value": value,
+                    "bonus_points": ch.bonus_points,
+                    "complete": value >= ch.target,
+                    "awarded": awarded,
+                }
+            )
         return out
 
     # ── Evaluation ───────────────────────────────────────────────────────
@@ -142,24 +145,36 @@ class ChallengesMixin:
             child.points += bonus
             child.total_points_earned += bonus
             child.career_score = child.total_points_earned - child.total_penalties_received
-            self.storage.add_points_transaction(PointsTransaction(
-                child_id=child.id, points=bonus,
-                reason=f"Challenge complete: {challenge.name}", created_at=dt_util.now(),
-            ))
+            self.storage.add_points_transaction(
+                PointsTransaction(
+                    child_id=child.id,
+                    points=bonus,
+                    reason=f"Challenge complete: {challenge.name}",
+                    created_at=dt_util.now(),
+                )
+            )
             if hasattr(self, "_maybe_level_up"):
                 await self._maybe_level_up(child)
             self.storage.update_child(child)
 
-        self.hass.bus.async_fire("taskmate_challenge_completed", {
-            "child_id": child.id, "child_name": child.name,
-            "challenge_id": challenge.id, "challenge_name": challenge.name,
-            "scope": challenge.scope, "bonus": bonus,
-            "timestamp": dt_util.now().isoformat(),
-        })
+        self.hass.bus.async_fire(
+            "taskmate_challenge_completed",
+            {
+                "child_id": child.id,
+                "child_name": child.name,
+                "challenge_id": challenge.id,
+                "challenge_name": challenge.name,
+                "scope": challenge.scope,
+                "bonus": bonus,
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
         if hasattr(self, "_celebrate"):
             await self._celebrate(
-                child, "challenge_completed",
+                child,
+                "challenge_completed",
                 f"{child.name} completed the challenge '{challenge.name}'!",
-                tier=2, extra={"challenge_id": challenge.id, "bonus": bonus},
+                tier=2,
+                extra={"challenge_id": challenge.id, "bonus": bonus},
             )
         _LOGGER.info("Challenge '%s' completed by %s (+%d)", challenge.name, child.name, bonus)

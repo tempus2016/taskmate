@@ -1,4 +1,5 @@
 """Tests for bulk chore approval (Approve All)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -19,8 +20,11 @@ def run(coro):
 
 def _completion(cid, approved=False):
     return ChoreCompletion(
-        chore_id="ch1", child_id="k1",
-        completed_at=datetime.now(timezone.utc), approved=approved, id=cid,
+        chore_id="ch1",
+        child_id="k1",
+        completed_at=datetime.now(timezone.utc),
+        approved=approved,
+        id=cid,
     )
 
 

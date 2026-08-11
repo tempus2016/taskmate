@@ -1,4 +1,5 @@
 """Tests for periodic points decay."""
+
 from __future__ import annotations
 
 import asyncio
@@ -51,9 +52,8 @@ def test_disabled_noop():
 
 def test_monthly_decay_on_first():
     c = Child(name="A", points=100, id="c1")
-    coord = _coord({"points_decay_enabled": True, "points_decay_period": "monthly",
-                    "points_decay_percent": "10"}, [c])
-    _run_on(coord, dt.date(2026, 7, 1))   # 1st -> decay 10%
+    coord = _coord({"points_decay_enabled": True, "points_decay_period": "monthly", "points_decay_percent": "10"}, [c])
+    _run_on(coord, dt.date(2026, 7, 1))  # 1st -> decay 10%
     assert c.points == 90
     coord.storage.add_points_transaction.assert_called_once()
     assert any(x[0][0] == "taskmate_points_decay" for x in coord.hass.bus.async_fire.call_args_list)
@@ -61,16 +61,14 @@ def test_monthly_decay_on_first():
 
 def test_monthly_skips_non_first():
     c = Child(name="A", points=100, id="c1")
-    coord = _coord({"points_decay_enabled": True, "points_decay_period": "monthly",
-                    "points_decay_percent": "10"}, [c])
+    coord = _coord({"points_decay_enabled": True, "points_decay_period": "monthly", "points_decay_percent": "10"}, [c])
     _run_on(coord, dt.date(2026, 7, 15))
     assert c.points == 100
 
 
 def test_weekly_on_monday_only():
     c = Child(name="A", points=200, id="c1")
-    coord = _coord({"points_decay_enabled": True, "points_decay_period": "weekly",
-                    "points_decay_percent": "25"}, [c])
+    coord = _coord({"points_decay_enabled": True, "points_decay_period": "weekly", "points_decay_percent": "25"}, [c])
     _run_on(coord, dt.date(2026, 6, 17))  # Wed
     assert c.points == 200
     _run_on(coord, dt.date(2026, 6, 15))  # Mon -> 25% off
@@ -79,18 +77,16 @@ def test_weekly_on_monday_only():
 
 def test_no_double_decay_same_day():
     c = Child(name="A", points=100, id="c1")
-    coord = _coord({"points_decay_enabled": True, "points_decay_period": "monthly",
-                    "points_decay_percent": "10"}, [c])
+    coord = _coord({"points_decay_enabled": True, "points_decay_period": "monthly", "points_decay_percent": "10"}, [c])
     _run_on(coord, dt.date(2026, 7, 1))
     assert c.points == 90
-    _run_on(coord, dt.date(2026, 7, 1))   # guarded by points_decay_last
+    _run_on(coord, dt.date(2026, 7, 1))  # guarded by points_decay_last
     assert c.points == 90
 
 
 def test_zero_balance_skipped():
     c = Child(name="A", points=0, id="c1")
-    coord = _coord({"points_decay_enabled": True, "points_decay_period": "monthly",
-                    "points_decay_percent": "10"}, [c])
+    coord = _coord({"points_decay_enabled": True, "points_decay_period": "monthly", "points_decay_percent": "10"}, [c])
     _run_on(coord, dt.date(2026, 7, 1))
     assert c.points == 0
     coord.storage.add_points_transaction.assert_not_called()

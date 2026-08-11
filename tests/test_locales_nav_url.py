@@ -11,8 +11,12 @@ KEYS = [
 
 def test_nav_url_strings_present_in_all_locales():
     base = os.path.join(
-        os.path.dirname(__file__), "..",
-        "custom_components", "taskmate", "www", "locales",
+        os.path.dirname(__file__),
+        "..",
+        "custom_components",
+        "taskmate",
+        "www",
+        "locales",
     )
     files = glob.glob(os.path.join(base, "*.json"))
     assert files, "no locale files found"
@@ -20,5 +24,4 @@ def test_nav_url_strings_present_in_all_locales():
         with open(path, encoding="utf-8") as fh:
             data = json.load(fh)
         for key in KEYS:
-            assert key in data and data[key].strip(), \
-                f"{key} missing/empty in {os.path.basename(path)}"
+            assert key in data and data[key].strip(), f"{key} missing/empty in {os.path.basename(path)}"

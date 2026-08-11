@@ -11,6 +11,7 @@ Three stacking "away" sources, all routed through
 While away: the streak is frozen (resumes intact on return, in BOTH reset and
 pause modes) and chores are hidden for that child only.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -33,8 +34,7 @@ def _make_coord(settings=None, children=None, states=None) -> TaskMateCoordinato
 
     hass = MagicMock()
     hass.states.get = MagicMock(
-        side_effect=lambda eid: SimpleNamespace(state=_states[eid], attributes={})
-        if eid in _states else None
+        side_effect=lambda eid: SimpleNamespace(state=_states[eid], attributes={}) if eid in _states else None
     )
     coord.hass = hass
 
@@ -59,6 +59,7 @@ def run(coro):
 
 def _run_check(coord, now_dt):
     import custom_components.taskmate.coord_points as _mod
+
     with patch.object(_mod.dt_util, "now", return_value=now_dt):
         run(coord._async_check_streaks())
 
@@ -75,7 +76,8 @@ class TestIsChildOnVacation:
     def test_global_calendar_active_freezes_everyone(self):
         child = Child(name="A")  # not opted in
         coord = _make_coord(
-            {"vacation_calendar": "calendar.family"}, [child],
+            {"vacation_calendar": "calendar.family"},
+            [child],
             {"calendar.family": "on"},
         )
         assert coord._is_child_on_vacation(child) is True
@@ -83,7 +85,8 @@ class TestIsChildOnVacation:
     def test_global_calendar_off_does_not_freeze(self):
         child = Child(name="A")
         coord = _make_coord(
-            {"vacation_calendar": "calendar.family"}, [child],
+            {"vacation_calendar": "calendar.family"},
+            [child],
             {"calendar.family": "off"},
         )
         assert coord._is_child_on_vacation(child) is False
@@ -91,7 +94,8 @@ class TestIsChildOnVacation:
     def test_broken_calendar_fails_open(self):
         child = Child(name="A")
         coord = _make_coord(
-            {"vacation_calendar": "calendar.family"}, [child],
+            {"vacation_calendar": "calendar.family"},
+            [child],
             {"calendar.family": "unavailable"},
         )
         assert coord._is_child_on_vacation(child) is False
@@ -99,7 +103,8 @@ class TestIsChildOnVacation:
     def test_per_child_calendar_via_unavailability(self):
         # Opted-in child whose unavailability entity is a calendar; "on" = away.
         child = Child(
-            name="A", pause_streak_when_unavailable=True,
+            name="A",
+            pause_streak_when_unavailable=True,
             unavailability_entity="calendar.alice_trips",
         )
         coord = _make_coord(children=[child], states={"calendar.alice_trips": "on"})
@@ -109,7 +114,8 @@ class TestIsChildOnVacation:
         # Same entity, flag off -> availability still gates assignment elsewhere,
         # but it must NOT freeze the streak / hide chores.
         child = Child(
-            name="A", pause_streak_when_unavailable=False,
+            name="A",
+            pause_streak_when_unavailable=False,
             unavailability_entity="calendar.alice_trips",
         )
         coord = _make_coord(children=[child], states={"calendar.alice_trips": "on"})
@@ -117,11 +123,13 @@ class TestIsChildOnVacation:
 
     def test_per_child_only_affects_that_child(self):
         away = Child(
-            name="Away", pause_streak_when_unavailable=True,
+            name="Away",
+            pause_streak_when_unavailable=True,
             unavailability_entity="calendar.away",
         )
         home = Child(
-            name="Home", pause_streak_when_unavailable=True,
+            name="Home",
+            pause_streak_when_unavailable=True,
             unavailability_entity="calendar.home",
         )
         coord = _make_coord(
@@ -133,7 +141,8 @@ class TestIsChildOnVacation:
 
     def test_none_child_uses_global_only(self):
         coord = _make_coord(
-            {"vacation_calendar": "calendar.family"}, [],
+            {"vacation_calendar": "calendar.family"},
+            [],
             {"calendar.family": "on"},
         )
         assert coord._is_child_on_vacation(None) is True
@@ -142,19 +151,25 @@ class TestIsChildOnVacation:
 class TestStreakFreezeOnAway:
     def test_optin_away_freezes_and_marks_paused_reset_mode(self):
         child = Child(
-            name="A", current_streak=5, last_completion_date="2026-07-05",
-            pause_streak_when_unavailable=True, unavailability_entity="calendar.trip",
+            name="A",
+            current_streak=5,
+            last_completion_date="2026-07-05",
+            pause_streak_when_unavailable=True,
+            unavailability_entity="calendar.trip",
         )
         coord = _make_coord({"streak_reset_mode": "reset"}, [child], {"calendar.trip": "on"})
         _run_check(coord, NOW)
-        assert child.current_streak == 5          # frozen, not reset
-        assert child.streak_paused is True         # will resume on return
+        assert child.current_streak == 5  # frozen, not reset
+        assert child.streak_paused is True  # will resume on return
 
     def test_optout_away_resets_normally_reset_mode(self):
         # Flag off + a genuine non-vacation gap -> normal reset.
         child = Child(
-            name="A", current_streak=5, last_completion_date="2026-07-22",
-            pause_streak_when_unavailable=False, unavailability_entity="calendar.trip",
+            name="A",
+            current_streak=5,
+            last_completion_date="2026-07-22",
+            pause_streak_when_unavailable=False,
+            unavailability_entity="calendar.trip",
         )
         coord = _make_coord({"streak_reset_mode": "reset"}, [child], {"calendar.trip": "on"})
         _run_check(coord, NOW)
@@ -164,7 +179,8 @@ class TestStreakFreezeOnAway:
         child = Child(name="A", current_streak=3, last_completion_date="2026-07-05")
         coord = _make_coord(
             {"streak_reset_mode": "reset", "vacation_calendar": "calendar.family"},
-            [child], {"calendar.family": "on"},
+            [child],
+            {"calendar.family": "on"},
         )
         _run_check(coord, NOW)
         assert child.current_streak == 3
@@ -175,7 +191,9 @@ class TestStreakFreezeOnAway:
         # In reset mode a normal gap would reset — but an already-paused streak
         # must be preserved so the next completion resumes it.
         child = Child(
-            name="A", current_streak=7, last_completion_date="2026-07-05",
+            name="A",
+            current_streak=7,
+            last_completion_date="2026-07-05",
             streak_paused=True,
         )
         coord = _make_coord({"streak_reset_mode": "reset"}, [child])
@@ -185,8 +203,11 @@ class TestStreakFreezeOnAway:
 
     def test_idempotent_no_double_save_while_away(self):
         child = Child(
-            name="A", current_streak=5, last_completion_date="2026-07-05",
-            pause_streak_when_unavailable=True, unavailability_entity="calendar.trip",
+            name="A",
+            current_streak=5,
+            last_completion_date="2026-07-05",
+            pause_streak_when_unavailable=True,
+            unavailability_entity="calendar.trip",
             streak_paused=True,  # already frozen from a previous night
         )
         coord = _make_coord({"streak_reset_mode": "reset"}, [child], {"calendar.trip": "on"})
@@ -197,8 +218,10 @@ class TestStreakFreezeOnAway:
 class TestChoreHidingWhileAway:
     def test_chore_hidden_for_away_child_only(self):
         from custom_components.taskmate.models import Chore
+
         away = Child(
-            name="Away", pause_streak_when_unavailable=True,
+            name="Away",
+            pause_streak_when_unavailable=True,
             unavailability_entity="calendar.away",
         )
         home = Child(name="Home")

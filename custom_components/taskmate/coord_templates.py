@@ -1,4 +1,5 @@
 """Template operations mixin for TaskMateCoordinator."""
+
 from __future__ import annotations
 
 import logging
@@ -70,9 +71,7 @@ class TemplatesMixin:
         await self.async_refresh()
         return created_ids
 
-    async def async_save_template_from_chores(
-        self, chore_ids: list[str], name: str, icon: str
-    ) -> str:
+    async def async_save_template_from_chores(self, chore_ids: list[str], name: str, icon: str) -> str:
         """Save existing chores as a custom template pack."""
         if not chore_ids:
             raise ValueError("At least one chore must be selected")
@@ -97,9 +96,7 @@ class TemplatesMixin:
         await self.storage.async_save()
         return tpl_id
 
-    async def async_create_template(
-        self, name: str, icon: str, chores: list[dict]
-    ) -> str:
+    async def async_create_template(self, name: str, icon: str, chores: list[dict]) -> str:
         """Create a new custom template from scratch."""
         if not chores:
             raise ValueError("Template must have at least one chore")
@@ -156,16 +153,19 @@ class TemplatesMixin:
         for tpl in self.storage.get_custom_templates():
             if wanted and tpl.get("id") not in wanted:
                 continue
-            packed.append({
-                "name": tpl.get("name", ""),
-                "icon": tpl.get("icon", "mdi:clipboard-list-outline"),
-                "chores": [
-                    {k: v for k, v in chore.items() if k in TEMPLATE_CHORE_FIELDS}
-                    for chore in tpl.get("chores", [])
-                ],
-            })
+            packed.append(
+                {
+                    "name": tpl.get("name", ""),
+                    "icon": tpl.get("icon", "mdi:clipboard-list-outline"),
+                    "chores": [
+                        {k: v for k, v in chore.items() if k in TEMPLATE_CHORE_FIELDS}
+                        for chore in tpl.get("chores", [])
+                    ],
+                }
+            )
 
         from homeassistant.util import dt as dt_util
+
         return {
             "format": self.PACK_FORMAT,
             "version": self.PACK_VERSION,
@@ -191,8 +191,7 @@ class TemplatesMixin:
             raise ValueError("Pack version is not a number") from err
         if version > self.PACK_VERSION:
             raise ValueError(
-                f"This pack needs a newer TaskMate (pack version {version}, "
-                f"this one understands {self.PACK_VERSION})"
+                f"This pack needs a newer TaskMate (pack version {version}, this one understands {self.PACK_VERSION})"
             )
 
         templates = pack.get("templates")
@@ -227,11 +226,13 @@ class TemplatesMixin:
                 cleaned["name"] = chore_name[:200]
                 chores.append(cleaned)
 
-            clean.append({
-                "name": name[:120],
-                "icon": str(entry.get("icon", "") or "mdi:clipboard-list-outline"),
-                "chores": chores,
-            })
+            clean.append(
+                {
+                    "name": name[:120],
+                    "icon": str(entry.get("icon", "") or "mdi:clipboard-list-outline"),
+                    "chores": chores,
+                }
+            )
         return clean
 
     async def async_import_pack(self, pack: dict) -> dict:

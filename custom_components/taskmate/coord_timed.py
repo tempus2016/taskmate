@@ -1,4 +1,5 @@
 """Timed task operations mixin for TaskMateCoordinator."""
+
 from __future__ import annotations
 
 import logging
@@ -41,9 +42,7 @@ class TimedMixin:
             # Check daily cap before resuming
             if chore.timed_max_daily_minutes > 0:
                 if existing.total_seconds_today >= chore.timed_max_daily_minutes * 60:
-                    raise ValueError(
-                        f"Daily cap reached ({chore.timed_max_daily_minutes} min)"
-                    )
+                    raise ValueError(f"Daily cap reached ({chore.timed_max_daily_minutes} min)")
             existing.state = "running"
             existing.segments.append({"start": now.isoformat(), "end": None})
             self.storage.save_timed_session(existing)
@@ -52,9 +51,7 @@ class TimedMixin:
             if chore.timed_max_daily_minutes > 0:
                 old_session = self.storage.get_timed_session(chore_id, child_id, today)
                 if old_session and old_session.total_seconds_today >= chore.timed_max_daily_minutes * 60:
-                    raise ValueError(
-                        f"Daily cap reached ({chore.timed_max_daily_minutes} min)"
-                    )
+                    raise ValueError(f"Daily cap reached ({chore.timed_max_daily_minutes} min)")
             session = TimedSession(
                 chore_id=chore_id,
                 child_id=child_id,
@@ -139,7 +136,10 @@ class TimedMixin:
 
         if chore.requires_approval:
             await self._async_notify_pending_approval(
-                child.name, chore.name, pts, completion_id=completion.id,
+                child.name,
+                chore.name,
+                pts,
+                completion_id=completion.id,
             )
 
         await self.async_refresh()

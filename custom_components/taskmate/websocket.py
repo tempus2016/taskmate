@@ -44,6 +44,7 @@ Settings:
 All commands require admin. Mutations write through coordinator methods so
 TaskMate's existing business logic (refunds, cleanup, recompute) runs.
 """
+
 from __future__ import annotations
 
 import logging
@@ -72,102 +73,102 @@ _LOGGER = logging.getLogger(__name__)
 WS_REGISTERED: Final = "ws_registered"
 
 # --- command names ---------------------------------------------------------
-WS_GET_STATE: Final           = "taskmate/get_state"
+WS_GET_STATE: Final = "taskmate/get_state"
 
-WS_ADD_CHILD: Final           = "taskmate/add_child"
-WS_UPDATE_CHILD: Final        = "taskmate/update_child"
-WS_REMOVE_CHILD: Final        = "taskmate/remove_child"
-WS_LIST_HA_USERS: Final       = "taskmate/list_ha_users"
+WS_ADD_CHILD: Final = "taskmate/add_child"
+WS_UPDATE_CHILD: Final = "taskmate/update_child"
+WS_REMOVE_CHILD: Final = "taskmate/remove_child"
+WS_LIST_HA_USERS: Final = "taskmate/list_ha_users"
 
-WS_ADD_CHORE: Final           = "taskmate/add_chore"
-WS_UPDATE_CHORE: Final        = "taskmate/update_chore"
-WS_REMOVE_CHORE: Final        = "taskmate/remove_chore"
+WS_ADD_CHORE: Final = "taskmate/add_chore"
+WS_UPDATE_CHORE: Final = "taskmate/update_chore"
+WS_REMOVE_CHORE: Final = "taskmate/remove_chore"
 
-WS_REPORT_FAIRNESS: Final     = "taskmate/reports/fairness"
-WS_REPORT_FRICTION: Final     = "taskmate/reports/friction"
-WS_REPORT_PROJECTION: Final   = "taskmate/reports/projection"
-WS_REPORT_HEALTH: Final       = "taskmate/reports/health"
-WS_SCHEDULED_LIST: Final      = "taskmate/scheduled/list"
-WS_SCHEDULED_ADD: Final       = "taskmate/scheduled/add"
-WS_SCHEDULED_REMOVE: Final    = "taskmate/scheduled/remove"
+WS_REPORT_FAIRNESS: Final = "taskmate/reports/fairness"
+WS_REPORT_FRICTION: Final = "taskmate/reports/friction"
+WS_REPORT_PROJECTION: Final = "taskmate/reports/projection"
+WS_REPORT_HEALTH: Final = "taskmate/reports/health"
+WS_SCHEDULED_LIST: Final = "taskmate/scheduled/list"
+WS_SCHEDULED_ADD: Final = "taskmate/scheduled/add"
+WS_SCHEDULED_REMOVE: Final = "taskmate/scheduled/remove"
 
-WS_ADD_REWARD: Final          = "taskmate/add_reward"
-WS_UPDATE_REWARD: Final       = "taskmate/update_reward"
-WS_REMOVE_REWARD: Final       = "taskmate/remove_reward"
+WS_ADD_REWARD: Final = "taskmate/add_reward"
+WS_UPDATE_REWARD: Final = "taskmate/update_reward"
+WS_REMOVE_REWARD: Final = "taskmate/remove_reward"
 
-WS_ADD_PENALTY: Final         = "taskmate/add_penalty"
-WS_UPDATE_PENALTY: Final      = "taskmate/update_penalty"
-WS_REMOVE_PENALTY: Final      = "taskmate/remove_penalty"
-WS_APPLY_PENALTY: Final       = "taskmate/apply_penalty"
+WS_ADD_PENALTY: Final = "taskmate/add_penalty"
+WS_UPDATE_PENALTY: Final = "taskmate/update_penalty"
+WS_REMOVE_PENALTY: Final = "taskmate/remove_penalty"
+WS_APPLY_PENALTY: Final = "taskmate/apply_penalty"
 
-WS_ADD_BONUS: Final           = "taskmate/add_bonus"
-WS_UPDATE_BONUS: Final        = "taskmate/update_bonus"
-WS_REMOVE_BONUS: Final        = "taskmate/remove_bonus"
-WS_APPLY_BONUS: Final         = "taskmate/apply_bonus"
+WS_ADD_BONUS: Final = "taskmate/add_bonus"
+WS_UPDATE_BONUS: Final = "taskmate/update_bonus"
+WS_REMOVE_BONUS: Final = "taskmate/remove_bonus"
+WS_APPLY_BONUS: Final = "taskmate/apply_bonus"
 
-WS_CREATE_QUEST: Final        = "taskmate/create_quest"
-WS_UPDATE_QUEST: Final        = "taskmate/update_quest"
-WS_DELETE_QUEST: Final        = "taskmate/delete_quest"
+WS_CREATE_QUEST: Final = "taskmate/create_quest"
+WS_UPDATE_QUEST: Final = "taskmate/update_quest"
+WS_DELETE_QUEST: Final = "taskmate/delete_quest"
 
 WS_UPDATE_AVATAR_CATALOG: Final = "taskmate/update_avatar_catalog"
-WS_SET_CHILD_AVATAR: Final      = "taskmate/set_child_avatar"
+WS_SET_CHILD_AVATAR: Final = "taskmate/set_child_avatar"
 
-WS_CREATE_CHALLENGE: Final    = "taskmate/create_challenge"
-WS_UPDATE_CHALLENGE: Final    = "taskmate/update_challenge"
-WS_DELETE_CHALLENGE: Final    = "taskmate/delete_challenge"
+WS_CREATE_CHALLENGE: Final = "taskmate/create_challenge"
+WS_UPDATE_CHALLENGE: Final = "taskmate/update_challenge"
+WS_DELETE_CHALLENGE: Final = "taskmate/delete_challenge"
 
-WS_ADD_TASK_GROUP: Final      = "taskmate/add_task_group"
-WS_UPDATE_TASK_GROUP: Final   = "taskmate/update_task_group"
-WS_REMOVE_TASK_GROUP: Final   = "taskmate/remove_task_group"
+WS_ADD_TASK_GROUP: Final = "taskmate/add_task_group"
+WS_UPDATE_TASK_GROUP: Final = "taskmate/update_task_group"
+WS_REMOVE_TASK_GROUP: Final = "taskmate/remove_task_group"
 
-WS_UPDATE_SETTINGS: Final     = "taskmate/update_settings"
+WS_UPDATE_SETTINGS: Final = "taskmate/update_settings"
 
 # Operational
 WS_COMPLETE_BONUS_SUBTASK: Final = "taskmate/complete_bonus_subtask"
-WS_APPROVE_CHORE: Final       = "taskmate/approve_chore"
-WS_APPROVE_ALL_CHORES: Final  = "taskmate/approve_all_chores"
-WS_REJECT_CHORE: Final        = "taskmate/reject_chore"
-WS_APPROVE_REWARD: Final      = "taskmate/approve_reward"
-WS_REJECT_REWARD: Final       = "taskmate/reject_reward"
-WS_SET_CHORE_ORDER: Final     = "taskmate/set_chore_order"
+WS_APPROVE_CHORE: Final = "taskmate/approve_chore"
+WS_APPROVE_ALL_CHORES: Final = "taskmate/approve_all_chores"
+WS_REJECT_CHORE: Final = "taskmate/reject_chore"
+WS_APPROVE_REWARD: Final = "taskmate/approve_reward"
+WS_REJECT_REWARD: Final = "taskmate/reject_reward"
+WS_SET_CHORE_ORDER: Final = "taskmate/set_chore_order"
 WS_SET_GLOBAL_CHORE_ORDER: Final = "taskmate/set_global_chore_order"
-WS_ADD_CHORES_BULK: Final     = "taskmate/add_chores_bulk"
+WS_ADD_CHORES_BULK: Final = "taskmate/add_chores_bulk"
 WS_PARENT_COMPLETE_CHORE: Final = "taskmate/parent_complete_chore"
 
 # Templates
-WS_TEMPLATES_LIST: Final       = "taskmate/templates/list"
-WS_TEMPLATES_GET: Final        = "taskmate/templates/get"
-WS_TEMPLATES_APPLY: Final      = "taskmate/templates/apply"
-WS_TEMPLATES_SAVE_FROM: Final  = "taskmate/templates/save_from_chores"
-WS_TEMPLATES_CREATE: Final     = "taskmate/templates/create"
-WS_TEMPLATES_UPDATE: Final     = "taskmate/templates/update"
-WS_TEMPLATES_EXPORT: Final     = "taskmate/templates/export"
-WS_TEMPLATES_IMPORT: Final     = "taskmate/templates/import"
-WS_PRINT_CHART: Final          = "taskmate/print/weekly_chart"
-WS_TEMPLATES_DELETE: Final     = "taskmate/templates/delete"
+WS_TEMPLATES_LIST: Final = "taskmate/templates/list"
+WS_TEMPLATES_GET: Final = "taskmate/templates/get"
+WS_TEMPLATES_APPLY: Final = "taskmate/templates/apply"
+WS_TEMPLATES_SAVE_FROM: Final = "taskmate/templates/save_from_chores"
+WS_TEMPLATES_CREATE: Final = "taskmate/templates/create"
+WS_TEMPLATES_UPDATE: Final = "taskmate/templates/update"
+WS_TEMPLATES_EXPORT: Final = "taskmate/templates/export"
+WS_TEMPLATES_IMPORT: Final = "taskmate/templates/import"
+WS_PRINT_CHART: Final = "taskmate/print/weekly_chart"
+WS_TEMPLATES_DELETE: Final = "taskmate/templates/delete"
 
 # Notifications
-WS_NOTIF_GET_STATE: Final          = "taskmate/notifications/get_state"
-WS_NOTIF_SET_MASTER: Final         = "taskmate/notifications/set_master_enabled"
-WS_NOTIF_SET_ROUTE: Final          = "taskmate/notifications/set_route"
-WS_NOTIF_SET_CHILD_NOTIFY: Final   = "taskmate/notifications/set_child_notify"
-WS_NOTIF_SET_CHILD_QUIET: Final    = "taskmate/notifications/set_child_quiet"
-WS_NOTIF_UPSERT_PARENT: Final      = "taskmate/notifications/upsert_parent"
-WS_NOTIF_DELETE_PARENT: Final      = "taskmate/notifications/delete_parent"
-WS_NOTIF_UPSERT_CUSTOM: Final      = "taskmate/notifications/upsert_custom"
-WS_NOTIF_DELETE_CUSTOM: Final      = "taskmate/notifications/delete_custom"
-WS_NOTIF_LIST_NOTIFY: Final        = "taskmate/notifications/list_notify_services"
-WS_NOTIF_SET_STREAK_CUTOFF: Final  = "taskmate/notifications/set_streak_cutoff"
-WS_NOTIF_SET_ESCALATION: Final     = "taskmate/notifications/set_escalation"
-WS_NOTIF_SEND_TEST: Final          = "taskmate/notifications/send_test"
-WS_NOTIF_SET_NAV_URL: Final        = "taskmate/notifications/set_nav_url"
+WS_NOTIF_GET_STATE: Final = "taskmate/notifications/get_state"
+WS_NOTIF_SET_MASTER: Final = "taskmate/notifications/set_master_enabled"
+WS_NOTIF_SET_ROUTE: Final = "taskmate/notifications/set_route"
+WS_NOTIF_SET_CHILD_NOTIFY: Final = "taskmate/notifications/set_child_notify"
+WS_NOTIF_SET_CHILD_QUIET: Final = "taskmate/notifications/set_child_quiet"
+WS_NOTIF_UPSERT_PARENT: Final = "taskmate/notifications/upsert_parent"
+WS_NOTIF_DELETE_PARENT: Final = "taskmate/notifications/delete_parent"
+WS_NOTIF_UPSERT_CUSTOM: Final = "taskmate/notifications/upsert_custom"
+WS_NOTIF_DELETE_CUSTOM: Final = "taskmate/notifications/delete_custom"
+WS_NOTIF_LIST_NOTIFY: Final = "taskmate/notifications/list_notify_services"
+WS_NOTIF_SET_STREAK_CUTOFF: Final = "taskmate/notifications/set_streak_cutoff"
+WS_NOTIF_SET_ESCALATION: Final = "taskmate/notifications/set_escalation"
+WS_NOTIF_SEND_TEST: Final = "taskmate/notifications/send_test"
+WS_NOTIF_SET_NAV_URL: Final = "taskmate/notifications/set_nav_url"
 
 # Calendar ICS feed (FEAT-10)
-WS_CAL_GET_URL: Final     = "taskmate/calendar/get_ics_url"
+WS_CAL_GET_URL: Final = "taskmate/calendar/get_ics_url"
 WS_CAL_REGEN_TOKEN: Final = "taskmate/calendar/regenerate_ics_token"
 
 # Admin audit log
-WS_AUDIT_LIST: Final  = "taskmate/audit/list"
+WS_AUDIT_LIST: Final = "taskmate/audit/list"
 WS_AUDIT_CLEAR: Final = "taskmate/audit/clear"
 
 # Undo / retract
@@ -194,10 +195,21 @@ WS_CONFIG_IMPORT: Final = "taskmate/config/import"
 # Read-only / audit-management commands that should NOT themselves be audited.
 # Everything else routed through @_admin_only mutates state and is logged.
 _AUDIT_EXCLUDE: Final = {
-    WS_GET_STATE, WS_NOTIF_GET_STATE, WS_NOTIF_LIST_NOTIFY,
-    WS_TEMPLATES_LIST, WS_TEMPLATES_GET, WS_TEMPLATES_EXPORT, WS_PRINT_CHART,
-    WS_AUDIT_LIST, WS_AUDIT_CLEAR,
-    WS_CONFIG_EXPORT, WS_SCHEDULED_LIST, WS_REPORT_FAIRNESS, WS_REPORT_FRICTION, WS_REPORT_PROJECTION, WS_REPORT_HEALTH,
+    WS_GET_STATE,
+    WS_NOTIF_GET_STATE,
+    WS_NOTIF_LIST_NOTIFY,
+    WS_TEMPLATES_LIST,
+    WS_TEMPLATES_GET,
+    WS_TEMPLATES_EXPORT,
+    WS_PRINT_CHART,
+    WS_AUDIT_LIST,
+    WS_AUDIT_CLEAR,
+    WS_CONFIG_EXPORT,
+    WS_SCHEDULED_LIST,
+    WS_REPORT_FAIRNESS,
+    WS_REPORT_FRICTION,
+    WS_REPORT_PROJECTION,
+    WS_REPORT_HEALTH,
 }
 
 
@@ -216,9 +228,18 @@ def _audit_target(coordinator, msg: dict) -> str:
             obj = getter(val)
             return getattr(obj, "name", None) or str(val)
     for key in (
-        "penalty_id", "bonus_id", "badge_id", "group_id", "template_id",
-        "completion_id", "claim_id", "parent_id", "custom_id",
-        "awarded_badge_id", "type_id", "transaction_id",
+        "penalty_id",
+        "bonus_id",
+        "badge_id",
+        "group_id",
+        "template_id",
+        "completion_id",
+        "claim_id",
+        "parent_id",
+        "custom_id",
+        "awarded_badge_id",
+        "type_id",
+        "transaction_id",
     ):
         if msg.get(key):
             return str(msg[key])
@@ -234,6 +255,7 @@ def _get_coordinator(hass: HomeAssistant) -> TaskMateCoordinator | None:
 
 def _admin_only(handler):
     """Enforce admin + coordinator availability + uniform error reporting."""
+
     @wraps(handler)
     async def wrapper(hass, connection, msg):
         if not connection.user.is_admin:
@@ -266,12 +288,14 @@ def _admin_only(handler):
                     )
                 except Exception:  # noqa: BLE001
                     _LOGGER.debug("audit record failed for %s", msg.get("type"), exc_info=True)
+
     return wrapper
 
 
 # ---------------------------------------------------------------------------
 # Validators / coercers
 # ---------------------------------------------------------------------------
+
 
 def _opt_str(v: Any) -> str:
     """Coerce optional string field to stripped str (or empty)."""
@@ -284,6 +308,7 @@ def _opt_str(v: Any) -> str:
 # State snapshot
 # ---------------------------------------------------------------------------
 
+
 def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
     data = coordinator.storage.data
     completions = list(data.get("completions", []))
@@ -292,8 +317,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
     # bearer token, so the auth-gated serve view would 401. Copy each dict so
     # the expiring signed URL is never written back into storage.
     completions = [
-        {**c, "photo_url": photos.sign_photo_url(coordinator.hass, c["photo_url"])}
-        if c.get("photo_url") else c
+        {**c, "photo_url": photos.sign_photo_url(coordinator.hass, c["photo_url"])} if c.get("photo_url") else c
         for c in completions
     ]
     reward_claims = list(data.get("reward_claims", []))
@@ -310,47 +334,46 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
 
     return {
         "version": "2",
-        "children":         list(data.get("children", [])),
+        "children": list(data.get("children", [])),
         # Sign picture URLs so the panel's <img> loads — browsers do not
         # send the bearer token on image requests, so a bare URL 401s.
         "chores": [
-            {**c, "image_url": images.sign_image_url(coordinator.hass, c["image_url"])}
-            if c.get("image_url") else c
+            {**c, "image_url": images.sign_image_url(coordinator.hass, c["image_url"])} if c.get("image_url") else c
             for c in data.get("chores", [])
         ],
         "chore_display_order": list(data.get("chore_display_order", [])),
         "scheduled_changes": list(data.get("scheduled_changes", [])),
-        "rewards":          list(data.get("rewards", [])),
-        "penalties":        list(data.get("penalties", [])),
-        "bonuses":          list(data.get("bonuses", [])),
-        "task_groups":      list(data.get("task_groups", [])),
-        "quests":           list(data.get("quests", [])),
-        "quest_progress":   dict(data.get("quest_progress", {}) or {}),
-        "avatar_catalog":   coordinator.avatar_catalog(),
-        "challenges":       list(data.get("challenges", [])),
+        "rewards": list(data.get("rewards", [])),
+        "penalties": list(data.get("penalties", [])),
+        "bonuses": list(data.get("bonuses", [])),
+        "task_groups": list(data.get("task_groups", [])),
+        "quests": list(data.get("quests", [])),
+        "quest_progress": dict(data.get("quest_progress", {}) or {}),
+        "avatar_catalog": coordinator.avatar_catalog(),
+        "challenges": list(data.get("challenges", [])),
         "pool_allocations": list(data.get("pool_allocations", [])),
-        "timed_sessions":   list(data.get("timed_sessions", [])),
-        "templates":        coordinator.get_all_templates(),
+        "timed_sessions": list(data.get("timed_sessions", [])),
+        "templates": coordinator.get_all_templates(),
         # Operational state — used by the panel's Activity tab + approval banner
-        "completions":          completions,           # all (panel slices for display)
-        "pending_completions":  [c for c in completions if not c.get("approved")],
-        "reward_claims":        reward_claims,
+        "completions": completions,  # all (panel slices for display)
+        "pending_completions": [c for c in completions if not c.get("approved")],
+        "reward_claims": reward_claims,
         "pending_reward_claims": [c for c in reward_claims if not c.get("approved")],
-        "mandatory_misses":     coordinator.mandatory_misses_state(),  # missed mandatory chores awaiting review (#532)
-        "points_transactions":  transactions[-100:],   # most recent 100 for audit log
-        "badges":        list(data.get("badges", [])),
+        "mandatory_misses": coordinator.mandatory_misses_state(),  # missed mandatory chores awaiting review (#532)
+        "points_transactions": transactions[-100:],  # most recent 100 for audit log
+        "badges": list(data.get("badges", [])),
         "awarded_badges": list(data.get("awarded_badges", [])),
-        "audit_log":     coordinator.storage.get_audit_log()[:100],  # newest 100 for the panel
+        "audit_log": coordinator.storage.get_audit_log()[:100],  # newest 100 for the panel
         "swap_requests": [r for r in coordinator.storage.get_swap_requests() if r.get("status") == "pending"],
         "allowance_payouts": list(reversed(coordinator.storage.get_allowance_payouts()))[:50],  # newest first (FEAT-3)
         "settings": {
-            "points_name":       data.get("points_name", "Stars"),
-            "points_icon":       data.get("points_icon", "mdi:star"),
-            "card_design":       "classic",
+            "points_name": data.get("points_name", "Stars"),
+            "points_icon": data.get("points_icon", "mdi:star"),
+            "card_design": "classic",
             # Difficulty multiplier defaults; overridden by stored values below.
-            "difficulty_multiplier_easy":   0.5,
+            "difficulty_multiplier_easy": 0.5,
             "difficulty_multiplier_medium": 1.0,
-            "difficulty_multiplier_hard":   2.0,
+            "difficulty_multiplier_hard": 2.0,
             **(data.get("settings", {}) or {}),
         },
         "parent_completable": parent_completable,
@@ -368,16 +391,19 @@ async def _ws_get_state(hass, connection, msg, coordinator):
 # Children
 # ---------------------------------------------------------------------------
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_ADD_CHILD,
-    vol.Required("name"): vol.All(str, vol.Length(min=1, max=120)),
-    vol.Optional("avatar", default="mdi:account-circle"): str,
-    vol.Optional("availability_entity", default=""): str,
-    vol.Optional("availability_inverted", default=False): bool,
-    vol.Optional("unavailability_entity", default=""): str,
-    vol.Optional("pause_streak_when_unavailable", default=False): bool,
-    vol.Optional("linked_user_id", default=""): str,
-})
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_ADD_CHILD,
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=120)),
+        vol.Optional("avatar", default="mdi:account-circle"): str,
+        vol.Optional("availability_entity", default=""): str,
+        vol.Optional("availability_inverted", default=False): bool,
+        vol.Optional("unavailability_entity", default=""): str,
+        vol.Optional("pause_streak_when_unavailable", default=False): bool,
+        vol.Optional("linked_user_id", default=""): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_add_child(hass, connection, msg, coordinator):
@@ -393,19 +419,21 @@ async def _ws_add_child(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": child.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_UPDATE_CHILD,
-    vol.Required("child_id"): str,
-    vol.Optional("name"): vol.All(str, vol.Length(min=1, max=120)),
-    vol.Optional("avatar"): str,
-    vol.Optional("availability_entity"): str,
-    vol.Optional("availability_inverted"): bool,
-    vol.Optional("unavailability_entity"): str,
-    vol.Optional("pause_streak_when_unavailable"): bool,
-    vol.Optional("linked_user_id"): str,
-    vol.Optional("is_guest"): bool,
-    vol.Optional("guest_expires_on"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_UPDATE_CHILD,
+        vol.Required("child_id"): str,
+        vol.Optional("name"): vol.All(str, vol.Length(min=1, max=120)),
+        vol.Optional("avatar"): str,
+        vol.Optional("availability_entity"): str,
+        vol.Optional("availability_inverted"): bool,
+        vol.Optional("unavailability_entity"): str,
+        vol.Optional("pause_streak_when_unavailable"): bool,
+        vol.Optional("linked_user_id"): str,
+        vol.Optional("is_guest"): bool,
+        vol.Optional("guest_expires_on"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_update_child(hass, connection, msg, coordinator):
@@ -444,10 +472,12 @@ async def _ws_update_child(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": existing.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REMOVE_CHILD,
-    vol.Required("child_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REMOVE_CHILD,
+        vol.Required("child_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_remove_child(hass, connection, msg, coordinator):
@@ -458,9 +488,11 @@ async def _ws_remove_child(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": msg["child_id"]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_LIST_HA_USERS,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_LIST_HA_USERS,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_list_ha_users(hass, connection, msg, coordinator):
@@ -483,6 +515,7 @@ async def _ws_list_ha_users(hass, connection, msg, coordinator):
 # Chores
 # ---------------------------------------------------------------------------
 
+
 def _image_url_or_blank(value):
     """Accept a blank string (clears the picture) or one of our image URLs.
 
@@ -500,21 +533,52 @@ def _image_url_or_blank(value):
 # assignment_current_child_id, publish_calendar_published_dates, etc.) is
 # coordinator-managed runtime state and intentionally not exposed.
 _CHORE_EDITABLE_FIELDS = {
-    "name", "description", "points", "assigned_to", "depends_on", "requires_approval",
-    "time_category", "claim_allowance_minutes", "daily_limit", "completion_sound",
-    "icon", "image_url", "difficulty",
-    "schedule_mode", "due_days", "recurrence", "recurrence_day",
-    "recurrence_start", "first_occurrence_mode", "visibility_entity",
-    "visibility_state", "visibility_operator",
-    "weather_entity", "weather_block_conditions", "weather_temp_min",
-    "weather_temp_max", "weather_wind_max",
-    "deadline_at", "speed_bonus_points",
-    "enabled", "expires_on",
-    "due_time", "early_bonus", "late_penalty", "require_photo",
-    "mandatory", "mandatory_penalty_points",
-    "assignment_mode", "assignment_rotation_anchor", "require_availability",
-    "publish_calendar_entities", "bonus_subtasks",
-    "task_type", "timed_rate_points", "timed_rate_minutes", "timed_max_daily_minutes",
+    "name",
+    "description",
+    "points",
+    "assigned_to",
+    "depends_on",
+    "requires_approval",
+    "time_category",
+    "claim_allowance_minutes",
+    "daily_limit",
+    "completion_sound",
+    "icon",
+    "image_url",
+    "difficulty",
+    "schedule_mode",
+    "due_days",
+    "recurrence",
+    "recurrence_day",
+    "recurrence_start",
+    "first_occurrence_mode",
+    "visibility_entity",
+    "visibility_state",
+    "visibility_operator",
+    "weather_entity",
+    "weather_block_conditions",
+    "weather_temp_min",
+    "weather_temp_max",
+    "weather_wind_max",
+    "deadline_at",
+    "speed_bonus_points",
+    "enabled",
+    "expires_on",
+    "due_time",
+    "early_bonus",
+    "late_penalty",
+    "require_photo",
+    "mandatory",
+    "mandatory_penalty_points",
+    "assignment_mode",
+    "assignment_rotation_anchor",
+    "require_availability",
+    "publish_calendar_entities",
+    "bonus_subtasks",
+    "task_type",
+    "timed_rate_points",
+    "timed_rate_minutes",
+    "timed_max_daily_minutes",
 }
 
 
@@ -560,16 +624,20 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("mandatory"): bool,
         vol.Optional("mandatory_penalty_points"): vol.All(int, vol.Range(min=0)),
         vol.Optional("require_photo"): bool,
-        vol.Optional("assignment_mode"): vol.In(["everyone", "alternating", "random", "balanced", "first_come", "unassigned"]),
+        vol.Optional("assignment_mode"): vol.In(
+            ["everyone", "alternating", "random", "balanced", "first_come", "unassigned"]
+        ),
         vol.Optional("assignment_rotation_anchor"): str,
         vol.Optional("require_availability"): bool,
         vol.Optional("publish_calendar_entities"): [str],
-        vol.Optional("bonus_subtasks"): [{
-            vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
-            vol.Optional("points"): vol.All(int, vol.Range(min=0)),
-            vol.Optional("description"): str,
-            vol.Optional("id"): str,
-        }],
+        vol.Optional("bonus_subtasks"): [
+            {
+                vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+                vol.Optional("points"): vol.All(int, vol.Range(min=0)),
+                vol.Optional("description"): str,
+                vol.Optional("id"): str,
+            }
+        ],
         vol.Optional("task_type"): vol.In(["standard", "timed"]),
         vol.Optional("timed_rate_points"): vol.All(int, vol.Range(min=1)),
         vol.Optional("timed_rate_minutes"): vol.All(int, vol.Range(min=1)),
@@ -592,11 +660,13 @@ async def _maybe_apply_manual_start(coordinator, chore_id: str, child_id: str | 
         _LOGGER.debug("manual start ignored for %s: %s", chore_id, err)
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_ADD_CHORE,
-    vol.Optional("manual_start_child_id"): vol.Any(str, None),
-    **_chore_payload_schema(require_name=True),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_ADD_CHORE,
+        vol.Optional("manual_start_child_id"): vol.Any(str, None),
+        **_chore_payload_schema(require_name=True),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_add_chore(hass, connection, msg, coordinator):
@@ -613,9 +683,16 @@ async def _ws_add_chore(hass, connection, msg, coordinator):
         schedule_mode=msg.get("schedule_mode", "specific_days"),
     )
     extra_fields = (set(msg.keys()) & _CHORE_EDITABLE_FIELDS) - {
-        "name", "points", "description", "assigned_to", "requires_approval",
-        "time_category", "claim_allowance_minutes", "daily_limit",
-        "completion_sound", "schedule_mode",
+        "name",
+        "points",
+        "description",
+        "assigned_to",
+        "requires_approval",
+        "time_category",
+        "claim_allowance_minutes",
+        "daily_limit",
+        "completion_sound",
+        "schedule_mode",
     }
     if extra_fields:
         for f in extra_fields:
@@ -628,12 +705,14 @@ async def _ws_add_chore(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": chore.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_UPDATE_CHORE,
-    vol.Required("chore_id"): str,
-    vol.Optional("manual_start_child_id"): vol.Any(str, None),
-    **_chore_payload_schema(require_name=False),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_UPDATE_CHORE,
+        vol.Required("chore_id"): str,
+        vol.Optional("manual_start_child_id"): vol.Any(str, None),
+        **_chore_payload_schema(require_name=False),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_update_chore(hass, connection, msg, coordinator):
@@ -656,10 +735,12 @@ async def _ws_update_chore(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": existing.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REMOVE_CHORE,
-    vol.Required("chore_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REMOVE_CHORE,
+        vol.Required("chore_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_remove_chore(hass, connection, msg, coordinator):
@@ -670,55 +751,65 @@ async def _ws_remove_chore(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": msg["chore_id"]})
 
 
-
 # ---------------------------------------------------------------------------
 # Insight reports (#679)
 # ---------------------------------------------------------------------------
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REPORT_FAIRNESS,
-    vol.Optional("days"): vol.All(int, vol.Range(min=1, max=90)),
-})
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REPORT_FAIRNESS,
+        vol.Optional("days"): vol.All(int, vol.Range(min=1, max=90)),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_report_fairness(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], coordinator.fairness_report(msg.get("days")))
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REPORT_FRICTION,
-    vol.Optional("days"): vol.All(int, vol.Range(min=1, max=90)),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REPORT_FRICTION,
+        vol.Optional("days"): vol.All(int, vol.Range(min=1, max=90)),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_report_friction(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], coordinator.friction_report(msg.get("days")))
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REPORT_PROJECTION,
-    vol.Optional("days"): vol.All(int, vol.Range(min=1, max=28)),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REPORT_PROJECTION,
+        vol.Optional("days"): vol.All(int, vol.Range(min=1, max=28)),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_report_projection(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], coordinator.projection_report(msg.get("days")))
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_TEMPLATES_EXPORT,
-    vol.Optional("template_ids"): [str],
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_TEMPLATES_EXPORT,
+        vol.Optional("template_ids"): [str],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_templates_export(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], coordinator.export_templates(msg.get("template_ids")))
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_TEMPLATES_IMPORT,
-    vol.Required("pack"): dict,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_TEMPLATES_IMPORT,
+        vol.Required("pack"): dict,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_templates_import(hass, connection, msg, coordinator):
@@ -730,12 +821,14 @@ async def _ws_templates_import(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], result)
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_PRINT_CHART,
-    vol.Optional("orientation", default="portrait"): vol.In(["portrait", "landscape"]),
-    vol.Optional("week_start"): str,
-    vol.Optional("title"): vol.All(str, vol.Length(max=80)),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_PRINT_CHART,
+        vol.Optional("orientation", default="portrait"): vol.In(["portrait", "landscape"]),
+        vol.Optional("week_start"): str,
+        vol.Optional("title"): vol.All(str, vol.Length(max=80)),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_print_chart(hass, connection, msg, coordinator):
@@ -775,10 +868,13 @@ async def _ws_report_health(hass, connection, msg, coordinator):
 # Scheduled config changes (#675)
 # ---------------------------------------------------------------------------
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_SCHEDULED_LIST,
-    vol.Optional("chore_id"): str,
-})
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_SCHEDULED_LIST,
+        vol.Optional("chore_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_scheduled_list(hass, connection, msg, coordinator):
@@ -786,13 +882,15 @@ async def _ws_scheduled_list(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"changes": [c.to_dict() for c in changes]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_SCHEDULED_ADD,
-    vol.Required("chore_id"): str,
-    vol.Required("apply_on"): str,
-    vol.Required("changes"): dict,
-    vol.Optional("note", default=""): vol.All(str, vol.Length(max=200)),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_SCHEDULED_ADD,
+        vol.Required("chore_id"): str,
+        vol.Required("apply_on"): str,
+        vol.Required("changes"): dict,
+        vol.Optional("note", default=""): vol.All(str, vol.Length(max=200)),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_scheduled_add(hass, connection, msg, coordinator):
@@ -809,10 +907,12 @@ async def _ws_scheduled_add(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": change.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_SCHEDULED_REMOVE,
-    vol.Required("change_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_SCHEDULED_REMOVE,
+        vol.Required("change_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_scheduled_remove(hass, connection, msg, coordinator):
@@ -828,10 +928,22 @@ async def _ws_scheduled_remove(hass, connection, msg, coordinator):
 # Rewards
 # ---------------------------------------------------------------------------
 
-_REWARD_FIELDS = {"name", "cost", "description", "icon", "assigned_to",
-                  "is_jackpot", "pool_enabled", "quantity", "expires_at",
-                  "restock_enabled", "restock_amount", "restock_period",
-                  "unlock_entity", "unlock_minutes"}
+_REWARD_FIELDS = {
+    "name",
+    "cost",
+    "description",
+    "icon",
+    "assigned_to",
+    "is_jackpot",
+    "pool_enabled",
+    "quantity",
+    "expires_at",
+    "restock_enabled",
+    "restock_amount",
+    "restock_period",
+    "unlock_entity",
+    "unlock_minutes",
+}
 
 
 def _reward_payload_schema(*, require_name: bool):
@@ -855,10 +967,12 @@ def _reward_payload_schema(*, require_name: bool):
     }
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_ADD_REWARD,
-    **_reward_payload_schema(require_name=True),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_ADD_REWARD,
+        **_reward_payload_schema(require_name=True),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_add_reward(hass, connection, msg, coordinator):
@@ -866,7 +980,8 @@ async def _ws_add_reward(hass, connection, msg, coordinator):
     # allowlist, at save time, with a message the panel can show.
     try:
         unlock_entity, unlock_minutes = coordinator.validate_unlock(
-            msg.get("unlock_entity", ""), msg.get("unlock_minutes", 0),
+            msg.get("unlock_entity", ""),
+            msg.get("unlock_minutes", 0),
         )
     except ValueError as err:
         connection.send_error(msg["id"], "invalid_format", str(err))
@@ -896,11 +1011,13 @@ async def _ws_add_reward(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": reward.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_UPDATE_REWARD,
-    vol.Required("reward_id"): str,
-    **_reward_payload_schema(require_name=False),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_UPDATE_REWARD,
+        vol.Required("reward_id"): str,
+        **_reward_payload_schema(require_name=False),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_update_reward(hass, connection, msg, coordinator):
@@ -931,10 +1048,12 @@ async def _ws_update_reward(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": existing.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REMOVE_REWARD,
-    vol.Required("reward_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REMOVE_REWARD,
+        vol.Required("reward_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_remove_reward(hass, connection, msg, coordinator):
@@ -949,17 +1068,20 @@ async def _ws_remove_reward(hass, connection, msg, coordinator):
 # Quests (chore chains)
 # ---------------------------------------------------------------------------
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_CREATE_QUEST,
-    vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Optional("description", default=""): str,
-    vol.Optional("icon", default="mdi:map-marker-path"): str,
-    vol.Required("steps"): vol.All([str], vol.Length(min=1)),
-    vol.Optional("bonus_points", default=25): vol.All(int, vol.Range(min=0, max=1000000)),
-    vol.Optional("assigned_to", default=[]): [str],
-    vol.Optional("repeatable", default=False): bool,
-    vol.Optional("active", default=True): bool,
-})
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_CREATE_QUEST,
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Optional("description", default=""): str,
+        vol.Optional("icon", default="mdi:map-marker-path"): str,
+        vol.Required("steps"): vol.All([str], vol.Length(min=1)),
+        vol.Optional("bonus_points", default=25): vol.All(int, vol.Range(min=0, max=1000000)),
+        vol.Optional("assigned_to", default=[]): [str],
+        vol.Optional("repeatable", default=False): bool,
+        vol.Optional("active", default=True): bool,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_create_quest(hass, connection, msg, coordinator):
@@ -976,18 +1098,20 @@ async def _ws_create_quest(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": quest_id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_UPDATE_QUEST,
-    vol.Required("quest_id"): str,
-    vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Optional("description"): str,
-    vol.Optional("icon"): str,
-    vol.Optional("steps"): vol.All([str], vol.Length(min=1)),
-    vol.Optional("bonus_points"): vol.All(int, vol.Range(min=0, max=1000000)),
-    vol.Optional("assigned_to"): [str],
-    vol.Optional("repeatable"): bool,
-    vol.Optional("active"): bool,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_UPDATE_QUEST,
+        vol.Required("quest_id"): str,
+        vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Optional("description"): str,
+        vol.Optional("icon"): str,
+        vol.Optional("steps"): vol.All([str], vol.Length(min=1)),
+        vol.Optional("bonus_points"): vol.All(int, vol.Range(min=0, max=1000000)),
+        vol.Optional("assigned_to"): [str],
+        vol.Optional("repeatable"): bool,
+        vol.Optional("active"): bool,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_update_quest(hass, connection, msg, coordinator):
@@ -1002,10 +1126,12 @@ async def _ws_update_quest(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": msg["quest_id"]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_DELETE_QUEST,
-    vol.Required("quest_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_DELETE_QUEST,
+        vol.Required("quest_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_delete_quest(hass, connection, msg, coordinator):
@@ -1021,16 +1147,21 @@ async def _ws_delete_quest(hass, connection, msg, coordinator):
 # Avatar unlockables
 # ---------------------------------------------------------------------------
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_UPDATE_AVATAR_CATALOG,
-    vol.Required("catalog"): [{
-        vol.Optional("id"): str,
-        vol.Optional("label"): str,
-        vol.Required("icon"): str,
-        vol.Optional("unlock_type"): vol.In(["free", "level", "points", "streak"]),
-        vol.Optional("unlock_value"): vol.All(vol.Coerce(int), vol.Range(min=0, max=1000000)),
-    }],
-})
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_UPDATE_AVATAR_CATALOG,
+        vol.Required("catalog"): [
+            {
+                vol.Optional("id"): str,
+                vol.Optional("label"): str,
+                vol.Required("icon"): str,
+                vol.Optional("unlock_type"): vol.In(["free", "level", "points", "streak"]),
+                vol.Optional("unlock_value"): vol.All(vol.Coerce(int), vol.Range(min=0, max=1000000)),
+            }
+        ],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_update_avatar_catalog(hass, connection, msg, coordinator):
@@ -1038,11 +1169,13 @@ async def _ws_update_avatar_catalog(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"count": len(msg["catalog"])})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_SET_CHILD_AVATAR,
-    vol.Required("child_id"): str,
-    vol.Required("icon"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_SET_CHILD_AVATAR,
+        vol.Required("child_id"): str,
+        vol.Required("icon"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_set_child_avatar(hass, connection, msg, coordinator):
@@ -1059,18 +1192,21 @@ async def _ws_set_child_avatar(hass, connection, msg, coordinator):
 # Challenges (daily / weekly)
 # ---------------------------------------------------------------------------
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_CREATE_CHALLENGE,
-    vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Optional("description", default=""): str,
-    vol.Optional("icon", default="mdi:trophy-outline"): str,
-    vol.Optional("scope", default="daily"): vol.In(["daily", "weekly"]),
-    vol.Optional("metric", default="chores"): vol.In(["chores", "points"]),
-    vol.Required("target"): vol.All(int, vol.Range(min=1, max=1000000)),
-    vol.Optional("bonus_points", default=15): vol.All(int, vol.Range(min=0, max=1000000)),
-    vol.Optional("assigned_to", default=[]): [str],
-    vol.Optional("active", default=True): bool,
-})
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_CREATE_CHALLENGE,
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Optional("description", default=""): str,
+        vol.Optional("icon", default="mdi:trophy-outline"): str,
+        vol.Optional("scope", default="daily"): vol.In(["daily", "weekly"]),
+        vol.Optional("metric", default="chores"): vol.In(["chores", "points"]),
+        vol.Required("target"): vol.All(int, vol.Range(min=1, max=1000000)),
+        vol.Optional("bonus_points", default=15): vol.All(int, vol.Range(min=0, max=1000000)),
+        vol.Optional("assigned_to", default=[]): [str],
+        vol.Optional("active", default=True): bool,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_create_challenge(hass, connection, msg, coordinator):
@@ -1088,19 +1224,21 @@ async def _ws_create_challenge(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": challenge_id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_UPDATE_CHALLENGE,
-    vol.Required("challenge_id"): str,
-    vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Optional("description"): str,
-    vol.Optional("icon"): str,
-    vol.Optional("scope"): vol.In(["daily", "weekly"]),
-    vol.Optional("metric"): vol.In(["chores", "points"]),
-    vol.Optional("target"): vol.All(int, vol.Range(min=1, max=1000000)),
-    vol.Optional("bonus_points"): vol.All(int, vol.Range(min=0, max=1000000)),
-    vol.Optional("assigned_to"): [str],
-    vol.Optional("active"): bool,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_UPDATE_CHALLENGE,
+        vol.Required("challenge_id"): str,
+        vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Optional("description"): str,
+        vol.Optional("icon"): str,
+        vol.Optional("scope"): vol.In(["daily", "weekly"]),
+        vol.Optional("metric"): vol.In(["chores", "points"]),
+        vol.Optional("target"): vol.All(int, vol.Range(min=1, max=1000000)),
+        vol.Optional("bonus_points"): vol.All(int, vol.Range(min=0, max=1000000)),
+        vol.Optional("assigned_to"): [str],
+        vol.Optional("active"): bool,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_update_challenge(hass, connection, msg, coordinator):
@@ -1115,10 +1253,12 @@ async def _ws_update_challenge(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": msg["challenge_id"]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_DELETE_CHALLENGE,
-    vol.Required("challenge_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_DELETE_CHALLENGE,
+        vol.Required("challenge_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_delete_challenge(hass, connection, msg, coordinator):
@@ -1134,14 +1274,17 @@ async def _ws_delete_challenge(hass, connection, msg, coordinator):
 # Penalties
 # ---------------------------------------------------------------------------
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_ADD_PENALTY,
-    vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Required("points"): vol.All(int, vol.Range(min=1)),
-    vol.Optional("description", default=""): str,
-    vol.Optional("icon", default="mdi:alert-circle-outline"): str,
-    vol.Optional("assigned_to", default=[]): [str],
-})
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_ADD_PENALTY,
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Required("points"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("description", default=""): str,
+        vol.Optional("icon", default="mdi:alert-circle-outline"): str,
+        vol.Optional("assigned_to", default=[]): [str],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_add_penalty(hass, connection, msg, coordinator):
@@ -1155,15 +1298,17 @@ async def _ws_add_penalty(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": pen.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_UPDATE_PENALTY,
-    vol.Required("penalty_id"): str,
-    vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Optional("points"): vol.All(int, vol.Range(min=1)),
-    vol.Optional("description"): str,
-    vol.Optional("icon"): str,
-    vol.Optional("assigned_to"): [str],
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_UPDATE_PENALTY,
+        vol.Required("penalty_id"): str,
+        vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Optional("points"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("description"): str,
+        vol.Optional("icon"): str,
+        vol.Optional("assigned_to"): [str],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_update_penalty(hass, connection, msg, coordinator):
@@ -1183,10 +1328,12 @@ async def _ws_update_penalty(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": existing.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REMOVE_PENALTY,
-    vol.Required("penalty_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REMOVE_PENALTY,
+        vol.Required("penalty_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_remove_penalty(hass, connection, msg, coordinator):
@@ -1197,17 +1344,17 @@ async def _ws_remove_penalty(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": msg["penalty_id"]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_APPLY_PENALTY,
-    vol.Required("penalty_id"): str,
-    vol.Required("child_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_APPLY_PENALTY,
+        vol.Required("penalty_id"): str,
+        vol.Required("child_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_apply_penalty(hass, connection, msg, coordinator):
-    await coordinator.async_apply_penalty(
-        penalty_id=msg["penalty_id"], child_id=msg["child_id"]
-    )
+    await coordinator.async_apply_penalty(penalty_id=msg["penalty_id"], child_id=msg["child_id"])
     connection.send_result(msg["id"], {"penalty_id": msg["penalty_id"], "child_id": msg["child_id"]})
 
 
@@ -1215,14 +1362,17 @@ async def _ws_apply_penalty(hass, connection, msg, coordinator):
 # Bonuses (mirror of penalties)
 # ---------------------------------------------------------------------------
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_ADD_BONUS,
-    vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Required("points"): vol.All(int, vol.Range(min=1)),
-    vol.Optional("description", default=""): str,
-    vol.Optional("icon", default="mdi:star-circle-outline"): str,
-    vol.Optional("assigned_to", default=[]): [str],
-})
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_ADD_BONUS,
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Required("points"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("description", default=""): str,
+        vol.Optional("icon", default="mdi:star-circle-outline"): str,
+        vol.Optional("assigned_to", default=[]): [str],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_add_bonus(hass, connection, msg, coordinator):
@@ -1236,15 +1386,17 @@ async def _ws_add_bonus(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": b.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_UPDATE_BONUS,
-    vol.Required("bonus_id"): str,
-    vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Optional("points"): vol.All(int, vol.Range(min=1)),
-    vol.Optional("description"): str,
-    vol.Optional("icon"): str,
-    vol.Optional("assigned_to"): [str],
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_UPDATE_BONUS,
+        vol.Required("bonus_id"): str,
+        vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Optional("points"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("description"): str,
+        vol.Optional("icon"): str,
+        vol.Optional("assigned_to"): [str],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_update_bonus(hass, connection, msg, coordinator):
@@ -1264,10 +1416,12 @@ async def _ws_update_bonus(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": existing.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REMOVE_BONUS,
-    vol.Required("bonus_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REMOVE_BONUS,
+        vol.Required("bonus_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_remove_bonus(hass, connection, msg, coordinator):
@@ -1278,11 +1432,13 @@ async def _ws_remove_bonus(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": msg["bonus_id"]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_APPLY_BONUS,
-    vol.Required("bonus_id"): str,
-    vol.Required("child_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_APPLY_BONUS,
+        vol.Required("bonus_id"): str,
+        vol.Required("child_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_apply_bonus(hass, connection, msg, coordinator):
@@ -1294,12 +1450,15 @@ async def _ws_apply_bonus(hass, connection, msg, coordinator):
 # Task groups
 # ---------------------------------------------------------------------------
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_ADD_TASK_GROUP,
-    vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Required("policy"): vol.In(["sticky", "spread"]),
-    vol.Optional("chore_ids", default=[]): [str],
-})
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_ADD_TASK_GROUP,
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Required("policy"): vol.In(["sticky", "spread"]),
+        vol.Optional("chore_ids", default=[]): [str],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_add_task_group(hass, connection, msg, coordinator):
@@ -1311,13 +1470,15 @@ async def _ws_add_task_group(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": g.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_UPDATE_TASK_GROUP,
-    vol.Required("group_id"): str,
-    vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Optional("policy"): vol.In(["sticky", "spread"]),
-    vol.Optional("chore_ids"): [str],
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_UPDATE_TASK_GROUP,
+        vol.Required("group_id"): str,
+        vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Optional("policy"): vol.In(["sticky", "spread"]),
+        vol.Optional("chore_ids"): [str],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_update_task_group(hass, connection, msg, coordinator):
@@ -1330,10 +1491,12 @@ async def _ws_update_task_group(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": g.id if g else msg["group_id"]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REMOVE_TASK_GROUP,
-    vol.Required("group_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REMOVE_TASK_GROUP,
+        vol.Required("group_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_remove_task_group(hass, connection, msg, coordinator):
@@ -1354,30 +1517,67 @@ _TOP_LEVEL_SETTINGS = {"points_name", "points_icon"}
 _ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro", "accessible"}
 # Settings stored under storage._data["settings"][key]
 _SUBKEY_SETTINGS = {
-    "history_days", "streak_reset_mode", "card_design",
-    "weekend_multiplier", "streak_milestones_enabled", "perfect_week_enabled",
-    "perfect_week_bonus", "streak_milestones", "quick_point_amounts",
-    "streak_requires_all_chores", "perfect_week_requires_all_chores",
-    "difficulty_multiplier_easy", "difficulty_multiplier_medium", "difficulty_multiplier_hard",
-    "unlock_allowlist", "parent_routing",
-    "read_aloud_media_player", "read_aloud_tts_entity", "read_aloud_template",
-    "read_aloud_one_template", "read_aloud_done_template", "read_aloud_joiner",
-    "roulette_enabled", "roulette_multiplier", "roulette_daily_spins",
-    "surprise_bonus_enabled", "surprise_bonus_chance", "surprise_bonus_min", "surprise_bonus_max",
-    "points_decay_enabled", "points_decay_period", "points_decay_percent",
+    "history_days",
+    "streak_reset_mode",
+    "card_design",
+    "weekend_multiplier",
+    "streak_milestones_enabled",
+    "perfect_week_enabled",
+    "perfect_week_bonus",
+    "streak_milestones",
+    "quick_point_amounts",
+    "streak_requires_all_chores",
+    "perfect_week_requires_all_chores",
+    "difficulty_multiplier_easy",
+    "difficulty_multiplier_medium",
+    "difficulty_multiplier_hard",
+    "unlock_allowlist",
+    "parent_routing",
+    "read_aloud_media_player",
+    "read_aloud_tts_entity",
+    "read_aloud_template",
+    "read_aloud_one_template",
+    "read_aloud_done_template",
+    "read_aloud_joiner",
+    "roulette_enabled",
+    "roulette_multiplier",
+    "roulette_daily_spins",
+    "surprise_bonus_enabled",
+    "surprise_bonus_chance",
+    "surprise_bonus_min",
+    "surprise_bonus_max",
+    "points_decay_enabled",
+    "points_decay_period",
+    "points_decay_percent",
     "level_xp_step",
-    "spend_cap_enabled", "spend_cap_period", "spend_cap_amount",
-    "interest_enabled", "interest_period", "interest_percent",
-    "celebration_notify", "celebration_notify_min_tier",
+    "spend_cap_enabled",
+    "spend_cap_period",
+    "spend_cap_amount",
+    "interest_enabled",
+    "interest_period",
+    "interest_percent",
+    "celebration_notify",
+    "celebration_notify_min_tier",
     "allow_negative_balance",
-    "allowance_enabled", "allowance_rate", "allowance_currency",
-    "family_goal_enabled", "family_goal_name", "family_goal_target", "family_goal_reward",
-    "notify_service", "calendar_projection_days", "skip_confirmation_enabled",
+    "allowance_enabled",
+    "allowance_rate",
+    "allowance_currency",
+    "family_goal_enabled",
+    "family_goal_name",
+    "family_goal_target",
+    "family_goal_reward",
+    "notify_service",
+    "calendar_projection_days",
+    "skip_confirmation_enabled",
     "vacation_calendar",
-    "time_morning_start", "time_morning_end",
-    "time_afternoon_start", "time_afternoon_end",
-    "time_evening_start", "time_evening_end",
-    "time_night_start", "time_night_end",
+    "time_morning_start",
+    "time_morning_end",
+    "time_afternoon_start",
+    "time_afternoon_end",
+    "time_evening_start",
+    "time_evening_end",
+    "time_night_start",
+    "time_night_end",
 }
 
 
@@ -1430,30 +1630,28 @@ def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, s
         if start >= end:
             return None, f"period '{label or pid}' must start before it ends"
         ids.add(pid)
-        periods.append({
-            "id": pid,
-            "label": label,
-            "start": start,
-            "end": end,
-            "icon": str(entry.get("icon") or "").strip()[:120]
-                    or TIME_CATEGORY_ICONS.get(pid, "mdi:clock-outline"),
-        })
+        periods.append(
+            {
+                "id": pid,
+                "label": label,
+                "start": start,
+                "end": end,
+                "icon": str(entry.get("icon") or "").strip()[:120] or TIME_CATEGORY_ICONS.get(pid, "mdi:clock-outline"),
+            }
+        )
 
     periods.sort(key=lambda p: p["start"])
     for prev, cur in zip(periods, periods[1:], strict=False):
         if cur["start"] < prev["end"]:
             return None, (
-                f"'{cur['label'] or cur['id']}' overlaps "
-                f"'{prev['label'] or prev['id']}' — periods cannot overlap"
+                f"'{cur['label'] or cur['id']}' overlaps '{prev['label'] or prev['id']}' — periods cannot overlap"
             )
 
     removed = {p["id"] for p in coordinator.get_time_periods()} - {p["id"] for p in periods}
     if removed:
-        in_use = sorted({
-            chore.name or chore.id
-            for chore in coordinator.storage.get_chores()
-            if chore.time_category in removed
-        })
+        in_use = sorted(
+            {chore.name or chore.id for chore in coordinator.storage.get_chores() if chore.time_category in removed}
+        )
         if in_use:
             return None, (
                 "cannot delete a period still used by chores: "
@@ -1495,13 +1693,16 @@ def _validate_vacation_periods(raw: list) -> tuple[list[dict] | None, str | None
         if not pid or pid in taken:
             pid = f"{start.isoformat()}_{len(periods)}"
         taken.add(pid)
-        periods.append({
-            "id": pid,
-            "name": str(entry.get("name") or "").strip(),
-            "start": start.isoformat(),
-            "end": end.isoformat(),
-        })
+        periods.append(
+            {
+                "id": pid,
+                "name": str(entry.get("name") or "").strip(),
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+            }
+        )
     return sorted(periods, key=lambda p: p["start"]), None
+
 
 # Extracted to a module constant so the accepted settings keys can be unit-tested
 # (the websocket_command decorator does not expose the compiled schema). Every key
@@ -1635,12 +1836,15 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
 # Operational — approval / rejection / reorder / bulk add
 # ---------------------------------------------------------------------------
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_COMPLETE_BONUS_SUBTASK,
-    vol.Required("chore_id"): str,
-    vol.Required("bonus_subtask_id"): str,
-    vol.Required("child_id"): str,
-})
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_COMPLETE_BONUS_SUBTASK,
+        vol.Required("chore_id"): str,
+        vol.Required("bonus_subtask_id"): str,
+        vol.Required("child_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_complete_bonus_subtask(hass, connection, msg, coordinator):
@@ -1650,10 +1854,12 @@ async def _ws_complete_bonus_subtask(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": completion.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_APPROVE_CHORE,
-    vol.Required("completion_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_APPROVE_CHORE,
+        vol.Required("completion_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_approve_chore(hass, connection, msg, coordinator):
@@ -1661,10 +1867,12 @@ async def _ws_approve_chore(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"completion_id": msg["completion_id"]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_APPROVE_ALL_CHORES,
-    vol.Optional("completion_ids"): [str],
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_APPROVE_ALL_CHORES,
+        vol.Optional("completion_ids"): [str],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_approve_all_chores(hass, connection, msg, coordinator):
@@ -1672,10 +1880,12 @@ async def _ws_approve_all_chores(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"count": count})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REJECT_CHORE,
-    vol.Required("completion_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REJECT_CHORE,
+        vol.Required("completion_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_reject_chore(hass, connection, msg, coordinator):
@@ -1683,10 +1893,12 @@ async def _ws_reject_chore(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"completion_id": msg["completion_id"]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_APPROVE_REWARD,
-    vol.Required("claim_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_APPROVE_REWARD,
+        vol.Required("claim_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_approve_reward(hass, connection, msg, coordinator):
@@ -1694,10 +1906,12 @@ async def _ws_approve_reward(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"claim_id": msg["claim_id"]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REJECT_REWARD,
-    vol.Required("claim_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REJECT_REWARD,
+        vol.Required("claim_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_reject_reward(hass, connection, msg, coordinator):
@@ -1705,10 +1919,12 @@ async def _ws_reject_reward(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"claim_id": msg["claim_id"]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_PARENT_COMPLETE_CHORE,
-    vol.Required("chore_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_PARENT_COMPLETE_CHORE,
+        vol.Required("chore_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_parent_complete_chore(hass, connection, msg, coordinator):
@@ -1716,11 +1932,13 @@ async def _ws_parent_complete_chore(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"ok": True})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_SET_CHORE_ORDER,
-    vol.Required("child_id"): str,
-    vol.Required("chore_order"): [str],
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_SET_CHORE_ORDER,
+        vol.Required("child_id"): str,
+        vol.Required("chore_order"): [str],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_set_chore_order(hass, connection, msg, coordinator):
@@ -1728,10 +1946,12 @@ async def _ws_set_chore_order(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"child_id": msg["child_id"]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_SET_GLOBAL_CHORE_ORDER,
-    vol.Required("chore_order"): [str],
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_SET_GLOBAL_CHORE_ORDER,
+        vol.Required("chore_order"): [str],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_set_global_chore_order(hass, connection, msg, coordinator):
@@ -1739,18 +1959,20 @@ async def _ws_set_global_chore_order(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"ok": True})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_ADD_CHORES_BULK,
-    vol.Required("chore_names"): [str],
-    vol.Optional("points"): vol.All(int, vol.Range(min=0)),
-    vol.Optional("assigned_to"): [str],
-    vol.Optional("requires_approval"): bool,
-    vol.Optional("time_category"): str,
-    vol.Optional("schedule_mode"): vol.In(["specific_days", "recurring", "one_shot"]),
-    vol.Optional("due_days"): [str],
-    vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
-    vol.Optional("completion_sound"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_ADD_CHORES_BULK,
+        vol.Required("chore_names"): [str],
+        vol.Optional("points"): vol.All(int, vol.Range(min=0)),
+        vol.Optional("assigned_to"): [str],
+        vol.Optional("requires_approval"): bool,
+        vol.Optional("time_category"): str,
+        vol.Optional("schedule_mode"): vol.In(["specific_days", "recurring", "one_shot"]),
+        vol.Optional("due_days"): [str],
+        vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("completion_sound"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_add_chores_bulk(hass, connection, msg, coordinator):
@@ -1776,6 +1998,7 @@ async def _ws_add_chores_bulk(hass, connection, msg, coordinator):
 # Templates
 # ---------------------------------------------------------------------------
 
+
 @websocket_api.websocket_command({vol.Required("type"): WS_TEMPLATES_LIST})
 @websocket_api.async_response
 @_admin_only
@@ -1783,10 +2006,12 @@ async def _ws_templates_list(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"templates": coordinator.get_all_templates()})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_TEMPLATES_GET,
-    vol.Required("template_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_TEMPLATES_GET,
+        vol.Required("template_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_templates_get(hass, connection, msg, coordinator):
@@ -1797,34 +2022,40 @@ async def _ws_templates_get(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], tpl)
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_TEMPLATES_APPLY,
-    vol.Required("chores"): [{
-        vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
-        vol.Optional("points"): vol.All(int, vol.Range(min=0)),
-        vol.Optional("description"): str,
-        vol.Optional("assigned_to"): [str],
-        vol.Optional("requires_approval"): bool,
-        vol.Optional("time_category"): str,
-        vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
-        vol.Optional("completion_sound"): str,
-        vol.Optional("schedule_mode"): vol.In(["specific_days", "recurring", "one_shot"]),
-        vol.Optional("due_days"): [str],
-        vol.Optional("recurrence"): str,
-        vol.Optional("recurrence_day"): str,
-        vol.Optional("recurrence_start"): str,
-        vol.Optional("first_occurrence_mode"): str,
-        vol.Optional("assignment_mode"): vol.In(["everyone", "alternating", "random", "balanced", "first_come", "unassigned"]),
-        vol.Optional("require_availability"): bool,
-        vol.Optional("visibility_entity"): str,
-        vol.Optional("visibility_state"): str,
-        vol.Optional("visibility_operator"): str,
-        vol.Optional("task_type"): vol.In(["standard", "timed"]),
-        vol.Optional("timed_rate_points"): vol.All(int, vol.Range(min=1)),
-        vol.Optional("timed_rate_minutes"): vol.All(int, vol.Range(min=1)),
-        vol.Optional("timed_max_daily_minutes"): vol.All(int, vol.Range(min=0)),
-    }],
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_TEMPLATES_APPLY,
+        vol.Required("chores"): [
+            {
+                vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+                vol.Optional("points"): vol.All(int, vol.Range(min=0)),
+                vol.Optional("description"): str,
+                vol.Optional("assigned_to"): [str],
+                vol.Optional("requires_approval"): bool,
+                vol.Optional("time_category"): str,
+                vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
+                vol.Optional("completion_sound"): str,
+                vol.Optional("schedule_mode"): vol.In(["specific_days", "recurring", "one_shot"]),
+                vol.Optional("due_days"): [str],
+                vol.Optional("recurrence"): str,
+                vol.Optional("recurrence_day"): str,
+                vol.Optional("recurrence_start"): str,
+                vol.Optional("first_occurrence_mode"): str,
+                vol.Optional("assignment_mode"): vol.In(
+                    ["everyone", "alternating", "random", "balanced", "first_come", "unassigned"]
+                ),
+                vol.Optional("require_availability"): bool,
+                vol.Optional("visibility_entity"): str,
+                vol.Optional("visibility_state"): str,
+                vol.Optional("visibility_operator"): str,
+                vol.Optional("task_type"): vol.In(["standard", "timed"]),
+                vol.Optional("timed_rate_points"): vol.All(int, vol.Range(min=1)),
+                vol.Optional("timed_rate_minutes"): vol.All(int, vol.Range(min=1)),
+                vol.Optional("timed_max_daily_minutes"): vol.All(int, vol.Range(min=0)),
+            }
+        ],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_templates_apply(hass, connection, msg, coordinator):
@@ -1832,12 +2063,14 @@ async def _ws_templates_apply(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"created_ids": created_ids})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_TEMPLATES_SAVE_FROM,
-    vol.Required("chore_ids"): vol.All([str], vol.Length(min=1)),
-    vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Optional("icon", default="mdi:clipboard-list"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_TEMPLATES_SAVE_FROM,
+        vol.Required("chore_ids"): vol.All([str], vol.Length(min=1)),
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Optional("icon", default="mdi:clipboard-list"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_templates_save_from(hass, connection, msg, coordinator):
@@ -1849,12 +2082,14 @@ async def _ws_templates_save_from(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"template_id": tpl_id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_TEMPLATES_CREATE,
-    vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Optional("icon", default="mdi:clipboard-list"): str,
-    vol.Required("chores"): vol.All(list, vol.Length(min=1)),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_TEMPLATES_CREATE,
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Optional("icon", default="mdi:clipboard-list"): str,
+        vol.Required("chores"): vol.All(list, vol.Length(min=1)),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_templates_create(hass, connection, msg, coordinator):
@@ -1866,13 +2101,15 @@ async def _ws_templates_create(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"template_id": tpl_id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_TEMPLATES_UPDATE,
-    vol.Required("template_id"): str,
-    vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
-    vol.Optional("icon"): str,
-    vol.Optional("chores"): vol.All(list, vol.Length(min=1)),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_TEMPLATES_UPDATE,
+        vol.Required("template_id"): str,
+        vol.Optional("name"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Optional("icon"): str,
+        vol.Optional("chores"): vol.All(list, vol.Length(min=1)),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_templates_update(hass, connection, msg, coordinator):
@@ -1885,10 +2122,12 @@ async def _ws_templates_update(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"success": True})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_TEMPLATES_DELETE,
-    vol.Required("template_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_TEMPLATES_DELETE,
+        vol.Required("template_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_templates_delete(hass, connection, msg, coordinator):
@@ -1900,11 +2139,13 @@ async def _ws_templates_delete(hass, connection, msg, coordinator):
 # Notifications
 # ---------------------------------------------------------------------------
 
+
 @websocket_api.websocket_command({vol.Required("type"): WS_NOTIF_GET_STATE})
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_get_state(hass, connection, msg, coordinator):
     from .coord_notifications import NOTIFICATION_TYPES
+
     c = coordinator
     state = {
         "recipients": {
@@ -1931,28 +2172,25 @@ async def ws_notif_get_state(hass, connection, msg, coordinator):
             }
             for t in NOTIFICATION_TYPES
         ],
-        "config": {
-            tid: cfg.to_dict()
-            for tid, cfg in c.storage.get_all_notification_configs().items()
-        },
+        "config": {tid: cfg.to_dict() for tid, cfg in c.storage.get_all_notification_configs().items()},
         "custom": [n.to_dict() for n in c.storage.get_custom_notifications()],
         "settings": {
             "streak_at_risk_cutoff_time": c.storage.get_streak_at_risk_cutoff(),
             "mandatory_escalation_reminder_minutes": c.storage.get_escalation_reminder_minutes(),
             "mandatory_escalation_parent_minutes": c.storage.get_escalation_parent_minutes(),
-            "notification_nav_url": c.storage.get_setting(
-                "notification_nav_url", DEFAULT_NOTIFICATION_NAV_URL
-            ),
+            "notification_nav_url": c.storage.get_setting("notification_nav_url", DEFAULT_NOTIFICATION_NAV_URL),
         },
     }
     connection.send_result(msg["id"], state)
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_NOTIF_SET_MASTER,
-    vol.Required("type_id"): str,
-    vol.Required("enabled"): bool,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_SET_MASTER,
+        vol.Required("type_id"): str,
+        vol.Required("enabled"): bool,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_set_master(hass, connection, msg, coordinator):
@@ -1960,27 +2198,32 @@ async def ws_notif_set_master(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"ok": True})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_NOTIF_SET_ROUTE,
-    vol.Required("type_id"): str,
-    vol.Required("recipient_id"): str,
-    vol.Required("enabled"): bool,
-    vol.Optional("time"): vol.Any(str, None),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_SET_ROUTE,
+        vol.Required("type_id"): str,
+        vol.Required("recipient_id"): str,
+        vol.Required("enabled"): bool,
+        vol.Optional("time"): vol.Any(str, None),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_set_route(hass, connection, msg, coordinator):
     from .models import NotificationRoute
+
     route = NotificationRoute(enabled=msg["enabled"], time=msg.get("time"))
     await coordinator.notifications.set_route(msg["type_id"], msg["recipient_id"], route)
     connection.send_result(msg["id"], {"ok": True})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_NOTIF_SET_CHILD_NOTIFY,
-    vol.Required("child_id"): str,
-    vol.Required("notify_service"): vol.Any(str, None),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_SET_CHILD_NOTIFY,
+        vol.Required("child_id"): str,
+        vol.Required("notify_service"): vol.Any(str, None),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_set_child_notify(hass, connection, msg, coordinator):
@@ -2011,12 +2254,14 @@ def _validate_hhmm_or_empty(value):
     return f"{hour:02d}:{minute:02d}"
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_NOTIF_SET_CHILD_QUIET,
-    vol.Required("child_id"): str,
-    vol.Required("quiet_hours_start"): _validate_hhmm_or_empty,
-    vol.Required("quiet_hours_end"): _validate_hhmm_or_empty,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_SET_CHILD_QUIET,
+        vol.Required("child_id"): str,
+        vol.Required("quiet_hours_start"): _validate_hhmm_or_empty,
+        vol.Required("quiet_hours_end"): _validate_hhmm_or_empty,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_set_child_quiet(hass, connection, msg, coordinator):
@@ -2032,24 +2277,25 @@ async def ws_notif_set_child_quiet(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"ok": True})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_NOTIF_UPSERT_PARENT,
-    vol.Optional("parent_id"): str,
-    vol.Required("name"): str,
-    vol.Required("notify_service"): str,
-    vol.Optional("enabled", default=True): bool,
-    vol.Optional("presence_entity", default=""): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_UPSERT_PARENT,
+        vol.Optional("parent_id"): str,
+        vol.Required("name"): str,
+        vol.Required("notify_service"): str,
+        vol.Optional("enabled", default=True): bool,
+        vol.Optional("presence_entity", default=""): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_upsert_parent(hass, connection, msg, coordinator):
     from .models import ParentRecipient
+
     c = coordinator
     p_id = msg.get("parent_id")
     if p_id:
-        existing = next(
-            (p for p in c.storage.get_parent_recipients() if p.id == p_id), None
-        )
+        existing = next((p for p in c.storage.get_parent_recipients() if p.id == p_id), None)
         if existing is None:
             connection.send_error(msg["id"], "not_found", "Parent not found")
             return
@@ -2070,10 +2316,12 @@ async def ws_notif_upsert_parent(hass, connection, msg, coordinator):
         connection.send_result(msg["id"], p.to_dict())
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_NOTIF_DELETE_PARENT,
-    vol.Required("parent_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_DELETE_PARENT,
+        vol.Required("parent_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_delete_parent(hass, connection, msg, coordinator):
@@ -2081,38 +2329,45 @@ async def ws_notif_delete_parent(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"ok": True})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_NOTIF_UPSERT_CUSTOM,
-    vol.Optional("custom_id"): str,
-    vol.Required("name"): str,
-    vol.Required("message_template"): str,
-    vol.Required("time"): str,
-    vol.Optional("day_mask", default=0b1111111): int,
-    vol.Optional("recipient_ids", default=list): list,
-    vol.Optional("enabled", default=True): bool,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_UPSERT_CUSTOM,
+        vol.Optional("custom_id"): str,
+        vol.Required("name"): str,
+        vol.Required("message_template"): str,
+        vol.Required("time"): str,
+        vol.Optional("day_mask", default=0b1111111): int,
+        vol.Optional("recipient_ids", default=list): list,
+        vol.Optional("enabled", default=True): bool,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_upsert_custom(hass, connection, msg, coordinator):
     from .models import CustomNotification
+
     c = coordinator
-    n = CustomNotification.from_dict({
-        "id": msg.get("custom_id"),
-        "name": msg["name"],
-        "message_template": msg["message_template"],
-        "time": msg["time"],
-        "day_mask": int(msg["day_mask"]),
-        "recipient_ids": list(msg["recipient_ids"]),
-        "enabled": bool(msg["enabled"]),
-    })
+    n = CustomNotification.from_dict(
+        {
+            "id": msg.get("custom_id"),
+            "name": msg["name"],
+            "message_template": msg["message_template"],
+            "time": msg["time"],
+            "day_mask": int(msg["day_mask"]),
+            "recipient_ids": list(msg["recipient_ids"]),
+            "enabled": bool(msg["enabled"]),
+        }
+    )
     await c.notifications.upsert_custom(n)
     connection.send_result(msg["id"], n.to_dict())
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_NOTIF_DELETE_CUSTOM,
-    vol.Required("custom_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_DELETE_CUSTOM,
+        vol.Required("custom_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_delete_custom(hass, connection, msg, coordinator):
@@ -2124,18 +2379,17 @@ async def ws_notif_delete_custom(hass, connection, msg, coordinator):
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_list_notify(hass, connection, msg, coordinator):
-    services = [
-        f"notify.{name}"
-        for name in hass.services.async_services().get("notify", {})
-    ]
+    services = [f"notify.{name}" for name in hass.services.async_services().get("notify", {})]
     services.sort()
     connection.send_result(msg["id"], services)
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_NOTIF_SET_STREAK_CUTOFF,
-    vol.Required("time"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_SET_STREAK_CUTOFF,
+        vol.Required("time"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_set_streak_cutoff(hass, connection, msg, coordinator):
@@ -2143,25 +2397,27 @@ async def ws_notif_set_streak_cutoff(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"ok": True})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_NOTIF_SET_ESCALATION,
-    vol.Required("reminder_minutes"): vol.All(vol.Coerce(int), vol.Range(min=1, max=1440)),
-    vol.Required("parent_minutes"): vol.All(vol.Coerce(int), vol.Range(min=1, max=1440)),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_SET_ESCALATION,
+        vol.Required("reminder_minutes"): vol.All(vol.Coerce(int), vol.Range(min=1, max=1440)),
+        vol.Required("parent_minutes"): vol.All(vol.Coerce(int), vol.Range(min=1, max=1440)),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_set_escalation(hass, connection, msg, coordinator):
-    coordinator.storage.set_escalation_minutes(
-        msg["reminder_minutes"], msg["parent_minutes"]
-    )
+    coordinator.storage.set_escalation_minutes(msg["reminder_minutes"], msg["parent_minutes"])
     await coordinator.storage.async_save()
     connection.send_result(msg["id"], {"ok": True})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_NOTIF_SEND_TEST,
-    vol.Required("type_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_SEND_TEST,
+        vol.Required("type_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_send_test(hass, connection, msg, coordinator):
@@ -2169,11 +2425,13 @@ async def ws_notif_send_test(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"sent": sent})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_NOTIF_SET_NAV_URL,
-    vol.Optional("type_id"): vol.Any(str, None),
-    vol.Required("nav_url"): vol.All(str, vol.Length(max=200)),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_SET_NAV_URL,
+        vol.Optional("type_id"): vol.Any(str, None),
+        vol.Required("nav_url"): vol.All(str, vol.Length(max=200)),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def ws_notif_set_nav_url(hass, connection, msg, coordinator):
@@ -2185,11 +2443,14 @@ async def ws_notif_set_nav_url(hass, connection, msg, coordinator):
 # Calendar ICS feed (FEAT-10)
 # ---------------------------------------------------------------------------
 
+
 def _build_ics_url(hass, token: str) -> str:
     from .http_calendar import CALENDAR_URL
+
     base = ""
     try:
         from homeassistant.helpers.network import get_url
+
         base = get_url(hass, prefer_external=True)
     except Exception:  # noqa: BLE001 - no configured URL yet
         base = ""
@@ -2216,6 +2477,7 @@ async def ws_cal_regen_token(hass, connection, msg, coordinator):
 # Admin audit log
 # ---------------------------------------------------------------------------
 
+
 @websocket_api.websocket_command({vol.Required("type"): WS_AUDIT_LIST})
 @websocket_api.async_response
 @_admin_only
@@ -2232,10 +2494,12 @@ async def _ws_audit_clear(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"cleared": True})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_UNDO_TRANSACTION,
-    vol.Required("transaction_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_UNDO_TRANSACTION,
+        vol.Required("transaction_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_undo_transaction(hass, connection, msg, coordinator):
@@ -2243,10 +2507,12 @@ async def _ws_undo_transaction(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"undone": msg["transaction_id"]})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_CLONE_CHORE,
-    vol.Required("chore_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_CLONE_CHORE,
+        vol.Required("chore_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_clone_chore(hass, connection, msg, coordinator):
@@ -2254,27 +2520,33 @@ async def _ws_clone_chore(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": clone.id})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_BULK_CHORE_ACTION,
-    vol.Required("action"): vol.In(["delete", "enable", "disable", "reassign"]),
-    vol.Required("chore_ids"): [str],
-    vol.Optional("assigned_to"): [str],
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_BULK_CHORE_ACTION,
+        vol.Required("action"): vol.In(["delete", "enable", "disable", "reassign"]),
+        vol.Required("chore_ids"): [str],
+        vol.Optional("assigned_to"): [str],
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_bulk_chore_action(hass, connection, msg, coordinator):
     count = await coordinator.async_bulk_chore_action(
-        msg["action"], msg["chore_ids"], msg.get("assigned_to"),
+        msg["action"],
+        msg["chore_ids"],
+        msg.get("assigned_to"),
     )
     connection.send_result(msg["id"], {"count": count})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_GIFT_POINTS,
-    vol.Required("from_child_id"): str,
-    vol.Required("to_child_id"): str,
-    vol.Required("points"): vol.All(int, vol.Range(min=1)),
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_GIFT_POINTS,
+        vol.Required("from_child_id"): str,
+        vol.Required("to_child_id"): str,
+        vol.Required("points"): vol.All(int, vol.Range(min=1)),
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_gift_points(hass, connection, msg, coordinator):
@@ -2282,11 +2554,13 @@ async def _ws_gift_points(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"ok": True})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REQUEST_SWAP,
-    vol.Required("chore_id"): str,
-    vol.Required("requester_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REQUEST_SWAP,
+        vol.Required("chore_id"): str,
+        vol.Required("requester_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_request_swap(hass, connection, msg, coordinator):
@@ -2294,10 +2568,12 @@ async def _ws_request_swap(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": rid})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_APPROVE_SWAP,
-    vol.Required("request_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_APPROVE_SWAP,
+        vol.Required("request_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_approve_swap(hass, connection, msg, coordinator):
@@ -2305,10 +2581,12 @@ async def _ws_approve_swap(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"ok": True})
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_REJECT_SWAP,
-    vol.Required("request_id"): str,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REJECT_SWAP,
+        vol.Required("request_id"): str,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_reject_swap(hass, connection, msg, coordinator):
@@ -2323,10 +2601,12 @@ async def _ws_config_export(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], coordinator.export_config())
 
 
-@websocket_api.websocket_command({
-    vol.Required("type"): WS_CONFIG_IMPORT,
-    vol.Required("payload"): dict,
-})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_CONFIG_IMPORT,
+        vol.Required("payload"): dict,
+    }
+)
 @websocket_api.async_response
 @_admin_only
 async def _ws_config_import(hass, connection, msg, coordinator):
@@ -2340,37 +2620,90 @@ async def _ws_config_import(hass, connection, msg, coordinator):
 
 _COMMANDS = (
     _ws_get_state,
-    _ws_audit_list, _ws_audit_clear, _ws_undo_transaction,
-    _ws_add_child, _ws_update_child, _ws_remove_child, _ws_list_ha_users,
-    _ws_add_chore, _ws_update_chore, _ws_remove_chore, _ws_clone_chore,
-    _ws_scheduled_list, _ws_scheduled_add, _ws_scheduled_remove,
-    _ws_report_fairness, _ws_report_friction, _ws_report_projection, _ws_report_health,
-    _ws_templates_export, _ws_templates_import, _ws_print_chart,
-    _ws_bulk_chore_action, _ws_gift_points,
-    _ws_request_swap, _ws_approve_swap, _ws_reject_swap,
-    _ws_config_export, _ws_config_import,
-    _ws_add_reward, _ws_update_reward, _ws_remove_reward,
-    _ws_create_quest, _ws_update_quest, _ws_delete_quest,
-    _ws_update_avatar_catalog, _ws_set_child_avatar,
-    _ws_create_challenge, _ws_update_challenge, _ws_delete_challenge,
-    _ws_add_penalty, _ws_update_penalty, _ws_remove_penalty, _ws_apply_penalty,
-    _ws_add_bonus, _ws_update_bonus, _ws_remove_bonus, _ws_apply_bonus,
-    _ws_add_task_group, _ws_update_task_group, _ws_remove_task_group,
+    _ws_audit_list,
+    _ws_audit_clear,
+    _ws_undo_transaction,
+    _ws_add_child,
+    _ws_update_child,
+    _ws_remove_child,
+    _ws_list_ha_users,
+    _ws_add_chore,
+    _ws_update_chore,
+    _ws_remove_chore,
+    _ws_clone_chore,
+    _ws_scheduled_list,
+    _ws_scheduled_add,
+    _ws_scheduled_remove,
+    _ws_report_fairness,
+    _ws_report_friction,
+    _ws_report_projection,
+    _ws_report_health,
+    _ws_templates_export,
+    _ws_templates_import,
+    _ws_print_chart,
+    _ws_bulk_chore_action,
+    _ws_gift_points,
+    _ws_request_swap,
+    _ws_approve_swap,
+    _ws_reject_swap,
+    _ws_config_export,
+    _ws_config_import,
+    _ws_add_reward,
+    _ws_update_reward,
+    _ws_remove_reward,
+    _ws_create_quest,
+    _ws_update_quest,
+    _ws_delete_quest,
+    _ws_update_avatar_catalog,
+    _ws_set_child_avatar,
+    _ws_create_challenge,
+    _ws_update_challenge,
+    _ws_delete_challenge,
+    _ws_add_penalty,
+    _ws_update_penalty,
+    _ws_remove_penalty,
+    _ws_apply_penalty,
+    _ws_add_bonus,
+    _ws_update_bonus,
+    _ws_remove_bonus,
+    _ws_apply_bonus,
+    _ws_add_task_group,
+    _ws_update_task_group,
+    _ws_remove_task_group,
     _ws_update_settings,
     _ws_complete_bonus_subtask,
-    _ws_approve_chore, _ws_approve_all_chores, _ws_reject_chore, _ws_approve_reward, _ws_reject_reward,
+    _ws_approve_chore,
+    _ws_approve_all_chores,
+    _ws_reject_chore,
+    _ws_approve_reward,
+    _ws_reject_reward,
     _ws_parent_complete_chore,
-    _ws_set_chore_order, _ws_set_global_chore_order, _ws_add_chores_bulk,
-    _ws_templates_list, _ws_templates_get, _ws_templates_apply,
-    _ws_templates_save_from, _ws_templates_create, _ws_templates_update,
+    _ws_set_chore_order,
+    _ws_set_global_chore_order,
+    _ws_add_chores_bulk,
+    _ws_templates_list,
+    _ws_templates_get,
+    _ws_templates_apply,
+    _ws_templates_save_from,
+    _ws_templates_create,
+    _ws_templates_update,
     _ws_templates_delete,
-    ws_notif_get_state, ws_notif_set_master, ws_notif_set_route,
-    ws_notif_set_child_notify, ws_notif_set_child_quiet,
-    ws_notif_upsert_parent, ws_notif_delete_parent,
-    ws_notif_upsert_custom, ws_notif_delete_custom,
-    ws_notif_list_notify, ws_notif_set_streak_cutoff, ws_notif_send_test,
-    ws_notif_set_escalation, ws_notif_set_nav_url,
-    ws_cal_get_url, ws_cal_regen_token,
+    ws_notif_get_state,
+    ws_notif_set_master,
+    ws_notif_set_route,
+    ws_notif_set_child_notify,
+    ws_notif_set_child_quiet,
+    ws_notif_upsert_parent,
+    ws_notif_delete_parent,
+    ws_notif_upsert_custom,
+    ws_notif_delete_custom,
+    ws_notif_list_notify,
+    ws_notif_set_streak_cutoff,
+    ws_notif_send_test,
+    ws_notif_set_escalation,
+    ws_notif_set_nav_url,
+    ws_cal_get_url,
+    ws_cal_regen_token,
 )
 
 

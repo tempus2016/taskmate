@@ -6,6 +6,7 @@ why no test imports ``http_photos`` either. The behaviour that can be tested
 without aiohttp — the storage helpers the views delegate to — is covered by
 ``test_image_storage.py``.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -13,10 +14,9 @@ import re
 
 from custom_components.taskmate import images
 
-SRC = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "custom_components" / "taskmate" / "http_images.py"
-).read_text(encoding="utf-8")
+SRC = (pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "http_images.py").read_text(
+    encoding="utf-8"
+)
 
 
 def test_views_are_bound_to_the_image_prefix():
@@ -72,9 +72,6 @@ def test_registration_is_idempotent():
 
 def test_frontend_registers_the_image_views():
     frontend = (
-        pathlib.Path(__file__).resolve().parent.parent
-        / "custom_components" / "taskmate" / "frontend.py"
+        pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "frontend.py"
     ).read_text(encoding="utf-8")
-    assert "async_register_image_views" in frontend, (
-        "views that are never registered mean every image 404s"
-    )
+    assert "async_register_image_views" in frontend, "views that are never registered mean every image 404s"

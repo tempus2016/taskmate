@@ -1,4 +1,5 @@
 """Tests for parent_complete_chore coordinator method."""
+
 from __future__ import annotations
 
 import asyncio
@@ -50,6 +51,7 @@ def _make_system(now=None):
     coord._unsub_availability = None
 
     import custom_components.taskmate.coordinator as _mod
+
     coord._dt_now = now
     coord.async_refresh = AsyncMock()
 
@@ -63,11 +65,16 @@ class TestParentCompleteChore:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Vacuum", points=10, requires_approval=False,
-                schedule_mode="recurring", recurrence="weekly",
-                assigned_to=[child.id],
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Vacuum",
+                    points=10,
+                    requires_approval=False,
+                    schedule_mode="recurring",
+                    recurrence="weekly",
+                    assigned_to=[child.id],
+                )
+            )
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_parent_complete_chore(chore.id))
@@ -85,11 +92,16 @@ class TestParentCompleteChore:
         with patch.object(_mod.dt_util, "now", return_value=now):
             alice = run(coord.async_add_child("Alice"))
             bob = run(coord.async_add_child("Bob"))
-            chore = run(coord.async_add_chore(
-                "Dishes", points=5, requires_approval=False,
-                schedule_mode="recurring", recurrence="weekly",
-                assigned_to=[alice.id, bob.id],
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Dishes",
+                    points=5,
+                    requires_approval=False,
+                    schedule_mode="recurring",
+                    recurrence="weekly",
+                    assigned_to=[alice.id, bob.id],
+                )
+            )
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_parent_complete_chore(chore.id))
@@ -105,11 +117,15 @@ class TestParentCompleteChore:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Special task", points=10, requires_approval=False,
-                schedule_mode="one_shot",
-                assigned_to=[child.id],
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Special task",
+                    points=10,
+                    requires_approval=False,
+                    schedule_mode="one_shot",
+                    assigned_to=[child.id],
+                )
+            )
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             with pytest.raises(ValueError, match="one.shot"):
@@ -129,11 +145,16 @@ class TestParentCompleteChore:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Mop", points=5, requires_approval=False,
-                schedule_mode="recurring", recurrence="weekly",
-                assigned_to=[child.id],
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Mop",
+                    points=5,
+                    requires_approval=False,
+                    schedule_mode="recurring",
+                    recurrence="weekly",
+                    assigned_to=[child.id],
+                )
+            )
             chore.enabled = False
             storage.update_chore(chore)
 
@@ -147,11 +168,16 @@ class TestParentCompleteChore:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Sweep", points=15, requires_approval=False,
-                schedule_mode="recurring", recurrence="weekly",
-                assigned_to=[child.id],
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Sweep",
+                    points=15,
+                    requires_approval=False,
+                    schedule_mode="recurring",
+                    recurrence="weekly",
+                    assigned_to=[child.id],
+                )
+            )
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_parent_complete_chore(chore.id))
@@ -166,11 +192,16 @@ class TestParentCompleteChore:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Laundry", points=5, requires_approval=False,
-                schedule_mode="recurring", recurrence="weekly",
-                assigned_to=[child.id],
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Laundry",
+                    points=5,
+                    requires_approval=False,
+                    schedule_mode="recurring",
+                    recurrence="weekly",
+                    assigned_to=[child.id],
+                )
+            )
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_parent_complete_chore(chore.id))
@@ -186,11 +217,16 @@ class TestParentCompleteChore:
         with patch.object(_mod.dt_util, "now", return_value=now):
             alice = run(coord.async_add_child("Alice"))
             bob = run(coord.async_add_child("Bob"))
-            chore = run(coord.async_add_chore(
-                "Tidy", points=5, requires_approval=False,
-                schedule_mode="recurring", recurrence="weekly",
-                assigned_to=[],  # empty = everyone
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Tidy",
+                    points=5,
+                    requires_approval=False,
+                    schedule_mode="recurring",
+                    recurrence="weekly",
+                    assigned_to=[],  # empty = everyone
+                )
+            )
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_parent_complete_chore(chore.id))
@@ -210,11 +246,16 @@ class TestParentCompleteIntegration:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             child = run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Weekly clean", points=10, requires_approval=False,
-                schedule_mode="recurring", recurrence="weekly",
-                assigned_to=[child.id],
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Weekly clean",
+                    points=10,
+                    requires_approval=False,
+                    schedule_mode="recurring",
+                    recurrence="weekly",
+                    assigned_to=[child.id],
+                )
+            )
 
         # Parent completes it
         with patch.object(_mod.dt_util, "now", return_value=now):
@@ -245,12 +286,17 @@ class TestParentCompleteIntegration:
         with patch.object(_mod.dt_util, "now", return_value=now):
             alice = run(coord.async_add_child("Alice"))
             bob = run(coord.async_add_child("Bob"))
-            chore = run(coord.async_add_chore(
-                "Alternating chore", points=5, requires_approval=False,
-                schedule_mode="recurring", recurrence="weekly",
-                assigned_to=[alice.id, bob.id],
-                assignment_mode="alternating",
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Alternating chore",
+                    points=5,
+                    requires_approval=False,
+                    schedule_mode="recurring",
+                    recurrence="weekly",
+                    assigned_to=[alice.id, bob.id],
+                    assignment_mode="alternating",
+                )
+            )
             chore.assignment_current_child_id = alice.id
             storage.update_chore(chore)
 
@@ -270,11 +316,16 @@ class TestParentCompleteIntegration:
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_add_child("Alice"))
-            chore = run(coord.async_add_chore(
-                "Brush teeth", points=2, requires_approval=False,
-                schedule_mode="recurring", recurrence="daily",
-                assigned_to=[],  # everyone
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Brush teeth",
+                    points=2,
+                    requires_approval=False,
+                    schedule_mode="recurring",
+                    recurrence="daily",
+                    assigned_to=[],  # everyone
+                )
+            )
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             run(coord.async_parent_complete_chore(chore.id))
@@ -292,12 +343,17 @@ class TestParentCompleteIntegration:
         with patch.object(_mod.dt_util, "now", return_value=now):
             alice = run(coord.async_add_child("Alice"))
             bob = run(coord.async_add_child("Bob"))
-            chore = run(coord.async_add_chore(
-                "Bins", points=5, requires_approval=False,
-                schedule_mode="recurring", recurrence="weekly",
-                assigned_to=[alice.id, bob.id],
-                assignment_mode="alternating",
-            ))
+            chore = run(
+                coord.async_add_chore(
+                    "Bins",
+                    points=5,
+                    requires_approval=False,
+                    schedule_mode="recurring",
+                    recurrence="weekly",
+                    assigned_to=[alice.id, bob.id],
+                    assignment_mode="alternating",
+                )
+            )
 
         with patch.object(_mod.dt_util, "now", return_value=now):
             assert coord._is_rotation_done_today(chore) is False

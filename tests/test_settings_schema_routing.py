@@ -7,15 +7,15 @@ a success to the caller, and then silently thrown away — which is exactly what
 happened while building chore roulette (#677): the panel toggle appeared to
 save, and nothing changed.
 """
+
 from __future__ import annotations
 
 import pathlib
 import re
 
-SRC = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "custom_components" / "taskmate" / "websocket.py"
-).read_text(encoding="utf-8")
+SRC = (pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "websocket.py").read_text(
+    encoding="utf-8"
+)
 
 # Keys the handler deals with by hand rather than through the two sets.
 _EXPLICIT = {"type", "time_periods", "vacation_periods", "parent_user_ids"}
@@ -39,8 +39,7 @@ def test_every_accepted_setting_is_persisted():
     persisted = _string_set("_TOP_LEVEL_SETTINGS") | _string_set("_SUBKEY_SETTINGS") | _EXPLICIT
     orphans = sorted(accepted - persisted)
     assert orphans == [], (
-        f"accepted by the schema but never stored: {orphans}. "
-        "Add them to _SUBKEY_SETTINGS (or handle them explicitly)."
+        f"accepted by the schema but never stored: {orphans}. Add them to _SUBKEY_SETTINGS (or handle them explicitly)."
     )
 
 
@@ -49,9 +48,7 @@ def test_no_persisted_setting_is_unreachable():
     accepted = _schema_keys()
     subkeys = _string_set("_SUBKEY_SETTINGS")
     unreachable = sorted(subkeys - accepted)
-    assert unreachable == [], (
-        f"storable but not accepted by the schema: {unreachable}"
-    )
+    assert unreachable == [], f"storable but not accepted by the schema: {unreachable}"
 
 
 def test_roulette_settings_round_trip():

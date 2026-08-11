@@ -1,4 +1,5 @@
 """Tests for chore early-bonus / late-penalty by completion time."""
+
 from __future__ import annotations
 
 import datetime as dt

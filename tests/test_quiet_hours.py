@@ -1,4 +1,5 @@
 """Tests for per-child quiet hours / do-not-disturb (FEAT-5)."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -22,6 +23,7 @@ def _at(hour: int, minute: int = 0) -> datetime:
 
 # --- pure window logic -----------------------------------------------------
 
+
 def test_disabled_when_either_bound_blank():
     assert _is_within_quiet_hours("", "07:00", _at(3)) is False
     assert _is_within_quiet_hours("20:00", "", _at(3)) is False
@@ -40,7 +42,7 @@ def test_disabled_when_malformed():
 def test_daytime_window():
     # School hours 09:00-15:00
     assert _is_within_quiet_hours("09:00", "15:00", _at(8, 59)) is False
-    assert _is_within_quiet_hours("09:00", "15:00", _at(9, 0)) is True   # start inclusive
+    assert _is_within_quiet_hours("09:00", "15:00", _at(9, 0)) is True  # start inclusive
     assert _is_within_quiet_hours("09:00", "15:00", _at(12, 0)) is True
     assert _is_within_quiet_hours("09:00", "15:00", _at(15, 0)) is False  # end exclusive
     assert _is_within_quiet_hours("09:00", "15:00", _at(16, 0)) is False
@@ -49,15 +51,16 @@ def test_daytime_window():
 def test_overnight_window():
     # Bedtime 20:00-07:00
     assert _is_within_quiet_hours("20:00", "07:00", _at(19, 59)) is False
-    assert _is_within_quiet_hours("20:00", "07:00", _at(20, 0)) is True   # start inclusive
+    assert _is_within_quiet_hours("20:00", "07:00", _at(20, 0)) is True  # start inclusive
     assert _is_within_quiet_hours("20:00", "07:00", _at(23, 30)) is True
     assert _is_within_quiet_hours("20:00", "07:00", _at(2, 0)) is True
     assert _is_within_quiet_hours("20:00", "07:00", _at(6, 59)) is True
-    assert _is_within_quiet_hours("20:00", "07:00", _at(7, 0)) is False   # end exclusive
+    assert _is_within_quiet_hours("20:00", "07:00", _at(7, 0)) is False  # end exclusive
     assert _is_within_quiet_hours("20:00", "07:00", _at(12, 0)) is False
 
 
 # --- dispatch integration --------------------------------------------------
+
 
 @pytest.fixture
 async def coord(hass):
@@ -79,9 +82,7 @@ async def test_fire_suppresses_child_during_quiet_hours(coord, hass, monkeypatch
     )
     coord.storage.add_child(child)
     coord.storage.set_notification_master("badge_earned", True)
-    coord.storage.set_notification_route(
-        "badge_earned", f"child:{child.id}", NotificationRoute(enabled=True)
-    )
+    coord.storage.set_notification_route("badge_earned", f"child:{child.id}", NotificationRoute(enabled=True))
 
     # Pretend it is 22:00 — inside the window. The conftest dt_util mock is the
     # single source of "now" the integration sees.
@@ -109,9 +110,7 @@ async def test_fire_delivers_child_outside_quiet_hours(coord, hass, monkeypatch)
     )
     coord.storage.add_child(child)
     coord.storage.set_notification_master("badge_earned", True)
-    coord.storage.set_notification_route(
-        "badge_earned", f"child:{child.id}", NotificationRoute(enabled=True)
-    )
+    coord.storage.set_notification_route("badge_earned", f"child:{child.id}", NotificationRoute(enabled=True))
 
     monkeypatch.setattr(dt_util_mock, "_now", _at(12))  # midday, outside window
 

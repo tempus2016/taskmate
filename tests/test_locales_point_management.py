@@ -1,4 +1,5 @@
 """Point-management strings must exist in every locale (#746)."""
+
 from __future__ import annotations
 
 import glob
@@ -31,8 +32,12 @@ PLACEHOLDERS = {
 }
 
 BASE = os.path.join(
-    os.path.dirname(__file__), "..",
-    "custom_components", "taskmate", "www", "locales",
+    os.path.dirname(__file__),
+    "..",
+    "custom_components",
+    "taskmate",
+    "www",
+    "locales",
 )
 
 
@@ -62,6 +67,5 @@ def test_all_locales_have_identical_key_sets():
     reference = sets["en.json"]
     for name, keys in sets.items():
         assert keys == reference, (
-            f"{name} key set differs from en.json: "
-            f"missing={sorted(reference - keys)} extra={sorted(keys - reference)}"
+            f"{name} key set differs from en.json: missing={sorted(reference - keys)} extra={sorted(keys - reference)}"
         )

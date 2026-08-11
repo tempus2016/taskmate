@@ -1,4 +1,5 @@
 """Tests for inter-child points gifting."""
+
 from __future__ import annotations
 
 import asyncio

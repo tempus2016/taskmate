@@ -1,4 +1,5 @@
 """Data coordinator for TaskMate integration."""
+
 from __future__ import annotations
 
 import logging
@@ -107,11 +108,7 @@ class TaskMateCoordinator(
         resolved = tier if tier in DEFAULT_DIFFICULTY_MULTIPLIERS else DEFAULT_DIFFICULTY
         default = DEFAULT_DIFFICULTY_MULTIPLIERS[resolved]
         try:
-            return float(
-                self.storage.get_setting(
-                    f"difficulty_multiplier_{resolved}", str(default)
-                )
-            )
+            return float(self.storage.get_setting(f"difficulty_multiplier_{resolved}", str(default)))
         except (ValueError, TypeError):
             return default
 
@@ -145,12 +142,14 @@ class TaskMateCoordinator(
                 continue
             if end < start:
                 start, end = end, start
-            periods.append({
-                "id": str(entry.get("id") or "").strip() or start.isoformat(),
-                "name": str(entry.get("name") or "").strip(),
-                "start": start.isoformat(),
-                "end": end.isoformat(),
-            })
+            periods.append(
+                {
+                    "id": str(entry.get("id") or "").strip() or start.isoformat(),
+                    "name": str(entry.get("name") or "").strip(),
+                    "start": start.isoformat(),
+                    "end": end.isoformat(),
+                }
+            )
         return sorted(periods, key=lambda p: p["start"])
 
     def active_vacation(self, on: date | None = None) -> dict | None:
@@ -253,20 +252,20 @@ class TaskMateCoordinator(
         await self.async_refresh()
 
     # ── Admin audit log ──────────────────────────────────────────────────
-    async def async_record_audit(
-        self, user_id: str, user_name: str, action: str, target: str = ""
-    ) -> None:
+    async def async_record_audit(self, user_id: str, user_name: str, action: str, target: str = "") -> None:
         """Record an admin config action in the audit log and persist it."""
         from .models import generate_id
 
-        self.storage.add_audit_entry({
-            "id": generate_id(),
-            "ts": dt_util.now().isoformat(),
-            "user_id": user_id or "",
-            "user_name": user_name or "",
-            "action": action,
-            "target": target or "",
-        })
+        self.storage.add_audit_entry(
+            {
+                "id": generate_id(),
+                "ts": dt_util.now().isoformat(),
+                "user_id": user_id or "",
+                "user_name": user_name or "",
+                "action": action,
+                "target": target or "",
+            }
+        )
         await self.storage.async_save()
 
     async def async_initialize(self) -> None:
@@ -296,16 +295,12 @@ class TaskMateCoordinator(
             self.hass, self._async_midnight_streak_check, hour=0, minute=0, second=5
         )
         # Schedule daily history pruning at 00:01:00
-        self._unsub_prune = async_track_time_change(
-            self.hass, self._async_scheduled_prune, hour=0, minute=1, second=0
-        )
+        self._unsub_prune = async_track_time_change(self.hass, self._async_scheduled_prune, hour=0, minute=1, second=0)
         # Re-evaluate availability-aware chore assignments when any HA entity
         # state changes. The callback filters cheaply on entity id so only
         # relevant flips trigger a recompute.
         self._refresh_tracked_availability_entities()
-        self._unsub_availability = self.hass.bus.async_listen(
-            "state_changed", self._availability_state_changed
-        )
+        self._unsub_availability = self.hass.bus.async_listen("state_changed", self._availability_state_changed)
         # Surprise-bonus daily roll at 16:00 (opt-in; no-op unless enabled)
         self._unsub_surprise = async_track_time_change(
             self.hass, self._async_surprise_bonus_check, hour=16, minute=0, second=0
@@ -353,10 +348,7 @@ class TaskMateCoordinator(
             done[comp.child_id] = done.get(comp.child_id, 0) + 1
             earned[comp.child_id] = earned.get(comp.child_id, 0) + (comp.points_awarded or 0)
         pts = self.storage.get_points_name()
-        lines = [
-            f"• {c.name}: {done.get(c.id, 0)} chores, {earned.get(c.id, 0)} {pts} earned"
-            for c in children
-        ]
+        lines = [f"• {c.name}: {done.get(c.id, 0)} chores, {earned.get(c.id, 0)} {pts} earned" for c in children]
         return "\n".join(lines)
 
     async def _async_send_monthly_report(self) -> None:
@@ -367,10 +359,13 @@ class TaskMateCoordinator(
         summary = self._build_monthly_report(month_start, month_end)
         if not summary:
             return
-        await self.notifications.fire("monthly_report", {
-            "summary": summary,
-            "month": month_start.strftime("%B %Y"),
-        })
+        await self.notifications.fire(
+            "monthly_report",
+            {
+                "summary": summary,
+                "month": month_start.strftime("%B %Y"),
+            },
+        )
 
     def _build_monthly_report(self, month_start: date, month_end: date) -> str:
         """Per-child recap for [month_start, month_end]: chores, points, level, best streak."""
@@ -403,8 +398,7 @@ class TaskMateCoordinator(
             ym = dt_util.now().strftime("%Y-%m")
         pts = self.storage.get_season_points(ym)
         rows = [
-            {"child_id": c.id, "name": c.name, "points": int(pts.get(c.id, 0))}
-            for c in self.storage.get_children()
+            {"child_id": c.id, "name": c.name, "points": int(pts.get(c.id, 0))} for c in self.storage.get_children()
         ]
         rows.sort(key=lambda r: (-r["points"], r["name"].lower()))
         for i, r in enumerate(rows):
@@ -434,13 +428,22 @@ class TaskMateCoordinator(
         await self.storage.async_save()
         name = str(self.storage.get_setting("family_goal_name", "") or "Family goal")
         reward = str(self.storage.get_setting("family_goal_reward", "") or "a treat")
-        self.hass.bus.async_fire("taskmate_family_goal_reached", {
-            "goal_name": name, "goal_reward": reward, "target": target,
-            "timestamp": dt_util.now().isoformat(),
-        })
-        await self.notifications.fire("family_goal_reached", {
-            "goal_name": name, "goal_reward": reward,
-        })
+        self.hass.bus.async_fire(
+            "taskmate_family_goal_reached",
+            {
+                "goal_name": name,
+                "goal_reward": reward,
+                "target": target,
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
+        await self.notifications.fire(
+            "family_goal_reached",
+            {
+                "goal_name": name,
+                "goal_reward": reward,
+            },
+        )
 
     # ── Allowance payout ledger (FEAT-3) ─────────────────────────────────
     async def async_record_allowance_payout(self, child_id: str, points: int) -> dict:
@@ -469,6 +472,7 @@ class TaskMateCoordinator(
         await self.async_remove_points(child_id, points, reason="Allowance payout")
 
         from .models import generate_id
+
         entry = {
             "id": generate_id(),
             "child_id": child_id,
@@ -490,6 +494,7 @@ class TaskMateCoordinator(
         token = self.storage.get_setting("ics_token", "")
         if not token:
             import secrets
+
             token = secrets.token_urlsafe(24)
             self.storage.set_setting("ics_token", token)
             await self.storage.async_save()
@@ -498,6 +503,7 @@ class TaskMateCoordinator(
     async def async_regenerate_ics_token(self) -> str:
         """Rotate the ICS feed token (invalidates existing subscriptions)."""
         import secrets
+
         token = secrets.token_urlsafe(24)
         self.storage.set_setting("ics_token", token)
         await self.storage.async_save()
@@ -514,22 +520,34 @@ class TaskMateCoordinator(
         if not winners:
             return
         top = winners[0]
-        self.storage.add_season_champion({
-            "month": ym,
-            "child_id": top["child_id"],
-            "child_name": top["name"],
-            "points": top["points"],
-        })
+        self.storage.add_season_champion(
+            {
+                "month": ym,
+                "child_id": top["child_id"],
+                "child_name": top["name"],
+                "points": top["points"],
+            }
+        )
         await self.storage.async_save()
-        self.hass.bus.async_fire("taskmate_season_champion", {
-            "month": ym, "child_id": top["child_id"], "child_name": top["name"],
-            "points": top["points"], "timestamp": now.isoformat(),
-        })
-        await self.notifications.fire("season_champion", {
-            "child_name": top["name"], "points": top["points"],
-            "month": prev_end.strftime("%B %Y"),
-            "points_name": self.storage.get_points_name(),
-        })
+        self.hass.bus.async_fire(
+            "taskmate_season_champion",
+            {
+                "month": ym,
+                "child_id": top["child_id"],
+                "child_name": top["name"],
+                "points": top["points"],
+                "timestamp": now.isoformat(),
+            },
+        )
+        await self.notifications.fire(
+            "season_champion",
+            {
+                "child_name": top["name"],
+                "points": top["points"],
+                "month": prev_end.strftime("%B %Y"),
+                "points_name": self.storage.get_points_name(),
+            },
+        )
 
     @callback
     def _async_surprise_bonus_check(self, now: datetime) -> None:
@@ -565,10 +583,15 @@ class TaskMateCoordinator(
             if pts <= 0:
                 continue
             await self.async_add_points(child.id, pts, reason="Surprise bonus 🎉")
-            self.hass.bus.async_fire("taskmate_surprise_bonus", {
-                "child_id": child.id, "child_name": child.name,
-                "points": pts, "timestamp": dt_util.now().isoformat(),
-            })
+            self.hass.bus.async_fire(
+                "taskmate_surprise_bonus",
+                {
+                    "child_id": child.id,
+                    "child_name": child.name,
+                    "points": pts,
+                    "timestamp": dt_util.now().isoformat(),
+                },
+            )
 
     async def _async_backfill_career_history(self) -> None:
         """Backfill career_score_history from completions and transactions.
@@ -618,13 +641,12 @@ class TaskMateCoordinator(
             running = start_score
             for day in sorted_days:
                 running += daily_net[day]
-                self.storage.append_career_score_snapshot(
-                    child.id, day, running
-                )
+                self.storage.append_career_score_snapshot(child.id, day, running)
             needs_save = True
             _LOGGER.info(
                 "Backfilled %d career history entries for %s",
-                len(sorted_days), child.name,
+                len(sorted_days),
+                child.name,
             )
 
         if needs_save:
@@ -701,9 +723,7 @@ class TaskMateCoordinator(
     async def _async_sweep_orphan_photos(self) -> None:
         """Delete evidence photos not referenced by any completion (SEC-2)."""
         referenced = [
-            getattr(c, "photo_url", "")
-            for c in self.storage.get_completions()
-            if getattr(c, "photo_url", "")
+            getattr(c, "photo_url", "") for c in self.storage.get_completions() if getattr(c, "photo_url", "")
         ]
         removed = await photos.async_sweep_orphan_photos(self.hass, referenced)
         if removed:

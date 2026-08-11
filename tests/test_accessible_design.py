@@ -5,6 +5,7 @@ type. The design ids live in THREE places — the JS design layer, the websocket
 allowlist and the select entity — and a mismatch means a style that either
 can't be chosen or can't be saved.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -29,7 +30,8 @@ def _ws_ids() -> set[str]:
 
 
 def _select_ids() -> list[str]:
-    m = re.search(r'\("card_design", "card_design", \[(.*?)\]', SELECT)
+    # Whitespace-tolerant: the formatter is free to wrap this call across lines.
+    m = re.search(r'"card_design",\s*"card_design",\s*\[(.*?)\]', SELECT, re.S)
     assert m
     return re.findall(r'"([a-z]+)"', m.group(1))
 
@@ -90,13 +92,13 @@ class TestEditor:
 
     def test_label_exists_in_every_locale(self):
         import json
+
         for path in sorted((ROOT / "www" / "locales").glob("*.json")):
             data = json.loads(path.read_text(encoding="utf-8"))
             assert "common.design.accessible" in data, f"{path.name} missing the label"
 
 
 def _accessible_block(dark: bool = False) -> str:
-    needle = ('[data-tm-design="accessible"][data-tm-dark]' if dark
-              else ':host([data-tm-design="accessible"]),')
+    needle = '[data-tm-design="accessible"][data-tm-dark]' if dark else ':host([data-tm-design="accessible"]),'
     start = DESIGN_JS.index(needle)
-    return DESIGN_JS[start:DESIGN_JS.index("}", start)]
+    return DESIGN_JS[start : DESIGN_JS.index("}", start)]

@@ -1,4 +1,5 @@
 """Tests for the admin audit log."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -19,9 +20,9 @@ async def test_storage_append_order_and_cap(hass):
     for i in range(550):
         storage.add_audit_entry({"id": str(i), "action": "x", "target": str(i)})
     log = storage.get_audit_log()
-    assert len(log) == 500          # capped
-    assert log[0]["id"] == "549"    # newest first
-    assert log[-1]["id"] == "50"    # oldest 50 dropped
+    assert len(log) == 500  # capped
+    assert log[0]["id"] == "549"  # newest first
+    assert log[-1]["id"] == "50"  # oldest 50 dropped
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,5 @@
 """Tests for photo-proof chores."""
+
 from __future__ import annotations
 
 import asyncio
@@ -50,8 +51,7 @@ def _coord(chore, child):
 
 def test_photo_required_forces_pending_even_if_no_approval():
     # require_photo=True, requires_approval=False -> still NOT auto-approved
-    chore = Chore(name="Room", requires_approval=False, require_photo=True,
-                  assignment_mode="everyone", id="ch1")
+    chore = Chore(name="Room", requires_approval=False, require_photo=True, assignment_mode="everyone", id="ch1")
     child = Child(name="Mia", id="c1")
     coord = _coord(chore, child)
     photo = "/api/taskmate/photo/" + "a" * 32 + ".jpg"
@@ -64,8 +64,7 @@ def test_photo_required_forces_pending_even_if_no_approval():
 
 
 def test_photo_stored_on_completion():
-    chore = Chore(name="Room", requires_approval=True, require_photo=True,
-                  assignment_mode="everyone", id="ch1")
+    chore = Chore(name="Room", requires_approval=True, require_photo=True, assignment_mode="everyone", id="ch1")
     coord = _coord(chore, Child(name="Mia", id="c1"))
     photo = "/api/taskmate/photo/" + "b" * 32 + ".png"
     run(coord.async_complete_chore("ch1", "c1", photo_url=photo))
@@ -75,8 +74,7 @@ def test_photo_stored_on_completion():
 def test_photo_required_blocks_completion_without_photo():
     # require_photo=True, child completing with no photo -> hard rejection (ValueError),
     # NOT a silent pending completion. This is the server-side guard mirroring the card.
-    chore = Chore(name="Room", requires_approval=False, require_photo=True,
-                  assignment_mode="everyone", id="ch1")
+    chore = Chore(name="Room", requires_approval=False, require_photo=True, assignment_mode="everyone", id="ch1")
     coord = _coord(chore, Child(name="Mia", id="c1"))
     with pytest.raises(ValueError):
         run(coord.async_complete_chore("ch1", "c1"))
@@ -85,8 +83,7 @@ def test_photo_required_blocks_completion_without_photo():
 
 def test_photo_required_blocks_blank_photo():
     # A whitespace-only photo_url is treated as no photo.
-    chore = Chore(name="Room", requires_approval=False, require_photo=True,
-                  assignment_mode="everyone", id="ch1")
+    chore = Chore(name="Room", requires_approval=False, require_photo=True, assignment_mode="everyone", id="ch1")
     coord = _coord(chore, Child(name="Mia", id="c1"))
     with pytest.raises(ValueError):
         run(coord.async_complete_chore("ch1", "c1", photo_url="   "))
@@ -99,12 +96,9 @@ def test_foreign_photo_url_is_rejected_not_stored():
     # approval views. The coordinator drops it to "" at the boundary. With an
     # approval-required (non-photo) chore the completion still proceeds, but with no
     # photo attached.
-    chore = Chore(name="Room", requires_approval=True, require_photo=False,
-                  assignment_mode="everyone", id="ch1")
+    chore = Chore(name="Room", requires_approval=True, require_photo=False, assignment_mode="everyone", id="ch1")
     coord = _coord(chore, Child(name="Mia", id="c1"))
-    for bad in ("javascript:alert(1)",
-                "https://evil.example/track.png",
-                "/api/taskmate/photo/../../etc/passwd"):
+    for bad in ("javascript:alert(1)", "https://evil.example/track.png", "/api/taskmate/photo/../../etc/passwd"):
         coord._added.clear()
         run(coord.async_complete_chore("ch1", "c1", photo_url=bad))
         assert coord._added[0].photo_url == ""
@@ -113,8 +107,7 @@ def test_foreign_photo_url_is_rejected_not_stored():
 def test_foreign_photo_url_does_not_satisfy_require_photo():
     # A crafted photo_url must not satisfy a require_photo chore — once dropped to
     # "", the require_photo guard fires exactly as if no photo were sent.
-    chore = Chore(name="Room", requires_approval=False, require_photo=True,
-                  assignment_mode="everyone", id="ch1")
+    chore = Chore(name="Room", requires_approval=False, require_photo=True, assignment_mode="everyone", id="ch1")
     coord = _coord(chore, Child(name="Mia", id="c1"))
     with pytest.raises(ValueError):
         run(coord.async_complete_chore("ch1", "c1", photo_url="javascript:alert(1)"))
@@ -122,8 +115,7 @@ def test_foreign_photo_url_does_not_satisfy_require_photo():
 
 
 def test_parent_can_still_autocomplete_photo_chore():
-    chore = Chore(name="Room", requires_approval=False, require_photo=True,
-                  assignment_mode="everyone", id="ch1")
+    chore = Chore(name="Room", requires_approval=False, require_photo=True, assignment_mode="everyone", id="ch1")
     coord = _coord(chore, Child(name="Mia", id="c1"))
     run(coord.async_complete_chore("ch1", "c1", as_parent=True))
     assert coord._added[0].approved is True
@@ -141,7 +133,8 @@ def test_prune_deletes_orphaned_evidence_photos(monkeypatch):
 
     deleted = []
     monkeypatch.setattr(
-        coord_points.photos, "async_delete_photo",
+        coord_points.photos,
+        "async_delete_photo",
         AsyncMock(side_effect=lambda hass, url: deleted.append(url)),
     )
 
@@ -149,20 +142,27 @@ def test_prune_deletes_orphaned_evidence_photos(monkeypatch):
     # test doesn't depend on the global mock's current value.
     now = dt_util.now()
     old_with_photo = ChoreCompletion(
-        chore_id="a", child_id="c", completed_at=now - _dt.timedelta(days=200),
-        approved=True, photo_url="/api/taskmate/photo/" + "a" * 32 + ".jpg")
+        chore_id="a",
+        child_id="c",
+        completed_at=now - _dt.timedelta(days=200),
+        approved=True,
+        photo_url="/api/taskmate/photo/" + "a" * 32 + ".jpg",
+    )
     old_no_photo = ChoreCompletion(
-        chore_id="b", child_id="c", completed_at=now - _dt.timedelta(days=200),
-        approved=True, photo_url="")
+        chore_id="b", child_id="c", completed_at=now - _dt.timedelta(days=200), approved=True, photo_url=""
+    )
     recent = ChoreCompletion(
-        chore_id="d", child_id="c", completed_at=now - _dt.timedelta(days=1),
-        approved=True, photo_url="/api/taskmate/photo/" + "b" * 32 + ".jpg")
+        chore_id="d",
+        child_id="c",
+        completed_at=now - _dt.timedelta(days=1),
+        approved=True,
+        photo_url="/api/taskmate/photo/" + "b" * 32 + ".jpg",
+    )
 
     coord = object.__new__(TaskMateCoordinator)
     coord.hass = MagicMock()
     storage = MagicMock()
-    storage.get_completions = MagicMock(
-        return_value=[old_with_photo, old_no_photo, recent])
+    storage.get_completions = MagicMock(return_value=[old_with_photo, old_no_photo, recent])
     storage.replace_completions = MagicMock()
     storage.async_save = AsyncMock()
     coord.storage = storage
@@ -175,9 +175,9 @@ def test_prune_deletes_orphaned_evidence_photos(monkeypatch):
 
 
 def test_completion_photo_round_trips():
-    c = ChoreCompletion(chore_id="x", child_id="y",
-                        completed_at=__import__("datetime").datetime(2026, 1, 1),
-                        photo_url="http://p")
+    c = ChoreCompletion(
+        chore_id="x", child_id="y", completed_at=__import__("datetime").datetime(2026, 1, 1), photo_url="http://p"
+    )
     assert ChoreCompletion.from_dict(c.to_dict()).photo_url == "http://p"
 
 

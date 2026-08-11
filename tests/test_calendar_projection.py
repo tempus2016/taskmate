@@ -5,6 +5,7 @@ configured HA calendar for the next N days (N = calendar_projection_days
 setting, default 14). Days are filtered by the chore's schedule so the
 HA calendar matches the in-card schedule view.
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -61,9 +62,7 @@ def test_schedule_helper_every_2_days_respects_anchor():
         assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 20) + dt.timedelta(days=offset))
     # Off-cycle days
     for offset in (1, 3, 5, 7):
-        assert not coord._is_chore_scheduled_for_date(
-            chore, date(2026, 4, 20) + dt.timedelta(days=offset)
-        )
+        assert not coord._is_chore_scheduled_for_date(chore, date(2026, 4, 20) + dt.timedelta(days=offset))
 
 
 def test_schedule_helper_weekly_recurrence_day_filters_to_single_weekday():
@@ -198,6 +197,7 @@ def test_projection_horizon_honors_settings_clamp():
 # ERR-2: interval recurrences fall back to created_date when no recurrence_start
 # ---------------------------------------------------------------------------
 
+
 def test_schedule_helper_monthly_without_start_uses_created_date():
     coord = _coord([])
     chore = Chore(
@@ -223,9 +223,9 @@ def test_schedule_helper_quarterly_without_start_projects():
         created_date="2026-01-15",
     )
     assert coord._is_chore_scheduled_for_date(chore, date(2026, 1, 15)) is True
-    assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 15)) is True   # +3 months
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 4, 15)) is True  # +3 months
     assert coord._is_chore_scheduled_for_date(chore, date(2026, 2, 15)) is False  # +1 month
-    assert coord._is_chore_scheduled_for_date(chore, date(2026, 7, 15)) is True   # +6 months
+    assert coord._is_chore_scheduled_for_date(chore, date(2026, 7, 15)) is True  # +6 months
 
 
 def test_schedule_helper_every_2_days_without_start_uses_created_date():

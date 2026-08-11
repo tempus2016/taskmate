@@ -1,4 +1,5 @@
 """Tests for sibling chore swaps."""
+
 from __future__ import annotations
 
 import asyncio
@@ -29,8 +30,12 @@ def _coord(chore, children):
     storage.get_chore = MagicMock(return_value=chore)
     storage.get_swap_requests = MagicMock(return_value=reqs)
     storage.add_swap_request = MagicMock(side_effect=lambda r: reqs.append(r))
-    storage.update_swap_request = MagicMock(side_effect=lambda rid, **ch: [r.update(ch) for r in reqs if r["id"] == rid])
-    storage.remove_swap_request = MagicMock(side_effect=lambda rid: reqs.__setitem__(slice(None), [r for r in reqs if r["id"] != rid]))
+    storage.update_swap_request = MagicMock(
+        side_effect=lambda rid, **ch: [r.update(ch) for r in reqs if r["id"] == rid]
+    )
+    storage.remove_swap_request = MagicMock(
+        side_effect=lambda rid: reqs.__setitem__(slice(None), [r for r in reqs if r["id"] != rid])
+    )
     storage.update_chore = MagicMock()
     storage.async_save = AsyncMock()
     coord.storage = storage

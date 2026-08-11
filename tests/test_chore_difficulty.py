@@ -5,6 +5,7 @@ baseline (×1.0) so pre-existing chores — which default to medium — keep the
 exact award value. The multiplier per tier is configurable via settings
 (difficulty_multiplier_<tier>); defaults are easy 0.5, medium 1.0, hard 2.0.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -39,10 +40,12 @@ class TestDifficultyMultiplier:
         assert coord.difficulty_multiplier("legendary") == 1.0
 
     def test_settings_override_defaults(self):
-        coord = _make_coord({
-            "difficulty_multiplier_easy": "0.75",
-            "difficulty_multiplier_hard": "3.0",
-        })
+        coord = _make_coord(
+            {
+                "difficulty_multiplier_easy": "0.75",
+                "difficulty_multiplier_hard": "3.0",
+            }
+        )
         assert coord.difficulty_multiplier("easy") == 0.75
         assert coord.difficulty_multiplier("hard") == 3.0
         # Untouched tier keeps its default.

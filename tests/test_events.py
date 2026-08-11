@@ -1,5 +1,6 @@
 """Tests for taskmate_* automation events added for penalties, bonuses,
 reward approve/reject and chore reject."""
+
 from __future__ import annotations
 
 import asyncio
@@ -83,8 +84,9 @@ def test_reward_rejected_event():
 
 def test_reward_approved_event_wallet_mode():
     coord = _base_coord()
-    claim = RewardClaim(reward_id="r1", child_id="c1", claimed_at=dt.datetime(2024, 1, 1, tzinfo=UTC),
-                        approved=False, id="cl1")
+    claim = RewardClaim(
+        reward_id="r1", child_id="c1", claimed_at=dt.datetime(2024, 1, 1, tzinfo=UTC), approved=False, id="cl1"
+    )
     coord.storage.get_reward_claims = MagicMock(return_value=[claim])
     coord.storage.get_pool_allocation = MagicMock(return_value=None)
     coord.storage.update_child = MagicMock()
@@ -102,9 +104,14 @@ def test_reward_approved_event_wallet_mode():
 
 def test_chore_rejected_event():
     coord = _base_coord()
-    comp = ChoreCompletion(chore_id="ch1", child_id="c1",
-                           completed_at=dt.datetime(2024, 1, 1, tzinfo=UTC),
-                           approved=False, points_awarded=0, id="comp1")
+    comp = ChoreCompletion(
+        chore_id="ch1",
+        child_id="c1",
+        completed_at=dt.datetime(2024, 1, 1, tzinfo=UTC),
+        approved=False,
+        points_awarded=0,
+        id="comp1",
+    )
     coord.storage.get_completions = MagicMock(return_value=[comp])
     coord.storage.undo_last_completed = MagicMock()
     coord.storage.remove_completion = MagicMock()

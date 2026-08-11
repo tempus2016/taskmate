@@ -1,4 +1,5 @@
 """Button platform for TaskMate integration."""
+
 from __future__ import annotations
 
 import logging
@@ -38,15 +39,11 @@ async def async_setup_entry(
             if getattr(chore, "assignment_mode", "everyone") == "unassigned":
                 continue
             if not chore.assigned_to or child.id in chore.assigned_to:
-                entities.append(
-                    CompleteChoreButton(coordinator, entry, child, chore)
-                )
+                entities.append(CompleteChoreButton(coordinator, entry, child, chore))
 
         # Reward claim buttons
         for reward in rewards:
-            entities.append(
-                ClaimRewardButton(coordinator, entry, child, reward)
-            )
+            entities.append(ClaimRewardButton(coordinator, entry, child, reward))
 
     # Track which entity combos already exist
     tracked_combos: set[str] = set()
@@ -77,16 +74,12 @@ async def async_setup_entry(
                 if not chore.assigned_to or child.id in chore.assigned_to:
                     key = f"{child.id}_{chore.id}_complete"
                     if key not in tracked_combos:
-                        new_entities.append(
-                            CompleteChoreButton(coordinator, entry, child, chore)
-                        )
+                        new_entities.append(CompleteChoreButton(coordinator, entry, child, chore))
                         tracked_combos.add(key)
             for reward in current_rewards:
                 key = f"{child.id}_{reward.id}_claim"
                 if key not in tracked_combos:
-                    new_entities.append(
-                        ClaimRewardButton(coordinator, entry, child, reward)
-                    )
+                    new_entities.append(ClaimRewardButton(coordinator, entry, child, reward))
                     tracked_combos.add(key)
 
         if new_entities:
@@ -142,7 +135,7 @@ class CompleteChoreButton(TaskMateBaseButton):
         # Chores gained an optional icon in #683, defaulting to "". Fall back on
         # falsiness, not on the attribute being absent — otherwise every chore
         # without a picture gets a blank button icon.
-        return (getattr(chore, 'icon', "") or "mdi:check-circle") if chore else "mdi:check-circle"
+        return (getattr(chore, "icon", "") or "mdi:check-circle") if chore else "mdi:check-circle"
 
     @property
     def extra_state_attributes(self) -> dict:

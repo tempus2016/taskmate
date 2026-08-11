@@ -4,6 +4,7 @@ An automation raises a short-lived chore — "the washing machine finished, empt
 it within 30 minutes". It disappears when the deadline passes, and beating the
 deadline pays a speed bonus.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -82,14 +83,22 @@ class TestAvailabilityGate:
 
     def test_chore_within_deadline_is_available(self):
         coord = _coord()
-        chore = Chore(name="Empty the washer", schedule_mode="one_shot",
-                      created_date=_now().date().isoformat(), deadline_at=_in(20))
+        chore = Chore(
+            name="Empty the washer",
+            schedule_mode="one_shot",
+            created_date=_now().date().isoformat(),
+            deadline_at=_in(20),
+        )
         assert self._available(coord, chore) is True
 
     def test_chore_past_deadline_is_unavailable(self):
         coord = _coord()
-        chore = Chore(name="Empty the washer", schedule_mode="one_shot",
-                      created_date=_now().date().isoformat(), deadline_at=_in(-5))
+        chore = Chore(
+            name="Empty the washer",
+            schedule_mode="one_shot",
+            created_date=_now().date().isoformat(),
+            deadline_at=_in(-5),
+        )
         assert self._available(coord, chore) is False
 
     def test_chore_without_deadline_is_unaffected(self):
@@ -123,8 +132,7 @@ class TestSpeedBonus:
     def test_bonus_stacks_on_top_of_the_time_adjustment(self):
         """Both incentives can apply to one completion."""
         coord = _coord()
-        chore = Chore(name="C", deadline_at=_in(10), speed_bonus_points=5,
-                      due_time="23:59", early_bonus=3)
+        chore = Chore(name="C", deadline_at=_in(10), speed_bonus_points=5, due_time="23:59", early_bonus=3)
         adjusted = coord._apply_time_adjustment(chore, 10, dt_util.now())
         assert coord._apply_speed_bonus(chore, adjusted, dt_util.now()) == 18
 

@@ -4,6 +4,7 @@ Tap actions (Approve / Reject) only render on the HA mobile app. For any other
 notify backend we must not send dead buttons — instead the message gets a hint
 pointing the recipient at the TaskMate panel.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
@@ -32,12 +33,13 @@ async def _fire_pending(coord, hass, notify_service):
     coord.storage.upsert_parent_recipient(p)
     coord.storage.set_notification_master("pending_chore_approval", True)
     coord.storage.set_notification_route(
-        "pending_chore_approval", p.id, NotificationRoute(enabled=True),
+        "pending_chore_approval",
+        p.id,
+        NotificationRoute(enabled=True),
     )
     await coord.fire(
         "pending_chore_approval",
-        {"entry_id": "completion-1", "child_name": "Mia", "chore_name": "Bin",
-         "points": 10, "points_name": "Stars"},
+        {"entry_id": "completion-1", "child_name": "Mia", "chore_name": "Bin", "points": 10, "points_name": "Stars"},
     )
     return next(c for c in hass.services.async_call.call_args_list if c[0][0] == "notify")[0][2]
 

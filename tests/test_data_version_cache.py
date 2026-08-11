@@ -1,4 +1,5 @@
 """PERF-2: storage data_version + coordinator _async_update_data caching."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
