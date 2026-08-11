@@ -13,7 +13,7 @@
   <a href="https://github.com/tempus2016/taskmate/releases"><img src="https://img.shields.io/github/v/release/tempus2016/taskmate" alt="Latest Release"></a>
   <a href="https://github.com/hacs/default"><img src="https://img.shields.io/badge/HACS-Default-41BDF5.svg" alt="HACS Default"></a>
   <a href="https://github.com/tempus2016/taskmate/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
-  <img src="https://img.shields.io/badge/Home%20Assistant-2024.1+-blue" alt="HA Version">
+  <img src="https://img.shields.io/badge/Home%20Assistant-2024.7+-blue" alt="HA Version">
   <a href="https://github.com/tempus2016/taskmate/releases"><img src="https://img.shields.io/github/downloads/tempus2016/taskmate/total" alt="Downloads"></a>
 </p>
 
@@ -124,7 +124,7 @@ Or use the one-click buttons:
 
 ### Requirements
 
-- **Home Assistant** 2024.1 or newer
+- **Home Assistant** 2024.7 or newer
 - A modern browser for the dashboard cards: current Chrome, Firefox, Edge, or Safari. The cards use Web Components, Web Audio, and ES2020 features and will not work in Internet Explorer or pre-2022 browsers.
 
 ### Privacy
