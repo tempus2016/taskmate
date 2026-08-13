@@ -153,6 +153,7 @@
   "badges.editor_help": "Configure via YAML: defina entity para o sensor de emblemas (ex. sensor.taskmate_badges_mia).",
   "badges.entity_not_found": "{entity} não encontrado",
   "badges.label": "Conquistas",
+  "badges.next_up": "A seguir",
   "badges.title_with_name": "Conquistas de {name}",
   "bonuses.add_bonus": "Adicionar Bónus",
   "bonuses.applying_to": "A aplicar a {childName} — saldo atual: {points} {pointsName}",

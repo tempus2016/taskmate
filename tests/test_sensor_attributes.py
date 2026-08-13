@@ -388,6 +388,70 @@ class TestChildBadgesSensor:
         assert attrs["available"][0]["badge_id"] == "locked"
         # Progress 5/10 = 50%
         assert attrs["available"][0]["progress_pct"] == 50
+        assert attrs["available"][0]["closest_criterion"] == {
+            "metric": "total_chores",
+            "current": 5,
+            "target": 10,
+        }
+
+    def test_and_badge_reports_weakest_criterion(self, hass):
+        """AND badges are gated by their worst criterion — report that one."""
+        child = Child(name="Mia", total_chores_completed=8, total_points_earned=10)
+        child.id = "c1"
+        locked = Badge(
+            name="Both",
+            criteria=[
+                BadgeCriterion("total_chores", ">=", 10),
+                BadgeCriterion("total_points", ">=", 100),
+            ],
+            combinator="AND",
+        )
+        locked.id = "locked"
+        coord = self._coordinator_for(child, [locked], [])
+        sensor = ChildBadgesSensor(coord, _MockEntry(), child)
+        avail = sensor.extra_state_attributes["available"][0]
+        # points is 10/100 = 10%, chores is 8/10 = 80% — AND takes the worse.
+        assert avail["progress_pct"] == 10
+        assert avail["closest_criterion"] == {
+            "metric": "total_points",
+            "current": 10,
+            "target": 100,
+        }
+
+    def test_or_badge_reports_strongest_criterion(self, hass):
+        """OR badges fire on any criterion, so progress is the best one (#780)."""
+        child = Child(name="Mia", total_chores_completed=8, total_points_earned=10)
+        child.id = "c1"
+        locked = Badge(
+            name="Either",
+            criteria=[
+                BadgeCriterion("total_chores", ">=", 10),
+                BadgeCriterion("total_points", ">=", 100),
+            ],
+            combinator="OR",
+        )
+        locked.id = "locked"
+        coord = self._coordinator_for(child, [locked], [])
+        sensor = ChildBadgesSensor(coord, _MockEntry(), child)
+        avail = sensor.extra_state_attributes["available"][0]
+        assert avail["progress_pct"] == 80
+        assert avail["closest_criterion"] == {
+            "metric": "total_chores",
+            "current": 8,
+            "target": 10,
+        }
+
+    def test_criteria_free_badge_has_no_closest_criterion(self, hass):
+        """Manual-award-only badges never auto-fire — no progress to show."""
+        child = Child(name="Mia")
+        child.id = "c1"
+        manual = Badge(name="Manual", criteria=[])
+        manual.id = "manual"
+        coord = self._coordinator_for(child, [manual], [])
+        sensor = ChildBadgesSensor(coord, _MockEntry(), child)
+        avail = sensor.extra_state_attributes["available"][0]
+        assert avail["progress_pct"] == 0
+        assert avail["closest_criterion"] is None
 
     def test_excludes_disabled_badges(self, hass):
         child = Child(name="Mia")

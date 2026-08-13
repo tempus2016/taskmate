@@ -1226,15 +1226,23 @@ class ChildBadgesSensor(TaskMateBaseSensor):
                     }
                 )
             else:
-                if not b.criteria:
+                # The criterion that actually gates the award: for an AND badge
+                # that is the weakest one, for an OR badge the strongest. Using
+                # min() for both understated OR badges (and could report <100%
+                # for one already earned) — see coord_badges.BadgeEvaluator.
+                combinator = (getattr(b, "combinator", "AND") or "AND").upper()
+                scored = []
+                for c in b.criteria:
+                    cur = resolve_metric(c.metric, child, storage)
+                    pct = min(100, int(100 * cur / max(c.value, 1)))
+                    scored.append((pct, c.metric, cur, c.value))
+                if not scored:
                     progress_pct = 0
+                    closest = None
                 else:
-                    pcts = []
-                    for c in b.criteria:
-                        cur = resolve_metric(c.metric, child, storage)
-                        target = max(c.value, 1)
-                        pcts.append(min(100, int(100 * cur / target)))
-                    progress_pct = min(pcts) if pcts else 0
+                    pick = max(scored) if combinator == "OR" else min(scored)
+                    progress_pct = pick[0]
+                    closest = {"metric": pick[1], "current": pick[2], "target": pick[3]}
                 available.append(
                     {
                         "badge_id": b.id,
@@ -1242,6 +1250,7 @@ class ChildBadgesSensor(TaskMateBaseSensor):
                         "icon": b.icon,
                         "tier": b.tier,
                         "progress_pct": progress_pct,
+                        "closest_criterion": closest,
                         "criteria_summary": ", ".join(f"{c.metric} >= {c.value}" for c in b.criteria),
                     }
                 )

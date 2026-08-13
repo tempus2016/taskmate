@@ -153,6 +153,7 @@
   "badges.editor_help": "Konfigurer via YAML: sett entity til din badge-sensor (t.d. sensor.taskmate_badges_mia).",
   "badges.entity_not_found": "{entity} ikkje funne",
   "badges.label": "Merke",
+  "badges.next_up": "Neste",
   "badges.title_with_name": "Merka til {name}",
   "bonuses.add_bonus": "Legg til bonus",
   "bonuses.applying_to": "Vert brukt på {childName} — noverande saldo: {points} {pointsName}",
