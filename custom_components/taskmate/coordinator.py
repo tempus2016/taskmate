@@ -824,10 +824,23 @@ class TaskMateCoordinator(
         self.storage.remove_career_score_history_for_child(child_id)
         self.storage.remove_quest_progress_for_child(child_id)
         self.storage.remove_challenge_progress_for_child(child_id)
-        # Remove child from chore assigned_to lists
+        # Drop pending swap requests either side of this child (#785) — a
+        # handover to or from a deleted child can never complete, and the
+        # approval queue would render them as "?".
+        self.storage.remove_swap_requests_for_child(child_id)
+        # Remove child from chore assigned_to lists, and clear any approved swap
+        # override that pointed at them so the chore isn't left assigned to a
+        # child who no longer exists.
         for chore in self.storage.get_chores():
+            dirty = False
             if child_id in chore.assigned_to:
                 chore.assigned_to.remove(child_id)
+                dirty = True
+            if getattr(chore, "assignment_swap_child_id", "") == child_id:
+                chore.assignment_swap_child_id = ""
+                chore.assignment_swap_date = ""
+                dirty = True
+            if dirty:
                 self.storage.update_chore(chore)
         await self.storage.async_save()
         await self.async_refresh()
