@@ -77,7 +77,6 @@ def test_approve_reassigns_today():
     run(coord.async_request_swap("ch1", "b"))
     run(coord.async_approve_swap(coord._reqs[0]["id"]))
     assert chore.assignment_current_child_id == "b"
-    assert coord._reqs[0]["status"] == "approved"
     assert any(c[0][0] == "taskmate_swap_approved" for c in coord.hass.bus.async_fire.call_args_list)
 
 
@@ -104,3 +103,30 @@ def test_approve_stamps_dated_swap_override():
     run(coord.async_approve_swap(coord._reqs[0]["id"]))
     assert chore.assignment_swap_child_id == "b"
     assert chore.assignment_swap_date == dt_util.now().date().isoformat()
+
+
+def test_approve_removes_request():
+    """Approval consumes the request, the same way rejection does (#783).
+
+    Nothing reads a request once it leaves `pending` — both readers filter on
+    it — so keeping the record would just grow the store forever. The approval
+    is still observable via the `taskmate_swap_approved` event and the chore's
+    own dated override.
+    """
+    chore = Chore(name="Bins", assignment_mode="alternating", assignment_current_child_id="a", id="ch1")
+    coord = _coord(chore, [Child(name="A", id="a"), Child(name="B", id="b")])
+    run(coord.async_request_swap("ch1", "b"))
+    run(coord.async_approve_swap(coord._reqs[0]["id"]))
+    assert coord._reqs == []
+
+
+def test_approve_twice_is_rejected():
+    """The second approval finds no pending request and raises, rather than
+    re-firing the event or re-stamping the override."""
+    chore = Chore(name="Bins", assignment_mode="alternating", assignment_current_child_id="a", id="ch1")
+    coord = _coord(chore, [Child(name="A", id="a"), Child(name="B", id="b")])
+    run(coord.async_request_swap("ch1", "b"))
+    rid = coord._reqs[0]["id"]
+    run(coord.async_approve_swap(rid))
+    with pytest.raises(ValueError, match="not found"):
+        run(coord.async_approve_swap(rid))

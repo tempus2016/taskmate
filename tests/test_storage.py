@@ -116,6 +116,41 @@ class TestAsyncLoad:
         assert children[0].name == "Alice"
         assert children[0].points == 100
 
+    def test_settled_swap_requests_are_dropped_on_load(self):
+        """Existing installs accumulated approved swap requests that nothing
+        reads (#783). Load clears them out; pending ones must survive."""
+        existing = {
+            "children": [],
+            "chores": [],
+            "swap_requests": [
+                {"id": "s1", "chore_id": "c1", "requester_id": "b", "status": "approved"},
+                {"id": "s2", "chore_id": "c2", "requester_id": "a", "status": "pending"},
+                {"id": "s3", "chore_id": "c3", "requester_id": "b", "status": "approved"},
+                {"id": "s4", "chore_id": "c4", "requester_id": "a"},  # legacy: no status
+            ],
+        }
+        storage = _make_storage(initial_data=existing)
+        run(storage.async_load())
+        assert [r["id"] for r in storage.get_swap_requests()] == ["s2"]
+
+    def test_load_without_swap_requests_is_harmless(self):
+        storage = _make_storage(initial_data={"children": [], "chores": []})
+        run(storage.async_load())
+        assert storage.get_swap_requests() == []
+
+    def test_load_leaves_all_pending_swap_requests_alone(self):
+        existing = {
+            "children": [],
+            "chores": [],
+            "swap_requests": [
+                {"id": "s1", "chore_id": "c1", "requester_id": "b", "status": "pending"},
+                {"id": "s2", "chore_id": "c2", "requester_id": "a", "status": "pending"},
+            ],
+        }
+        storage = _make_storage(initial_data=existing)
+        run(storage.async_load())
+        assert [r["id"] for r in storage.get_swap_requests()] == ["s1", "s2"]
+
 
 # ---------------------------------------------------------------------------
 # _migrate_assigned_to_child_ids

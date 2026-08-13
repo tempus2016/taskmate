@@ -189,7 +189,12 @@ class ChoresMixin:
             chore.assignment_swap_date = dt_util.as_local(dt_util.now()).date().isoformat()
             chore.assignment_current_child_id = req["requester_id"]
             self.storage.update_chore(chore)
-        self.storage.update_swap_request(req_id, status="approved")
+        # Consume the request, exactly as rejection does (#783). Nothing reads a
+        # request once it leaves "pending" — both readers filter on it — so
+        # keeping it would grow the store forever. The approval stays observable
+        # through the event below and the chore's own dated override. `req` is
+        # already captured, so the payload survives the removal.
+        self.storage.remove_swap_request(req_id)
         self.hass.bus.async_fire(
             "taskmate_swap_approved",
             {
