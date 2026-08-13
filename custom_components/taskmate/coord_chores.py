@@ -181,6 +181,12 @@ class ChoresMixin:
             raise ValueError(f"Swap request {req_id} not found")
         chore = self.get_chore(req["chore_id"])
         if chore:
+            # Stamp the dated override *and* the cached current child. The
+            # override is what every eligibility gate reads (#781); the cached
+            # field keeps the sensors/cards consistent without waiting for the
+            # next assignment pass.
+            chore.assignment_swap_child_id = req["requester_id"]
+            chore.assignment_swap_date = dt_util.as_local(dt_util.now()).date().isoformat()
             chore.assignment_current_child_id = req["requester_id"]
             self.storage.update_chore(chore)
         self.storage.update_swap_request(req_id, status="approved")
@@ -314,6 +320,8 @@ class ChoresMixin:
         data["assignment_current_child_id"] = ""
         data["skip_date"] = ""
         data["skip_count"] = 0
+        data["assignment_swap_child_id"] = ""
+        data["assignment_swap_date"] = ""
         data["publish_calendar_published_dates"] = []
         data["disabled_for"] = []
         data["enabled"] = True
@@ -561,6 +569,12 @@ class ChoresMixin:
             chore.skip_date = today_iso
             chore.skip_count = 0
 
+        # A skip is a deliberate move of today's assignee, so it supersedes any
+        # approved swap — otherwise the swap override would keep winning and the
+        # skip would silently do nothing.
+        chore.assignment_swap_child_id = ""
+        chore.assignment_swap_date = ""
+
         # Cyclical: A → B → … → unassigned → back to A.
         # skip_count < pool_size  → advance to next child
         # skip_count == pool_size → unassigned (no child today)
@@ -624,9 +638,13 @@ class ChoresMixin:
             chore.assigned_to = [child_id] + [c for c in pool if c != child_id]
             chore.assignment_rotation_anchor = today.isoformat()
 
-        # Any previous skip is wiped — manual start is an explicit reset.
+        # Any previous skip or approved swap is wiped — manual start is an
+        # explicit reset, and a lingering swap override would outrank the
+        # child the parent just picked.
         chore.skip_date = ""
         chore.skip_count = 0
+        chore.assignment_swap_child_id = ""
+        chore.assignment_swap_date = ""
 
         chore.assignment_current_child_id = child_id
 
@@ -878,8 +896,12 @@ class ChoresMixin:
         # the "Current" column / child-stats card stops pointing at the
         # original child. The pointer recomputes at the next midnight refresh.
         if getattr(chore, "assignment_mode", "everyone") != "everyone":
-            if getattr(chore, "assignment_current_child_id", ""):
+            if getattr(chore, "assignment_current_child_id", "") or getattr(chore, "assignment_swap_date", ""):
                 chore.assignment_current_child_id = ""
+                # Drop the swap override too, or it would re-point the column
+                # at the swapped-to child on the next assignment pass.
+                chore.assignment_swap_child_id = ""
+                chore.assignment_swap_date = ""
                 self.storage.update_chore(chore)
 
         await self.storage.async_save()

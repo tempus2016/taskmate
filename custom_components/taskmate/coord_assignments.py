@@ -360,12 +360,42 @@ class AssignmentsMixin:
             return cached
         return self._compute_active_children_uncached(chore, today)
 
+    def _swap_override(self, chore: Chore, today: date | None = None) -> str:
+        """The child an approved sibling swap moved this chore to for ``today``.
+
+        Returns "" when there is no swap for that date, or when the swapped-to
+        child is no longer in the chore's pool (removed from `assigned_to`, or
+        deleted). Stamped with a date so it expires on its own — a swap is a
+        one-day arrangement, and probes of other days must stay pure rotation.
+        """
+        swap_date = getattr(chore, "assignment_swap_date", "") or ""
+        swapped_to = getattr(chore, "assignment_swap_child_id", "") or ""
+        if not swap_date or not swapped_to:
+            return ""
+        if today is None:
+            today = dt_util.as_local(dt_util.now()).date()
+        if swap_date != today.isoformat():
+            return ""
+        if swapped_to not in self._chore_assignment_pool(chore):
+            return ""
+        return swapped_to
+
     def _compute_active_children_uncached(self, chore: Chore, today: date | None = None) -> list[str]:
         mode = getattr(chore, "assignment_mode", "everyone")
         require_availability = getattr(chore, "require_availability", False)
 
         if mode == "unassigned":
             return []
+
+        # An approved swap replaces the whole active set for that day, ahead of
+        # every mode's own logic. `require_availability` is deliberately not
+        # re-applied: a parent explicitly approved this child for today, which
+        # outranks an availability entity. "everyone" chores have no single
+        # assignee to move, and async_request_swap already refuses them.
+        if mode != "everyone":
+            swapped_to = self._swap_override(chore, today)
+            if swapped_to:
+                return [swapped_to]
 
         if mode == "first_come":
             # Competitive: every child in the resolved pool sees it until the
@@ -628,8 +658,8 @@ class AssignmentsMixin:
         Runs at midnight. All chores are processed concurrently so the runtime
         is bounded by the slowest single publish, not the sum across chores.
 
-        Also clears stale skip state (skip_date != today) so yesterday's skip
-        doesn't bleed into the new day.
+        Also clears stale skip and swap state (dated != today) so yesterday's
+        skip or approved sibling swap doesn't bleed into the new day.
         """
         today = dt_util.as_local(dt_util.now()).date()
         today_iso = today.isoformat()
@@ -637,11 +667,16 @@ class AssignmentsMixin:
         if not chores:
             return
 
-        # Clear stale skip state in-memory (persisted via update_chore below).
+        # Clear stale skip/swap state in-memory (persisted via update_chore
+        # below). Both are read-time-guarded by their date too, so this is
+        # housekeeping rather than a correctness requirement.
         for chore in chores:
             if getattr(chore, "skip_date", "") and chore.skip_date != today_iso:
                 chore.skip_date = ""
                 chore.skip_count = 0
+            if getattr(chore, "assignment_swap_date", "") and chore.assignment_swap_date != today_iso:
+                chore.assignment_swap_date = ""
+                chore.assignment_swap_child_id = ""
 
         # Group-aware daily assignment map.
         daily = self._compute_daily_assignments(today)
@@ -657,10 +692,14 @@ class AssignmentsMixin:
             await self._publish_chore_to_calendars(chore, today)
             if list(getattr(chore, "publish_calendar_published_dates", []) or []) != before:
                 dirty = True
-            # Always persist if skip state was cleared above.
+            # Always persist if skip/swap state was cleared above.
             if getattr(chore, "skip_date", "") == "" and getattr(chore, "skip_count", 0) == 0:
                 stored = self.storage.get_chore(chore.id)
                 if stored and (stored.skip_date or stored.skip_count):
+                    dirty = True
+            if getattr(chore, "assignment_swap_date", "") == "":
+                stored = self.storage.get_chore(chore.id)
+                if stored and getattr(stored, "assignment_swap_date", ""):
                     dirty = True
             if dirty:
                 self.storage.update_chore(chore)

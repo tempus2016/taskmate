@@ -329,6 +329,13 @@ class Chore:
     # Skip state (ephemeral: cleared at midnight when skip_date != today)
     skip_date: str = ""  # ISO date the skip applies to ("" = no active skip)
     skip_count: int = 0  # number of times skipped today; added to rotation index
+    # Approved sibling swap (ephemeral, same shape as the skip pair above).
+    # This — not assignment_current_child_id — is the override every read-time
+    # eligibility gate consults, because assignment_current_child_id is itself
+    # *written from* _compute_active_children at midnight; reading it back there
+    # would pin the rotation to whoever it last cached (#781).
+    assignment_swap_child_id: str = ""  # child the chore was swapped to
+    assignment_swap_date: str = ""  # ISO date the swap applies to ("" = no swap)
     # Calendar publish: list of HA calendar entity ids to mirror the chore to. Any number supported.
     publish_calendar_entities: list[str] = field(default_factory=list)
     # ISO dates already written to the configured calendars. Used for both
@@ -400,6 +407,8 @@ class Chore:
             require_availability=data.get("require_availability", False),
             skip_date=data.get("skip_date", ""),
             skip_count=int(data.get("skip_count", 0) or 0),
+            assignment_swap_child_id=data.get("assignment_swap_child_id", ""),
+            assignment_swap_date=data.get("assignment_swap_date", ""),
             publish_calendar_entities=list(data.get("publish_calendar_entities", [])),
             # Back-compat: old records stored a single ISO date in
             # `publish_calendar_last_date`. Seed the new list with it so we
@@ -464,6 +473,8 @@ class Chore:
             "require_availability": self.require_availability,
             "skip_date": self.skip_date,
             "skip_count": self.skip_count,
+            "assignment_swap_child_id": self.assignment_swap_child_id,
+            "assignment_swap_date": self.assignment_swap_date,
             "publish_calendar_entities": self.publish_calendar_entities,
             "publish_calendar_published_dates": self.publish_calendar_published_dates,
             "bonus_subtasks": [b.to_dict() for b in self.bonus_subtasks],

@@ -116,3 +116,73 @@ class TestRotationQuota:
         comps = _parent_completions(storage)
         assert len(comps) == 1
         assert comps[0].child_id == inactive
+
+
+class TestSwappedRotation:
+    """An approved sibling swap must move the *whole* eligibility, not just the
+    card's view of it (#781). Before the fix the swapped-to child saw the chore
+    (the sensor reads `assignment_current_child_id`) but `async_complete_chore`
+    gated on `_compute_active_children`, which is pure date math — so the tap
+    was a silent no-op: no points, no pending approval, and the chore returned
+    on the next 30s coordinator refresh.
+    """
+
+    def _swapped(self, coord, _mod, now):
+        chore, active, inactive = _alternating_chore(coord, _mod, now)
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            req_id = run(coord.async_request_swap(chore.id, inactive))
+            run(coord.async_approve_swap(req_id))
+        return chore, active, inactive
+
+    def test_swapped_to_child_can_complete(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        chore, _active, inactive = self._swapped(coord, _mod, now)
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            result = run(coord.async_complete_chore(chore.id, inactive, as_parent=False))
+        assert result is not None
+        comps = _parent_completions(storage)
+        assert len(comps) == 1
+        assert comps[0].child_id == inactive
+        assert coord.get_child(inactive).points > 0
+
+    def test_swapped_away_child_can_no_longer_complete(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        chore, active, _inactive = self._swapped(coord, _mod, now)
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            result = run(coord.async_complete_chore(chore.id, active, as_parent=False))
+        assert result is None
+        assert _parent_completions(storage) == []
+
+    def test_swap_still_shares_one_quota(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        chore, active, inactive = self._swapped(coord, _mod, now)
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_complete_chore(chore.id, inactive, as_parent=False))
+            result = run(coord.async_complete_chore(chore.id, active, as_parent=False))
+        assert result is None
+        assert len(_parent_completions(storage)) == 1
+
+    def test_swap_does_not_leak_into_later_days(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        chore, active, inactive = self._swapped(coord, _mod, now)
+        stored = storage.get_chore(chore.id)
+        # The override is stamped with today's date only. A 2-child pool
+        # alternates daily, so day+2 must land back on the swapped-away child —
+        # if the override leaked it would still be pinned to the requester.
+        day_after = (now + dt.timedelta(days=2)).date()
+        assert coord._compute_active_children(stored, day_after) == [active]
+        with patch.object(_mod.dt_util, "now", return_value=now + dt.timedelta(days=2)):
+            assert coord._compute_active_children(stored) == [active]
+
+    def test_swapped_chore_is_available_to_new_assignee(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        chore, active, inactive = self._swapped(coord, _mod, now)
+        stored = storage.get_chore(chore.id)
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            assert coord.is_chore_available_for_child(stored, inactive) is True
+            assert coord.is_chore_available_for_child(stored, active) is False
