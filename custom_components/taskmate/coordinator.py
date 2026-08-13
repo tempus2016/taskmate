@@ -847,11 +847,7 @@ class TaskMateCoordinator(
         # when assignment_current_child_id matches, and a deleted id matches
         # nobody. Repoint at today's live pool rather than just blanking it, so
         # the chore reappears for the survivors now instead of at midnight.
-        stale = [
-            c
-            for c in self.storage.get_chores()
-            if getattr(c, "assignment_current_child_id", "") == child_id
-        ]
+        stale = [c for c in self.storage.get_chores() if getattr(c, "assignment_current_child_id", "") == child_id]
         if stale:
             daily = self._compute_daily_assignments()
             for chore in stale:
