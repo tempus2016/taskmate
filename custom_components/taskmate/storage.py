@@ -121,6 +121,21 @@ class TaskMateStorage:
         if "scheduled_changes" not in self._data:
             self._data["scheduled_changes"] = []
 
+        # Drop settled swap requests (#783). Approval used to only flip a status
+        # flag, so existing installs carry every swap they ever approved — and
+        # nothing reads a request once it leaves "pending". Runs on every load
+        # rather than behind a one-shot flag: it is a cheap list filter, and it
+        # also sweeps up records left by a downgrade to an older version.
+        swap_requests = self._data.get("swap_requests")
+        if swap_requests:
+            still_pending = [r for r in swap_requests if r.get("status") == "pending"]
+            if len(still_pending) != len(swap_requests):
+                _LOGGER.debug(
+                    "Dropped %d settled swap request(s) from storage",
+                    len(swap_requests) - len(still_pending),
+                )
+                self._data["swap_requests"] = still_pending
+
         # Notifications overhaul (v3.9.0)
         if "parent_recipients" not in self._data:
             self._data["parent_recipients"] = []
