@@ -878,13 +878,15 @@ Empty criteria = manual-award only (parent presses "Award to..." to grant it).
 
 - **`taskmate-badges-card`** — full grid view per child. Earned tiles in tier colour, locked tiles greyed with progress bars showing closest-criterion completion percentage.
 - **`taskmate-child-card`** — inline strip of up to 5 most-recently-earned badges below the points readout (auto-hidden when zero earned). Tap → opens the admin panel's badges section. Disable with `show_badges: false`.
+- **`taskmate-child-card` — "Next up" line** — progress toward the single closest unearned badge (icon, name, bar and an `840 / 1000` count), so the journey is visible without opening the badge grid. Hidden when nothing is started or every remaining badge sits at 0%. Tap → badges section. Disable with `show_next_badge: false`.
 - **Admin panel — Badges section** — Catalogue / Custom / Award History tabs. Award History shows AUTO / MANUAL / SILENT source pills and supports one-click revoke (auto-reverses any point bonus credited).
 
 ### Sensor
 
 Each child gets `sensor.taskmate_badges_<slug>`:
 - State: count of earned badges
-- Attributes: `earned[]` (with `earned_at`, `tier`, etc.), `available[]` (with `progress_pct`), `total_badges`
+- Attributes: `earned[]` (with `earned_at`, `tier`, etc.), `available[]` (with `progress_pct` and `closest_criterion: {metric, current, target}`), `total_badges`
+- `progress_pct` / `closest_criterion` track the criterion that actually gates the award: the weakest one for an `AND` badge, the strongest for an `OR` badge
 
 ### Retroactive Backfill
 

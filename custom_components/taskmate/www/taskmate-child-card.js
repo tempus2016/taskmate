@@ -160,6 +160,13 @@ class TaskMateChildCard extends LitElement {
     }[tier] || '#888';
   }
 
+  _badgeKeydown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      this._openBadgesView();
+    }
+  }
+
   _openBadgesView() {
     const slug = this.config?.child_id
       ? String(this.config.child_id).toLowerCase().replace(/\s+/g, '_')
@@ -1906,6 +1913,74 @@ class TaskMateChildCard extends LitElement {
         white-space: nowrap;
       }
 
+      /* ── Next badge progress (#780) ── */
+      .next-badge {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      }
+      .next-badge:hover { background: var(--secondary-background-color, rgba(0,0,0,0.03)); }
+      .next-badge:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: -2px;
+      }
+      .next-badge-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        --mdc-icon-size: 16px;
+        color: #1a1a1a;
+        border: 2px dashed var(--t);
+        background: transparent;
+        flex-shrink: 0;
+        opacity: 0.85;
+      }
+      .next-badge-body { flex: 1; min-width: 0; }
+      .next-badge-top {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-bottom: 5px;
+      }
+      .next-badge-label {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        white-space: nowrap;
+      }
+      .next-badge-name {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--primary-text-color);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .next-badge-count {
+        margin-left: auto;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--secondary-text-color);
+        white-space: nowrap;
+      }
+      .next-badge-bar {
+        height: 6px;
+        border-radius: 3px;
+        background: var(--divider-color, #e0e0e0);
+        overflow: hidden;
+      }
+      .next-badge-bar i {
+        display: block;
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.4s ease;
+      }
+
       /* ══════════════════════════════════════════════════════════════════
          DESIGNED STYLES (playroom / console / cleanpro)
          Shared .tmd kit + tokens come from taskmate-design.js styles().
@@ -2042,6 +2117,49 @@ class TaskMateChildCard extends LitElement {
       .tmd-badge-mini ha-icon { --mdc-icon-size: 16px; color: #fff; }
       .tmd-badges .more { font-size: 11px; font-weight: 800; color: var(--tmd-accent); }
 
+      /* Designed: next badge progress (#780) */
+      .tmd-next-badge {
+        display: flex; align-items: center; gap: 9px;
+        padding: 9px 11px; margin-bottom: 11px;
+        background: var(--tmd-surface-2); border: 1px solid var(--tmd-border);
+        border-radius: var(--tmd-radius-sm); cursor: pointer;
+      }
+      .tmd-next-badge:focus-visible { outline: 2px solid var(--tmd-accent); outline-offset: 1px; }
+      .tmd-next-badge .ic {
+        width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+        border: 2px dashed var(--t, var(--tmd-accent)); color: var(--tmd-dim); flex-shrink: 0;
+      }
+      .tmd-next-badge .ic ha-icon { --mdc-icon-size: 15px; }
+      .tmd-next-badge .bd { flex: 1; min-width: 0; }
+      .tmd-next-badge .top { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; }
+      .tmd-next-badge .lbl {
+        font-size: 11px; font-weight: 800; color: var(--tmd-dim);
+        text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+      }
+      .tmd-next-badge .nm {
+        font-size: 12.5px; font-weight: 700; color: var(--tmd-text);
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .tmd-next-badge .cnt {
+        margin-left: auto; font-size: 11px; font-weight: 800;
+        color: var(--tmd-dim); white-space: nowrap;
+      }
+      .tmd-next-badge .bar {
+        height: 6px; border-radius: 999px; background: var(--tmd-border); overflow: hidden;
+      }
+      .tmd-next-badge .bar i {
+        display: block; height: 100%; border-radius: 999px; transition: width .4s ease;
+      }
+      /* Playroom is chunkier, console squares everything off, accessible needs
+         a solid ring rather than a dashed one to stay legible. */
+      :host([data-tm-design="playroom"]) .tmd-next-badge .bar { height: 8px; }
+      :host([data-tm-design="console"]) .tmd-next-badge .bar,
+      :host([data-tm-design="console"]) .tmd-next-badge .bar i { border-radius: 0; }
+      :host([data-tm-design="accessible"]) .tmd-next-badge .ic { border-style: solid; }
+      :host([data-tm-design="accessible"]) .tmd-next-badge .bar { height: 10px; }
+      :host([data-tm-design="accessible"]) .tmd-next-badge .nm,
+      :host([data-tm-design="accessible"]) .tmd-next-badge .cnt { font-size: 14px; }
+
       /* Designed: vacation banner + swappable section */
       .tmd-vacation {
         display: flex; align-items: center; gap: 7px; padding: 9px 11px; margin-bottom: 11px;
@@ -2072,6 +2190,7 @@ class TaskMateChildCard extends LitElement {
       show_countdown: true,          // Show midnight reset countdown below section title
       show_due_days_only: true,      // Whether to apply due_days filtering at all
       show_badges: true,             // Show badge strip between points and chores
+      show_next_badge: true,         // Show progress toward the closest unearned badge
             header_color: '#9b59b6',
     ...config,
     };
@@ -2172,6 +2291,7 @@ class TaskMateChildCard extends LitElement {
     const badgesEntity = this._resolveBadgesEntity(child);
     const earnedBadges = (badgesEntity?.attributes?.earned) || [];
     const showBadges = this.config.show_badges !== false && earnedBadges.length > 0;
+    const nextBadge = this._nextBadge(badgesEntity);
 
     // Get pending points for this child
     const pendingPoints = child.pending_points || 0;
@@ -2253,6 +2373,28 @@ class TaskMateChildCard extends LitElement {
               </div>
             `)}
             ${earnedBadges.length > 5 ? html`<span class="badge-strip-more">+${earnedBadges.length - 5} →</span>` : ''}
+          </div>
+        ` : ''}
+
+        ${nextBadge ? html`
+          <div class="next-badge" role="button" tabindex="0"
+            aria-label="${this._t('badges.next_up')} — ${nextBadge.name} ${nextBadge.label}"
+            @click=${() => this._openBadgesView()}
+            @keydown=${(e) => this._badgeKeydown(e)}>
+            <div class="next-badge-icon" style="--t: ${this._tierColor(nextBadge.badge.tier)}">
+              <ha-icon icon="${nextBadge.badge.icon || 'mdi:trophy-outline'}"></ha-icon>
+            </div>
+            <div class="next-badge-body">
+              <div class="next-badge-top">
+                <span class="next-badge-label">${this._t('badges.next_up')}</span>
+                <span class="next-badge-name">${nextBadge.name}</span>
+                <span class="next-badge-count">${nextBadge.label}</span>
+              </div>
+              <div class="next-badge-bar" role="progressbar"
+                aria-valuenow="${nextBadge.pct}" aria-valuemin="0" aria-valuemax="100">
+                <i style="width: ${nextBadge.pct}%; background: ${this._tierColor(nextBadge.badge.tier)}"></i>
+              </div>
+            </div>
           </div>
         ` : ''}
 
@@ -2344,6 +2486,39 @@ class TaskMateChildCard extends LitElement {
       }
     }
     return null;
+  }
+
+  /* The single closest unearned badge (#780) — the kid-facing "next up" line.
+     `available[]` is already sorted by nothing in particular, so pick the
+     highest progress_pct. Badges nobody has started (0%) are skipped: a bar
+     stuck at zero is noise, not motivation. Returns null when there is
+     nothing worth showing. */
+  _nextBadge(badgesEntity) {
+    if (this.config.show_next_badge === false) return null;
+    const available = badgesEntity?.attributes?.available || [];
+    let best = null;
+    for (const b of available) {
+      const pct = Math.max(0, Math.min(100, Number(b.progress_pct) || 0));
+      if (pct <= 0) continue;
+      if (!best || pct > best.pct) best = { badge: b, pct };
+    }
+    if (!best) return null;
+    const c = best.badge.closest_criterion;
+    // Older backends (and criteria-free, manual-award badges) have no
+    // closest_criterion — fall back to the percentage.
+    best.label = c && c.target ? `${c.current} / ${c.target}` : `${best.pct}%`;
+    best.name = this._badgeName(best.badge);
+    return best;
+  }
+
+  // Built-in badge names arrive from the sensor in English; the localised
+  // name lives under badge.name_<suffix> (same scheme as the panel).
+  _badgeName(b) {
+    const id = b.badge_id || "";
+    if (!id.startsWith("builtin.")) return b.name;
+    const key = "badge.name_" + id.slice("builtin.".length);
+    const t = this._t(key);
+    return t !== key ? t : b.name;
   }
 
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
@@ -2489,6 +2664,7 @@ class TaskMateChildCard extends LitElement {
     const badgesEntity = this._resolveBadgesEntity(child);
     const earnedBadges = (badgesEntity?.attributes?.earned) || [];
     const showBadges = this.config.show_badges !== false && earnedBadges.length > 0;
+    const nextBadge = this._nextBadge(badgesEntity);
     const pendingPoints = child.pending_points || 0;
     const countdown = this.config.show_countdown !== false ? this._getMidnightCountdown() : null;
 
@@ -2531,6 +2707,26 @@ class TaskMateChildCard extends LitElement {
                 <ha-icon icon="${b.icon || "mdi:medal"}"></ha-icon>
               </div>`)}
             ${earnedBadges.length > 5 ? html`<span class="more">+${earnedBadges.length - 5} →</span>` : ""}
+          </div>` : ""}
+        ${nextBadge ? html`
+          <div class="tmd-next-badge" role="button" tabindex="0"
+            aria-label="${this._t("badges.next_up")} — ${nextBadge.name} ${nextBadge.label}"
+            @click=${() => this._openBadgesView()}
+            @keydown=${(e) => this._badgeKeydown(e)}>
+            <div class="ic" style="--t:${this._tierColor(nextBadge.badge.tier)}">
+              <ha-icon icon="${nextBadge.badge.icon || "mdi:trophy-outline"}"></ha-icon>
+            </div>
+            <div class="bd">
+              <div class="top">
+                <span class="lbl">${this._t("badges.next_up")}</span>
+                <span class="nm">${nextBadge.name}</span>
+                <span class="cnt">${nextBadge.label}</span>
+              </div>
+              <div class="bar" role="progressbar"
+                aria-valuenow="${nextBadge.pct}" aria-valuemin="0" aria-valuemax="100">
+                <i style="width:${nextBadge.pct}%;background:${this._tierColor(nextBadge.badge.tier)}"></i>
+              </div>
+            </div>
           </div>` : ""}
         ${sectionLine}
         ${this._renderRoulette(child, childChores, pointsIcon)}

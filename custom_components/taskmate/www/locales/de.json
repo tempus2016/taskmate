@@ -153,6 +153,7 @@
   "badges.editor_help": "Konfigurieren Sie per YAML: Setzen Sie entity auf Ihren Badges-Sensor (z.B. sensor.taskmate_badges_mia).",
   "badges.entity_not_found": "{entity} nicht gefunden",
   "badges.label": "Abzeichen",
+  "badges.next_up": "Als Nächstes",
   "badges.title_with_name": "Abzeichen von {name}",
   "bonuses.add_bonus": "Bonus hinzufügen",
   "bonuses.applying_to": "Beantragung bei {childName} – aktuelles Guthaben: {points} {pointsName}",

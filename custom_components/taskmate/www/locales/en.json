@@ -154,6 +154,7 @@
   "badges.editor_help": "Configure via YAML: set entity to your badges sensor (e.g. sensor.taskmate_badges_mia).",
   "badges.entity_not_found": "{entity} not found",
   "badges.label": "Badges",
+  "badges.next_up": "Next up",
   "badges.title_with_name": "{name}'s Badges",
   "bonuses.add_bonus": "Add Bonus",
   "bonuses.applying_to": "Applying to {childName} — current balance: {points} {pointsName}",
