@@ -6,6 +6,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from homeassistant.util import dt as dt_util
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.models import Child, Chore
@@ -88,3 +89,18 @@ def test_reject_removes_request():
     run(coord.async_reject_swap(rid))
     assert coord._reqs == []
     assert chore.assignment_current_child_id == "a"  # unchanged
+
+
+def test_approve_stamps_dated_swap_override():
+    """Approval records a *dated* override, not just the cached current child.
+
+    `assignment_current_child_id` is written from `_compute_active_children`
+    at midnight, so it can't be the override's home — reading it back there
+    would pin the rotation. The dated pair is what read-time gates consult.
+    """
+    chore = Chore(name="Bins", assignment_mode="alternating", assignment_current_child_id="a", id="ch1")
+    coord = _coord(chore, [Child(name="A", id="a"), Child(name="B", id="b")])
+    run(coord.async_request_swap("ch1", "b"))
+    run(coord.async_approve_swap(coord._reqs[0]["id"]))
+    assert chore.assignment_swap_child_id == "b"
+    assert chore.assignment_swap_date == dt_util.now().date().isoformat()
