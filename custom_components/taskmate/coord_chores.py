@@ -530,6 +530,9 @@ class ChoresMixin:
         self.storage.remove_chore_from_task_groups(chore_id)
         # Drop queued scheduled changes (#675) — nothing left to apply them to.
         self.storage.remove_scheduled_changes_for_chore(chore_id)
+        # Drop pending swap requests (#785), else they sit in the parent's
+        # approval queue forever showing "?" for the chore that no longer exists.
+        self.storage.remove_swap_requests_for_chore(chore_id)
         # Remove chore from children's chore_order lists
         for child in self.storage.get_children():
             if chore_id in child.chore_order:

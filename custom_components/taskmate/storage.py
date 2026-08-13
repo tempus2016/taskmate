@@ -121,20 +121,14 @@ class TaskMateStorage:
         if "scheduled_changes" not in self._data:
             self._data["scheduled_changes"] = []
 
-        # Drop settled swap requests (#783). Approval used to only flip a status
-        # flag, so existing installs carry every swap they ever approved — and
-        # nothing reads a request once it leaves "pending". Runs on every load
-        # rather than behind a one-shot flag: it is a cheap list filter, and it
-        # also sweeps up records left by a downgrade to an older version.
-        swap_requests = self._data.get("swap_requests")
-        if swap_requests:
-            still_pending = [r for r in swap_requests if r.get("status") == "pending"]
-            if len(still_pending) != len(swap_requests):
-                _LOGGER.debug(
-                    "Dropped %d settled swap request(s) from storage",
-                    len(swap_requests) - len(still_pending),
-                )
-                self._data["swap_requests"] = still_pending
+        # Drop settled swap requests (#783) and ones pointing at a chore or child
+        # that no longer exists (#785). Approval used to only flip a status flag,
+        # and deletes did not cascade, so existing installs carry both kinds —
+        # the orphans surface in the parent's approval queue as an unclearable
+        # "? wants to swap ?" row. Runs on every load rather than behind a
+        # one-shot flag: it is a cheap list filter, and it also sweeps up records
+        # left by a downgrade to a version without the cascades.
+        self._drop_dead_swap_requests()
 
         # Notifications overhaul (v3.9.0)
         if "parent_recipients" not in self._data:
@@ -992,6 +986,57 @@ class TaskMateStorage:
                 del reqs[i]
                 return True
         return False
+
+    def _drop_dead_swap_requests(self) -> None:
+        """Prune swap requests that are settled or dangling (#783, #785).
+
+        Called from ``async_load``. A request survives only when it is still
+        pending *and* every id it names still resolves — the chore, the
+        requester, and ``from_child_id`` when set (it is "" for a chore with no
+        cached assignee yet, which is a normal request, not a dead reference).
+        """
+        swap_requests = self._data.get("swap_requests")
+        if not swap_requests:
+            return
+
+        chore_ids = {c.get("id") for c in self._data.get("chores", [])}
+        child_ids = {c.get("id") for c in self._data.get("children", [])}
+
+        def _alive(req: dict) -> bool:
+            if req.get("status") != "pending":
+                return False
+            if req.get("chore_id") not in chore_ids:
+                return False
+            if req.get("requester_id") not in child_ids:
+                return False
+            from_id = req.get("from_child_id") or ""
+            return not from_id or from_id in child_ids
+
+        kept = [r for r in swap_requests if _alive(r)]
+        if len(kept) != len(swap_requests):
+            _LOGGER.debug(
+                "Dropped %d settled or orphaned swap request(s) from storage",
+                len(swap_requests) - len(kept),
+            )
+            self._data["swap_requests"] = kept
+
+    def remove_swap_requests_for_chore(self, chore_id: str) -> None:
+        """Drop a deleted chore's swap requests so they can't linger in the
+        approval queue with nothing to approve."""
+        self._data["swap_requests"] = [r for r in self._data.get("swap_requests", []) if r.get("chore_id") != chore_id]
+
+    def remove_swap_requests_for_child(self, child_id: str) -> None:
+        """Drop swap requests a deleted child is either side of.
+
+        Both ends matter: the requester is who the handover goes *to*, and
+        `from_child_id` is who it comes from and is rendered in the queue.
+        Either being gone makes the request undeliverable.
+        """
+        self._data["swap_requests"] = [
+            r
+            for r in self._data.get("swap_requests", [])
+            if r.get("requester_id") != child_id and r.get("from_child_id") != child_id
+        ]
 
     # ── Quests (chore chains) ────────────────────────────────────────────
     def get_quests(self) -> list[Quest]:

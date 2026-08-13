@@ -130,3 +130,104 @@ def test_approve_twice_is_rejected():
     run(coord.async_approve_swap(rid))
     with pytest.raises(ValueError, match="not found"):
         run(coord.async_approve_swap(rid))
+
+
+# ---------------------------------------------------------------------------
+# Orphan cleanup (#785) — deleting a chore or child must take its pending swap
+# requests with it, or the parent is left with an unclearable "? wants to swap
+# ?" row in the approval queue.
+# ---------------------------------------------------------------------------
+
+
+def _real_system():
+    """A coordinator over real storage — the mock storage above can't exercise
+    the removal cascades, which touch several stores at once."""
+    from tests.test_rotation_quota import _make_system
+
+    return _make_system()
+
+
+def _two_kids_and_chore(coord, _mod, now):
+    from unittest.mock import patch
+
+    with patch.object(_mod.dt_util, "now", return_value=now):
+        alice = run(coord.async_add_child("Alice"))
+        bob = run(coord.async_add_child("Bob"))
+        chore = run(
+            coord.async_add_chore(
+                "Dishes",
+                points=10,
+                assignment_mode="alternating",
+                assigned_to=[alice.id, bob.id],
+            )
+        )
+        active = coord._compute_active_children(chore)[0]
+        other = next(c.id for c in (alice, bob) if c.id != active)
+        run(coord.async_request_swap(chore.id, other))
+    return chore, active, other
+
+
+def test_removing_chore_drops_its_pending_swap_requests():
+    from tests.test_rotation_quota import _now
+
+    coord, storage, _mod = _real_system()
+    chore, _active, _other = _two_kids_and_chore(coord, _mod, _now())
+    assert len(storage.get_swap_requests()) == 1
+
+    run(coord.async_remove_chore(chore.id))
+    assert storage.get_swap_requests() == []
+
+
+def test_removing_child_drops_swap_requests_they_requested():
+    from tests.test_rotation_quota import _now
+
+    coord, storage, _mod = _real_system()
+    _chore, _active, other = _two_kids_and_chore(coord, _mod, _now())
+    assert len(storage.get_swap_requests()) == 1
+
+    run(coord.async_remove_child(other))
+    assert storage.get_swap_requests() == []
+
+
+def test_removing_child_drops_swap_requests_aimed_away_from_them():
+    """The swapped-*away* child matters too: `from_child_id` is rendered in the
+    queue, and the request describes a handover that can no longer happen."""
+    from tests.test_rotation_quota import _now
+
+    coord, storage, _mod = _real_system()
+    _chore, active, _other = _two_kids_and_chore(coord, _mod, _now())
+    run(coord.async_remove_child(active))
+    assert storage.get_swap_requests() == []
+
+
+def test_removing_child_clears_a_swap_override_pointing_at_them():
+    from unittest.mock import patch
+
+    from tests.test_rotation_quota import _now
+
+    coord, storage, _mod = _real_system()
+    now = _now()
+    chore, _active, other = _two_kids_and_chore(coord, _mod, now)
+    with patch.object(_mod.dt_util, "now", return_value=now):
+        run(coord.async_approve_swap(storage.get_swap_requests()[0]["id"]))
+    assert storage.get_chore(chore.id).assignment_swap_child_id == other
+
+    run(coord.async_remove_child(other))
+    stored = storage.get_chore(chore.id)
+    assert stored.assignment_swap_child_id == ""
+    assert stored.assignment_swap_date == ""
+
+
+def test_removing_an_unrelated_child_leaves_the_request_alone():
+    from unittest.mock import patch
+
+    from tests.test_rotation_quota import _now
+
+    coord, storage, _mod = _real_system()
+    now = _now()
+    _chore, _active, _other = _two_kids_and_chore(coord, _mod, now)
+    with patch.object(_mod.dt_util, "now", return_value=now):
+        bystander = run(coord.async_add_child("Cara"))
+
+    run(coord.async_remove_child(bystander.id))
+    assert len(storage.get_swap_requests()) == 1

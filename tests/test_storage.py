@@ -116,19 +116,27 @@ class TestAsyncLoad:
         assert children[0].name == "Alice"
         assert children[0].points == 100
 
+    @staticmethod
+    def _swap_fixture(swap_requests):
+        """Storage seeded with children a/b and chores c1-c4, so a request is
+        only dropped for its status — not for referencing something missing."""
+        return {
+            "children": [{"id": "a", "name": "Alice"}, {"id": "b", "name": "Bob"}],
+            "chores": [{"id": f"c{i}", "name": f"Chore {i}"} for i in range(1, 5)],
+            "swap_requests": swap_requests,
+        }
+
     def test_settled_swap_requests_are_dropped_on_load(self):
         """Existing installs accumulated approved swap requests that nothing
         reads (#783). Load clears them out; pending ones must survive."""
-        existing = {
-            "children": [],
-            "chores": [],
-            "swap_requests": [
+        existing = self._swap_fixture(
+            [
                 {"id": "s1", "chore_id": "c1", "requester_id": "b", "status": "approved"},
                 {"id": "s2", "chore_id": "c2", "requester_id": "a", "status": "pending"},
                 {"id": "s3", "chore_id": "c3", "requester_id": "b", "status": "approved"},
                 {"id": "s4", "chore_id": "c4", "requester_id": "a"},  # legacy: no status
-            ],
-        }
+            ]
+        )
         storage = _make_storage(initial_data=existing)
         run(storage.async_load())
         assert [r["id"] for r in storage.get_swap_requests()] == ["s2"]
@@ -139,17 +147,47 @@ class TestAsyncLoad:
         assert storage.get_swap_requests() == []
 
     def test_load_leaves_all_pending_swap_requests_alone(self):
-        existing = {
-            "children": [],
-            "chores": [],
-            "swap_requests": [
+        existing = self._swap_fixture(
+            [
                 {"id": "s1", "chore_id": "c1", "requester_id": "b", "status": "pending"},
                 {"id": "s2", "chore_id": "c2", "requester_id": "a", "status": "pending"},
-            ],
-        }
+            ]
+        )
         storage = _make_storage(initial_data=existing)
         run(storage.async_load())
         assert [r["id"] for r in storage.get_swap_requests()] == ["s1", "s2"]
+
+    def test_orphaned_pending_swap_requests_are_dropped_on_load(self):
+        """Installs that deleted a chore or child before #785 carry pending
+        requests pointing at nothing; the panel renders them as "? wants to
+        swap ?" and the parent can't clear them."""
+        existing = self._swap_fixture(
+            [
+                {"id": "keep", "chore_id": "c1", "requester_id": "a", "from_child_id": "b", "status": "pending"},
+                {"id": "dead-chore", "chore_id": "gone", "requester_id": "a", "status": "pending"},
+                {"id": "dead-requester", "chore_id": "c2", "requester_id": "gone", "status": "pending"},
+                {
+                    "id": "dead-from",
+                    "chore_id": "c3",
+                    "requester_id": "a",
+                    "from_child_id": "gone",
+                    "status": "pending",
+                },
+            ]
+        )
+        storage = _make_storage(initial_data=existing)
+        run(storage.async_load())
+        assert [r["id"] for r in storage.get_swap_requests()] == ["keep"]
+
+    def test_blank_from_child_id_does_not_count_as_orphaned(self):
+        """`from_child_id` is "" for a chore with no cached assignee yet — that
+        is a normal request, not a dangling reference."""
+        existing = self._swap_fixture(
+            [{"id": "s1", "chore_id": "c1", "requester_id": "a", "from_child_id": "", "status": "pending"}]
+        )
+        storage = _make_storage(initial_data=existing)
+        run(storage.async_load())
+        assert [r["id"] for r in storage.get_swap_requests()] == ["s1"]
 
 
 # ---------------------------------------------------------------------------
