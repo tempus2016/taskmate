@@ -842,6 +842,17 @@ class TaskMateCoordinator(
                 dirty = True
             if dirty:
                 self.storage.update_chore(chore)
+        # A rotation pointer left on the deleted child hides the chore from
+        # everyone (#787): the child sensor includes a non-everyone chore only
+        # when assignment_current_child_id matches, and a deleted id matches
+        # nobody. Repoint at today's live pool rather than just blanking it, so
+        # the chore reappears for the survivors now instead of at midnight.
+        stale = [c for c in self.storage.get_chores() if getattr(c, "assignment_current_child_id", "") == child_id]
+        if stale:
+            daily = self._compute_daily_assignments()
+            for chore in stale:
+                chore.assignment_current_child_id = daily.get(chore.id, "")
+                self.storage.update_chore(chore)
         await self.storage.async_save()
         await self.async_refresh()
 

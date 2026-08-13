@@ -186,3 +186,69 @@ class TestSwappedRotation:
         with patch.object(_mod.dt_util, "now", return_value=now):
             assert coord.is_chore_available_for_child(stored, inactive) is True
             assert coord.is_chore_available_for_child(stored, active) is False
+
+
+class _MockEntry:
+    entry_id = "test_entry"
+
+
+class TestRemovedChildLeavesRotationPointer:
+    """#787 — deleting the child holding today's rotation slot left
+    `assignment_current_child_id` pointing at them, and the child sensor
+    filters on exactly that field, so the chore vanished for everyone left
+    until the midnight pass recomputed it."""
+
+    def test_pointer_is_repointed_at_a_surviving_child(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        chore, active, survivor = _alternating_chore(coord, _mod, now)
+        assert storage.get_chore(chore.id).assignment_current_child_id == active
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_remove_child(active))
+
+        stored = storage.get_chore(chore.id)
+        assert stored.assignment_current_child_id == survivor
+        assert stored.assigned_to == [survivor]
+
+    def test_child_sensor_still_lists_the_chore_for_the_survivor(self):
+        """Where the bug actually bit: the child sensor filters on the pointer,
+        so a stale one hid the chore from the card even though the completion
+        service, button entity and to-do list all still accepted it."""
+        from custom_components.taskmate.sensor import ChildStatsSensor
+
+        coord, storage, _mod = _make_system()
+        now = _now()
+        chore, active, survivor = _alternating_chore(coord, _mod, now)
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_remove_child(active))
+            stored = storage.get_chore(chore.id)
+            coord.data = {"chores": [stored]}
+            coord.get_child = storage.get_child
+            coord._is_rotation_done_today = lambda c: False
+            sensor = ChildStatsSensor(coord, _MockEntry(), storage.get_child(survivor))
+            listed = [c["id"] for c in sensor.extra_state_attributes["assigned_chores"]]
+
+        assert listed == [chore.id]
+
+    def test_pointer_is_cleared_when_nobody_is_left_in_the_pool(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        chore, active, survivor = _alternating_chore(coord, _mod, now)
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_remove_child(active))
+            run(coord.async_remove_child(survivor))
+
+        assert storage.get_chore(chore.id).assignment_current_child_id == ""
+
+    def test_removing_an_off_rotation_child_leaves_the_pointer_alone(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        chore, active, inactive = _alternating_chore(coord, _mod, now)
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_remove_child(inactive))
+
+        assert storage.get_chore(chore.id).assignment_current_child_id == active
