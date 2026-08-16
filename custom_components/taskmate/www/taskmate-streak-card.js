@@ -549,10 +549,6 @@ class TaskMateStreakCard extends LitElement {
     return html`<ha-card class="tmd" style="--hd:${hd}">${header}<div class="tmd-bd">${body}</div></ha-card>`;
   }
 
-  _earnedBadges(achievements) {
-    return achievements.filter(a => a.earned);
-  }
-
   // Classic shows earned badges PLUS the next locked milestone. _getAchievements
   // already returns exactly that set, so the designed badge rows render it whole,
   // dimming the locked entry to match the classic .badge.locked treatment.
