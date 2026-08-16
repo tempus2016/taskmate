@@ -16,6 +16,8 @@ from typing import Any
 
 from homeassistant.util import dt as dt_util
 
+from .const import RECURRENCE_PERIOD_DAYS
+
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_WINDOW_DAYS = 7
@@ -163,14 +165,7 @@ class ReportsMixin:
             return 1
 
         if mode == "recurring":
-            period_days = {
-                "every_2_days": 2,
-                "weekly": 7,
-                "every_2_weeks": 14,
-                "monthly": 30,
-                "every_3_months": 91,
-                "every_6_months": 182,
-            }.get(getattr(chore, "recurrence", "weekly"), 7)
+            period_days = RECURRENCE_PERIOD_DAYS.get(getattr(chore, "recurrence", "weekly"), 7)
             return max(0, span // period_days)
 
         due_days = [d.lower() for d in (getattr(chore, "due_days", []) or [])]
@@ -330,14 +325,7 @@ class ReportsMixin:
                 pass
 
         if mode == "recurring":
-            period_days = {
-                "every_2_days": 2,
-                "weekly": 7,
-                "every_2_weeks": 14,
-                "monthly": 30,
-                "every_3_months": 91,
-                "every_6_months": 182,
-            }.get(getattr(chore, "recurrence", "weekly"), 7)
+            period_days = RECURRENCE_PERIOD_DAYS.get(getattr(chore, "recurrence", "weekly"), 7)
             anchor_raw = getattr(chore, "recurrence_start", "") or ""
             try:
                 anchor = date.fromisoformat(anchor_raw) if anchor_raw else None
