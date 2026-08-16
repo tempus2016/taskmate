@@ -228,10 +228,11 @@ class TaskMateCoordinator(
             return True
         if self._vacation_calendar_active():
             return True
-        if child is not None and getattr(child, "pause_streak_when_unavailable", False):
-            if not self._is_child_available(child.id):
-                return True
-        return False
+        return (
+            child is not None
+            and getattr(child, "pause_streak_when_unavailable", False)
+            and not self._is_child_available(child.id)
+        )
 
     # ── Backup / restore ─────────────────────────────────────────────────
     EXPORT_VERSION = 1
@@ -655,21 +656,11 @@ class TaskMateCoordinator(
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator and clean up listeners."""
         self.cancel_unlock_timers()
-        if self._unsub_midnight:
-            self._unsub_midnight()
-            self._unsub_midnight = None
-        if self._unsub_prune:
-            self._unsub_prune()
-            self._unsub_prune = None
-        if self._unsub_availability:
-            self._unsub_availability()
-            self._unsub_availability = None
-        if self._unsub_surprise:
-            self._unsub_surprise()
-            self._unsub_surprise = None
-        if self._unsub_weekly:
-            self._unsub_weekly()
-            self._unsub_weekly = None
+        self.notifications.cancel_schedules()
+        for attr in ("_unsub_midnight", "_unsub_prune", "_unsub_availability", "_unsub_surprise", "_unsub_weekly"):
+            if unsub := getattr(self, attr):
+                unsub()
+                setattr(self, attr, None)
         self.disarm_mandatory_schedules()
         # Flush any pending debounced save so an entry unload/reload can't drop
         # the last mutation (PERF-3).
@@ -859,17 +850,3 @@ class TaskMateCoordinator(
     def get_child(self, child_id: str) -> Child | None:
         """Get a child by ID."""
         return self.storage.get_child(child_id)
-
-    async def async_set_setting(self, key: str, value: str) -> None:
-        """Update a generic setting."""
-        self.storage.set_setting(key, value)
-        await self.storage.async_save()
-        await self.async_refresh()
-
-    # Settings
-    async def async_set_points_settings(self, name: str, icon: str) -> None:
-        """Update points settings."""
-        self.storage.set_points_name(name)
-        self.storage.set_points_icon(icon)
-        await self.storage.async_save()
-        await self.async_refresh()

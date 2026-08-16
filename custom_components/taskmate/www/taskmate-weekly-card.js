@@ -401,7 +401,7 @@ class TaskMateWeeklyCard extends LitElement {
 
     // Max completions in a day for chart scale
     const maxPerDay = Math.max(1, ...weekDays.map(d => (approvedCompletionsByDay[d.key] || []).length));
-    const weekLabel = this._getWeekLabel(weekDays, tz);
+    const weekLabel = this._getWeekLabel(weekDays);
 
     return html`
       <ha-card>
@@ -596,7 +596,7 @@ class TaskMateWeeklyCard extends LitElement {
     }
 
     const d = this._weekData(entity, tz);
-    const weekLabel = this._getWeekLabel(d.weekDays, tz);
+    const weekLabel = this._getWeekLabel(d.weekDays);
     const title = this.config.title || this._t("weekly.default_title");
 
     const icon = design === "playroom" ? "📅" : design === "console" ? "▦" : "▤";
@@ -718,7 +718,7 @@ class TaskMateWeeklyCard extends LitElement {
     return days;
   }
 
-  _getWeekLabel(weekDays, tz) {
+  _getWeekLabel(weekDays) {
     const first = weekDays[0].date;
     const last = weekDays[6].date;
     const fmt = { month: "short", day: "numeric" };

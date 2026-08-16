@@ -16,6 +16,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
+from .entity import taskmate_device_info
 
 # (setting_key, translation_key, min, max, step, default, icon)
 _NUMBERS = [
@@ -50,12 +51,7 @@ class TaskMateSettingNumber(CoordinatorEntity, NumberEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name="TaskMate",
-            manufacturer="TaskMate",
-            model="Family Chore Manager",
-        )
+        return taskmate_device_info(self._entry.entry_id)
 
     @property
     def native_value(self) -> float:

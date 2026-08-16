@@ -919,7 +919,6 @@ export function createIncentiveCard(P) {
 
     _renderDesignedRow(b, design) {
       const isEditing = this._editingBonus?.id === b.id;
-      const tone = this._designTone(0);
       const accent = P.designAccent;
       const pv = P.dpts(b.points);
 

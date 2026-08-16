@@ -378,10 +378,6 @@ class TaskMateStorage:
         if chore_id in order:
             order.remove(chore_id)
 
-    def get_chore_display_order(self) -> list[str]:
-        """Get the global chore display order."""
-        return list(self._data.get("chore_display_order", []))
-
     def set_chore_display_order(self, order: list[str]) -> None:
         """Set the global chore display order."""
         self._data["chore_display_order"] = list(order)

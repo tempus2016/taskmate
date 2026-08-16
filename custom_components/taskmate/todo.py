@@ -22,6 +22,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
+from .entity import taskmate_device_info
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
@@ -57,12 +58,7 @@ class TaskMateChildTodoList(CoordinatorEntity, TodoListEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name="TaskMate",
-            manufacturer="TaskMate",
-            model="Family Chore Manager",
-        )
+        return taskmate_device_info(self._entry.entry_id)
 
     @property
     def todo_items(self) -> list[TodoItem]:

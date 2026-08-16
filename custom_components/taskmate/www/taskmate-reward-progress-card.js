@@ -699,7 +699,7 @@ class TaskMateRewardProgressCard extends LitElement {
 
   _renderDesigned(design) {
     const hd = _safeColor(this.config.header_color, '#00897b');
-    const wrap = (body, icon) => html`
+    const wrap = (body) => html`
       <ha-card class="tmd" style="--hd:${hd}">
         <div class="tmd-hd">
           <span class="ic">🎯</span>

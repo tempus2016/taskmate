@@ -984,7 +984,7 @@ class TaskMatePointsCard extends LitElement {
   }
 
   _renderDialog() {
-    const { child, action, pointsIcon, pointsName } = this._dialog;
+    const { child, action, pointsName } = this._dialog;
     const isAdd = action === "add";
     const isLoading = this._loading[`dialog_${child.id}`];
 

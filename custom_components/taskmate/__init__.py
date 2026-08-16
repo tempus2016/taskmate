@@ -61,6 +61,8 @@ from .const import (
     ATTR_REASON,
     ATTR_REWARD_ID,
     ATTR_SOUND,
+    BADGE_TIERS,
+    COMPLETION_SOUND_OPTIONS,
     CONF_TASK_GROUP_CHORE_IDS,
     CONF_TASK_GROUP_ID,
     CONF_TASK_GROUP_NAME,
@@ -1363,28 +1365,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         _safe(handle_preview_sound),
         schema=vol.Schema(
             {
-                vol.Required(ATTR_SOUND): vol.In(
-                    [
-                        "none",
-                        "coin",
-                        "levelup",
-                        "fanfare",
-                        "chime",
-                        "powerup",
-                        "undo",
-                        "fart1",
-                        "fart2",
-                        "fart3",
-                        "fart4",
-                        "fart5",
-                        "fart6",
-                        "fart7",
-                        "fart8",
-                        "fart9",
-                        "fart10",
-                        "fart_random",
-                    ]
-                ),
+                vol.Required(ATTR_SOUND): vol.In(COMPLETION_SOUND_OPTIONS),
             }
         ),
     )
@@ -1583,7 +1564,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Required(ATTR_BADGE_NAME): cv.string,
                 vol.Optional(ATTR_BADGE_DESCRIPTION, default=""): cv.string,
                 vol.Optional(ATTR_BADGE_ICON, default="mdi:trophy"): cv.string,
-                vol.Optional(ATTR_BADGE_TIER, default="bronze"): vol.In(["bronze", "silver", "gold", "platinum"]),
+                vol.Optional(ATTR_BADGE_TIER, default="bronze"): vol.In(BADGE_TIERS),
                 vol.Optional(ATTR_BADGE_POINT_BONUS, default=0): vol.Coerce(int),
                 vol.Optional(ATTR_BADGE_CRITERIA, default=[]): list,
                 vol.Optional(ATTR_BADGE_COMBINATOR, default="AND"): cv.string,
@@ -1603,7 +1584,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Optional(ATTR_BADGE_NAME): cv.string,
                 vol.Optional(ATTR_BADGE_DESCRIPTION): cv.string,
                 vol.Optional(ATTR_BADGE_ICON): cv.string,
-                vol.Optional(ATTR_BADGE_TIER): vol.In(["bronze", "silver", "gold", "platinum"]),
+                vol.Optional(ATTR_BADGE_TIER): vol.In(BADGE_TIERS),
                 vol.Optional(ATTR_BADGE_POINT_BONUS): vol.Coerce(int),
                 vol.Optional(ATTR_BADGE_CRITERIA): list,
                 vol.Optional(ATTR_BADGE_COMBINATOR): cv.string,

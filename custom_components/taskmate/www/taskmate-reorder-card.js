@@ -856,7 +856,6 @@ class TaskMateReorderCard extends LitElement {
 
     const chores = attrs.chores || [];
     const childChores = this._getChoresForChild(chores, child.id);
-    const pointsIcon = attrs.points_icon || "mdi:star";
 
     const header = html`
       <div class="tmd-hd" style="--ac:var(--tmd-c1)">
@@ -913,7 +912,7 @@ class TaskMateReorderCard extends LitElement {
               </div>
               <div class="d-list">
                 ${allCategoryChores.map((chore, index) =>
-                  this._renderDesignedChoreItem(chore, index, allCategoryChores.length, category, pointsIcon)
+                  this._renderDesignedChoreItem(chore, index, allCategoryChores.length, category)
                 )}
               </div>`;
           })}
@@ -922,7 +921,7 @@ class TaskMateReorderCard extends LitElement {
     `;
   }
 
-  _renderDesignedChoreItem(chore, index, total, category, pointsIcon) {
+  _renderDesignedChoreItem(chore, index, total, category) {
     const isFirst = index === 0;
     const isLast = index === total - 1;
     const v = window.__taskmate_chore_visual(chore);

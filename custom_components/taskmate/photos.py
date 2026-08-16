@@ -10,6 +10,7 @@ served (auth-gated) at ``/api/taskmate/photo/<name>``.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 import time
@@ -158,19 +159,21 @@ async def async_delete_photo(hass, photo_url: str) -> None:
     await hass.async_add_executor_job(_unlink)
 
 
-def total_photos_bytes(hass) -> int:
-    """Sum of all stored evidence-photo file sizes (0 if the dir is absent)."""
-    directory = photos_path(hass)
+def matching_files_bytes(directory: Path, filename_re: re.Pattern[str]) -> int:
+    """Sum sizes of files in ``directory`` matching ``filename_re`` (0 if absent)."""
     if not directory.is_dir():
         return 0
     total = 0
     for p in directory.iterdir():
-        if p.is_file() and FILENAME_RE.match(p.name):
-            try:
+        if p.is_file() and filename_re.match(p.name):
+            with contextlib.suppress(OSError):  # pragma: no cover - defensive
                 total += p.stat().st_size
-            except OSError:  # pragma: no cover - defensive
-                pass
     return total
+
+
+def total_photos_bytes(hass) -> int:
+    """Sum of all stored evidence-photo file sizes (0 if the dir is absent)."""
+    return matching_files_bytes(photos_path(hass), FILENAME_RE)
 
 
 async def async_sweep_orphan_photos(hass, referenced_urls, max_age_hours: int = 24) -> int:

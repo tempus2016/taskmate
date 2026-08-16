@@ -19,6 +19,7 @@ from homeassistant.util import dt as dt_util
 from . import images, photos
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
+from .entity import taskmate_device_info
 from .models import Child
 
 _LOGGER = logging.getLogger(__name__)
@@ -453,7 +454,7 @@ def _build_rewards_list(common: dict) -> list[dict]:
     out = []
     for r in rewards:
         assigned = r.assigned_to if isinstance(r.assigned_to, list) and r.assigned_to else [c.id for c in children]
-        calculated_costs = {child_id: r.cost for child_id in assigned}
+        calculated_costs = dict.fromkeys(assigned, r.cost)
         reward_pool_allocations = {cid: pool_by_child_reward.get(cid, {}).get(r.id, 0) for cid in assigned}
         jackpot_pool_total = pool_total_by_reward.get(r.id, 0) if getattr(r, "is_jackpot", False) else None
         quantity = getattr(r, "quantity", None)
@@ -736,12 +737,7 @@ class TaskMateBaseSensor(CoordinatorEntity, SensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name="TaskMate",
-            manufacturer="TaskMate",
-            model="Family Chore Manager",
-        )
+        return taskmate_device_info(self._entry.entry_id)
 
 
 class _CachedAttrsSensor(TaskMateBaseSensor):
@@ -1143,12 +1139,10 @@ class ChildStatsSensor(TaskMateBaseSensor):
             if not (child.id in c.assigned_to or not c.assigned_to):
                 return False
             mode = getattr(c, "assignment_mode", "everyone")
-            if mode not in ("everyone", "first_come"):
-                if getattr(c, "assignment_current_child_id", "") != child.id:
-                    return False
-            if mode != "everyone":
-                if self.coordinator._is_rotation_done_today(c):
-                    return False
+            if mode not in ("everyone", "first_come") and getattr(c, "assignment_current_child_id", "") != child.id:
+                return False
+            if mode != "everyone" and self.coordinator._is_rotation_done_today(c):
+                return False
             return True
 
         assigned_chores = [c for c in chores if _included(c)]

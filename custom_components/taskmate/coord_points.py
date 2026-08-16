@@ -778,9 +778,12 @@ class PointsMixin:
         # #563: when enabled, the streak only advances once EVERY chore due that
         # day is done. The in-flight completion (chore_id) is counted as done
         # since it may not be persisted yet at this point in the flow.
-        if advance_streak and self._setting_enabled("streak_requires_all_chores"):
-            if not self._all_due_chores_done(child.id, effective_date, include_rotation=True, extra_done=chore_id):
-                advance_streak = False
+        if (
+            advance_streak
+            and self._setting_enabled("streak_requires_all_chores")
+            and not self._all_due_chores_done(child.id, effective_date, include_rotation=True, extra_done=chore_id)
+        ):
+            advance_streak = False
         if advance_streak:
             streak_mode = self.storage.get_setting("streak_reset_mode", "reset")
             streak_paused = getattr(child, "streak_paused", False)

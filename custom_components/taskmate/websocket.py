@@ -59,10 +59,13 @@ from homeassistant.core import HomeAssistant
 
 from . import images, photos
 from .const import (
+    ASSIGNMENT_MODES,
     DEFAULT_NOTIFICATION_NAV_URL,
     DEFAULT_TIME_PERIODS,
+    DIFFICULTY_TIERS,
     DOMAIN,
     MAX_TIME_PERIODS,
+    SCHEDULE_MODES,
     TIME_CATEGORY_ICONS,
 )
 from .coordinator import TaskMateCoordinator
@@ -598,8 +601,8 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("completion_sound"): str,
         vol.Optional("icon"): str,
         vol.Optional("image_url"): _image_url_or_blank,
-        vol.Optional("difficulty"): vol.In(["easy", "medium", "hard"]),
-        vol.Optional("schedule_mode"): vol.In(["specific_days", "recurring", "one_shot"]),
+        vol.Optional("difficulty"): vol.In(DIFFICULTY_TIERS),
+        vol.Optional("schedule_mode"): vol.In(SCHEDULE_MODES),
         vol.Optional("due_days"): [str],
         vol.Optional("recurrence"): str,
         vol.Optional("recurrence_day"): str,
@@ -624,9 +627,7 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("mandatory"): bool,
         vol.Optional("mandatory_penalty_points"): vol.All(int, vol.Range(min=0)),
         vol.Optional("require_photo"): bool,
-        vol.Optional("assignment_mode"): vol.In(
-            ["everyone", "alternating", "random", "balanced", "first_come", "unassigned"]
-        ),
+        vol.Optional("assignment_mode"): vol.In(ASSIGNMENT_MODES),
         vol.Optional("assignment_rotation_anchor"): str,
         vol.Optional("require_availability"): bool,
         vol.Optional("publish_calendar_entities"): [str],
@@ -1967,7 +1968,7 @@ async def _ws_set_global_chore_order(hass, connection, msg, coordinator):
         vol.Optional("assigned_to"): [str],
         vol.Optional("requires_approval"): bool,
         vol.Optional("time_category"): str,
-        vol.Optional("schedule_mode"): vol.In(["specific_days", "recurring", "one_shot"]),
+        vol.Optional("schedule_mode"): vol.In(SCHEDULE_MODES),
         vol.Optional("due_days"): [str],
         vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
         vol.Optional("completion_sound"): str,
@@ -2035,15 +2036,13 @@ async def _ws_templates_get(hass, connection, msg, coordinator):
                 vol.Optional("time_category"): str,
                 vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
                 vol.Optional("completion_sound"): str,
-                vol.Optional("schedule_mode"): vol.In(["specific_days", "recurring", "one_shot"]),
+                vol.Optional("schedule_mode"): vol.In(SCHEDULE_MODES),
                 vol.Optional("due_days"): [str],
                 vol.Optional("recurrence"): str,
                 vol.Optional("recurrence_day"): str,
                 vol.Optional("recurrence_start"): str,
                 vol.Optional("first_occurrence_mode"): str,
-                vol.Optional("assignment_mode"): vol.In(
-                    ["everyone", "alternating", "random", "balanced", "first_come", "unassigned"]
-                ),
+                vol.Optional("assignment_mode"): vol.In(ASSIGNMENT_MODES),
                 vol.Optional("require_availability"): bool,
                 vol.Optional("visibility_entity"): str,
                 vol.Optional("visibility_state"): str,

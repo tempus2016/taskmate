@@ -11,6 +11,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
+from .entity import taskmate_device_info
 
 # (setting_key, translation_key, options, default, icon)
 _SELECTS = [
@@ -48,12 +49,7 @@ class TaskMateSettingSelect(CoordinatorEntity, SelectEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name="TaskMate",
-            manufacturer="TaskMate",
-            model="Family Chore Manager",
-        )
+        return taskmate_device_info(self._entry.entry_id)
 
     @property
     def current_option(self) -> str:

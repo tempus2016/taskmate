@@ -13,6 +13,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
+from .entity import taskmate_device_info
 from .models import Child, Chore, Reward
 
 _LOGGER = logging.getLogger(__name__)
@@ -42,8 +43,7 @@ async def async_setup_entry(
                 entities.append(CompleteChoreButton(coordinator, entry, child, chore))
 
         # Reward claim buttons
-        for reward in rewards:
-            entities.append(ClaimRewardButton(coordinator, entry, child, reward))
+        entities.extend(ClaimRewardButton(coordinator, entry, child, reward) for reward in rewards)
 
     # Track which entity combos already exist
     tracked_combos: set[str] = set()
@@ -103,12 +103,7 @@ class TaskMateBaseButton(CoordinatorEntity, ButtonEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name="TaskMate",
-            manufacturer="TaskMate",
-            model="Family Chore Manager",
-        )
+        return taskmate_device_info(self._entry.entry_id)
 
 
 class CompleteChoreButton(TaskMateBaseButton):

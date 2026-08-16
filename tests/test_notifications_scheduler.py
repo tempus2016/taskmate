@@ -162,3 +162,18 @@ async def test_custom_fires_when_today_bit_set(coord, hass):
     notify_calls = [c for c in hass.services.async_call.call_args_list if c[0][0] == "notify"]
     assert len(notify_calls) == 1
     assert "M" in notify_calls[0][0][2]["message"]
+
+
+@pytest.mark.asyncio
+async def test_cancel_schedules_drops_all_time_triggers(coord):
+    """cancel_schedules cancels every registered trigger and empties the list."""
+    cancelled = []
+    coord._scheduled_unsubs = [lambda: cancelled.append(1) for _ in range(3)]
+
+    coord.cancel_schedules()
+
+    assert len(cancelled) == 3
+    assert coord._scheduled_unsubs == []
+    # Idempotent — a second call is a no-op.
+    coord.cancel_schedules()
+    assert len(cancelled) == 3

@@ -322,7 +322,7 @@ class TaskMateStreakCard extends LitElement {
     // Use backend-calculated streak if available, fall back to client calculation
     const streak = child.current_streak !== undefined
       ? child.current_streak
-      : this._calculateStreak(childCompletions, chores, child.id);
+      : this._calculateStreak(childCompletions);
     const daysShown = this.config.streak_days_shown || 14;
     const dayDots = this._buildDayDots(childCompletions, chores, child.id, daysShown);
     const achievements = this._getAchievements(child, childCompletions, streak, entity_ref);
@@ -370,7 +370,7 @@ class TaskMateStreakCard extends LitElement {
     `;
   }
 
-  _calculateStreak(completions, chores, childId) {
+  _calculateStreak(completions) {
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     // Build set of unique days with at least one completion
@@ -492,7 +492,7 @@ class TaskMateStreakCard extends LitElement {
     const childCompletions = completions.filter(c => c.child_id === child.id);
     const streak = child.current_streak !== undefined
       ? child.current_streak
-      : this._calculateStreak(childCompletions, chores, child.id);
+      : this._calculateStreak(childCompletions);
     const daysShown = this.config.streak_days_shown || 14;
     const dayDots = this._buildDayDots(childCompletions, chores, child.id, daysShown);
     const achievements = this._getAchievements(child, childCompletions, streak, entity_ref);
@@ -547,10 +547,6 @@ class TaskMateStreakCard extends LitElement {
                               this._skCleanpro(rows);
 
     return html`<ha-card class="tmd" style="--hd:${hd}">${header}<div class="tmd-bd">${body}</div></ha-card>`;
-  }
-
-  _earnedBadges(achievements) {
-    return achievements.filter(a => a.earned);
   }
 
   // Classic shows earned badges PLUS the next locked milestone. _getAchievements

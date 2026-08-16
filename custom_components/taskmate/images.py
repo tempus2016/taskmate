@@ -21,7 +21,7 @@ import logging
 import re
 from pathlib import Path
 
-from .photos import content_type_for, detect_image_ext
+from .photos import content_type_for, detect_image_ext, matching_files_bytes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -139,14 +139,4 @@ async def async_delete_image(hass, image_url: str) -> None:
 
 def total_images_bytes(hass) -> int:
     """Sum of all stored chore-image file sizes (0 if the dir is absent)."""
-    directory = images_path(hass)
-    if not directory.is_dir():
-        return 0
-    total = 0
-    for p in directory.iterdir():
-        if p.is_file() and FILENAME_RE.match(p.name):
-            try:
-                total += p.stat().st_size
-            except OSError:  # pragma: no cover - defensive
-                pass
-    return total
+    return matching_files_bytes(images_path(hass), FILENAME_RE)

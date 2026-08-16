@@ -348,7 +348,7 @@ class TaskMateLeaderboardCard extends LitElement {
 
     // Solo mode
     if (children.length === 1) {
-      return this._renderSolo(sorted[0], weeklyPoints, pointsIcon, pointsName, periodLabel);
+      return this._renderSolo(sorted[0], weeklyPoints, pointsIcon, pointsName);
     }
 
     return html`
@@ -464,8 +464,7 @@ class TaskMateLeaderboardCard extends LitElement {
     `;
   }
 
-  _renderSolo(child, weeklyPoints, pointsIcon, pointsName, periodLabel) {
-    const entity = this.hass.states[this.config.entity];
+  _renderSolo(child, weeklyPoints, pointsIcon, pointsName) {
     const totalChores = child.total_chores_completed || 0;
     const bestStreak = child.best_streak || 0;
     const weekly = weeklyPoints[child.id] || 0;
