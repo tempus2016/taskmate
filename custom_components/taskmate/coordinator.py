@@ -860,17 +860,3 @@ class TaskMateCoordinator(
     def get_child(self, child_id: str) -> Child | None:
         """Get a child by ID."""
         return self.storage.get_child(child_id)
-
-    async def async_set_setting(self, key: str, value: str) -> None:
-        """Update a generic setting."""
-        self.storage.set_setting(key, value)
-        await self.storage.async_save()
-        await self.async_refresh()
-
-    # Settings
-    async def async_set_points_settings(self, name: str, icon: str) -> None:
-        """Update points settings."""
-        self.storage.set_points_name(name)
-        self.storage.set_points_icon(icon)
-        await self.storage.async_save()
-        await self.async_refresh()
