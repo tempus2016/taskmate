@@ -42,8 +42,7 @@ async def async_setup_entry(
                 entities.append(CompleteChoreButton(coordinator, entry, child, chore))
 
         # Reward claim buttons
-        for reward in rewards:
-            entities.append(ClaimRewardButton(coordinator, entry, child, reward))
+        entities.extend(ClaimRewardButton(coordinator, entry, child, reward) for reward in rewards)
 
     # Track which entity combos already exist
     tracked_combos: set[str] = set()

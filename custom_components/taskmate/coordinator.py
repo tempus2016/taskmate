@@ -228,10 +228,11 @@ class TaskMateCoordinator(
             return True
         if self._vacation_calendar_active():
             return True
-        if child is not None and getattr(child, "pause_streak_when_unavailable", False):
-            if not self._is_child_available(child.id):
-                return True
-        return False
+        return (
+            child is not None
+            and getattr(child, "pause_streak_when_unavailable", False)
+            and not self._is_child_available(child.id)
+        )
 
     # ── Backup / restore ─────────────────────────────────────────────────
     EXPORT_VERSION = 1

@@ -716,32 +716,37 @@ class ChoresMixin:
             # assignee. Parents (as_parent) may complete on behalf of any pool
             # member — e.g. ticking it off for the off-rotation child. first_come
             # keeps its competitive semantics (every pool member may race).
-            if not as_parent and assignment_mode != "first_come":
-                if child_id not in self._compute_active_children(chore):
-                    _LOGGER.debug(
-                        "complete_chore no-op: '%s' not assigned to %s today",
-                        chore.name,
-                        child.name,
-                    )
-                    return None
+            if (
+                not as_parent
+                and assignment_mode != "first_come"
+                and child_id not in self._compute_active_children(chore)
+            ):
+                _LOGGER.debug(
+                    "complete_chore no-op: '%s' not assigned to %s today",
+                    chore.name,
+                    child.name,
+                )
+                return None
 
         # Check recurrence window for Mode B chores
-        if getattr(chore, "schedule_mode", "specific_days") == "recurring":
-            if not self.is_chore_available_for_child(chore, child_id):
-                _LOGGER.debug(
-                    "complete_chore no-op: '%s' not available yet (recurrence window)",
-                    chore.name,
-                )
-                return None
+        if getattr(chore, "schedule_mode", "specific_days") == "recurring" and not self.is_chore_available_for_child(
+            chore, child_id
+        ):
+            _LOGGER.debug(
+                "complete_chore no-op: '%s' not available yet (recurrence window)",
+                chore.name,
+            )
+            return None
 
         # Check availability for one-shot chores
-        if getattr(chore, "schedule_mode", "specific_days") == "one_shot":
-            if not self.is_chore_available_for_child(chore, child_id):
-                _LOGGER.debug(
-                    "complete_chore no-op: '%s' not available (one-shot done or expired)",
-                    chore.name,
-                )
-                return None
+        if getattr(chore, "schedule_mode", "specific_days") == "one_shot" and not self.is_chore_available_for_child(
+            chore, child_id
+        ):
+            _LOGGER.debug(
+                "complete_chore no-op: '%s' not available (one-shot done or expired)",
+                chore.name,
+            )
+            return None
 
         # Check daily limit (only count parent completions, not bonus sub-tasks)
         all_completions = self.storage.get_completions()
@@ -876,10 +881,7 @@ class ChoresMixin:
 
         # Determine child pool — empty assigned_to means all children
         assigned = getattr(chore, "assigned_to", []) or []
-        if assigned:
-            child_ids = list(assigned)
-        else:
-            child_ids = [c.id for c in self.storage.get_children()]
+        child_ids = list(assigned) if assigned else [c.id for c in self.storage.get_children()]
 
         if not child_ids:
             raise ValueError(f"Chore '{chore.name}' has no children to suppress")
@@ -903,14 +905,15 @@ class ChoresMixin:
         # Clear today's cached current assignee for rotation-mode chores so
         # the "Current" column / child-stats card stops pointing at the
         # original child. The pointer recomputes at the next midnight refresh.
-        if getattr(chore, "assignment_mode", "everyone") != "everyone":
-            if getattr(chore, "assignment_current_child_id", "") or getattr(chore, "assignment_swap_date", ""):
-                chore.assignment_current_child_id = ""
-                # Drop the swap override too, or it would re-point the column
-                # at the swapped-to child on the next assignment pass.
-                chore.assignment_swap_child_id = ""
-                chore.assignment_swap_date = ""
-                self.storage.update_chore(chore)
+        if getattr(chore, "assignment_mode", "everyone") != "everyone" and (
+            getattr(chore, "assignment_current_child_id", "") or getattr(chore, "assignment_swap_date", "")
+        ):
+            chore.assignment_current_child_id = ""
+            # Drop the swap override too, or it would re-point the column
+            # at the swapped-to child on the next assignment pass.
+            chore.assignment_swap_child_id = ""
+            chore.assignment_swap_date = ""
+            self.storage.update_chore(chore)
 
         await self.storage.async_save()
         await self.async_refresh()
@@ -1290,11 +1293,8 @@ class ChoresMixin:
 
     def _check_one_shot_fully_disabled(self, chore) -> None:
         """Check if a one-shot chore should be fully disabled (all children done)."""
-        if chore.assigned_to:
-            target_children = set(chore.assigned_to)
-        else:
-            # assigned_to=[] means all children
-            target_children = {c.id for c in self.storage.get_children()}
+        # assigned_to=[] means all children
+        target_children = set(chore.assigned_to) or {c.id for c in self.storage.get_children()}
 
         if target_children and target_children.issubset(set(chore.disabled_for)):
             chore.enabled = False

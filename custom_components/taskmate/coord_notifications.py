@@ -12,6 +12,7 @@ once this module is in place. They call self.notifications.fire(...).
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from dataclasses import dataclass
 from typing import Any
@@ -546,10 +547,8 @@ class NotificationCoordinator:
         (e.g. bedtime time edited, custom notification time edited, master toggled).
         """
         for unsub in self._scheduled_unsubs:
-            try:
+            with contextlib.suppress(Exception):
                 unsub()
-            except Exception:  # noqa: BLE001
-                pass
         self._scheduled_unsubs = []
 
         # Bedtime — per-child time

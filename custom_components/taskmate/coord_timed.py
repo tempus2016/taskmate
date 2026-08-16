@@ -40,9 +40,8 @@ class TimedMixin:
 
         if existing and existing.state == "paused":
             # Check daily cap before resuming
-            if chore.timed_max_daily_minutes > 0:
-                if existing.total_seconds_today >= chore.timed_max_daily_minutes * 60:
-                    raise ValueError(f"Daily cap reached ({chore.timed_max_daily_minutes} min)")
+            if chore.timed_max_daily_minutes > 0 and existing.total_seconds_today >= chore.timed_max_daily_minutes * 60:
+                raise ValueError(f"Daily cap reached ({chore.timed_max_daily_minutes} min)")
             existing.state = "running"
             existing.segments.append({"start": now.isoformat(), "end": None})
             self.storage.save_timed_session(existing)

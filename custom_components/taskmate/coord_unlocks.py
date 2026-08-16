@@ -19,6 +19,7 @@ anything still running is re-armed.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from datetime import datetime, timedelta
 from typing import Any
@@ -221,9 +222,8 @@ class UnlocksMixin:
 
     def cancel_unlock_timers(self) -> None:
         """Drop scheduled reverts on unload so they can't fire post-teardown."""
+        # Teardown must not raise.
         for cancel in getattr(self, "_unlock_timers", []):
-            try:
+            with contextlib.suppress(Exception):
                 cancel()
-            except Exception:  # noqa: BLE001 - teardown must not raise
-                pass
         self._unlock_timers = []
