@@ -19,6 +19,7 @@ from homeassistant.util import dt as dt_util
 from . import images, photos
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
+from .entity import taskmate_device_info
 from .models import Child
 
 _LOGGER = logging.getLogger(__name__)
@@ -736,12 +737,7 @@ class TaskMateBaseSensor(CoordinatorEntity, SensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name="TaskMate",
-            manufacturer="TaskMate",
-            model="Family Chore Manager",
-        )
+        return taskmate_device_info(self._entry.entry_id)
 
 
 class _CachedAttrsSensor(TaskMateBaseSensor):

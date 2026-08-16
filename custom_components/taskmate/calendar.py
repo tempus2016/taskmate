@@ -31,6 +31,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
+from .entity import taskmate_device_info
 from .models import Child, Chore
 
 _LOGGER = logging.getLogger(__name__)
@@ -127,12 +128,7 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name="TaskMate",
-            manufacturer="TaskMate",
-            model="Family Chore Manager",
-        )
+        return taskmate_device_info(self._entry.entry_id)
 
     @property
     def _child(self) -> Child | None:
