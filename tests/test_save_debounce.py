@@ -65,6 +65,7 @@ async def test_shutdown_flushes_pending_save():
     coord = object.__new__(TaskMateCoordinator)
     coord.storage = MagicMock()
     coord.storage.async_save_now = AsyncMock()
+    coord.notifications = MagicMock()
     coord._unsub_midnight = None
     coord._unsub_prune = None
     coord._unsub_availability = None
@@ -73,3 +74,6 @@ async def test_shutdown_flushes_pending_save():
     coord.disarm_mandatory_schedules = MagicMock()
     await coord.async_shutdown()
     coord.storage.async_save_now.assert_awaited_once()
+    # Unload must also drop the scheduled notification time triggers, or they
+    # keep firing against the dead coordinator after a reload.
+    coord.notifications.cancel_schedules.assert_called_once()

@@ -540,16 +540,20 @@ class NotificationCoordinator:
     # Scheduler — time-gated callbacks
     # ------------------------------------------------------------------
 
+    def cancel_schedules(self) -> None:
+        """Cancel all registered time triggers (idempotent; also used on unload)."""
+        for unsub in self._scheduled_unsubs:
+            with contextlib.suppress(Exception):
+                unsub()
+        self._scheduled_unsubs = []
+
     async def async_setup_schedules(self) -> None:
         """Cancel any existing time callbacks and register fresh ones from current config.
 
         Call this on startup AND after any config change that affects schedules
         (e.g. bedtime time edited, custom notification time edited, master toggled).
         """
-        for unsub in self._scheduled_unsubs:
-            with contextlib.suppress(Exception):
-                unsub()
-        self._scheduled_unsubs = []
+        self.cancel_schedules()
 
         # Bedtime — per-child time
         cfg = self.storage.get_notification_config("bedtime_reminder")

@@ -656,21 +656,11 @@ class TaskMateCoordinator(
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator and clean up listeners."""
         self.cancel_unlock_timers()
-        if self._unsub_midnight:
-            self._unsub_midnight()
-            self._unsub_midnight = None
-        if self._unsub_prune:
-            self._unsub_prune()
-            self._unsub_prune = None
-        if self._unsub_availability:
-            self._unsub_availability()
-            self._unsub_availability = None
-        if self._unsub_surprise:
-            self._unsub_surprise()
-            self._unsub_surprise = None
-        if self._unsub_weekly:
-            self._unsub_weekly()
-            self._unsub_weekly = None
+        self.notifications.cancel_schedules()
+        for attr in ("_unsub_midnight", "_unsub_prune", "_unsub_availability", "_unsub_surprise", "_unsub_weekly"):
+            if unsub := getattr(self, attr):
+                unsub()
+                setattr(self, attr, None)
         self.disarm_mandatory_schedules()
         # Flush any pending debounced save so an entry unload/reload can't drop
         # the last mutation (PERF-3).
