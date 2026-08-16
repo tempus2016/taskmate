@@ -2953,8 +2953,6 @@ class TaskMateChildCard extends LitElement {
     const childId = String(child.id || "");
     const choreOrder = child.chore_order || [];
 
-    // Debug logging to diagnose assignment filtering issues
-
     // Get today's day of week from sensor (set by backend) or compute client-side
     const entity = this.hass?.states?.[this.config.entity];
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity?.attributes || {};
