@@ -19,7 +19,7 @@ CARD = (WWW / "taskmate-child-card.js").read_text(encoding="utf-8")
 
 def _tile_source() -> str:
     """The tile method body — sliced from its definition, not its call site."""
-    start = CARD.index("  _renderPreReaderTile(chore, child, todaysCompletions = [], choreIndex = 0) {")
+    start = CARD.index("  _renderPreReaderTile(chore, child, todaysCompletions = []) {")
     return CARD[start : CARD.index("_renderChoreCard(chore, child, pointsIcon", start)]
 
 

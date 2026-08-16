@@ -785,7 +785,7 @@ class TaskMateApprovalsCard extends LitElement {
       <button class="btn bad" style="flex:1" ?disabled="${isLoading}" @click="${reject}">👎 ${this._t('approvals.reject')}</button>`;
   }
 
-  _apPhotoDesigned(it, cls, fallback) {
+  _apPhotoDesigned(it, cls) {
     const photoUrl = tmSafePhotoUrl(it.photo);
     if (it.kind !== "completion" || !photoUrl) {
       return it.kind === "claim" && it.icon
@@ -1154,8 +1154,6 @@ class TaskMateApprovalsCard extends LitElement {
   }
 
   _getDayLabel(date) {
-    const timezone = this._getTimezone();
-
     // Get today's date parts in HA timezone
     const now = new Date();
     const todayParts = this._getDatePartsInTimezone(now);
@@ -1252,7 +1250,7 @@ class TaskMateApprovalsCard extends LitElement {
   _renderApprovals(groupedByDay) {
     return html`
       ${groupedByDay.map(
-        ([dayKey, dayGroup]) => html`
+        ([, dayGroup]) => html`
           <div class="day-group">
             <div class="day-header">${dayGroup.label}</div>
             ${this._renderTimeCategories(dayGroup.timeCategories)}

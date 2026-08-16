@@ -2418,8 +2418,8 @@ class TaskMateChildCard extends LitElement {
                 ${this._renderRoulette(child, childChores, pointsIcon)}
                 ${this.config.pre_reader === true ? html`
                   <div class="pre-reader-grid">
-                    ${childChores.map((chore, index) =>
-                      this._renderPreReaderTile(chore, child, todaysCompletions, index))}
+                    ${childChores.map((chore) =>
+                      this._renderPreReaderTile(chore, child, todaysCompletions))}
                   </div>
                 ` : childChores.map((chore, index) => html`
                   ${chore.task_type === 'timed'
@@ -2683,15 +2683,15 @@ class TaskMateChildCard extends LitElement {
     const body = this.config.pre_reader === true
       ? html`
         <div class="pre-reader-grid">
-          ${childChores.map((chore, index) =>
-            this._renderPreReaderTile(chore, child, todaysCompletions, index))}
+          ${childChores.map((chore) =>
+            this._renderPreReaderTile(chore, child, todaysCompletions))}
         </div>`
       : design === "playroom" ? this._designPlayroom(child, rows, remaining, tone) :
         design === "console"  ? this._designConsole(child, rows, remaining, tone) :
                                 this._designCleanpro(child, rows, remaining, tone);
 
     return html`<ha-card class="tmd" style="--hd:${hd}">
-      ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints, pointsIcon)}
+      ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints)}
       <div class="tmd-bd">
         ${attrs.vacation_active ? html`
           <div class="tmd-vacation">
@@ -2742,7 +2742,7 @@ class TaskMateChildCard extends LitElement {
   }
 
   /** Designed header: avatar/title, remaining pill, pending-points chip. */
-  _designHeaderFull(child, design, remaining, total, tone, pendingPoints, pointsIcon) {
+  _designHeaderFull(child, design, remaining, total, tone, pendingPoints) {
     const title = design === "console"
       ? `${(child.name || "").toUpperCase()} · ${this._t("child.todays_chores").toUpperCase()}`
       : this._t("points_display.single_title", { name: child.name });
@@ -2820,7 +2820,7 @@ class TaskMateChildCard extends LitElement {
     return this._renderBonusSubtasks(r.chore, r.child, r.pointsIcon, r.todaysCompletions);
   }
 
-  _designPlayroom(child, rows, remaining, tone) {
+  _designPlayroom(child, rows, _remaining, _tone) {
     if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
     return html`<div class="tmd-chores">
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
@@ -2840,7 +2840,7 @@ class TaskMateChildCard extends LitElement {
     </div>`;
   }
 
-  _designConsole(child, rows, remaining, tone) {
+  _designConsole(child, rows, _remaining, _tone) {
     if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
     return html`<div class="grid">
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
@@ -2862,7 +2862,7 @@ class TaskMateChildCard extends LitElement {
     </div>`;
   }
 
-  _designCleanpro(child, rows, remaining, tone) {
+  _designCleanpro(child, rows, _remaining, _tone) {
     if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
     return html`<div class="tmd-checklist">
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
@@ -2951,7 +2951,6 @@ class TaskMateChildCard extends LitElement {
 
   _filterAndSortChores(chores, child) {
     const childId = String(child.id || "");
-    const childName = child.name;
     const choreOrder = child.chore_order || [];
 
     // Debug logging to diagnose assignment filtering issues
@@ -3504,7 +3503,7 @@ class TaskMateChildCard extends LitElement {
    * yet. No chore name, no numbers — a big icon, a row of stars for the
    * points, and a huge tick when it's done.
    */
-  _renderPreReaderTile(chore, child, todaysCompletions = [], choreIndex = 0) {
+  _renderPreReaderTile(chore, child, todaysCompletions = []) {
     const dailyLimit = chore.daily_limit || 1;
     // Counted the same way the standard row does: pending completions hold a
     // place too, and a parent completing on behalf lands under "__parent__".
@@ -3592,8 +3591,6 @@ class TaskMateChildCard extends LitElement {
     // This is defensive - we'd rather show "completed" incorrectly than allow double-completions
     // The optimistic completion will be cleaned up once we verify the server state reflects it
     if (hasOptimisticCompletion) {
-      // Calculate how many optimistic completions we've tracked that aren't yet in the data
-      const optimisticCount = optimisticData.count || 1;
 
       // Get timestamps from actual completions for this chore/child today
       const actualTimestamps = childCompletionsToday.map(comp =>
@@ -3616,8 +3613,6 @@ class TaskMateChildCard extends LitElement {
 
     const isCompletedForToday = completionsToday >= dailyLimit;
 
-    // Check if the most recent completion is pending approval
-    const hasPendingCompletion = childCompletionsToday.some((comp) => !comp.approved) || hasOptimisticCompletion;
 
     // Chore number (1-indexed for display) and color class (cycle through 8 colors)
     const choreNumber = choreIndex + 1;

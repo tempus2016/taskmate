@@ -276,7 +276,6 @@ class TaskMateGraphCard extends LitElement {
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     let children = attrs.children || [];
-    const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t('common.points');
     const days = Math.max(3, Math.min(90, this.config.days || 14));
 

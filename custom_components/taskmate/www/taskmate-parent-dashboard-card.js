@@ -755,7 +755,7 @@ class TaskMateParentDashboardCard extends LitElement {
 
   _dEmpty(msg) { return html`<div class="tmd-empty">${msg}</div>`; }
 
-  _dOverview(design, children, chores, completions, attrs, pointsIcon) {
+  _dOverview(design, children, chores, completions, attrs, _pointsIcon) {
     if (!children.length) return this._dEmpty(this._t('dashboard.empty_no_children'));
     return html`${children.map((child, i) => {
       const tone = this._designTone(i);
@@ -805,7 +805,7 @@ class TaskMateParentDashboardCard extends LitElement {
     })}`;
   }
 
-  _dApprovals(design, pending, children, chores, pointsIcon) {
+  _dApprovals(design, pending, children, chores, _pointsIcon) {
     if (!pending.length) return this._dEmpty(this._t('dashboard.empty_approvals'));
     const childMap = {}; children.forEach(c => { childMap[c.id] = c; });
     const choreMap = {}; chores.forEach(c => { choreMap[c.id] = c; });
@@ -841,7 +841,7 @@ class TaskMateParentDashboardCard extends LitElement {
     })}`;
   }
 
-  _dClaims(design, claims, pointsIcon) {
+  _dClaims(design, claims, _pointsIcon) {
     if (!claims.length) return this._dEmpty(this._t('dashboard.empty_claims'));
     return html`${claims.map((claim, i) => {
       const tone = this._designTone(i);
@@ -924,7 +924,7 @@ class TaskMateParentDashboardCard extends LitElement {
     })}`;
   }
 
-  _renderOverview(children, chores, completions, pointsIcon, pointsName) {
+  _renderOverview(children, chores, completions, pointsIcon, _pointsName) {
     if (!children.length) return html`<div class="empty-section"><ha-icon icon="mdi:account-group"></ha-icon><span>${this._t('dashboard.empty_no_children')}</span></div>`;
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity)) || {};

@@ -631,7 +631,7 @@ class TaskMateOverviewCard extends LitElement {
       </div>`;
   }
 
-  _ovKid(design, k, isParent, pointsIcon) {
+  _ovKid(design, k, isParent, _pointsIcon) {
     const cls = design === "console" ? "cn" : design === "cleanpro" ? "cp" : "";
     const nameUpper = design === "console" ? `${k.child.name.toUpperCase()} · ${k.pct}%` : k.child.name;
     const isOpen = !!this._expanded[k.child.id];
@@ -652,7 +652,7 @@ class TaskMateOverviewCard extends LitElement {
   }
 
   /** Admin "complete on behalf" panel — same handler as the classic tile. */
-  _ovBehalf(k, pointsIcon) {
+  _ovBehalf(k, _pointsIcon) {
     return html`
       <div class="ov-behalf" @click="${(e) => e.stopPropagation()}">
         <div class="ov-behalf-hdr">${this._t('common.complete_on_behalf_heading')} · ${k.child.name}</div>
@@ -693,7 +693,7 @@ class TaskMateOverviewCard extends LitElement {
       </div>`;
   }
 
-  _renderChildTile(child, chores, completions, pointsIcon, pointsName) {
+  _renderChildTile(child, chores, completions, pointsIcon, _pointsName) {
     // Avatar now included directly in children array from the overview sensor
     const avatar = child.avatar || "mdi:account-circle";
 

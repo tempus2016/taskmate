@@ -697,7 +697,7 @@ class TaskMateCalendarCard extends LitElement {
       style="${dim ? "" : `color:var(--tmd-${tok});background:color-mix(in srgb,var(--tmd-${tok}) 16%,transparent);border-color:transparent`}">${glyph[item.state] || glyph.due} ${item.chore.name}</span>`;
   }
 
-  _calPlayroom(blocks, pointsIcon) {
+  _calPlayroom(blocks, _pointsIcon) {
     const glyph = { approved: "✓", pending: "◌", due: "—" };
     return html`
       <div class="grid cal-grid">
@@ -713,7 +713,7 @@ class TaskMateCalendarCard extends LitElement {
       </div>`;
   }
 
-  _calConsole(blocks, pointsIcon) {
+  _calConsole(blocks, _pointsIcon) {
     const glyph = { approved: "▮", pending: "▯", due: "▢" };
     return html`
       <div class="grid cal-grid-cn">
@@ -733,7 +733,7 @@ class TaskMateCalendarCard extends LitElement {
       </div>`;
   }
 
-  _calCleanpro(blocks, pointsIcon) {
+  _calCleanpro(blocks, _pointsIcon) {
     const glyph = { approved: "●", pending: "○", due: "—" };
     return html`
       <div class="grid cal-grid-cp">

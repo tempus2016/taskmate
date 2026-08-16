@@ -1147,8 +1147,8 @@ class TaskMateRewardsCard extends LitElement {
       if (a.is_jackpot && !b.is_jackpot) return -1;
       if (!a.is_jackpot && b.is_jackpot) return 1;
       // Within same type, sort by calculated cost ascending
-      const aCost = this._getDisplayCost(a, children);
-      const bCost = this._getDisplayCost(b, children);
+      const aCost = this._getDisplayCost(a);
+      const bCost = this._getDisplayCost(b);
       return aCost - bCost;
     });
 
@@ -1304,7 +1304,7 @@ class TaskMateRewardsCard extends LitElement {
     // pool, so jackpots never show the single-child claim button.
     const enablePoolMode = cardForcesPool || reward.pool_enabled === true || isJackpot;
     // All costs are static — just use reward.cost
-    const displayCost = this._getDisplayCost(reward, children);
+    const displayCost = this._getDisplayCost(reward);
 
     // Get relevant children for this reward
     const relevantChildren = assignedTo.length === 0
@@ -1329,7 +1329,6 @@ class TaskMateRewardsCard extends LitElement {
       const sharePerChild = relevantChildren.length > 0
         ? Math.round(displayCost / relevantChildren.length)
         : displayCost;
-
       relevantChildren.forEach((child, index) => {
         // In pool mode, show allocated points only; in wallet mode show wallet points
         const points = enablePoolMode
@@ -1703,7 +1702,7 @@ class TaskMateRewardsCard extends LitElement {
    * For non-jackpot rewards, each child has their own calculated cost.
    * For jackpot rewards, all children share the same cost.
    */
-  _getDisplayCost(reward, children) {
+  _getDisplayCost(reward) {
     // All reward costs are static — just return reward.cost
     // calculated_costs is still provided by the sensor for jackpot display purposes
     const calculatedCosts = reward.calculated_costs || {};
@@ -1739,9 +1738,6 @@ class TaskMateRewardsCard extends LitElement {
         width: width
       };
     });
-
-    // Calculate total percentage for display
-    const totalPercentage = cost > 0 ? Math.min((totalStars / cost) * 100, 100) : 0;
 
     return html`
       <div class="progress-section">
@@ -1803,7 +1799,7 @@ class TaskMateRewardsCard extends LitElement {
     // shared jar and it's redeemed when full. Combined points only work via the
     // pool, so jackpots never show the single-child claim button.
     const enablePoolMode = cardForcesPool || reward.pool_enabled === true || isJackpot;
-    const displayCost = this._getDisplayCost(reward, children);
+    const displayCost = this._getDisplayCost(reward);
 
     const relevantChildren = assignedTo.length === 0
       ? children
@@ -1821,9 +1817,6 @@ class TaskMateRewardsCard extends LitElement {
     const childContributions = [];
 
     if (isJackpot) {
-      const sharePerChild = relevantChildren.length > 0
-        ? Math.round(displayCost / relevantChildren.length)
-        : displayCost;
       relevantChildren.forEach((child, index) => {
         const points = enablePoolMode
           ? (poolAllocations[child.id] || 0)
@@ -1906,7 +1899,7 @@ class TaskMateRewardsCard extends LitElement {
 
     if (!entity) {
       return html`<ha-card class="tmd" style="--hd:${hd}">
-        ${this._designHeader(0, hd)}
+        ${this._designHeader(0)}
         <div class="tmd-bd"><div class="tmd-empty">${this._t('common.entity_not_found', { entity: this.config.entity })}</div></div>
       </ha-card>`;
     }
@@ -1928,7 +1921,7 @@ class TaskMateRewardsCard extends LitElement {
     const sortedRewards = [...rewards].sort((a, b) => {
       if (a.is_jackpot && !b.is_jackpot) return -1;
       if (!a.is_jackpot && b.is_jackpot) return 1;
-      return this._getDisplayCost(a, children) - this._getDisplayCost(b, children);
+      return this._getDisplayCost(a) - this._getDisplayCost(b);
     });
 
     const cardForcesPool = this.config.enable_pool_mode === true;
@@ -1936,7 +1929,7 @@ class TaskMateRewardsCard extends LitElement {
     const activeChild = activeChildId ? children.find((c) => c.id === activeChildId) : null;
     const anyPoolReward = sortedRewards.some((r) => cardForcesPool || r.pool_enabled === true || r.is_jackpot);
 
-    const header = this._designHeader(rewards.length, hd);
+    const header = this._designHeader(rewards.length);
 
     const body = sortedRewards.length === 0
       ? html`<div class="tmd-empty">${this._t('rewards.empty_title')}<br>${this._t('rewards.empty_subtitle')}</div>`
@@ -1958,7 +1951,7 @@ class TaskMateRewardsCard extends LitElement {
     `;
   }
 
-  _designHeader(count, hd) {
+  _designHeader(count) {
     return html`
       <div class="tmd-hd">
         <span class="ic">🎁</span>
@@ -1969,7 +1962,7 @@ class TaskMateRewardsCard extends LitElement {
       </div>`;
   }
 
-  _designChildSelector(child, pointsIcon, pointsName, design) {
+  _designChildSelector(child, _pointsIcon, _pointsName, _design) {
     const spendable = typeof child.spendable_balance === 'number'
       ? child.spendable_balance : (child.points || 0);
     return html`
@@ -1983,7 +1976,7 @@ class TaskMateRewardsCard extends LitElement {
       </div>`;
   }
 
-  _designRewardRow(reward, children, pointsIcon, pointsName, design) {
+  _designRewardRow(reward, children, pointsIcon, pointsName, _design) {
     const d = this._rewardData(reward, children);
     const tone = this._designTone((reward.id || reward.name || '').length);
     const isLoading = this._loading[reward.id];

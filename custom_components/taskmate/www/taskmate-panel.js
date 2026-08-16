@@ -18,24 +18,6 @@ const PANEL_VERSION = (() => {
   return el ? sanitize(new URLSearchParams(el.src.split("?")[1] || "").get("v")) : "?";
 })();
 
-const TABS = [
-  { id: "children",  lk: "panel.tab_children" },
-  { id: "activity",  lk: "panel.tab_activity" },
-  { id: "insights",  lk: "panel.tab_insights" },
-  { id: "chores",    lk: "panel.tab_chores" },
-  { id: "rewards",   lk: "panel.tab_rewards" },
-  { id: "penalties", lk: "panel.tab_penalties" },
-  { id: "bonuses",   lk: "panel.tab_bonuses" },
-  { id: "groups",    lk: "panel.tab_groups" },
-  { id: "quests",    lk: "panel.tab_quests" },
-  { id: "challenges", lk: "panel.tab_challenges" },
-  { id: "badges",    lk: "panel.tab_badges" },
-  { id: "templates",     lk: "panel.tab_templates" },
-  { id: "notifications", lk: "panel.tab_notifications" },
-  { id: "audit",         lk: "panel.tab_audit" },
-  { id: "settings",      lk: "panel.tab_settings", label: "⚙" },
-];
-
 const BADGE_METRICS = [
   { v: "total_points",  lk: "badge.metric_total_points" },
   { v: "total_chores",  lk: "badge.metric_total_chores" },
@@ -3434,7 +3416,7 @@ class TaskMatePanel extends HTMLElement {
     const assigned = (q.assigned_to && q.assigned_to.length)
       ? children.filter(c => q.assigned_to.includes(c.id)).map(c => c.name)
       : [this._t("panel.quest_all_children")];
-    const stepNames = steps.map((sid, i) => {
+    const stepNames = steps.map((sid) => {
       const name = choreById[sid] ? choreById[sid].name : this._t("panel.quest_missing_chore");
       return `<li>${this._esc(name)}</li>`;
     }).join("");
