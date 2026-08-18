@@ -389,6 +389,15 @@ class ChoresMixin:
         approved. If None/empty, every currently-unapproved completion is approved.
         Reuses async_approve_chore so all award/badge/quest/celebration side-effects
         match single approval exactly.
+
+        Each approval is told not to refresh (#794). ``async_approve_chore``
+        normally ends in a full coordinator rebuild plus a state write for every
+        TaskMate entity, which at ~0.13s a time made a 60-chore Approve All block
+        the websocket call for ~8s with nothing pushed to the frontend meanwhile —
+        the panel and the approvals card sit unchanged for that whole window, so
+        the button reads as broken. The batch refreshes once at the end instead.
+        Safe because the per-approval side-effects (badges, quests, challenges,
+        the all-done check) all read `storage` directly, never `self.data`.
         """
         pending = {c.id for c in self.storage.get_completions() if not c.approved}
         if completion_ids:
@@ -398,8 +407,10 @@ class ChoresMixin:
             targets = [c.id for c in self.storage.get_completions() if not c.approved]
         count = 0
         for cid in targets:
-            await self.async_approve_chore(cid)
+            await self.async_approve_chore(cid, refresh=False)
             count += 1
+        if count:
+            await self.async_refresh()
         return count
 
     async def async_add_chores_bulk(
@@ -991,8 +1002,13 @@ class ChoresMixin:
         await self.async_refresh()
         return completion
 
-    async def async_approve_chore(self, completion_id: str) -> None:
-        """Approve a chore completion."""
+    async def async_approve_chore(self, completion_id: str, refresh: bool = True) -> None:
+        """Approve a chore completion.
+
+        ``refresh=False`` is used by ``async_approve_chores_bulk`` so a batch
+        pays for one coordinator rebuild rather than one per completion (#794).
+        The caller must refresh once it is done.
+        """
         completions = self.storage.get_completions()
         for completion in completions:
             if completion.id == completion_id:
@@ -1058,7 +1074,8 @@ class ChoresMixin:
                         self.storage.update_chore(chore)
 
                     await self.storage.async_save()
-                    await self.async_refresh()
+                    if refresh:
+                        await self.async_refresh()
 
                     # Trigger badge evaluation after approval awards points/chore count/streak
                     if getattr(self, "badges", None):
