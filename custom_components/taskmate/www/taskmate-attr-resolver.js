@@ -30,7 +30,11 @@
     // Full pending-approvals lists (chore_completions / reward_claims). These
     // are NOT filtered to today, so approval cards pointed at the overview
     // entity can still surface a completion left pending from a previous day.
-    "sensor.pending_approvals",
+    // Named "Pending Approvals", but it carries no _attr_has_entity_name, so
+    // the TaskMate device name still prefixes its entity id. This entry was
+    // missing that prefix and so matched nothing at all, silently dropping
+    // chore_completions and mandatory_misses from every merge (#798).
+    "sensor.taskmate_pending_approvals",
   ];
 
   function mergedAttributes(hass, primaryEntityId) {
