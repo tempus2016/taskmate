@@ -60,8 +60,7 @@ class TestCompanionIdsAreReal:
         real = _static_sensor_entity_ids()
         bogus = [c for c in _companions() if c not in real]
         assert bogus == [], (
-            f"resolver references sensors that do not exist: {bogus}. "
-            f"Real singleton sensors: {sorted(real)}"
+            f"resolver references sensors that do not exist: {bogus}. Real singleton sensors: {sorted(real)}"
         )
 
     def test_pending_approvals_is_the_taskmate_prefixed_id(self):
