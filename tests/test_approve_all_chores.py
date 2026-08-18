@@ -35,14 +35,17 @@ def _coord(completions):
     coord.storage = storage
     approved = []
 
-    async def _approve(cid):
+    async def _approve(cid, refresh=True):
         for c in completions:
             if c.id == cid and not c.approved:
                 c.approved = True
                 approved.append(cid)
+        coord._refresh_flags.append(refresh)
 
     coord.async_approve_chore = AsyncMock(side_effect=_approve)
+    coord.async_refresh = AsyncMock()
     coord._approved = approved
+    coord._refresh_flags = []
     return coord
 
 
@@ -75,3 +78,49 @@ def test_empty_pending_returns_zero():
     n = run(coord.async_approve_chores_bulk())
     assert n == 0
     coord.async_approve_chore.assert_not_awaited()
+
+
+class TestBulkApprovalRefreshesOnce:
+    """Approve All rebuilt the whole coordinator once per completion (#794).
+
+    ``async_approve_chore`` ends in ``await self.async_refresh()`` — a full
+    rebuild plus a state write for every TaskMate entity. Reusing it per
+    completion made "Approve All" cost O(N) refreshes: measured at ~0.13 s
+    each on the dev instance, so 60 pending approvals blocked the websocket
+    call for ~8 s with no intermediate state pushed to the frontend. The panel
+    and the approvals card both look frozen for that whole window, which is
+    indistinguishable from the button doing nothing.
+    """
+
+    def test_refresh_happens_once_not_per_completion(self):
+        cs = [_completion(c) for c in "abcdefgh"]
+        coord = _coord(cs)
+        n = run(coord.async_approve_chores_bulk())
+        assert n == 8
+        assert coord.async_refresh.await_count == 1, (
+            f"expected a single refresh for the whole batch, got "
+            f"{coord.async_refresh.await_count} — one per completion is the #794 stall"
+        )
+
+    def test_per_completion_refresh_is_suppressed(self):
+        cs = [_completion(c) for c in "abc"]
+        coord = _coord(cs)
+        run(coord.async_approve_chores_bulk())
+        assert coord._refresh_flags == [False, False, False], (
+            "each approval must be told not to refresh; the batch refreshes at the end"
+        )
+
+    def test_nothing_to_approve_skips_the_refresh_entirely(self):
+        coord = _coord([_completion("a", approved=True)])
+        assert run(coord.async_approve_chores_bulk()) == 0
+        coord.async_refresh.assert_not_awaited()
+
+    def test_single_approval_still_refreshes_by_default(self):
+        """The default must stay refresh-on-approve — a lone approval from the
+        card or a service call has nothing else to trigger the update."""
+        import inspect
+
+        from custom_components.taskmate.coord_chores import ChoresMixin
+
+        sig = inspect.signature(ChoresMixin.async_approve_chore)
+        assert sig.parameters["refresh"].default is True
