@@ -1738,5 +1738,6 @@
   "panel.chore_image_bad_type": "Vel eit JPEG-, PNG- eller WebP-bilete.",
   "child.editor.pre_reader": "Berre bilete (for små born)",
   "child.editor.pre_reader_labels": "Vis namn i biletemodus",
+  "child.editor.pre_reader_points": "Vis poengverdiar i staden for stjerner i biletemodus",
   "common.design.accessible": "Tilgjengeleg"
 }

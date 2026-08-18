@@ -1738,5 +1738,6 @@
   "panel.chore_image_bad_type": "Choose a JPEG, PNG or WebP image.",
   "child.editor.pre_reader": "Picture-only mode (for young children)",
   "child.editor.pre_reader_labels": "Show names in picture mode",
+  "child.editor.pre_reader_points": "Show point values instead of stars in picture mode",
   "common.design.accessible": "Accessible"
 }
