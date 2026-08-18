@@ -248,7 +248,7 @@
   "child.editor.recurrence_dim": "Dim — vis gråtonet, ikke-interaktiv",
   "child.editor.recurrence_helper": "Hva som vises når en gjentagende oppgave er fullført og vinduet ikke har nullstilt seg ennå",
   "child.editor.recurrence_hide": "Skjul — ikke vis før tilgjengelig igjen",
-  "child.editor.recurrence_show": "Vis — vis normalt uansett",
+  "child.editor.recurrence_show": "Vis — vis normalt (fortsatt ikke trykkbar)",
   "child.editor.recurring_when_completed": "Gjentagende oppgaver — når fullført",
   "child.editor.select_child": "Velg et barn...",
   "child.editor.show_countdown": "Vis nedtelling ved siden av «Dagens oppgaver»",

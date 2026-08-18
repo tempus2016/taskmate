@@ -248,7 +248,7 @@
   "child.editor.recurrence_dim": "Gedimmt – ausgegraut anzeigen, nicht interaktiv",
   "child.editor.recurrence_helper": "Was angezeigt werden soll, wenn eine wiederkehrende Aufgabe abgeschlossen wurde und das Fenster noch nicht zurückgesetzt wurde",
   "child.editor.recurrence_hide": "Ausblenden – erst wieder anzeigen, wenn es wieder verfügbar ist",
-  "child.editor.recurrence_show": "Anzeigen – trotzdem normal anzeigen",
+  "child.editor.recurrence_show": "Anzeigen – normal zeigen (weiterhin nicht antippbar)",
   "child.editor.recurring_when_completed": "Wiederkehrende Aufgaben – nach Abschluss",
   "child.editor.select_child": "Wählen Sie ein Kind aus...",
   "child.editor.show_countdown": "Countdown zum Zurücksetzen neben „Heutige Aufgaben“ anzeigen",

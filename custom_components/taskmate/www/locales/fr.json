@@ -248,7 +248,7 @@
   "child.editor.recurrence_dim": "Estomper — afficher en gris, non interactif",
   "child.editor.recurrence_helper": "Que montrer lorsqu'une tâche récurrente a été accomplie et que la fenêtre n'a pas encore été réinitialisée",
   "child.editor.recurrence_hide": "Masquer — ne pas afficher avant d'être à nouveau disponible",
-  "child.editor.recurrence_show": "Afficher — afficher normalement malgré tout",
+  "child.editor.recurrence_show": "Afficher — affichage normal (toujours non cliquable)",
   "child.editor.recurring_when_completed": "Tâches récurrentes — une fois terminées",
   "child.editor.select_child": "Sélectionner un enfant...",
   "child.editor.show_countdown": "Afficher le compte à rebours de réinitialisation à côté de \"Tâches d'aujourd'hui\"",

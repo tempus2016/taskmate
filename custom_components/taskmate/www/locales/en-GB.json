@@ -250,7 +250,7 @@
   "child.editor.recurrence_dim": "Dim — show greyed out, non-interactive",
   "child.editor.recurrence_helper": "What to show when a recurring chore has been completed and the window hasn't reset yet",
   "child.editor.recurrence_hide": "Hide — don't show until available again",
-  "child.editor.recurrence_show": "Show — show normally regardless",
+  "child.editor.recurrence_show": "Show — show normally (still not tappable)",
   "child.editor.recurring_when_completed": "Recurring Chores — When Completed",
   "child.editor.select_child": "Select a child...",
   "child.editor.show_countdown": "Show reset countdown beside \"Today's Chores\"",

@@ -81,13 +81,12 @@ class TestHideMode:
 
 class TestDimMode:
     def test_dim_still_allows_undo(self):
-        """notAvailableRecurrence short-circuits the click handler before the
-        undo branch, so it must not fire for a chore completed today."""
+        """recurrenceLocked short-circuits the click handler before the undo
+        branch, so it must not fire for a chore completed today."""
         row = _row_source()
-        idx = row.index("const notAvailableRecurrence =")
-        # The assignment may wrap over several lines; read to its semicolon.
+        idx = row.index("const recurrenceLocked =")
         stmt = row[idx : row.index(";", idx)]
-        assert "isCompletedForToday" in stmt, f"dimming a chore completed today would block its undo, got: {stmt!r}"
+        assert "isCompletedForToday" in stmt, f"a chore completed today must stay undoable, got: {stmt!r}"
 
     def test_designed_styles_dim_too(self):
         """The designed row builder computes its own `dimmed` flag."""
@@ -107,3 +106,48 @@ class TestLabelComesAlive:
         """The sensor omits `recurrence` when it is the default weekly, so the
         label has to cope with it being absent."""
         assert "child.recurring" in CARD
+
+
+class TestShowModeIsNotTappable:
+    """`show` must not leave a dead-tappable chore (#805).
+
+    `async_complete_chore` returns None for a recurring chore still inside its
+    window, so a tap does nothing. Leaving the row interactive reproduces the
+    "nothing happens" papercut of #794/#799. `dependency_mode` already refuses
+    the tap under both dim and show; recurrence conflated styling with
+    interactivity and only refused it under dim.
+    """
+
+    def test_interactivity_is_separate_from_the_dim_styling(self):
+        row = _row_source()
+        idx = row.index("const notAvailableRecurrence =")
+        stmt = row[idx : row.index(";", idx)]
+        # The dim-styling flag stays mode-gated...
+        assert "'dim'" in stmt
+        # ...but a separate flag must gate the click, without the mode.
+        assert "const recurrenceLocked" in row, "show still shares the dim flag, so the row stays clickable"
+
+    def test_click_handler_refuses_under_show_too(self):
+        row = _row_source()
+        handler = row[row.index("const handleRowClick") : row.index("const isInteractive")]
+        assert "recurrenceLocked" in handler
+
+    def test_row_is_marked_non_interactive(self):
+        row = _row_source()
+        idx = row.index("const isInteractive =")
+        assert "recurrenceLocked" in row[idx : row.index(";", idx)]
+
+    def test_designed_styles_already_agreed(self):
+        """They gate the button on the lock itself, not on the mode."""
+        assert "r.loading || r.blocked || r.recLocked" in CARD
+
+    def test_label_no_longer_promises_normal_behaviour(self):
+        import json
+        import pathlib
+
+        www = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "www"
+        for path in sorted((www / "locales").glob("*.json")):
+            data = json.loads(path.read_text(encoding="utf-8"))
+            value = data["child.editor.recurrence_show"]
+            assert "regardless" not in value.lower(), f"{path.name} still promises 'regardless'"
+            assert value != "Show — show normally regardless"
