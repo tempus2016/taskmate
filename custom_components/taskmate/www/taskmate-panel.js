@@ -1163,12 +1163,29 @@ class TaskMatePanel extends HTMLElement {
   async _doApproveAll() {
     const pending = this._state?.pending_completions || [];
     if (pending.length === 0) return;
+    if (this._approvingAll) return;
     if (!confirm(this._t("panel.activity_approve_all_confirm", { count: pending.length }))) return;
-    const { ok, err } = await this._callWS({
-      type: "taskmate/approve_all_chores",
-      completion_ids: pending.map(c => c.id),
-    });
-    if (!ok) { this._showToast("err", this._t("panel.toast_approve_failed", { error: err })); return; }
+    // Acknowledge the tap straight away (#799). The batch is fast since #794,
+    // but not instant, and a button that looks untouched is indistinguishable
+    // from one that did nothing — which is how #794 came to be reported.
+    this._approvingAll = true;
+    this._render();
+    let result;
+    try {
+      result = await this._callWS({
+        type: "taskmate/approve_all_chores",
+        completion_ids: pending.map(c => c.id),
+      });
+    } finally {
+      // Cleared the moment the call settles, whatever it did — a button stuck
+      // spinning is worse than no busy state at all.
+      this._approvingAll = false;
+    }
+    if (!result.ok) {
+      this._showToast("err", this._t("panel.toast_approve_failed", { error: result.err }));
+      this._render();
+      return;
+    }
     await this._fetchState();
     this._showToast("ok", this._t("panel.activity_approve_all_done", { count: pending.length }));
   }
@@ -3102,7 +3119,9 @@ class TaskMatePanel extends HTMLElement {
             ? `<span class="tm-pill tm-pill-warn">${pendingCompletions.length + pendingClaims.length + pendingSwaps.length}</span>`
             : `<span class="tm-pill tm-pill-success">${this._t("panel.activity_pending_all_clear")}</span>`}
           ${pendingCompletions.length > 0
-            ? `<button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="approve-all-chores" style="margin-left:auto">${this._t("panel.activity_approve_all")}</button>`
+            ? `<button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="approve-all-chores" style="margin-left:auto"${this._approvingAll ? " disabled" : ""}>${this._approvingAll
+                ? `<span class="tm-btn-spinner"></span>${this._t("panel.activity_approve_all_busy")}`
+                : this._t("panel.activity_approve_all")}</button>`
             : ""}
         </h3>
         ${pendingCompletions.length === 0 && pendingClaims.length === 0 && pendingSwaps.length === 0 ? `
@@ -6535,6 +6554,24 @@ class TaskMatePanel extends HTMLElement {
       .tm-btn:hover {
         background: var(--tm-accent-soft);
         border-color: var(--tm-accent);
+      }
+      .tm-btn:disabled {
+        opacity: 0.6;
+        cursor: default;
+        pointer-events: none;
+      }
+      @keyframes tm-spin { to { transform: rotate(360deg); } }
+      .tm-btn-spinner {
+        width: 12px; height: 12px;
+        border: 2px solid currentColor;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: tm-spin 0.7s linear infinite;
+        flex-shrink: 0;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        /* Still reads as busy — the ring just doesn't rotate. */
+        .tm-btn-spinner { animation: none; opacity: 0.7; }
       }
       .tm-btn-raised {
         background: var(--tm-accent);
