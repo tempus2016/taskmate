@@ -39,9 +39,7 @@ def _row_source() -> str:
 
 class TestFieldsAreActuallyAssigned:
     def test_is_recurring_is_assigned(self):
-        assert "_isRecurring =" in _filter_source(), (
-            "the card reads chore._isRecurring but never assigns it"
-        )
+        assert "_isRecurring =" in _filter_source(), "the card reads chore._isRecurring but never assigns it"
 
     def test_lock_uses_a_dedicated_field(self):
         """Deliberately NOT chore._isAvailableForChild. That field is also read
@@ -77,9 +75,7 @@ class TestHideMode:
         # The lock is what hide keys on, so the exclusion has to live in it.
         idx = src.index("_isRecurrenceLocked =")
         lock = src[idx : src.index(";", idx)]
-        assert "completedToday" in lock, (
-            f"the lock must exclude chores completed today, got: {lock!r}"
-        )
+        assert "completedToday" in lock, f"the lock must exclude chores completed today, got: {lock!r}"
         assert "_isRecurrenceLocked" in src[src.index("recurrenceDoneMode === 'hide'") - 60 :]
 
 
@@ -91,9 +87,7 @@ class TestDimMode:
         idx = row.index("const notAvailableRecurrence =")
         # The assignment may wrap over several lines; read to its semicolon.
         stmt = row[idx : row.index(";", idx)]
-        assert "isCompletedForToday" in stmt, (
-            f"dimming a chore completed today would block its undo, got: {stmt!r}"
-        )
+        assert "isCompletedForToday" in stmt, f"dimming a chore completed today would block its undo, got: {stmt!r}"
 
     def test_designed_styles_dim_too(self):
         """The designed row builder computes its own `dimmed` flag."""
