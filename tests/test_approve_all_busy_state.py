@@ -43,7 +43,7 @@ class TestPanelBusyState:
     def test_setting_the_flag_triggers_a_render(self):
         """Without this the flag changes nothing on screen."""
         h = _panel_handler()
-        after_set = h[h.index("this._approvingAll = true;"):]
+        after_set = h[h.index("this._approvingAll = true;") :]
         assert "this._render();" in after_set.split("taskmate/approve_all_chores")[0]
 
     def test_a_second_tap_is_ignored_while_running(self):
@@ -51,7 +51,7 @@ class TestPanelBusyState:
 
     def test_button_is_disabled_and_relabelled_while_busy(self):
         assert 'data-act="approve-all-chores"' in PANEL
-        button = PANEL[PANEL.index('data-act="approve-all-chores"') - 400:]
+        button = PANEL[PANEL.index('data-act="approve-all-chores"') - 400 :]
         button = button[: button.index("</button>")]
         assert "_approvingAll" in button, "the button never consults the busy flag"
         assert "disabled" in button
@@ -66,16 +66,14 @@ class TestPanelBusyState:
 
     def test_spinner_respects_reduced_motion(self):
         """An indefinitely spinning element is exactly what that setting is for."""
-        block = PANEL[PANEL.index(".tm-btn-spinner {"):]
+        block = PANEL[PANEL.index(".tm-btn-spinner {") :]
         assert "prefers-reduced-motion" in block[:900]
 
 
 class TestCardBusyState:
     def test_both_render_paths_show_the_busy_label(self):
         """Classic and designed each render their own Approve All button."""
-        assert CARD.count("approvals.approve_all_busy") == 2, (
-            "both approve-all buttons must show the busy label"
-        )
+        assert CARD.count("approvals.approve_all_busy") == 2, "both approve-all buttons must show the busy label"
 
     def test_button_stays_disabled_while_running(self):
         assert CARD.count("""?disabled="${this._loading['__all__']}\"""") == 2
