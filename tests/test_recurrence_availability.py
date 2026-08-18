@@ -125,9 +125,7 @@ class TestShowModeIsNotTappable:
         # The dim-styling flag stays mode-gated...
         assert "'dim'" in stmt
         # ...but a separate flag must gate the click, without the mode.
-        assert "const recurrenceLocked" in row, (
-            "show still shares the dim flag, so the row stays clickable"
-        )
+        assert "const recurrenceLocked" in row, "show still shares the dim flag, so the row stays clickable"
 
     def test_click_handler_refuses_under_show_too(self):
         row = _row_source()
