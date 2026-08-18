@@ -248,7 +248,7 @@
   "child.editor.recurrence_dim": "Atenuar — mostrar em cinzento, sem interação",
   "child.editor.recurrence_helper": "O que mostrar quando uma tarefa recorrente foi concluída e a janela ainda não reiniciou",
   "child.editor.recurrence_hide": "Ocultar — não mostrar até estar disponível novamente",
-  "child.editor.recurrence_show": "Mostrar — mostrar normalmente",
+  "child.editor.recurrence_show": "Mostrar — mostrar normalmente (continua sem toque)",
   "child.editor.recurring_when_completed": "Tarefas Recorrentes — Quando Concluídas",
   "child.editor.select_child": "Selecionar uma criança...",
   "child.editor.show_countdown": "Mostrar contagem regressiva de reinício junto a \"Tarefas de Hoje\"",

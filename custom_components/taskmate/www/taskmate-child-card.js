@@ -3724,8 +3724,12 @@ class TaskMateChildCard extends LitElement {
     // Click handler for the entire row
     const notDueToday = chore._hasDueDays && !chore._isDueToday && this.config.due_days_mode === 'dim';
     const recurrenceDoneMode = this.config.recurrence_done_mode || 'dim';
-    const notAvailableRecurrence = !!chore._isRecurrenceLocked
-      && !isCompletedForToday && recurrenceDoneMode === 'dim';
+    // The tap is refused whenever the chore is locked: async_complete_chore
+    // no-ops a recurring chore inside its window, so a clickable row under
+    // `show` would just swallow the tap (#805). Only the dim STYLING is
+    // mode-gated. Same split dependency_mode uses.
+    const recurrenceLocked = !!chore._isRecurrenceLocked && !isCompletedForToday;
+    const notAvailableRecurrence = recurrenceLocked && recurrenceDoneMode === 'dim';
     // Elapsed: only dim incomplete chores — completed ones keep their green "done" style
     const elapsedTimeMode = this.config.elapsed_time_mode || 'dim';
     const timeElapsed = chore._isTimeElapsed && !isCompletedForToday && elapsedTimeMode === 'dim';
@@ -3744,7 +3748,7 @@ class TaskMateChildCard extends LitElement {
     const handleRowClick = () => {
       if (isLoading) return;
       if (notDueToday) return;  // Dim mode — not interactive
-      if (notAvailableRecurrence) return;  // Recurrence window not open — not interactive
+      if (recurrenceLocked) return;  // Recurrence window not open — not interactive
       if (isLockedPreview) return;  // Next-period preview — not yet claimable
       if (depBlocked) return;  // Prerequisite chore not approved yet
       if (timeElapsed) return;  // Time period passed — not interactive
@@ -3754,7 +3758,7 @@ class TaskMateChildCard extends LitElement {
         this._handleComplete(chore, child);
       }
     };
-    const isInteractive = !(isLoading || notDueToday || notAvailableRecurrence || isLockedPreview || depBlocked || timeElapsed);
+    const isInteractive = !(isLoading || notDueToday || recurrenceLocked || isLockedPreview || depBlocked || timeElapsed);
     const handleRowKeyDown = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();

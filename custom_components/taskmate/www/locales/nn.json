@@ -248,7 +248,7 @@
   "child.editor.recurrence_dim": "Dim — vis gråtona, ikkje-interaktiv",
   "child.editor.recurrence_helper": "Kva som visast når ei gjentakande oppgåve er fullført og vindauget ikkje har nullstilt seg enno",
   "child.editor.recurrence_hide": "Gøym — ikkje vis før tilgjengeleg att",
-  "child.editor.recurrence_show": "Vis — vis normalt uansett",
+  "child.editor.recurrence_show": "Vis — vis normalt (framleis ikkje trykkbar)",
   "child.editor.recurring_when_completed": "Gjentakande oppgåver — når fullført",
   "child.editor.select_child": "Vel eit born...",
   "child.editor.show_countdown": "Vis nedteljing ved sida av «Dagens oppgåver»",
