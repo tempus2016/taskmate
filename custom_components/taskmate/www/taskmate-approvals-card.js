@@ -106,6 +106,9 @@ class TaskMateApprovalsCard extends LitElement {
       }
 
       .approve-all-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         background: rgba(255, 255, 255, 0.2);
         color: white;
         border: 1px solid rgba(255, 255, 255, 0.45);
@@ -118,6 +121,18 @@ class TaskMateApprovalsCard extends LitElement {
       }
       .approve-all-btn:hover { background: rgba(255, 255, 255, 0.3); }
       .approve-all-btn:disabled { opacity: 0.6; cursor: default; }
+      /* Reuses the spin keyframes already defined for the loading spinner. */
+      .btn-spinner {
+        width: 12px; height: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.45);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .btn-spinner { animation: none; opacity: 0.7; }
+      }
 
       .card-content { padding: 16px; }
 
@@ -537,7 +552,9 @@ class TaskMateApprovalsCard extends LitElement {
           <div class="header-right">
             ${filteredCompletions.length > 0
               ? html`<button class="approve-all-btn" ?disabled="${this._loading['__all__']}"
-                  @click="${() => this._handleApproveAll(filteredCompletions)}">${this._t('approvals.approve_all')}</button>`
+                  @click="${() => this._handleApproveAll(filteredCompletions)}">${this._loading['__all__']
+                    ? html`<span class="btn-spinner"></span>${this._t('approvals.approve_all_busy')}`
+                    : this._t('approvals.approve_all')}</button>`
               : ""}
             ${totalPending > 0 ? html`<span class="pending-count">${totalPending}</span>` : ""}
           </div>
@@ -724,7 +741,9 @@ class TaskMateApprovalsCard extends LitElement {
         <span class="tt">${title}</span>
         ${completions.length > 0
           ? html`<button class="approve-all-btn" ?disabled="${this._loading['__all__']}"
-              @click="${() => this._handleApproveAll(completions)}">${this._t('approvals.approve_all')}</button>`
+              @click="${() => this._handleApproveAll(completions)}">${this._loading['__all__']
+                ? html`<span class="btn-spinner"></span>${this._t('approvals.approve_all_busy')}`
+                : this._t('approvals.approve_all')}</button>`
           : ""}
         ${count > 0 ? html`<span class="cnt">${count}</span>` : ""}
       </div>`;
