@@ -1272,6 +1272,11 @@ class TaskMateChildCard extends LitElement {
       .pre-tile-icon ha-icon { --mdc-icon-size: 64px; color: var(--primary-color); }
       .pre-tile-stars { display: flex; gap: 2px; }
       .pre-tile-stars ha-icon { --mdc-icon-size: 18px; color: #f1c40f; }
+      .pre-tile-points {
+        display: flex; align-items: center; gap: 4px;
+        font-size: 1.15rem; font-weight: 700; color: var(--primary-text-color);
+      }
+      .pre-tile-points ha-icon { --mdc-icon-size: 20px; color: #f1c40f; }
       .pre-tile-label {
         font-size: 0.85rem; font-weight: 700; text-align: center;
         color: var(--secondary-text-color); line-height: 1.2;
@@ -1282,6 +1287,7 @@ class TaskMateChildCard extends LitElement {
       }
       .pre-tile.done .pre-tile-icon ha-icon { opacity: 0.35; }
       .pre-tile.done .pre-tile-stars { opacity: 0.35; }
+      .pre-tile.done .pre-tile-points { opacity: 0.35; }
       .pre-tile-tick {
         position: absolute; inset: 0;
         display: grid; place-items: center;
@@ -2419,7 +2425,7 @@ class TaskMateChildCard extends LitElement {
                 ${this.config.pre_reader === true ? html`
                   <div class="pre-reader-grid">
                     ${childChores.map((chore) =>
-                      this._renderPreReaderTile(chore, child, todaysCompletions))}
+                      this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
                   </div>
                 ` : childChores.map((chore, index) => html`
                   ${chore.task_type === 'timed'
@@ -2684,7 +2690,7 @@ class TaskMateChildCard extends LitElement {
       ? html`
         <div class="pre-reader-grid">
           ${childChores.map((chore) =>
-            this._renderPreReaderTile(chore, child, todaysCompletions))}
+            this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
         </div>`
       : design === "playroom" ? this._designPlayroom(child, rows, remaining, tone) :
         design === "console"  ? this._designConsole(child, rows, remaining, tone) :
@@ -3500,8 +3506,12 @@ class TaskMateChildCard extends LitElement {
    * Pre-reader mode (#683): a picture-only tile for children who can't read
    * yet. No chore name, no numbers — a big icon, a row of stars for the
    * points, and a huge tick when it's done.
+   *
+   * `pre_reader_points` (#795) swaps the stars for the value itself, for
+   * families whose children can already read a number and who found the
+   * rounded star count contradicted the balance on the rest of the dashboard.
    */
-  _renderPreReaderTile(chore, child, todaysCompletions = []) {
+  _renderPreReaderTile(chore, child, pointsIcon, todaysCompletions = []) {
     const dailyLimit = chore.daily_limit || 1;
     // Counted the same way the standard row does: pending completions hold a
     // place too, and a parent completing on behalf lands under "__parent__".
@@ -3515,8 +3525,11 @@ class TaskMateChildCard extends LitElement {
     const available = chore._isAvailableForChild !== false && !chore._isLockedPreview;
 
     // Stars, not digits: a 4-year-old can count pictures, not read "+3".
+    // The count is deliberately lossy — it rounds and clamps to 1..5 — which
+    // is why showing the number instead is opt-in rather than a second row.
     const points = chore.effective_points ?? chore.points ?? 0;
     const stars = Math.max(1, Math.min(5, Math.round(points / 2) || 1));
+    const showPoints = this.config.pre_reader_points === true;
 
     const v = window.__taskmate_chore_visual(chore);
     const icon = (v.kind === "icon" ? v.icon : "")
@@ -3539,9 +3552,15 @@ class TaskMateChildCard extends LitElement {
             : html`<ha-icon icon="${icon}"></ha-icon>`}
         </div>
         ${isDone ? html`<div class="pre-tile-tick"><ha-icon icon="mdi:check-bold"></ha-icon></div>` : ''}
-        <div class="pre-tile-stars">
-          ${Array.from({ length: stars }, () => html`<ha-icon icon="mdi:star"></ha-icon>`)}
-        </div>
+        ${showPoints
+          ? html`
+            <div class="pre-tile-points">
+              <ha-icon icon="${pointsIcon}"></ha-icon>+${points}
+            </div>`
+          : html`
+            <div class="pre-tile-stars">
+              ${Array.from({ length: stars }, () => html`<ha-icon icon="mdi:star"></ha-icon>`)}
+            </div>`}
         ${this.config.pre_reader_labels === true
           ? html`<div class="pre-tile-label">${chore.name}</div>` : ''}
       </button>
@@ -4718,6 +4737,7 @@ class TaskMateChildCardEditor extends LitElement {
       { name: 'show_description', selector: { boolean: {} } },
       { name: 'pre_reader', selector: { boolean: {} } },
       { name: 'pre_reader_labels', selector: { boolean: {} } },
+      { name: 'pre_reader_points', selector: { boolean: {} } },
       { name: 'debug', selector: { boolean: {} } },
     ];
   }
@@ -4735,6 +4755,7 @@ class TaskMateChildCardEditor extends LitElement {
       show_description: this._t('child.editor.show_description'),
       pre_reader: this._t('child.editor.pre_reader'),
       pre_reader_labels: this._t('child.editor.pre_reader_labels'),
+      pre_reader_points: this._t('child.editor.pre_reader_points'),
       debug: this._t('child.editor.show_debug'),
     };
     return labels[entry.name] ?? entry.name;
@@ -4767,6 +4788,7 @@ class TaskMateChildCardEditor extends LitElement {
       show_description: this.config.show_description === true,
       pre_reader: this.config.pre_reader === true,
       pre_reader_labels: this.config.pre_reader_labels === true,
+      pre_reader_points: this.config.pre_reader_points === true,
       debug: this.config.debug === true,
     };
 

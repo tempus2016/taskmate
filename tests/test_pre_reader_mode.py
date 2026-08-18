@@ -19,7 +19,7 @@ CARD = (WWW / "taskmate-child-card.js").read_text(encoding="utf-8")
 
 def _tile_source() -> str:
     """The tile method body — sliced from its definition, not its call site."""
-    start = CARD.index("  _renderPreReaderTile(chore, child, todaysCompletions = []) {")
+    start = CARD.index("  _renderPreReaderTile(chore, child, pointsIcon, todaysCompletions = []) {")
     return CARD[start : CARD.index("_renderChoreCard(chore, child, pointsIcon", start)]
 
 
@@ -132,3 +132,60 @@ class TestPreReaderRendersOnEveryDesign:
 
     def test_designed_styles_render_the_picture_tiles(self):
         assert "_renderPreReaderTile(" in self._designed_region()
+
+
+class TestPreReaderPointValues:
+    """Show the real point value instead of stars in picture mode (#795).
+
+    The star row is `round(points / 2)` clamped to 1..5, so a 7-point and an
+    8-point chore both draw four stars — a parent who wants the dashboard to
+    agree with the child's balance needs the number itself.
+    """
+
+    def test_points_row_is_opt_in(self):
+        """Stars are what every existing picture-mode card already shows."""
+        assert "this.config.pre_reader_points === true" in _tile_source()
+
+    def test_stars_remain_the_default(self):
+        tile = _tile_source()
+        assert "pre-tile-stars" in tile
+        assert "mdi:star" in tile
+
+    def test_points_row_renders_the_exact_value(self):
+        """Not the star approximation — the number the completion awards."""
+        tile = _tile_source()
+        assert "pre-tile-points" in tile
+        assert "+${points}" in tile
+
+    def test_points_row_uses_the_effective_value(self):
+        """Difficulty multipliers and boosts land in effective_points."""
+        assert "chore.effective_points ?? chore.points ?? 0" in _tile_source()
+
+    def test_tile_takes_the_family_points_icon(self):
+        """Hard-coding mdi:star would contradict a family that renamed points."""
+        tile = _tile_source()
+        assert "_renderPreReaderTile(chore, child, pointsIcon, todaysCompletions = [])" in CARD
+        assert 'icon="${pointsIcon}"' in tile
+
+    def test_both_render_paths_pass_the_points_icon(self):
+        """Classic and designed each call the tile — a missed argument would
+        leave the icon undefined on one style only."""
+        calls = CARD.count("this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions)")
+        assert calls == 2, f"expected both call sites to pass pointsIcon, found {calls}"
+
+    def test_points_row_is_styled(self):
+        assert ".pre-tile-points {" in CARD
+
+    def test_points_row_dims_when_done(self):
+        """The star row already dims; a points row that stayed bright would
+        read as "still to earn"."""
+        assert ".pre-tile.done .pre-tile-points" in CARD
+
+    def test_editor_exposes_the_option(self):
+        assert "name: 'pre_reader_points'" in CARD
+        assert "pre_reader_points: this.config.pre_reader_points === true" in CARD
+
+    def test_string_exists_in_every_locale(self):
+        for path in sorted((WWW / "locales").glob("*.json")):
+            data = json.loads(path.read_text(encoding="utf-8"))
+            assert "child.editor.pre_reader_points" in data, f"{path.name} missing the label"

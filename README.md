@@ -541,12 +541,14 @@ entity: sensor.taskmate_overview
 child_id: <child_id>
 pre_reader: true
 pre_reader_labels: false   # optional; adds the chore name back under each tile
+pre_reader_points: false   # optional; shows the point value instead of the stars
 ```
 
 ### Key Points
 
 - **Chores now have a picture.** Set one per chore in the panel (next to the description). Without it a tile falls back to the time-of-day icon — fine for one chore, useless for telling "brush teeth" from "get dressed", so set them.
 - **Points are shown as stars, not digits** (1–5, scaled from the chore's value). A four-year-old can count pictures.
+- **`pre_reader_points: true` shows the number instead.** The star count rounds and clamps to 1–5, so a 7-point and an 8-point chore both draw four stars. Turn this on for a child who can already read a number and you get `+7` — matching what the completion actually awards, and what the rest of the dashboard shows.
 - Tiles are at least 128 px with a large tap target, and a **done tile stays tappable** so a mis-tap can be undone, exactly as on the standard card.
 - **Opt-in.** An existing dashboard never turns into pictures on its own, and names stay off unless you ask for them.
 

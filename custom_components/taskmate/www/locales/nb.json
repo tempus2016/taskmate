@@ -1738,5 +1738,6 @@
   "panel.chore_image_bad_type": "Velg et JPEG-, PNG- eller WebP-bilde.",
   "child.editor.pre_reader": "Kun bilder (for små barn)",
   "child.editor.pre_reader_labels": "Vis navn i bildemodus",
+  "child.editor.pre_reader_points": "Vis poengverdier i stedet for stjerner i bildemodus",
   "common.design.accessible": "Tilgjengelig"
 }
