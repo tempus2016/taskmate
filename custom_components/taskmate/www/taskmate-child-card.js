@@ -2650,6 +2650,7 @@ class TaskMateChildCard extends LitElement {
     const dueDaysMode = this.config.due_days_mode || "hide";
     const elapsedTimeMode = this.config.elapsed_time_mode || "dim";
     const dependencyMode = this.config.dependency_mode || "hide";
+    const recurrenceDoneMode = this.config.recurrence_done_mode || "dim";
 
     // Annotate each chore with done-state + handlers, preserving the classic path's logic.
     const rows = childChores.map((chore, i) => {
@@ -2658,8 +2659,11 @@ class TaskMateChildCard extends LitElement {
       // Blocked chores only reach here under dim/show — hide is filtered
       // upstream. Either way the tap must be refused (#793).
       const blocked = !!chore._isDependencyBlocked && !done;
+      // Recurring chore still inside its cooldown. Excluded when done so the
+      // undo chip stays live, exactly as on the classic row.
+      const recLocked = !!chore._isRecurrenceLocked && !done;
       const onAct = () => {
-        if (loading || blocked) return;
+        if (loading || blocked || recLocked) return;
         if (done) this._handleUndo(chore, child, completions);
         else this._handleComplete(chore, child);
       };
@@ -2670,10 +2674,11 @@ class TaskMateChildCard extends LitElement {
         (notDueToday && dueDaysMode === "dim") ||
         (chore._isTimeElapsed && elapsedTimeMode === "dim") ||
         (blocked && dependencyMode === "dim") ||
+        (chore._isRecurrenceLocked && recurrenceDoneMode === "dim") ||
         chore._isLockedPreview === true
       );
       return {
-        chore, child, done, loading, onAct, index: i, dimmed, blocked,
+        chore, child, done, loading, onAct, index: i, dimmed, blocked, recLocked,
         tone: this._designTone(i),
         glyph: this._choreGlyph(chore),
         points: chore.effective_points ?? chore.points,
@@ -2806,12 +2811,18 @@ class TaskMateChildCard extends LitElement {
     // A blocked chore says what unlocks it here too — the classic row carries
     // the same label, and a dimmed row with no reason is just confusing (#793).
     const depNames = r.blocked ? (r.chore._dependencyNames || []) : [];
+    // Same reason label the classic row carries, so a dimmed designed row is
+    // not just mysteriously grey (#803).
+    const recLabel = r.recLocked
+      ? (r.chore.recurrence ? r.chore.recurrence.replace(/_/g, " ") : this._t("child.recurring"))
+      : "";
     return html`
-      ${r.mandatory || r.photo || depNames.length ? html`
+      ${r.mandatory || r.photo || depNames.length || recLabel ? html`
         <div class="tmd-meta">
           ${r.mandatory ? html`<span class="tmd-tag mandatory">⚠ ${this._t("child.mandatory")}</span>` : ""}
           ${r.photo ? html`<span class="tmd-tag photo">📷 ${this._t("child.photo_needed")}</span>` : ""}
           ${depNames.length ? html`<span class="tmd-tag">🔒 ${this._t("child.blocked_by_dependency", { chores: depNames.join(", ") })}</span>` : ""}
+          ${recLabel ? html`<span class="tmd-tag">🕒 ${recLabel}</span>` : ""}
         </div>` : ""}
       ${showDesc ? html`<div class="tmd-desc">${r.chore.description}</div>` : ""}`;
   }
@@ -2827,7 +2838,7 @@ class TaskMateChildCard extends LitElement {
 
   _designDoneBtn(r, label, cls) {
     return html`<button class="btn ${cls || ""}"
-      ?disabled=${r.loading || r.blocked}
+      ?disabled=${r.loading || r.blocked || r.recLocked}
       @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
   }
 
@@ -2997,7 +3008,15 @@ class TaskMateChildCard extends LitElement {
     // Hide by default: the backend simply reports a dependency-blocked chore
     // as unavailable, so hiding is what matches it (#793).
     const dependencyMode = this.config.dependency_mode || 'hide';
+    const recurrenceDoneMode = this.config.recurrence_done_mode || 'dim';
     const allCompletionsToday = attrs.todays_completions || [];
+    // Availability comes from the backend's own matrix (#803). The card cannot
+    // work a recurrence window out for itself: last_completed is not exposed,
+    // `recurrence` is omitted from the payload when it is the default weekly,
+    // and the maths is calendar-month aware. A missing matrix (older backend,
+    // or a sensor that hasn't published yet) has to read as available, or the
+    // card would blank itself.
+    const availability = attrs.chore_availability || {};
 
     // First, filter chores for this child and time category
     const filteredChores = chores.filter(chore => {
@@ -3165,6 +3184,21 @@ class TaskMateChildCard extends LitElement {
             .filter(Boolean)
         : [];
       if (chore._isDependencyBlocked && dependencyMode === 'hide') return false;
+
+      // Recurring chores in their cooldown window (#803). Both of these are
+      // read by the render path, which until now found them undefined.
+      chore._isRecurring = (chore.schedule_mode || 'specific_days') === 'recurring';
+      const availableNow = (availability[chore.id] || {})[childId] !== false;
+      // Completing a recurring chore makes it unavailable at once, so hiding on
+      // availability alone would vanish it the instant it is ticked — no done
+      // state, no way to undo. The mode is about the days *after* that.
+      const completedToday = allCompletionsToday.some(
+        (comp) => comp.chore_id === chore.id
+          && (String(comp.child_id) === childId || comp.child_id === '__parent__')
+          && !comp.bonus_subtask_id
+      );
+      chore._isRecurrenceLocked = chore._isRecurring && !availableNow && !completedToday;
+      if (chore._isRecurrenceLocked && recurrenceDoneMode === 'hide') return false;
 
       // Mark whether this chore's time period has elapsed (grace-aware).
       chore._isTimeElapsed = this._isTimePeriodElapsed(chore);
@@ -3690,7 +3724,8 @@ class TaskMateChildCard extends LitElement {
     // Click handler for the entire row
     const notDueToday = chore._hasDueDays && !chore._isDueToday && this.config.due_days_mode === 'dim';
     const recurrenceDoneMode = this.config.recurrence_done_mode || 'dim';
-    const notAvailableRecurrence = chore._isRecurring && !chore._isAvailableForChild && recurrenceDoneMode === 'dim';
+    const notAvailableRecurrence = !!chore._isRecurrenceLocked
+      && !isCompletedForToday && recurrenceDoneMode === 'dim';
     // Elapsed: only dim incomplete chores — completed ones keep their green "done" style
     const elapsedTimeMode = this.config.elapsed_time_mode || 'dim';
     const timeElapsed = chore._isTimeElapsed && !isCompletedForToday && elapsedTimeMode === 'dim';
@@ -3767,7 +3802,7 @@ class TaskMateChildCard extends LitElement {
                 ${this._t('child.blocked_by_dependency', { chores: chore._dependencyNames.join(', ') })}
               </div>
             ` : ''}
-            ${chore._isRecurring && !chore._isAvailableForChild ? html`
+            ${chore._isRecurrenceLocked ? html`
               <div class="recurrence-label">
                 <ha-icon icon="mdi:clock-outline"></ha-icon>
                 ${chore.recurrence ? chore.recurrence.replace(/_/g, ' ') : this._t('child.recurring')}
