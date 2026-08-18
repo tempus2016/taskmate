@@ -1530,6 +1530,10 @@ class TaskMatePanel extends HTMLElement {
       image_url: d.image_url || "",
       points: Number(d.points) || 0,
       assigned_to: d.assigned_to || [],
+      // The dialog tracks this via toggle-depends, but it was never sent, so a
+      // dependency could neither be saved nor cleared — _ws_update_chore only
+      // applies fields present in the message (#793).
+      depends_on: d.depends_on || [],
       requires_approval: !!d.requires_approval,
       time_category: d.time_category || "anytime",
       claim_allowance_minutes: Math.max(0, Number(d.claim_allowance_minutes) || 0),

@@ -1144,6 +1144,23 @@ class TaskMateChildCard extends LitElement {
 
       .recurrence-label ha-icon { --mdc-icon-size: 12px; }
 
+      /* Dependency-blocked (#793). Under dim the row stays readable so a child
+         can see what unlocks next; show leaves it looking normal, but either
+         way the tap is refused in the handler. */
+      .chore-card.dependency-blocked {
+        opacity: 0.5;
+        filter: grayscale(0.5);
+      }
+      .dependency-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--secondary-text-color);
+      }
+      .dependency-label ha-icon { --mdc-icon-size: 12px; }
+
 
       /* Recurring chore not yet available — dimmed/greyed */
       .chore-card.recurrence-unavailable {
@@ -2632,13 +2649,17 @@ class TaskMateChildCard extends LitElement {
 
     const dueDaysMode = this.config.due_days_mode || "hide";
     const elapsedTimeMode = this.config.elapsed_time_mode || "dim";
+    const dependencyMode = this.config.dependency_mode || "hide";
 
     // Annotate each chore with done-state + handlers, preserving the classic path's logic.
     const rows = childChores.map((chore, i) => {
       const { done, completions } = this._isChoreDone(chore, child, todaysCompletions);
       const loading = !!this._loading[chore.id];
+      // Blocked chores only reach here under dim/show — hide is filtered
+      // upstream. Either way the tap must be refused (#793).
+      const blocked = !!chore._isDependencyBlocked && !done;
       const onAct = () => {
-        if (loading) return;
+        if (loading || blocked) return;
         if (done) this._handleUndo(chore, child, completions);
         else this._handleComplete(chore, child);
       };
@@ -2648,10 +2669,11 @@ class TaskMateChildCard extends LitElement {
       const dimmed = !done && (
         (notDueToday && dueDaysMode === "dim") ||
         (chore._isTimeElapsed && elapsedTimeMode === "dim") ||
+        (blocked && dependencyMode === "dim") ||
         chore._isLockedPreview === true
       );
       return {
-        chore, child, done, loading, onAct, index: i, dimmed,
+        chore, child, done, loading, onAct, index: i, dimmed, blocked,
         tone: this._designTone(i),
         glyph: this._choreGlyph(chore),
         points: chore.effective_points ?? chore.points,
@@ -2781,11 +2803,15 @@ class TaskMateChildCard extends LitElement {
   /** Shared meta tags (mandatory / photo / description) for a designed chore row. */
   _designChoreMeta(r) {
     const showDesc = this.config.show_description === true && r.chore.description;
+    // A blocked chore says what unlocks it here too — the classic row carries
+    // the same label, and a dimmed row with no reason is just confusing (#793).
+    const depNames = r.blocked ? (r.chore._dependencyNames || []) : [];
     return html`
-      ${r.mandatory || r.photo ? html`
+      ${r.mandatory || r.photo || depNames.length ? html`
         <div class="tmd-meta">
           ${r.mandatory ? html`<span class="tmd-tag mandatory">⚠ ${this._t("child.mandatory")}</span>` : ""}
           ${r.photo ? html`<span class="tmd-tag photo">📷 ${this._t("child.photo_needed")}</span>` : ""}
+          ${depNames.length ? html`<span class="tmd-tag">🔒 ${this._t("child.blocked_by_dependency", { chores: depNames.join(", ") })}</span>` : ""}
         </div>` : ""}
       ${showDesc ? html`<div class="tmd-desc">${r.chore.description}</div>` : ""}`;
   }
@@ -2801,7 +2827,7 @@ class TaskMateChildCard extends LitElement {
 
   _designDoneBtn(r, label, cls) {
     return html`<button class="btn ${cls || ""}"
-      ?disabled=${r.loading}
+      ?disabled=${r.loading || r.blocked}
       @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
   }
 
@@ -2968,6 +2994,10 @@ class TaskMateChildCard extends LitElement {
     const dueDaysMode = this.config.due_days_mode || 'hide';
     const showDueDaysOnly = this.config.show_due_days_only !== false;
     const elapsedTimeMode = this.config.elapsed_time_mode || 'dim';
+    // Hide by default: the backend simply reports a dependency-blocked chore
+    // as unavailable, so hiding is what matches it (#793).
+    const dependencyMode = this.config.dependency_mode || 'hide';
+    const allCompletionsToday = attrs.todays_completions || [];
 
     // First, filter chores for this child and time category
     const filteredChores = chores.filter(chore => {
@@ -3114,6 +3144,27 @@ class TaskMateChildCard extends LitElement {
       // Store due status on chore object for rendering
       chore._isDueToday = isDueToday;
       chore._hasDueDays = hasDueDays;
+
+      // Chore dependencies (#793). Mirrors is_chore_available_for_child():
+      // a prerequisite counts as satisfied only when this same child has an
+      // approved, non-bonus completion of it today. todays_completions is
+      // already scoped to today, so the date check is implicit. A looser rule
+      // here would unlock a chore the backend then refuses to complete.
+      const dependsOn = Array.isArray(chore.depends_on) ? chore.depends_on : [];
+      chore._isDependencyBlocked = dependsOn.length > 0 && !dependsOn.every(
+        (depId) => allCompletionsToday.some(
+          (comp) => comp.chore_id === depId
+            && String(comp.child_id) === childId
+            && comp.approved
+            && !comp.bonus_subtask_id
+        )
+      );
+      chore._dependencyNames = chore._isDependencyBlocked
+        ? dependsOn
+            .map((depId) => (chores.find((c) => c.id === depId) || {}).name)
+            .filter(Boolean)
+        : [];
+      if (chore._isDependencyBlocked && dependencyMode === 'hide') return false;
 
       // Mark whether this chore's time period has elapsed (grace-aware).
       chore._isTimeElapsed = this._isTimePeriodElapsed(chore);
@@ -3522,7 +3573,8 @@ class TaskMateChildCard extends LitElement {
     );
     const isDone = childCompletionsToday.length >= dailyLimit;
     const isLoading = this._loading[chore.id];
-    const available = chore._isAvailableForChild !== false && !chore._isLockedPreview;
+    const available = chore._isAvailableForChild !== false && !chore._isLockedPreview
+      && !chore._isDependencyBlocked;
 
     // Stars, not digits: a 4-year-old can count pictures, not read "+3".
     // The count is deliberately lossy — it rounds and clamps to 1..5 — which
@@ -3643,6 +3695,11 @@ class TaskMateChildCard extends LitElement {
     const elapsedTimeMode = this.config.elapsed_time_mode || 'dim';
     const timeElapsed = chore._isTimeElapsed && !isCompletedForToday && elapsedTimeMode === 'dim';
     const isLockedPreview = !!chore._isLockedPreview && !isCompletedForToday;
+    // Under dim/show the blocked chore is still on screen, so the tap has to be
+    // refused here — the backend would reject the completion anyway (#793).
+    // Only `dim` greys it out; `show` is meant to look untouched.
+    const depBlocked = !!chore._isDependencyBlocked && !isCompletedForToday;
+    const depDimmed = depBlocked && (this.config.dependency_mode || 'hide') === 'dim';
     const periodStartHour = isLockedPreview
       ? (this._getPeriodHours(chore.time_category)?.[0] ?? null)
       : null;
@@ -3654,6 +3711,7 @@ class TaskMateChildCard extends LitElement {
       if (notDueToday) return;  // Dim mode — not interactive
       if (notAvailableRecurrence) return;  // Recurrence window not open — not interactive
       if (isLockedPreview) return;  // Next-period preview — not yet claimable
+      if (depBlocked) return;  // Prerequisite chore not approved yet
       if (timeElapsed) return;  // Time period passed — not interactive
       if (isCompletedForToday) {
         this._handleUndo(chore, child, childCompletionsToday);
@@ -3661,7 +3719,7 @@ class TaskMateChildCard extends LitElement {
         this._handleComplete(chore, child);
       }
     };
-    const isInteractive = !(isLoading || notDueToday || notAvailableRecurrence || isLockedPreview || timeElapsed);
+    const isInteractive = !(isLoading || notDueToday || notAvailableRecurrence || isLockedPreview || depBlocked || timeElapsed);
     const handleRowKeyDown = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -3671,6 +3729,8 @@ class TaskMateChildCard extends LitElement {
 
     const titleText = isLockedPreview
       ? (lockedUntilLabel || this._t('child.chore_locked_until_generic'))
+      : depBlocked
+        ? this._t('child.blocked_by_dependency', { chores: (chore._dependencyNames || []).join(', ') })
       : notDueToday
         ? this._t('child.not_scheduled_for_today')
         : timeElapsed
@@ -3681,7 +3741,7 @@ class TaskMateChildCard extends LitElement {
 
     return html`
       <div
-        class="chore-card ${chore.mandatory ? "mandatory" : ""} ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence ? "recurrence-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""}"
+        class="chore-card ${chore.mandatory ? "mandatory" : ""} ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence ? "recurrence-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""} ${depDimmed ? "dependency-blocked" : ""}"
         role="button"
         tabindex="${isInteractive ? '0' : '-1'}"
         aria-disabled="${isInteractive ? 'false' : 'true'}"
@@ -3700,6 +3760,12 @@ class TaskMateChildCard extends LitElement {
             ${chore.difficulty ? html`<span class="difficulty-badge difficulty-${chore.difficulty}">${this._t('child.difficulty_' + chore.difficulty) || chore.difficulty}</span>` : ''}
             ${this.config.show_description && chore.description ? html`
               <div class="chore-description">${chore.description}</div>
+            ` : ''}
+            ${depBlocked && (chore._dependencyNames || []).length ? html`
+              <div class="dependency-label">
+                <ha-icon icon="mdi:lock-outline"></ha-icon>
+                ${this._t('child.blocked_by_dependency', { chores: chore._dependencyNames.join(', ') })}
+              </div>
             ` : ''}
             ${chore._isRecurring && !chore._isAvailableForChild ? html`
               <div class="recurrence-label">
@@ -3740,6 +3806,9 @@ class TaskMateChildCard extends LitElement {
 
     const colorClass = `color-${choreIndex % 8}`;
     const choreNumber = choreIndex + 1;
+    // A blocked timed chore must not be startable under dim/show (#793).
+    // Pause/stop stay live so a session already running can still be ended.
+    const depBlocked = !!chore._isDependencyBlocked;
 
     // Calculate elapsed seconds
     let elapsed = session ? (session.total_seconds_today || 0) : 0;
@@ -3771,6 +3840,7 @@ class TaskMateChildCard extends LitElement {
     const nearCap = maxMin > 0 && capPct >= 85;
 
     const handleStart = (e) => {
+      if (depBlocked) { e.stopPropagation(); return; }
       e.stopPropagation();
       if (isLoading) return;
       this._loading = { ...this._loading, [`timed_${chore.id}`]: true };
@@ -3841,7 +3911,7 @@ class TaskMateChildCard extends LitElement {
 
         <div class="timer-actions">
           ${state === 'idle' ? html`
-            <button class="timer-btn start" @click="${handleStart}" ?disabled="${isLoading}">
+            <button class="timer-btn start" @click="${handleStart}" ?disabled="${isLoading || depBlocked}">
               <span class="btn-icon">&#9654;</span>
               ${this._t('child.start') || 'START'}
             </button>
@@ -3857,7 +3927,7 @@ class TaskMateChildCard extends LitElement {
             </button>
           ` : ''}
           ${state === 'paused' ? html`
-            <button class="timer-btn resume" @click="${handleStart}" ?disabled="${isLoading}">
+            <button class="timer-btn resume" @click="${handleStart}" ?disabled="${isLoading || depBlocked}">
               <span class="btn-icon">&#9654;</span>
               ${this._t('child.resume') || 'RESUME'}
             </button>
@@ -4721,6 +4791,19 @@ class TaskMateChildCardEditor extends LitElement {
         },
       },
       {
+        name: 'dependency_mode',
+        selector: {
+          select: {
+            options: [
+              { value: 'hide', label: this._t('child.editor.dependency_hide') },
+              { value: 'dim', label: this._t('child.editor.dependency_dim') },
+              { value: 'show', label: this._t('child.editor.dependency_show') },
+            ],
+            mode: 'dropdown',
+          },
+        },
+      },
+      {
         name: 'elapsed_time_mode',
         selector: {
           select: {
@@ -4750,6 +4833,7 @@ class TaskMateChildCardEditor extends LitElement {
       card_design: this._t('common.design.field_label'),
       due_days_mode: this._t('child.editor.chores_not_due_today'),
       recurrence_done_mode: this._t('child.editor.recurring_when_completed'),
+      dependency_mode: this._t('child.editor.dependency_mode'),
       elapsed_time_mode: this._t('child.editor.missed_time_chores'),
       show_countdown: this._t('child.editor.show_countdown'),
       show_description: this._t('child.editor.show_description'),
@@ -4768,6 +4852,7 @@ class TaskMateChildCardEditor extends LitElement {
       time_category: this._t('child.editor.time_category_helper'),
       due_days_mode: this._t('child.editor.due_days_helper'),
       recurrence_done_mode: this._t('child.editor.recurrence_helper'),
+      dependency_mode: this._t('child.editor.dependency_helper'),
       elapsed_time_mode: this._t('child.editor.elapsed_helper'),
     };
     return helpers[entry.name] ?? '';
@@ -4783,6 +4868,7 @@ class TaskMateChildCardEditor extends LitElement {
       card_design: this.config.card_design || 'global',
       due_days_mode: this.config.due_days_mode || 'hide',
       recurrence_done_mode: this.config.recurrence_done_mode || 'dim',
+      dependency_mode: this.config.dependency_mode || 'hide',
       elapsed_time_mode: this.config.elapsed_time_mode || 'dim',
       show_countdown: this.config.show_countdown !== false,
       show_description: this.config.show_description === true,

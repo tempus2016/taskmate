@@ -250,7 +250,8 @@ Chain chores together so one only becomes available after others are finished. A
 - Set prerequisites in the chore editor (**Admin Panel → Chores → Edit chore**) via the **"Depends on"** picker — pick one or more of your other chores (stored as the chore's `depends_on` list). All selected prerequisites must be satisfied before the dependent chore unlocks.
 - Each prerequisite needs an **approved** completion (a pending one doesn't count), made **today**, by the **same child**. Parent completions count; bonus sub-tasks do not.
 - The check is **per day** — dependencies reset every night. If a prerequisite is rejected or its approval is undone, the dependent chore locks again.
-- Dependencies are one more gate on top of scheduling, rotation, vacation status, and [Dynamic Chore Visibility](#dynamic-chore-visibility). While locked, the chore follows the same hide/dim child-card rules as any other unavailable chore.
+- Dependencies are one more gate on top of scheduling, rotation, vacation status, and [Dynamic Chore Visibility](#dynamic-chore-visibility).
+- **How a locked chore looks is up to you.** The child card's `dependency_mode` option takes `hide` (the default — the chore simply isn't shown until it unlocks), `dim` (shown greyed out and not tappable, with a *"Do X first"* note so the child can see what unlocks it) or `show` (shown normally, still not tappable). Set it in the card editor under **Chores Waiting On Another**.
 
 See the [Chore Dependencies wiki page](https://github.com/tempus2016/taskmate/wiki/Chore-Dependencies) for full details.
 
