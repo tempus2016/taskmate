@@ -1219,6 +1219,7 @@ class NotificationConfig:
     master_enabled: bool = False
     routes: dict[str, NotificationRoute] = field(default_factory=dict)
     nav_url: str = ""  # tap target; "" = inherit global default
+    group: str = ""  # notification group/thread; "" = inherit global default
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> NotificationConfig:
@@ -1228,6 +1229,7 @@ class NotificationConfig:
             master_enabled=bool(data.get("master_enabled", False)),
             routes={rid: NotificationRoute.from_dict(rdata) for rid, rdata in raw_routes.items()},
             nav_url=data.get("nav_url", "") or "",
+            group=data.get("group", "") or "",
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1238,6 +1240,8 @@ class NotificationConfig:
         }
         if self.nav_url:
             d["nav_url"] = self.nav_url
+        if self.group:
+            d["group"] = self.group
         return d
 
 

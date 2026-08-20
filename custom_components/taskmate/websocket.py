@@ -60,6 +60,7 @@ from homeassistant.core import HomeAssistant
 from . import images, photos
 from .const import (
     ASSIGNMENT_MODES,
+    DEFAULT_NOTIFICATION_GROUP,
     DEFAULT_NOTIFICATION_NAV_URL,
     DEFAULT_TIME_PERIODS,
     DIFFICULTY_TIERS,
@@ -165,6 +166,7 @@ WS_NOTIF_SET_STREAK_CUTOFF: Final = "taskmate/notifications/set_streak_cutoff"
 WS_NOTIF_SET_ESCALATION: Final = "taskmate/notifications/set_escalation"
 WS_NOTIF_SEND_TEST: Final = "taskmate/notifications/send_test"
 WS_NOTIF_SET_NAV_URL: Final = "taskmate/notifications/set_nav_url"
+WS_NOTIF_SET_GROUP: Final = "taskmate/notifications/set_group"
 
 # Calendar ICS feed (FEAT-10)
 WS_CAL_GET_URL: Final = "taskmate/calendar/get_ics_url"
@@ -2178,6 +2180,7 @@ async def ws_notif_get_state(hass, connection, msg, coordinator):
             "mandatory_escalation_reminder_minutes": c.storage.get_escalation_reminder_minutes(),
             "mandatory_escalation_parent_minutes": c.storage.get_escalation_parent_minutes(),
             "notification_nav_url": c.storage.get_setting("notification_nav_url", DEFAULT_NOTIFICATION_NAV_URL),
+            "notification_group": c.storage.get_setting("notification_group", DEFAULT_NOTIFICATION_GROUP),
         },
     }
     connection.send_result(msg["id"], state)
@@ -2435,6 +2438,20 @@ async def ws_notif_send_test(hass, connection, msg, coordinator):
 @_admin_only
 async def ws_notif_set_nav_url(hass, connection, msg, coordinator):
     await coordinator.notifications.set_nav_url(msg.get("type_id"), msg["nav_url"])
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_SET_GROUP,
+        vol.Optional("type_id"): vol.Any(str, None),
+        vol.Required("group"): vol.All(str, vol.Length(max=64)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def ws_notif_set_group(hass, connection, msg, coordinator):
+    await coordinator.notifications.set_group(msg.get("type_id"), msg["group"])
     connection.send_result(msg["id"], {"ok": True})
 
 
@@ -2701,6 +2718,7 @@ _COMMANDS = (
     ws_notif_send_test,
     ws_notif_set_escalation,
     ws_notif_set_nav_url,
+    ws_notif_set_group,
     ws_cal_get_url,
     ws_cal_regen_token,
 )
