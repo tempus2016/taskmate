@@ -396,3 +396,68 @@ async def test_get_state_includes_nav_url(setup, hass):
     await ws.ws_notif_get_state(hass, connection, msg)
     state = connection.send_result.call_args[0][1]
     assert state["settings"]["notification_nav_url"] == "/taskmate-admin"
+
+
+@pytest.mark.asyncio
+async def test_set_group_global(setup, hass):
+    coord = setup
+    connection = MagicMock()
+    msg = {"id": 30, "type": "taskmate/notifications/set_group", "group": "family-chores"}
+    await ws.ws_notif_set_group(hass, connection, msg)
+    args, _ = connection.send_result.call_args
+    assert args[1] == {"ok": True}
+    assert coord.storage.get_setting("notification_group") == "family-chores"
+
+
+@pytest.mark.asyncio
+async def test_set_group_per_type(setup, hass):
+    coord = setup
+    connection = MagicMock()
+    msg = {"id": 31, "type": "taskmate/notifications/set_group", "type_id": "badge_earned", "group": "tm-badges"}
+    await ws.ws_notif_set_group(hass, connection, msg)
+    assert coord.storage.get_notification_config("badge_earned").group == "tm-badges"
+
+
+@pytest.mark.asyncio
+async def test_set_group_empty_disables_grouping(setup, hass):
+    coord = setup
+    connection = MagicMock()
+    msg = {"id": 32, "type": "taskmate/notifications/set_group", "group": ""}
+    await ws.ws_notif_set_group(hass, connection, msg)
+    args, _ = connection.send_result.call_args
+    assert args[1] == {"ok": True}
+    assert coord.storage.get_setting("notification_group") == ""
+
+
+@pytest.mark.asyncio
+async def test_set_group_rejects_control_characters_and_overlong(setup, hass):
+    coord = setup
+    for bad in ("bad\nname", "bad\tname", "x" * 65):
+        connection = MagicMock()
+        msg = {"id": 33, "type": "taskmate/notifications/set_group", "group": bad}
+        await ws.ws_notif_set_group(hass, connection, msg)
+        connection.send_result.assert_not_called()
+        args, _ = connection.send_error.call_args
+        assert args[1] == "invalid", bad
+    assert not coord.storage.get_setting("notification_group")
+
+
+@pytest.mark.asyncio
+async def test_set_group_rejects_unknown_type_id(setup, hass):
+    coord = setup
+    connection = MagicMock()
+    msg = {"id": 34, "type": "taskmate/notifications/set_group", "type_id": "not_a_type", "group": "x"}
+    await ws.ws_notif_set_group(hass, connection, msg)
+    connection.send_result.assert_not_called()
+    args, _ = connection.send_error.call_args
+    assert args[1] == "invalid"
+    assert "not_a_type" not in coord.storage.get_all_notification_configs()
+
+
+@pytest.mark.asyncio
+async def test_get_state_includes_group(setup, hass):
+    connection = MagicMock()
+    msg = {"id": 35, "type": "taskmate/notifications/get_state"}
+    await ws.ws_notif_get_state(hass, connection, msg)
+    state = connection.send_result.call_args[0][1]
+    assert state["settings"]["notification_group"] == "taskmate"

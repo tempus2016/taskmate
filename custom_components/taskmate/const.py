@@ -228,3 +228,9 @@ NOTIF_TYPE_FAMILY_GOAL_REACHED: Final = "family_goal_reached"
 # Default notification tap target. Must match PANEL_URL_PATH in panel.py —
 # a bare /taskmate is the static-files prefix and returns 403, not the panel.
 DEFAULT_NOTIFICATION_NAV_URL: Final = "/taskmate-admin"
+
+# Default notification group (#811). The HA companion app stacks notifications
+# that share this key, so TaskMate's alerts collapse into one bundle instead of
+# scattering through the rest of the phone's HA notifications. Applied by
+# default — set it to "" in the panel to turn grouping off.
+DEFAULT_NOTIFICATION_GROUP: Final = "taskmate"

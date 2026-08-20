@@ -123,3 +123,14 @@ async def test_migration_rewrites_broken_v502_nav_url(hass):
     assert s._data["notification_config"]["badge_earned"]["nav_url"] == "/taskmate-admin"
     # A deliberate non-default choice is left alone
     assert s._data["notification_config"]["level_up"]["nav_url"] == "/lovelace/kids"
+
+
+@pytest.mark.asyncio
+async def test_set_notification_group(storage):
+    storage.set_notification_group("badge_earned", "taskmate-badges")
+    assert storage.get_notification_config("badge_earned").group == "taskmate-badges"
+
+
+@pytest.mark.asyncio
+async def test_notification_group_defaults_to_empty(storage):
+    assert storage.get_notification_config("badge_earned").group == ""

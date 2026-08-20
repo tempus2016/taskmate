@@ -315,3 +315,128 @@ async def test_nav_url_coexists_with_action_buttons(coord, hass):
     data = _notify_data(hass)["data"]
     assert data["clickAction"] == "/taskmate-admin"
     assert "actions" in data
+
+
+# --- notification group (#811) -------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_group_global_default_applied(coord, hass):
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(p)
+    coord.storage.set_notification_master("badge_earned", True)
+    coord.storage.set_notification_route("badge_earned", p.id, NotificationRoute(enabled=True))
+    await coord.fire("badge_earned", {"child_name": "M", "badge_name": "Star"})
+    data = _notify_data(hass)["data"]
+    assert data["group"] == "taskmate"
+    assert data["push"]["thread-id"] == "taskmate"
+
+
+@pytest.mark.asyncio
+async def test_group_per_type_overrides_global(coord, hass):
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(p)
+    coord.storage.set_notification_master("badge_earned", True)
+    coord.storage.set_notification_route("badge_earned", p.id, NotificationRoute(enabled=True))
+    coord.storage.set_notification_group("badge_earned", "taskmate-badges")
+    await coord.fire("badge_earned", {"child_name": "M", "badge_name": "Star"})
+    data = _notify_data(hass)["data"]
+    assert data["group"] == "taskmate-badges"
+    assert data["push"]["thread-id"] == "taskmate-badges"
+
+
+@pytest.mark.asyncio
+async def test_group_empty_emits_no_keys(coord, hass):
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    coord.storage.set_setting("notification_group", "")  # grouping turned off
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(p)
+    coord.storage.set_notification_master("badge_earned", True)
+    coord.storage.set_notification_route("badge_earned", p.id, NotificationRoute(enabled=True))
+    await coord.fire("badge_earned", {"child_name": "M", "badge_name": "Star"})
+    data = _notify_data(hass).get("data", {})
+    assert "group" not in data
+    assert "push" not in data
+
+
+@pytest.mark.asyncio
+async def test_group_only_for_mobile_app(coord, hass):
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    p = ParentRecipient(name="Lisa", notify_service="notify.telegram_lisa")
+    coord.storage.upsert_parent_recipient(p)
+    coord.storage.set_notification_master("badge_earned", True)
+    coord.storage.set_notification_route("badge_earned", p.id, NotificationRoute(enabled=True))
+    await coord.fire("badge_earned", {"child_name": "M", "badge_name": "Star"})
+    data = _notify_data(hass).get("data", {})
+    assert "group" not in data
+
+
+@pytest.mark.asyncio
+async def test_group_coexists_with_action_buttons_and_tag(coord, hass):
+    """Grouping must not disturb the approve/reject buttons or the dismiss tag."""
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(p)
+    coord.storage.set_notification_master("pending_chore_approval", True)
+    coord.storage.set_notification_route("pending_chore_approval", p.id, NotificationRoute(enabled=True))
+    await coord.fire(
+        "pending_chore_approval",
+        {"entry_id": "c-1", "child_name": "Maria", "chore_name": "Bin", "points": 5},
+    )
+    data = _notify_data(hass)["data"]
+    assert data["group"] == "taskmate"
+    assert data["tag"]
+    assert len(data["actions"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_group_applied_to_custom_notification(coord, hass):
+    """Custom reminders bypass _send_to — they must still carry the group."""
+    from custom_components.taskmate.models import CustomNotification
+
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_johns_iphone")
+    coord.storage.upsert_parent_recipient(p)
+    n = CustomNotification(
+        name="Piano",
+        message_template="Practice piano",
+        time="17:00",
+        day_mask=0b1111111,
+        recipient_ids=[p.id],
+        enabled=True,
+    )
+    coord.storage.upsert_custom_notification(n)
+    cb = coord._make_custom_callback(n.id)
+    await cb(None)
+    data = _notify_data(hass)["data"]
+    assert data["group"] == "taskmate"
+    assert data["push"]["thread-id"] == "taskmate"
+
+
+@pytest.mark.asyncio
+async def test_custom_notification_group_skipped_for_non_mobile(coord, hass):
+    from custom_components.taskmate.models import CustomNotification
+
+    hass.services.async_call = AsyncMock()
+    hass.bus.async_fire = AsyncMock()
+    p = ParentRecipient(name="Lisa", notify_service="notify.telegram_lisa")
+    coord.storage.upsert_parent_recipient(p)
+    n = CustomNotification(
+        name="Piano",
+        message_template="Practice piano",
+        time="17:00",
+        day_mask=0b1111111,
+        recipient_ids=[p.id],
+        enabled=True,
+    )
+    coord.storage.upsert_custom_notification(n)
+    await coord._make_custom_callback(n.id)(None)
+    assert "data" not in _notify_data(hass)

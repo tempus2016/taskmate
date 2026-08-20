@@ -678,3 +678,20 @@ def test_notification_config_nav_url_omitted_when_empty():
     cfg = NotificationConfig(type_id="badge_earned")
     assert "nav_url" not in cfg.to_dict()
     assert NotificationConfig.from_dict({"type_id": "x"}).nav_url == ""
+
+
+def test_notification_config_group_roundtrip():
+    from custom_components.taskmate.models import NotificationConfig
+
+    cfg = NotificationConfig(type_id="badge_earned", group="taskmate-badges")
+    d = cfg.to_dict()
+    assert d["group"] == "taskmate-badges"
+    assert NotificationConfig.from_dict(d).group == "taskmate-badges"
+
+
+def test_notification_config_group_omitted_when_empty():
+    from custom_components.taskmate.models import NotificationConfig
+
+    cfg = NotificationConfig(type_id="badge_earned")
+    assert "group" not in cfg.to_dict()
+    assert NotificationConfig.from_dict({"type_id": "x"}).group == ""

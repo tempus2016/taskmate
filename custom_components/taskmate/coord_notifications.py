@@ -21,6 +21,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.event import async_track_time_change
 
 from .const import (
+    DEFAULT_NOTIFICATION_GROUP,
     DEFAULT_NOTIFICATION_NAV_URL,
     NOTIF_TYPE_ALL_CHORES_DONE,
     NOTIF_TYPE_BADGE_EARNED,
@@ -106,6 +107,23 @@ def _validate_nav_url(value: str) -> str:
     raise ValueError("nav_url must be a /path, an http(s) URL, or noAction")
 
 
+def _validate_group(value: str) -> str:
+    """Normalise and vet a notification group key.
+
+    The value is an opaque bundling key for the companion app, so anything
+    printable will do — but control characters would land inside the JSON
+    payload the app parses, and an unbounded string is just storage bloat.
+    """
+    value = (value or "").strip()
+    if not value:
+        return ""
+    if any(ord(c) <= 32 or ord(c) == 127 for c in value):
+        raise ValueError("group must not contain control characters")
+    if len(value) > 64:
+        raise ValueError("group must be 64 characters or fewer")
+    return value
+
+
 def _parse_hhmm(value: str) -> tuple[int, int] | None:
     """Parse "HH:MM" into (hour, minute); None if blank/malformed."""
     if not value:
@@ -180,6 +198,7 @@ class NotificationCoordinator:
         recipients_fired: list[str] = []
         message = self._render_template(meta, context)
         nav_url = self._resolve_nav_url(cfg)
+        group = self._resolve_group(cfg)
 
         # Multi-parent routing (#687): thin the PARENT recipients down per the
         # configured policy. Child routes are never touched — a reminder for a
@@ -201,7 +220,7 @@ class NotificationCoordinator:
             notify_service = self._resolve_notify_service(recipient_id)
             if not notify_service:
                 continue
-            await self._send_to(notify_service, message, meta, context, nav_url)
+            await self._send_to(notify_service, message, meta, context, nav_url, group)
             recipients_fired.append(recipient_id)
 
         # NOTE: deliberately no unconditional persistent_notification here.
@@ -310,6 +329,7 @@ class NotificationCoordinator:
         message = "[TEST] " + self._render_template(meta, ctx)
         cfg = self.storage.get_notification_config(type_id)
         nav_url = self._resolve_nav_url(cfg)
+        group = self._resolve_group(cfg)
         sent: list[str] = []
         for recipient_id, route in cfg.routes.items():
             if not route.enabled:
@@ -317,7 +337,7 @@ class NotificationCoordinator:
             notify_service = self._resolve_notify_service(recipient_id)
             if not notify_service:
                 continue
-            await self._send_to(notify_service, message, meta, ctx, nav_url)
+            await self._send_to(notify_service, message, meta, ctx, nav_url, group)
             sent.append(recipient_id)
         await self._fire_persistent_notification(type_id, message)
         return sent
@@ -340,6 +360,17 @@ class NotificationCoordinator:
         if per_type:
             return per_type
         return str(self.storage.get_setting("notification_nav_url", DEFAULT_NOTIFICATION_NAV_URL) or "").strip()
+
+    def _resolve_group(self, cfg=None) -> str:
+        """Group key for this notification: per-type override, else global default.
+
+        Called with no cfg for dispatch paths that have no notification type of
+        their own (custom reminders), which always use the global value.
+        """
+        per_type = (getattr(cfg, "group", "") or "").strip()
+        if per_type:
+            return per_type
+        return str(self.storage.get_setting("notification_group", DEFAULT_NOTIFICATION_GROUP) or "").strip()
 
     def _resolve_notify_service(self, recipient_id: str) -> str:
         if recipient_id.startswith("child:"):
@@ -387,6 +418,7 @@ class NotificationCoordinator:
         meta: "NotificationTypeMeta",
         context: dict[str, Any],
         nav_url: str = "",
+        group: str = "",
     ) -> None:
         domain, service = notify_service.split(".", 1) if "." in notify_service else ("notify", notify_service)
         if domain != "notify":
@@ -435,6 +467,14 @@ class NotificationCoordinator:
         if nav_url and service.startswith("mobile_app"):
             push["clickAction"] = nav_url
             push["url"] = nav_url
+
+        # Grouping (#811): stack TaskMate's notifications into one bundle so
+        # they don't scatter through the phone's other HA alerts. Android reads
+        # data.group; iOS threads on push.thread-id, so send both — same value,
+        # and each platform ignores the other's key.
+        if group and service.startswith("mobile_app"):
+            push["group"] = group
+            push["push"] = {"thread-id": group}
 
         if push:
             data["data"] = push
@@ -665,10 +705,17 @@ class NotificationCoordinator:
                     )
                     message = n.message_template
                 service_name = notify_service.split(".", 1)[1] if "." in notify_service else notify_service
+                payload: dict[str, Any] = {"title": "TaskMate", "message": message}
+                # Custom reminders bypass _send_to, so apply the group here too
+                # (#811) — otherwise they'd be the one kind of TaskMate alert
+                # that still lands outside the bundle.
+                group = self._resolve_group()
+                if group and service_name.startswith("mobile_app"):
+                    payload["data"] = {"group": group, "push": {"thread-id": group}}
                 await self.hass.services.async_call(
                     "notify",
                     service_name,
-                    {"title": "TaskMate", "message": message},
+                    payload,
                     blocking=False,
                 )
             self.hass.bus.async_fire(
@@ -751,6 +798,17 @@ class NotificationCoordinator:
             self.storage.set_notification_nav_url(type_id, nav_url)
         else:
             self.storage.set_setting("notification_nav_url", nav_url)
+        await self.storage.async_save()
+
+    async def set_group(self, type_id: str | None, group: str) -> None:
+        """Set the group key — global (type_id falsy) or per notification type."""
+        group = _validate_group(group)
+        if type_id:
+            if type_id not in NOTIFICATION_TYPES_BY_ID:
+                raise ValueError(f"Unknown notification type {type_id}")
+            self.storage.set_notification_group(type_id, group)
+        else:
+            self.storage.set_setting("notification_group", group)
         await self.storage.async_save()
 
     def _has_outstanding_chores_today(self, child_id: str) -> bool:
