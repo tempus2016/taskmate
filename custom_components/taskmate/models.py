@@ -1224,12 +1224,16 @@ class NotificationConfig:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> NotificationConfig:
         raw_routes = data.get("routes", {}) or {}
+        # Imported backups aren't field-validated, so non-string values must
+        # fall back to "" here or dispatch crashes on .strip() later.
+        raw_nav_url = data.get("nav_url")
+        raw_group = data.get("group")
         return cls(
             type_id=data.get("type_id", ""),
             master_enabled=bool(data.get("master_enabled", False)),
             routes={rid: NotificationRoute.from_dict(rdata) for rid, rdata in raw_routes.items()},
-            nav_url=data.get("nav_url", "") or "",
-            group=data.get("group", "") or "",
+            nav_url=raw_nav_url if isinstance(raw_nav_url, str) else "",
+            group=raw_group if isinstance(raw_group, str) else "",
         )
 
     def to_dict(self) -> dict[str, Any]:
