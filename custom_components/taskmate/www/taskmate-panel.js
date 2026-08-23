@@ -2246,14 +2246,16 @@ class TaskMatePanel extends HTMLElement {
   async _notifSetNavUrl(typeId, navUrl) {
     const payload = { type: "taskmate/notifications/set_nav_url", nav_url: navUrl || "" };
     if (typeId) payload.type_id = typeId;
-    await this._callWS(payload);
+    const { ok, err } = await this._callWS(payload);
+    if (!ok) this._showToast("err", this._t("panel.toast_save_failed", { error: err }));
     await this._fetchState();
   }
 
   async _notifSetGroup(typeId, group) {
     const payload = { type: "taskmate/notifications/set_group", group: group || "" };
     if (typeId) payload.type_id = typeId;
-    await this._callWS(payload);
+    const { ok, err } = await this._callWS(payload);
+    if (!ok) this._showToast("err", this._t("panel.toast_save_failed", { error: err }));
     await this._fetchState();
   }
 
@@ -4842,12 +4844,12 @@ class TaskMatePanel extends HTMLElement {
                 <input type="text" class="tm-notif-time-input" style="width:150px"
                        value="${this._esc(c.nav_url || "")}"
                        data-act="notif-set-nav-url-type" data-type-id="${this._esc(t.id)}"
-                       placeholder="${this._t("panel.notif_nav_url_row_placeholder")}">
+                       placeholder="${this._esc(this._t("panel.notif_nav_url_row_placeholder"))}">
                 <input type="text" class="tm-notif-time-input" style="width:150px" maxlength="64"
                        value="${this._esc(c.group || "")}"
                        data-act="notif-set-group-type" data-type-id="${this._esc(t.id)}"
-                       title="${this._t("panel.notif_group_global_label")}"
-                       placeholder="${this._t("panel.notif_group_row_placeholder")}">
+                       title="${this._esc(this._t("panel.notif_group_global_label"))}"
+                       placeholder="${this._esc(this._t("panel.notif_group_row_placeholder"))}">
               </div>
             </div>
           </div>

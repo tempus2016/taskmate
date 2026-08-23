@@ -440,3 +440,12 @@ async def test_custom_notification_group_skipped_for_non_mobile(coord, hass):
     coord.storage.upsert_custom_notification(n)
     await coord._make_custom_callback(n.id)(None)
     assert "data" not in _notify_data(hass)
+
+
+def test_validate_group_rejects_spaces_with_distinct_message():
+    from custom_components.taskmate.coord_notifications import _validate_group
+
+    with pytest.raises(ValueError, match="spaces"):
+        _validate_group("family chores")
+    with pytest.raises(ValueError, match="control characters"):
+        _validate_group("bad\x01group")
