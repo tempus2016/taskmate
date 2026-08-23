@@ -695,3 +695,14 @@ def test_notification_config_group_omitted_when_empty():
     cfg = NotificationConfig(type_id="badge_earned")
     assert "group" not in cfg.to_dict()
     assert NotificationConfig.from_dict({"type_id": "x"}).group == ""
+
+
+def test_notification_config_from_dict_drops_non_string_group_and_nav_url():
+    # Imported backups aren't field-validated, so a truthy non-string must
+    # fall back to "" instead of crashing .strip() in dispatch later.
+    from custom_components.taskmate.models import NotificationConfig
+
+    for bad in ({"x": 1}, ["a"], 7, True):
+        cfg = NotificationConfig.from_dict({"type_id": "badge_earned", "group": bad, "nav_url": bad})
+        assert cfg.group == ""
+        assert cfg.nav_url == ""
