@@ -117,6 +117,8 @@ def _validate_group(value: str) -> str:
     value = (value or "").strip()
     if not value:
         return ""
+    if " " in value:
+        raise ValueError("group must not contain spaces (try family-chores)")
     if any(ord(c) <= 32 or ord(c) == 127 for c in value):
         raise ValueError("group must not contain control characters")
     if len(value) > 64:
