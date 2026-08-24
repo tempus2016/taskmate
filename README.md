@@ -1757,13 +1757,25 @@ the overview sensor and its companion sensors at render time.
 | `sensor.taskmate_chores` | total chores | `chores` list (definitions), `todays_completions` |
 | `sensor.taskmate_chore_availability` | total chores available today | `chore_availability`: `{chore_id: {child_id: bool}}` |
 | `sensor.taskmate_rewards` | total rewards | `rewards`, `pending_reward_claims`, `pool_allocations` |
-| `sensor.taskmate_activity` | total completions all-time | `recent_completions` (last 35), `recent_transactions` (last 20), `photo_gallery` |
+| `sensor.taskmate_activity` | total completions all-time | `recent_completions` (last 35), `recent_transactions` (last 20), `career_score_history`, `photo_gallery` |
 | `sensor.taskmate_incentives` | penalties + bonuses count | `penalties`, `bonuses` |
-| `sensor.taskmate_pending_approvals` | pending approvals count | `chore_completions`, `reward_claims` (detailed lists) |
+| `sensor.taskmate_pending_approvals` | pending approvals count | `chore_completions`, `reward_claims`, `mandatory_misses` (detailed lists) |
 | `sensor.taskmate_<child>_points` | points for that child | `child_id`, `current_streak`, `best_streak`, `total_*` |
 | `sensor.taskmate_<child>_stats` | chores completed by that child | `assigned_chores`, streak / totals |
 
 Automations that read the old overview attributes (e.g. `sensor.taskmate_overview.attributes.chores`) should instead read from the matching companion sensor listed above.
+
+### Attributes and the recorder
+
+The large list attributes above (`chores`, `recent_completions`, `mandatory_misses`,
+`children`, `earned` / `available` badges, and so on) are declared **unrecorded**.
+They are still published on the live state — cards, templates, `state_attr()` and
+automation conditions all read them exactly as before — but Home Assistant's
+recorder does not write them to the database. That keeps the database small and
+stops the `State attributes for sensor.taskmate_… exceed maximum size of 16384
+bytes` warning that a large family could otherwise trigger. The scalar attributes
+(counts, totals, settings) stay recorded, so history and statistics on them keep
+working.
 
 ### Other Platforms
 
