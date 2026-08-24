@@ -593,3 +593,99 @@ class TestPendingApprovalsSensor:
         assert detail["chore_name"] == "Make bed › Tidy toys"
         assert detail["points"] == 3
         assert detail["bonus_subtask_id"] == "sub1"
+
+
+def _wired_stress_coordinator():
+    """Stress coordinator with the extras the whole-entity sensors reach for."""
+    coord = _stress_coordinator()
+    coord.external_state_version = 0
+    coord.hass = MagicMock()
+    coord.storage.get_career_score_history = MagicMock(
+        return_value=[{"date": f"2026-01-{(d % 28) + 1:02d}", "score": 100 + d} for d in range(90)]
+    )
+    coord.mandatory_misses_state = MagicMock(
+        return_value=[
+            {
+                "id": f"miss-{i:03d}",
+                "chore_id": f"chore-{i % 30:02d}",
+                "child_id": f"child-{i % 4}",
+                "date": "2026-04-20",
+                "chore_name": f"Chore {i % 30:02d}",
+                "child_name": f"Child {i % 4}",
+                "resolved": False,
+            }
+            for i in range(120)
+        ]
+    )
+    return coord
+
+
+def _stress_sensors(coord, entry):
+    """The six global sensors plus the pending-approvals sensor."""
+    return [
+        sensor_module.TaskMateOverallStatsSensor(coord, entry),
+        sensor_module.TaskMateChoresSensor(coord, entry),
+        sensor_module.TaskMateChoreAvailabilitySensor(coord, entry),
+        sensor_module.TaskMateRewardsSensor(coord, entry),
+        sensor_module.TaskMateActivitySensor(coord, entry),
+        sensor_module.TaskMateIncentivesSensor(coord, entry),
+        PendingApprovalsSensor(coord, entry),
+    ]
+
+
+def _recorder_payload(sensor_cls, attrs: dict) -> dict:
+    """Mirror HA's recorder filter: drop `_unrecorded_attributes` first.
+
+    ``StateAttributes.shared_attrs_bytes_from_event`` excludes an entity's
+    unrecorded attributes *before* measuring against MAX_STATE_ATTRS_BYTES,
+    so it is that subset which has to fit.
+    """
+    excluded = getattr(sensor_cls, "_unrecorded_attributes", frozenset())
+    return {k: v for k, v in attrs.items() if k not in excluded}
+
+
+def test_unrecorded_attribute_names_are_actually_published():
+    """A typo'd name in `_unrecorded_attributes` silently excludes nothing (#817)."""
+    coord = _wired_stress_coordinator()
+    entry = _MockEntry()
+    for sensor in _stress_sensors(coord, entry):
+        published = set(sensor.extra_state_attributes)
+        declared = set(getattr(type(sensor), "_unrecorded_attributes", frozenset()))
+        assert declared <= published, (
+            f"{type(sensor).__name__} declares unrecorded attributes it never publishes: {sorted(declared - published)}"
+        )
+
+
+def test_global_sensor_recorder_payloads_under_limit():
+    """Every sensor's recorder-visible payload must fit in 16 KB (#817).
+
+    The per-slice tests above assemble the attribute dicts by hand, so they
+    miss whatever a sensor actually publishes (that is how `career_score_history`,
+    `photo_gallery` and `mandatory_misses` slipped past). This one drives the
+    real entities end to end.
+    """
+    coord = _wired_stress_coordinator()
+    entry = _MockEntry()
+    oversized = []
+    for sensor in _stress_sensors(coord, entry):
+        size = _bytes(_recorder_payload(type(sensor), sensor.extra_state_attributes))
+        if size >= MAX_ATTR_BYTES:
+            oversized.append(f"{sensor._attr_name}: {size} bytes")
+    assert not oversized, "recorder payload over the 16384-byte limit: " + "; ".join(oversized)
+
+
+def test_heavy_lists_are_still_published_to_the_frontend():
+    """Excluding from the recorder must not remove data the cards read (#817)."""
+    coord = _wired_stress_coordinator()
+    entry = _MockEntry()
+    activity = sensor_module.TaskMateActivitySensor(coord, entry).extra_state_attributes
+    assert activity["recent_completions"]
+    assert activity["recent_transactions"]
+    assert activity["career_score_history"]
+    approvals = PendingApprovalsSensor(coord, entry).extra_state_attributes
+    assert approvals["chore_completions"]
+    assert approvals["mandatory_misses"]
+    # The scalar counters stay recorded so history/statistics keep working.
+    recorded = _recorder_payload(PendingApprovalsSensor, approvals)
+    assert recorded["pending_chore_completions"] == len(approvals["chore_completions"])
+    assert recorded["pending_mandatory_misses"] == 120

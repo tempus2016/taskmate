@@ -773,6 +773,10 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
     sensors so this entity stays well under the 16KB recorder limit.
     """
 
+    # The per-child summary grows with the family; the scalars stay recorded
+    # so history/statistics on them keep working (#817).
+    _unrecorded_attributes = frozenset({"children", "vacation_periods", "season_champions"})
+
     def __init__(
         self,
         coordinator: TaskMateCoordinator,
@@ -869,6 +873,8 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
 class TaskMateChoresSensor(_CachedAttrsSensor):
     """Chores catalog + today's completions."""
 
+    _unrecorded_attributes = frozenset({"chores", "todays_completions", "task_groups", "active_timed_sessions"})
+
     def __init__(
         self,
         coordinator: TaskMateCoordinator,
@@ -917,6 +923,8 @@ class TaskMateChoreAvailabilitySensor(_CachedAttrsSensor):
     The map is `{chore_id: {child_id: bool}}`.
     """
 
+    _unrecorded_attributes = frozenset({"chore_availability"})
+
     def __init__(
         self,
         coordinator: TaskMateCoordinator,
@@ -949,6 +957,8 @@ class TaskMateChoreAvailabilitySensor(_CachedAttrsSensor):
 class TaskMateRewardsSensor(_CachedAttrsSensor):
     """Rewards catalog + pending claims + pool allocations."""
 
+    _unrecorded_attributes = frozenset({"rewards", "pending_reward_claims", "pool_allocations"})
+
     def __init__(
         self,
         coordinator: TaskMateCoordinator,
@@ -977,6 +987,10 @@ class TaskMateRewardsSensor(_CachedAttrsSensor):
 
 class TaskMateActivitySensor(_CachedAttrsSensor):
     """Recent completions + recent points/reward transactions."""
+
+    _unrecorded_attributes = frozenset(
+        {"recent_completions", "recent_transactions", "career_score_history", "photo_gallery"}
+    )
 
     def __init__(
         self,
@@ -1011,6 +1025,8 @@ class TaskMateActivitySensor(_CachedAttrsSensor):
 
 class TaskMateIncentivesSensor(_CachedAttrsSensor):
     """Penalties + bonuses catalogue."""
+
+    _unrecorded_attributes = frozenset({"penalties", "bonuses"})
 
     def __init__(
         self,
@@ -1094,6 +1110,7 @@ class ChildStatsSensor(TaskMateBaseSensor):
     """Sensor for a child's statistics."""
 
     _attr_translation_key = "child_stats"
+    _unrecorded_attributes = frozenset({"assigned_chores", "chore_order"})
 
     def __init__(
         self,
@@ -1171,6 +1188,7 @@ class ChildBadgesSensor(TaskMateBaseSensor):
 
     _attr_icon = "mdi:trophy-award"
     _attr_translation_key = "child_badges"
+    _unrecorded_attributes = frozenset({"earned", "available"})
 
     def __init__(
         self,
@@ -1260,6 +1278,8 @@ class ChildBadgesSensor(TaskMateBaseSensor):
 
 class PendingApprovalsSensor(TaskMateBaseSensor):
     """Sensor for pending approvals."""
+
+    _unrecorded_attributes = frozenset({"chore_completions", "reward_claims", "mandatory_misses"})
 
     def __init__(
         self,
