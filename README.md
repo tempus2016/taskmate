@@ -241,6 +241,10 @@ The chore has a rolling recurrence window. Once completed, it cannot be done aga
 
 **Child card behaviour:** Use `recurrence_done_mode` on the child card to control what happens when a recurring chore has been completed and is waiting to reset — `dim` (default), `hide`, or `show`.
 
+**First-come chores:** a `first_come` chore is a single shared quota of one — the moment any pool member completes it, it's done for the whole pool. By default (`first_come_claimed_mode: hide`) it disappears from every card, winner included. Set `first_come_claimed_mode: dim` or `show` on the child card instead to keep it visible for the rest of the pool after it's claimed — the winner's own row still shows their normal completed/undo state, and everyone else sees a locked, non-tappable row naming who completed it. A pool-wide dismissal via the parent panel (no specific winner) is treated the same as "claimed by someone else" for every child, rather than showing as done for all of them.
+
+`first_come_claimed_mode` (like `recurrence_done_mode`) is only honored by the standard and designed chore rows — `_renderTimedChoreCard` and `_renderPreReaderTile` don't check either lock, so a claimed first-come timed chore or pre-reader tile stays live and tappable in those two views.
+
 ---
 
 ## Chore Dependencies
@@ -1264,6 +1268,7 @@ child_id: a8c8376a            # required — see Finding IDs
 time_category: anytime        # any period id (built-in or custom) | anytime | all
 due_days_mode: hide           # hide | dim | show — chores not scheduled today
 recurrence_done_mode: dim     # dim | hide | show — recurring chores waiting to reset
+first_come_claimed_mode: hide    # hide (default) | dim | show — first-come chore claimed by another child
 elapsed_time_mode: dim        # dim | hide | show — time-of-day chores whose period has passed
 show_countdown: true          # show midnight reset countdown
 show_description: false       # show chore description below name
