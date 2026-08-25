@@ -238,7 +238,7 @@
   "child.editor.dependency_show": "Anzeigen – normal zeigen (weiterhin nicht antippbar)",
   "child.editor.dependency_helper": "Was angezeigt wird, wenn eine Aufgabe von einer anderen abhängt, die heute noch nicht genehmigt ist",
   "child.blocked_by_dependency": "Zuerst {chores} erledigen",
-  "child.parent": "Elternteil",
+  "child.parent": "Eltern",
   "child.editor.due_days_dim": "Gedimmt – ausgegraut anzeigen, nicht interaktiv",
   "child.editor.due_days_helper": "Gilt für Aufgaben, bei denen due_days festgelegt ist, wenn der heutige Tag nicht geplant ist",
   "child.editor.due_days_hide": "Ausblenden – nicht anzeigen",

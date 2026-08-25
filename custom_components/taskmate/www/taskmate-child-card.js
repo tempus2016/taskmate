@@ -1119,7 +1119,7 @@ class TaskMateChildCard extends LitElement {
       }
 
       /* First-come chore claimed by a sibling today — dimmed/greyed, same
-         treatment as recurrence-unavailable (first_come_done_mode: dim) */
+         treatment as recurrence-unavailable (first_come_claimed_mode: dim) */
       .chore-card.first-come-unavailable {
         opacity: 0.45;
         filter: grayscale(0.6);
@@ -2640,7 +2640,11 @@ class TaskMateChildCard extends LitElement {
         if (!actualTs.some(a => Math.abs(a - t) < 2000)) count += 1;
       }
     }
-    const done = count >= (chore.daily_limit || 1);
+    // first_come is a single-winner race whatever quota is stored on the chore —
+    // the filter and the backend both clamp it to 1 (coord_assignments). Reading
+    // the raw daily_limit here would leave the winner's own row looking incomplete
+    // and tappable, and complete_chore would then silently no-op the tap (#805).
+    const done = count >= (isFirstCome ? 1 : (chore.daily_limit || 1));
     return { done, completions: childCompletionsToday };
   }
 
@@ -2683,7 +2687,7 @@ class TaskMateChildCard extends LitElement {
     const elapsedTimeMode = this.config.elapsed_time_mode || "dim";
     const dependencyMode = this.config.dependency_mode || "hide";
     const recurrenceDoneMode = this.config.recurrence_done_mode || "dim";
-    const firstComeDoneMode = this.config.first_come_done_mode || "hide";
+    const firstComeClaimedMode = this.config.first_come_claimed_mode || "hide";
 
     // Annotate each chore with done-state + handlers, preserving the classic path's logic.
     const rows = childChores.map((chore, i) => {
@@ -2695,7 +2699,7 @@ class TaskMateChildCard extends LitElement {
       // Recurring chore still inside its cooldown. Excluded when done so the
       // undo chip stays live, exactly as on the classic row.
       const recLocked = !!chore._isRecurrenceLocked && !done;
-      // First-come chore claimed by a different pool member (first_come_done_mode
+      // First-come chore claimed by a different pool member (first_come_claimed_mode
       // dim/show only — hide is filtered upstream same as recurrence). Never true
       // for the winner's own row: _isFirstComeLocked is only set on siblings.
       const firstComeLocked = !!chore._isFirstComeLocked && !done;
@@ -2712,7 +2716,7 @@ class TaskMateChildCard extends LitElement {
         (chore._isTimeElapsed && elapsedTimeMode === "dim") ||
         (blocked && dependencyMode === "dim") ||
         (chore._isRecurrenceLocked && recurrenceDoneMode === "dim") ||
-        (chore._isFirstComeLocked && firstComeDoneMode === "dim") ||
+        (chore._isFirstComeLocked && firstComeClaimedMode === "dim") ||
         chore._isLockedPreview === true
       );
       return {
@@ -3055,7 +3059,7 @@ class TaskMateChildCard extends LitElement {
     // as unavailable, so hiding is what matches it (#793).
     const dependencyMode = this.config.dependency_mode || 'hide';
     const recurrenceDoneMode = this.config.recurrence_done_mode || 'dim';
-    const firstComeDoneMode = this.config.first_come_done_mode || 'hide';
+    const firstComeClaimedMode = this.config.first_come_claimed_mode || 'hide';
     const allCompletionsToday = attrs.todays_completions || [];
     // Availability comes from the backend's own matrix (#803). The card cannot
     // work a recurrence window out for itself: last_completed is not exposed,
@@ -3130,7 +3134,7 @@ class TaskMateChildCard extends LitElement {
             );
             const hasPendingBonus = bonusSubtasks.some(b => b && b.id && !completedBonusIds.has(b.id));
             if (!hasPendingBonus) {
-              // first_come_done_mode (#first-come-visibility): by default a
+              // first_come_claimed_mode (#first-come-visibility): by default a
               // claimed first-come chore disappears for the whole pool,
               // winner included — unchanged from prior behaviour. Under
               // dim/show it stays in the list instead: the winner's own row
@@ -3138,7 +3142,7 @@ class TaskMateChildCard extends LitElement {
               // other pool member is flagged locked so the render layer can
               // grey it out and refuse taps (the backend rejects the
               // completion anyway).
-              if (assignmentMode === 'first_come' && firstComeDoneMode !== 'hide') {
+              if (assignmentMode === 'first_come' && firstComeClaimedMode !== 'hide') {
                 const completedByThisChild = allTodayCompletions.some(
                   (comp) => comp.chore_id === chore.id
                     && String(comp.child_id) === childId
@@ -3766,7 +3770,10 @@ class TaskMateChildCard extends LitElement {
       (comp) => comp.chore_id === chore.id && (comp.child_id === child.id || (!isFirstCome && comp.child_id === "__parent__")) && !comp.bonus_subtask_id
     );
     let completionsToday = childCompletionsToday.length;
-    const dailyLimit = chore.daily_limit || 1;
+    // Clamped for first_come the same way the filter and the backend clamp it: a
+    // stored daily_limit > 1 must not make the winner's finished row read as still
+    // outstanding, or it invites a tap that complete_chore silently swallows (#805).
+    const dailyLimit = isFirstCome ? 1 : (chore.daily_limit || 1);
 
     // Check for optimistic completions (chores just completed but not yet confirmed by HA)
     const optimisticKey = `${chore.id}_${child.id}`;
@@ -3813,12 +3820,12 @@ class TaskMateChildCard extends LitElement {
     // mode-gated. Same split dependency_mode uses.
     const recurrenceLocked = !!chore._isRecurrenceLocked && !isCompletedForToday;
     const notAvailableRecurrence = recurrenceLocked && recurrenceDoneMode === 'dim';
-    // First-come chore claimed by a sibling today (first_come_done_mode
+    // First-come chore claimed by a sibling today (first_come_claimed_mode
     // dim/show — hide is filtered upstream). Never true on the winner's own
     // row: _isFirstComeLocked is only set for the other pool members.
-    const firstComeDoneMode = this.config.first_come_done_mode || 'hide';
+    const firstComeClaimedMode = this.config.first_come_claimed_mode || 'hide';
     const firstComeLocked = !!chore._isFirstComeLocked && !isCompletedForToday;
-    const notAvailableFirstCome = firstComeLocked && firstComeDoneMode === 'dim';
+    const notAvailableFirstCome = firstComeLocked && firstComeClaimedMode === 'dim';
     // Elapsed: only dim incomplete chores — completed ones keep their green "done" style
     const elapsedTimeMode = this.config.elapsed_time_mode || 'dim';
     const timeElapsed = chore._isTimeElapsed && !isCompletedForToday && elapsedTimeMode === 'dim';
@@ -4932,7 +4939,7 @@ class TaskMateChildCardEditor extends LitElement {
         },
       },
       {
-        name: 'first_come_done_mode',
+        name: 'first_come_claimed_mode',
         selector: {
           select: {
             options: [
@@ -4987,7 +4994,7 @@ class TaskMateChildCardEditor extends LitElement {
       card_design: this._t('common.design.field_label'),
       due_days_mode: this._t('child.editor.chores_not_due_today'),
       recurrence_done_mode: this._t('child.editor.recurring_when_completed'),
-      first_come_done_mode: this._t('child.editor.first_come_when_completed'),
+      first_come_claimed_mode: this._t('child.editor.first_come_when_completed'),
       dependency_mode: this._t('child.editor.dependency_mode'),
       elapsed_time_mode: this._t('child.editor.missed_time_chores'),
       show_countdown: this._t('child.editor.show_countdown'),
@@ -5007,7 +5014,7 @@ class TaskMateChildCardEditor extends LitElement {
       time_category: this._t('child.editor.time_category_helper'),
       due_days_mode: this._t('child.editor.due_days_helper'),
       recurrence_done_mode: this._t('child.editor.recurrence_helper'),
-      first_come_done_mode: this._t('child.editor.first_come_helper'),
+      first_come_claimed_mode: this._t('child.editor.first_come_helper'),
       dependency_mode: this._t('child.editor.dependency_helper'),
       elapsed_time_mode: this._t('child.editor.elapsed_helper'),
     };
@@ -5024,7 +5031,7 @@ class TaskMateChildCardEditor extends LitElement {
       card_design: this.config.card_design || 'global',
       due_days_mode: this.config.due_days_mode || 'hide',
       recurrence_done_mode: this.config.recurrence_done_mode || 'dim',
-      first_come_done_mode: this.config.first_come_done_mode || 'hide',
+      first_come_claimed_mode: this.config.first_come_claimed_mode || 'hide',
       dependency_mode: this.config.dependency_mode || 'hide',
       elapsed_time_mode: this.config.elapsed_time_mode || 'dim',
       show_countdown: this.config.show_countdown !== false,
@@ -5071,7 +5078,7 @@ class TaskMateChildCardEditor extends LitElement {
         show_countdown: true, show_description: false, debug: false,
         time_category: 'morning', due_days_mode: 'hide',
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',
-        first_come_done_mode: 'hide',
+        first_come_claimed_mode: 'hide',
       };
       if (value === '' || value === null || value === undefined) {
         delete newConfig[key];
