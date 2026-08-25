@@ -2616,9 +2616,18 @@ class TaskMateChildCard extends LitElement {
 
   /** Mirror of _renderChoreCard's "completed today" detection, designed branch only. */
   _isChoreDone(chore, child, todaysCompletions) {
+    // async_parent_complete_chore writes child_id="__parent__" to dismiss a
+    // chore for the WHOLE pool with zero points — it never credits a specific
+    // child. Every other assignment mode treats that as "done for whoever is
+    // looking", which is the intended behavior. first_come is exclusive: a
+    // pool-wide dismissal means nobody actually completed it, so it must not
+    // read as this child's own done state (green row + live undo chip) for
+    // anyone — it should fall through to the locked/dimmed row instead
+    // (chore._isFirstComeLocked, set in _filterAndSortChores).
+    const isFirstCome = chore.assignment_mode === "first_come";
     const childCompletionsToday = (todaysCompletions || []).filter(
       (comp) => comp.chore_id === chore.id
-        && (comp.child_id === child.id || comp.child_id === "__parent__")
+        && (comp.child_id === child.id || (!isFirstCome && comp.child_id === "__parent__"))
         && !comp.bonus_subtask_id
     );
     let count = childCompletionsToday.length;
@@ -3744,9 +3753,17 @@ class TaskMateChildCard extends LitElement {
     const isCelebrating = this._celebrating === chore.id;
 
     // Check how many times this chore was completed today by this child
-    // Both pending (awaiting approval) AND approved completions count toward the daily limit
+    // Both pending (awaiting approval) AND approved completions count toward the daily limit.
+    // Exception: async_parent_complete_chore's child_id="__parent__" dismisses a
+    // first_come chore for the whole pool with zero points and no winner — it must
+    // not read as THIS child's own done state (green row + live undo chip) for
+    // anyone, or every sibling gets a completed chip for a chore none of them did.
+    // It should fall through to the locked/dimmed row instead (chore._isFirstComeLocked
+    // below). Every other assignment mode keeps the existing __parent__-counts-for-
+    // everyone behavior, which is intentional there.
+    const isFirstCome = chore.assignment_mode === "first_come";
     const childCompletionsToday = todaysCompletions.filter(
-      (comp) => comp.chore_id === chore.id && (comp.child_id === child.id || comp.child_id === "__parent__") && !comp.bonus_subtask_id
+      (comp) => comp.chore_id === chore.id && (comp.child_id === child.id || (!isFirstCome && comp.child_id === "__parent__")) && !comp.bonus_subtask_id
     );
     let completionsToday = childCompletionsToday.length;
     const dailyLimit = chore.daily_limit || 1;

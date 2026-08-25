@@ -241,7 +241,9 @@ The chore has a rolling recurrence window. Once completed, it cannot be done aga
 
 **Child card behaviour:** Use `recurrence_done_mode` on the child card to control what happens when a recurring chore has been completed and is waiting to reset — `dim` (default), `hide`, or `show`.
 
-**First-come chores:** a `first_come` chore is a single shared quota of one — the moment any pool member completes it, it's done for the whole pool. By default (`first_come_done_mode: hide`) it disappears from every card, winner included. Set `first_come_done_mode: dim` or `show` on the child card instead to keep it visible for the rest of the pool after it's claimed — the winner's own row still shows their normal completed/undo state, and everyone else sees a locked, non-tappable row naming who completed it.
+**First-come chores:** a `first_come` chore is a single shared quota of one — the moment any pool member completes it, it's done for the whole pool. By default (`first_come_done_mode: hide`) it disappears from every card, winner included. Set `first_come_done_mode: dim` or `show` on the child card instead to keep it visible for the rest of the pool after it's claimed — the winner's own row still shows their normal completed/undo state, and everyone else sees a locked, non-tappable row naming who completed it. A pool-wide dismissal via the parent panel (no specific winner) is treated the same as "claimed by someone else" for every child, rather than showing as done for all of them.
+
+`first_come_done_mode` (like `recurrence_done_mode`) is only honored by the standard and designed chore rows — `_renderTimedChoreCard` and `_renderPreReaderTile` don't check either lock, so a claimed first-come timed chore or pre-reader tile stays live and tappable in those two views.
 
 ---
 
