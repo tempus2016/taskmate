@@ -241,6 +241,10 @@ The chore has a rolling recurrence window. Once completed, it cannot be done aga
 
 **Child card behaviour:** Use `recurrence_done_mode` on the child card to control what happens when a recurring chore has been completed and is waiting to reset — `dim` (default), `hide`, or `show`.
 
+**First-come chores:** a `first_come` chore is a single shared quota of one — the moment any pool member completes it, it's done for the whole pool. By default (`first_come_claimed_mode: hide`) it disappears from every card, winner included. Set `first_come_claimed_mode: dim` or `show` on the child card instead to keep it visible for the rest of the pool after it's claimed — the winner's own row still shows their normal completed/undo state, and everyone else sees a locked, non-tappable row naming who completed it. A pool-wide dismissal via the parent panel (no specific winner) is treated the same as "claimed by someone else" for every child, rather than showing as done for all of them.
+
+`first_come_claimed_mode` (like `recurrence_done_mode`) is only honored by the standard and designed chore rows — `_renderTimedChoreCard` and `_renderPreReaderTile` don't check either lock, so a claimed first-come timed chore or pre-reader tile stays live and tappable in those two views.
+
 ---
 
 ## Chore Dependencies
@@ -768,6 +772,30 @@ Leave all targets empty to use persistent (in-app) notifications only.
 
 > **Tip:** Use `binary_sensor.taskmate_has_pending_approvals` in your own automations for more customised notification logic.
 
+### Grouping Notifications on Your Phone
+
+TaskMate stamps every push with a **group key** so the companion app stacks its
+alerts into one bundle instead of scattering them through everything else Home
+Assistant sends you. This is on by default with the key `taskmate` — no setup
+needed.
+
+To change it, use **Group key** on the Notifications tab. Set it globally, or
+override it per notification type to split TaskMate's alerts into separate
+stacks (say, approvals in one bundle and badges in another). **Leave it blank
+to turn grouping off.**
+
+Keys must be 64 characters or fewer with no spaces or control characters —
+use `family-chores`, not `family chores`.
+
+| Platform | Key sent | Effect |
+|---|---|---|
+| Android | `data.group` | Notifications collapse into one group |
+| iOS | `push.thread-id` | Notifications thread together |
+
+Both are sent with the same value and each platform ignores the other's, so one
+setting covers both. The keys are only added for `mobile_app.*` notify services —
+other targets (email, Telegram, persistent notifications) are unaffected.
+
 ---
 
 ## Quiet Hours
@@ -1240,6 +1268,7 @@ child_id: a8c8376a            # required — see Finding IDs
 time_category: anytime        # any period id (built-in or custom) | anytime | all
 due_days_mode: hide           # hide | dim | show — chores not scheduled today
 recurrence_done_mode: dim     # dim | hide | show — recurring chores waiting to reset
+first_come_claimed_mode: hide    # hide (default) | dim | show — first-come chore claimed by another child
 elapsed_time_mode: dim        # dim | hide | show — time-of-day chores whose period has passed
 show_countdown: true          # show midnight reset countdown
 show_description: false       # show chore description below name
@@ -1757,13 +1786,25 @@ the overview sensor and its companion sensors at render time.
 | `sensor.taskmate_chores` | total chores | `chores` list (definitions), `todays_completions` |
 | `sensor.taskmate_chore_availability` | total chores available today | `chore_availability`: `{chore_id: {child_id: bool}}` |
 | `sensor.taskmate_rewards` | total rewards | `rewards`, `pending_reward_claims`, `pool_allocations` |
-| `sensor.taskmate_activity` | total completions all-time | `recent_completions` (last 35), `recent_transactions` (last 20), `photo_gallery` |
+| `sensor.taskmate_activity` | total completions all-time | `recent_completions` (last 35), `recent_transactions` (last 20), `career_score_history`, `photo_gallery` |
 | `sensor.taskmate_incentives` | penalties + bonuses count | `penalties`, `bonuses` |
-| `sensor.taskmate_pending_approvals` | pending approvals count | `chore_completions`, `reward_claims` (detailed lists) |
+| `sensor.taskmate_pending_approvals` | pending approvals count | `chore_completions`, `reward_claims`, `mandatory_misses` (detailed lists) |
 | `sensor.taskmate_<child>_points` | points for that child | `child_id`, `current_streak`, `best_streak`, `total_*` |
 | `sensor.taskmate_<child>_stats` | chores completed by that child | `assigned_chores`, streak / totals |
 
 Automations that read the old overview attributes (e.g. `sensor.taskmate_overview.attributes.chores`) should instead read from the matching companion sensor listed above.
+
+### Attributes and the recorder
+
+The large list attributes above (`chores`, `recent_completions`, `mandatory_misses`,
+`children`, `earned` / `available` badges, and so on) are declared **unrecorded**.
+They are still published on the live state — cards, templates, `state_attr()` and
+automation conditions all read them exactly as before — but Home Assistant's
+recorder does not write them to the database. That keeps the database small and
+stops the `State attributes for sensor.taskmate_… exceed maximum size of 16384
+bytes` warning that a large family could otherwise trigger. The scalar attributes
+(counts, totals, settings) stay recorded, so history and statistics on them keep
+working.
 
 ### Other Platforms
 
@@ -1825,6 +1866,22 @@ Beyond the sensors above, TaskMate also exposes:
 ---
 
 ## Changelog
+
+### v5.3.0
+
+Phone notifications now stack into a single bundle instead of scattering through the rest of Home Assistant's alerts, and two sensors stop flooding the log with recorder warnings. Both changes are drop-in — grouping is on by default and needs no configuration, and nothing about the data your cards read has changed.
+
+**New**
+- **TaskMate notifications group on your phone** — every push now carries a group key, so the companion app collapses them into one stack rather than interleaving them with everything else HA sends you. Android reads `data.group`, iOS threads on `push.thread-id`; both are sent with the same value and each platform ignores the other's key. The keys only go to `mobile_app.*` services, matching how `clickAction` is already gated, and custom reminders stamp the group themselves so no alert is left outside the bundle. Applied by default as `taskmate` with no setup at all. To change it, use **Group key** in the notifications panel — global, or per notification type, exactly like the existing tap-target (`nav_url`) setting. A blank value turns grouping off. ([#812](https://github.com/tempus2016/taskmate/pull/812), closes [#811](https://github.com/tempus2016/taskmate/issues/811))
+
+**Fixes**
+- **Recorder warnings on `sensor.taskmate_activity`** — its four lists (`recent_completions`, `recent_transactions`, `career_score_history`, `photo_gallery`) measured 14,425 bytes on a *two-child* test instance, 88% of Home Assistant's 16,384-byte attribute limit. Batch approving tipped it over, at which point the recorder logged *"State attributes … exceed maximum size"* and threw away the entity's **entire** attribute set for that state. Auditing every TaskMate entity turned up a quieter, worse case: `sensor.taskmate_pending_approvals` measured 62,506 bytes and had never recorded a single attribute in its history. The growth-prone lists across all the sensors are now declared unrecorded, so the recorder skips them and the size check only ever sees the compact scalars. They are untouched on the live state — cards, `state_attr()`, templates and automations read them exactly as before — and the scalar counters stay recorded, so history and statistics keep working. ([#818](https://github.com/tempus2016/taskmate/pull/818), closes [#817](https://github.com/tempus2016/taskmate/issues/817))
+- **A rejected group key or tap target looked like it had saved** — the notifications panel discarded the validation error and left the invalid value sitting in the field, so an entry like `family chores` (with a space) appeared accepted but was never stored. The panel now surfaces the rejection and restores the last good value. ([#816](https://github.com/tempus2016/taskmate/pull/816))
+- **A non-string `group` or `nav_url` in stored config raised on load** — `NotificationConfig` assumed both fields were strings, so a value of the wrong type (from a hand-edited store or a partial write) broke loading rather than degrading. Both now coerce to empty. ([#815](https://github.com/tempus2016/taskmate/pull/815))
+
+**Internal**
+- The sensor size tests measured hand-assembled attribute dicts rather than what the sensors actually publish, which is how `career_score_history`, `photo_gallery` and `mandatory_misses` went unmeasured. They now drive the real entities and assert on the recorder-visible payload, with a guard that every declared unrecorded attribute is genuinely published. ([#818](https://github.com/tempus2016/taskmate/pull/818))
+- A sponsor button on the repository. ([#814](https://github.com/tempus2016/taskmate/pull/814))
 
 ### v5.2.0
 

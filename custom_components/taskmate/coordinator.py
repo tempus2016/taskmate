@@ -183,18 +183,26 @@ class TaskMateCoordinator(
         """Memoize chore-only computations for one availability build (PERF-1).
 
         The availability matrix calls ``is_chore_available_for_child`` for every
-        chore × child. Several inner computations depend only on the chore (the
+        chore × child, and the calendar projection does the same for every
+        chore × day. Several inner computations depend only on the chore (the
         rotation active-set, the rotation-done check) or are re-fetched from
-        storage repeatedly (the completions list, which ``get_completions``
-        rebuilds from dicts on each call). Inside this scope those are computed
-        once and cached. The build is fully synchronous (no awaits), so storage
-        cannot mutate while the cache is live. Re-entrant scopes reuse the cache.
+        storage repeatedly — every ``storage.get_*`` call rebuilds its whole
+        list of dataclasses from raw dicts, so a per-chore ``get_chores()``
+        (balanced-mode grouping) or a per-pool-member ``get_child()``
+        (``_chore_assignment_pool``) turns a projection into hundreds of
+        thousands of object constructions (#823). Inside this scope those are
+        computed once and cached. The build is fully synchronous (no awaits),
+        so storage cannot mutate while the cache is live. Re-entrant scopes
+        reuse the cache.
         """
         if getattr(self, "_avail_cache", None) is not None:
             yield  # already inside a scope — reuse the existing cache
             return
         self._avail_cache = {
             "completions": self.storage.get_completions(),
+            "completions_by_chore": None,  # built lazily — only rotation modes need it
+            "chores": None,
+            "child_lookup": None,
             "active": {},
             "rotation_done": {},
         }
@@ -209,6 +217,48 @@ class TaskMateCoordinator(
         if cache is not None:
             return cache["completions"]
         return self.storage.get_completions()
+
+    def _cached_completions_for_chore(self, chore_id: str) -> list:
+        """Completions for one chore, via a shared index when in scope.
+
+        Without the index each rotation chore walks the entire completions
+        list, making the availability matrix O(chores × completions).
+        """
+        cache = getattr(self, "_avail_cache", None)
+        if cache is None:
+            return [c for c in self.storage.get_completions() if c.chore_id == chore_id]
+        index = cache["completions_by_chore"]
+        if index is None:
+            index = {}
+            for comp in cache["completions"]:
+                index.setdefault(comp.chore_id, []).append(comp)
+            cache["completions_by_chore"] = index
+        return index.get(chore_id, [])
+
+    def _cached_chores(self) -> list:
+        """Chores list, rebuilt from storage once per scope."""
+        cache = getattr(self, "_avail_cache", None)
+        if cache is None:
+            return self.storage.get_chores()
+        if cache["chores"] is None:
+            cache["chores"] = self.storage.get_chores()
+        return cache["chores"]
+
+    def _cached_child_lookup(self) -> dict:
+        """``{child_id: Child}``, rebuilt from storage once per scope."""
+        cache = getattr(self, "_avail_cache", None)
+        if cache is None:
+            return {c.id: c for c in self.storage.get_children()}
+        if cache["child_lookup"] is None:
+            cache["child_lookup"] = {c.id: c for c in self.storage.get_children()}
+        return cache["child_lookup"]
+
+    def _cached_child(self, child_id: str):
+        """A single child, served from the scope lookup when in scope."""
+        cache = getattr(self, "_avail_cache", None)
+        if cache is None:
+            return self.storage.get_child(child_id)
+        return self._cached_child_lookup().get(child_id)
 
     def _is_child_on_vacation(self, child, on: date | None = None) -> bool:
         """True when ``child`` should be treated as away (streak frozen, chores
