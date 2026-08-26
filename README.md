@@ -1867,6 +1867,20 @@ Beyond the sensors above, TaskMate also exposes:
 
 ## Changelog
 
+### v5.4.0
+
+First-come chores can now stay on the card after someone claims them, so the rest of the pool sees who won instead of watching the chore vanish. Alongside that, calendar and availability state writes no longer block Home Assistant's event loop — if your log has been filling with *"Updating state for calendar.taskmate_… took 1.4 seconds"*, that stops here. Both changes are drop-in: the new card option defaults to today's behaviour and the performance work is invisible apart from the warnings going away.
+
+**New — cards**
+- **`first_come_claimed_mode` on the child card** — a `first_come` chore is a single shared quota of one, and the moment anyone completed it the row disappeared from every card in the pool, the winner's included. There was no confirmation it had been done and no way to see who got there first. The new option controls what the pool sees once a chore is claimed: `hide` (default, exactly as before), `dim` (greyed out and not tappable) or `show` (full opacity, still not tappable). Under **First-Come Chores — When Claimed** in the card editor. The winner keeps their normal completed row with undo; everyone else gets a locked row reading *"Already done by {name}"*. A pool-wide dismissal from the parent panel has no specific winner, so every child sees *"Already claimed today"* rather than it showing as done for all of them. Honoured by the standard chore row and all five designs; `_renderTimedChoreCard` and `_renderPreReaderTile` don't check this lock (or `recurrence_done_mode`), so a claimed first-come timed chore or picture-mode tile stays live in those two views. ([#821](https://github.com/tempus2016/taskmate/pull/821), closes [#822](https://github.com/tempus2016/taskmate/issues/822))
+
+**Fixes**
+- **Calendar and availability state writes blocked the event loop** — every coordinator refresh logged *"Updating state for calendar.taskmate_… took 1.096 seconds"* and *"…chore_availability … took 2.083 seconds"*. Both entities rebuilt the entire dataset from raw dictionaries on every read. Profiled against a synthetic 6-children × 120-chore × 20,000-completion family, a single read of `calendar.event` made **24.1 million function calls** — 157k `Chore.from_dict`, 258k `Child.from_dict` and 415k `uuid4()`. Four separate defects fed it: the calendar re-projected its full 60-day horizon on every read and Home Assistant reads it *twice* per write (state, then attributes); the projection ran outside `availability_build_scope`, so balanced-mode grouping and the assignment pool re-fetched and rebuilt every stored dataclass per `(chore, day)` pair — 1,311 full chore-list rebuilds for one read; `_is_rotation_done_today` walked the whole completions list per chore, making the availability matrix O(chores × completions); and `data.get("id", generate_id())` evaluated its default *eagerly*, burning a `uuid4()` on every `from_dict` only to discard it. The availability sensor separately rebuilt in `native_value` the matrix `extra_state_attributes` had just built, doubling every write. The calendar horizon is now memoised on the same cache key `_CachedAttrsSensor` already uses, so an availability or visibility flip still invalidates it correctly. ([#824](https://github.com/tempus2016/taskmate/pull/824), fixes [#823](https://github.com/tempus2016/taskmate/issues/823))
+
+**Internal**
+- A performance regression test covering the state-write path, so the projection cannot quietly start rebuilding per read again. ([#824](https://github.com/tempus2016/taskmate/pull/824))
+- ESLint 10.8.0 → 10.8.1 and a `globals` bump. ([#813](https://github.com/tempus2016/taskmate/pull/813))
+
 ### v5.3.0
 
 Phone notifications now stack into a single bundle instead of scattering through the rest of Home Assistant's alerts, and two sensors stop flooding the log with recorder warnings. Both changes are drop-in — grouping is on by default and needs no configuration, and nothing about the data your cards read has changed.
