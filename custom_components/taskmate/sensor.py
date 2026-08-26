@@ -936,12 +936,11 @@ class TaskMateChoreAvailabilitySensor(_CachedAttrsSensor):
 
     @property
     def native_value(self) -> int:
-        common = _compute_common(self.coordinator)
-        total = 0
-        availability = _build_chore_availability(self.coordinator, common)
-        for per_child in availability.values():
-            total += sum(1 for v in per_child.values() if v)
-        return total
+        # Read the matrix back off the attribute cache rather than rebuilding
+        # it: HA writes the state and the attributes together, so building it
+        # here too doubled the cost of every write (#823).
+        availability = self.extra_state_attributes.get("chore_availability", {})
+        return sum(sum(1 for v in per_child.values() if v) for per_child in availability.values())
 
     @property
     def icon(self) -> str:

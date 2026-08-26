@@ -106,7 +106,7 @@ class TimedSession:
             segments=list(data.get("segments", [])),
             total_seconds_today=data.get("total_seconds_today", 0),
             session_date=data.get("session_date", ""),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -136,7 +136,7 @@ class BonusSubTask:
             name=data.get("name", ""),
             points=data.get("points", 5),
             description=data.get("description", ""),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -212,7 +212,7 @@ class Child:
             quiet_hours_start=data.get("quiet_hours_start", ""),
             quiet_hours_end=data.get("quiet_hours_end", ""),
             level=int(data.get("level", 1) or 1),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -422,7 +422,7 @@ class Chore:
             timed_rate_points=data.get("timed_rate_points", 10),
             timed_rate_minutes=max(1, int(data.get("timed_rate_minutes", 5) or 5)),
             timed_max_daily_minutes=max(0, int(data.get("timed_max_daily_minutes", 0) or 0)),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -542,7 +542,7 @@ class Reward:
             unlock_minutes=int(data.get("unlock_minutes", 0) or 0),
             restock_period=data.get("restock_period", "weekly"),
             restock_last=data.get("restock_last", ""),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -598,7 +598,7 @@ class Quest:
             assigned_to=list(data.get("assigned_to", [])),
             repeatable=bool(data.get("repeatable", False)),
             active=bool(data.get("active", True)),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -648,7 +648,7 @@ class Challenge:
             bonus_points=int(data.get("bonus_points", 15) or 0),
             assigned_to=list(data.get("assigned_to", [])),
             active=bool(data.get("active", True)),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -697,7 +697,7 @@ class ChoreCompletion:
             bonus_subtask_id=data.get("bonus_subtask_id", ""),
             timed_duration_seconds=data.get("timed_duration_seconds", 0),
             photo_url=data.get("photo_url", ""),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -747,7 +747,7 @@ class MandatoryMiss:
             postpone_count=max(0, int(data.get("postpone_count", 0) or 0)),
             escalation_stage=max(0, int(data.get("escalation_stage", 0) or 0)),
             created_at=data.get("created_at", "") or dt_util_now_iso(),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -788,7 +788,7 @@ class RewardClaim:
             claimed_at=claimed_at or datetime.now(timezone.utc),
             approved=data.get("approved", False),
             approved_at=approved_at,
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -819,7 +819,7 @@ class PoolAllocation:
             child_id=data.get("child_id", ""),
             reward_id=data.get("reward_id", ""),
             allocated_points=data.get("allocated_points", 0),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -847,7 +847,7 @@ class Penalty:
     def from_dict(cls, data: dict[str, Any]) -> "Penalty":
         """Create a Penalty from a dictionary."""
         return cls(
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
             name=data.get("name", ""),
             # Always positive — a negative value would *grant* points on use
             points=max(0, int(data.get("points", 0) or 0)),
@@ -883,7 +883,7 @@ class Bonus:
     def from_dict(cls, data: dict[str, Any]) -> "Bonus":
         """Create a Bonus from a dictionary."""
         return cls(
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
             name=data.get("name", ""),
             # Always positive — a negative value would *deduct* points on use
             points=max(0, int(data.get("points", 0) or 0)),
@@ -946,7 +946,7 @@ class PointsTransaction:
             points=data.get("points", 0),
             reason=data.get("reason", ""),
             created_at=created_at or datetime.now(timezone.utc),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
             link_id=data.get("link_id", ""),
         )
 
@@ -984,7 +984,7 @@ class Badge:
     def from_dict(cls, data: dict[str, Any]) -> "Badge":
         created_at = parse_datetime(data.get("created_at"))
         return cls(
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
             name=data.get("name", ""),
             description=data.get("description", ""),
             icon=data.get("icon", "mdi:trophy"),
@@ -1033,7 +1033,7 @@ class AwardedBadge:
     def from_dict(cls, data: dict[str, Any]) -> "AwardedBadge":
         earned_at = parse_datetime(data.get("earned_at"))
         return cls(
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
             child_id=data.get("child_id", ""),
             badge_id=data.get("badge_id", ""),
             earned_at=earned_at or datetime.now(timezone.utc),
@@ -1078,7 +1078,7 @@ class TaskGroup:
             name=data.get("name", ""),
             policy=data.get("policy", "sticky"),
             chore_ids=list(data.get("chore_ids", [])),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1122,7 +1122,7 @@ class ScheduledChange:
             applied=bool(data.get("applied", False)),
             applied_at=data.get("applied_at", ""),
             created_at=data.get("created_at", "") or dt_util_now_iso(),
-            id=data.get("id", generate_id()),
+            id=data.get("id") or generate_id(),
         )
 
     def to_dict(self) -> dict[str, Any]:
