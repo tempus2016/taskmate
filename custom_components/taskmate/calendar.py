@@ -125,6 +125,8 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
         self._child_id = child.id
         self._attr_unique_id = f"{entry.entry_id}_{child.id}_calendar"
         self._attr_name = f"TaskMate {child.name}"
+        self._events_cache: list[CalendarEvent] | None = None
+        self._events_key: tuple | None = None
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -140,16 +142,39 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
 
     @property
     def event(self) -> CalendarEvent | None:
-        """The current or next upcoming event (HA shows this as the entity state)."""
+        """The current or next upcoming event (HA shows this as the entity state).
+
+        Home Assistant reads this twice per state write (once for the state,
+        once for the state attributes), and writes on every coordinator
+        refresh — so the horizon projection is memoized against the same key
+        the sensors use: the data snapshot plus the external-entity version
+        that covers availability/visibility flips (#823). Only the cheap
+        "which one is next" filter re-runs.
+        """
         child = self._child
         if not child:
             return None
         now = dt_util.now()
         today = now.date()
-        events = self._build_events(child, today, today + timedelta(days=_NEXT_EVENT_HORIZON_DAYS))
+        events = self._cached_horizon(child, today)
         upcoming = [e for e in events if _as_local_dt(e.end) > now]
         upcoming.sort(key=lambda e: _as_local_dt(e.start))
         return upcoming[0] if upcoming else None
+
+    def _cached_horizon(self, child: Child, today: date) -> list[CalendarEvent]:
+        """The next-up horizon for ``today``, rebuilt only when inputs change."""
+        key = (
+            today,
+            id(self.coordinator.data),
+            getattr(self.coordinator, "external_state_version", 0),
+        )
+        cached = getattr(self, "_events_cache", None)
+        if cached is not None and getattr(self, "_events_key", None) == key:
+            return cached
+        events = self._build_events(child, today, today + timedelta(days=_NEXT_EVENT_HORIZON_DAYS))
+        self._events_cache = events
+        self._events_key = key
+        return events
 
     async def async_get_events(
         self, hass: HomeAssistant, start_date: datetime, end_date: datetime
@@ -161,6 +186,14 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
         return self._build_events(child, start_date.date(), end_date.date())
 
     def _build_events(self, child: Child, start_day: date, end_day: date) -> list[CalendarEvent]:
+        with self.coordinator.availability_build_scope():
+            return self._build_events_locked(child, start_day, end_day)
+
+    def _build_events_locked(self, child: Child, start_day: date, end_day: date) -> list[CalendarEvent]:
+        """Project the range. Must run inside ``availability_build_scope`` so the
+        rotation pool and balanced-mode grouping resolve from the scope cache
+        instead of rebuilding every stored chore/child per (chore, day) (#823).
+        """
         coord = self.coordinator
         events: list[CalendarEvent] = []
 
@@ -182,7 +215,7 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
             events.append(_away_event(run_start, end_day + timedelta(days=1), run_label))
 
         # ---- chore occurrences (skipped on away days) ----
-        chores = coord.storage.get_chores()
+        chores = coord._cached_chores()
         tz = dt_util.DEFAULT_TIME_ZONE
         day = start_day
         while day <= end_day:

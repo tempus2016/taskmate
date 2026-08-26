@@ -280,7 +280,7 @@ class AssignmentsMixin:
           2. unavailability_entity — neutral when missing; _AVAILABLE_STATES means BUSY.
         Final = step1 AND NOT step2.
         """
-        child = self.storage.get_child(child_id)
+        child = self._cached_child(child_id)
         if not child:
             return True
 
@@ -327,10 +327,11 @@ class AssignmentsMixin:
         Prefers the chore's `assigned_to` list. When empty, falls back to every
         stored child so "Everyone"-style chores can still alternate/randomize.
         """
-        pool = [cid for cid in (chore.assigned_to or []) if self.storage.get_child(cid)]
+        lookup = self._cached_child_lookup()
+        pool = [cid for cid in (chore.assigned_to or []) if cid in lookup]
         if pool:
             return pool
-        return [child.id for child in self.storage.get_children()]
+        return list(lookup)
 
     def _compute_active_children(self, chore: Chore, today: date | None = None) -> list[str]:
         """Return the child IDs the chore is active for today.
@@ -347,16 +348,18 @@ class AssignmentsMixin:
         parent has skipped. Stale skip state (skip_date != today) is ignored at
         read time and cleared during the midnight refresh.
         """
-        # PERF-1: the active set depends only on the chore for "today" (the
-        # availability matrix calls this per chore × child). Memoize per chore
-        # within an availability build scope. Skip when an explicit `today` is
-        # passed (callers that probe other days must not read today's cache).
+        # PERF-1/#823: the active set depends only on (chore, day) — the
+        # availability matrix calls this per chore × child and the calendar
+        # projection per chore × day. Memoize on that pair within a build
+        # scope; `today=None` ("today") keys separately from an explicit date
+        # so a probe of another day can never be served today's answer.
         cache = getattr(self, "_avail_cache", None)
-        if cache is not None and today is None:
-            cached = cache["active"].get(chore.id)
+        if cache is not None:
+            key = (chore.id, today)
+            cached = cache["active"].get(key)
             if cached is None:
-                cached = self._compute_active_children_uncached(chore, None)
-                cache["active"][chore.id] = cached
+                cached = self._compute_active_children_uncached(chore, today)
+                cache["active"][key] = cached
             return cached
         return self._compute_active_children_uncached(chore, today)
 
@@ -448,7 +451,7 @@ class AssignmentsMixin:
         pool_key = tuple(sorted(pool))
         group_ids = sorted(
             c.id
-            for c in self.storage.get_chores()
+            for c in self._cached_chores()
             if getattr(c, "assignment_mode", "everyone") == "balanced"
             and tuple(sorted(self._chore_assignment_pool(c))) == pool_key
         )
@@ -613,9 +616,7 @@ class AssignmentsMixin:
         active_child_id = getattr(chore, "assignment_current_child_id", "") or ""
         completions_today = 0
         completed_bonus_ids_today: set[str] = set()
-        for comp in self._cached_completions():
-            if comp.chore_id != chore.id:
-                continue
+        for comp in self._cached_completions_for_chore(chore.id):
             comp_dt = comp.completed_at
             try:
                 if hasattr(comp_dt, "astimezone"):
