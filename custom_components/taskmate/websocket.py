@@ -524,13 +524,20 @@ async def _ws_list_ha_users(hass, connection, msg, coordinator):
 def _image_url_or_blank(value):
     """Accept a blank string (clears the picture) or one of our image URLs.
 
+    Returns the *canonical* URL: the panel is handed a signed one for its
+    <img> and posts it back verbatim, so the signature is stripped here rather
+    than persisted (#827).
+
     A bare predicate can't be used as a voluptuous validator: voluptuous treats
     a callable as a coercer, so returning False would be a *value*, not a
     rejection. This raises instead.
     """
     text = str(value or "")
-    if not text or images.is_taskmate_image_url(text):
+    if not text:
         return text
+    canonical = images.normalize_taskmate_image_url(text)
+    if canonical:
+        return canonical
     raise vol.Invalid("image_url must be a TaskMate image URL")
 
 
