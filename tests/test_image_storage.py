@@ -119,3 +119,22 @@ def test_sign_image_url_passes_through_foreign_urls(tmp_path):
     hass = _hass(tmp_path)
     assert images.sign_image_url(hass, "") == ""
     assert images.sign_image_url(hass, "https://x/y.jpg") == "https://x/y.jpg"
+
+
+def test_normalize_strips_a_signature_query(tmp_path):
+    good = "/api/taskmate/image/" + "a" * 32 + ".jpg"
+    assert images.normalize_taskmate_image_url(good + "?authSig=abc.def.ghi") == good
+    assert images.normalize_taskmate_image_url(good + "?authSig=abc#frag") == good
+    assert images.normalize_taskmate_image_url(good) == good
+
+
+def test_normalize_rejects_what_is_taskmate_image_url_rejects():
+    for bad in (
+        "",
+        None,
+        "/api/taskmate/photo/" + "a" * 32 + ".jpg?authSig=abc",
+        "/api/taskmate/image/../../secret.txt?authSig=abc",
+        "https://evil.example/x.jpg?authSig=abc",
+        "javascript:alert(1)",
+    ):
+        assert images.normalize_taskmate_image_url(bad) is None, bad

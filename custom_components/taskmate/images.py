@@ -59,6 +59,7 @@ __all__ = [
     "image_file_for_url",
     "images_path",
     "is_taskmate_image_url",
+    "normalize_taskmate_image_url",
     "sign_image_url",
     "total_images_bytes",
 ]
@@ -88,6 +89,23 @@ def is_taskmate_image_url(image_url: str) -> bool:
     if not image_url.startswith(prefix):
         return False
     return bool(FILENAME_RE.match(image_url[len(prefix) :]))
+
+
+def normalize_taskmate_image_url(image_url: str) -> str | None:
+    """Return the canonical bare form of one of our image URLs, else None.
+
+    State delivery hands the panel a *signed* URL (``?authSig=<jwt>``) so a
+    plain ``<img>`` loads without a bearer token, and the chore editor seeds
+    its dialog from that state and posts the same value straight back on save.
+    Dropping the query (and any fragment) lets that round-trip validate while
+    still storing only the bare URL — a signature expires in 24h, is per-user,
+    and would rot the stored chore and break the delete-by-equality check in
+    ``coord_chores._async_release_image`` (#827).
+    """
+    if not image_url:
+        return None
+    base = str(image_url).split("#", 1)[0].split("?", 1)[0]
+    return base if is_taskmate_image_url(base) else None
 
 
 def image_file_for_url(hass, image_url: str) -> Path | None:

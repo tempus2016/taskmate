@@ -53,7 +53,7 @@ def test_image_url_is_an_editable_field():
 
 
 def test_websocket_validates_the_url():
-    assert "is_taskmate_image_url" in WS, "an unvalidated image_url would let a chore point at any URL"
+    assert "normalize_taskmate_image_url" in WS, "an unvalidated image_url would let a chore point at any URL"
 
 
 def test_state_snapshot_signs_the_image_url():
@@ -100,3 +100,38 @@ def test_validator_accepts_blank_and_our_urls(ok):
     from custom_components.taskmate.websocket import _image_url_or_blank
 
     assert _image_url_or_blank(ok) == (ok or "")
+
+
+# --- #827: the panel round-trips the *signed* URL it was given ---------------
+#
+# _build_state_snapshot hands the panel a signed URL so its <img> loads without
+# a bearer token. The chore editor seeds its dialog straight from that state
+# and posts the same value back on save, so the validator saw
+# `<our url>?authSig=<jwt>` and rejected every edit of a chore with an image.
+
+SIGNED = GOOD + (
+    "?authSig=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+    ".eyJpc3MiOiIxNzJlZDRjYTNmNTA0OGQ4YmNiNGFiNzcyMTE4NTIyNSJ9"
+    ".Sd5AmNlzLX_46dqdzfv2iCIdCUnA-srciXw71yUtU0E"
+)
+
+
+def test_validator_accepts_the_signed_url_the_panel_was_handed():
+    from custom_components.taskmate.websocket import _image_url_or_blank
+
+    assert _image_url_or_blank(SIGNED) == GOOD
+
+
+def test_validator_strips_the_signature_before_storing():
+    # A signature expires in 24h and is per-user; persisting one would rot the
+    # stored chore and break image deletion, which compares URLs by equality.
+    from custom_components.taskmate.websocket import _image_url_or_blank
+
+    assert "authSig" not in _image_url_or_blank(SIGNED)
+
+
+def test_validator_still_rejects_a_foreign_url_with_a_query():
+    from custom_components.taskmate.websocket import _image_url_or_blank
+
+    with pytest.raises(vol.Invalid):
+        _image_url_or_blank("https://evil.example/x.jpg?authSig=abc")
