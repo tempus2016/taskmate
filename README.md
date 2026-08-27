@@ -1867,6 +1867,13 @@ Beyond the sensors above, TaskMate also exposes:
 
 ## Changelog
 
+### v5.4.1
+
+A single fix: editing a chore that had a picture failed to save. If you added an image to a chore and then tried to change anything about it — its name, points, days — the save was rejected with *"image_url must be a TaskMate image URL"* and the edit was lost. Upgrading is enough; your existing chores and their images are untouched and need no re-uploading.
+
+**Fixes**
+- **Editing a chore with an image failed with `image_url must be a TaskMate image URL`** — TaskMate signs chore image URLs before handing them to the panel, because a browser does not attach the Home Assistant bearer token to a plain `<img>` request and an unsigned URL would 401 instead of showing the picture. The chore editor seeds its dialog straight from that state and posted the signed value back on save, but the save-side validator only accepted the bare `/api/taskmate/image/<name>.jpg` form and rejected anything carrying the `?authSig=…` signature. Uploading a *new* image therefore worked — the upload response is unsigned — while every later edit of that same chore failed, which is why it looked like the chore itself had become uneditable. The signature is now stripped and the bare path validated at the websocket boundary, so only the canonical URL is ever stored. That matters beyond the error message: a signature expires after 24 hours and is tied to one user, so persisting one would have rotted the stored chore and broken the delete-by-equality check that removes an image file when its chore is deleted or its picture replaced. The strict URL check itself is unchanged, so no traversal or foreign-URL surface widens. ([#828](https://github.com/tempus2016/taskmate/pull/828), fixes [#827](https://github.com/tempus2016/taskmate/issues/827))
+
 ### v5.4.0
 
 First-come chores can now stay on the card after someone claims them, so the rest of the pool sees who won instead of watching the chore vanish. Alongside that, calendar and availability state writes no longer block Home Assistant's event loop — if your log has been filling with *"Updating state for calendar.taskmate_… took 1.4 seconds"*, that stops here. Both changes are drop-in: the new card option defaults to today's behaviour and the performance work is invisible apart from the warnings going away.
