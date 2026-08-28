@@ -144,5 +144,5 @@ body:
       options:
         - label: I have searched [existing issues](https://github.com/tempus2016/taskmate/issues) and this has not already been requested
           required: true
-        - label: I have checked the [README](https://github.com/tempus2016/taskmate#readme) and this feature doesn't already exist
+        - label: I have checked the [wiki](https://github.com/tempus2016/taskmate/wiki) and this feature doesn't already exist
           required: true
