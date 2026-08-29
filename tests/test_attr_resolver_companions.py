@@ -99,9 +99,7 @@ def _pending_approvals_count_keys() -> list[str]:
     Derived from sensor.py so adding a fourth count is caught here rather than
     by a user whose card goes blank.
     """
-    block = re.search(
-        r"class PendingApprovalsSensor.*?(?=\nclass |\Z)", SENSOR_SRC, re.S
-    )
+    block = re.search(r"class PendingApprovalsSensor.*?(?=\nclass |\Z)", SENSOR_SRC, re.S)
     assert block, "PendingApprovalsSensor not found in sensor.py"
     return re.findall(r'"([a-z_]+)":\s*len\(', block.group(0))
 
