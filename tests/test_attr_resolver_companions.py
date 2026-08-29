@@ -80,3 +80,57 @@ class TestCompanionIdsAreReal:
         """Cheap structural guard — every TaskMate entity id starts this way."""
         bad = [c for c in _companions() if not c.startswith("sensor.taskmate_")]
         assert bad == [], f"companion ids missing the taskmate_ prefix: {bad}"
+
+
+def _skip_keys() -> dict[str, list[str]]:
+    """COMPANION_SKIP_KEYS as the browser sees it (#834)."""
+    block = re.search(r"const COMPANION_SKIP_KEYS = \{(.*?)\};", RESOLVER, re.S)
+    assert block, "COMPANION_SKIP_KEYS object not found in the resolver"
+    code = re.sub(r"//[^\n]*", "", block.group(1))
+    out: dict[str, list[str]] = {}
+    for entity, body in re.findall(r'"(sensor\.[a-z_]+)"\s*:\s*\[(.*?)\]', code, re.S):
+        out[entity] = re.findall(r'"([^"]+)"', body)
+    return out
+
+
+def _pending_approvals_count_keys() -> list[str]:
+    """Keys PendingApprovalsSensor publishes as a scalar count, not a list.
+
+    Derived from sensor.py so adding a fourth count is caught here rather than
+    by a user whose card goes blank.
+    """
+    block = re.search(r"class PendingApprovalsSensor.*?(?=\nclass |\Z)", SENSOR_SRC, re.S)
+    assert block, "PendingApprovalsSensor not found in sensor.py"
+    return re.findall(r'"([a-z_]+)":\s*len\(', block.group(0))
+
+
+class TestCollidingAttributesAreNotMerged:
+    """#834: two sensors used one name for two different shapes.
+
+    sensor.taskmate_rewards owns `pending_reward_claims` as the LIST of claims;
+    sensor.taskmate_pending_approvals published the same name as an integer
+    count. The approvals sensor merges last, so the number won, and every card
+    calling .filter()/.some() on it threw — the rewards card and the
+    child-filtered approvals card both rendered as an empty box the moment a
+    child claimed a reward.
+    """
+
+    def test_pending_approvals_counts_are_skipped_in_the_merge(self):
+        counts = _pending_approvals_count_keys()
+        assert counts, "expected PendingApprovalsSensor to publish count attributes"
+        skipped = _skip_keys().get("sensor.taskmate_pending_approvals", [])
+        missing = [k for k in counts if k not in skipped]
+        assert missing == [], (
+            f"PendingApprovalsSensor publishes {missing} as a scalar count, but the "
+            "resolver still merges them. Any card reading one of these names as a "
+            "list will throw and render blank."
+        )
+
+    def test_the_colliding_key_is_covered(self):
+        """Pin the exact key from the bug report so this can't silently narrow."""
+        skipped = _skip_keys().get("sensor.taskmate_pending_approvals", [])
+        assert "pending_reward_claims" in skipped
+
+    def test_skip_lists_only_name_real_companions(self):
+        unknown = [e for e in _skip_keys() if e not in _companions()]
+        assert unknown == [], f"skip list names non-companion sensors: {unknown}"

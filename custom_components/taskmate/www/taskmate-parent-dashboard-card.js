@@ -19,6 +19,13 @@ const css = LitElement.prototype.css;
 const tmSafePhotoUrl = (u) =>
   typeof u === "string" && u.startsWith("/api/taskmate/photo/") ? u : "";
 
+// A pending-claims attribute is only ever usable as a list. The resolver used
+// to hand back the pending-approvals sensor's scalar COUNT under this name,
+// which turned .filter()/.some() into a TypeError and blanked the whole card
+// (#834). The name collision is fixed in the resolver; this keeps a stray
+// value from taking the card down again.
+const tmClaimList = (v) => (Array.isArray(v) ? v : []);
+
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
 
 class TaskMateParentDashboardCard extends LitElement {
@@ -527,7 +534,7 @@ class TaskMateParentDashboardCard extends LitElement {
     // approve button after a recurring chore resets. `completions` stays
     // today-only for the overview tab's activity display.
     const pendingCompletions = attrs.chore_completions || completions.filter(c => !c.approved);
-    const pendingRewardClaims = attrs.pending_reward_claims || [];
+    const pendingRewardClaims = tmClaimList(attrs.pending_reward_claims);
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t('common.points');
     const totalPending = pendingCompletions.length + pendingRewardClaims.length;
@@ -662,7 +669,7 @@ class TaskMateParentDashboardCard extends LitElement {
     const chores = attrs.chores || [];
     const completions = attrs.todays_completions || [];
     const pendingCompletions = attrs.chore_completions || completions.filter(c => !c.approved);
-    const pendingRewardClaims = attrs.pending_reward_claims || [];
+    const pendingRewardClaims = tmClaimList(attrs.pending_reward_claims);
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t('common.points');
     const totalPending = pendingCompletions.length + pendingRewardClaims.length;
