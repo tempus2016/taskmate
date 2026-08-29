@@ -15,6 +15,13 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+// A pending-claims attribute is only ever usable as a list. The resolver used
+// to hand back the pending-approvals sensor's scalar COUNT under this name,
+// which turned .filter()/.some() into a TypeError and blanked the whole card
+// (#834). The name collision is fixed in the resolver; this keeps a stray
+// value from taking the card down again.
+const tmClaimList = (v) => (Array.isArray(v) ? v : []);
+
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
 
 class TaskMateRewardsCard extends LitElement {
@@ -1363,7 +1370,8 @@ class TaskMateRewardsCard extends LitElement {
 
     // Pending claim check
     const pcAttrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity)) || this.hass?.states?.[this.config?.entity]?.attributes || {};
-    const pendingClaims = pcAttrs.pending_reward_claims || [];
+    // Always a list, even if the attribute arrives as something else (#834).
+    const pendingClaims = tmClaimList(pcAttrs.pending_reward_claims);
     const hasPendingClaim = pendingClaims.some(c =>
       c.reward_id === reward.id && (!childId || c.child_id === childId)
     );
@@ -1842,7 +1850,8 @@ class TaskMateRewardsCard extends LitElement {
 
     const pcAttrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
       || this.hass?.states?.[this.config?.entity]?.attributes || {};
-    const pendingClaims = pcAttrs.pending_reward_claims || [];
+    // Always a list, even if the attribute arrives as something else (#834).
+    const pendingClaims = tmClaimList(pcAttrs.pending_reward_claims);
     const hasPendingClaim = pendingClaims.some(c =>
       c.reward_id === reward.id && (!childId || c.child_id === childId)
     );

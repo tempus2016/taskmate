@@ -17,6 +17,13 @@ const css = LitElement.prototype.css;
 const tmSafePhotoUrl = (u) =>
   typeof u === "string" && u.startsWith("/api/taskmate/photo/") ? u : "";
 
+// A pending-claims attribute is only ever usable as a list. The resolver used
+// to hand back the pending-approvals sensor's scalar COUNT under this name,
+// which turned .filter()/.some() into a TypeError and blanked the whole card
+// (#834). The name collision is fixed in the resolver; this keeps a stray
+// value from taking the card down again.
+const tmClaimList = (v) => (Array.isArray(v) ? v : []);
+
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
 
 class TaskMateApprovalsCard extends LitElement {
@@ -530,10 +537,9 @@ class TaskMateApprovalsCard extends LitElement {
 
     // Pending reward claims: supported via either the pending_approvals sensor
     // (reward_claims attribute) or the rewards sensor (pending_reward_claims).
-    let rewardClaims =
-      entity.attributes.reward_claims ||
-      attrs.pending_reward_claims ||
-      [];
+    let rewardClaims = tmClaimList(
+      entity.attributes.reward_claims || attrs.pending_reward_claims,
+    );
     const filteredClaims = this._filterClaimsByChild(rewardClaims);
 
     // Missed mandatory chores awaiting parent review (#532)
@@ -611,7 +617,7 @@ class TaskMateApprovalsCard extends LitElement {
     if (!completions) completions = (attrs.todays_completions || []).filter(c => !c.approved);
     const filteredCompletions = this._filterByChild(completions);
 
-    const rewardClaims = entity.attributes.reward_claims || attrs.pending_reward_claims || [];
+    const rewardClaims = tmClaimList(entity.attributes.reward_claims || attrs.pending_reward_claims);
     const filteredClaims = this._filterClaimsByChild(rewardClaims);
 
     const misses = this._filterMissesByChild(attrs.mandatory_misses || []);

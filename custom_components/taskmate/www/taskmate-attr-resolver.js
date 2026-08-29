@@ -37,6 +37,30 @@
     "sensor.taskmate_pending_approvals",
   ];
 
+  // Attributes a companion must NOT contribute to the merge, because another
+  // sensor already owns that name for different data (#834).
+  //
+  // sensor.taskmate_pending_approvals publishes both the full lists and a
+  // scalar count of each. Its `pending_reward_claims` count collides with
+  // sensor.taskmate_rewards' `pending_reward_claims` LIST, and the approvals
+  // sensor merges last, so the number won — every card that did
+  // `claims.filter(...)` / `claims.some(...)` threw as soon as a claim was
+  // pending, blanking the card. Zero pending claims hid it: the cards' own
+  // `|| []` fallback catches a count of 0 because it is falsy, so the crash
+  // only appeared once a child actually claimed something.
+  //
+  // Nothing reads these counts through the resolver — the admin panel takes
+  // its badge counts from the taskmate/get_state WebSocket call and the cards
+  // derive theirs from the lists' length. They stay readable directly off
+  // sensor.taskmate_pending_approvals for templates and automations.
+  const COMPANION_SKIP_KEYS = {
+    "sensor.taskmate_pending_approvals": [
+      "pending_chore_completions",
+      "pending_reward_claims",
+      "pending_mandatory_misses",
+    ],
+  };
+
   function mergedAttributes(hass, primaryEntityId) {
     if (!hass || !hass.states) return {};
     const merged = {};
@@ -46,8 +70,14 @@
     }
     for (const id of COMPANIONS) {
       const s = hass.states[id];
-      if (s && s.attributes) {
+      if (!s || !s.attributes) continue;
+      const skip = COMPANION_SKIP_KEYS[id];
+      if (!skip) {
         Object.assign(merged, s.attributes);
+        continue;
+      }
+      for (const [key, value] of Object.entries(s.attributes)) {
+        if (!skip.includes(key)) merged[key] = value;
       }
     }
     return merged;
