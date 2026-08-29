@@ -60,10 +60,7 @@ def _english_copies() -> dict[str, list[str]]:
         hits = sorted(
             key
             for key, value in data.items()
-            if key in en
-            and isinstance(value, str)
-            and any(ch.isalpha() for ch in value)
-            and value == en[key]
+            if key in en and isinstance(value, str) and any(ch.isalpha() for ch in value) and value == en[key]
         )
         if hits:
             found[name] = hits
@@ -74,10 +71,7 @@ def test_no_new_untranslated_english_strings():
     baseline = _load(BASELINE_PATH)
     current = _english_copies()
     new = sorted(
-        f"{name}: {key}"
-        for name, keys in current.items()
-        for key in keys
-        if key not in baseline.get(name, [])
+        f"{name}: {key}" for name, keys in current.items() for key in keys if key not in baseline.get(name, [])
     )
     assert new == [], (
         "these locale entries are the untranslated English string:\n  "
@@ -92,12 +86,7 @@ def test_baseline_only_names_keys_that_exist():
     """Stop the baseline rotting into a list of dead keys."""
     en = _load(LOCALES_DIR / REFERENCE)
     baseline = _load(BASELINE_PATH)
-    unknown = sorted(
-        f"{name}: {key}"
-        for name, keys in baseline.items()
-        for key in keys
-        if key not in en
-    )
+    unknown = sorted(f"{name}: {key}" for name, keys in baseline.items() for key in keys if key not in en)
     assert unknown == [], f"baseline names keys that no longer exist in en.json: {unknown}"
 
 
@@ -149,6 +138,4 @@ def test_the_activity_card_and_skip_rotation_strings_are_translated():
         for key in keys:
             if data.get(key) == en[key]:
                 offenders.append(f"{name}: {key} = {en[key]!r}")
-    assert offenders == [], (
-        "activity card / skip-rotation strings are back to English:\n  " + "\n  ".join(offenders)
-    )
+    assert offenders == [], "activity card / skip-rotation strings are back to English:\n  " + "\n  ".join(offenders)
