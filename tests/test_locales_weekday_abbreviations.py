@@ -63,7 +63,4 @@ def test_weekday_abbreviations_are_short():
                 key = f"{prefix}{day}"
                 value = data.get(key)
                 assert value, f"{name}: {key} missing/empty"
-                assert len(value) <= 4, (
-                    f"{name}: {key} is {value!r} — that is a word, not a "
-                    "weekday abbreviation."
-                )
+                assert len(value) <= 4, f"{name}: {key} is {value!r} — that is a word, not a weekday abbreviation."
