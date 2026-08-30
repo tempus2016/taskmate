@@ -36,6 +36,7 @@ def _coord(chore=None, child=None, active=None, dated=None):
     storage.get_child = MagicMock(return_value=child)
     storage.get_active_timed_session = MagicMock(return_value=active)
     storage.get_timed_session = MagicMock(return_value=dated)
+    storage.get_completions = MagicMock(return_value=[])
     storage.save_timed_session = MagicMock()
     storage.async_save = AsyncMock()
     coord.storage = storage

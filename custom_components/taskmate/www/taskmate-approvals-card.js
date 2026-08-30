@@ -32,6 +32,7 @@ class TaskMateApprovalsCard extends LitElement {
       hass: { type: Object },
       config: { type: Object },
       _loading: { type: Object },
+      _signed: { state: true },
     };
   }
 
@@ -47,11 +48,63 @@ class TaskMateApprovalsCard extends LitElement {
   constructor() {
     super();
     this._loading = {};
+    this._signed = {};        // safe photo path -> per-viewer signed path
+    this._inflight = new Set();
   }
 
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
+  }
+
+  // Evidence photos are served from an auth-gated view; an <img> carries no
+  // bearer token, so each path is signed per-viewer via auth/sign_path. The
+  // sensor now publishes bare paths (no self-authenticating URL in shared
+  // state), so this binds photo access to the actual viewer.
+  _photoHref(raw) {
+    const safe = tmSafePhotoUrl(raw);
+    return (safe && this._signed[safe]) || "";
+  }
+
+  _collectPhotoUrls() {
+    const out = [];
+    const st = this.hass && this.hass.states;
+    if (!st) return out;
+    for (const eid in st) {
+      if (eid.indexOf("sensor.taskmate") !== 0) continue;
+      const attrs = (st[eid] && st[eid].attributes) || {};
+      for (const k in attrs) {
+        const v = attrs[k];
+        if (!Array.isArray(v)) continue;
+        for (const item of v) {
+          if (item && typeof item === "object" && typeof item.photo_url === "string" && item.photo_url) {
+            out.push(item.photo_url);
+          }
+        }
+      }
+    }
+    return out;
+  }
+
+  async _ensureSignedPhotos(rawUrls) {
+    for (const raw of rawUrls) {
+      const url = tmSafePhotoUrl(raw);
+      if (!url || this._signed[url] || this._inflight.has(url)) continue;
+      this._inflight.add(url);
+      try {
+        const res = await this.hass.callWS({ type: "auth/sign_path", path: url, expires: 3600 });
+        if (res && res.path) this._signed = { ...this._signed, [url]: res.path };
+      } catch (e) {
+        console.warn("taskmate: sign_path failed", e);
+      } finally {
+        this._inflight.delete(url);
+      }
+    }
+  }
+
+  updated() {
+    const urls = this._collectPhotoUrls();
+    if (urls.length) this._ensureSignedPhotos(urls);
   }
 
   static get styles() {
@@ -811,7 +864,7 @@ class TaskMateApprovalsCard extends LitElement {
   }
 
   _apPhotoDesigned(it, cls) {
-    const photoUrl = tmSafePhotoUrl(it.photo);
+    const photoUrl = this._photoHref(it.photo);
     if (it.kind !== "completion" || !photoUrl) {
       return it.kind === "claim" && it.icon
         ? html`<div class="${cls}"><ha-icon icon="${it.icon}"></ha-icon></div>`
@@ -1338,11 +1391,11 @@ class TaskMateApprovalsCard extends LitElement {
               ${completion.points}
             </span>
           </div>
-          ${tmSafePhotoUrl(completion.photo_url) ? html`
-            <a class="approval-photo" href="${tmSafePhotoUrl(completion.photo_url)}" target="_blank" rel="noopener"
-               @click="${(e) => this._openPhoto(e, tmSafePhotoUrl(completion.photo_url), this._photoCaption(completion.chore_name, completion.child_name, completion.completed_at))}"
+          ${this._photoHref(completion.photo_url) ? html`
+            <a class="approval-photo" href="${this._photoHref(completion.photo_url)}" target="_blank" rel="noopener"
+               @click="${(e) => this._openPhoto(e, this._photoHref(completion.photo_url), this._photoCaption(completion.chore_name, completion.child_name, completion.completed_at))}"
                title="${this._t('approvals.view_photo') || 'View photo'}">
-              <img src="${tmSafePhotoUrl(completion.photo_url)}" alt="" loading="lazy">
+              <img src="${this._photoHref(completion.photo_url)}" alt="" loading="lazy">
             </a>
           ` : ''}
         </div>

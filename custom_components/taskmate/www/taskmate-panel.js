@@ -3349,7 +3349,7 @@ class TaskMatePanel extends HTMLElement {
       : ((c.due_days || []).length === 0 ? this._t("panel.common_daily") : (c.due_days || []).map(d => this._labelOf(DAYS, d)).join(" · "));
     const schedClass = c.schedule_mode === "recurring" ? "tm-pill-accent" : c.schedule_mode === "one_shot" ? "tm-pill-warn" : "tm-pill-success";
     const modeBadge = c.assignment_mode && c.assignment_mode !== "everyone"
-      ? `<span class="tm-pill tm-pill-${c.assignment_mode}">${this._t(`panel.assign_${c.assignment_mode}_short`)}</span>` : "";
+      ? `<span class="tm-pill tm-pill-${this._esc(c.assignment_mode)}">${this._t(`panel.assign_${c.assignment_mode}_short`)}</span>` : "";
     const nameCell = renaming
       ? `<input class="tm-inline-input" type="text" data-field="_inlineRename" value="${this._esc(this._inlineRename.value)}" autofocus>
          <button type="button" class="tm-icon-btn" data-act="rename-chore-commit" title="${this._t("panel.tooltip_save")}">✓</button>
@@ -3571,7 +3571,7 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _tierClass(tier) {
-    return `tm-badge-tier-${(tier || "bronze").toLowerCase()}`;
+    return `tm-badge-tier-${this._esc((tier || "bronze").toLowerCase())}`;
   }
 
   _criteriaLabel(criteria, combinator = "AND") {
@@ -3973,7 +3973,7 @@ class TaskMatePanel extends HTMLElement {
                 <div class="tm-child-name">
                   <h3>${this._esc(g.name)}</h3>
                   ${this._idBadge(g.id)}
-                  <div class="tm-meta"><span class="tm-pill tm-pill-${g.policy}">${this._t(`panel.group_policy_${g.policy}_short`)}</span> · ${this._t("panel.group_chore_count", {count: (g.chore_ids || []).length})}</div>
+                  <div class="tm-meta"><span class="tm-pill tm-pill-${this._esc(g.policy)}">${this._t(`panel.group_policy_${g.policy}_short`)}</span> · ${this._t("panel.group_chore_count", {count: (g.chore_ids || []).length})}</div>
                 </div>
               </div>
               <ul class="tm-group-list">
@@ -4103,7 +4103,7 @@ class TaskMatePanel extends HTMLElement {
 
   _renderTemplateChoreCard(chore, idx) {
     const expanded = chore._expanded;
-    const schedLabel = (chore.due_days || []).length === 0 ? this._t("panel.common_daily") : (chore.due_days || []).map(d => this._labelOf(DAYS, d)).join(", ");
+    const schedLabel = (chore.due_days || []).length === 0 ? this._t("panel.common_daily") : (chore.due_days || []).map(d => this._esc(this._labelOf(DAYS, d))).join(", ");
     return `
       <div class="tm-tpl-preview-card">
         <div class="tm-tpl-preview-header" data-act="tpl-toggle-expand" data-idx="${idx}">
@@ -5387,7 +5387,7 @@ class TaskMatePanel extends HTMLElement {
         const value = f === "assigned_to"
           ? (v || []).map(id => this._esc((children.find(c => c.id === id) || {}).name || id)).join(", ")
               || this._t("panel.sched_value_nobody")
-          : Array.isArray(v) ? v.join(", ")
+          : Array.isArray(v) ? this._esc(v.join(", "))
           : typeof v === "boolean" ? this._t(v ? "panel.sched_value_yes" : "panel.sched_value_no")
           : this._esc(String(v));
         return `${label}: <strong>${value}</strong>`;

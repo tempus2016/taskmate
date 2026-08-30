@@ -650,6 +650,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         if not coordinator:
             _LOGGER.error("No TaskMate coordinator available")
             return
+        await _async_require_linked_child(hass, call, coordinator, call.data[ATTR_CHILD_ID])
         try:
             await coordinator.async_read_aloud(
                 child_id=call.data[ATTR_CHILD_ID],

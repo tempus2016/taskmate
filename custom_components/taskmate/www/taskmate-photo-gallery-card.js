@@ -87,7 +87,10 @@ class TaskMatePhotoGalleryCard extends LitElement {
   async _ensureSigned(items) {
     for (const it of items) {
       const url = it.photo_url;
-      if (!url || this._signed[url] || this._inflight.has(url)) continue;
+      // Only sign our own photo paths; never hand auth/sign_path a foreign or
+      // javascript:/data: value that could round-trip into a clickable href.
+      if (!url || typeof url !== "string" || !url.startsWith("/api/taskmate/photo/")) continue;
+      if (this._signed[url] || this._inflight.has(url)) continue;
       this._inflight.add(url);
       try {
         const res = await this.hass.callWS({ type: "auth/sign_path", path: url, expires: 3600 });

@@ -84,7 +84,11 @@ function localize(hass, key, params) {
     str = _cache[_FALLBACK][key];
   }
   if (str === undefined) {
-    str = key;
+    // Missing translation: only echo the key back when it's a plain identifier.
+    // A key carrying HTML-significant characters is not a real key — it's caller
+    // data concatenated into the lookup (e.g. `panel.assign_${value}_short`) —
+    // so refuse to reflect it, since some call sites render _t() output as HTML.
+    str = /^[\w.-]+$/.test(key) ? key : "";
   }
 
   // Trigger background loads for any language not yet in cache
@@ -93,10 +97,12 @@ function localize(hass, key, params) {
   }
   if (!(_FALLBACK in _cache)) _loadLocale(_FALLBACK);
 
-  // Replace {placeholder} tokens
+  // Replace {placeholder} tokens. Use a replacer function so a value containing
+  // "$&", "$1" etc. is inserted literally rather than interpreted as a
+  // replacement pattern.
   if (params && typeof str === 'string') {
     for (const [k, v] of Object.entries(params)) {
-      str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+      str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), () => String(v));
     }
   }
 

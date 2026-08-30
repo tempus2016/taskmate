@@ -53,7 +53,14 @@ class TaskMateCalendarFeedView(HomeAssistantView):
 
         expected = coordinator.storage.get_setting("ics_token", "")
         supplied = request.query.get("token", "")
-        if not expected or not supplied or not hmac.compare_digest(str(expected), supplied):
+        # Compare as bytes: hmac.compare_digest raises on non-ASCII str inputs,
+        # which on this pre-auth endpoint would turn a crafted ?token= into an
+        # unhandled 500 + traceback rather than a clean 401.
+        if (
+            not expected
+            or not supplied
+            or not hmac.compare_digest(str(expected).encode("utf-8"), supplied.encode("utf-8"))
+        ):
             return web.Response(status=HTTPStatus.UNAUTHORIZED)
 
         days = coordinator._calendar_projection_days()

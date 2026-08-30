@@ -20,6 +20,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.event import async_track_time_change
 
+from . import authz
 from .const import (
     DEFAULT_NOTIFICATION_GROUP,
     DEFAULT_NOTIFICATION_NAV_URL,
@@ -553,6 +554,13 @@ class NotificationCoordinator:
             return
         coordinator = getattr(self, "coordinator", None)
         if coordinator is None:
+            return
+        # Approving/rejecting is a parent action. The event bus is a second door
+        # into it, so enforce the same admin/parent identity check the service
+        # and WebSocket approval paths use — otherwise anyone who can fire this
+        # event (e.g. a child's Companion-app registration) could self-approve.
+        if not await authz.async_context_is_parent(self.hass, coordinator, getattr(event, "context", None)):
+            _LOGGER.warning("Ignoring TaskMate mobile action from a non-parent user")
             return
 
         if action.startswith("TASKMATE_APPROVE_"):

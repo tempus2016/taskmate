@@ -14,8 +14,21 @@ PRODID = "-//TaskMate//Chores//EN"
 
 
 def _escape(text: str) -> str:
-    """Escape a value per RFC 5545 (backslash, comma, semicolon, newline)."""
-    return str(text).replace("\\", "\\\\").replace("\n", "\\n").replace(",", "\\,").replace(";", "\\;")
+    """Escape a value per RFC 5545 (backslash, comma, semicolon, newline).
+
+    Carriage returns are normalised to the escaped ``\\n`` too: content lines
+    terminate on CRLF, so a bare ``\\r`` left in a SUMMARY/DESCRIPTION could be
+    read by a lenient parser as a line break and let a value inject a property.
+    """
+    return (
+        str(text)
+        .replace("\\", "\\\\")
+        .replace("\r\n", "\\n")
+        .replace("\r", "\\n")
+        .replace("\n", "\\n")
+        .replace(",", "\\,")
+        .replace(";", "\\;")
+    )
 
 
 def _fold(line: str) -> str:

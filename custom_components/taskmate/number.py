@@ -10,10 +10,12 @@ from __future__ import annotations
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import Unauthorized
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import authz
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
@@ -62,6 +64,12 @@ class TaskMateSettingNumber(CoordinatorEntity, NumberEntity):
             return float(self._default)
 
     async def async_set_native_value(self, value: float) -> None:
+        # These entities write panel settings that are admin-only over the
+        # WebSocket; enforce the same gate here so a non-admin call_service
+        # can't retune the point economy.
+        ctx = getattr(self, "_context", None)
+        if not await authz.async_context_is_admin(getattr(self, "hass", None), ctx):
+            raise Unauthorized(context=ctx)
         stored = int(value) if float(value).is_integer() else value
         self.coordinator.storage.set_setting(self._key, stored)
         await self.coordinator.storage.async_save()
