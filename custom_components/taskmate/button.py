@@ -7,10 +7,12 @@ import logging
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import Unauthorized
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import authz
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
@@ -152,6 +154,11 @@ class CompleteChoreButton(TaskMateBaseButton):
 
     async def async_press(self) -> None:
         """Handle the button press."""
+        ctx = getattr(self, "_context", None)
+        if not await authz.async_context_allows_child(
+            getattr(self, "hass", None), self.coordinator, ctx, self.child_id
+        ):
+            raise Unauthorized(context=ctx)
         try:
             await self.coordinator.async_complete_chore(self.chore_id, self.child_id)
         except ValueError as err:
@@ -236,6 +243,11 @@ class ClaimRewardButton(TaskMateBaseButton):
 
     async def async_press(self) -> None:
         """Handle the button press."""
+        ctx = getattr(self, "_context", None)
+        if not await authz.async_context_allows_child(
+            getattr(self, "hass", None), self.coordinator, ctx, self.child_id
+        ):
+            raise Unauthorized(context=ctx)
         try:
             await self.coordinator.async_claim_reward(self.reward_id, self.child_id)
         except ValueError as err:

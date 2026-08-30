@@ -33,24 +33,31 @@ class TimedMixin:
 
         now = dt_util.now()
         today = dt_util.as_local(now).date().isoformat()
+        cap_seconds = chore.timed_max_daily_minutes * 60 if chore.timed_max_daily_minutes > 0 else 0
 
         existing = self.storage.get_active_timed_session(chore_id, child_id)
         if existing and existing.state == "running":
             raise ValueError("Timer is already running")
 
+        # Seconds already credited today survive a stop (which removes the live
+        # session); count them so the cap is a true daily budget rather than a
+        # per-session one that resets on every stop.
+        credited_today = self._timed_seconds_credited_today(chore_id, child_id)
+
         if existing and existing.state == "paused":
-            # Check daily cap before resuming
-            if chore.timed_max_daily_minutes > 0 and existing.total_seconds_today >= chore.timed_max_daily_minutes * 60:
+            if cap_seconds and (credited_today + existing.total_seconds_today) >= cap_seconds:
                 raise ValueError(f"Daily cap reached ({chore.timed_max_daily_minutes} min)")
             existing.state = "running"
             existing.segments.append({"start": now.isoformat(), "end": None})
             self.storage.save_timed_session(existing)
         else:
-            # Check daily cap before starting fresh
-            if chore.timed_max_daily_minutes > 0:
-                old_session = self.storage.get_timed_session(chore_id, child_id, today)
-                if old_session and old_session.total_seconds_today >= chore.timed_max_daily_minutes * 60:
-                    raise ValueError(f"Daily cap reached ({chore.timed_max_daily_minutes} min)")
+            # Fresh start: enforce the same assignment/enabled/schedule
+            # eligibility the child card uses, so a disabled, off-day, or
+            # not-yours timed chore can't be farmed via a crafted start call.
+            if not self._timed_start_allowed(chore, child_id):
+                raise ValueError(f"'{chore.name}' is not available for {child.name} right now")
+            if cap_seconds and credited_today >= cap_seconds:
+                raise ValueError(f"Daily cap reached ({chore.timed_max_daily_minutes} min)")
             session = TimedSession(
                 chore_id=chore_id,
                 child_id=child_id,
@@ -102,10 +109,13 @@ class TimedMixin:
 
         total_seconds = self._calc_session_seconds(session)
 
-        # Clamp to daily cap
+        # Clamp to the remaining daily budget (cap minus what was already
+        # credited today), so repeated start/stop cycles can't exceed the cap.
         if chore.timed_max_daily_minutes > 0:
-            max_seconds = chore.timed_max_daily_minutes * 60
-            total_seconds = min(total_seconds, max_seconds)
+            remaining = max(
+                0, chore.timed_max_daily_minutes * 60 - self._timed_seconds_credited_today(chore_id, child_id)
+            )
+            total_seconds = min(total_seconds, remaining)
 
         # Calculate points. Guard against a mis-configured zero rate, which
         # would otherwise raise ZeroDivisionError and wedge the session.
@@ -142,6 +152,53 @@ class TimedMixin:
             )
 
         await self.async_refresh()
+
+    def _timed_start_allowed(self, chore, child_id: str) -> bool:
+        """Assignment/enabled/schedule eligibility for starting a timed task.
+
+        A lightweight, self-contained gate (no live-state lookups): the chore
+        must be enabled, not per-child disabled, assigned to this child if it
+        has an assignee list, and — for a specific_days schedule — due today.
+        """
+        if not getattr(chore, "enabled", True):
+            return False
+        if child_id in (getattr(chore, "disabled_for", []) or []):
+            return False
+        assigned = getattr(chore, "assigned_to", []) or []
+        if assigned and child_id not in assigned:
+            return False
+        if getattr(chore, "schedule_mode", "specific_days") == "specific_days":
+            due_days = getattr(chore, "due_days", []) or []
+            if due_days:
+                today = dt_util.as_local(dt_util.now()).date()
+                dow = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")[today.weekday()]
+                if dow not in due_days:
+                    return False
+        return True
+
+    def _timed_seconds_credited_today(self, chore_id: str, child_id: str) -> int:
+        """Seconds already credited today for this timed chore + child.
+
+        Sums ``timed_duration_seconds`` across today's completions (approved or
+        pending). Stop removes the live session, so the daily cap is enforced
+        against these persisted completions instead of a session that vanishes.
+        """
+        today = dt_util.as_local(dt_util.now()).date()
+        total = 0
+        for c in self.storage.get_completions():
+            if c.chore_id != chore_id or c.child_id != child_id:
+                continue
+            if getattr(c, "bonus_subtask_id", ""):
+                continue
+            secs = getattr(c, "timed_duration_seconds", 0) or 0
+            if secs <= 0:
+                continue
+            try:
+                if dt_util.as_local(c.completed_at).date() == today:
+                    total += int(secs)
+            except (AttributeError, TypeError, ValueError):
+                continue
+        return total
 
     def _calc_session_seconds(self, session: TimedSession) -> int:
         """Calculate total elapsed seconds from session segments."""

@@ -5,10 +5,12 @@ from __future__ import annotations
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import Unauthorized
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import authz
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
@@ -57,6 +59,10 @@ class TaskMateSettingSelect(CoordinatorEntity, SelectEntity):
         return val if val in self._attr_options else self._default
 
     async def async_select_option(self, option: str) -> None:
+        # Panel setting write — admin-only, matching the WebSocket gate.
+        ctx = getattr(self, "_context", None)
+        if not await authz.async_context_is_admin(getattr(self, "hass", None), ctx):
+            raise Unauthorized(context=ctx)
         if option not in self._attr_options:
             return
         self.coordinator.storage.set_setting(self._key, option)

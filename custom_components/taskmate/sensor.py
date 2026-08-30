@@ -16,7 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from . import images, photos
+from . import images
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
@@ -389,11 +389,14 @@ def _build_todays_completions(common: dict) -> list[dict]:
         }
         if timed_secs > 0:
             rec["timed_duration_seconds"] = timed_secs
-        # Sign the evidence photo so a card's <img> (which carries no bearer
-        # token) can load it from the auth-gated serve view.
+        # Emit the bare (unsigned) photo path. A card's <img> carries no bearer
+        # token, so the card signs each path per-viewer via auth/sign_path before
+        # rendering — this keeps a self-authenticating URL out of this
+        # world-readable attribute (a signed URL here would be redeemable by
+        # anyone who could read the state).
         photo = getattr(comp, "photo_url", "") or ""
         if photo:
-            rec["photo_url"] = photos.sign_photo_url(common["hass"], photo)
+            rec["photo_url"] = photo
         out.append(rec)
     return out
 
@@ -1344,9 +1347,12 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                 }
                 if timed_secs > 0:
                     detail["timed_duration_seconds"] = timed_secs
+                # Bare (unsigned) path; the card signs per-viewer via
+                # auth/sign_path so no self-authenticating URL lands in this
+                # world-readable attribute.
                 photo = getattr(comp, "photo_url", "") or ""
                 if photo:
-                    detail["photo_url"] = photos.sign_photo_url(self.coordinator.hass, photo)
+                    detail["photo_url"] = photo
                 completion_details.append(detail)
 
         reward_details = []

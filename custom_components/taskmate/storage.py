@@ -1172,12 +1172,37 @@ class TaskMateStorage:
         """Re-validate untrusted inner records after a full-replace import (SEC-5).
 
         ``import_data`` deep-copies the payload in with only top-level coercion,
-        so a crafted backup could smuggle a ``photo_url`` that bypasses the
-        ``is_taskmate_photo_url`` gate enforced at the ``complete_chore``
-        boundary. Strip any completion ``photo_url`` that isn't one of our own
-        well-formed photo URLs so the panel never renders a foreign/dangerous one.
+        so a crafted backup could smuggle values that never passed the WebSocket
+        schemas: a foreign ``photo_url``/``image_url`` (bypassing the gates at the
+        service/WS boundary), or an enum field the panel renders into markup.
+        Normalise every field that reaches a template — unknown enum values fall
+        back to their safe default and foreign URLs are dropped — so a restored
+        backup can never carry stored content into the admin panel.
         """
+        from .const import ASSIGNMENT_MODES, BADGE_TIERS, SCHEDULE_MODES, TASK_GROUP_POLICIES
+        from .images import is_taskmate_image_url
         from .photos import is_taskmate_photo_url
+
+        _STREAK_MODES = ("reset", "pause")
+        _CARD_DESIGNS = ("classic", "playroom", "console", "cleanpro", "accessible")
+        _NUMERIC_SETTINGS = (
+            "history_days",
+            "weekend_multiplier",
+            "difficulty_multiplier_easy",
+            "difficulty_multiplier_medium",
+            "difficulty_multiplier_hard",
+            "calendar_projection_days",
+            "surprise_bonus_chance",
+            "surprise_bonus_min",
+            "surprise_bonus_max",
+            "roulette_multiplier",
+            "roulette_daily_spins",
+            "points_decay_percent",
+            "level_xp_step",
+            "spend_cap_amount",
+            "interest_percent",
+            "perfect_week_bonus",
+        )
 
         for comp in self._data.get("completions", []):
             if not isinstance(comp, dict):
@@ -1189,6 +1214,50 @@ class TaskMateStorage:
                     comp.get("id", "?"),
                 )
                 comp["photo_url"] = ""
+
+        for chore in self._data.get("chores", []):
+            if not isinstance(chore, dict):
+                continue
+            if chore.get("assignment_mode") not in ASSIGNMENT_MODES:
+                chore["assignment_mode"] = "everyone"
+            if chore.get("schedule_mode") not in SCHEDULE_MODES:
+                chore["schedule_mode"] = "specific_days"
+            img = chore.get("image_url")
+            if img and not is_taskmate_image_url(img):
+                _LOGGER.warning(
+                    "Import: dropped non-TaskMate image_url on chore %s",
+                    chore.get("id", "?"),
+                )
+                chore["image_url"] = ""
+
+        for grp in self._data.get("task_groups", []):
+            if isinstance(grp, dict) and grp.get("policy") not in TASK_GROUP_POLICIES:
+                grp["policy"] = "sticky"
+
+        for badge in self._data.get("badges", []):
+            if isinstance(badge, dict) and badge.get("tier") not in BADGE_TIERS:
+                badge["tier"] = "bronze"
+
+        settings = self._data.get("settings")
+        if isinstance(settings, dict):
+            if settings.get("streak_reset_mode") not in _STREAK_MODES:
+                settings.pop("streak_reset_mode", None)
+            if settings.get("card_design") not in _CARD_DESIGNS:
+                settings.pop("card_design", None)
+            # Numeric settings are rendered into the panel's number inputs; the
+            # WebSocket update path coerces them, but import does not, so coerce
+            # here too. A value that isn't a number (e.g. a crafted string) is
+            # coerced if it parses, else dropped so its default applies — it can
+            # never reach the panel as raw markup.
+            for key in _NUMERIC_SETTINGS:
+                if key not in settings:
+                    continue
+                val = settings[key]
+                if isinstance(val, bool) or not isinstance(val, (int, float)):
+                    try:
+                        settings[key] = float(val)
+                    except (TypeError, ValueError):
+                        settings.pop(key, None)
 
     def replace_completions(self, completions: list[ChoreCompletion]) -> None:
         """Replace all completions with the given list."""

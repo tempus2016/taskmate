@@ -17,6 +17,10 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+# Cap on simultaneously-pending swap requests, so a scripted caller can't grow
+# storage / the approval queue without bound.
+_MAX_PENDING_SWAP_REQUESTS = 50
+
 
 def _add_months(d: date, months: int) -> date:
     """Step a date forward by calendar months, clamping to the month's last day."""
@@ -158,6 +162,14 @@ class ChoresMixin:
         current = getattr(chore, "assignment_current_child_id", "") or ""
         if current == requester_id:
             raise ValueError("Chore is already assigned to that child today")
+        # Reject a duplicate pending request for the same chore+requester, and
+        # cap the pending queue, so a scripted caller can't flood storage or the
+        # parent's approval list with identical swap requests.
+        pending = [r for r in self.storage.get_swap_requests() if r.get("status") == "pending"]
+        if any(r.get("chore_id") == chore_id and r.get("requester_id") == requester_id for r in pending):
+            raise ValueError("A swap request for this chore is already pending")
+        if len(pending) >= _MAX_PENDING_SWAP_REQUESTS:
+            raise ValueError("Too many pending swap requests")
         req = {
             "id": generate_id(),
             "chore_id": chore_id,
@@ -738,6 +750,24 @@ class ChoresMixin:
                     child.name,
                 )
                 return None
+
+        # specific_days chores were historically only filtered by the child card
+        # (see get_due_chores_for_child), so a crafted service / entity / Dev
+        # Tools call could complete one that is disabled, not scheduled today, or
+        # assigned to a different child. Enforce the same eligibility the card
+        # uses, server-side. Parents completing on behalf are the authority and
+        # stay exempt.
+        if (
+            not as_parent
+            and getattr(chore, "schedule_mode", "specific_days") == "specific_days"
+            and not self._is_chore_completable_by_child(chore, child_id)
+        ):
+            _LOGGER.debug(
+                "complete_chore no-op: '%s' not eligible for %s today (assignment/schedule/availability)",
+                chore.name,
+                child.name,
+            )
+            return None
 
         # Check recurrence window for Mode B chores
         if getattr(chore, "schedule_mode", "specific_days") == "recurring" and not self.is_chore_available_for_child(
@@ -1473,6 +1503,30 @@ class ChoresMixin:
         days_since = (today - last_dt).days
         return days_since >= window_days
 
+    def _is_chore_completable_by_child(self, chore, child_id: str) -> bool:
+        """Whether ``child_id`` may complete ``chore`` right now (card parity).
+
+        Combines ``is_chore_available_for_child``
+        (enabled/vacation/disabled_for/rotation/visibility/weather/deadline/
+        recurrence) with everyone-mode ``assigned_to`` membership and the
+        ``specific_days`` ``due_days`` day-of-week filter. Does NOT apply the
+        daily-limit cap — callers handle that. This is the single source of
+        truth the child card, the todo platform and the completion path share.
+        """
+        if not self.is_chore_available_for_child(chore, child_id):
+            return False
+        assigned = getattr(chore, "assigned_to", []) or []
+        if assigned and child_id not in assigned:
+            return False
+        if getattr(chore, "schedule_mode", "specific_days") == "specific_days":
+            due_days = getattr(chore, "due_days", []) or []
+            if due_days:
+                today = dt_util.as_local(dt_util.now()).date()
+                dow = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")[today.weekday()]
+                if dow not in due_days:
+                    return False
+        return True
+
     def get_due_chores_for_child(self, child_id: str) -> list:
         """Chores this child should still act on today (their outstanding to-dos).
 
@@ -1485,20 +1539,12 @@ class ChoresMixin:
         Used by the todo platform (and reusable by cards/automations).
         """
         today = dt_util.as_local(dt_util.now()).date()
-        dow = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")[today.weekday()]
         out = []
         with self.availability_build_scope():
             completions = self._cached_completions()
             for chore in self.storage.get_chores():
-                if not self.is_chore_available_for_child(chore, child_id):
+                if not self._is_chore_completable_by_child(chore, child_id):
                     continue
-                assigned = getattr(chore, "assigned_to", []) or []
-                if assigned and child_id not in assigned:
-                    continue
-                if getattr(chore, "schedule_mode", "specific_days") == "specific_days":
-                    due_days = getattr(chore, "due_days", []) or []
-                    if due_days and dow not in due_days:
-                        continue
                 limit = getattr(chore, "daily_limit", 1) or 1
                 done = 0
                 for c in completions:
