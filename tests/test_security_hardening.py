@@ -91,7 +91,9 @@ def test_number_rejects_non_admin():
     coord.storage.set_setting = MagicMock(side_effect=store.__setitem__)
     coord.storage.async_save = AsyncMock()
     coord.async_refresh = AsyncMock()
-    num = TaskMateSettingNumber(coord, _entry(), "weekend_multiplier", "weekend_multiplier", 1.0, 5.0, 0.5, 1.0, "mdi:x")
+    num = TaskMateSettingNumber(
+        coord, _entry(), "weekend_multiplier", "weekend_multiplier", 1.0, 5.0, 0.5, 1.0, "mdi:x"
+    )
     num.hass = _hass(MagicMock(is_admin=False))
     num._context = _ctx("child-user")
     with pytest.raises(Unauthorized):
@@ -105,7 +107,9 @@ def test_select_rejects_non_admin():
     coord.storage.set_setting = MagicMock(side_effect=store.__setitem__)
     coord.storage.async_save = AsyncMock()
     coord.async_refresh = AsyncMock()
-    sel = TaskMateSettingSelect(coord, _entry(), "streak_reset_mode", "streak_reset_mode", ["reset", "pause"], "reset", "mdi:x")
+    sel = TaskMateSettingSelect(
+        coord, _entry(), "streak_reset_mode", "streak_reset_mode", ["reset", "pause"], "reset", "mdi:x"
+    )
     sel.hass = _hass(MagicMock(is_admin=False))
     sel._context = _ctx("child-user")
     with pytest.raises(Unauthorized):

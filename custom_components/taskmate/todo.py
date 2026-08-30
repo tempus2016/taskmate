@@ -74,7 +74,9 @@ class TaskMateChildTodoList(CoordinatorEntity, TodoListEntity):
     async def async_update_todo_item(self, item: TodoItem) -> None:
         """Checking an item off completes the chore for this child."""
         ctx = getattr(self, "_context", None)
-        if not await authz.async_context_allows_child(getattr(self, "hass", None), self.coordinator, ctx, self._child_id):
+        if not await authz.async_context_allows_child(
+            getattr(self, "hass", None), self.coordinator, ctx, self._child_id
+        ):
             raise Unauthorized(context=ctx)
         if item.status == TodoItemStatus.COMPLETED and item.uid:
             await self.coordinator.async_complete_chore(item.uid, self._child_id)

@@ -112,7 +112,9 @@ class TimedMixin:
         # Clamp to the remaining daily budget (cap minus what was already
         # credited today), so repeated start/stop cycles can't exceed the cap.
         if chore.timed_max_daily_minutes > 0:
-            remaining = max(0, chore.timed_max_daily_minutes * 60 - self._timed_seconds_credited_today(chore_id, child_id))
+            remaining = max(
+                0, chore.timed_max_daily_minutes * 60 - self._timed_seconds_credited_today(chore_id, child_id)
+            )
             total_seconds = min(total_seconds, remaining)
 
         # Calculate points. Guard against a mis-configured zero rate, which

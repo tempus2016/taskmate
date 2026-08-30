@@ -155,7 +155,9 @@ class CompleteChoreButton(TaskMateBaseButton):
     async def async_press(self) -> None:
         """Handle the button press."""
         ctx = getattr(self, "_context", None)
-        if not await authz.async_context_allows_child(getattr(self, "hass", None), self.coordinator, ctx, self.child_id):
+        if not await authz.async_context_allows_child(
+            getattr(self, "hass", None), self.coordinator, ctx, self.child_id
+        ):
             raise Unauthorized(context=ctx)
         try:
             await self.coordinator.async_complete_chore(self.chore_id, self.child_id)
@@ -242,7 +244,9 @@ class ClaimRewardButton(TaskMateBaseButton):
     async def async_press(self) -> None:
         """Handle the button press."""
         ctx = getattr(self, "_context", None)
-        if not await authz.async_context_allows_child(getattr(self, "hass", None), self.coordinator, ctx, self.child_id):
+        if not await authz.async_context_allows_child(
+            getattr(self, "hass", None), self.coordinator, ctx, self.child_id
+        ):
             raise Unauthorized(context=ctx)
         try:
             await self.coordinator.async_claim_reward(self.reward_id, self.child_id)

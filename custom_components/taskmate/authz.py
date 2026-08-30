@@ -51,9 +51,7 @@ async def async_context_is_parent(hass: HomeAssistant, coordinator: Any, context
     return user_id in parent_ids
 
 
-async def async_context_allows_child(
-    hass: HomeAssistant, coordinator: Any, context: Any, child_id: str
-) -> bool:
+async def async_context_allows_child(hass: HomeAssistant, coordinator: Any, context: Any, child_id: str) -> bool:
     """True if the context user may act *as* ``child_id`` (linked-child rule).
 
     Mirrors the service-layer ``_async_require_linked_child`` gate: a child that
