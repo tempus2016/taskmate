@@ -15,6 +15,7 @@
   <a href="https://github.com/tempus2016/taskmate/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.7+-blue" alt="HA Version">
   <a href="https://github.com/tempus2016/taskmate/releases"><img src="https://img.shields.io/github/downloads/tempus2016/taskmate/total" alt="Downloads"></a>
+  <a href="https://community.home-assistant.io/t/taskmate-family-chore-rewards-integration-now-in-hacs-default/1023281"><img src="https://img.shields.io/badge/community-forum-41BDF5?logo=home-assistant&logoColor=white" alt="Community Forum"></a>
 </p>
 
 <p align="center">
