@@ -265,6 +265,7 @@
   "child.editor.time_category": "Tidskategori",
   "child.editor.time_category_afternoon": "Ettermiddagsoppgaver",
   "child.editor.time_category_all": "Dagens oppgaver (alle)",
+  "child.editor.time_category_current": "Gjeldende tidsperiode (live)",
   "child.editor.time_category_anytime": "Dagens oppgaver (når som helst)",
   "child.editor.time_category_evening": "Kveldsoppgaver",
   "child.editor.time_category_helper": "Hvilken tid på dagen skal oppgaver vises — setter også korttittelen",
@@ -1758,5 +1759,7 @@
   "child.editor.pre_reader": "Kun bilder (for små barn)",
   "child.editor.pre_reader_labels": "Vis navn i bildemodus",
   "child.editor.pre_reader_points": "Vis poengverdier i stedet for stjerner i bildemodus",
-  "common.design.accessible": "Tilgjengelig"
+  "common.design.accessible": "Tilgjengelig",
+  "child.editor.include_anytime_chores": "Ta med «når som helst»-oppgaver",
+  "child.editor.include_anytime_chores_helper": "«Når som helst»-oppgaver vises normalt i alle tidskategorier — slå av for å skjule dem"
 }

@@ -265,6 +265,7 @@
   "child.editor.time_category": "Tidskategori",
   "child.editor.time_category_afternoon": "Ettermiddagsoppgåver",
   "child.editor.time_category_all": "Dagens oppgåver (alle)",
+  "child.editor.time_category_current": "Gjeldande tidsperiode (live)",
   "child.editor.time_category_anytime": "Dagens oppgåver (kva tid som helst)",
   "child.editor.time_category_evening": "Kveldsoppgåver",
   "child.editor.time_category_helper": "Kva tid på dagen oppgåver skal visast — set òg korttittelen",
@@ -1758,5 +1759,7 @@
   "child.editor.pre_reader": "Berre bilete (for små born)",
   "child.editor.pre_reader_labels": "Vis namn i biletemodus",
   "child.editor.pre_reader_points": "Vis poengverdiar i staden for stjerner i biletemodus",
-  "common.design.accessible": "Tilgjengeleg"
+  "common.design.accessible": "Tilgjengeleg",
+  "child.editor.include_anytime_chores": "Ta med «kva tid som helst»-oppgåver",
+  "child.editor.include_anytime_chores_helper": "«Kva tid som helst»-oppgåver vert normalt viste i alle tidskategoriar — slå av for å skjule dei"
 }
