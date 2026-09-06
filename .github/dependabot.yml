@@ -47,8 +47,3 @@ updates:
       - "ci"
     cooldown:
       default-days: 14
-    ignore:
-      # ci/constraints-floor.txt is a snapshot of a green floor-leg run, not a
-      # dependency list to keep current: HA 2024.7.0 pins httpx==0.27.0 exactly,
-      # so any bump makes the floor leg unresolvable (see closed PR #844).
-      - dependency-name: "httpx"

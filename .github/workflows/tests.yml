@@ -57,7 +57,7 @@ jobs:
             # Rather than chase each break with another one-off pin, this file
             # holds the complete set a known-good run resolved. See the header
             # in it for why, and for how to regenerate.
-            constraints: "ci/constraints-floor.txt"
+            constraints: "ci/constraints-floor.pins"
 
     steps:
       - name: Check out repository
@@ -76,7 +76,7 @@ jobs:
           cache: "pip"
           cache-dependency-path: |
             requirements_test.txt
-            ci/constraints-floor.txt
+            ci/constraints-floor.pins
 
       - name: Install dependencies
         env:
