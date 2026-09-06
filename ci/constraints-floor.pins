@@ -16,6 +16,19 @@
 # These are constraints, not requirements: pip applies them to whatever the
 # harness pulls in, and unlisted packages still resolve normally.
 #
+# Why the .pins extension
+# -----------------------
+# Not cosmetic, and please don't rename it back to .txt. Dependabot's pip
+# fetcher walks one level into every subdirectory and picks up anything ending
+# .txt or .in whose contents parse as requirements (dependabot-core,
+# SharedFileFetcher#req_txt_and_in_files). This file qualified, so Dependabot
+# kept raising PRs against it -- but every pin here mirrors what HA 2024.7.0
+# itself resolved, and HA pins several of them exactly. Bumping one makes the
+# floor leg unresolvable before pytest can install, which is what happened to
+# httpx (#844) and fnv-hash-fast (#851). An extension outside .txt/.in is not
+# collected at all, so the whole file is invisible to Dependabot. pip does not
+# care about the extension for -c.
+#
 # Regenerating
 # ------------
 # Take the "Successfully installed" line from a green floor-leg job log and
