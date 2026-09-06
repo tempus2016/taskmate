@@ -2228,6 +2228,7 @@ class TaskMateChildCard extends LitElement {
     }
     this.config = {
       time_category: "anytime",
+      include_anytime_chores: true,  // false hides the Anytime bucket from every filter
       debug: false,
       default_sound: "coin",
       undo_sound: "undo",
@@ -2449,7 +2450,7 @@ class TaskMateChildCard extends LitElement {
             ? this._renderEmptyState()
             : html`
                 <div class="section-title">
-                  <ha-icon icon="${this._getTimeCategoryIcon(this.config.time_category)}"></ha-icon>
+                  <ha-icon icon="${this._getTimeCategoryIcon(this._effectiveTimeCategory())}"></ha-icon>
                   <span class="section-title-text">${this._getDynamicTitle()}</span>
                   ${this.config.show_countdown !== false ? (() => {
                     const countdown = this._getMidnightCountdown();
@@ -3068,6 +3069,10 @@ class TaskMateChildCard extends LitElement {
     // or a sensor that hasn't published yet) has to read as available, or the
     // card would blank itself.
     const availability = attrs.chore_availability || {};
+    // "current" resolves to the live period; anytime chores are opt-out (#847).
+    const isCurrentMode = this.config.time_category === 'current';
+    const effectiveCategory = this._effectiveTimeCategory();
+    const includeAnytime = this.config.include_anytime_chores !== false;
 
     // First, filter chores for this child and time category
     const filteredChores = chores.filter(chore => {
@@ -3076,18 +3081,30 @@ class TaskMateChildCard extends LitElement {
       const disabledFor = chore.disabled_for || [];
       if (disabledFor.includes(childId)) return false;
 
+      // Anytime chores match every filter, so opting out has to be an early
+      // return: _isChoreInClaimWindow() reports "anytime" as always in-window,
+      // and a clause inside matchesCardFilter would be bypassed below.
+      if (!includeAnytime && chore.time_category === "anytime") return false;
+
       // Check time category. The card's configured filter matches as before;
       // on top of that, chores currently in their claim window (including the
       // post-period grace) and any future-period chores are let through so
       // they can render as locked previews or keep claimable during grace.
       const isLockedPreview = this._isChorePreviewLocked(chore);
       const inClaimWindow = this._isChoreInClaimWindow(chore);
-      chore._isLockedPreview = isLockedPreview;
+      // In "current" mode a future chore must not survive as a dimmed preview
+      // either, so the flag is cleared rather than just filtered around.
+      chore._isLockedPreview = isCurrentMode ? false : isLockedPreview;
       const matchesCardFilter =
-        this.config.time_category === "all" ||
-        chore.time_category === this.config.time_category ||
+        effectiveCategory === "all" ||
+        chore.time_category === effectiveCategory ||
         chore.time_category === "anytime";
-      const matchesTime = matchesCardFilter || isLockedPreview || inClaimWindow;
+      // "current" drops the future-preview pass-through; the claim window stays
+      // so a chore inside its post-period grace is still tappable, and past
+      // periods keep being governed by elapsed_time_mode.
+      const matchesTime = isCurrentMode
+        ? matchesCardFilter || inClaimWindow
+        : matchesCardFilter || isLockedPreview || inClaimWindow;
 
       // Check assignment
       let assignedTo = chore.assigned_to;
@@ -3320,6 +3337,16 @@ class TaskMateChildCard extends LitElement {
     });
   }
 
+  // Resolves the configured time_category. "current" is dynamic: it tracks
+  // whichever period is active right now, so a wall dashboard shows only the
+  // chores that are actually due (#847). Everything else passes through.
+  // _getCurrentTimePeriod() reads the user's own time_periods, so custom
+  // periods work here without any extra mapping.
+  _effectiveTimeCategory() {
+    const configured = this.config?.time_category;
+    return configured === 'current' ? this._getCurrentTimePeriod() : configured;
+  }
+
   _getTimeCategoryIcon(category) {
     const period = this._getTimePeriods().find(p => p.id === category);
     if (period) return period.icon;
@@ -3349,7 +3376,7 @@ class TaskMateChildCard extends LitElement {
   }
 
   _getDynamicTitle() {
-    const category = this.config.time_category;
+    const category = this._effectiveTimeCategory();
     const period = this._getTimePeriods().find(p => p.id === category);
     if (period && period.label) return period.label;
     const keyMap = {
@@ -4866,6 +4893,7 @@ class TaskMateChildCardEditor extends LitElement {
         }))
       : Object.entries(builtinLabels).map(([value, label]) => ({ value, label }));
     return [
+      { value: 'current', label: this._t('child.editor.time_category_current') },
       ...periodOptions,
       { value: 'anytime', label: this._t('child.editor.time_category_anytime') },
       { value: 'all', label: this._t('child.editor.time_category_all') },
@@ -4977,6 +5005,7 @@ class TaskMateChildCardEditor extends LitElement {
           },
         },
       },
+      { name: 'include_anytime_chores', selector: { boolean: {} } },
       { name: 'show_countdown', selector: { boolean: {} } },
       { name: 'show_description', selector: { boolean: {} } },
       { name: 'pre_reader', selector: { boolean: {} } },
@@ -4997,6 +5026,7 @@ class TaskMateChildCardEditor extends LitElement {
       first_come_claimed_mode: this._t('child.editor.first_come_when_completed'),
       dependency_mode: this._t('child.editor.dependency_mode'),
       elapsed_time_mode: this._t('child.editor.missed_time_chores'),
+      include_anytime_chores: this._t('child.editor.include_anytime_chores'),
       show_countdown: this._t('child.editor.show_countdown'),
       show_description: this._t('child.editor.show_description'),
       pre_reader: this._t('child.editor.pre_reader'),
@@ -5017,6 +5047,7 @@ class TaskMateChildCardEditor extends LitElement {
       first_come_claimed_mode: this._t('child.editor.first_come_helper'),
       dependency_mode: this._t('child.editor.dependency_helper'),
       elapsed_time_mode: this._t('child.editor.elapsed_helper'),
+      include_anytime_chores: this._t('child.editor.include_anytime_chores_helper'),
     };
     return helpers[entry.name] ?? '';
   };
@@ -5034,6 +5065,7 @@ class TaskMateChildCardEditor extends LitElement {
       first_come_claimed_mode: this.config.first_come_claimed_mode || 'hide',
       dependency_mode: this.config.dependency_mode || 'hide',
       elapsed_time_mode: this.config.elapsed_time_mode || 'dim',
+      include_anytime_chores: this.config.include_anytime_chores !== false,
       show_countdown: this.config.show_countdown !== false,
       show_description: this.config.show_description === true,
       pre_reader: this.config.pre_reader === true,

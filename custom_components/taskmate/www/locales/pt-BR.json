@@ -265,6 +265,7 @@
   "child.editor.time_category": "Categoria de Hora",
   "child.editor.time_category_afternoon": "Tarefas da Tarde",
   "child.editor.time_category_all": "Tarefas de Hoje (Todas)",
+  "child.editor.time_category_current": "Período Atual (Ao Vivo)",
   "child.editor.time_category_anytime": "Tarefas de Hoje (Qualquer Hora)",
   "child.editor.time_category_evening": "Tarefas da Noite",
   "child.editor.time_category_helper": "Qual período do dia mostrar tarefas — também define o título do cartão",
@@ -1758,5 +1759,7 @@
   "child.editor.pre_reader": "Modo só imagens (crianças pequenas)",
   "child.editor.pre_reader_labels": "Mostrar nomes no modo imagens",
   "child.editor.pre_reader_points": "Mostrar pontos em vez de estrelas no modo imagens",
-  "common.design.accessible": "Acessível"
+  "common.design.accessible": "Acessível",
+  "child.editor.include_anytime_chores": "Incluir tarefas de qualquer hora",
+  "child.editor.include_anytime_chores_helper": "As tarefas de qualquer hora aparecem normalmente em todas as categorias de hora — desative para ocultá-las"
 }

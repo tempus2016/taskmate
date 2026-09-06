@@ -265,6 +265,7 @@
   "child.editor.time_category": "Catégorie de temps",
   "child.editor.time_category_afternoon": "Tâches de l'après-midi",
   "child.editor.time_category_all": "Tâches d'aujourd'hui (toutes)",
+  "child.editor.time_category_current": "Période actuelle (en direct)",
   "child.editor.time_category_anytime": "Tâches d'aujourd'hui (n'importe quand)",
   "child.editor.time_category_evening": "Tâches du soir",
   "child.editor.time_category_helper": "Pour quel moment de la journée afficher les tâches — définit également le titre de la carte",
@@ -1758,5 +1759,7 @@
   "child.editor.pre_reader": "Mode images seules (jeunes enfants)",
   "child.editor.pre_reader_labels": "Afficher les noms en mode images",
   "child.editor.pre_reader_points": "Afficher les points au lieu des étoiles en mode images",
-  "common.design.accessible": "Accessible"
+  "common.design.accessible": "Accessible",
+  "child.editor.include_anytime_chores": "Inclure les tâches « n'importe quand »",
+  "child.editor.include_anytime_chores_helper": "Les tâches « n'importe quand » apparaissent normalement dans toutes les catégories de temps — désactivez pour les masquer"
 }

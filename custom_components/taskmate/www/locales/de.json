@@ -265,6 +265,7 @@
   "child.editor.time_category": "Zeitkategorie",
   "child.editor.time_category_afternoon": "Nachmittagsaufgaben",
   "child.editor.time_category_all": "Heutige Aufgaben (Alle)",
+  "child.editor.time_category_current": "Aktueller Zeitabschnitt (live)",
   "child.editor.time_category_anytime": "Heutige Aufgaben (jederzeit)",
   "child.editor.time_category_evening": "Abendliche Aufgaben",
   "child.editor.time_category_helper": "Zu welcher Tageszeit Aufgaben angezeigt werden sollen – legt auch den Kartentitel fest",
@@ -1758,5 +1759,7 @@
   "child.editor.pre_reader": "Nur-Bilder-Modus (für kleine Kinder)",
   "child.editor.pre_reader_labels": "Namen im Bildmodus anzeigen",
   "child.editor.pre_reader_points": "Punktzahl statt Sterne im Bildmodus anzeigen",
-  "common.design.accessible": "Barrierefrei"
+  "common.design.accessible": "Barrierefrei",
+  "child.editor.include_anytime_chores": "Jederzeit-Aufgaben einbeziehen",
+  "child.editor.include_anytime_chores_helper": "Jederzeit-Aufgaben erscheinen normalerweise in jeder Zeitkategorie – deaktivieren, um sie auszublenden"
 }

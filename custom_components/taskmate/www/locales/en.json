@@ -267,6 +267,7 @@
   "child.editor.time_category": "Time Category",
   "child.editor.time_category_afternoon": "Afternoon Chores",
   "child.editor.time_category_all": "Today's Chores (All)",
+  "child.editor.time_category_current": "Current Time Period (Live)",
   "child.editor.time_category_anytime": "Today's Chores (Anytime)",
   "child.editor.time_category_evening": "Evening Chores",
   "child.editor.time_category_helper": "Which time of day to show chores for — also sets the card title",
@@ -1758,5 +1759,7 @@
   "child.editor.pre_reader": "Picture-only mode (for young children)",
   "child.editor.pre_reader_labels": "Show names in picture mode",
   "child.editor.pre_reader_points": "Show point values instead of stars in picture mode",
-  "common.design.accessible": "Accessible"
+  "common.design.accessible": "Accessible",
+  "child.editor.include_anytime_chores": "Include anytime chores",
+  "child.editor.include_anytime_chores_helper": "Anytime chores normally appear under every time category — turn this off to hide them"
 }
