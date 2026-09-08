@@ -9,7 +9,7 @@
 # Keep this in step with the CI Python (3.14): 0.13.206+ require >=3.13 and
 # 0.13.317+ require >=3.14, so bumping the harness past those floors means
 # bumping python-version in the workflows too.
-pytest-homeassistant-custom-component==0.13.348
+pytest-homeassistant-custom-component==0.13.357
 
 # Coverage reporting for CI (Tests workflow renders a per-module summary).
 pytest-cov
