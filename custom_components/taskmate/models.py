@@ -486,6 +486,21 @@ class Chore:
         }
 
 
+def _clean_weekdays(raw: Any) -> list[int]:
+    """Coerce stored weekday numbers to a sorted, de-duplicated 0-6 list."""
+    if not isinstance(raw, (list, tuple, set)):
+        return []
+    out: set[int] = set()
+    for item in raw:
+        try:
+            day = int(item)
+        except (TypeError, ValueError):
+            continue
+        if 0 <= day <= 6:
+            out.add(day)
+    return sorted(out)
+
+
 @dataclass
 class Reward:
     """Represents a reward."""
@@ -509,6 +524,15 @@ class Reward:
     # checked both at save time and again when it fires.
     unlock_entity: str = ""
     unlock_minutes: int = 0
+    # Time lock (#857): restrict claiming to certain weekdays and/or a
+    # time-of-day window. `available_days` holds Python weekday numbers
+    # (0=Monday .. 6=Sunday); empty means every day. The times are "HH:MM";
+    # a start later than the end is an overnight window. All of it is inert
+    # unless `time_lock_enabled` is set.
+    time_lock_enabled: bool = False
+    available_days: list[int] = field(default_factory=list)
+    available_from: str = ""
+    available_until: str = ""
     id: str = field(default_factory=generate_id)
 
     def __post_init__(self) -> None:
@@ -542,6 +566,10 @@ class Reward:
             unlock_minutes=int(data.get("unlock_minutes", 0) or 0),
             restock_period=data.get("restock_period", "weekly"),
             restock_last=data.get("restock_last", ""),
+            time_lock_enabled=bool(data.get("time_lock_enabled", False)),
+            available_days=_clean_weekdays(data.get("available_days")),
+            available_from=str(data.get("available_from", "") or ""),
+            available_until=str(data.get("available_until", "") or ""),
             id=data.get("id") or generate_id(),
         )
 
@@ -563,6 +591,10 @@ class Reward:
             "restock_last": self.restock_last,
             "unlock_entity": self.unlock_entity,
             "unlock_minutes": self.unlock_minutes,
+            "time_lock_enabled": self.time_lock_enabled,
+            "available_days": list(self.available_days),
+            "available_from": self.available_from,
+            "available_until": self.available_until,
             "id": self.id,
         }
 

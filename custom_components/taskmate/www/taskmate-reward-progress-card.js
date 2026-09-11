@@ -325,6 +325,13 @@ class TaskMateRewardProgressCard extends LitElement {
         background: color-mix(in srgb, var(--error-color, #db4437) 18%, transparent);
         color: var(--error-color, #db4437);
       }
+      .availability-badge.badge-time-locked {
+        background: color-mix(in srgb, var(--info-color, #3498db) 18%, transparent);
+        color: var(--info-color, #2471a3);
+        /* Longer than the other badges — uppercasing a whole window reads badly. */
+        text-transform: none;
+        letter-spacing: 0;
+      }
       .availability-badge.badge-expiring-soon {
         background: color-mix(in srgb, var(--warning-color, #ff9800) 20%, transparent);
         color: var(--warning-color, #ff9800);
@@ -503,6 +510,9 @@ class TaskMateRewardProgressCard extends LitElement {
     } else if (isSoldOut) {
       availabilityLabel = this._t('rewards.sold_out');
       availabilityClass = 'badge-sold-out';
+    } else if (reward.is_time_locked === true) {
+      availabilityLabel = this._timeLockLabel(reward);
+      availabilityClass = 'badge-time-locked';
     } else if (typeof reward.quantity === 'number' && reward.quantity > 0 && reward.quantity <= 3) {
       availabilityLabel = this._t('rewards.only_n_left', { count: reward.quantity });
       availabilityClass = 'badge-low-stock';
@@ -557,6 +567,14 @@ class TaskMateRewardProgressCard extends LitElement {
         </div>
       </ha-card>
     `;
+  }
+
+  /** "Available Fri, Sat · 18:00–21:00" for a time-locked reward (#857). */
+  _timeLockLabel(reward) {
+    const summary = window.__taskmate_time_lock_label
+      ? window.__taskmate_time_lock_label(reward.time_lock, (k, pr) => this._t(k, pr))
+      : '';
+    return summary ? this._t('rewards.available_when', { window: summary }) : this._t('rewards.locked_now');
   }
 
   _renderChildProgress(child, reward, pointsIcon, pointsName) {
@@ -759,6 +777,9 @@ class TaskMateRewardProgressCard extends LitElement {
       availabilityTone = 'dim';
     } else if (isSoldOut) {
       availabilityLabel = this._t('rewards.sold_out');
+      availabilityTone = 'dim';
+    } else if (reward.is_time_locked === true) {
+      availabilityLabel = this._timeLockLabel(reward);
       availabilityTone = 'dim';
     } else if (typeof reward.quantity === 'number' && reward.quantity > 0 && reward.quantity <= 3) {
       availabilityLabel = this._t('rewards.only_n_left', { count: reward.quantity });
