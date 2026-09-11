@@ -6248,11 +6248,21 @@ class TaskMatePanel extends HTMLElement {
     if (engine) engine.play(value, this._customSounds());
   }
 
+  /**
+   * Icon field. `ha-icon-picker` is HA's own component — we keep it for the
+   * searchable MDI list, but its Material shell (grey fill, underline, 56px
+   * box) reads as a foreign control beside the panel's own inputs. The
+   * `.tm-icon-well` wrapper supplies the tm-input frame and the picker inside
+   * it is made transparent; see the CSS for why the wrapper, not the picker,
+   * carries the border.
+   */
   _iconPickerField(label, name, value) {
     return `
       <div class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
-        <ha-icon-picker data-field="${name}" data-current="${this._esc(value || "")}"></ha-icon-picker>
+        <div class="tm-icon-well">
+          <ha-icon-picker data-field="${name}" data-current="${this._esc(value || "")}"></ha-icon-picker>
+        </div>
       </div>`;
   }
 
@@ -7616,6 +7626,42 @@ class TaskMatePanel extends HTMLElement {
       .tm-field ha-icon-picker,
       .tm-section-body ha-icon-picker {
         display: block; width: 100%;
+      }
+
+      /* Icon field well: make ha-icon-picker sit in the dialogs like a
+         tm-input. The picker's inner shell can't be reached from here (shadow
+         DOM), so the wrapper carries the frame and the picker is stripped back:
+           - the fill and the 1px "active indicator" are var() usages inside
+             ha-picker-field, so overriding the vars here does reach them;
+           - ha-combo-box-item hard-sets its own 56px row height and square
+             bottom corners, which no variable overrides — so the well is
+             tm-input height with overflow:hidden, and the picker is pulled up
+             by half the difference to keep its content optically centred.
+         The --mdc-* vars cover older HA, which still renders an mwc textfield. */
+      .tm-icon-well {
+        box-sizing: border-box;
+        height: 37px;
+        background: var(--tm-surface-0);
+        border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm);
+        box-shadow: var(--tm-shadow-xs);
+        overflow: hidden;
+        transition: all 0.1s var(--tm-easing);
+      }
+      .tm-icon-well:hover { border-color: var(--tm-border-strong); }
+      .tm-icon-well:focus-within { border-color: var(--tm-accent); box-shadow: var(--tm-shadow-focus); }
+      .tm-icon-well ha-icon-picker {
+        display: block; width: 100%;
+        margin-top: calc((37px - 56px) / 2);
+        --ha-color-form-background: transparent;
+        --ha-color-border-neutral-loud: transparent;
+        --md-list-item-leading-space: 11px;
+        --md-list-item-trailing-space: 4px;
+        --md-list-item-label-text-size: 13px;
+        --mdc-text-field-fill-color: transparent;
+        --mdc-text-field-idle-line-color: transparent;
+        --mdc-text-field-hover-line-color: transparent;
+        --mdc-text-field-focused-line-color: transparent;
       }
 
       /* Chip multi-select */
