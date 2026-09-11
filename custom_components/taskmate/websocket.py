@@ -68,9 +68,11 @@ from .const import (
     MAX_TIME_PERIODS,
     SCHEDULE_MODES,
     TIME_CATEGORY_ICONS,
+    is_valid_completion_sound,
 )
 from .coordinator import TaskMateCoordinator
 from .models import BonusSubTask, Reward
+from .sounds import MAX_NAME_LEN as MAX_SOUND_NAME_LEN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -124,6 +126,10 @@ WS_DELETE_CHALLENGE: Final = "taskmate/delete_challenge"
 WS_ADD_TASK_GROUP: Final = "taskmate/add_task_group"
 WS_UPDATE_TASK_GROUP: Final = "taskmate/update_task_group"
 WS_REMOVE_TASK_GROUP: Final = "taskmate/remove_task_group"
+
+WS_ADD_CUSTOM_SOUND: Final = "taskmate/add_custom_sound"
+WS_RENAME_CUSTOM_SOUND: Final = "taskmate/rename_custom_sound"
+WS_REMOVE_CUSTOM_SOUND: Final = "taskmate/remove_custom_sound"
 
 WS_UPDATE_SETTINGS: Final = "taskmate/update_settings"
 
@@ -368,6 +374,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "points_transactions": transactions[-100:],  # most recent 100 for audit log
         "badges": list(data.get("badges", [])),
         "awarded_badges": list(data.get("awarded_badges", [])),
+        "custom_sounds": coordinator.custom_sounds_state(),  # uploaded completion sounds (#856)
         "audit_log": coordinator.storage.get_audit_log()[:100],  # newest 100 for the panel
         "swap_requests": [r for r in coordinator.storage.get_swap_requests() if r.get("status") == "pending"],
         "allowance_payouts": list(reversed(coordinator.storage.get_allowance_payouts()))[:50],  # newest first (FEAT-3)
@@ -521,6 +528,20 @@ async def _ws_list_ha_users(hass, connection, msg, coordinator):
 # ---------------------------------------------------------------------------
 
 
+def _completion_sound(value):
+    """Accept a built-in sound name or a ``custom:<file>`` reference (#856).
+
+    This field was previously an unvalidated ``str``, so a typo'd or stale name
+    persisted happily and then played nothing. Like ``_image_url_or_blank``
+    below, it raises rather than returning False — voluptuous treats a callable
+    as a coercer, so a falsy return would be stored as the value.
+    """
+    text = str(value or "")
+    if is_valid_completion_sound(text):
+        return text
+    raise vol.Invalid(f"Unknown completion sound: {text}")
+
+
 def _image_url_or_blank(value):
     """Accept a blank string (clears the picture) or one of our image URLs.
 
@@ -607,7 +628,7 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("time_category"): str,
         vol.Optional("claim_allowance_minutes"): vol.All(int, vol.Range(min=0)),
         vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
-        vol.Optional("completion_sound"): str,
+        vol.Optional("completion_sound"): _completion_sound,
         vol.Optional("icon"): str,
         vol.Optional("image_url"): _image_url_or_blank,
         vol.Optional("difficulty"): vol.In(DIFFICULTY_TIERS),
@@ -1518,6 +1539,69 @@ async def _ws_remove_task_group(hass, connection, msg, coordinator):
 
 
 # ---------------------------------------------------------------------------
+# Custom completion sounds (#856)
+#
+# The audio file is uploaded separately to the admin-only HTTP view in
+# http_sounds.py, which returns its generated filename. These commands manage
+# the registry entry that gives that file a display name and makes it
+# selectable. All three are admin-only, matching the upload view.
+# ---------------------------------------------------------------------------
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_ADD_CUSTOM_SOUND,
+        vol.Required("file"): str,
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=MAX_SOUND_NAME_LEN)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_add_custom_sound(hass, connection, msg, coordinator):
+    try:
+        sound = await coordinator.async_add_custom_sound(msg["file"], msg["name"])
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid_sound", str(err))
+        return
+    connection.send_result(msg["id"], {"file": sound.file, "name": sound.name})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_RENAME_CUSTOM_SOUND,
+        vol.Required("file"): str,
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=MAX_SOUND_NAME_LEN)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_rename_custom_sound(hass, connection, msg, coordinator):
+    try:
+        sound = await coordinator.async_rename_custom_sound(msg["file"], msg["name"])
+    except ValueError as err:
+        connection.send_error(msg["id"], "not_found", str(err))
+        return
+    connection.send_result(msg["id"], {"file": sound.file, "name": sound.name})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REMOVE_CUSTOM_SOUND,
+        vol.Required("file"): str,
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_remove_custom_sound(hass, connection, msg, coordinator):
+    try:
+        reset = await coordinator.async_remove_custom_sound(msg["file"])
+    except ValueError as err:
+        connection.send_error(msg["id"], "not_found", str(err))
+        return
+    connection.send_result(msg["id"], {"file": msg["file"], "chores_reset": reset})
+
+
+# ---------------------------------------------------------------------------
 # Settings — partial update of currency + the "settings" subkey
 # ---------------------------------------------------------------------------
 
@@ -1980,7 +2064,7 @@ async def _ws_set_global_chore_order(hass, connection, msg, coordinator):
         vol.Optional("schedule_mode"): vol.In(SCHEDULE_MODES),
         vol.Optional("due_days"): [str],
         vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
-        vol.Optional("completion_sound"): str,
+        vol.Optional("completion_sound"): _completion_sound,
     }
 )
 @websocket_api.async_response
@@ -2044,7 +2128,7 @@ async def _ws_templates_get(hass, connection, msg, coordinator):
                 vol.Optional("requires_approval"): bool,
                 vol.Optional("time_category"): str,
                 vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
-                vol.Optional("completion_sound"): str,
+                vol.Optional("completion_sound"): _completion_sound,
                 vol.Optional("schedule_mode"): vol.In(SCHEDULE_MODES),
                 vol.Optional("due_days"): [str],
                 vol.Optional("recurrence"): str,
@@ -2693,6 +2777,9 @@ _COMMANDS = (
     _ws_add_task_group,
     _ws_update_task_group,
     _ws_remove_task_group,
+    _ws_add_custom_sound,
+    _ws_rename_custom_sound,
+    _ws_remove_custom_sound,
     _ws_update_settings,
     _ws_complete_bonus_subtask,
     _ws_approve_chore,

@@ -62,7 +62,6 @@ from .const import (
     ATTR_REWARD_ID,
     ATTR_SOUND,
     BADGE_TIERS,
-    COMPLETION_SOUND_OPTIONS,
     CONF_TASK_GROUP_CHORE_IDS,
     CONF_TASK_GROUP_ID,
     CONF_TASK_GROUP_NAME,
@@ -382,6 +381,19 @@ async def _async_record_service_audit(hass: HomeAssistant, call: ServiceCall) ->
         await coordinator.async_record_audit(user_id, user_name, f"service.{call.service}", target)
     except Exception:  # noqa: BLE001 - audit must never break the action
         _LOGGER.debug("Failed to record service audit for %s", call.service, exc_info=True)
+
+
+def _valid_sound(value: str) -> str:
+    """Validate a preview_sound name: a built-in, or an uploaded custom sound (#856).
+
+    Replaces a plain ``vol.In(COMPLETION_SOUND_OPTIONS)``, which could not see
+    custom sounds because they are created at runtime.
+    """
+    from .const import is_valid_completion_sound
+
+    if is_valid_completion_sound(value):
+        return value
+    raise vol.Invalid(f"Unknown completion sound: {value}")
 
 
 def _safe(handler):
@@ -1366,7 +1378,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         _safe(handle_preview_sound),
         schema=vol.Schema(
             {
-                vol.Required(ATTR_SOUND): vol.In(COMPLETION_SOUND_OPTIONS),
+                vol.Required(ATTR_SOUND): vol.All(str, _valid_sound),
             }
         ),
     )

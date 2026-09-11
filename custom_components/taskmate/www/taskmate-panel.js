@@ -122,6 +122,8 @@ const WEATHER_CONDITIONS = [
   { v: "exceptional",    icon: "mdi:alert-outline" },
 ];
 
+// Built-in sounds, mirroring COMPLETION_SOUND_OPTIONS in const.py. User-uploaded
+// sounds are appended per render by _soundOptions() (#856).
 const COMPLETION_SOUNDS = [
   "none", "coin", "levelup", "fanfare", "chime", "powerup", "undo",
   "fart1", "fart2", "fart3", "fart4", "fart5", "fart6", "fart7",
@@ -506,6 +508,15 @@ class TaskMatePanel extends HTMLElement {
     if (act === "save-gift")    { this._doGiftPoints(); return; }
     if (act === "adjust-points") { this._doAdjustPoints(t.dataset.id, Number(t.dataset.delta)); return; }
     if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
+    if (act === "sound-preview-field") {
+      const sel = t.closest(".tm-sound-row")?.querySelector('select[data-field="completion_sound"]');
+      if (sel) this._previewSound(sel.value);
+      return;
+    }
+    if (act === "sound-preview")  { this._previewSound(t.dataset.value); return; }
+    if (act === "sound-upload")   { this._pickCustomSound(); return; }
+    if (act === "sound-rename")   { this._renameCustomSound(t.dataset.file, t.dataset.name); return; }
+    if (act === "sound-delete")   { this._deleteCustomSound(t.dataset.file, t.dataset.name); return; }
     if (act === "chore-image-pick")   { this._pickChoreImage(); return; }
     if (act === "chore-image-remove") {
       // Clears the dialog value only — the file is deleted on save by the
@@ -1447,6 +1458,100 @@ class TaskMatePanel extends HTMLElement {
     } else {
       this._openDialog({ kind: "chore", mode: "add", data: blank });
     }
+  }
+
+  // --- Custom completion sounds (#856) ------------------------------------
+
+  _pickCustomSound() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "audio/mpeg,audio/ogg,audio/wav,audio/mp4,.mp3,.ogg,.wav,.m4a";
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      if (file) this._uploadCustomSound(file);
+    });
+    input.click();
+  }
+
+  /**
+   * Upload the file, then register it under a display name.
+   *
+   * Two steps because the bytes go over HTTP (multipart) while the registry
+   * entry is a WebSocket command — same split as chore images. The default
+   * name is the filename without its extension, which is nearly always what
+   * the user wants.
+   */
+  async _uploadCustomSound(file) {
+    if (this._soundBusy) return;
+    this._soundBusy = true;
+    this._render();
+    try {
+      const post = () => {
+        const token = this._hass && this._hass.auth && this._hass.auth.data
+          && this._hass.auth.data.access_token;
+        const fd = new FormData();
+        fd.append("file", file, file.name || "sound");
+        return fetch("/api/taskmate/sound", {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fd,
+        });
+      };
+      // The cached access token can go stale mid-session, so refresh and retry
+      // once on a 401 before giving up. Mirrors the chore-image upload.
+      if (this._hass && this._hass.auth && this._hass.auth.expired
+        && this._hass.auth.refreshAccessToken) {
+        try { await this._hass.auth.refreshAccessToken(); } catch (e) { /* surfaced below */ }
+      }
+      let resp = await post();
+      if (resp.status === 401 && this._hass && this._hass.auth
+        && this._hass.auth.refreshAccessToken) {
+        await this._hass.auth.refreshAccessToken();
+        resp = await post();
+      }
+      if (resp.status === 413) { this._showToast("err", this._t("panel.sound_too_large")); return; }
+      if (resp.status === 400) { this._showToast("err", this._t("panel.sound_bad_type")); return; }
+      if (resp.status === 507) { this._showToast("err", this._t("panel.sound_storage_full")); return; }
+      if (!resp.ok) { this._showToast("err", this._t("panel.sound_upload_failed")); return; }
+
+      const body = await resp.json();
+      const name = (file.name || "").replace(/\.[^.]+$/, "").slice(0, 40) || this._t("panel.sound_default_name");
+      const { ok, err } = await this._callWS({
+        type: "taskmate/add_custom_sound", file: body.file, name,
+      });
+      if (!ok) { this._showToast("err", this._t("panel.sound_upload_failed", { error: err })); return; }
+      this._showToast("ok", this._t("panel.sound_uploaded"));
+      await this._fetchState();
+    } catch (err) {
+      this._showToast("err", this._t("panel.sound_upload_failed"));
+    } finally {
+      this._soundBusy = false;
+      this._render();
+    }
+  }
+
+  async _renameCustomSound(file, current) {
+    const name = prompt(this._t("panel.sound_rename_prompt"), current || "");
+    if (name === null) return;
+    if (!name.trim()) { this._showToast("err", this._t("panel.sound_name_required")); return; }
+    const { ok, err } = await this._callWS({
+      type: "taskmate/rename_custom_sound", file, name: name.trim().slice(0, 40),
+    });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+  }
+
+  async _deleteCustomSound(file, name) {
+    if (!confirm(this._t("panel.sound_delete_confirm", { name: name || file }))) return;
+    const { ok, err, res } = await this._callWS({ type: "taskmate/remove_custom_sound", file });
+    if (!ok) { this._showToast("err", err); return; }
+    // Chores that used it were reset to the default sound server-side; say so
+    // rather than letting the change be discovered later.
+    const reset = (res && res.chores_reset) || 0;
+    this._showToast("ok", reset
+      ? this._t("panel.sound_deleted_reset", { count: reset })
+      : this._t("panel.sound_deleted"));
+    await this._fetchState();
   }
 
   _pickChoreImage() {
@@ -4336,6 +4441,50 @@ class TaskMatePanel extends HTMLElement {
   }
 
   // -- Settings tab ------------------------------------------------------
+  /**
+   * Custom completion sounds (#856).
+   *
+   * Uploaded clips are listed with preview / rename / delete. Deleting one
+   * resets any chore using it back to the default sound server-side, so the
+   * confirm copy warns about that rather than leaving it to be discovered.
+   */
+  _renderSoundsSection() {
+    const list = this._customSounds();
+    const busy = this._soundBusy;
+    return `
+      <div class="tm-section">
+        <div class="tm-section-head"><div>
+          <h3>${this._t("panel.settings_sounds_title")}</h3>
+          <p class="tm-meta">${this._t("panel.settings_sounds_hint")}</p>
+        </div></div>
+        <div class="tm-section-body">
+          ${list.length ? `
+            <div class="tm-sound-list">
+              ${list.map(s => `
+                <div class="tm-sound-item">
+                  <span class="tm-sound-name">${this._esc(s.name)}</span>
+                  <div class="tm-sound-item-actions">
+                    <button type="button" class="tm-btn tm-btn-sm" data-act="sound-preview"
+                      data-value="${this._esc(s.value)}"
+                      aria-label="${this._esc(this._t("panel.sound_preview"))}"
+                      title="${this._esc(this._t("panel.sound_preview"))}">▶</button>
+                    <button type="button" class="tm-btn tm-btn-sm" data-act="sound-rename"
+                      data-file="${this._esc(s.file)}" data-name="${this._esc(s.name)}">${this._t("panel.sound_rename")}</button>
+                    <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="sound-delete"
+                      data-file="${this._esc(s.file)}" data-name="${this._esc(s.name)}">${this._t("panel.sound_delete")}</button>
+                  </div>
+                </div>`).join("")}
+            </div>` : `<p class="tm-meta">${this._t("panel.settings_sounds_empty")}</p>`}
+          <div class="tm-sound-upload">
+            <button type="button" class="tm-btn tm-btn-raised" data-act="sound-upload" ${busy ? "disabled" : ""}>
+              ${busy ? this._t("panel.sound_uploading") : this._t("panel.sound_upload")}
+            </button>
+            <span class="tm-field-hint">${this._t("panel.settings_sounds_formats")}</span>
+          </div>
+        </div>
+      </div>`;
+  }
+
   _renderSettingsTab() {
     const s = this._state.settings || {};
     const notifyServices = Object.keys((this._hass && this._hass.services && this._hass.services.notify) || {});
@@ -4376,6 +4525,8 @@ class TaskMatePanel extends HTMLElement {
             </div>
           </div>
         </div>
+
+        ${this._renderSoundsSection()}
 
         <div class="tm-section">
           <div class="tm-section-head"><div>
@@ -5266,7 +5417,7 @@ class TaskMatePanel extends HTMLElement {
             ${this._select(this._t("panel.chore_first_occurrence_label"), "first_occurrence_mode", d.first_occurrence_mode, FIRST_OCCURRENCE)}
           </div>
         ` : "",
-        this._select(this._t("panel.chore_completion_sound_label"), "completion_sound", d.completion_sound, COMPLETION_SOUNDS.map(s => ({ v: s, l: s }))),
+        this._soundField(d.completion_sound),
         this._select(this._t("panel.chore_difficulty_label"), "difficulty", d.difficulty || "medium", [
           { v: "easy", l: this._t("panel.difficulty_easy") },
           { v: "medium", l: this._t("panel.difficulty_medium") },
@@ -5845,7 +5996,7 @@ class TaskMatePanel extends HTMLElement {
             </div>
           </div>
         ` : "",
-        this._select(this._t("panel.chore_completion_sound_label"), "completion_sound", d.completion_sound, COMPLETION_SOUNDS.map(s => ({ v: s, l: s }))),
+        this._soundField(d.completion_sound),
         this._select(this._t("panel.chore_difficulty_label"), "difficulty", d.difficulty || "medium", [
           { v: "easy", l: this._t("panel.difficulty_easy") },
           { v: "medium", l: this._t("panel.difficulty_medium") },
@@ -5983,6 +6134,48 @@ class TaskMatePanel extends HTMLElement {
         </div>
         <span class="tm-field-hint">${this._t("panel.chore_image_hint")}</span>
       </div>`;
+  }
+
+  /** Uploaded custom sounds from the last get_state (#856). */
+  _customSounds() {
+    return (this._state && this._state.custom_sounds) || [];
+  }
+
+  /** Built-in + uploaded sounds, as <select> options. */
+  _soundOptions() {
+    return [
+      ...COMPLETION_SOUNDS.map(v => ({ v, l: v })),
+      ...this._customSounds().map(s => ({ v: s.value, l: s.name })),
+    ];
+  }
+
+  /**
+   * The chore editor's completion-sound picker, with a preview button.
+   *
+   * Picking a sound used to be silent here: the only preview code lived in
+   * taskmate-config-sounds.js, which scans the document for sound dropdowns
+   * and so could never see this one inside the panel's shadow root (#856).
+   */
+  _soundField(value) {
+    const current = value || "coin";
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.chore_completion_sound_label")}</span>
+        <div class="tm-sound-row">
+          <select class="tm-select" data-field="completion_sound">
+            ${this._soundOptions().map(o => `<option value="${this._esc(o.v)}" ${String(o.v) === String(current) ? "selected" : ""}>${this._esc(o.l)}</option>`).join("")}
+          </select>
+          <button type="button" class="tm-btn tm-btn-sm" data-act="sound-preview-field"
+            title="${this._esc(this._t("panel.sound_preview"))}"
+            aria-label="${this._esc(this._t("panel.sound_preview"))}">▶</button>
+        </div>
+      </div>`;
+  }
+
+  /** Play a sound through the shared engine (taskmate-sounds.js). */
+  _previewSound(value) {
+    const engine = window.__taskmate_sounds;
+    if (engine) engine.play(value, this._customSounds());
   }
 
   _iconPickerField(label, name, value) {
@@ -6739,6 +6932,24 @@ class TaskMatePanel extends HTMLElement {
         color: var(--tm-text-faint); font-size: 11px; text-align: center;
       }
       .tm-image-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+      /* Custom completion sounds (#856) */
+      .tm-sound-row { display: flex; gap: 6px; align-items: center; }
+      .tm-sound-row .tm-select { flex: 1; min-width: 0; }
+      .tm-sound-list {
+        display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;
+      }
+      .tm-sound-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 10px; border: 1px solid var(--tm-border);
+        border-radius: var(--tm-radius-sm); background: var(--tm-surface-2);
+      }
+      .tm-sound-name {
+        flex: 1; min-width: 0; font-size: 14px; font-weight: 600;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .tm-sound-item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+      .tm-sound-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
       .tm-points-adjust {
         display: flex; gap: 4px; flex-wrap: wrap;

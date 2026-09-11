@@ -198,6 +198,22 @@ COMPLETION_SOUND_OPTIONS: Final = [
     "fart_random",  # Random fart - picks a random fart sound each time!
 ]
 
+
+def is_valid_completion_sound(value: str | None) -> bool:
+    """True for a built-in sound name or a well-formed custom sound reference.
+
+    A chore's ``completion_sound`` is either one of ``COMPLETION_SOUND_OPTIONS``
+    or ``custom:<32 hex>.<ext>`` pointing at an uploaded file (#856). Kept here
+    rather than in ``sounds.py`` so schema code can validate the whole field
+    from one import. The custom check is pure, so it is safe on untrusted input.
+    """
+    if value in COMPLETION_SOUND_OPTIONS:
+        return True
+    from .sounds import is_custom_sound
+
+    return is_custom_sound(value)
+
+
 # --- Chore difficulty tiers ---
 # Each chore carries a difficulty tier; the points it awards are the base
 # points multiplied by the tier's multiplier. "medium" is the neutral baseline

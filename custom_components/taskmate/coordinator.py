@@ -31,6 +31,7 @@ from .coord_reports import ReportsMixin
 from .coord_rewards import RewardsMixin
 from .coord_roulette import RouletteMixin
 from .coord_scheduled import ScheduledChangesMixin
+from .coord_sounds import SoundsMixin
 from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
 from .coord_tts import ReadAloudMixin
@@ -59,6 +60,7 @@ class TaskMateCoordinator(
     ReadAloudMixin,
     GuestsMixin,
     UnlocksMixin,
+    SoundsMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
