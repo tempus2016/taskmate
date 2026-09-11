@@ -145,7 +145,32 @@ function _refreshTaskMateCards() {
   }
 }
 
+const _DAY_KEYS = [
+  'weekly.day_mon', 'weekly.day_tue', 'weekly.day_wed', 'weekly.day_thu',
+  'weekly.day_fri', 'weekly.day_sat', 'weekly.day_sun',
+];
+
+/**
+ * Human summary of a reward's time lock (#857), e.g. "Fri, Sat · 18:00–21:00".
+ * Returns "" when nothing is restricted, so callers can skip the badge.
+ *
+ * @param {object} lock - { days: number[], from: string, until: string }
+ * @param {function} t - the caller's translate function (key, params) => string
+ */
+function timeLockLabel(lock, t) {
+  if (!lock) return '';
+  const days = (lock.days || []).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6).sort((a, b) => a - b);
+  const parts = [];
+  // All seven days selected is the same as no day restriction — don't spell it out.
+  if (days.length && days.length < 7) parts.push(days.map(d => t(_DAY_KEYS[d])).join(', '));
+  const from = lock.from || '';
+  const until = lock.until || '';
+  if (from && until && from !== until) parts.push(`${from}\u2013${until}`);
+  return parts.join(' \u00b7 ');
+}
+
 // Expose globally so cards can access without ES module imports
+window.__taskmate_time_lock_label = timeLockLabel;
 window.__taskmate_localize = localize;
 window.__taskmate_loadTranslations = loadTranslations;
 
