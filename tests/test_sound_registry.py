@@ -218,9 +218,13 @@ def test_async_remove_custom_sound_rejects_unknown(tmp_path):
     raise AssertionError("removed a sound that was never registered")
 
 
-def test_custom_sounds_state_shape(tmp_path):
+def test_custom_sounds_state_shape(tmp_path, monkeypatch):
     coord = _coord(tmp_path)
     run(coord.async_add_custom_sound(NAME, "Burp"))
+    # Pin the signer: under the real HA harness async_sign_path imports and runs
+    # for real, reaching into hass.data on our MagicMock. The URL signing itself
+    # is HA's business; what this test owns is the row shape.
+    monkeypatch.setattr("custom_components.taskmate.coord_sounds.sign_sound_url", lambda hass, url: url)
     state = coord.custom_sounds_state()
     assert len(state) == 1
     row = state[0]
