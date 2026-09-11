@@ -959,6 +959,22 @@ async def _ws_scheduled_remove(hass, connection, msg, coordinator):
 # Rewards
 # ---------------------------------------------------------------------------
 
+
+def _validate_hhmm_or_empty(value):
+    """voluptuous validator: '' (disabled) or a valid 'HH:MM' string."""
+    if value in (None, ""):
+        return ""
+    if not isinstance(value, str):
+        raise vol.Invalid("must be a string")
+    parts = value.split(":")
+    if len(parts) != 2 or not (parts[0].isdigit() and parts[1].isdigit()):
+        raise vol.Invalid("must be HH:MM")
+    hour, minute = int(parts[0]), int(parts[1])
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        raise vol.Invalid("HH:MM out of range")
+    return f"{hour:02d}:{minute:02d}"
+
+
 _REWARD_FIELDS = {
     "name",
     "cost",
@@ -974,6 +990,10 @@ _REWARD_FIELDS = {
     "restock_period",
     "unlock_entity",
     "unlock_minutes",
+    "time_lock_enabled",
+    "available_days",
+    "available_from",
+    "available_until",
 }
 
 
@@ -995,6 +1015,10 @@ def _reward_payload_schema(*, require_name: bool):
         vol.Optional("restock_period"): vol.In(["daily", "weekly", "monthly"]),
         vol.Optional("unlock_entity"): str,
         vol.Optional("unlock_minutes"): vol.All(int, vol.Range(min=0, max=1440)),
+        vol.Optional("time_lock_enabled"): bool,
+        vol.Optional("available_days"): [vol.All(int, vol.Range(min=0, max=6))],
+        vol.Optional("available_from"): _validate_hhmm_or_empty,
+        vol.Optional("available_until"): _validate_hhmm_or_empty,
     }
 
 
@@ -1035,6 +1059,10 @@ async def _ws_add_reward(hass, connection, msg, coordinator):
         restock_period=msg.get("restock_period", "weekly"),
         unlock_entity=unlock_entity,
         unlock_minutes=unlock_minutes,
+        time_lock_enabled=msg.get("time_lock_enabled", False),
+        available_days=sorted(set(msg.get("available_days", []) or [])),
+        available_from=msg.get("available_from", "") or "",
+        available_until=msg.get("available_until", "") or "",
     )
     coordinator.storage.add_reward(reward)
     await coordinator.storage.async_save()
@@ -1072,6 +1100,8 @@ async def _ws_update_reward(hass, connection, msg, coordinator):
                 value = value.strip()
             if field == "expires_at":
                 value = value or None
+            if field == "available_days":
+                value = sorted(set(value or []))
             if isinstance(value, list):
                 value = list(value)
             setattr(existing, field, value)
@@ -2330,21 +2360,6 @@ async def ws_notif_set_child_notify(hass, connection, msg, coordinator):
     await c.storage.async_save()
     await c.notifications.async_setup_schedules()
     connection.send_result(msg["id"], {"ok": True})
-
-
-def _validate_hhmm_or_empty(value):
-    """voluptuous validator: '' (disabled) or a valid 'HH:MM' string."""
-    if value in (None, ""):
-        return ""
-    if not isinstance(value, str):
-        raise vol.Invalid("must be a string")
-    parts = value.split(":")
-    if len(parts) != 2 or not (parts[0].isdigit() and parts[1].isdigit()):
-        raise vol.Invalid("must be HH:MM")
-    hour, minute = int(parts[0]), int(parts[1])
-    if not (0 <= hour <= 23 and 0 <= minute <= 59):
-        raise vol.Invalid("HH:MM out of range")
-    return f"{hour:02d}:{minute:02d}"
 
 
 @websocket_api.websocket_command(
