@@ -3,17 +3,39 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
 
 from .models import PointsTransaction, PoolAllocation, Reward, RewardClaim
+from .timewindow import has_window, is_within_window
 
 if TYPE_CHECKING:
     pass
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def reward_is_time_locked(reward: Reward, now: datetime | None = None) -> bool:
+    """True if a time-locked reward is currently outside its allowed window (#857).
+
+    The lock has two independent parts, both optional: a set of weekdays and
+    a time-of-day window. Whatever is configured must pass. An empty day list
+    means every day; an unusable time window (blank, malformed, or equal
+    bounds) means any time. The weekday is read from the local day `now`
+    falls on, so an overnight window on a day-restricted reward only covers
+    the part of it before midnight.
+    """
+    if not getattr(reward, "time_lock_enabled", False):
+        return False
+    moment = now or dt_util.now()
+    days = getattr(reward, "available_days", None) or []
+    if days and moment.weekday() not in days:
+        return True
+    start = getattr(reward, "available_from", "") or ""
+    end = getattr(reward, "available_until", "") or ""
+    return has_window(start, end) and not is_within_window(start, end, moment)
 
 
 class RewardsMixin:
@@ -123,9 +145,17 @@ class RewardsMixin:
             return False
         return deadline <= dt_util.now().date()
 
+    # Module-level so sensor.py can reuse the same rule when building state.
+    _reward_is_time_locked = staticmethod(reward_is_time_locked)
+
     @classmethod
     def _reward_is_unavailable(cls, reward: Reward) -> bool:
-        """True if the reward cannot currently be claimed or allocated to."""
+        """True if the reward is permanently out of reach — sold out or expired.
+
+        Deliberately excludes the time lock: this predicate drives pool refunds,
+        and a time lock is temporary, so folding it in would refund every saver's
+        points the moment a window closed.
+        """
         return cls._reward_is_sold_out(reward) or cls._reward_is_expired(reward)
 
     def _refund_all_pool_allocations(self, reward: Reward, reason: str) -> None:
@@ -226,6 +256,8 @@ class RewardsMixin:
             raise ValueError(f"Reward '{reward.name}' is sold out")
         if self._reward_is_expired(reward):
             raise ValueError(f"Reward '{reward.name}' has expired")
+        if self._reward_is_time_locked(reward):
+            raise ValueError(f"Reward '{reward.name}' is not available right now")
 
         # Cost is always static
         effective_cost = reward.cost

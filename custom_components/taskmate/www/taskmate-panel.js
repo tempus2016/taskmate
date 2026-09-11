@@ -616,6 +616,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "delete-reward") { this._confirmDelete("reward", t.dataset.id); return; }
     if (act === "save-reward")   { this._doSaveReward(); return; }
     if (act === "toggle-reward-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
+    if (act === "toggle-reward-day") { this._toggleArrayField("available_days", Number(t.dataset.day)); return; }
 
     // Quests (chore chains)
     if (act === "add-quest")    { this._openQuestDialog(null); return; }
@@ -1724,7 +1725,8 @@ class TaskMatePanel extends HTMLElement {
       assigned_to: [], is_jackpot: false, pool_enabled: false,
       quantity_str: "", expires_at: "",
       restock_enabled: false, restock_amount: 0, restock_period: "weekly",
-      unlock_entity: "", unlock_minutes: 30 };
+      unlock_entity: "", unlock_minutes: 30,
+      time_lock_enabled: false, available_days: [], available_from: "", available_until: "" };
     if (id) {
       const r = (this._state.rewards || []).find(x => x.id === id);
       if (!r) return;
@@ -1733,6 +1735,7 @@ class TaskMatePanel extends HTMLElement {
         assigned_to: [...(r.assigned_to || [])],
         quantity_str: r.quantity == null ? "" : String(r.quantity),
         expires_at: r.expires_at || "",
+        available_days: (r.available_days || []).map(Number),
       } });
     } else {
       this._openDialog({ kind: "reward", mode: "add", data: blank });
@@ -1760,6 +1763,10 @@ class TaskMatePanel extends HTMLElement {
       unlock_minutes: Math.max(0, Number(d.unlock_minutes) || 0),
       restock_amount: Math.max(0, Number(d.restock_amount) || 0),
       restock_period: d.restock_period || "weekly",
+      time_lock_enabled: !!d.time_lock_enabled,
+      available_days: (d.available_days || []).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6),
+      available_from: d.available_from || "",
+      available_until: d.available_until || "",
     };
     const payload = wasAdd ? { type: "taskmate/add_reward", ...base } : { type: "taskmate/update_reward", reward_id: d.id, ...base };
     const { ok, err } = await this._callWS(payload);
@@ -3501,6 +3508,18 @@ class TaskMatePanel extends HTMLElement {
     `;
   }
 
+  /** Reward-list pill summarising a time lock (#857), or "" when unrestricted. */
+  _rewardTimeLockPill(r) {
+    if (!r.time_lock_enabled) return "";
+    const summary = window.__taskmate_time_lock_label
+      ? window.__taskmate_time_lock_label(
+          { days: r.available_days, from: r.available_from, until: r.available_until },
+          (k, pr) => this._t(k, pr))
+      : "";
+    const label = summary || this._t("panel.reward_timelock_badge");
+    return `<span class="tm-pill tm-pill-timelock">${this._mdi("mdi:clock-outline")} ${this._esc(label)}</span>`;
+  }
+
   _renderRewardCard(r, pointsName) {
     const totalPooled = (this._state.pool_allocations || []).filter(a => a.reward_id === r.id).reduce((s, a) => s + (a.allocated_points || 0), 0);
     const showProgress = (r.pool_enabled || r.is_jackpot) && r.cost > 0;
@@ -3510,7 +3529,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-child-head">
           <div class="tm-avatar tm-avatar-reward">${this._mdi(r.icon || "mdi:gift")}</div>
           <div class="tm-child-name">
-            <h3>${this._esc(r.name)} ${r.is_jackpot ? `<span class="tm-pill tm-pill-jackpot">🏆 ${this._t("panel.reward_badge_jackpot")}</span>` : ""} ${r.pool_enabled ? `<span class="tm-pill tm-pill-pool">${this._t("panel.reward_badge_pool")}</span>` : ""}</h3>
+            <h3>${this._esc(r.name)} ${r.is_jackpot ? `<span class="tm-pill tm-pill-jackpot">🏆 ${this._t("panel.reward_badge_jackpot")}</span>` : ""} ${r.pool_enabled ? `<span class="tm-pill tm-pill-pool">${this._t("panel.reward_badge_pool")}</span>` : ""} ${this._rewardTimeLockPill(r)}</h3>
             ${this._idBadge(r.id)}
             <div class="tm-meta">${this._esc(r.description || "")}</div>
           </div>
@@ -5746,11 +5765,48 @@ class TaskMatePanel extends HTMLElement {
             { v: "monthly", l: this._t("panel.reward_restock_monthly") },
           ])}
         </div>`,
+        this._renderRewardTimeLock(d),
         this._renderRewardUnlock(d),
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-reward">${this._t("panel.btn_save")}</button>`
     );
+  }
+
+  /**
+   * Time lock (#857). Restricts *claiming* to certain weekdays and/or a
+   * time-of-day window — the reward stays visible the rest of the time, greyed
+   * out with a "when it's available" badge, and saving points into a pool
+   * reward is never blocked.
+   */
+  _renderRewardTimeLock(d) {
+    const open = this._dialog._openAdvanced?.has("timelock") || !!d.time_lock_enabled;
+    const days = (d.available_days || []).map(Number);
+    return `<details class="tm-advanced" data-section="timelock"${open ? " open" : ""}>
+      <summary>${this._t("panel.reward_timelock_section")}</summary>
+      <div>
+        ${this._switch(this._t("panel.reward_timelock_label"), "time_lock_enabled", d.time_lock_enabled,
+          this._t("panel.reward_timelock_hint"), true)}
+        ${d.time_lock_enabled ? `
+          <div class="tm-field">
+            <span class="tm-field-label">${this._t("panel.reward_timelock_days_label")}</span>
+            <div class="tm-chip-row">
+              ${DAYS.map((day, i) => `
+                <button type="button" class="tm-chip-btn ${days.includes(i) ? "tm-chip-on" : ""}" data-act="toggle-reward-day" data-day="${i}">
+                  ${this._t(day.lk)}
+                </button>
+              `).join("")}
+            </div>
+            <span class="tm-field-hint">${this._t("panel.reward_timelock_days_hint")}</span>
+          </div>
+          <div class="tm-field-row">
+            ${this._timeField(this._t("panel.reward_timelock_from_label"), "available_from", d.available_from)}
+            ${this._timeField(this._t("panel.reward_timelock_until_label"), "available_until", d.available_until)}
+          </div>
+          <span class="tm-field-hint">${this._t("panel.reward_timelock_times_hint")}</span>
+        ` : ""}
+      </div>
+    </details>`;
   }
 
   /**
@@ -6084,6 +6140,20 @@ class TaskMatePanel extends HTMLElement {
           data-field="${name}"
           value="${this._esc(value || "")}"
           type="date"
+        >
+        ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
+      </div>`;
+  }
+
+  _timeField(label, name, value, hint = "") {
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._esc(label)}</span>
+        <input
+          class="tm-input"
+          data-field="${name}"
+          value="${this._esc(value || "")}"
+          type="time"
         >
         ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
       </div>`;
@@ -7122,6 +7192,8 @@ class TaskMatePanel extends HTMLElement {
       .tm-pill-pool    { background: var(--tm-pool-soft);     color: var(--tm-pool);        border-color: color-mix(in srgb, var(--tm-pool), transparent 75%); }
       .tm-pill-sticky  { background: var(--tm-sticky-soft);   color: var(--tm-sticky);      border-color: color-mix(in srgb, var(--tm-sticky), transparent 75%); }
       .tm-pill-spread  { background: var(--tm-positive-soft); color: var(--tm-positive);    border-color: var(--tm-positive-border); }
+      .tm-pill-timelock { background: var(--tm-accent-soft); color: var(--tm-accent-text); border-color: var(--tm-accent-border); }
+      .tm-pill-timelock ha-icon { --mdc-icon-size: 13px; vertical-align: -2px; }
       .tm-pill-jackpot { background: var(--tm-gold-soft);     color: var(--tm-gold);        border-color: color-mix(in srgb, var(--tm-gold), transparent 75%); }
       .tm-pill-muted   { background: var(--tm-surface-2);     color: var(--tm-text-muted);  border-color: var(--tm-border); }
       .tm-quest-inactive { opacity: 0.6; }

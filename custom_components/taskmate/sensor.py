@@ -18,6 +18,7 @@ from homeassistant.util import dt as dt_util
 
 from . import images
 from .const import DOMAIN
+from .coord_rewards import reward_is_time_locked
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
 from .models import Child
@@ -453,7 +454,8 @@ def _build_rewards_list(common: dict) -> list[dict]:
     children = common["children"]
     pool_by_child_reward = common["pool_by_child_reward"]
     pool_total_by_reward = common["pool_total_by_reward"]
-    today = dt_util.now().date()
+    now = dt_util.now()
+    today = now.date()
     out = []
     for r in rewards:
         assigned = r.assigned_to if isinstance(r.assigned_to, list) and r.assigned_to else [c.id for c in children]
@@ -472,6 +474,7 @@ def _build_rewards_list(common: dict) -> list[dict]:
                 days_until_expiry = (deadline - today).days
             except (TypeError, ValueError):
                 pass
+        is_time_locked = reward_is_time_locked(r, now)
         out.append(
             {
                 "id": r.id,
@@ -489,10 +492,21 @@ def _build_rewards_list(common: dict) -> list[dict]:
                 "expires_at": expires_at,
                 "is_sold_out": is_sold_out,
                 "is_expired": is_expired,
-                "is_available": not (is_sold_out or is_expired),
+                "is_available": not (is_sold_out or is_expired or is_time_locked),
                 "days_until_expiry": days_until_expiry,
             }
         )
+        # Time lock (#857): only carried for rewards that actually use it. This
+        # attribute slice is capped at the recorder's 16 KB limit, so unused
+        # feature fields must not cost every reward bytes.
+        if getattr(r, "time_lock_enabled", False):
+            out[-1]["time_lock"] = {
+                "days": list(getattr(r, "available_days", []) or []),
+                "from": getattr(r, "available_from", "") or "",
+                "until": getattr(r, "available_until", "") or "",
+            }
+            if is_time_locked:
+                out[-1]["is_time_locked"] = True
     return out
 
 

@@ -587,6 +587,12 @@ class TaskMateRewardsCard extends LitElement {
         background: rgba(231,76,60,0.15);
         color: #c0392b;
       }
+      .availability-badge.badge-time-locked {
+        gap: 3px;
+        background: rgba(52,152,219,0.16);
+        color: #2471a3;
+      }
+      .availability-badge.badge-time-locked ha-icon { --mdc-icon-size: 13px; }
       .availability-badge.badge-expiring-soon {
         background: rgba(243,156,18,0.18);
         color: #d35400;
@@ -1393,10 +1399,12 @@ class TaskMateRewardsCard extends LitElement {
     const isLoading = this._loading[reward.id];
     const isAllocLoading = this._loading[`${reward.id}_alloc`];
 
-    // Availability (quantity / expiration)
+    // Availability (quantity / expiration / time lock)
     const isSoldOut = reward.is_sold_out === true;
     const isExpired = reward.is_expired === true;
     const isUnavailable = isSoldOut || isExpired;
+    const isTimeLocked = reward.is_time_locked === true;
+    const canClaimNow = !isUnavailable && !isTimeLocked;
     const daysUntilExpiry = (typeof reward.days_until_expiry === 'number')
       ? reward.days_until_expiry
       : null;
@@ -1407,7 +1415,7 @@ class TaskMateRewardsCard extends LitElement {
     const showPoolControls = enablePoolMode && childId && !hasPendingClaim && !isUnavailable;
 
     return html`
-      <div class="reward-row ${isJackpot ? 'jackpot' : ''} ${hasPendingClaim ? 'pending-approval' : ''} ${enablePoolMode ? 'pool-mode' : ''} ${isUnavailable ? 'unavailable' : ''}">
+      <div class="reward-row ${isJackpot ? 'jackpot' : ''} ${hasPendingClaim ? 'pending-approval' : ''} ${enablePoolMode ? 'pool-mode' : ''} ${isUnavailable || isTimeLocked ? 'unavailable' : ''}">
         <div class="cost-badge">
           <ha-icon icon="${pointsIcon}"></ha-icon>
           <span class="cost-value">${displayCost}</span>
@@ -1450,7 +1458,7 @@ class TaskMateRewardsCard extends LitElement {
             : ""}
         </div>
         <div class="reward-right-col">
-          ${!enablePoolMode && !hasPendingClaim && childId && !isUnavailable ? html`
+          ${!enablePoolMode && !hasPendingClaim && childId && canClaimNow ? html`
             <button
               class="claim-btn ${!canAfford ? 'cant-afford' : ''}"
               ?disabled="${!canAfford || isLoading}"
@@ -1460,7 +1468,7 @@ class TaskMateRewardsCard extends LitElement {
               <ha-icon icon="${isLoading ? 'mdi:loading' : rewardIcon}"></ha-icon>
             </button>
           ` : html`
-            <div class="reward-icon-container" title="${isUnavailable ? this._t('rewards.unavailable_hint') : ''}">
+            <div class="reward-icon-container" title="${isTimeLocked ? this._timeLockLabel(reward) : (isUnavailable ? this._t('rewards.unavailable_hint') : '')}">
               <ha-icon icon="${rewardIcon}"></ha-icon>
             </div>
           `}
@@ -1469,12 +1477,25 @@ class TaskMateRewardsCard extends LitElement {
     `;
   }
 
+  /** "Available Fri, Sat · 18:00–21:00" for a time-locked reward (#857). */
+  _timeLockLabel(reward) {
+    const summary = window.__taskmate_time_lock_label
+      ? window.__taskmate_time_lock_label(reward.time_lock, (k, pr) => this._t(k, pr))
+      : '';
+    return summary ? this._t('rewards.available_when', { window: summary }) : this._t('rewards.locked_now');
+  }
+
   _renderAvailabilityBadge(reward, isSoldOut, isExpired, daysUntilExpiry) {
     if (isExpired) {
       return html`<div class="availability-badge badge-expired">${this._t('rewards.expired')}</div>`;
     }
     if (isSoldOut) {
       return html`<div class="availability-badge badge-sold-out">${this._t('rewards.sold_out')}</div>`;
+    }
+    if (reward.is_time_locked === true) {
+      return html`<div class="availability-badge badge-time-locked">
+        <ha-icon icon="mdi:clock-outline"></ha-icon>${this._timeLockLabel(reward)}
+      </div>`;
     }
     const badges = [];
     if (typeof reward.quantity === 'number' && reward.quantity > 0 && reward.quantity <= 3) {
@@ -1872,14 +1893,17 @@ class TaskMateRewardsCard extends LitElement {
     const isSoldOut = reward.is_sold_out === true;
     const isExpired = reward.is_expired === true;
     const isUnavailable = isSoldOut || isExpired;
+    // Time lock (#857) is temporary: it blocks claiming and greys the reward,
+    // but leaves pool allocation alone — saving up is not spending.
+    const isTimeLocked = reward.is_time_locked === true;
     const daysUntilExpiry = (typeof reward.days_until_expiry === 'number')
       ? reward.days_until_expiry : null;
 
     return {
       reward, isJackpot, enablePoolMode, displayCost, relevantChildren, relevantChild,
       childId, currentStars, childContributions, percentage, hasPendingClaim,
-      spendable, poolFull, canAfford, isSoldOut, isExpired, isUnavailable, daysUntilExpiry,
-      showClaim: !enablePoolMode && !hasPendingClaim && childId && !isUnavailable,
+      spendable, poolFull, canAfford, isSoldOut, isExpired, isUnavailable, isTimeLocked, daysUntilExpiry,
+      showClaim: !enablePoolMode && !hasPendingClaim && childId && !isUnavailable && !isTimeLocked,
       showPoolControls: enablePoolMode && childId && !hasPendingClaim && !isUnavailable,
     };
   }
@@ -1888,6 +1912,7 @@ class TaskMateRewardsCard extends LitElement {
   _designAvail(d) {
     if (d.isExpired) return { label: this._t('rewards.expired'), tone: 'muted' };
     if (d.isSoldOut) return { label: this._t('rewards.sold_out'), tone: 'muted' };
+    if (d.isTimeLocked) return { label: this._timeLockLabel(d.reward), tone: 'muted' };
     if (typeof d.reward.quantity === 'number' && d.reward.quantity > 0 && d.reward.quantity <= 3) {
       return { label: this._t('rewards.only_n_left', { count: d.reward.quantity }), tone: 'bad' };
     }
@@ -2049,7 +2074,7 @@ class TaskMateRewardsCard extends LitElement {
         : html`<span class="muted rw-status">${d.currentStars} / ${d.displayCost}</span>`;
 
     return html`
-      <div class="rw-card ${d.isJackpot ? 'rw-jackpot' : ''} ${d.isUnavailable ? 'rw-unavail' : ''}"
+      <div class="rw-card ${d.isJackpot ? 'rw-jackpot' : ''} ${d.isUnavailable || d.isTimeLocked ? 'rw-unavail' : ''}"
            style="--ac:${tone}">
         <div class="row rw-top">
           <span class="rw-emoji">${emoji}</span>
