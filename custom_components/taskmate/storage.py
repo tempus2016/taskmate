@@ -19,6 +19,7 @@ from .models import (
     Chore,
     ChoreCompletion,
     CustomNotification,
+    CustomSound,
     MandatoryMiss,
     NotificationConfig,
     NotificationRoute,
@@ -116,6 +117,10 @@ class TaskMateStorage:
         # Ensure chore_display_order store exists (global admin ordering)
         if "chore_display_order" not in self._data:
             self._data["chore_display_order"] = []
+
+        # Ensure custom_sounds store exists (migration for custom sounds, #856)
+        if "custom_sounds" not in self._data:
+            self._data["custom_sounds"] = []
 
         # Ensure scheduled_changes store exists (#675)
         if "scheduled_changes" not in self._data:
@@ -557,6 +562,48 @@ class TaskMateStorage:
     def remove_bonus(self, bonus_id: str) -> None:
         """Remove a bonus."""
         self._data["bonuses"] = [b for b in self._data.get("bonuses", []) if b.get("id") != bonus_id]
+
+    # Custom sounds management (#856)
+    def get_custom_sounds(self) -> list[CustomSound]:
+        """Get all uploaded custom completion sounds."""
+        return [CustomSound.from_dict(s) for s in self._data.get("custom_sounds", [])]
+
+    def get_custom_sound(self, file: str) -> CustomSound | None:
+        """Get a custom sound by its stored filename."""
+        for s in self._data.get("custom_sounds", []):
+            if s.get("file") == file:
+                return CustomSound.from_dict(s)
+        return None
+
+    def add_custom_sound(self, sound: CustomSound) -> None:
+        """Register an uploaded custom sound."""
+        self._data.setdefault("custom_sounds", []).append(sound.to_dict())
+
+    def rename_custom_sound(self, file: str, name: str) -> bool:
+        """Rename a custom sound. Returns False if it isn't registered."""
+        for s in self._data.get("custom_sounds", []):
+            if s.get("file") == file:
+                s["name"] = name
+                return True
+        return False
+
+    def remove_custom_sound(self, file: str) -> None:
+        """Deregister a custom sound (the file itself is deleted by the caller)."""
+        self._data["custom_sounds"] = [s for s in self._data.get("custom_sounds", []) if s.get("file") != file]
+
+    def reset_chores_using_sound(self, sound_value: str, fallback: str = "coin") -> int:
+        """Point any chore using ``sound_value`` back at ``fallback``.
+
+        Called when a custom sound is deleted. Without this the chore keeps a
+        dangling ``custom:`` reference and silently plays nothing on completion.
+        Returns the number of chores rewritten.
+        """
+        changed = 0
+        for c in self._data.get("chores", []):
+            if c.get("completion_sound") == sound_value:
+                c["completion_sound"] = fallback
+                changed += 1
+        return changed
 
     # Badges management
     def get_badges(self) -> list[Badge]:

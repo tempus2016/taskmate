@@ -876,7 +876,11 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
 class TaskMateChoresSensor(_CachedAttrsSensor):
     """Chores catalog + today's completions."""
 
-    _unrecorded_attributes = frozenset({"chores", "todays_completions", "task_groups", "active_timed_sessions"})
+    # custom_sounds carries a freshly signed URL per sound, so it changes on every
+    # refresh — recording it would churn the DB for no history value (#856).
+    _unrecorded_attributes = frozenset(
+        {"chores", "todays_completions", "task_groups", "active_timed_sessions", "custom_sounds"}
+    )
 
     def __init__(
         self,
@@ -910,6 +914,8 @@ class TaskMateChoresSensor(_CachedAttrsSensor):
         return {
             "chores": _build_chores_list(self.coordinator, common),
             "todays_completions": _build_todays_completions(common),
+            # Lookup table for chores whose completion_sound is "custom:<file>" (#856).
+            "custom_sounds": self.coordinator.custom_sounds_state(),
             "task_groups": task_groups,
             "active_timed_sessions": _build_active_timed_sessions(self.coordinator),
             "vacation_active": active_vacation is not None,

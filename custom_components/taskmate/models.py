@@ -1283,3 +1283,34 @@ class CustomNotification:
             "recipient_ids": list(self.recipient_ids),
             "enabled": self.enabled,
         }
+
+
+@dataclass
+class CustomSound:
+    """A user-uploaded completion sound (#856).
+
+    ``file`` is the generated ``<32 hex>.<ext>`` name on disk under
+    ``<config>/taskmate_sounds``; it doubles as the sound's identity, so a
+    chore references this row as ``custom:<file>``. There is no separate id:
+    a second id would let the row and the file drift apart, and the filename
+    is already unique and immutable.
+    """
+
+    name: str
+    file: str
+    created_at: str = field(default_factory=dt_util_now_iso)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> CustomSound:
+        return cls(
+            name=data.get("name", ""),
+            file=data.get("file", ""),
+            created_at=data.get("created_at", "") or dt_util_now_iso(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "file": self.file,
+            "created_at": self.created_at,
+        }

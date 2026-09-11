@@ -27,6 +27,7 @@ CARDS: Final = [
     "taskmate-attr-resolver.js",
     "taskmate-localize.js",
     "taskmate-design.js",
+    "taskmate-sounds.js",
     "taskmate-badges-card.js",
     "taskmate-child-card.js",
     "taskmate-routine-card.js",
@@ -69,6 +70,9 @@ RETIRED_CARDS: Final = [
 # no-op: the module is keyed by URL (loaded once) and only assigns idempotent
 # window.__taskmate_localize globals.
 GLOBAL_MODULES: Final = [
+    # Order matters: the bridge and the panel both call window.__taskmate_sounds,
+    # so the engine must be defined first.
+    "taskmate-sounds.js",
     "taskmate-config-sounds.js",
     "taskmate-localize.js",
     # Like localize.js above, the admin panel (a panel_custom page, not a
@@ -127,6 +131,11 @@ async def async_register_frontend(hass: HomeAssistant) -> None:
     from .http_images import async_register_image_views
 
     async_register_image_views(hass)
+
+    # Admin-gated upload / authenticated serve for custom completion sounds (#856).
+    from .http_sounds import async_register_sound_views
+
+    async_register_sound_views(hass)
 
     # Token-gated ICS calendar feed (FEAT-10).
     from .http_calendar import async_register_calendar_view
