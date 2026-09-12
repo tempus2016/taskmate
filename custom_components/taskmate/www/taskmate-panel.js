@@ -2480,7 +2480,9 @@ class TaskMatePanel extends HTMLElement {
   _timeAgo(iso) {
     if (!iso) return "—";
     const then = new Date(iso);
-    if (isNaN(then)) return iso;
+    // Echoing an unparseable value straight back would put stored text into
+    // markup, so escape it — the panel builds its HTML as strings.
+    if (isNaN(then)) return this._esc(iso);
     const diffSec = Math.floor((Date.now() - then.getTime()) / 1000);
     if (diffSec < 60)         return this._t("panel.time_ago_just_now");
     if (diffSec < 3600)       return this._t("panel.time_ago_minutes", {count: Math.floor(diffSec / 60)});
@@ -2944,7 +2946,7 @@ class TaskMatePanel extends HTMLElement {
                 <td><strong>${this._t("panel.day_" + d.weekday.slice(0, 3))}</strong> <span class="tm-proj-date">${d.date.slice(5)}</span></td>
                 ${kids.map(k => {
                   const cell = d.children.find(c => c.id === k.id) || { points: 0, chores: 0 };
-                  return `<td>${cell.chores ? `${cell.points} <span class="tm-proj-count">(${cell.chores})</span>` : "—"}</td>`;
+                  return `<td>${cell.chores ? `${this._num(cell.points)} <span class="tm-proj-count">(${this._num(cell.chores)})</span>` : "—"}</td>`;
                 }).join("")}
               </tr>
             `).join("")}
@@ -3088,7 +3090,7 @@ class TaskMatePanel extends HTMLElement {
                 </div>
                 <div class="tm-fair-figs">
                   <strong>${c.completions}</strong> ${this._t(c.completions === 1 ? "panel.insights_chore" : "panel.insights_chores")}
-                  · ${c.points} ${this._esc(this._state.settings?.points_name || this._t("common.points"))}
+                  · ${this._num(c.points)} ${this._esc(this._state.settings?.points_name || this._t("common.points"))}
                   · ${c.share_completions}%
                 </div>
                 <div class="tm-fair-status tm-fair-${c.status}">${this._t("panel.insights_status_" + c.status)}</div>
@@ -3303,7 +3305,7 @@ class TaskMatePanel extends HTMLElement {
                   <div class="tm-approval-icon"><ha-icon icon="mdi:gift-outline"></ha-icon></div>
                   <div class="tm-approval-body">
                     <div class="tm-approval-line">${this._t("panel.activity_claimed_text", {child: this._esc((child && child.name) || "?"), reward: this._esc((reward && reward.name) || this._t("panel.activity_deleted_reward"))})}</div>
-                    <div class="tm-meta">${this._timeAgo(c.claimed_at)}${reward ? ` · ${reward.cost} ${this._t("panel.activity_points")}` : ""}</div>
+                    <div class="tm-meta">${this._timeAgo(c.claimed_at)}${reward ? ` · ${this._num(reward.cost)} ${this._t("panel.activity_points")}` : ""}</div>
                   </div>
                   <div class="tm-approval-actions">
                     <button type="button" class="tm-btn tm-btn-sm" data-act="reject-reward" data-id="${this._esc(c.id)}">${this._t("panel.activity_reject")}</button>
@@ -3346,7 +3348,7 @@ class TaskMatePanel extends HTMLElement {
                 <div class="tm-timeline-body">
                   <div><strong>${this._esc(ev.child)}</strong> · ${this._esc(ev.label)}</div>
                 </div>
-                <div class="tm-timeline-points ${ev.points >= 0 ? 'tm-pos' : 'tm-neg'} tm-numeric">${ev.points >= 0 ? '+' : ''}${ev.points || 0}</div>
+                <div class="tm-timeline-points ${ev.points >= 0 ? 'tm-pos' : 'tm-neg'} tm-numeric">${ev.points >= 0 ? '+' : ''}${this._num(ev.points)}</div>
               </div>
             `).join("")}
           </div>
@@ -3370,7 +3372,7 @@ class TaskMatePanel extends HTMLElement {
                     <tr class="tm-row">
                       <td class="tm-meta">${this._esc(this._timeAgo(t.created_at))}</td>
                       <td>${this._esc((child && child.name) || "?")}</td>
-                      <td><strong class="tm-numeric ${t.points >= 0 ? 'tm-pos' : 'tm-neg'}">${t.points >= 0 ? '+' : ''}${t.points}</strong></td>
+                      <td><strong class="tm-numeric ${t.points >= 0 ? 'tm-pos' : 'tm-neg'}">${t.points >= 0 ? '+' : ''}${this._num(t.points)}</strong></td>
                       <td>${this._esc(this._translateReason(t.reason) || "—")}</td>
                       <td>${undoable ? `<button type="button" class="tm-icon-btn" data-act="undo-tx" data-id="${this._esc(t.id)}" title="${this._esc(this._t("panel.activity_undo"))}"><ha-icon icon="mdi:undo-variant"></ha-icon></button>` : ""}</td>
                     </tr>
@@ -3477,7 +3479,7 @@ class TaskMatePanel extends HTMLElement {
             <button type="button" class="tm-icon-btn" data-act="toggle-row-menu" data-id="${this._esc(c.id)}" title="${this._t("panel.row_menu_more")}" aria-haspopup="menu" aria-label="${this._t("panel.row_menu_more")}">⋮</button>
           </span>`}
         </div></td>
-        <td><strong class="tm-numeric">${c.task_type === "timed" ? `${c.timed_rate_points || 0}/${c.timed_rate_minutes || 1} min` : c.points}</strong></td>
+        <td><strong class="tm-numeric">${c.task_type === "timed" ? `${this._num(c.timed_rate_points)}/${this._num(c.timed_rate_minutes, 1)} min` : this._num(c.points)}</strong></td>
         <td><span class="tm-pill">${this._esc(this._timeCategoryLabel(c.time_category))}</span></td>
         <td>${assignedNames} ${modeBadge}</td>
         <td>${currentName}</td>
@@ -3536,7 +3538,7 @@ class TaskMatePanel extends HTMLElement {
         </div>
         <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr ${r.expires_at ? "1fr" : ""};">
           <div class="tm-stat"><div class="tm-stat-value tm-numeric tm-cost">${this._fmtNum(r.cost)}</div><div class="tm-stat-label">${this._t("panel.reward_stat_cost", {points_name: pointsName})}</div></div>
-          ${r.quantity != null ? `<div class="tm-stat"><div class="tm-stat-value tm-numeric">${r.quantity}</div><div class="tm-stat-label">${this._t("panel.reward_stat_remaining")}</div></div>` : `<div class="tm-stat"><div class="tm-stat-value">∞</div><div class="tm-stat-label">${this._t("panel.reward_stat_unlimited")}</div></div>`}
+          ${r.quantity != null ? `<div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._num(r.quantity)}</div><div class="tm-stat-label">${this._t("panel.reward_stat_remaining")}</div></div>` : `<div class="tm-stat"><div class="tm-stat-value">∞</div><div class="tm-stat-label">${this._t("panel.reward_stat_unlimited")}</div></div>`}
           ${r.expires_at ? `<div class="tm-stat"><div class="tm-stat-value" style="font-size: 14px;">${this._esc(r.expires_at)}</div><div class="tm-stat-label">${this._t("panel.reward_stat_expires")}</div></div>` : ""}
         </div>
         ${showProgress ? `
@@ -3657,7 +3659,7 @@ class TaskMatePanel extends HTMLElement {
           </div>
         </div>
         <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr;">
-          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${c.target}</div><div class="tm-stat-label">${this._esc(metricLabel)}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._num(c.target)}</div><div class="tm-stat-label">${this._esc(metricLabel)}</div></div>
           <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(c.bonus_points || 0)}</div><div class="tm-stat-label">${this._t("panel.quest_stat_bonus", {points_name: pointsName})}</div></div>
         </div>
         <div class="tm-meta">${this._t("panel.quest_assigned_to")}: ${this._esc(assigned.join(", "))}</div>
@@ -3701,7 +3703,7 @@ class TaskMatePanel extends HTMLElement {
   _criteriaLabel(criteria, combinator = "AND") {
     if (!criteria || !criteria.length) return this._t("badge.manual_award_only");
     const joinKey = combinator === "OR" ? "badge.criteria_or" : "badge.criteria_and";
-    return criteria.map(c => `${this._t("badge.criteria_" + c.metric)} ${c.operator} ${c.value}`).join(` ${this._t(joinKey)} `);
+    return criteria.map(c => `${this._t("badge.criteria_" + c.metric)} ${this._esc(c.operator)} ${this._num(c.value)}`).join(` ${this._t(joinKey)} `);
   }
 
   _badgeName(b) {
@@ -3994,7 +3996,7 @@ class TaskMatePanel extends HTMLElement {
                     <select class="tm-select tm-badge-op-select" data-badge-criterion-field="operator" data-badge-criterion-idx="${idx}">
                       ${BADGE_OPERATORS.map(sym => { const v = BADGE_OP_VALUES[sym]; return `<option value="${v}"${(c.operator || ">=") === v ? " selected" : ""}>${sym}</option>`; }).join("")}
                     </select>`}
-                    ${isBool ? `<span class="tm-field-hint" style="flex:1">true</span>` : `<input class="tm-input" type="number" min="0" value="${c.value || 1}" data-badge-criterion-field="value" data-badge-criterion-idx="${idx}">`}
+                    ${isBool ? `<span class="tm-field-hint" style="flex:1">true</span>` : `<input class="tm-input" type="number" min="0" value="${this._num(c.value, 1)}" data-badge-criterion-field="value" data-badge-criterion-idx="${idx}">`}
                     <button type="button" class="tm-icon-btn" data-act="badge-remove-criterion" data-idx="${idx}" title="${this._t("panel.badge_remove_criterion_btn")}">✕</button>
                   </div>
                 `;
@@ -4059,7 +4061,7 @@ class TaskMatePanel extends HTMLElement {
                 return `
                   <tr class="tm-row">
                     <td><span class="tm-row-icon">${this._mdi(item.icon)}</span><strong>${this._esc(item.name)}</strong>${this._idBadge(item.id)}${item.description ? `<div class="tm-meta">${this._esc(item.description)}</div>` : ""}</td>
-                    <td><strong class="tm-numeric ${kind === "penalty" ? "tm-neg" : "tm-pos"}">${kind === "penalty" ? "−" : "+"}${item.points}</strong></td>
+                    <td><strong class="tm-numeric ${kind === "penalty" ? "tm-neg" : "tm-pos"}">${kind === "penalty" ? "−" : "+"}${this._num(item.points)}</strong></td>
                     <td>${assignedNames}</td>
                     <td class="tm-row-actions"><div>
                       <button type="button" class="tm-btn tm-btn-sm" data-act="apply-${kind}" data-id="${this._esc(item.id)}">${this._t("panel.btn_apply")}</button>
@@ -4244,7 +4246,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-tpl-preview-body">
             <div class="tm-field-row">
               <div class="tm-field"><span class="tm-field-label">${this._t("panel.common_name")}</span><input class="tm-input" type="text" data-tpl-field="name" data-tpl-idx="${idx}" value="${this._esc(chore.name)}"></div>
-              <div class="tm-field"><span class="tm-field-label">${this._t("panel.common_points")}</span><input class="tm-input" type="number" data-tpl-field="points" data-tpl-idx="${idx}" value="${chore.points || 0}" min="0"></div>
+              <div class="tm-field"><span class="tm-field-label">${this._t("panel.common_points")}</span><input class="tm-input" type="number" data-tpl-field="points" data-tpl-idx="${idx}" value="${this._num(chore.points)}" min="0"></div>
             </div>
             <div class="tm-field-row">
               <div class="tm-field"><span class="tm-field-label">${this._t("panel.chore_time_category_label")}</span>
@@ -4271,7 +4273,7 @@ class TaskMatePanel extends HTMLElement {
                 </select>
               </div>
               <div class="tm-field"><span class="tm-field-label">${this._t("panel.template_daily_limit_label")}</span>
-                <input class="tm-input" type="number" data-tpl-field="daily_limit" data-tpl-idx="${idx}" value="${chore.daily_limit || 1}" min="1">
+                <input class="tm-input" type="number" data-tpl-field="daily_limit" data-tpl-idx="${idx}" value="${this._num(chore.daily_limit, 1)}" min="1">
               </div>
             </div>
           </div>
@@ -4571,7 +4573,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-section-body">
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_retention_label")}<small>${this._t("panel.settings_retention_hint")}</small></div>
-              <input type="number" class="tm-input" min="30" max="365" data-setting="history_days" value="${s.history_days || 90}">
+              <input type="number" class="tm-input" min="30" max="365" data-setting="history_days" value="${this._num(s.history_days, 90)}">
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_streak_reset_label")}<small>${this._t("panel.settings_streak_reset_hint")}</small></div>
@@ -4585,19 +4587,19 @@ class TaskMatePanel extends HTMLElement {
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_weekend_multiplier_label")}<small>${this._t("panel.settings_weekend_multiplier_hint")}</small></div>
-              <input type="number" class="tm-input" step="0.1" min="1" max="5" data-setting="weekend_multiplier" value="${s.weekend_multiplier || 1.0}">
+              <input type="number" class="tm-input" step="0.1" min="1" max="5" data-setting="weekend_multiplier" value="${this._num(s.weekend_multiplier, 1.0)}">
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_difficulty_multipliers_label")}<small>${this._t("panel.settings_difficulty_multipliers_hint")}</small></div>
               <div class="tm-difficulty-mults">
-                <label>${this._t("panel.difficulty_easy")}<input type="number" class="tm-input" step="0.1" min="0" max="10" data-setting="difficulty_multiplier_easy" value="${s.difficulty_multiplier_easy ?? 0.5}"></label>
-                <label>${this._t("panel.difficulty_medium")}<input type="number" class="tm-input" step="0.1" min="0" max="10" data-setting="difficulty_multiplier_medium" value="${s.difficulty_multiplier_medium ?? 1.0}"></label>
-                <label>${this._t("panel.difficulty_hard")}<input type="number" class="tm-input" step="0.1" min="0" max="10" data-setting="difficulty_multiplier_hard" value="${s.difficulty_multiplier_hard ?? 2.0}"></label>
+                <label>${this._t("panel.difficulty_easy")}<input type="number" class="tm-input" step="0.1" min="0" max="10" data-setting="difficulty_multiplier_easy" value="${this._num(s.difficulty_multiplier_easy, 0.5)}"></label>
+                <label>${this._t("panel.difficulty_medium")}<input type="number" class="tm-input" step="0.1" min="0" max="10" data-setting="difficulty_multiplier_medium" value="${this._num(s.difficulty_multiplier_medium, 1.0)}"></label>
+                <label>${this._t("panel.difficulty_hard")}<input type="number" class="tm-input" step="0.1" min="0" max="10" data-setting="difficulty_multiplier_hard" value="${this._num(s.difficulty_multiplier_hard, 2.0)}"></label>
               </div>
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_calendar_projection_label")}<small>${this._t("panel.settings_calendar_projection_hint")}</small></div>
-              <input type="number" class="tm-input" min="1" max="90" data-setting="calendar_projection_days" value="${s.calendar_projection_days || 14}">
+              <input type="number" class="tm-input" min="1" max="90" data-setting="calendar_projection_days" value="${this._num(s.calendar_projection_days, 14)}">
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_surprise_enabled_label")}<small>${this._t("panel.settings_surprise_enabled_hint")}</small></div>
@@ -4606,9 +4608,9 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_surprise_params_label")}<small>${this._t("panel.settings_surprise_params_hint")}</small></div>
               <div class="tm-difficulty-mults">
-                <label>${this._t("panel.settings_surprise_chance")}<input type="number" class="tm-input" step="1" min="0" max="100" data-setting="surprise_bonus_chance" value="${s.surprise_bonus_chance ?? 15}"></label>
-                <label>${this._t("panel.settings_surprise_min")}<input type="number" class="tm-input" step="1" min="0" data-setting="surprise_bonus_min" value="${s.surprise_bonus_min ?? 5}"></label>
-                <label>${this._t("panel.settings_surprise_max")}<input type="number" class="tm-input" step="1" min="0" data-setting="surprise_bonus_max" value="${s.surprise_bonus_max ?? 20}"></label>
+                <label>${this._t("panel.settings_surprise_chance")}<input type="number" class="tm-input" step="1" min="0" max="100" data-setting="surprise_bonus_chance" value="${this._num(s.surprise_bonus_chance, 15)}"></label>
+                <label>${this._t("panel.settings_surprise_min")}<input type="number" class="tm-input" step="1" min="0" data-setting="surprise_bonus_min" value="${this._num(s.surprise_bonus_min, 5)}"></label>
+                <label>${this._t("panel.settings_surprise_max")}<input type="number" class="tm-input" step="1" min="0" data-setting="surprise_bonus_max" value="${this._num(s.surprise_bonus_max, 20)}"></label>
               </div>
             </div>
             <div class="tm-setting-row tm-setting-stack">
@@ -4634,8 +4636,8 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_roulette_section")}</div>
               <div class="tm-difficulty-mults">
-                <label>${this._t("panel.settings_roulette_multiplier")}<input type="number" class="tm-input" step="0.5" min="1" max="5" data-setting="roulette_multiplier" value="${s.roulette_multiplier ?? 2}"></label>
-                <label>${this._t("panel.settings_roulette_spins")}<input type="number" class="tm-input" step="1" min="1" max="10" data-setting="roulette_daily_spins" value="${s.roulette_daily_spins ?? 1}"></label>
+                <label>${this._t("panel.settings_roulette_multiplier")}<input type="number" class="tm-input" step="0.5" min="1" max="5" data-setting="roulette_multiplier" value="${this._num(s.roulette_multiplier, 2)}"></label>
+                <label>${this._t("panel.settings_roulette_spins")}<input type="number" class="tm-input" step="1" min="1" max="10" data-setting="roulette_daily_spins" value="${this._num(s.roulette_daily_spins, 1)}"></label>
               </div>
             </div>
             <div class="tm-setting-row">
@@ -4645,7 +4647,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_decay_params_label")}<small>${this._t("panel.settings_decay_params_hint")}</small></div>
               <div class="tm-difficulty-mults">
-                <label>${this._t("panel.settings_decay_percent")}<input type="number" class="tm-input" step="1" min="0" max="100" data-setting="points_decay_percent" value="${s.points_decay_percent ?? 10}"></label>
+                <label>${this._t("panel.settings_decay_percent")}<input type="number" class="tm-input" step="1" min="0" max="100" data-setting="points_decay_percent" value="${this._num(s.points_decay_percent, 10)}"></label>
                 <label>${this._t("panel.settings_decay_period")}
                   <select class="tm-select" data-setting="points_decay_period">
                     <option value="weekly" ${s.points_decay_period === "weekly" ? "selected" : ""}>${this._t("panel.reward_restock_weekly")}</option>
@@ -4660,7 +4662,7 @@ class TaskMatePanel extends HTMLElement {
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_level_step_label")}<small>${this._t("panel.settings_level_step_hint")}</small></div>
-              <input type="number" class="tm-input" min="1" data-setting="level_xp_step" value="${s.level_xp_step || 100}">
+              <input type="number" class="tm-input" min="1" data-setting="level_xp_step" value="${this._num(s.level_xp_step, 100)}">
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_spendcap_enabled_label")}<small>${this._t("panel.settings_spendcap_enabled_hint")}</small></div>
@@ -4669,7 +4671,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_spendcap_params_label")}<small>${this._t("panel.settings_spendcap_params_hint")}</small></div>
               <div class="tm-difficulty-mults">
-                <label>${this._t("panel.settings_spendcap_amount")}<input type="number" class="tm-input" step="1" min="0" data-setting="spend_cap_amount" value="${s.spend_cap_amount ?? 0}"></label>
+                <label>${this._t("panel.settings_spendcap_amount")}<input type="number" class="tm-input" step="1" min="0" data-setting="spend_cap_amount" value="${this._num(s.spend_cap_amount, 0)}"></label>
                 <label>${this._t("panel.settings_decay_period")}
                   <select class="tm-select" data-setting="spend_cap_period">
                     <option value="weekly" ${s.spend_cap_period === "weekly" ? "selected" : ""}>${this._t("panel.reward_restock_weekly")}</option>
@@ -4685,7 +4687,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_interest_params_label")}<small>${this._t("panel.settings_interest_params_hint")}</small></div>
               <div class="tm-difficulty-mults">
-                <label>${this._t("panel.settings_interest_percent")}<input type="number" class="tm-input" step="1" min="0" max="100" data-setting="interest_percent" value="${s.interest_percent ?? 5}"></label>
+                <label>${this._t("panel.settings_interest_percent")}<input type="number" class="tm-input" step="1" min="0" max="100" data-setting="interest_percent" value="${this._num(s.interest_percent, 5)}"></label>
                 <label>${this._t("panel.settings_decay_period")}
                   <select class="tm-select" data-setting="interest_period">
                     <option value="weekly" ${(s.interest_period || "weekly") === "weekly" ? "selected" : ""}>${this._t("panel.reward_restock_weekly")}</option>
@@ -4718,7 +4720,7 @@ class TaskMatePanel extends HTMLElement {
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_perfect_week_bonus_label")}<small>${this._t("panel.settings_perfect_week_bonus_hint")}</small></div>
-              <input type="number" class="tm-input" min="0" data-setting="perfect_week_bonus" value="${s.perfect_week_bonus || 50}">
+              <input type="number" class="tm-input" min="0" data-setting="perfect_week_bonus" value="${this._num(s.perfect_week_bonus, 50)}">
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_celebration_notify_label")}<small>${this._t("panel.settings_celebration_notify_hint")}</small></div>
@@ -4832,7 +4834,7 @@ class TaskMatePanel extends HTMLElement {
                   <tr>
                     <td>${this._esc((p.date || "").slice(0, 10))}</td>
                     <td>${this._esc(p.child_name || "")}</td>
-                    <td style="text-align:right">${p.points} → ${this._esc(p.currency || "")}${this._esc(String(p.amount))}</td>
+                    <td style="text-align:right">${this._num(p.points)} → ${this._esc(p.currency || "")}${this._esc(String(p.amount))}</td>
                   </tr>
                 `).join("")}
               </tbody></table></div>
@@ -5289,7 +5291,7 @@ class TaskMatePanel extends HTMLElement {
                 <div style="padding:0 14px 12px;border-top:1px solid var(--tm-border-soft)">
                   <div class="tm-field-row" style="margin-top:10px">
                     <div class="tm-field"><span class="tm-field-label">${this._t("panel.common_name")}</span><input class="tm-input" type="text" data-tpl-dialog-field="name" data-tpl-dialog-idx="${i}" value="${this._esc(c.name)}"></div>
-                    <div class="tm-field"><span class="tm-field-label">${this._t("panel.common_points")}</span><input class="tm-input" type="number" data-tpl-dialog-field="points" data-tpl-dialog-idx="${i}" value="${c.points || 0}" min="0"></div>
+                    <div class="tm-field"><span class="tm-field-label">${this._t("panel.common_points")}</span><input class="tm-input" type="number" data-tpl-dialog-field="points" data-tpl-dialog-idx="${i}" value="${this._num(c.points)}" min="0"></div>
                   </div>
                   <div class="tm-field-row">
                     <div class="tm-field"><span class="tm-field-label">${this._t("panel.chore_time_category_label")}</span>
@@ -5473,7 +5475,7 @@ class TaskMatePanel extends HTMLElement {
             ${(d.bonus_subtasks || []).map((b, idx) => `
               <div class="tm-field-row" style="align-items:flex-end;gap:6px;margin-bottom:6px">
                 <div class="tm-field" style="flex:2;margin:0"><input class="tm-input" placeholder="${this._t("panel.chore_subtask_name_placeholder")}" value="${this._esc(b.name)}" data-field="bonus_subtasks[${idx}].name"></div>
-                <div class="tm-field" style="flex:0 0 70px;margin:0"><input class="tm-input" type="number" min="0" placeholder="${this._t("panel.chore_subtask_points_placeholder")}" value="${b.points}" data-field="bonus_subtasks[${idx}].points"></div>
+                <div class="tm-field" style="flex:0 0 70px;margin:0"><input class="tm-input" type="number" min="0" placeholder="${this._t("panel.chore_subtask_points_placeholder")}" value="${this._num(b.points)}" data-field="bonus_subtasks[${idx}].points"></div>
                 <button type="button" class="tm-btn tm-btn-icon" data-act="remove-bonus-subtask" data-idx="${idx}" title="${this._t("panel.tooltip_remove")}" style="padding:6px 10px">✕</button>
               </div>
             `).join("")}
@@ -6092,7 +6094,7 @@ class TaskMatePanel extends HTMLElement {
              <div class="tm-reorder-item" draggable="true" data-drag-id="${this._esc(id)}">
                <div class="tm-reorder-handle">⠿</div>
                <div class="tm-reorder-name">${this._esc(c.name)}</div>
-               <div class="tm-reorder-points tm-numeric">${c.points}</div>
+               <div class="tm-reorder-points tm-numeric">${this._num(c.points)}</div>
                <div class="tm-reorder-moves">
                  <button type="button" class="tm-reorder-move" data-act="reorder-move" data-dir="-1" data-drag-id="${this._esc(id)}" ${idx === 0 ? "disabled" : ""} title="${this._t("reorder.move_up")}" aria-label="${this._t("reorder.move_up")}">▲</button>
                  <button type="button" class="tm-reorder-move" data-act="reorder-move" data-dir="1" data-drag-id="${this._esc(id)}" ${idx === arr.length - 1 ? "disabled" : ""} title="${this._t("reorder.move_down")}" aria-label="${this._t("reorder.move_down")}">▼</button>
@@ -6483,6 +6485,15 @@ class TaskMatePanel extends HTMLElement {
   _fmtNum(n) {
     if (n == null) return "0";
     return new Intl.NumberFormat().format(n);
+  }
+
+  // A number bound for a markup or attribute slot. The panel assembles its
+  // HTML as strings, so anything stored in a field we *assume* is numeric has
+  // to be proven numeric before it is echoed back. Non-numbers, inf and NaN
+  // fall back rather than reaching the DOM.
+  _num(v, fallback = 0) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
   }
 
   // Quick point-adjust amounts (#746). Stored as a comma-separated string like

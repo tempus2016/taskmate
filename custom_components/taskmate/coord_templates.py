@@ -13,6 +13,31 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+# Numeric template-chore fields, with the default used when a pack supplies
+# something that isn't a usable number.
+_NUMERIC_TEMPLATE_FIELDS = {
+    "points": 10,
+    "daily_limit": 1,
+    "timed_rate_points": 10,
+    "timed_rate_minutes": 15,
+    "timed_max_daily_minutes": 0,
+}
+# These are "unset" when None, so they can't take a numeric default.
+_OPTIONAL_NUMERIC_TEMPLATE_FIELDS = ("weather_temp_min", "weather_temp_max", "weather_wind_max")
+
+
+def _pack_number(value, default):
+    """Coerce a pack-supplied value to a finite number, else ``default``."""
+    if isinstance(value, bool) or isinstance(value, (dict, list)):
+        return default
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return default
+    if num != num or num in (float("inf"), float("-inf")):
+        return default
+    return int(num) if float(num).is_integer() else num
+
 
 class TemplatesMixin:
     """Mixin providing template CRUD and application logic."""
@@ -224,6 +249,18 @@ class TemplatesMixin:
                 # Whitelist: unknown keys are dropped, never carried through.
                 cleaned = {k: v for k, v in raw.items() if k in TEMPLATE_CHORE_FIELDS}
                 cleaned["name"] = chore_name[:200]
+                # The whitelist controls which keys survive, not what they hold.
+                # A shared pack is arbitrary JSON, so a field the rest of the app
+                # treats as a number has to actually be one — otherwise it lands
+                # in a Chore and every later read of it (points arithmetic, the
+                # panel's number inputs, the sensor attribute build) inherits a
+                # string, inf or NaN.
+                for key, default in _NUMERIC_TEMPLATE_FIELDS.items():
+                    if key in cleaned:
+                        cleaned[key] = _pack_number(cleaned[key], default)
+                for key in _OPTIONAL_NUMERIC_TEMPLATE_FIELDS:
+                    if cleaned.get(key) is not None:
+                        cleaned[key] = _pack_number(cleaned[key], None)
                 chores.append(cleaned)
 
             clean.append(

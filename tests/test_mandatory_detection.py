@@ -125,8 +125,9 @@ def _mandatory_chore(category="evening"):
 
 def test_recheck_creates_the_miss_once_the_period_has_closed():
     """Submit before the deadline, get rejected after it: the miss is now owed."""
-    import custom_components.taskmate.coord_mandatory as _mod
     from unittest.mock import patch
+
+    import custom_components.taskmate.coord_mandatory as _mod
 
     chore = _mandatory_chore("evening")
     now = dt.datetime(2026, 6, 21, 21, 30, tzinfo=dt.timezone.utc)
@@ -142,8 +143,9 @@ def test_recheck_creates_the_miss_once_the_period_has_closed():
 
 def test_recheck_is_a_no_op_while_the_period_is_still_open():
     """Rejecting early in the period must not penalise a child who can still act."""
-    import custom_components.taskmate.coord_mandatory as _mod
     from unittest.mock import patch
+
+    import custom_components.taskmate.coord_mandatory as _mod
 
     chore = _mandatory_chore("evening")
     now = dt.datetime(2026, 6, 21, 19, 0, tzinfo=dt.timezone.utc)
@@ -155,8 +157,9 @@ def test_recheck_is_a_no_op_while_the_period_is_still_open():
 
 
 def test_recheck_ignores_non_mandatory_chores():
-    import custom_components.taskmate.coord_mandatory as _mod
     from unittest.mock import patch
+
+    import custom_components.taskmate.coord_mandatory as _mod
 
     chore = Chore(name="Extra", mandatory=False, time_category="evening", assigned_to=["k1"], id="c1")
     now = dt.datetime(2026, 6, 21, 23, 0, tzinfo=dt.timezone.utc)
@@ -167,9 +170,10 @@ def test_recheck_ignores_non_mandatory_chores():
 
 
 def test_recheck_does_not_double_up_an_existing_miss():
+    from unittest.mock import patch
+
     import custom_components.taskmate.coord_mandatory as _mod
     from custom_components.taskmate.models import MandatoryMiss
-    from unittest.mock import patch
 
     chore = _mandatory_chore("evening")
     now = dt.datetime(2026, 6, 21, 22, 0, tzinfo=dt.timezone.utc)
@@ -183,8 +187,9 @@ def test_recheck_does_not_double_up_an_existing_miss():
 
 
 def test_recheck_on_a_past_day_always_counts_as_closed():
-    import custom_components.taskmate.coord_mandatory as _mod
     from unittest.mock import patch
+
+    import custom_components.taskmate.coord_mandatory as _mod
 
     chore = _mandatory_chore("evening")
     now = dt.datetime(2026, 6, 23, 9, 0, tzinfo=dt.timezone.utc)

@@ -33,9 +33,28 @@ from .models import (
     ScheduledChange,
     TaskGroup,
     TimedSession,
+    parse_datetime,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _finite_number(value: Any, default: int | float) -> int | float:
+    """Coerce an imported value to a real, finite number.
+
+    Returns ``default`` for anything that isn't usable — a string that doesn't
+    parse, a bool, a dict, or inf/NaN. Booleans are excluded deliberately:
+    ``float(True)`` is 1.0, which would silently turn a flag into a score.
+    """
+    if isinstance(value, bool) or isinstance(value, (dict, list)):
+        return default
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return default
+    if num != num or num in (float("inf"), float("-inf")):
+        return default
+    return int(num) if float(num).is_integer() else num
 
 STORAGE_VERSION = 1
 STORAGE_KEY = f"{DOMAIN}.storage"
@@ -1243,6 +1262,33 @@ class TaskMateStorage:
 
         _STREAK_MODES = ("reset", "pause")
         _CARD_DESIGNS = ("classic", "playroom", "console", "cleanpro", "accessible")
+        # Per-record numeric fields. The WebSocket schemas coerce these on every
+        # normal write; import bypasses the schemas entirely, so a crafted
+        # backup could leave a string (or inf/NaN) where the rest of the code —
+        # and the panel's number inputs — expect a number.
+        _NUMERIC_RECORD_FIELDS = {
+            # NB: streak_milestones_achieved is a list[int], not a scalar — it
+            # must not be coerced here.
+            "children": ("points", "total_points_earned", "total_chores_completed", "current_streak",
+                         "best_streak", "career_score", "total_penalties_received"),
+            "chores": ("points", "claim_allowance_minutes", "daily_limit", "mandatory_penalty_points",
+                       "speed_bonus_points", "skip_count", "timed_rate_points", "timed_rate_minutes",
+                       "timed_max_daily_minutes"),
+            "rewards": ("cost", "restock_amount", "unlock_minutes"),
+            "penalties": ("points",),
+            "bonuses": ("points",),
+            "completions": ("points_awarded", "timed_duration_seconds"),
+            "points_transactions": ("points",),
+            "mandatory_misses": ("penalty_points", "postpone_count", "escalation_stage"),
+            "pool_allocations": ("allocated_points",),
+        }
+        _DATETIME_RECORD_FIELDS = {
+            "completions": ("completed_at", "approved_at"),
+            "reward_claims": ("claimed_at", "approved_at"),
+            "points_transactions": ("created_at",),
+            "mandatory_misses": ("created_at",),
+            "allowance_payouts": ("created_at",),
+        }
         _NUMERIC_SETTINGS = (
             "history_days",
             "weekend_multiplier",
@@ -1261,6 +1307,45 @@ class TaskMateStorage:
             "interest_percent",
             "perfect_week_bonus",
         )
+
+        for bucket, keys in _NUMERIC_RECORD_FIELDS.items():
+            for record in self._data.get(bucket, []) or []:
+                if not isinstance(record, dict):
+                    continue
+                for key in keys:
+                    if key in record:
+                        record[key] = _finite_number(record[key], 0)
+                for sub in record.get("bonus_subtasks", []) or []:
+                    if isinstance(sub, dict) and "points" in sub:
+                        sub["points"] = _finite_number(sub["points"], 0)
+
+        # quantity is "unlimited" when absent/None, so it can't share the loop
+        # above — but a string or NaN there breaks the sold-out comparison.
+        for reward in self._data.get("rewards", []) or []:
+            if isinstance(reward, dict) and reward.get("quantity") is not None:
+                reward["quantity"] = _finite_number(reward["quantity"], 0)
+
+        for badge in self._data.get("badges", []) or []:
+            if not isinstance(badge, dict):
+                continue
+            if "points" in badge:
+                badge["points"] = _finite_number(badge["points"], 0)
+            for crit in badge.get("criteria", []) or []:
+                if isinstance(crit, dict) and "value" in crit:
+                    crit["value"] = _finite_number(crit["value"], 0)
+
+        # A timestamp that doesn't parse is dropped: models already turn it into
+        # None on load, and the panel renders a blank as an em dash rather than
+        # echoing whatever the string happened to be.
+        for bucket, keys in _DATETIME_RECORD_FIELDS.items():
+            for record in self._data.get(bucket, []) or []:
+                if not isinstance(record, dict):
+                    continue
+                for key in keys:
+                    raw = record.get(key)
+                    if raw and parse_datetime(raw) is None:
+                        _LOGGER.warning("Import: dropped unparseable %s on a %s record", key, bucket)
+                        record[key] = ""
 
         for comp in self._data.get("completions", []):
             if not isinstance(comp, dict):
@@ -1311,11 +1396,17 @@ class TaskMateStorage:
                 if key not in settings:
                     continue
                 val = settings[key]
-                if isinstance(val, bool) or not isinstance(val, (int, float)):
-                    try:
-                        settings[key] = float(val)
-                    except (TypeError, ValueError):
+                if isinstance(val, bool) or not isinstance(val, (int, float)) or val != val or val in (
+                    float("inf"),
+                    float("-inf"),
+                ):
+                    # inf/NaN parse happily via float() but blow up later in
+                    # arithmetic (e.g. a multiplier), so drop them to the default.
+                    coerced = _finite_number(val, None)
+                    if coerced is None:
                         settings.pop(key, None)
+                    else:
+                        settings[key] = coerced
 
     def replace_completions(self, completions: list[ChoreCompletion]) -> None:
         """Replace all completions with the given list."""
