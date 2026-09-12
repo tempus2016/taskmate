@@ -94,6 +94,7 @@ class ReadAloudMixin:
         media_player: str = "",
         tts_entity: str = "",
         message: str = "",
+        context: Any = None,
     ) -> str:
         """Speak a child's outstanding chores. Returns what was said."""
         target = media_player or self._tts_setting("read_aloud_media_player", "")
@@ -109,6 +110,9 @@ class ReadAloudMixin:
         # blocking=True so a bad media player or a broken TTS reaches the
         # caller. This is a service a parent invokes deliberately; "it silently
         # did nothing" is the worst possible answer.
+        # Forward the caller's context so Home Assistant applies that user's
+        # entity permissions to the speaker, instead of the call arriving
+        # unattributed and bypassing them.
         await self.hass.services.async_call(
             "tts",
             "speak",
@@ -118,6 +122,7 @@ class ReadAloudMixin:
                 "message": text,
             },
             blocking=True,
+            context=context,
         )
         _LOGGER.info("Read aloud to %s via %s: %s", target, speaker, text)
 

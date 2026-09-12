@@ -18,6 +18,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_set_service_schema
 from homeassistant.util import dt as dt_util
 
+from . import authz
 from .const import (
     ATTR_AS_PARENT,
     ATTR_AWARDED_BADGE_ID,
@@ -670,12 +671,20 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             _LOGGER.error("No TaskMate coordinator available")
             return
         await _async_require_linked_child(hass, call, coordinator, call.data[ATTR_CHILD_ID])
+        # A child may have their own chore list read out; choosing the words is
+        # a parent action. Otherwise any account that can act as a child could
+        # make a speaker in the house say anything, at any hour.
+        message = call.data.get("message", "")
+        if message and not await authz.async_context_is_parent(hass, coordinator, call.context):
+            _LOGGER.warning("Ignoring caller-supplied read_aloud message from a non-parent user")
+            message = ""
         try:
             await coordinator.async_read_aloud(
                 child_id=call.data[ATTR_CHILD_ID],
                 media_player=call.data.get("media_player", ""),
                 tts_entity=call.data.get("tts_entity", ""),
-                message=call.data.get("message", ""),
+                message=message,
+                context=call.context,
             )
         except ValueError as err:
             raise ServiceValidationError(str(err)) from err
@@ -1284,9 +1293,11 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHILD_ID): cv.string,
-                vol.Optional("media_player", default=""): cv.string,
-                vol.Optional("tts_entity", default=""): cv.string,
-                vol.Optional("message", default=""): cv.string,
+                # Blank means "use the configured default"; anything else has to
+                # be an entity in the right domain, not an arbitrary string.
+                vol.Optional("media_player", default=""): vol.Any("", cv.entity_domain("media_player")),
+                vol.Optional("tts_entity", default=""): vol.Any("", cv.entity_domain("tts")),
+                vol.Optional("message", default=""): vol.All(cv.string, vol.Length(max=500)),
             }
         ),
     )
