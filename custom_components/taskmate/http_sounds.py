@@ -48,8 +48,14 @@ class TaskMateSoundUploadView(HomeAssistantView):
         except (ValueError, AssertionError):
             return self.json_message("Expected multipart form", HTTPStatus.BAD_REQUEST)
 
+        # Bound the scan so a stream of endlessly-named non-"file" parts can't
+        # hold the handler open indefinitely (mirrors the photo upload).
         field = await reader.next()
+        parts_scanned = 0
         while field is not None and field.name != "file":
+            parts_scanned += 1
+            if parts_scanned > 16:
+                return self.json_message("Too many form parts", HTTPStatus.BAD_REQUEST)
             field = await reader.next()
         if field is None:
             return self.json_message("No file provided", HTTPStatus.BAD_REQUEST)
@@ -117,7 +123,14 @@ class TaskMateSoundServeView(HomeAssistantView):
         return web.Response(
             body=data,
             content_type=sounds.content_type_for(filename),
-            headers={"Cache-Control": "private, max-age=31536000"},
+            headers={
+                "Cache-Control": "private, max-age=31536000",
+                # Same as the photo view: these files are user-supplied, so
+                # don't let a browser content-sniff them into something
+                # executable on the Home Assistant origin.
+                "X-Content-Type-Options": "nosniff",
+                "Content-Disposition": "inline",
+            },
         )
 
 

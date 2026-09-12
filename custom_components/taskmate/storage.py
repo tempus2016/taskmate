@@ -1388,6 +1388,34 @@ class TaskMateStorage:
                 )
                 chore["image_url"] = ""
 
+        # Custom sounds: `file` is concatenated into a path and handed to HA's
+        # URL signer, and `name` is rendered in the panel and the chore
+        # dropdown. Neither goes through the upload validation on an import.
+        from .sounds import FILENAME_RE as _SOUND_FILENAME_RE
+        from .sounds import clean_sound_name
+
+        sounds = self._data.get("custom_sounds")
+        if isinstance(sounds, list):
+            kept = []
+            for snd in sounds:
+                if not isinstance(snd, dict):
+                    continue
+                if not _SOUND_FILENAME_RE.match(str(snd.get("file", "") or "")):
+                    _LOGGER.warning("Import: dropped custom sound with an invalid file name")
+                    continue
+                snd["name"] = clean_sound_name(snd.get("name"))
+                kept.append(snd)
+            self._data["custom_sounds"] = kept
+
+        # A chore's completion_sound is an enum or a reference to one of those
+        # sounds; anything else would be rendered into the panel as-is.
+        from .const import is_valid_completion_sound
+
+        for chore in self._data.get("chores", []) or []:
+            if isinstance(chore, dict) and "completion_sound" in chore:
+                if not is_valid_completion_sound(str(chore.get("completion_sound") or "")):
+                    chore["completion_sound"] = "coin"
+
         for grp in self._data.get("task_groups", []):
             if isinstance(grp, dict) and grp.get("policy") not in TASK_GROUP_POLICIES:
                 grp["policy"] = "sticky"

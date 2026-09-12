@@ -6123,7 +6123,7 @@ class TaskMatePanel extends HTMLElement {
       </div>`;
   }
 
-  _field(label, name, value, type = "text", hint = "") {
+  _field(label, name, value, type = "text", hintHtml = "") {
     return `
       <div class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
@@ -6133,11 +6133,11 @@ class TaskMatePanel extends HTMLElement {
           value="${this._esc(value == null ? "" : value)}"
           ${type === "number" ? 'type="number"' : 'type="text"'}
         >
-        ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
+        ${hintHtml ? `<span class="tm-field-hint">${hintHtml}</span>` : ""}
       </div>`;
   }
 
-  _dateField(label, name, value, hint = "") {
+  _dateField(label, name, value, hintHtml = "") {
     return `
       <div class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
@@ -6147,11 +6147,11 @@ class TaskMatePanel extends HTMLElement {
           value="${this._esc(value || "")}"
           type="date"
         >
-        ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
+        ${hintHtml ? `<span class="tm-field-hint">${hintHtml}</span>` : ""}
       </div>`;
   }
 
-  _timeField(label, name, value, hint = "") {
+  _timeField(label, name, value, hintHtml = "") {
     return `
       <div class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
@@ -6161,11 +6161,11 @@ class TaskMatePanel extends HTMLElement {
           value="${this._esc(value || "")}"
           type="time"
         >
-        ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
+        ${hintHtml ? `<span class="tm-field-hint">${hintHtml}</span>` : ""}
       </div>`;
   }
 
-  _select(label, name, value, options, hint = "", rerender = false) {
+  _select(label, name, value, options, hintHtml = "", rerender = false) {
     return `
       <div class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
@@ -6176,17 +6176,17 @@ class TaskMatePanel extends HTMLElement {
         >
           ${options.map(o => `<option value="${this._esc(o.v)}" ${String(o.v) === String(value) ? "selected" : ""}>${this._esc(o.lk ? this._t(o.lk) : o.l)}</option>`).join("")}
         </select>
-        ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
+        ${hintHtml ? `<span class="tm-field-hint">${hintHtml}</span>` : ""}
       </div>`;
   }
 
-  _switch(label, name, checked, hint = "", rerender = false) {
+  _switch(label, name, checked, hintHtml = "", rerender = false) {
     return `
       <div class="tm-check-row">
         <ha-switch data-field="${name}" ${checked ? "checked" : ""} ${rerender ? 'data-rerender="true"' : ""}></ha-switch>
         <div>
           <div class="tm-check-title">${this._esc(label)}</div>
-          ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
+          ${hintHtml ? `<span class="tm-field-hint">${hintHtml}</span>` : ""}
         </div>
       </div>`;
   }
@@ -6293,7 +6293,7 @@ class TaskMatePanel extends HTMLElement {
     else { (this._settingsEntityDraft = this._settingsEntityDraft || {})[field] = value; }
   }
 
-  _entityPickerField(label, name, value, domains, hint = "") {
+  _entityPickerField(label, name, value, domains, hintHtml = "") {
     const friendly = value && this._hass?.states?.[value]?.attributes?.friendly_name || "";
     const icon = value ? (this._hass?.states?.[value]?.attributes?.icon || this._entityDomainIcon(value)) : "";
     return `
@@ -6312,7 +6312,7 @@ class TaskMatePanel extends HTMLElement {
               </div>`
           }
         </div>
-        ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
+        ${hintHtml ? `<span class="tm-field-hint">${hintHtml}</span>` : ""}
       </div>`;
   }
 

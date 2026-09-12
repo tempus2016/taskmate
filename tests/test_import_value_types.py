@@ -199,3 +199,51 @@ def test_template_pack_preserves_valid_values():
     assert chore["points"] == 25
     assert chore["daily_limit"] == 2
     assert chore["weather_temp_min"] == 4.5
+
+
+# ── custom sounds on import ─────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_import_drops_custom_sounds_with_a_bad_filename(hass):
+    """`file` is concatenated into a path and handed to HA's URL signer."""
+    storage = TaskMateStorage(hass, "snd1")
+    await storage.async_load()
+    storage.import_data(
+        {
+            "custom_sounds": [
+                {"id": "s1", "name": "Good", "file": "a" * 32 + ".mp3"},
+                {"id": "s2", "name": "Bad", "file": "../../secrets.yaml"},
+                {"id": "s3", "name": "Worse", "file": XSS},
+            ]
+        }
+    )
+    files = [s["file"] for s in storage._data["custom_sounds"]]
+    assert files == ["a" * 32 + ".mp3"]
+
+
+@pytest.mark.asyncio
+async def test_import_cleans_custom_sound_names(hass):
+    storage = TaskMateStorage(hass, "snd2")
+    await storage.async_load()
+    storage.import_data(
+        {"custom_sounds": [{"id": "s1", "name": "x" * 200, "file": "b" * 32 + ".ogg"}]}
+    )
+    assert len(storage._data["custom_sounds"][0]["name"]) <= 40
+
+
+@pytest.mark.asyncio
+async def test_import_resets_an_unknown_completion_sound(hass):
+    storage = TaskMateStorage(hass, "snd3")
+    await storage.async_load()
+    storage.import_data(
+        {
+            "chores": [
+                {"id": "c1", "name": "A", "completion_sound": XSS},
+                {"id": "c2", "name": "B", "completion_sound": "coin"},
+                {"id": "c3", "name": "C", "completion_sound": "custom:" + "c" * 32 + ".mp3"},
+            ]
+        }
+    )
+    sounds = [c["completion_sound"] for c in storage._data["chores"]]
+    assert sounds == ["coin", "coin", "custom:" + "c" * 32 + ".mp3"]
