@@ -1299,6 +1299,15 @@ class ChoresMixin:
             if getattr(self, "notifications", None):
                 await self.notifications.clear_approval("pending_chore_approval", completion_id)
 
+            # A rejected submission no longer counts as "done", so a mandatory
+            # chore whose period has already closed may now owe a miss that
+            # end-of-period detection skipped.
+            await self.async_recheck_mandatory_miss(
+                target_completion.chore_id,
+                target_completion.child_id,
+                dt_util.as_local(target_completion.completed_at).date(),
+            )
+
     async def async_undo_chore_approval(self, completion_id: str) -> None:
         """Undo an accidental approval: reverse the awards and return the
         completion to *pending* so it re-enters the approval queue.

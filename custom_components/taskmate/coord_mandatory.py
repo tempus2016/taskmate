@@ -63,6 +63,44 @@ class MandatoryMixin:
                 return True
         return False
 
+    def _period_has_ended(self, period_id: str, day: date, now: datetime | None = None) -> bool:
+        """True once ``period_id`` on ``day`` is over and a miss could be owed."""
+        now = now or dt_util.now()
+        today = dt_util.as_local(now).date()
+        if day < today:
+            return True
+        if day > today:
+            return False
+        for p in self.get_time_periods():
+            if p.get("id") != period_id:
+                continue
+            try:
+                eh, em = [int(x) for x in p["end"].split(":")]
+            except (ValueError, KeyError, TypeError):
+                return False
+            return dt_util.as_local(now).time() >= dt_time(eh, em)
+        # "anytime" and unknown periods only close at midnight, which the
+        # midnight sweep already handles.
+        return False
+
+    async def async_recheck_mandatory_miss(self, chore_id: str, child_id: str, day: date) -> int:
+        """Re-run miss detection after a completion stops counting.
+
+        Detection accepts a *pending* completion as "done" on purpose — a child
+        who did the chore shouldn't be penalised because a parent hasn't got to
+        the approval yet. The gap is that detection only ran once, at the end of
+        the period: submitting just before the deadline and having it rejected
+        afterwards left no miss behind. Rejection re-opens the question, so ask
+        it again (detection is idempotent and dedupes existing misses).
+        """
+        chore = self.get_chore(chore_id)
+        if not chore or not getattr(chore, "mandatory", False):
+            return 0
+        period_id = self._effective_period_for(chore, child_id, day)
+        if not self._period_has_ended(period_id, day):
+            return 0
+        return await self.async_detect_mandatory_misses(period_id, day)
+
     async def async_detect_mandatory_misses(self, period_id: str, day: date) -> int:
         """Create misses for due+incomplete mandatory chores in `period_id`."""
         existing = {(m.chore_id, m.child_id, m.due_date) for m in self.storage.get_mandatory_misses()}
