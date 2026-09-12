@@ -878,3 +878,50 @@ class TestClaimFloodControl:
 
         run(coord.async_claim_reward("reward1", "kid1"))
         coord.storage.add_reward_claim.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# availability is re-checked at approval, not just at claim time
+# ---------------------------------------------------------------------------
+
+
+class TestApprovalRechecksAvailability:
+    def test_stacked_claims_cannot_oversell_stock(self):
+        """Two claims, one unit: the second approval must fail, not float to -1."""
+        alice = Child(name="Alice", points=500, id="kid1")
+        bob = Child(name="Bob", points=500, id="kid2")
+        reward = Reward(name="Cinema ticket", cost=10, id="reward1", quantity=1)
+        c1 = RewardClaim(child_id="kid1", reward_id="reward1", claimed_at=_ts(), approved=False, id="c1")
+        c2 = RewardClaim(child_id="kid2", reward_id="reward1", claimed_at=_ts(), approved=False, id="c2")
+        coord = _make_coord(children=[alice, bob], rewards=[reward], claims=[c1, c2])
+
+        run(coord.async_approve_reward("c1"))
+        assert reward.quantity == 0
+
+        with pytest.raises(ValueError, match="sold out"):
+            run(coord.async_approve_reward("c2"))
+
+        assert reward.quantity == 0
+        assert bob.points == 500  # not charged for a unit that doesn't exist
+
+    def test_expired_reward_cannot_be_approved(self):
+        alice = Child(name="Alice", points=500, id="kid1")
+        reward = Reward(name="Summer treat", cost=10, id="reward1", expires_at="2000-01-01")
+        claim = RewardClaim(child_id="kid1", reward_id="reward1", claimed_at=_ts(), approved=False, id="c1")
+        coord = _make_coord(children=[alice], rewards=[reward], claims=[claim])
+
+        with pytest.raises(ValueError, match="expired"):
+            run(coord.async_approve_reward("c1"))
+
+        assert alice.points == 500
+
+    def test_normal_approval_still_works(self):
+        alice = Child(name="Alice", points=500, id="kid1")
+        reward = Reward(name="Movie night", cost=10, id="reward1", quantity=5)
+        claim = RewardClaim(child_id="kid1", reward_id="reward1", claimed_at=_ts(), approved=False, id="c1")
+        coord = _make_coord(children=[alice], rewards=[reward], claims=[claim])
+
+        run(coord.async_approve_reward("c1"))
+        assert claim.approved is True
+        assert alice.points == 490
+        assert reward.quantity == 4

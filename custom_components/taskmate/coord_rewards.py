@@ -404,6 +404,18 @@ class RewardsMixin:
                 if not reward or not child:
                     raise ValueError(f"Reward or child not found for claim {claim_id}")
 
+                # Stock and expiry are checked when the claim is made, but a
+                # claim can sit in the queue for days and several can stack up
+                # against the same item. Re-check here or approving them in
+                # turn hands out more units than exist (the counter floors at
+                # zero, so it doesn't even show). The time lock is deliberately
+                # not re-checked: approval is the parent's call, not the
+                # child's, so an out-of-hours approval is legitimate.
+                if self._reward_is_sold_out(reward):
+                    raise ValueError(f"Reward '{reward.name}' is sold out")
+                if self._reward_is_expired(reward):
+                    raise ValueError(f"Reward '{reward.name}' has expired")
+
                 # Cost is always static
                 effective_cost = reward.cost
 
