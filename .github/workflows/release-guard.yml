@@ -64,3 +64,42 @@ jobs:
           echo "::error::taskmate.zip is missing from release $TAG — HACS installs will fail."
           echo "Re-run the 'Attach HACS zip to release' workflow, then re-run this check."
           exit 1
+
+      - name: Check out the released tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.event.release.tag_name }}
+          persist-credentials: false
+          path: src
+
+      - name: Verify the attached zip matches the tag
+        # Checking only that an asset *named* taskmate.zip exists says nothing
+        # about what is inside it — and the upload uses --clobber, so an asset
+        # can be replaced on an already-green release without leaving a commit
+        # behind. Compare the contents against the tag instead. Zip bytes are
+        # not reproducible (timestamps), so compare a per-file digest listing.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          gh release download "$TAG" --repo "$REPO" --pattern taskmate.zip --dir .
+          mkdir -p from_asset
+          unzip -q taskmate.zip -d from_asset
+
+          digest() {
+            ( cd "$1" && find . -type f \
+                ! -path '*/__pycache__/*' ! -name '*.pyc' \
+                -print0 | sort -z | xargs -0 sha256sum )
+          }
+          digest from_asset > asset.txt
+          digest src/custom_components/taskmate > tag.txt
+
+          if diff -u tag.txt asset.txt; then
+            echo "taskmate.zip matches the source at $TAG ($(wc -l < tag.txt) files)."
+          else
+            echo "::error::taskmate.zip does not match custom_components/taskmate at $TAG."
+            echo "Rebuild it with the 'Attach HACS zip to release' workflow before announcing this release."
+            exit 1
+          fi
