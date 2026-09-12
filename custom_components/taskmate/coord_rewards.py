@@ -16,6 +16,12 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+# Upper bound on a single child's pending reward claims. Each claim writes a
+# permanent record and pushes a notification to every routed parent, so an
+# unbounded queue is a way to bury the approvals list and spam phones. Mirrors
+# the pending-swap-request cap.
+_MAX_PENDING_CLAIMS_PER_CHILD = 20
+
 
 def reward_is_time_locked(reward: Reward, now: datetime | None = None) -> bool:
     """True if a time-locked reward is currently outside its allowed window (#857).
@@ -272,6 +278,16 @@ class RewardsMixin:
             raise ValueError(f"Reward '{reward.name}' has expired")
         if self._reward_is_time_locked(reward):
             raise ValueError(f"Reward '{reward.name}' is not available right now")
+
+        # A pool-filled claim skips the wallet check below, and a zero-cost
+        # reward can never fail it, so without these two guards a child can
+        # queue unlimited claims — each one a stored record plus a push to
+        # every parent.
+        own_pending = [c for c in self.storage.get_pending_reward_claims() if c.child_id == child_id]
+        if any(c.reward_id == reward_id for c in own_pending):
+            raise ValueError(f"A claim for '{reward.name}' is already waiting for approval")
+        if len(own_pending) >= _MAX_PENDING_CLAIMS_PER_CHILD:
+            raise ValueError("Too many reward claims are already waiting for approval")
 
         # Cost is always static
         effective_cost = reward.cost

@@ -811,3 +811,70 @@ class TestRewardAssignment:
 
         run(coord.async_allocate_points_to_pool("kid1", "reward1", 10))
         coord.storage.upsert_pool_allocation.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# pending-claim flood control
+# ---------------------------------------------------------------------------
+
+
+def _ts():
+    import datetime as _dt
+
+    return _dt.datetime(2024, 3, 20, 12, 0, 0, tzinfo=_dt.timezone.utc)
+
+
+class TestClaimFloodControl:
+    def test_duplicate_pending_claim_is_rejected(self):
+        child = _child(points=500)
+        reward = _reward(cost=10)
+        existing = RewardClaim(child_id="kid1", reward_id="reward1", claimed_at=_ts(), approved=False)
+        coord = _make_coord(children=[child], rewards=[reward], claims=[existing])
+
+        with pytest.raises(ValueError, match="already waiting"):
+            run(coord.async_claim_reward("reward1", "kid1"))
+
+        coord.storage.add_reward_claim.assert_not_called()
+
+    def test_zero_cost_reward_cannot_be_claimed_repeatedly(self):
+        """A free reward passes every balance check, so the dedupe guard is the brake."""
+        child = _child(points=0)
+        reward = _reward(cost=0)
+        existing = RewardClaim(child_id="kid1", reward_id="reward1", claimed_at=_ts(), approved=False)
+        coord = _make_coord(children=[child], rewards=[reward], claims=[existing])
+
+        with pytest.raises(ValueError, match="already waiting"):
+            run(coord.async_claim_reward("reward1", "kid1"))
+
+    def test_another_child_may_still_claim_the_same_reward(self):
+        alice = _child(points=500)
+        bob = Child(name="Bob", points=500, id="kid2")
+        reward = _reward(cost=10)
+        existing = RewardClaim(child_id="kid1", reward_id="reward1", claimed_at=_ts(), approved=False)
+        coord = _make_coord(children=[alice, bob], rewards=[reward], claims=[existing])
+
+        run(coord.async_claim_reward("reward1", "kid2"))
+        coord.storage.add_reward_claim.assert_called_once()
+
+    def test_pending_queue_is_capped_per_child(self):
+        from custom_components.taskmate.coord_rewards import _MAX_PENDING_CLAIMS_PER_CHILD
+
+        child = _child(points=100000)
+        rewards = [Reward(name=f"R{i}", cost=1, id=f"reward{i}") for i in range(_MAX_PENDING_CLAIMS_PER_CHILD + 1)]
+        claims = [
+            RewardClaim(child_id="kid1", reward_id=f"reward{i}", claimed_at=_ts(), approved=False)
+            for i in range(_MAX_PENDING_CLAIMS_PER_CHILD)
+        ]
+        coord = _make_coord(children=[child], rewards=rewards, claims=claims)
+
+        with pytest.raises(ValueError, match="Too many"):
+            run(coord.async_claim_reward(f"reward{_MAX_PENDING_CLAIMS_PER_CHILD}", "kid1"))
+
+    def test_approved_claims_do_not_count_towards_the_cap(self):
+        child = _child(points=500)
+        reward = _reward(cost=10)
+        done = RewardClaim(child_id="kid1", reward_id="reward1", claimed_at=_ts(), approved=True)
+        coord = _make_coord(children=[child], rewards=[reward], claims=[done])
+
+        run(coord.async_claim_reward("reward1", "kid1"))
+        coord.storage.add_reward_claim.assert_called_once()
