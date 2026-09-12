@@ -11,6 +11,7 @@ the thin aiohttp wrapper, verified on the dev HA instance.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from http import HTTPStatus
@@ -71,13 +72,40 @@ class TaskMatePhotoUploadView(HomeAssistantView):
     url = photos.URL_PREFIX
     name = "api:taskmate:photo:upload"
 
+    # Unlike the image/sound uploads this one is deliberately open to any
+    # authenticated user — a child has to be able to post their own evidence.
+    # That makes it the one upload path a non-admin can drive, so it carries
+    # its own limits: a per-user rate cap, and a bound on how many bodies are
+    # buffered at once (each one can be MAX_UPLOAD_BYTES).
+    MAX_UPLOADS_PER_WINDOW = 20
+    RATE_WINDOW_SECONDS = 60
+    MAX_CONCURRENT_UPLOADS = 4
+
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
+        self._limiter = photos.UploadRateLimiter(self.MAX_UPLOADS_PER_WINDOW, self.RATE_WINDOW_SECONDS)
+        self._slots = asyncio.Semaphore(self.MAX_CONCURRENT_UPLOADS)
 
     async def post(self, request: web.Request) -> web.Response:
+        user = request.get("hass_user")
+        user_id = getattr(user, "id", "") or "anonymous"
+        if self._limiter.check(user_id):
+            _LOGGER.warning("Rejecting photo upload from %s: rate limit exceeded", user_id)
+            return self.json_message("Too many uploads, try again shortly", HTTPStatus.TOO_MANY_REQUESTS)
+
+        async with self._slots:
+            return await self._handle_upload(request)
+
+    async def _handle_upload(self, request: web.Request) -> web.Response:
         # Cheap pre-check on the declared length before reading the body.
         if request.content_length and request.content_length > photos.MAX_UPLOAD_BYTES:
             return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+
+        # Check the disk budget before accepting a body, not only after: there
+        # is no point buffering megabytes we are about to refuse.
+        used = await self.hass.async_add_executor_job(photos.total_photos_bytes, self.hass)
+        if used >= photos.MAX_TOTAL_BYTES:
+            return self.json_message("Photo storage full", HTTPStatus.INSUFFICIENT_STORAGE)
 
         try:
             reader = await request.multipart()
@@ -110,7 +138,8 @@ class TaskMatePhotoUploadView(HomeAssistantView):
         if ext is None:
             return self.json_message("Not a valid image", HTTPStatus.BAD_REQUEST)
 
-        # DoS guard: reject if the photo store is already at its disk budget.
+        # Re-check with the real size now the body is in hand (the pre-check
+        # above only knows the budget was not already full).
         used = await self.hass.async_add_executor_job(photos.total_photos_bytes, self.hass)
         if used + len(data) > photos.MAX_TOTAL_BYTES:
             return self.json_message("Photo storage full", HTTPStatus.INSUFFICIENT_STORAGE)

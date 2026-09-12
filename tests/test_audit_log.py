@@ -149,3 +149,61 @@ async def test_wrapper_does_not_audit_on_handler_error():
 
     await handler(_hass_with(coord), _conn(), {"id": 1, "type": "taskmate/add_chore", "name": "x"})
     coord.async_record_audit.assert_not_awaited()
+
+
+# ---------------------------------------------------------------------------
+# child-facing mutations are audited too, and truncation is visible
+# ---------------------------------------------------------------------------
+
+
+def test_child_facing_services_are_audited():
+    """The actions a child can drive are exactly the ones worth reviewing."""
+    import pathlib
+
+    src = (pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
+
+    for handler in (
+        "handle_complete_chore",
+        "handle_complete_bonus_subtask",
+        "handle_claim_reward",
+        "handle_allocate_points_to_pool",
+        "handle_spin_roulette",
+        "handle_choose_avatar",
+        "handle_request_swap",
+        "handle_start_timed_task",
+        "handle_stop_timed_task",
+    ):
+        assert f"_audited({handler})" in src, f"{handler} is not audited"
+
+    # …and the wrapper really does record.
+    block = src[src.index("def _audited(handler):") : src.index("def _parent(handler):")]
+    assert "_async_record_service_audit(hass, call)" in block
+
+
+def test_dropped_audit_entries_are_counted():
+    from custom_components.taskmate.storage import TaskMateStorage
+
+    storage = TaskMateStorage.__new__(TaskMateStorage)
+    storage._data = {}
+    for i in range(520):
+        storage.add_audit_entry({"id": str(i), "action": "service.test"})
+
+    assert len(storage._data["audit_log"]) == 500
+    assert storage.get_audit_dropped_count() == 20
+    # The oldest really are gone — the count is what makes that visible.
+    assert storage._data["audit_log"][0]["id"] == "20"
+
+
+def test_clearing_the_log_resets_the_dropped_counter():
+    from custom_components.taskmate.storage import TaskMateStorage
+
+    storage = TaskMateStorage.__new__(TaskMateStorage)
+    storage._data = {}
+    for i in range(505):
+        storage.add_audit_entry({"id": str(i), "action": "service.test"})
+    assert storage.get_audit_dropped_count() == 5
+
+    storage.clear_audit_log()
+    assert storage.get_audit_dropped_count() == 0

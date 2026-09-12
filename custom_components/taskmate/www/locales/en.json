@@ -846,6 +846,8 @@
   "panel.settings_parents_title": "Parents (no admin rights)",
   "panel.settings_parents_hint": "Give a non-admin household member day-to-day control — approve chores, adjust points, confirm rewards — without Home Assistant admin rights. They still can't open this admin panel or change configuration.",
   "panel.settings_parents_empty": "No non-admin Home Assistant users found. Create a standard HA user first, then tick them here.",
+  "panel.settings_require_linked_child_label": "Require a linked account per child",
+  "panel.settings_require_linked_child_hint": "Only let a child's own Home Assistant account act as that child. Leave off for a shared family tablet where one account is used for everyone. Parents and admins can always act for any child.",
   "panel.settings_evening_hint": "Default 17:00 – 21:00",
   "panel.settings_evening_label": "Evening",
   "panel.settings_history_title": "History & streaks",

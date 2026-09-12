@@ -135,3 +135,13 @@ def test_child_card_delegates_to_the_shared_engine():
 def test_child_card_reads_custom_sounds_from_the_sensor():
     assert "_customSounds()" in CHILD_CARD
     assert "custom_sounds" in CHILD_CARD
+
+
+def test_serve_view_sets_sniffing_protections():
+    """User-supplied bytes served from the HA origin need nosniff, like photos."""
+    assert '"X-Content-Type-Options": "nosniff"' in SRC
+    assert '"Content-Disposition": "inline"' in SRC
+
+
+def test_upload_bounds_the_form_part_scan():
+    assert "parts_scanned > 16" in SRC

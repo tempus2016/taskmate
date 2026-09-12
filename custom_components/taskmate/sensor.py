@@ -310,6 +310,12 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         # `icon` above, to keep records under the 16KB recorder limit.
         image_url = getattr(c, "image_url", "")
         if image_url:
+            # Same trade-off as custom sounds, and unlike evidence photos
+            # (which deliberately emit a bare path for the card to sign per
+            # viewer): a chore picture is decorative and renders on first
+            # paint, so signing it here keeps that render synchronous. It does
+            # mean the signed URL is readable in this attribute — fine for a
+            # chore picture, not fine for anything personal.
             record["image_url"] = images.sign_image_url(common["hass"], image_url)
         completion_sound = getattr(c, "completion_sound", "coin")
         if completion_sound and completion_sound != "coin":
@@ -863,7 +869,15 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "points_icon": data.get("points_icon", "mdi:star"),
             # Global default card-design style; cards read this when no per-card override (#design).
             "card_design": settings.get("card_design", "classic"),
-            # Non-admin parent role (#661): cards unlock parent controls for these HA users.
+            # Non-admin parent role (#661): cards unlock parent controls for
+            # these HA users. Deliberately still published in the clear, and
+            # deliberately never trusted: every privileged path re-resolves the
+            # role server-side (`_async_require_parent` / `authz`), so this list
+            # only decides which buttons a card draws. Any authenticated user
+            # can read it, which tells them which accounts hold the role — worth
+            # knowing, but it grants nothing, and the alternatives (digests, or
+            # a per-connection lookup) make the check asynchronous and race the
+            # first paint in every card that gates controls on it.
             "parent_user_ids": self.coordinator.storage.get_parent_user_ids(),
             "children": _build_children_summary(self.coordinator, common),
             "time_boundaries": time_boundaries,

@@ -751,17 +751,16 @@ class ChoresMixin:
                 )
                 return None
 
-        # specific_days chores were historically only filtered by the child card
-        # (see get_due_chores_for_child), so a crafted service / entity / Dev
-        # Tools call could complete one that is disabled, not scheduled today, or
+        # Chores were historically only filtered by the child card (see
+        # get_due_chores_for_child), so a crafted service / entity / Dev Tools
+        # call could complete one that is disabled, not scheduled today, or
         # assigned to a different child. Enforce the same eligibility the card
-        # uses, server-side. Parents completing on behalf are the authority and
-        # stay exempt.
-        if (
-            not as_parent
-            and getattr(chore, "schedule_mode", "specific_days") == "specific_days"
-            and not self._is_chore_completable_by_child(chore, child_id)
-        ):
+        # uses, server-side, for EVERY schedule mode — the `assigned_to`
+        # membership test lives in _is_chore_completable_by_child, so gating
+        # this on specific_days left recurring/one_shot chores unchecked.
+        # Parents completing on behalf are the authority and stay exempt (the
+        # recurrence/one-shot window below still applies to them).
+        if not as_parent and not self._is_chore_completable_by_child(chore, child_id):
             _LOGGER.debug(
                 "complete_chore no-op: '%s' not eligible for %s today (assignment/schedule/availability)",
                 chore.name,
@@ -845,13 +844,19 @@ class ChoresMixin:
             photo_url=photo_url or "",
         )
 
+        # Record the completion before awarding anything. Awarding can suspend
+        # (a level-up or streak milestone sends a notification), and the
+        # daily-limit check above counts stored completions — so with the write
+        # last, two calls that arrive together could both pass the check and
+        # both be paid. Writing the marker first closes that window.
+        self.storage.add_completion(completion)
+
         if auto_approve:
             total_awarded = await self._award_points(child, effective_points, chore_id=chore_id)
             completion.approved = True
             completion.approved_at = dt_util.now()
             completion.points_awarded = total_awarded
-
-        self.storage.add_completion(completion)
+            self.storage.update_completion(completion)
 
         self.hass.bus.async_fire(
             "taskmate_chore_completed",
@@ -980,6 +985,14 @@ class ChoresMixin:
         now = dt_util.now()
         today = dt_util.as_local(now).date()
 
+        # A bonus sub-task belongs to its parent chore's assignment. Availability
+        # is deliberately NOT re-checked here — the parent chore being done today
+        # is what makes the bonus available, and for one_shot/recurring chores
+        # that same completion closes the availability window.
+        assigned = getattr(chore, "assigned_to", []) or []
+        if assigned and child_id not in assigned:
+            raise ValueError(f"Bonus sub-task '{subtask.name}' is not assigned to {child.name}.")
+
         # Gate check: parent chore must be completed today
         all_completions = self.storage.get_completions()
         parent_done_today = any(
@@ -1015,13 +1028,17 @@ class ChoresMixin:
             bonus_subtask_id=bonus_subtask_id,
         )
 
+        # Written before the award for the same reason as the main completion
+        # path: the duplicate check above reads stored completions, and
+        # awarding can suspend.
+        self.storage.add_completion(completion)
+
         if not chore.requires_approval:
             total_awarded = await self._award_points(child, subtask.points, skip_streak=True)
             completion.approved = True
             completion.approved_at = dt_util.now()
             completion.points_awarded = total_awarded
-
-        self.storage.add_completion(completion)
+            self.storage.update_completion(completion)
         await self.storage.async_save()
 
         if chore.requires_approval:
@@ -1068,6 +1085,16 @@ class ChoresMixin:
                         pts = self._apply_time_adjustment(
                             chore, self.effective_chore_points(chore), completion.completed_at
                         )
+                    # Claim the completion before awarding. The "already
+                    # approved" check above and the award are separated by an
+                    # await that can suspend, so two approvals landing together
+                    # (a double-tap, or Approve All overlapping a single
+                    # approve) could otherwise both get through and pay twice.
+                    completion.approved = True
+                    completion.approved_at = dt_util.now()
+                    completion.points_awarded = 0
+                    self.storage.update_completion(completion)
+
                     total_awarded = await self._award_points(
                         child,
                         pts,
@@ -1075,8 +1102,6 @@ class ChoresMixin:
                         skip_streak=is_bonus,
                         chore_id=completion.chore_id,
                     )
-                    completion.approved = True
-                    completion.approved_at = dt_util.now()
                     completion.points_awarded = total_awarded
                     self.storage.update_completion(completion)
 
@@ -1265,6 +1290,11 @@ class ChoresMixin:
                 self.storage.remove_completion(bc.id)
 
         self.storage.remove_completion(completion_id)
+        if target_completion and target_completion.approved and not target_completion.bonus_subtask_id:
+            # Same as undo: a rejected completion must not leave the quest
+            # chain standing on the step it unlocked.
+            if hasattr(self, "_async_rewind_quests"):
+                await self._async_rewind_quests(target_completion.child_id, target_completion.chore_id)
         # The completion record is gone, so its evidence photo is now orphaned —
         # delete it (best-effort; foreign/blank URLs are ignored).
         if target_completion and getattr(target_completion, "photo_url", ""):
@@ -1291,6 +1321,15 @@ class ChoresMixin:
             # approval): re-clearing a stale tag is a harmless no-op.
             if getattr(self, "notifications", None):
                 await self.notifications.clear_approval("pending_chore_approval", completion_id)
+
+            # A rejected submission no longer counts as "done", so a mandatory
+            # chore whose period has already closed may now owe a miss that
+            # end-of-period detection skipped.
+            await self.async_recheck_mandatory_miss(
+                target_completion.chore_id,
+                target_completion.child_id,
+                dt_util.as_local(target_completion.completed_at).date(),
+            )
 
     async def async_undo_chore_approval(self, completion_id: str) -> None:
         """Undo an accidental approval: reverse the awards and return the
@@ -1320,6 +1359,12 @@ class ChoresMixin:
         target.approved_at = None
         target.points_awarded = 0
         self.storage.update_completion(target)
+
+        # Quest progress advanced on approval, so it has to come back too —
+        # otherwise re-approving the same completion advances the chain a
+        # second time and pays a repeatable quest's bonus twice.
+        if not target.bonus_subtask_id and hasattr(self, "_async_rewind_quests"):
+            await self._async_rewind_quests(target.child_id, target.chore_id)
 
         await self.storage.async_save()
         await self.async_refresh()

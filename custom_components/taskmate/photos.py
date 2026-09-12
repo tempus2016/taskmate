@@ -45,6 +45,40 @@ CONTENT_TYPES = {
 }
 
 
+class UploadRateLimiter:
+    """Sliding-window upload cap, keyed by HA user id.
+
+    The evidence-photo upload is the one upload path open to any authenticated
+    user (a child has to be able to post their own proof), so it needs a brake
+    that the admin-only uploads don't. Kept here, free of aiohttp, so it can be
+    unit-tested directly.
+    """
+
+    def __init__(self, max_per_window: int = 20, window_seconds: float = 60.0) -> None:
+        self.max_per_window = max_per_window
+        self.window_seconds = window_seconds
+        self._seen: dict[str, list[float]] = {}
+
+    def check(self, user_id: str, now: float | None = None) -> bool:
+        """Record an attempt. True when the caller is over its cap."""
+        now = time.monotonic() if now is None else now
+        cutoff = now - self.window_seconds
+        for uid in [u for u, stamps in list(self._seen.items()) if not any(t > cutoff for t in stamps)]:
+            self._seen.pop(uid, None)
+        stamps = [t for t in self._seen.get(user_id, []) if t > cutoff]
+        if len(stamps) >= self.max_per_window:
+            self._seen[user_id] = stamps
+            return True
+        stamps.append(now)
+        self._seen[user_id] = stamps
+        return False
+
+    @property
+    def tracked_users(self) -> int:
+        """How many users currently hold state (for leak checks)."""
+        return len(self._seen)
+
+
 def detect_image_ext(data: bytes) -> str | None:
     """Return a file extension for known image magic bytes, else None.
 

@@ -75,3 +75,13 @@ def test_frontend_registers_the_image_views():
         pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "frontend.py"
     ).read_text(encoding="utf-8")
     assert "async_register_image_views" in frontend, "views that are never registered mean every image 404s"
+
+
+def test_serve_view_sets_sniffing_protections():
+    """User-supplied bytes served from the HA origin need nosniff, like photos."""
+    assert '"X-Content-Type-Options": "nosniff"' in SRC
+    assert '"Content-Disposition": "inline"' in SRC
+
+
+def test_upload_bounds_the_form_part_scan():
+    assert "parts_scanned > 16" in SRC

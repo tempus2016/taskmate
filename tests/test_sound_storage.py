@@ -211,3 +211,33 @@ def test_sign_sound_url_passes_through_foreign_urls(tmp_path):
     # is that a non-TaskMate URL is never handed to the signer at all.
     assert sounds.sign_sound_url(hass, "") == ""
     assert sounds.sign_sound_url(hass, "https://example.com/a.mp3") == "https://example.com/a.mp3"
+
+
+# ---------------------------------------------------------------------------
+# the bare-frame MP3 sniff must not accept text
+# ---------------------------------------------------------------------------
+
+
+class TestMp3SniffRejectsText:
+    def test_utf16_bom_is_not_audio(self):
+        """0xFF 0xFE is a UTF-16LE BOM; it passes a sync-bits-only check."""
+        html = "<html><script>alert(1)</script></html>".encode("utf-16-le")
+        assert sounds.detect_allowed_ext(b"\xff\xfe" + html) is None
+
+    def test_utf16_be_bom_is_not_audio(self):
+        assert sounds.detect_allowed_ext(b"\xfe\xff" + "<html>".encode("utf-16-be")) is None
+
+    def test_reserved_mpeg_version_is_rejected(self):
+        # 0xFF 0xEB: sync ok, but version bits are the reserved 01.
+        assert sounds.detect_allowed_ext(b"\xff\xeb" + b"\x00" * 64) is None
+
+    def test_reserved_layer_is_rejected(self):
+        # 0xFF 0xF9: sync ok, version ok, but layer bits are the reserved 00.
+        assert sounds.detect_allowed_ext(b"\xff\xf9" + b"\x00" * 64) is None
+
+    def test_a_real_mpeg1_layer3_frame_is_still_accepted(self):
+        # 0xFF 0xFB = sync + MPEG-1 (11) + Layer III (01).
+        assert sounds.detect_allowed_ext(b"\xff\xfb\x90\x44" + b"\x00" * 64) == "mp3"
+
+    def test_id3_tagged_mp3_is_still_accepted(self):
+        assert sounds.detect_allowed_ext(b"ID3\x03\x00" + b"\x00" * 64) == "mp3"

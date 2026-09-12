@@ -1641,6 +1641,7 @@ _TOP_LEVEL_SETTINGS = {"points_name", "points_icon"}
 _ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro", "accessible"}
 # Settings stored under storage._data["settings"][key]
 _SUBKEY_SETTINGS = {
+    "require_linked_child",
     "history_days",
     "streak_reset_mode",
     "card_design",
@@ -1848,6 +1849,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("difficulty_multiplier_medium"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("difficulty_multiplier_hard"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("unlock_allowlist"): [str],
+    vol.Optional("require_linked_child"): bool,
     vol.Optional("parent_routing"): vol.In(["all", "home", "round_robin"]),
     vol.Optional("read_aloud_media_player"): str,
     vol.Optional("read_aloud_tts_entity"): str,
@@ -2604,7 +2606,14 @@ async def ws_cal_regen_token(hass, connection, msg, coordinator):
 @websocket_api.async_response
 @_admin_only
 async def _ws_audit_list(hass, connection, msg, coordinator):
-    connection.send_result(msg["id"], {"entries": coordinator.storage.get_audit_log()})
+    connection.send_result(
+        msg["id"],
+        {
+            "entries": coordinator.storage.get_audit_log(),
+            # Non-zero means older entries have aged out of the capped log.
+            "dropped": coordinator.storage.get_audit_dropped_count(),
+        },
+    )
 
 
 @websocket_api.websocket_command({vol.Required("type"): WS_AUDIT_CLEAR})

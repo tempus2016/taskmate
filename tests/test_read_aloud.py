@@ -97,6 +97,7 @@ class TestSpeaking:
             "speak",
             {"entity_id": "tts.piper", "media_player_entity_id": "media_player.kitchen", "message": said},
             blocking=True,
+            context=None,
         )
 
     @pytest.mark.asyncio
@@ -164,3 +165,15 @@ class TestPreview:
         assert preview["message"] == DEFAULT_ONE_TEMPLATE.format(name="Ella", count=1, chores="a")
         assert preview["tts_entity"] == "tts.piper"
         coord.hass.services.async_call.assert_not_awaited()
+
+
+class TestReadAloudContext:
+    @pytest.mark.asyncio
+    async def test_caller_context_is_forwarded_to_tts(self):
+        """Without the context the speaker call is unattributed, so HA can't
+        apply the calling user's entity permissions to it."""
+        coord = _coord()
+        ctx = object()
+        await coord.async_read_aloud("kid1", media_player="media_player.kitchen", tts_entity="tts.piper", context=ctx)
+        _, kwargs = coord.hass.services.async_call.call_args
+        assert kwargs["context"] is ctx

@@ -93,9 +93,18 @@ def detect_allowed_ext(data: bytes) -> str | None:
     """
     if data[:3] == b"ID3":
         return "mp3"
-    # Bare MPEG audio with no ID3 tag: an 11-bit frame sync (0xFFE).
-    if len(data) >= 2 and data[0] == 0xFF and (data[1] & 0xE0) == 0xE0:
-        return "mp3"
+    # Bare MPEG audio with no ID3 tag. The 11-bit frame sync (0xFFE) alone is
+    # far too weak a test: 0xFF 0xFE is also a UTF-16LE byte-order mark, so any
+    # UTF-16 text file passed as audio and was then stored and served back from
+    # this origin as audio/mpeg. Validate the whole 4-byte frame header, whose
+    # reserved values a BOM does not satisfy.
+    if len(data) >= 4 and data[0] == 0xFF and (data[1] & 0xE0) == 0xE0:
+        version = (data[1] >> 3) & 0x03  # 01 is reserved
+        layer = (data[1] >> 1) & 0x03  # 00 is reserved
+        bitrate = (data[2] >> 4) & 0x0F  # 0000 is "free", 1111 is bad
+        sample_rate = (data[2] >> 2) & 0x03  # 11 is reserved
+        if version != 0x01 and layer != 0x00 and bitrate not in (0x00, 0x0F) and sample_rate != 0x03:
+            return "mp3"
     if data[:4] == b"OggS":
         return "ogg"
     if data[:4] == b"RIFF" and data[8:12] == b"WAVE":

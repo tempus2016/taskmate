@@ -74,4 +74,8 @@ async def async_context_allows_child(hass: HomeAssistant, coordinator: Any, cont
     others = coordinator.storage.get_children() or []
     if any(getattr(c, "linked_user_id", "") == user_id for c in others):
         return False
+    # Strict mode (opt-in): an unlinked child is not an open door. Mirrors the
+    # service-layer gate — parents may still act on any child's behalf.
+    if coordinator is not None and coordinator.storage.get_require_linked_child():
+        return user_id in (coordinator.storage.get_parent_user_ids() or [])
     return True

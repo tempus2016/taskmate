@@ -39,6 +39,13 @@ class SoundsMixin:
                 "value": f"{CUSTOM_PREFIX}{s.file}",
                 "file": s.file,
                 "name": s.name,
+                # Signed here rather than per-viewer (as evidence photos are):
+                # playback is synchronous at the moment a chore is ticked off,
+                # and a sound that arrives late or not at all is a worse bug
+                # than the exposure. The trade-off is that this signed URL sits
+                # in a world-readable attribute for its lifetime — acceptable
+                # only because the asset is a sound effect, with nothing
+                # personal in it. Do NOT copy this to anything sensitive.
                 "url": sign_sound_url(self.hass, sound_url_for_name(s.file)),
             }
             for s in self.storage.get_custom_sounds()

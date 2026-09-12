@@ -162,3 +162,38 @@ def test_sweep_removes_old_unreferenced_only(tmp_path):
 def test_sweep_missing_dir_is_noop(tmp_path):
     hass = _hass(tmp_path)
     assert run(photos.async_sweep_orphan_photos(hass, [])) == 0
+
+
+# ---------------------------------------------------------------------------
+# upload rate limiting (the one upload path open to non-admin users)
+# ---------------------------------------------------------------------------
+
+
+class TestUploadRateLimiter:
+    def test_allows_up_to_the_cap_then_refuses(self):
+        rl = photos.UploadRateLimiter(max_per_window=3, window_seconds=60)
+        assert [rl.check("u1", now=100 + i) for i in range(3)] == [False, False, False]
+        assert rl.check("u1", now=104) is True
+
+    def test_window_slides(self):
+        rl = photos.UploadRateLimiter(max_per_window=2, window_seconds=60)
+        rl.check("u1", now=100)
+        rl.check("u1", now=101)
+        assert rl.check("u1", now=102) is True
+        # Once the earlier attempts age out, the caller is allowed again.
+        assert rl.check("u1", now=200) is False
+
+    def test_users_are_independent(self):
+        rl = photos.UploadRateLimiter(max_per_window=1, window_seconds=60)
+        assert rl.check("u1", now=100) is False
+        assert rl.check("u1", now=101) is True
+        assert rl.check("u2", now=101) is False
+
+    def test_state_does_not_leak_for_idle_users(self):
+        rl = photos.UploadRateLimiter(max_per_window=5, window_seconds=60)
+        for i in range(50):
+            rl.check(f"user{i}", now=100 + i)
+        assert rl.tracked_users == 50
+        # Long after their windows closed, the map is swept.
+        rl.check("late", now=100_000)
+        assert rl.tracked_users == 1

@@ -12,4 +12,7 @@
 pytest-homeassistant-custom-component==0.13.357
 
 # Coverage reporting for CI (Tests workflow renders a per-module summary).
-pytest-cov
+# Pinned like the harness above: an unpinned dev dependency resolves to
+# whatever PyPI serves at job time, which is one supply-chain hop into every
+# test run.
+pytest-cov==7.1.0

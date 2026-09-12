@@ -16,6 +16,12 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+# Upper bound on a single child's pending reward claims. Each claim writes a
+# permanent record and pushes a notification to every routed parent, so an
+# unbounded queue is a way to bury the approvals list and spam phones. Mirrors
+# the pending-swap-request cap.
+_MAX_PENDING_CLAIMS_PER_CHILD = 20
+
 
 def reward_is_time_locked(reward: Reward, now: datetime | None = None) -> bool:
     """True if a time-locked reward is currently outside its allowed window (#857).
@@ -148,6 +154,18 @@ class RewardsMixin:
     # Module-level so sensor.py can reuse the same rule when building state.
     _reward_is_time_locked = staticmethod(reward_is_time_locked)
 
+    @staticmethod
+    def _reward_is_for_child(reward: Reward, child_id: str) -> bool:
+        """True if ``child_id`` is allowed this reward.
+
+        An empty ``assigned_to`` means "everyone", matching how the cards build
+        their reward list. The cards filter on this, so the coordinator has to
+        as well — otherwise a direct service call can claim or save towards a
+        reward meant for a sibling.
+        """
+        assigned = reward.assigned_to if isinstance(reward.assigned_to, list) else []
+        return not assigned or child_id in assigned
+
     @classmethod
     def _reward_is_unavailable(cls, reward: Reward) -> bool:
         """True if the reward is permanently out of reach — sold out or expired.
@@ -252,12 +270,24 @@ class RewardsMixin:
         if not child:
             raise ValueError(f"Child {child_id} not found")
 
+        if not self._reward_is_for_child(reward, child_id):
+            raise ValueError(f"Reward '{reward.name}' is not available to {child.name}")
         if self._reward_is_sold_out(reward):
             raise ValueError(f"Reward '{reward.name}' is sold out")
         if self._reward_is_expired(reward):
             raise ValueError(f"Reward '{reward.name}' has expired")
         if self._reward_is_time_locked(reward):
             raise ValueError(f"Reward '{reward.name}' is not available right now")
+
+        # A pool-filled claim skips the wallet check below, and a zero-cost
+        # reward can never fail it, so without these two guards a child can
+        # queue unlimited claims — each one a stored record plus a push to
+        # every parent.
+        own_pending = [c for c in self.storage.get_pending_reward_claims() if c.child_id == child_id]
+        if any(c.reward_id == reward_id for c in own_pending):
+            raise ValueError(f"A claim for '{reward.name}' is already waiting for approval")
+        if len(own_pending) >= _MAX_PENDING_CLAIMS_PER_CHILD:
+            raise ValueError("Too many reward claims are already waiting for approval")
 
         # Cost is always static
         effective_cost = reward.cost
@@ -373,6 +403,18 @@ class RewardsMixin:
                 child = self.get_child(claim.child_id)
                 if not reward or not child:
                     raise ValueError(f"Reward or child not found for claim {claim_id}")
+
+                # Stock and expiry are checked when the claim is made, but a
+                # claim can sit in the queue for days and several can stack up
+                # against the same item. Re-check here or approving them in
+                # turn hands out more units than exist (the counter floors at
+                # zero, so it doesn't even show). The time lock is deliberately
+                # not re-checked: approval is the parent's call, not the
+                # child's, so an out-of-hours approval is legitimate.
+                if self._reward_is_sold_out(reward):
+                    raise ValueError(f"Reward '{reward.name}' is sold out")
+                if self._reward_is_expired(reward):
+                    raise ValueError(f"Reward '{reward.name}' has expired")
 
                 # Cost is always static
                 effective_cost = reward.cost
@@ -494,6 +536,8 @@ class RewardsMixin:
         if not reward:
             raise ValueError(f"Reward {reward_id} not found")
 
+        if not self._reward_is_for_child(reward, child_id):
+            raise ValueError(f"Reward '{reward.name}' is not available to {child.name}")
         if self._reward_is_sold_out(reward):
             raise ValueError(f"Reward '{reward.name}' is sold out")
         if self._reward_is_expired(reward):
