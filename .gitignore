@@ -47,19 +47,13 @@ dev-config/
 coverage.xml
 htmlcov/
 
-# Internal review artefacts — never belong in the public repo
-AUDIT_PROMPT.md
-AUDIT_REPORT.md
+# Local tooling
 .claude/
 
-# Secrets and tokens. These should never be in the working tree at all, but a
-# stray `git add -A` must not be the thing that decides that.
+# Credentials
 .env
 .env.*
 secrets.yaml
-.ha_token
-.ha_token*
-.ha_test_user
 *.token
 *.pem
 *.key
