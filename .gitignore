@@ -46,14 +46,3 @@ dev-config/
 .coverage
 coverage.xml
 htmlcov/
-
-# Local tooling
-.claude/
-
-# Credentials
-.env
-.env.*
-secrets.yaml
-*.token
-*.pem
-*.key
