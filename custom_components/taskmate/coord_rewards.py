@@ -148,6 +148,18 @@ class RewardsMixin:
     # Module-level so sensor.py can reuse the same rule when building state.
     _reward_is_time_locked = staticmethod(reward_is_time_locked)
 
+    @staticmethod
+    def _reward_is_for_child(reward: Reward, child_id: str) -> bool:
+        """True if ``child_id`` is allowed this reward.
+
+        An empty ``assigned_to`` means "everyone", matching how the cards build
+        their reward list. The cards filter on this, so the coordinator has to
+        as well — otherwise a direct service call can claim or save towards a
+        reward meant for a sibling.
+        """
+        assigned = reward.assigned_to if isinstance(reward.assigned_to, list) else []
+        return not assigned or child_id in assigned
+
     @classmethod
     def _reward_is_unavailable(cls, reward: Reward) -> bool:
         """True if the reward is permanently out of reach — sold out or expired.
@@ -252,6 +264,8 @@ class RewardsMixin:
         if not child:
             raise ValueError(f"Child {child_id} not found")
 
+        if not self._reward_is_for_child(reward, child_id):
+            raise ValueError(f"Reward '{reward.name}' is not available to {child.name}")
         if self._reward_is_sold_out(reward):
             raise ValueError(f"Reward '{reward.name}' is sold out")
         if self._reward_is_expired(reward):
@@ -494,6 +508,8 @@ class RewardsMixin:
         if not reward:
             raise ValueError(f"Reward {reward_id} not found")
 
+        if not self._reward_is_for_child(reward, child_id):
+            raise ValueError(f"Reward '{reward.name}' is not available to {child.name}")
         if self._reward_is_sold_out(reward):
             raise ValueError(f"Reward '{reward.name}' is sold out")
         if self._reward_is_expired(reward):

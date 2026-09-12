@@ -751,3 +751,63 @@ class TestRemoveRewardRefundsPool:
         run(coord.async_remove_reward("reward1"))
         coord.storage.remove_reward.assert_called_once_with("reward1")
         assert coord.storage.add_points_transaction.call_count == 0
+
+
+# ---------------------------------------------------------------------------
+# assigned_to is a real restriction, not just a card-side filter
+# ---------------------------------------------------------------------------
+
+
+class TestRewardAssignment:
+    def test_claim_rejects_a_child_the_reward_is_not_assigned_to(self):
+        child = _child(points=500)
+        reward = _reward(cost=50)
+        reward.assigned_to = ["someone-else"]
+        coord = _make_coord(children=[child], rewards=[reward])
+
+        with pytest.raises(ValueError, match="not available to"):
+            run(coord.async_claim_reward("reward1", "kid1"))
+
+        coord.storage.add_reward_claim.assert_not_called()
+
+    def test_claim_allows_an_assigned_child(self):
+        child = _child(points=500)
+        reward = _reward(cost=50)
+        reward.assigned_to = ["kid1"]
+        coord = _make_coord(children=[child], rewards=[reward])
+
+        run(coord.async_claim_reward("reward1", "kid1"))
+        coord.storage.add_reward_claim.assert_called_once()
+
+    def test_claim_allows_everyone_when_assigned_to_is_empty(self):
+        child = _child(points=500)
+        reward = _reward(cost=50)
+        reward.assigned_to = []
+        coord = _make_coord(children=[child], rewards=[reward])
+
+        run(coord.async_claim_reward("reward1", "kid1"))
+        coord.storage.add_reward_claim.assert_called_once()
+
+    def test_pool_allocation_rejects_an_unassigned_child(self):
+        """Allocation deducts immediately and cannot be withdrawn — gate it too."""
+        child = _child(points=500)
+        reward = _reward(cost=50)
+        reward.assigned_to = ["someone-else"]
+        reward.pool_enabled = True
+        coord = _make_coord(children=[child], rewards=[reward])
+
+        with pytest.raises(ValueError, match="not available to"):
+            run(coord.async_allocate_points_to_pool("kid1", "reward1", 10))
+
+        assert child.points == 500
+        coord.storage.upsert_pool_allocation.assert_not_called()
+
+    def test_pool_allocation_allows_an_assigned_child(self):
+        child = _child(points=500)
+        reward = _reward(cost=50)
+        reward.assigned_to = ["kid1"]
+        reward.pool_enabled = True
+        coord = _make_coord(children=[child], rewards=[reward])
+
+        run(coord.async_allocate_points_to_pool("kid1", "reward1", 10))
+        coord.storage.upsert_pool_allocation.assert_called_once()
