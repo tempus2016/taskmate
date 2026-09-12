@@ -808,6 +808,8 @@
   "panel.settings_parents_title": "Pais (sem direitos de administrador)",
   "panel.settings_parents_hint": "Dê a um membro da família sem permissões de administrador o controle do dia a dia — aprovar tarefas, ajustar pontos, confirmar recompensas — sem direitos de administrador do Home Assistant. Ele ainda não poderá abrir este painel de administração nem alterar a configuração.",
   "panel.settings_parents_empty": "Nenhum usuário do Home Assistant sem permissões de administrador foi encontrado. Crie primeiro um usuário HA padrão e depois marque-o aqui.",
+  "panel.settings_require_linked_child_label": "Exigir uma conta vinculada por criança",
+  "panel.settings_require_linked_child_hint": "Só permite que a conta do Home Assistant da própria criança atue como essa criança. Deixe desligado em um tablet familiar compartilhado em que uma conta serve para todos. Pais e administradores sempre podem atuar por qualquer criança.",
   "panel.settings_evening_hint": "Padrão 17:00 – 21:00",
   "panel.settings_evening_label": "Noite",
   "panel.settings_history_title": "Histórico e sequências",

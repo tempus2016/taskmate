@@ -75,11 +75,30 @@ def test_allows_child_blocks_cross_child():
     coord = MagicMock()
     coord.get_child.return_value = MagicMock(linked_user_id="uid-malia")
     coord.storage.get_children.return_value = []
+    coord.storage.get_require_linked_child.return_value = False
     hass = _hass(MagicMock(is_admin=False))
     # Ella's HA user acting as Malia (who is linked to someone else) → denied.
     assert run(authz.async_context_allows_child(hass, coord, _ctx("uid-ella"), "malia")) is False
     # Malia's own linked user → allowed.
     assert run(authz.async_context_allows_child(hass, coord, _ctx("uid-malia"), "malia")) is True
+
+
+def test_allows_child_strict_mode_mirrors_the_service_gate():
+    """authz and _async_require_linked_child must not drift on strict mode."""
+    coord = MagicMock()
+    coord.get_child.return_value = MagicMock(linked_user_id="")
+    coord.storage.get_children.return_value = []
+    coord.storage.get_parent_user_ids.return_value = ["uid-parent"]
+    hass = _hass(MagicMock(is_admin=False))
+
+    coord.storage.get_require_linked_child.return_value = False
+    assert run(authz.async_context_allows_child(hass, coord, _ctx("uid-anyone"), "malia")) is True
+
+    coord.storage.get_require_linked_child.return_value = True
+    assert run(authz.async_context_allows_child(hass, coord, _ctx("uid-anyone"), "malia")) is False
+    # Parents and trusted/context-less callers still pass.
+    assert run(authz.async_context_allows_child(hass, coord, _ctx("uid-parent"), "malia")) is True
+    assert run(authz.async_context_allows_child(hass, coord, _ctx(""), "malia")) is True
 
 
 # ── entity platforms enforce the gate ───────────────────────────────────────

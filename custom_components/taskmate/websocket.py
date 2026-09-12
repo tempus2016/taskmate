@@ -1641,6 +1641,7 @@ _TOP_LEVEL_SETTINGS = {"points_name", "points_icon"}
 _ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro", "accessible"}
 # Settings stored under storage._data["settings"][key]
 _SUBKEY_SETTINGS = {
+    "require_linked_child",
     "history_days",
     "streak_reset_mode",
     "card_design",
@@ -1848,6 +1849,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("difficulty_multiplier_medium"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("difficulty_multiplier_hard"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("unlock_allowlist"): [str],
+    vol.Optional("require_linked_child"): bool,
     vol.Optional("parent_routing"): vol.In(["all", "home", "round_robin"]),
     vol.Optional("read_aloud_media_player"): str,
     vol.Optional("read_aloud_tts_entity"): str,

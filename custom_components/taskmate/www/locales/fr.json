@@ -808,6 +808,8 @@
   "panel.settings_parents_title": "Parents (sans droits admin)",
   "panel.settings_parents_hint": "Donnez à un membre du foyer non-administrateur le contrôle quotidien — valider les tâches, ajuster les points, confirmer les récompenses — sans droits d’administrateur Home Assistant. Il ne pourra toujours pas ouvrir ce panneau d’administration ni modifier la configuration.",
   "panel.settings_parents_empty": "Aucun utilisateur Home Assistant non-administrateur trouvé. Créez d’abord un utilisateur HA standard, puis cochez-le ici.",
+  "panel.settings_require_linked_child_label": "Exiger un compte lié par enfant",
+  "panel.settings_require_linked_child_hint": "Seul le compte Home Assistant d'un enfant peut agir en son nom. Laissez désactivé pour une tablette familiale partagée où un seul compte sert à tous. Les parents et les administrateurs peuvent toujours agir pour n'importe quel enfant.",
   "panel.settings_evening_hint": "Par défaut 17:00 – 21:00",
   "panel.settings_evening_label": "Soir",
   "panel.settings_history_title": "Historique et séries",

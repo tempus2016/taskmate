@@ -445,6 +445,13 @@ async def _async_require_linked_child(hass: HomeAssistant, call: ServiceCall, co
     others = coordinator.storage.get_children() or []
     if any(getattr(c, "linked_user_id", "") == user_id for c in others):
         raise Unauthorized(context=call.context)
+    # Strict mode: households where every child has their own HA login can
+    # require a link, so an unlinked child profile is no longer an open door
+    # for any authenticated user. Parents keep acting on any child's behalf.
+    if coordinator.storage.get_require_linked_child():
+        if user_id in (coordinator.storage.get_parent_user_ids() or []):
+            return
+        raise Unauthorized(context=call.context)
 
 
 async def _async_register_services(hass: HomeAssistant) -> None:

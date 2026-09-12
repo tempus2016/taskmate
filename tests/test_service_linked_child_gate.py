@@ -39,6 +39,10 @@ def _coordinator(linked_user_id, others=None):
     # mirror that exact path so a regression to a non-existent coordinator
     # method (issue #641) is caught here rather than only at runtime.
     coord.storage.get_children.return_value = others or []
+    # Strict mode is opt-in; default the flag off so the kiosk cases below
+    # exercise the shipped default rather than a truthy MagicMock.
+    coord.storage.get_require_linked_child.return_value = False
+    coord.storage.get_parent_user_ids.return_value = []
     return coord
 
 
@@ -105,3 +109,49 @@ async def test_unlinked_child_admin_still_allowed_with_other_links():
     """An admin is allowed through an unlinked child even when other links exist."""
     coord = _coordinator("", others=[MagicMock(linked_user_id="uid-sibling")])
     await tm._async_require_linked_child(_hass(MagicMock(is_admin=True)), _call("uid-parent"), coord, "child-1")
+
+
+@pytest.mark.asyncio
+async def test_strict_mode_blocks_unlinked_child():
+    """With require_linked_child on, an unlinked child is no longer an open door."""
+    coord = _coordinator("")
+    coord.storage.get_require_linked_child.return_value = True
+    with pytest.raises(tm.Unauthorized):
+        await tm._async_require_linked_child(
+            _hass(MagicMock(is_admin=False)), _call("uid-anyone"), coord, "child-1"
+        )
+
+
+@pytest.mark.asyncio
+async def test_strict_mode_allows_the_linked_user():
+    """Strict mode is about *unlinked* children — the linked user still passes."""
+    coord = _coordinator("uid-malia")
+    coord.storage.get_require_linked_child.return_value = True
+    await tm._async_require_linked_child(
+        _hass(MagicMock(is_admin=False)), _call("uid-malia"), coord, "child-1"
+    )
+
+
+@pytest.mark.asyncio
+async def test_strict_mode_allows_admins_and_parents():
+    """Admins and configured TaskMate parents keep acting for any child."""
+    coord = _coordinator("")
+    coord.storage.get_require_linked_child.return_value = True
+    await tm._async_require_linked_child(
+        _hass(MagicMock(is_admin=True)), _call("uid-admin"), coord, "child-1"
+    )
+
+    coord2 = _coordinator("")
+    coord2.storage.get_require_linked_child.return_value = True
+    coord2.storage.get_parent_user_ids.return_value = ["uid-parent"]
+    await tm._async_require_linked_child(
+        _hass(MagicMock(is_admin=False)), _call("uid-parent"), coord2, "child-1"
+    )
+
+
+@pytest.mark.asyncio
+async def test_strict_mode_still_passes_context_less_calls():
+    """Automations and scripts stay trusted in strict mode."""
+    coord = _coordinator("")
+    coord.storage.get_require_linked_child.return_value = True
+    await tm._async_require_linked_child(_hass(None), _call(None), coord, "child-1")

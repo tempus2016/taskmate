@@ -15,8 +15,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from custom_components.taskmate.models import BonusSubTask
 from custom_components.taskmate.coordinator import TaskMateCoordinator
+from custom_components.taskmate.models import BonusSubTask
 from custom_components.taskmate.storage import TaskMateStorage
 
 UTC = timezone.utc

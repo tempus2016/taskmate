@@ -808,6 +808,8 @@
   "panel.settings_parents_title": "Eltern (ohne Admin-Rechte)",
   "panel.settings_parents_hint": "Geben Sie einem Haushaltsmitglied ohne Admin-Rechte die tägliche Kontrolle — Aufgaben bestätigen, Punkte anpassen, Belohnungen freigeben — ohne Home-Assistant-Administratorrechte. Dieses Admin-Panel können sie weiterhin nicht öffnen und die Konfiguration nicht ändern.",
   "panel.settings_parents_empty": "Keine Home-Assistant-Benutzer ohne Admin-Rechte gefunden. Erstellen Sie zuerst einen normalen HA-Benutzer und wählen Sie ihn dann hier aus.",
+  "panel.settings_require_linked_child_label": "Verknüpftes Konto pro Kind verlangen",
+  "panel.settings_require_linked_child_hint": "Nur das eigene Home-Assistant-Konto eines Kindes darf für dieses Kind handeln. Für ein gemeinsames Familien-Tablet, auf dem ein Konto für alle genutzt wird, ausgeschaltet lassen. Eltern und Admins können immer für jedes Kind handeln.",
   "panel.settings_evening_hint": "Standard 17:00 – 21:00",
   "panel.settings_evening_label": "Abend",
   "panel.settings_history_title": "Verlauf & Serien",

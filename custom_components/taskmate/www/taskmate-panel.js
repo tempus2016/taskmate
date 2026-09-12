@@ -4559,6 +4559,10 @@ class TaskMatePanel extends HTMLElement {
                 <input type="checkbox" class="tm-role-check" data-parent-user="${this._esc(u.id)}" ${(s.parent_user_ids || []).includes(u.id) ? "checked" : ""}>
               </label>`).join("")
               || `<p class="tm-meta">${this._t("panel.settings_parents_empty")}</p>`}
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_require_linked_child_label")}<small>${this._t("panel.settings_require_linked_child_hint")}</small></div>
+              <ha-switch data-setting="require_linked_child" ${s.require_linked_child ? "checked" : ""}></ha-switch>
+            </div>
           </div>
         </div>
 

@@ -821,6 +821,17 @@ class TaskMateStorage:
             return []
         return [x for x in raw if isinstance(x, str) and x]
 
+    def get_require_linked_child(self) -> bool:
+        """True when acting *as* a child requires that child to be linked.
+
+        Off by default: the shared-tablet/kiosk setup (nobody linked, one
+        household account drives every child) is the common deployment and
+        must keep working on upgrade. Households where each child has their
+        own Home Assistant login can switch this on to stop one child acting
+        through another's profile.
+        """
+        return bool((self._data.get("settings", {}) or {}).get("require_linked_child", False))
+
     def set_parent_user_ids(self, ids: list[str]) -> None:
         """Replace the parent role list (deduped, order-preserving, strings only)."""
         seen: list[str] = []
