@@ -2606,7 +2606,14 @@ async def ws_cal_regen_token(hass, connection, msg, coordinator):
 @websocket_api.async_response
 @_admin_only
 async def _ws_audit_list(hass, connection, msg, coordinator):
-    connection.send_result(msg["id"], {"entries": coordinator.storage.get_audit_log()})
+    connection.send_result(
+        msg["id"],
+        {
+            "entries": coordinator.storage.get_audit_log(),
+            # Non-zero means older entries have aged out of the capped log.
+            "dropped": coordinator.storage.get_audit_dropped_count(),
+        },
+    )
 
 
 @websocket_api.websocket_command({vol.Required("type"): WS_AUDIT_CLEAR})

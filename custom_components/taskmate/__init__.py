@@ -472,6 +472,23 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         # Unauthorized (not ValueError), so it is unaffected and still 401s.
         return _safe(wrapped)
 
+    def _audited(handler):
+        """Wrap a child-facing handler so its mutation is recorded too.
+
+        Only the admin and parent wrappers used to audit. Everything a child
+        can drive — completing a chore, claiming a reward, allocating points —
+        therefore left no trail at all, which is exactly the set of actions
+        worth being able to review. The guards stay inside each handler; this
+        only adds the record.
+        """
+
+        @wraps(handler)
+        async def wrapped(call: ServiceCall) -> None:
+            await handler(call)
+            await _async_record_service_audit(hass, call)
+
+        return _safe(wrapped)
+
     def _parent(handler):
         """Like _admin, but also allows non-admin users in parent_user_ids (#661).
 
@@ -1103,7 +1120,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_COMPLETE_CHORE,
-        handle_complete_chore,
+        _audited(handle_complete_chore),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHORE_ID): cv.string,
@@ -1117,7 +1134,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_COMPLETE_BONUS_SUBTASK,
-        _safe(handle_complete_bonus_subtask),
+        _audited(handle_complete_bonus_subtask),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHORE_ID): cv.string,
@@ -1130,7 +1147,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_START_TIMED_TASK,
-        _safe(handle_start_timed_task),
+        _audited(handle_start_timed_task),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHORE_ID): cv.string,
@@ -1142,7 +1159,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_PAUSE_TIMED_TASK,
-        _safe(handle_pause_timed_task),
+        _audited(handle_pause_timed_task),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHORE_ID): cv.string,
@@ -1154,7 +1171,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_STOP_TIMED_TASK,
-        _safe(handle_stop_timed_task),
+        _audited(handle_stop_timed_task),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHORE_ID): cv.string,
@@ -1277,7 +1294,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_REQUEST_SWAP,
-        _safe(handle_request_swap),
+        _audited(handle_request_swap),
         schema=vol.Schema(
             {
                 vol.Required("chore_id"): cv.string,
@@ -1305,14 +1322,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_SPIN_ROULETTE,
-        _safe(handle_spin_roulette),
+        _audited(handle_spin_roulette),
         schema=vol.Schema({vol.Required(ATTR_CHILD_ID): cv.string}),
     )
 
     hass.services.async_register(
         DOMAIN,
         SERVICE_CHOOSE_AVATAR,
-        _safe(handle_choose_avatar),
+        _audited(handle_choose_avatar),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHILD_ID): cv.string,
@@ -1324,7 +1341,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_CLAIM_REWARD,
-        _safe(handle_claim_reward),
+        _audited(handle_claim_reward),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_REWARD_ID): cv.string,
@@ -1354,7 +1371,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_ALLOCATE_POINTS_TO_POOL,
-        _safe(handle_allocate_points_to_pool),
+        _audited(handle_allocate_points_to_pool),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHILD_ID): cv.string,

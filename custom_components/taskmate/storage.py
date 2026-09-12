@@ -1033,15 +1033,30 @@ class TaskMateStorage:
         return list(reversed(self._data.get("audit_log", [])))
 
     def add_audit_entry(self, entry: dict) -> None:
-        """Append an admin audit entry, capping the log at 500 (oldest dropped)."""
+        """Append an audit entry, capping the log at 500 (oldest dropped).
+
+        Truncation is counted, not silent: without a marker, generating 500
+        routine entries quietly pushes an earlier one out of the log and the
+        reader has no way to tell that anything is missing.
+        """
         log = self._data.setdefault("audit_log", [])
         log.append(entry)
         if len(log) > 500:
+            dropped = len(log) - 500
             del log[:-500]
+            self._data["audit_log_dropped"] = int(self._data.get("audit_log_dropped", 0) or 0) + dropped
+
+    def get_audit_dropped_count(self) -> int:
+        """How many audit entries have aged out of the capped log."""
+        try:
+            return int(self._data.get("audit_log_dropped", 0) or 0)
+        except (TypeError, ValueError):
+            return 0
 
     def clear_audit_log(self) -> None:
         """Remove all audit entries."""
         self._data["audit_log"] = []
+        self._data["audit_log_dropped"] = 0
 
     # ── Chore swap requests ──────────────────────────────────────────────
     def get_swap_requests(self) -> list[dict]:
