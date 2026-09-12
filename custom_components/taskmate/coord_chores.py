@@ -1290,6 +1290,11 @@ class ChoresMixin:
                 self.storage.remove_completion(bc.id)
 
         self.storage.remove_completion(completion_id)
+        if target_completion and target_completion.approved and not target_completion.bonus_subtask_id:
+            # Same as undo: a rejected completion must not leave the quest
+            # chain standing on the step it unlocked.
+            if hasattr(self, "_async_rewind_quests"):
+                await self._async_rewind_quests(target_completion.child_id, target_completion.chore_id)
         # The completion record is gone, so its evidence photo is now orphaned —
         # delete it (best-effort; foreign/blank URLs are ignored).
         if target_completion and getattr(target_completion, "photo_url", ""):
@@ -1354,6 +1359,12 @@ class ChoresMixin:
         target.approved_at = None
         target.points_awarded = 0
         self.storage.update_completion(target)
+
+        # Quest progress advanced on approval, so it has to come back too —
+        # otherwise re-approving the same completion advances the chain a
+        # second time and pays a repeatable quest's bonus twice.
+        if not target.bonus_subtask_id and hasattr(self, "_async_rewind_quests"):
+            await self._async_rewind_quests(target.child_id, target.chore_id)
 
         await self.storage.async_save()
         await self.async_refresh()

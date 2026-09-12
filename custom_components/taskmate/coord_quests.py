@@ -122,6 +122,70 @@ class QuestsMixin:
             await self.storage.async_save()
             await self.async_refresh()
 
+    async def _async_rewind_quests(self, child_id: str, chore_id: str) -> None:
+        """Undo a quest step that a now-reversed completion had advanced.
+
+        Progress used to be one-way: rejecting or un-approving a completion left
+        the quest sitting on the step it unlocked, so re-approving the same
+        completion advanced it again — and on a repeatable quest that meant
+        paying the completion bonus a second time for one piece of work.
+        """
+        child = self.get_child(child_id)
+        if not child:
+            return
+        changed = False
+        for quest in self.storage.get_quests():
+            if not quest.active or not quest.steps:
+                continue
+            if not self._quest_applies_to(quest, child_id):
+                continue
+            prog = dict(self.storage.get_quest_child_progress(quest.id, child_id))
+            step = int(prog.get("step", 0))
+            completed = int(prog.get("completed_count", 0))
+            was_finished = False
+
+            if step > 0 and quest.steps[step - 1] == chore_id:
+                # Ordinary mid-quest step, or the final step of a one-shot
+                # quest (whose step stays at len(steps) once finished).
+                was_finished = step >= len(quest.steps)
+                prog["step"] = step - 1
+            elif step == 0 and completed > 0 and quest.steps[-1] == chore_id:
+                # A repeatable quest wrapped back to the start on this very
+                # completion: step back into its final step.
+                was_finished = True
+                prog["step"] = len(quest.steps) - 1
+            else:
+                continue
+
+            if was_finished:
+                prog["completed_count"] = max(0, completed - 1)
+                self._refund_quest_bonus(quest, child)
+
+            self.storage.set_quest_child_progress(quest.id, child_id, prog)
+            changed = True
+
+        if changed:
+            self.storage.update_child(child)
+            await self.storage.async_save()
+            await self.async_refresh()
+
+    def _refund_quest_bonus(self, quest: Quest, child) -> None:
+        """Take back a quest completion bonus, logging the reversal."""
+        bonus = int(quest.bonus_points or 0)
+        if bonus <= 0:
+            return
+        child.points = max(0, child.points - bonus)
+        child.total_points_earned = max(0, child.total_points_earned - bonus)
+        child.career_score = child.total_points_earned - child.total_penalties_received
+        self.storage.add_points_transaction(
+            PointsTransaction(
+                child_id=child.id,
+                points=-bonus,
+                reason=f"Quest reversed: {quest.name}",
+                created_at=dt_util.now(),
+            )
+        )
+
     async def _complete_quest(self, quest: Quest, child, prog: dict) -> None:
         """Award the quest bonus and reset/finalise progress."""
         prog["completed_count"] = int(prog.get("completed_count", 0)) + 1
