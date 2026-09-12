@@ -844,13 +844,19 @@ class ChoresMixin:
             photo_url=photo_url or "",
         )
 
+        # Record the completion before awarding anything. Awarding can suspend
+        # (a level-up or streak milestone sends a notification), and the
+        # daily-limit check above counts stored completions — so with the write
+        # last, two calls that arrive together could both pass the check and
+        # both be paid. Writing the marker first closes that window.
+        self.storage.add_completion(completion)
+
         if auto_approve:
             total_awarded = await self._award_points(child, effective_points, chore_id=chore_id)
             completion.approved = True
             completion.approved_at = dt_util.now()
             completion.points_awarded = total_awarded
-
-        self.storage.add_completion(completion)
+            self.storage.update_completion(completion)
 
         self.hass.bus.async_fire(
             "taskmate_chore_completed",
@@ -1022,13 +1028,17 @@ class ChoresMixin:
             bonus_subtask_id=bonus_subtask_id,
         )
 
+        # Written before the award for the same reason as the main completion
+        # path: the duplicate check above reads stored completions, and
+        # awarding can suspend.
+        self.storage.add_completion(completion)
+
         if not chore.requires_approval:
             total_awarded = await self._award_points(child, subtask.points, skip_streak=True)
             completion.approved = True
             completion.approved_at = dt_util.now()
             completion.points_awarded = total_awarded
-
-        self.storage.add_completion(completion)
+            self.storage.update_completion(completion)
         await self.storage.async_save()
 
         if chore.requires_approval:
@@ -1075,6 +1085,16 @@ class ChoresMixin:
                         pts = self._apply_time_adjustment(
                             chore, self.effective_chore_points(chore), completion.completed_at
                         )
+                    # Claim the completion before awarding. The "already
+                    # approved" check above and the award are separated by an
+                    # await that can suspend, so two approvals landing together
+                    # (a double-tap, or Approve All overlapping a single
+                    # approve) could otherwise both get through and pay twice.
+                    completion.approved = True
+                    completion.approved_at = dt_util.now()
+                    completion.points_awarded = 0
+                    self.storage.update_completion(completion)
+
                     total_awarded = await self._award_points(
                         child,
                         pts,
@@ -1082,8 +1102,6 @@ class ChoresMixin:
                         skip_streak=is_bonus,
                         chore_id=completion.chore_id,
                     )
-                    completion.approved = True
-                    completion.approved_at = dt_util.now()
                     completion.points_awarded = total_awarded
                     self.storage.update_completion(completion)
 
