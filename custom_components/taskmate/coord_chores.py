@@ -751,17 +751,16 @@ class ChoresMixin:
                 )
                 return None
 
-        # specific_days chores were historically only filtered by the child card
-        # (see get_due_chores_for_child), so a crafted service / entity / Dev
-        # Tools call could complete one that is disabled, not scheduled today, or
+        # Chores were historically only filtered by the child card (see
+        # get_due_chores_for_child), so a crafted service / entity / Dev Tools
+        # call could complete one that is disabled, not scheduled today, or
         # assigned to a different child. Enforce the same eligibility the card
-        # uses, server-side. Parents completing on behalf are the authority and
-        # stay exempt.
-        if (
-            not as_parent
-            and getattr(chore, "schedule_mode", "specific_days") == "specific_days"
-            and not self._is_chore_completable_by_child(chore, child_id)
-        ):
+        # uses, server-side, for EVERY schedule mode — the `assigned_to`
+        # membership test lives in _is_chore_completable_by_child, so gating
+        # this on specific_days left recurring/one_shot chores unchecked.
+        # Parents completing on behalf are the authority and stay exempt (the
+        # recurrence/one-shot window below still applies to them).
+        if not as_parent and not self._is_chore_completable_by_child(chore, child_id):
             _LOGGER.debug(
                 "complete_chore no-op: '%s' not eligible for %s today (assignment/schedule/availability)",
                 chore.name,
@@ -979,6 +978,14 @@ class ChoresMixin:
 
         now = dt_util.now()
         today = dt_util.as_local(now).date()
+
+        # A bonus sub-task belongs to its parent chore's assignment. Availability
+        # is deliberately NOT re-checked here — the parent chore being done today
+        # is what makes the bonus available, and for one_shot/recurring chores
+        # that same completion closes the availability window.
+        assigned = getattr(chore, "assigned_to", []) or []
+        if assigned and child_id not in assigned:
+            raise ValueError(f"Bonus sub-task '{subtask.name}' is not assigned to {child.name}.")
 
         # Gate check: parent chore must be completed today
         all_completions = self.storage.get_completions()
