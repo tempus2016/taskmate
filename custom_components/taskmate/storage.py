@@ -56,6 +56,7 @@ def _finite_number(value: Any, default: int | float) -> int | float:
         return default
     return int(num) if float(num).is_integer() else num
 
+
 STORAGE_VERSION = 1
 STORAGE_KEY = f"{DOMAIN}.storage"
 
@@ -1284,11 +1285,26 @@ class TaskMateStorage:
         _NUMERIC_RECORD_FIELDS = {
             # NB: streak_milestones_achieved is a list[int], not a scalar — it
             # must not be coerced here.
-            "children": ("points", "total_points_earned", "total_chores_completed", "current_streak",
-                         "best_streak", "career_score", "total_penalties_received"),
-            "chores": ("points", "claim_allowance_minutes", "daily_limit", "mandatory_penalty_points",
-                       "speed_bonus_points", "skip_count", "timed_rate_points", "timed_rate_minutes",
-                       "timed_max_daily_minutes"),
+            "children": (
+                "points",
+                "total_points_earned",
+                "total_chores_completed",
+                "current_streak",
+                "best_streak",
+                "career_score",
+                "total_penalties_received",
+            ),
+            "chores": (
+                "points",
+                "claim_allowance_minutes",
+                "daily_limit",
+                "mandatory_penalty_points",
+                "speed_bonus_points",
+                "skip_count",
+                "timed_rate_points",
+                "timed_rate_minutes",
+                "timed_max_daily_minutes",
+            ),
             "rewards": ("cost", "restock_amount", "unlock_minutes"),
             "penalties": ("points",),
             "bonuses": ("points",),
@@ -1439,9 +1455,15 @@ class TaskMateStorage:
                 if key not in settings:
                     continue
                 val = settings[key]
-                if isinstance(val, bool) or not isinstance(val, (int, float)) or val != val or val in (
-                    float("inf"),
-                    float("-inf"),
+                if (
+                    isinstance(val, bool)
+                    or not isinstance(val, (int, float))
+                    or val != val
+                    or val
+                    in (
+                        float("inf"),
+                        float("-inf"),
+                    )
                 ):
                     # inf/NaN parse happily via float() but blow up later in
                     # arithmetic (e.g. a multiplier), so drop them to the default.

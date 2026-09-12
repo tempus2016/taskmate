@@ -91,11 +91,7 @@ async def test_import_drops_unparseable_timestamps(hass):
     storage = TaskMateStorage(hass, "imp4")
     await storage.async_load()
     storage.import_data(
-        {
-            "completions": [
-                {"id": "x1", "chore_id": "c1", "child_id": "k1", "completed_at": XSS, "approved_at": XSS}
-            ]
-        }
+        {"completions": [{"id": "x1", "chore_id": "c1", "child_id": "k1", "completed_at": XSS, "approved_at": XSS}]}
     )
     comp = storage._data["completions"][0]
     assert comp["completed_at"] == ""
@@ -107,9 +103,7 @@ async def test_import_keeps_valid_timestamps(hass):
     storage = TaskMateStorage(hass, "imp5")
     await storage.async_load()
     stamp = "2026-06-21T13:00:00+00:00"
-    storage.import_data(
-        {"completions": [{"id": "x1", "chore_id": "c1", "child_id": "k1", "completed_at": stamp}]}
-    )
+    storage.import_data({"completions": [{"id": "x1", "chore_id": "c1", "child_id": "k1", "completed_at": stamp}]})
     assert storage._data["completions"][0]["completed_at"] == stamp
 
 
@@ -192,9 +186,7 @@ def test_template_pack_coerces_optional_numbers():
 
 def test_template_pack_preserves_valid_values():
     coord = _templates_coord()
-    clean = coord._validate_pack(
-        _pack({"name": "Make bed", "points": 25, "daily_limit": 2, "weather_temp_min": 4.5})
-    )
+    clean = coord._validate_pack(_pack({"name": "Make bed", "points": 25, "daily_limit": 2, "weather_temp_min": 4.5}))
     chore = clean[0]["chores"][0]
     assert chore["points"] == 25
     assert chore["daily_limit"] == 2
@@ -226,9 +218,7 @@ async def test_import_drops_custom_sounds_with_a_bad_filename(hass):
 async def test_import_cleans_custom_sound_names(hass):
     storage = TaskMateStorage(hass, "snd2")
     await storage.async_load()
-    storage.import_data(
-        {"custom_sounds": [{"id": "s1", "name": "x" * 200, "file": "b" * 32 + ".ogg"}]}
-    )
+    storage.import_data({"custom_sounds": [{"id": "s1", "name": "x" * 200, "file": "b" * 32 + ".ogg"}]})
     assert len(storage._data["custom_sounds"][0]["name"]) <= 40
 
 

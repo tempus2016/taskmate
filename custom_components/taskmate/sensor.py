@@ -310,6 +310,12 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         # `icon` above, to keep records under the 16KB recorder limit.
         image_url = getattr(c, "image_url", "")
         if image_url:
+            # Same trade-off as custom sounds, and unlike evidence photos
+            # (which deliberately emit a bare path for the card to sign per
+            # viewer): a chore picture is decorative and renders on first
+            # paint, so signing it here keeps that render synchronous. It does
+            # mean the signed URL is readable in this attribute — fine for a
+            # chore picture, not fine for anything personal.
             record["image_url"] = images.sign_image_url(common["hass"], image_url)
         completion_sound = getattr(c, "completion_sound", "coin")
         if completion_sound and completion_sound != "coin":

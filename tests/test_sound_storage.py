@@ -221,7 +221,7 @@ def test_sign_sound_url_passes_through_foreign_urls(tmp_path):
 class TestMp3SniffRejectsText:
     def test_utf16_bom_is_not_audio(self):
         """0xFF 0xFE is a UTF-16LE BOM; it passes a sync-bits-only check."""
-        html = '<html><script>alert(1)</script></html>'.encode("utf-16-le")
+        html = "<html><script>alert(1)</script></html>".encode("utf-16-le")
         assert sounds.detect_allowed_ext(b"\xff\xfe" + html) is None
 
     def test_utf16_be_bom_is_not_audio(self):

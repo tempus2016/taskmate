@@ -160,9 +160,9 @@ def test_child_facing_services_are_audited():
     """The actions a child can drive are exactly the ones worth reviewing."""
     import pathlib
 
-    src = (
-        pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "__init__.py"
-    ).read_text(encoding="utf-8")
+    src = (pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "__init__.py").read_text(
+        encoding="utf-8"
+    )
 
     for handler in (
         "handle_complete_chore",

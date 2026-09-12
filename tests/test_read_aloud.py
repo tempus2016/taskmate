@@ -174,8 +174,6 @@ class TestReadAloudContext:
         apply the calling user's entity permissions to it."""
         coord = _coord()
         ctx = object()
-        await coord.async_read_aloud(
-            "kid1", media_player="media_player.kitchen", tts_entity="tts.piper", context=ctx
-        )
+        await coord.async_read_aloud("kid1", media_player="media_player.kitchen", tts_entity="tts.piper", context=ctx)
         _, kwargs = coord.hass.services.async_call.call_args
         assert kwargs["context"] is ctx

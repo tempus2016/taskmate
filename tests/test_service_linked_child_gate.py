@@ -117,9 +117,7 @@ async def test_strict_mode_blocks_unlinked_child():
     coord = _coordinator("")
     coord.storage.get_require_linked_child.return_value = True
     with pytest.raises(tm.Unauthorized):
-        await tm._async_require_linked_child(
-            _hass(MagicMock(is_admin=False)), _call("uid-anyone"), coord, "child-1"
-        )
+        await tm._async_require_linked_child(_hass(MagicMock(is_admin=False)), _call("uid-anyone"), coord, "child-1")
 
 
 @pytest.mark.asyncio
@@ -127,9 +125,7 @@ async def test_strict_mode_allows_the_linked_user():
     """Strict mode is about *unlinked* children — the linked user still passes."""
     coord = _coordinator("uid-malia")
     coord.storage.get_require_linked_child.return_value = True
-    await tm._async_require_linked_child(
-        _hass(MagicMock(is_admin=False)), _call("uid-malia"), coord, "child-1"
-    )
+    await tm._async_require_linked_child(_hass(MagicMock(is_admin=False)), _call("uid-malia"), coord, "child-1")
 
 
 @pytest.mark.asyncio
@@ -137,16 +133,12 @@ async def test_strict_mode_allows_admins_and_parents():
     """Admins and configured TaskMate parents keep acting for any child."""
     coord = _coordinator("")
     coord.storage.get_require_linked_child.return_value = True
-    await tm._async_require_linked_child(
-        _hass(MagicMock(is_admin=True)), _call("uid-admin"), coord, "child-1"
-    )
+    await tm._async_require_linked_child(_hass(MagicMock(is_admin=True)), _call("uid-admin"), coord, "child-1")
 
     coord2 = _coordinator("")
     coord2.storage.get_require_linked_child.return_value = True
     coord2.storage.get_parent_user_ids.return_value = ["uid-parent"]
-    await tm._async_require_linked_child(
-        _hass(MagicMock(is_admin=False)), _call("uid-parent"), coord2, "child-1"
-    )
+    await tm._async_require_linked_child(_hass(MagicMock(is_admin=False)), _call("uid-parent"), coord2, "child-1")
 
 
 @pytest.mark.asyncio

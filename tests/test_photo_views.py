@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import pathlib
 
-SRC = (
-    pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "http_photos.py"
-).read_text(encoding="utf-8")
+SRC = (pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "http_photos.py").read_text(
+    encoding="utf-8"
+)
 
 
 def test_upload_is_rate_limited_per_user():
