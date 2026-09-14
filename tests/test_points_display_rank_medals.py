@@ -24,9 +24,7 @@ LOOKBACK = 4
 def _medal_lines() -> list[tuple[int, str]]:
     """1-indexed lines that paint a medal, excluding the RANK_MEDAL table itself."""
     return [
-        (n, line)
-        for n, line in enumerate(LINES, start=1)
-        if "RANK_MEDAL[" in line and "const RANK_MEDAL" not in line
+        (n, line) for n, line in enumerate(LINES, start=1) if "RANK_MEDAL[" in line and "const RANK_MEDAL" not in line
     ]
 
 
@@ -40,7 +38,7 @@ def test_every_medal_render_site_is_gated_on_show_rank():
     ungated = [
         f"line {n}: {line.strip()}"
         for n, line in _medal_lines()
-        if not re.search(r"show_rank|showRank", "\n".join(LINES[max(0, n - 1 - LOOKBACK):n]))
+        if not re.search(r"show_rank|showRank", "\n".join(LINES[max(0, n - 1 - LOOKBACK) : n]))
     ]
     assert not ungated, "medal rendered without a show_rank gate:\n" + "\n".join(ungated)
 
