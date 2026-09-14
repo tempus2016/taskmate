@@ -731,8 +731,7 @@ class TaskMatePointsDisplayCard extends LitElement {
           return html`
             <div class="child-tile ${isTop ? "top-child" : ""}"
                  style="${isTop ? `border-color:${colour};` : ""}">
-              ${isTop ? html`<div class="rank-badge">\u{1F947}</div>` :
-                idx < 3 && this.config.show_rank ? html`<div class="rank-badge">${RANK_MEDAL[idx]}</div>` : ""}
+              ${idx < 3 && this.config.show_rank ? html`<div class="rank-badge">${RANK_MEDAL[idx]}</div>` : ""}
               ${childAvatar(child, colour)}
               <div class="child-name">${child.name}</div>
               <div class="tile-points" style="color:${colour}">
