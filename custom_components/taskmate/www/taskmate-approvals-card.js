@@ -399,6 +399,8 @@ class TaskMateApprovalsCard extends LitElement {
         border-radius: 16px;
         padding: 18px;
         box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        max-height: 88vh;
+        overflow-y: auto;
       }
 
       .tm-rv-title { font-size: 1.05rem; font-weight: 800; }
@@ -417,8 +419,12 @@ class TaskMateApprovalsCard extends LitElement {
         overflow-wrap: anywhere;
       }
 
+      /* Capped: a portrait photo would otherwise push the award field and the
+         buttons off the bottom of the sheet. */
       .tm-rv-photo img {
         width: 100%;
+        max-height: 34vh;
+        object-fit: cover;
         border-radius: 12px;
         display: block;
         margin-bottom: 12px;

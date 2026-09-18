@@ -4371,6 +4371,7 @@ class TaskMateChildCard extends LitElement {
         <div class="photo-sheet" @click="${stop}">
           <div class="photo-title">✍️ ${this._t("child.extra_title")}</div>
           <div class="photo-for">${chore.name || ""}</div>
+          <div class="photo-dropzone-hint" style="margin:0 0 10px">${this._t("child.extra_hint")}</div>
 
           <textarea id="tm-extra-note" class="extra-note" rows="3"
                     maxlength="200"
@@ -4382,7 +4383,6 @@ class TaskMateChildCard extends LitElement {
           <input id="tm-extra-points" class="extra-points" type="number"
                  min="0" max="999" inputmode="numeric" placeholder="0">
 
-          <div class="photo-dropzone-hint">${this._t("child.extra_hint")}</div>
           ${cap.error ? html`<div class="photo-error">${cap.error}</div>` : ""}
 
           <div class="photo-btn-row">
