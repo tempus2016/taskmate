@@ -1339,25 +1339,17 @@ class TaskMateRewardsCard extends LitElement {
     let childContributions = [];
 
     if (isJackpot) {
-      const sharePerChild = relevantChildren.length > 0
-        ? Math.round(displayCost / relevantChildren.length)
-        : displayCost;
       relevantChildren.forEach((child, index) => {
         // In pool mode, show allocated points only; in wallet mode show wallet points
         const points = enablePoolMode
           ? (poolAllocations[child.id] || 0)
           : (child.points || 0);
-        const shareOfGoal = relevantChildren.length > 0 ? (100 / relevantChildren.length) : 100;
-        const weightedProgress = sharePerChild > 0 ? Math.min((points / sharePerChild) * 100, 100) : 0;
 
         currentStars += points;
         childContributions.push({
           name: child.name,
           points: points,
           colorIndex: index % 6,
-          expectedContribution: sharePerChild,
-          weightedProgress: weightedProgress,
-          shareOfGoal: shareOfGoal,
         });
       });
     } else {
@@ -1746,25 +1738,16 @@ class TaskMateRewardsCard extends LitElement {
   _renderJackpotProgress(reward, childContributions, totalStars, pointsIcon, displayCost) {
     const cost = displayCost || reward.cost;
 
-    // For weighted display: each child's segment shows their progress toward their expected share
-    // The meter shows how much of their "responsibility" each child has fulfilled
-    const hasWeightedData = childContributions.some(c => c.expectedContribution > 0);
-
-    // Calculate weighted segments - each segment width = (child's share of goal) * (their progress %)
-    // This way, if a child has 50% share and is at 100% progress, they fill 50% of the bar
+    // Every segment is measured against the shared goal (#874): a child who
+    // puts in 40 of a 50-point jackpot fills 80% of the bar. Sizing segments
+    // against an equal per-child share instead capped the over-contributor at
+    // their own slice, so a fully funded jackpot drew a part-empty bar.
     const segments = childContributions.map((contrib) => {
-      let width;
-      if (hasWeightedData && contrib.shareOfGoal > 0) {
-        // Weighted: segment width = share of goal * progress percentage
-        // e.g., 40% share at 50% progress = 20% of bar filled
-        width = (contrib.shareOfGoal / 100) * (contrib.weightedProgress / 100) * 100;
-      } else {
-        // Fallback: raw contribution relative to cost
-        width = cost > 0 ? Math.min((contrib.points / cost) * 100, 100) : 0;
-      }
+      const sharePct = cost > 0 ? Math.min((contrib.points / cost) * 100, 100) : 0;
       return {
         ...contrib,
-        width: width
+        sharePct: sharePct,
+        width: sharePct,
       };
     });
 
@@ -1780,14 +1763,14 @@ class TaskMateRewardsCard extends LitElement {
           <span class="progress-text">${totalStars}/${cost} <ha-icon icon="${pointsIcon}" style="--mdc-icon-size: 14px;"></ha-icon></span>
         </div>
         <div class="jackpot-breakdown">
-          ${childContributions.map((contrib) => html`
+          ${segments.map((contrib) => html`
             <span class="jackpot-child-contribution">
               <span class="color-dot color-${contrib.colorIndex}"></span>
               <strong>${contrib.name}</strong>:
               ${contrib.points}
               <ha-icon icon="${pointsIcon}" style="--mdc-icon-size: 12px;"></ha-icon>
-              ${hasWeightedData && contrib.expectedContribution > 0 ? html`
-                <span class="jackpot-pct">(${Math.round(contrib.weightedProgress)}%)</span>
+              ${cost > 0 ? html`
+                <span class="jackpot-pct">(${Math.round(contrib.sharePct)}%)</span>
               ` : ''}
             </span>
           `)}
