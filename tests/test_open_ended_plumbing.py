@@ -168,3 +168,15 @@ def test_approvals_queue_omits_both_when_the_child_said_nothing(hass):
     detail = _pending_detail(_completion())
     assert "note" not in detail
     assert "suggested_points" not in detail
+
+
+# ── the panel's editing surface ──────────────────────────────────────────────
+
+
+def test_panel_may_set_open_ended_on_a_chore():
+    assert "open_ended" in ws._CHORE_EDITABLE_FIELDS
+
+
+def test_chore_payload_schema_accepts_open_ended():
+    schema = ws._chore_payload_schema(require_name=False)
+    assert "open_ended" in {str(k) for k in schema}

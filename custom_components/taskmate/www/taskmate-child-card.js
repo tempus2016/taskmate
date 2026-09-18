@@ -38,6 +38,7 @@ class TaskMateChildCard extends LitElement {
       _justEarnedBadge: { type: String },
       _avatarPickerOpen: { type: Boolean },
       _photoCapture: { type: Object },
+      _extraCapture: { type: Object },
     };
   }
 
@@ -1243,6 +1244,22 @@ class TaskMateChildCard extends LitElement {
       }
       @keyframes photo-spin { to { transform: rotate(360deg); } }
 
+      /* Open-ended submission sheet (#832) — shares the photo sheet's shell. */
+      .extra-note, .extra-points {
+        width: 100%; box-sizing: border-box; font: inherit;
+        border-radius: 12px; padding: 10px 12px;
+        border: 2px solid var(--divider-color, #e0e0e0);
+        color: var(--primary-text-color, #33373d);
+        background: var(--card-background-color, #fff);
+      }
+      .extra-note { resize: vertical; font-size: 0.95rem; }
+      .extra-points { font-size: 1.05rem; font-weight: 800; }
+      .extra-note:focus, .extra-points:focus { outline: none; border-color: var(--fun-purple); }
+      .extra-points-label {
+        display: block; margin: 14px 0 6px; font-weight: 700; font-size: 0.85rem;
+        color: var(--secondary-text-color, #6b7280);
+      }
+
       @keyframes fade-in {
         from { opacity: 0; }
         to { opacity: 1; }
@@ -2157,6 +2174,7 @@ class TaskMateChildCard extends LitElement {
         ${this._celebrating ? this._renderCelebration() : ""}
         ${this._confetti.length > 0 ? this._renderConfetti() : ""}
         ${this._renderPhotoCapture()}
+        ${this._renderExtraCapture()}
         <input type="file" id="tm-photo-input" accept="image/*" capture="environment"
                style="display:none" @change="${this._onPhotoSelected}">
 
@@ -2401,6 +2419,7 @@ class TaskMateChildCard extends LitElement {
         timed: chore.task_type === "timed",
         mandatory: chore.mandatory === true,
         photo: chore.require_photo === true,
+        openEnded: chore.open_ended === true,
         pointsIcon,
         todaysCompletions,
       };
@@ -2485,6 +2504,7 @@ class TaskMateChildCard extends LitElement {
       ${this._celebrating ? this._renderCelebration() : ""}
       ${this._confetti.length > 0 ? this._renderConfetti() : ""}
       ${this._renderPhotoCapture()}
+      ${this._renderExtraCapture()}
       <input type="file" id="tm-photo-input" accept="image/*" capture="environment"
              style="display:none" @change="${this._onPhotoSelected}">
     </ha-card>`;
@@ -2540,10 +2560,11 @@ class TaskMateChildCard extends LitElement {
           : this._t("child.claimed_by_another_generic"))
       : "";
     return html`
-      ${r.mandatory || r.photo || depNames.length || recLabel || firstComeLabel ? html`
+      ${r.mandatory || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel ? html`
         <div class="tmd-meta">
           ${r.mandatory ? html`<span class="tmd-tag mandatory">⚠ ${this._t("child.mandatory")}</span>` : ""}
           ${r.photo ? html`<span class="tmd-tag photo">📷 ${this._t("child.photo_needed")}</span>` : ""}
+          ${r.openEnded ? html`<span class="tmd-tag photo">✍️ ${this._t("child.open_ended_tag")}</span>` : ""}
           ${depNames.length ? html`<span class="tmd-tag">🔒 ${this._t("child.blocked_by_dependency", { chores: depNames.join(", ") })}</span>` : ""}
           ${recLabel ? html`<span class="tmd-tag">🕒 ${recLabel}</span>` : ""}
           ${firstComeLabel ? html`<span class="tmd-tag">✅ ${firstComeLabel}</span>` : ""}
@@ -3631,6 +3652,11 @@ class TaskMateChildCard extends LitElement {
                 <span class="photo-badge">📷 ${this._t('child.photo_needed')}</span>
               </div>
             ` : ''}
+            ${chore.open_ended && !isCompletedForToday ? html`
+              <div class="recurrence-label">
+                <span class="photo-badge">✍️ ${this._t('child.open_ended_tag')}</span>
+              </div>
+            ` : ''}
           </div>
         </div>
         <div class="chore-checkbox">
@@ -4007,7 +4033,7 @@ class TaskMateChildCard extends LitElement {
     `;
   }
 
-  async _handleComplete(chore, child, photoUrl = null) {
+  async _handleComplete(chore, child, photoUrl = null, extra = null) {
     const key = `${chore.id}_${child.id}`;
     const dailyLimit = chore.daily_limit || 1;
 
@@ -4019,8 +4045,17 @@ class TaskMateChildCard extends LitElement {
     // Photo-evidence chores can't be completed with a plain tap — open the
     // capture overlay first. The overlay uploads the photo and then calls back
     // into this method with a photoUrl, which takes the service path below.
+    // Open-ended chores can't be completed with a plain tap either — the
+    // child's description IS the chore, so collect it first. Gating here
+    // rather than on the button covers every design's render path at once,
+    // and the sheet calls back in with `extra` filled.
+    if (chore.open_ended && !extra) {
+      this._openExtraCapture(chore, child);
+      return;
+    }
+
     if (chore.require_photo && !photoUrl) {
-      this._openPhotoCapture(chore, child);
+      this._openPhotoCapture(chore, child, extra);
       return;
     }
 
@@ -4071,7 +4106,9 @@ class TaskMateChildCard extends LitElement {
       // A photo-evidence completion MUST go through the service so it can carry
       // photo_url — a button-entity press cannot. Other chores prefer the button
       // entity so HA state-trigger automations fire.
-      const buttonEntityId = photoUrl ? null : (window.__taskmate_find_button
+      // A photo or an open-ended note can only travel on the service call, so
+      // either one rules out the button-entity shortcut.
+      const buttonEntityId = (photoUrl || extra) ? null : (window.__taskmate_find_button
         && window.__taskmate_find_button(this.hass, child.id, "complete", chore.id));
       if (buttonEntityId) {
         await this.hass.callService("button", "press", { entity_id: buttonEntityId });
@@ -4080,6 +4117,8 @@ class TaskMateChildCard extends LitElement {
           chore_id: chore.id,
           child_id: child.id,
           ...(photoUrl ? { photo_url: photoUrl } : {}),
+          ...(extra && extra.note ? { note: extra.note } : {}),
+          ...(extra && extra.suggested_points ? { suggested_points: extra.suggested_points } : {}),
         });
       }
 
@@ -4149,9 +4188,9 @@ class TaskMateChildCard extends LitElement {
 
   // ── Photo-evidence capture ────────────────────────────────────────────────
 
-  _openPhotoCapture(chore, child) {
+  _openPhotoCapture(chore, child, extra = null) {
     this._photoCapture = {
-      chore, child, step: "pick", previewUrl: "", blob: null,
+      chore, child, extra, step: "pick", previewUrl: "", blob: null,
       sizeKb: 0, error: "",
     };
     this.requestUpdate();
@@ -4254,9 +4293,9 @@ class TaskMateChildCard extends LitElement {
       const { photo_url: photoUrl } = await resp.json();
       if (!photoUrl) throw new Error("no photo_url in response");
 
-      const { chore, child } = cap;
+      const { chore, child, extra } = cap;
       this._closePhotoCapture();
-      await this._handleComplete(chore, child, photoUrl);
+      await this._handleComplete(chore, child, photoUrl, extra);
     } catch (err) {
       // Keep the overlay open on the preview so the child can retry.
       if (this._photoCapture) {
@@ -4282,6 +4321,81 @@ class TaskMateChildCard extends LitElement {
     }
     this._photoCapture = null;
     this.requestUpdate();
+  }
+
+  // ── Open-ended submission ("I did something extra", #832) ────────────────
+  //
+  // The two inputs are deliberately uncontrolled and read from the DOM on
+  // submit: binding .value would re-render on every keystroke and fight the
+  // caret. Lit reuses the same elements across re-renders, so the typed text
+  // survives the error-state update below.
+
+  _openExtraCapture(chore, child) {
+    this._extraCapture = { chore, child, error: "" };
+    this.requestUpdate();
+    this.updateComplete.then(() => {
+      const note = this.renderRoot && this.renderRoot.querySelector("#tm-extra-note");
+      if (note) note.focus();
+    });
+  }
+
+  _closeExtraCapture() {
+    this._extraCapture = null;
+    this.requestUpdate();
+  }
+
+  async _submitExtraCapture() {
+    const cap = this._extraCapture;
+    if (!cap) return;
+    const root = this.renderRoot;
+    const note = ((root && root.querySelector("#tm-extra-note")?.value) || "").trim();
+    if (!note) {
+      this._extraCapture = { ...cap, error: this._t("child.extra_needs_desc") };
+      this.requestUpdate();
+      return;
+    }
+    const raw = Number((root && root.querySelector("#tm-extra-points")?.value) || 0);
+    const suggested = Math.min(Math.max(0, Math.round(raw) || 0), 999);
+    const { chore, child } = cap;
+    this._closeExtraCapture();
+    await this._handleComplete(chore, child, null, { note, suggested_points: suggested });
+  }
+
+  _renderExtraCapture() {
+    const cap = this._extraCapture;
+    if (!cap) return "";
+    const chore = cap.chore || {};
+    const stop = (e) => e.stopPropagation();
+    return html`
+      <div class="photo-overlay" @click="${() => this._closeExtraCapture()}">
+        <div class="photo-sheet" @click="${stop}">
+          <div class="photo-title">✍️ ${this._t("child.extra_title")}</div>
+          <div class="photo-for">${chore.name || ""}</div>
+
+          <textarea id="tm-extra-note" class="extra-note" rows="3"
+                    maxlength="200"
+                    placeholder="${this._t("child.extra_desc_placeholder")}"></textarea>
+
+          <label class="extra-points-label" for="tm-extra-points">
+            ${this._t("child.extra_points_label")}
+          </label>
+          <input id="tm-extra-points" class="extra-points" type="number"
+                 min="0" max="999" inputmode="numeric" placeholder="0">
+
+          <div class="photo-dropzone-hint">${this._t("child.extra_hint")}</div>
+          ${cap.error ? html`<div class="photo-error">${cap.error}</div>` : ""}
+
+          <div class="photo-btn-row">
+            <button class="photo-btn ghost" @click="${() => this._closeExtraCapture()}">
+              ${this._t("child.photo_cancel")}
+            </button>
+            <button class="photo-btn primary" @click="${() => this._submitExtraCapture()}">
+              ✓ ${this._t("child.extra_submit")}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   _renderPhotoCapture() {
