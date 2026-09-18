@@ -1370,8 +1370,11 @@ class TaskMateRewardsCard extends LitElement {
     const pcAttrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity)) || this.hass?.states?.[this.config?.entity]?.attributes || {};
     // Always a list, even if the attribute arrives as something else (#834).
     const pendingClaims = tmClaimList(pcAttrs.pending_reward_claims);
+    // A jackpot is one shared pool redeemed once per funding cycle, so a claim
+    // from any contributor puts the reward into "awaiting approval" for every
+    // child — not just the one who tapped Redeem (#873).
     const hasPendingClaim = pendingClaims.some(c =>
-      c.reward_id === reward.id && (!childId || c.child_id === childId)
+      c.reward_id === reward.id && (isJackpot || !childId || c.child_id === childId)
     );
 
     // Pool mode affordability / redeem state
@@ -1856,8 +1859,11 @@ class TaskMateRewardsCard extends LitElement {
       || this.hass?.states?.[this.config?.entity]?.attributes || {};
     // Always a list, even if the attribute arrives as something else (#834).
     const pendingClaims = tmClaimList(pcAttrs.pending_reward_claims);
+    // A jackpot is one shared pool redeemed once per funding cycle, so a claim
+    // from any contributor puts the reward into "awaiting approval" for every
+    // child — not just the one who tapped Redeem (#873).
     const hasPendingClaim = pendingClaims.some(c =>
-      c.reward_id === reward.id && (!childId || c.child_id === childId)
+      c.reward_id === reward.id && (isJackpot || !childId || c.child_id === childId)
     );
 
     const spendable = relevantChild

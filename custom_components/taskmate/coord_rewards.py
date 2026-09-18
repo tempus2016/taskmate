@@ -283,8 +283,18 @@ class RewardsMixin:
         # reward can never fail it, so without these two guards a child can
         # queue unlimited claims — each one a stored record plus a push to
         # every parent.
-        own_pending = [c for c in self.storage.get_pending_reward_claims() if c.child_id == child_id]
-        if any(c.reward_id == reward_id for c in own_pending):
+        pending = self.storage.get_pending_reward_claims()
+        own_pending = [c for c in pending if c.child_id == child_id]
+        # A jackpot is funded from one shared pool, so it is redeemed once per
+        # funding cycle: a queued claim owns that pool whoever made it. Without
+        # this, a second child's claim is approved after the pool is already
+        # spent, falls through to wallet mode, and charges them the full cost
+        # all over again (#873).
+        if reward.is_jackpot:
+            blocking = [c for c in pending if c.reward_id == reward_id]
+        else:
+            blocking = [c for c in own_pending if c.reward_id == reward_id]
+        if blocking:
             raise ValueError(f"A claim for '{reward.name}' is already waiting for approval")
         if len(own_pending) >= _MAX_PENDING_CLAIMS_PER_CHILD:
             raise ValueError("Too many reward claims are already waiting for approval")

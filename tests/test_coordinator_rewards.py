@@ -925,3 +925,72 @@ class TestApprovalRechecksAvailability:
         assert claim.approved is True
         assert alice.points == 490
         assert reward.quantity == 4
+
+
+# ---------------------------------------------------------------------------
+# jackpot rewards share one pending claim (#873)
+# ---------------------------------------------------------------------------
+
+
+class TestJackpotSharedPendingClaim:
+    """A jackpot is funded from one shared pool, so it can only be redeemed
+    once per funding cycle. A pending claim from any contributor has to block
+    every other child — otherwise the parent approves the second claim after
+    the pool is already spent and it silently falls through to wallet mode,
+    charging that child the full cost a second time (#873).
+    """
+
+    def _jackpot_coord(self, *, cost=50, pool_total=50, claim_child="kidA"):
+        alice = Child(name="Alice", points=0, id="kidA")
+        # Bob is deliberately wallet-rich: without the shared-claim block he
+        # sails straight past the balance check and queues a second claim.
+        bob = Child(name="Bob", points=500, id="kidB")
+        reward = Reward(name="Family Trip", cost=cost, is_jackpot=True, id="rewardJ")
+        claim = RewardClaim(reward_id="rewardJ", child_id=claim_child, claimed_at=_ts(), approved=False, id="c1")
+        coord = _make_coord(children=[alice, bob], rewards=[reward], claims=[claim])
+        coord.storage.get_total_allocated_for_reward = MagicMock(return_value=pool_total)
+        return coord, alice, bob, reward
+
+    def test_second_child_cannot_claim_while_a_claim_is_pending(self):
+        coord, _alice, _bob, _reward = self._jackpot_coord()
+
+        with pytest.raises(ValueError, match="already waiting"):
+            run(coord.async_claim_reward("rewardJ", "kidB"))
+
+        coord.storage.add_reward_claim.assert_not_called()
+
+    def test_claiming_child_still_blocked_by_their_own_claim(self):
+        coord, _alice, _bob, _reward = self._jackpot_coord()
+
+        with pytest.raises(ValueError, match="already waiting"):
+            run(coord.async_claim_reward("rewardJ", "kidA"))
+
+    def test_partially_funded_jackpot_also_blocked(self):
+        # The pool need not be full for the block to apply — a queued claim
+        # still owns the pool until it is approved or rejected.
+        coord, _alice, _bob, _reward = self._jackpot_coord(pool_total=20)
+
+        with pytest.raises(ValueError, match="already waiting"):
+            run(coord.async_claim_reward("rewardJ", "kidB"))
+
+    def test_jackpot_claim_allowed_once_the_pending_claim_clears(self):
+        alice = Child(name="Alice", points=0, id="kidA")
+        bob = Child(name="Bob", points=0, id="kidB")
+        reward = Reward(name="Family Trip", cost=50, is_jackpot=True, id="rewardJ")
+        coord = _make_coord(children=[alice, bob], rewards=[reward], claims=[])
+        coord.storage.get_total_allocated_for_reward = MagicMock(return_value=50)
+
+        run(coord.async_claim_reward("rewardJ", "kidB"))
+        coord.storage.add_reward_claim.assert_called_once()
+
+    def test_non_jackpot_pool_reward_is_still_per_child(self):
+        # Regression guard: only jackpots share a pool. A pool-enabled reward
+        # with per-child jars keeps independent claims.
+        alice = Child(name="Alice", points=0, id="kidA")
+        bob = Child(name="Bob", points=500, id="kidB")
+        reward = Reward(name="Cinema", cost=50, pool_enabled=True, id="rewardP")
+        claim = RewardClaim(reward_id="rewardP", child_id="kidA", claimed_at=_ts(), approved=False, id="c1")
+        coord = _make_coord(children=[alice, bob], rewards=[reward], claims=[claim])
+
+        run(coord.async_claim_reward("rewardP", "kidB"))
+        coord.storage.add_reward_claim.assert_called_once()
