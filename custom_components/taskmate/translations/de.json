@@ -139,6 +139,14 @@
         "child_id": {
           "name": "Kinder-ID",
           "description": "Die ID des Kindes, das die Aufgabe erledigt"
+        },
+        "note": {
+          "name": "Notiz",
+          "description": "Was das Kind getan hat, in seinen eigenen Worten. Bei offenen Aufgaben erforderlich und den Eltern bei der Genehmigung angezeigt."
+        },
+        "suggested_points": {
+          "name": "Vorgeschlagene Punkte",
+          "description": "Was das Kind für die Arbeit für angemessen hält. Nur ein Hinweis für die genehmigenden Eltern — es werden dadurch keine Punkte vergeben."
         }
       }
     },
@@ -167,6 +175,10 @@
         "completion_id": {
           "name": "Abschluss-ID",
           "description": "Die ID des zu genehmigenden Aufgabenabschlusses"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Diese Punktzahl anstelle des Aufgabenwerts vergeben. Leer lassen, um die Punkte der Aufgabe zu verwenden."
         }
       }
     },

@@ -139,6 +139,14 @@
         "child_id": {
           "name": "ID da criança",
           "description": "O ID da criança que conclui a tarefa"
+        },
+        "note": {
+          "name": "Observação",
+          "description": "O que a criança fez, com as próprias palavras. Obrigatório em tarefas abertas e mostrado ao responsável na aprovação."
+        },
+        "suggested_points": {
+          "name": "Pontos sugeridos",
+          "description": "Quanto a criança acha que o trabalho valeu. Apenas uma sugestão para quem aprova — não concede pontos por si só."
         }
       }
     },
@@ -167,6 +175,10 @@
         "completion_id": {
           "name": "ID de conclusão",
           "description": "O ID da conclusão da tarefa a aprovar"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "Atribuir esta quantidade de pontos em vez do valor da própria tarefa. Deixe vazio para usar os pontos da tarefa."
         }
       }
     },

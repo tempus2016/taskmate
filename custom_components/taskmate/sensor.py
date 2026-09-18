@@ -261,6 +261,10 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
                 record["mandatory_penalty_points"] = penalty
         if getattr(c, "require_photo", False):
             record["require_photo"] = True
+        # Open-ended chores (#832): the child card asks for a description and a
+        # suggested point value instead of completing on a single tap.
+        if getattr(c, "open_ended", False):
+            record["open_ended"] = True
         recurrence = getattr(c, "recurrence", "weekly")
         if recurrence != "weekly":
             record["recurrence"] = recurrence
@@ -1387,6 +1391,15 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                 photo = getattr(comp, "photo_url", "") or ""
                 if photo:
                     detail["photo_url"] = photo
+                # The child's description and their own estimate (#832). Both
+                # are emitted only when set — an ordinary tap-to-complete
+                # carries neither, and this slice is capped at 16KB.
+                note = getattr(comp, "note", "") or ""
+                if note:
+                    detail["note"] = note
+                suggested = getattr(comp, "suggested_points", 0) or 0
+                if suggested:
+                    detail["suggested_points"] = suggested
                 completion_details.append(detail)
 
         reward_details = []

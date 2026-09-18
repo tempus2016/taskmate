@@ -139,6 +139,14 @@
         "child_id": {
           "name": "Barn-ID",
           "description": "ID-en til barnet som fullfører oppgaven"
+        },
+        "note": {
+          "name": "Notat",
+          "description": "Hva barnet gjorde, med egne ord. Påkrevd for åpne oppgaver, og vises til forelderen ved godkjenning."
+        },
+        "suggested_points": {
+          "name": "Foreslåtte poeng",
+          "description": "Hva barnet mener arbeidet var verdt. Bare et hint til forelderen som godkjenner — det gir ikke poeng i seg selv."
         }
       }
     },
@@ -167,6 +175,10 @@
         "completion_id": {
           "name": "Fullførings-ID",
           "description": "ID-en til oppgavefullføringen som skal godkjennes"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Gi dette antallet poeng i stedet for oppgavens egen verdi. La stå tomt for å bruke oppgavens poeng."
         }
       }
     },

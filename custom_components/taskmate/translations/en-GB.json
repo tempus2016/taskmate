@@ -139,6 +139,14 @@
         "child_id": {
           "name": "Child ID",
           "description": "The ID of the child completing the chore"
+        },
+        "note": {
+          "name": "Note",
+          "description": "What the child did, in their own words. Required when the chore is open-ended, and shown to the parent during approval."
+        },
+        "suggested_points": {
+          "name": "Suggested points",
+          "description": "What the child reckons the work was worth. A hint for the approving parent — it awards nothing on its own."
         }
       }
     },
@@ -167,6 +175,10 @@
         "completion_id": {
           "name": "Completion ID",
           "description": "The ID of the chore completion to approve"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Award this many points instead of the chore's own value. Leave empty to use the chore's points."
         }
       }
     },

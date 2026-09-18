@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from homeassistant.util import dt as dt_util
 
 from . import images, photos
+from .const import CHORE_NOTE_MAX_LENGTH, CHORE_SUGGESTED_POINTS_MAX
 from .models import Chore, ChoreCompletion, PointsTransaction
 
 if TYPE_CHECKING:
@@ -685,7 +686,13 @@ class ChoresMixin:
         return chore
 
     async def async_complete_chore(
-        self, chore_id: str, child_id: str, as_parent: bool = False, photo_url: str = ""
+        self,
+        chore_id: str,
+        child_id: str,
+        as_parent: bool = False,
+        photo_url: str = "",
+        note: str = "",
+        suggested_points: int = 0,
     ) -> ChoreCompletion | None:
         """Mark a chore as completed by a child.
 
@@ -719,6 +726,18 @@ class ChoresMixin:
                 chore_id,
             )
             photo_url = ""
+
+        # The note and the suggested points are typed by a child, so bound both
+        # before they reach storage: an unbounded note bloats the store and the
+        # sensor attribute slice, and the suggestion is only ever a hint for the
+        # parent. Over-long notes are truncated rather than refused — losing a
+        # child's tail end beats refusing their chore.
+        note = (note or "").strip()[:CHORE_NOTE_MAX_LENGTH]
+        try:
+            suggested_points = int(suggested_points or 0)
+        except (TypeError, ValueError):
+            suggested_points = 0
+        suggested_points = min(max(0, suggested_points), CHORE_SUGGESTED_POINTS_MAX)
 
         now = dt_util.now()
         today = dt_util.as_local(now).date()
@@ -824,7 +843,16 @@ class ChoresMixin:
         # ServiceValidationError by the service layer.
         if requires_photo and not as_parent and not (photo_url or "").strip():
             raise ValueError("This chore requires a photo as evidence.")
-        auto_approve = as_parent or (not chore.requires_approval and not requires_photo)
+        # An open-ended chore is a placeholder for unlisted work, so the note IS
+        # the chore — without it the parent has nothing to review. Same shape as
+        # the photo gate above: enforced here rather than only in the card, so
+        # the button entity, automations and Dev Tools can't bypass it.
+        is_open_ended = bool(getattr(chore, "open_ended", False))
+        if is_open_ended and not as_parent and not note:
+            raise ValueError("Say what you did to submit this one.")
+        # Open-ended completions always go to a parent: the child suggested the
+        # point value, so self-awarding it would let them set their own pay.
+        auto_approve = as_parent or (not chore.requires_approval and not requires_photo and not is_open_ended)
         effective_points = self._apply_roulette_multiplier(
             chore,
             child_id,
@@ -842,6 +870,8 @@ class ChoresMixin:
             approved=auto_approve,
             points_awarded=effective_points if auto_approve else 0,
             photo_url=photo_url or "",
+            note=note,
+            suggested_points=suggested_points,
         )
 
         # Record the completion before awarding anything. Awarding can suspend
@@ -888,7 +918,10 @@ class ChoresMixin:
             await self._async_notify_pending_approval(
                 child.name,
                 chore.name,
-                chore.points,
+                # An open-ended chore has no points of its own, so quote the
+                # child's own estimate — otherwise every one of these pushes
+                # announces "+0" (#832).
+                completion.suggested_points if is_open_ended else chore.points,
                 completion_id=completion.id,
                 photo_url=completion.photo_url,
             )
@@ -1049,12 +1082,19 @@ class ChoresMixin:
         await self.async_refresh()
         return completion
 
-    async def async_approve_chore(self, completion_id: str, refresh: bool = True) -> None:
+    async def async_approve_chore(self, completion_id: str, refresh: bool = True, points: int | None = None) -> None:
         """Approve a chore completion.
 
         ``refresh=False`` is used by ``async_approve_chores_bulk`` so a batch
         pays for one coordinator rebuild rather than one per completion (#794).
         The caller must refresh once it is done.
+
+        ``points`` lets the approving parent set what the chore was actually
+        worth (#832) — needed for open-ended submissions, useful for any chore.
+        It replaces the chore's *base* points, so the streak and level
+        multipliers ``_award_points`` applies still ride on top exactly as they
+        would for an ordinary approval. ``None`` means "use the chore's value"
+        and leaves the existing behaviour untouched.
         """
         completions = self.storage.get_completions()
         for completion in completions:
@@ -1085,6 +1125,19 @@ class ChoresMixin:
                         pts = self._apply_time_adjustment(
                             chore, self.effective_chore_points(chore), completion.completed_at
                         )
+                    if points is not None:
+                        # An explicit award overrides every per-chore
+                        # calculation above (bonus sub-task, timed rate,
+                        # time-of-day adjustment) — the parent has looked at
+                        # what was actually done and priced it themselves.
+                        try:
+                            pts = max(0, int(points))
+                        except (TypeError, ValueError):
+                            _LOGGER.warning(
+                                "Ignoring non-numeric points override %r for completion %s",
+                                points,
+                                completion_id,
+                            )
                     # Claim the completion before awarding. The "already
                     # approved" check above and the award are separated by an
                     # await that can suspend, so two approvals landing together

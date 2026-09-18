@@ -1984,12 +1984,14 @@ async def _ws_complete_bonus_subtask(hass, connection, msg, coordinator):
     {
         vol.Required("type"): WS_APPROVE_CHORE,
         vol.Required("completion_id"): str,
+        # Optional per-approval award (#832) — replaces the chore's own points.
+        vol.Optional("points"): vol.All(vol.Coerce(int), vol.Range(min=0)),
     }
 )
 @websocket_api.async_response
 @_admin_only
 async def _ws_approve_chore(hass, connection, msg, coordinator):
-    await coordinator.async_approve_chore(msg["completion_id"])
+    await coordinator.async_approve_chore(msg["completion_id"], points=msg.get("points"))
     connection.send_result(msg["id"], {"completion_id": msg["completion_id"]})
 
 

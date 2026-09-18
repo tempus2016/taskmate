@@ -139,6 +139,14 @@
         "child_id": {
           "name": "Born-ID",
           "description": "ID-en til bornet som fullfører oppgåva"
+        },
+        "note": {
+          "name": "Notat",
+          "description": "Kva barnet gjorde, med eigne ord. Påkravd for opne oppgåver, og vert vist til forelderen ved godkjenning."
+        },
+        "suggested_points": {
+          "name": "Føreslåtte poeng",
+          "description": "Kva barnet meiner arbeidet var verdt. Berre eit hint til forelderen som godkjenner — det gjev ikkje poeng i seg sjølv."
         }
       }
     },
@@ -167,6 +175,10 @@
         "completion_id": {
           "name": "Fullførings-ID",
           "description": "ID-en til oppgåvefullføringa som skal godkjennast"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Gje dette talet poeng i staden for oppgåva sin eigen verdi. Lat stå tomt for å bruke poenga til oppgåva."
         }
       }
     },
