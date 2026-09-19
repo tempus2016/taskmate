@@ -6,6 +6,7 @@
   "common.design.playroom": "Playroom",
   "common.design.console": "Console",
   "common.design.cleanpro": "Clean Pro",
+  "common.design.graphite": "Grafite",
   "panel.settings_card_design_label": "Design de cartão predefinido",
   "panel.settings_card_design_hint": "O estilo que os novos cartões usam, salvo substituição por cartão.",
   "activity.a_chore": "uma tarefa",

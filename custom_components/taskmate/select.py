@@ -21,7 +21,7 @@ _SELECTS = [
     (
         "card_design",
         "card_design",
-        ["classic", "playroom", "console", "cleanpro", "accessible"],
+        ["classic", "playroom", "console", "cleanpro", "accessible", "graphite"],
         "classic",
         "mdi:palette",
     ),

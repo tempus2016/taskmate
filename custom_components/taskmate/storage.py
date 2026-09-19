@@ -1277,7 +1277,7 @@ class TaskMateStorage:
         from .photos import is_taskmate_photo_url
 
         _STREAK_MODES = ("reset", "pause")
-        _CARD_DESIGNS = ("classic", "playroom", "console", "cleanpro", "accessible")
+        _CARD_DESIGNS = ("classic", "playroom", "console", "cleanpro", "accessible", "graphite")
         # Per-record numeric fields. The WebSocket schemas coerce these on every
         # normal write; import bypasses the schemas entirely, so a crafted
         # backup could leave a string (or inf/NaN) where the rest of the code —
