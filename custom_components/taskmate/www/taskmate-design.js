@@ -204,7 +204,10 @@
   font-family:var(--tmd-font-body);font-weight:500;letter-spacing:-.2px;
   border-radius:9px;box-shadow:none}
 :host([data-tm-design="graphite"]) .btn.ghost{background:transparent;color:var(--tmd-text);border:1px solid var(--tmd-border)}
-:host([data-tm-design="graphite"]) .btn.good{background:var(--tmd-good);color:#fff}
+/* "good" marks the primary confirm (Approve / Dismiss). Graphite draws the
+   primary action in near-black like every other one; green is reserved for
+   reporting a completed state, not for a button. */
+:host([data-tm-design="graphite"]) .btn.good{background:var(--tmd-text);color:var(--tmd-surface)}
 :host([data-tm-design="graphite"]) .btn.bad{background:transparent;color:var(--tmd-bad)}
 :host([data-tm-design="graphite"]) .btn.round{border-radius:50%}
 
@@ -303,6 +306,7 @@
 :host([data-tm-design="graphite"]) .lb-cp-score{font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:-.6px}
 :host([data-tm-design="graphite"]) .lb-cp-unit{color:var(--tmd-dim);font-weight:400}
 :host([data-tm-design="graphite"]) .lb-cp-row.win{background:transparent}
+:host([data-tm-design="graphite"]) .lb-cp-meta ha-icon{--mdc-icon-size:14px;vertical-align:-2px;margin-right:3px;color:var(--tmd-dim)}
 
 /* Overview: hairline-separated stats, then a grouped per-child list. */
 :host([data-tm-design="graphite"]) .ov-kids{border:1px solid var(--tmd-border);border-radius:var(--tmd-radius-sm)}
