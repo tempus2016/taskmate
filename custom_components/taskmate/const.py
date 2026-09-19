@@ -78,6 +78,11 @@ DEFAULT_TIME_PERIODS: Final = [
 
 MAX_TIME_PERIODS: Final = 24
 
+# Open-ended chores (#832): the child describes the work and suggests what it
+# was worth. Both are child-entered free input, so they're bounded before storage.
+CHORE_NOTE_MAX_LENGTH: Final = 200
+CHORE_SUGGESTED_POINTS_MAX: Final = 999
+
 # Platforms
 PLATFORMS: Final = ["sensor", "button", "binary_sensor"]
 

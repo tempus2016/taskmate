@@ -27,6 +27,22 @@ complete_chore:
       required: false
       selector:
         text:
+    note:
+      name: Note
+      description: What the child did, in their own words. Required when the chore is open-ended, and shown to the parent during approval.
+      required: false
+      selector:
+        text:
+          multiline: true
+    suggested_points:
+      name: Suggested points
+      description: What the child reckons the work was worth. A hint for the approving parent — it awards nothing on its own.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 999
+          mode: box
 
 complete_bonus_subtask:
   name: Complete Bonus Sub-task
@@ -61,6 +77,15 @@ approve_chore:
       required: true
       selector:
         text:
+    points:
+      name: Points
+      description: Award this many points instead of the chore's own value. Leave empty to use the chore's points.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 9999
+          mode: box
 
 approve_all_chores:
   name: Approve All Chores

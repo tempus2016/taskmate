@@ -33,6 +33,7 @@ class TaskMateApprovalsCard extends LitElement {
       config: { type: Object },
       _loading: { type: Object },
       _signed: { state: true },
+      _review: { state: true },
     };
   }
 
@@ -368,6 +369,106 @@ class TaskMateApprovalsCard extends LitElement {
         color: white;
       }
 
+      /* Review-and-award sheet (#832) */
+      .action-button.adjust {
+        background: var(--secondary-background-color, #f1f1f1);
+        color: var(--primary-text-color, #33373d);
+        font-size: 1rem;
+        line-height: 1;
+      }
+
+      /* Fixed, not absolute: ha-card sets overflow:hidden, which would clip an
+         absolutely-positioned overlay to the card's own box. */
+      .tm-rv-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(20, 20, 30, 0.72);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        z-index: 10000;
+      }
+
+      .tm-rv-sheet {
+        width: 100%;
+        max-width: 340px;
+        box-sizing: border-box;
+        background: var(--card-background-color, #fff);
+        color: var(--primary-text-color, #33373d);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        max-height: 88vh;
+        overflow-y: auto;
+      }
+
+      .tm-rv-title { font-size: 1.05rem; font-weight: 800; }
+      .tm-rv-sub {
+        font-size: 0.82rem;
+        color: var(--secondary-text-color, #6b7280);
+        margin: 2px 0 12px;
+      }
+
+      .tm-rv-quote {
+        border-left: 3px solid var(--accent-color, #ffc107);
+        padding: 6px 0 6px 10px;
+        margin-bottom: 12px;
+        font-size: 0.92rem;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      /* Capped: a portrait photo would otherwise push the award field and the
+         buttons off the bottom of the sheet. */
+      .tm-rv-photo img {
+        width: 100%;
+        max-height: 34vh;
+        object-fit: cover;
+        border-radius: 12px;
+        display: block;
+        margin-bottom: 12px;
+      }
+
+      .tm-rv-label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--secondary-text-color, #6b7280);
+        margin-bottom: 6px;
+      }
+
+      .tm-rv-points {
+        width: 100%;
+        box-sizing: border-box;
+        font: inherit;
+        font-size: 1.1rem;
+        font-weight: 800;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 2px solid var(--divider-color, #e0e0e0);
+        background: var(--card-background-color, #fff);
+        color: var(--primary-text-color, #33373d);
+      }
+
+      .tm-rv-points:focus { outline: none; border-color: #4caf50; }
+
+      .tm-rv-row { display: flex; gap: 10px; margin-top: 16px; }
+      .tm-rv-btn {
+        flex: 1;
+        border: none;
+        border-radius: 12px;
+        padding: 11px 0;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .tm-rv-btn.ghost {
+        background: var(--secondary-background-color, #f1f1f1);
+        color: var(--primary-text-color, #33373d);
+      }
+      .tm-rv-btn.primary { background: #4caf50; color: #fff; }
+
       /* Mandatory-miss review actions (#532) */
       .action-button.penalty {
         background: var(--fun-red, #e74c3c);
@@ -628,6 +729,7 @@ class TaskMateApprovalsCard extends LitElement {
                 ${filteredCompletions.length > 0 ? this._renderApprovals(groupedByDay) : ''}
               `}
         </div>
+        ${this._renderReview()}
       </ha-card>
     `;
   }
@@ -789,6 +891,7 @@ class TaskMateApprovalsCard extends LitElement {
     return html`<ha-card class="tmd" style="--hd:${hd}">
       ${this._designHeader(hd, items.length, completions)}
       <div class="tmd-bd">${body}</div>
+      ${this._renderReview()}
     </ha-card>`;
   }
 
@@ -815,7 +918,7 @@ class TaskMateApprovalsCard extends LitElement {
     if (it.kind === "completion") {
       const approve = () => this._handleApprove(it.completion);
       const reject = () => this._handleReject(it.completion);
-      return this._apActionPair(approve, reject, isLoading, shape);
+      return this._apActionPair(approve, reject, isLoading, shape, it.completion);
     }
     if (it.kind === "claim") {
       const approve = () => this._handleApproveReward(it.id);
@@ -845,9 +948,15 @@ class TaskMateApprovalsCard extends LitElement {
         @click="${() => this._handleDismiss(it.id)}">${this._t('approvals.dismiss')}</button>`;
   }
 
-  _apActionPair(approve, reject, isLoading, shape) {
+  _apActionPair(approve, reject, isLoading, shape, completion = null) {
+    const adjust = completion
+      ? html`<button class="btn ghost sm ${shape === "round" ? "round" : ""}" ?disabled="${isLoading}"
+          title="${this._t('approvals.award_label')}"
+          @click="${() => this._openReview(completion)}">${this._reviewGlyph(completion)}</button>`
+      : "";
     if (shape === "round") {
       return html`
+        ${adjust}
         <button class="btn good sm round" ?disabled="${isLoading}"
           title="${this._t('approvals.approve')}" @click="${approve}">✓</button>
         <button class="btn bad sm round" ?disabled="${isLoading}"
@@ -855,10 +964,12 @@ class TaskMateApprovalsCard extends LitElement {
     }
     if (shape === "ghost") {
       return html`
+        ${adjust}
         <button class="btn good sm" ?disabled="${isLoading}" @click="${approve}">${this._t('approvals.approve')}</button>
         <button class="btn ghost sm" ?disabled="${isLoading}" @click="${reject}">${this._t('approvals.reject')}</button>`;
     }
     return html`
+      ${adjust}
       <button class="btn good" style="flex:1" ?disabled="${isLoading}" @click="${approve}">👍 ${this._t('approvals.approve')}</button>
       <button class="btn bad" style="flex:1" ?disabled="${isLoading}" @click="${reject}">👎 ${this._t('approvals.reject')}</button>`;
   }
@@ -1401,6 +1512,12 @@ class TaskMateApprovalsCard extends LitElement {
         </div>
         <div class="action-buttons right">
           <button
+            class="action-button adjust"
+            @click="${() => this._openReview(completion)}"
+            title="${this._t('approvals.award_label')}"
+            ?disabled="${isLoading}"
+          >${this._reviewGlyph(completion)}</button>
+          <button
             class="action-button approve ${isLoading ? "loading" : ""}"
             @click="${() => this._handleApprove(completion)}"
             title="${this._t('approvals.approve')}"
@@ -1445,7 +1562,84 @@ class TaskMateApprovalsCard extends LitElement {
     }
   }
 
-  async _callService(service, completionId) {
+  /* ── Review and award (#832) ──────────────────────────────────────────
+     Every approve stays one tap. This is the second control beside it: read
+     what the child wrote and set what the work was actually worth. The points
+     input is uncontrolled and filled imperatively on open — binding .value
+     would reset the parent's typing on the next coordinator refresh. */
+
+  _reviewGlyph(completion) {
+    return (completion && completion.note) ? "✍️" : "✎";
+  }
+
+  _openReview(completion) {
+    this._review = { completion };
+    this.requestUpdate();
+    this.updateComplete.then(() => {
+      const input = this.renderRoot && this.renderRoot.querySelector("#tm-review-points");
+      if (!input) return;
+      input.value = String(completion.suggested_points || completion.points || 0);
+      input.focus();
+      input.select();
+    });
+  }
+
+  _closeReview() {
+    this._review = null;
+    this.requestUpdate();
+  }
+
+  async _confirmReview() {
+    const review = this._review;
+    if (!review) return;
+    const input = this.renderRoot && this.renderRoot.querySelector("#tm-review-points");
+    const points = Math.max(0, Math.round(Number(input && input.value) || 0));
+    const completionId = review.completion.completion_id;
+    this._closeReview();
+    await this._callService("approve_chore", completionId, { points });
+  }
+
+  _renderReview() {
+    const review = this._review;
+    if (!review) return "";
+    const completion = review.completion;
+    const photoUrl = this._photoHref(completion.photo_url);
+    const stop = (e) => e.stopPropagation();
+    return html`
+      <div class="tm-rv-overlay" @click="${() => this._closeReview()}">
+        <div class="tm-rv-sheet" @click="${stop}">
+          <div class="tm-rv-title">${completion.chore_name}</div>
+          <div class="tm-rv-sub">
+            ${completion.child_name}${completion.suggested_points
+              ? html` · ${this._t('approvals.suggested', { points: completion.suggested_points })}`
+              : ""}
+          </div>
+
+          ${completion.note ? html`
+            <div class="tm-rv-label">${this._t('approvals.child_said')}</div>
+            <div class="tm-rv-quote">${completion.note}</div>
+          ` : ""}
+
+          ${photoUrl ? html`<div class="tm-rv-photo"><img src="${photoUrl}" alt="" loading="lazy"></div>` : ""}
+
+          <label class="tm-rv-label" for="tm-review-points">${this._t('approvals.award_label')}</label>
+          <input id="tm-review-points" class="tm-rv-points" type="number"
+                 min="0" max="9999" inputmode="numeric">
+
+          <div class="tm-rv-row">
+            <button class="tm-rv-btn ghost" @click="${() => this._closeReview()}">
+              ${this._t('common.cancel')}
+            </button>
+            <button class="tm-rv-btn primary" @click="${() => this._confirmReview()}">
+              ${this._t('approvals.approve')}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async _callService(service, completionId, extra = null) {
     if (this._loading[completionId]) return;
     this._loading = { ...this._loading, [completionId]: true };
     this.requestUpdate();
@@ -1453,6 +1647,7 @@ class TaskMateApprovalsCard extends LitElement {
     try {
       await this.hass.callService("taskmate", service, {
         completion_id: completionId,
+        ...(extra || {}),
       });
     } catch (error) {
       console.error(`Failed to call ${service}:`, error);

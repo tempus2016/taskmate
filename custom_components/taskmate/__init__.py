@@ -63,6 +63,7 @@ from .const import (
     ATTR_REWARD_ID,
     ATTR_SOUND,
     BADGE_TIERS,
+    CHORE_SUGGESTED_POINTS_MAX,
     CONF_TASK_GROUP_CHORE_IDS,
     CONF_TASK_GROUP_ID,
     CONF_TASK_GROUP_NAME,
@@ -527,6 +528,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 child_id,
                 as_parent=as_parent,
                 photo_url=call.data.get("photo_url", ""),
+                note=call.data.get("note", ""),
+                suggested_points=call.data.get("suggested_points", 0),
             )
         except ValueError as err:
             # Only genuinely bad input (unknown chore/child) raises now — expected
@@ -581,7 +584,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             _LOGGER.error("No TaskMate coordinator available")
             return
         completion_id = call.data["completion_id"]
-        await coordinator.async_approve_chore(completion_id)
+        await coordinator.async_approve_chore(completion_id, points=call.data.get("points"))
 
     async def handle_approve_all_chores(call: ServiceCall) -> None:
         """Handle the approve_all_chores service call."""
@@ -1127,6 +1130,10 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Required(ATTR_CHILD_ID): cv.string,
                 vol.Optional(ATTR_AS_PARENT, default=False): cv.boolean,
                 vol.Optional("photo_url"): cv.string,
+                vol.Optional("note"): cv.string,
+                vol.Optional("suggested_points"): vol.All(
+                    vol.Coerce(int), vol.Range(min=0, max=CHORE_SUGGESTED_POINTS_MAX)
+                ),
             }
         ),
     )
@@ -1187,6 +1194,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         schema=vol.Schema(
             {
                 vol.Required("completion_id"): cv.string,
+                vol.Optional("points"): vol.All(vol.Coerce(int), vol.Range(min=0)),
             }
         ),
     )

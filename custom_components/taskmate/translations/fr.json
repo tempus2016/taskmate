@@ -139,6 +139,14 @@
         "child_id": {
           "name": "ID de l'enfant",
           "description": "L'identifiant de l'enfant effectuant la corvée"
+        },
+        "note": {
+          "name": "Note",
+          "description": "Ce que l'enfant a fait, avec ses propres mots. Obligatoire pour les tâches ouvertes, et affiché au parent lors de l'approbation."
+        },
+        "suggested_points": {
+          "name": "Points suggérés",
+          "description": "Ce que l'enfant estime que le travail valait. Une simple indication pour le parent qui approuve — cela n'attribue aucun point."
         }
       }
     },
@@ -167,6 +175,10 @@
         "completion_id": {
           "name": "ID de complétion",
           "description": "L'identifiant de l'exécution à approuver"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Attribuer ce nombre de points au lieu de la valeur de la tâche. Laisser vide pour utiliser les points de la tâche."
         }
       }
     },

@@ -319,6 +319,11 @@ class Chore:
     mandatory: bool = False
     mandatory_penalty_points: int = 0
     require_photo: bool = False  # require an evidence photo; forces parent approval
+    # Open-ended "I did something extra" placeholder (#832): the card asks the
+    # child to describe the work and suggest a point value, and the parent sets
+    # the real points when approving. Forces parent approval — a child types
+    # the suggestion, so it must never self-award.
+    open_ended: bool = False
     # Dynamic assignment (sibling rotation)
     assignment_mode: str = "everyone"  # everyone | alternating | random
     assignment_rotation_anchor: str = ""  # ISO date; day-0 of the rotation for alternating
@@ -401,6 +406,7 @@ class Chore:
             mandatory=bool(data.get("mandatory", False)),
             mandatory_penalty_points=max(0, int(data.get("mandatory_penalty_points", 0) or 0)),
             require_photo=data.get("require_photo", False),
+            open_ended=data.get("open_ended", False),
             assignment_mode=data.get("assignment_mode", "everyone"),
             assignment_rotation_anchor=data.get("assignment_rotation_anchor", ""),
             assignment_current_child_id=data.get("assignment_current_child_id", ""),
@@ -467,6 +473,7 @@ class Chore:
             "mandatory": self.mandatory,
             "mandatory_penalty_points": self.mandatory_penalty_points,
             "require_photo": self.require_photo,
+            "open_ended": self.open_ended,
             "assignment_mode": self.assignment_mode,
             "assignment_rotation_anchor": self.assignment_rotation_anchor,
             "assignment_current_child_id": self.assignment_current_child_id,
@@ -711,6 +718,8 @@ class ChoreCompletion:
     bonus_subtask_id: str = ""  # Non-empty = this completion is for a bonus sub-task
     timed_duration_seconds: int = 0
     photo_url: str = ""  # optional evidence photo (URL/path) attached at completion
+    note: str = ""  # child's own description of the work (open-ended chores, #832)
+    suggested_points: int = 0  # what the child reckons it was worth (#832)
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -729,6 +738,8 @@ class ChoreCompletion:
             bonus_subtask_id=data.get("bonus_subtask_id", ""),
             timed_duration_seconds=data.get("timed_duration_seconds", 0),
             photo_url=data.get("photo_url", ""),
+            note=data.get("note", ""),
+            suggested_points=int(data.get("suggested_points", 0) or 0),
             id=data.get("id") or generate_id(),
         )
 
@@ -744,6 +755,8 @@ class ChoreCompletion:
             "bonus_subtask_id": self.bonus_subtask_id,
             "timed_duration_seconds": self.timed_duration_seconds,
             "photo_url": self.photo_url,
+            "note": self.note,
+            "suggested_points": self.suggested_points,
             "id": self.id,
         }
 
