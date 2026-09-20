@@ -63,3 +63,6 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
+
+      - name: Run card render tests
+        run: npm test

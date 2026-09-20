@@ -69,8 +69,9 @@ Run these locally before pushing:
 ruff check custom_components/taskmate tests scripts
 ruff format --check custom_components/taskmate tests scripts   # drop --check to fix
 
-# Cards and panel (matches the "ESLint" CI check)
+# Cards and panel (both match the "ESLint" CI check)
 npm ci && npm run lint
+npm test          # renders the real cards and presses their buttons
 
 # Tests (matches the "Run tests" CI check)
 pytest

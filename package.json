@@ -4,7 +4,8 @@
   "description": "Dev tooling for the TaskMate Lovelace cards + admin panel.",
   "private": true,
   "scripts": {
-    "lint": "eslint \"custom_components/taskmate/www/**/*.js\""
+    "lint": "eslint \"custom_components/taskmate/www/**/*.js\"",
+    "test": "node --test tests/frontend/*.test.cjs"
   },
   "license": "ISC",
   "devDependencies": {
