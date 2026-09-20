@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
 
-from .models import PointsTransaction, PoolAllocation, Reward, RewardClaim
+from .models import Child, PointsTransaction, PoolAllocation, Reward, RewardClaim
 from .timewindow import has_window, is_within_window
 
 if TYPE_CHECKING:
@@ -338,14 +338,34 @@ class RewardsMixin:
             )
         )
 
-    async def async_claim_reward(self, reward_id: str, child_id: str) -> RewardClaim:
-        """Child claims a reward — creates a pending claim awaiting parent approval.
+    def reward_claim_funding(self, reward: Reward, child_id: str) -> int:
+        """What is available to pay for this reward, from whichever purse applies.
 
-        Two modes are supported:
-          * Wallet mode (default): requires child.points (minus committed) to cover cost
-          * Pool mode: if pool allocations exist for this (child, reward) and they fill the
-            reward's cost, the claim is a "redeem" — no wallet check needed. For jackpot
-            rewards the pool total across all contributing children must reach the cost.
+        A jackpot is paid from the shared pool, an ordinary reward from either
+        a filled savings jar or the child's uncommitted balance — so "can they
+        afford it" cannot be answered from the wallet alone.
+        """
+        if reward.is_jackpot:
+            return self.storage.get_total_allocated_for_reward(reward.id)
+        child = self.get_child(child_id)
+        if not child:
+            return 0
+        committed = 0
+        for claim in self.storage.get_pending_reward_claims():
+            if claim.child_id == child_id and not self.is_pool_mode_claim(claim):
+                pending_reward = self.get_reward(claim.reward_id)
+                if pending_reward:
+                    committed += pending_reward.cost
+        wallet = child.points - committed
+        allocation = self.storage.get_pool_allocation(child_id, reward.id)
+        return max(wallet, allocation.allocated_points) if allocation else wallet
+
+    def validate_reward_claim(self, reward_id: str, child_id: str) -> tuple[Reward, Child]:
+        """Check a claim is allowed, raising ValueError with the reason if not.
+
+        Every rule that decides whether a child may claim right now lives here,
+        so the claim itself and anything that offers it — the per-reward button
+        entity, for one — cannot drift apart. Mutates nothing.
         """
         reward = self.get_reward(reward_id)
         if not reward:
@@ -415,6 +435,19 @@ class RewardsMixin:
 
             if available_points < effective_cost:
                 raise ValueError(f"Not enough points. Need {effective_cost}, have {available_points} available")
+
+        return reward, child
+
+    async def async_claim_reward(self, reward_id: str, child_id: str) -> RewardClaim:
+        """Child claims a reward — creates a pending claim awaiting parent approval.
+
+        Two modes are supported:
+          * Wallet mode (default): requires child.points (minus committed) to cover cost
+          * Pool mode: if pool allocations exist for this (child, reward) and they fill the
+            reward's cost, the claim is a "redeem" — no wallet check needed. For jackpot
+            rewards the pool total across all contributing children must reach the cost.
+        """
+        reward, child = self.validate_reward_claim(reward_id, child_id)
 
         claim = RewardClaim(
             reward_id=reward_id,
