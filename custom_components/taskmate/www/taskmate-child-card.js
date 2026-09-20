@@ -1716,6 +1716,12 @@ class TaskMateChildCard extends LitElement {
         border-radius: 3px;
         transition: width 0.4s ease;
       }
+      .next-badge-nudge {
+        margin-top: 5px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--primary-color);
+      }
 
       /* ══════════════════════════════════════════════════════════════════
          DESIGNED STYLES (playroom / console / cleanpro)
@@ -1886,6 +1892,9 @@ class TaskMateChildCard extends LitElement {
       .tmd-next-badge .bar i {
         display: block; height: 100%; border-radius: 999px; transition: width .4s ease;
       }
+      .tmd-next-badge .nudge {
+        margin-top: 5px; font-size: 11px; font-weight: 800; color: var(--tmd-accent);
+      }
       /* Playroom is chunkier, console squares everything off, accessible needs
          a solid ring rather than a dashed one to stay legible. */
       :host([data-tm-design="playroom"]) .tmd-next-badge .bar { height: 8px; }
@@ -1895,6 +1904,7 @@ class TaskMateChildCard extends LitElement {
       :host([data-tm-design="accessible"]) .tmd-next-badge .bar { height: 10px; }
       :host([data-tm-design="accessible"]) .tmd-next-badge .nm,
       :host([data-tm-design="accessible"]) .tmd-next-badge .cnt { font-size: 14px; }
+      :host([data-tm-design="accessible"]) .tmd-next-badge .nudge { font-size: 13px; }
 
       /* Designed: vacation banner + swappable section */
       .tmd-vacation {
@@ -1928,6 +1938,7 @@ class TaskMateChildCard extends LitElement {
       show_due_days_only: true,      // Whether to apply due_days filtering at all
       show_badges: true,             // Show badge strip between points and chores
       show_next_badge: true,         // Show progress toward the closest unearned badge
+      show_badge_nudge: true,        // Encouraging line when one away from that badge
             header_color: '#9b59b6',
     ...config,
     };
@@ -2131,6 +2142,9 @@ class TaskMateChildCard extends LitElement {
                 aria-valuenow="${nextBadge.pct}" aria-valuemin="0" aria-valuemax="100">
                 <i style="width: ${nextBadge.pct}%; background: ${this._tierColor(nextBadge.badge.tier)}"></i>
               </div>
+              ${this._badgeNudgeText(nextBadge)
+                ? html`<div class="next-badge-nudge">${this._badgeNudgeText(nextBadge)}</div>`
+                : ''}
             </div>
           </div>
         ` : ''}
@@ -2247,6 +2261,21 @@ class TaskMateChildCard extends LitElement {
     best.label = c && c.target ? `${c.current} / ${c.target}` : `${best.pct}%`;
     best.name = this._badgeName(best.badge);
     return best;
+  }
+
+  /* "Nearly there" (#890) — the line of encouragement under the next-badge bar.
+
+     It fires on the last remaining unit and nothing else, measured in the
+     criterion's own units rather than percent: 90% of a ten-week badge is one
+     week away, 90% of a hundred-point badge is ten points away. Rare on
+     purpose — a line that shows for half the climb has stopped meaning
+     anything by the time it matters. Manual-award badges carry no criterion
+     and so never nudge. */
+  _badgeNudgeText(nextBadge) {
+    if (this.config.show_badge_nudge === false) return "";
+    const c = nextBadge?.badge?.closest_criterion;
+    if (!c) return "";
+    return Number(c.target) - Number(c.current) === 1 ? this._t("badges.one_more") : "";
   }
 
   // Built-in badge names arrive from the sensor in English; the localised
@@ -2494,6 +2523,9 @@ class TaskMateChildCard extends LitElement {
                 aria-valuenow="${nextBadge.pct}" aria-valuemin="0" aria-valuemax="100">
                 <i style="width:${nextBadge.pct}%;background:${this._tierColor(nextBadge.badge.tier)}"></i>
               </div>
+              ${this._badgeNudgeText(nextBadge)
+                ? html`<div class="nudge">${this._badgeNudgeText(nextBadge)}</div>`
+                : ""}
             </div>
           </div>` : ""}
         ${sectionLine}
