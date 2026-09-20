@@ -1,0 +1,104 @@
+name: Create issue from Idea
+
+# Every new discussion in the "Ideas" category is mirrored into a feature
+# request issue, so ideas land in the same triage pipeline as anything filed
+# through .github/ISSUE_TEMPLATE/feature_request.yml:
+#
+#   Ideas discussion -> [Feature] issue (enhancement + needs-triage)
+#     -> triage -> `planned` label -> auto-branch.yml cuts the branch
+#
+# Deliberately fires on `created` only. Adding `category_changed` would also
+# catch ideas moved in after the fact, but moving a discussion out of Ideas
+# and back in would then mint a second issue for the same thread.
+#
+# NOTE: the `discussion` event only runs the copy of this file on the default
+# branch. Changes here do nothing until they are merged to main.
+
+on:
+  discussion:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  convert:
+    name: Mirror idea to issue
+    if: github.event.discussion.category.slug == 'ideas'
+    runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+      discussions: write
+
+    steps:
+      - name: Open the feature request
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const discussion = context.payload.discussion;
+            const author = discussion.user.login;
+
+            // Strip whatever lead-in the author used ("Feature request: ...",
+            // "[Idea] ...") so titles don't end up double-prefixed, then apply
+            // the same [Feature]: prefix the issue form uses.
+            const stripped = discussion.title
+              .trim()
+              .replace(/^\[?\s*(feature request|feature|idea|suggestion|request)\s*\]?\s*[:\-–—]\s*/i, '')
+              .trim();
+            const base = stripped || discussion.title.trim();
+            const title = `[Feature]: ${base}`.slice(0, 250);
+
+            const body = [
+              `_Filed automatically from [discussion #${discussion.number}](${discussion.html_url})`,
+              `in **Ideas**, opened by @${author}._`,
+              ``,
+              `---`,
+              ``,
+              discussion.body?.trim() || '_The discussion had no body._',
+              ``,
+              `---`,
+              ``,
+              `This issue tracks the implementation — the original thread stays open for`,
+              `discussion: ${discussion.html_url}`,
+            ].join('\n');
+
+            const { data: issue } = await github.rest.issues.create({
+              owner, repo, title, body,
+              labels: ['enhancement', 'needs-triage'],
+            });
+
+            console.log(`Created issue #${issue.number}: ${issue.html_url}`);
+
+            // Assignment is best-effort: it fails for anyone without write
+            // access on the repo, and that must not lose the issue itself.
+            try {
+              await github.rest.issues.addAssignees({
+                owner, repo, issue_number: issue.number, assignees: ['tempus2016'],
+              });
+            } catch (err) {
+              console.log(`Could not assign the issue: ${err.message}`);
+            }
+
+            // Discussions are GraphQL-only — there is no REST endpoint for this.
+            const comment = [
+              `Thanks! This has been picked up as **#${issue.number}** so it can be tracked`,
+              `and triaged alongside the other feature requests: ${issue.html_url}`,
+              ``,
+              `Feel free to keep discussing it here.`,
+            ].join('\n');
+
+            await github.graphql(
+              `mutation($discussionId: ID!, $body: String!) {
+                 addDiscussionComment(input: { discussionId: $discussionId, body: $body }) {
+                   comment { url }
+                 }
+               }`,
+              { discussionId: discussion.node_id, body: comment },
+            );
+
+            await core.summary
+              .addHeading('Idea mirrored to an issue')
+              .addLink(title, issue.html_url)
+              .addRaw(` (from discussion #${discussion.number})`)
+              .write();
