@@ -52,18 +52,36 @@ class RewardsMixin:
         return self.storage.get_reward(reward_id)
 
     def is_pool_mode_claim(self, claim: RewardClaim) -> bool:
-        """True if the claim is covered by pool allocations (points already deducted).
+        """True if the claim is funded from the pool rather than a wallet.
 
-        Pool-mode claims must NOT be counted against a child's spendable balance,
-        because their cost was already removed from child.points at allocation time.
+        Pool-funded claims must NOT be counted against a child's spendable
+        balance, because their cost was already removed from child.points at
+        allocation time. A jackpot is always pool-funded (#552), even if the
+        pool has since dipped below the cost — it is still not the claimer's
+        wallet that is on the hook for it.
         """
         reward = self.get_reward(claim.reward_id)
         if not reward:
             return False
         if getattr(reward, "is_jackpot", False):
-            return self.storage.get_total_allocated_for_reward(claim.reward_id) >= reward.cost
+            return True
         alloc = self.storage.get_pool_allocation(claim.child_id, claim.reward_id)
         return bool(alloc and alloc.allocated_points >= reward.cost)
+
+    def _require_funded_jackpot(self, reward: Reward, cost: int) -> None:
+        """Raise unless the shared pool covers a jackpot's cost.
+
+        Jackpots are funded from one shared pool and never from a wallet
+        (#552). The pool can fall short of a pending claim — the cost is
+        raised, a contributor is unassigned, a child is deleted — and without
+        this guard the fallback path charged the full jackpot to whichever
+        child happened to be holding the claim.
+        """
+        pool_total = self.storage.get_total_allocated_for_reward(reward.id)
+        if pool_total < cost:
+            raise ValueError(
+                f"'{reward.name}' is a shared jackpot and its pool is not full. Need {cost}, have {pool_total} saved up"
+            )
 
     async def async_add_reward(
         self,
@@ -306,9 +324,10 @@ class RewardsMixin:
         # or for jackpots the summed pool across all children reaches cost.
         pool_filled = False
         if reward.is_jackpot:
-            pool_total = self.storage.get_total_allocated_for_reward(reward_id)
-            if pool_total >= effective_cost:
-                pool_filled = True
+            # A short pool is the end of it: a jackpot is never redeemed out of
+            # one child's wallet, however many points they happen to have.
+            self._require_funded_jackpot(reward, effective_cost)
+            pool_filled = True
         else:
             allocation = self.storage.get_pool_allocation(child_id, reward_id)
             if allocation and allocation.allocated_points >= effective_cost:
@@ -436,9 +455,12 @@ class RewardsMixin:
                 pool_alloc = self.storage.get_pool_allocation(claim.child_id, claim.reward_id)
                 is_pool_mode = False
                 if reward.is_jackpot:
-                    pool_total = self.storage.get_total_allocated_for_reward(claim.reward_id)
-                    if pool_total >= effective_cost:
-                        is_pool_mode = True
+                    # The pool can have drained since the claim was made, and
+                    # the wallet path below is not an acceptable fallback for a
+                    # shared reward — it would charge the whole jackpot to the
+                    # one child holding the claim.
+                    self._require_funded_jackpot(reward, effective_cost)
+                    is_pool_mode = True
                 elif pool_alloc and pool_alloc.allocated_points >= effective_cost:
                     is_pool_mode = True
 
@@ -476,12 +498,32 @@ class RewardsMixin:
                 claim.approved = True
                 claim.approved_at = dt_util.now()
                 self.storage.update_reward_claim(claim)
+
+                # One pool, one redemption. Claims stored before a jackpot was
+                # limited to a single pending claim (#873) can still be sitting
+                # in the queue; the pool that would have paid for them has just
+                # been spent, so approving one of those later would fall
+                # through to its claimer's wallet. Retire them with the pool.
+                superseded = []
+                if reward.is_jackpot:
+                    superseded = [c for c in claims if c.id != claim.id and c.reward_id == reward.id and not c.approved]
+                    for other in superseded:
+                        self.storage.remove_reward_claim(other.id)
+                    if superseded:
+                        _LOGGER.info(
+                            "Retired %d duplicate pending claim(s) for jackpot '%s' on redemption",
+                            len(superseded),
+                            reward.name,
+                        )
+
                 await self.storage.async_save()
                 await self.async_refresh()
 
                 # Dismiss the mobile approval push now this claim is reviewed.
                 if getattr(self, "notifications", None):
                     await self.notifications.clear_approval("pending_reward_claim", claim_id)
+                    for other in superseded:
+                        await self.notifications.clear_approval("pending_reward_claim", other.id)
 
                 # Timed unlock (#678): allowlisted entity on, auto-off later.
                 await self.async_start_unlock(reward, child)
