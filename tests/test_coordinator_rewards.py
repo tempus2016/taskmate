@@ -883,6 +883,13 @@ def _ts():
     return _dt.datetime(2024, 3, 20, 12, 0, 0, tzinfo=_dt.timezone.utc)
 
 
+def _now():
+    """Now, for records that have to land inside the current cap period."""
+    import datetime as _dt
+
+    return _dt.datetime.now(_dt.timezone.utc)
+
+
 class TestClaimFloodControl:
     def test_duplicate_pending_claim_is_rejected(self):
         child = _child(points=500)
@@ -1357,3 +1364,117 @@ class TestRewardEditSettlesThePool:
 
         coord.storage.remove_pool_allocation.assert_not_called()
         coord.storage.remove_reward_claim.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# a purchase keeps the price it was approved at
+# ---------------------------------------------------------------------------
+
+
+class TestApprovedCostIsRecorded:
+    """History read the reward's live cost, so re-pricing a reward silently
+    rewrote every past purchase of it — in the activity feed, in the panel's
+    timeline, and in the per-period spending cap.
+    """
+
+    def _coord(self, *, cost=50, points=500, claims=()):
+        child = Child(name="Alice", points=points, id="kidA")
+        reward = Reward(name="Cinema", cost=cost, id="rw")
+        coord = _make_coord(children=[child], rewards=[reward], claims=list(claims))
+        # Make stored rewards actually change on update, so a test can approve
+        # a claim after an edit and see the new price rather than the old one.
+        stored = {reward.id: reward}
+        coord.storage.get_reward = MagicMock(side_effect=stored.get)
+        coord.storage.update_reward = MagicMock(side_effect=lambda r: stored.__setitem__(r.id, r))
+        return coord, child, reward
+
+    def test_approval_records_what_was_paid(self):
+        claim = RewardClaim(reward_id="rw", child_id="kidA", claimed_at=_ts(), id="c1")
+        coord, child, _reward = self._coord(cost=50, claims=[claim])
+
+        run(coord.async_approve_reward("c1"))
+
+        assert claim.approved_cost == 50
+        assert child.points == 450
+
+    def test_a_later_price_change_leaves_the_record_alone(self):
+        claim = RewardClaim(reward_id="rw", child_id="kidA", claimed_at=_ts(), id="c1")
+        coord, _child, _reward = self._coord(cost=50, claims=[claim])
+        run(coord.async_approve_reward("c1"))
+
+        run(coord.async_update_reward(Reward(name="Cinema", cost=5, id="rw")))
+
+        assert claim.approved_cost == 50
+
+    def test_a_free_reward_records_a_zero_price(self):
+        claim = RewardClaim(reward_id="rw", child_id="kidA", claimed_at=_ts(), id="c1")
+        coord, _child, _reward = self._coord(cost=0, claims=[claim])
+
+        run(coord.async_approve_reward("c1"))
+
+        assert claim.approved_cost == 0  # not None: it really was free
+
+    # ── records written before the price was stored ─────────────────────
+    def test_a_price_change_freezes_unrecorded_history_first(self):
+        legacy = RewardClaim(
+            reward_id="rw", child_id="kidA", claimed_at=_ts(), approved=True, approved_at=_ts(), id="old"
+        )
+        coord, _child, _reward = self._coord(cost=50, claims=[legacy])
+
+        run(coord.async_update_reward(Reward(name="Cinema", cost=5, id="rw")))
+
+        assert legacy.approved_cost == 50  # the price it was approved at
+
+    def test_a_pending_claim_is_not_given_a_price_by_an_edit(self):
+        pending = RewardClaim(reward_id="rw", child_id="kidA", claimed_at=_ts(), id="c1")
+        coord, _child, _reward = self._coord(cost=50, claims=[pending])
+
+        run(coord.async_update_reward(Reward(name="Cinema", cost=5, id="rw")))
+
+        assert pending.approved_cost is None  # it will be priced when approved
+        run(coord.async_approve_reward("c1"))
+        assert pending.approved_cost == 5
+
+    def test_an_edit_that_does_not_move_the_price_freezes_nothing(self):
+        legacy = RewardClaim(
+            reward_id="rw", child_id="kidA", claimed_at=_ts(), approved=True, approved_at=_ts(), id="old"
+        )
+        coord, _child, _reward = self._coord(cost=50, claims=[legacy])
+
+        run(coord.async_update_reward(Reward(name="Cinema night", cost=50, icon="mdi:movie", id="rw")))
+
+        assert legacy.approved_cost is None
+
+    def test_another_rewards_history_is_not_touched(self):
+        other = RewardClaim(
+            reward_id="other", child_id="kidA", claimed_at=_ts(), approved=True, approved_at=_ts(), id="old"
+        )
+        coord, _child, _reward = self._coord(cost=50, claims=[other])
+
+        run(coord.async_update_reward(Reward(name="Cinema", cost=5, id="rw")))
+
+        assert other.approved_cost is None
+
+    # ── the spending cap ────────────────────────────────────────────────
+    def test_the_spending_cap_counts_what_was_paid(self):
+        spent = RewardClaim(
+            reward_id="rw",
+            child_id="kidA",
+            claimed_at=_ts(),
+            approved=True,
+            approved_at=_now(),
+            approved_cost=95,
+            id="old",
+        )
+        claim = RewardClaim(reward_id="rw", child_id="kidA", claimed_at=_ts(), id="c1")
+        coord, _child, _reward = self._coord(cost=10, claims=[spent, claim])
+        settings = {"spend_cap_enabled": True, "spend_cap_amount": "100"}
+        coord.storage.get_setting = MagicMock(side_effect=lambda key, default=None: settings.get(key, default))
+
+        # 95 already spent this period, so another 10 breaks a cap of 100...
+        with pytest.raises(ValueError, match="Spending cap reached"):
+            run(coord.async_approve_reward("c1"))
+
+        # ...whereas the reward's live cost alone reads as only 10 spent.
+        spent.approved_cost = None
+        run(coord.async_approve_reward("c1"))

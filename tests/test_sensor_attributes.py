@@ -689,3 +689,30 @@ def test_heavy_lists_are_still_published_to_the_frontend():
     recorded = _recorder_payload(PendingApprovalsSensor, approvals)
     assert recorded["pending_chore_completions"] == len(approvals["chore_completions"])
     assert recorded["pending_mandatory_misses"] == 120
+
+
+def test_history_shows_the_price_a_reward_was_bought_at():
+    """Re-pricing a reward must not rewrite what past purchases cost."""
+    import datetime as dt
+
+    from custom_components.taskmate.models import Child, Reward, RewardClaim
+
+    child = Child(name="Alice", id="kidA")
+    reward = Reward(name="Cinema", cost=5, id="rw")  # since re-priced down from 50
+    when = dt.datetime(2024, 3, 20, 12, 0, tzinfo=dt.timezone.utc)
+    paid = RewardClaim(
+        reward_id="rw", child_id="kidA", claimed_at=when, approved=True, approved_at=when, approved_cost=50, id="c1"
+    )
+    legacy = RewardClaim(reward_id="rw", child_id="kidA", claimed_at=when, approved=True, approved_at=when, id="c2")
+    pending = RewardClaim(reward_id="rw", child_id="kidA", claimed_at=when, id="c3")
+
+    common = {
+        "data": {"points_transactions": [], "reward_claims": [paid, legacy, pending]},
+        "child_lookup": {"kidA": child},
+        "reward_lookup": {"rw": reward},
+    }
+    by_id = {e["transaction_id"]: e for e in sensor_module._build_recent_transactions(common)}
+
+    assert by_id["c1"]["points"] == -50  # what it actually cost
+    assert by_id["c2"]["points"] == -5  # no record kept; fall back to the live cost
+    assert by_id["c3"]["points"] == -5  # still pending: today's price is the estimate

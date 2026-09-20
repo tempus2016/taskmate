@@ -54,6 +54,24 @@ def parse_datetime(value: str | datetime | None) -> datetime | None:
     return None
 
 
+def parse_optional_points(value: Any) -> int | None:
+    """Parse a stored points figure, or None for "not recorded".
+
+    Used for fields that snapshot a value at the moment it applied. ``None``
+    marks a record written before the field existed, so callers can fall back
+    to recalculating; anything unusable is treated the same way rather than
+    being trusted as a number.
+    """
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        points = int(value)
+    except (ValueError, TypeError, OverflowError):
+        _LOGGER.warning("Ignoring unusable stored points value %r", value)
+        return None
+    return None if points < 0 else points
+
+
 def format_datetime(dt: datetime | None) -> str | None:
     """Format a datetime as ISO string with timezone info.
 
@@ -820,6 +838,9 @@ class RewardClaim:
     approved: bool = False
     approved_at: datetime | None = None
     id: str = field(default_factory=generate_id)
+    # What this purchase actually cost, recorded when it was approved. None on
+    # a pending claim, and on claims approved before the field existed.
+    approved_cost: int | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> RewardClaim:
@@ -834,6 +855,7 @@ class RewardClaim:
             approved=data.get("approved", False),
             approved_at=approved_at,
             id=data.get("id") or generate_id(),
+            approved_cost=parse_optional_points(data.get("approved_cost")),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -845,6 +867,7 @@ class RewardClaim:
             "approved": self.approved,
             "approved_at": format_datetime(self.approved_at),
             "id": self.id,
+            "approved_cost": self.approved_cost,
         }
 
 

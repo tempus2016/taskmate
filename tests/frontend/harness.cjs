@@ -178,6 +178,23 @@ function loadCard(filename, overrides = {}) {
 
   const sandbox = {
     window: sandboxWindow,
+    // The admin panel is a plain custom element rather than a Lit card.
+    HTMLElement: class {
+      constructor() {
+        this.shadowRoot = null;
+      }
+      attachShadow() {
+        this.shadowRoot = { innerHTML: "", querySelector: () => null, querySelectorAll: () => [] };
+        return this.shadowRoot;
+      }
+      addEventListener() {}
+      removeEventListener() {}
+      setAttribute() {}
+      getAttribute() {
+        return null;
+      }
+    },
+    URL,
     document: {
       createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }),
       querySelector: () => null,
@@ -203,7 +220,14 @@ function loadCard(filename, overrides = {}) {
   sandboxWindow.customElements ??= sandbox.customElements;
   sandboxWindow.document ??= sandbox.document;
 
-  vm.runInNewContext(readFileSync(path.join(WWW, filename), "utf8"), sandbox);
+  // `import.meta.url` is how the panel reads its cache-busting version. It is
+  // module syntax, which a plain script context cannot parse, so it is given a
+  // stand-in URL of the same shape.
+  const source = readFileSync(path.join(WWW, filename), "utf8").replaceAll(
+    "import.meta.url",
+    JSON.stringify(`http://localhost/${filename}?v=test`),
+  );
+  vm.runInNewContext(source, sandbox);
   return { elements, window: sandboxWindow, get: (name) => elements.get(name) };
 }
 

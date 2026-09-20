@@ -5,6 +5,8 @@ from __future__ import annotations
 import datetime as dt
 from datetime import timezone
 
+import pytest
+
 from custom_components.taskmate.models import (
     Bonus,
     Child,
@@ -423,6 +425,31 @@ class TestRewardClaim:
         )
         assert claim.approved is False
         assert claim.approved_at is None
+        assert claim.approved_cost is None
+
+    def test_approved_cost_survives_a_roundtrip(self):
+        claim = RewardClaim(
+            reward_id="r1",
+            child_id="k1",
+            claimed_at=dt.datetime(2024, 3, 19, 12, 0, 0, tzinfo=UTC),
+            approved=True,
+            approved_cost=0,
+            id="claim01",
+        )
+        assert RewardClaim.from_dict(claim.to_dict()).approved_cost == 0
+
+    @pytest.mark.parametrize("stored", ["not a number", -5, True, None, [], float("nan")])
+    def test_an_unusable_stored_price_reads_as_not_recorded(self, stored):
+        claim = RewardClaim.from_dict(
+            {"reward_id": "r1", "child_id": "k1", "claimed_at": "2024-03-19T10:00:00Z", "approved_cost": stored}
+        )
+        assert claim.approved_cost is None
+
+    def test_a_stored_price_string_is_read_as_a_number(self):
+        claim = RewardClaim.from_dict(
+            {"reward_id": "r1", "child_id": "k1", "claimed_at": "2024-03-19T10:00:00Z", "approved_cost": "25"}
+        )
+        assert claim.approved_cost == 25
 
 
 # ---------------------------------------------------------------------------

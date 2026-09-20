@@ -132,6 +132,8 @@ class RewardsMixin:
         # Jackpots are always pool-mode (#552); keep stored data consistent.
         if reward.is_jackpot:
             reward.pool_enabled = True
+        if old and reward.cost != old.cost:
+            self._freeze_unrecorded_prices(old)
         self.storage.update_reward(reward)
         cancelled_claim_ids = self._settle_pool_after_edit(old, reward) if old else []
         if old and reward.cost < old.cost:
@@ -190,6 +192,19 @@ class RewardsMixin:
                 reward.name,
             )
         return cancelled
+
+    def _freeze_unrecorded_prices(self, old: Reward) -> None:
+        """Stamp the current price onto approved claims that never recorded one.
+
+        Claims approved before the price was stored alongside them have no
+        record of what was paid, so history reads the reward's live cost. This
+        is the last moment that cost is still the one those purchases were
+        approved at, so it is written down before the edit lands.
+        """
+        for claim in self.storage.get_reward_claims():
+            if claim.reward_id == old.id and claim.approved and claim.approved_cost is None:
+                claim.approved_cost = old.cost
+                self.storage.update_reward_claim(claim)
 
     async def async_remove_reward(self, reward_id: str) -> None:
         """Remove a reward and clean up any pending claims and pool allocations referencing it."""
@@ -449,7 +464,8 @@ class RewardsMixin:
                 continue
             when = claim.approved_at or claim.claimed_at
             if when and dt_util.as_local(when).date() >= start:
-                total += reward_cost.get(claim.reward_id, 0)
+                paid = claim.approved_cost
+                total += paid if paid is not None else reward_cost.get(claim.reward_id, 0)
         return total
 
     def _enforce_spend_cap(self, child_id: str, cost: int) -> None:
@@ -549,6 +565,7 @@ class RewardsMixin:
 
                 claim.approved = True
                 claim.approved_at = dt_util.now()
+                claim.approved_cost = effective_cost
                 self.storage.update_reward_claim(claim)
 
                 # One pool, one redemption. Claims stored before a jackpot was
