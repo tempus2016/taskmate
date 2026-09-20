@@ -160,6 +160,7 @@
   "badges.entity_not_found": "{entity} ikkje funne",
   "badges.label": "Merke",
   "badges.next_up": "Neste",
+  "badges.one_more": "Berre éin til, så er det ditt!",
   "badges.title_with_name": "Merka til {name}",
   "bonuses.add_bonus": "Legg til bonus",
   "bonuses.applying_to": "Vert brukt på {childName} — noverande saldo: {points} {pointsName}",

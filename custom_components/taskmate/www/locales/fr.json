@@ -160,6 +160,7 @@
   "badges.entity_not_found": "{entity} introuvable",
   "badges.label": "Badges",
   "badges.next_up": "Prochain",
+  "badges.one_more": "Encore un et il est à toi !",
   "badges.title_with_name": "Badges de {name}",
   "bonuses.add_bonus": "Ajouter un bonus",
   "bonuses.applying_to": "Application à {childName} — solde actuel : {points} {pointsName}",
