@@ -768,14 +768,14 @@ class PointsMixin:
                 weekend_bonus,
                 points,
             )
-            # Log weekend bonus as a separate transaction for activity history
-            transaction = PointsTransaction(
-                child_id=child.id,
-                points=weekend_bonus,
-                reason=f"Weekend bonus (×{multiplier:.0f})",
-                created_at=now,
-            )
-            self.storage.add_points_transaction(transaction)
+            # Deliberately NOT written as its own transaction. The bonus is part
+            # of what `total_points` pays, and the completion records that in
+            # points_awarded — so an extra row here would be the same points
+            # counted twice by anything summing completions and transactions
+            # together (the graph, weekly and leaderboard cards all do).
+            # Households upgrading from an earlier version still have these
+            # rows in their history, so the "Weekend bonus" reason stays in
+            # _UNDO_DENY_PREFIXES and in the locales.
 
         # ── Streak tracking ─────────────────────────────────────────────────
         streak_reset_occurred = False

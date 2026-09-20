@@ -250,8 +250,79 @@ def test_the_pending_review_shows_the_promised_award():
     by_id = {row["completion_id"]: row["points"] for row in sensor_module._build_todays_completions(common)}
     assert by_id["p1"] == 15  # what the child was promised
     assert by_id["p2"] == 1  # nothing recorded; fall back to the chore
-    assert by_id["p3"] == 1  # already approved: not a preview
+    assert by_id["p3"] == 15  # already approved: what it actually paid
 
     recent = {row["completion_id"]: row["points"] for row in sensor_module._build_recent_completions(common)}
     assert recent["p1"] == 15
     assert recent["p2"] == 1
+
+
+# ── an approved completion is worth what it paid ─────────────────────────
+
+
+def test_history_shows_what_an_approved_completion_actually_paid():
+    """Re-pricing a chore must not rewrite what past completions earned."""
+    from homeassistant.util import dt as dt_util
+
+    from custom_components.taskmate import sensor as sensor_module
+    from custom_components.taskmate.models import Child, Chore, ChoreCompletion
+
+    today = dt_util.now()
+    chore = Chore(name="Tidy up", points=1, id="c")  # since re-priced down from 10
+    child = Child(name="Alice", id="k")
+    paid = ChoreCompletion(
+        chore_id="c", child_id="k", completed_at=today, approved=True, points_awarded=20, submitted_points=10, id="p1"
+    )
+    legacy = ChoreCompletion(chore_id="c", child_id="k", completed_at=today, approved=True, points_awarded=7, id="p2")
+    common = {
+        "child_lookup": {"k": child},
+        "chore_lookup": {"c": chore},
+        "all_completions": [paid, legacy],
+    }
+
+    rows = {r["completion_id"]: r["points"] for r in sensor_module._build_recent_completions(common)}
+    # 10 for the chore + 10 weekend bonus, not the 1 it costs today.
+    assert rows["p1"] == 20
+    assert rows["p2"] == 7  # no submitted award recorded, but it was still paid 7
+
+
+def test_a_parent_completion_is_worth_nothing():
+    """It suppresses the chore for the day rather than earning anything."""
+    from homeassistant.util import dt as dt_util
+
+    from custom_components.taskmate import sensor as sensor_module
+    from custom_components.taskmate.models import Chore, ChoreCompletion
+
+    today = dt_util.now()
+    marker = ChoreCompletion(
+        chore_id="c", child_id="__parent__", completed_at=today, approved=True, points_awarded=0, id="p1"
+    )
+    common = {
+        "child_lookup": {},
+        "chore_lookup": {"c": Chore(name="Tidy up", points=10, id="c")},
+        "all_completions": [marker],
+    }
+
+    rows = {r["completion_id"]: r["points"] for r in sensor_module._build_todays_completions(common)}
+    assert rows["p1"] == 0
+
+
+def test_the_weekend_bonus_is_not_also_its_own_transaction():
+    """It is inside points_awarded; a second row would be counted twice by
+    every card that sums completions and transactions together."""
+
+    async def scenario():
+        import custom_components.taskmate.coordinator as _mod
+
+        coord, storage = await _make_system()
+        storage.set_setting("weekend_multiplier", "2.0")
+        child = await coord.async_add_child("Alice")
+        saturday = dt.datetime(2024, 3, 23, 12, 0, tzinfo=UTC)
+        with patch.object(_mod.dt_util, "now", return_value=saturday):
+            awarded = await coord._award_points(child, 10, completion_date=saturday.date())
+        return awarded, coord.get_child(child.id).points, storage.get_points_transactions()
+
+    awarded, balance, transactions = _run(scenario)
+    assert awarded == 20  # 10 for the chore, 10 for the weekend
+    assert balance == 20
+    assert [t.reason for t in transactions if "Weekend" in (t.reason or "")] == []
