@@ -603,7 +603,9 @@ class TaskMateApprovalsCard extends LitElement {
       .ap-cn-photo img { width: 100%; height: 100%; object-fit: cover; }
 
       /* Clean Pro — divided list */
-      .ap-cp-item { padding: 10px 0; }
+      .ap-cp-item { padding: 10px 0; flex-wrap: wrap; row-gap: 8px; }
+      .ap-cp-mid { flex: 1 1 130px; min-width: 130px; }
+      .ap-cp-actions { display: flex; gap: 8px; flex: 0 0 auto; margin-left: auto; }
       .ap-cp-title { font-weight: 600; }
       .ap-cp-sub { font-size: 12px; }
       .ap-cp-photo { width: 32px; height: 32px; border-radius: 8px; overflow: hidden;
@@ -1048,13 +1050,13 @@ class TaskMateApprovalsCard extends LitElement {
     return html`
       <div class="row ap-cp-item" style="--ac:${tone}">
         ${this._av(it.childName, this._childAvatar(it.childId), tone, 38)}
-        <div style="flex:1;min-width:0">
+        <div class="ap-cp-mid">
           <div class="ap-cp-title">${it.title}</div>
           <div class="muted ap-cp-sub">${it.childName}${time ? html` · ${time}` : ""}</div>
         </div>
         ${this._apPhotoDesigned(it, "ap-cp-photo")}
         <span class="chip soft ap-gold-soft">+${it.points}</span>
-        ${this._designActions(it, "ghost")}
+        <div class="ap-cp-actions">${this._designActions(it, "ghost")}</div>
       </div>`;
   }
 

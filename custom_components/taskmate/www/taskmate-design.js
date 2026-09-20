@@ -13,11 +13,21 @@
  *   console  — dark gamified HUD
  *   cleanpro — calm productivity / SaaS
  *   accessible — high contrast, colour-blind safe, dyslexia-friendly type
+ *   graphite — corporate/system look; reuses the cleanpro LAYOUT (see
+ *              LAYOUT_ALIAS) and restyles it entirely through tokens + kit
  *
  * Mirrors window.__taskmate_localize: exposed globally, no ES module imports.
  */
 (function () {
-  const IDS = ["classic", "playroom", "console", "cleanpro", "accessible"];
+  const IDS = ["classic", "playroom", "console", "cleanpro", "accessible", "graphite"];
+
+  // A design whose markup is another design's. apply() stamps the real id on
+  // the host (so the style's CSS applies) but hands cards the layout id, so
+  // every existing `design === "cleanpro"` branch picks graphite up too. Without
+  // this a new id falls down each card's final `else`, which is playroom in
+  // some cards and cleanpro in others — the classic "works on one style,
+  // invisible on the rest" bug.
+  const LAYOUT_ALIAS = { graphite: "cleanpro" };
 
   // Fonts must be loaded at the document level (an @import inside a shadow
   // stylesheet is honoured, but loading once globally avoids N duplicate fetches).
@@ -56,6 +66,23 @@
   --tmd-c1:#4F6BED;--tmd-c2:#0FB5A8;--tmd-c3:#E0A100;--tmd-c4:#7A5AF0;--tmd-c5:#E0567A;--tmd-c6:#2BA84A;
 }
 
+:host([data-tm-design="graphite"]),[data-tm-design="graphite"]{
+  /* Neutrals carry the card; the only saturated element is the header band
+     (per-card header_color). Actions are near-black rather than a coloured
+     accent, and colour is reserved for meaning: good / warn / bad. */
+  --tmd-bg:#EFEFF2;--tmd-surface:#FFFFFF;--tmd-surface-2:#F5F5F7;--tmd-border:#D2D2D7;
+  --tmd-text:#1D1D1F;--tmd-dim:#6E6E73;
+  --tmd-accent:#1D1D1F;--tmd-accent2:#6E6E73;--tmd-good:#1D7A4C;--tmd-warn:#B25E00;--tmd-bad:#B3261E;--tmd-gold:#B25E00;
+  --tmd-radius:18px;--tmd-radius-sm:12px;--tmd-shadow:none;--tmd-hd-text:#fff;
+  /* The system stack resolves to real SF Pro on Apple hardware; Inter (already
+     in FONT_IMPORT) is the fallback everywhere else. Figures are kept aligned
+     with font-variant-numeric rather than a separate monospace face. */
+  --tmd-font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter",system-ui,sans-serif;
+  --tmd-font-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;
+  --tmd-font-mono:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;
+  --tmd-c1:#1F5F8B;--tmd-c2:#146356;--tmd-c3:#8A4B12;--tmd-c4:#3E4B8B;--tmd-c5:#6B3D6B;--tmd-c6:#2F4858;
+}
+
 /* ── Dark-mode variants ──────────────────────────────────────────────────
    Cards stamp data-tm-dark on the host when HA is in dark mode. Each design has
    a light base (above) and a dark override here, so all three follow HA's
@@ -92,6 +119,16 @@
   --tmd-bg:#0F141A;--tmd-surface:#181D25;--tmd-surface-2:#212733;--tmd-border:#2C3340;
   --tmd-text:#E6EAF1;--tmd-dim:#97A1B0;--tmd-accent:#6E86F5;--tmd-accent2:#1FC7B8;
   --tmd-shadow:0 1px 2px rgba(0,0,0,.4),0 8px 18px rgba(0,0,0,.35);
+}
+:host([data-tm-design="graphite"][data-tm-dark]),[data-tm-design="graphite"][data-tm-dark]{
+  /* True black behind elevated sheets. --tmd-accent stays a mid neutral so a
+     card with no header_color still has a legible band with white text; the
+     button colour is derived from --tmd-text instead, so it inverts properly. */
+  --tmd-bg:#000000;--tmd-surface:#1C1C1E;--tmd-surface-2:#2C2C2E;--tmd-border:#38383A;
+  --tmd-text:#F5F5F7;--tmd-dim:#98989F;
+  --tmd-accent:#3A3A3C;--tmd-accent2:#98989F;--tmd-good:#30A46C;--tmd-warn:#D98324;--tmd-bad:#E5484D;--tmd-gold:#D98324;
+  --tmd-shadow:none;
+  --tmd-c1:#2C7CB0;--tmd-c2:#1E8C77;--tmd-c3:#B06A26;--tmd-c4:#5B6AC0;--tmd-c5:#945993;--tmd-c6:#4A6B80;
 }
 :host([data-tm-design="accessible"][data-tm-dark]),[data-tm-design="accessible"][data-tm-dark]{
   /* Pure black would bloom on OLED and is harsh for astigmatism; #0A0A0A with
@@ -145,7 +182,142 @@
 .stat{background:var(--tmd-surface-2);border:1px solid var(--tmd-border);border-radius:var(--tmd-radius-sm);padding:10px 11px}
 .stat .k{font-size:11px;font-weight:700;color:var(--tmd-dim);text-transform:uppercase;letter-spacing:.04em}
 .stat .v{font-family:var(--tmd-font-display);font-weight:800;font-size:20px;margin-top:2px}
-.grid{display:grid;gap:10px}`;
+.grid{display:grid;gap:10px}
+
+/* ── Graphite ─────────────────────────────────────────────────────────────
+   Graphite has no render path of its own: it borrows the Clean Pro markup
+   (LAYOUT_ALIAS) and is defined entirely by the rules below, so all cards
+   adopt it at once. Selectors are :host([...]) + class, which out-specifies
+   the '.tmd-check .c-num' pattern the cards use for their own design CSS. */
+:host([data-tm-design="graphite"]) .tmd{border:1px solid var(--tmd-border);box-shadow:none}
+/* The header band stays full colour — it is the one saturated element. */
+:host([data-tm-design="graphite"]) .tmd-hd{padding:13px 15px 12px}
+:host([data-tm-design="graphite"]) .tmd-hd .tt{font-weight:600;font-size:17px;letter-spacing:-.42px}
+:host([data-tm-design="graphite"]) .tmd-hd .tt small{font-weight:400;font-size:13px;opacity:.78;letter-spacing:-.06px;margin-top:2px}
+:host([data-tm-design="graphite"]) .tmd-hd .ic{border-radius:50%;background:rgba(255,255,255,.2)}
+:host([data-tm-design="graphite"]) .tmd-hd .pill{background:transparent;padding:0;font-weight:500;font-size:15px;letter-spacing:-.2px;text-transform:none}
+:host([data-tm-design="graphite"]) .tmd-hd .cnt{background:rgba(255,255,255,.22);font-weight:500;font-variant-numeric:tabular-nums}
+
+/* Actions are near-black on light and near-white on dark. Deriving them from
+   --tmd-text (not --tmd-accent) is what makes both directions invert. */
+:host([data-tm-design="graphite"]) .btn{background:var(--tmd-text);color:var(--tmd-surface);
+  font-family:var(--tmd-font-body);font-weight:500;letter-spacing:-.2px;
+  border-radius:9px;box-shadow:none}
+:host([data-tm-design="graphite"]) .btn.ghost{background:transparent;color:var(--tmd-text);border:1px solid var(--tmd-border)}
+/* "good" marks the primary confirm (Approve / Dismiss). Graphite draws the
+   primary action in near-black like every other one; green is reserved for
+   reporting a completed state, not for a button. */
+:host([data-tm-design="graphite"]) .btn.good{background:var(--tmd-text);color:var(--tmd-surface)}
+:host([data-tm-design="graphite"]) .btn.bad{background:transparent;color:var(--tmd-bad)}
+:host([data-tm-design="graphite"]) .btn.round{border-radius:50%}
+
+/* Figures hold their column as they tick over. */
+:host([data-tm-design="graphite"]) .num,
+:host([data-tm-design="graphite"]) .big,
+:host([data-tm-design="graphite"]) .stat .v{font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:-.6px}
+/* A chip reports a value here; it is not a highlight. */
+:host([data-tm-design="graphite"]) .chip{background:transparent;border-color:transparent;color:var(--tmd-dim);
+  font-weight:500;font-variant-numeric:tabular-nums}
+:host([data-tm-design="graphite"]) .chip.soft{color:var(--tmd-dim)}
+/* 4px track rather than a fat rounded pill. */
+:host([data-tm-design="graphite"]) .bar{height:4px;border:0;border-radius:2px;background:var(--tmd-border)}
+:host([data-tm-design="graphite"]) .bar>i{box-shadow:none}
+:host([data-tm-design="graphite"]) .av{box-shadow:none}
+:host([data-tm-design="graphite"]) .divide{background:var(--tmd-border)}
+/* Stat cells are separated by hairlines, not drawn as nested boxes. */
+:host([data-tm-design="graphite"]) .stat{background:transparent;border:0;border-radius:0;padding:0 12px}
+:host([data-tm-design="graphite"]) .stat .k{text-transform:none;letter-spacing:-.04px;font-weight:400;font-size:12.5px}
+
+/* Grouped inset list: one hairline container, separators starting past the
+   leading control, and the leading badge reduced to a completion mark. */
+:host([data-tm-design="graphite"]) .tmd-checklist{border:1px solid var(--tmd-border);border-radius:var(--tmd-radius-sm)}
+:host([data-tm-design="graphite"]) .tmd-check{position:relative;padding:9px 12px;min-height:46px;box-sizing:border-box}
+:host([data-tm-design="graphite"]) .tmd-check+.tmd-check{border-top:0}
+:host([data-tm-design="graphite"]) .tmd-check+.tmd-check::before{content:"";position:absolute;top:0;left:46px;right:0;height:1px;background:var(--tmd-border)}
+:host([data-tm-design="graphite"]) .tmd-check .c-num{width:22px;height:22px;border-radius:50%;
+  background:transparent;border:1.5px solid var(--tmd-border);color:transparent;font-size:0}
+:host([data-tm-design="graphite"]) .tmd-check.done .c-num{background:var(--tmd-good);border-color:var(--tmd-good);color:#fff;font-size:13px}
+:host([data-tm-design="graphite"]) .tmd-check .c-name{font-weight:450;font-size:15px;letter-spacing:-.18px}
+/* Dimming already says "done"; the strike-through is redundant noise. */
+:host([data-tm-design="graphite"]) .tmd-check.done .c-name{text-decoration:none}
+:host([data-tm-design="graphite"]) .tmd-check.done{opacity:.52}
+/* Meta reads as quiet text, not as a row of coloured pills. */
+:host([data-tm-design="graphite"]) .tmd-tag{background:transparent;border-color:transparent;
+  color:var(--tmd-dim);font-weight:400;font-size:12.5px;letter-spacing:-.02px;padding:0;text-transform:none}
+:host([data-tm-design="graphite"]) .tmd-tag.mandatory{color:var(--tmd-bad)}
+:host([data-tm-design="graphite"]) .tmd-tag.photo{color:var(--tmd-dim)}
+
+/* The decorative emoji tile in a card header is the loudest "kids app" tell
+   left in the designed markup, and it is chrome rather than user data — the
+   child card puts a real avatar here instead, which is kept. */
+:host([data-tm-design="graphite"]) .tmd-hd .ic{display:none}
+/* Sentence case throughout: tracked-out uppercase labels are not this style. */
+:host([data-tm-design="graphite"]) .lbl,
+:host([data-tm-design="graphite"]) .ap-group-label,
+:host([data-tm-design="graphite"]) .rw-jackpot-label,
+:host([data-tm-design="graphite"]) .tmd-badges .lbl{text-transform:none;letter-spacing:-.04px;font-weight:500;font-size:13px;color:var(--tmd-dim)}
+
+/* Badge strip + next-badge: outlines rather than filled colour discs. */
+:host([data-tm-design="graphite"]) .tmd-badges,
+:host([data-tm-design="graphite"]) .tmd-next-badge{background:transparent;border:1px solid var(--tmd-border);border-radius:var(--tmd-radius-sm)}
+:host([data-tm-design="graphite"]) .tmd-badge-mini{background:transparent;border:1px solid var(--tmd-border);box-shadow:none}
+/* The glyphs inside these discs are drawn white for a filled tier colour;
+   once the fill is gone they have to take the text colour or they vanish. */
+:host([data-tm-design="graphite"]) .tmd-badge-mini,
+:host([data-tm-design="graphite"]) .tmd-badge-mini ha-icon,
+:host([data-tm-design="graphite"]) .tmd-next-badge .ic,
+:host([data-tm-design="graphite"]) .tmd-next-badge .ic ha-icon{color:var(--tmd-text)}
+:host([data-tm-design="graphite"]) .tmd-next-badge .ic{background:transparent;box-shadow:none}
+:host([data-tm-design="graphite"]) .tmd-next-badge .bar{height:4px;border:0;background:var(--tmd-border)}
+:host([data-tm-design="graphite"]) .tmd-next-badge .nm{font-weight:500}
+
+/* Points display: tiles become a plain figure block. */
+:host([data-tm-design="graphite"]) .cp-tile{background:transparent;border:1px solid var(--tmd-border);border-radius:var(--tmd-radius-sm);box-shadow:none}
+:host([data-tm-design="graphite"]) .cp-pts,
+:host([data-tm-design="graphite"]) .cp-total{font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:-1.2px}
+:host([data-tm-design="graphite"]) .cp-name{font-weight:500;letter-spacing:-.18px}
+:host([data-tm-design="graphite"]) .cp-rank,
+:host([data-tm-design="graphite"]) .cp-chips .chip{background:transparent;border-color:transparent;color:var(--tmd-dim);font-weight:500}
+
+/* Rewards: a grouped list of fixed costs, not a deck of tinted cards. */
+:host([data-tm-design="graphite"]) .rw-list{border:1px solid var(--tmd-border);border-radius:var(--tmd-radius-sm);gap:0}
+:host([data-tm-design="graphite"]) .rw-card{background:transparent;border:0;border-radius:0;box-shadow:none}
+:host([data-tm-design="graphite"]) .rw-card+.rw-card{border-top:1px solid var(--tmd-border)}
+:host([data-tm-design="graphite"]) .rw-name{font-weight:500;letter-spacing:-.18px}
+:host([data-tm-design="graphite"]) .rw-cost{font-variant-numeric:tabular-nums;font-weight:500;color:var(--tmd-dim)}
+:host([data-tm-design="graphite"]) .rw-emoji{font-size:0}
+:host([data-tm-design="graphite"]) .rw-pool-bar{height:4px;border:0;background:var(--tmd-border)}
+:host([data-tm-design="graphite"]) .rw-jackpot{background:transparent;border:1px solid var(--tmd-border)}
+
+/* Approvals: one grouped queue; the destructive action is text, not a slab. */
+:host([data-tm-design="graphite"]) .ap-cp-item{background:transparent;border:0;border-radius:0;box-shadow:none}
+:host([data-tm-design="graphite"]) .ap-cp-item+.ap-cp-item{border-top:1px solid var(--tmd-border)}
+:host([data-tm-design="graphite"]) .ap-cp-title{font-weight:500;letter-spacing:-.18px}
+:host([data-tm-design="graphite"]) .ap-cp-sub{color:var(--tmd-dim);font-weight:400}
+:host([data-tm-design="graphite"]) .ap-cp-photo{border-radius:8px;border:1px solid var(--tmd-border)}
+:host([data-tm-design="graphite"]) .ap-gold-soft{background:transparent;color:var(--tmd-dim)}
+:host([data-tm-design="graphite"]) .approve-all-btn{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45);font-weight:500}
+
+/* Leaderboard: rank, name, figure — right-aligned and tabular. */
+:host([data-tm-design="graphite"]) .lb-cp-row{background:transparent;border:0;border-radius:0}
+:host([data-tm-design="graphite"]) .lb-cp-row+.lb-cp-row{border-top:1px solid var(--tmd-border)}
+:host([data-tm-design="graphite"]) .lb-cp-rank{background:transparent;border:0;color:var(--tmd-dim);font-variant-numeric:tabular-nums;font-weight:500}
+:host([data-tm-design="graphite"]) .lb-cp-name{font-weight:500;letter-spacing:-.18px}
+:host([data-tm-design="graphite"]) .lb-cp-score{font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:-.6px}
+:host([data-tm-design="graphite"]) .lb-cp-unit{color:var(--tmd-dim);font-weight:400}
+:host([data-tm-design="graphite"]) .lb-cp-row.win{background:transparent}
+:host([data-tm-design="graphite"]) .lb-cp-meta ha-icon{--mdc-icon-size:14px;vertical-align:-2px;margin-right:3px;color:var(--tmd-dim)}
+
+/* Overview: hairline-separated stats, then a grouped per-child list. */
+:host([data-tm-design="graphite"]) .ov-kids{border:1px solid var(--tmd-border);border-radius:var(--tmd-radius-sm)}
+:host([data-tm-design="graphite"]) .ov-kid{background:transparent;border:0;border-radius:0}
+:host([data-tm-design="graphite"]) .ov-kid+.ov-kid{border-top:1px solid var(--tmd-border)}
+:host([data-tm-design="graphite"]) .ov-kid-flag{background:transparent;border:0;color:var(--tmd-dim);font-weight:400}
+:host([data-tm-design="graphite"]) .ov-alert{background:transparent;border:1px solid var(--tmd-border);color:var(--tmd-text)}
+:host([data-tm-design="graphite"]) .ov-today .val,
+:host([data-tm-design="graphite"]) .pts{font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:-.6px}
+:host([data-tm-design="graphite"]) .nm,
+:host([data-tm-design="graphite"]) .ttl{font-weight:500;letter-spacing:-.18px}`;
 
   if (!document.getElementById("taskmate-design-fonts")) {
     const styleEl = document.createElement("style");
@@ -249,7 +421,14 @@
       el.setAttribute("data-tm-design", design);
       el.toggleAttribute("data-tm-dark", design !== "classic" && isDark(hass, el));
     }
-    return design;
+    // The host keeps the real id (its CSS keys off it); the card gets the
+    // layout id so aliased styles reuse an existing render path.
+    return LAYOUT_ALIAS[design] || design;
+  }
+
+  /** The real design id stamped on a card host (not the layout alias). */
+  function active(el) {
+    return (el && el.getAttribute("data-tm-design")) || "classic";
   }
 
   /** ha-form select options for a per-card design override (includes "use global"). */
@@ -262,6 +441,7 @@
       { value: "console",  label: label("console", "Console") },
       { value: "cleanpro", label: label("cleanpro", "Clean Pro") },
       { value: "accessible", label: label("accessible", "Accessible") },
+      { value: "graphite", label: label("graphite", "Graphite") },
     ];
   }
 
@@ -307,7 +487,7 @@
     `;
   }
 
-  window.__taskmate_design = { IDS, resolve, isDark, apply, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker };
+  window.__taskmate_design = { IDS, resolve, isDark, apply, active, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker };
 
   /**
    * The single place that decides what a chore looks like (#750).
