@@ -73,6 +73,8 @@ class TaskMateActivityCard extends LitElement {
       ['Pool refund (reward sold out):', 'activity.reason_pool_refund_sold_out'],
       ['Pool refund (reward cost reduced):', 'activity.reason_pool_refund_cost_reduced'],
       ['Pool refund (reward deleted):', 'activity.reason_pool_refund_deleted'],
+      ['Pool refund (reward funding changed):', 'activity.reason_pool_refund_funding_changed'],
+      ['Pool refund (reward assignment changed):', 'activity.reason_pool_refund_assignment_changed'],
       ['Penalty:', 'activity.reason_penalty'],
       ['Bonus:', 'activity.reason_bonus'],
     ];
