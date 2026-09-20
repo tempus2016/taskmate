@@ -1042,6 +1042,10 @@ class TaskMateParentDashboardCard extends LitElement {
           if (c.schedule_mode === 'recurring') {
             if (perChild && perChild[child.id] === false) return false;
           }
+          // Weekly target (#883): quota filled for the week, so it is neither
+          // outstanding nor part of today's total.
+          const weeklyTarget = Number(c.weekly_target) || 0;
+          if (weeklyTarget > 0 && Number((child.weekly_chore_progress || {})[c.id] || 0) >= weeklyTarget) return false;
           return true;
         });
         const childChoreIds = new Set(childChores.map(c => c.id));

@@ -681,6 +681,11 @@ class PointsMixin:
                     continue
                 if child_id not in self._compute_active_children(chore, day):
                     continue
+            # Weekly target (#883): the child picks the days, so "every chore
+            # due today" can't include it — it's owed by Sunday, not by any one
+            # evening.
+            if int(getattr(chore, "weekly_target", 0) or 0) > 0:
+                continue
             if not self._is_chore_scheduled_for_date(chore, day):
                 continue
             out.add(chore.id)

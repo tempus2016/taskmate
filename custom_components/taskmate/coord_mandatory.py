@@ -119,6 +119,11 @@ class MandatoryMixin:
                     continue
                 if self._child_completed_today(chore.id, child_id, day):
                     continue
+                # Weekly target (#883): the week's quota is already filled, so
+                # nothing is outstanding — even though the chore is still
+                # "scheduled" every day.
+                if self.weekly_target_met(chore, child_id):
+                    continue
                 if (chore.id, child_id, day.isoformat()) in existing:
                     continue
                 miss = MandatoryMiss(

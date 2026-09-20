@@ -581,6 +581,12 @@ class TaskMateOverviewCard extends LitElement {
         const perChild = availability[c.id];
         if (perChild && perChild[child.id] === false) return false;
       }
+      // Weekly target (#883): the week's quota is filled, so the chore isn't
+      // outstanding today. Filtering here rather than at the two call sites
+      // keeps it out of the progress ring as well — otherwise the ring could
+      // never reach 100% once a weekly chore was finished for the week.
+      const weeklyTarget = Number(c.weekly_target) || 0;
+      if (weeklyTarget > 0 && Number((child.weekly_chore_progress || {})[c.id] || 0) >= weeklyTarget) return false;
       return true;
     });
   }

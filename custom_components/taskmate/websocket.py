@@ -575,6 +575,7 @@ _CHORE_EDITABLE_FIELDS = {
     "time_category",
     "claim_allowance_minutes",
     "daily_limit",
+    "weekly_target",
     "completion_sound",
     "icon",
     "image_url",
@@ -629,6 +630,9 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("time_category"): str,
         vol.Optional("claim_allowance_minutes"): vol.All(int, vol.Range(min=0)),
         vol.Optional("daily_limit"): vol.All(int, vol.Range(min=1)),
+        # Weekly target (#883): 0 = no quota, which is the case for almost
+        # every chore, so it has to be a valid value rather than a floor of 1.
+        vol.Optional("weekly_target"): vol.All(int, vol.Range(min=0)),
         vol.Optional("completion_sound"): _completion_sound,
         vol.Optional("icon"): str,
         vol.Optional("image_url"): _image_url_or_blank,
