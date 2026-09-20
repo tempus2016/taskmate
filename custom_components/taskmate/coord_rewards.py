@@ -506,8 +506,20 @@ class RewardsMixin:
         _LOGGER.warning("Reward claim %s not found for approval", claim_id)
 
     async def async_reject_reward(self, claim_id: str) -> None:
-        """Reject a reward claim — no refund needed as points were never deducted."""
+        """Reject a *pending* reward claim — no refund needed as points were never deducted.
+
+        That "no refund needed" only holds while the claim is pending. Two
+        parents can review the same claim at once — one in the panel, one from
+        a mobile approval push — and the second one is acting on a list that no
+        longer matches storage. Deleting an approved claim there would erase
+        the purchase from history while its points, its stock and any timed
+        unlock stayed spent, so the stale review is refused instead.
+        """
         claim = next((c for c in self.storage.get_reward_claims() if c.id == claim_id), None)
+        if claim is not None and claim.approved:
+            reward = self.get_reward(claim.reward_id)
+            name = reward.name if reward else "This reward"
+            raise ValueError(f"'{name}' has already been approved and can no longer be rejected")
         self.storage.remove_reward_claim(claim_id)
         await self.storage.async_save()
         await self.async_refresh()

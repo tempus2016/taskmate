@@ -212,6 +212,65 @@ class TestRejectReward:
         run(coord.async_reject_reward("claim1"))
         assert child.points == 100  # points were never deducted
 
+    def test_unknown_claim_is_a_no_op(self):
+        coord = _make_coord()
+        run(coord.async_reject_reward("does-not-exist"))
+
+    def test_an_approved_claim_cannot_be_rejected(self):
+        """A stale second review must not delete a purchase that was paid for."""
+        import datetime as dt
+
+        now = dt.datetime.now(dt.timezone.utc)
+        child = _child(points=50)  # already paid the 50-point cost
+        reward = _reward(cost=50)
+        reward.quantity = 2
+        claim = RewardClaim(
+            reward_id="reward1",
+            child_id="kid1",
+            claimed_at=now,
+            approved=True,
+            approved_at=now,
+            id="claim1",
+        )
+        coord = _make_coord(children=[child], rewards=[reward], claims=[claim])
+
+        with pytest.raises(ValueError, match="already been approved"):
+            run(coord.async_reject_reward("claim1"))
+
+        # The purchase, the price paid and the stock all survive the attempt.
+        assert [c["id"] for c in coord.storage._data["reward_claims"]] == ["claim1"]
+        assert child.points == 50
+        assert reward.quantity == 2
+        coord.storage.remove_reward_claim.assert_not_called()
+        coord.storage.async_save.assert_not_called()
+        coord.hass.bus.async_fire.assert_not_called()
+
+    def test_the_refusal_names_the_reward(self):
+        import datetime as dt
+
+        now = dt.datetime.now(dt.timezone.utc)
+        claim = RewardClaim(
+            reward_id="reward1", child_id="kid1", claimed_at=now, approved=True, approved_at=now, id="claim1"
+        )
+        coord = _make_coord(rewards=[_reward()], claims=[claim])
+
+        with pytest.raises(ValueError, match="Movie night"):
+            run(coord.async_reject_reward("claim1"))
+
+    def test_a_deleted_reward_still_refuses_an_approved_claim(self):
+        """The claim outlives its reward, and the guard must not depend on it."""
+        import datetime as dt
+
+        now = dt.datetime.now(dt.timezone.utc)
+        claim = RewardClaim(
+            reward_id="gone", child_id="kid1", claimed_at=now, approved=True, approved_at=now, id="claim1"
+        )
+        coord = _make_coord(claims=[claim])
+
+        with pytest.raises(ValueError, match="already been approved"):
+            run(coord.async_reject_reward("claim1"))
+        assert [c["id"] for c in coord.storage._data["reward_claims"]] == ["claim1"]
+
 
 # ---------------------------------------------------------------------------
 # async_allocate_points_to_pool (v3.0 pool mode)
