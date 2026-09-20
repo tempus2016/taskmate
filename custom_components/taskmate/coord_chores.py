@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from calendar import monthrange
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
@@ -833,6 +833,18 @@ class ChoresMixin:
             )
             return None
 
+        # Weekly target (#883): the same cap one level up. Parents completing on
+        # behalf are bound by it too — the quota is the point of the chore, and
+        # the daily limit above already treats them the same way.
+        if self.weekly_target_met(chore, child_id):
+            _LOGGER.debug(
+                "complete_chore no-op: weekly target reached for '%s' (%d/%d this week)",
+                chore.name,
+                self.weekly_completion_count(chore_id, child_id),
+                getattr(chore, "weekly_target", 0),
+            )
+            return None
+
         # A photo-required chore always goes through parent approval (unless a
         # parent is completing on behalf), so the evidence gets reviewed.
         requires_photo = bool(getattr(chore, "require_photo", False))
@@ -1613,6 +1625,34 @@ class ChoresMixin:
         days_since = (today - last_dt).days
         return days_since >= window_days
 
+    def weekly_completion_count(self, chore_id: str, child_id: str) -> int:
+        """How many times ``child_id`` has completed ``chore_id`` this week.
+
+        Monday-anchored, matching the Challenges period convention. Bonus
+        sub-tasks don't count; pending completions do, so a chore can't be
+        submitted a fourth time just because the parent hasn't got round to
+        approving the third yet.
+        """
+        today = dt_util.as_local(dt_util.now()).date()
+        week_start = today - timedelta(days=today.weekday())
+        count = 0
+        for comp in self._cached_completions_for_chore(chore_id):
+            if comp.child_id != child_id or getattr(comp, "bonus_subtask_id", ""):
+                continue
+            try:
+                if dt_util.as_local(comp.completed_at).date() >= week_start:
+                    count += 1
+            except (AttributeError, TypeError, ValueError):
+                continue
+        return count
+
+    def weekly_target_met(self, chore, child_id: str) -> bool:
+        """True when a weekly-target chore has had its quota filled this week."""
+        target = int(getattr(chore, "weekly_target", 0) or 0)
+        if target <= 0:
+            return False
+        return self.weekly_completion_count(chore.id, child_id) >= target
+
     def _is_chore_completable_by_child(self, chore, child_id: str) -> bool:
         """Whether ``child_id`` may complete ``chore`` right now (card parity).
 
@@ -1668,6 +1708,10 @@ class ChoresMixin:
                     except (AttributeError, TypeError, ValueError):
                         continue
                 if done >= limit:
+                    continue
+                # Weekly target (#883): filled the week's quota, so nothing is
+                # owed until Monday even on a day the chore is scheduled.
+                if self.weekly_target_met(chore, child_id):
                     continue
                 out.append(chore)
         return out

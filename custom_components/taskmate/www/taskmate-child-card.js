@@ -2336,6 +2336,23 @@ class TaskMateChildCard extends LitElement {
   }
 
   /** Mirror of _renderChoreCard's "completed today" detection, designed branch only. */
+  // How many times this chore can still be ticked TODAY.
+  //
+  // Normally the chore's own daily_limit, clamped to 1 for a first_come race.
+  // A weekly target (#883) clamps it again: once the week's quota is full there
+  // is no allowance left, so a chore with daily_limit 5 and 2/2 done reads as
+  // finished rather than staying tappable — the tap would only be one
+  // complete_chore refuses (#805). Only applied once the child has ticked it
+  // today; a quota filled on earlier days leaves the row locked instead, so a
+  // green "done" row never appears with no completion behind it to undo.
+  _effectiveDailyLimit(chore, child, countToday, isFirstCome) {
+    const limit = isFirstCome ? 1 : (chore.daily_limit || 1);
+    const target = Number(chore.weekly_target) || 0;
+    if (target <= 0 || countToday <= 0) return limit;
+    const doneThisWeek = Number((child?.weekly_chore_progress || {})[chore.id] || 0);
+    return Math.min(limit, countToday + Math.max(0, target - doneThisWeek));
+  }
+
   _isChoreDone(chore, child, todaysCompletions) {
     // async_parent_complete_chore writes child_id="__parent__" to dismiss a
     // chore for the WHOLE pool with zero points — it never credits a specific
@@ -2365,7 +2382,7 @@ class TaskMateChildCard extends LitElement {
     // the filter and the backend both clamp it to 1 (coord_assignments). Reading
     // the raw daily_limit here would leave the winner's own row looking incomplete
     // and tappable, and complete_chore would then silently no-op the tap (#805).
-    const done = count >= (isFirstCome ? 1 : (chore.daily_limit || 1));
+    const done = count >= this._effectiveDailyLimit(chore, child, count, isFirstCome);
     return { done, completions: childCompletionsToday };
   }
 
@@ -2424,8 +2441,11 @@ class TaskMateChildCard extends LitElement {
       // dim/show only — hide is filtered upstream same as recurrence). Never true
       // for the winner's own row: _isFirstComeLocked is only set on siblings.
       const firstComeLocked = !!chore._isFirstComeLocked && !done;
+      // Weekly quota filled — nothing owed until Monday, so the tap is refused
+      // the same way a recurrence window refuses one.
+      const weeklyDone = !!chore._weeklyTargetMet && !done;
       const onAct = () => {
-        if (loading || blocked || recLocked || firstComeLocked) return;
+        if (loading || blocked || recLocked || firstComeLocked || weeklyDone) return;
         if (done) this._handleUndo(chore, child, completions);
         else this._handleComplete(chore, child);
       };
@@ -2438,10 +2458,11 @@ class TaskMateChildCard extends LitElement {
         (blocked && dependencyMode === "dim") ||
         (chore._isRecurrenceLocked && recurrenceDoneMode === "dim") ||
         (chore._isFirstComeLocked && firstComeClaimedMode === "dim") ||
+        weeklyDone ||
         chore._isLockedPreview === true
       );
       return {
-        chore, child, done, loading, onAct, index: i, dimmed, blocked, recLocked, firstComeLocked,
+        chore, child, done, loading, onAct, index: i, dimmed, blocked, recLocked, firstComeLocked, weeklyDone,
         tone: this._designTone(i),
         glyph: this._choreGlyph(chore),
         points: chore.effective_points ?? chore.points,
@@ -2591,8 +2612,13 @@ class TaskMateChildCard extends LitElement {
           ? this._t("child.claimed_by_another", { name: r.chore._firstComeCompletedByName })
           : this._t("child.claimed_by_another_generic"))
       : "";
+    // Weekly target (#883): shown from the first tick so the child can see
+    // where they are, not only once the quota is full.
+    const weeklyLabel = r.chore._weeklyTarget > 0
+      ? this._t("child.weekly_target_progress", { done: r.chore._weeklyProgress, target: r.chore._weeklyTarget })
+      : "";
     return html`
-      ${r.mandatory || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel ? html`
+      ${r.mandatory || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || weeklyLabel ? html`
         <div class="tmd-meta">
           ${r.mandatory ? html`<span class="tmd-tag mandatory">⚠ ${this._t("child.mandatory")}</span>` : ""}
           ${r.photo ? html`<span class="tmd-tag photo">📷 ${this._t("child.photo_needed")}</span>` : ""}
@@ -2600,6 +2626,7 @@ class TaskMateChildCard extends LitElement {
           ${depNames.length ? html`<span class="tmd-tag">🔒 ${this._t("child.blocked_by_dependency", { chores: depNames.join(", ") })}</span>` : ""}
           ${recLabel ? html`<span class="tmd-tag">🕒 ${recLabel}</span>` : ""}
           ${firstComeLabel ? html`<span class="tmd-tag">✅ ${firstComeLabel}</span>` : ""}
+          ${weeklyLabel ? html`<span class="tmd-tag">📅 ${weeklyLabel}</span>` : ""}
         </div>` : ""}
       ${showDesc ? html`<div class="tmd-desc">${r.chore.description}</div>` : ""}`;
   }
@@ -2615,7 +2642,7 @@ class TaskMateChildCard extends LitElement {
 
   _designDoneBtn(r, label, cls) {
     return html`<button class="btn ${cls || ""}"
-      ?disabled=${r.loading || r.blocked || r.recLocked || r.firstComeLocked}
+      ?disabled=${r.loading || r.blocked || r.recLocked || r.firstComeLocked || r.weeklyDone}
       @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
   }
 
@@ -3021,6 +3048,20 @@ class TaskMateChildCard extends LitElement {
       );
       chore._isRecurrenceLocked = chore._isRecurring && !availableNow && !completedToday;
       if (chore._isRecurrenceLocked && recurrenceDoneMode === 'hide') return false;
+
+      // Weekly target (#883): the child picks which days, so the chore keeps
+      // being offered until the week's quota is filled. The count comes from
+      // the per-child map on the overview sensor — the card only ever sees
+      // today's completions, so it can't total a week by itself. Excluding
+      // completedToday keeps the row live for an undo when today's tick was
+      // the one that filled it, exactly as the recurrence lock does.
+      chore._weeklyTarget = Number(chore.weekly_target) || 0;
+      chore._weeklyProgress = chore._weeklyTarget > 0
+        ? Number((child.weekly_chore_progress || {})[chore.id] || 0)
+        : 0;
+      chore._weeklyTargetMet = chore._weeklyTarget > 0
+        && chore._weeklyProgress >= chore._weeklyTarget
+        && !completedToday;
 
       // Mark whether this chore's time period has elapsed (grace-aware).
       chore._isTimeElapsed = this._isTimePeriodElapsed(chore);
@@ -3526,7 +3567,7 @@ class TaskMateChildCard extends LitElement {
     // Clamped for first_come the same way the filter and the backend clamp it: a
     // stored daily_limit > 1 must not make the winner's finished row read as still
     // outstanding, or it invites a tap that complete_chore silently swallows (#805).
-    const dailyLimit = isFirstCome ? 1 : (chore.daily_limit || 1);
+    const dailyLimit = this._effectiveDailyLimit(chore, child, completionsToday, isFirstCome);
 
     // Check for optimistic completions (chores just completed but not yet confirmed by HA)
     const optimisticKey = `${chore.id}_${child.id}`;
@@ -3579,6 +3620,9 @@ class TaskMateChildCard extends LitElement {
     const firstComeClaimedMode = this.config.first_come_claimed_mode || 'hide';
     const firstComeLocked = !!chore._isFirstComeLocked && !isCompletedForToday;
     const notAvailableFirstCome = firstComeLocked && firstComeClaimedMode === 'dim';
+    // Weekly quota filled (#883). Dimmed and non-interactive: the backend
+    // would refuse the completion, so a live row would just swallow the tap.
+    const weeklyDone = !!chore._weeklyTargetMet && !isCompletedForToday;
     // Elapsed: only dim incomplete chores — completed ones keep their green "done" style
     const elapsedTimeMode = this.config.elapsed_time_mode || 'dim';
     const timeElapsed = chore._isTimeElapsed && !isCompletedForToday && elapsedTimeMode === 'dim';
@@ -3602,13 +3646,14 @@ class TaskMateChildCard extends LitElement {
       if (depBlocked) return;  // Prerequisite chore not approved yet
       if (timeElapsed) return;  // Time period passed — not interactive
       if (firstComeLocked) return;  // Claimed by another child today — not interactive
+      if (weeklyDone) return;  // Weekly target already met — nothing owed until Monday
       if (isCompletedForToday) {
         this._handleUndo(chore, child, childCompletionsToday);
       } else {
         this._handleComplete(chore, child);
       }
     };
-    const isInteractive = !(isLoading || notDueToday || recurrenceLocked || isLockedPreview || depBlocked || timeElapsed || firstComeLocked);
+    const isInteractive = !(isLoading || notDueToday || recurrenceLocked || isLockedPreview || depBlocked || timeElapsed || firstComeLocked || weeklyDone);
     const handleRowKeyDown = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -3628,13 +3673,15 @@ class TaskMateChildCard extends LitElement {
             ? (chore._firstComeCompletedByName
                 ? this._t('child.claimed_by_another', { name: chore._firstComeCompletedByName })
                 : this._t('child.claimed_by_another_generic'))
+          : weeklyDone
+            ? this._t('child.weekly_target_done')
           : isCompletedForToday
             ? this._t('child.click_to_undo')
             : this._t('child.click_to_complete');
 
     return html`
       <div
-        class="chore-card ${chore.mandatory ? "mandatory" : ""} ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence ? "recurrence-unavailable" : ""} ${notAvailableFirstCome ? "first-come-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""} ${depDimmed ? "dependency-blocked" : ""}"
+        class="chore-card ${chore.mandatory ? "mandatory" : ""} ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence || weeklyDone ? "recurrence-unavailable" : ""} ${notAvailableFirstCome ? "first-come-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""} ${depDimmed ? "dependency-blocked" : ""}"
         role="button"
         tabindex="${isInteractive ? '0' : '-1'}"
         aria-disabled="${isInteractive ? 'false' : 'true'}"
@@ -3678,6 +3725,7 @@ class TaskMateChildCard extends LitElement {
               <ha-icon icon="${pointsIcon}"></ha-icon>
               +${chore.effective_points ?? chore.points}
               ${dailyLimit > 1 ? html`<span style="font-size: 0.8em; opacity: 0.7;">(${completionsToday}/${dailyLimit})</span>` : ''}
+              ${chore._weeklyTarget > 0 ? html`<span style="font-size: 0.8em; opacity: 0.7;">${this._t('child.weekly_target_progress', { done: chore._weeklyProgress, target: chore._weeklyTarget })}</span>` : ''}
             </div>
             ${chore.require_photo && !isCompletedForToday ? html`
               <div class="recurrence-label">

@@ -1419,6 +1419,7 @@ class TaskMatePanel extends HTMLElement {
       timed_rate_points: 10, timed_rate_minutes: 5, timed_max_daily_minutes: 0,
       assigned_to: [], requires_approval: true,
       time_category: "anytime", completion_sound: "coin", daily_limit: 1,
+      weekly_target: 0,
       difficulty: "medium",
       claim_allowance_minutes: 0,
       schedule_mode: "specific_days",
@@ -1659,6 +1660,7 @@ class TaskMatePanel extends HTMLElement {
       completion_sound: d.completion_sound || "coin",
       difficulty: d.difficulty || "medium",
       daily_limit: Number(d.daily_limit) || 1,
+      weekly_target: Math.max(0, Number(d.weekly_target) || 0),
       schedule_mode: d.schedule_mode || "specific_days",
       due_days: d.due_days || [],
       recurrence: d.recurrence || "weekly",
@@ -3470,6 +3472,11 @@ class TaskMatePanel extends HTMLElement {
       ? this._t("panel.common_one_shot")
       : ((c.due_days || []).length === 0 ? this._t("panel.common_daily") : (c.due_days || []).map(d => this._labelOf(DAYS, d)).join(" · "));
     const schedClass = c.schedule_mode === "recurring" ? "tm-pill-accent" : c.schedule_mode === "one_shot" ? "tm-pill-warn" : "tm-pill-success";
+    // A weekly quota doesn't replace the day list — the chore is still only
+    // offered on those days, it just stops once the week's count is filled.
+    const weeklyPill = Number(c.weekly_target) > 0
+      ? ` <span class="tm-pill tm-pill-accent">${this._t("panel.chore_weekly_target_pill", { count: Number(c.weekly_target) })}</span>`
+      : "";
     const modeBadge = c.assignment_mode && c.assignment_mode !== "everyone"
       ? `<span class="tm-pill tm-pill-${this._esc(c.assignment_mode)}">${this._t(`panel.assign_${c.assignment_mode}_short`)}</span>` : "";
     const nameCell = renaming
@@ -3491,7 +3498,7 @@ class TaskMatePanel extends HTMLElement {
         <td><span class="tm-pill">${this._esc(this._timeCategoryLabel(c.time_category))}</span></td>
         <td>${assignedNames} ${modeBadge}</td>
         <td>${currentName}</td>
-        <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span></td>
+        <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span>${weeklyPill}</td>
         <td>${c.requires_approval ? `<span class='tm-yes'>${this._t("panel.common_yes")}</span>` : `<span class='tm-no'>${this._t("panel.common_no")}</span>`}</td>
       </tr>
     `;
@@ -5439,6 +5446,8 @@ class TaskMatePanel extends HTMLElement {
               `).join("")}
             </div>
           </div>
+          ${this._field(this._t("panel.chore_weekly_target_label"), "weekly_target", d.weekly_target || 0, "number",
+            this._t("panel.chore_weekly_target_hint"))}
         ` : "",
         showRecurring ? `
           <div class="tm-field-row">

@@ -278,6 +278,12 @@ class Chore:
     time_category: str = "anytime"  # morning, afternoon, evening, night, anytime
     claim_allowance_minutes: int = 0  # Grace minutes past period end during which the chore stays claimable; 0 = no grace. Night chores still cap at midnight.
     daily_limit: int = 1
+    # Weekly target (#883): "do this N times this week, on whichever days you
+    # like" — instrument practice, reading, exercise. 0 = off. Monday-anchored
+    # to match Challenges. It caps the week the way daily_limit caps the day,
+    # and counts pending completions too, so a slow approval never hands the
+    # child a spare go.
+    weekly_target: int = 0
     completion_sound: str = "coin"  # Sound to play on completion
     # Optional picture for the chore. Text-free pre-reader mode (#683) needs
     # one per chore; everything else falls back to the time-of-day icon.
@@ -393,6 +399,7 @@ class Chore:
             time_category=data.get("time_category", "anytime"),
             claim_allowance_minutes=max(0, int(data.get("claim_allowance_minutes", 0) or 0)),
             daily_limit=data.get("daily_limit", 1),
+            weekly_target=int(data.get("weekly_target", 0) or 0),
             completion_sound=data.get("completion_sound", "coin"),
             icon=str(data.get("icon", "") or ""),
             image_url=str(data.get("image_url", "") or ""),
@@ -460,6 +467,7 @@ class Chore:
             "time_category": self.time_category,
             "claim_allowance_minutes": self.claim_allowance_minutes,
             "daily_limit": self.daily_limit,
+            "weekly_target": self.weekly_target,
             "completion_sound": self.completion_sound,
             "icon": self.icon,
             "image_url": self.image_url,

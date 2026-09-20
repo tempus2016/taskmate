@@ -146,6 +146,14 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
     for c in children:
         committed_amount = committed.get(c.id, 0)
         lvl = coordinator.level_info(c)
+        # Weekly targets (#883): {chore_id: done so far this week} for the
+        # chores that have one, so a card can render "2/3 this week" without
+        # its own pass over completions. Empty — and so absent — for most.
+        weekly_progress = {
+            ch.id: coordinator.weekly_completion_count(ch.id, c.id)
+            for ch in common["chores"]
+            if int(getattr(ch, "weekly_target", 0) or 0) > 0
+        }
         summary.append(
             {
                 "level": lvl["level"],
@@ -195,6 +203,7 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 "quests": coordinator.quest_progress_for_child(c.id),
                 "avatar_options": coordinator.avatar_options_for_child(c),
                 "challenges": coordinator.challenge_progress_for_child(c.id),
+                **({"weekly_chore_progress": weekly_progress} if weekly_progress else {}),
             }
         )
     return summary
@@ -243,6 +252,11 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         daily_limit = getattr(c, "daily_limit", 1)
         if daily_limit != 1:
             record["daily_limit"] = daily_limit
+        # Weekly target (#883) — off for almost every chore, so it only goes
+        # into the record when a family actually uses one.
+        weekly_target = int(getattr(c, "weekly_target", 0) or 0)
+        if weekly_target:
+            record["weekly_target"] = weekly_target
         claim_allowance_minutes = getattr(c, "claim_allowance_minutes", 0) or 0
         if claim_allowance_minutes:
             record["claim_allowance_minutes"] = claim_allowance_minutes
