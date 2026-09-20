@@ -538,27 +538,42 @@ class NotificationCoordinator:
             return
 
         if action.startswith("TASKMATE_APPROVE_"):
-            entry_id = action[len("TASKMATE_APPROVE_") :]
-            try:
-                await coordinator.async_approve_chore(entry_id)
-                return
-            except (ValueError, KeyError):
-                pass
-            try:
-                await coordinator.async_approve_reward(entry_id)
-            except (ValueError, KeyError):
-                _LOGGER.info("Mobile action %s — entry not found", action)
+            await self._review_from_mobile(
+                action,
+                action[len("TASKMATE_APPROVE_") :],
+                coordinator.async_approve_chore,
+                coordinator.async_approve_reward,
+            )
         elif action.startswith("TASKMATE_REJECT_"):
-            entry_id = action[len("TASKMATE_REJECT_") :]
-            try:
-                await coordinator.async_reject_chore(entry_id)
-                return
-            except (ValueError, KeyError):
-                pass
-            try:
-                await coordinator.async_reject_reward(entry_id)
-            except (ValueError, KeyError):
-                _LOGGER.info("Mobile action %s — entry not found", action)
+            await self._review_from_mobile(
+                action,
+                action[len("TASKMATE_REJECT_") :],
+                coordinator.async_reject_chore,
+                coordinator.async_reject_reward,
+            )
+
+    async def _review_from_mobile(self, action: str, entry_id: str, review_chore, review_reward) -> None:
+        """Send a mobile review to whichever record the id belongs to.
+
+        A chore completion id and a reward claim id look alike, so this used to
+        try the chore path and fall back to the reward path when it raised. It
+        never does: approving or rejecting an unknown completion is a no-op,
+        not an error, so the fallback was unreachable and every reward push
+        button did nothing at all. The id itself decides.
+        """
+        if any(c.id == entry_id for c in self.storage.get_completions()):
+            review = review_chore
+        elif any(c.id == entry_id for c in self.storage.get_reward_claims()):
+            review = review_reward
+        else:
+            _LOGGER.info("Mobile action %s — entry not found", action)
+            return
+        try:
+            await review(entry_id)
+        except (ValueError, KeyError) as err:
+            # A stale push: the item was reviewed elsewhere, or the reward has
+            # since sold out. Nothing to do, but say why in the log.
+            _LOGGER.info("Mobile action %s could not be applied: %s", action, err)
 
     # ------------------------------------------------------------------
     # Scheduler — time-gated callbacks

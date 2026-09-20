@@ -9,6 +9,7 @@ stay closed.
 from __future__ import annotations
 
 import asyncio
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -195,6 +196,10 @@ def _notif_with_coordinator(parent_ids, user):
     nc.coordinator.storage.get_parent_user_ids.return_value = parent_ids
     nc.coordinator.async_approve_chore = AsyncMock()
     nc.coordinator.async_approve_reward = AsyncMock()
+    # "abc" has to name a real completion, or the action is dropped as stale
+    # before the identity check can be what decides the outcome.
+    nc.storage.get_completions.return_value = [SimpleNamespace(id="abc")]
+    nc.storage.get_reward_claims.return_value = []
     return nc
 
 
