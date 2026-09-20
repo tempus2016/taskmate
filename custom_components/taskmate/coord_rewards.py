@@ -120,12 +120,20 @@ class RewardsMixin:
         can't appear as e.g. 11/10. If the edit makes the reward unavailable
         (quantity set to 0, or expires_at moved into the past) any pool
         allocations on that reward are refunded in full.
+
+        An edit can also take the savings jar itself away: switching a reward
+        between jackpot and ordinary, turning pool mode off, or dropping a
+        child from ``assigned_to``. Allocations are locked with no withdraw
+        operation, so anything left behind by those edits is a child's points
+        stranded for good — they are refunded, and any pending claim the edit
+        has invalidated is cancelled with it.
         """
         old = self.get_reward(reward.id)
         # Jackpots are always pool-mode (#552); keep stored data consistent.
         if reward.is_jackpot:
             reward.pool_enabled = True
         self.storage.update_reward(reward)
+        cancelled_claim_ids = self._settle_pool_after_edit(old, reward) if old else []
         if old and reward.cost < old.cost:
             self._refund_pool_excess(reward, "Pool refund (reward cost reduced)")
         became_unavailable = (
@@ -138,6 +146,50 @@ class RewardsMixin:
             self._refund_all_pool_allocations(reward, reason)
         await self.storage.async_save()
         await self.async_refresh()
+
+        # Dismiss the approval pushes for claims this edit just cancelled.
+        if cancelled_claim_ids and getattr(self, "notifications", None):
+            for claim_id in cancelled_claim_ids:
+                await self.notifications.clear_approval("pending_reward_claim", claim_id)
+
+    def _settle_pool_after_edit(self, old: Reward, reward: Reward) -> list[str]:
+        """Refund savings and cancel claims an edit has just invalidated.
+
+        Returns the ids of the cancelled claims so the caller can clear their
+        approval notifications once the change is saved.
+        """
+        # Funding changed: the shared jar became per-child jars, or the other
+        # way round, or pool mode was switched off altogether. Whatever is in
+        # the pool was saved towards something that no longer exists.
+        funding_changed = reward.is_jackpot != old.is_jackpot or (old.pool_enabled and not reward.pool_enabled)
+        if funding_changed:
+            self._refund_all_pool_allocations(reward, "Pool refund (reward funding changed)")
+        else:
+            # Narrowed assignment: a child who can no longer be given this
+            # reward can no longer redeem what they saved towards it either.
+            for alloc in list(self.storage.get_pool_allocations()):
+                if alloc.reward_id == reward.id and not self._reward_is_for_child(reward, alloc.child_id):
+                    self._apply_pool_refund(
+                        alloc, alloc.allocated_points, reward, "Pool refund (reward assignment changed)"
+                    )
+
+        cancelled: list[str] = []
+        for claim in self.storage.get_reward_claims():
+            if claim.reward_id != reward.id or claim.approved:
+                continue
+            # A pool-funded claim whose pool has just been refunded would fall
+            # through to the claimer's wallet on approval, and an unassigned
+            # child's claim should not be approvable at all.
+            if funding_changed or not self._reward_is_for_child(reward, claim.child_id):
+                self.storage.remove_reward_claim(claim.id)
+                cancelled.append(claim.id)
+        if cancelled:
+            _LOGGER.info(
+                "Cancelled %d pending claim(s) for '%s' — the edit changed how it is funded or who it is for",
+                len(cancelled),
+                reward.name,
+            )
+        return cancelled
 
     async def async_remove_reward(self, reward_id: str) -> None:
         """Remove a reward and clean up any pending claims and pool allocations referencing it."""
