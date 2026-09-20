@@ -4552,7 +4552,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_card_design_label")}<small>${this._t("panel.settings_card_design_hint")}</small></div>
               <select class="tm-select" data-setting="card_design">
-                ${["classic","playroom","console","cleanpro"].map(v => `<option value="${v}" ${v === (s.card_design || "classic") ? "selected" : ""}>${this._esc(this._t("common.design." + v))}</option>`).join("")}
+                ${["classic","playroom","console","cleanpro","accessible","graphite"].map(v => `<option value="${v}" ${v === (s.card_design || "classic") ? "selected" : ""}>${this._esc(this._t("common.design." + v))}</option>`).join("")}
               </select>
             </div>
             <div class="tm-setting-row">

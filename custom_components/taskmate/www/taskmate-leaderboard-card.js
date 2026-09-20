@@ -659,10 +659,17 @@ class TaskMateLeaderboardCard extends LitElement {
   _lbMetaChips(r, ctx, cls) {
     const sortBy = ctx.sortBy;
     const chips = [];
-    if (this.config.show_streak !== false && sortBy !== "streak") chips.push(html`<span>🔥 ${r.streak}</span>`);
-    if (this.config.show_weekly !== false && sortBy !== "weekly") chips.push(html`<span>📅 ${r.weekly}</span>`);
-    if (sortBy !== "points") chips.push(html`<span>⭐ ${r.points}</span>`);
-    if (this.config.show_career !== false && sortBy !== "career") chips.push(html`<span>🏆 ${r.career}</span>`);
+    // Graphite carries no emoji chrome, so the same figures get monoline
+    // icons there. active() returns the real design id (apply() hands the
+    // render path the layout alias, which for graphite is "cleanpro").
+    const mono = window.__taskmate_design?.active?.(this) === "graphite";
+    const stat = (icon, emoji, value) => (mono
+      ? html`<span><ha-icon icon="${icon}"></ha-icon>${value}</span>`
+      : html`<span>${emoji} ${value}</span>`);
+    if (this.config.show_streak !== false && sortBy !== "streak") chips.push(stat("mdi:fire", "🔥", r.streak));
+    if (this.config.show_weekly !== false && sortBy !== "weekly") chips.push(stat("mdi:calendar-blank-outline", "📅", r.weekly));
+    if (sortBy !== "points") chips.push(stat("mdi:star-outline", "⭐", r.points));
+    if (this.config.show_career !== false && sortBy !== "career") chips.push(stat("mdi:trophy-outline", "🏆", r.career));
     if (!chips.length) return "";
     return html`<div class="row muted ${cls}">${chips}</div>`;
   }

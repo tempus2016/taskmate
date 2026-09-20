@@ -1644,7 +1644,7 @@ async def _ws_remove_custom_sound(hass, connection, msg, coordinator):
 # Top-level fields stored at storage._data root
 _TOP_LEVEL_SETTINGS = {"points_name", "points_icon"}
 # Allowed values for the global default card-design style (per-card design styles).
-_ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro", "accessible"}
+_ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro", "accessible", "graphite"}
 # Settings stored under storage._data["settings"][key]
 _SUBKEY_SETTINGS = {
     "require_linked_child",
