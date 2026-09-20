@@ -52,3 +52,37 @@ test("a deleted reward with no recorded price contributes nothing", () => {
   panel._state.rewards = [];
   assert.equal(pointsCell(panel), "+0");
 });
+
+// A pending completion was priced when the child submitted it. Recalculating
+// from the chore shows the reviewing parent a different number from the one the
+// child was promised, and from the one approval actually pays.
+
+function pendingRowPoints(completion, chore = { id: "chore1", name: "Tidy up", points: 3 }) {
+  const panel = Object.create(TaskMatePanel.prototype);
+  panel._t = (key, params = {}) => (params.name ? `${key}:${params.name}` : key);
+  panel._timeAgo = () => "just now";
+  panel._esc = (value) => String(value ?? "");
+  panel._safePhotoUrl = () => "";
+  panel._state = {
+    children: [{ id: "kid1", name: "Kid 1" }],
+    chores: [chore],
+    pending_completions: [
+      { id: "p1", chore_id: chore.id, child_id: "kid1", completed_at: "2026-09-18T12:00:00Z", ...completion },
+    ],
+  };
+  const markup = panel._renderActivityTab();
+  return markup.match(/just now · (-?\d+) panel\.activity_points/)?.[1];
+}
+
+test("a pending completion shows the award it was submitted at", () => {
+  // The chore has since been re-priced from 15 down to 3.
+  assert.equal(pendingRowPoints({ submitted_points: 15 }), "15");
+});
+
+test("a pending completion with no recorded award falls back to the chore", () => {
+  assert.equal(pendingRowPoints({}), "3");
+});
+
+test("a zero-point submission is shown as zero", () => {
+  assert.equal(pendingRowPoints({ submitted_points: 0 }), "0");
+});

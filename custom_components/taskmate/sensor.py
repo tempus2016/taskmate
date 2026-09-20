@@ -355,6 +355,19 @@ def _build_chore_availability(coordinator: TaskMateCoordinator, common: dict) ->
     return availability
 
 
+def _pending_award(completion, recalculated: int) -> int:
+    """What a completion awaiting review is worth.
+
+    A pending completion was priced when the child submitted it — including a
+    speed bonus or roulette multiplier that may no longer apply. Recalculating
+    from the chore shows the parent a different number from the one the child
+    was promised, and from the one approval actually pays.
+    """
+    if completion.approved or completion.submitted_points is None:
+        return recalculated
+    return completion.submitted_points
+
+
 def _build_todays_completions(common: dict) -> list[dict]:
     """Build today's completions (both approved and pending)."""
     now = dt_util.now()
@@ -391,7 +404,7 @@ def _build_todays_completions(common: dict) -> list[dict]:
             if comp.child_id == "__parent__"
             else (child_lookup[comp.child_id].name if comp.child_id in child_lookup else ""),
             "chore_name": display_name,
-            "points": display_points,
+            "points": _pending_award(comp, display_points),
             "approved": comp.approved,
             "completed_at": comp.completed_at.isoformat()
             if hasattr(comp.completed_at, "isoformat")
@@ -573,7 +586,7 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
                 if comp.child_id == "__parent__"
                 else (child_lookup[comp.child_id].name if comp.child_id in child_lookup else ""),
                 "chore_name": matched_chore.name if matched_chore else "",
-                "points": display_points,
+                "points": _pending_award(comp, display_points),
                 "approved": comp.approved,
                 "completed_at": comp.completed_at.isoformat()
                 if hasattr(comp.completed_at, "isoformat")
@@ -1380,7 +1393,7 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                     "child_id": child.id,
                     "chore_name": chore_name,
                     "chore_id": chore.id,
-                    "points": pts,
+                    "points": _pending_award(comp, pts),
                     "time_category": chore.time_category,
                     "completed_at": comp.completed_at.isoformat(),
                     "bonus_subtask_id": bonus_subtask_id,

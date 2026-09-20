@@ -739,6 +739,10 @@ class ChoreCompletion:
     note: str = ""  # child's own description of the work (open-ended chores, #832)
     suggested_points: int = 0  # what the child reckons it was worth (#832)
     id: str = field(default_factory=generate_id)
+    # The award this submission was worth when it was made, before the streak
+    # and weekend multipliers that _award_points adds on top. None on records
+    # written before the field existed.
+    submitted_points: int | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ChoreCompletion:
@@ -759,6 +763,7 @@ class ChoreCompletion:
             note=data.get("note", ""),
             suggested_points=int(data.get("suggested_points", 0) or 0),
             id=data.get("id") or generate_id(),
+            submitted_points=parse_optional_points(data.get("submitted_points")),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -776,6 +781,7 @@ class ChoreCompletion:
             "note": self.note,
             "suggested_points": self.suggested_points,
             "id": self.id,
+            "submitted_points": self.submitted_points,
         }
 
 

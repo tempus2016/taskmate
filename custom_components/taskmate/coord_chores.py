@@ -869,6 +869,7 @@ class ChoresMixin:
             completed_at=now,
             approved=auto_approve,
             points_awarded=effective_points if auto_approve else 0,
+            submitted_points=effective_points,
             photo_url=photo_url or "",
             note=note,
             suggested_points=suggested_points,
@@ -972,6 +973,7 @@ class ChoresMixin:
             approved=True,
             approved_at=now,
             points_awarded=0,
+            submitted_points=0,
         )
 
         self.storage.add_completion(completion)
@@ -1058,6 +1060,7 @@ class ChoresMixin:
             completed_at=now,
             approved=not chore.requires_approval,
             points_awarded=subtask.points if not chore.requires_approval else 0,
+            submitted_points=subtask.points,
             bonus_subtask_id=bonus_subtask_id,
         )
 
@@ -1093,8 +1096,9 @@ class ChoresMixin:
         worth (#832) — needed for open-ended submissions, useful for any chore.
         It replaces the chore's *base* points, so the streak and level
         multipliers ``_award_points`` applies still ride on top exactly as they
-        would for an ordinary approval. ``None`` means "use the chore's value"
-        and leaves the existing behaviour untouched.
+        would for an ordinary approval. ``None`` means "pay what the submission
+        was worth when it was made", falling back to the chore's value for
+        completions recorded before that was stored.
         """
         completions = self.storage.get_completions()
         for completion in completions:
@@ -1111,7 +1115,15 @@ class ChoresMixin:
                 if chore and child:
                     comp_date = dt_util.as_local(completion.completed_at).date()
                     is_bonus = bool(completion.bonus_subtask_id)
-                    if is_bonus:
+                    if completion.submitted_points is not None:
+                        # Pay what the child was promised when they submitted.
+                        # Recalculating here reads the chore's *current* points
+                        # — so an edit made while the work sat in the queue
+                        # changed the price after the fact — and silently drops
+                        # the speed bonus and roulette multiplier that were in
+                        # the figure they saw.
+                        pts = completion.submitted_points
+                    elif is_bonus:
                         subtask = next((b for b in chore.bonus_subtasks if b.id == completion.bonus_subtask_id), None)
                         pts = subtask.points if subtask else 0
                     elif completion.timed_duration_seconds > 0 and chore.task_type == "timed":

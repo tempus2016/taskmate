@@ -3285,6 +3285,10 @@ class TaskMatePanel extends HTMLElement {
                   chorePoints = Math.floor(c.timed_duration_seconds / rateSeconds) * (chore.timed_rate_points || 0);
                 }
               }
+              // What the child was promised when they submitted beats anything
+              // recalculated here: a chore edited while the work sat in the
+              // queue, or a speed/roulette bonus that no longer applies.
+              chorePoints = c.submitted_points ?? chorePoints;
               const photoCap = [choreName, (child && child.name) || "", c.completed_at ? new Date(c.completed_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""].filter(Boolean).join(" · ");
               return `
                 <div class="tm-approval-item">
