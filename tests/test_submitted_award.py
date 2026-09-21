@@ -326,3 +326,44 @@ def test_the_weekend_bonus_is_not_also_its_own_transaction():
     assert awarded == 20  # 10 for the chore, 10 for the weekend
     assert balance == 20
     assert [t.reason for t in transactions if "Weekend" in (t.reason or "")] == []
+
+
+# ── timed chores ─────────────────────────────────────────────────────────
+
+
+def test_a_timed_session_pays_the_rate_it_was_stopped_at():
+    """Approval re-derives a timed award from the chore's *current* rate."""
+
+    async def scenario():
+        import custom_components.taskmate.coordinator as _mod
+
+        coord, _storage = await _make_system()
+        child = await coord.async_add_child("Alice")
+        chore = await coord.async_add_chore(
+            "Practice piano",
+            points=0,
+            requires_approval=True,
+            schedule_mode="specific_days",
+            assigned_to=[child.id],
+        )
+        chore.task_type = "timed"
+        chore.timed_rate_points = 5
+        chore.timed_rate_minutes = 10
+        await coord.async_update_chore(chore)
+        with patch.object(_mod.dt_util, "now", return_value=_now()):
+            await coord.async_start_timed_task(chore.id, child.id)
+        with patch.object(_mod.dt_util, "now", return_value=_now() + dt.timedelta(minutes=30)):
+            await coord.async_stop_timed_task(chore.id, child.id)
+
+        completion = next(c for c in coord.storage.get_completions() if c.chore_id == chore.id)
+        # The parent trims the rate while the session waits for review.
+        chore.timed_rate_points = 1
+        await coord.async_update_chore(chore)
+        with patch.object(_mod.dt_util, "now", return_value=_now() + dt.timedelta(minutes=35)):
+            await coord.async_approve_chore(completion.id)
+
+        return completion.submitted_points, coord.get_child(child.id).points
+
+    submitted, points = _run(scenario)
+    assert submitted == 15  # 30 minutes at 5 points per 10
+    assert points == 15

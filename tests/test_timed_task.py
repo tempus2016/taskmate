@@ -140,3 +140,71 @@ def test_stop_without_active_raises():
     coord = _coord(active=None)
     with pytest.raises(ValueError):
         run(coord.async_stop_timed_task("cho1", "ch1"))
+
+
+# ── the award a session was stopped at ───────────────────────────────────────
+# Approval re-derives a timed award from the chore's rate, so a rate edited
+# while the session sat in the review queue changed what it paid. The stop
+# records what it was worth, and approval honours that (#898).
+
+
+def _stopped_session(*, requires_approval, rate_points=5, rate_minutes=10, minutes=30):
+    """Run a session of `minutes` to a stop, and hand back the completion."""
+    start = NOW - dt.timedelta(minutes=minutes)
+    chore = Chore(
+        name="Practice piano",
+        task_type="timed",
+        timed_rate_points=rate_points,
+        timed_rate_minutes=rate_minutes,
+        requires_approval=requires_approval,
+        id="cho1",
+    )
+    session = TimedSession(
+        chore_id="cho1",
+        child_id="ch1",
+        state="running",
+        segments=[{"start": start.isoformat(), "end": None}],
+        session_date=NOW.date().isoformat(),
+        id="sess1",
+    )
+    coord = _coord(chore=chore, child=Child(name="Alice", id="ch1"), active=session)
+    coord.storage.add_completion = MagicMock()
+    coord.storage.set_last_completed = MagicMock()
+    coord.storage.remove_timed_session = MagicMock()
+    coord._award_points = AsyncMock(return_value=rate_points * (minutes // rate_minutes))
+    coord._async_notify_pending_approval = AsyncMock()
+
+    with _patch_now():
+        run(coord.async_stop_timed_task("cho1", "ch1"))
+
+    return coord.storage.add_completion.call_args[0][0], coord
+
+
+def test_stopping_records_the_award_the_session_earned():
+    completion, _coordinator = _stopped_session(requires_approval=True)
+
+    # 30 minutes at 5 points per 10 minutes.
+    assert completion.submitted_points == 15
+    assert completion.timed_duration_seconds == 1800
+    assert completion.points_awarded == 0  # not paid until a parent approves
+
+
+def test_an_auto_approved_session_records_it_too():
+    completion, _coordinator = _stopped_session(requires_approval=False)
+
+    assert completion.submitted_points == 15
+    assert completion.points_awarded == 15
+
+
+def test_a_session_that_earned_nothing_records_zero_not_unknown():
+    """Zero is a real award; None would mean "recalculate from the chore"."""
+    completion, _coordinator = _stopped_session(requires_approval=True, minutes=3)
+
+    assert completion.submitted_points == 0
+
+
+def test_the_recorded_award_matches_what_the_parent_is_told():
+    completion, coord = _stopped_session(requires_approval=True)
+
+    told = coord._async_notify_pending_approval.await_args[0][2]
+    assert told == completion.submitted_points

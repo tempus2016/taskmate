@@ -128,6 +128,7 @@ class TimedMixin:
             completed_at=now,
             approved=not chore.requires_approval,
             points_awarded=pts if not chore.requires_approval else 0,
+            submitted_points=pts,
             timed_duration_seconds=total_seconds,
         )
 
@@ -251,6 +252,7 @@ class TimedMixin:
                     completed_at=dt_util.now(),
                     approved=not chore.requires_approval,
                     points_awarded=pts if not chore.requires_approval else 0,
+                    submitted_points=pts,
                     timed_duration_seconds=total_seconds,
                 )
                 if not chore.requires_approval:
