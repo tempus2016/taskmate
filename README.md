@@ -40,7 +40,7 @@
 3. **Parents approve** — chores marked "requires approval" land in a pending queue
 4. **Kids claim rewards** — points are only deducted once a parent approves the claim
 
-Everything is managed from the **TaskMate panel** in the Home Assistant sidebar, and surfaced on your dashboards through 21 Lovelace cards.
+Everything is managed from the **TaskMate panel** in the Home Assistant sidebar, and surfaced on your dashboards through 22 Lovelace cards.
 
 All data stays inside your Home Assistant instance. Nothing is sent to any external service.
 
@@ -89,7 +89,7 @@ Lovelace resources register automatically on startup. Edit your dashboard → **
 
 | For kids | For parents |
 |----------|-------------|
-| Child · Rewards · Reward Progress · Points Display · Routine · Streak · Badges | Approvals · Parent Dashboard · Overview · Activity · Points · Reorder · Penalties · Bonuses · Weekly · Graph · Leaderboard · Calendar · Family Goal · Photo Gallery |
+| Child · Sticker Chart · Rewards · Reward Progress · Points Display · Routine · Streak · Badges | Approvals · Parent Dashboard · Overview · Activity · Points · Reorder · Penalties · Bonuses · Weekly · Graph · Leaderboard · Calendar · Family Goal · Photo Gallery |
 
 Every card takes a `header_color` and a `card_design` option. See [Dashboard Cards](https://github.com/tempus2016/taskmate/wiki/Dashboard-Cards) for each card's full configuration.
 
@@ -108,7 +108,7 @@ Every card takes a `header_color` and a `card_design` option. See [Dashboard Car
 | [Getting Started](https://github.com/tempus2016/taskmate/wiki/Getting-Started) | First-time setup walkthrough |
 | [Admin Panel](https://github.com/tempus2016/taskmate/wiki/Admin-Panel) | The management hub in the HA sidebar |
 | [Settings](https://github.com/tempus2016/taskmate/wiki/Settings) | Every configurable setting in one place |
-| [Dashboard Cards](https://github.com/tempus2016/taskmate/wiki/Dashboard-Cards) | All 21 Lovelace cards and their options |
+| [Dashboard Cards](https://github.com/tempus2016/taskmate/wiki/Dashboard-Cards) | All 22 Lovelace cards and their options |
 | [Services](https://github.com/tempus2016/taskmate/wiki/Services) | Every callable service, with examples |
 | [Sensor Reference](https://github.com/tempus2016/taskmate/wiki/Sensor-Reference) | All entities and their attributes |
 | [Automations](https://github.com/tempus2016/taskmate/wiki/Automations) | Bus events, blueprints, and examples |
@@ -133,4 +133,4 @@ Bug reports and feature requests are welcome in [Issues](https://github.com/temp
 
 MIT — see [LICENSE](LICENSE).
 
-> Originally created by [vinnybad/choremander](https://github.com/vinnybad/choremander). This fork adds 21 Lovelace cards, an admin panel, a bonus points system, streak tracking, reward approval flow, a penalty system, and much more.
+> Originally created by [vinnybad/choremander](https://github.com/vinnybad/choremander). This fork adds 22 Lovelace cards, an admin panel, a bonus points system, streak tracking, reward approval flow, a penalty system, and much more.

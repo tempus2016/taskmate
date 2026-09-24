@@ -20,6 +20,61 @@ _LOGGER = logging.getLogger(__name__)
 class PointsMixin:
     """Mixin providing points, streaks, penalties, bonuses, and notifications."""
 
+    def week_progress(self, children, chores, completions) -> dict[str, dict[str, int]]:
+        """Points each child has earned this week, and the most they could have.
+
+        The week runs Monday to Sunday, like the weekly digest. ``earned`` is
+        the approved chore points since Monday (bonus sub-tasks excluded, as
+        they are extras on top of the jobs). ``available`` is every scheduled
+        job's points at its daily limit across all seven days, with the weekend
+        multiplier on Saturday and Sunday and the family's planned vacation days
+        left out (a child's live away-sensor is not used: it says nothing about
+        the rest of the week). Rotation
+        chores are skipped — who is active on a future day can't be known — so
+        ``earned`` may run past ``available``; cards cap the display.
+        """
+        today = dt_util.now().date()
+        week_start = today - timedelta(days=today.weekday())
+        days = [week_start + timedelta(days=i) for i in range(7)]
+        try:
+            multiplier = float(self.storage.get_setting("weekend_multiplier", "2.0"))
+        except (ValueError, TypeError):
+            multiplier = 2.0
+
+        earned: dict[str, int] = {}
+        for comp in completions:
+            if not comp.approved or comp.bonus_subtask_id:
+                continue
+            if dt_util.as_local(comp.completed_at).date() < week_start:
+                continue
+            earned[comp.child_id] = earned.get(comp.child_id, 0) + (comp.points_awarded or 0)
+
+        progress: dict[str, dict[str, int]] = {}
+        for child in children:
+            available = 0
+            for chore in chores:
+                if not getattr(chore, "enabled", True):
+                    continue
+                assigned = chore.assigned_to or []
+                if assigned and child.id not in assigned:
+                    continue
+                if child.id in (getattr(chore, "disabled_for", None) or []):
+                    continue
+                mode = getattr(chore, "assignment_mode", "everyone") or "everyone"
+                if mode not in ("everyone", "first_come"):
+                    continue
+                limit = 1 if mode == "first_come" else max(1, int(getattr(chore, "daily_limit", 1) or 1))
+                points = self.effective_chore_points(chore)
+                for day in days:
+                    if self.is_vacation_day(day) or not self._is_chore_scheduled_for_date(chore, day):
+                        continue
+                    per = points
+                    if day.weekday() in (5, 6) and multiplier > 1.0:
+                        per += round(points * (multiplier - 1.0))
+                    available += per * limit
+            progress[child.id] = {"earned": earned.get(child.id, 0), "available": available}
+        return progress
+
     async def _async_check_perfect_week(self) -> None:
         """Award perfect week bonus to children who completed at least one chore every day last week."""
         perfect_week_enabled = self.storage.get_setting("perfect_week_enabled", "true") == "true"

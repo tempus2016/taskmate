@@ -781,20 +781,24 @@ class TaskMatePointsCard extends LitElement {
 
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
+  /** Avatar + photo, read off the child's own sensor. */
   _childAvatarValue(child) {
     const childEntityId = Object.keys(this.hass.states).find(
       (eid) => this.hass.states[eid].attributes?.child_id === child.id
     );
-    const childEntity = childEntityId ? this.hass.states[childEntityId] : null;
-    return childEntity?.attributes?.avatar || "mdi:account-circle";
+    const attrs = childEntityId ? this.hass.states[childEntityId].attributes : null;
+    return {
+      avatar: attrs?.avatar || "mdi:account-circle",
+      avatar_image: attrs?.avatar_image || "",
+    };
   }
 
   _av(child, tone, size) {
-    const a = this._childAvatarValue(child);
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${child.name}">`
+    const face = window.__taskmate_child_visual(this._childAvatarValue(child));
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${child.name}">`
         : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }
@@ -923,17 +927,15 @@ class TaskMatePointsCard extends LitElement {
     const isLoading = this._loading[child.id];
 
     // Get child entity for avatar
-    const childEntityId = Object.keys(this.hass.states).find(
-      (eid) => this.hass.states[eid].attributes?.child_id === child.id
-    );
-    const childEntity = childEntityId ? this.hass.states[childEntityId] : null;
-    const avatar = childEntity?.attributes?.avatar || "mdi:account-circle";
+    const face = window.__taskmate_child_visual(this._childAvatarValue(child));
 
     return html`
       <div class="child-row ${isLoading ? "loading" : ""}">
         <div class="child-info">
           <div class="child-avatar">
-            <ha-icon icon="${avatar}"></ha-icon>
+            ${face.kind === "image"
+              ? html`<img class="tm-face-img" src="${face.url}" alt="" loading="lazy">`
+              : html`<ha-icon icon="${face.kind === "icon" ? face.icon : "mdi:account-circle"}"></ha-icon>`}
           </div>
           <div class="child-details">
             <div class="child-name">${child.name}</div>

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from calendar import monthrange
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
@@ -909,6 +909,116 @@ class ChoresMixin:
                 await self._async_evaluate_challenges(child_id)
 
         return completion
+
+    # How far back a grown-up may log a job that was done but not ticked.
+    BACKDATE_MAX_DAYS = 7
+
+    async def async_complete_chore_on_date(self, chore_id: str, child_id: str, day: date) -> ChoreCompletion:
+        """Log a job a child did on an earlier day but nobody ticked at the time.
+
+        Parent-only (the service gates it). The completion is stamped midday
+        on ``day`` so it lands in that day's (and that week's) totals, and it
+        is approved straight away — the grown-up logging it is the approver.
+
+        It must be a day in the last ``BACKDATE_MAX_DAYS`` days, not today
+        (today is ticked the normal way), for a chore that was assigned to the
+        child and due that day, with that day's daily limit not yet used up.
+        Rotation chores are refused: whose turn it was can't be reconstructed.
+        Points are the chore's base points (with its difficulty) plus the
+        weekend multiplier when ``day`` was a Saturday or Sunday; the time-of-day,
+        speed and roulette adjustments are left out, as there was no live tap.
+        The streak is left alone: rewriting ``last_completion_date`` to a past
+        day would break a streak the child is on today.
+
+        Every refusal raises ValueError with a message meant for the parent.
+        """
+        chore = self.get_chore(chore_id)
+        if not chore:
+            raise ValueError(f"Chore {chore_id} not found")
+        child = self.get_child(child_id)
+        if not child:
+            raise ValueError(f"Child {child_id} not found")
+
+        today = dt_util.as_local(dt_util.now()).date()
+        if not (today - timedelta(days=self.BACKDATE_MAX_DAYS) <= day < today):
+            raise ValueError(f"Pick a day in the last {self.BACKDATE_MAX_DAYS} days, before today.")
+
+        assigned = chore.assigned_to or []
+        if (assigned and child_id not in assigned) or child_id in (getattr(chore, "disabled_for", None) or []):
+            raise ValueError(f"'{chore.name}' isn't one of {child.name}'s jobs.")
+        if (getattr(chore, "assignment_mode", "everyone") or "everyone") != "everyone":
+            raise ValueError(f"'{chore.name}' rotates between children, so it can't be logged for a past day.")
+        if not self._is_chore_scheduled_for_date(chore, day):
+            raise ValueError(f"'{chore.name}' wasn't due on {day.strftime('%A')}.")
+
+        done_that_day = sum(
+            1
+            for comp in self.storage.get_completions()
+            if comp.chore_id == chore_id
+            and comp.child_id == child_id
+            and not comp.bonus_subtask_id
+            and dt_util.as_local(comp.completed_at).date() == day
+        )
+        daily_limit = max(1, int(getattr(chore, "daily_limit", 1) or 1))
+        if done_that_day >= daily_limit:
+            raise ValueError(
+                f"'{chore.name}' was already done {done_that_day}/{daily_limit} times on {day.strftime('%A')}."
+            )
+
+        points = self.effective_chore_points(chore)
+        completed_at = datetime.combine(day, time(12, 0), tzinfo=dt_util.DEFAULT_TIME_ZONE)
+        completion = ChoreCompletion(
+            chore_id=chore_id,
+            child_id=child_id,
+            completed_at=completed_at,
+            approved=True,
+            approved_at=dt_util.now(),
+            points_awarded=points,
+        )
+        # Written before awarding, as in async_complete_chore, so two quick
+        # calls can't both pass the daily-limit check above.
+        self.storage.add_completion(completion)
+        completion.points_awarded = await self._award_points(
+            child, points, completion_date=day, skip_streak=True, chore_id=chore_id
+        )
+        self.storage.update_completion(completion)
+        await self.storage.async_save()
+
+        self.hass.bus.async_fire(
+            "taskmate_chore_completed",
+            {
+                "child_id": child.id,
+                "child_name": child.name,
+                "chore_id": chore.id,
+                "chore_name": chore.name,
+                "points": completion.points_awarded,
+                "difficulty": getattr(chore, "difficulty", "medium"),
+                "timestamp": completed_at.isoformat(),
+                "backdated": True,
+            },
+        )
+        await self.async_refresh()
+        if getattr(self, "badges", None):
+            await self.badges.evaluate_for_child(child_id, "manual")
+        return completion
+
+    def completions_on_date(self, day: date) -> list[dict]:
+        """Every chore completion made on ``day`` (local time), sub-tasks excluded.
+
+        Shaped like the sensors' ``todays_completions`` rows, so the sticker
+        chart can show a past day with the same code it uses for today.
+        """
+        return [
+            {
+                "completion_id": comp.id,
+                "chore_id": comp.chore_id,
+                "child_id": comp.child_id,
+                "approved": comp.approved,
+                "points": comp.points_awarded,
+            }
+            for comp in self.storage.get_completions()
+            if not comp.bonus_subtask_id and dt_util.as_local(comp.completed_at).date() == day
+        ]
 
     async def async_parent_complete_chore(self, chore_id: str) -> ChoreCompletion:
         """Mark a chore as completed by the parent — zero points, advances recurrence."""

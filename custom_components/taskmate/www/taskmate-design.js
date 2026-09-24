@@ -110,7 +110,7 @@
   const KIT = `
 .tmd{overflow:hidden;font-family:var(--tmd-font-body);color:var(--tmd-text);background:var(--tmd-surface);border-radius:var(--tmd-radius);box-shadow:var(--tmd-shadow)}
 .tmd-hd{display:flex;align-items:center;gap:11px;padding:13px 15px;background:var(--hd,var(--tmd-accent));color:#fff}
-:host([data-tm-design="playroom"]) .tmd-hd{background:linear-gradient(135deg,var(--hd,var(--tmd-accent)),color-mix(in srgb,var(--hd,var(--tmd-accent)) 72%,#fff))}
+:host([data-tm-design="playroom"]) .tmd-hd{background:var(--hd,var(--tmd-accent));background:linear-gradient(135deg,var(--hd,var(--tmd-accent)),color-mix(in srgb,var(--hd,var(--tmd-accent)) 72%,#fff))}
 .tmd-hd .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.22);font-size:17px;flex:none}
 .tmd-hd .tt{font-family:var(--tmd-font-display);font-weight:800;font-size:16px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tmd-hd .tt small{display:block;font-family:var(--tmd-font-body);font-weight:600;font-size:11px;opacity:.85;margin-top:1px}
@@ -122,6 +122,11 @@
 :host([data-tm-design="console"]) .av{box-shadow:0 0 0 1px color-mix(in srgb,var(--ac,var(--tmd-accent)) 70%,transparent),0 0 14px color-mix(in srgb,var(--ac,var(--tmd-accent)) 35%,transparent)}
 .av ha-icon{--mdc-icon-size:calc(var(--av,42px)*.55);color:#fff}
 .av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+/* A child's photo, for the classic (non-designed) avatar wells.
+   Every one of them is a sized, centred circle, so filling it is right; the
+   chip variant is for the few places the icon sits inline beside text. */
+.tm-face-img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.tm-face-chip{width:18px;height:18px;border-radius:50%;object-fit:cover;display:block;flex:none}
 .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--tmd-surface-2);color:var(--tmd-text);border:1px solid var(--tmd-border)}
 .chip.soft{background:color-mix(in srgb,var(--tmd-accent) 14%,transparent);border-color:transparent;color:var(--tmd-accent)}
 .num{font-family:var(--tmd-font-mono);font-weight:800;letter-spacing:-.01em}
@@ -135,7 +140,7 @@
 .lead{color:var(--tmd-accent)}
 .lead-dot{color:var(--tmd-gold)}
 .btn{font:inherit;font-family:var(--tmd-font-display);font-weight:800;font-size:13.5px;line-height:1;border:0;cursor:pointer;padding:9px 14px;border-radius:var(--tmd-radius-sm);background:var(--tmd-accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:6px}
-:host([data-tm-design="console"]) .btn{color:#06101c;background:linear-gradient(135deg,var(--tmd-accent),color-mix(in srgb,var(--tmd-accent) 60%,var(--tmd-accent2)));box-shadow:0 0 14px color-mix(in srgb,var(--tmd-accent) 45%,transparent)}
+:host([data-tm-design="console"]) .btn{color:#06101c;background:linear-gradient(135deg,var(--tmd-accent),var(--tmd-accent2));background:linear-gradient(135deg,var(--tmd-accent),color-mix(in srgb,var(--tmd-accent) 60%,var(--tmd-accent2)));box-shadow:0 0 14px color-mix(in srgb,var(--tmd-accent) 45%,transparent)}
 .btn.ghost{background:var(--tmd-surface-2);color:var(--tmd-text);border:1px solid var(--tmd-border)}
 :host([data-tm-design="console"]) .btn.ghost{box-shadow:none}
 .btn.good{background:var(--tmd-good);color:#06301f}
@@ -324,6 +329,28 @@
   window.__taskmate_chore_visual = window.__taskmate_chore_visual || function (chore) {
     if (chore && chore.image_url) return { kind: "image", url: chore.image_url };
     if (chore && chore.icon) return { kind: "icon", icon: chore.icon };
+    return { kind: "none" };
+  };
+
+  /**
+   * The same idea for a child's face.
+   *
+   * Precedence: child's photo → MDI avatar → the call site's fallback.
+   *
+   * `avatar_image` is resolved server-side from the picture entity chosen for
+   * the child in TaskMate (empty when none is), so a card needs no knowledge
+   * of person entities. A non-"mdi:" `avatar` is still treated as a picture URL,
+   * which is what the points-display and approvals cards already did.
+   *
+   * Accepts a child object or a bare avatar string, because a few payloads
+   * (reward claims, badges) carry only the string.
+   */
+  window.__taskmate_child_visual = window.__taskmate_child_visual || function (child) {
+    const c = typeof child === "string" ? { avatar: child } : child || {};
+    if (c.avatar_image) return { kind: "image", url: c.avatar_image };
+    const av = c.avatar || "";
+    if (av.startsWith("mdi:")) return { kind: "icon", icon: av };
+    if (av) return { kind: "image", url: av };
     return { kind: "none" };
   };
 

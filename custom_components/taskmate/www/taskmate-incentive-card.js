@@ -43,6 +43,14 @@ export function createIncentiveCard(P) {
       return fn ? fn(this.hass, key, params) : key;
     }
 
+    /** Avatar: child's photo → MDI avatar → default icon. */
+    _avatarGlyph(source, fallback = "mdi:account-circle", cls = "tm-face-img") {
+      const face = window.__taskmate_child_visual(source);
+      return face.kind === "image"
+        ? html`<img class="${cls}" src="${face.url}" alt="" loading="lazy">`
+        : html`<ha-icon icon="${face.kind === "icon" ? face.icon : fallback}"></ha-icon>`;
+    }
+
     _tp(key, params) {
       return this._t(P.i18n + "." + key, params);
     }
@@ -616,7 +624,7 @@ export function createIncentiveCard(P) {
           ${children.map(c => html`
             <div class="child-tab ${selected?.id === c.id ? "selected" : ""}"
                  @click=${() => this._selectChild(c.id)}>
-              <ha-icon icon="${c.avatar || "mdi:account-circle"}"></ha-icon>
+              ${this._avatarGlyph(c, "mdi:account-circle", "tm-face-chip")}
               ${c.name}
             </div>
           `)}
@@ -820,11 +828,11 @@ export function createIncentiveCard(P) {
     _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
     _av(child, tone, size) {
-      const a = child.avatar || "";
-      const inner = a.startsWith("mdi:")
-        ? html`<ha-icon icon="${a}"></ha-icon>`
-        : a
-          ? html`<img src="${a}" alt="${child.name}">`
+      const face = window.__taskmate_child_visual(child);
+      const inner = face.kind === "icon"
+        ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+        : face.kind === "image"
+          ? html`<img src="${face.url}" alt="${child.name}">`
           : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
       return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
     }

@@ -640,23 +640,26 @@ class TaskMateApprovalsCard extends LitElement {
 
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
-  _av(name, avatar, tone, size) {
-    const a = avatar || "";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${name || ''}">`
+  // `source` is whatever _childAvatar returned: a child object, or a bare
+  // avatar string from an older payload. The shared helper accepts either.
+  _av(name, source, tone, size) {
+    const face = window.__taskmate_child_visual(source);
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${name || ''}">`
         : (name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }
 
-  // Resolve a child's avatar from the overview sensor's children list (the
-  // completion/claim payloads don't carry an avatar field).
+  // Resolve a child's face from the overview sensor's children list (the
+  // completion/claim payloads don't carry one). Returns the whole child so the
+  // child's photo travels with the avatar, not just the icon.
   _childAvatar(childId) {
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
       || this.hass?.states?.[this.config.entity]?.attributes || {};
     const child = (attrs.children || []).find(c => c.id === childId);
-    return child ? child.avatar : null;
+    return child || null;
   }
 
   // Flatten all pending items into a single ordered, day/time-grouped list so

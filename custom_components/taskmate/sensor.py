@@ -130,6 +130,11 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
         "pool_by_child_reward": pool_by_child_reward,
         "pool_total_by_reward": pool_total_by_reward,
         "total_allocated_by_child": total_allocated_by_child,
+        # Each child's photo (from their chosen picture entity), resolved once
+        # per update: every call site that draws a child's face reads this.
+        "child_avatar_images": {c.id: coordinator.child_avatar_image(c) for c in children},
+        # This week's points earned vs. the most on offer, per child.
+        "child_week_progress": coordinator.week_progress(children, chores, all_completions),
     }
     setattr(coordinator, _COMMON_CACHE_ATTR, {"data_id": data_id, "common": common})
     return common
@@ -185,6 +190,10 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 "total_points_earned": getattr(c, "total_points_earned", 0) or 0,
                 "total_chores_completed": getattr(c, "total_chores_completed", 0) or 0,
                 "avatar": getattr(c, "avatar", "mdi:account-circle") or "mdi:account-circle",
+                # The child's photo, or "" — cards fall back to `avatar`.
+                "avatar_image": common["child_avatar_images"].get(c.id, ""),
+                "week_points_earned": common["child_week_progress"].get(c.id, {}).get("earned", 0),
+                "week_points_available": common["child_week_progress"].get(c.id, {}).get("available", 0),
                 "last_completion_date": getattr(c, "last_completion_date", None),
                 "streak_paused": getattr(c, "streak_paused", False),
                 "on_vacation": coordinator._is_child_on_vacation(c),
@@ -532,6 +541,9 @@ def _build_pending_reward_claims(common: dict) -> list[dict]:
                 "reward_id": rc.reward_id,
                 "child_id": rc.child_id,
                 "child_name": child.name,
+                # No avatar_image here on purpose: the cards resolve a claim's
+                # face from the overview sensor's children[], and a copy per
+                # claim pushed this sensor past the 16KB recorder limit.
                 "child_avatar": getattr(child, "avatar", "mdi:account-circle") or "mdi:account-circle",
                 "reward_name": reward.name,
                 "reward_icon": reward.icon or "mdi:gift",
@@ -1133,6 +1145,7 @@ class ChildPointsSensor(TaskMateBaseSensor):
             "child_id": child.id,
             "child_name": child.name,
             "avatar": child.avatar,
+            "avatar_image": self.coordinator.child_avatar_image(child),
             "total_points_earned": child.total_points_earned,
             "total_chores_completed": child.total_chores_completed,
             "current_streak": child.current_streak,
@@ -1174,6 +1187,18 @@ class ChildStatsSensor(TaskMateBaseSensor):
         return child.avatar if child else "mdi:account-circle"
 
     @property
+    def entity_picture(self) -> str | None:
+        """The child's photo, so HA's own UI shows their face too.
+
+        HA prefers a picture over ``icon`` when both are set, so returning
+        None (the default) leaves the MDI avatar above in charge.
+        """
+        child = self.coordinator.get_child(self.child_id)
+        if not child:
+            return None
+        return self.coordinator.child_avatar_image(child) or None
+
+    @property
     def extra_state_attributes(self) -> dict:
         """Return additional attributes."""
         child = self.coordinator.get_child(self.child_id)
@@ -1204,6 +1229,7 @@ class ChildStatsSensor(TaskMateBaseSensor):
             "child_id": child.id,
             "child_name": child.name,
             "avatar": child.avatar,
+            "avatar_image": self.coordinator.child_avatar_image(child),
             "points": child.points,
             "total_points_earned": child.total_points_earned,
             "total_chores_completed": child.total_chores_completed,

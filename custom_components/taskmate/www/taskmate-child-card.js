@@ -180,6 +180,20 @@ class TaskMateChildCard extends LitElement {
     this.requestUpdate();
   }
 
+  /**
+   * Classic-header avatar: child's photo → MDI avatar → default.
+   *
+   * The picker below is unaffected: it still compares catalogue icons against
+   * `child.avatar`, so a child shown with their photo keeps whichever MDI
+   * avatar they unlocked, and gets it back by switching the photo off.
+   */
+  _avatarGlyph(child) {
+    const face = window.__taskmate_child_visual(child);
+    return face.kind === "image"
+      ? html`<img class="tm-face-img" src="${face.url}" alt="" loading="lazy">`
+      : html`<ha-icon icon="${face.kind === "icon" ? face.icon : "mdi:account-circle"}"></ha-icon>`;
+  }
+
   _renderAvatarPicker(child, options) {
     return html`
       <div class="avatar-picker">
@@ -2004,9 +2018,6 @@ class TaskMateChildCard extends LitElement {
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t('common.stars');
 
-    // Avatar now in children array directly
-    const avatar = child.avatar || "mdi:account-circle";
-
     // Resolve badges sensor entity for this child
     const badgesEntity = this._resolveBadgesEntity(child);
     const earnedBadges = (badgesEntity?.attributes?.earned) || [];
@@ -2035,7 +2046,7 @@ class TaskMateChildCard extends LitElement {
                 <div class="avatar-container ${canChange ? 'avatar-clickable' : ''}"
                      @click=${canChange ? () => this._toggleAvatarPicker() : null}
                      title="${canChange ? this._t('child.avatar_change') : ''}">
-                  <ha-icon icon="${avatar}"></ha-icon>
+                  ${this._avatarGlyph(child)}
                   ${canChange ? html`<span class="avatar-edit-dot"><ha-icon icon="mdi:pencil"></ha-icon></span>` : ''}
                 </div>
                 ${canChange && this._avatarPickerOpen ? this._renderAvatarPicker(child, opts) : ''}
@@ -2244,11 +2255,11 @@ class TaskMateChildCard extends LitElement {
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
   _av(child, tone, size) {
-    const a = child.avatar || "";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${child.name}">`
+    const face = window.__taskmate_child_visual(child);
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${child.name}">`
         : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }

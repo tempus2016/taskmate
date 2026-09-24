@@ -512,6 +512,16 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         chore_id = call.data[ATTR_CHORE_ID]
         child_id = call.data[ATTR_CHILD_ID]
         as_parent = call.data.get(ATTR_AS_PARENT, False)
+        completed_date = call.data.get("completed_date")
+        if completed_date is not None:
+            # Logging a job for an earlier day is a grown-up's correction, never
+            # a child's: it is always parent-gated and always approved.
+            await _async_require_parent(hass, call)
+            try:
+                await coordinator.async_complete_chore_on_date(chore_id, child_id, completed_date)
+            except ValueError as err:
+                raise ServiceValidationError(str(err)) from err
+            return
         if as_parent:
             # Completing on behalf of a child (auto-approve + instant award) is a
             # parent privilege. Enforce it on the backend, not just by hiding the
@@ -1127,6 +1137,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Required(ATTR_CHILD_ID): cv.string,
                 vol.Optional(ATTR_AS_PARENT, default=False): cv.boolean,
                 vol.Optional("photo_url"): cv.string,
+                vol.Optional("completed_date"): cv.date,
             }
         ),
     )

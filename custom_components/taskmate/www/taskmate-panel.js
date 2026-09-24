@@ -234,6 +234,7 @@ class TaskMatePanel extends HTMLElement {
     // to lean on) and our shell was stripped out in the meantime.
     if (!this._rendered || !this.querySelector(".tm-shell")) this._render();
     this._bindHaPickers(false);
+    if (this._backdateCard) this._backdateCard.hass = value;
   }
   get hass() { return this._hass; }
   set narrow(_v) {}
@@ -508,6 +509,9 @@ class TaskMatePanel extends HTMLElement {
     if (act === "save-gift")    { this._doGiftPoints(); return; }
     if (act === "adjust-points") { this._doAdjustPoints(t.dataset.id, Number(t.dataset.delta)); return; }
     if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
+    if (act === "backdate-open") { this._openBackdateDialog(t.dataset.id); return; }
+    if (act === "save-backdate") { this._saveBackdateDialog(); return; }
+    if (act === "close-backdate") { this._closeDialog(true); this._fetchState(); return; }
     if (act === "sound-preview-field") {
       const sel = t.closest(".tm-sound-row")?.querySelector('select[data-field="completion_sound"]');
       if (sel) this._previewSound(sel.value);
@@ -1234,6 +1238,7 @@ class TaskMatePanel extends HTMLElement {
         unavailability_entity: c.unavailability_entity || "",
         pause_streak_when_unavailable: !!c.pause_streak_when_unavailable,
         linked_user_id: c.linked_user_id || "",
+        picture_entity: c.picture_entity || "",
       } });
     } else {
       this._openDialog({ kind: "child", mode: "add", data: {
@@ -1241,6 +1246,7 @@ class TaskMatePanel extends HTMLElement {
         availability_inverted: false, unavailability_entity: "",
         pause_streak_when_unavailable: false,
         linked_user_id: "",
+        picture_entity: "",
       } });
     }
   }
@@ -1260,11 +1266,13 @@ class TaskMatePanel extends HTMLElement {
       ? { type: "taskmate/add_child", name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
-          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "" }
+          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
+          picture_entity: d.picture_entity || "" }
       : { type: "taskmate/update_child", child_id: d.id, name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
-          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "" };
+          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
+          picture_entity: d.picture_entity || "" };
     const { ok, err } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
     this._closeDialog(true);
@@ -2534,6 +2542,7 @@ class TaskMatePanel extends HTMLElement {
       this._zoneCache = {};
       this._applyDesign();
       this._bindHaPickers();
+      this._mountBackdateCard();
       return;
     }
 
@@ -2584,6 +2593,7 @@ class TaskMatePanel extends HTMLElement {
     }
 
     this._applyDesign();
+    this._mountBackdateCard();
   }
 
   // The admin panel intentionally stays CLASSIC regardless of the global card
@@ -3172,6 +3182,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-card-foot">
           <button type="button" class="tm-btn tm-btn-sm" data-act="edit-child" data-id="${this._esc(child.id)}">${this._t("panel.btn_edit")}</button>
           <button type="button" class="tm-btn tm-btn-sm" data-act="reorder-chores-for-child" data-id="${this._esc(child.id)}" title="${this._t("panel.chore_order_title")}">⇅ ${this._t("panel.chore_order_title")}</button>
+          <button type="button" class="tm-btn tm-btn-sm" data-act="backdate-open" data-id="${this._esc(child.id)}" title="${this._esc(this._t("panel.backdate_hint"))}">📅 ${this._t("panel.backdate_button")}</button>
           <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-child" data-id="${this._esc(child.id)}">${this._t("panel.btn_delete")}</button>
         </div>
       </article>
@@ -5205,6 +5216,168 @@ class TaskMatePanel extends HTMLElement {
     }
   }
 
+  // Log a past job: one done on an earlier day that nobody ticked. The
+  // backend (complete_chore with completed_date) re-checks every rule here —
+  // the last 7 days, the child's own non-rotating job, due that day, that
+  // day's limit — so this list is a convenience, not the gate.
+  _backdateDays() {
+    const pad = (n) => String(n).padStart(2, "0");
+    const lang = this._hass?.locale?.language || this._hass?.language || undefined;
+    const days = [];
+    for (let back = 1; back <= 7; back++) {
+      const d = new Date();
+      d.setHours(12, 0, 0, 0);
+      d.setDate(d.getDate() - back);
+      days.push({
+        v: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+        l: d.toLocaleDateString(lang, { weekday: "long", day: "numeric", month: "short" }),
+        dow: ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][d.getDay()],
+      });
+    }
+    return days;
+  }
+
+  _backdateChores(childId, dow) {
+    return (this._state.chores || []).filter(c => {
+      if (c.enabled === false) return false;
+      if ((c.disabled_for || []).includes(childId)) return false;
+      if ((c.assigned_to || []).length && !(c.assigned_to || []).includes(childId)) return false;
+      if ((c.assignment_mode || "everyone") !== "everyone") return false;
+      if ((c.schedule_mode || "specific_days") === "specific_days") {
+        const due = c.due_days || [];
+        return !due.length || due.includes(dow);
+      }
+      return true;
+    });
+  }
+
+  async _openBackdateDialog(childId) {
+    const child = (this._state.children || []).find(c => c.id === childId);
+    if (!child) return;
+    const day = this._backdateDays()[0];
+    const first = this._backdateChores(childId, day.dow)[0];
+    this._backdateKey = "";
+    this._openDialog({ kind: "backdate", data: { child_id: childId, day: day.v, chore_id: first ? first.id : "" } });
+    this._backdateCardReady = await this._loadBackdateCard();
+    if (this._dialog && this._dialog.kind === "backdate") this._render();
+  }
+
+  // The day is shown with the dashboard's own sticker chart card, so jobs are
+  // ticked exactly as the children tick them. The panel isn't a dashboard and
+  // never loads dashboard resources, so the card (and the attribute helper it
+  // reads the sensors through) are imported here, at the same versioned URLs
+  // a dashboard uses — a browser that has both open runs each module once.
+  // If the card can't load, the dialog falls back to a plain job list.
+  async _loadBackdateCard() {
+    if (customElements.get("taskmate-sticker-chart-card")) return true;
+    try {
+      await import(`/taskmate/taskmate-attr-resolver.js?v=${PANEL_VERSION}`);
+      await import(`/taskmate/taskmate-sticker-chart-card.js?v=${PANEL_VERSION}`);
+      return !!customElements.get("taskmate-sticker-chart-card");
+    } catch (err) {
+      console.warn("TaskMate: sticker chart card unavailable in the panel", err);
+      return false;
+    }
+  }
+
+  _overviewEntity() {
+    const states = (this._hass && this._hass.states) || {};
+    return Object.keys(states).find(id => {
+      const a = id.startsWith("sensor.") && states[id].attributes;
+      return a && a.points_name !== undefined && Array.isArray(a.children);
+    }) || "";
+  }
+
+  // Called after every render: the card element is created once and moved
+  // into the dialog's placeholder, so a re-render never loses its state.
+  _mountBackdateCard() {
+    const host = this.querySelector(".tm-backdate-host");
+    if (!host || !this._dialog || this._dialog.kind !== "backdate") return;
+    const d = this._dialog.data;
+    if (!this._backdateCard) {
+      this._backdateCard = document.createElement("taskmate-sticker-chart-card");
+      this._backdateCard.addEventListener("taskmate-day-changed", () => this._refreshBackdateDay());
+    }
+    const card = this._backdateCard;
+    const key = `${d.child_id}|${d.day}`;
+    if (this._backdateKey !== key) {
+      this._backdateKey = key;
+      card.setConfig({ entity: this._overviewEntity(), child_id: d.child_id, date: d.day, show_claim: false });
+      card.dayCompletions = [];
+      this._refreshBackdateDay();
+      // Changing the day isn't an unsaved edit: every tick is saved as it's made.
+      this._dialogInitialHash = this._hashDialog();
+    }
+    card.hass = this._hass;
+    if (card.parentNode !== host) host.appendChild(card);
+  }
+
+  async _refreshBackdateDay() {
+    const card = this._backdateCard;
+    const d = this._dialog && this._dialog.data;
+    if (!card || !d) return;
+    const day = d.day;
+    const { ok, res, err } = await this._callWS({ type: "taskmate/day_completions", date: day });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    if (this._dialog && this._dialog.data.day === day) card.dayCompletions = res.completions || [];
+  }
+
+  _renderBackdateDialog() {
+    const d = this._dialog.data;
+    const child = (this._state.children || []).find(c => c.id === d.child_id) || {};
+    const name = child.name || this._t("panel.child_unnamed");
+    const days = this._backdateDays();
+    const day = days.find(x => x.v === d.day) || days[0];
+    if (this._backdateCardReady !== false) {
+      return this._dialogShell(
+        this._t("panel.backdate_title", { name }),
+        [
+          `<p class="tm-field-hint">${this._esc(this._t("panel.backdate_hint"))}</p>`,
+          this._select(this._t("panel.backdate_day"), "day", day.v, days, "", true),
+          this._backdateCardReady ? `<div class="tm-backdate-host"></div>` : `<p class="tm-field-hint">…</p>`,
+        ].join(""),
+        `<button type="button" class="tm-btn tm-btn-raised" data-act="close-backdate">${this._t("panel.backdate_finish")}</button>`
+      );
+    }
+    const chores = this._backdateChores(d.child_id, day.dow);
+    if (!chores.some(c => c.id === d.chore_id)) d.chore_id = chores[0] ? chores[0].id : "";
+    return this._dialogShell(
+      this._t("panel.backdate_title", { name }),
+      [
+        `<p class="tm-field-hint">${this._esc(this._t("panel.backdate_hint_list"))}</p>`,
+        this._select(this._t("panel.backdate_day"), "day", day.v, days, "", true),
+        chores.length
+          ? this._select(this._t("panel.backdate_chore"), "chore_id", d.chore_id,
+              chores.map(c => ({ v: c.id, l: `${c.name} (${c.points})` })))
+          : `<p class="tm-field-hint">${this._esc(this._t("panel.backdate_none", { name }))}</p>`,
+      ].join(""),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-backdate" ${chores.length ? "" : "disabled"}>${this._t("panel.backdate_save")}</button>`
+    );
+  }
+
+  async _saveBackdateDialog() {
+    const d = this._dialog.data;
+    if (!d.child_id || !d.chore_id || !d.day || this._backdateBusy) return;
+    this._backdateBusy = true;
+    try {
+      const { ok, err } = await this._callService("complete_chore", {
+        chore_id: d.chore_id, child_id: d.child_id, as_parent: true, completed_date: d.day,
+      });
+      if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+      const child = (this._state.children || []).find(c => c.id === d.child_id) || {};
+      const chore = (this._state.chores || []).find(c => c.id === d.chore_id) || {};
+      const day = this._backdateDays().find(x => x.v === d.day);
+      this._closeDialog(true);
+      await this._fetchState();
+      this._showToast("ok", this._t("panel.backdate_done", {
+        chore: chore.name || "", name: child.name || "", day: day ? day.l : d.day,
+      }));
+    } finally {
+      this._backdateBusy = false;
+    }
+  }
+
   _openSwapDialog(choreId) {
     const c = (this._state.chores || []).find(x => x.id === choreId);
     if (!c) return;
@@ -5246,6 +5419,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "swap")         return this._renderSwapDialog();
     if (this._dialog.kind === "gift")         return this._renderGiftDialog();
     if (this._dialog.kind === "adjust")       return this._renderAdjustDialog();
+    if (this._dialog.kind === "backdate")     return this._renderBackdateDialog();
     if (this._dialog.kind === "child")        return this._renderChildDialog();
     if (this._dialog.kind === "chore")        return this._renderChoreDialog();
     if (this._dialog.kind === "reward")       return this._renderRewardDialog();
@@ -5341,6 +5515,8 @@ class TaskMatePanel extends HTMLElement {
             (this._haUsers || []).map(u => ({ v: u.id, l: u.is_admin ? `${u.name} (admin)` : u.name }))
           ),
           this._t("panel.child_link_user_hint")),
+        this._entityPickerField(this._t("panel.child_picture_entity_label"), "picture_entity", d.picture_entity,
+          ["person"], this._t("panel.child_picture_entity_hint")),
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-child">${this._t("panel.btn_save")}</button>`

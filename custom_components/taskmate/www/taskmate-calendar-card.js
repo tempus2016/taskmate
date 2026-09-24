@@ -570,7 +570,12 @@ class TaskMateCalendarCard extends LitElement {
       <div class="child-block">
         <div class="child-head">
           <div class="child-avatar">
-            <ha-icon icon="${child.avatar || "mdi:account-circle"}"></ha-icon>
+            ${(() => {
+              const face = window.__taskmate_child_visual(child);
+              return face.kind === "image"
+                ? html`<img class="tm-face-img" src="${face.url}" alt="" loading="lazy">`
+                : html`<ha-icon icon="${face.kind === "icon" ? face.icon : "mdi:account-circle"}"></ha-icon>`;
+            })()}
           </div>
           <span class="child-name">${child.name}</span>
           <span class="child-summary">${summary}</span>
@@ -590,11 +595,11 @@ class TaskMateCalendarCard extends LitElement {
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
   _av(child, tone, size) {
-    const a = child.avatar || "";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${child.name}">`
+    const face = window.__taskmate_child_visual(child);
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${child.name}">`
         : (child.name || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }

@@ -36,6 +36,14 @@ class TaskMateLeaderboardCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
+  /** Avatar: child's photo → MDI avatar → default icon. */
+  _avatarGlyph(source, fallback = "mdi:account-circle", cls = "tm-face-img") {
+    const face = window.__taskmate_child_visual(source);
+    return face.kind === "image"
+      ? html`<img class="${cls}" src="${face.url}" alt="" loading="lazy">`
+      : html`<ha-icon icon="${face.kind === "icon" ? face.icon : fallback}"></ha-icon>`;
+  }
+
   static get styles() {
     const base = css`
       :host { display: block; }
@@ -423,7 +431,7 @@ class TaskMateLeaderboardCard extends LitElement {
           : html`<div class="rank-number">${this._t('leaderboard.ordinal_' + rankNum)}</div>`}
 
         <div class="child-avatar" style="background: linear-gradient(135deg, ${avatarColour} 0%, ${avatarColour}cc 100%);">
-          <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
+          ${this._avatarGlyph(child)}
         </div>
 
         <div class="rank-info">
@@ -482,7 +490,7 @@ class TaskMateLeaderboardCard extends LitElement {
           <div class="rank-row first">
             <div class="rank-badge">🥇</div>
             <div class="child-avatar" style="background: linear-gradient(135deg, #f1c40f 0%, #e67e22 100%);">
-              <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
+              ${this._avatarGlyph(child)}
             </div>
             <div class="rank-info">
               <div class="rank-name">${child.name}</div>
@@ -565,11 +573,11 @@ class TaskMateLeaderboardCard extends LitElement {
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
   _av(child, tone, size) {
-    const a = child.avatar || "";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${child.name}">`
+    const face = window.__taskmate_child_visual(child);
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${child.name}">`
         : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }

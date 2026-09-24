@@ -144,6 +144,7 @@ WS_SET_CHORE_ORDER: Final = "taskmate/set_chore_order"
 WS_SET_GLOBAL_CHORE_ORDER: Final = "taskmate/set_global_chore_order"
 WS_ADD_CHORES_BULK: Final = "taskmate/add_chores_bulk"
 WS_PARENT_COMPLETE_CHORE: Final = "taskmate/parent_complete_chore"
+WS_DAY_COMPLETIONS: Final = "taskmate/day_completions"
 
 # Templates
 WS_TEMPLATES_LIST: Final = "taskmate/templates/list"
@@ -414,6 +415,7 @@ async def _ws_get_state(hass, connection, msg, coordinator):
         vol.Optional("unavailability_entity", default=""): str,
         vol.Optional("pause_streak_when_unavailable", default=False): bool,
         vol.Optional("linked_user_id", default=""): str,
+        vol.Optional("picture_entity", default=""): str,
     }
 )
 @websocket_api.async_response
@@ -427,6 +429,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         unavailability_entity=_opt_str(msg.get("unavailability_entity")),
         pause_streak_when_unavailable=bool(msg.get("pause_streak_when_unavailable", False)),
         linked_user_id=_opt_str(msg.get("linked_user_id")),
+        picture_entity=_opt_str(msg.get("picture_entity")),
     )
     connection.send_result(msg["id"], {"id": child.id})
 
@@ -442,6 +445,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         vol.Optional("unavailability_entity"): str,
         vol.Optional("pause_streak_when_unavailable"): bool,
         vol.Optional("linked_user_id"): str,
+        vol.Optional("picture_entity"): str,
         vol.Optional("is_guest"): bool,
         vol.Optional("guest_expires_on"): str,
     }
@@ -467,6 +471,8 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.pause_streak_when_unavailable = bool(msg["pause_streak_when_unavailable"])
     if "linked_user_id" in msg:
         existing.linked_user_id = _opt_str(msg["linked_user_id"])
+    if "picture_entity" in msg:
+        existing.picture_entity = _opt_str(msg["picture_entity"])
     if "is_guest" in msg or "guest_expires_on" in msg:
         # Routed through the coordinator so the expiry is validated and an
         # archived guest is un-archived when promoted to a family member.
@@ -2060,6 +2066,19 @@ async def _ws_parent_complete_chore(hass, connection, msg, coordinator):
 
 @websocket_api.websocket_command(
     {
+        vol.Required("type"): WS_DAY_COMPLETIONS,
+        vol.Required("date"): vol.All(str, vol.Coerce(date.fromisoformat)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_day_completions(hass, connection, msg, coordinator):
+    """What was done on one day — for logging past jobs from the panel."""
+    connection.send_result(msg["id"], {"completions": coordinator.completions_on_date(msg["date"])})
+
+
+@websocket_api.websocket_command(
+    {
         vol.Required("type"): WS_SET_CHORE_ORDER,
         vol.Required("child_id"): str,
         vol.Required("chore_order"): [str],
@@ -2812,6 +2831,7 @@ _COMMANDS = (
     _ws_approve_reward,
     _ws_reject_reward,
     _ws_parent_complete_chore,
+    _ws_day_completions,
     _ws_set_chore_order,
     _ws_set_global_chore_order,
     _ws_add_chores_bulk,

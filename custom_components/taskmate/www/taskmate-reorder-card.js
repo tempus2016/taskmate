@@ -816,12 +816,12 @@ class TaskMateReorderCard extends LitElement {
   ══════════════════════════════════════════════════════════════════════ */
 
   _designAv(child, size) {
-    const a = child.avatar || "";
+    const face = window.__taskmate_child_visual(child);
     const tone = "var(--tmd-c1)";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${child.name}">`
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${child.name}">`
         : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<span class="av" style="--av:${size}px;--ac:${tone}">${inner}</span>`;
   }

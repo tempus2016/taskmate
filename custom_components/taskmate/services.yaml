@@ -27,6 +27,12 @@ complete_chore:
       required: false
       selector:
         text:
+    completed_date:
+      name: Done on
+      description: Log the job for an earlier day (up to 7 days back, not today) that was done but not ticked. Parents only; approved straight away. The day's daily limit still applies.
+      required: false
+      selector:
+        date:
 
 complete_bonus_subtask:
   name: Complete Bonus Sub-task

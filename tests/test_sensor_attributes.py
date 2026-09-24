@@ -229,6 +229,9 @@ def _stress_coordinator():
             "target": 100,
         }
     )
+    # No linked-account pictures in the fixture; the feature has its own tests.
+    coord.child_avatar_image = MagicMock(return_value="")
+    coord.week_progress = MagicMock(return_value={})
     coord.storage = MagicMock()
     coord.storage.get_last_completed = MagicMock(return_value={"current": "2026-04-20T08:00:00Z"})
     return coord
