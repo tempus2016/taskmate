@@ -38,7 +38,7 @@ Closes #
 - [ ] My code follows the existing patterns in the codebase
 - [ ] I bumped `manifest.json` `version` if this is a release-bound change
 - [ ] Any new user-facing strings are translated into **all** locales
-      (`de`, `fr`, `nb`, `nn`, `pt`, `pt-BR`) in this same PR — not English-only
+      (`da`, `de`, `fr`, `nb`, `nn`, `pt`, `pt-BR`) in this same PR — not English-only
 - [ ] I updated the `README` / docs where relevant
 - [ ] I did **not** add Claude / AI co-author attribution to commits or files
 
