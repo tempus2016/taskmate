@@ -1,0 +1,896 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Velkommen til TaskMate!",
+        "description": "Opsæt familiens pligtsystem. Du kan tilpasse den pointvaluta, som børnene optjener.",
+        "data": {
+          "points_name": "Navn på pointvaluta (f.eks. Stjerner, Mønter, Coins)",
+          "points_icon": "Ikon for point"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Navn er påkrævet"
+    },
+    "abort": {
+      "already_configured": "TaskMate er allerede konfigureret"
+    }
+  },
+  "selector": {
+    "chore_action": {
+      "options": {
+        "save": "Gem ændringer",
+        "re_enable": "Aktivér pligt igen",
+        "disable": "Deaktivér pligt",
+        "delete": "Slet denne pligt"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "Gem ændringer",
+        "delete": "Slet belønning"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "Morgen",
+        "afternoon": "Eftermiddag",
+        "evening": "Aften",
+        "night": "Nat",
+        "anytime": "Når som helst"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "Bestemte ugedage",
+        "recurring": "Gentagende (hver N. dag/uge/måned)",
+        "one_shot": "Engangsopgave (én dag)"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "Mandag",
+        "tuesday": "Tirsdag",
+        "wednesday": "Onsdag",
+        "thursday": "Torsdag",
+        "friday": "Fredag",
+        "saturday": "Lørdag",
+        "sunday": "Søndag"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "Hver 2. dag",
+        "weekly": "Ugentligt",
+        "every_2_weeks": "Hver 2. uge",
+        "monthly": "Månedligt",
+        "every_3_months": "Hver 3. måned",
+        "every_6_months": "Hver 6. måned"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "Mandag",
+        "tuesday": "Tirsdag",
+        "wednesday": "Onsdag",
+        "thursday": "Torsdag",
+        "friday": "Fredag",
+        "saturday": "Lørdag",
+        "sunday": "Søndag",
+        "any_day": "Hvilken som helst dag"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "Tilgængelig med det samme",
+        "wait_for_first_occurrence": "Vent til første planlagte gang"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "Nulstil — streak går til 0 ved en misset dag",
+        "pause": "Pause — streak bevares indtil næste fuldførelse"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "none": "Intet filter — vis altid pligten",
+        "equals": "Lig med — vis når entitetens tilstand matcher præcist",
+        "not_equals": "Ikke lig med — vis når entitetens tilstand ikke matcher",
+        "gte": "Større end eller lig med (≥) — vis når den numeriske værdi er ≥ målet",
+        "lte": "Mindre end eller lig med (≤) — vis når den numeriske værdi er ≤ målet",
+        "gt": "Større end (>) — vis når den numeriske værdi er > målet",
+        "lt": "Mindre end (<) — vis når den numeriske værdi er < målet"
+      }
+    },
+    "assignment_mode": {
+      "options": {
+        "everyone": "Alle — alle tildelte børn ser pligten",
+        "alternating": "Skiftevis — skift mellem de tildelte børn, ét barn pr. dag",
+        "random": "Tilfældig — vælg tilfældigt ét af de tildelte børn hver dag",
+        "balanced": "Balanceret — fordel dagens balancerede pligter ligeligt mellem de tildelte børn",
+        "first_come": "Først til mølle — det første barn, der fuldfører den, vinder; den skjules for resten",
+        "unassigned": "Ikke tildelt — intet barn ser denne pligt"
+      }
+    },
+    "task_group_policy": {
+      "options": {
+        "sticky": "Samlet — samme barn får alle pligter i gruppen",
+        "spread": "Fordelt — forskellige børn på tværs af gruppen i dag"
+      }
+    },
+    "task_group_action": {
+      "options": {
+        "save": "Gem ændringer",
+        "delete": "Slet gruppe"
+      }
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "Fuldfør pligt",
+      "description": "Markér en pligt som fuldført af et barn",
+      "fields": {
+        "chore_id": {
+          "name": "Pligt-ID",
+          "description": "ID'et på den pligt, der skal fuldføres"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der fuldfører pligten"
+        },
+        "note": {
+          "name": "Note",
+          "description": "Hvad barnet har lavet, med egne ord. Påkrævet når pligten er åben, og vises for forælderen ved godkendelse."
+        },
+        "suggested_points": {
+          "name": "Foreslåede point",
+          "description": "Hvad barnet mener, arbejdet var værd. Et hint til den forælder, der godkender — det giver ikke point i sig selv."
+        }
+      }
+    },
+    "complete_bonus_subtask": {
+      "name": "Fuldfør bonus-delopgave",
+      "description": "Fuldfør en bonus-delopgave, efter hovedpligten er udført",
+      "fields": {
+        "chore_id": {
+          "name": "Pligt-ID",
+          "description": "ID'et på hovedpligten"
+        },
+        "bonus_subtask_id": {
+          "name": "Bonus-delopgave-ID",
+          "description": "ID'et på den bonus-delopgave, der skal fuldføres"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der fuldfører bonus-delopgaven"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Godkend pligt",
+      "description": "Godkend en fuldført pligt og tildel point",
+      "fields": {
+        "completion_id": {
+          "name": "Fuldførelses-ID",
+          "description": "ID'et på den fuldførelse, der skal godkendes"
+        },
+        "points": {
+          "name": "Point",
+          "description": "Tildel dette antal point i stedet for pligtens egen værdi. Lad feltet være tomt for at bruge pligtens point."
+        }
+      }
+    },
+    "approve_all_chores": {
+      "name": "Godkend alle pligter",
+      "description": "Godkend alle ventende fuldførelser (eller udvalgte) og tildel point",
+      "fields": {
+        "completion_ids": {
+          "name": "Fuldførelses-ID'er",
+          "description": "Bestemte fuldførelses-ID'er, der skal godkendes; udelad for at godkende alle ventende"
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Afvis pligt",
+      "description": "Afvis en fuldført pligt",
+      "fields": {
+        "completion_id": {
+          "name": "Fuldførelses-ID",
+          "description": "ID'et på den fuldførelse, der skal afvises"
+        }
+      }
+    },
+    "undo_chore_approval": {
+      "name": "Fortryd godkendelse af pligt",
+      "description": "Fortryd en godkendelse, der blev givet ved en fejl — fjerner de tildelte point og sætter fuldførelsen tilbage til afventende, så den kan godkendes igen.",
+      "fields": {
+        "completion_id": {
+          "name": "Fuldførelses-ID",
+          "description": "ID'et på den godkendte fuldførelse, der skal sættes tilbage til afventende"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "Fortryd transaktion",
+      "description": "Fortryd en pointtransaktion ud fra dens ID — straffe, bonusser, manuelle tilføjelser/fradrag og gaver (begge sider). Automatiske transaktioner (weekend-, streak- og perfekt uge-bonusser, puljeflytninger, forfald, rente) kan ikke fortrydes.",
+      "fields": {
+        "transaction_id": {
+          "name": "Transaktions-ID",
+          "description": "ID'et på den pointtransaktion, der skal fortrydes"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "Indløs belønning",
+      "description": "Et barn indløser en belønning med sine point",
+      "fields": {
+        "reward_id": {
+          "name": "Belønnings-ID",
+          "description": "ID'et på den belønning, der skal indløses"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der indløser belønningen"
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Godkend belønning",
+      "description": "Godkend en indløsning af en belønning",
+      "fields": {
+        "claim_id": {
+          "name": "Indløsnings-ID",
+          "description": "ID'et på den indløsning, der skal godkendes"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "Indbetal point i pulje",
+      "description": "Flyt point fra et barns disponible saldo til en belønnings opsparingspulje (låst).",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der indbetaler"
+        },
+        "reward_id": {
+          "name": "Belønnings-ID",
+          "description": "ID'et på den belønningspulje, der skal indbetales i"
+        },
+        "points": {
+          "name": "Point",
+          "description": "Antal point der skal indbetales (begrænset af puljens restplads og den disponible saldo)"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Tilføj point",
+      "description": "Giv et barn bonuspoint",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der skal have point"
+        },
+        "points": {
+          "name": "Point",
+          "description": "Antal point der skal tilføjes"
+        },
+        "reason": {
+          "name": "Begrundelse",
+          "description": "Valgfri begrundelse for bonussen"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Fjern point",
+      "description": "Fjern point fra et barn (straf)",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der skal have fjernet point"
+        },
+        "points": {
+          "name": "Point",
+          "description": "Antal point der skal fjernes"
+        },
+        "reason": {
+          "name": "Begrundelse",
+          "description": "Valgfri begrundelse for straffen"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "Afvis belønning",
+      "description": "Afvis en indløsning af en belønning",
+      "fields": {
+        "claim_id": {
+          "name": "Indløsnings-ID",
+          "description": "ID'et på den indløsning, der skal afvises"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "Afspil lyd",
+      "description": "Afspil en fuldførelseslyd i browseren",
+      "fields": {
+        "sound": {
+          "name": "Lyd",
+          "description": "Den lyd, der skal afspilles"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "Angiv rækkefølge for pligter",
+      "description": "Angiv den rækkefølge, et barns pligter vises i",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, rækkefølgen gælder for"
+        },
+        "chore_order": {
+          "name": "Rækkefølge",
+          "description": "Sorteret liste af pligt-ID'er"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "Tilføj straf",
+      "description": "Opret en ny straf",
+      "fields": {
+        "name": {
+          "name": "Navn",
+          "description": "Straffens navn"
+        },
+        "points": {
+          "name": "Point",
+          "description": "Antal point der trækkes, når straffen gives"
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Valgfri beskrivelse af straffen"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "MDI-ikon for straffen"
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Liste over barn-ID'er, straffen gælder for"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "Opdater straf",
+      "description": "Opdater en eksisterende straf",
+      "fields": {
+        "penalty_id": {
+          "name": "Straf-ID",
+          "description": "ID'et på den straf, der skal opdateres"
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Nyt navn på straffen"
+        },
+        "points": {
+          "name": "Point",
+          "description": "Ny pointværdi"
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Ny beskrivelse"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Nyt ikon"
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Ny liste over barn-ID'er"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "Fjern straf",
+      "description": "Fjern en straf",
+      "fields": {
+        "penalty_id": {
+          "name": "Straf-ID",
+          "description": "ID'et på den straf, der skal fjernes"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "Giv straf",
+      "description": "Giv et barn en straf og træk point",
+      "fields": {
+        "penalty_id": {
+          "name": "Straf-ID",
+          "description": "ID'et på den straf, der skal gives"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der skal have straffen"
+        }
+      }
+    },
+    "add_bonus": {
+      "name": "Tilføj bonus",
+      "description": "Opret en ny bonus",
+      "fields": {
+        "name": {
+          "name": "Navn",
+          "description": "Bonussens navn"
+        },
+        "points": {
+          "name": "Point",
+          "description": "Antal point der gives, når bonussen tildeles"
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Valgfri beskrivelse af bonussen"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "MDI-ikon for bonussen"
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Liste over barn-ID'er, bonussen gælder for"
+        }
+      }
+    },
+    "update_bonus": {
+      "name": "Opdater bonus",
+      "description": "Opdater en eksisterende bonus",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "ID'et på den bonus, der skal opdateres"
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Nyt navn på bonussen"
+        },
+        "points": {
+          "name": "Point",
+          "description": "Ny pointværdi"
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Ny beskrivelse"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Nyt ikon"
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Ny liste over barn-ID'er"
+        }
+      }
+    },
+    "remove_bonus": {
+      "name": "Fjern bonus",
+      "description": "Fjern en bonus",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "ID'et på den bonus, der skal fjernes"
+        }
+      }
+    },
+    "apply_bonus": {
+      "name": "Giv bonus",
+      "description": "Giv et barn en bonus og tildel point",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "ID'et på den bonus, der skal gives"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der skal have bonussen"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "Tilføj pligt",
+      "description": "Opret en ny pligt dynamisk, typisk fra en automation eller et script",
+      "fields": {
+        "name": {
+          "name": "Navn",
+          "description": "Pligtens navn"
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Valgfri beskrivelse af pligten"
+        },
+        "points": {
+          "name": "Point",
+          "description": "Point der gives, når pligten er fuldført"
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Liste over barn-ID'er, pligten tildeles. Lad feltet være tomt for at tildele den til alle børn"
+        },
+        "time_category": {
+          "name": "Tidspunkt",
+          "description": "Hvornår pligten skal udføres: morning, afternoon, evening, night eller anytime"
+        },
+        "one_shot": {
+          "name": "Engangs",
+          "description": "Hvis sand, er det en engangspligt, der udløber, når den er fuldført, eller ved dagens slutning"
+        },
+        "requires_approval": {
+          "name": "Kræver godkendelse",
+          "description": "Hvis sand, skal en forælder godkende fuldførelsen, før der gives point"
+        }
+      }
+    },
+    "skip_chore": {
+      "name": "Spring pligt over",
+      "description": "Ryk dagens rotation forbi det barn, der har pligten nu. Gælder kun i dag — i morgen fortsætter rotationen som normalt.",
+      "fields": {
+        "chore_id": {
+          "name": "Pligt-ID",
+          "description": "ID'et på den pligt, der skal springes over"
+        }
+      }
+    },
+    "set_chore_manual_start": {
+      "name": "Angiv startbarn manuelt",
+      "description": "Angiv hvilket barn der starter en roterende pligt. Ved skiftevis ændres rækkefølgen i puljen; ved tilfældig/balanceret ændres kun dagens tildeling.",
+      "fields": {
+        "chore_id": {
+          "name": "Pligt-ID",
+          "description": "ID'et på den pligt, der skal opdateres"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der skal starte rotationen"
+        }
+      }
+    },
+    "add_task_group": {
+      "name": "Tilføj pligtgruppe",
+      "description": "Opret en pligtgruppe (samlet = samme barn, fordelt = forskellige børn).",
+      "fields": {
+        "name": {
+          "name": "Navn",
+          "description": "Gruppens visningsnavn"
+        },
+        "policy": {
+          "name": "Regel",
+          "description": "sticky (samme barn) eller spread (forskellige børn)"
+        },
+        "chore_ids": {
+          "name": "Pligt-ID'er",
+          "description": "Liste over pligt-ID'er i gruppen. Ved sticky er den første pligt den styrende."
+        }
+      }
+    },
+    "update_task_group": {
+      "name": "Opdater pligtgruppe",
+      "description": "Opdater en pligtgruppes navn, regel eller medlemmer.",
+      "fields": {
+        "group_id": {
+          "name": "Gruppe-ID",
+          "description": "ID'et på den gruppe, der skal opdateres"
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Nyt visningsnavn"
+        },
+        "policy": {
+          "name": "Regel",
+          "description": "Ny regel (sticky eller spread)"
+        },
+        "chore_ids": {
+          "name": "Pligt-ID'er",
+          "description": "Ny liste over pligt-ID'er. Ved sticky er den første pligt den styrende."
+        }
+      }
+    },
+    "remove_task_group": {
+      "name": "Fjern pligtgruppe",
+      "description": "Slet en pligtgruppe. Pligterne i gruppen påvirkes ikke.",
+      "fields": {
+        "group_id": {
+          "name": "Gruppe-ID",
+          "description": "ID'et på den gruppe, der skal slettes"
+        }
+      }
+    },
+    "start_timed_task": {
+      "name": "Start tidsbestemt pligt",
+      "description": "Start eller genoptag timeren på en tidsbestemt pligt",
+      "fields": {
+        "chore_id": {
+          "name": "Pligt-ID",
+          "description": "ID'et på den tidsbestemte pligt"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der starter timeren"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "Sæt tidsbestemt pligt på pause",
+      "description": "Sæt en kørende timer på pause",
+      "fields": {
+        "chore_id": {
+          "name": "Pligt-ID",
+          "description": "ID'et på den tidsbestemte pligt"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der sætter timeren på pause"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "Stop tidsbestemt pligt",
+      "description": "Stop timeren og send pligten til godkendelse",
+      "fields": {
+        "chore_id": {
+          "name": "Pligt-ID",
+          "description": "ID'et på den tidsbestemte pligt"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der stopper timeren"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "Tilføj badge",
+      "description": "Opret et brugerdefineret badge.",
+      "fields": {
+        "name": {
+          "name": "Navn",
+          "description": "Badgets visningsnavn"
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Beskrivelse af, hvordan badget optjenes"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Ikon for badget (f.eks. mdi:beach)"
+        },
+        "tier": {
+          "name": "Niveau",
+          "description": "Badgets niveau: bronze, silver, gold eller platinum"
+        },
+        "point_bonus": {
+          "name": "Pointbonus",
+          "description": "Point der gives til barnet, når badget optjenes"
+        },
+        "criteria": {
+          "name": "Kriterier",
+          "description": "Liste over metric / operator / value-sæt. Tom = kan kun tildeles manuelt."
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Liste over barn-ID'er (tom = alle)"
+        },
+        "notify_on_earn": {
+          "name": "Giv besked ved optjening",
+          "description": "Send en notifikation, når badget optjenes"
+        }
+      }
+    },
+    "update_badge": {
+      "name": "Opdater badge",
+      "description": "Opdater et eksisterende badge. For indbyggede badges kan kun point_bonus, tier, assigned_to, enabled og notify_on_earn ændres.",
+      "fields": {
+        "badge_id": {
+          "name": "Badge-ID",
+          "description": "ID'et på det badge, der skal opdateres"
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Nyt visningsnavn på badget"
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Ny beskrivelse af badget"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Nyt ikon for badget"
+        },
+        "tier": {
+          "name": "Niveau",
+          "description": "Badgets niveau: bronze, silver, gold eller platinum"
+        },
+        "point_bonus": {
+          "name": "Pointbonus",
+          "description": "Point der gives til barnet, når badget optjenes"
+        },
+        "criteria": {
+          "name": "Kriterier",
+          "description": "Liste over metric / operator / value-sæt. Tom = kan kun tildeles manuelt."
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Liste over barn-ID'er (tom = alle)"
+        },
+        "enabled": {
+          "name": "Aktiveret",
+          "description": "Om badget er aktivt"
+        },
+        "notify_on_earn": {
+          "name": "Giv besked ved optjening",
+          "description": "Send en notifikation, når badget optjenes"
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "Fjern badge",
+      "description": "Fjern et brugerdefineret badge. Indbyggede badges kan ikke fjernes.",
+      "fields": {
+        "badge_id": {
+          "name": "Badge-ID",
+          "description": "ID'et på det badge, der skal fjernes"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "Tildel badge manuelt",
+      "description": "Tildel et barn et badge manuelt.",
+      "fields": {
+        "badge_id": {
+          "name": "Badge-ID",
+          "description": "ID'et på det badge, der skal tildeles"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der modtager badget"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "Tilbagekald badge",
+      "description": "Tilbagekald et tildelt badge. Hvis der blev givet en pointbonus, trækkes den tilbage.",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "ID for tildelt badge",
+          "description": "ID'et på den badge-tildeling, der skal tilbagekaldes"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "Genberegn badges",
+      "description": "Gennemgå alle badges for alle børn i stilhed (ingen notifikationer, ingen pointbonusser)."
+    },
+    "apply_mandatory_penalty": {
+      "name": "Giv straf for obligatorisk pligt",
+      "description": "Træk de konfigurerede strafpoint for en misset obligatorisk pligt og ryd gennemgangspunktet.",
+      "fields": {
+        "miss_id": {
+          "name": "Mangel-ID",
+          "description": "ID'et på gennemgangspunktet for den missede obligatoriske pligt"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "Vælg avatar",
+      "description": "Et barn skifter til en avatar, det har låst op.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnets ID"
+        },
+        "icon": {
+          "name": "Avatar-ikon",
+          "description": "MDI-ikonet for en oplåst avatar fra kataloget (f.eks. mdi:rocket-launch)."
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "Afvis obligatorisk pligt",
+      "description": "Ryd et gennemgangspunkt for en misset obligatorisk pligt uden straf.",
+      "fields": {
+        "miss_id": {
+          "name": "Mangel-ID",
+          "description": "ID'et på gennemgangspunktet for den missede obligatoriske pligt"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "Giv point i gave",
+      "description": "Overfør disponible point fra ét barn til et andet (styres af forælder).",
+      "fields": {
+        "from_child_id": {
+          "name": "Fra barn-ID",
+          "description": "ID'et på det barn, der giver point"
+        },
+        "to_child_id": {
+          "name": "Til barn-ID",
+          "description": "ID'et på det barn, der modtager point"
+        },
+        "points": {
+          "name": "Point",
+          "description": "Antal point der skal overføres"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "Udskyd obligatorisk pligt",
+      "description": "Giv en misset obligatorisk pligt en ny periode (eller i morgen) uden straf, og ryd gennemgangspunktet.",
+      "fields": {
+        "miss_id": {
+          "name": "Mangel-ID",
+          "description": "ID'et på gennemgangspunktet for den missede obligatoriske pligt"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "Anmod om at bytte pligt",
+      "description": "Et barn anmoder om at overtage dagens tildeling af en roterende pligt (afventer forældres godkendelse).",
+      "fields": {
+        "chore_id": {
+          "name": "Pligt-ID",
+          "description": "ID'et på den pligt, der skal overtages"
+        },
+        "requester_id": {
+          "name": "Anmodende barn-ID",
+          "description": "ID'et på det barn, der anmoder om at bytte"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Test notifikation",
+      "description": "Send en eksempel-notifikation af den valgte type til dens aktive modtagere (ignorerer hovedkontakten, så routingen kan kontrolleres).",
+      "fields": {
+        "type_id": {
+          "name": "Notifikationstype",
+          "description": "ID for notifikationstype, f.eks. pending_chore_approval, badge_earned, streak_milestone"
+        }
+      }
+    },
+    "record_allowance_payout": {
+      "name": "Registrer lommepengeudbetaling",
+      "description": "Træk point og registrer en udbetaling af lommepenge i rigtige penge på listen over udbetalinger (fast omregningskurs; styres af forælder).",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der får udbetalingen"
+        },
+        "points": {
+          "name": "Point",
+          "description": "Point der skal omregnes til kontanter og trækkes"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "child_stats": {
+        "unit_of_measurement": "pligter"
+      },
+      "child_badges": {
+        "unit_of_measurement": "badges"
+      }
+    },
+    "number": {
+      "weekend_multiplier": {
+        "name": "Weekend-multiplikator"
+      },
+      "perfect_week_bonus": {
+        "name": "Bonus for perfekt uge"
+      }
+    },
+    "select": {
+      "streak_reset_mode": {
+        "name": "Nulstilling af streak"
+      },
+      "card_design": {
+        "name": "Kortdesign"
+      }
+    }
+  }
+}

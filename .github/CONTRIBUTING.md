@@ -27,7 +27,7 @@ custom_components/taskmate/
 ├── sensor.py              # sensors the cards read from
 ├── services.yaml          # service definitions
 ├── websocket.py           # WebSocket API commands
-├── translations/          # backend strings (de, en, en-GB, fr, nb, nn, pt, pt-BR)
+├── translations/          # backend strings (da, de, en, en-GB, fr, nb, nn, pt, pt-BR)
 ├── strings.json           # source strings
 └── www/                   # Lovelace cards (LitElement) + panel + locales
 ```
@@ -97,7 +97,7 @@ pre-commit run --all-files
 ## Translations
 
 TaskMate ships in several languages. **Any new user-facing string must be added
-to every locale in the same PR** — `de`, `fr`, `nb`, `nn`, `pt`, and `pt-BR`
+to every locale in the same PR** — `da`, `de`, `fr`, `nb`, `nn`, `pt`, and `pt-BR`
 (plus the English source). English-only PRs with a "translate later" note will
 be asked to include the translations.
 

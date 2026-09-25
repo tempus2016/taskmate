@@ -54,7 +54,7 @@ def test_parent_dashboard_respects_the_weekly_target():
 # ── strings ──────────────────────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("locale", ["en", "en-GB", "de", "fr", "nb", "nn", "pt", "pt-BR"])
+@pytest.mark.parametrize("locale", ["en", "en-GB", "da", "de", "fr", "nb", "nn", "pt", "pt-BR"])
 @pytest.mark.parametrize(
     "key",
     [
