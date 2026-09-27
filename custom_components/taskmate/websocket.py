@@ -171,6 +171,7 @@ WS_NOTIF_DELETE_CUSTOM: Final = "taskmate/notifications/delete_custom"
 WS_NOTIF_LIST_NOTIFY: Final = "taskmate/notifications/list_notify_services"
 WS_NOTIF_SET_STREAK_CUTOFF: Final = "taskmate/notifications/set_streak_cutoff"
 WS_NOTIF_SET_ESCALATION: Final = "taskmate/notifications/set_escalation"
+WS_NOTIF_SET_PRESENCE_ARRIVAL: Final = "taskmate/notifications/set_presence_arrival"
 WS_NOTIF_SEND_TEST: Final = "taskmate/notifications/send_test"
 WS_NOTIF_SET_NAV_URL: Final = "taskmate/notifications/set_nav_url"
 WS_NOTIF_SET_GROUP: Final = "taskmate/notifications/set_group"
@@ -316,6 +317,14 @@ def _opt_str(v: Any) -> str:
     return str(v).strip()
 
 
+def _validate_presence_entity(value):
+    """voluptuous validator: '' (off) or a person.* / device_tracker.* entity id (#926)."""
+    value = _opt_str(value)
+    if value and not value.startswith(("person.", "device_tracker.")):
+        raise vol.Invalid("presence_entity must be a person.* or device_tracker.* entity")
+    return value
+
+
 # ---------------------------------------------------------------------------
 # State snapshot
 # ---------------------------------------------------------------------------
@@ -418,6 +427,7 @@ async def _ws_get_state(hass, connection, msg, coordinator):
         vol.Optional("pause_streak_when_unavailable", default=False): bool,
         vol.Optional("linked_user_id", default=""): str,
         vol.Optional("birthday", default=""): vol.All(str, vol.Length(max=10)),
+        vol.Optional("presence_entity", default=""): _validate_presence_entity,
     }
 )
 @websocket_api.async_response
@@ -437,6 +447,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         pause_streak_when_unavailable=bool(msg.get("pause_streak_when_unavailable", False)),
         linked_user_id=_opt_str(msg.get("linked_user_id")),
         birthday=birthday,
+        presence_entity=msg.get("presence_entity", ""),
     )
     connection.send_result(msg["id"], {"id": child.id})
 
@@ -452,6 +463,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         vol.Optional("unavailability_entity"): str,
         vol.Optional("pause_streak_when_unavailable"): bool,
         vol.Optional("linked_user_id"): str,
+        vol.Optional("presence_entity"): _validate_presence_entity,
         vol.Optional("is_guest"): bool,
         vol.Optional("guest_expires_on"): str,
         vol.Optional("birthday"): vol.All(str, vol.Length(max=10)),
@@ -484,6 +496,8 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         except ValueError as err:
             connection.send_error(msg["id"], "invalid_format", str(err))
             return
+    if "presence_entity" in msg:
+        existing.presence_entity = msg["presence_entity"]
     if "is_guest" in msg or "guest_expires_on" in msg:
         # Routed through the coordinator so the expiry is validated and an
         # archived guest is un-archived when promoted to a family member.
@@ -2341,6 +2355,7 @@ async def ws_notif_get_state(hass, connection, msg, coordinator):
             "streak_at_risk_cutoff_time": c.storage.get_streak_at_risk_cutoff(),
             "mandatory_escalation_reminder_minutes": c.storage.get_escalation_reminder_minutes(),
             "mandatory_escalation_parent_minutes": c.storage.get_escalation_parent_minutes(),
+            "presence_arrival_min_away": c.storage.get_presence_arrival_min_away(),
             "notification_nav_url": c.storage.get_setting("notification_nav_url", DEFAULT_NOTIFICATION_NAV_URL),
             "notification_group": c.storage.get_setting("notification_group", DEFAULT_NOTIFICATION_GROUP),
         },
@@ -2558,6 +2573,19 @@ async def ws_notif_set_streak_cutoff(hass, connection, msg, coordinator):
 async def ws_notif_set_escalation(hass, connection, msg, coordinator):
     coordinator.storage.set_escalation_minutes(msg["reminder_minutes"], msg["parent_minutes"])
     await coordinator.storage.async_save()
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_NOTIF_SET_PRESENCE_ARRIVAL,
+        vol.Required("min_away_minutes"): vol.All(vol.Coerce(int), vol.Range(min=0, max=1440)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def ws_notif_set_presence_arrival(hass, connection, msg, coordinator):
+    await coordinator.notifications.set_presence_arrival_min_away(msg["min_away_minutes"])
     connection.send_result(msg["id"], {"ok": True})
 
 
@@ -2874,6 +2902,7 @@ _COMMANDS = (
     ws_notif_set_streak_cutoff,
     ws_notif_send_test,
     ws_notif_set_escalation,
+    ws_notif_set_presence_arrival,
     ws_notif_set_nav_url,
     ws_notif_set_group,
     ws_cal_get_url,

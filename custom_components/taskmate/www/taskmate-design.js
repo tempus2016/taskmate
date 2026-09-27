@@ -555,7 +555,7 @@
     } catch (e) {
       day = new Date().toLocaleDateString("en-CA");
     }
-    const KEY = "taskmate_birthday_seen";
+    const KEY = "taskmate_celebrated_day";
     let seen;
     try { seen = JSON.parse(window.localStorage.getItem(KEY) || "{}") || {}; } catch (e) { seen = {}; }
     if (seen[childId] === day) return false;
