@@ -9,7 +9,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
-from .const import DEFAULT_NOTIFICATION_NAV_URL, DOMAIN
+from .const import DEFAULT_NOTIFICATION_NAV_URL, DEFAULT_PRESENCE_ARRIVAL_MIN_AWAY, DOMAIN
 from .models import (
     AwardedBadge,
     Badge,
@@ -893,6 +893,20 @@ class TaskMateStorage:
         s = self._data.setdefault("settings", {})
         s["mandatory_escalation_reminder_minutes"] = max(1, int(reminder_minutes))
         s["mandatory_escalation_parent_minutes"] = max(1, int(parent_minutes))
+
+    # --- presence-aware reminders (#926) ---
+    def get_presence_arrival_min_away(self) -> int:
+        """Minutes a child must have been away for their arrival to earn a nudge."""
+        try:
+            value = (self._data.get("settings", {}) or {}).get(
+                "presence_arrival_min_away", DEFAULT_PRESENCE_ARRIVAL_MIN_AWAY
+            )
+            return max(0, int(value))
+        except (TypeError, ValueError):
+            return DEFAULT_PRESENCE_ARRIVAL_MIN_AWAY
+
+    def set_presence_arrival_min_away(self, minutes: int) -> None:
+        self._data.setdefault("settings", {})["presence_arrival_min_away"] = max(0, int(minutes))
 
     # Task groups management
     def get_task_groups(self) -> list[TaskGroup]:

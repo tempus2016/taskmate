@@ -253,6 +253,8 @@ class MandatoryMixin:
         will be resolved by the parent / next-day prune). Each notification is
         still gated by its own master switch + routes inside ``fire()``; stages
         advance regardless so a disabled type is not retro-fired when re-enabled.
+        While the child is away (#926) the child reminders are held by
+        ``fire()`` for the single arrival nudge, and the parent alert waits.
         Returns the number of misses whose stage advanced.
         """
         now = now or dt_util.now()
@@ -277,6 +279,10 @@ class MandatoryMixin:
                 target = 2
             if elapsed_min >= parent_minutes:
                 target = 3
+            if target == 3 and self.notifications.child_is_away(miss.child_id):
+                # Presence-aware (#926): no parent alert about a child who is
+                # out. Hold at stage 2; the ladder resumes once they're home.
+                target = 2
             if target <= miss.escalation_stage:
                 continue
 
