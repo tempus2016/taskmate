@@ -83,6 +83,8 @@ For manual installation and the first-run walkthrough, see [Installation](https:
 
 **Child undo window** — off by default. Set **Child undo window (seconds)** in the TaskMate panel's **Settings** to anything from 1 to 3600 and a child can take back their own chore: a submission waiting for approval until a parent reviews it, and an automatically approved chore for that many seconds after they ticked it. The child and routine cards show an **Undo** button while it's allowed, on every design style and in picture mode. Points, chore count, streak and leaderboard score are all reversed. Once a parent approves (or otherwise reviews) a completion, only a parent can undo it, and anything completed while the window was 0 stays parent-only. Automations can call `taskmate.undo_chore` with a `completion_id`; it applies the same rules and the child's linked-account check. Leave the window at 0 and nothing changes: only parents can undo.
 
+**Kiosk mode** — the **TaskMate Kiosk** card turns a shared wall tablet into a family check-in point: a picker of faces, an optional 4-digit PIN per child, then that child's chores for today with big Done buttons, their points, streak and next reward. It goes back to the picker after a spell without a tap (60 seconds by default) and straight after an "all done" celebration. There are no parent actions in it at all, no reward claiming, and chores that need a photo are greyed out for the child's own phone. PINs are set per child in the panel's **Children** dialog and stored hashed; the card only chooses which children need theirs, and wrong guesses lock that child's pad for a while. The PIN is a hand-over between siblings, not a permission: completions still go through the normal linked-account check for the tablet's Home Assistant user. Children linked to their own account, or every child while **Require a linked account per child** is on (unless the tablet signs in as a TaskMate parent), show "Ask a grown-up" instead of chores. Use the card's full-screen button, and the kiosk-mode HACS plugin if you also want to hide Home Assistant's sidebar and header.
+
 ---
 
 ## Dashboard cards
@@ -91,7 +93,7 @@ Lovelace resources register automatically on startup. Edit your dashboard → **
 
 | For kids | For parents |
 |----------|-------------|
-| Child · Rewards · Reward Progress · Points Display · Routine · Streak · Badges | Approvals · Parent Dashboard · Overview · Activity · Points · Reorder · Penalties · Bonuses · Weekly · Graph · Leaderboard · Calendar · Family Goal · Photo Gallery |
+| Child · Rewards · Reward Progress · Points Display · Routine · Kiosk · Streak · Badges | Approvals · Parent Dashboard · Overview · Activity · Points · Reorder · Penalties · Bonuses · Weekly · Graph · Leaderboard · Calendar · Family Goal · Photo Gallery |
 
 Every card takes a `header_color` and a `card_design` option. See [Dashboard Cards](https://github.com/tempus2016/taskmate/wiki/Dashboard-Cards) for each card's full configuration.
 

@@ -1325,6 +1325,9 @@ class TaskMatePanel extends HTMLElement {
         linked_user_id: c.linked_user_id || "",
         birthday: c.birthday || "",
         presence_entity: c.presence_entity || "",
+        // Kiosk PIN (#930): write-only. The panel only knows whether one is set.
+        kiosk_pin: "", kiosk_pin_clear: false,
+        has_kiosk_pin: (this._state.kiosk_pin_children || []).includes(c.id),
       } });
     } else {
       this._openDialog({ kind: "child", mode: "add", data: {
@@ -1333,6 +1336,7 @@ class TaskMatePanel extends HTMLElement {
         pause_streak_when_unavailable: false,
         linked_user_id: "", presence_entity: "",
         birthday: "",
+        kiosk_pin: "", kiosk_pin_clear: false, has_kiosk_pin: false,
       } });
     }
   }
@@ -1372,6 +1376,8 @@ class TaskMatePanel extends HTMLElement {
     this._syncIconPickers();
     const d = this._dialog.data;
     if (!d.name || !d.name.trim()) { this._showToast("err", this._t("panel.toast_name_required")); return; }
+    const kioskPin = String(d.kiosk_pin || "").trim();
+    if (kioskPin && !/^[0-9]{4}$/.test(kioskPin)) { this._showToast("err", this._t("panel.toast_kiosk_pin_invalid")); return; }
     const wasAdd = this._dialog.mode === "add";
     const payload = wasAdd
       ? { type: "taskmate/add_child", name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
@@ -1386,10 +1392,19 @@ class TaskMatePanel extends HTMLElement {
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
           birthday: (d.birthday || "").trim(),
           presence_entity: d.presence_entity || "" };
-    const { ok, err } = await this._callWS(payload);
+    const { ok, err, res } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
+    // The PIN goes through its own command so it is hashed server-side and
+    // never stored on (or read back with) the child record.
+    const childId = (res && res.id) || d.id;
+    let pinErr = "";
+    if (childId && (kioskPin || (d.kiosk_pin_clear && d.has_kiosk_pin))) {
+      const pinRes = await this._callWS({ type: "taskmate/kiosk/set_pin", child_id: childId, pin: kioskPin });
+      if (!pinRes.ok) pinErr = pinRes.err;
+    }
     this._closeDialog(true);
     await this._fetchState();
+    if (pinErr) { this._showToast("err", this._t("panel.toast_kiosk_pin_failed", {error: pinErr})); return; }
     this._showToast("ok", wasAdd ? this._t("panel.toast_child_added") : this._t("panel.toast_child_updated"));
   }
 
@@ -5956,10 +5971,26 @@ class TaskMatePanel extends HTMLElement {
             (this._haUsers || []).map(u => ({ v: u.id, l: u.is_admin ? `${u.name} (admin)` : u.name }))
           ),
           this._t("panel.child_link_user_hint")),
+        this._kioskPinField(d),
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-child">${this._t("panel.btn_save")}</button>`
     );
+  }
+
+  /** Kiosk PIN (#930): a masked 4-digit input, plus "remove" once one is set. */
+  _kioskPinField(d) {
+    const clearing = !!(d.has_kiosk_pin && d.kiosk_pin_clear);
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._esc(this._t("panel.child_kiosk_pin_label"))}</span>
+        <input class="tm-input" data-field="kiosk_pin" type="password" inputmode="numeric" pattern="[0-9]*"
+               maxlength="4" autocomplete="new-password" value="${this._esc(d.kiosk_pin || "")}"
+               placeholder="${d.has_kiosk_pin ? "••••" : ""}" ${clearing ? "disabled" : ""}>
+        <span class="tm-field-hint">${this._esc(this._t("panel.child_kiosk_pin_hint"))}${d.has_kiosk_pin
+          ? " " + this._esc(this._t("panel.child_kiosk_pin_set")) : ""}</span>
+      </div>
+      ${d.has_kiosk_pin ? this._switch(this._t("panel.child_kiosk_pin_remove"), "kiosk_pin_clear", d.kiosk_pin_clear, "", true) : ""}`;
   }
 
   _renderChoreDialog() {

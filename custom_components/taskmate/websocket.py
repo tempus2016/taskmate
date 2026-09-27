@@ -43,6 +43,9 @@ Settings:
 
 All commands require admin. Mutations write through coordinator methods so
 TaskMate's existing business logic (refunds, cleanup, recompute) runs.
+
+The kiosk card's commands (taskmate/kiosk/*) live in kiosk.py and are
+registered alongside these; status and verify_pin serve any signed-in user.
 """
 
 from __future__ import annotations
@@ -426,6 +429,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
             **(data.get("settings", {}) or {}),
         },
         "parent_completable": parent_completable,
+        # Kiosk (#930): which children have a PIN — never the hash itself.
+        "kiosk_pin_children": coordinator.storage.get_kiosk_pin_child_ids(),
     }
 
 
@@ -3090,7 +3095,10 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     if hass.data.get(DOMAIN, {}).get(WS_REGISTERED):
         _LOGGER.debug("TaskMate WS commands already registered, skipping")
         return
-    for cmd in _COMMANDS:
+    # Imported here: kiosk.py builds on this module's _admin_only helper.
+    from .kiosk import KIOSK_COMMANDS
+
+    for cmd in (*_COMMANDS, *KIOSK_COMMANDS):
         websocket_api.async_register_command(hass, cmd)
     hass.data.setdefault(DOMAIN, {})[WS_REGISTERED] = True
-    _LOGGER.info("Registered %d TaskMate WebSocket commands", len(_COMMANDS))
+    _LOGGER.info("Registered %d TaskMate WebSocket commands", len(_COMMANDS) + len(KIOSK_COMMANDS))
