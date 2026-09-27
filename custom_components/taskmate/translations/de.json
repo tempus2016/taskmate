@@ -179,6 +179,10 @@
         "points": {
           "name": "Punkte",
           "description": "Diese Punktzahl anstelle des Aufgabenwerts vergeben. Leer lassen, um die Punkte der Aufgabe zu verwenden."
+        },
+        "rating": {
+          "name": "Qualitätsbewertung",
+          "description": "Optionale Bewertung mit 1-3 Sternen, wie gut die Aufgabe erledigt wurde. Bei aktivierten Qualitätsbewertungen werden die Punkte mit dem Multiplikator dieses Sterns skaliert; leer lassen, um 100 % zu vergeben."
         }
       }
     },
@@ -189,6 +193,10 @@
         "completion_ids": {
           "name": "Erledigungs-IDs",
           "description": "Bestimmte Erledigungs-IDs zum Genehmigen; leer lassen, um alle ausstehenden zu genehmigen"
+        },
+        "rating": {
+          "name": "Qualitätsbewertung",
+          "description": "Optionale Bewertung mit 1-3 Sternen für jede mit diesem Aufruf genehmigte Aufgabe (Qualitätsbewertungen müssen aktiviert sein)."
         }
       }
     },
@@ -851,6 +859,20 @@
         "points": {
           "name": "Punkte",
           "description": "Die Anzahl der zu übertragenden Punkte"
+        }
+      }
+    },
+    "adjust_streak_freezes": {
+      "name": "Serienschutz anpassen",
+      "description": "Gibt einem Kind Serienschutz (positive Anzahl) oder nimmt welchen weg (negative). Eine Gutschrift überschreitet nie die Grenze streak_freeze_max.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Die ID des Kindes, dessen Serienschutz sich ändert"
+        },
+        "amount": {
+          "name": "Anzahl",
+          "description": "Hinzuzufügender (positiv) oder zu entfernender (negativ) Serienschutz"
         }
       }
     },

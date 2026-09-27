@@ -19,8 +19,9 @@ from custom_components.taskmate.models import AwardedBadge, Badge, BadgeCriterio
 
 
 class TestBuiltinCatalogue:
-    def test_has_15_builtins(self):
-        assert len(BUILTIN_CATALOGUE) == 15
+    def test_has_16_builtins(self):
+        # 15 originals + the Birthday badge (#924).
+        assert len(BUILTIN_CATALOGUE) == 16
 
     def test_all_marked_builtin(self):
         for b in BUILTIN_CATALOGUE:

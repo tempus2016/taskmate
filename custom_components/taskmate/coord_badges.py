@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import logging
 
+from homeassistant.util import dt as dt_util
+
+from .coord_birthdays import is_birthday_on
 from .models import Badge, BadgeCriterion, Child
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,6 +46,8 @@ BUILTIN_CATALOGUE: list[Badge] = [
     ),
     _b("first_reward", "First Reward", "Claim your first reward", "mdi:gift", "bronze", 0, "first_reward", 1),
     _b("100_points", "100 Points", "Earn 100 lifetime points", "mdi:star", "bronze", 0, "total_points", 100),
+    # Awarded on the child's birthday (#924) — evaluated by the birthday check.
+    _b("birthday", "Birthday", "Celebrate your birthday", "mdi:cake-variant", "bronze", 0, "birthday", 1),
     _b(
         "10_chores",
         "10 Chores Completed",
@@ -158,6 +163,9 @@ def resolve_metric(metric: str, child: Child, storage) -> int:
         return len(child.awarded_perfect_weeks or [])
     if metric == "first_chore":
         return 1 if (child.total_chores_completed or 0) >= 1 else 0
+    if metric == "birthday":
+        today = dt_util.as_local(dt_util.now()).date()
+        return 1 if is_birthday_on(getattr(child, "birthday", "") or "", today) else 0
     if metric in ("total_rewards", "first_reward"):
         approved_count = sum(1 for c in storage.get_reward_claims() if c.child_id == child.id and c.approved)
         if metric == "first_reward":
@@ -172,6 +180,7 @@ TRIGGER_METRICS: dict[str, set[str]] = {
     "reward_redeemed": {"total_rewards", "first_reward"},
     "streak_updated": {"current_streak", "best_streak"},
     "perfect_week": {"perfect_weeks"},
+    "birthday": {"birthday"},
 }
 
 

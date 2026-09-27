@@ -65,16 +65,19 @@ from .const import (
     DEFAULT_TIME_PERIODS,
     DIFFICULTY_TIERS,
     DOMAIN,
+    MAX_CHORE_TAGS,
     MAX_TIME_PERIODS,
     SCHEDULE_MODES,
+    TAG_ID_MAX_LENGTH,
     TEAM_POINTS_MODES,
     TEAM_SIZE_MAX,
     TIME_CATEGORY_ICONS,
     is_valid_completion_sound,
 )
+from .coord_birthdays import normalize_birthday
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
-from .models import BonusSubTask, Reward
+from .models import BonusSubTask, Reward, normalize_tag_ids
 from .sounds import MAX_NAME_LEN as MAX_SOUND_NAME_LEN
 
 _LOGGER = logging.getLogger(__name__)
@@ -97,6 +100,7 @@ WS_REPORT_FAIRNESS: Final = "taskmate/reports/fairness"
 WS_REPORT_FRICTION: Final = "taskmate/reports/friction"
 WS_REPORT_PROJECTION: Final = "taskmate/reports/projection"
 WS_REPORT_HEALTH: Final = "taskmate/reports/health"
+WS_REPORT_QUALITY: Final = "taskmate/reports/quality"
 WS_SCHEDULED_LIST: Final = "taskmate/scheduled/list"
 WS_SCHEDULED_ADD: Final = "taskmate/scheduled/add"
 WS_SCHEDULED_REMOVE: Final = "taskmate/scheduled/remove"
@@ -225,6 +229,7 @@ _AUDIT_EXCLUDE: Final = {
     WS_REPORT_FRICTION,
     WS_REPORT_PROJECTION,
     WS_REPORT_HEALTH,
+    WS_REPORT_QUALITY,
 }
 
 
@@ -400,6 +405,10 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
             "difficulty_multiplier_easy": 0.5,
             "difficulty_multiplier_medium": 1.0,
             "difficulty_multiplier_hard": 2.0,
+            # Quality-rating multipliers (#927); overridden by stored values.
+            "quality_rating_multiplier_1": 0.75,
+            "quality_rating_multiplier_2": 1.0,
+            "quality_rating_multiplier_3": 1.25,
             **(data.get("settings", {}) or {}),
         },
         "parent_completable": parent_completable,
@@ -428,12 +437,18 @@ async def _ws_get_state(hass, connection, msg, coordinator):
         vol.Optional("unavailability_entity", default=""): str,
         vol.Optional("pause_streak_when_unavailable", default=False): bool,
         vol.Optional("linked_user_id", default=""): str,
+        vol.Optional("birthday", default=""): vol.All(str, vol.Length(max=10)),
         vol.Optional("presence_entity", default=""): _validate_presence_entity,
     }
 )
 @websocket_api.async_response
 @_admin_only
 async def _ws_add_child(hass, connection, msg, coordinator):
+    try:
+        birthday = normalize_birthday(msg.get("birthday", ""))
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid_format", str(err))
+        return
     child = await coordinator.async_add_child(
         name=msg["name"].strip(),
         avatar=msg.get("avatar") or "mdi:account-circle",
@@ -442,6 +457,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         unavailability_entity=_opt_str(msg.get("unavailability_entity")),
         pause_streak_when_unavailable=bool(msg.get("pause_streak_when_unavailable", False)),
         linked_user_id=_opt_str(msg.get("linked_user_id")),
+        birthday=birthday,
         presence_entity=msg.get("presence_entity", ""),
     )
     connection.send_result(msg["id"], {"id": child.id})
@@ -461,6 +477,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         vol.Optional("presence_entity"): _validate_presence_entity,
         vol.Optional("is_guest"): bool,
         vol.Optional("guest_expires_on"): str,
+        vol.Optional("birthday"): vol.All(str, vol.Length(max=10)),
     }
 )
 @websocket_api.async_response
@@ -484,6 +501,12 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.pause_streak_when_unavailable = bool(msg["pause_streak_when_unavailable"])
     if "linked_user_id" in msg:
         existing.linked_user_id = _opt_str(msg["linked_user_id"])
+    if "birthday" in msg:
+        try:
+            existing.birthday = normalize_birthday(msg["birthday"])
+        except ValueError as err:
+            connection.send_error(msg["id"], "invalid_format", str(err))
+            return
     if "presence_entity" in msg:
         existing.presence_entity = msg["presence_entity"]
     if "is_guest" in msg or "guest_expires_on" in msg:
@@ -636,7 +659,23 @@ _CHORE_EDITABLE_FIELDS = {
     "timed_rate_points",
     "timed_rate_minutes",
     "timed_max_daily_minutes",
+    "tag_ids",
 }
+
+
+def _tag_id_list(value):
+    """Validate the NFC / QR tag ids linked to a chore (#923).
+
+    Raises rather than returning a falsy value — voluptuous treats a callable
+    as a coercer (see ``_image_url_or_blank``).
+    """
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        raise vol.Invalid("tag_ids must be a list of strings")
+    if any(len(v.strip()) > TAG_ID_MAX_LENGTH for v in value):
+        raise vol.Invalid(f"Tag ids are limited to {TAG_ID_MAX_LENGTH} characters")
+    if len({v.strip() for v in value if v.strip()}) > MAX_CHORE_TAGS:
+        raise vol.Invalid(f"A chore can be linked to at most {MAX_CHORE_TAGS} tags")
+    return normalize_tag_ids(value)
 
 
 def _chore_payload_schema(*, require_name: bool):
@@ -707,6 +746,7 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("timed_rate_points"): vol.All(int, vol.Range(min=1)),
         vol.Optional("timed_rate_minutes"): vol.All(int, vol.Range(min=1)),
         vol.Optional("timed_max_daily_minutes"): vol.All(int, vol.Range(min=0)),
+        vol.Optional("tag_ids"): _tag_id_list,
     }
 
 
@@ -934,6 +974,18 @@ async def _ws_print_chart(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"html": html})
 
 
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REPORT_QUALITY,
+        vol.Optional("days"): vol.All(int, vol.Range(min=1, max=90)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_report_quality(hass, connection, msg, coordinator):
+    connection.send_result(msg["id"], coordinator.quality_report(msg.get("days")))
+
+
 @websocket_api.websocket_command({vol.Required("type"): WS_REPORT_HEALTH})
 @websocket_api.async_response
 @_admin_only
@@ -1040,6 +1092,7 @@ _REWARD_FIELDS = {
     "available_days",
     "available_from",
     "available_until",
+    "streak_freeze",
 }
 
 
@@ -1065,6 +1118,7 @@ def _reward_payload_schema(*, require_name: bool):
         vol.Optional("available_days"): [vol.All(int, vol.Range(min=0, max=6))],
         vol.Optional("available_from"): _validate_hhmm_or_empty,
         vol.Optional("available_until"): _validate_hhmm_or_empty,
+        vol.Optional("streak_freeze"): bool,
     }
 
 
@@ -1109,6 +1163,7 @@ async def _ws_add_reward(hass, connection, msg, coordinator):
         available_days=sorted(set(msg.get("available_days", []) or [])),
         available_from=msg.get("available_from", "") or "",
         available_until=msg.get("available_until", "") or "",
+        streak_freeze=msg.get("streak_freeze", False),
     )
     coordinator.storage.add_reward(reward)
     await coordinator.storage.async_save()
@@ -1693,6 +1748,8 @@ _SUBKEY_SETTINGS = {
     "streak_reset_mode",
     "card_design",
     "weekend_multiplier",
+    "birthday_points_multiplier",
+    "birthday_chores_off",
     "streak_milestones_enabled",
     "perfect_week_enabled",
     "perfect_week_bonus",
@@ -1700,9 +1757,15 @@ _SUBKEY_SETTINGS = {
     "quick_point_amounts",
     "streak_requires_all_chores",
     "perfect_week_requires_all_chores",
+    "streak_freeze_max",
+    "streak_freeze_earn_every",
     "difficulty_multiplier_easy",
     "difficulty_multiplier_medium",
     "difficulty_multiplier_hard",
+    "quality_rating_enabled",
+    "quality_rating_multiplier_1",
+    "quality_rating_multiplier_2",
+    "quality_rating_multiplier_3",
     "unlock_allowlist",
     "parent_routing",
     "read_aloud_media_player",
@@ -1894,14 +1957,22 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("history_days"): vol.All(int, vol.Range(min=30, max=365)),
     vol.Optional("streak_reset_mode"): vol.In(["reset", "pause"]),
     vol.Optional("weekend_multiplier"): vol.All(vol.Coerce(float), vol.Range(min=1.0, max=5.0)),
+    vol.Optional("birthday_points_multiplier"): vol.All(vol.Coerce(float), vol.Range(min=1.0, max=5.0)),
+    vol.Optional("birthday_chores_off"): bool,
     vol.Optional("streak_milestones_enabled"): bool,
     vol.Optional("perfect_week_enabled"): bool,
     vol.Optional("perfect_week_bonus"): vol.All(int, vol.Range(min=0)),
     vol.Optional("streak_requires_all_chores"): bool,
     vol.Optional("perfect_week_requires_all_chores"): bool,
+    vol.Optional("streak_freeze_max"): vol.All(vol.Coerce(int), vol.Range(min=0, max=10)),
+    vol.Optional("streak_freeze_earn_every"): vol.All(vol.Coerce(int), vol.Range(min=0, max=365)),
     vol.Optional("difficulty_multiplier_easy"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("difficulty_multiplier_medium"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("difficulty_multiplier_hard"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
+    vol.Optional("quality_rating_enabled"): bool,
+    vol.Optional("quality_rating_multiplier_1"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=5.0)),
+    vol.Optional("quality_rating_multiplier_2"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=5.0)),
+    vol.Optional("quality_rating_multiplier_3"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=5.0)),
     vol.Optional("unlock_allowlist"): [str],
     vol.Optional("require_linked_child"): bool,
     vol.Optional("chore_undo_seconds"): _validate_chore_undo_seconds,
@@ -2042,12 +2113,14 @@ async def _ws_complete_bonus_subtask(hass, connection, msg, coordinator):
         vol.Required("completion_id"): str,
         # Optional per-approval award (#832) — replaces the chore's own points.
         vol.Optional("points"): vol.All(vol.Coerce(int), vol.Range(min=0)),
+        # Optional 1-3 star quality rating (#927).
+        vol.Optional("rating"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
     }
 )
 @websocket_api.async_response
 @_admin_only
 async def _ws_approve_chore(hass, connection, msg, coordinator):
-    await coordinator.async_approve_chore(msg["completion_id"], points=msg.get("points"))
+    await coordinator.async_approve_chore(msg["completion_id"], points=msg.get("points"), rating=msg.get("rating"))
     connection.send_result(msg["id"], {"completion_id": msg["completion_id"]})
 
 
@@ -2055,12 +2128,13 @@ async def _ws_approve_chore(hass, connection, msg, coordinator):
     {
         vol.Required("type"): WS_APPROVE_ALL_CHORES,
         vol.Optional("completion_ids"): [str],
+        vol.Optional("rating"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
     }
 )
 @websocket_api.async_response
 @_admin_only
 async def _ws_approve_all_chores(hass, connection, msg, coordinator):
-    count = await coordinator.async_approve_chores_bulk(msg.get("completion_ids"))
+    count = await coordinator.async_approve_chores_bulk(msg.get("completion_ids"), rating=msg.get("rating"))
     connection.send_result(msg["id"], {"count": count})
 
 
@@ -2841,6 +2915,7 @@ _COMMANDS = (
     _ws_report_friction,
     _ws_report_projection,
     _ws_report_health,
+    _ws_report_quality,
     _ws_templates_export,
     _ws_templates_import,
     _ws_print_chart,

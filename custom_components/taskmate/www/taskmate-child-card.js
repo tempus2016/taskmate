@@ -92,6 +92,7 @@ class TaskMateChildCard extends LitElement {
     super.updated(changedProperties);
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
       || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    this._maybeBirthdayConfetti(attrs);
     this._scheduleUndoExpiry(attrs);
     const sessions = attrs.active_timed_sessions || [];
     const hasRunning = sessions.some(s => s.state === 'running' && s.child_id === this.config?.child_id);
@@ -1655,6 +1656,19 @@ class TaskMateChildCard extends LitElement {
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
       }
       .vacation-banner ha-icon { --mdc-icon-size: 24px; }
+      .birthday-banner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #ffd1e8, #e3c8ff);
+        color: #5b1f6b;
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      }
+      .birthday-banner ha-icon { --mdc-icon-size: 28px; flex-shrink: 0; }
+      .bday-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .birthday-banner .bday-title { font-weight: 800; font-size: 1rem; }
+      .birthday-banner .bday-sub { font-size: 0.85rem; font-weight: 600; opacity: 0.85; }
       /* Child undo strip (#918). The --tmd-* tokens only exist under a
          designed style, so classic falls through to the HA theme. */
       .tm-child-undo {
@@ -1901,6 +1915,12 @@ class TaskMateChildCard extends LitElement {
       .tmd-check .c-emoji .tmd-glyph-icon { --mdc-icon-size: 18px; }
 
       /* Designed: pending-points + countdown chips on the header/section */
+      .tmd-freeze {
+        margin-left: auto; display: inline-flex; align-items: center; gap: 3px;
+        font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
+        background: rgba(255,255,255,.22); color: #fff; white-space: nowrap;
+      }
+      .tmd-freeze + .tmd-pending { margin-left: 6px; }
       .tmd-pending {
         margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
         font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
@@ -1984,6 +2004,15 @@ class TaskMateChildCard extends LitElement {
         background: color-mix(in srgb, var(--tmd-warn) 16%, transparent); color: var(--tmd-warn);
         border-radius: var(--tmd-radius-sm); font-weight: 700; font-size: 12.5px;
       }
+      .tmd-birthday {
+        display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 11px;
+        background: color-mix(in srgb, var(--tmd-accent) 16%, transparent); color: var(--tmd-text);
+        border: 1px solid color-mix(in srgb, var(--tmd-accent) 40%, transparent);
+        border-radius: var(--tmd-radius-sm);
+      }
+      .tmd-birthday ha-icon { --mdc-icon-size: 26px; color: var(--tmd-accent); flex-shrink: 0; }
+      .tmd-birthday .bday-title { font-weight: 800; font-size: 14px; }
+      .tmd-birthday .bday-sub { font-size: 12px; font-weight: 600; color: var(--tmd-dim); }
       .tmd-swaps { margin-top: 12px; }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
@@ -2149,7 +2178,10 @@ class TaskMateChildCard extends LitElement {
                   <div class="level-xp-track">
                     <div class="level-xp-fill" style="width: ${Math.max(0, Math.min(100, Math.round(((child.level_progress || 0) / (child.level_target || 100)) * 100)))}%"></div>
                   </div>
+                  ${this._renderFreezeBadge(child, "level-badge freeze-badge")}
                 </div>
+              ` : child.streak_freezes > 0 ? html`
+                <div class="child-level">${this._renderFreezeBadge(child, "level-badge freeze-badge")}</div>
               ` : ''}
             </div>
           </div>
@@ -2176,6 +2208,7 @@ class TaskMateChildCard extends LitElement {
           </div>
         </div>
 
+        ${this._renderBirthdayBanner(child, false)}
         ${this._renderChildUndo(child, todaysCompletions)}
 
         ${attrs.vacation_active ? html`
@@ -2643,6 +2676,7 @@ class TaskMateChildCard extends LitElement {
     return html`<ha-card class="tmd" style="--hd:${hd}">
       ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints)}
       <div class="tmd-bd">
+        ${this._renderBirthdayBanner(child, true)}
         ${this._renderChildUndo(child, todaysCompletions)}
         ${attrs.vacation_active ? html`
           <div class="tmd-vacation">
@@ -2696,6 +2730,18 @@ class TaskMateChildCard extends LitElement {
     </ha-card>`;
   }
 
+  /**
+   * Streak-freeze tokens (#925): "❄️ N" in the header, once the child holds
+   * at least one. Called from the classic header AND _designHeaderFull, so
+   * every design shows it (the two-render-paths rule).
+   */
+  _renderFreezeBadge(child, cls) {
+    const n = child.streak_freezes;
+    if (typeof n !== "number" || n <= 0) return "";
+    return html`<span class="${cls}" title="${this._t("streak.freezes_tooltip")}"
+      aria-label="${this._t("streak.freezes_aria", { count: n })}">❄️ ${n}</span>`;
+  }
+
   /** Designed header: avatar/title, remaining pill, pending-points chip. */
   _designHeaderFull(child, design, remaining, total, tone, pendingPoints) {
     const title = design === "console"
@@ -2721,6 +2767,7 @@ class TaskMateChildCard extends LitElement {
         </div>
         <span class="tt">${title}<small>${sub}</small></span>
         ${remaining === 0 && total > 0 ? html`<span class="pill">🎉</span>` : ""}
+        ${this._renderFreezeBadge(child, "tmd-freeze")}
         ${pendingPoints > 0 ? html`<span class="tmd-pending">
           <ha-icon icon="mdi:timer-sand"></ha-icon>+${pendingPoints}</span>` : ""}
         ${canChange && this._avatarPickerOpen ? this._renderAvatarPicker(child, opts) : ""}
@@ -4902,6 +4949,38 @@ class TaskMateChildCard extends LitElement {
       this._loading = { ...this._loading, [chore.id]: false };
       this.requestUpdate();
     }
+  }
+
+  /* Birthday mode (#924). The backend only sends `child.birthday` on the day
+     ({multiplier, age?, chores_off?}). Confetti is fired from updated(), which
+     runs for every design, and the banner helper is called from BOTH render
+     paths — the classic branch alone would leave it invisible on the others. */
+  _maybeBirthdayConfetti(attrs) {
+    const child = (attrs.children || []).find(c => c.id === this.config?.child_id);
+    if (!child || !child.birthday) return;
+    const once = window.__taskmate_birthday_once;
+    if (once && once(this.hass, child.id)) this._spawnConfetti();
+  }
+
+  _renderBirthdayBanner(child, designed) {
+    const b = child && child.birthday;
+    if (!b) return "";
+    const greeting = b.age != null
+      ? this._t("birthday.banner_age", { name: child.name, age: b.age })
+      : this._t("birthday.banner", { name: child.name });
+    const mult = Number(b.multiplier) || 1;
+    const details = [
+      mult > 1 ? this._t("birthday.multiplier", { multiplier: mult }) : "",
+      b.chores_off ? this._t("birthday.day_off") : "",
+    ].filter(Boolean).join(" · ");
+    return html`
+      <div class="${designed ? "tmd-birthday" : "birthday-banner"}" role="status">
+        <ha-icon icon="mdi:cake-variant"></ha-icon>
+        <div class="bday-text">
+          <span class="bday-title">${greeting}</span>
+          ${details ? html`<span class="bday-sub">${details}</span>` : ""}
+        </div>
+      </div>`;
   }
 
   _spawnConfetti() {

@@ -179,6 +179,10 @@
         "points": {
           "name": "Point",
           "description": "Tildel dette antal point i stedet for pligtens egen værdi. Lad feltet være tomt for at bruge pligtens point."
+        },
+        "rating": {
+          "name": "Kvalitetsvurdering",
+          "description": "Valgfri vurdering på 1-3 stjerner af, hvor godt opgaven blev udført. Når kvalitetsvurderinger er slået til, skaleres pointene med stjernens multiplikator; lad feltet stå tomt for at give 100 %."
         }
       }
     },
@@ -189,6 +193,10 @@
         "completion_ids": {
           "name": "Fuldførelses-ID'er",
           "description": "Bestemte fuldførelses-ID'er, der skal godkendes; udelad for at godkende alle ventende"
+        },
+        "rating": {
+          "name": "Kvalitetsvurdering",
+          "description": "Valgfri vurdering på 1-3 stjerner, der gælder for alle opgaver, som godkendes med dette kald (kvalitetsvurderinger skal være slået til)."
         }
       }
     },
@@ -851,6 +859,20 @@
         "points": {
           "name": "Point",
           "description": "Antal point der skal overføres"
+        }
+      }
+    },
+    "adjust_streak_freezes": {
+      "name": "Justér streak-frys",
+      "description": "Giv et barn streak-frys (positivt antal) eller fjern nogle (negativt). En tildeling går aldrig over grænsen streak_freeze_max.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på barnet, hvis frys ændres"
+        },
+        "amount": {
+          "name": "Antal",
+          "description": "Frys der skal tilføjes (positivt) eller fjernes (negativt)"
         }
       }
     },

@@ -28,6 +28,7 @@ from .const import (
     NOTIF_TYPE_ALL_CHORES_DONE,
     NOTIF_TYPE_BADGE_EARNED,
     NOTIF_TYPE_BEDTIME_REMINDER,
+    NOTIF_TYPE_BIRTHDAY,
     NOTIF_TYPE_CELEBRATION,
     NOTIF_TYPE_FAMILY_GOAL_REACHED,
     NOTIF_TYPE_LEVEL_UP,
@@ -39,17 +40,26 @@ from .const import (
     NOTIF_TYPE_PRESENCE_ARRIVAL,
     NOTIF_TYPE_SEASON_CHAMPION,
     NOTIF_TYPE_STREAK_AT_RISK,
+    NOTIF_TYPE_STREAK_FREEZE_USED,
     NOTIF_TYPE_STREAK_MILESTONE,
     NOTIF_TYPE_WEEKLY_DIGEST,
+    QUALITY_RATINGS,
 )
 from .models import NotificationRoute
 from .timewindow import is_within_window, parse_hhmm
 
 _LOGGER = logging.getLogger(__name__)
 
+DEFAULT_MORNING_NOTIFY_TIME = "08:00"
+
 # Appended to actionable notifications sent to non-mobile_app backends, which
 # silently ignore tap actions. Gives those recipients a way to act.
 _APPROVE_IN_PANEL_HINT = "Open the TaskMate panel to approve or reject."
+
+# Mobile action id prefix for "approve with an N-star quality rating" (#927):
+# TASKMATE_RATE_<n>_<completion id>. Distinct from TASKMATE_APPROVE_ so the
+# original Approve/Reject ids keep working unchanged when ratings are off.
+_RATE_ACTION_PREFIX = "TASKMATE_RATE_"
 
 
 def _approval_tag(entry_id: str) -> str:
@@ -89,6 +99,10 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_MONTHLY_REPORT, "parent", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_SEASON_CHAMPION, "both", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_FAMILY_GOAL_REACHED, "both", False, False, False, False),
+    # Birthday mode (#924): a morning "happy birthday" to the child, at a
+    # per-child time (08:00 when none is set).
+    NotificationTypeMeta(NOTIF_TYPE_BIRTHDAY, "child", True, True, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_STREAK_FREEZE_USED, "both", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_PRESENCE_ARRIVAL, "child", False, False, False, False),
 ]
 
@@ -339,6 +353,7 @@ class NotificationCoordinator:
             "month": "January 2026",
             "goal_name": "Movie night fund",
             "goal_reward": "a family movie night",
+            "multiplier": "2",
             "count": 3,
             "points_name": self.storage.get_points_name(),
         }
@@ -418,6 +433,8 @@ class NotificationCoordinator:
             NOTIF_TYPE_MONTHLY_REPORT: "TaskMate {month} report:\n{summary}",
             NOTIF_TYPE_SEASON_CHAMPION: "🏆 {child_name} won the {month} leaderboard with {points} {points_name}!",
             NOTIF_TYPE_FAMILY_GOAL_REACHED: "🎉 Family goal reached: {goal_name}! Time for {goal_reward}.",
+            NOTIF_TYPE_BIRTHDAY: "🎂 Happy birthday, {child_name}! Every chore pays {multiplier}× today.",
+            NOTIF_TYPE_STREAK_FREEZE_USED: "❄️ A streak freeze saved {child_name}'s {streak}-day streak ({freezes_left} left).",
             NOTIF_TYPE_PRESENCE_ARRIVAL: "🏠 You're home, {child_name} — {count} chores left today.",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
@@ -465,10 +482,7 @@ class NotificationCoordinator:
                     # `tag` lets us dismiss this push later (clear_approval) once
                     # the item is reviewed — see _approval_tag.
                     push["tag"] = _approval_tag(entry_id)
-                    push["actions"] = [
-                        {"action": f"TASKMATE_APPROVE_{entry_id}", "title": "Approve"},
-                        {"action": f"TASKMATE_REJECT_{entry_id}", "title": "Reject"},
-                    ]
+                    push["actions"] = self._approval_actions(meta.id, entry_id)
             else:
                 data["message"] = f"{message} {_APPROVE_IN_PANEL_HINT}"
 
@@ -500,6 +514,32 @@ class NotificationCoordinator:
             await self.hass.services.async_call(domain, service, data, blocking=False)
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("notify call failed for %s: %s", notify_service, err)
+
+    def _approval_actions(self, type_id: str, entry_id: str) -> list[dict[str, str]]:
+        """Mobile action buttons for a pending-approval push.
+
+        With quality ratings on (#927) a chore approval offers the three star
+        ratings instead of a plain Approve, so a parent can rate from the lock
+        screen. Reject goes last: Android shows at most three actions, so the
+        ratings take priority there and Reject stays in the panel/card. With
+        the feature off — and always for reward claims — the push keeps the
+        original Approve/Reject ids, so older pushes still in flight resolve.
+        """
+        coordinator = getattr(self, "coordinator", None)
+        rated = (
+            type_id == NOTIF_TYPE_PENDING_CHORE_APPROVAL
+            and coordinator is not None
+            and coordinator.quality_rating_enabled()
+        )
+        if rated:
+            return [
+                *({"action": f"{_RATE_ACTION_PREFIX}{n}_{entry_id}", "title": "★" * n} for n in QUALITY_RATINGS),
+                {"action": f"TASKMATE_REJECT_{entry_id}", "title": "Reject"},
+            ]
+        return [
+            {"action": f"TASKMATE_APPROVE_{entry_id}", "title": "Approve"},
+            {"action": f"TASKMATE_REJECT_{entry_id}", "title": "Reject"},
+        ]
 
     async def clear_approval(self, type_id: str, entry_id: str) -> None:
         """Dismiss the mobile push for a reviewed approval (chore or reward).
@@ -577,7 +617,20 @@ class NotificationCoordinator:
             _LOGGER.warning("Ignoring TaskMate mobile action from a non-parent user")
             return
 
-        if action.startswith("TASKMATE_APPROVE_"):
+        if action.startswith(_RATE_ACTION_PREFIX):
+            # TASKMATE_RATE_<n>_<completion id> (#927): approve with a rating.
+            stars, _, entry_id = action[len(_RATE_ACTION_PREFIX) :].partition("_")
+            try:
+                rating = int(stars)
+            except ValueError:
+                _LOGGER.info("Mobile action %s — malformed rating", action)
+                return
+
+            async def _approve_rated(completion_id: str) -> None:
+                await coordinator.async_approve_chore(completion_id, rating=rating)
+
+            await self._review_from_mobile(action, entry_id, _approve_rated, coordinator.async_approve_reward)
+        elif action.startswith("TASKMATE_APPROVE_"):
             await self._review_from_mobile(
                 action,
                 action[len("TASKMATE_APPROVE_") :],
@@ -648,6 +701,17 @@ class NotificationCoordinator:
                     self._make_bedtime_callback(child_id),
                 )
 
+        # Birthday (#924) — per-child morning time, only fires on the day
+        cfg = self.storage.get_notification_config("birthday")
+        if cfg.master_enabled:
+            for recipient_id, route in cfg.routes.items():
+                if not route.enabled or not recipient_id.startswith("child:"):
+                    continue
+                self._register_at(
+                    route.time or DEFAULT_MORNING_NOTIFY_TIME,
+                    self._make_birthday_callback(recipient_id.split(":", 1)[1]),
+                )
+
         # Streak at risk — global cutoff time, fire once per child
         cfg = self.storage.get_notification_config("streak_at_risk")
         if cfg.master_enabled:
@@ -692,6 +756,24 @@ class NotificationCoordinator:
 
         return _cb
 
+    def _make_birthday_callback(self, child_id: str):
+        async def _cb(now):
+            coord = self.coordinator
+            child = self.storage.get_child(child_id)
+            if child is None or coord is None or not coord.is_birthday(child):
+                return
+            await self.fire(
+                "birthday",
+                {
+                    "child_name": child.name,
+                    "child_id": child_id,
+                    "multiplier": f"{coord.birthday_multiplier():g}",
+                },
+                only_recipients={f"child:{child_id}"},
+            )
+
+        return _cb
+
     async def _streak_at_risk_callback(self, now) -> None:
         from homeassistant.util import dt as dt_util
 
@@ -700,6 +782,9 @@ class NotificationCoordinator:
             if (child.current_streak or 0) < 2:
                 continue
             if child.last_completion_date == today:
+                continue
+            # A birthday day off can't break the streak, so don't nag (#924).
+            if self.coordinator is not None and self.coordinator.is_birthday_day_off(child) is True:
                 continue
             await self.fire(
                 "streak_at_risk",
@@ -1020,10 +1105,15 @@ class NotificationCoordinator:
             for c in completions
             if c.child_id == child_id and dt_util.as_local(c.completed_at).date() == today
         }
+        # Birthday day off (#924): only mandatory chores are still owed.
+        coord = self.coordinator
+        birthday_off = coord is not None and coord.is_birthday_day_off(self.storage.get_child(child_id)) is True
         for chore in chores:
             if not chore.assigned_to or child_id not in chore.assigned_to:
                 continue
             if chore.id in completed_today:
+                continue
+            if birthday_off and not getattr(chore, "mandatory", False):
                 continue
             return True
         return False

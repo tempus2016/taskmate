@@ -19,6 +19,7 @@ from .const import DOMAIN
 from .coord_assignments import AssignmentsMixin
 from .coord_avatars import AvatarsMixin
 from .coord_badges import BadgeCoordinator
+from .coord_birthdays import BirthdaysMixin
 from .coord_calendar import CalendarMixin
 from .coord_challenges import ChallengesMixin
 from .coord_chores import ChoresMixin
@@ -32,6 +33,7 @@ from .coord_rewards import RewardsMixin
 from .coord_roulette import RouletteMixin
 from .coord_scheduled import ScheduledChangesMixin
 from .coord_sounds import SoundsMixin
+from .coord_tags import TagsMixin
 from .coord_teamwork import TeamworkMixin
 from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
@@ -62,6 +64,8 @@ class TaskMateCoordinator(
     GuestsMixin,
     UnlocksMixin,
     SoundsMixin,
+    BirthdaysMixin,
+    TagsMixin,
     TeamworkMixin,
     DataUpdateCoordinator,
 ):
@@ -82,6 +86,7 @@ class TaskMateCoordinator(
         self._unsub_midnight: Callable[[], None] | None = None
         self._unsub_prune: Callable[[], None] | None = None
         self._unsub_availability: Callable[[], None] | None = None
+        self._unsub_tag_scanned: Callable[[], None] | None = None
         self._tracked_availability_entities: set[str] = set()
         self._tracked_visibility_entities: set[str] = set()
         # Bumped whenever a tracked external entity (child availability, chore
@@ -115,6 +120,24 @@ class TaskMateCoordinator(
             return float(self.storage.get_setting(f"difficulty_multiplier_{resolved}", str(default)))
         except (ValueError, TypeError):
             return default
+
+    def quality_rating_enabled(self) -> bool:
+        """Whether parents may rate approvals 1-3 stars (#927). Off by default."""
+        v = self.storage.get_setting("quality_rating_enabled", False)
+        return v is True or str(v).lower() == "true"
+
+    def quality_rating_multipliers(self) -> dict[int, float]:
+        """The points multiplier for each star rating, from settings (#927)."""
+        from .const import DEFAULT_QUALITY_RATING_MULTIPLIERS
+
+        out: dict[int, float] = {}
+        for rating, default in DEFAULT_QUALITY_RATING_MULTIPLIERS.items():
+            try:
+                value = float(self.storage.get_setting(f"quality_rating_multiplier_{rating}", default))
+            except (ValueError, TypeError):
+                value = default
+            out[rating] = max(0.0, value)
+        return out
 
     def effective_chore_points(self, chore) -> int:
         """Base chore points scaled by its difficulty multiplier (never negative)."""
@@ -344,6 +367,8 @@ class TaskMateCoordinator(
         await self.async_apply_due_scheduled_changes(refresh=False)
         # A restart mid-unlock must never strand the TV on (#678).
         await self.async_resume_unlocks()
+        # Birthday mode (#924): HA may have been off at midnight on the day.
+        await self.async_check_birthdays(refresh=False)
         await self.async_refresh()
         # Schedule midnight streak check at 00:00:05
         self._unsub_midnight = async_track_time_change(
@@ -356,6 +381,9 @@ class TaskMateCoordinator(
         # relevant flips trigger a recompute.
         self._refresh_tracked_availability_entities()
         self._unsub_availability = self.hass.bus.async_listen("state_changed", self._availability_state_changed)
+        # NFC / QR tag completion (#923): a scanned tag linked to a chore
+        # completes it for the scanning child.
+        self._unsub_tag_scanned = self.hass.bus.async_listen("tag_scanned", self._tag_scanned)
         # Surprise-bonus daily roll at 16:00 (opt-in; no-op unless enabled)
         self._unsub_surprise = async_track_time_change(
             self.hass, self._async_surprise_bonus_check, hour=16, minute=0, second=0
@@ -712,8 +740,15 @@ class TaskMateCoordinator(
         self.cancel_unlock_timers()
         self.notifications.cancel_schedules()
         self.notifications.cancel_presence_tracking()
-        for attr in ("_unsub_midnight", "_unsub_prune", "_unsub_availability", "_unsub_surprise", "_unsub_weekly"):
-            if unsub := getattr(self, attr):
+        for attr in (
+            "_unsub_midnight",
+            "_unsub_prune",
+            "_unsub_availability",
+            "_unsub_tag_scanned",
+            "_unsub_surprise",
+            "_unsub_weekly",
+        ):
+            if unsub := getattr(self, attr, None):
                 unsub()
                 setattr(self, attr, None)
         self.disarm_mandatory_schedules()
@@ -738,6 +773,8 @@ class TaskMateCoordinator(
             self.async_prune_roulette_state,
             self.async_archive_expired_guests,
             self._async_check_streaks,
+            # Birthday mode (#924): badge + celebration, once per child per day.
+            self.async_check_birthdays,
             self._async_expire_one_shot_chores,
             self._async_expire_dated_chores,
             self._async_expire_deadline_chores,
@@ -844,6 +881,7 @@ class TaskMateCoordinator(
         unavailability_entity: str = "",
         pause_streak_when_unavailable: bool = False,
         linked_user_id: str = "",
+        birthday: str = "",
         presence_entity: str = "",
     ) -> Child:
         """Add a new child."""
@@ -855,10 +893,13 @@ class TaskMateCoordinator(
             unavailability_entity=unavailability_entity,
             pause_streak_when_unavailable=pause_streak_when_unavailable,
             linked_user_id=linked_user_id,
+            birthday=birthday,
             presence_entity=presence_entity,
         )
         self.storage.add_child(child)
         await self.storage.async_save()
+        # A birthday entered on the day still gets its badge and celebration.
+        await self.async_check_birthdays(refresh=False)
         await self.async_refresh()
         return child
 
@@ -866,6 +907,7 @@ class TaskMateCoordinator(
         """Update a child."""
         self.storage.update_child(child)
         await self.storage.async_save()
+        await self.async_check_birthdays(refresh=False)
         await self.async_refresh()
 
     async def async_remove_child(self, child_id: str) -> None:

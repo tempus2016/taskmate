@@ -91,6 +91,17 @@ MAX_TIME_PERIODS: Final = 24
 CHORE_NOTE_MAX_LENGTH: Final = 200
 CHORE_SUGGESTED_POINTS_MAX: Final = 999
 
+# NFC / QR tag completion (#923): a chore lists the HA tag ids that complete it.
+# Tag ids are typed or picked by a parent, so both the count and the length are
+# bounded before storage.
+MAX_CHORE_TAGS: Final = 10
+TAG_ID_MAX_LENGTH: Final = 100
+# A phone reading an NFC sticker often fires tag_scanned twice for one tap, so a
+# second scan of the same chore by the same child inside this window is ignored
+# even when the daily limit would allow another completion.
+TAG_SCAN_DEBOUNCE_SECONDS: Final = 60
+EVENT_TAG_COMPLETION: Final = "taskmate_tag_completion"
+
 # Platforms
 PLATFORMS: Final = ["sensor", "button", "binary_sensor"]
 
@@ -112,6 +123,7 @@ SERVICE_REMOVE_POINTS: Final = "remove_points"
 SERVICE_UNDO_TRANSACTION: Final = "undo_transaction"
 SERVICE_TEST_NOTIFICATION: Final = "test_notification"
 SERVICE_GIFT_POINTS: Final = "gift_points"
+SERVICE_ADJUST_STREAK_FREEZES: Final = "adjust_streak_freezes"
 SERVICE_RECORD_ALLOWANCE_PAYOUT: Final = "record_allowance_payout"
 SERVICE_REQUEST_SWAP: Final = "request_swap"
 SERVICE_SPIN_ROULETTE: Final = "spin_roulette"
@@ -239,6 +251,15 @@ DIFFICULTY_TIERS: Final = ("easy", "medium", "hard")
 DEFAULT_DIFFICULTY: Final = "medium"
 DEFAULT_DIFFICULTY_MULTIPLIERS: Final = {"easy": 0.5, "medium": 1.0, "hard": 2.0}
 
+# --- Chore quality rating (#927) ---
+# When the "quality_rating_enabled" setting is on, a parent may rate an approval
+# 1-3 stars and the chore's base points are scaled by that star's multiplier
+# (configurable via the "quality_rating_multiplier_<n>" settings keys). An
+# unrated approval pays 100%, so turning the feature on changes nothing until a
+# parent actually picks a star.
+QUALITY_RATINGS: Final = (1, 2, 3)
+DEFAULT_QUALITY_RATING_MULTIPLIERS: Final = {1: 0.75, 2: 1.0, 3: 1.25}
+
 # --- Notification type IDs (v3.9.0) ---
 NOTIF_TYPE_BEDTIME_REMINDER: Final = "bedtime_reminder"
 NOTIF_TYPE_STREAK_AT_RISK: Final = "streak_at_risk"
@@ -255,6 +276,8 @@ NOTIF_TYPE_MANDATORY_PARENT_ALERT: Final = "mandatory_parent_alert"
 NOTIF_TYPE_MONTHLY_REPORT: Final = "monthly_report"
 NOTIF_TYPE_SEASON_CHAMPION: Final = "season_champion"
 NOTIF_TYPE_FAMILY_GOAL_REACHED: Final = "family_goal_reached"
+NOTIF_TYPE_BIRTHDAY: Final = "birthday"
+NOTIF_TYPE_STREAK_FREEZE_USED: Final = "streak_freeze_used"
 NOTIF_TYPE_PRESENCE_ARRIVAL: Final = "presence_arrival"
 
 # Presence-aware reminders (#926): the default for how long a child must have

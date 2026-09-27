@@ -412,3 +412,74 @@ def test_clearing_the_last_join_removes_the_entry():
     storage.set_team_joins("a", TODAY, [{"child_id": "k1"}])
     storage.set_team_joins("a", TODAY, [])
     assert "a" not in storage._data["team_joins"]
+
+
+# ── interplay with neighbouring features ─────────────────────────────────────
+
+
+def _scan(coord, child_id):
+    from custom_components.taskmate import coord_tags
+
+    coord.chores_for_tag = MagicMock(return_value=[coord.storage.get_chore("car")])
+    coord._child_for_tag_user = MagicMock(side_effect=lambda uid: coord.storage.get_child(uid))
+    coord._record_tag_audit = AsyncMock()
+    coord._async_record_tag_audit = AsyncMock()
+    with (
+        patch.object(coord_tags.authz, "_context_user_id", side_effect=lambda ctx: ctx),
+        patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NOW),
+        patch("custom_components.taskmate.coord_teamwork.dt_util.now", return_value=NOW),
+    ):
+        return run(coord.async_handle_tag_scan("tag-1", context=child_id))
+
+
+def test_a_tag_scan_counts_as_a_join():
+    # NFC tags (#923) complete through async_complete_chore, so a scan is a
+    # join: nothing recorded until the team fills, then everyone's credited.
+    coord = _coord(_team(team_size=2))
+    assert _scan(coord, "k1") == []
+    assert _joined(coord) == ["k1"]
+    done = _scan(coord, "k2")
+    assert [c.child_id for c in done] == ["k2"]
+    assert sorted(c.child_id for c in coord.storage.get_completions()) == ["k1", "k2"]
+
+
+def test_a_repeat_scan_does_not_leave_the_team():
+    coord = _coord(_team(team_size=3))
+    _scan(coord, "k1")
+    _scan(coord, "k1")
+    assert _joined(coord) == ["k1"]
+
+
+def test_a_childs_undo_takes_back_only_their_own_share():
+    # Child undo (#918): once the team has submitted, a child undoing theirs
+    # leaves the team after the fact — their teammates keep their credit.
+    coord = _coord(_team(team_size=2, requires_approval=True))
+    coord.async_recheck_mandatory_miss = AsyncMock()
+    coord.notifications = MagicMock()
+    coord.notifications.clear_approval = AsyncMock()
+    coord.storage._data["settings"] = {"chore_undo_seconds": 300}
+    _complete(coord, "k1")
+    _complete(coord, "k2")
+    mine = next(c for c in coord.storage.get_completions() if c.child_id == "k1")
+    assert mine.child_undo_allowed is True
+    run(coord.async_undo_chore(mine.id))
+    assert [c.child_id for c in coord.storage.get_completions()] == ["k2"]
+
+
+def test_each_participant_is_rated_on_their_own_approval():
+    # Quality rating (#927) belongs to an approval, and a team is one
+    # completion per child — so the parent can rate each child's part.
+    coord = _coord(_team(team_size=2, requires_approval=True))
+    coord.quality_rating_enabled = MagicMock(return_value=True)
+    coord.quality_rating_multipliers = MagicMock(return_value={1: 0.5, 2: 0.75, 3: 1.0})
+    coord.notifications = MagicMock()
+    coord.notifications.clear_approval = AsyncMock()
+    coord.notifications.fire = AsyncMock()
+    coord.notifications._has_outstanding_chores_today = MagicMock(return_value=True)
+    _complete(coord, "k1")
+    _complete(coord, "k2")
+    by_child = {c.child_id: c.id for c in coord.storage.get_completions()}
+    run(coord.async_approve_chore(by_child["k1"], rating=1))
+    run(coord.async_approve_chore(by_child["k2"], rating=3))
+    paid = {c.child_id: (c.points_awarded, c.quality_rating) for c in coord.storage.get_completions()}
+    assert paid == {"k1": (5, 1), "k2": (10, 3)}

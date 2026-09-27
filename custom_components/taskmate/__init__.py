@@ -77,6 +77,7 @@ from .const import (
     SERVICE_ADD_PENALTY,
     SERVICE_ADD_POINTS,
     SERVICE_ADD_TASK_GROUP,
+    SERVICE_ADJUST_STREAK_FREEZES,
     SERVICE_ALLOCATE_POINTS_TO_POOL,
     SERVICE_APPLY_BONUS,
     SERVICE_APPLY_MANDATORY_PENALTY,
@@ -599,7 +600,9 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             _LOGGER.error("No TaskMate coordinator available")
             return
         completion_id = call.data["completion_id"]
-        await coordinator.async_approve_chore(completion_id, points=call.data.get("points"))
+        await coordinator.async_approve_chore(
+            completion_id, points=call.data.get("points"), rating=call.data.get("rating")
+        )
 
     async def handle_approve_all_chores(call: ServiceCall) -> None:
         """Handle the approve_all_chores service call."""
@@ -607,7 +610,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         if not coordinator:
             _LOGGER.error("No TaskMate coordinator available")
             return
-        await coordinator.async_approve_chores_bulk(call.data.get("completion_ids"))
+        await coordinator.async_approve_chores_bulk(call.data.get("completion_ids"), rating=call.data.get("rating"))
 
     async def handle_reject_chore(call: ServiceCall) -> None:
         """Handle the reject_chore service call."""
@@ -696,6 +699,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             call.data["to_child_id"],
             call.data["points"],
         )
+
+    async def handle_adjust_streak_freezes(call: ServiceCall) -> None:
+        """Grant (positive amount) or remove (negative) streak-freeze tokens (#925)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_adjust_streak_freezes(call.data[ATTR_CHILD_ID], call.data["amount"])
 
     async def handle_record_allowance_payout(call: ServiceCall) -> None:
         """Record a parent-confirmed allowance payout (deduct points, log cash)."""
@@ -1244,6 +1255,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             {
                 vol.Required("completion_id"): cv.string,
                 vol.Optional("points"): vol.All(vol.Coerce(int), vol.Range(min=0)),
+                # 1-3 star quality rating (#927); ignored while the feature is off.
+                vol.Optional("rating"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
             }
         ),
     )
@@ -1255,6 +1268,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         schema=vol.Schema(
             {
                 vol.Optional("completion_ids"): [cv.string],
+                vol.Optional("rating"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
             }
         ),
     )
@@ -1340,6 +1354,18 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Required("from_child_id"): cv.string,
                 vol.Required("to_child_id"): cv.string,
                 vol.Required("points"): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ADJUST_STREAK_FREEZES,
+        _parent(handle_adjust_streak_freezes),
+        schema=vol.Schema(
+            {
+                vol.Required(ATTR_CHILD_ID): cv.string,
+                vol.Required("amount"): vol.All(vol.Coerce(int), vol.Range(min=-10, max=10), vol.NotIn([0])),
             }
         ),
     )
