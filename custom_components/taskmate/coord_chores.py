@@ -1258,8 +1258,11 @@ class ChoresMixin:
         NOT remove or modify the completion records themselves.
         """
         completion = target_completion
-        if completion.points_awarded > 0:
-            child = self.get_child(completion.child_id)
+        child = self.get_child(completion.child_id)
+        # Approval, not a positive payout, is what marks an award to reverse: a
+        # 0-point chore still bumps the chore count and can advance the streak.
+        # Pending submissions have been awarded nothing yet.
+        if completion.approved:
             if child:
                 child.points = max(0, child.points - completion.points_awarded)
                 child.total_points_earned = max(0, child.total_points_earned - completion.points_awarded)
@@ -1273,6 +1276,7 @@ class ChoresMixin:
                     other_same_day = any(
                         c.id != completion.id
                         and c.child_id == completion.child_id
+                        and c.approved
                         and not c.bonus_subtask_id
                         and dt_util.as_local(c.completed_at).date() == reject_date
                         for c in completions
@@ -1285,6 +1289,7 @@ class ChoresMixin:
                                 for c in completions
                                 if c.id != completion.id
                                 and c.child_id == completion.child_id
+                                and c.approved
                                 and not c.bonus_subtask_id
                             ]
                             child.last_completion_date = max(remaining).isoformat() if remaining else None
@@ -1316,8 +1321,6 @@ class ChoresMixin:
                                 )
                             child.streak_milestones_achieved = sorted(d for d in achieved if d <= child.current_streak)
 
-                self.storage.update_child(child)
-
         bonus_completions: list = []
         is_parent = not target_completion.bonus_subtask_id
         if is_parent:
@@ -1333,15 +1336,11 @@ class ChoresMixin:
                 and c.id != target_completion.id
                 and dt_util.as_local(c.completed_at).date() == comp_date
             ]
-            if bonus_completions:
-                child = self.get_child(target_completion.child_id)
-                for bc in bonus_completions:
-                    if bc.points_awarded > 0 and child:
-                        child.points = max(0, child.points - bc.points_awarded)
-                        child.total_points_earned = max(0, child.total_points_earned - bc.points_awarded)
-                        child.total_chores_completed = max(0, child.total_chores_completed - 1)
-                if child:
-                    self.storage.update_child(child)
+            for bc in bonus_completions:
+                if bc.approved and child:
+                    child.points = max(0, child.points - bc.points_awarded)
+                    child.total_points_earned = max(0, child.total_points_earned - bc.points_awarded)
+                    child.total_chores_completed = max(0, child.total_chores_completed - 1)
 
             # Undo last_completed store so recurrence window resets correctly
             self.storage.undo_last_completed(target_completion.chore_id, target_completion.child_id)
@@ -1353,6 +1352,13 @@ class ChoresMixin:
                     chore.disabled_for.remove(target_completion.child_id)
                 chore.enabled = True
                 self.storage.update_chore(chore)
+
+        if child and (completion.approved or any(bc.approved for bc in bonus_completions)):
+            # Keep the leaderboard and its chart in step once the main award and
+            # any cascaded bonus sub-tasks have both been reversed.
+            child.career_score = child.total_points_earned - child.total_penalties_received
+            self.storage.update_child(child)
+            self.storage.append_career_score_snapshot(child.id, dt_util.now().date().isoformat(), child.career_score)
 
         return bonus_completions
 
