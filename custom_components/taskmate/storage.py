@@ -368,6 +368,33 @@ class TaskMateStorage:
         """Remove a child and cascade-delete their awarded badges."""
         self._data["children"] = [c for c in self._data.get("children", []) if c.get("id") != child_id]
         self.remove_awards_for_child(child_id)
+        self.set_kiosk_pin_hash(child_id, "")
+
+    # Kiosk PINs (#930): {child_id: salted hash}. Kept apart from the child
+    # records so the hash never rides along wherever children are serialised
+    # (get_state, sensor attributes). A missing or malformed map reads as empty.
+    def _kiosk_pins(self) -> dict:
+        pins = self._data.get("kiosk_pins")
+        return pins if isinstance(pins, dict) else {}
+
+    def get_kiosk_pin_hash(self, child_id: str) -> str:
+        value = self._kiosk_pins().get(child_id, "")
+        return value if isinstance(value, str) else ""
+
+    def get_kiosk_pin_child_ids(self) -> list[str]:
+        return [cid for cid, value in self._kiosk_pins().items() if isinstance(value, str) and value]
+
+    def set_kiosk_pin_hash(self, child_id: str, value: str) -> None:
+        """Store a child's PIN hash; an empty value removes it."""
+        pins = dict(self._kiosk_pins())
+        if value:
+            pins[child_id] = value
+        else:
+            pins.pop(child_id, None)
+        if pins:
+            self._data["kiosk_pins"] = pins
+        else:
+            self._data.pop("kiosk_pins", None)
 
     # Chores management
     def get_chores(self) -> list[Chore]:
