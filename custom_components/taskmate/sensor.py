@@ -242,9 +242,22 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         difficulty = getattr(c, "difficulty", "medium") or "medium"
         if difficulty != "medium":
             record["difficulty"] = difficulty
-        effective_points = coordinator.effective_chore_points(c)
+        # A teamwork chore (#928) pays each participant their share, so that
+        # is the figure the cards quote as "+N".
+        team_size = coordinator.teamwork_size(c) if int(getattr(c, "team_size", 0) or 0) >= 2 else 0
+        effective_points = coordinator.team_share_points(c) if team_size else coordinator.effective_chore_points(c)
         if effective_points != c.points:
             record["effective_points"] = effective_points
+        # Teamwork (#928): only on teamwork chores, and only the non-default
+        # parts — the joined list is the day's progress the card draws.
+        if team_size:
+            team: dict = {"size": team_size}
+            joined = coordinator.team_joined_ids(c)
+            if joined:
+                team["joined"] = joined
+            if getattr(c, "team_points_mode", "each") == "split":
+                team["split"] = True
+            record["team"] = team
         # Optional fields — emit only when non-default to save bytes.
         description = getattr(c, "description", "") or ""
         if description:

@@ -525,6 +525,18 @@
         "requires_approval": {
           "name": "Requer aprovação",
           "description": "Se verdadeiro, um pai/mãe deve aprovar a conclusão antes de os pontos serem concedidos"
+        },
+        "team_size": {
+          "name": "Tamanho da equipe",
+          "description": "Transforma esta tarefa em uma tarefa em equipe que só conta quando esse número de crianças diferentes participar. Quando a equipe está completa, ela é enviada para todas. 0 = uma tarefa normal."
+        },
+        "team_points_mode": {
+          "name": "Pontos da equipe",
+          "description": "Como uma tarefa em equipe paga: \"each\" dá os pontos completos a cada participante, \"split\" divide igualmente (arredondado para baixo)."
+        },
+        "team_bonus": {
+          "name": "Bônus de equipe",
+          "description": "Pontos extras que cada participante ganha quando uma tarefa em equipe é concluída."
         }
       }
     },
@@ -613,6 +625,20 @@
         "child_id": {
           "name": "ID da criança",
           "description": "O ID da criança que inicia o cronômetro"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "Sair de tarefa em equipe",
+      "description": "Tirar uma criança de uma tarefa em equipe em que entrou hoje, antes de a equipe estar completa",
+      "fields": {
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "O ID da tarefa em equipe"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que sai da equipe"
         }
       }
     },

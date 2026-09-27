@@ -11,6 +11,7 @@ from homeassistant.util import dt as dt_util
 
 from . import images, photos
 from .const import CHORE_NOTE_MAX_LENGTH, CHORE_SUGGESTED_POINTS_MAX
+from .coord_teamwork import teamwork_config_error
 from .models import Chore, ChoreCompletion, PointsTransaction
 
 if TYPE_CHECKING:
@@ -76,8 +77,17 @@ class ChoresMixin:
         manual_start_child_id: str = "",
         deadline_at: str = "",
         speed_bonus_points: int = 0,
+        team_size: int = 0,
+        team_points_mode: str = "each",
+        team_bonus: int = 0,
     ) -> Chore:
         """Add a new chore."""
+        # Teamwork (#928) is refused up front, before anything is stored.
+        team_error = teamwork_config_error(
+            team_size, assignment_mode=assignment_mode, team_points_mode=team_points_mode
+        )
+        if team_error:
+            raise ValueError(team_error)
         # One-shot chores: force daily_limit=1, set created_date to today
         if schedule_mode == "one_shot":
             daily_limit = 1
@@ -127,6 +137,9 @@ class ChoresMixin:
             require_availability=require_availability,
             deadline_at=deadline_at,
             speed_bonus_points=max(0, int(speed_bonus_points or 0)),
+            team_size=int(team_size or 0),
+            team_points_mode=team_points_mode,
+            team_bonus=max(0, int(team_bonus or 0)),
         )
         # Cache today's active child so the card can show it immediately
         active = self._compute_active_children(chore, today)
@@ -475,6 +488,16 @@ class ChoresMixin:
 
     async def async_update_chore(self, chore: Chore) -> None:
         """Update a chore."""
+        # Checked before storage is touched so a refused edit changes nothing.
+        team_error = teamwork_config_error(
+            getattr(chore, "team_size", 0),
+            assignment_mode=getattr(chore, "assignment_mode", "everyone"),
+            open_ended=bool(getattr(chore, "open_ended", False)),
+            task_type=getattr(chore, "task_type", "standard") or "standard",
+            team_points_mode=getattr(chore, "team_points_mode", "each"),
+        )
+        if team_error:
+            raise ValueError(team_error)
         today = dt_util.as_local(dt_util.now()).date()
         # Capture pre-update state before storage is mutated below.
         existing = self.storage.get_chore(chore.id)
@@ -557,6 +580,8 @@ class ChoresMixin:
         # Drop pending swap requests (#785), else they sit in the parent's
         # approval queue forever showing "?" for the chore that no longer exists.
         self.storage.remove_swap_requests_for_chore(chore_id)
+        # Teamwork joins (#928) belong to the occurrence of a chore that's gone.
+        self.storage.remove_team_joins_for_chore(chore_id)
         # Remove chore from children's chore_order lists
         for child in self.storage.get_children():
             if chore_id in child.chore_order:
@@ -862,6 +887,12 @@ class ChoresMixin:
         is_open_ended = bool(getattr(chore, "open_ended", False))
         if is_open_ended and not as_parent and not note:
             raise ValueError("Say what you did to submit this one.")
+        # Teamwork chores (#928): this tap joins the day's occurrence. Only the
+        # join that fills the team records anything — a completion for every
+        # participant at once — so a lone join returns None like the other
+        # soft outcomes above. Every gate above has already run for the joiner.
+        if self.teamwork_size(chore):
+            return await self._async_join_team_chore(chore, child, now, as_parent=as_parent, photo_url=photo_url)
         # Open-ended completions always go to a parent: the child suggested the
         # point value, so self-awarding it would let them set their own pay.
         auto_approve = as_parent or (not chore.requires_approval and not requires_photo and not is_open_ended)
@@ -874,14 +905,51 @@ class ChoresMixin:
                 now,
             ),
         )
+        completion = await self._async_record_completion(
+            chore,
+            child,
+            now,
+            auto_approve=auto_approve,
+            points=effective_points,
+            photo_url=photo_url,
+            note=note,
+            suggested_points=suggested_points,
+        )
+        await self._async_after_completions(
+            chore,
+            # An open-ended chore has no points of its own, so quote the
+            # child's own estimate — otherwise every one of these pushes
+            # announces "+0" (#832).
+            [(child, completion, completion.suggested_points if is_open_ended else chore.points)],
+            auto_approve=auto_approve,
+        )
+        return completion
 
+    async def _async_record_completion(
+        self,
+        chore,
+        child,
+        now,
+        *,
+        auto_approve: bool,
+        points: int,
+        photo_url: str = "",
+        note: str = "",
+        suggested_points: int = 0,
+    ) -> ChoreCompletion:
+        """Store one completion and, when auto-approved, pay it.
+
+        The part of completing a chore that is per child. The caller has already
+        run every eligibility gate and then calls _async_after_completions once
+        for the whole batch (one child normally, a whole team for #928).
+        """
         completion = ChoreCompletion(
-            chore_id=chore_id,
-            child_id=child_id,
+            chore_id=chore.id,
+            child_id=child.id,
             completed_at=now,
             approved=auto_approve,
-            points_awarded=effective_points if auto_approve else 0,
-            submitted_points=effective_points,
+            points_awarded=points if auto_approve else 0,
+            submitted_points=points,
             photo_url=photo_url or "",
             note=note,
             suggested_points=suggested_points,
@@ -895,7 +963,7 @@ class ChoresMixin:
         self.storage.add_completion(completion)
 
         if auto_approve:
-            total_awarded = await self._award_points(child, effective_points, chore_id=chore_id)
+            total_awarded = await self._award_points(child, points, chore_id=chore.id)
             completion.approved = True
             completion.approved_at = dt_util.now()
             completion.points_awarded = total_awarded
@@ -908,53 +976,61 @@ class ChoresMixin:
                 "child_name": child.name,
                 "chore_id": chore.id,
                 "chore_name": chore.name,
-                "points": effective_points,
+                "points": points,
                 "difficulty": getattr(chore, "difficulty", "medium"),
                 "timestamp": dt_util.now().isoformat(),
             },
         )
 
         # Update last_completed store (window starts at completion time, midnight-rounded)
-        self.storage.set_last_completed(chore_id, child_id, now.isoformat())
+        self.storage.set_last_completed(chore.id, child.id, now.isoformat())
 
         # One-shot: if auto-approved, disable for this child immediately
         if getattr(chore, "schedule_mode", "specific_days") == "one_shot" and auto_approve:
-            if child_id not in chore.disabled_for:
-                chore.disabled_for.append(child_id)
+            if child.id not in chore.disabled_for:
+                chore.disabled_for.append(child.id)
             self._check_one_shot_fully_disabled(chore)
             self.storage.update_chore(chore)
 
+        return completion
+
+    async def _async_after_completions(self, chore, recorded: list, *, auto_approve: bool) -> None:
+        """Save, notify and refresh once for completions just recorded.
+
+        ``recorded`` is a list of ``(child, completion, notify_points)``. One
+        save and one refresh cover the batch (a refresh per child is the cost
+        #794 measured); the approval push and the progression hooks stay per
+        child.
+        """
         await self.storage.async_save()
 
         # Fire approval notification only if it stays pending
         if not auto_approve:
-            await self._async_notify_pending_approval(
-                child.name,
-                chore.name,
-                # An open-ended chore has no points of its own, so quote the
-                # child's own estimate — otherwise every one of these pushes
-                # announces "+0" (#832).
-                completion.suggested_points if is_open_ended else chore.points,
-                completion_id=completion.id,
-                photo_url=completion.photo_url,
-            )
+            for child, completion, notify_points in recorded:
+                await self._async_notify_pending_approval(
+                    child.name,
+                    chore.name,
+                    notify_points,
+                    completion_id=completion.id,
+                    photo_url=completion.photo_url,
+                )
 
         await self.async_refresh()
 
-        # Trigger badge evaluation for anything that auto-approved
-        if auto_approve and getattr(self, "badges", None):
-            await self.badges.evaluate_for_child(child_id, "manual")
+        if not auto_approve:
+            return
+        for child, _completion, _points in recorded:
+            # Trigger badge evaluation for anything that auto-approved
+            if getattr(self, "badges", None):
+                await self.badges.evaluate_for_child(child.id, "manual")
 
-        # Auto-approved completions skip the parent-approval path, so they must
-        # run the same post-approval progression hooks here — otherwise quest
-        # steps and challenges only advance for approval-required chores (#558).
-        if auto_approve:
+            # Auto-approved completions skip the parent-approval path, so they must
+            # run the same post-approval progression hooks here — otherwise quest
+            # steps and challenges only advance for approval-required chores (#558).
             if hasattr(self, "_async_advance_quests"):
-                await self._async_advance_quests(child_id, chore_id)
+                await self._async_advance_quests(child.id, chore.id)
             if hasattr(self, "_async_evaluate_challenges"):
-                await self._async_evaluate_challenges(child_id)
-
-        return completion
+                await self._async_evaluate_challenges(child.id)
 
     async def async_parent_complete_chore(self, chore_id: str) -> ChoreCompletion:
         """Mark a chore as completed by the parent — zero points, advances recurrence."""

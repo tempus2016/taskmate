@@ -726,6 +726,41 @@ add_chore:
           min: 0
           max: 10000
           mode: box
+    team_size:
+      name: Team size
+      description: >-
+        Make this a teamwork chore that only counts once this many different children have joined
+        it. Each child's Done tap joins; when the team is full it submits for all of them. 0 = a
+        normal chore.
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 10
+          mode: box
+    team_points_mode:
+      name: Team points
+      description: >-
+        How a teamwork chore pays out — "each" gives every participant the full points, "split"
+        divides them evenly (rounded down).
+      required: false
+      default: each
+      selector:
+        select:
+          options:
+            - each
+            - split
+    team_bonus:
+      name: Team bonus
+      description: Extra points each participant earns when a teamwork chore is completed.
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 10000
+          mode: box
 
 read_aloud:
   name: Read Chores Aloud
@@ -883,6 +918,23 @@ start_timed_task:
     child_id:
       name: Child ID
       description: The ID of the child starting the timer
+      required: true
+      selector:
+        text:
+
+leave_team_chore:
+  name: Leave Teamwork Chore
+  description: Take a child back out of a teamwork chore they joined today, before the team is complete
+  fields:
+    chore_id:
+      name: Chore ID
+      description: The ID of the teamwork chore
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child leaving the team
       required: true
       selector:
         text:

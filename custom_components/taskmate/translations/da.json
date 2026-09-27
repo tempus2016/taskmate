@@ -525,6 +525,18 @@
         "requires_approval": {
           "name": "Kræver godkendelse",
           "description": "Hvis sand, skal en forælder godkende fuldførelsen, før der gives point"
+        },
+        "team_size": {
+          "name": "Holdstørrelse",
+          "description": "Gør pligten til en holdpligt, der først tæller, når så mange forskellige børn er med. Når holdet er fuldt, indsendes den for dem alle. 0 = en normal pligt."
+        },
+        "team_points_mode": {
+          "name": "Holdpoint",
+          "description": "Hvordan en holdpligt udbetaler: \"each\" giver alle deltagere de fulde point, \"split\" deler dem ligeligt (rundet ned)."
+        },
+        "team_bonus": {
+          "name": "Holdbonus",
+          "description": "Ekstra point, hver deltager får, når en holdpligt er fuldført."
         }
       }
     },
@@ -613,6 +625,20 @@
         "child_id": {
           "name": "Barn-ID",
           "description": "ID'et på det barn, der starter timeren"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "Forlad holdpligt",
+      "description": "Tag et barn ud af en holdpligt, det har meldt sig til i dag, før holdet er fuldt",
+      "fields": {
+        "chore_id": {
+          "name": "Pligt-ID",
+          "description": "ID'et på holdpligten"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der forlader holdet"
         }
       }
     },

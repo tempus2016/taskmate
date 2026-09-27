@@ -1132,6 +1132,45 @@ class TaskMateStorage:
             if r.get("requester_id") != child_id and r.get("from_child_id") != child_id
         ]
 
+    # ── Teamwork chore joins (#928) ─────────────────────────────────────
+    # {chore_id: {"date": "YYYY-MM-DD", "joined": [{"child_id", "joined_at",
+    # "photo_url"?}]}}. Runtime state for the occurrence in progress, kept out
+    # of the chore record so an editor save can never wipe (or resurrect) it.
+    # Only the current day's entry counts; anything older is dead on read.
+    def get_team_joins(self, chore_id: str, day: str) -> list[dict]:
+        entry = self._data.get("team_joins", {}).get(chore_id)
+        if not isinstance(entry, dict) or entry.get("date") != day:
+            return []
+        return [dict(j) for j in entry.get("joined", []) if isinstance(j, dict) and j.get("child_id")]
+
+    def set_team_joins(self, chore_id: str, day: str, joined: list[dict]) -> None:
+        store = self._data.setdefault("team_joins", {})
+        if joined:
+            store[chore_id] = {"date": day, "joined": [dict(j) for j in joined]}
+        else:
+            store.pop(chore_id, None)
+
+    def remove_team_joins_for_chore(self, chore_id: str) -> None:
+        self._data.get("team_joins", {}).pop(chore_id, None)
+
+    def remove_team_joins_for_child(self, child_id: str) -> None:
+        """Take a deleted child out of every team they had joined."""
+        store = self._data.get("team_joins", {})
+        for chore_id in list(store):
+            entry = store[chore_id]
+            kept = [j for j in entry.get("joined", []) if j.get("child_id") != child_id]
+            if kept:
+                entry["joined"] = kept
+            else:
+                store.pop(chore_id, None)
+
+    def prune_team_joins(self, keep_date: str) -> None:
+        """Drop joins from any day but keep_date — the occurrence rolled over."""
+        store = self._data.get("team_joins", {})
+        for chore_id in list(store):
+            if store[chore_id].get("date") != keep_date:
+                store.pop(chore_id, None)
+
     # ── Quests (chore chains) ────────────────────────────────────────────
     def get_quests(self) -> list[Quest]:
         return [Quest.from_dict(q) for q in self._data.get("quests", [])]

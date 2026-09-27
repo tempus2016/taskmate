@@ -26,6 +26,14 @@ MAX_CALENDAR_PROJECTION_DAYS: Final = 90
 #                 hides for everyone else (shared quota of 1). A parent rejection reopens it for the pool.
 ASSIGNMENT_MODES: Final = ["everyone", "alternating", "random", "balanced", "first_come", "unassigned"]
 
+# Teamwork chores (#928): how a finished team's points are shared out.
+# "each"  = every participant earns the chore's full points
+# "split" = the points are divided evenly across the team, rounded down
+TEAM_POINTS_MODES: Final = ["each", "split"]
+# Upper bound on team_size — more than a family has children is meaningless,
+# and the joins list rides in a sensor attribute.
+TEAM_SIZE_MAX: Final = 10
+
 # Default values
 DEFAULT_POINTS_NAME: Final = "Stars"
 DEFAULT_POINTS_ICON: Final = "mdi:star"
@@ -129,6 +137,7 @@ SERVICE_COMPLETE_BONUS_SUBTASK: Final = "complete_bonus_subtask"
 SERVICE_START_TIMED_TASK: Final = "start_timed_task"
 SERVICE_PAUSE_TIMED_TASK: Final = "pause_timed_task"
 SERVICE_STOP_TIMED_TASK: Final = "stop_timed_task"
+SERVICE_LEAVE_TEAM_CHORE: Final = "leave_team_chore"
 
 # Events
 EVENT_PREVIEW_SOUND: Final = "taskmate_preview_sound"

@@ -1438,6 +1438,7 @@ class TaskMatePanel extends HTMLElement {
       mandatory: false, mandatory_penalty_points: 0,
       require_photo: false,
       open_ended: false,
+      team_size: 0, team_points_mode: "each", team_bonus: 0,
       publish_calendar_entities: [],
       depends_on: [],
       bonus_subtasks: [],
@@ -1643,6 +1644,16 @@ class TaskMatePanel extends HTMLElement {
     const d = this._dialog.data;
     if (!d.name || !d.name.trim()) { this._showToast("err", this._t("panel.toast_name_required")); return; }
     const wasAdd = this._dialog.mode === "add";
+    // Teamwork (#928). A timed task can't be one, so switching to timed
+    // quietly turns it off rather than refusing the save. The other clashes
+    // are the backend's rules too, checked here so the parent gets a clear
+    // message instead of a raw error.
+    const teamSize = (d.task_type || "standard") === "timed" ? 0 : Math.max(0, Math.floor(Number(d.team_size) || 0));
+    if (teamSize === 1 || teamSize > 10) { this._showToast("err", this._t("panel.chore_team_size_invalid")); return; }
+    if (teamSize >= 2 && (!["everyone", "unassigned"].includes(d.assignment_mode || "everyone") || d.open_ended)) {
+      this._showToast("err", this._t("panel.chore_team_conflict"));
+      return;
+    }
     const base = {
       name: d.name.trim(),
       description: d.description || "",
@@ -1687,6 +1698,9 @@ class TaskMatePanel extends HTMLElement {
       mandatory_penalty_points: Math.max(0, Number(d.mandatory_penalty_points) || 0),
       require_photo: !!d.require_photo,
       open_ended: !!d.open_ended,
+      team_size: teamSize,
+      team_points_mode: d.team_points_mode === "split" ? "split" : "each",
+      team_bonus: Math.max(0, Number(d.team_bonus) || 0),
       publish_calendar_entities: d.publish_calendar_entities || [],
       bonus_subtasks: (d.bonus_subtasks || []).filter(b => b.name && b.name.trim()).map(b => ({
         name: b.name.trim(), points: Number(b.points) || 5,
@@ -3477,6 +3491,9 @@ class TaskMatePanel extends HTMLElement {
     const weeklyPill = Number(c.weekly_target) > 0
       ? ` <span class="tm-pill tm-pill-accent">${this._t("panel.chore_weekly_target_pill", { count: Number(c.weekly_target) })}</span>`
       : "";
+    const teamPill = Number(c.team_size) >= 2
+      ? ` <span class="tm-pill tm-pill-accent">${this._t("panel.chore_team_pill", { count: Number(c.team_size) })}</span>`
+      : "";
     const modeBadge = c.assignment_mode && c.assignment_mode !== "everyone"
       ? `<span class="tm-pill tm-pill-${this._esc(c.assignment_mode)}">${this._t(`panel.assign_${c.assignment_mode}_short`)}</span>` : "";
     const nameCell = renaming
@@ -3496,7 +3513,7 @@ class TaskMatePanel extends HTMLElement {
         </div></td>
         <td><strong class="tm-numeric">${c.task_type === "timed" ? `${this._num(c.timed_rate_points)}/${this._num(c.timed_rate_minutes, 1)} min` : this._num(c.points)}</strong></td>
         <td><span class="tm-pill">${this._esc(this._timeCategoryLabel(c.time_category))}</span></td>
-        <td>${assignedNames} ${modeBadge}</td>
+        <td>${assignedNames} ${modeBadge}${teamPill}</td>
         <td>${currentName}</td>
         <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span>${weeklyPill}</td>
         <td>${c.requires_approval ? `<span class='tm-yes'>${this._t("panel.common_yes")}</span>` : `<span class='tm-no'>${this._t("panel.common_no")}</span>`}</td>
@@ -5482,6 +5499,7 @@ class TaskMatePanel extends HTMLElement {
           this._t("panel.chore_mandatory_hint"), true),
         d.mandatory ? this._field(this._t("panel.chore_mandatory_penalty_label"), "mandatory_penalty_points",
           d.mandatory_penalty_points, "number", this._t("panel.chore_mandatory_penalty_hint")) : "",
+        isTimedTask ? "" : this._renderChoreTeamwork(d),
         memberInGroup ? `
           <div class="tm-field">
             <span class="tm-field-hint">${this._t("panel.chore_group_hint", {name: this._esc(memberInGroup.name), policy: memberInGroup.policy})}</span>
@@ -5796,6 +5814,30 @@ class TaskMatePanel extends HTMLElement {
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-reward">${this._t("panel.btn_save")}</button>`
     );
+  }
+
+  /**
+   * Teamwork (#928): a chore that only counts once N children have joined it.
+   * Tucked into its own section like the other optional behaviours, and open
+   * whenever the chore already is one so an edit shows what's set.
+   */
+  _renderChoreTeamwork(d) {
+    const size = Number(d.team_size) || 0;
+    const open = this._dialog._openAdvanced?.has("teamwork") || size >= 2;
+    return `<details class="tm-advanced" data-section="teamwork"${open ? " open" : ""}>
+      <summary>${this._t("panel.chore_team_section")}</summary>
+      <div>
+        <span class="tm-field-hint" style="margin-bottom:8px;display:block">${this._t("panel.chore_team_hint")}</span>
+        <div class="tm-field-row">
+          ${this._field(this._t("panel.chore_team_size_label"), "team_size", size, "number")}
+          ${this._select(this._t("panel.chore_team_points_label"), "team_points_mode", d.team_points_mode || "each", [
+            { v: "each", l: this._t("panel.chore_team_points_each") },
+            { v: "split", l: this._t("panel.chore_team_points_split") },
+          ])}
+          ${this._field(this._t("panel.chore_team_bonus_label"), "team_bonus", d.team_bonus || 0, "number")}
+        </div>
+      </div>
+    </details>`;
   }
 
   /**

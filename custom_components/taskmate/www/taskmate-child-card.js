@@ -815,6 +815,42 @@ class TaskMateChildCard extends LitElement {
 
       .first-come-label ha-icon { --mdc-icon-size: 12px; }
 
+      /* Teamwork chores (#928): joiners' avatars + "2 / 3 joined". Shared by
+         the classic row, the designed rows (as a .tmd-tag) and pre-reader
+         tiles, so every colour carries a classic fallback. */
+      .tm-team {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: 0.72rem; font-weight: 700;
+        color: var(--secondary-text-color);
+        max-width: 100%;
+      }
+      .tm-team.team-label {
+        background: color-mix(in srgb, var(--primary-text-color, #212121) 8%, transparent);
+        border-radius: 999px; padding: 2px 8px 2px 3px; margin-top: 3px;
+      }
+      .tm-team.mine { color: var(--tmd-good, #2e7d32); }
+      .tm-team.tmd-tag { padding: 2px 7px 2px 2px; }
+      .tm-team-avs { display: inline-flex; }
+      .tm-team-avs:empty { display: none; }
+      .tm-team-av {
+        width: 18px; height: 18px; border-radius: 50%;
+        display: inline-grid; place-items: center; overflow: hidden;
+        background: var(--ac, #7e57c2); color: #fff;
+        font-size: 10px; font-weight: 800; line-height: 1;
+        border: 2px solid var(--card-background-color, #fff);
+        margin-left: -5px;
+      }
+      .tm-team-av:first-child { margin-left: 0; }
+      .tm-team-av img { width: 100%; height: 100%; object-fit: cover; }
+      .tm-team-av ha-icon { --mdc-icon-size: 12px; }
+      .tm-team-txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      /* Joined but the team isn't full: a half-way state between the empty
+         box and the solid green "done" one. */
+      .chore-checkbox.team ha-icon { color: var(--secondary-text-color, #7f8c8d); }
+      .chore-checkbox.team-joined { border-color: var(--fun-green); background: rgba(46, 204, 113, 0.16); }
+      .chore-checkbox.team-joined ha-icon { color: var(--fun-green); }
+      .pre-tile-team { justify-content: center; font-size: 0.7rem; }
+
       /* Locked preview — chore is visible but not yet claimable because its
          time-of-day window has not started. Dim with a padlock badge. */
       .chore-card.chore-locked {
@@ -2306,6 +2342,63 @@ class TaskMateChildCard extends LitElement {
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }
 
+  // Teamwork chores (#928). The backend emits `team` only on a teamwork chore:
+  // {size, joined?: [child ids who have joined today], split?}. Null for every
+  // other chore, so callers can gate on it.
+  _teamState(chore, child) {
+    const team = chore && chore.team;
+    const size = team ? Number(team.size) || 0 : 0;
+    if (size < 2) return null;
+    const joined = Array.isArray(team.joined) ? team.joined.map(String) : [];
+    return { size, joined, mine: joined.includes(String(child?.id || "")) };
+  }
+
+  /** "2 / 3 joined" with the joiners' avatars. Shared by every render path —
+   *  the classic row, the designed rows (via _designChoreMeta) and the
+   *  pre-reader tile — so the progress can't go missing on one of them. */
+  _renderTeamProgress(team, cls = "") {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+      || this.hass?.states?.[this.config.entity]?.attributes || {};
+    const kids = attrs.children || [];
+    const fallback = ["#ff7043", "#42a5f5", "#66bb6a", "#ab47bc", "#ffa726", "#26c6da"];
+    const label = this._t("child.team_progress", { joined: team.joined.length, size: team.size });
+    return html`<span class="tm-team ${cls} ${team.mine ? "mine" : ""}" aria-label="${label}">
+      <span class="tm-team-avs">${team.joined.map((id) => {
+        const i = kids.findIndex((k) => String(k.id) === id);
+        const kid = kids[i] || { name: "?" };
+        const a = kid.avatar || "";
+        const tone = `var(--tmd-c${((i < 0 ? 0 : i) % 6) + 1}, ${fallback[(i < 0 ? 0 : i) % 6]})`;
+        return html`<span class="tm-team-av" style="--ac:${tone}" title="${kid.name || ""}">${a.startsWith("mdi:")
+          ? html`<ha-icon icon="${a}"></ha-icon>`
+          : a ? html`<img src="${a}" alt="">` : (kid.name || "?").slice(0, 1).toUpperCase()}</span>`;
+      })}</span>
+      <span class="tm-team-txt">👥 ${label}${team.mine ? html` · ${this._t("child.team_you_joined")}` : ""}</span>
+    </span>`;
+  }
+
+  /** A teamwork Done tap: join (no completion yet) or, if already in, leave. */
+  async _handleTeamTap(chore, child, team, photoUrl = null) {
+    if (this._loading[chore.id]) return;
+    this._loading = { ...this._loading, [chore.id]: true };
+    this.requestUpdate();
+    try {
+      if (team.mine) {
+        await this.hass.callService("taskmate", "leave_team_chore", { chore_id: chore.id, child_id: child.id });
+      } else {
+        await this.hass.callService("taskmate", "complete_chore", {
+          chore_id: chore.id,
+          child_id: child.id,
+          ...(photoUrl ? { photo_url: photoUrl } : {}),
+        });
+      }
+    } catch (error) {
+      console.error("Failed to update teamwork chore:", error);
+    } finally {
+      this._loading = { ...this._loading, [chore.id]: false };
+      this.requestUpdate();
+    }
+  }
+
   _choreEmoji(chore) {
     const n = `${chore.name || ""} ${chore.icon || ""}`.toLowerCase();
     const map = [
@@ -2476,6 +2569,7 @@ class TaskMateChildCard extends LitElement {
         mandatory: chore.mandatory === true,
         photo: chore.require_photo === true,
         openEnded: chore.open_ended === true,
+        team: this._teamState(chore, child),
         pointsIcon,
         todaysCompletions,
       };
@@ -2624,7 +2718,7 @@ class TaskMateChildCard extends LitElement {
       ? this._t("child.weekly_target_progress", { done: r.chore._weeklyProgress, target: r.chore._weeklyTarget })
       : "";
     return html`
-      ${r.mandatory || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || weeklyLabel ? html`
+      ${r.mandatory || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || weeklyLabel || (r.team && !r.done) ? html`
         <div class="tmd-meta">
           ${r.mandatory ? html`<span class="tmd-tag mandatory">⚠ ${this._t("child.mandatory")}</span>` : ""}
           ${r.photo ? html`<span class="tmd-tag photo">📷 ${this._t("child.photo_needed")}</span>` : ""}
@@ -2633,6 +2727,7 @@ class TaskMateChildCard extends LitElement {
           ${recLabel ? html`<span class="tmd-tag">🕒 ${recLabel}</span>` : ""}
           ${firstComeLabel ? html`<span class="tmd-tag">✅ ${firstComeLabel}</span>` : ""}
           ${weeklyLabel ? html`<span class="tmd-tag">📅 ${weeklyLabel}</span>` : ""}
+          ${r.team && !r.done ? this._renderTeamProgress(r.team, "tmd-tag") : ""}
         </div>` : ""}
       ${showDesc ? html`<div class="tmd-desc">${r.chore.description}</div>` : ""}`;
   }
@@ -2647,6 +2742,11 @@ class TaskMateChildCard extends LitElement {
   }
 
   _designDoneBtn(r, label, cls) {
+    // Teamwork (#928): one place relabels the button for every design.
+    if (r.team) {
+      label = r.team.mine ? this._t("child.team_leave") : `${r.photo ? "📷 " : ""}${this._t("child.team_join")}`;
+      cls = `${cls || ""} ${r.team.mine ? "tm-team-leave" : ""}`;
+    }
     return html`<button class="btn ${cls || ""}"
       ?disabled=${r.loading || r.blocked || r.recLocked || r.firstComeLocked || r.weeklyDone}
       @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
@@ -3528,6 +3628,8 @@ class TaskMateChildCard extends LitElement {
             </div>`}
         ${this.config.pre_reader_labels === true
           ? html`<div class="pre-tile-label">${chore.name}</div>` : ''}
+        ${!isDone && this._teamState(chore, child)
+          ? this._renderTeamProgress(this._teamState(chore, child), 'pre-tile-team') : ''}
       </button>
     `;
   }
@@ -3667,6 +3769,7 @@ class TaskMateChildCard extends LitElement {
       }
     };
 
+    const team = isCompletedForToday ? null : this._teamState(chore, child);
     const titleText = isLockedPreview
       ? (lockedUntilLabel || this._t('child.chore_locked_until_generic'))
       : depBlocked
@@ -3683,6 +3786,8 @@ class TaskMateChildCard extends LitElement {
             ? this._t('child.weekly_target_done')
           : isCompletedForToday
             ? this._t('child.click_to_undo')
+          : team
+            ? this._t(team.mine ? 'child.team_tap_to_leave' : 'child.team_tap_to_join')
             : this._t('child.click_to_complete');
 
     return html`
@@ -3743,14 +3848,17 @@ class TaskMateChildCard extends LitElement {
                 <span class="photo-badge">✍️ ${this._t('child.open_ended_tag')}</span>
               </div>
             ` : ''}
+            ${team ? html`<div>${this._renderTeamProgress(team, 'team-label')}</div>` : ''}
           </div>
         </div>
-        <div class="chore-checkbox">
+        <div class="chore-checkbox ${team ? 'team' : ''} ${team?.mine ? 'team-joined' : ''}">
           ${isLoading
             ? html`<ha-icon icon="mdi:loading" style="animation: spin 1s linear infinite; color: var(--fun-purple);"></ha-icon>`
             : isLockedPreview
               ? html`<ha-icon icon="mdi:lock-clock" class="chore-lock-icon"></ha-icon>`
-              : html`<ha-icon icon="mdi:check-bold"></ha-icon>`}
+              : team
+                ? html`<ha-icon icon="${team.mine ? 'mdi:account-multiple-minus' : 'mdi:account-multiple-plus'}"></ha-icon>`
+                : html`<ha-icon icon="mdi:check-bold"></ha-icon>`}
         </div>
       </div>
     `;
@@ -4140,8 +4248,25 @@ class TaskMateChildCard extends LitElement {
       return;
     }
 
+    // Teamwork (#928): a child already in the team taps to leave — no photo
+    // needed for that. Gated here, like open-ended, so every render path
+    // (classic, designed, pre-reader) behaves the same.
+    const team = this._teamState(chore, child);
+    if (team && team.mine) {
+      await this._handleTeamTap(chore, child, team);
+      return;
+    }
+
     if (chore.require_photo && !photoUrl) {
       this._openPhotoCapture(chore, child, extra);
+      return;
+    }
+
+    // A join that doesn't fill the team records nothing yet, so it skips the
+    // optimistic "done" state and the celebration below. The join that DOES
+    // fill it completes the chore for this child like any other tap.
+    if (team && team.joined.length + 1 < team.size) {
+      await this._handleTeamTap(chore, child, team, photoUrl);
       return;
     }
 

@@ -525,6 +525,18 @@
         "requires_approval": {
           "name": "Krever godkjenning",
           "description": "Hvis sann må en forelder godkjenne fullføringen før poeng tildeles"
+        },
+        "team_size": {
+          "name": "Lagstørrelse",
+          "description": "Gjør dette til en lagoppgave som først teller når så mange ulike barn er med. Når laget er fullt, sendes den inn for alle. 0 = en vanlig oppgave."
+        },
+        "team_points_mode": {
+          "name": "Lagpoeng",
+          "description": "Hvordan en lagoppgave betaler ut: «each» gir alle deltakerne fulle poeng, «split» deler dem likt (rundet ned)."
+        },
+        "team_bonus": {
+          "name": "Lagbonus",
+          "description": "Ekstra poeng hver deltaker får når en lagoppgave er fullført."
         }
       }
     },
@@ -613,6 +625,20 @@
         "child_id": {
           "name": "Barn-ID",
           "description": "ID-en til barnet som starter timeren"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "Forlat lagoppgave",
+      "description": "Ta et barn ut av en lagoppgave det ble med på i dag, før laget er fullt",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgave-ID",
+          "description": "ID-en til lagoppgaven"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID-en til barnet som forlater laget"
         }
       }
     },

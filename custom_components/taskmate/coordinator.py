@@ -32,6 +32,7 @@ from .coord_rewards import RewardsMixin
 from .coord_roulette import RouletteMixin
 from .coord_scheduled import ScheduledChangesMixin
 from .coord_sounds import SoundsMixin
+from .coord_teamwork import TeamworkMixin
 from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
 from .coord_tts import ReadAloudMixin
@@ -61,6 +62,7 @@ class TaskMateCoordinator(
     GuestsMixin,
     UnlocksMixin,
     SoundsMixin,
+    TeamworkMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -761,6 +763,9 @@ class TaskMateCoordinator(
                 _LOGGER.exception("Midnight maintenance step %s failed", step.__name__)
         # Prune all-chores-done daily flags older than today
         self.storage.prune_all_done_flags(dt_util.now().date().isoformat())
+        # Teamwork joins are per occurrence (#928): yesterday's half-formed
+        # teams are dead, so drop them rather than carry them in the store.
+        self.storage.prune_team_joins(dt_util.as_local(dt_util.now()).date().isoformat())
         await self.storage.async_save()
 
     async def _async_sweep_orphan_photos(self) -> None:
@@ -871,6 +876,9 @@ class TaskMateCoordinator(
         # handover to or from a deleted child can never complete, and the
         # approval queue would render them as "?".
         self.storage.remove_swap_requests_for_child(child_id)
+        # And out of any teamwork chore they had joined (#928), or the team
+        # would count a member who can never be paid.
+        self.storage.remove_team_joins_for_child(child_id)
         # Remove child from chore assigned_to lists, and clear any approved swap
         # override that pointed at them so the chore isn't left assigned to a
         # child who no longer exists.

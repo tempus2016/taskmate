@@ -525,6 +525,18 @@
         "requires_approval": {
           "name": "Requires Approval",
           "description": "If true, a parent must approve the completion before points are awarded"
+        },
+        "team_size": {
+          "name": "Team size",
+          "description": "Make this a teamwork chore that only counts once this many different children have joined it. When the team is full it submits for all of them. 0 = a normal chore."
+        },
+        "team_points_mode": {
+          "name": "Team points",
+          "description": "How a teamwork chore pays out: \"each\" gives every participant the full points, \"split\" divides them evenly (rounded down)."
+        },
+        "team_bonus": {
+          "name": "Team bonus",
+          "description": "Extra points each participant earns when a teamwork chore is completed."
         }
       }
     },
@@ -613,6 +625,20 @@
         "child_id": {
           "name": "Child ID",
           "description": "The ID of the child starting the timer"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "Leave Teamwork Chore",
+      "description": "Take a child back out of a teamwork chore they joined today, before the team is complete",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the teamwork chore"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child leaving the team"
         }
       }
     },

@@ -525,6 +525,18 @@
         "requires_approval": {
           "name": "Erfordert eine Genehmigung",
           "description": "Wenn dies zutrifft, muss ein Elternteil den Abschluss genehmigen, bevor Punkte vergeben werden"
+        },
+        "team_size": {
+          "name": "Teamgröße",
+          "description": "Macht daraus eine Teamaufgabe, die erst zählt, wenn so viele verschiedene Kinder mitmachen. Sobald das Team voll ist, wird sie für alle eingereicht. 0 = normale Aufgabe."
+        },
+        "team_points_mode": {
+          "name": "Team-Punkte",
+          "description": "Wie eine Teamaufgabe auszahlt: „each“ gibt jedem Kind die vollen Punkte, „split“ teilt sie gleichmäßig auf (abgerundet)."
+        },
+        "team_bonus": {
+          "name": "Teambonus",
+          "description": "Zusätzliche Punkte für jedes beteiligte Kind, wenn eine Teamaufgabe erledigt ist."
         }
       }
     },
@@ -613,6 +625,20 @@
         "child_id": {
           "name": "Kinder-ID",
           "description": "Die ID des Kindes, das den Timer startet"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "Teamaufgabe verlassen",
+      "description": "Nimmt ein Kind wieder aus einer Teamaufgabe heraus, der es heute beigetreten ist, bevor das Team vollständig ist",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID der Teamaufgabe"
+        },
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, das das Team verlässt"
         }
       }
     },

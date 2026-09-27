@@ -348,6 +348,15 @@ class Chore:
     # the real points when approving. Forces parent approval — a child types
     # the suggestion, so it must never self-award.
     open_ended: bool = False
+    # Teamwork chores (#928): the chore only counts once team_size different
+    # children have joined the day's occurrence; then it submits for all of
+    # them at once. 0 = an ordinary chore. team_points_mode "each" pays every
+    # participant the full points, "split" divides them evenly (rounded down);
+    # team_bonus is added per participant either way. Who has joined so far
+    # is runtime state, kept in storage["team_joins"], not on the chore.
+    team_size: int = 0
+    team_points_mode: str = "each"  # each | split
+    team_bonus: int = 0
     # Dynamic assignment (sibling rotation)
     assignment_mode: str = "everyone"  # everyone | alternating | random
     assignment_rotation_anchor: str = ""  # ISO date; day-0 of the rotation for alternating
@@ -432,6 +441,9 @@ class Chore:
             mandatory_penalty_points=max(0, int(data.get("mandatory_penalty_points", 0) or 0)),
             require_photo=data.get("require_photo", False),
             open_ended=data.get("open_ended", False),
+            team_size=max(0, int(data.get("team_size", 0) or 0)),
+            team_points_mode="split" if data.get("team_points_mode") == "split" else "each",
+            team_bonus=max(0, int(data.get("team_bonus", 0) or 0)),
             assignment_mode=data.get("assignment_mode", "everyone"),
             assignment_rotation_anchor=data.get("assignment_rotation_anchor", ""),
             assignment_current_child_id=data.get("assignment_current_child_id", ""),
@@ -500,6 +512,9 @@ class Chore:
             "mandatory_penalty_points": self.mandatory_penalty_points,
             "require_photo": self.require_photo,
             "open_ended": self.open_ended,
+            "team_size": self.team_size,
+            "team_points_mode": self.team_points_mode,
+            "team_bonus": self.team_bonus,
             "assignment_mode": self.assignment_mode,
             "assignment_rotation_anchor": self.assignment_rotation_anchor,
             "assignment_current_child_id": self.assignment_current_child_id,

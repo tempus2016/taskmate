@@ -67,9 +67,12 @@ from .const import (
     DOMAIN,
     MAX_TIME_PERIODS,
     SCHEDULE_MODES,
+    TEAM_POINTS_MODES,
+    TEAM_SIZE_MAX,
     TIME_CATEGORY_ICONS,
     is_valid_completion_sound,
 )
+from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
 from .models import BonusSubTask, Reward
 from .sounds import MAX_NAME_LEN as MAX_SOUND_NAME_LEN
@@ -603,6 +606,9 @@ _CHORE_EDITABLE_FIELDS = {
     "late_penalty",
     "require_photo",
     "open_ended",
+    "team_size",
+    "team_points_mode",
+    "team_bonus",
     "mandatory",
     "mandatory_penalty_points",
     "assignment_mode",
@@ -663,6 +669,12 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("mandatory_penalty_points"): vol.All(int, vol.Range(min=0)),
         vol.Optional("require_photo"): bool,
         vol.Optional("open_ended"): bool,
+        # Teamwork chores (#928): 0 = an ordinary chore, otherwise 2..max.
+        # The cross-field rules (not first-come, not open-ended) are checked
+        # by teamwork_config_error once the whole chore is known.
+        vol.Optional("team_size"): vol.All(int, vol.Range(min=0, max=TEAM_SIZE_MAX)),
+        vol.Optional("team_points_mode"): vol.In(TEAM_POINTS_MODES),
+        vol.Optional("team_bonus"): vol.All(int, vol.Range(min=0)),
         vol.Optional("assignment_mode"): vol.In(ASSIGNMENT_MODES),
         vol.Optional("assignment_rotation_anchor"): str,
         vol.Optional("require_availability"): bool,
@@ -707,6 +719,18 @@ async def _maybe_apply_manual_start(coordinator, chore_id: str, child_id: str | 
 @websocket_api.async_response
 @_admin_only
 async def _ws_add_chore(hass, connection, msg, coordinator):
+    # The chore is created and then updated with the remaining fields, so a bad
+    # teamwork combination (#928) has to be refused before the create — the
+    # update would reject it only after an ordinary chore already existed.
+    team_error = teamwork_config_error(
+        msg.get("team_size", 0),
+        assignment_mode=msg.get("assignment_mode", "everyone"),
+        open_ended=bool(msg.get("open_ended", False)),
+        task_type=msg.get("task_type", "standard"),
+        team_points_mode=msg.get("team_points_mode", "each"),
+    )
+    if team_error:
+        raise ValueError(team_error)
     chore = await coordinator.async_add_chore(
         name=msg["name"].strip(),
         points=msg.get("points", 10),

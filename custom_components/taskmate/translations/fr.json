@@ -525,6 +525,18 @@
         "requires_approval": {
           "name": "Nécessite approbation",
           "description": "Si vrai, un parent doit approuver l'exécution avant que les points soient attribués"
+        },
+        "team_size": {
+          "name": "Taille de l'équipe",
+          "description": "Fait de cette corvée une tâche d'équipe qui ne compte qu'une fois que ce nombre d'enfants différents l'ont rejointe. Quand l'équipe est complète, elle est soumise pour tous. 0 = corvée normale."
+        },
+        "team_points_mode": {
+          "name": "Points d'équipe",
+          "description": "Comment une tâche d'équipe rapporte : « each » donne tous les points à chaque participant, « split » les partage à parts égales (arrondi à l'inférieur)."
+        },
+        "team_bonus": {
+          "name": "Bonus d'équipe",
+          "description": "Points supplémentaires gagnés par chaque participant quand une tâche d'équipe est terminée."
         }
       }
     },
@@ -613,6 +625,20 @@
         "child_id": {
           "name": "ID de l'enfant",
           "description": "L'identifiant de l'enfant démarrant le minuteur"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "Quitter une tâche d'équipe",
+      "description": "Retirer un enfant d'une tâche d'équipe qu'il a rejointe aujourd'hui, avant que l'équipe soit complète",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la corvée",
+          "description": "L'identifiant de la tâche d'équipe"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant qui quitte l'équipe"
         }
       }
     },

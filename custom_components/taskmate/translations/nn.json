@@ -525,6 +525,18 @@
         "requires_approval": {
           "name": "Krev godkjenning",
           "description": "Om sann må ein forelder godkjenne fullføringa før poeng vert tildelte"
+        },
+        "team_size": {
+          "name": "Lagstorleik",
+          "description": "Gjer dette til ei lagoppgåve som først tel når så mange ulike born er med. Når laget er fullt, vert ho send inn for alle. 0 = ei vanleg oppgåve."
+        },
+        "team_points_mode": {
+          "name": "Lagpoeng",
+          "description": "Korleis ei lagoppgåve betaler ut: «each» gjev alle deltakarane fulle poeng, «split» deler dei likt (runda ned)."
+        },
+        "team_bonus": {
+          "name": "Lagbonus",
+          "description": "Ekstra poeng kvar deltakar får når ei lagoppgåve er fullført."
         }
       }
     },
@@ -613,6 +625,20 @@
         "child_id": {
           "name": "Born-ID",
           "description": "ID-en til bornet som startar timeren"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "Forlat lagoppgåve",
+      "description": "Ta eit born ut av ei lagoppgåve det vart med på i dag, før laget er fullt",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgåve-ID",
+          "description": "ID-en til lagoppgåva"
+        },
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som forlèt laget"
         }
       }
     },

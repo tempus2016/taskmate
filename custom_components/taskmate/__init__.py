@@ -90,6 +90,7 @@ from .const import (
     SERVICE_COMPLETE_CHORE,
     SERVICE_DISMISS_MANDATORY_CHORE,
     SERVICE_GIFT_POINTS,
+    SERVICE_LEAVE_TEAM_CHORE,
     SERVICE_PAUSE_TIMED_TASK,
     SERVICE_POSTPONE_MANDATORY_CHORE,
     SERVICE_PREVIEW_SOUND,
@@ -115,6 +116,8 @@ from .const import (
     SERVICE_UPDATE_PENALTY,
     SERVICE_UPDATE_TASK_GROUP,
     TASK_GROUP_POLICIES,
+    TEAM_POINTS_MODES,
+    TEAM_SIZE_MAX,
     TIME_CATEGORIES,
 )
 from .coordinator import TaskMateCoordinator
@@ -537,6 +540,17 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             # no-ops inside the coordinator. Surface real errors as a clean
             # validation error rather than an unhandled 500 + traceback.
             raise ServiceValidationError(str(err)) from err
+
+    async def handle_leave_team_chore(call: ServiceCall) -> None:
+        """Take a child back out of a teamwork chore they joined (#928)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        child_id = call.data[ATTR_CHILD_ID]
+        # Same gate as completing: a child acts for themselves, parents for anyone.
+        await _async_require_linked_child(hass, call, coordinator, child_id)
+        await coordinator.async_leave_team_chore(call.data[ATTR_CHORE_ID], child_id)
 
     async def handle_complete_bonus_subtask(call: ServiceCall) -> None:
         """Handle the complete_bonus_subtask service call."""
@@ -1004,6 +1018,9 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             schedule_mode=schedule_mode,
             deadline_at=deadline_at,
             speed_bonus_points=call.data.get(ATTR_CHORE_SPEED_BONUS_POINTS, 0),
+            team_size=call.data.get("team_size", 0),
+            team_points_mode=call.data.get("team_points_mode", "each"),
+            team_bonus=call.data.get("team_bonus", 0),
         )
 
     async def handle_add_badge(call: ServiceCall) -> None:
@@ -1146,6 +1163,18 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             {
                 vol.Required(ATTR_CHORE_ID): cv.string,
                 vol.Required(ATTR_BONUS_SUBTASK_ID): cv.string,
+                vol.Required(ATTR_CHILD_ID): cv.string,
+            }
+        ),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_LEAVE_TEAM_CHORE,
+        _audited(handle_leave_team_chore),
+        schema=vol.Schema(
+            {
+                vol.Required(ATTR_CHORE_ID): cv.string,
                 vol.Required(ATTR_CHILD_ID): cv.string,
             }
         ),
@@ -1554,6 +1583,12 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Optional(ATTR_CHORE_REQUIRES_APPROVAL, default=True): cv.boolean,
                 vol.Optional(ATTR_CHORE_EXPIRES_IN_MINUTES, default=0): vol.All(cv.positive_int, vol.Range(max=10080)),
                 vol.Optional(ATTR_CHORE_SPEED_BONUS_POINTS, default=0): cv.positive_int,
+                # Teamwork (#928). The service creates "everyone" chores, so the
+                # only cross-field rule left to check is the size range, which
+                # async_add_chore enforces.
+                vol.Optional("team_size", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=TEAM_SIZE_MAX)),
+                vol.Optional("team_points_mode", default="each"): vol.In(TEAM_POINTS_MODES),
+                vol.Optional("team_bonus", default=0): cv.positive_int,
             }
         ),
     )
@@ -1722,6 +1757,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_ADD_TASK_GROUP,
         SERVICE_UPDATE_TASK_GROUP,
         SERVICE_REMOVE_TASK_GROUP,
+        SERVICE_LEAVE_TEAM_CHORE,
         SERVICE_START_TIMED_TASK,
         SERVICE_PAUSE_TIMED_TASK,
         SERVICE_STOP_TIMED_TASK,
