@@ -30,6 +30,9 @@ const BADGE_METRICS = [
   { v: "birthday",      lk: "badge.metric_birthday" },
 ];
 const BADGE_BOOL_METRICS = ["first_chore", "first_reward", "birthday"];
+// Quick picks for a bounty's icon (#931); the icon picker below them takes any.
+const BOUNTY_ICONS = ["mdi:car-wash", "mdi:leaf", "mdi:recycle", "mdi:home-outline",
+  "mdi:silverware-clean", "mdi:broom", "mdi:book-open-variant", "mdi:star-outline"];
 const BADGE_OPERATORS = ["≥", "=", "≤", ">", "<", "≠"];
 const BADGE_OP_VALUES = { "≥": ">=", "=": "==", "≤": "<=", ">": ">", "<": "<", "≠": "!=" };
 const BADGE_TIERS = [
@@ -663,6 +666,19 @@ class TaskMatePanel extends HTMLElement {
     if (act === "delete-challenge") { this._confirmDelete("challenge", t.dataset.id); return; }
     if (act === "save-challenge")   { this._doSaveChallenge(); return; }
     if (act === "toggle-challenge-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
+
+    // Bounty board (#931)
+    if (act === "bounty-subtab")    { this._bountySubTab = t.dataset.id; this._render(); return; }
+    if (act === "add-bounty")       { this._openBountyDialog(null); return; }
+    if (act === "edit-bounty")      { this._openBountyDialog(t.dataset.id); return; }
+    if (act === "delete-bounty")    { this._doRemoveBounty(t.dataset.id); return; }
+    if (act === "release-bounty")   { this._doReleaseBounty(t.dataset.id); return; }
+    if (act === "save-bounty")      { this._doSaveBounty(); return; }
+    if (act === "bounty-points")    { this._bountyDialogSet("points", Number(t.dataset.id)); return; }
+    if (act === "bounty-icon")      { this._bountyDialogSet("icon", t.dataset.id); return; }
+    if (act === "bounty-exp")       { this._bountyDialogSet("exp_mode", t.dataset.id); return; }
+    if (act === "bounty-el-all")    { this._bountyDialogSet("eligible_child_ids", []); return; }
+    if (act === "toggle-bounty-el") { this._syncIconPickers(); this._toggleArrayField("eligible_child_ids", t.dataset.id); return; }
 
     // Avatar unlockables
     if (act === "manage-avatars")     { this._openAvatarCatalogDialog(); return; }
@@ -2753,6 +2769,7 @@ class TaskMatePanel extends HTMLElement {
       bonuses:   (this._state.bonuses || []).length,
       groups:    (this._state.task_groups || []).length,
       templates: (this._state.templates || []).length,
+      bounties:  (this._state.bounties || []).filter(b => ["open", "claimed", "pending"].includes(b.status)).length,
     } : {};
     return [
       { head: this._t("panel.nav_today"), items: [
@@ -2762,6 +2779,7 @@ class TaskMatePanel extends HTMLElement {
       { head: this._t("panel.nav_manage"), items: [
         { id: "children",  label: this._t("panel.tab_children"),  icon: "mdi:account-multiple" },
         { id: "chores",    label: this._t("panel.tab_chores"),    icon: "mdi:check-circle-outline" },
+        { id: "bounties",  label: this._t("panel.tab_bounties"),  icon: "mdi:flag-outline" },
         { id: "rewards",   label: this._t("panel.tab_rewards"),   icon: "mdi:gift-outline" },
         { id: "penalties", label: this._t("panel.tab_penalties"), icon: "mdi:alert-circle-outline" },
         { id: "bonuses",   label: this._t("panel.tab_bonuses"),   icon: "mdi:flash-outline" },
@@ -2936,6 +2954,7 @@ class TaskMatePanel extends HTMLElement {
       case "groups":    return this._renderGroupsTab();
       case "quests":    return this._renderQuestsTab();
       case "challenges": return this._renderChallengesTab();
+      case "bounties":   return this._renderBountiesTab();
       case "badges":    return this._renderBadgesTab();
       case "templates":     return this._renderTemplatesTab();
       case "notifications": return this._renderNotificationsTab();
@@ -3449,6 +3468,10 @@ class TaskMatePanel extends HTMLElement {
     const childById = Object.fromEntries((this._state.children || []).map(c => [c.id, c]));
     const choreById = Object.fromEntries((this._state.chores || []).map(c => [c.id, c]));
     const rewardById = Object.fromEntries((this._state.rewards || []).map(r => [r.id, r]));
+    // A bounty's completion (#931) names the bounty; it has no chore.
+    for (const b of this._state.bounties || []) {
+      if (!choreById[b.id]) choreById[b.id] = { id: b.id, name: b.title, points: b.points, bounty: true };
+    }
 
     // Recent activity feed: merge approved completions + claims + transactions
     const events = [];
@@ -3517,7 +3540,7 @@ class TaskMatePanel extends HTMLElement {
               const photoCap = [choreName, (child && child.name) || "", c.completed_at ? new Date(c.completed_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""].filter(Boolean).join(" · ");
               return `
                 <div class="tm-approval-item">
-                  <div class="tm-approval-icon"><ha-icon icon="${c.bonus_subtask_id ? 'mdi:star-plus' : 'mdi:checkbox-marked-circle-outline'}"></ha-icon></div>
+                  <div class="tm-approval-icon"><ha-icon icon="${c.bonus_subtask_id ? 'mdi:star-plus' : c.bounty_id ? 'mdi:flag-outline' : 'mdi:checkbox-marked-circle-outline'}"></ha-icon></div>
                   ${this._safePhotoUrl(c.photo_url) ? `<a class="tm-approval-photo" href="${this._esc(this._safePhotoUrl(c.photo_url))}" target="_blank" rel="noopener" data-act="view-photo" data-photo="${this._esc(this._safePhotoUrl(c.photo_url))}" data-cap="${this._esc(photoCap)}" title="${this._t("panel.activity_view_photo")}"><img src="${this._esc(this._safePhotoUrl(c.photo_url))}" alt="" loading="lazy"></a>` : ""}
                   <div class="tm-approval-body">
                     <div class="tm-approval-line">${this._t("panel.activity_completed_text", {child: this._esc((child && child.name) || "?"), chore: this._esc(choreName)})}</div>
@@ -3911,6 +3934,310 @@ class TaskMatePanel extends HTMLElement {
         </div>
       </article>
     `;
+  }
+
+  // -- Bounties tab (#931) ----------------------------------------------
+  // One-off jobs any eligible child can claim. Active = open + claimed;
+  // Waiting approval = submitted, and the same completion also sits in the
+  // Activity queue and the approvals card; History = completed + expired.
+  _bountyLists() {
+    const all = this._state.bounties || [];
+    const closedDesc = (a, b) => String(b.closed_at || "").localeCompare(String(a.closed_at || ""));
+    return {
+      active: all.filter(b => b.status === "open" || b.status === "claimed"),
+      pending: all.filter(b => b.status === "pending"),
+      history: all.filter(b => b.status === "completed" || b.status === "expired").sort(closedDesc),
+    };
+  }
+
+  _bountyDur(ms) {
+    const sec = Math.max(0, Math.round(ms / 1000));
+    const d = Math.floor(sec / 86400);
+    const h = Math.floor((sec % 86400) / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (d) return this._t("bounty.dur_days", { d, h });
+    if (h) return this._t("bounty.dur_hours", { h, m: String(m).padStart(2, "0") });
+    return this._t("bounty.dur_minutes", { m, s: String(s).padStart(2, "0") });
+  }
+
+  _renderBountiesTab() {
+    const lists = this._bountyLists();
+    const all = this._state.bounties || [];
+    const sub = this._bountySubTab || "active";
+    const rows = lists[sub] || [];
+    const childById = Object.fromEntries((this._state.children || []).map(c => [c.id, c]));
+    const tabs = [
+      { id: "active", label: this._t("panel.bounty_tab_active", { count: lists.active.length }) },
+      { id: "pending", label: this._t("panel.bounty_tab_pending", { count: lists.pending.length }) },
+      { id: "history", label: this._t("panel.bounty_tab_history", { count: lists.history.length }) },
+    ];
+    return `
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">${this._t("panel.tab_bounties")} <span class="tm-toolbar-count">${lists.active.length + lists.pending.length}</span></h2>
+        <button type="button" class="tm-btn tm-btn-raised" data-act="add-bounty">${this._t("panel.bounty_post_btn")}</button>
+      </div>
+      ${all.length === 0 ? this._emptyState("🏁", this._t("panel.bounty_empty_title"), this._t("panel.bounty_empty_copy"), "add-bounty", this._t("panel.bounty_post_btn")) : `
+        <div class="tm-chip-row" style="margin-bottom:14px">
+          ${tabs.map(t => `<button type="button" class="tm-chip-btn ${t.id === sub ? "tm-chip-on" : ""}" data-act="bounty-subtab" data-id="${t.id}">${this._esc(t.label)}</button>`).join("")}
+        </div>
+        <div class="tm-table-wrap">
+          <table class="tm-table">
+            <thead><tr>
+              <th>${this._t("panel.bounty_col_bounty")}</th><th>${this._t("panel.bounty_col_points")}</th><th>${this._t("panel.bounty_col_eligible")}</th><th>${this._t("panel.bounty_col_status")}</th><th>${this._t("panel.bounty_col_expires")}</th><th></th>
+            </tr></thead>
+            <tbody>
+              ${rows.length === 0
+                ? `<tr><td colspan="6" class="tm-meta" style="text-align:center;padding:26px">${this._t("panel.bounty_nothing")}</td></tr>`
+                : rows.map(b => this._renderBountyRow(b, childById)).join("")}
+            </tbody>
+          </table>
+        </div>
+      `}
+    `;
+  }
+
+  _renderBountyRow(b, childById) {
+    const now = Date.now();
+    const name = (id) => (childById[id] && childById[id].name) || "?";
+    const eligible = (b.eligible_child_ids || []).length
+      ? this._esc(b.eligible_child_ids.map(name).join(", "))
+      : `<span class="tm-text-muted">${this._t("panel.bounty_all_children")}</span>`;
+    const meta = [this._t("panel.bounty_lock_meta", { hours: b.claim_hours })];
+    if (b.require_photo) meta.push(this._t("panel.bounty_photo_meta"));
+    const left = (iso) => this._bountyDur(Date.parse(iso || "") - now);
+    let status = "";
+    if (b.status === "open") {
+      status = `<span class="tm-pill tm-pill-accent">${this._t("panel.bounty_status_open")}</span>`;
+    } else if (b.status === "claimed") {
+      status = `<span class="tm-pill tm-pill-warn">${this._t("panel.bounty_status_claimed")}</span>
+        <div class="tm-meta">${this._t("panel.bounty_claimed_meta", { name: this._esc(name(b.claimed_by)), time: left(b.claim_until) })}</div>`;
+    } else if (b.status === "pending") {
+      const comp = (this._state.completions || []).find(c => c.id === b.completion_id);
+      status = `<span class="tm-pill tm-pill-warn">${this._t("panel.bounty_status_pending")}</span>
+        <div class="tm-meta">${this._esc(name(b.claimed_by))}${comp ? ` · ${this._timeAgo(comp.completed_at)}` : ""}</div>`;
+    } else if (b.status === "completed") {
+      status = `<span class="tm-pill tm-pill-success">${this._t("panel.bounty_status_completed")}</span>
+        <div class="tm-meta">${this._t("panel.bounty_completed_meta", { name: this._esc(name(b.claimed_by)), points: this._num(b.points_awarded || b.points) })}</div>`;
+    } else if (b.status === "expired") {
+      status = `<span class="tm-pill tm-pill-muted">${this._t("panel.bounty_status_expired")}</span>
+        <div class="tm-meta">${this._t("panel.bounty_expired_meta", { date: b.closed_at ? this._esc(new Date(b.closed_at).toLocaleDateString([], { day: "numeric", month: "short" })) : "" })}</div>`;
+    }
+    if (b.lapse_count > 0) status += `<div class="tm-meta">${this._t("panel.bounty_lapsed_meta", { count: b.lapse_count })}</div>`;
+    const expires = (b.status === "open" || b.status === "claimed")
+      ? (b.expires_at ? this._esc(left(b.expires_at)) : this._t("panel.bounty_no_expiry"))
+      : "—";
+    const id = this._esc(b.id);
+    let actions;
+    if (b.status === "pending" && b.completion_id) {
+      const cid = this._esc(b.completion_id);
+      actions = `${this._ratingOn() ? this._ratingPicker(b.completion_id) : ""}
+        <button type="button" class="tm-btn tm-btn-sm" data-act="reject-chore" data-id="${cid}">${this._t("panel.activity_reject")}</button>
+        <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="approve-chore" data-id="${cid}">${this._t("panel.activity_approve")}</button>`;
+    } else if (b.status === "claimed") {
+      actions = `<button type="button" class="tm-btn tm-btn-sm" data-act="release-bounty" data-id="${id}">${this._t("panel.bounty_release")}</button>
+        <button type="button" class="tm-icon-btn" data-act="edit-bounty" data-id="${id}" title="${this._t("panel.btn_edit")}">✏</button>`;
+    } else if (b.status === "open") {
+      actions = `<button type="button" class="tm-icon-btn" data-act="edit-bounty" data-id="${id}" title="${this._t("panel.btn_edit")}">✏</button>
+        <button type="button" class="tm-icon-btn" data-act="delete-bounty" data-id="${id}" title="${this._t("panel.bounty_cancel")}"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>`;
+    } else {
+      actions = `<button type="button" class="tm-icon-btn" data-act="delete-bounty" data-id="${id}" title="${this._t("panel.btn_delete")}"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>`;
+    }
+    return `
+      <tr class="tm-row">
+        <td><div class="tm-bounty-cell">
+          <span class="tm-avatar tm-bounty-ic">${this._mdi(b.icon || "mdi:flag-outline")}</span>
+          <div><strong>${this._esc(b.title)}</strong><div class="tm-meta">${this._esc(meta.join(" · "))}</div></div>
+        </div></td>
+        <td><strong class="tm-numeric">${this._num(b.points)}</strong></td>
+        <td>${eligible}</td>
+        <td>${status}</td>
+        <td class="tm-meta">${expires}</td>
+        <td><div class="tm-bounty-actions">${actions}</div></td>
+      </tr>`;
+  }
+
+  _openBountyDialog(id) {
+    const pad = (n) => String(n).padStart(2, "0");
+    const localInput = (iso) => {
+      const d = new Date(iso);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    if (id) {
+      const b = (this._state.bounties || []).find(x => x.id === id);
+      if (!b) return;
+      this._openDialog({ kind: "bounty", mode: "edit", data: {
+        id: b.id, status: b.status, title: b.title, description: b.description || "",
+        points: b.points, icon: b.icon || "mdi:flag-outline", claim_hours: b.claim_hours,
+        eligible_child_ids: [...(b.eligible_child_ids || [])],
+        require_photo: !!b.require_photo, notify_children: b.notify_children !== false,
+        exp_mode: b.expires_at ? "pick" : "none",
+        exp_pick: b.expires_at ? localInput(b.expires_at) : "",
+        exp_pick_orig: b.expires_at ? localInput(b.expires_at) : "",
+        exp_dirty: false,
+      } });
+    } else {
+      this._openDialog({ kind: "bounty", mode: "add", data: {
+        title: "", description: "", points: 50, icon: "mdi:car-wash", claim_hours: 2,
+        eligible_child_ids: [], require_photo: false, notify_children: true,
+        exp_mode: "24h", exp_pick: "", exp_dirty: true,
+      } });
+    }
+  }
+
+  /** The dialog's expiry choice as an ISO instant, or null for none. */
+  _bountyExpiryIso(d) {
+    const now = new Date();
+    const at = (base, hours) => { const x = new Date(base); x.setHours(hours, 0, 0, 0); return x; };
+    let when = null;
+    if (d.exp_mode === "tonight") {
+      when = at(now, 20);
+      if (when <= now) when.setDate(when.getDate() + 1);
+    } else if (d.exp_mode === "24h") {
+      when = new Date(now.getTime() + 24 * 3600e3);
+    } else if (d.exp_mode === "weekend") {
+      when = at(now, 20);
+      when.setDate(when.getDate() + ((7 - when.getDay()) % 7));
+      if (when <= now) when.setDate(when.getDate() + 7);
+    } else if (d.exp_mode === "pick") {
+      when = d.exp_pick ? new Date(d.exp_pick) : null;
+      if (when && Number.isNaN(when.getTime())) when = null;
+    }
+    return when ? when.toISOString() : null;
+  }
+
+  async _doSaveBounty() {
+    this._syncIconPickers();
+    const d = this._dialog.data;
+    const wasAdd = this._dialog.mode === "add";
+    const locked = !wasAdd && d.status !== "open";
+    if (!d.title || !String(d.title).trim()) { this._showToast("err", this._t("panel.bounty_title_required")); return; }
+    const expires = this._bountyExpiryIso(d);
+    // Typing a new date into the picker counts as touching the expiry too.
+    if (d.exp_mode === "pick" && d.exp_pick !== d.exp_pick_orig) d.exp_dirty = true;
+    if (d.exp_dirty && d.exp_mode === "pick" && !expires) { this._showToast("err", this._t("panel.bounty_expiry_past")); return; }
+    if (d.exp_dirty && expires && Date.parse(expires) <= Date.now()) { this._showToast("err", this._t("panel.bounty_expiry_past")); return; }
+    const points = Math.max(1, Math.round(Number(d.points) || 0));
+    let payload;
+    if (locked) {
+      payload = { type: "taskmate/bounty_update", bounty_id: d.id, points };
+    } else {
+      payload = {
+        type: wasAdd ? "taskmate/bounty_post" : "taskmate/bounty_update",
+        ...(wasAdd ? {} : { bounty_id: d.id }),
+        title: String(d.title).trim(),
+        description: d.description || "",
+        points,
+        icon: d.icon || "mdi:flag-outline",
+        claim_hours: Math.min(48, Math.max(1, Math.round(Number(d.claim_hours) || 2))),
+        eligible_child_ids: d.eligible_child_ids || [],
+        require_photo: !!d.require_photo,
+        notify_children: !!d.notify_children,
+      };
+    }
+    if (d.exp_dirty) payload.expires_at = expires;
+    const { ok, err } = await this._callWS(payload);
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", wasAdd ? this._t("panel.toast_bounty_posted") : this._t("panel.toast_bounty_updated"));
+  }
+
+  async _doReleaseBounty(id) {
+    const b = (this._state.bounties || []).find(x => x.id === id);
+    if (!b || !confirm(this._t("panel.bounty_release_confirm", { title: b.title }))) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/bounty_release", bounty_id: id });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.toast_bounty_released"));
+  }
+
+  async _doRemoveBounty(id) {
+    const b = (this._state.bounties || []).find(x => x.id === id);
+    if (!b || !confirm(this._t("panel.bounty_remove_confirm", { title: b.title }))) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/bounty_remove", bounty_id: id });
+    if (!ok) { this._showToast("err", this._t("panel.toast_delete_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.toast_bounty_removed"));
+  }
+
+  _bountyDialogSet(field, value) {
+    if (!this._dialog || !this._dialog.data) return;
+    this._syncIconPickers();
+    this._dialog.data[field] = value;
+    if (field === "exp_mode") this._dialog.data.exp_dirty = true;
+    const body = this.querySelector(".tm-dialog-body");
+    const scrollY = body ? body.scrollTop : 0;
+    this._render();
+    const b = this.querySelector(".tm-dialog-body");
+    if (b) b.scrollTop = scrollY;
+  }
+
+  _renderBountyDialog() {
+    const d = this._dialog.data;
+    const children = this._state.children || [];
+    const locked = this._dialog.mode === "edit" && d.status !== "open";
+    const dis = locked ? " disabled" : "";
+    const chip = (act, id, on, label, extra = "") =>
+      `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" data-act="${act}" data-id="${this._esc(id)}"${extra}>${label}</button>`;
+    const expChips = [
+      ["none", this._t("panel.bounty_exp_none")],
+      ["tonight", this._t("panel.bounty_exp_tonight")],
+      ["24h", this._t("panel.bounty_exp_24h")],
+      ["weekend", this._t("panel.bounty_exp_weekend")],
+      ["pick", this._t("panel.bounty_exp_pick")],
+    ];
+    const eligible = d.eligible_child_ids || [];
+    return this._dialogShell(this._dialog.mode === "add" ? this._t("panel.bounty_dialog_post") : this._t("panel.bounty_dialog_edit"),
+      [
+        locked ? `<p class="tm-meta tm-bounty-note">${this._t("panel.bounty_claimed_lock_note")}</p>` : "",
+        `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.bounty_title_label")}</span>
+          <input class="tm-input" type="text" data-field="title" maxlength="120" placeholder="${this._esc(this._t("panel.bounty_title_placeholder"))}" value="${this._esc(d.title || "")}"${dis}>
+        </div>`,
+        `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.bounty_desc_label")}</span>
+          <input class="tm-input" type="text" data-field="description" maxlength="500" value="${this._esc(d.description || "")}"${dis}>
+        </div>`,
+        `<div class="tm-field-row">
+          <div class="tm-field">
+            <span class="tm-field-label">${this._t("panel.bounty_points_label")}</span>
+            <input class="tm-input" type="number" min="1" data-field="points" value="${this._esc(d.points ?? "")}">
+            <div class="tm-chip-row" style="margin-top:8px">
+              ${[10, 25, 50, 100].map(n => chip("bounty-points", n, Number(d.points) === n, String(n))).join("")}
+            </div>
+          </div>
+          <div class="tm-field">
+            <span class="tm-field-label">${this._t("panel.bounty_lock_label")}</span>
+            <input class="tm-input" type="number" min="1" max="48" data-field="claim_hours" value="${this._esc(d.claim_hours ?? 2)}"${dis}>
+            <span class="tm-field-hint">${this._t("panel.bounty_lock_hint")}</span>
+          </div>
+        </div>`,
+        locked ? "" : `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.bounty_icon_label")}</span>
+          <div class="tm-chip-row">
+            ${BOUNTY_ICONS.map(ic => chip("bounty-icon", ic, d.icon === ic, `<ha-icon icon="${ic}"></ha-icon>`, ` title="${this._esc(ic)}"`)).join("")}
+          </div>
+        </div>
+        ${this._iconPickerField("", "icon", d.icon)}`,
+        `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.bounty_expires_label")}</span>
+          <div class="tm-chip-row">${expChips.map(([k, l]) => chip("bounty-exp", k, d.exp_mode === k, this._esc(l))).join("")}</div>
+          ${d.exp_mode === "pick" ? `<input class="tm-input" type="datetime-local" data-field="exp_pick" style="margin-top:8px;max-width:260px" value="${this._esc(d.exp_pick || "")}">` : ""}
+        </div>`,
+        locked ? "" : `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.bounty_who_label")}</span>
+          <div class="tm-chip-row">
+            ${chip("bounty-el-all", "", eligible.length === 0, this._t("panel.bounty_all_children"))}
+            ${children.map(c => chip("toggle-bounty-el", c.id, eligible.includes(c.id), this._esc(c.name))).join("")}
+          </div>
+        </div>`,
+        locked ? "" : this._switch(this._t("panel.bounty_photo_label"), "require_photo", !!d.require_photo, this._t("panel.bounty_photo_hint")),
+        locked || this._dialog.mode !== "add" ? "" : this._switch(this._t("panel.bounty_notify_label"), "notify_children", d.notify_children !== false, this._t("panel.bounty_notify_hint")),
+      ].join(""),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-bounty">${this._dialog.mode === "add" ? this._t("panel.bounty_post_save") : this._t("panel.btn_save")}</button>`
+    );
   }
 
   // -- Badges tab --------------------------------------------------------
@@ -5538,6 +5865,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "quest")        return this._renderQuestDialog();
     if (this._dialog.kind === "avatar-catalog") return this._renderAvatarCatalogDialog();
     if (this._dialog.kind === "challenge")    return this._renderChallengeDialog();
+    if (this._dialog.kind === "bounty")       return this._renderBountyDialog();
     if (this._dialog.kind === "apply-penalty") return this._renderApplyDialog("penalty");
     if (this._dialog.kind === "apply-bonus")   return this._renderApplyDialog("bonus");
     if (this._dialog.kind === "bulk-chore")    return this._renderBulkChoreDialog();
@@ -7330,6 +7658,11 @@ class TaskMatePanel extends HTMLElement {
         color: var(--tm-accent);
       }
       .tm-avatar ha-icon { --mdc-icon-size: 24px; }
+      .tm-bounty-cell { display: flex; align-items: center; gap: 12px; }
+      .tm-bounty-ic { width: 34px; height: 34px; border-radius: 50%; color: var(--tm-gold, #d4ac0d); }
+      .tm-bounty-ic ha-icon { --mdc-icon-size: 18px; }
+      .tm-bounty-note { margin: 0 0 12px; }
+      .tm-bounty-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
       .tm-avatar-reward  { color: var(--tm-gold); }
       .tm-child-name { min-width: 0; flex: 1; }
       .tm-child-name h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }

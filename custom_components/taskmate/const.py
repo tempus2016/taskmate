@@ -34,6 +34,20 @@ TEAM_POINTS_MODES: Final = ["each", "split"]
 # and the joins list rides in a sensor attribute.
 TEAM_SIZE_MAX: Final = 10
 
+# Bounty board (#931): one-off jobs any eligible child can claim.
+# A claim locks the bounty to one child for claim_hours (never past its
+# expiry); an unfinished claim lapses back onto the board.
+BOUNTY_STATUSES: Final = ["open", "claimed", "pending", "completed", "expired"]
+BOUNTY_CLAIM_HOURS_DEFAULT: Final = 2
+BOUNTY_CLAIM_HOURS_MAX: Final = 48
+BOUNTY_POINTS_MAX: Final = 100000
+BOUNTY_TITLE_MAX_LENGTH: Final = 120
+BOUNTY_DESCRIPTION_MAX_LENGTH: Final = 500
+# The claimer is warned this long before their claim lapses (opt-in type).
+BOUNTY_LAPSE_WARNING_MINUTES: Final = 15
+# Approved bounties stay on the card as "Recently completed" this long.
+BOUNTY_RECENT_HOURS: Final = 24
+
 # Default values
 DEFAULT_POINTS_NAME: Final = "Stars"
 DEFAULT_POINTS_ICON: Final = "mdi:star"
@@ -151,6 +165,12 @@ SERVICE_START_TIMED_TASK: Final = "start_timed_task"
 SERVICE_PAUSE_TIMED_TASK: Final = "pause_timed_task"
 SERVICE_STOP_TIMED_TASK: Final = "stop_timed_task"
 SERVICE_LEAVE_TEAM_CHORE: Final = "leave_team_chore"
+SERVICE_POST_BOUNTY: Final = "post_bounty"
+SERVICE_UPDATE_BOUNTY: Final = "update_bounty"
+SERVICE_REMOVE_BOUNTY: Final = "remove_bounty"
+SERVICE_CLAIM_BOUNTY: Final = "claim_bounty"
+SERVICE_GIVE_BACK_BOUNTY: Final = "give_back_bounty"
+SERVICE_COMPLETE_BOUNTY: Final = "complete_bounty"
 
 # Events
 EVENT_PREVIEW_SOUND: Final = "taskmate_preview_sound"
@@ -279,6 +299,8 @@ NOTIF_TYPE_FAMILY_GOAL_REACHED: Final = "family_goal_reached"
 NOTIF_TYPE_BIRTHDAY: Final = "birthday"
 NOTIF_TYPE_STREAK_FREEZE_USED: Final = "streak_freeze_used"
 NOTIF_TYPE_PRESENCE_ARRIVAL: Final = "presence_arrival"
+NOTIF_TYPE_BOUNTY_POSTED: Final = "bounty_posted"
+NOTIF_TYPE_BOUNTY_CLAIM_LAPSING: Final = "bounty_claim_lapsing"
 
 # Presence-aware reminders (#926): the default for how long a child must have
 # been away before arriving home earns a "you're home" nudge.

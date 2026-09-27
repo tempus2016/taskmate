@@ -60,6 +60,11 @@ from homeassistant.core import HomeAssistant
 from . import images, photos
 from .const import (
     ASSIGNMENT_MODES,
+    BOUNTY_CLAIM_HOURS_DEFAULT,
+    BOUNTY_CLAIM_HOURS_MAX,
+    BOUNTY_DESCRIPTION_MAX_LENGTH,
+    BOUNTY_POINTS_MAX,
+    BOUNTY_TITLE_MAX_LENGTH,
     DEFAULT_NOTIFICATION_GROUP,
     DEFAULT_NOTIFICATION_NAV_URL,
     DEFAULT_TIME_PERIODS,
@@ -129,6 +134,11 @@ WS_SET_CHILD_AVATAR: Final = "taskmate/set_child_avatar"
 WS_CREATE_CHALLENGE: Final = "taskmate/create_challenge"
 WS_UPDATE_CHALLENGE: Final = "taskmate/update_challenge"
 WS_DELETE_CHALLENGE: Final = "taskmate/delete_challenge"
+
+WS_BOUNTY_POST: Final = "taskmate/bounty_post"
+WS_BOUNTY_UPDATE: Final = "taskmate/bounty_update"
+WS_BOUNTY_REMOVE: Final = "taskmate/bounty_remove"
+WS_BOUNTY_RELEASE: Final = "taskmate/bounty_release"
 
 WS_ADD_TASK_GROUP: Final = "taskmate/add_task_group"
 WS_UPDATE_TASK_GROUP: Final = "taskmate/update_task_group"
@@ -235,7 +245,7 @@ _AUDIT_EXCLUDE: Final = {
 
 def _audit_target(coordinator, msg: dict) -> str:
     """Best-effort human-readable target for an admin action from its payload."""
-    name = msg.get("name")
+    name = msg.get("name") or msg.get("title")
     if isinstance(name, str) and name.strip():
         return name.strip()
     for key, getter in (
@@ -260,6 +270,7 @@ def _audit_target(coordinator, msg: dict) -> str:
         "awarded_badge_id",
         "type_id",
         "transaction_id",
+        "bounty_id",
     ):
         if msg.get(key):
             return str(msg[key])
@@ -379,6 +390,9 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "quest_progress": dict(data.get("quest_progress", {}) or {}),
         "avatar_catalog": coordinator.avatar_catalog(),
         "challenges": list(data.get("challenges", [])),
+        # Bounty board (#931): every bounty, history included — the panel
+        # splits them into Active / Waiting approval / History.
+        "bounties": list(data.get("bounties", [])),
         "pool_allocations": list(data.get("pool_allocations", [])),
         "timed_sessions": list(data.get("timed_sessions", [])),
         "templates": coordinator.get_all_templates(),
@@ -1348,6 +1362,83 @@ async def _ws_set_child_avatar(hass, connection, msg, coordinator):
         connection.send_error(msg["id"], "invalid", str(err))
         return
     connection.send_result(msg["id"], {"id": msg["child_id"]})
+
+
+# ---------------------------------------------------------------------------
+# Bounty board (#931)
+# ---------------------------------------------------------------------------
+
+_BOUNTY_EDITABLE = {
+    vol.Optional("description"): vol.All(str, vol.Length(max=BOUNTY_DESCRIPTION_MAX_LENGTH)),
+    vol.Optional("icon"): str,
+    # ISO date-time, or null / "" for no expiry.
+    vol.Optional("expires_at"): vol.Any(None, str),
+    vol.Optional("eligible_child_ids"): [str],
+    vol.Optional("claim_hours"): vol.All(int, vol.Range(min=1, max=BOUNTY_CLAIM_HOURS_MAX)),
+    vol.Optional("require_photo"): bool,
+    vol.Optional("notify_children"): bool,
+}
+_BOUNTY_FIELDS = (
+    "title",
+    "points",
+    "description",
+    "icon",
+    "expires_at",
+    "eligible_child_ids",
+    "claim_hours",
+    "require_photo",
+    "notify_children",
+)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_BOUNTY_POST,
+        vol.Required("title"): vol.All(str, vol.Length(min=1, max=BOUNTY_TITLE_MAX_LENGTH)),
+        vol.Required("points"): vol.All(int, vol.Range(min=1, max=BOUNTY_POINTS_MAX)),
+        **_BOUNTY_EDITABLE,
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_bounty_post(hass, connection, msg, coordinator):
+    extra = {k: msg[k] for k in _BOUNTY_FIELDS if k in msg and k not in ("title", "points")}
+    extra.setdefault("claim_hours", BOUNTY_CLAIM_HOURS_DEFAULT)
+    bounty = await coordinator.async_post_bounty(msg["title"], msg["points"], **extra)
+    connection.send_result(msg["id"], {"id": bounty.id})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_BOUNTY_UPDATE,
+        vol.Required("bounty_id"): str,
+        vol.Optional("title"): vol.All(str, vol.Length(min=1, max=BOUNTY_TITLE_MAX_LENGTH)),
+        vol.Optional("points"): vol.All(int, vol.Range(min=1, max=BOUNTY_POINTS_MAX)),
+        **_BOUNTY_EDITABLE,
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_bounty_update(hass, connection, msg, coordinator):
+    changes = {k: msg[k] for k in _BOUNTY_FIELDS if k in msg}
+    bounty = await coordinator.async_update_bounty(msg["bounty_id"], **changes)
+    connection.send_result(msg["id"], {"id": bounty.id})
+
+
+@websocket_api.websocket_command({vol.Required("type"): WS_BOUNTY_REMOVE, vol.Required("bounty_id"): str})
+@websocket_api.async_response
+@_admin_only
+async def _ws_bounty_remove(hass, connection, msg, coordinator):
+    await coordinator.async_remove_bounty(msg["bounty_id"])
+    connection.send_result(msg["id"], {"id": msg["bounty_id"]})
+
+
+@websocket_api.websocket_command({vol.Required("type"): WS_BOUNTY_RELEASE, vol.Required("bounty_id"): str})
+@websocket_api.async_response
+@_admin_only
+async def _ws_bounty_release(hass, connection, msg, coordinator):
+    await coordinator.async_release_bounty(msg["bounty_id"])
+    connection.send_result(msg["id"], {"id": msg["bounty_id"]})
 
 
 # ---------------------------------------------------------------------------
@@ -2935,6 +3026,10 @@ _COMMANDS = (
     _ws_update_avatar_catalog,
     _ws_set_child_avatar,
     _ws_create_challenge,
+    _ws_bounty_post,
+    _ws_bounty_update,
+    _ws_bounty_remove,
+    _ws_bounty_release,
     _ws_update_challenge,
     _ws_delete_challenge,
     _ws_add_penalty,

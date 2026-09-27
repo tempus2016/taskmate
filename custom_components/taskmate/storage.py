@@ -14,6 +14,7 @@ from .models import (
     AwardedBadge,
     Badge,
     Bonus,
+    Bounty,
     Challenge,
     Child,
     Chore,
@@ -1199,6 +1200,35 @@ class TaskMateStorage:
             if store[chore_id].get("date") != keep_date:
                 store.pop(chore_id, None)
 
+    # ── Bounty board (#931) ──────────────────────────────────────────────
+    # Their own list, not chores: a bounty is a one-off with a claim lock and
+    # a lifecycle of its own. Missing on installs from before the feature, so
+    # every reader defaults it.
+    def get_bounties(self) -> list[Bounty]:
+        return [Bounty.from_dict(b) for b in self._data.get("bounties", []) if isinstance(b, dict)]
+
+    def get_bounty(self, bounty_id: str) -> Bounty | None:
+        for b in self._data.get("bounties", []):
+            if isinstance(b, dict) and b.get("id") == bounty_id:
+                return Bounty.from_dict(b)
+        return None
+
+    def add_bounty(self, bounty: Bounty) -> None:
+        self._data.setdefault("bounties", []).append(bounty.to_dict())
+
+    def update_bounty(self, bounty: Bounty) -> None:
+        items = self._data.setdefault("bounties", [])
+        for i, b in enumerate(items):
+            if isinstance(b, dict) and b.get("id") == bounty.id:
+                items[i] = bounty.to_dict()
+                return
+        items.append(bounty.to_dict())
+
+    def remove_bounty(self, bounty_id: str) -> None:
+        self._data["bounties"] = [
+            b for b in self._data.get("bounties", []) if not (isinstance(b, dict) and b.get("id") == bounty_id)
+        ]
+
     # ── Quests (chore chains) ────────────────────────────────────────────
     def get_quests(self) -> list[Quest]:
         return [Quest.from_dict(q) for q in self._data.get("quests", [])]
@@ -1316,6 +1346,7 @@ class TaskMateStorage:
             "timed_sessions",
             "quests",
             "challenges",
+            "bounties",
         )
         for k in list_keys:
             if not isinstance(self._data.get(k), list):
