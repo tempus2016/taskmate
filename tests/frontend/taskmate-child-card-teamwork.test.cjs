@@ -66,7 +66,7 @@ for (const design of DESIGNS) {
   test(`teamwork: ${design} shows who has joined`, () => {
     const { card } = makeCard({ team: { size: 3, joined: ["kid2"] }, design });
     const { markup } = render(card.render());
-    assert.match(markup, new RegExp(progress(1, 3).replace(/\//g, "\\/")));
+    assert.ok(markup.includes(progress(1, 3)), "the progress line is drawn");
     assert.match(markup, /tm-team-av/, "the joiner's avatar is drawn");
     assert.match(markup, /mdi:robot/);
   });
@@ -74,7 +74,7 @@ for (const design of DESIGNS) {
   test(`teamwork: ${design} says so once this child is in`, () => {
     const { card } = makeCard({ team: { size: 3, joined: ["kid1", "kid2"] }, design });
     const { markup } = render(card.render());
-    assert.match(markup, new RegExp(localize("child.team_you_joined").replace("'", ".")));
+    assert.ok(markup.includes(localize("child.team_you_joined")));
   });
 
   test(`teamwork: ${design} shows nothing for an ordinary chore`, () => {
