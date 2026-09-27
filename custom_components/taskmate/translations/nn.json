@@ -179,6 +179,10 @@
         "points": {
           "name": "Poeng",
           "description": "Gje dette talet poeng i staden for oppgåva sin eigen verdi. Lat stå tomt for å bruke poenga til oppgåva."
+        },
+        "rating": {
+          "name": "Kvalitetsvurdering",
+          "description": "Valfri vurdering på 1-3 stjerner av kor godt oppgåva vart gjord. Når kvalitetsvurdering er slått på, vert poenga skalerte med multiplikatoren til stjerna; la feltet stå tomt for å gje 100 %."
         }
       }
     },
@@ -189,6 +193,10 @@
         "completion_ids": {
           "name": "Fullførings-ID-ar",
           "description": "Bestemte fullførings-ID-ar som skal godkjennast; utelat for å godkjenne alle ventande"
+        },
+        "rating": {
+          "name": "Kvalitetsvurdering",
+          "description": "Valfri vurdering på 1-3 stjerner som gjeld alle oppgåver godkjende med dette kallet (kvalitetsvurdering må vere slått på)."
         }
       }
     },

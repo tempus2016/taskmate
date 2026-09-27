@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from homeassistant.util import dt as dt_util
 
 from . import images, photos
-from .const import CHORE_NOTE_MAX_LENGTH, CHORE_SUGGESTED_POINTS_MAX
+from .const import CHORE_NOTE_MAX_LENGTH, CHORE_SUGGESTED_POINTS_MAX, QUALITY_RATINGS
 from .models import Chore, ChoreCompletion, PointsTransaction
 
 if TYPE_CHECKING:
@@ -395,7 +395,9 @@ class ChoresMixin:
         await self.async_refresh()
         return count
 
-    async def async_approve_chores_bulk(self, completion_ids: list[str] | None = None) -> int:
+    async def async_approve_chores_bulk(
+        self, completion_ids: list[str] | None = None, rating: int | None = None
+    ) -> int:
         """Approve several pending chore completions at once. Returns count approved.
 
         If completion_ids is given, only those (still-pending) completions are
@@ -411,6 +413,9 @@ class ChoresMixin:
         the button reads as broken. The batch refreshes once at the end instead.
         Safe because the per-approval side-effects (badges, quests, challenges,
         the all-done check) all read `storage` directly, never `self.data`.
+
+        ``rating`` (#927) applies the same 1-3 star quality rating to every
+        approval in the batch; see ``async_approve_chore``.
         """
         pending = {c.id for c in self.storage.get_completions() if not c.approved}
         if completion_ids:
@@ -418,9 +423,10 @@ class ChoresMixin:
             targets = [cid for cid in dict.fromkeys(completion_ids) if cid in pending]
         else:
             targets = [c.id for c in self.storage.get_completions() if not c.approved]
+        rated = {"rating": rating} if rating is not None else {}
         count = 0
         for cid in targets:
-            await self.async_approve_chore(cid, refresh=False)
+            await self.async_approve_chore(cid, refresh=False, **rated)
             count += 1
         if count:
             await self.async_refresh()
@@ -1097,7 +1103,13 @@ class ChoresMixin:
         await self.async_refresh()
         return completion
 
-    async def async_approve_chore(self, completion_id: str, refresh: bool = True, points: int | None = None) -> None:
+    async def async_approve_chore(
+        self,
+        completion_id: str,
+        refresh: bool = True,
+        points: int | None = None,
+        rating: int | None = None,
+    ) -> None:
         """Approve a chore completion.
 
         ``refresh=False`` is used by ``async_approve_chores_bulk`` so a batch
@@ -1111,6 +1123,15 @@ class ChoresMixin:
         would for an ordinary approval. ``None`` means "pay what the submission
         was worth when it was made", falling back to the chore's value for
         completions recorded before that was stored.
+
+        ``rating`` is the parent's optional 1-3 star quality rating (#927),
+        honoured only while the ``quality_rating_enabled`` setting is on. It
+        scales the base points by that star's multiplier before the streak and
+        weekend multipliers ride on top, and is stored on the completion. No
+        rating pays 100%. An explicit ``points`` award is already the parent's
+        own valuation, so it is paid as-is and the rating is only recorded.
+        Because the scaled total lands in ``points_awarded``, undo and reject
+        reverse exactly what the rating paid.
         """
         completions = self.storage.get_completions()
         for completion in completions:
@@ -1149,6 +1170,20 @@ class ChoresMixin:
                         pts = self._apply_time_adjustment(
                             chore, self.effective_chore_points(chore), completion.completed_at
                         )
+                    stars = 0
+                    if rating is not None and self.quality_rating_enabled():
+                        try:
+                            stars = int(rating)
+                        except (TypeError, ValueError):
+                            stars = 0
+                        if stars not in QUALITY_RATINGS:
+                            _LOGGER.warning("Ignoring invalid quality rating %r for %s", rating, completion_id)
+                            stars = 0
+                    if stars and points is None:
+                        # Half-up, like the cards' preview (Python's round() is
+                        # half-to-even, so ★ on a 30-point chore would pay 22
+                        # where the card showed 23).
+                        pts = max(0, int(pts * self.quality_rating_multipliers()[stars] + 0.5))
                     if points is not None:
                         # An explicit award overrides every per-chore
                         # calculation above (bonus sub-task, timed rate,
@@ -1170,6 +1205,7 @@ class ChoresMixin:
                     completion.approved = True
                     completion.approved_at = dt_util.now()
                     completion.points_awarded = 0
+                    completion.quality_rating = stars
                     self.storage.update_completion(completion)
 
                     total_awarded = await self._award_points(
@@ -1195,6 +1231,7 @@ class ChoresMixin:
                             "chore_id": completion.chore_id,
                             "completion_id": completion.id,
                             "timestamp": dt_util.now().isoformat(),
+                            **({"quality_rating": stars} if stars else {}),
                         },
                     )
 
@@ -1436,11 +1473,15 @@ class ChoresMixin:
             bc.approved = False
             bc.approved_at = None
             bc.points_awarded = 0
+            bc.quality_rating = 0
             self.storage.update_completion(bc)
 
         target.approved = False
         target.approved_at = None
         target.points_awarded = 0
+        # The rating belonged to the approval being undone (#927); a
+        # re-approval rates it afresh.
+        target.quality_rating = 0
         self.storage.update_completion(target)
 
         # Quest progress advanced on approval, so it has to come back too —

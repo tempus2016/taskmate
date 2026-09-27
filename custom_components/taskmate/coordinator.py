@@ -114,6 +114,24 @@ class TaskMateCoordinator(
         except (ValueError, TypeError):
             return default
 
+    def quality_rating_enabled(self) -> bool:
+        """Whether parents may rate approvals 1-3 stars (#927). Off by default."""
+        v = self.storage.get_setting("quality_rating_enabled", False)
+        return v is True or str(v).lower() == "true"
+
+    def quality_rating_multipliers(self) -> dict[int, float]:
+        """The points multiplier for each star rating, from settings (#927)."""
+        from .const import DEFAULT_QUALITY_RATING_MULTIPLIERS
+
+        out: dict[int, float] = {}
+        for rating, default in DEFAULT_QUALITY_RATING_MULTIPLIERS.items():
+            try:
+                value = float(self.storage.get_setting(f"quality_rating_multiplier_{rating}", default))
+            except (ValueError, TypeError):
+                value = default
+            out[rating] = max(0.0, value)
+        return out
+
     def effective_chore_points(self, chore) -> int:
         """Base chore points scaled by its difficulty multiplier (never negative)."""
         from .const import DEFAULT_DIFFICULTY

@@ -584,7 +584,9 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             _LOGGER.error("No TaskMate coordinator available")
             return
         completion_id = call.data["completion_id"]
-        await coordinator.async_approve_chore(completion_id, points=call.data.get("points"))
+        await coordinator.async_approve_chore(
+            completion_id, points=call.data.get("points"), rating=call.data.get("rating")
+        )
 
     async def handle_approve_all_chores(call: ServiceCall) -> None:
         """Handle the approve_all_chores service call."""
@@ -592,7 +594,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         if not coordinator:
             _LOGGER.error("No TaskMate coordinator available")
             return
-        await coordinator.async_approve_chores_bulk(call.data.get("completion_ids"))
+        await coordinator.async_approve_chores_bulk(call.data.get("completion_ids"), rating=call.data.get("rating"))
 
     async def handle_reject_chore(call: ServiceCall) -> None:
         """Handle the reject_chore service call."""
@@ -1195,6 +1197,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             {
                 vol.Required("completion_id"): cv.string,
                 vol.Optional("points"): vol.All(vol.Coerce(int), vol.Range(min=0)),
+                # 1-3 star quality rating (#927); ignored while the feature is off.
+                vol.Optional("rating"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
             }
         ),
     )
@@ -1206,6 +1210,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         schema=vol.Schema(
             {
                 vol.Optional("completion_ids"): [cv.string],
+                vol.Optional("rating"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
             }
         ),
     )

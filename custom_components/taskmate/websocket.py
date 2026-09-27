@@ -94,6 +94,7 @@ WS_REPORT_FAIRNESS: Final = "taskmate/reports/fairness"
 WS_REPORT_FRICTION: Final = "taskmate/reports/friction"
 WS_REPORT_PROJECTION: Final = "taskmate/reports/projection"
 WS_REPORT_HEALTH: Final = "taskmate/reports/health"
+WS_REPORT_QUALITY: Final = "taskmate/reports/quality"
 WS_SCHEDULED_LIST: Final = "taskmate/scheduled/list"
 WS_SCHEDULED_ADD: Final = "taskmate/scheduled/add"
 WS_SCHEDULED_REMOVE: Final = "taskmate/scheduled/remove"
@@ -221,6 +222,7 @@ _AUDIT_EXCLUDE: Final = {
     WS_REPORT_FRICTION,
     WS_REPORT_PROJECTION,
     WS_REPORT_HEALTH,
+    WS_REPORT_QUALITY,
 }
 
 
@@ -386,6 +388,10 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
             "difficulty_multiplier_easy": 0.5,
             "difficulty_multiplier_medium": 1.0,
             "difficulty_multiplier_hard": 2.0,
+            # Quality-rating multipliers (#927); overridden by stored values.
+            "quality_rating_multiplier_1": 0.75,
+            "quality_rating_multiplier_2": 1.0,
+            "quality_rating_multiplier_3": 1.25,
             **(data.get("settings", {}) or {}),
         },
         "parent_completable": parent_completable,
@@ -892,6 +898,18 @@ async def _ws_print_chart(hass, connection, msg, coordinator):
         points_name=coordinator.storage.get_points_name(),
     )
     connection.send_result(msg["id"], {"html": html})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REPORT_QUALITY,
+        vol.Optional("days"): vol.All(int, vol.Range(min=1, max=90)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_report_quality(hass, connection, msg, coordinator):
+    connection.send_result(msg["id"], coordinator.quality_report(msg.get("days")))
 
 
 @websocket_api.websocket_command({vol.Required("type"): WS_REPORT_HEALTH})
@@ -1662,6 +1680,10 @@ _SUBKEY_SETTINGS = {
     "difficulty_multiplier_easy",
     "difficulty_multiplier_medium",
     "difficulty_multiplier_hard",
+    "quality_rating_enabled",
+    "quality_rating_multiplier_1",
+    "quality_rating_multiplier_2",
+    "quality_rating_multiplier_3",
     "unlock_allowlist",
     "parent_routing",
     "read_aloud_media_player",
@@ -1854,6 +1876,10 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("difficulty_multiplier_easy"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("difficulty_multiplier_medium"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("difficulty_multiplier_hard"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
+    vol.Optional("quality_rating_enabled"): bool,
+    vol.Optional("quality_rating_multiplier_1"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=5.0)),
+    vol.Optional("quality_rating_multiplier_2"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=5.0)),
+    vol.Optional("quality_rating_multiplier_3"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=5.0)),
     vol.Optional("unlock_allowlist"): [str],
     vol.Optional("require_linked_child"): bool,
     vol.Optional("parent_routing"): vol.In(["all", "home", "round_robin"]),
@@ -1992,12 +2018,14 @@ async def _ws_complete_bonus_subtask(hass, connection, msg, coordinator):
         vol.Required("completion_id"): str,
         # Optional per-approval award (#832) — replaces the chore's own points.
         vol.Optional("points"): vol.All(vol.Coerce(int), vol.Range(min=0)),
+        # Optional 1-3 star quality rating (#927).
+        vol.Optional("rating"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
     }
 )
 @websocket_api.async_response
 @_admin_only
 async def _ws_approve_chore(hass, connection, msg, coordinator):
-    await coordinator.async_approve_chore(msg["completion_id"], points=msg.get("points"))
+    await coordinator.async_approve_chore(msg["completion_id"], points=msg.get("points"), rating=msg.get("rating"))
     connection.send_result(msg["id"], {"completion_id": msg["completion_id"]})
 
 
@@ -2005,12 +2033,13 @@ async def _ws_approve_chore(hass, connection, msg, coordinator):
     {
         vol.Required("type"): WS_APPROVE_ALL_CHORES,
         vol.Optional("completion_ids"): [str],
+        vol.Optional("rating"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
     }
 )
 @websocket_api.async_response
 @_admin_only
 async def _ws_approve_all_chores(hass, connection, msg, coordinator):
-    count = await coordinator.async_approve_chores_bulk(msg.get("completion_ids"))
+    count = await coordinator.async_approve_chores_bulk(msg.get("completion_ids"), rating=msg.get("rating"))
     connection.send_result(msg["id"], {"count": count})
 
 
@@ -2777,6 +2806,7 @@ _COMMANDS = (
     _ws_report_friction,
     _ws_report_projection,
     _ws_report_health,
+    _ws_report_quality,
     _ws_templates_export,
     _ws_templates_import,
     _ws_print_chart,

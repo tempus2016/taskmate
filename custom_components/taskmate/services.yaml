@@ -86,6 +86,15 @@ approve_chore:
           min: 0
           max: 9999
           mode: box
+    rating:
+      name: Quality rating
+      description: Optional 1-3 star rating of how well the chore was done. When quality ratings are enabled it scales the points by that star's multiplier; leave empty to pay 100%.
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 3
+          mode: slider
 
 approve_all_chores:
   name: Approve All Chores
@@ -97,6 +106,15 @@ approve_all_chores:
       required: false
       selector:
         object:
+    rating:
+      name: Quality rating
+      description: Optional 1-3 star rating applied to every chore approved by this call (quality ratings must be enabled).
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 3
+          mode: slider
 
 reject_chore:
   name: Reject Chore

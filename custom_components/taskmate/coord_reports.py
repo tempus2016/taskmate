@@ -430,6 +430,67 @@ class ReportsMixin:
             "is_ceiling": True,
         }
 
+    # ── Quality ratings (#927) ───────────────────────────────────────────
+
+    def quality_report(self, days: int | None = None) -> dict[str, Any]:
+        """Average 1-3 star approval rating per child and per chore.
+
+        Only rated approvals count toward an average: an unrated approval is
+        "the parent didn't say", not a middling job, so folding it in as ★★
+        would drag every average toward the middle. ``unrated`` is reported
+        alongside so the parent can see how much of the window was rated.
+        """
+        start, end, span = self._report_window(days)
+        completions = self._completions_in_window(start, end)
+        children = {c.id: c.name for c in self.storage.get_children()}
+        chores = {c.id: c.name for c in self.storage.get_chores()}
+
+        def bucket(key: str, name: str) -> dict[str, Any]:
+            return {"id": key, "name": name, "rated": 0, "total": 0, "counts": {"1": 0, "2": 0, "3": 0}}
+
+        by_child: dict[str, dict[str, Any]] = {}
+        by_chore: dict[str, dict[str, Any]] = {}
+        rated = 0
+        stars_total = 0
+        for comp in completions:
+            rating = int(getattr(comp, "quality_rating", 0) or 0)
+            targets = []
+            if comp.child_id in children:
+                targets.append(by_child.setdefault(comp.child_id, bucket(comp.child_id, children[comp.child_id])))
+            if comp.chore_id in chores:
+                targets.append(by_chore.setdefault(comp.chore_id, bucket(comp.chore_id, chores[comp.chore_id])))
+            for entry in targets:
+                entry["total"] += 1
+                if rating:
+                    entry["rated"] += 1
+                    entry["counts"][str(rating)] += 1
+            if rating:
+                rated += 1
+                stars_total += rating
+
+        def finish(rows: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+            out = []
+            for entry in rows.values():
+                stars = sum(int(k) * v for k, v in entry["counts"].items())
+                entry["average"] = round(stars / entry["rated"], 2) if entry["rated"] else None
+                out.append(entry)
+            # Rated rows first, best average first; unrated rows trail by name.
+            out.sort(key=lambda r: (r["average"] is None, -(r["average"] or 0), r["name"]))
+            return out
+
+        return {
+            "days": span,
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "generated_at": dt_util.now().isoformat(),
+            "enabled": self.quality_rating_enabled(),
+            "total_completions": len(completions),
+            "rated_completions": rated,
+            "average": round(stars_total / rated, 2) if rated else None,
+            "children": finish(by_child),
+            "chores": finish(by_chore),
+        }
+
     # ── Health & diagnostics (#682) ──────────────────────────────────────
 
     def health_report(self) -> dict[str, Any]:

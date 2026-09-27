@@ -39,6 +39,7 @@ from .const import (
     NOTIF_TYPE_STREAK_AT_RISK,
     NOTIF_TYPE_STREAK_MILESTONE,
     NOTIF_TYPE_WEEKLY_DIGEST,
+    QUALITY_RATINGS,
 )
 from .models import NotificationRoute
 from .timewindow import is_within_window, parse_hhmm
@@ -48,6 +49,11 @@ _LOGGER = logging.getLogger(__name__)
 # Appended to actionable notifications sent to non-mobile_app backends, which
 # silently ignore tap actions. Gives those recipients a way to act.
 _APPROVE_IN_PANEL_HINT = "Open the TaskMate panel to approve or reject."
+
+# Mobile action id prefix for "approve with an N-star quality rating" (#927):
+# TASKMATE_RATE_<n>_<completion id>. Distinct from TASKMATE_APPROVE_ so the
+# original Approve/Reject ids keep working unchanged when ratings are off.
+_RATE_ACTION_PREFIX = "TASKMATE_RATE_"
 
 
 def _approval_tag(entry_id: str) -> str:
@@ -425,10 +431,7 @@ class NotificationCoordinator:
                     # `tag` lets us dismiss this push later (clear_approval) once
                     # the item is reviewed — see _approval_tag.
                     push["tag"] = _approval_tag(entry_id)
-                    push["actions"] = [
-                        {"action": f"TASKMATE_APPROVE_{entry_id}", "title": "Approve"},
-                        {"action": f"TASKMATE_REJECT_{entry_id}", "title": "Reject"},
-                    ]
+                    push["actions"] = self._approval_actions(meta.id, entry_id)
             else:
                 data["message"] = f"{message} {_APPROVE_IN_PANEL_HINT}"
 
@@ -460,6 +463,32 @@ class NotificationCoordinator:
             await self.hass.services.async_call(domain, service, data, blocking=False)
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("notify call failed for %s: %s", notify_service, err)
+
+    def _approval_actions(self, type_id: str, entry_id: str) -> list[dict[str, str]]:
+        """Mobile action buttons for a pending-approval push.
+
+        With quality ratings on (#927) a chore approval offers the three star
+        ratings instead of a plain Approve, so a parent can rate from the lock
+        screen. Reject goes last: Android shows at most three actions, so the
+        ratings take priority there and Reject stays in the panel/card. With
+        the feature off — and always for reward claims — the push keeps the
+        original Approve/Reject ids, so older pushes still in flight resolve.
+        """
+        coordinator = getattr(self, "coordinator", None)
+        rated = (
+            type_id == NOTIF_TYPE_PENDING_CHORE_APPROVAL
+            and coordinator is not None
+            and coordinator.quality_rating_enabled()
+        )
+        if rated:
+            return [
+                *({"action": f"{_RATE_ACTION_PREFIX}{n}_{entry_id}", "title": "★" * n} for n in QUALITY_RATINGS),
+                {"action": f"TASKMATE_REJECT_{entry_id}", "title": "Reject"},
+            ]
+        return [
+            {"action": f"TASKMATE_APPROVE_{entry_id}", "title": "Approve"},
+            {"action": f"TASKMATE_REJECT_{entry_id}", "title": "Reject"},
+        ]
 
     async def clear_approval(self, type_id: str, entry_id: str) -> None:
         """Dismiss the mobile push for a reviewed approval (chore or reward).
@@ -537,7 +566,20 @@ class NotificationCoordinator:
             _LOGGER.warning("Ignoring TaskMate mobile action from a non-parent user")
             return
 
-        if action.startswith("TASKMATE_APPROVE_"):
+        if action.startswith(_RATE_ACTION_PREFIX):
+            # TASKMATE_RATE_<n>_<completion id> (#927): approve with a rating.
+            stars, _, entry_id = action[len(_RATE_ACTION_PREFIX) :].partition("_")
+            try:
+                rating = int(stars)
+            except ValueError:
+                _LOGGER.info("Mobile action %s — malformed rating", action)
+                return
+
+            async def _approve_rated(completion_id: str) -> None:
+                await coordinator.async_approve_chore(completion_id, rating=rating)
+
+            await self._review_from_mobile(action, entry_id, _approve_rated, coordinator.async_approve_reward)
+        elif action.startswith("TASKMATE_APPROVE_"):
             await self._review_from_mobile(
                 action,
                 action[len("TASKMATE_APPROVE_") :],

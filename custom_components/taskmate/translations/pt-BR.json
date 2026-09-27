@@ -179,6 +179,10 @@
         "points": {
           "name": "Pontos",
           "description": "Atribuir esta quantidade de pontos em vez do valor da própria tarefa. Deixe vazio para usar os pontos da tarefa."
+        },
+        "rating": {
+          "name": "Avaliação de qualidade",
+          "description": "Avaliação opcional de 1 a 3 estrelas sobre a qualidade da tarefa. Com as avaliações de qualidade ativadas, os pontos são multiplicados pelo multiplicador dessa estrela; deixe vazio para pagar 100%."
         }
       }
     },
@@ -189,6 +193,10 @@
         "completion_ids": {
           "name": "IDs de conclusão",
           "description": "IDs de conclusão específicos para aprovar; omita para aprovar todas as pendentes"
+        },
+        "rating": {
+          "name": "Avaliação de qualidade",
+          "description": "Avaliação opcional de 1 a 3 estrelas aplicada a todas as tarefas aprovadas por esta chamada (as avaliações de qualidade precisam estar ativadas)."
         }
       }
     },

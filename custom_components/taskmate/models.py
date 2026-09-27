@@ -54,6 +54,17 @@ def parse_datetime(value: str | datetime | None) -> datetime | None:
     return None
 
 
+def parse_quality_rating(value: Any) -> int:
+    """Parse a stored 1-3 star quality rating (#927); anything else is 0 (unrated)."""
+    if value is None or isinstance(value, bool):
+        return 0
+    try:
+        rating = int(value)
+    except (ValueError, TypeError, OverflowError):
+        return 0
+    return rating if 1 <= rating <= 3 else 0
+
+
 def parse_optional_points(value: Any) -> int | None:
     """Parse a stored points figure, or None for "not recorded".
 
@@ -751,6 +762,8 @@ class ChoreCompletion:
     # and weekend multipliers that _award_points adds on top. None on records
     # written before the field existed.
     submitted_points: int | None = None
+    # Parent's 1-3 star quality rating given at approval (#927); 0 = unrated.
+    quality_rating: int = 0
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ChoreCompletion:
@@ -772,6 +785,7 @@ class ChoreCompletion:
             suggested_points=int(data.get("suggested_points", 0) or 0),
             id=data.get("id") or generate_id(),
             submitted_points=parse_optional_points(data.get("submitted_points")),
+            quality_rating=parse_quality_rating(data.get("quality_rating")),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -790,6 +804,7 @@ class ChoreCompletion:
             "suggested_points": self.suggested_points,
             "id": self.id,
             "submitted_points": self.submitted_points,
+            "quality_rating": self.quality_rating,
         }
 
 

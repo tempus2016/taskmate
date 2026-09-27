@@ -613,6 +613,8 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
                 "completed_at": comp.completed_at.isoformat()
                 if hasattr(comp.completed_at, "isoformat")
                 else str(comp.completed_at),
+                # Star rating the parent gave at approval (#927) — only when rated.
+                **({"rating": comp.quality_rating} if getattr(comp, "quality_rating", 0) else {}),
             }
         )
     return out
@@ -1458,7 +1460,7 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                 )
 
         mandatory_misses = self.coordinator.mandatory_misses_state()
-        return {
+        attrs = {
             "pending_chore_completions": len(pending_completions),
             "pending_reward_claims": len(pending_rewards),
             "pending_mandatory_misses": len(mandatory_misses),
@@ -1466,3 +1468,10 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
             "reward_claims": reward_details,
             "mandatory_misses": mandatory_misses,
         }
+        # Quality rating (#927): tells approval cards to draw the star picker,
+        # and what each star pays. Absent entirely while the feature is off.
+        if self.coordinator.quality_rating_enabled():
+            attrs["quality_rating"] = {
+                "multipliers": [round(m, 3) for _, m in sorted(self.coordinator.quality_rating_multipliers().items())]
+            }
+        return attrs

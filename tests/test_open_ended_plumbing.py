@@ -89,7 +89,7 @@ async def test_ws_approve_forwards_the_points_override():
     await ws._ws_approve_chore(
         _hass_with(coordinator), connection, {"id": 1, "type": ws.WS_APPROVE_CHORE, "completion_id": "x1", "points": 25}
     )
-    coordinator.async_approve_chore.assert_awaited_once_with("x1", points=25)
+    coordinator.async_approve_chore.assert_awaited_once_with("x1", points=25, rating=None)
     connection.send_error.assert_not_called()
 
 
@@ -99,7 +99,7 @@ async def test_ws_approve_without_an_override_leaves_the_chores_points_alone():
     await ws._ws_approve_chore(
         _hass_with(coordinator), _connection(), {"id": 1, "type": ws.WS_APPROVE_CHORE, "completion_id": "x1"}
     )
-    coordinator.async_approve_chore.assert_awaited_once_with("x1", points=None)
+    coordinator.async_approve_chore.assert_awaited_once_with("x1", points=None, rating=None)
 
 
 # ── the data cards actually read ─────────────────────────────────────────────

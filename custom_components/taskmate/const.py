@@ -229,6 +229,15 @@ DIFFICULTY_TIERS: Final = ("easy", "medium", "hard")
 DEFAULT_DIFFICULTY: Final = "medium"
 DEFAULT_DIFFICULTY_MULTIPLIERS: Final = {"easy": 0.5, "medium": 1.0, "hard": 2.0}
 
+# --- Chore quality rating (#927) ---
+# When the "quality_rating_enabled" setting is on, a parent may rate an approval
+# 1-3 stars and the chore's base points are scaled by that star's multiplier
+# (configurable via the "quality_rating_multiplier_<n>" settings keys). An
+# unrated approval pays 100%, so turning the feature on changes nothing until a
+# parent actually picks a star.
+QUALITY_RATINGS: Final = (1, 2, 3)
+DEFAULT_QUALITY_RATING_MULTIPLIERS: Final = {1: 0.75, 2: 1.0, 3: 1.25}
+
 # --- Notification type IDs (v3.9.0) ---
 NOTIF_TYPE_BEDTIME_REMINDER: Final = "bedtime_reminder"
 NOTIF_TYPE_STREAK_AT_RISK: Final = "streak_at_risk"

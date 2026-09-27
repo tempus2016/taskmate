@@ -433,6 +433,9 @@ class TaskMateActivityCard extends LitElement {
       .tmd-undo { padding: 4px 11px; }
       .act-line { font-weight: 700; font-size: 13.5px; line-height: 1.35; }
       .act-line .reason { font-weight: 400; color: var(--tmd-dim); }
+      /* Quality rating the parent gave at approval (#927), both render paths. */
+      .act-rating { color: var(--tmd-gold, #f5b301); font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
+      .act-rating .off { color: var(--tmd-dim, var(--secondary-text-color, #999)); font-weight: 400; }
       .act-ago { font-size: 11.5px; }
       .act-rel { opacity: 0.8; }
 
@@ -794,6 +797,7 @@ class TaskMateActivityCard extends LitElement {
           <div class="activity-body">
             <div class="activity-title">
               <strong>${childName}</strong> · ${choreName}
+              ${this._ratingStars(item)}
               ${status !== 'approved' ? html`
                 <span class="activity-status ${status}">${this._t('common.' + status)}</span>
               ` : ''}
@@ -815,6 +819,14 @@ class TaskMateActivityCard extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  // Stars a parent gave the approval (#927); nothing for unrated completions.
+  _ratingStars(item) {
+    const n = Number(item && item.rating) || 0;
+    if (n < 1 || n > 3) return '';
+    const label = this._t('activity.rated', { count: n });
+    return html`<span class="act-rating" title="${label}" aria-label="${label}" role="img">${'★'.repeat(n)}<span class="off">${'☆'.repeat(3 - n)}</span></span>`;
   }
 
   // ── Undo affordance ──────────────────────────────────────
@@ -948,8 +960,10 @@ class TaskMateActivityCard extends LitElement {
     const emoji = status === 'approved' ? '✅' : status === 'rejected' ? '❌' : '⏳';
     return {
       childName, tone, emoji, sign: '+', pts,
-      text: html`<strong>${childName}</strong> ${this._t('activity.completed')} ${choreName}`,
+      text: html`<strong>${childName}</strong> ${this._t('activity.completed')} ${choreName} ${this._ratingStars(item)}`,
       plain: `${childName} · ${choreName}`,
+      // Console renders `plain`, so it carries the stars separately.
+      stars: this._ratingStars(item),
       ago, time,
       ptsClass: status === 'approved' ? 'good' : status === 'rejected' ? 'bad' : 'muted',
       undo: status === 'approved'
@@ -1067,7 +1081,7 @@ class TaskMateActivityCard extends LitElement {
           <div class="row act-cn-row" style="--ac:var(--tmd-${r.tone})">
             ${this._stripe(r)}
             <div class="av" style="--av:26px;--ac:var(--tmd-${r.tone})">${r.emoji}</div>
-            <div class="act-cn-mid">${r.plain} <span class="num" style="color:var(--tmd-${r.ptsClass})">${r.sign}${r.pts}</span></div>
+            <div class="act-cn-mid">${r.plain} ${r.stars || ''} <span class="num" style="color:var(--tmd-${r.ptsClass})">${r.sign}${r.pts}</span></div>
             ${this._designUndoBtn(r.undo, this._t('activity.undo'))}
             <div class="num muted act-cn-time">${this._timeMeta(r)}</div>
           </div>`)}
