@@ -1323,6 +1323,7 @@ class TaskMateStorage:
         _NUMERIC_SETTINGS = (
             "history_days",
             "weekend_multiplier",
+            "birthday_points_multiplier",
             "difficulty_multiplier_easy",
             "difficulty_multiplier_medium",
             "difficulty_multiplier_hard",

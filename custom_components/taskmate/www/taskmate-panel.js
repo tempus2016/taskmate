@@ -27,8 +27,9 @@ const BADGE_METRICS = [
   { v: "perfect_weeks", lk: "badge.metric_perfect_weeks" },
   { v: "first_chore",   lk: "badge.metric_first_chore" },
   { v: "first_reward",  lk: "badge.metric_first_reward" },
+  { v: "birthday",      lk: "badge.metric_birthday" },
 ];
-const BADGE_BOOL_METRICS = ["first_chore", "first_reward"];
+const BADGE_BOOL_METRICS = ["first_chore", "first_reward", "birthday"];
 const BADGE_OPERATORS = ["≥", "=", "≤", ">", "<", "≠"];
 const BADGE_OP_VALUES = { "≥": ">=", "=": "==", "≤": "<=", ">": ">", "<": "<", "≠": "!=" };
 const BADGE_TIERS = [
@@ -1236,6 +1237,7 @@ class TaskMatePanel extends HTMLElement {
         unavailability_entity: c.unavailability_entity || "",
         pause_streak_when_unavailable: !!c.pause_streak_when_unavailable,
         linked_user_id: c.linked_user_id || "",
+        birthday: c.birthday || "",
       } });
     } else {
       this._openDialog({ kind: "child", mode: "add", data: {
@@ -1243,6 +1245,7 @@ class TaskMatePanel extends HTMLElement {
         availability_inverted: false, unavailability_entity: "",
         pause_streak_when_unavailable: false,
         linked_user_id: "",
+        birthday: "",
       } });
     }
   }
@@ -1262,11 +1265,13 @@ class TaskMatePanel extends HTMLElement {
       ? { type: "taskmate/add_child", name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
-          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "" }
+          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
+          birthday: (d.birthday || "").trim() }
       : { type: "taskmate/update_child", child_id: d.id, name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
-          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "" };
+          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
+          birthday: (d.birthday || "").trim() };
     const { ok, err } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
     this._closeDialog(true);
@@ -4605,6 +4610,14 @@ class TaskMatePanel extends HTMLElement {
               <input type="number" class="tm-input" step="0.1" min="1" max="5" data-setting="weekend_multiplier" value="${this._num(s.weekend_multiplier, 1.0)}">
             </div>
             <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_birthday_multiplier_label")}<small>${this._t("panel.settings_birthday_multiplier_hint")}</small></div>
+              <input type="number" class="tm-input" step="0.5" min="1" max="5" data-setting="birthday_points_multiplier" value="${this._num(s.birthday_points_multiplier, 2)}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_birthday_chores_off_label")}<small>${this._t("panel.settings_birthday_chores_off_hint")}</small></div>
+              <ha-switch data-setting="birthday_chores_off" ${s.birthday_chores_off ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_difficulty_multipliers_label")}<small>${this._t("panel.settings_difficulty_multipliers_hint")}</small></div>
               <div class="tm-difficulty-mults">
                 <label>${this._t("panel.difficulty_easy")}<input type="number" class="tm-input" step="0.1" min="0" max="10" data-setting="difficulty_multiplier_easy" value="${this._num(s.difficulty_multiplier_easy, 0.5)}"></label>
@@ -5061,7 +5074,7 @@ class TaskMatePanel extends HTMLElement {
       <td class="tm-notif-matrix-cell">
         <input type="checkbox" class="tm-notif-switch" data-act="notif-set-route" data-type-id="${this._esc(t.id)}" data-recipient-id="${this._esc(r.id)}" data-time="${this._esc(route.time || "")}" ${route.enabled ? "checked" : ""} ${c.master_enabled ? "" : "disabled"}>
         ${t.per_recipient_time ? `
-          <input type="time" class="tm-notif-time-input" data-act="notif-set-route-time" data-type-id="${this._esc(t.id)}" data-recipient-id="${this._esc(r.id)}" value="${this._esc(route.time || "20:00")}" ${(c.master_enabled && route.enabled) ? "" : "disabled"}>
+          <input type="time" class="tm-notif-time-input" data-act="notif-set-route-time" data-type-id="${this._esc(t.id)}" data-recipient-id="${this._esc(r.id)}" value="${this._esc(route.time || (t.id === "birthday" ? "08:00" : "20:00"))}" ${(c.master_enabled && route.enabled) ? "" : "disabled"}>
         ` : ""}
       </td>
     `;
@@ -5342,6 +5355,8 @@ class TaskMatePanel extends HTMLElement {
       [
         this._field(this._t("panel.child_name_label"), "name", d.name, "text", this._t("panel.child_name_placeholder")),
         this._iconPickerField(this._t("panel.child_avatar_label"), "avatar", d.avatar),
+        this._field(this._t("panel.child_birthday_label"), "birthday", d.birthday, "text",
+          this._esc(this._t("panel.child_birthday_hint"))),
         this._entityPickerField(this._t("panel.child_availability_label"), "availability_entity", d.availability_entity, ["binary_sensor", "sensor", "input_boolean", "person"],
           this._t("panel.child_availability_hint")),
         hasAvail ? this._switch(this._t("panel.child_invert_label"), "availability_inverted", d.availability_inverted,

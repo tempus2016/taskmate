@@ -27,6 +27,7 @@ from .const import (
     NOTIF_TYPE_ALL_CHORES_DONE,
     NOTIF_TYPE_BADGE_EARNED,
     NOTIF_TYPE_BEDTIME_REMINDER,
+    NOTIF_TYPE_BIRTHDAY,
     NOTIF_TYPE_CELEBRATION,
     NOTIF_TYPE_FAMILY_GOAL_REACHED,
     NOTIF_TYPE_LEVEL_UP,
@@ -44,6 +45,8 @@ from .models import NotificationRoute
 from .timewindow import is_within_window, parse_hhmm
 
 _LOGGER = logging.getLogger(__name__)
+
+DEFAULT_BIRTHDAY_NOTIFY_TIME = "08:00"
 
 # Appended to actionable notifications sent to non-mobile_app backends, which
 # silently ignore tap actions. Gives those recipients a way to act.
@@ -87,6 +90,9 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_MONTHLY_REPORT, "parent", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_SEASON_CHAMPION, "both", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_FAMILY_GOAL_REACHED, "both", False, False, False, False),
+    # Birthday mode (#924): a morning "happy birthday" to the child, at a
+    # per-child time (08:00 when none is set).
+    NotificationTypeMeta(NOTIF_TYPE_BIRTHDAY, "child", True, True, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
@@ -301,6 +307,7 @@ class NotificationCoordinator:
             "month": "January 2026",
             "goal_name": "Movie night fund",
             "goal_reward": "a family movie night",
+            "multiplier": "2",
             "points_name": self.storage.get_points_name(),
         }
         message = "[TEST] " + self._render_template(meta, ctx)
@@ -379,6 +386,7 @@ class NotificationCoordinator:
             NOTIF_TYPE_MONTHLY_REPORT: "TaskMate {month} report:\n{summary}",
             NOTIF_TYPE_SEASON_CHAMPION: "🏆 {child_name} won the {month} leaderboard with {points} {points_name}!",
             NOTIF_TYPE_FAMILY_GOAL_REACHED: "🎉 Family goal reached: {goal_name}! Time for {goal_reward}.",
+            NOTIF_TYPE_BIRTHDAY: "🎂 Happy birthday, {child_name}! Every chore pays {multiplier}× today.",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:
@@ -608,6 +616,17 @@ class NotificationCoordinator:
                     self._make_bedtime_callback(child_id),
                 )
 
+        # Birthday (#924) — per-child morning time, only fires on the day
+        cfg = self.storage.get_notification_config("birthday")
+        if cfg.master_enabled:
+            for recipient_id, route in cfg.routes.items():
+                if not route.enabled or not recipient_id.startswith("child:"):
+                    continue
+                self._register_at(
+                    route.time or DEFAULT_BIRTHDAY_NOTIFY_TIME,
+                    self._make_birthday_callback(recipient_id.split(":", 1)[1]),
+                )
+
         # Streak at risk — global cutoff time, fire once per child
         cfg = self.storage.get_notification_config("streak_at_risk")
         if cfg.master_enabled:
@@ -652,6 +671,24 @@ class NotificationCoordinator:
 
         return _cb
 
+    def _make_birthday_callback(self, child_id: str):
+        async def _cb(now):
+            coord = self.coordinator
+            child = self.storage.get_child(child_id)
+            if child is None or coord is None or not coord.is_birthday(child):
+                return
+            await self.fire(
+                "birthday",
+                {
+                    "child_name": child.name,
+                    "child_id": child_id,
+                    "multiplier": f"{coord.birthday_multiplier():g}",
+                },
+                only_recipients={f"child:{child_id}"},
+            )
+
+        return _cb
+
     async def _streak_at_risk_callback(self, now) -> None:
         from homeassistant.util import dt as dt_util
 
@@ -660,6 +697,9 @@ class NotificationCoordinator:
             if (child.current_streak or 0) < 2:
                 continue
             if child.last_completion_date == today:
+                continue
+            # A birthday day off can't break the streak, so don't nag (#924).
+            if self.coordinator is not None and self.coordinator.is_birthday_day_off(child) is True:
                 continue
             await self.fire(
                 "streak_at_risk",
@@ -823,10 +863,15 @@ class NotificationCoordinator:
             for c in completions
             if c.child_id == child_id and dt_util.as_local(c.completed_at).date() == today
         }
+        # Birthday day off (#924): only mandatory chores are still owed.
+        coord = self.coordinator
+        birthday_off = coord is not None and coord.is_birthday_day_off(self.storage.get_child(child_id)) is True
         for chore in chores:
             if not chore.assigned_to or child_id not in chore.assigned_to:
                 continue
             if chore.id in completed_today:
+                continue
+            if birthday_off and not getattr(chore, "mandatory", False):
                 continue
             return True
         return False

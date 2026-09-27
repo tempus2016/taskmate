@@ -541,6 +541,29 @@
     return { config: Object.assign({}, stub, { type: "custom:" + type, entity: entityId }) };
   };
 
+  // ── Birthday "first open today" gate (#924) ───────────────────────────────
+  // True the first time it's asked about a child on a given day on this device,
+  // false after that — so the birthday confetti plays once per day, not on every
+  // hass update or page load. Shared by every card that celebrates, so a child
+  // card and a points card on the same dashboard don't both go off. Keyed on
+  // HA's time zone so the day rolls over with the backend, not the browser.
+  window.__taskmate_birthday_once = window.__taskmate_birthday_once || function (hass, childId) {
+    if (!childId) return false;
+    let day;
+    try {
+      day = new Date().toLocaleDateString("en-CA", { timeZone: hass?.config?.time_zone || undefined });
+    } catch (e) {
+      day = new Date().toLocaleDateString("en-CA");
+    }
+    const KEY = "taskmate_birthday_seen";
+    let seen;
+    try { seen = JSON.parse(window.localStorage.getItem(KEY) || "{}") || {}; } catch (e) { seen = {}; }
+    if (seen[childId] === day) return false;
+    seen[childId] = day;
+    try { window.localStorage.setItem(KEY, JSON.stringify(seen)); } catch (e) { /* private mode: plays each load */ }
+    return true;
+  };
+
   // ── Chore-photo lightbox ───────────────────────────────────────────────────
   // A single shared, design-AGNOSTIC image viewer for evidence photos. It is
   // mounted on document.body (NOT inside any card's shadow root), so it paints

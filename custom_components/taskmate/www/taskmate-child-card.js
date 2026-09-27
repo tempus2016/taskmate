@@ -90,6 +90,7 @@ class TaskMateChildCard extends LitElement {
     super.updated(changedProperties);
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
       || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    this._maybeBirthdayConfetti(attrs);
     const sessions = attrs.active_timed_sessions || [];
     const hasRunning = sessions.some(s => s.state === 'running' && s.child_id === this.config?.child_id);
     // A reactive chore's countdown (#674) has to keep ticking too, otherwise it
@@ -1616,6 +1617,19 @@ class TaskMateChildCard extends LitElement {
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
       }
       .vacation-banner ha-icon { --mdc-icon-size: 24px; }
+      .birthday-banner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #ffd1e8, #e3c8ff);
+        color: #5b1f6b;
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      }
+      .birthday-banner ha-icon { --mdc-icon-size: 28px; flex-shrink: 0; }
+      .bday-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .birthday-banner .bday-title { font-weight: 800; font-size: 1rem; }
+      .birthday-banner .bday-sub { font-size: 0.85rem; font-weight: 600; opacity: 0.85; }
       .badge-strip:hover { background: var(--secondary-background-color, rgba(0,0,0,0.03)); }
       .badge-strip-label {
         font-size: 11px;
@@ -1918,6 +1932,15 @@ class TaskMateChildCard extends LitElement {
         background: color-mix(in srgb, var(--tmd-warn) 16%, transparent); color: var(--tmd-warn);
         border-radius: var(--tmd-radius-sm); font-weight: 700; font-size: 12.5px;
       }
+      .tmd-birthday {
+        display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 11px;
+        background: color-mix(in srgb, var(--tmd-accent) 16%, transparent); color: var(--tmd-text);
+        border: 1px solid color-mix(in srgb, var(--tmd-accent) 40%, transparent);
+        border-radius: var(--tmd-radius-sm);
+      }
+      .tmd-birthday ha-icon { --mdc-icon-size: 26px; color: var(--tmd-accent); flex-shrink: 0; }
+      .tmd-birthday .bday-title { font-weight: 800; font-size: 14px; }
+      .tmd-birthday .bday-sub { font-size: 12px; font-weight: 600; color: var(--tmd-dim); }
       .tmd-swaps { margin-top: 12px; }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
@@ -2109,6 +2132,8 @@ class TaskMateChildCard extends LitElement {
             </div>
           </div>
         </div>
+
+        ${this._renderBirthdayBanner(child, false)}
 
         ${attrs.vacation_active ? html`
           <div class="vacation-banner">
@@ -2517,6 +2542,7 @@ class TaskMateChildCard extends LitElement {
     return html`<ha-card class="tmd" style="--hd:${hd}">
       ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints)}
       <div class="tmd-bd">
+        ${this._renderBirthdayBanner(child, true)}
         ${attrs.vacation_active ? html`
           <div class="tmd-vacation">
             <ha-icon icon="mdi:palm-tree"></ha-icon>
@@ -4623,6 +4649,38 @@ class TaskMateChildCard extends LitElement {
       this._loading = { ...this._loading, [chore.id]: false };
       this.requestUpdate();
     }
+  }
+
+  /* Birthday mode (#924). The backend only sends `child.birthday` on the day
+     ({multiplier, age?, chores_off?}). Confetti is fired from updated(), which
+     runs for every design, and the banner helper is called from BOTH render
+     paths — the classic branch alone would leave it invisible on the others. */
+  _maybeBirthdayConfetti(attrs) {
+    const child = (attrs.children || []).find(c => c.id === this.config?.child_id);
+    if (!child || !child.birthday) return;
+    const once = window.__taskmate_birthday_once;
+    if (once && once(this.hass, child.id)) this._spawnConfetti();
+  }
+
+  _renderBirthdayBanner(child, designed) {
+    const b = child && child.birthday;
+    if (!b) return "";
+    const greeting = b.age != null
+      ? this._t("birthday.banner_age", { name: child.name, age: b.age })
+      : this._t("birthday.banner", { name: child.name });
+    const mult = Number(b.multiplier) || 1;
+    const details = [
+      mult > 1 ? this._t("birthday.multiplier", { multiplier: mult }) : "",
+      b.chores_off ? this._t("birthday.day_off") : "",
+    ].filter(Boolean).join(" · ");
+    return html`
+      <div class="${designed ? "tmd-birthday" : "birthday-banner"}" role="status">
+        <ha-icon icon="mdi:cake-variant"></ha-icon>
+        <div class="bday-text">
+          <span class="bday-title">${greeting}</span>
+          ${details ? html`<span class="bday-sub">${details}</span>` : ""}
+        </div>
+      </div>`;
   }
 
   _spawnConfetti() {

@@ -70,6 +70,7 @@ from .const import (
     TIME_CATEGORY_ICONS,
     is_valid_completion_sound,
 )
+from .coord_birthdays import normalize_birthday
 from .coordinator import TaskMateCoordinator
 from .models import BonusSubTask, Reward
 from .sounds import MAX_NAME_LEN as MAX_SOUND_NAME_LEN
@@ -414,11 +415,17 @@ async def _ws_get_state(hass, connection, msg, coordinator):
         vol.Optional("unavailability_entity", default=""): str,
         vol.Optional("pause_streak_when_unavailable", default=False): bool,
         vol.Optional("linked_user_id", default=""): str,
+        vol.Optional("birthday", default=""): vol.All(str, vol.Length(max=10)),
     }
 )
 @websocket_api.async_response
 @_admin_only
 async def _ws_add_child(hass, connection, msg, coordinator):
+    try:
+        birthday = normalize_birthday(msg.get("birthday", ""))
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid_format", str(err))
+        return
     child = await coordinator.async_add_child(
         name=msg["name"].strip(),
         avatar=msg.get("avatar") or "mdi:account-circle",
@@ -427,6 +434,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         unavailability_entity=_opt_str(msg.get("unavailability_entity")),
         pause_streak_when_unavailable=bool(msg.get("pause_streak_when_unavailable", False)),
         linked_user_id=_opt_str(msg.get("linked_user_id")),
+        birthday=birthday,
     )
     connection.send_result(msg["id"], {"id": child.id})
 
@@ -444,6 +452,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         vol.Optional("linked_user_id"): str,
         vol.Optional("is_guest"): bool,
         vol.Optional("guest_expires_on"): str,
+        vol.Optional("birthday"): vol.All(str, vol.Length(max=10)),
     }
 )
 @websocket_api.async_response
@@ -467,6 +476,12 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.pause_streak_when_unavailable = bool(msg["pause_streak_when_unavailable"])
     if "linked_user_id" in msg:
         existing.linked_user_id = _opt_str(msg["linked_user_id"])
+    if "birthday" in msg:
+        try:
+            existing.birthday = normalize_birthday(msg["birthday"])
+        except ValueError as err:
+            connection.send_error(msg["id"], "invalid_format", str(err))
+            return
     if "is_guest" in msg or "guest_expires_on" in msg:
         # Routed through the coordinator so the expiry is validated and an
         # archived guest is un-archived when promoted to a family member.
@@ -1652,6 +1667,8 @@ _SUBKEY_SETTINGS = {
     "streak_reset_mode",
     "card_design",
     "weekend_multiplier",
+    "birthday_points_multiplier",
+    "birthday_chores_off",
     "streak_milestones_enabled",
     "perfect_week_enabled",
     "perfect_week_bonus",
@@ -1846,6 +1863,8 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("history_days"): vol.All(int, vol.Range(min=30, max=365)),
     vol.Optional("streak_reset_mode"): vol.In(["reset", "pause"]),
     vol.Optional("weekend_multiplier"): vol.All(vol.Coerce(float), vol.Range(min=1.0, max=5.0)),
+    vol.Optional("birthday_points_multiplier"): vol.All(vol.Coerce(float), vol.Range(min=1.0, max=5.0)),
+    vol.Optional("birthday_chores_off"): bool,
     vol.Optional("streak_milestones_enabled"): bool,
     vol.Optional("perfect_week_enabled"): bool,
     vol.Optional("perfect_week_bonus"): vol.All(int, vol.Range(min=0)),

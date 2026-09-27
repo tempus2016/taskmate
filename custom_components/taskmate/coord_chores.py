@@ -1491,6 +1491,10 @@ class ChoresMixin:
         if self._is_child_on_vacation(self._cached_child(child_id)):
             return False
 
+        # Birthday day off (#924): only mandatory chores stay on the list.
+        if not getattr(chore, "mandatory", False) and self.is_birthday_day_off(self._cached_child(child_id)):
+            return False
+
         # Check if chore is globally disabled (soft-disabled one-shot chores)
         if not getattr(chore, "enabled", True):
             return False

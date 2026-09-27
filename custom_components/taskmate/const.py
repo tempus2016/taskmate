@@ -245,6 +245,7 @@ NOTIF_TYPE_MANDATORY_PARENT_ALERT: Final = "mandatory_parent_alert"
 NOTIF_TYPE_MONTHLY_REPORT: Final = "monthly_report"
 NOTIF_TYPE_SEASON_CHAMPION: Final = "season_champion"
 NOTIF_TYPE_FAMILY_GOAL_REACHED: Final = "family_goal_reached"
+NOTIF_TYPE_BIRTHDAY: Final = "birthday"
 
 # Default notification tap target. Must match PANEL_URL_PATH in panel.py —
 # a bare /taskmate is the static-files prefix and returns 403, not the panel.

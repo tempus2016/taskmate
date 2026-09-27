@@ -198,6 +198,8 @@ class Child:
     # expires on its own and stays out of the family leaderboard.
     is_guest: bool = False
     guest_expires_on: str = ""  # ISO date; profile auto-archives the day after
+    # Birthday mode (#924): "YYYY-MM-DD", or "MM-DD" when no age should show.
+    birthday: str = ""
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -219,6 +221,7 @@ class Child:
             awarded_perfect_weeks=list(data.get("awarded_perfect_weeks", [])),
             is_guest=bool(data.get("is_guest", False)),
             guest_expires_on=str(data.get("guest_expires_on", "") or ""),
+            birthday=str(data.get("birthday", "") or ""),
             availability_entity=data.get("availability_entity", ""),
             availability_inverted=data.get("availability_inverted", False),
             unavailability_entity=data.get("unavailability_entity", ""),
@@ -251,6 +254,7 @@ class Child:
             "awarded_perfect_weeks": self.awarded_perfect_weeks,
             "is_guest": self.is_guest,
             "guest_expires_on": self.guest_expires_on,
+            "birthday": self.birthday,
             "availability_entity": self.availability_entity,
             "availability_inverted": self.availability_inverted,
             "unavailability_entity": self.unavailability_entity,

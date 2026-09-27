@@ -57,8 +57,12 @@ class PointsMixin:
             are skipped — who was active on a past day can't be reconstructed.
             """
             req: set[str] = set()
+            child_obj = self.storage.get_child(child_id)
             for d_str in last_week_dates:
                 day = date.fromisoformat(d_str)
+                # A birthday day off is never a required day (#924).
+                if self.is_birthday_day_off(child_obj, day):
+                    continue
                 for chore in chores:
                     assigned = chore.assigned_to or []
                     if assigned and child_id not in assigned:
@@ -154,12 +158,13 @@ class PointsMixin:
             await self.storage.async_save()
             await self.async_refresh()
 
-    def _streak_breaks_after_gap(self, last_date_str: str, today: date) -> bool:
+    def _streak_breaks_after_gap(self, last_date_str: str, today: date, child=None) -> bool:
         """True if a genuine (non-vacation) expected day was missed.
 
         Walks each day strictly between the last completion and today; if any
         is not a vacation day the child missed it and the streak breaks.
-        Days inside a vacation period are forgiven.
+        Days inside a vacation period are forgiven, as is the child's birthday
+        when it's a day off (#924).
         """
         try:
             last_date = date.fromisoformat(last_date_str)
@@ -167,10 +172,22 @@ class PointsMixin:
             return False
         d = last_date + timedelta(days=1)
         while d < today:
-            if not self.is_vacation_day(d):
+            if not self.is_vacation_day(d) and not self.is_birthday_day_off(child, d):
                 return True
             d += timedelta(days=1)
         return False
+
+    def _gap_is_birthday_days_off(self, child, last_date: date, today: date) -> bool:
+        """True when every day strictly between ``last_date`` and ``today`` was
+        the child's birthday day off — the only gap a completion bridges (#924)."""
+        d = last_date + timedelta(days=1)
+        if d >= today:
+            return False
+        while d < today:
+            if not self.is_birthday_day_off(child, d):
+                return False
+            d += timedelta(days=1)
+        return True
 
     async def _async_check_streaks(self) -> None:
         """Check all children's streaks and reset/pause if they missed yesterday.
@@ -204,7 +221,7 @@ class PointsMixin:
 
             # Streak is fine unless a genuine, non-vacation day was missed
             # between the last completion and today.
-            if not self._streak_breaks_after_gap(last_date_str, today):
+            if not self._streak_breaks_after_gap(last_date_str, today, child):
                 continue
 
             # They missed a (non-vacation) day
@@ -667,6 +684,7 @@ class PointsMixin:
         who was active, so the perfect-week path passes False).
         """
         out: set[str] = set()
+        birthday_off = self.is_birthday_day_off(self.storage.get_child(child_id), day)
         for chore in self.storage.get_chores():
             if not getattr(chore, "enabled", True):
                 continue
@@ -685,6 +703,9 @@ class PointsMixin:
             # due today" can't include it — it's owed by Sunday, not by any one
             # evening.
             if int(getattr(chore, "weekly_target", 0) or 0) > 0:
+                continue
+            # Birthday day off (#924): only mandatory chores are still owed.
+            if not getattr(chore, "mandatory", False) and birthday_off:
                 continue
             if not self._is_chore_scheduled_for_date(chore, day):
                 continue
@@ -731,8 +752,8 @@ class PointsMixin:
     ) -> int:
         """Award points to a child, update streak, and apply bonus systems.
 
-        Returns the total points awarded (base + weekend bonus), excluding
-        milestone bonuses (which are logged as separate transactions).
+        Returns the total points awarded (base + weekend + birthday bonus),
+        excluding milestone bonuses (which are logged as separate transactions).
 
         If skip_streak is True, streak tracking is skipped (used for bonus
         sub-task completions where the parent already counted).
@@ -754,7 +775,22 @@ class PointsMixin:
         if effective_date.weekday() in (5, 6) and multiplier > 1.0:
             weekend_bonus = round(points * (multiplier - 1.0))
 
-        total_points = points + weekend_bonus
+        # ── Birthday multiplier (#924) ──────────────────────────────────────
+        # Applied after the weekend bonus, so a birthday doubles whatever the
+        # chore would otherwise have paid that day.
+        birthday_bonus = 0
+        if self.is_birthday(child, effective_date):
+            birthday_multiplier = self.birthday_multiplier()
+            if birthday_multiplier > 1.0:
+                birthday_bonus = round((points + weekend_bonus) * (birthday_multiplier - 1.0))
+                _LOGGER.info(
+                    "Birthday multiplier (%.1fx) applied for %s: +%d bonus",
+                    birthday_multiplier,
+                    child.name,
+                    birthday_bonus,
+                )
+
+        total_points = points + weekend_bonus + birthday_bonus
         child.points += total_points
         child.total_points_earned += total_points
         child.total_chores_completed += 1
@@ -803,7 +839,10 @@ class PointsMixin:
                 try:
                     last_date = date.fromisoformat(last_date_str)
                     yesterday = effective_date - timedelta(days=1)
-                    if last_date == yesterday:
+                    # A birthday day off in between doesn't break the run (#924).
+                    if last_date == yesterday or (
+                        last_date < yesterday and self._gap_is_birthday_days_off(child, last_date, effective_date)
+                    ):
                         child.current_streak = streak_before + 1
                         child.streak_paused = False
                     elif streak_mode == "pause" or streak_paused:
