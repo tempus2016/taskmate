@@ -179,6 +179,10 @@
         "points": {
           "name": "Points",
           "description": "Attribuer ce nombre de points au lieu de la valeur de la tâche. Laisser vide pour utiliser les points de la tâche."
+        },
+        "rating": {
+          "name": "Note de qualité",
+          "description": "Note facultative de 1 à 3 étoiles sur la qualité du travail. Quand les notes de qualité sont activées, les points sont multipliés par le coefficient de cette note ; laissez vide pour verser 100 %."
         }
       }
     },
@@ -189,6 +193,10 @@
         "completion_ids": {
           "name": "Identifiants de complétion",
           "description": "Identifiants de complétion à approuver ; laisser vide pour tout approuver"
+        },
+        "rating": {
+          "name": "Note de qualité",
+          "description": "Note facultative de 1 à 3 étoiles appliquée à chaque tâche approuvée par cet appel (les notes de qualité doivent être activées)."
         }
       }
     },
@@ -825,6 +833,20 @@
         "points": {
           "name": "Points",
           "description": "Le nombre de points à transférer"
+        }
+      }
+    },
+    "adjust_streak_freezes": {
+      "name": "Ajuster les gels de série",
+      "description": "Donne des gels de série à un enfant (nombre positif) ou en retire (négatif). Un ajout ne dépasse jamais la limite streak_freeze_max.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'ID de l'enfant dont les gels changent"
+        },
+        "amount": {
+          "name": "Nombre",
+          "description": "Gels à ajouter (positif) ou à retirer (négatif)"
         }
       }
     },

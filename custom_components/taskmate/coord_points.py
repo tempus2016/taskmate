@@ -158,24 +158,176 @@ class PointsMixin:
             await self.storage.async_save()
             await self.async_refresh()
 
-    def _streak_breaks_after_gap(self, last_date_str: str, today: date, child=None) -> bool:
+    def _streak_breaks_after_gap(self, last_date_str: str, today: date, child: Child | None = None) -> bool:
         """True if a genuine (non-vacation) expected day was missed.
 
         Walks each day strictly between the last completion and today; if any
         is not a vacation day the child missed it and the streak breaks.
-        Days inside a vacation period are forgiven, as is the child's birthday
-        when it's a day off (#924).
+        Days inside a vacation period are forgiven, and so are days one of the
+        child's streak-freeze tokens has already covered (#925), as is the
+        child's birthday when it's a day off (#924).
+        """
+        return bool(self._unprotected_missed_days(last_date_str, today, child))
+
+    def _unprotected_missed_days(self, last_date_str: str, today: date, child: Child | None = None) -> list[date]:
+        """Days strictly between the last completion and today that nothing covers.
+
+        A day is covered by a vacation period, a birthday day off (#924) or by
+        a streak-freeze token the child already spent on it. Anything left is a genuinely missed day.
         """
         try:
             last_date = date.fromisoformat(last_date_str)
         except (TypeError, ValueError):
-            return False
+            return []
+        frozen = set(getattr(child, "streak_freeze_dates", None) or []) if child is not None else set()
+        missed = []
         d = last_date + timedelta(days=1)
         while d < today:
-            if not self.is_vacation_day(d) and not self.is_birthday_day_off(child, d):
-                return True
+            if not self.is_vacation_day(d) and d.isoformat() not in frozen and not self.is_birthday_day_off(child, d):
+                missed.append(d)
             d += timedelta(days=1)
-        return False
+        return missed
+
+    # ── Streak freeze tokens (#925) ──────────────────────────────────────
+    def _gap_bridged_by_freeze(self, child: Child, last_date: date, effective_date: date) -> bool:
+        """True when a streak freeze covered the gap before ``effective_date``.
+
+        Every day between the last completion and this one must be covered —
+        by a token, or by a vacation day alongside one — and at least one of
+        them by a token. A gap with no token in it keeps its old handling.
+        """
+        frozen = set(getattr(child, "streak_freeze_dates", None) or [])
+        if not frozen or last_date >= effective_date - timedelta(days=1):
+            return False
+        used = False
+        d = last_date + timedelta(days=1)
+        while d < effective_date:
+            if d.isoformat() in frozen:
+                used = True
+            elif not self.is_vacation_day(d) and not self.is_birthday_day_off(child, d):
+                return False
+            d += timedelta(days=1)
+        return used
+
+    def _setting_int(self, key: str, default: int) -> int:
+        try:
+            return max(0, int(float(self.storage.get_setting(key, default))))
+        except (TypeError, ValueError):
+            return default
+
+    def streak_freeze_max(self) -> int:
+        """How many streak-freeze tokens a child may hold; 0 turns the feature off."""
+        return self._setting_int("streak_freeze_max", 2)
+
+    def streak_freeze_earn_every(self) -> int:
+        """Earn a token every N consecutive streak days; 0 means never."""
+        return self._setting_int("streak_freeze_earn_every", 7)
+
+    def _log_streak_freeze(self, child: Child, reason: str) -> None:
+        """Record a token movement in the activity log.
+
+        Tokens are not points, so the entry carries 0 points; the reason is
+        what the activity feed shows (and translates). "Streak freeze" is on
+        the undo deny-list, so nobody can "undo" a zero-point row and expect
+        the token to come back.
+        """
+        self.storage.add_points_transaction(
+            PointsTransaction(child_id=child.id, points=0, reason=reason, created_at=dt_util.now())
+        )
+
+    def _maybe_earn_streak_freeze(self, child: Child) -> bool:
+        """Hand out a token when the streak lands on a multiple of earn_every.
+
+        Called only when the streak has just advanced. Records the streak
+        length that earned it (0 when the child was already at the cap), so an
+        undo of this very completion can take back exactly what it gave.
+        """
+        cap = self.streak_freeze_max()
+        every = self.streak_freeze_earn_every()
+        streak = child.current_streak or 0
+        if cap <= 0 or every <= 0 or streak <= 0 or streak % every:
+            return False
+        if (child.streak_freezes or 0) >= cap:
+            child.streak_freeze_earned_at = 0
+            return False
+        child.streak_freezes = (child.streak_freezes or 0) + 1
+        child.streak_freeze_earned_at = streak
+        self._log_streak_freeze(child, f"Streak freeze earned ({streak} day streak!)")
+        _LOGGER.info("%s earned a streak freeze at a %d-day streak", child.name, streak)
+        return True
+
+    def _reverse_streak_freeze_earn(self, child: Child, streak_before: int) -> None:
+        """Take back the token a now-undone completion earned, if it earned one."""
+        earned_at = getattr(child, "streak_freeze_earned_at", 0) or 0
+        if not earned_at or streak_before != earned_at or (child.current_streak or 0) >= earned_at:
+            return
+        child.streak_freeze_earned_at = 0
+        if (child.streak_freezes or 0) > 0:
+            child.streak_freezes -= 1
+            self._log_streak_freeze(child, "Streak freeze reversed")
+
+    async def async_adjust_streak_freezes(self, child_id: str, amount: int) -> int:
+        """Grant (positive) or remove (negative) streak-freeze tokens.
+
+        A parent grant respects the cap like every other way of getting one;
+        removal floors at zero. Returns the child's new token count.
+        """
+        child = self.get_child(child_id)
+        if not child:
+            raise ValueError(f"Child {child_id} not found")
+        if amount == 0:
+            raise ValueError("amount must not be 0")
+        cap = self.streak_freeze_max()
+        if cap <= 0 and amount > 0:
+            raise ValueError("Streak freezes are turned off (streak_freeze_max is 0)")
+        before = child.streak_freezes or 0
+        after = max(0, before + amount)
+        if amount > 0:
+            after = min(after, max(cap, before))
+        if after == before:
+            if amount > 0:
+                raise ValueError(f"{child.name} already holds the maximum of {cap} streak freezes")
+            return before
+        child.streak_freezes = after
+        delta = after - before
+        self._log_streak_freeze(child, f"Streak freezes adjusted ({delta:+d})")
+        self.storage.update_child(child)
+        await self.storage.async_save()
+        await self.async_refresh()
+        return after
+
+    async def _async_use_streak_freeze(self, child: Child, day: date) -> None:
+        """Spend one token on ``day``: log it, tell the family, fire an event."""
+        child.streak_freezes -= 1
+        day_str = day.isoformat()
+        # Keep a month of covered days: enough for any gap the streak paths
+        # walk (an undo can move last_completion_date back), bounded so the
+        # child record can't grow without limit.
+        child.streak_freeze_dates = sorted(set(child.streak_freeze_dates or []) | {day_str})[-31:]
+        self._log_streak_freeze(child, f"Streak freeze used ({day_str})")
+        _LOGGER.info("Streak freeze used for %s on %s (%d left)", child.name, day_str, child.streak_freezes)
+        self.hass.bus.async_fire(
+            "taskmate_streak_freeze_used",
+            {
+                "child_id": child.id,
+                "child_name": child.name,
+                "date": day_str,
+                "streak": child.current_streak,
+                "freezes_left": child.streak_freezes,
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
+        if getattr(self, "notifications", None):
+            await self.notifications.fire(
+                "streak_freeze_used",
+                {
+                    "child_name": child.name,
+                    "child_id": child.id,
+                    "date": day_str,
+                    "streak": child.current_streak,
+                    "freezes_left": child.streak_freezes,
+                },
+            )
 
     def _gap_is_birthday_days_off(self, child, last_date: date, today: date) -> bool:
         """True when every day strictly between ``last_date`` and ``today`` was
@@ -195,10 +347,17 @@ class PointsMixin:
         Behaviour depends on streak_reset_mode setting:
         - "reset" (default): streak goes back to 0 on missed day
         - "pause": streak is preserved but not incremented until they complete again
+
+        Before either happens, each missed day spends one of the child's
+        streak-freeze tokens (#925) while they last — the streak then carries
+        on as if the day had been kept. A day already forgiven (vacation, the
+        child's own unavailability, a streak already frozen/paused) never
+        costs a token: there is nothing to protect.
         """
         today = dt_util.now().date()
 
         streak_mode = self.storage.get_setting("streak_reset_mode", "reset")
+        freezes_on = self.streak_freeze_max() > 0
 
         children = self.storage.get_children()
         changed = False
@@ -221,8 +380,19 @@ class PointsMixin:
 
             # Streak is fine unless a genuine, non-vacation day was missed
             # between the last completion and today.
-            if not self._streak_breaks_after_gap(last_date_str, today, child):
+            missed = self._unprotected_missed_days(last_date_str, today, child)
+            if not missed:
                 continue
+
+            # Spend a token per missed day while they last. Only a live,
+            # unpaused streak is at risk; a paused one resumes on its own.
+            if freezes_on and (child.current_streak or 0) > 0 and not getattr(child, "streak_paused", False):
+                while missed and (child.streak_freezes or 0) > 0:
+                    await self._async_use_streak_freeze(child, missed.pop(0))
+                    self.storage.update_child(child)
+                    changed = True
+                if not missed:
+                    continue
 
             # They missed a (non-vacation) day
             if (child.current_streak or 0) > 0:
@@ -324,6 +494,8 @@ class PointsMixin:
         "Points decay",
         "Savings interest",
         "Badge",
+        # Zero-point token movements (#925): nothing to reverse in points.
+        "Streak freeze",
     )
 
     async def async_undo_transaction(self, transaction_id: str) -> None:
@@ -836,8 +1008,10 @@ class PointsMixin:
                     last_date = date.fromisoformat(last_date_str)
                     yesterday = effective_date - timedelta(days=1)
                     # A birthday day off in between doesn't break the run (#924).
-                    if last_date == yesterday or (
-                        last_date < yesterday and self._gap_is_birthday_days_off(child, last_date, effective_date)
+                    if (
+                        last_date == yesterday
+                        or self._gap_bridged_by_freeze(child, last_date, effective_date)
+                        or (last_date < yesterday and self._gap_is_birthday_days_off(child, last_date, effective_date))
                     ):
                         child.current_streak = streak_before + 1
                         child.streak_paused = False
@@ -861,6 +1035,9 @@ class PointsMixin:
 
             if child.current_streak > (child.best_streak or 0):
                 child.best_streak = child.current_streak
+
+            if child.current_streak > streak_before:
+                self._maybe_earn_streak_freeze(child)
 
             self.hass.bus.async_fire(
                 "taskmate_streak_updated",

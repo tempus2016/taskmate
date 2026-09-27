@@ -279,6 +279,24 @@ class TestStreakProtection:
             run(coord._award_points(child, 10))
         assert child.current_streak == 1
 
+    def test_birthday_day_off_never_spends_a_streak_freeze(self):
+        child = Child(name="Mia", birthday="2016-09-23", current_streak=5, last_completion_date="2026-09-22")
+        child.streak_freezes = 1
+        coord = _make_coord({"birthday_chores_off": True}, [child])
+        assert coord._unprotected_missed_days("2026-09-22", date(2026, 9, 24), child) == []
+
+    def test_gap_of_a_frozen_day_and_the_birthday_is_bridged(self):
+        # 22nd done, 23rd birthday off, 24th covered by a freeze, completing on the 25th.
+        child = Child(name="Mia", birthday="2016-09-23", current_streak=5, last_completion_date="2026-09-22")
+        child.streak_freeze_dates = ["2026-09-24"]
+        coord = _make_coord(
+            {"birthday_chores_off": True, "streak_reset_mode": "reset", "streak_milestones_enabled": "false"},
+            [child],
+        )
+        with _now(_at(2026, 9, 25)):
+            run(coord._award_points(child, 10))
+        assert child.current_streak == 6
+
 
 # ── Badge + celebration ──────────────────────────────────────────────────────
 

@@ -179,6 +179,10 @@
         "points": {
           "name": "Poeng",
           "description": "Gje dette talet poeng i staden for oppgåva sin eigen verdi. Lat stå tomt for å bruke poenga til oppgåva."
+        },
+        "rating": {
+          "name": "Kvalitetsvurdering",
+          "description": "Valfri vurdering på 1-3 stjerner av kor godt oppgåva vart gjord. Når kvalitetsvurdering er slått på, vert poenga skalerte med multiplikatoren til stjerna; la feltet stå tomt for å gje 100 %."
         }
       }
     },
@@ -189,6 +193,10 @@
         "completion_ids": {
           "name": "Fullførings-ID-ar",
           "description": "Bestemte fullførings-ID-ar som skal godkjennast; utelat for å godkjenne alle ventande"
+        },
+        "rating": {
+          "name": "Kvalitetsvurdering",
+          "description": "Valfri vurdering på 1-3 stjerner som gjeld alle oppgåver godkjende med dette kallet (kvalitetsvurdering må vere slått på)."
         }
       }
     },
@@ -825,6 +833,20 @@
         "points": {
           "name": "Poeng",
           "description": "Talet på poeng som skal overførast"
+        }
+      }
+    },
+    "adjust_streak_freezes": {
+      "name": "Juster rekkjefrys",
+      "description": "Gje eit barn rekkjefrys (positivt tal) eller ta nokre bort (negativt). Ei tildeling går aldri over grensa streak_freeze_max.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "ID-en til barnet som får endra frys"
+        },
+        "amount": {
+          "name": "Tal",
+          "description": "Frys som skal leggjast til (positivt) eller fjernast (negativt)"
         }
       }
     },

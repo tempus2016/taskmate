@@ -34,6 +34,7 @@ class TaskMateApprovalsCard extends LitElement {
       _loading: { type: Object },
       _signed: { state: true },
       _review: { state: true },
+      _ratings: { state: true },
     };
   }
 
@@ -49,6 +50,7 @@ class TaskMateApprovalsCard extends LitElement {
   constructor() {
     super();
     this._loading = {};
+    this._ratings = {};       // completion_id -> picked 1-3 star rating (#927)
     this._signed = {};        // safe photo path -> per-viewer signed path
     this._inflight = new Set();
   }
@@ -616,6 +618,22 @@ class TaskMateApprovalsCard extends LitElement {
 
       .ap-d-photo-link { line-height: 0; text-decoration: none; }
 
+      /* Quality rating star picker (#927) — shared by every design. */
+      .ap-stars { display: inline-flex; align-items: center; gap: 1px; flex: none; }
+      .ap-star {
+        background: none; border: 0; margin: 0; padding: 2px 3px; cursor: pointer;
+        font: inherit; font-size: 20px; line-height: 1; border-radius: 6px;
+        color: var(--tmd-dim, var(--secondary-text-color, #9e9e9e));
+      }
+      .ap-star:hover, .ap-star.on { color: var(--tmd-gold, #f5b301); }
+      /* Console rows are one tight line: the picker sits under the subtitle. */
+      .ap-cn-stars { margin-top: 3px; }
+      .ap-cn-stars .ap-star { font-size: 17px; padding: 1px 2px; }
+      .ap-star:focus-visible { outline: 2px solid var(--tmd-accent, var(--primary-color)); outline-offset: 1px; }
+      .ap-star:disabled { cursor: default; opacity: .5; }
+      .tm-rv-stars { margin: 4px 0 10px; }
+      .tm-rv-stars .ap-star { font-size: 28px; }
+
       /* Scrollable list (parity with classic content) */
       .ap-d-scroll { max-height: 360px; overflow-y: auto; }
     `;
@@ -952,7 +970,7 @@ class TaskMateApprovalsCard extends LitElement {
 
   _apActionPair(approve, reject, isLoading, shape, completion = null) {
     const adjust = completion
-      ? html`<button class="btn ghost sm ${shape === "round" ? "round" : ""}" ?disabled="${isLoading}"
+      ? html`${shape === "round" ? "" : this._renderStars(completion)}<button class="btn ghost sm ${shape === "round" ? "round" : ""}" ?disabled="${isLoading}"
           title="${this._t('approvals.award_label')}"
           @click="${() => this._openReview(completion)}">${this._reviewGlyph(completion)}</button>`
       : "";
@@ -1036,6 +1054,7 @@ class TaskMateApprovalsCard extends LitElement {
         <div style="flex:1;min-width:0">
           <div class="ap-cn-title">${it.title}</div>
           <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()} · +${it.points} XP</div>
+          ${it.kind === "completion" ? this._renderStars(it.completion, "ap-cn-stars") : ""}
         </div>
         ${this._apPhotoDesigned(it, "ap-cn-photo")}
         ${this._designActions(it, "round")}
@@ -1503,6 +1522,7 @@ class TaskMateApprovalsCard extends LitElement {
               <ha-icon icon="mdi:star"></ha-icon>
               ${completion.points}
             </span>
+            ${this._renderStars(completion)}
           </div>
           ${this._photoHref(completion.photo_url) ? html`
             <a class="approval-photo" href="${this._photoHref(completion.photo_url)}" target="_blank" rel="noopener"
@@ -1533,7 +1553,63 @@ class TaskMateApprovalsCard extends LitElement {
   }
 
   async _handleApprove(completion) {
-    await this._callService("approve_chore", completion.completion_id);
+    const id = completion.completion_id;
+    const rating = this._ratingMultipliers() ? this._ratings[id] || 0 : 0;
+    await this._callService("approve_chore", id, rating ? { rating } : null);
+    if (rating) this._clearRating(id);
+  }
+
+  /* ── Quality rating (#927) ────────────────────────────────────────────
+     Published by the pending-approvals sensor only while the feature is on,
+     so its absence is the "off" switch. Picking a star is a selection, not an
+     approval — Approve still does the approving, and tapping the picked star
+     again clears it back to "unrated" (100%). */
+
+  _ratingMultipliers() {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+      || this.hass?.states?.[this.config.entity]?.attributes || {};
+    const m = attrs.quality_rating && attrs.quality_rating.multipliers;
+    return Array.isArray(m) && m.length === 3 ? m : null;
+  }
+
+  _pickRating(completion, n) {
+    const id = completion.completion_id;
+    const next = this._ratings[id] === n ? 0 : n;
+    this._ratings = { ...this._ratings, [id]: next };
+    // In the review sheet the parent sees the number they will pay, so a star
+    // rescales it there rather than silently on the server.
+    if (this._review && this._review.completion.completion_id === id) {
+      const input = this.renderRoot && this.renderRoot.querySelector("#tm-review-points");
+      const mults = this._ratingMultipliers();
+      if (input && mults) {
+        const base = Number(this._review.base) || 0;
+        input.value = String(Math.max(0, Math.round(next ? base * mults[next - 1] : base)));
+      }
+    }
+  }
+
+  _clearRating(id) {
+    if (!(id in this._ratings)) return;
+    const next = { ...this._ratings };
+    delete next[id];
+    this._ratings = next;
+  }
+
+  _renderStars(completion, extraClass = "") {
+    const mults = this._ratingMultipliers();
+    if (!mults || !completion) return "";
+    const id = completion.completion_id;
+    const sel = this._ratings[id] || 0;
+    const busy = !!this._loading[id];
+    return html`<span class="ap-stars ${extraClass}" role="group" aria-label="${this._t('approvals.rating_label')}">
+      ${[1, 2, 3].map((n) => {
+        const label = this._t('approvals.rating_star_title', { count: n, percent: Math.round(Number(mults[n - 1]) * 100) });
+        // Filled vs outlined, not just gold vs grey, so the pick reads without colour.
+        return html`<button type="button" class="ap-star ${n <= sel ? "on" : ""}" ?disabled="${busy}"
+          aria-pressed="${n === sel ? "true" : "false"}" title="${label}" aria-label="${label}"
+          @click="${(e) => { e.stopPropagation(); this._pickRating(completion, n); }}">${n <= sel ? "★" : "☆"}</button>`;
+      })}
+    </span>`;
   }
 
   async _handleReject(completion) {
@@ -1575,12 +1651,15 @@ class TaskMateApprovalsCard extends LitElement {
   }
 
   _openReview(completion) {
-    this._review = { completion };
+    const base = completion.suggested_points || completion.points || 0;
+    this._review = { completion, base };
     this.requestUpdate();
     this.updateComplete.then(() => {
       const input = this.renderRoot && this.renderRoot.querySelector("#tm-review-points");
       if (!input) return;
-      input.value = String(completion.suggested_points || completion.points || 0);
+      const mults = this._ratingMultipliers();
+      const picked = this._ratings[completion.completion_id] || 0;
+      input.value = String(mults && picked ? Math.max(0, Math.round(base * mults[picked - 1])) : base);
       input.focus();
       input.select();
     });
@@ -1597,8 +1676,12 @@ class TaskMateApprovalsCard extends LitElement {
     const input = this.renderRoot && this.renderRoot.querySelector("#tm-review-points");
     const points = Math.max(0, Math.round(Number(input && input.value) || 0));
     const completionId = review.completion.completion_id;
+    const rating = this._ratingMultipliers() ? this._ratings[completionId] || 0 : 0;
     this._closeReview();
-    await this._callService("approve_chore", completionId, { points });
+    // The typed award is paid as-is; a picked rating is recorded with it
+    // (the stars above already rescaled the number the parent confirmed).
+    await this._callService("approve_chore", completionId, rating ? { points, rating } : { points });
+    if (rating) this._clearRating(completionId);
   }
 
   _renderReview() {
@@ -1623,6 +1706,11 @@ class TaskMateApprovalsCard extends LitElement {
           ` : ""}
 
           ${photoUrl ? html`<div class="tm-rv-photo"><img src="${photoUrl}" alt="" loading="lazy"></div>` : ""}
+
+          ${this._ratingMultipliers() ? html`
+            <div class="tm-rv-label">${this._t('approvals.rating_label')}</div>
+            <div class="tm-rv-stars">${this._renderStars(completion)}</div>
+          ` : ""}
 
           <label class="tm-rv-label" for="tm-review-points">${this._t('approvals.award_label')}</label>
           <input id="tm-review-points" class="tm-rv-points" type="number"

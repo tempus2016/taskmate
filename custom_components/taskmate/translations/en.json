@@ -179,6 +179,10 @@
         "points": {
           "name": "Points",
           "description": "Award this many points instead of the chore's own value. Leave empty to use the chore's points."
+        },
+        "rating": {
+          "name": "Quality rating",
+          "description": "Optional 1-3 star rating of how well the chore was done. When quality ratings are enabled it scales the points by that star's multiplier; leave empty to pay 100%."
         }
       }
     },
@@ -189,6 +193,10 @@
         "completion_ids": {
           "name": "Completion IDs",
           "description": "Specific completion IDs to approve; omit to approve all pending"
+        },
+        "rating": {
+          "name": "Quality rating",
+          "description": "Optional 1-3 star rating applied to every chore approved by this call (quality ratings must be enabled)."
         }
       }
     },
@@ -825,6 +833,20 @@
         "points": {
           "name": "Points",
           "description": "The number of points to transfer"
+        }
+      }
+    },
+    "adjust_streak_freezes": {
+      "name": "Adjust Streak Freezes",
+      "description": "Give a child streak-freeze tokens (positive amount) or take some away (negative). A grant never goes past the streak_freeze_max cap.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child whose tokens change"
+        },
+        "amount": {
+          "name": "Amount",
+          "description": "Tokens to add (positive) or remove (negative)"
         }
       }
     },

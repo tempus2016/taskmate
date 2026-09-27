@@ -129,6 +129,9 @@ class RewardsMixin:
         has invalidated is cancelled with it.
         """
         old = self.get_reward(reward.id)
+        # A streak freeze is bought by one child for themselves (#925).
+        if getattr(reward, "streak_freeze", False):
+            reward.is_jackpot = False
         # Jackpots are always pool-mode (#552); keep stored data consistent.
         if reward.is_jackpot:
             reward.pool_enabled = True
@@ -401,6 +404,8 @@ class RewardsMixin:
             blocking = [c for c in own_pending if c.reward_id == reward_id]
         if blocking:
             raise ValueError(f"A claim for '{reward.name}' is already waiting for approval")
+        if getattr(reward, "streak_freeze", False):
+            self._require_streak_freeze_room(child, pending_claims=pending)
         if len(own_pending) >= _MAX_PENDING_CLAIMS_PER_CHILD:
             raise ValueError("Too many reward claims are already waiting for approval")
 
@@ -437,6 +442,27 @@ class RewardsMixin:
                 raise ValueError(f"Not enough points. Need {effective_cost}, have {available_points} available")
 
         return reward, child
+
+    def _require_streak_freeze_room(self, child: Child, pending_claims: list | None = None) -> None:
+        """Refuse a streak-freeze purchase the child could not hold (#925).
+
+        Counts tokens already held plus streak-freeze claims still waiting for
+        approval, so a queue of claims can't push the child past the cap.
+        Pass ``pending_claims=None`` at approval time: the claim being approved
+        is itself pending, and only the tokens actually held matter then.
+        """
+        cap = self.streak_freeze_max()
+        if cap <= 0:
+            raise ValueError("Streak freezes are turned off")
+        queued = 0
+        for claim in pending_claims or []:
+            if claim.child_id != child.id:
+                continue
+            queued_reward = self.get_reward(claim.reward_id)
+            if queued_reward and getattr(queued_reward, "streak_freeze", False):
+                queued += 1
+        if (child.streak_freezes or 0) + queued >= cap:
+            raise ValueError(f"{child.name} already has the maximum of {cap} streak freezes")
 
     async def async_claim_reward(self, reward_id: str, child_id: str) -> RewardClaim:
         """Child claims a reward — creates a pending claim awaiting parent approval.
@@ -551,6 +577,10 @@ class RewardsMixin:
 
                 # Spending cap: block approval if it would exceed the per-period budget.
                 self._enforce_spend_cap(claim.child_id, effective_cost)
+                # A streak freeze can't be handed over past the cap, whatever
+                # has happened since the claim was made (#925).
+                if getattr(reward, "streak_freeze", False):
+                    self._require_streak_freeze_room(child)
 
                 # Detect pool mode: either a direct allocation, or a filled jackpot pool.
                 pool_alloc = self.storage.get_pool_allocation(claim.child_id, claim.reward_id)
@@ -595,6 +625,10 @@ class RewardsMixin:
                         # Last unit claimed — refund any points other children
                         # still have earmarked for this reward's pool.
                         self._refund_all_pool_allocations(reward, "Pool refund (reward sold out)")
+
+                if getattr(reward, "streak_freeze", False):
+                    child.streak_freezes = (child.streak_freezes or 0) + 1
+                    self.storage.update_child(child)
 
                 claim.approved = True
                 claim.approved_at = dt_util.now()

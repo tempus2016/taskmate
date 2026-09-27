@@ -1879,6 +1879,12 @@ class TaskMateChildCard extends LitElement {
       .tmd-check .c-emoji .tmd-glyph-icon { --mdc-icon-size: 18px; }
 
       /* Designed: pending-points + countdown chips on the header/section */
+      .tmd-freeze {
+        margin-left: auto; display: inline-flex; align-items: center; gap: 3px;
+        font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
+        background: rgba(255,255,255,.22); color: #fff; white-space: nowrap;
+      }
+      .tmd-freeze + .tmd-pending { margin-left: 6px; }
       .tmd-pending {
         margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
         font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
@@ -2136,7 +2142,10 @@ class TaskMateChildCard extends LitElement {
                   <div class="level-xp-track">
                     <div class="level-xp-fill" style="width: ${Math.max(0, Math.min(100, Math.round(((child.level_progress || 0) / (child.level_target || 100)) * 100)))}%"></div>
                   </div>
+                  ${this._renderFreezeBadge(child, "level-badge freeze-badge")}
                 </div>
+              ` : child.streak_freezes > 0 ? html`
+                <div class="child-level">${this._renderFreezeBadge(child, "level-badge freeze-badge")}</div>
               ` : ''}
             </div>
           </div>
@@ -2627,6 +2636,18 @@ class TaskMateChildCard extends LitElement {
     </ha-card>`;
   }
 
+  /**
+   * Streak-freeze tokens (#925): "❄️ N" in the header, once the child holds
+   * at least one. Called from the classic header AND _designHeaderFull, so
+   * every design shows it (the two-render-paths rule).
+   */
+  _renderFreezeBadge(child, cls) {
+    const n = child.streak_freezes;
+    if (typeof n !== "number" || n <= 0) return "";
+    return html`<span class="${cls}" title="${this._t("streak.freezes_tooltip")}"
+      aria-label="${this._t("streak.freezes_aria", { count: n })}">❄️ ${n}</span>`;
+  }
+
   /** Designed header: avatar/title, remaining pill, pending-points chip. */
   _designHeaderFull(child, design, remaining, total, tone, pendingPoints) {
     const title = design === "console"
@@ -2652,6 +2673,7 @@ class TaskMateChildCard extends LitElement {
         </div>
         <span class="tt">${title}<small>${sub}</small></span>
         ${remaining === 0 && total > 0 ? html`<span class="pill">🎉</span>` : ""}
+        ${this._renderFreezeBadge(child, "tmd-freeze")}
         ${pendingPoints > 0 ? html`<span class="tmd-pending">
           <ha-icon icon="mdi:timer-sand"></ha-icon>+${pendingPoints}</span>` : ""}
         ${canChange && this._avatarPickerOpen ? this._renderAvatarPicker(child, opts) : ""}

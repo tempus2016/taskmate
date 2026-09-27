@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
+from .const import MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -54,6 +56,17 @@ def parse_datetime(value: str | datetime | None) -> datetime | None:
     return None
 
 
+def parse_quality_rating(value: Any) -> int:
+    """Parse a stored 1-3 star quality rating (#927); anything else is 0 (unrated)."""
+    if value is None or isinstance(value, bool):
+        return 0
+    try:
+        rating = int(value)
+    except (ValueError, TypeError, OverflowError):
+        return 0
+    return rating if 1 <= rating <= 3 else 0
+
+
 def parse_optional_points(value: Any) -> int | None:
     """Parse a stored points figure, or None for "not recorded".
 
@@ -86,6 +99,24 @@ def format_datetime(dt: datetime | None) -> str | None:
     utc_dt = dt.astimezone(timezone.utc)
     # Use isoformat but replace +00:00 with Z for cleaner output
     return utc_dt.isoformat().replace("+00:00", "Z")
+
+
+def normalize_tag_ids(raw: Any) -> list[str]:
+    """Clean a chore's linked HA tag ids (#923).
+
+    Ids are compared exactly against ``tag_scanned`` events, so surrounding
+    whitespace (easy to paste in with a free-text id) would silently never
+    match. Blanks and duplicates are dropped, order is kept, and the list is
+    capped so a crafted import can't bloat the store.
+    """
+    if not isinstance(raw, (list, tuple)):
+        return []
+    out: list[str] = []
+    for item in raw:
+        text = str(item or "").strip()[:TAG_ID_MAX_LENGTH]
+        if text and text not in out:
+            out.append(text)
+    return out[:MAX_CHORE_TAGS]
 
 
 def optional_float(value: Any) -> float | None:
@@ -182,6 +213,14 @@ class Child:
     last_completion_date: str | None = None  # ISO date string of last chore completion (for streak tracking)
     streak_paused: bool = False  # True if streak is paused due to missed day (pause mode)
     streak_milestones_achieved: list[int] = field(default_factory=list)
+    # Streak freeze tokens (#925): each one covers one missed day so the streak
+    # survives it. `streak_freeze_dates` are the ISO days a token has covered
+    # (only the ones after the last completion matter, so it stays short), and
+    # `streak_freeze_earned_at` is the streak length that last earned a token,
+    # so undoing that day's completion can take the token back.
+    streak_freezes: int = 0
+    streak_freeze_dates: list[str] = field(default_factory=list)
+    streak_freeze_earned_at: int = 0
     awarded_perfect_weeks: list[str] = field(default_factory=list)
     availability_entity: str = ""  # HA entity id; empty = always available
     availability_inverted: bool = False  # When True, _AVAILABLE_STATES means UNAVAILABLE
@@ -219,6 +258,9 @@ class Child:
             last_completion_date=data.get("last_completion_date"),
             streak_paused=data.get("streak_paused", False),
             streak_milestones_achieved=list(data.get("streak_milestones_achieved", [])),
+            streak_freezes=max(0, int(data.get("streak_freezes", 0) or 0)),
+            streak_freeze_dates=[str(d) for d in (data.get("streak_freeze_dates") or []) if d],
+            streak_freeze_earned_at=max(0, int(data.get("streak_freeze_earned_at", 0) or 0)),
             awarded_perfect_weeks=list(data.get("awarded_perfect_weeks", [])),
             is_guest=bool(data.get("is_guest", False)),
             guest_expires_on=str(data.get("guest_expires_on", "") or ""),
@@ -253,6 +295,9 @@ class Child:
             "last_completion_date": self.last_completion_date,
             "streak_paused": self.streak_paused,
             "streak_milestones_achieved": self.streak_milestones_achieved,
+            "streak_freezes": self.streak_freezes,
+            "streak_freeze_dates": list(self.streak_freeze_dates),
+            "streak_freeze_earned_at": self.streak_freeze_earned_at,
             "awarded_perfect_weeks": self.awarded_perfect_weeks,
             "is_guest": self.is_guest,
             "guest_expires_on": self.guest_expires_on,
@@ -385,6 +430,9 @@ class Chore:
     timed_rate_points: int = 10  # points awarded per rate window
     timed_rate_minutes: int = 5  # rate window size in minutes
     timed_max_daily_minutes: int = 0  # 0 = unlimited; caps total daily duration
+    # NFC / QR tag completion (#923): HA tag ids that complete this chore when
+    # scanned in the companion app. Empty = no tag linked.
+    tag_ids: list[str] = field(default_factory=list)
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -460,6 +508,7 @@ class Chore:
             timed_rate_points=data.get("timed_rate_points", 10),
             timed_rate_minutes=max(1, int(data.get("timed_rate_minutes", 5) or 5)),
             timed_max_daily_minutes=max(0, int(data.get("timed_max_daily_minutes", 0) or 0)),
+            tag_ids=normalize_tag_ids(data.get("tag_ids", [])),
             id=data.get("id") or generate_id(),
         )
 
@@ -522,6 +571,7 @@ class Chore:
             "timed_rate_points": self.timed_rate_points,
             "timed_rate_minutes": self.timed_rate_minutes,
             "timed_max_daily_minutes": self.timed_max_daily_minutes,
+            "tag_ids": self.tag_ids,
             "id": self.id,
         }
 
@@ -573,9 +623,16 @@ class Reward:
     available_days: list[int] = field(default_factory=list)
     available_from: str = ""
     available_until: str = ""
+    # Streak freeze (#925): approving a claim hands the child one streak-freeze
+    # token instead of anything physical. Always a fixed cost like any reward.
+    streak_freeze: bool = False
     id: str = field(default_factory=generate_id)
 
     def __post_init__(self) -> None:
+        # A streak freeze belongs to the one child who bought it, so it can
+        # never be a shared jackpot.
+        if self.streak_freeze:
+            self.is_jackpot = False
         # Jackpots are inherently pooled (#552): everyone deposits into the shared
         # jar, so pool mode is always on. Enforced here so every construction path
         # — WS add, service add, and storage load (legacy migration) — stays
@@ -610,6 +667,7 @@ class Reward:
             available_days=_clean_weekdays(data.get("available_days")),
             available_from=str(data.get("available_from", "") or ""),
             available_until=str(data.get("available_until", "") or ""),
+            streak_freeze=bool(data.get("streak_freeze", False)),
             id=data.get("id") or generate_id(),
         )
 
@@ -635,6 +693,7 @@ class Reward:
             "available_days": list(self.available_days),
             "available_from": self.available_from,
             "available_until": self.available_until,
+            "streak_freeze": self.streak_freeze,
             "id": self.id,
         }
 
@@ -758,6 +817,8 @@ class ChoreCompletion:
     # and weekend multipliers that _award_points adds on top. None on records
     # written before the field existed.
     submitted_points: int | None = None
+    # Parent's 1-3 star quality rating given at approval (#927); 0 = unrated.
+    quality_rating: int = 0
     # True only on a completion a child submitted themselves, so the child
     # may take it back inside the global undo window (#918). A parent's
     # review clears it for good, and records written before the field existed
@@ -784,6 +845,7 @@ class ChoreCompletion:
             suggested_points=int(data.get("suggested_points", 0) or 0),
             id=data.get("id") or generate_id(),
             submitted_points=parse_optional_points(data.get("submitted_points")),
+            quality_rating=parse_quality_rating(data.get("quality_rating")),
             child_undo_allowed=data.get("child_undo_allowed") is True,
         )
 
@@ -803,6 +865,7 @@ class ChoreCompletion:
             "suggested_points": self.suggested_points,
             "id": self.id,
             "submitted_points": self.submitted_points,
+            "quality_rating": self.quality_rating,
         }
         # Written only when set: every completion ever made is stored, and the
         # flag is False on nearly all of them.
