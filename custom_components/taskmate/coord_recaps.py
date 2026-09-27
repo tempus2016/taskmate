@@ -56,7 +56,9 @@ _FREQ_MONTHS = {"monthly": 1, "every_3_months": 3, "every_6_months": 6, "every_9
 # 1 January 2026: Jan-Sep 2026, Oct 2026-Jun 2027, and so on.
 NINE_MONTH_ANCHOR = date(2026, 1, 1)
 
-DEFAULT_RECAP_FREQUENCIES = ("monthly",)
+# Off until a parent ticks a frequency (#944): an upgrade must not start
+# building recaps and pushing "recap ready" to families who never asked.
+DEFAULT_RECAP_FREQUENCIES: tuple[str, ...] = ()
 DEFAULT_RECAP_SEND_TIME = "08:00"
 RECAP_RETENTION_DAYS = {"1y": 366, "2y": 731, "forever": None}
 DEFAULT_RECAP_RETENTION = "forever"
@@ -192,6 +194,12 @@ class RecapsMixin:
         if child_id in overrides:
             return overrides[child_id]
         return self.recap_family_frequencies()
+
+    def recaps_enabled_anywhere(self) -> bool:
+        """True when the family default or any child's Custom list has a frequency."""
+        if self.recap_family_frequencies():
+            return True
+        return any(self.recap_child_overrides().values())
 
     def recap_week_start(self) -> int:
         return week_start_for_country(getattr(getattr(self.hass, "config", None), "country", None))
@@ -834,16 +842,19 @@ class RecapsMixin:
         self.arm_recap_schedules()
 
     def ensure_recap_routes(self) -> None:
-        """Deliver "recap ready" to every child and parent by default.
+        """Deliver "recap ready" to every child and parent once recaps are on.
 
-        The notification is on out of the box (the Recaps settings carry their
-        own child/parent switches), so the first pass switches the type on.
-        After that only recipients with no route yet are added: a parent who
-        unticks someone in the notification matrix stays unticked.
+        Recaps are opt-in (#944), so nothing happens until a parent ticks a
+        frequency. The first pass after that switches the type on (the Recaps
+        settings carry their own child/parent switches). After that only
+        recipients with no route yet are added: a parent who unticks someone
+        in the notification matrix stays unticked.
         """
         from .const import NOTIF_TYPE_RECAP_READY
         from .models import NotificationRoute
 
+        if not self.recaps_enabled_anywhere():
+            return
         if not self.storage.get_setting("recap_notify_seeded", False):
             self.storage.set_notification_master(NOTIF_TYPE_RECAP_READY, True)
             self.storage.set_setting("recap_notify_seeded", True)

@@ -120,8 +120,9 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_BOUNTY_POSTED, "child", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_BOUNTY_CLAIM_LAPSING, "child", False, False, False, False),
     # Recaps (#929): one push per child plus one grouped parent message, sent
-    # at the recap send time rather than at midnight when they're built.
-    NotificationTypeMeta(NOTIF_TYPE_RECAP_READY, "both", True, False, False, True),
+    # at the recap send time rather than at midnight when they're built. Off
+    # at install; switched on the first time a parent turns recaps on (#944).
+    NotificationTypeMeta(NOTIF_TYPE_RECAP_READY, "both", True, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}

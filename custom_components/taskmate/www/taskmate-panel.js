@@ -2356,7 +2356,7 @@ class TaskMatePanel extends HTMLElement {
   _recapDraftState() {
     if (!this._recapDraft) {
       const s = this._state?.settings || {};
-      const family = Array.isArray(s.recap_frequencies) ? s.recap_frequencies : ["monthly"];
+      const family = Array.isArray(s.recap_frequencies) ? s.recap_frequencies : [];
       const kids = s.recap_child_frequencies && typeof s.recap_child_frequencies === "object" ? s.recap_child_frequencies : {};
       this._recapDraft = {
         family: [...family],

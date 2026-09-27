@@ -60,7 +60,8 @@ def clock(monkeypatch):
     return set_now
 
 
-async def _make(hass, *, names=("Malia", "Vaiha"), country="GB"):
+async def _make(hass, *, names=("Malia", "Vaiha"), country="GB", frequencies=("monthly",)):
+    """A coordinator whose parent has turned monthly recaps on (pass None for a fresh install)."""
     hass.config = SimpleNamespace(country=country)
     coord = object.__new__(TaskMateCoordinator)
     coord.hass = hass
@@ -84,6 +85,8 @@ async def _make(hass, *, names=("Malia", "Vaiha"), country="GB"):
     coord.other = Chore(name="Make my bed", icon="mdi:bed")
     coord.storage.add_chore(coord.chore)
     coord.storage.add_chore(coord.other)
+    if frequencies is not None:
+        coord.storage.set_setting("recap_frequencies", list(frequencies))
     return coord
 
 
@@ -157,7 +160,7 @@ class TestPeriods:
 async def test_monthly_recap_built_at_the_boundary(hass, clock):
     coord = await _make(hass)
     clock(date(2026, 9, 1))
-    await coord.async_run_recaps(date(2026, 9, 1))  # monthly (the default) on since 1 Sep
+    await coord.async_run_recaps(date(2026, 9, 1))  # monthly on since 1 Sep
 
     for day in (3, 4, 5, 6, 12, 12, 12):
         _done(coord, "Malia", date(2026, 9, day))
@@ -230,7 +233,7 @@ async def test_custom_override_and_off(hass, clock):
     clock(date(2026, 9, 1))
     coord.storage.set_setting("recap_child_frequencies", {coord.kids["Vaiha"]: []})
     await coord.async_recap_settings_changed()
-    assert coord.recap_frequencies_for(coord.kids["Malia"]) == ["monthly"]  # default for new installs
+    assert coord.recap_frequencies_for(coord.kids["Malia"]) == ["monthly"]  # the family default
     assert coord.recap_frequencies_for(coord.kids["Vaiha"]) == []
     built = await coord.async_run_recaps(date(2026, 10, 1))
     assert {r["child_id"] for r in built} == {coord.kids["Malia"]}
@@ -541,3 +544,34 @@ def test_schedule_lists_every_frequency(hass):
     assert sched["next"]["every_9_months"] == "2026-10-01"
     assert sched["next"]["yearly"] == "2027-01-01"
     assert date.fromisoformat(sched["next"]["monthly"]) - timedelta(days=1) == date(2026, 9, 30)
+
+
+async def test_recaps_are_off_until_a_parent_turns_them_on(hass, clock):
+    """#944: an upgrade builds nothing and switches no notification on."""
+    coord = await _make(hass, frequencies=None)
+    clock(date(2026, 9, 1))
+    assert coord.recap_frequencies_for(coord.kids["Malia"]) == []
+    assert coord.recaps_enabled_anywhere() is False
+    await coord.async_start_recaps()
+    cfg = coord.storage.get_notification_config("recap_ready")
+    assert cfg.master_enabled is False
+    assert cfg.routes == {}
+    _done(coord, "Malia", date(2026, 9, 3))
+    clock(date(2026, 10, 1))
+    assert await coord.async_run_recaps(date(2026, 10, 1)) == []
+
+
+async def test_turning_recaps_on_switches_the_notification_on_once(hass, clock):
+    coord = await _make(hass, frequencies=None)
+    clock(date(2026, 9, 1))
+    await coord.async_start_recaps()
+    # One child set to Custom weekly is enough to count as "on".
+    coord.storage.set_setting("recap_child_frequencies", {coord.kids["Vaiha"]: ["weekly"]})
+    await coord.async_recap_settings_changed()
+    cfg = coord.storage.get_notification_config("recap_ready")
+    assert cfg.master_enabled is True
+    assert f"child:{coord.kids['Malia']}" in cfg.routes
+    # A parent who then switches the type off stays switched off.
+    coord.storage.set_notification_master("recap_ready", False)
+    await coord.async_recap_settings_changed()
+    assert coord.storage.get_notification_config("recap_ready").master_enabled is False
