@@ -210,6 +210,16 @@
         }
       }
     },
+    "undo_chore": {
+      "name": "Angre gjeremål",
+      "description": "La eit barn ta tilbake sitt eige gjeremål — ei innsending som ventar, heilt til ein forelder har gått gjennom ho, eller eit automatisk godkjent gjeremål innanfor angrevindauget. Av med mindre vindauget er sett over 0 i TaskMate-innstillingane; alt ein forelder har gått gjennom, må ein forelder angre.",
+      "fields": {
+        "completion_id": {
+          "name": "Fullførings-ID",
+          "description": "ID-en til det fullførte gjeremålet til barnet som skal takast tilbake"
+        }
+      }
+    },
     "undo_chore_approval": {
       "name": "Angre godkjenning av gjeremål",
       "description": "Angre ei utilsikta godkjenning av eit gjeremål — fjernar dei tildelte poenga og set fullføringa tilbake til ventar, slik at ho kan godkjennast på nytt.",

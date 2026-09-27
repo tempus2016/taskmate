@@ -210,6 +210,16 @@
         }
       }
     },
+    "undo_chore": {
+      "name": "Desfazer tarefa",
+      "description": "Permite que uma criança desfaça a própria tarefa — um envio pendente até que um responsável o revise, ou uma tarefa aprovada automaticamente dentro da janela para desfazer. Desativado a menos que a janela esteja acima de 0 nas configurações do TaskMate; o que um responsável já revisou só pode ser desfeito por um responsável.",
+      "fields": {
+        "completion_id": {
+          "name": "ID da conclusão",
+          "description": "O ID da tarefa concluída pela criança a desfazer"
+        }
+      }
+    },
     "undo_chore_approval": {
       "name": "Desfazer aprovação de tarefa",
       "description": "Desfazer a aprovação acidental de uma tarefa — remove os pontos concedidos e retorna a conclusão para pendente para que possa ser aprovada novamente.",

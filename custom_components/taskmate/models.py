@@ -764,6 +764,11 @@ class ChoreCompletion:
     submitted_points: int | None = None
     # Parent's 1-3 star quality rating given at approval (#927); 0 = unrated.
     quality_rating: int = 0
+    # True only on a completion a child submitted themselves, so the child
+    # may take it back inside the global undo window (#918). A parent's
+    # review clears it for good, and records written before the field existed
+    # load as False: they stay parent-only.
+    child_undo_allowed: bool = False
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ChoreCompletion:
@@ -786,11 +791,12 @@ class ChoreCompletion:
             id=data.get("id") or generate_id(),
             submitted_points=parse_optional_points(data.get("submitted_points")),
             quality_rating=parse_quality_rating(data.get("quality_rating")),
+            child_undo_allowed=data.get("child_undo_allowed") is True,
         )
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
-        return {
+        data = {
             "chore_id": self.chore_id,
             "child_id": self.child_id,
             "completed_at": format_datetime(self.completed_at),
@@ -806,6 +812,11 @@ class ChoreCompletion:
             "submitted_points": self.submitted_points,
             "quality_rating": self.quality_rating,
         }
+        # Written only when set: every completion ever made is stored, and the
+        # flag is False on nearly all of them.
+        if self.child_undo_allowed:
+            data["child_undo_allowed"] = True
+        return data
 
 
 @dataclass

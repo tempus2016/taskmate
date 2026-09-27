@@ -210,6 +210,16 @@
         }
       }
     },
+    "undo_chore": {
+      "name": "Annuler une tâche",
+      "description": "Permet à un enfant de reprendre sa propre tâche — une soumission en attente tant qu'un parent ne l'a pas examinée, ou une tâche approuvée automatiquement pendant la fenêtre d'annulation. Désactivé tant que la fenêtre n'est pas réglée au-dessus de 0 dans les paramètres TaskMate ; tout ce qu'un parent a examiné doit être annulé par un parent.",
+      "fields": {
+        "completion_id": {
+          "name": "ID de réalisation",
+          "description": "L'ID de la tâche réalisée par l'enfant à reprendre"
+        }
+      }
+    },
     "undo_chore_approval": {
       "name": "Annuler l'approbation d'une tâche",
       "description": "Annuler l'approbation accidentelle d'une tâche — retire les points attribués et remet la réalisation en attente afin qu'elle puisse être approuvée à nouveau.",

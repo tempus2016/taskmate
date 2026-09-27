@@ -210,6 +210,16 @@
         }
       }
     },
+    "undo_chore": {
+      "name": "Fortryd pligt",
+      "description": "Lad et barn tage sin egen pligt tilbage — en indsendelse, der venter, indtil en forælder har gennemgået den, eller en automatisk godkendt pligt inden for fortrydelsesvinduet. Slået fra, medmindre vinduet er sat over 0 i TaskMate-indstillingerne; alt, hvad en forælder har gennemgået, skal fortrydes af en forælder.",
+      "fields": {
+        "completion_id": {
+          "name": "Fuldførelses-ID",
+          "description": "ID'et på barnets fuldførte pligt, der skal tages tilbage"
+        }
+      }
+    },
     "undo_chore_approval": {
       "name": "Fortryd godkendelse af pligt",
       "description": "Fortryd en godkendelse, der blev givet ved en fejl — fjerner de tildelte point og sætter fuldførelsen tilbage til afventende, så den kan godkendes igen.",

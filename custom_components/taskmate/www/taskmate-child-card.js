@@ -76,6 +76,8 @@ class TaskMateChildCard extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._stopTimerTick();
+    clearTimeout(this._undoExpiryTimer);
+    this._undoExpiryTimer = null;
     if (this._justEarnedTimeout) {
       clearTimeout(this._justEarnedTimeout);
       this._justEarnedTimeout = null;
@@ -90,6 +92,7 @@ class TaskMateChildCard extends LitElement {
     super.updated(changedProperties);
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
       || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    this._scheduleUndoExpiry(attrs);
     const sessions = attrs.active_timed_sessions || [];
     const hasRunning = sessions.some(s => s.state === 'running' && s.child_id === this.config?.child_id);
     // A reactive chore's countdown (#674) has to keep ticking too, otherwise it
@@ -1616,6 +1619,33 @@ class TaskMateChildCard extends LitElement {
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
       }
       .vacation-banner ha-icon { --mdc-icon-size: 24px; }
+      /* Child undo strip (#918). The --tmd-* tokens only exist under a
+         designed style, so classic falls through to the HA theme. */
+      .tm-child-undo {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--tmd-border, var(--divider-color, #e0e0e0));
+      }
+      .tmd-bd .tm-child-undo { padding: 0 0 10px; border-bottom: none; }
+      .tm-child-undo button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 44px;
+        padding: 6px 14px;
+        border: 2px solid var(--tmd-accent, var(--primary-color, #03a9f4));
+        border-radius: var(--tmd-radius-sm, 22px);
+        background: var(--tmd-surface, var(--card-background-color, #fff));
+        color: var(--tmd-text, var(--primary-text-color, #212121));
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .tm-child-undo button ha-icon { --mdc-icon-size: 20px; color: var(--tmd-accent, var(--primary-color, #03a9f4)); }
+      .tm-child-undo button:disabled { opacity: 0.5; cursor: default; }
+      .tm-child-undo button:focus-visible { outline: 3px solid var(--tmd-accent, var(--primary-color, #03a9f4)); outline-offset: 2px; }
       .badge-strip:hover { background: var(--secondary-background-color, rgba(0,0,0,0.03)); }
       .badge-strip-label {
         font-size: 11px;
@@ -2110,6 +2140,8 @@ class TaskMateChildCard extends LitElement {
           </div>
         </div>
 
+        ${this._renderChildUndo(child, todaysCompletions)}
+
         ${attrs.vacation_active ? html`
           <div class="vacation-banner">
             <ha-icon icon="mdi:palm-tree"></ha-icon>
@@ -2517,6 +2549,7 @@ class TaskMateChildCard extends LitElement {
     return html`<ha-card class="tmd" style="--hd:${hd}">
       ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints)}
       <div class="tmd-bd">
+        ${this._renderChildUndo(child, todaysCompletions)}
         ${attrs.vacation_active ? html`
           <div class="tmd-vacation">
             <ha-icon icon="mdi:palm-tree"></ha-icon>
@@ -4018,7 +4051,16 @@ class TaskMateChildCard extends LitElement {
 
     // Undoing removes already-awarded points, so it is parent-only — short-circuit
     // for non-parents with one friendly message instead of a doomed service call.
+    // The one exception is a child's own tick still inside the undo window
+    // (#918), which goes through the restricted undo_chore service.
     if (!window.__taskmate_is_parent(this.hass)) {
+      const own = (todaysCompletions || []).find(
+        c => c.chore_id === chore.id && c.child_id === child.id && c.bonus_subtask_id === subtask.id
+      );
+      if (this._childCanUndo(own)) {
+        await this._childUndo(own, chore, child);
+        return;
+      }
       this._notifyUndo(this._t("child.undo_not_allowed"));
       return;
     }
@@ -4552,6 +4594,111 @@ class TaskMateChildCard extends LitElement {
     return text.includes("unauthorized") || text.includes("not authorized");
   }
 
+  // ── Child undo (#918) ───────────────────────────────────────────────────
+  // The server marks each of today's completions a child may still take back:
+  // child_undo_pending (a submission no parent has reviewed) or
+  // child_undo_until (an auto-approved one, until that instant). Neither is
+  // ever set while the window is 0, so the card then behaves exactly as
+  // before. The backend re-checks everything; this only decides what to show.
+
+  _childCanUndo(completion, now = Date.now()) {
+    if (!completion || !(completion.completion_id || completion.id)) return false;
+    if (completion.child_undo_pending === true) return true;
+    const until = Date.parse(completion.child_undo_until || "");
+    return Number.isFinite(until) && until > now;
+  }
+
+  _latestCompletion(completions) {
+    return [...(completions || [])].sort(
+      (a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0)
+    )[0];
+  }
+
+  /** This child's completions that can still be undone, newest first. */
+  _childUndoCandidates(child, todaysCompletions, now = Date.now()) {
+    if (!child) return [];
+    return (todaysCompletions || [])
+      .filter(c => c.child_id === child.id && this._childCanUndo(c, now))
+      .sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0));
+  }
+
+  /** Re-render when the soonest undo window closes, so its button goes away. */
+  _scheduleUndoExpiry(attrs) {
+    clearTimeout(this._undoExpiryTimer);
+    this._undoExpiryTimer = null;
+    const childId = this.config?.child_id || attrs?.children?.[0]?.id;
+    const now = Date.now();
+    const deadlines = (attrs?.todays_completions || [])
+      .filter(c => c.child_id === childId)
+      .map(c => Date.parse(c.child_undo_until || ""))
+      .filter(t => Number.isFinite(t) && t > now);
+    if (!deadlines.length) return;
+    // setTimeout overflows past ~24.8 days; the window tops out at an hour.
+    const wait = Math.min(Math.min(...deadlines) - now + 50, 2 ** 31 - 1);
+    this._undoExpiryTimer = setTimeout(() => {
+      this._undoExpiryTimer = null;
+      this.requestUpdate();
+    }, wait);
+  }
+
+  /** The "Undo <chore>" strip, shown on every design and in picture mode. */
+  _renderChildUndo(child, todaysCompletions) {
+    const candidates = this._childUndoCandidates(child, todaysCompletions);
+    if (!candidates.length) return "";
+    return html`
+      <div class="tm-child-undo" role="group" aria-label="${this._t("child.undo_recent")}">
+        ${candidates.map(c => html`
+          <button type="button" class="tm-child-undo-btn"
+            ?disabled=${!!this._loading[`undo_${c.completion_id || c.id}`]}
+            @click=${() => this._childUndo(c)}>
+            <ha-icon icon="mdi:undo-variant"></ha-icon>
+            ${this._t("child.undo_named", { name: c.chore_name || "" })}
+          </button>`)}
+      </div>`;
+  }
+
+  /**
+   * Take back one of the child's own completions through taskmate.undo_chore.
+   * The service reads the child from the stored completion, so nothing here
+   * can point it at a sibling.
+   */
+  async _childUndo(completion, chore = null, child = null) {
+    const completionId = completion?.completion_id || completion?.id;
+    if (!completionId) return;
+    const key = `undo_${completionId}`;
+    if (this._loading[key]) return;
+    const rowKey = chore ? (completion.bonus_subtask_id ? `${chore.id}_bonus_${completion.bonus_subtask_id}_${child?.id}` : chore.id) : null;
+    this._loading = { ...this._loading, [key]: true, ...(rowKey ? { [rowKey]: true } : {}) };
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "undo_chore", { completion_id: completionId });
+      this._playSound(this.config.undo_sound || "undo");
+      // Drop any optimistic tick for what was just undone. A main chore takes
+      // its bonus sub-tasks with it; a bonus undo leaves the main chore alone.
+      const choreId = completion.chore_id;
+      const childId = completion.child_id;
+      const next = { ...this._optimisticCompletions };
+      if (completion.bonus_subtask_id) {
+        delete next[`${choreId}_bonus_${completion.bonus_subtask_id}_${childId}`];
+      } else {
+        delete next[`${choreId}_${childId}`];
+        for (const k of Object.keys(next)) {
+          if (k.startsWith(`${choreId}_bonus_`) && k.endsWith(`_${childId}`)) delete next[k];
+        }
+      }
+      this._optimisticCompletions = next;
+    } catch (error) {
+      console.error("Failed to undo chore completion:", error);
+      const message = this._isUnauthorized(error)
+        ? this._t("child.undo_not_allowed")
+        : this._t("child.error_undo", { message: error?.message || "" });
+      this._notifyUndo(message);
+    } finally {
+      this._loading = { ...this._loading, [key]: false, ...(rowKey ? { [rowKey]: false } : {}) };
+      this.requestUpdate();
+    }
+  }
+
   async _handleUndo(chore, child, childCompletionsToday) {
     // Check if already loading for this chore (prevent double-clicks during loading)
     if (this._loading[chore.id]) {
@@ -4563,7 +4710,14 @@ class TaskMateChildCard extends LitElement {
     // user the call always fails with a raw "Unauthorized" — HA shows its own
     // snackbar and we used to add an error notification on top. Short-circuit
     // with one clear, friendly message and never fire the doomed call.
+    // The one exception is a child's own completion still inside the undo
+    // window (#918), which goes through the restricted undo_chore service.
     if (!window.__taskmate_is_parent(this.hass)) {
+      const latest = this._latestCompletion(childCompletionsToday);
+      if (this._childCanUndo(latest)) {
+        await this._childUndo(latest, chore, child);
+        return;
+      }
       this._notifyUndo(this._t("child.undo_not_allowed"));
       return;
     }

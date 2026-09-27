@@ -210,6 +210,16 @@
         }
       }
     },
+    "undo_chore": {
+      "name": "Angre gjøremål",
+      "description": "La et barn ta tilbake sitt eget gjøremål — en innsending som venter, helt til en forelder har gått gjennom den, eller et automatisk godkjent gjøremål innenfor angrevinduet. Av med mindre vinduet er satt over 0 i TaskMate-innstillingene; alt en forelder har gått gjennom, må en forelder angre.",
+      "fields": {
+        "completion_id": {
+          "name": "Fullførings-ID",
+          "description": "ID-en til barnets fullførte gjøremål som skal tas tilbake"
+        }
+      }
+    },
     "undo_chore_approval": {
       "name": "Angre godkjenning av gjøremål",
       "description": "Angre en utilsiktet godkjenning av et gjøremål — fjerner de tildelte poengene og setter fullføringen tilbake til venter, slik at den kan godkjennes på nytt.",

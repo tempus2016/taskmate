@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from homeassistant.util import dt as dt_util
 
 from . import images, photos
+from .chore_undo import child_can_undo, undo_window_seconds
 from .const import CHORE_NOTE_MAX_LENGTH, CHORE_SUGGESTED_POINTS_MAX, QUALITY_RATINGS
 from .models import Chore, ChoreCompletion, PointsTransaction
 
@@ -891,6 +892,10 @@ class ChoresMixin:
             photo_url=photo_url or "",
             note=note,
             suggested_points=suggested_points,
+            # A child's own submission may be taken back inside the undo
+            # window (#918); one a parent made on their behalf may not, and
+            # nothing made while the window is 0 (off) ever can.
+            child_undo_allowed=not as_parent and undo_window_seconds(self.storage) > 0,
         )
 
         # Record the completion before awarding anything. Awarding can suspend
@@ -1020,9 +1025,13 @@ class ChoresMixin:
         return completion
 
     async def async_complete_bonus_subtask(
-        self, chore_id: str, bonus_subtask_id: str, child_id: str
+        self, chore_id: str, bonus_subtask_id: str, child_id: str, by_child: bool = True
     ) -> ChoreCompletion:
-        """Complete a bonus sub-task (only available after parent chore is completed today)."""
+        """Complete a bonus sub-task (only available after parent chore is completed today).
+
+        ``by_child=False`` marks a completion made from the admin panel, which
+        the child may not undo (#918).
+        """
         chore = self.get_chore(chore_id)
         if not chore:
             raise ValueError(f"Chore {chore_id} not found")
@@ -1080,6 +1089,7 @@ class ChoresMixin:
             points_awarded=subtask.points if not chore.requires_approval else 0,
             submitted_points=subtask.points,
             bonus_subtask_id=bonus_subtask_id,
+            child_undo_allowed=by_child and undo_window_seconds(self.storage) > 0,
         )
 
         # Written before the award for the same reason as the main completion
@@ -1206,6 +1216,9 @@ class ChoresMixin:
                     completion.approved_at = dt_util.now()
                     completion.points_awarded = 0
                     completion.quality_rating = stars
+                    # A parent has reviewed it: the child can no longer undo
+                    # it, whatever the window says (#918).
+                    completion.child_undo_allowed = False
                     self.storage.update_completion(completion)
 
                     total_awarded = await self._award_points(
@@ -1399,8 +1412,32 @@ class ChoresMixin:
 
         return bonus_completions
 
-    async def async_reject_chore(self, completion_id: str) -> None:
-        """Reject a chore completion and fully reverse all awards if already granted."""
+    async def async_undo_chore(self, completion_id: str) -> None:
+        """A child takes back their own completion (#918).
+
+        Allowed only for a pending submission no parent has reviewed yet, or an
+        auto-approved one still inside the global undo window — see
+        ``chore_undo``. The caller has already checked the linked-child rule
+        against the completion's *stored* child. Everything from the re-read to
+        the reversal inside ``async_reject_chore`` runs without yielding, so a
+        parent's approval or a second undo can't slip in between the check and
+        the reversal.
+        """
+        completions = self.storage.get_completions()
+        completion = next((c for c in completions if c.id == completion_id), None)
+        if completion is None:
+            raise ValueError("This chore has already been undone. Refresh the card.")
+        if not child_can_undo(completion, completions, undo_window_seconds(self.storage)):
+            raise ValueError("This chore can't be undone any more. Ask a parent to undo it.")
+        await self.async_reject_chore(completion_id, event="taskmate_chore_undone")
+
+    async def async_reject_chore(self, completion_id: str, event: str = "taskmate_chore_rejected") -> None:
+        """Reject a chore completion and fully reverse all awards if already granted.
+
+        ``event`` is the bus event fired afterwards; a child's own undo fires
+        ``taskmate_chore_undone`` so automations can tell it from a parent's
+        rejection.
+        """
         completions = self.storage.get_completions()
         target_completion = next((c for c in completions if c.id == completion_id), None)
 
@@ -1426,7 +1463,7 @@ class ChoresMixin:
             child = self.get_child(target_completion.child_id)
             chore = self.get_chore(target_completion.chore_id)
             self.hass.bus.async_fire(
-                "taskmate_chore_rejected",
+                event,
                 {
                     "child_id": target_completion.child_id,
                     "child_name": getattr(child, "name", ""),
@@ -1474,6 +1511,7 @@ class ChoresMixin:
             bc.approved_at = None
             bc.points_awarded = 0
             bc.quality_rating = 0
+            bc.child_undo_allowed = False
             self.storage.update_completion(bc)
 
         target.approved = False
@@ -1482,6 +1520,8 @@ class ChoresMixin:
         # The rating belonged to the approval being undone (#927); a
         # re-approval rates it afresh.
         target.quality_rating = 0
+        # A parent touched it, so child undo stays locked (#918).
+        target.child_undo_allowed = False
         self.storage.update_completion(target)
 
         # Quest progress advanced on approval, so it has to come back too —
