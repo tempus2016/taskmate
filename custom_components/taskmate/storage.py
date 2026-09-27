@@ -14,6 +14,7 @@ from .models import (
     AwardedBadge,
     Badge,
     Bonus,
+    Bounty,
     Challenge,
     Child,
     Chore,
@@ -368,6 +369,33 @@ class TaskMateStorage:
         """Remove a child and cascade-delete their awarded badges."""
         self._data["children"] = [c for c in self._data.get("children", []) if c.get("id") != child_id]
         self.remove_awards_for_child(child_id)
+        self.set_kiosk_pin_hash(child_id, "")
+
+    # Kiosk PINs (#930): {child_id: salted hash}. Kept apart from the child
+    # records so the hash never rides along wherever children are serialised
+    # (get_state, sensor attributes). A missing or malformed map reads as empty.
+    def _kiosk_pins(self) -> dict:
+        pins = self._data.get("kiosk_pins")
+        return pins if isinstance(pins, dict) else {}
+
+    def get_kiosk_pin_hash(self, child_id: str) -> str:
+        value = self._kiosk_pins().get(child_id, "")
+        return value if isinstance(value, str) else ""
+
+    def get_kiosk_pin_child_ids(self) -> list[str]:
+        return [cid for cid, value in self._kiosk_pins().items() if isinstance(value, str) and value]
+
+    def set_kiosk_pin_hash(self, child_id: str, value: str) -> None:
+        """Store a child's PIN hash; an empty value removes it."""
+        pins = dict(self._kiosk_pins())
+        if value:
+            pins[child_id] = value
+        else:
+            pins.pop(child_id, None)
+        if pins:
+            self._data["kiosk_pins"] = pins
+        else:
+            self._data.pop("kiosk_pins", None)
 
     # Chores management
     def get_chores(self) -> list[Chore]:
@@ -1199,6 +1227,35 @@ class TaskMateStorage:
             if store[chore_id].get("date") != keep_date:
                 store.pop(chore_id, None)
 
+    # ── Bounty board (#931) ──────────────────────────────────────────────
+    # Their own list, not chores: a bounty is a one-off with a claim lock and
+    # a lifecycle of its own. Missing on installs from before the feature, so
+    # every reader defaults it.
+    def get_bounties(self) -> list[Bounty]:
+        return [Bounty.from_dict(b) for b in self._data.get("bounties", []) if isinstance(b, dict)]
+
+    def get_bounty(self, bounty_id: str) -> Bounty | None:
+        for b in self._data.get("bounties", []):
+            if isinstance(b, dict) and b.get("id") == bounty_id:
+                return Bounty.from_dict(b)
+        return None
+
+    def add_bounty(self, bounty: Bounty) -> None:
+        self._data.setdefault("bounties", []).append(bounty.to_dict())
+
+    def update_bounty(self, bounty: Bounty) -> None:
+        items = self._data.setdefault("bounties", [])
+        for i, b in enumerate(items):
+            if isinstance(b, dict) and b.get("id") == bounty.id:
+                items[i] = bounty.to_dict()
+                return
+        items.append(bounty.to_dict())
+
+    def remove_bounty(self, bounty_id: str) -> None:
+        self._data["bounties"] = [
+            b for b in self._data.get("bounties", []) if not (isinstance(b, dict) and b.get("id") == bounty_id)
+        ]
+
     # ── Quests (chore chains) ────────────────────────────────────────────
     def get_quests(self) -> list[Quest]:
         return [Quest.from_dict(q) for q in self._data.get("quests", [])]
@@ -1316,6 +1373,7 @@ class TaskMateStorage:
             "timed_sessions",
             "quests",
             "challenges",
+            "bounties",
         )
         for k in list_keys:
             if not isinstance(self._data.get(k), list):

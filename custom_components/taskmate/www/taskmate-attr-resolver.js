@@ -35,6 +35,8 @@
     // missing that prefix and so matched nothing at all, silently dropping
     // chore_completions and mandatory_misses from every merge (#798).
     "sensor.taskmate_pending_approvals",
+    // The bounty board (#931): `bounties` for the bounty card.
+    "sensor.taskmate_bounties",
   ];
 
   // Attributes a companion must NOT contribute to the merge, because another

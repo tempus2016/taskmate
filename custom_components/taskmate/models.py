@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from .const import MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
+from .const import BOUNTY_STATUSES, MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -812,6 +812,108 @@ class Challenge:
         }
 
 
+def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+@dataclass
+class Bounty:
+    """A one-off job on the bounty board (#931).
+
+    A parent posts it for a fixed number of points; any eligible child may
+    claim it, which locks it to them until ``claim_until``. Done goes through
+    the normal approval queue as a ``ChoreCompletion`` carrying ``bounty_id``,
+    so points, streaks, badges and undo behave exactly as for a chore. A claim
+    that runs out puts the bounty back on the board; an unclaimed bounty
+    expires at ``expires_at``. Completed and expired bounties stay as history
+    until the completion history is pruned.
+    """
+
+    title: str
+    points: int = 0
+    description: str = ""
+    icon: str = "mdi:flag-outline"
+    expires_at: datetime | None = None  # None = no expiry
+    eligible_child_ids: list[str] = field(default_factory=list)  # empty = every child
+    claim_hours: int = 2
+    require_photo: bool = False
+    notify_children: bool = True
+    status: str = "open"  # open | claimed | pending | completed | expired
+    # The claimer. Kept once the bounty is completed, as who did it.
+    claimed_by: str = ""
+    claimed_at: datetime | None = None
+    claim_until: datetime | None = None
+    lapse_warned: bool = False  # the "about to lapse" push went out for this claim
+    completion_id: str = ""  # the pending / approved ChoreCompletion
+    points_awarded: int = 0
+    lapse_count: int = 0  # how many claims ran out before someone finished it
+    created_at: datetime | None = None
+    closed_at: datetime | None = None  # when it was completed or expired
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Bounty:
+        return cls(
+            title=str(data.get("title", "") or ""),
+            points=max(0, _safe_int(data.get("points", 0))),
+            description=str(data.get("description", "") or ""),
+            icon=str(data.get("icon", "") or "mdi:flag-outline"),
+            expires_at=parse_datetime(data.get("expires_at")),
+            eligible_child_ids=[str(c) for c in (data.get("eligible_child_ids") or []) if c],
+            claim_hours=max(1, _safe_int(data.get("claim_hours", 2), 2)),
+            require_photo=data.get("require_photo") is True,
+            notify_children=data.get("notify_children", True) is not False,
+            status=data.get("status") if data.get("status") in BOUNTY_STATUSES else "open",
+            claimed_by=str(data.get("claimed_by", "") or ""),
+            claimed_at=parse_datetime(data.get("claimed_at")),
+            claim_until=parse_datetime(data.get("claim_until")),
+            lapse_warned=data.get("lapse_warned") is True,
+            completion_id=str(data.get("completion_id", "") or ""),
+            points_awarded=max(0, _safe_int(data.get("points_awarded", 0))),
+            lapse_count=max(0, _safe_int(data.get("lapse_count", 0))),
+            created_at=parse_datetime(data.get("created_at")),
+            closed_at=parse_datetime(data.get("closed_at")),
+            id=data.get("id") or generate_id(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "title": self.title,
+            "points": self.points,
+            "description": self.description,
+            "icon": self.icon,
+            "expires_at": format_datetime(self.expires_at),
+            "eligible_child_ids": list(self.eligible_child_ids),
+            "claim_hours": self.claim_hours,
+            "require_photo": self.require_photo,
+            "notify_children": self.notify_children,
+            "status": self.status,
+            "claimed_by": self.claimed_by,
+            "claimed_at": format_datetime(self.claimed_at),
+            "claim_until": format_datetime(self.claim_until),
+            "lapse_warned": self.lapse_warned,
+            "completion_id": self.completion_id,
+            "points_awarded": self.points_awarded,
+            "lapse_count": self.lapse_count,
+            "created_at": format_datetime(self.created_at),
+            "closed_at": format_datetime(self.closed_at),
+            "id": self.id,
+        }
+
+    def is_eligible(self, child_id: str) -> bool:
+        return not self.eligible_child_ids or child_id in self.eligible_child_ids
+
+    def clear_claim(self) -> None:
+        self.claimed_by = ""
+        self.claimed_at = None
+        self.claim_until = None
+        self.lapse_warned = False
+        self.completion_id = ""
+
+
 @dataclass
 class ChoreCompletion:
     """Represents a chore completion record."""
@@ -839,6 +941,9 @@ class ChoreCompletion:
     # review clears it for good, and records written before the field existed
     # load as False: they stay parent-only.
     child_undo_allowed: bool = False
+    # Set when this completion is a bounty's (#931). chore_id then carries the
+    # bounty id too, so nothing that groups completions by chore mixes the two.
+    bounty_id: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ChoreCompletion:
@@ -862,6 +967,7 @@ class ChoreCompletion:
             submitted_points=parse_optional_points(data.get("submitted_points")),
             quality_rating=parse_quality_rating(data.get("quality_rating")),
             child_undo_allowed=data.get("child_undo_allowed") is True,
+            bounty_id=str(data.get("bounty_id", "") or ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -886,6 +992,8 @@ class ChoreCompletion:
         # flag is False on nearly all of them.
         if self.child_undo_allowed:
             data["child_undo_allowed"] = True
+        if self.bounty_id:
+            data["bounty_id"] = self.bounty_id
         return data
 
 

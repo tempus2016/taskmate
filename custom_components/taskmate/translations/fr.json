@@ -660,6 +660,150 @@
         }
       }
     },
+    "post_bounty": {
+      "name": "Publier une prime",
+      "description": "Publier une tâche ponctuelle sur le tableau des primes pour un nombre de points fixe. Tout enfant éligible peut la réserver ; une fois faite, elle passe par la validation habituelle.",
+      "fields": {
+        "title": {
+          "name": "Titre",
+          "description": "La tâche, p. ex. « Laver la voiture »"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Points fixes versés quand un parent valide la tâche terminée"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Détails facultatifs pour les enfants"
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Icône MDI affichée sur le tableau"
+        },
+        "expires_at": {
+          "name": "Expire le",
+          "description": "Date et heure facultatives auxquelles la prime quitte le tableau si personne ne l'a réservée. Laisser vide pour ne pas expirer."
+        },
+        "eligible_child_ids": {
+          "name": "Enfants éligibles",
+          "description": "ID des enfants qui peuvent la réserver. Vide = tous les enfants."
+        },
+        "claim_hours": {
+          "name": "Réservation (heures)",
+          "description": "Durée d'une réservation avant que la prime ne revienne sur le tableau"
+        },
+        "require_photo": {
+          "name": "Photo obligatoire",
+          "description": "L'enfant doit joindre une photo en la marquant comme faite"
+        },
+        "notify_children": {
+          "name": "Prévenir les enfants",
+          "description": "Envoyer la notification « Nouvelle prime » aux enfants éligibles"
+        }
+      }
+    },
+    "update_bounty": {
+      "name": "Modifier une prime",
+      "description": "Modifier une prime. Une fois réservée, seuls ses points et son expiration peuvent changer.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID de la prime",
+          "description": "L'ID de la prime à modifier"
+        },
+        "title": {
+          "name": "Titre",
+          "description": "La tâche, p. ex. « Laver la voiture »"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Points fixes versés quand un parent valide la tâche terminée"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Détails facultatifs pour les enfants"
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Icône MDI affichée sur le tableau"
+        },
+        "expires_at": {
+          "name": "Expire le",
+          "description": "Date et heure facultatives auxquelles la prime quitte le tableau si personne ne l'a réservée. Laisser vide pour ne pas expirer."
+        },
+        "eligible_child_ids": {
+          "name": "Enfants éligibles",
+          "description": "ID des enfants qui peuvent la réserver. Vide = tous les enfants."
+        },
+        "claim_hours": {
+          "name": "Réservation (heures)",
+          "description": "Durée d'une réservation avant que la prime ne revienne sur le tableau"
+        },
+        "require_photo": {
+          "name": "Photo obligatoire",
+          "description": "L'enfant doit joindre une photo en la marquant comme faite"
+        },
+        "notify_children": {
+          "name": "Prévenir les enfants",
+          "description": "Envoyer la notification « Nouvelle prime » aux enfants éligibles"
+        }
+      }
+    },
+    "remove_bounty": {
+      "name": "Retirer une prime",
+      "description": "Retirer une prime du tableau. Impossible tant qu'une tâche terminée attend la validation.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID de la prime",
+          "description": "L'ID de la prime à retirer"
+        }
+      }
+    },
+    "claim_bounty": {
+      "name": "Réserver une prime",
+      "description": "Réserver une prime pour un enfant, qui la garde pendant la durée de réservation. Un enfant ne peut en réserver qu'une à la fois.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID de la prime",
+          "description": "L'ID de la prime à réserver"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'ID de l'enfant qui la réserve"
+        }
+      }
+    },
+    "give_back_bounty": {
+      "name": "Rendre une prime",
+      "description": "Remettre une prime réservée sur le tableau pour qu'un autre enfant puisse la prendre",
+      "fields": {
+        "bounty_id": {
+          "name": "ID de la prime",
+          "description": "L'ID de la prime réservée"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'ID de l'enfant qui l'a réservée"
+        }
+      }
+    },
+    "complete_bounty": {
+      "name": "Terminer une prime",
+      "description": "Marquer une prime réservée comme faite. Elle part en validation comme une tâche.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID de la prime",
+          "description": "L'ID de la prime réservée"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'ID de l'enfant qui l'a réservée"
+        },
+        "photo_url": {
+          "name": "URL de la photo",
+          "description": "Photo de la tâche terminée (obligatoire si la prime en demande une)"
+        }
+      }
+    },
     "pause_timed_task": {
       "name": "Mettre en pause une tâche chronométrée",
       "description": "Mettre en pause le minuteur d'une tâche chronométrée en cours",

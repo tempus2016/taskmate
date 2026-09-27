@@ -29,6 +29,8 @@ from .const import (
     NOTIF_TYPE_BADGE_EARNED,
     NOTIF_TYPE_BEDTIME_REMINDER,
     NOTIF_TYPE_BIRTHDAY,
+    NOTIF_TYPE_BOUNTY_CLAIM_LAPSING,
+    NOTIF_TYPE_BOUNTY_POSTED,
     NOTIF_TYPE_CELEBRATION,
     NOTIF_TYPE_FAMILY_GOAL_REACHED,
     NOTIF_TYPE_LEVEL_UP,
@@ -105,6 +107,11 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_BIRTHDAY, "child", True, True, False, False),
     NotificationTypeMeta(NOTIF_TYPE_STREAK_FREEZE_USED, "both", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_PRESENCE_ARRIVAL, "child", False, False, False, False),
+    # Bounty board (#931), both opt-in: a new bounty for the children it's
+    # open to (when the parent ticks "notify"), and a warning to the claimer
+    # shortly before their claim lapses.
+    NotificationTypeMeta(NOTIF_TYPE_BOUNTY_POSTED, "child", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_BOUNTY_CLAIM_LAPSING, "child", False, False, False, False),
     # Recaps (#929): one push per child plus one grouped parent message, sent
     # at the recap send time rather than at midnight when they're built.
     NotificationTypeMeta(NOTIF_TYPE_RECAP_READY, "both", True, False, False, True),
@@ -359,6 +366,8 @@ class NotificationCoordinator:
             "goal_reward": "a family movie night",
             "multiplier": "2",
             "count": 3,
+            "bounty_name": "Wash the car",
+            "minutes": 15,
             "period": "January",
             "points_name": self.storage.get_points_name(),
         }
@@ -441,6 +450,8 @@ class NotificationCoordinator:
             NOTIF_TYPE_BIRTHDAY: "🎂 Happy birthday, {child_name}! Every chore pays {multiplier}× today.",
             NOTIF_TYPE_STREAK_FREEZE_USED: "❄️ A streak freeze saved {child_name}'s {streak}-day streak ({freezes_left} left).",
             NOTIF_TYPE_PRESENCE_ARRIVAL: "🏠 You're home, {child_name} — {count} chores left today.",
+            NOTIF_TYPE_BOUNTY_POSTED: "🏁 New bounty: {bounty_name} — {points} {points_name}. First to claim it gets it!",
+            NOTIF_TYPE_BOUNTY_CLAIM_LAPSING: "⏳ {child_name}, {minutes} minutes left to finish '{bounty_name}' before it goes back on the board.",
             NOTIF_TYPE_RECAP_READY: "✨ Your {period} recap is ready, {child_name}! Tap to watch it.",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")

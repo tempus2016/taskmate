@@ -1230,7 +1230,9 @@ class ChoresMixin:
                         completion_id,
                     )
                     return
-                chore = self.get_chore(completion.chore_id)
+                # A bounty's completion (#931) has no chore of its own; it is
+                # priced and paid through this same path.
+                chore = self.get_chore(completion.chore_id) or self.bounty_completion_chore(completion)
                 child = self.get_child(completion.child_id)
 
                 if chore and child:
@@ -1308,6 +1310,8 @@ class ChoresMixin:
                     )
                     completion.points_awarded = total_awarded
                     self.storage.update_completion(completion)
+                    if getattr(completion, "bounty_id", ""):
+                        self._bounty_on_approved(completion)
 
                     # Dismiss the mobile approval push now this completion is
                     # reviewed (covers single approve AND "approve all", which
@@ -1528,6 +1532,10 @@ class ChoresMixin:
                 self.storage.remove_completion(bc.id)
 
         self.storage.remove_completion(completion_id)
+        if target_completion and getattr(target_completion, "bounty_id", ""):
+            # A bounty goes back to the same child rather than to the board
+            # (#931): renewed on a rejection, as it was on their own undo.
+            self._bounty_on_withdrawn(target_completion, rejected=event == "taskmate_chore_rejected")
         if target_completion and target_completion.approved and not target_completion.bonus_subtask_id:
             # Same as undo: a rejected completion must not leave the quest
             # chain standing on the step it unlocked.
@@ -1604,6 +1612,8 @@ class ChoresMixin:
         # A parent touched it, so child undo stays locked (#918).
         target.child_undo_allowed = False
         self.storage.update_completion(target)
+        if getattr(target, "bounty_id", ""):
+            self._bounty_on_unapproved(target)
 
         # Quest progress advanced on approval, so it has to come back too —
         # otherwise re-approving the same completion advances the chain a
