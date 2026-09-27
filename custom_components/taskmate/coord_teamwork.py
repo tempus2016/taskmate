@@ -166,6 +166,10 @@ class TeamworkMixin:
                 now,
                 auto_approve=auto_approve,
                 points=points,
+                # A parent's tap filling the team counts as made on everyone's
+                # behalf, so it isn't child-undoable (#918); otherwise each
+                # child may take back their own share within the window.
+                as_parent=as_parent,
                 photo_url=j.get("photo_url", ""),
             )
             recorded.append((member, completion, points))
