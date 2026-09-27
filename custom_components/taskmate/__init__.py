@@ -109,6 +109,7 @@ from .const import (
     SERVICE_START_TIMED_TASK,
     SERVICE_STOP_TIMED_TASK,
     SERVICE_TEST_NOTIFICATION,
+    SERVICE_UNDO_CHORE,
     SERVICE_UNDO_CHORE_APPROVAL,
     SERVICE_UNDO_TRANSACTION,
     SERVICE_UPDATE_BONUS,
@@ -602,6 +603,25 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             return
         completion_id = call.data["completion_id"]
         await coordinator.async_reject_chore(completion_id)
+
+    async def handle_undo_chore(call: ServiceCall) -> None:
+        """A child takes back their own chore inside the undo window (#918).
+
+        The child is read from the stored completion, never from the call, and
+        the linked-child rule is applied to that child — so one child can't
+        undo a sibling's chore. The window and parent-review checks live in the
+        coordinator. Parents keep reject_chore / undo_chore_approval.
+        """
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        completion_id = call.data["completion_id"]
+        completion = next((c for c in coordinator.storage.get_completions() if c.id == completion_id), None)
+        if completion is None:
+            raise ValueError("This chore has already been undone. Refresh the card.")
+        await _async_require_linked_child(hass, call, coordinator, completion.child_id)
+        await coordinator.async_undo_chore(completion_id)
 
     async def handle_apply_mandatory_penalty(call: ServiceCall) -> None:
         """Handle apply_mandatory_penalty (deduct penalty for a missed mandatory chore)."""
@@ -1221,6 +1241,14 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         ),
     )
 
+    # Child-facing: gated on the stored child's linked user, not on parent.
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_UNDO_CHORE,
+        _audited(handle_undo_chore),
+        schema=vol.Schema({vol.Required("completion_id"): cv.string}),
+    )
+
     _miss_schema = vol.Schema({vol.Required("miss_id"): cv.string})
     hass.services.async_register(
         DOMAIN,
@@ -1694,6 +1722,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_APPROVE_ALL_CHORES,
         SERVICE_REJECT_CHORE,
         SERVICE_UNDO_TRANSACTION,
+        SERVICE_UNDO_CHORE,
         SERVICE_UNDO_CHORE_APPROVAL,
         SERVICE_TEST_NOTIFICATION,
         SERVICE_GIFT_POINTS,

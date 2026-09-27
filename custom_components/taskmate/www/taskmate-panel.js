@@ -2290,6 +2290,14 @@ class TaskMatePanel extends HTMLElement {
     root.querySelectorAll("ha-icon-picker[data-setting]").forEach(el => {
       payload[el.dataset.setting] = el.value || "";
     });
+    // Child undo window (#918): whole seconds, 0 (off) to 3600.
+    if ("chore_undo_seconds" in payload) {
+      const secs = payload.chore_undo_seconds;
+      if (!Number.isInteger(secs) || secs < 0 || secs > 3600) {
+        this._showToast("err", this._t("panel.settings_chore_undo_invalid"));
+        return;
+      }
+    }
     // Non-admin parent role (#661): collect the ticked HA users.
     const parentBoxes = root.querySelectorAll("input[type=checkbox][data-parent-user]");
     if (parentBoxes.length) {
@@ -4579,6 +4587,10 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_require_linked_child_label")}<small>${this._t("panel.settings_require_linked_child_hint")}</small></div>
               <ha-switch data-setting="require_linked_child" ${s.require_linked_child ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_chore_undo_label")}<small>${this._t("panel.settings_chore_undo_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="3600" step="1" data-setting="chore_undo_seconds" aria-label="${this._esc(this._t("panel.settings_chore_undo_label"))}" value="${this._num(s.chore_undo_seconds, 0)}">
             </div>
           </div>
         </div>

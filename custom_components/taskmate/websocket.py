@@ -382,6 +382,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
             "points_name": data.get("points_name", "Stars"),
             "points_icon": data.get("points_icon", "mdi:star"),
             "card_design": "classic",
+            # Child undo window (#918): off unless a parent opts in.
+            "chore_undo_seconds": 0,
             # Difficulty multiplier defaults; overridden by stored values below.
             "difficulty_multiplier_easy": 0.5,
             "difficulty_multiplier_medium": 1.0,
@@ -1648,6 +1650,7 @@ _ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro", "accessib
 # Settings stored under storage._data["settings"][key]
 _SUBKEY_SETTINGS = {
     "require_linked_child",
+    "chore_undo_seconds",
     "history_days",
     "streak_reset_mode",
     "card_design",
@@ -1835,6 +1838,13 @@ def _validate_vacation_periods(raw: list) -> tuple[list[dict] | None, str | None
     return sorted(periods, key=lambda p: p["start"]), None
 
 
+def _validate_chore_undo_seconds(value: Any) -> int:
+    """A whole number of seconds from 0 to 3600 (#918). Booleans are refused."""
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 3600:
+        raise vol.Invalid("chore_undo_seconds must be a whole number from 0 to 3600")
+    return value
+
+
 # Extracted to a module constant so the accepted settings keys can be unit-tested
 # (the websocket_command decorator does not expose the compiled schema). Every key
 # accepted here must also be routed in _ws_update_settings below.
@@ -1856,6 +1866,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("difficulty_multiplier_hard"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=10.0)),
     vol.Optional("unlock_allowlist"): [str],
     vol.Optional("require_linked_child"): bool,
+    vol.Optional("chore_undo_seconds"): _validate_chore_undo_seconds,
     vol.Optional("parent_routing"): vol.In(["all", "home", "round_robin"]),
     vol.Optional("read_aloud_media_player"): str,
     vol.Optional("read_aloud_tts_entity"): str,
@@ -1980,8 +1991,9 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
 @websocket_api.async_response
 @_admin_only
 async def _ws_complete_bonus_subtask(hass, connection, msg, coordinator):
+    # Ticked from the admin panel, so not the child's to undo (#918).
     completion = await coordinator.async_complete_bonus_subtask(
-        msg["chore_id"], msg["bonus_subtask_id"], msg["child_id"]
+        msg["chore_id"], msg["bonus_subtask_id"], msg["child_id"], by_child=False
     )
     connection.send_result(msg["id"], {"id": completion.id})
 

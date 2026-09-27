@@ -81,6 +81,8 @@ For manual installation and the first-run walkthrough, see [Installation](https:
 
 **Made for kids** — [Routine Mode](https://github.com/tempus2016/taskmate/wiki/Routine-Mode) for guided morning and bedtime flows, [Pre-Reader Mode](https://github.com/tempus2016/taskmate/wiki/Pre-Reader-Mode) for children who can't read yet, [Read Aloud](https://github.com/tempus2016/taskmate/wiki/Read-Aloud) to a media player, a [printable fridge chart](https://github.com/tempus2016/taskmate/wiki/Printable-Weekly-Chart), [custom completion sounds](https://github.com/tempus2016/taskmate/wiki/Completion-Sounds) you can upload and pick per chore, and six [card design styles](https://github.com/tempus2016/taskmate/wiki/Card-Design-Styles) including a high-contrast accessible theme and a clean corporate one.
 
+**Child undo window** — off by default. Set **Child undo window (seconds)** in the TaskMate panel's **Settings** to anything from 1 to 3600 and a child can take back their own chore: a submission waiting for approval until a parent reviews it, and an automatically approved chore for that many seconds after they ticked it. The child and routine cards show an **Undo** button while it's allowed, on every design style and in picture mode. Points, chore count, streak and leaderboard score are all reversed. Once a parent approves (or otherwise reviews) a completion, only a parent can undo it, and anything completed while the window was 0 stays parent-only. Automations can call `taskmate.undo_chore` with a `completion_id`; it applies the same rules and the child's linked-account check. Leave the window at 0 and nothing changes: only parents can undo.
+
 ---
 
 ## Dashboard cards

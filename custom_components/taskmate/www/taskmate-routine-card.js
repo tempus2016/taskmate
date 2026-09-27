@@ -69,6 +69,72 @@ class TaskMateRoutineCard extends LitElement {
     return { entity: "sensor.taskmate_overview", child_id: "", time_category: "morning" };
   }
 
+  updated(changedProps) {
+    super.updated?.(changedProps);
+    this._scheduleUndoExpiry();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearTimeout(this._undoExpiryTimer);
+    this._undoExpiryTimer = null;
+  }
+
+  // ── Child undo (#918) ───────────────────────────────────────────────────
+  // A step finished in this run can be taken back while the server says so:
+  // child_undo_pending (not yet reviewed) or child_undo_until (auto-approved,
+  // until that instant). Neither is set while the global window is 0.
+
+  _undoableCompletion(chore, now = Date.now()) {
+    const child = this._child();
+    if (!child || !chore) return null;
+    const latest = (this._attrs().todays_completions || [])
+      .filter(c => String(c.child_id) === String(child.id)
+        && String(c.chore_id) === String(chore.id) && !c.bonus_subtask_id)
+      .sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0))[0];
+    if (!latest || !(latest.completion_id || latest.id)) return null;
+    if (latest.child_undo_pending === true) return latest;
+    const until = Date.parse(latest.child_undo_until || "");
+    return Number.isFinite(until) && until > now ? latest : null;
+  }
+
+  /** Re-render when the soonest undo window closes, so its button goes away. */
+  _scheduleUndoExpiry() {
+    clearTimeout(this._undoExpiryTimer);
+    this._undoExpiryTimer = null;
+    const child = this._child?.();
+    if (!child) return;
+    const now = Date.now();
+    const deadlines = (this._attrs().todays_completions || [])
+      .filter(c => String(c.child_id) === String(child.id))
+      .map(c => Date.parse(c.child_undo_until || ""))
+      .filter(t => Number.isFinite(t) && t > now);
+    if (!deadlines.length) return;
+    this._undoExpiryTimer = setTimeout(() => {
+      this._undoExpiryTimer = null;
+      this.requestUpdate();
+    }, Math.min(Math.min(...deadlines) - now + 50, 2 ** 31 - 1));
+  }
+
+  async _undo(chore, completion) {
+    if (this._busy) return;
+    this._busy = true;
+    try {
+      // The service takes the child from the stored completion itself.
+      await this.hass.callService("taskmate", "undo_chore", {
+        completion_id: completion.completion_id || completion.id,
+      });
+      this._runCompleted.delete(String(chore.id));
+    } catch (err) {
+      this.dispatchEvent(new CustomEvent("hass-notification", {
+        detail: { message: String(err?.message || err) }, bubbles: true, composed: true,
+      }));
+    } finally {
+      this._busy = false;
+      this.requestUpdate();
+    }
+  }
+
   shouldUpdate(changedProps) {
     if (changedProps.has("hass")) {
       return window.__taskmate_hasChanged
@@ -294,7 +360,17 @@ class TaskMateRoutineCard extends LitElement {
           ${done
             ? html`<button class="rt-btn rt-done is-done" disabled>
                      ${done.pending ? this._t("routine.sent_for_checking") : this._t("routine.completed")}
-                   </button>`
+                   </button>
+                   ${(() => {
+                     const undoable = this._undoableCompletion(chore);
+                     return undoable
+                       ? html`<button class="rt-btn rt-undo" ?disabled=${this._busy}
+                                      @click=${() => this._undo(chore, undoable)}>
+                                <ha-icon icon="mdi:undo-variant"></ha-icon>
+                                ${this._t("child.undo_named", { name: chore.name })}
+                              </button>`
+                       : "";
+                   })()}`
             : html`<button class="rt-btn rt-done" ?disabled=${this._busy}
                            @click=${() => this._complete(chore)}>
                      ${this._t("routine.done")}
@@ -508,6 +584,15 @@ class TaskMateRoutineCard extends LitElement {
         background: var(--tmd-dim, var(--disabled-text-color, #9ca3af));
       }
       :host([data-tm-design]:not([data-tm-design="classic"])) .rt-done.is-done { color: #fff; }
+      .rt-undo {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        background: transparent;
+        color: var(--tmd-text, var(--primary-text-color));
+        border: 2px solid var(--routine-accent, var(--tmd-accent, #7c3aed));
+        padding: 12px; font-size: 15px; min-height: 44px;
+      }
+      .rt-undo ha-icon { --mdc-icon-size: 20px; }
+      .rt-undo:disabled { opacity: 0.5; }
       .rt-row { display: flex; gap: 10px; }
       .rt-skip {
         background: var(--tmd-surface-2, var(--divider-color, #e5e7eb));
