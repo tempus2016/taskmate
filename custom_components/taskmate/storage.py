@@ -841,6 +841,20 @@ class TaskMateStorage:
             return []
         return [x for x in raw if isinstance(x, str) and x]
 
+    def get_chore_undo_seconds(self) -> int:
+        """Seconds a child has to undo their own auto-approved chore (#918).
+
+        0 (the default) switches child undo off entirely. Anything stored that
+        isn't a whole number reads as 0, and the value is clamped to 0..3600.
+        """
+        value = (self._data.get("settings", {}) or {}).get("chore_undo_seconds", 0)
+        if isinstance(value, bool):
+            return 0
+        try:
+            return max(0, min(3600, int(value)))
+        except (TypeError, ValueError, OverflowError):
+            return 0
+
     def get_require_linked_child(self) -> bool:
         """True when acting *as* a child requires that child to be linked.
 
@@ -1322,6 +1336,7 @@ class TaskMateStorage:
         }
         _NUMERIC_SETTINGS = (
             "history_days",
+            "chore_undo_seconds",
             "weekend_multiplier",
             "birthday_points_multiplier",
             "difficulty_multiplier_easy",

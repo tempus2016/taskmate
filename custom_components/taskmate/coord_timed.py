@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
 
+from .chore_undo import undo_window_seconds
 from .models import ChoreCompletion, TimedSession
 
 if TYPE_CHECKING:
@@ -130,6 +131,8 @@ class TimedMixin:
             points_awarded=pts if not chore.requires_approval else 0,
             submitted_points=pts,
             timed_duration_seconds=total_seconds,
+            # The child's own stopped session: theirs to undo in the window (#918).
+            child_undo_allowed=undo_window_seconds(self.storage) > 0,
         )
 
         if not chore.requires_approval:

@@ -153,6 +153,17 @@ undo_transaction:
       selector:
         text:
 
+undo_chore:
+  name: Undo Chore
+  description: Let a child take back their own chore — a pending submission until a parent reviews it, or an automatically approved one within the chore undo window. Off unless the window is set above 0 in TaskMate settings; anything a parent has reviewed needs a parent to undo it.
+  fields:
+    completion_id:
+      name: Completion ID
+      description: The ID of the child's chore completion to take back
+      required: true
+      selector:
+        text:
+
 undo_chore_approval:
   name: Undo Chore Approval
   description: Reverse an accidental chore approval — removes the awarded points and returns the completion to pending so it can be approved again.
