@@ -660,6 +660,150 @@
         }
       }
     },
+    "post_bounty": {
+      "name": "Sonderjob ausschreiben",
+      "description": "Einen einmaligen Sonderjob für eine feste Punktzahl an die Sonderjob-Tafel hängen. Jedes berechtigte Kind kann ihn übernehmen; die Erledigung läuft durch die normale Freigabe.",
+      "fields": {
+        "title": {
+          "name": "Titel",
+          "description": "Worum es geht, z. B. \"Auto waschen\""
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Feste Punkte, die gezahlt werden, wenn ein Elternteil den erledigten Job freigibt"
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Optionale Details für die Kinder"
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "MDI-Symbol auf der Tafel"
+        },
+        "expires_at": {
+          "name": "Läuft ab am",
+          "description": "Optionales Datum mit Uhrzeit, zu dem der Sonderjob verschwindet, wenn ihn niemand übernommen hat. Leer lassen für kein Ablaufdatum."
+        },
+        "eligible_child_ids": {
+          "name": "Berechtigte Kinder",
+          "description": "IDs der Kinder, die ihn übernehmen dürfen. Leer = alle Kinder."
+        },
+        "claim_hours": {
+          "name": "Reservierung (Stunden)",
+          "description": "Wie lange eine Übernahme gilt, bevor der Sonderjob zurück an die Tafel geht"
+        },
+        "require_photo": {
+          "name": "Foto erforderlich",
+          "description": "Das Kind muss beim Erledigen ein Foto anhängen"
+        },
+        "notify_children": {
+          "name": "Kinder benachrichtigen",
+          "description": "Die Benachrichtigung \"Neuer Sonderjob\" an die berechtigten Kinder senden"
+        }
+      }
+    },
+    "update_bounty": {
+      "name": "Sonderjob bearbeiten",
+      "description": "Einen Sonderjob bearbeiten. Nach der Übernahme lassen sich nur noch Punkte und Ablaufzeit ändern.",
+      "fields": {
+        "bounty_id": {
+          "name": "Sonderjob-ID",
+          "description": "Die ID des zu bearbeitenden Sonderjobs"
+        },
+        "title": {
+          "name": "Titel",
+          "description": "Worum es geht, z. B. \"Auto waschen\""
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Feste Punkte, die gezahlt werden, wenn ein Elternteil den erledigten Job freigibt"
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Optionale Details für die Kinder"
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "MDI-Symbol auf der Tafel"
+        },
+        "expires_at": {
+          "name": "Läuft ab am",
+          "description": "Optionales Datum mit Uhrzeit, zu dem der Sonderjob verschwindet, wenn ihn niemand übernommen hat. Leer lassen für kein Ablaufdatum."
+        },
+        "eligible_child_ids": {
+          "name": "Berechtigte Kinder",
+          "description": "IDs der Kinder, die ihn übernehmen dürfen. Leer = alle Kinder."
+        },
+        "claim_hours": {
+          "name": "Reservierung (Stunden)",
+          "description": "Wie lange eine Übernahme gilt, bevor der Sonderjob zurück an die Tafel geht"
+        },
+        "require_photo": {
+          "name": "Foto erforderlich",
+          "description": "Das Kind muss beim Erledigen ein Foto anhängen"
+        },
+        "notify_children": {
+          "name": "Kinder benachrichtigen",
+          "description": "Die Benachrichtigung \"Neuer Sonderjob\" an die berechtigten Kinder senden"
+        }
+      }
+    },
+    "remove_bounty": {
+      "name": "Sonderjob entfernen",
+      "description": "Einen Sonderjob von der Tafel nehmen. Nicht möglich, solange ein erledigter Job auf Freigabe wartet.",
+      "fields": {
+        "bounty_id": {
+          "name": "Sonderjob-ID",
+          "description": "Die ID des zu entfernenden Sonderjobs"
+        }
+      }
+    },
+    "claim_bounty": {
+      "name": "Sonderjob übernehmen",
+      "description": "Einen Sonderjob für ein Kind übernehmen und für die Reservierungszeit sperren. Ein Kind kann jeweils nur einen halten.",
+      "fields": {
+        "bounty_id": {
+          "name": "Sonderjob-ID",
+          "description": "Die ID des zu übernehmenden Sonderjobs"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Die ID des Kindes, das ihn übernimmt"
+        }
+      }
+    },
+    "give_back_bounty": {
+      "name": "Sonderjob zurückgeben",
+      "description": "Einen übernommenen Sonderjob zurück an die Tafel geben, damit ein anderes Kind ihn nehmen kann",
+      "fields": {
+        "bounty_id": {
+          "name": "Sonderjob-ID",
+          "description": "Die ID des übernommenen Sonderjobs"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Die ID des Kindes, das ihn übernommen hat"
+        }
+      }
+    },
+    "complete_bounty": {
+      "name": "Sonderjob erledigen",
+      "description": "Einen übernommenen Sonderjob als erledigt melden. Er geht wie eine Aufgabe in die Freigabe.",
+      "fields": {
+        "bounty_id": {
+          "name": "Sonderjob-ID",
+          "description": "Die ID des übernommenen Sonderjobs"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Die ID des Kindes, das ihn übernommen hat"
+        },
+        "photo_url": {
+          "name": "Foto-URL",
+          "description": "Foto des erledigten Jobs (erforderlich, wenn der Sonderjob eines verlangt)"
+        }
+      }
+    },
     "pause_timed_task": {
       "name": "Zeitbasierte Aufgabe pausieren",
       "description": "Pausieren Sie den laufenden Timer einer zeitbasierten Aufgabe",

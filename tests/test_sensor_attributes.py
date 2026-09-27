@@ -22,6 +22,7 @@ from custom_components.taskmate.models import (
     BadgeCriterion,
     Bonus,
     BonusSubTask,
+    Bounty,
     Child,
     Chore,
     ChoreCompletion,
@@ -207,6 +208,22 @@ def _stress_coordinator():
         "pool_allocations": pool_allocations,
         "penalties": penalties,
         "bonuses": bonuses,
+        # A busy bounty board (#931): every one claimed, dated and restricted.
+        "bounties": [
+            Bounty(
+                title=f"Bounty number {i:02d} with a reasonably long title",
+                description="Bucket and sponge are in the garage, rinse it off afterwards",
+                points=50,
+                status="claimed",
+                claimed_by=children[i % 4].id,
+                claimed_at=now,
+                claim_until=now + dt.timedelta(hours=2),
+                expires_at=now + dt.timedelta(days=2),
+                eligible_child_ids=[c.id for c in children[:3]],
+                id=f"bounty-{i:02d}",
+            )
+            for i in range(20)
+        ],
         "points_name": "Stars",
         "points_icon": "mdi:star",
         "settings": {
@@ -629,6 +646,7 @@ def _stress_sensors(coord, entry):
         sensor_module.TaskMateRewardsSensor(coord, entry),
         sensor_module.TaskMateActivitySensor(coord, entry),
         sensor_module.TaskMateIncentivesSensor(coord, entry),
+        sensor_module.TaskMateBountiesSensor(coord, entry),
         PendingApprovalsSensor(coord, entry),
     ]
 

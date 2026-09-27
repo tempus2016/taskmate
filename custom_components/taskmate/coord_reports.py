@@ -561,7 +561,13 @@ class ReportsMixin:
                 len(orphan_deps),
             )
 
-        orphan_completions = sum(1 for c in completions if c.chore_id not in chore_ids or c.child_id not in child_ids)
+        # A bounty's completion (#931) belongs to the bounty, not a chore.
+        bounty_ids = {b.id for b in self.storage.get_bounties()}
+        orphan_completions = sum(
+            1
+            for c in completions
+            if (c.chore_id not in chore_ids and c.chore_id not in bounty_ids) or c.child_id not in child_ids
+        )
         if orphan_completions:
             add(
                 "info",

@@ -660,6 +660,150 @@
         }
       }
     },
+    "post_bounty": {
+      "name": "Publicar tarefa extra",
+      "description": "Publique uma tarefa extra avulsa no quadro de tarefas extras por um número fixo de pontos. Qualquer criança elegível pode pegá-la; quando feita, ela passa pela aprovação normal.",
+      "fields": {
+        "title": {
+          "name": "Título",
+          "description": "Qual é a tarefa, por ex. \"Lavar o carro\""
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "Pontos fixos pagos quando um responsável aprova a tarefa feita"
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Detalhes opcionais para as crianças"
+        },
+        "icon": {
+          "name": "Ícone",
+          "description": "Ícone MDI exibido no quadro"
+        },
+        "expires_at": {
+          "name": "Expira em",
+          "description": "Data e hora opcionais em que a tarefa extra sai do quadro se ninguém a pegou. Deixe vazio para não expirar."
+        },
+        "eligible_child_ids": {
+          "name": "Crianças elegíveis",
+          "description": "IDs das crianças que podem pegá-la. Vazio = todas as crianças."
+        },
+        "claim_hours": {
+          "name": "Reserva (horas)",
+          "description": "Quanto tempo dura uma reserva antes de a tarefa extra voltar ao quadro"
+        },
+        "require_photo": {
+          "name": "Exigir foto",
+          "description": "A criança precisa anexar uma foto ao marcá-la como feita"
+        },
+        "notify_children": {
+          "name": "Avisar as crianças",
+          "description": "Enviar a notificação \"Nova tarefa extra\" às crianças elegíveis"
+        }
+      }
+    },
+    "update_bounty": {
+      "name": "Atualizar tarefa extra",
+      "description": "Edite uma tarefa extra. Depois de pega, só os pontos e a expiração podem mudar.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID da tarefa extra",
+          "description": "O ID da tarefa extra a editar"
+        },
+        "title": {
+          "name": "Título",
+          "description": "Qual é a tarefa, por ex. \"Lavar o carro\""
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "Pontos fixos pagos quando um responsável aprova a tarefa feita"
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Detalhes opcionais para as crianças"
+        },
+        "icon": {
+          "name": "Ícone",
+          "description": "Ícone MDI exibido no quadro"
+        },
+        "expires_at": {
+          "name": "Expira em",
+          "description": "Data e hora opcionais em que a tarefa extra sai do quadro se ninguém a pegou. Deixe vazio para não expirar."
+        },
+        "eligible_child_ids": {
+          "name": "Crianças elegíveis",
+          "description": "IDs das crianças que podem pegá-la. Vazio = todas as crianças."
+        },
+        "claim_hours": {
+          "name": "Reserva (horas)",
+          "description": "Quanto tempo dura uma reserva antes de a tarefa extra voltar ao quadro"
+        },
+        "require_photo": {
+          "name": "Exigir foto",
+          "description": "A criança precisa anexar uma foto ao marcá-la como feita"
+        },
+        "notify_children": {
+          "name": "Avisar as crianças",
+          "description": "Enviar a notificação \"Nova tarefa extra\" às crianças elegíveis"
+        }
+      }
+    },
+    "remove_bounty": {
+      "name": "Remover tarefa extra",
+      "description": "Tire uma tarefa extra do quadro. Não é possível enquanto uma tarefa feita aguarda aprovação.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID da tarefa extra",
+          "description": "O ID da tarefa extra a remover"
+        }
+      }
+    },
+    "claim_bounty": {
+      "name": "Pegar tarefa extra",
+      "description": "Pegue uma tarefa extra para uma criança, reservando-a durante o período de reserva. Cada criança só pode ter uma por vez.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID da tarefa extra",
+          "description": "O ID da tarefa extra a pegar"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que está pegando"
+        }
+      }
+    },
+    "give_back_bounty": {
+      "name": "Devolver tarefa extra",
+      "description": "Devolva uma tarefa extra pega ao quadro para outra criança poder pegá-la",
+      "fields": {
+        "bounty_id": {
+          "name": "ID da tarefa extra",
+          "description": "O ID da tarefa extra pega"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que a pegou"
+        }
+      }
+    },
+    "complete_bounty": {
+      "name": "Concluir tarefa extra",
+      "description": "Marque uma tarefa extra pega como feita. Ela vai para aprovação como uma tarefa normal.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID da tarefa extra",
+          "description": "O ID da tarefa extra pega"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que a pegou"
+        },
+        "photo_url": {
+          "name": "URL da foto",
+          "description": "Foto da tarefa feita (obrigatória quando a tarefa extra pede)"
+        }
+      }
+    },
     "pause_timed_task": {
       "name": "Pausar tarefa cronometrada",
       "description": "Pausar o cronômetro de uma tarefa cronometrada em andamento",

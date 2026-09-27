@@ -20,6 +20,7 @@ from .coord_assignments import AssignmentsMixin
 from .coord_avatars import AvatarsMixin
 from .coord_badges import BadgeCoordinator
 from .coord_birthdays import BirthdaysMixin
+from .coord_bounties import BountiesMixin
 from .coord_calendar import CalendarMixin
 from .coord_challenges import ChallengesMixin
 from .coord_chores import ChoresMixin
@@ -69,6 +70,7 @@ class TaskMateCoordinator(
     TagsMixin,
     TeamworkMixin,
     WishlistMixin,
+    BountiesMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -371,6 +373,9 @@ class TaskMateCoordinator(
         await self.async_resume_unlocks()
         # Birthday mode (#924): HA may have been off at midnight on the day.
         await self.async_check_birthdays(refresh=False)
+        # Bounty board (#931): claims that ran out and bounties that expired
+        # while HA was off.
+        await self.async_sweep_bounties(refresh=False)
         await self.async_refresh()
         # Schedule midnight streak check at 00:00:05
         self._unsub_midnight = async_track_time_change(
@@ -792,6 +797,8 @@ class TaskMateCoordinator(
             self.async_detect_anytime_mandatory_misses,
             self.async_prune_orphan_misses,
             self._async_sweep_orphan_photos,
+            # Finished bounties leave with the completion history (#931).
+            self.async_prune_bounties,
         ]
         # Check for perfect week bonus every Monday at midnight
         if now.weekday() == 0:
@@ -841,6 +848,9 @@ class TaskMateCoordinator(
         # we are already inside the refresh, and the snapshot below picks the
         # change up in this same tick.
         await self._async_expire_deadline_chores(refresh=False)
+        # Bounty claims last hours, not days (#931): lapse and expire them on
+        # this tick, and warn a claimer whose time is nearly up.
+        await self.async_sweep_bounties(refresh=False)
         self._refresh_tracked_availability_entities()
         # Presence-aware reminders (#926): follow child presence-entity edits.
         # A no-op unless the child -> entity map actually changed.
@@ -871,6 +881,7 @@ class TaskMateCoordinator(
             "bonuses": self.storage.get_bonuses(),
             "pool_allocations": self.storage.get_pool_allocations(),
             "timed_sessions": self.storage.get_timed_sessions(),
+            "bounties": self.storage.get_bounties(),
         }
 
     # Child operations
@@ -932,6 +943,8 @@ class TaskMateCoordinator(
         self.storage.remove_team_joins_for_child(child_id)
         # Their wishes (#932) go too — and the pictures stored for them.
         await self._async_remove_wishes_for_child(child_id)
+        # Free any bounty they had claimed and take them off eligibility (#931).
+        self.remove_child_from_bounties(child_id)
         # Remove child from chore assigned_to lists, and clear any approved swap
         # override that pointed at them so the chore isn't left assigned to a
         # child who no longer exists.

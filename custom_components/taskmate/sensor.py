@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, timedelta
 from types import SimpleNamespace
 
 from homeassistant.components.sensor import (
@@ -19,7 +19,7 @@ from homeassistant.util import dt as dt_util
 
 from . import images
 from .chore_undo import child_undo_metadata, undo_window_seconds
-from .const import DOMAIN, WISH_MAX_OPEN_PER_CHILD
+from .const import BOUNTY_RECENT_HOURS, DOMAIN, WISH_MAX_OPEN_PER_CHILD
 from .coord_rewards import reward_is_time_locked
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
@@ -83,6 +83,9 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
     reward_lookup = {r.id: r for r in rewards}
     # Wishlist redemptions (#932) are reward claims with no Reward behind them.
     wish_lookup = {w.id: w for w in coordinator.storage.get_wishes()}
+    # A bounty's completion (#931) carries the bounty id as its chore_id, so
+    # every "which chore is this?" lookup below falls back to this one.
+    bounty_lookup = {b.id: b for b in data.get("bounties", []) or []}
 
     # Current-month leaderboard points per child (FEAT-2).
     season_points = coordinator.storage.get_season_points(dt_util.now().strftime("%Y-%m"))
@@ -90,7 +93,7 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
     # Pending chore points per child (awaiting approval -> points to be earned).
     pending_points_by_child: dict[str, int] = {}
     for comp in pending_completions:
-        chore = chore_lookup.get(comp.chore_id)
+        chore = chore_lookup.get(comp.chore_id) or bounty_lookup.get(comp.chore_id)
         if chore:
             pending_points_by_child[comp.child_id] = pending_points_by_child.get(comp.child_id, 0) + chore.points
 
@@ -125,6 +128,7 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
         "chore_lookup": chore_lookup,
         "reward_lookup": reward_lookup,
         "wish_lookup": wish_lookup,
+        "bounty_lookup": bounty_lookup,
         "season_points": season_points,
         "all_completions": all_completions,
         "chore_undo_seconds": undo_window_seconds(coordinator.storage),
@@ -415,6 +419,12 @@ def _completion_award(completion, recalculated: int) -> int:
     return recalculated
 
 
+def _bounty_title(common: dict, comp) -> str:
+    """The bounty's title for a bounty completion (#931), else ""."""
+    bounty = common.get("bounty_lookup", {}).get(getattr(comp, "bounty_id", "") or "")
+    return bounty.title if bounty else ""
+
+
 def _build_todays_completions(common: dict) -> list[dict]:
     """Build today's completions (both approved and pending)."""
     now = dt_util.now()
@@ -436,7 +446,7 @@ def _build_todays_completions(common: dict) -> list[dict]:
             display_name = f"{matched_chore.name} › {subtask.name}" if subtask else matched_chore.name
             display_points = subtask.points if subtask else 0
         else:
-            display_name = matched_chore.name if matched_chore else ""
+            display_name = matched_chore.name if matched_chore else _bounty_title(common, comp)
             display_points = matched_chore.points if matched_chore else 0
         timed_secs = getattr(comp, "timed_duration_seconds", 0) or 0
         if timed_secs > 0 and matched_chore and getattr(matched_chore, "task_type", "") == "timed":
@@ -651,7 +661,7 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
                 "child_name": "Parent"
                 if comp.child_id == "__parent__"
                 else (child_lookup[comp.child_id].name if comp.child_id in child_lookup else ""),
-                "chore_name": matched_chore.name if matched_chore else "",
+                "chore_name": matched_chore.name if matched_chore else _bounty_title(common, comp),
                 "points": _completion_award(comp, display_points),
                 "approved": comp.approved,
                 "completed_at": comp.completed_at.isoformat()
@@ -682,7 +692,7 @@ def _build_photo_gallery(common: dict, limit: int = 40) -> list[dict]:
             {
                 "completion_id": comp.id,
                 "child_name": child_lookup[comp.child_id].name if comp.child_id in child_lookup else "",
-                "chore_name": chore.name if chore else "",
+                "chore_name": chore.name if chore else _bounty_title(common, comp),
                 "approved": comp.approved,
                 "completed_at": comp.completed_at.isoformat()
                 if hasattr(comp.completed_at, "isoformat")
@@ -801,6 +811,7 @@ async def async_setup_entry(
     entities.append(TaskMateRewardsSensor(coordinator, entry))
     entities.append(TaskMateActivitySensor(coordinator, entry))
     entities.append(TaskMateIncentivesSensor(coordinator, entry))
+    entities.append(TaskMateBountiesSensor(coordinator, entry))
 
     # Add sensors for each child
     for child in coordinator.data.get("children", []):
@@ -1182,6 +1193,88 @@ class TaskMateIncentivesSensor(_CachedAttrsSensor):
         }
 
 
+def _build_bounties_list(coordinator: TaskMateCoordinator, common: dict) -> list[dict]:
+    """The bounty board for the cards (#931): live bounties plus the last day's
+    completed ones. Expired and older history stays in storage for the panel.
+
+    Compact: optional fields only appear when they carry something, so a board
+    of a handful of jobs costs a few hundred bytes.
+    """
+    now = dt_util.now()
+    recent_cutoff = now - timedelta(hours=BOUNTY_RECENT_HOURS)
+    completions = {c.id: c for c in common["all_completions"]}
+    window = common.get("chore_undo_seconds", 0)
+    out = []
+    for b in common["data"].get("bounties", []) or []:
+        if b.status == "expired":
+            continue
+        if b.status == "completed" and (b.closed_at is None or b.closed_at < recent_cutoff):
+            continue
+        rec = {
+            "id": b.id,
+            "title": b.title,
+            "points": b.points,
+            "icon": b.icon,
+            "status": b.status,
+            "claim_hours": b.claim_hours,
+        }
+        if b.description:
+            rec["description"] = b.description
+        if b.eligible_child_ids:
+            rec["eligible"] = list(b.eligible_child_ids)
+        if b.expires_at is not None:
+            rec["expires_at"] = b.expires_at.isoformat()
+        if b.require_photo:
+            rec["require_photo"] = True
+        if b.status in ("claimed", "pending", "completed") and b.claimed_by:
+            rec["claimed_by"] = b.claimed_by
+        if b.status == "claimed":
+            if b.claimed_at is not None:
+                rec["claimed_at"] = b.claimed_at.isoformat()
+            if b.claim_until is not None:
+                rec["claim_until"] = b.claim_until.isoformat()
+        if b.status == "pending" and b.completion_id:
+            rec["completion_id"] = b.completion_id
+            comp = completions.get(b.completion_id)
+            if comp is not None and child_undo_metadata(comp, common["all_completions"], window).get(
+                "child_undo_pending"
+            ):
+                rec["undo"] = True
+        if b.status == "completed":
+            rec["points_awarded"] = b.points_awarded
+            rec["completed_at"] = b.closed_at.isoformat()
+        out.append(rec)
+    return out
+
+
+class TaskMateBountiesSensor(_CachedAttrsSensor):
+    """The bounty board (#931): open bounties as the state, the board as an
+    attribute for the bounty card."""
+
+    _unrecorded_attributes = frozenset({"bounties"})
+
+    def __init__(
+        self,
+        coordinator: TaskMateCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_bounties"
+        self._attr_name = "TaskMate Bounties"
+
+    @property
+    def native_value(self) -> int:
+        return sum(1 for b in self.coordinator.data.get("bounties", []) or [] if b.status == "open")
+
+    @property
+    def icon(self) -> str:
+        return "mdi:flag-checkered"
+
+    def _build_attributes(self) -> dict:
+        common = _compute_common(self.coordinator)
+        return {"bounties": _build_bounties_list(self.coordinator, common)}
+
+
 class ChildPointsSensor(TaskMateBaseSensor):
     """Sensor for a child's points."""
 
@@ -1483,7 +1576,8 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
         completion_details = []
         for comp in pending_completions:
             child = self.coordinator.get_child(comp.child_id)
-            chore = self.coordinator.get_chore(comp.chore_id)
+            # A bounty's completion (#931) is approved in the same queue.
+            chore = self.coordinator.get_chore(comp.chore_id) or self.coordinator.bounty_completion_chore(comp)
             if child and chore:
                 # Bonus sub-task completions carry the sub-task's own name and
                 # points; mirror _build_todays_completions so cards reading this
@@ -1515,6 +1609,8 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                 }
                 if timed_secs > 0:
                     detail["timed_duration_seconds"] = timed_secs
+                if getattr(comp, "bounty_id", ""):
+                    detail["bounty_id"] = comp.bounty_id
                 # Bare (unsigned) path; the card signs per-viewer via
                 # auth/sign_path so no self-authenticating URL lands in this
                 # world-readable attribute.

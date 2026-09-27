@@ -660,6 +660,150 @@
         }
       }
     },
+    "post_bounty": {
+      "name": "Legg ut dusør",
+      "description": "Legg ut en engangsjobb på dusørtavlen for et fast antall poeng. Alle barn som kan, får ta den; når den er gjort, går den gjennom vanlig godkjenning.",
+      "fields": {
+        "title": {
+          "name": "Tittel",
+          "description": "Hva jobben er, f.eks. \"Vask bilen\""
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Faste poeng som betales når en forelder godkjenner den ferdige jobben"
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Valgfrie detaljer til barna"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "MDI-ikon som vises på tavlen"
+        },
+        "expires_at": {
+          "name": "Utløper",
+          "description": "Valgfri dato og tid da dusøren forsvinner fra tavlen hvis ingen har tatt den. La stå tom for ingen utløp."
+        },
+        "eligible_child_ids": {
+          "name": "Barn som kan ta den",
+          "description": "ID-ene til barna som kan ta den. Tom = alle barn."
+        },
+        "claim_hours": {
+          "name": "Reservasjon (timer)",
+          "description": "Hvor lenge en reservasjon varer før dusøren går tilbake på tavlen"
+        },
+        "require_photo": {
+          "name": "Krev bilde",
+          "description": "Barnet må legge ved et bilde når det melder jobben ferdig"
+        },
+        "notify_children": {
+          "name": "Varsle barna",
+          "description": "Send varselet \"Ny dusør\" til barna som kan ta den"
+        }
+      }
+    },
+    "update_bounty": {
+      "name": "Oppdater dusør",
+      "description": "Rediger en dusør. Når den er tatt, kan bare poeng og utløp endres.",
+      "fields": {
+        "bounty_id": {
+          "name": "Dusør-ID",
+          "description": "ID-en til dusøren som skal redigeres"
+        },
+        "title": {
+          "name": "Tittel",
+          "description": "Hva jobben er, f.eks. \"Vask bilen\""
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Faste poeng som betales når en forelder godkjenner den ferdige jobben"
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Valgfrie detaljer til barna"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "MDI-ikon som vises på tavlen"
+        },
+        "expires_at": {
+          "name": "Utløper",
+          "description": "Valgfri dato og tid da dusøren forsvinner fra tavlen hvis ingen har tatt den. La stå tom for ingen utløp."
+        },
+        "eligible_child_ids": {
+          "name": "Barn som kan ta den",
+          "description": "ID-ene til barna som kan ta den. Tom = alle barn."
+        },
+        "claim_hours": {
+          "name": "Reservasjon (timer)",
+          "description": "Hvor lenge en reservasjon varer før dusøren går tilbake på tavlen"
+        },
+        "require_photo": {
+          "name": "Krev bilde",
+          "description": "Barnet må legge ved et bilde når det melder jobben ferdig"
+        },
+        "notify_children": {
+          "name": "Varsle barna",
+          "description": "Send varselet \"Ny dusør\" til barna som kan ta den"
+        }
+      }
+    },
+    "remove_bounty": {
+      "name": "Fjern dusør",
+      "description": "Ta en dusør av tavlen. Ikke mulig mens en ferdig jobb venter på godkjenning.",
+      "fields": {
+        "bounty_id": {
+          "name": "Dusør-ID",
+          "description": "ID-en til dusøren som skal fjernes"
+        }
+      }
+    },
+    "claim_bounty": {
+      "name": "Ta dusør",
+      "description": "Ta en dusør for et barn og lås den til dem i reservasjonstiden. Et barn kan ha én om gangen.",
+      "fields": {
+        "bounty_id": {
+          "name": "Dusør-ID",
+          "description": "ID-en til dusøren som skal tas"
+        },
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "ID-en til barnet som tar den"
+        }
+      }
+    },
+    "give_back_bounty": {
+      "name": "Gi tilbake dusør",
+      "description": "Gi en tatt dusør tilbake til tavlen så et annet barn kan ta den",
+      "fields": {
+        "bounty_id": {
+          "name": "Dusør-ID",
+          "description": "ID-en til den tatte dusøren"
+        },
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "ID-en til barnet som tok den"
+        }
+      }
+    },
+    "complete_bounty": {
+      "name": "Fullfør dusør",
+      "description": "Meld en tatt dusør som ferdig. Den går til godkjenning som en oppgave.",
+      "fields": {
+        "bounty_id": {
+          "name": "Dusør-ID",
+          "description": "ID-en til den tatte dusøren"
+        },
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "ID-en til barnet som tok den"
+        },
+        "photo_url": {
+          "name": "Bilde-URL",
+          "description": "Bilde av den ferdige jobben (påkrevd når dusøren ber om det)"
+        }
+      }
+    },
     "pause_timed_task": {
       "name": "Sett tidsbasert oppgave på pause",
       "description": "Sett timeren på en tidsbasert oppgave på pause",

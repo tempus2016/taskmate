@@ -988,6 +988,223 @@ leave_team_chore:
       selector:
         text:
 
+post_bounty:
+  name: Post Bounty
+  description: >-
+    Post a one-off job to the bounty board for a fixed number of points. Any eligible child can claim it; finishing it goes through the normal approval queue.
+  fields:
+    title:
+      name: Title
+      description: "What the job is, e.g. \"Wash the car\""
+      required: true
+      selector:
+        text:
+    points:
+      name: Points
+      description: "Fixed points paid when a parent approves the finished job"
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+    description:
+      name: Description
+      description: "Optional extra detail for the children"
+      required: false
+      selector:
+        text:
+          multiline: true
+    icon:
+      name: Icon
+      description: "MDI icon shown on the board"
+      required: false
+      selector:
+        icon:
+    expires_at:
+      name: Expires at
+      description: "Optional date and time the bounty leaves the board if nobody has claimed it. Leave empty for no expiry."
+      required: false
+      selector:
+        datetime:
+    eligible_child_ids:
+      name: Eligible children
+      description: "IDs of the children who may claim it. Empty = every child."
+      required: false
+      selector:
+        object:
+    claim_hours:
+      name: Claim lock (hours)
+      description: "How long a claim lasts before the bounty goes back on the board"
+      required: false
+      default: 2
+      selector:
+        number:
+          min: 1
+          max: 48
+          unit_of_measurement: h
+          mode: box
+    require_photo:
+      name: Require photo
+      description: "The child must attach a photo when marking it done"
+      required: false
+      default: false
+      selector:
+        boolean:
+    notify_children:
+      name: Notify children
+      description: "Send the \"New bounty\" notification to the eligible children"
+      required: false
+      default: true
+      selector:
+        boolean:
+
+update_bounty:
+  name: Update Bounty
+  description: >-
+    Edit a bounty. Once it has been claimed, only its points and expiry can change.
+  fields:
+    bounty_id:
+      name: Bounty ID
+      description: "The ID of the bounty to edit"
+      required: true
+      selector:
+        text:
+    title:
+      name: Title
+      description: "What the job is, e.g. \"Wash the car\""
+      required: false
+      selector:
+        text:
+    points:
+      name: Points
+      description: "Fixed points paid when a parent approves the finished job"
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+    description:
+      name: Description
+      description: "Optional extra detail for the children"
+      required: false
+      selector:
+        text:
+          multiline: true
+    icon:
+      name: Icon
+      description: "MDI icon shown on the board"
+      required: false
+      selector:
+        icon:
+    expires_at:
+      name: Expires at
+      description: "Optional date and time the bounty leaves the board if nobody has claimed it. Leave empty for no expiry."
+      required: false
+      selector:
+        datetime:
+    eligible_child_ids:
+      name: Eligible children
+      description: "IDs of the children who may claim it. Empty = every child."
+      required: false
+      selector:
+        object:
+    claim_hours:
+      name: Claim lock (hours)
+      description: "How long a claim lasts before the bounty goes back on the board"
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 48
+          unit_of_measurement: h
+          mode: box
+    require_photo:
+      name: Require photo
+      description: "The child must attach a photo when marking it done"
+      required: false
+      selector:
+        boolean:
+    notify_children:
+      name: Notify children
+      description: "Send the \"New bounty\" notification to the eligible children"
+      required: false
+      selector:
+        boolean:
+
+remove_bounty:
+  name: Remove Bounty
+  description: >-
+    Take a bounty off the board. Not allowed while a finished job waits for approval.
+  fields:
+    bounty_id:
+      name: Bounty ID
+      description: "The ID of the bounty to remove"
+      required: true
+      selector:
+        text:
+
+claim_bounty:
+  name: Claim Bounty
+  description: >-
+    Claim a bounty for a child, locking it to them for its claim period. A child can hold one claim at a time.
+  fields:
+    bounty_id:
+      name: Bounty ID
+      description: "The ID of the bounty to claim"
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: "The ID of the child claiming it"
+      required: true
+      selector:
+        text:
+
+give_back_bounty:
+  name: Give Back Bounty
+  description: >-
+    Hand a claimed bounty back to the board so another child can take it
+  fields:
+    bounty_id:
+      name: Bounty ID
+      description: "The ID of the claimed bounty"
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: "The ID of the child who claimed it"
+      required: true
+      selector:
+        text:
+
+complete_bounty:
+  name: Complete Bounty
+  description: >-
+    Mark a claimed bounty as done. It goes to the approval queue like a chore.
+  fields:
+    bounty_id:
+      name: Bounty ID
+      description: "The ID of the claimed bounty"
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: "The ID of the child who claimed it"
+      required: true
+      selector:
+        text:
+    photo_url:
+      name: Photo URL
+      description: "Photo of the finished job (required when the bounty asks for one)"
+      required: false
+      selector:
+        text:
+
 pause_timed_task:
   name: Pause Timed Task
   description: Pause a running timed task timer

@@ -660,6 +660,150 @@
         }
       }
     },
+    "post_bounty": {
+      "name": "Post Bounty",
+      "description": "Post a one-off job to the bounty board for a fixed number of points. Any eligible child can claim it; finishing it goes through the normal approval queue.",
+      "fields": {
+        "title": {
+          "name": "Title",
+          "description": "What the job is, e.g. \"Wash the car\""
+        },
+        "points": {
+          "name": "Points",
+          "description": "Fixed points paid when a parent approves the finished job"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Optional extra detail for the children"
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "MDI icon shown on the board"
+        },
+        "expires_at": {
+          "name": "Expires at",
+          "description": "Optional date and time the bounty leaves the board if nobody has claimed it. Leave empty for no expiry."
+        },
+        "eligible_child_ids": {
+          "name": "Eligible children",
+          "description": "IDs of the children who may claim it. Empty = every child."
+        },
+        "claim_hours": {
+          "name": "Claim lock (hours)",
+          "description": "How long a claim lasts before the bounty goes back on the board"
+        },
+        "require_photo": {
+          "name": "Require photo",
+          "description": "The child must attach a photo when marking it done"
+        },
+        "notify_children": {
+          "name": "Notify children",
+          "description": "Send the \"New bounty\" notification to the eligible children"
+        }
+      }
+    },
+    "update_bounty": {
+      "name": "Update Bounty",
+      "description": "Edit a bounty. Once it has been claimed, only its points and expiry can change.",
+      "fields": {
+        "bounty_id": {
+          "name": "Bounty ID",
+          "description": "The ID of the bounty to edit"
+        },
+        "title": {
+          "name": "Title",
+          "description": "What the job is, e.g. \"Wash the car\""
+        },
+        "points": {
+          "name": "Points",
+          "description": "Fixed points paid when a parent approves the finished job"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Optional extra detail for the children"
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "MDI icon shown on the board"
+        },
+        "expires_at": {
+          "name": "Expires at",
+          "description": "Optional date and time the bounty leaves the board if nobody has claimed it. Leave empty for no expiry."
+        },
+        "eligible_child_ids": {
+          "name": "Eligible children",
+          "description": "IDs of the children who may claim it. Empty = every child."
+        },
+        "claim_hours": {
+          "name": "Claim lock (hours)",
+          "description": "How long a claim lasts before the bounty goes back on the board"
+        },
+        "require_photo": {
+          "name": "Require photo",
+          "description": "The child must attach a photo when marking it done"
+        },
+        "notify_children": {
+          "name": "Notify children",
+          "description": "Send the \"New bounty\" notification to the eligible children"
+        }
+      }
+    },
+    "remove_bounty": {
+      "name": "Remove Bounty",
+      "description": "Take a bounty off the board. Not allowed while a finished job waits for approval.",
+      "fields": {
+        "bounty_id": {
+          "name": "Bounty ID",
+          "description": "The ID of the bounty to remove"
+        }
+      }
+    },
+    "claim_bounty": {
+      "name": "Claim Bounty",
+      "description": "Claim a bounty for a child, locking it to them for its claim period. A child can hold one claim at a time.",
+      "fields": {
+        "bounty_id": {
+          "name": "Bounty ID",
+          "description": "The ID of the bounty to claim"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child claiming it"
+        }
+      }
+    },
+    "give_back_bounty": {
+      "name": "Give Back Bounty",
+      "description": "Hand a claimed bounty back to the board so another child can take it",
+      "fields": {
+        "bounty_id": {
+          "name": "Bounty ID",
+          "description": "The ID of the claimed bounty"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child who claimed it"
+        }
+      }
+    },
+    "complete_bounty": {
+      "name": "Complete Bounty",
+      "description": "Mark a claimed bounty as done. It goes to the approval queue like a chore.",
+      "fields": {
+        "bounty_id": {
+          "name": "Bounty ID",
+          "description": "The ID of the claimed bounty"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child who claimed it"
+        },
+        "photo_url": {
+          "name": "Photo URL",
+          "description": "Photo of the finished job (required when the bounty asks for one)"
+        }
+      }
+    },
     "pause_timed_task": {
       "name": "Pause Timed Task",
       "description": "Pause a running timed task timer",

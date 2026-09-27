@@ -29,6 +29,8 @@ from .const import (
     NOTIF_TYPE_BADGE_EARNED,
     NOTIF_TYPE_BEDTIME_REMINDER,
     NOTIF_TYPE_BIRTHDAY,
+    NOTIF_TYPE_BOUNTY_CLAIM_LAPSING,
+    NOTIF_TYPE_BOUNTY_POSTED,
     NOTIF_TYPE_CELEBRATION,
     NOTIF_TYPE_FAMILY_GOAL_REACHED,
     NOTIF_TYPE_LEVEL_UP,
@@ -111,6 +113,11 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     # like every type added after the first release.
     NotificationTypeMeta(NOTIF_TYPE_WISH_REQUESTED, "parent", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_WISH_PLEDGED, "child", False, False, False, False),
+    # Bounty board (#931), both opt-in: a new bounty for the children it's
+    # open to (when the parent ticks "notify"), and a warning to the claimer
+    # shortly before their claim lapses.
+    NotificationTypeMeta(NOTIF_TYPE_BOUNTY_POSTED, "child", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_BOUNTY_CLAIM_LAPSING, "child", False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
@@ -365,6 +372,8 @@ class NotificationCoordinator:
             "wish_name": "Lego set",
             "target": 600,
             "pledger": "Grandma",
+            "bounty_name": "Wash the car",
+            "minutes": 15,
             "points_name": self.storage.get_points_name(),
         }
         message = "[TEST] " + self._render_template(meta, ctx)
@@ -448,6 +457,8 @@ class NotificationCoordinator:
             NOTIF_TYPE_PRESENCE_ARRIVAL: "🏠 You're home, {child_name} — {count} chores left today.",
             NOTIF_TYPE_WISH_REQUESTED: "{child_name} wished for '{wish_name}' ({target} {points_name}) — waiting for your approval.",
             NOTIF_TYPE_WISH_PLEDGED: "💝 {pledger} added {points} {points_name} to your wish '{wish_name}'!",
+            NOTIF_TYPE_BOUNTY_POSTED: "🏁 New bounty: {bounty_name} — {points} {points_name}. First to claim it gets it!",
+            NOTIF_TYPE_BOUNTY_CLAIM_LAPSING: "⏳ {child_name}, {minutes} minutes left to finish '{bounty_name}' before it goes back on the board.",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:

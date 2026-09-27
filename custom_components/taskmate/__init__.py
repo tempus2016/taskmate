@@ -63,6 +63,10 @@ from .const import (
     ATTR_REWARD_ID,
     ATTR_SOUND,
     BADGE_TIERS,
+    BOUNTY_CLAIM_HOURS_MAX,
+    BOUNTY_DESCRIPTION_MAX_LENGTH,
+    BOUNTY_POINTS_MAX,
+    BOUNTY_TITLE_MAX_LENGTH,
     CHORE_SUGGESTED_POINTS_MAX,
     CONF_TASK_GROUP_CHORE_IDS,
     CONF_TASK_GROUP_ID,
@@ -86,13 +90,17 @@ from .const import (
     SERVICE_APPROVE_CHORE,
     SERVICE_APPROVE_REWARD,
     SERVICE_CHOOSE_AVATAR,
+    SERVICE_CLAIM_BOUNTY,
     SERVICE_CLAIM_REWARD,
     SERVICE_COMPLETE_BONUS_SUBTASK,
+    SERVICE_COMPLETE_BOUNTY,
     SERVICE_COMPLETE_CHORE,
     SERVICE_DISMISS_MANDATORY_CHORE,
     SERVICE_GIFT_POINTS,
+    SERVICE_GIVE_BACK_BOUNTY,
     SERVICE_LEAVE_TEAM_CHORE,
     SERVICE_PAUSE_TIMED_TASK,
+    SERVICE_POST_BOUNTY,
     SERVICE_POSTPONE_MANDATORY_CHORE,
     SERVICE_PREVIEW_SOUND,
     SERVICE_READ_ALOUD,
@@ -100,6 +108,7 @@ from .const import (
     SERVICE_REJECT_CHORE,
     SERVICE_REJECT_REWARD,
     SERVICE_REMOVE_BONUS,
+    SERVICE_REMOVE_BOUNTY,
     SERVICE_REMOVE_PENALTY,
     SERVICE_REMOVE_POINTS,
     SERVICE_REMOVE_TASK_GROUP,
@@ -115,6 +124,7 @@ from .const import (
     SERVICE_UNDO_CHORE_APPROVAL,
     SERVICE_UNDO_TRANSACTION,
     SERVICE_UPDATE_BONUS,
+    SERVICE_UPDATE_BOUNTY,
     SERVICE_UPDATE_PENALTY,
     SERVICE_UPDATE_TASK_GROUP,
     TASK_GROUP_POLICIES,
@@ -355,6 +365,7 @@ _AUDIT_TARGET_KEYS = (
     "transaction_id",
     "type_id",
     "wish_id",
+    "bounty_id",
 )
 
 
@@ -555,6 +566,77 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         # Same gate as completing: a child acts for themselves, parents for anyone.
         await _async_require_linked_child(hass, call, coordinator, child_id)
         await coordinator.async_leave_team_chore(call.data[ATTR_CHORE_ID], child_id)
+
+    # ── Bounty board (#931) ───────────────────────────────────────────────
+    _BOUNTY_FIELDS = (
+        "title",
+        "points",
+        "description",
+        "icon",
+        "expires_at",
+        "eligible_child_ids",
+        "claim_hours",
+        "require_photo",
+        "notify_children",
+    )
+
+    async def handle_post_bounty(call: ServiceCall) -> None:
+        """A parent posts a one-off job to the bounty board."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        extra = {k: call.data[k] for k in _BOUNTY_FIELDS if k in call.data and k not in ("title", "points")}
+        await coordinator.async_post_bounty(call.data["title"], call.data["points"], **extra)
+
+    async def handle_update_bounty(call: ServiceCall) -> None:
+        """A parent edits a bounty (only points and expiry once it's claimed)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        changes = {k: call.data[k] for k in _BOUNTY_FIELDS if k in call.data}
+        await coordinator.async_update_bounty(call.data["bounty_id"], **changes)
+
+    async def handle_remove_bounty(call: ServiceCall) -> None:
+        """A parent takes a bounty off the board."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_remove_bounty(call.data["bounty_id"])
+
+    async def handle_claim_bounty(call: ServiceCall) -> None:
+        """A child claims a bounty — same linked-child gate as completing a chore."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        child_id = call.data[ATTR_CHILD_ID]
+        await _async_require_linked_child(hass, call, coordinator, child_id)
+        await coordinator.async_claim_bounty(call.data["bounty_id"], child_id)
+
+    async def handle_give_back_bounty(call: ServiceCall) -> None:
+        """The claimer hands a bounty back to the board."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        child_id = call.data[ATTR_CHILD_ID]
+        await _async_require_linked_child(hass, call, coordinator, child_id)
+        await coordinator.async_give_back_bounty(call.data["bounty_id"], child_id)
+
+    async def handle_complete_bounty(call: ServiceCall) -> None:
+        """The claimer marks their bounty done — it goes to the approval queue."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        child_id = call.data[ATTR_CHILD_ID]
+        await _async_require_linked_child(hass, call, coordinator, child_id)
+        await coordinator.async_complete_bounty(
+            call.data["bounty_id"], child_id, photo_url=call.data.get("photo_url", "")
+        )
 
     async def handle_complete_bonus_subtask(call: ServiceCall) -> None:
         """Handle the complete_bonus_subtask service call."""
@@ -1213,6 +1295,67 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         ),
     )
 
+    _bounty_editable = {
+        vol.Optional("description"): vol.All(cv.string, vol.Length(max=BOUNTY_DESCRIPTION_MAX_LENGTH)),
+        vol.Optional("icon"): cv.string,
+        # ISO date-time; "" clears it. A naive time is read as local time.
+        vol.Optional("expires_at"): vol.Any(None, cv.string),
+        vol.Optional("eligible_child_ids"): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("claim_hours"): vol.All(vol.Coerce(int), vol.Range(min=1, max=BOUNTY_CLAIM_HOURS_MAX)),
+        vol.Optional("require_photo"): cv.boolean,
+        vol.Optional("notify_children"): cv.boolean,
+    }
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_POST_BOUNTY,
+        _parent(handle_post_bounty),
+        schema=vol.Schema(
+            {
+                vol.Required("title"): vol.All(cv.string, vol.Length(min=1, max=BOUNTY_TITLE_MAX_LENGTH)),
+                vol.Required("points"): vol.All(vol.Coerce(int), vol.Range(min=1, max=BOUNTY_POINTS_MAX)),
+                **_bounty_editable,
+            }
+        ),
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_UPDATE_BOUNTY,
+        _parent(handle_update_bounty),
+        schema=vol.Schema(
+            {
+                vol.Required("bounty_id"): cv.string,
+                vol.Optional("title"): vol.All(cv.string, vol.Length(min=1, max=BOUNTY_TITLE_MAX_LENGTH)),
+                vol.Optional("points"): vol.All(vol.Coerce(int), vol.Range(min=1, max=BOUNTY_POINTS_MAX)),
+                **_bounty_editable,
+            }
+        ),
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_REMOVE_BOUNTY,
+        _parent(handle_remove_bounty),
+        schema=vol.Schema({vol.Required("bounty_id"): cv.string}),
+    )
+    _bounty_child_schema = vol.Schema({vol.Required("bounty_id"): cv.string, vol.Required(ATTR_CHILD_ID): cv.string})
+    hass.services.async_register(
+        DOMAIN, SERVICE_CLAIM_BOUNTY, _audited(handle_claim_bounty), schema=_bounty_child_schema
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_GIVE_BACK_BOUNTY, _audited(handle_give_back_bounty), schema=_bounty_child_schema
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_COMPLETE_BOUNTY,
+        _audited(handle_complete_bounty),
+        schema=vol.Schema(
+            {
+                vol.Required("bounty_id"): cv.string,
+                vol.Required(ATTR_CHILD_ID): cv.string,
+                vol.Optional("photo_url"): cv.string,
+            }
+        ),
+    )
+
     hass.services.async_register(
         DOMAIN,
         SERVICE_START_TIMED_TASK,
@@ -1826,6 +1969,12 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_UPDATE_TASK_GROUP,
         SERVICE_REMOVE_TASK_GROUP,
         SERVICE_LEAVE_TEAM_CHORE,
+        SERVICE_POST_BOUNTY,
+        SERVICE_UPDATE_BOUNTY,
+        SERVICE_REMOVE_BOUNTY,
+        SERVICE_CLAIM_BOUNTY,
+        SERVICE_GIVE_BACK_BOUNTY,
+        SERVICE_COMPLETE_BOUNTY,
         SERVICE_START_TIMED_TASK,
         SERVICE_PAUSE_TIMED_TASK,
         SERVICE_STOP_TIMED_TASK,
