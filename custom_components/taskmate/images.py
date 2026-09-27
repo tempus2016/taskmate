@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import logging
 import re
+import time
+import uuid
 from pathlib import Path
 
 from .photos import content_type_for, detect_image_ext, matching_files_bytes
@@ -53,6 +55,7 @@ __all__ = [
     "MAX_TOTAL_BYTES",
     "MAX_UPLOAD_BYTES",
     "URL_PREFIX",
+    "async_adopt_photo",
     "async_delete_image",
     "content_type_for",
     "detect_allowed_ext",
@@ -158,3 +161,56 @@ async def async_delete_image(hass, image_url: str) -> None:
 def total_images_bytes(hass) -> int:
     """Sum of all stored chore-image file sizes (0 if the dir is absent)."""
     return matching_files_bytes(images_path(hass), FILENAME_RE)
+
+
+async def async_adopt_photo(hass, photo_url: str, max_age_seconds: int = 3600) -> str | None:
+    """Turn a fresh upload from the photo endpoint into a stored image (#932).
+
+    A wish picture is added by a child, and the image upload is admin-only,
+    so the card posts to the child-open photo endpoint (rate-limited, size
+    capped) and the wish takes the file over here. The bytes are re-checked
+    against this module's own rules — renderable format, size cap, disk
+    budget — copied under a new name, and the photo removed.
+
+    Only a recent upload is accepted (``max_age_seconds``): an older photo
+    is most likely someone's chore evidence, which is access-controlled,
+    while stored images are readable by any signed-in user. Returns the new
+    ``/api/taskmate/image/<name>`` URL, or None if the photo can't be used.
+    """
+    from .photos import photo_file_for_url
+
+    src = photo_file_for_url(hass, photo_url)
+    if src is None:
+        return None
+
+    def _adopt() -> str | None:
+        try:
+            info = src.stat()
+        except OSError:
+            return None
+        if time.time() - info.st_mtime > max_age_seconds or info.st_size > MAX_UPLOAD_BYTES:
+            return None
+        try:
+            data = src.read_bytes()
+        except OSError:
+            return None
+        ext = detect_allowed_ext(data)
+        if ext is None:
+            return None
+        if total_images_bytes(hass) + len(data) > MAX_TOTAL_BYTES:
+            return None
+        name = f"{uuid.uuid4().hex}.{ext}"
+        directory = images_path(hass)
+        try:
+            directory.mkdir(parents=True, exist_ok=True)
+            (directory / name).write_bytes(data)
+        except OSError as err:
+            _LOGGER.error("Failed to store wish image: %s", err)
+            return None
+        try:
+            src.unlink()
+        except OSError:  # pragma: no cover - the midnight sweep gets it anyway
+            pass
+        return f"{URL_PREFIX}/{name}"
+
+    return await hass.async_add_executor_job(_adopt)

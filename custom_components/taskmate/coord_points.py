@@ -496,6 +496,12 @@ class PointsMixin:
         "Badge",
         # Zero-point token movements (#925): nothing to reverse in points.
         "Streak freeze",
+        # Wishlist (#932): taking points back out and removing a pledge are
+        # the undo for these; reversing a row alone would desync the wish.
+        "Wish savings",
+        "Wish refund",
+        "Wish pledge",
+        "Wish redeemed",
     )
 
     async def async_undo_transaction(self, transaction_id: str) -> None:

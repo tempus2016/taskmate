@@ -1393,3 +1393,227 @@ revoke_badge:
 rebuild_badges:
   name: Rebuild Badges
   description: Re-evaluate all badges across all children silently (no notifications, no point bonuses).
+
+# Wishlist (#932)
+add_wish:
+  name: Add Wish
+  description: A child adds something they want to save for. It waits for a parent to approve it.
+  fields:
+    child_id:
+      name: Child ID
+      description: The ID of the child making the wish
+      required: true
+      selector:
+        text:
+    name:
+      name: Name
+      description: What the child wants
+      required: true
+      selector:
+        text:
+    target:
+      name: Target
+      description: Suggested number of points it costs. The parent can change it when approving.
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+    link:
+      name: Link
+      description: Optional web address (http or https) for the thing
+      required: false
+      selector:
+        text:
+          type: url
+    photo_url:
+      name: Picture
+      description: Optional picture just uploaded through the TaskMate photo endpoint
+      required: false
+      selector:
+        text:
+
+withdraw_wish:
+  name: Withdraw Wish
+  description: A child takes back a wish that is still waiting for approval, or clears one that was declined.
+  fields:
+    wish_id:
+      name: Wish ID
+      description: The ID of the wish
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child whose wish it is
+      required: true
+      selector:
+        text:
+
+move_points_to_wish:
+  name: Move Points to Wish
+  description: Move points from a child's spendable balance into one of their approved wishes.
+  fields:
+    wish_id:
+      name: Wish ID
+      description: The ID of the wish
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child whose wish it is
+      required: true
+      selector:
+        text:
+    points:
+      name: Points
+      description: How many points to move (capped at the balance and at what the wish still needs)
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+
+take_points_from_wish:
+  name: Take Points from Wish
+  description: Give some of a child's own saved points back from a wish. Pledged points never come out.
+  fields:
+    wish_id:
+      name: Wish ID
+      description: The ID of the wish
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child whose wish it is
+      required: true
+      selector:
+        text:
+    points:
+      name: Points
+      description: How many saved points to take back (capped at what the child saved)
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+
+request_wish_redeem:
+  name: Ask to Redeem Wish
+  description: A fully funded wish becomes a reward claim waiting for the parent's approval.
+  fields:
+    wish_id:
+      name: Wish ID
+      description: The ID of the wish
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child whose wish it is
+      required: true
+      selector:
+        text:
+
+approve_wish:
+  name: Approve Wish
+  description: Turn a waiting wish into a savings goal, optionally at a different target.
+  fields:
+    wish_id:
+      name: Wish ID
+      description: The ID of the wish
+      required: true
+      selector:
+        text:
+    target:
+      name: Target
+      description: Points the wish costs. Leave empty to keep the child's suggestion.
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+
+decline_wish:
+  name: Decline Wish
+  description: Say no to a wish. Saved points go back to the child and pledges are voided.
+  fields:
+    wish_id:
+      name: Wish ID
+      description: The ID of the wish
+      required: true
+      selector:
+        text:
+    reason:
+      name: Reason
+      description: Optional reason shown to the child
+      required: false
+      selector:
+        text:
+          multiline: true
+
+pledge_to_wish:
+  name: Pledge to Wish
+  description: Record points a relative chips in towards a child's wish. They never touch any balance.
+  fields:
+    wish_id:
+      name: Wish ID
+      description: The ID of the wish
+      required: true
+      selector:
+        text:
+    name:
+      name: From
+      description: Who the pledge is from, e.g. Grandma
+      required: true
+      selector:
+        text:
+    points:
+      name: Points
+      description: How many points to pledge (capped at what the wish still needs)
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+    message:
+      name: Message
+      description: Optional message for the child
+      required: false
+      selector:
+        text:
+
+remove_wish_pledge:
+  name: Remove Wish Pledge
+  description: Undo a pledge. Allowed until the wish is redeemed.
+  fields:
+    wish_id:
+      name: Wish ID
+      description: The ID of the wish
+      required: true
+      selector:
+        text:
+    pledge_id:
+      name: Pledge ID
+      description: The ID of the pledge to remove
+      required: true
+      selector:
+        text:
+
+remove_wish:
+  name: Remove Wish
+  description: Delete a wish. Saved points go back to the child and pledges are voided.
+  fields:
+    wish_id:
+      name: Wish ID
+      description: The ID of the wish
+      required: true
+      selector:
+        text:

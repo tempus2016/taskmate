@@ -1067,6 +1067,170 @@
           "description": "Poeng som skal reknast om til pengar og trekkjast frå"
         }
       }
+    },
+    "add_wish": {
+      "name": "Legg til ønske",
+      "description": "Eit barn legg til noko det vil spare til. Det ventar på at ein forelder godkjenner det.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "ID-en til barnet som ønskjer seg noko"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Det barnet ønskjer seg"
+        },
+        "target": {
+          "name": "Mål",
+          "description": "Føreslått tal på poeng det kostar. Forelderen kan endre det ved godkjenning."
+        },
+        "link": {
+          "name": "Lenkje",
+          "description": "Valfri nettadresse (http eller https) til tingen"
+        },
+        "photo_url": {
+          "name": "Bilete",
+          "description": "Valfritt bilete som nettopp er lasta opp via fotoendepunktet til TaskMate"
+        }
+      }
+    },
+    "withdraw_wish": {
+      "name": "Trekk tilbake ønske",
+      "description": "Eit barn trekkjer tilbake eit ønske som framleis ventar på godkjenning, eller fjernar eit avslått ønske.",
+      "fields": {
+        "wish_id": {
+          "name": "Ønske-ID",
+          "description": "ID-en til ønsket"
+        },
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "ID-en til barnet som ønsket høyrer til"
+        }
+      }
+    },
+    "move_points_to_wish": {
+      "name": "Flytt poeng til ønske",
+      "description": "Flytt poeng frå den disponible saldoen til eit barn til eitt av dei godkjende ønska.",
+      "fields": {
+        "wish_id": {
+          "name": "Ønske-ID",
+          "description": "ID-en til ønsket"
+        },
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "ID-en til barnet som ønsket høyrer til"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Kor mange poeng som skal flyttast (høgst saldoen og det ønsket framleis manglar)"
+        }
+      }
+    },
+    "take_points_from_wish": {
+      "name": "Ta poeng frå ønske",
+      "description": "Gi nokre av dei sparte poenga til barnet tilbake frå eit ønske. Poeng frå tilsegn kan aldri takast ut.",
+      "fields": {
+        "wish_id": {
+          "name": "Ønske-ID",
+          "description": "ID-en til ønsket"
+        },
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "ID-en til barnet som ønsket høyrer til"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Kor mange sparte poeng som skal takast tilbake (høgst det barnet har spart)"
+        }
+      }
+    },
+    "request_wish_redeem": {
+      "name": "Be om å løyse inn ønske",
+      "description": "Eit fullfinansiert ønske blir eit belønningskrav som ventar på godkjenning frå forelderen.",
+      "fields": {
+        "wish_id": {
+          "name": "Ønske-ID",
+          "description": "ID-en til ønsket"
+        },
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "ID-en til barnet som ønsket høyrer til"
+        }
+      }
+    },
+    "approve_wish": {
+      "name": "Godkjenn ønske",
+      "description": "Gjer eit ventande ønske om til eit sparemål, eventuelt med eit anna mål.",
+      "fields": {
+        "wish_id": {
+          "name": "Ønske-ID",
+          "description": "ID-en til ønsket"
+        },
+        "target": {
+          "name": "Mål",
+          "description": "Poeng ønsket kostar. La feltet stå tomt for å halde på forslaget frå barnet."
+        }
+      }
+    },
+    "decline_wish": {
+      "name": "Avslå ønske",
+      "description": "Sei nei til eit ønske. Sparte poeng går tilbake til barnet, og tilsegn blir annullerte.",
+      "fields": {
+        "wish_id": {
+          "name": "Ønske-ID",
+          "description": "ID-en til ønsket"
+        },
+        "reason": {
+          "name": "Grunngjeving",
+          "description": "Valfri grunngjeving som blir vist til barnet"
+        }
+      }
+    },
+    "pledge_to_wish": {
+      "name": "Gi tilsegn til ønske",
+      "description": "Registrer poeng som ein slektning bidreg med til ønsket til eit barn. Dei rører aldri nokon saldo.",
+      "fields": {
+        "wish_id": {
+          "name": "Ønske-ID",
+          "description": "ID-en til ønsket"
+        },
+        "name": {
+          "name": "Frå",
+          "description": "Kven tilsegnet er frå, t.d. Bestemor"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Kor mange poeng det blir gitt tilsegn om (høgst det ønsket framleis manglar)"
+        },
+        "message": {
+          "name": "Melding",
+          "description": "Valfri melding til barnet"
+        }
+      }
+    },
+    "remove_wish_pledge": {
+      "name": "Fjern tilsegn",
+      "description": "Angre eit tilsegn. Mogleg til ønsket er løyst inn.",
+      "fields": {
+        "wish_id": {
+          "name": "Ønske-ID",
+          "description": "ID-en til ønsket"
+        },
+        "pledge_id": {
+          "name": "Tilsegn-ID",
+          "description": "ID-en til tilsegnet som skal fjernast"
+        }
+      }
+    },
+    "remove_wish": {
+      "name": "Fjern ønske",
+      "description": "Slett eit ønske. Sparte poeng går tilbake til barnet, og tilsegn blir annullerte.",
+      "fields": {
+        "wish_id": {
+          "name": "Ønske-ID",
+          "description": "ID-en til ønsket"
+        }
+      }
     }
   },
   "entity": {

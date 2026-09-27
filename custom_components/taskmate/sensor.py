@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date, timedelta
+from types import SimpleNamespace
 
 from homeassistant.components.sensor import (
     SensorEntity,
@@ -18,7 +19,7 @@ from homeassistant.util import dt as dt_util
 
 from . import images
 from .chore_undo import child_undo_metadata, undo_window_seconds
-from .const import BOUNTY_RECENT_HOURS, DOMAIN
+from .const import BOUNTY_RECENT_HOURS, DOMAIN, WISH_MAX_OPEN_PER_CHILD
 from .coord_rewards import reward_is_time_locked
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
@@ -80,6 +81,8 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
     child_lookup = {c.id: c for c in children}
     chore_lookup = {c.id: c for c in chores}
     reward_lookup = {r.id: r for r in rewards}
+    # Wishlist redemptions (#932) are reward claims with no Reward behind them.
+    wish_lookup = {w.id: w for w in coordinator.storage.get_wishes()}
     # A bounty's completion (#931) carries the bounty id as its chore_id, so
     # every "which chore is this?" lookup below falls back to this one.
     bounty_lookup = {b.id: b for b in data.get("bounties", []) or []}
@@ -124,6 +127,7 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
         "child_lookup": child_lookup,
         "chore_lookup": chore_lookup,
         "reward_lookup": reward_lookup,
+        "wish_lookup": wish_lookup,
         "bounty_lookup": bounty_lookup,
         "season_points": season_points,
         "all_completions": all_completions,
@@ -593,13 +597,25 @@ def _build_rewards_list(common: dict) -> list[dict]:
     return out
 
 
+def _wish_as_reward(wish) -> SimpleNamespace | None:
+    """Present a wish's redemption claim (#932) the way a reward claim reads.
+
+    Approval cards and the activity feed look a claim's reward up by id; a
+    wish has no Reward record, so they get its name, a heart and its target.
+    """
+    if wish is None:
+        return None
+    return SimpleNamespace(id=wish.id, name=wish.name, icon="mdi:heart", cost=wish.target)
+
+
 def _build_pending_reward_claims(common: dict) -> list[dict]:
     """Build enriched pending reward claims list."""
     reward_lookup = common["reward_lookup"]
     child_lookup = common["child_lookup"]
     out = []
+    wish_lookup = common.get("wish_lookup", {})
     for rc in common["pending_reward_claim_objs"]:
-        reward = reward_lookup.get(rc.reward_id)
+        reward = reward_lookup.get(rc.reward_id) or _wish_as_reward(wish_lookup.get(rc.wish_id))
         child = child_lookup.get(rc.child_id)
         if not reward or not child:
             continue
@@ -716,9 +732,10 @@ def _build_recent_transactions(common: dict, limit: int = 20) -> list[dict]:
             }
         )
 
+    wish_lookup = common.get("wish_lookup", {})
     for rc in all_reward_claims:
         child = child_lookup.get(rc.child_id)
-        reward = reward_lookup.get(rc.reward_id)
+        reward = reward_lookup.get(rc.reward_id) or _wish_as_reward(wish_lookup.get(getattr(rc, "wish_id", "")))
         if not child or not reward:
             continue
         event_type = "reward_approved" if rc.approved else "reward_claimed"
@@ -801,6 +818,7 @@ async def async_setup_entry(
         entities.append(ChildPointsSensor(coordinator, entry, child))
         entities.append(ChildStatsSensor(coordinator, entry, child))
         entities.append(ChildBadgesSensor(coordinator, entry, child))
+        entities.append(ChildWishlistSensor(coordinator, entry, child))
         tracked_child_ids.add(child.id)
 
     # Add pending approvals sensor
@@ -819,6 +837,7 @@ async def async_setup_entry(
                 new_entities.append(ChildPointsSensor(coordinator, entry, child))
                 new_entities.append(ChildStatsSensor(coordinator, entry, child))
                 new_entities.append(ChildBadgesSensor(coordinator, entry, child))
+                new_entities.append(ChildWishlistSensor(coordinator, entry, child))
                 tracked_child_ids.add(child.id)
 
         if new_entities:
@@ -1385,6 +1404,48 @@ class ChildStatsSensor(TaskMateBaseSensor):
         }
 
 
+class ChildWishlistSensor(TaskMateBaseSensor):
+    """A child's open wishes (#932), for the wishlist card.
+
+    One per child rather than one for the family: a wish can carry a name,
+    a link, a picture and a row of pledge chips, and a family's worth of
+    those would not fit under the recorder's 16 KB attribute limit. The card
+    finds this sensor by ``wishlist_child_id``. The redeemed history is left
+    to the admin panel.
+    """
+
+    _attr_icon = "mdi:heart-outline"
+    _unrecorded_attributes = frozenset({"wishes"})
+
+    def __init__(
+        self,
+        coordinator: TaskMateCoordinator,
+        entry: ConfigEntry,
+        child: Child,
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self.child_id = child.id
+        self._attr_unique_id = f"{entry.entry_id}_{child.id}_wishlist"
+        self._attr_name = f"{child.name} Wishlist"
+
+    @property
+    def native_value(self) -> int:
+        """Wishes on the go: waiting, saving, or waiting to be handed over."""
+        return sum(
+            1
+            for w in self.coordinator.storage.get_wishes()
+            if w.child_id == self.child_id and w.status in ("pending", "active", "redeem_requested")
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return {
+            "wishlist_child_id": self.child_id,
+            "wishes": self.coordinator.wishlist_sensor_rows(self.child_id),
+            "wish_max_open": WISH_MAX_OPEN_PER_CHILD,
+        }
+
+
 class ChildBadgesSensor(TaskMateBaseSensor):
     """Sensor exposing a child's earned and available badges."""
 
@@ -1571,6 +1632,8 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
         for claim in pending_rewards:
             child = self.coordinator.get_child(claim.child_id)
             reward = self.coordinator.get_reward(claim.reward_id)
+            if reward is None and getattr(claim, "wish_id", ""):
+                reward = _wish_as_reward(self.coordinator.get_wish(claim.wish_id))
             if child and reward:
                 reward_details.append(
                     {

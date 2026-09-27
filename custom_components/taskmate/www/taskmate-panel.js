@@ -336,6 +336,7 @@ class TaskMatePanel extends HTMLElement {
       "Weekend bonus", "Streak milestone bonus", "Perfect week bonus",
       "Allocated to pool:", "Pool refund", "Points decay",
       "Savings interest", "Badge", "Streak freeze",
+      "Wish savings", "Wish refund", "Wish pledge", "Wish redeemed",
     ];
   }
 
@@ -396,6 +397,26 @@ class TaskMatePanel extends HTMLElement {
     }
     if (reason === 'Streak freeze reversed') {
       return this._t('activity.reason_streak_freeze_reversed');
+    }
+    // Wishlist (#932). Pledges carry who and how much, so they need a match
+    // rather than a prefix.
+    const wishPrefixes = [
+      ['Wish savings taken back:', 'activity.reason_wish_taken_back'],
+      ['Wish savings:', 'activity.reason_wish_savings'],
+      ['Wish refund (declined):', 'activity.reason_wish_refund_declined'],
+      ['Wish refund (removed):', 'activity.reason_wish_refund_removed'],
+      ['Wish redeemed:', 'activity.reason_wish_redeemed'],
+    ];
+    for (const [prefix, key] of wishPrefixes) {
+      if (reason.startsWith(prefix)) return this._t(key, { name: reason.slice(prefix.length).trim() });
+    }
+    const pledgeAdded = reason.match(/^Wish pledge from (.+) \(\+(\d+)\): (.*)$/);
+    if (pledgeAdded) {
+      return this._t('activity.reason_wish_pledge', { who: pledgeAdded[1], points: pledgeAdded[2], name: pledgeAdded[3] });
+    }
+    const pledgeGone = reason.match(/^Wish pledge (removed|voided) \((.+), (\d+)\): (.*)$/);
+    if (pledgeGone) {
+      return this._t(`activity.reason_wish_pledge_${pledgeGone[1]}`, { who: pledgeGone[2], points: pledgeGone[3], name: pledgeGone[4] });
     }
     return reason;
   }
@@ -822,6 +843,19 @@ class TaskMatePanel extends HTMLElement {
     }
 
     // Activity / approvals
+    // Wishlists (#932)
+    if (act === "wish-filter")       { this._wishChild = t.dataset.id || ""; this._render(); return; }
+    if (act === "wish-approve")      { this._doApproveWish(t.dataset.id); return; }
+    if (act === "wish-decline")      { this._openDialog({ kind: "wish-decline", data: { wish_id: t.dataset.id, reason: "" } }); return; }
+    if (act === "save-wish-decline") { this._doDeclineWish(); return; }
+    if (act === "wish-pledge")       { this._openWishPledge(t.dataset.id); return; }
+    if (act === "wish-pledge-who")   { if (this._dialog) { this._dialog.data.name = t.dataset.name || ""; this._render(); } return; }
+    if (act === "wish-pledge-amt")   { if (this._dialog) { this._dialog.data.points = Number(t.dataset.points) || 0; this._render(); } return; }
+    if (act === "save-wish-pledge")  { this._doPledgeWish(); return; }
+    if (act === "wish-unpledge")     { this._doWishService("remove_wish_pledge", { wish_id: t.dataset.id, pledge_id: t.dataset.pledge }, "panel.wish_toast_pledge_removed", "panel.wish_confirm_unpledge"); return; }
+    if (act === "wish-fulfil")       { this._doApprove("reward", t.dataset.id); return; }
+    if (act === "wish-delete")       { this._doWishService("remove_wish", { wish_id: t.dataset.id }, "panel.wish_toast_removed", "panel.wish_confirm_delete"); return; }
+
     if (act === "approve-all-chores") { this._doApproveAll(); return; }
     if (act === "approve-chore")  { this._doApprove("chore", t.dataset.id); return; }
     if (act === "rate-chore") {
@@ -870,6 +904,11 @@ class TaskMatePanel extends HTMLElement {
       // Restore focus to the filter input
       const f = this.querySelector("[data-filter='true']");
       if (f) { f.focus(); f.setSelectionRange(this._filter.length, this._filter.length); }
+      return;
+    }
+    // Wishlist approval target (#932): keep what was typed across re-renders.
+    if (t.dataset.wishTarget) {
+      (this._wishTargets || (this._wishTargets = {}))[t.dataset.wishTarget] = t.value;
       return;
     }
     // Inline rename input
@@ -2970,6 +3009,8 @@ class TaskMatePanel extends HTMLElement {
       activity:  (this._state.pending_completions || []).length + (this._state.pending_reward_claims || []).length + (this._state.swap_requests || []).length,
       chores:    (this._state.chores || []).length,
       rewards:   (this._state.rewards || []).length,
+      // Wishlists (#932): what is waiting on a parent — approvals and hand-overs.
+      wishlists: (this._state.wishes || []).filter(w => w.status === "pending" || w.status === "redeem_requested").length,
       penalties: (this._state.penalties || []).length,
       bonuses:   (this._state.bonuses || []).length,
       groups:    (this._state.task_groups || []).length,
@@ -2986,6 +3027,7 @@ class TaskMatePanel extends HTMLElement {
         { id: "chores",    label: this._t("panel.tab_chores"),    icon: "mdi:check-circle-outline" },
         { id: "bounties",  label: this._t("panel.tab_bounties"),  icon: "mdi:flag-outline" },
         { id: "rewards",   label: this._t("panel.tab_rewards"),   icon: "mdi:gift-outline" },
+        { id: "wishlists", label: this._t("panel.tab_wishlists"), icon: "mdi:heart-outline" },
         { id: "penalties", label: this._t("panel.tab_penalties"), icon: "mdi:alert-circle-outline" },
         { id: "bonuses",   label: this._t("panel.tab_bonuses"),   icon: "mdi:flash-outline" },
         { id: "groups",    label: this._t("panel.tab_groups"),    icon: "mdi:layers-outline" },
@@ -3154,6 +3196,7 @@ class TaskMatePanel extends HTMLElement {
       case "insights":  return this._renderInsightsTab();
       case "chores":    return this._renderChoresTab();
       case "rewards":   return this._renderRewardsTab();
+      case "wishlists": return this._renderWishlistsTab();
       case "penalties": return this._renderPenBonTab("penalty");
       case "bonuses":   return this._renderPenBonTab("bonus");
       case "groups":    return this._renderGroupsTab();
@@ -3673,6 +3716,11 @@ class TaskMatePanel extends HTMLElement {
     const childById = Object.fromEntries((this._state.children || []).map(c => [c.id, c]));
     const choreById = Object.fromEntries((this._state.chores || []).map(c => [c.id, c]));
     const rewardById = Object.fromEntries((this._state.rewards || []).map(r => [r.id, r]));
+    // A wishlist redemption (#932) is a claim with no reward behind it: read
+    // its name and price off the wish instead.
+    for (const w of (this._state.wishes || [])) {
+      if (!rewardById[w.id]) rewardById[w.id] = { id: w.id, name: w.name, cost: w.target };
+    }
     // A bounty's completion (#931) names the bounty; it has no chore.
     for (const b of this._state.bounties || []) {
       if (!choreById[b.id]) choreById[b.id] = { id: b.id, name: b.title, points: b.points, bounty: true };
@@ -4021,6 +4069,296 @@ class TaskMatePanel extends HTMLElement {
         </div>
       </article>
     `;
+  }
+
+  // -- Wishlists tab (#932) ----------------------------------------------
+  // Children add wishes from the wishlist card; parents approve them here
+  // (confirming or changing the target), pledge on behalf of relatives, and
+  // hand a funded wish over by approving its reward claim.
+  _safeWishImage(u) {
+    return typeof u === "string" && u.startsWith("/api/taskmate/image/") ? u : "";
+  }
+
+  // A wish link is typed by a child: only an absolute http(s) URL is ever
+  // emitted into an href. _esc() stops markup injection, not a javascript: URL.
+  _safeWishLink(u) {
+    if (typeof u !== "string" || !u) return null;
+    try {
+      const url = new URL(u);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+      return { href: url.href, host: url.hostname.replace(/^www\./, "") };
+    } catch (_e) {
+      return null;
+    }
+  }
+
+  _wishThumb(w, size = 44) {
+    const src = this._safeWishImage(w.image_url);
+    return src
+      ? `<img class="tm-wl-thumb" style="width:${size}px;height:${size}px" src="${this._esc(src)}" alt="" loading="lazy">`
+      : `<span class="tm-wl-thumb tm-wl-thumb-ph" style="width:${size}px;height:${size}px">${this._mdi("mdi:gift-outline")}</span>`;
+  }
+
+  _wishLinkChip(w) {
+    const link = this._safeWishLink(w.link);
+    return link
+      ? `<a class="tm-pill tm-pill-accent tm-wl-link" href="${this._esc(link.href)}" target="_blank" rel="noopener noreferrer">${this._mdi("mdi:link-variant")} ${this._esc(link.host)}</a>`
+      : "";
+  }
+
+  _wishBar(w) {
+    const target = this._num(w.target);
+    const saved = this._num(w.saved);
+    const pledged = this._num(w.pledged);
+    const pct = (n) => (target > 0 ? Math.max(0, Math.min(100, (n / target) * 100)) : 0);
+    return `
+      <div class="tm-wl-split"><i class="tm-wl-me" style="width:${pct(saved)}%"></i><i class="tm-wl-fam" style="width:${pct(Math.min(pledged, Math.max(0, target - saved)))}%"></i></div>
+      <div class="tm-meta tm-numeric">${this._fmtNum(Math.min(target, saved + pledged))} / ${this._fmtNum(target)}</div>`;
+  }
+
+  _renderWishlistsTab() {
+    const children = this._state.children || [];
+    const childById = Object.fromEntries(children.map(c => [c.id, c]));
+    const filter = this._wishChild && childById[this._wishChild] ? this._wishChild : "";
+    const all = (this._state.wishes || []).filter(w => childById[w.child_id] && (!filter || w.child_id === filter));
+    const pending = all.filter(w => w.status === "pending");
+    const active = all.filter(w => w.status === "active" || w.status === "redeem_requested");
+    const history = all
+      .filter(w => w.status === "redeemed" || w.status === "declined")
+      .sort((a, b) => String(b.redeemed_at || b.declined_at || "").localeCompare(String(a.redeemed_at || a.declined_at || "")));
+    const pledges = all
+      .flatMap(w => (w.pledges || []).map(p => ({ ...p, wish: w })))
+      .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+    const pointsName = this._state.settings.points_name || this._t("common.points");
+    const who = (w) => this._esc((childById[w.child_id] || {}).name || "?");
+
+    const chips = `
+      <div class="tm-chip-row">
+        <button type="button" class="tm-chip-btn ${filter ? "" : "tm-chip-on"}" data-act="wish-filter" data-id="">${this._t("panel.wish_filter_all")}</button>
+        ${children.map(c => `<button type="button" class="tm-chip-btn ${filter === c.id ? "tm-chip-on" : ""}" data-act="wish-filter" data-id="${this._esc(c.id)}">${this._esc(c.name)}</button>`).join("")}
+      </div>`;
+
+    const pendingHtml = pending.length === 0 ? `<p class="tm-meta">${this._t("panel.wish_none_pending")}</p>` : pending.map(w => {
+      const typed = (this._wishTargets || {})[w.id];
+      const value = typed != null ? typed : this._num(w.target);
+      return `
+        <div class="tm-approval-item tm-wl-appr">
+          ${this._wishThumb(w, 52)}
+          <div class="tm-approval-body">
+            <div class="tm-approval-line"><strong>${this._esc(w.name)}</strong> ${this._wishLinkChip(w)}</div>
+            <div class="tm-meta">${this._t("panel.wish_suggested", { child: who(w), points: this._fmtNum(w.suggested_target || w.target), points_name: this._esc(pointsName) })} · ${this._esc(this._timeAgo(w.created_at))}</div>
+          </div>
+          <label class="tm-wl-target">
+            <span class="tm-meta">${this._t("panel.wish_target")}</span>
+            <input class="tm-input" type="number" min="1" max="100000" data-wish-target="${this._esc(w.id)}" value="${this._esc(value)}">
+          </label>
+          <div class="tm-approval-actions">
+            <button type="button" class="tm-btn tm-btn-sm" data-act="wish-decline" data-id="${this._esc(w.id)}">${this._t("panel.wish_decline")}</button>
+            <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="wish-approve" data-id="${this._esc(w.id)}">${this._t("panel.wish_approve")}</button>
+          </div>
+        </div>`;
+    }).join("");
+
+    const activeHtml = active.length === 0 ? `<p class="tm-meta">${this._t("panel.wish_none_active")}</p>` : `
+      <div class="tm-table-wrap">
+        <table class="tm-table tm-wl-table">
+          <thead><tr>
+            <th>${this._t("panel.wish_col_wish")}</th><th class="tm-wl-progress">${this._t("panel.wish_col_progress")}</th>
+            <th>${this._t("panel.wish_col_saved")}</th><th>${this._t("panel.wish_col_pledged")}</th>
+            <th>${this._t("panel.wish_col_status")}</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${active.map(w => {
+              const status = w.status === "redeem_requested"
+                ? `<span class="tm-pill tm-pill-success">${this._t("panel.wish_status_redeem")}</span>`
+                : w.funded ? `<span class="tm-pill tm-pill-success">${this._t("panel.wish_status_funded")}</span>`
+                : `<span class="tm-pill tm-pill-accent">${this._t("panel.wish_status_saving")}</span>`;
+              const main = w.status === "redeem_requested" && w.claim_id
+                ? `<button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="wish-fulfil" data-id="${this._esc(w.claim_id)}">${this._mdi("mdi:gift-outline")} ${this._t("panel.wish_fulfil")}</button>`
+                : (!w.funded && w.status === "active")
+                  ? `<button type="button" class="tm-btn tm-btn-sm" data-act="wish-pledge" data-id="${this._esc(w.id)}">${this._mdi("mdi:heart-outline")} ${this._t("panel.wish_pledge")}</button>`
+                  : "";
+              return `
+                <tr class="tm-row">
+                  <td><div class="tm-wl-cell">${this._wishThumb(w, 32)}<div><strong>${this._esc(w.name)}</strong><div class="tm-meta">${who(w)} ${this._wishLinkChip(w)}</div></div></div></td>
+                  <td class="tm-wl-progress">${this._wishBar(w)}</td>
+                  <td class="tm-numeric">${this._fmtNum(w.saved)}</td>
+                  <td class="tm-numeric">${this._fmtNum(w.pledged)}</td>
+                  <td>${status}</td>
+                  <td><div class="tm-wl-acts">${main}
+                    <button type="button" class="tm-icon-btn" data-act="wish-delete" data-id="${this._esc(w.id)}" title="${this._esc(this._t("panel.wish_delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>
+                  </div></td>
+                </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>`;
+
+    const pledgesHtml = pledges.length === 0 ? `<p class="tm-meta">${this._t("panel.wish_none_pledges")}</p>` : `
+      <div class="tm-table-wrap">
+        <table class="tm-table">
+          <thead><tr>
+            <th>${this._t("panel.wish_col_from")}</th><th>${this._t("panel.wish_col_to")}</th><th>${this._t("panel.wish_col_amount")}</th>
+            <th>${this._t("panel.wish_col_message")}</th><th>${this._t("panel.wish_col_date")}</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${pledges.map(p => `
+              <tr class="tm-row">
+                <td><strong>${this._esc(p.name)}</strong></td>
+                <td>${who(p.wish)} · ${this._esc(p.wish.name)}</td>
+                <td class="tm-numeric tm-wl-gold">+${this._fmtNum(p.points)}</td>
+                <td class="tm-meta">${this._esc(p.message || "—")}</td>
+                <td class="tm-meta">${this._esc(this._timeAgo(p.created_at))}</td>
+                <td>${p.wish.status === "active" || p.wish.status === "redeem_requested"
+                  ? `<button type="button" class="tm-icon-btn" data-act="wish-unpledge" data-id="${this._esc(p.wish.id)}" data-pledge="${this._esc(p.id)}" title="${this._esc(this._t("panel.wish_unpledge"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>`
+                  : ""}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>`;
+
+    const historyHtml = history.length === 0 ? `<p class="tm-meta">${this._t("panel.wish_none_history")}</p>` : `
+      <div class="tm-table-wrap">
+        <table class="tm-table">
+          <tbody>
+            ${history.map(w => `
+              <tr class="tm-row">
+                <td><div class="tm-wl-cell">${this._wishThumb(w, 32)}<div><strong>${this._esc(w.name)}</strong><div class="tm-meta">${who(w)}</div></div></div></td>
+                <td>${w.status === "redeemed"
+                  ? `<span class="tm-pill tm-pill-success">${this._t("panel.wish_status_redeemed")}</span>`
+                  : `<span class="tm-pill tm-pill-danger">${this._t("panel.wish_status_declined")}</span>${w.decline_reason ? ` <span class="tm-meta">${this._esc(w.decline_reason)}</span>` : ""}`}</td>
+                <td class="tm-numeric">${this._fmtNum(w.target)}</td>
+                <td class="tm-meta">${this._esc(this._timeAgo(w.redeemed_at || w.declined_at || w.created_at))}</td>
+                <td><button type="button" class="tm-icon-btn" data-act="wish-delete" data-id="${this._esc(w.id)}" title="${this._esc(this._t("panel.wish_delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button></td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>`;
+
+    return `
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">${this._t("panel.tab_wishlists")} <span class="tm-toolbar-count">${active.length + pending.length}</span></h2>
+        ${chips}
+      </div>
+      <div class="tm-card">
+        <h3 class="tm-section-title">${this._t("panel.wish_section_pending")}
+          ${pending.length ? `<span class="tm-pill tm-pill-warn">${pending.length}</span>` : ""}</h3>
+        <p class="tm-meta tm-wl-intro">${this._t("panel.wish_section_pending_hint")}</p>
+        <div class="tm-approval-list">${pendingHtml}</div>
+      </div>
+      <div class="tm-card">
+        <h3 class="tm-section-title">${this._t("panel.wish_section_active")}</h3>
+        ${activeHtml}
+      </div>
+      <div class="tm-card">
+        <h3 class="tm-section-title">${this._t("panel.wish_section_pledges")}</h3>
+        <p class="tm-meta tm-wl-intro">${this._t("panel.wish_section_pledges_hint")}</p>
+        ${pledgesHtml}
+      </div>
+      <div class="tm-card">
+        <h3 class="tm-section-title">${this._t("panel.wish_section_history")}</h3>
+        ${historyHtml}
+      </div>
+    `;
+  }
+
+  _openWishPledge(wishId) {
+    const w = (this._state.wishes || []).find(x => x.id === wishId);
+    if (!w) return;
+    const remaining = this._num(w.remaining);
+    this._openDialog({ kind: "wish-pledge", data: { wish_id: w.id, name: "", points: Math.min(20, remaining), message: "" } });
+  }
+
+  _renderWishPledgeDialog() {
+    const d = this._dialog.data;
+    const w = (this._state.wishes || []).find(x => x.id === d.wish_id);
+    if (!w) return "";
+    const child = (this._state.children || []).find(c => c.id === w.child_id) || {};
+    const remaining = this._num(w.remaining);
+    // Quick picks: names already used for pledges, most recent first.
+    const names = [...new Set((this._state.wishes || [])
+      .flatMap(x => x.pledges || [])
+      .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))
+      .map(p => p.name).filter(Boolean))].slice(0, 6);
+    const amount = Math.max(0, Math.min(this._num(d.points), remaining));
+    const target = this._num(w.target);
+    const pct = (n) => (target > 0 ? Math.max(0, Math.min(100, (n / target) * 100)) : 0);
+    const body = `
+      ${this._field(this._t("panel.wish_pledge_who"), "name", d.name)}
+      ${names.length ? `<div class="tm-chip-row tm-wl-quick">${names.map(n => `<button type="button" class="tm-chip-btn ${d.name === n ? "tm-chip-on" : ""}" data-act="wish-pledge-who" data-name="${this._esc(n)}">${this._esc(n)}</button>`).join("")}</div>` : ""}
+      ${this._field(this._t("panel.wish_pledge_amount"), "points", d.points, "number",
+        this._esc(this._t("panel.wish_pledge_amount_hint", { points: this._fmtNum(remaining) })))}
+      <div class="tm-chip-row tm-wl-quick">
+        ${[10, 20, 50].filter(n => n < remaining).map(n => `<button type="button" class="tm-chip-btn ${amount === n ? "tm-chip-on" : ""}" data-act="wish-pledge-amt" data-points="${n}">${n}</button>`).join("")}
+        <button type="button" class="tm-chip-btn ${amount === remaining ? "tm-chip-on" : ""}" data-act="wish-pledge-amt" data-points="${remaining}">${this._t("panel.wish_pledge_finish", { points: this._fmtNum(remaining) })}</button>
+      </div>
+      ${this._field(this._t("panel.wish_pledge_message", { name: child.name || "" }), "message", d.message)}
+      <div class="tm-wl-split tm-wl-split-lg">
+        <i class="tm-wl-me" style="width:${pct(this._num(w.saved))}%"></i>
+        <i class="tm-wl-fam" style="width:${pct(this._num(w.pledged))}%"></i>
+        <i class="tm-wl-new" style="width:${pct(amount)}%"></i>
+      </div>
+      <p class="tm-meta">${this._t("panel.wish_pledge_preview", { total: this._fmtNum(Math.min(target, this._num(w.saved) + this._num(w.pledged) + amount)), target: this._fmtNum(target) })}</p>`;
+    return this._dialogShell(
+      this._t("panel.wish_pledge_title", { child: child.name || "", wish: w.name }),
+      body,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-wish-pledge">${this._mdi("mdi:heart-outline")} ${this._t("panel.wish_pledge_add")}</button>`
+    );
+  }
+
+  _renderWishDeclineDialog() {
+    const d = this._dialog.data;
+    const w = (this._state.wishes || []).find(x => x.id === d.wish_id);
+    if (!w) return "";
+    return this._dialogShell(
+      this._t("panel.wish_decline_title", { wish: w.name }),
+      this._field(this._t("panel.wish_decline_reason"), "reason", d.reason, "text", this._esc(this._t("panel.wish_decline_reason_hint"))),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-danger" data-act="save-wish-decline">${this._t("panel.wish_decline")}</button>`
+    );
+  }
+
+  async _doWishService(service, data, okKey, confirmKey) {
+    if (confirmKey && !confirm(this._t(confirmKey))) return false;
+    const { ok, err } = await this._callService(service, data);
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return false; }
+    await this._fetchState();
+    this._showToast("ok", this._t(okKey));
+    return true;
+  }
+
+  async _doApproveWish(wishId) {
+    const w = (this._state.wishes || []).find(x => x.id === wishId);
+    if (!w) return;
+    const typed = (this._wishTargets || {})[wishId];
+    const target = typed != null && typed !== "" ? Number(typed) : this._num(w.target);
+    if (!Number.isInteger(target) || target < 1 || target > 100000) {
+      this._showToast("err", this._t("panel.wish_err_target"));
+      return;
+    }
+    if (await this._doWishService("approve_wish", { wish_id: wishId, target }, "panel.wish_toast_approved")) {
+      if (this._wishTargets) delete this._wishTargets[wishId];
+    }
+  }
+
+  async _doDeclineWish() {
+    const d = this._dialog.data;
+    const reason = String(d.reason || "").trim();
+    const data = reason ? { wish_id: d.wish_id, reason } : { wish_id: d.wish_id };
+    if (await this._doWishService("decline_wish", data, "panel.wish_toast_declined")) this._closeDialog(true);
+  }
+
+  async _doPledgeWish() {
+    const d = this._dialog.data;
+    const name = String(d.name || "").trim();
+    const points = Number(d.points);
+    if (!name) { this._showToast("err", this._t("panel.wish_err_who")); return; }
+    if (!Number.isInteger(points) || points < 1) { this._showToast("err", this._t("panel.wish_err_amount")); return; }
+    const data = { wish_id: d.wish_id, name, points };
+    const message = String(d.message || "").trim();
+    if (message) data.message = message;
+    if (await this._doWishService("pledge_to_wish", data, "panel.wish_toast_pledged")) this._closeDialog(true);
   }
 
   // -- Quests tab --------------------------------------------------------
@@ -6080,6 +6418,8 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "create-template" || this._dialog.kind === "edit-template") return this._renderCreateEditTemplateDialog();
     if (this._dialog.kind === "badge")       return this._renderBadgeDialog();
     if (this._dialog.kind === "award-badge") return this._renderAwardDialog();
+    if (this._dialog.kind === "wish-pledge")  return this._renderWishPledgeDialog();
+    if (this._dialog.kind === "wish-decline") return this._renderWishDeclineDialog();
     return "";
   }
 
@@ -9280,6 +9620,37 @@ class TaskMatePanel extends HTMLElement {
         .tm-section-head, .tm-setting-row { padding-left: 16px; padding-right: 16px; }
         .tm-timeline-row { grid-template-columns: 1fr auto; }
         .tm-timeline-time, .tm-timeline-icon { display: none; }
+      }
+      /* Wishlists tab (#932) */
+      .tm-wl-intro { margin: -4px 0 10px; }
+      .tm-wl-thumb {
+        flex: none; border-radius: 10px; object-fit: cover; display: inline-grid; place-items: center;
+      }
+      .tm-wl-thumb-ph {
+        background: linear-gradient(135deg, #e91e63, #9b59b6); color: #fff; --mdc-icon-size: 20px;
+      }
+      .tm-wl-appr { align-items: center; }
+      .tm-wl-target { display: inline-flex; align-items: center; gap: 6px; }
+      .tm-wl-target .tm-input { width: 96px; padding: 6px 8px; }
+      .tm-wl-link { text-decoration: none; --mdc-icon-size: 13px; margin-left: 4px; }
+      .tm-wl-cell { display: flex; align-items: center; gap: 10px; }
+      .tm-wl-progress { min-width: 180px; }
+      .tm-wl-acts { display: flex; align-items: center; justify-content: flex-end; gap: 6px; white-space: nowrap; }
+      .tm-wl-acts .tm-btn { --mdc-icon-size: 16px; }
+      .tm-wl-gold { color: var(--tm-gold); font-weight: 700; }
+      .tm-wl-quick { margin: -6px 0 14px; }
+      .tm-wl-split {
+        height: 12px; border-radius: 6px; overflow: hidden; display: flex; margin-bottom: 4px;
+        background: var(--tm-surface-2); border: 1px solid var(--tm-border);
+      }
+      .tm-wl-split-lg { height: 16px; margin-top: 4px; }
+      .tm-wl-split i { display: block; height: 100%; }
+      .tm-wl-me { background: #e91e63; }
+      .tm-wl-fam { background: repeating-linear-gradient(135deg, #f1c40f 0 6px, #f39c12 6px 12px); }
+      .tm-wl-new { background: var(--tm-text); opacity: .35; }
+      @media (max-width: 700px) {
+        .tm-wl-appr { flex-wrap: wrap; }
+        .tm-wl-progress { min-width: 120px; }
       }
     </style>`;
   }

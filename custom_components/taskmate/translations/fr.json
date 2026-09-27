@@ -1067,6 +1067,170 @@
           "description": "Points à convertir en argent et à déduire"
         }
       }
+    },
+    "add_wish": {
+      "name": "Ajouter un souhait",
+      "description": "Un enfant ajoute quelque chose pour lequel il veut économiser. Le souhait attend l'approbation d'un parent.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'ID de l'enfant qui fait le souhait"
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Ce que l'enfant souhaite"
+        },
+        "target": {
+          "name": "Objectif",
+          "description": "Nombre de points proposé. Le parent peut le modifier lors de l'approbation."
+        },
+        "link": {
+          "name": "Lien",
+          "description": "Adresse web facultative (http ou https) de l'article"
+        },
+        "photo_url": {
+          "name": "Image",
+          "description": "Image facultative tout juste envoyée via le point d'accès photo de TaskMate"
+        }
+      }
+    },
+    "withdraw_wish": {
+      "name": "Retirer un souhait",
+      "description": "Un enfant retire un souhait encore en attente d'approbation, ou efface un souhait refusé.",
+      "fields": {
+        "wish_id": {
+          "name": "ID du souhait",
+          "description": "L'ID du souhait"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'ID de l'enfant à qui appartient le souhait"
+        }
+      }
+    },
+    "move_points_to_wish": {
+      "name": "Placer des points dans un souhait",
+      "description": "Transfère des points du solde disponible d'un enfant vers l'un de ses souhaits approuvés.",
+      "fields": {
+        "wish_id": {
+          "name": "ID du souhait",
+          "description": "L'ID du souhait"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'ID de l'enfant à qui appartient le souhait"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Nombre de points à transférer (plafonné au solde et à ce qu'il manque au souhait)"
+        }
+      }
+    },
+    "take_points_from_wish": {
+      "name": "Reprendre des points d'un souhait",
+      "description": "Rend à l'enfant une partie de ses propres points économisés. Les points promis ne sortent jamais.",
+      "fields": {
+        "wish_id": {
+          "name": "ID du souhait",
+          "description": "L'ID du souhait"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'ID de l'enfant à qui appartient le souhait"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Nombre de points économisés à reprendre (plafonné à ce que l'enfant a économisé)"
+        }
+      }
+    },
+    "request_wish_redeem": {
+      "name": "Demander à obtenir le souhait",
+      "description": "Un souhait entièrement financé devient une demande de récompense en attente d'approbation.",
+      "fields": {
+        "wish_id": {
+          "name": "ID du souhait",
+          "description": "L'ID du souhait"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'ID de l'enfant à qui appartient le souhait"
+        }
+      }
+    },
+    "approve_wish": {
+      "name": "Approuver un souhait",
+      "description": "Transforme un souhait en attente en objectif d'épargne, éventuellement avec un autre objectif.",
+      "fields": {
+        "wish_id": {
+          "name": "ID du souhait",
+          "description": "L'ID du souhait"
+        },
+        "target": {
+          "name": "Objectif",
+          "description": "Points que coûte le souhait. Laisser vide pour garder la proposition de l'enfant."
+        }
+      }
+    },
+    "decline_wish": {
+      "name": "Refuser un souhait",
+      "description": "Refuse un souhait. Les points économisés reviennent à l'enfant et les promesses sont annulées.",
+      "fields": {
+        "wish_id": {
+          "name": "ID du souhait",
+          "description": "L'ID du souhait"
+        },
+        "reason": {
+          "name": "Raison",
+          "description": "Raison facultative affichée à l'enfant"
+        }
+      }
+    },
+    "pledge_to_wish": {
+      "name": "Promettre pour un souhait",
+      "description": "Enregistre des points offerts par un proche pour le souhait d'un enfant. Ils ne touchent aucun solde.",
+      "fields": {
+        "wish_id": {
+          "name": "ID du souhait",
+          "description": "L'ID du souhait"
+        },
+        "name": {
+          "name": "De la part de",
+          "description": "De qui vient la promesse, p. ex. Mamie"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Nombre de points promis (plafonné à ce qu'il manque au souhait)"
+        },
+        "message": {
+          "name": "Message",
+          "description": "Message facultatif pour l'enfant"
+        }
+      }
+    },
+    "remove_wish_pledge": {
+      "name": "Retirer une promesse",
+      "description": "Annule une promesse. Possible tant que le souhait n'est pas obtenu.",
+      "fields": {
+        "wish_id": {
+          "name": "ID du souhait",
+          "description": "L'ID du souhait"
+        },
+        "pledge_id": {
+          "name": "ID de la promesse",
+          "description": "L'ID de la promesse à retirer"
+        }
+      }
+    },
+    "remove_wish": {
+      "name": "Supprimer un souhait",
+      "description": "Supprime un souhait. Les points économisés reviennent à l'enfant et les promesses sont annulées.",
+      "fields": {
+        "wish_id": {
+          "name": "ID du souhait",
+          "description": "L'ID du souhait"
+        }
+      }
     }
   },
   "entity": {

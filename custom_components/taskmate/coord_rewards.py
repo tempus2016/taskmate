@@ -60,6 +60,10 @@ class RewardsMixin:
         pool has since dipped below the cost — it is still not the claimer's
         wallet that is on the hook for it.
         """
+        # A wishlist redemption (#932) is paid from the wish's own savings,
+        # which left the child's balance when they were moved in.
+        if getattr(claim, "wish_id", ""):
+            return True
         reward = self.get_reward(claim.reward_id)
         if not reward:
             return False
@@ -549,6 +553,11 @@ class RewardsMixin:
         wallet-mode path deducts directly from child.points.
         """
         claims = self.storage.get_reward_claims()
+        # A funded wish's claim (#932) has no Reward behind it.
+        wish_claim = next((c for c in claims if c.id == claim_id and c.wish_id and not c.approved), None)
+        if wish_claim is not None:
+            await self._async_approve_wish_claim(wish_claim)
+            return
         for claim in claims:
             if claim.id == claim_id:
                 if claim.approved:
@@ -698,6 +707,9 @@ class RewardsMixin:
             reward = self.get_reward(claim.reward_id)
             name = reward.name if reward else "This reward"
             raise ValueError(f"'{name}' has already been approved and can no longer be rejected")
+        if claim is not None and claim.wish_id:
+            await self._async_reject_wish_claim(claim)
+            return
         self.storage.remove_reward_claim(claim_id)
         await self.storage.async_save()
         await self.async_refresh()

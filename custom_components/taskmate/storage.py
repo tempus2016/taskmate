@@ -34,6 +34,7 @@ from .models import (
     ScheduledChange,
     TaskGroup,
     TimedSession,
+    Wish,
     parse_datetime,
 )
 
@@ -1016,8 +1017,13 @@ class TaskMateStorage:
         """Get all points transactions."""
         return [PointsTransaction.from_dict(t) for t in self._data.get("points_transactions", [])]
 
-    def add_points_transaction(self, transaction: PointsTransaction) -> None:
-        """Add a points transaction record."""
+    def add_points_transaction(self, transaction: PointsTransaction, *, count_for_season: bool = True) -> None:
+        """Add a points transaction record.
+
+        ``count_for_season=False`` records a positive row that returns the
+        child's own points rather than awarding new ones (e.g. taking savings
+        back out of a wish, #932), so it must not count towards the leaderboard.
+        """
         if "points_transactions" not in self._data:
             self._data["points_transactions"] = []
         self._data["points_transactions"].append(transaction.to_dict())
@@ -1025,7 +1031,7 @@ class TaskMateStorage:
         # Accumulate season (leaderboard) points from every positive award here,
         # the single choke point all awards flow through — the rolling 200-cap on
         # transactions makes them unreliable for a monthly total (FEAT-2).
-        if transaction.points > 0:
+        if transaction.points > 0 and count_for_season:
             self.record_season_points(transaction.child_id, transaction.points, transaction.created_at)
 
         # Keep only the last 200 transactions to avoid unbounded storage growth
@@ -1227,6 +1233,40 @@ class TaskMateStorage:
             if store[chore_id].get("date") != keep_date:
                 store.pop(chore_id, None)
 
+    # ── Wishlist (#932) ──────────────────────────────────────────────────
+    # Wishes are their own records, not rewards: a child creates them and a
+    # parent approves them. A wish's own saved points and pledges live on the
+    # record; the reward claim a funded wish turns into points back at it.
+    def get_wishes(self) -> list[Wish]:
+        return [Wish.from_dict(w) for w in self._data.get("wishes", []) if isinstance(w, dict)]
+
+    def get_wish(self, wish_id: str) -> Wish | None:
+        for w in self._data.get("wishes", []):
+            if isinstance(w, dict) and w.get("id") == wish_id:
+                return Wish.from_dict(w)
+        return None
+
+    def upsert_wish(self, wish: Wish) -> None:
+        rows = self._data.setdefault("wishes", [])
+        for i, row in enumerate(rows):
+            if isinstance(row, dict) and row.get("id") == wish.id:
+                rows[i] = wish.to_dict()
+                return
+        rows.append(wish.to_dict())
+
+    def remove_wish(self, wish_id: str) -> None:
+        self._data["wishes"] = [
+            w for w in self._data.get("wishes", []) if not (isinstance(w, dict) and w.get("id") == wish_id)
+        ]
+
+    def remove_wishes_for_child(self, child_id: str) -> list[Wish]:
+        """Drop a deleted child's wishes; returns them so their images can go too."""
+        removed = [w for w in self.get_wishes() if w.child_id == child_id]
+        self._data["wishes"] = [
+            w for w in self._data.get("wishes", []) if not (isinstance(w, dict) and w.get("child_id") == child_id)
+        ]
+        return removed
+
     # ── Bounty board (#931) ──────────────────────────────────────────────
     # Their own list, not chores: a bounty is a one-off with a claim lock and
     # a lifecycle of its own. Missing on installs from before the feature, so
@@ -1373,6 +1413,7 @@ class TaskMateStorage:
             "timed_sessions",
             "quests",
             "challenges",
+            "wishes",
             "bounties",
         )
         for k in list_keys:
@@ -1563,6 +1604,13 @@ class TaskMateStorage:
             if isinstance(chore, dict) and "completion_sound" in chore:
                 if not is_valid_completion_sound(str(chore.get("completion_sound") or "")):
                     chore["completion_sound"] = "coin"
+
+        # Wishes (#932): a restored backup must not smuggle in a javascript:
+        # link or a foreign image URL. The model normalises every field it
+        # reads, so a round trip through it is the sanitiser.
+        self._data["wishes"] = [
+            Wish.from_dict(w).to_dict() for w in self._data.get("wishes", []) or [] if isinstance(w, dict)
+        ]
 
         for grp in self._data.get("task_groups", []):
             if isinstance(grp, dict) and grp.get("policy") not in TASK_GROUP_POLICIES:

@@ -41,6 +41,7 @@ class TaskMateActivityCard extends LitElement {
       "Weekend bonus", "Streak milestone bonus", "Perfect week bonus",
       "Allocated to pool:", "Pool refund", "Points decay",
       "Savings interest", "Badge", "Streak freeze",
+      "Wish savings", "Wish refund", "Wish pledge", "Wish redeemed",
     ];
   }
 
@@ -52,8 +53,15 @@ class TaskMateActivityCard extends LitElement {
   // Streak-freeze token movements (#925) are logged as zero-point rows. Worded
   // as points they would read "lost 0", so both render paths give them their
   // own line: the child, the translated reason, a snowflake — no points.
+  // Wishlist pledges and redemptions (#932) are zero-point rows too — the
+  // pledged points never touch the child's balance — and share the same line.
   _isFreezeEntry(item) {
-    return !item.points && (item.reason || "").startsWith("Streak freeze");
+    const reason = item.reason || "";
+    return !item.points && (reason.startsWith("Streak freeze") || reason.startsWith("Wish "));
+  }
+
+  _isWishEntry(item) {
+    return (item.reason || "").startsWith("Wish ");
   }
 
   shouldUpdate(changedProps) {
@@ -122,6 +130,26 @@ class TaskMateActivityCard extends LitElement {
     }
     if (reason === 'Streak freeze reversed') {
       return this._t('activity.reason_streak_freeze_reversed');
+    }
+    // Wishlist (#932). Pledges carry who and how much, so they need a match
+    // rather than a prefix.
+    const wishPrefixes = [
+      ['Wish savings taken back:', 'activity.reason_wish_taken_back'],
+      ['Wish savings:', 'activity.reason_wish_savings'],
+      ['Wish refund (declined):', 'activity.reason_wish_refund_declined'],
+      ['Wish refund (removed):', 'activity.reason_wish_refund_removed'],
+      ['Wish redeemed:', 'activity.reason_wish_redeemed'],
+    ];
+    for (const [prefix, key] of wishPrefixes) {
+      if (reason.startsWith(prefix)) return this._t(key, { name: reason.slice(prefix.length).trim() });
+    }
+    const pledgeAdded = reason.match(/^Wish pledge from (.+) \(\+(\d+)\): (.*)$/);
+    if (pledgeAdded) {
+      return this._t('activity.reason_wish_pledge', { who: pledgeAdded[1], points: pledgeAdded[2], name: pledgeAdded[3] });
+    }
+    const pledgeGone = reason.match(/^Wish pledge (removed|voided) \((.+), (\d+)\): (.*)$/);
+    if (pledgeGone) {
+      return this._t(`activity.reason_wish_pledge_${pledgeGone[1]}`, { who: pledgeGone[2], points: pledgeGone[3], name: pledgeGone[4] });
     }
     return reason;
   }
@@ -724,7 +752,7 @@ class TaskMateActivityCard extends LitElement {
           ${this.config.accent_stripes !== false ? html`<div class="event-stripe"></div>` : ''}
           <div class="activity-row">
             <div class="activity-icon t-bonus">
-              <ha-icon icon="mdi:snowflake"></ha-icon>
+              <ha-icon icon="${this._isWishEntry(item) ? "mdi:heart" : "mdi:snowflake"}"></ha-icon>
             </div>
             <div class="activity-body">
               <div class="activity-title">
@@ -747,7 +775,8 @@ class TaskMateActivityCard extends LitElement {
       const pts = Math.abs(item.points || 0);
       const reason = item.reason || '';
       const isPenalty = reason.startsWith('Penalty:');
-      const isPoolAllocation = reason.startsWith('Allocated to pool:');
+      // Saving into a wish (#932) is the same kind of move as a savings jar.
+      const isPoolAllocation = reason.startsWith('Allocated to pool:') || reason.startsWith('Wish savings:');
       const isSpend = !isAdd && !isPenalty && isPoolAllocation;
       const verb = isAdd ? this._t('activity.received')
                  : isSpend ? this._t('activity.spent')
@@ -964,7 +993,7 @@ class TaskMateActivityCard extends LitElement {
     if ((type === "points_added" || type === "points_removed") && this._isFreezeEntry(item)) {
       const displayReason = this._translateReason(item.reason);
       return {
-        childName, tone: 'accent', emoji: '❄️', sign: '', pts: '',
+        childName, tone: 'accent', emoji: this._isWishEntry(item) ? '💝' : '❄️', sign: '', pts: '',
         text: html`<strong>${childName}</strong> <span class="reason">— ${displayReason}</span>`,
         plain: `${childName} · ${displayReason}`,
         ago, time,
@@ -978,7 +1007,8 @@ class TaskMateActivityCard extends LitElement {
       const pts = Math.abs(item.points || 0);
       const reason = item.reason || '';
       const isPenalty = reason.startsWith('Penalty:');
-      const isPoolAllocation = reason.startsWith('Allocated to pool:');
+      // Saving into a wish (#932) is the same kind of move as a savings jar.
+      const isPoolAllocation = reason.startsWith('Allocated to pool:') || reason.startsWith('Wish savings:');
       const isSpend = !isAdd && !isPenalty && isPoolAllocation;
       const displayReason = this._translateReason(item.reason);
       const verb = isAdd ? this._t('activity.received') : isSpend ? this._t('activity.spent') : this._t('activity.lost');

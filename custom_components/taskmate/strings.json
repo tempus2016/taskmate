@@ -1067,6 +1067,170 @@
           "description": "Points to convert to cash and deduct"
         }
       }
+    },
+    "add_wish": {
+      "name": "Add Wish",
+      "description": "A child adds something they want to save for. It waits for a parent to approve it.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child making the wish"
+        },
+        "name": {
+          "name": "Name",
+          "description": "What the child wants"
+        },
+        "target": {
+          "name": "Target",
+          "description": "Suggested number of points it costs. The parent can change it when approving."
+        },
+        "link": {
+          "name": "Link",
+          "description": "Optional web address (http or https) for the thing"
+        },
+        "photo_url": {
+          "name": "Picture",
+          "description": "Optional picture just uploaded through the TaskMate photo endpoint"
+        }
+      }
+    },
+    "withdraw_wish": {
+      "name": "Withdraw Wish",
+      "description": "A child takes back a wish that is still waiting for approval, or clears one that was declined.",
+      "fields": {
+        "wish_id": {
+          "name": "Wish ID",
+          "description": "The ID of the wish"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child whose wish it is"
+        }
+      }
+    },
+    "move_points_to_wish": {
+      "name": "Move Points to Wish",
+      "description": "Move points from a child's spendable balance into one of their approved wishes.",
+      "fields": {
+        "wish_id": {
+          "name": "Wish ID",
+          "description": "The ID of the wish"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child whose wish it is"
+        },
+        "points": {
+          "name": "Points",
+          "description": "How many points to move (capped at the balance and at what the wish still needs)"
+        }
+      }
+    },
+    "take_points_from_wish": {
+      "name": "Take Points from Wish",
+      "description": "Give some of a child's own saved points back from a wish. Pledged points never come out.",
+      "fields": {
+        "wish_id": {
+          "name": "Wish ID",
+          "description": "The ID of the wish"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child whose wish it is"
+        },
+        "points": {
+          "name": "Points",
+          "description": "How many saved points to take back (capped at what the child saved)"
+        }
+      }
+    },
+    "request_wish_redeem": {
+      "name": "Ask to Redeem Wish",
+      "description": "A fully funded wish becomes a reward claim waiting for the parent's approval.",
+      "fields": {
+        "wish_id": {
+          "name": "Wish ID",
+          "description": "The ID of the wish"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child whose wish it is"
+        }
+      }
+    },
+    "approve_wish": {
+      "name": "Approve Wish",
+      "description": "Turn a waiting wish into a savings goal, optionally at a different target.",
+      "fields": {
+        "wish_id": {
+          "name": "Wish ID",
+          "description": "The ID of the wish"
+        },
+        "target": {
+          "name": "Target",
+          "description": "Points the wish costs. Leave empty to keep the child's suggestion."
+        }
+      }
+    },
+    "decline_wish": {
+      "name": "Decline Wish",
+      "description": "Say no to a wish. Saved points go back to the child and pledges are voided.",
+      "fields": {
+        "wish_id": {
+          "name": "Wish ID",
+          "description": "The ID of the wish"
+        },
+        "reason": {
+          "name": "Reason",
+          "description": "Optional reason shown to the child"
+        }
+      }
+    },
+    "pledge_to_wish": {
+      "name": "Pledge to Wish",
+      "description": "Record points a relative chips in towards a child's wish. They never touch any balance.",
+      "fields": {
+        "wish_id": {
+          "name": "Wish ID",
+          "description": "The ID of the wish"
+        },
+        "name": {
+          "name": "From",
+          "description": "Who the pledge is from, e.g. Grandma"
+        },
+        "points": {
+          "name": "Points",
+          "description": "How many points to pledge (capped at what the wish still needs)"
+        },
+        "message": {
+          "name": "Message",
+          "description": "Optional message for the child"
+        }
+      }
+    },
+    "remove_wish_pledge": {
+      "name": "Remove Wish Pledge",
+      "description": "Undo a pledge. Allowed until the wish is redeemed.",
+      "fields": {
+        "wish_id": {
+          "name": "Wish ID",
+          "description": "The ID of the wish"
+        },
+        "pledge_id": {
+          "name": "Pledge ID",
+          "description": "The ID of the pledge to remove"
+        }
+      }
+    },
+    "remove_wish": {
+      "name": "Remove Wish",
+      "description": "Delete a wish. Saved points go back to the child and pledges are voided.",
+      "fields": {
+        "wish_id": {
+          "name": "Wish ID",
+          "description": "The ID of the wish"
+        }
+      }
     }
   },
   "entity": {

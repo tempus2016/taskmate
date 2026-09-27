@@ -1059,6 +1059,9 @@ class RewardClaim:
     # What this purchase actually cost, recorded when it was approved. None on
     # a pending claim, and on claims approved before the field existed.
     approved_cost: int | None = None
+    # Set when the claim redeems a wishlist wish (#932) rather than a reward.
+    # reward_id then holds the wish id too, and no Reward record exists.
+    wish_id: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> RewardClaim:
@@ -1074,11 +1077,12 @@ class RewardClaim:
             approved_at=approved_at,
             id=data.get("id") or generate_id(),
             approved_cost=parse_optional_points(data.get("approved_cost")),
+            wish_id=str(data.get("wish_id", "") or ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
-        return {
+        out = {
             "reward_id": self.reward_id,
             "child_id": self.child_id,
             "claimed_at": format_datetime(self.claimed_at),
@@ -1087,6 +1091,10 @@ class RewardClaim:
             "id": self.id,
             "approved_cost": self.approved_cost,
         }
+        # Only a wishlist redemption carries it, so ordinary claims keep their shape.
+        if self.wish_id:
+            out["wish_id"] = self.wish_id
+        return out
 
 
 @dataclass
@@ -1599,4 +1607,180 @@ class CustomSound:
             "name": self.name,
             "file": self.file,
             "created_at": self.created_at,
+        }
+
+
+# ── Wishlist with pledges (#932) ─────────────────────────────────────────
+WISH_NAME_MAX = 60
+WISH_LINK_MAX = 500
+WISH_DECLINE_REASON_MAX = 200
+PLEDGE_NAME_MAX = 40
+PLEDGE_MESSAGE_MAX = 140
+WISH_STATUSES = ("pending", "active", "redeem_requested", "redeemed", "declined")
+
+
+def clean_label(value: Any, limit: int) -> str:
+    """Single-line, trimmed, length-capped text for a user-supplied label."""
+    text = " ".join(str(value or "").split())
+    return text[:limit]
+
+
+def clean_wish_link(value: Any) -> str:
+    """Return ``value`` if it is a plain http(s) URL, else "".
+
+    A wish link is typed by a child and rendered as a clickable link, so
+    anything that is not an absolute http(s) URL — ``javascript:``, ``data:``,
+    a relative path, embedded whitespace or control characters — is dropped
+    rather than stored.
+    """
+    from urllib.parse import urlsplit
+
+    text = str(value or "").strip()
+    if not text or len(text) > WISH_LINK_MAX:
+        return ""
+    if any(ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in text):
+        return ""
+    try:
+        parts = urlsplit(text)
+    except ValueError:
+        return ""
+    if parts.scheme.lower() not in ("http", "https") or not parts.netloc:
+        return ""
+    return text
+
+
+def _clean_wish_image(value: Any) -> str:
+    """Keep only one of TaskMate's own stored-image URLs (bare, unsigned)."""
+    from .images import normalize_taskmate_image_url
+
+    return normalize_taskmate_image_url(str(value or "")) or ""
+
+
+def _points(value: Any) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, number)
+
+
+@dataclass
+class WishPledge:
+    """Points a relative chipped in towards a wish (#932).
+
+    Pledged points are a gift attached to the wish: they are never added to
+    the child's balance, so the only way they turn into anything is by the
+    wish being redeemed. ``name`` is free text typed by a parent ("Grandma").
+    """
+
+    name: str
+    points: int
+    message: str = ""
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> WishPledge:
+        return cls(
+            name=clean_label(data.get("name"), PLEDGE_NAME_MAX),
+            points=_points(data.get("points")),
+            message=clean_label(data.get("message"), PLEDGE_MESSAGE_MAX),
+            created_at=parse_datetime(data.get("created_at")) or datetime.now(timezone.utc),
+            id=data.get("id") or generate_id(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "points": self.points,
+            "message": self.message,
+            "created_at": format_datetime(self.created_at),
+            "id": self.id,
+        }
+
+
+@dataclass
+class Wish:
+    """Something a child is saving towards (#932).
+
+    Lifecycle: ``pending`` (added by the child, waiting for a parent) →
+    ``active`` (approved; the child can move points in and relatives can
+    pledge) → ``redeem_requested`` (funded, a reward claim is waiting) →
+    ``redeemed``. A parent can ``decline`` it instead, with a reason the child
+    sees. ``saved`` are the child's own points moved in — already taken out of
+    ``Child.points``, exactly like a savings-jar allocation — and are the only
+    part a child can take back out.
+    """
+
+    child_id: str
+    name: str
+    target: int
+    status: str = "pending"
+    suggested_target: int = 0
+    link: str = ""
+    image_url: str = ""
+    saved: int = 0
+    pledges: list[WishPledge] = field(default_factory=list)
+    decline_reason: str = ""
+    claim_id: str = ""
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    approved_at: datetime | None = None
+    declined_at: datetime | None = None
+    redeemed_at: datetime | None = None
+    id: str = field(default_factory=generate_id)
+
+    @property
+    def pledged(self) -> int:
+        return sum(p.points for p in self.pledges)
+
+    @property
+    def remaining(self) -> int:
+        """Points still needed to reach the target (never negative)."""
+        return max(0, self.target - self.saved - self.pledged)
+
+    @property
+    def funded(self) -> bool:
+        return self.target > 0 and self.saved + self.pledged >= self.target
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Wish:
+        status = data.get("status", "pending")
+        target = _points(data.get("target"))
+        return cls(
+            child_id=str(data.get("child_id", "") or ""),
+            name=clean_label(data.get("name"), WISH_NAME_MAX),
+            target=target,
+            status=status if status in WISH_STATUSES else "pending",
+            suggested_target=_points(data.get("suggested_target")) or target,
+            link=clean_wish_link(data.get("link")),
+            image_url=_clean_wish_image(data.get("image_url")),
+            saved=_points(data.get("saved")),
+            pledges=[WishPledge.from_dict(p) for p in data.get("pledges", []) or [] if isinstance(p, dict)],
+            decline_reason=clean_label(data.get("decline_reason"), WISH_DECLINE_REASON_MAX),
+            claim_id=str(data.get("claim_id", "") or ""),
+            created_at=parse_datetime(data.get("created_at")) or datetime.now(timezone.utc),
+            approved_at=parse_datetime(data.get("approved_at")),
+            declined_at=parse_datetime(data.get("declined_at")),
+            redeemed_at=parse_datetime(data.get("redeemed_at")),
+            id=data.get("id") or generate_id(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "child_id": self.child_id,
+            "name": self.name,
+            "target": self.target,
+            "status": self.status,
+            "suggested_target": self.suggested_target,
+            "link": self.link,
+            "image_url": self.image_url,
+            "saved": self.saved,
+            "pledges": [p.to_dict() for p in self.pledges],
+            "decline_reason": self.decline_reason,
+            "claim_id": self.claim_id,
+            "created_at": format_datetime(self.created_at),
+            "approved_at": format_datetime(self.approved_at),
+            "declined_at": format_datetime(self.declined_at),
+            "redeemed_at": format_datetime(self.redeemed_at),
+            "id": self.id,
         }

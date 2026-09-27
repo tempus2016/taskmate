@@ -397,6 +397,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         # splits them into Active / Waiting approval / History.
         "bounties": list(data.get("bounties", [])),
         "pool_allocations": list(data.get("pool_allocations", [])),
+        "wishes": coordinator.wishlist_state(),  # wishlist (#932), images signed
         "timed_sessions": list(data.get("timed_sessions", [])),
         "templates": coordinator.get_all_templates(),
         # Operational state — used by the panel's Activity tab + approval banner
