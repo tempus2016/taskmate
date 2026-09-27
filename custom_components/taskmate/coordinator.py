@@ -711,6 +711,7 @@ class TaskMateCoordinator(
         """Shutdown the coordinator and clean up listeners."""
         self.cancel_unlock_timers()
         self.notifications.cancel_schedules()
+        self.notifications.cancel_presence_tracking()
         for attr in ("_unsub_midnight", "_unsub_prune", "_unsub_availability", "_unsub_surprise", "_unsub_weekly"):
             if unsub := getattr(self, attr):
                 unsub()
@@ -802,6 +803,10 @@ class TaskMateCoordinator(
         # change up in this same tick.
         await self._async_expire_deadline_chores(refresh=False)
         self._refresh_tracked_availability_entities()
+        # Presence-aware reminders (#926): follow child presence-entity edits.
+        # A no-op unless the child -> entity map actually changed.
+        if notifications := getattr(self, "notifications", None):
+            notifications.sync_presence_tracking()
         version = self.storage.data_version
         cached = getattr(self, "_data_snapshot_cache", None)
         if cached is not None and cached[0] == version:
@@ -839,6 +844,7 @@ class TaskMateCoordinator(
         unavailability_entity: str = "",
         pause_streak_when_unavailable: bool = False,
         linked_user_id: str = "",
+        presence_entity: str = "",
     ) -> Child:
         """Add a new child."""
         child = Child(
@@ -849,6 +855,7 @@ class TaskMateCoordinator(
             unavailability_entity=unavailability_entity,
             pause_streak_when_unavailable=pause_streak_when_unavailable,
             linked_user_id=linked_user_id,
+            presence_entity=presence_entity,
         )
         self.storage.add_child(child)
         await self.storage.async_save()

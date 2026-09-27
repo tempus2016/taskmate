@@ -9,7 +9,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
-from .const import DEFAULT_NOTIFICATION_NAV_URL, DOMAIN
+from .const import DEFAULT_NOTIFICATION_NAV_URL, DEFAULT_PRESENCE_ARRIVAL_MIN_AWAY, DOMAIN
 from .models import (
     AwardedBadge,
     Badge,
@@ -841,6 +841,20 @@ class TaskMateStorage:
             return []
         return [x for x in raw if isinstance(x, str) and x]
 
+    def get_chore_undo_seconds(self) -> int:
+        """Seconds a child has to undo their own auto-approved chore (#918).
+
+        0 (the default) switches child undo off entirely. Anything stored that
+        isn't a whole number reads as 0, and the value is clamped to 0..3600.
+        """
+        value = (self._data.get("settings", {}) or {}).get("chore_undo_seconds", 0)
+        if isinstance(value, bool):
+            return 0
+        try:
+            return max(0, min(3600, int(value)))
+        except (TypeError, ValueError, OverflowError):
+            return 0
+
     def get_require_linked_child(self) -> bool:
         """True when acting *as* a child requires that child to be linked.
 
@@ -879,6 +893,20 @@ class TaskMateStorage:
         s = self._data.setdefault("settings", {})
         s["mandatory_escalation_reminder_minutes"] = max(1, int(reminder_minutes))
         s["mandatory_escalation_parent_minutes"] = max(1, int(parent_minutes))
+
+    # --- presence-aware reminders (#926) ---
+    def get_presence_arrival_min_away(self) -> int:
+        """Minutes a child must have been away for their arrival to earn a nudge."""
+        try:
+            value = (self._data.get("settings", {}) or {}).get(
+                "presence_arrival_min_away", DEFAULT_PRESENCE_ARRIVAL_MIN_AWAY
+            )
+            return max(0, int(value))
+        except (TypeError, ValueError):
+            return DEFAULT_PRESENCE_ARRIVAL_MIN_AWAY
+
+    def set_presence_arrival_min_away(self, minutes: int) -> None:
+        self._data.setdefault("settings", {})["presence_arrival_min_away"] = max(0, int(minutes))
 
     # Task groups management
     def get_task_groups(self) -> list[TaskGroup]:
@@ -1361,6 +1389,7 @@ class TaskMateStorage:
         }
         _NUMERIC_SETTINGS = (
             "history_days",
+            "chore_undo_seconds",
             "weekend_multiplier",
             "difficulty_multiplier_easy",
             "difficulty_multiplier_medium",

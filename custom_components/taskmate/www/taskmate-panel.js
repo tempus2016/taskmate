@@ -973,6 +973,10 @@ class TaskMatePanel extends HTMLElement {
       this._notifSetEscalation(t.dataset.escField, t.value);
       return;
     }
+    if (t.dataset.act === "notif-set-presence-arrival") {
+      this._notifSetPresenceArrival(t.value);
+      return;
+    }
     if (t.dataset.act === "notif-update-custom") {
       this._notifUpdateCustomField(t.dataset.customId, t.dataset.field, t.value);
       return;
@@ -1236,13 +1240,14 @@ class TaskMatePanel extends HTMLElement {
         unavailability_entity: c.unavailability_entity || "",
         pause_streak_when_unavailable: !!c.pause_streak_when_unavailable,
         linked_user_id: c.linked_user_id || "",
+        presence_entity: c.presence_entity || "",
       } });
     } else {
       this._openDialog({ kind: "child", mode: "add", data: {
         name: "", avatar: "mdi:account-circle", availability_entity: "",
         availability_inverted: false, unavailability_entity: "",
         pause_streak_when_unavailable: false,
-        linked_user_id: "",
+        linked_user_id: "", presence_entity: "",
       } });
     }
   }
@@ -1262,11 +1267,13 @@ class TaskMatePanel extends HTMLElement {
       ? { type: "taskmate/add_child", name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
-          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "" }
+          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
+          presence_entity: d.presence_entity || "" }
       : { type: "taskmate/update_child", child_id: d.id, name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
-          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "" };
+          pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
+          presence_entity: d.presence_entity || "" };
     const { ok, err } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
     this._closeDialog(true);
@@ -2304,6 +2311,14 @@ class TaskMatePanel extends HTMLElement {
     root.querySelectorAll("ha-icon-picker[data-setting]").forEach(el => {
       payload[el.dataset.setting] = el.value || "";
     });
+    // Child undo window (#918): whole seconds, 0 (off) to 3600.
+    if ("chore_undo_seconds" in payload) {
+      const secs = payload.chore_undo_seconds;
+      if (!Number.isInteger(secs) || secs < 0 || secs > 3600) {
+        this._showToast("err", this._t("panel.settings_chore_undo_invalid"));
+        return;
+      }
+    }
     // Non-admin parent role (#661): collect the ticked HA users.
     const parentBoxes = root.querySelectorAll("input[type=checkbox][data-parent-user]");
     if (parentBoxes.length) {
@@ -2400,6 +2415,13 @@ class TaskMatePanel extends HTMLElement {
     const n = Math.max(1, Math.min(1440, Math.round(Number(value) || cur[field])));
     cur[field] = n;
     await this._callWS({ type: "taskmate/notifications/set_escalation", reminder_minutes: cur.reminder_minutes, parent_minutes: cur.parent_minutes });
+    await this._fetchState();
+  }
+
+  async _notifSetPresenceArrival(value) {
+    const n = Math.max(0, Math.min(1440, Math.round(Number(value))));
+    const { ok, err } = await this._callWS({ type: "taskmate/notifications/set_presence_arrival", min_away_minutes: Number.isFinite(n) ? n : 30 });
+    if (!ok) this._showToast("err", this._t("panel.toast_save_failed", { error: err }));
     await this._fetchState();
   }
 
@@ -4597,6 +4619,10 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-setting-label">${this._t("panel.settings_require_linked_child_label")}<small>${this._t("panel.settings_require_linked_child_hint")}</small></div>
               <ha-switch data-setting="require_linked_child" ${s.require_linked_child ? "checked" : ""}></ha-switch>
             </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_chore_undo_label")}<small>${this._t("panel.settings_chore_undo_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="3600" step="1" data-setting="chore_undo_seconds" aria-label="${this._esc(this._t("panel.settings_chore_undo_label"))}" value="${this._num(s.chore_undo_seconds, 0)}">
+            </div>
           </div>
         </div>
 
@@ -5036,6 +5062,15 @@ class TaskMatePanel extends HTMLElement {
                   ${this._t("panel.notif_escalation_minutes_suffix")}
                 </div>
               ` : ""}
+              ${t.id === "presence_arrival" ? `
+                <div class="tm-meta" style="margin-top:6px;display:flex;align-items:center;gap:8px">
+                  ${this._t("panel.notif_presence_min_away_label")}
+                  <span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">
+                    <input type="number" min="0" max="1440" class="tm-notif-time-input" value="${this._esc(String(settings.presence_arrival_min_away ?? 30))}" data-act="notif-set-presence-arrival" style="display:inline;margin:0;width:70px">
+                    ${this._t("panel.notif_escalation_minutes_suffix")}
+                  </span>
+                </div>
+              ` : ""}
               ${t.id === "mandatory_parent_alert" ? `
                 <div class="tm-meta" style="margin-top:6px;display:flex;align-items:center;gap:8px">
                   ${this._t("panel.notif_escalation_parent_label")}
@@ -5367,6 +5402,8 @@ class TaskMatePanel extends HTMLElement {
           this._t("panel.child_unavailability_hint")),
         hasAway ? this._switch(this._t("panel.child_pause_streak_label"), "pause_streak_when_unavailable", d.pause_streak_when_unavailable,
           this._t("panel.child_pause_streak_hint")) : "",
+        this._entityPickerField(this._t("panel.child_presence_label"), "presence_entity", d.presence_entity, ["person", "device_tracker"],
+          this._t("panel.child_presence_hint")),
         this._select(
           this._t("panel.child_link_user_label"), "linked_user_id", d.linked_user_id || "",
           [{ v: "", l: this._t("panel.child_link_user_none") }].concat(

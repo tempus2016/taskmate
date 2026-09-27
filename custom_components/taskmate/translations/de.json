@@ -202,6 +202,16 @@
         }
       }
     },
+    "undo_chore": {
+      "name": "Aufgabe rückgängig machen",
+      "description": "Lässt ein Kind seine eigene Aufgabe zurücknehmen — eine offene Einreichung, bis ein Elternteil sie prüft, oder eine automatisch genehmigte innerhalb des Rückgängig-Zeitfensters. Aus, solange das Zeitfenster in den TaskMate-Einstellungen nicht über 0 liegt; alles, was ein Elternteil geprüft hat, kann nur ein Elternteil rückgängig machen.",
+      "fields": {
+        "completion_id": {
+          "name": "Erledigungs-ID",
+          "description": "Die ID der erledigten Aufgabe des Kindes, die zurückgenommen werden soll"
+        }
+      }
+    },
     "undo_chore_approval": {
       "name": "Aufgabengenehmigung rückgängig machen",
       "description": "Eine versehentliche Aufgabengenehmigung rückgängig machen — entfernt die vergebenen Punkte und setzt die Erledigung zurück auf ausstehend, sodass sie erneut genehmigt werden kann.",

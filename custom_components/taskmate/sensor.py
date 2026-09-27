@@ -17,6 +17,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import images
+from .chore_undo import child_undo_metadata, undo_window_seconds
 from .const import DOMAIN
 from .coord_rewards import reward_is_time_locked
 from .coordinator import TaskMateCoordinator
@@ -122,6 +123,7 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
         "reward_lookup": reward_lookup,
         "season_points": season_points,
         "all_completions": all_completions,
+        "chore_undo_seconds": undo_window_seconds(coordinator.storage),
         "pending_completions": pending_completions,
         "pending_reward_claim_objs": pending_reward_claim_objs,
         "pool_alloc_objs": pool_alloc_objs,
@@ -448,6 +450,10 @@ def _build_todays_completions(common: dict) -> list[dict]:
         }
         if timed_secs > 0:
             rec["timed_duration_seconds"] = timed_secs
+        # Child undo (#918): child_undo_pending / child_undo_until, present only
+        # on a completion the child may still take back, so the attribute
+        # stays small (and empty whenever the window is 0).
+        rec.update(child_undo_metadata(comp, common["all_completions"], common.get("chore_undo_seconds", 0)))
         # Emit the bare (unsigned) photo path. A card's <img> carries no bearer
         # token, so the card signs each path per-viewer via auth/sign_path before
         # rendering — this keeps a self-authenticating URL out of this
