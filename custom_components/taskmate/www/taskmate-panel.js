@@ -30,6 +30,8 @@ const BADGE_METRICS = [
   { v: "birthday",      lk: "badge.metric_birthday" },
 ];
 const BADGE_BOOL_METRICS = ["first_chore", "first_reward", "birthday"];
+// Recap frequencies (#929), in display order. Mirrors RECAP_FREQUENCIES in coord_recaps.py.
+const RECAP_FREQUENCIES = ["weekly", "monthly", "every_3_months", "every_6_months", "every_9_months", "yearly"];
 const BADGE_OPERATORS = ["≥", "=", "≤", ">", "<", "≠"];
 const BADGE_OP_VALUES = { "≥": ">=", "=": "==", "≤": "<=", ">": ">", "<": "<", "≠": "!=" };
 const BADGE_TIERS = [
@@ -750,6 +752,11 @@ class TaskMatePanel extends HTMLElement {
     if (act === "notif-toggle-custom")    { this._notifToggleCustom(t.dataset.customId, t.checked); return; }
     if (act === "notif-toggle-day")       { this._notifToggleDay(t.dataset.customId, Number(t.dataset.day), t.checked); return; }
     if (act === "notif-toggle-recipient") { this._notifToggleRecipient(t.dataset.customId, t.dataset.recipientId); return; }
+
+    // Recaps (#929)
+    if (act === "recap-tog")     { this._recapToggle(t.dataset.who, t.dataset.freq); return; }
+    if (act === "recap-mode")    { this._recapSetMode(t.dataset.who, t.dataset.mode); return; }
+    if (act === "recap-preview") { this._doRecapPreview(); return; }
 
     // Settings
     if (act === "save-settings") { this._doSaveSettings(); return; }
@@ -2271,6 +2278,181 @@ class TaskMatePanel extends HTMLElement {
     });
   }
 
+  // ---- Recaps (#929) -----------------------------------------------------
+  // Frequencies are multi-select chips held in a draft until "Save settings",
+  // like the time-period and vacation editors. Chip clicks repaint only the
+  // row they belong to, so unsaved edits elsewhere on the tab survive.
+
+  _recapDraftState() {
+    if (!this._recapDraft) {
+      const s = this._state?.settings || {};
+      const family = Array.isArray(s.recap_frequencies) ? s.recap_frequencies : ["monthly"];
+      const kids = s.recap_child_frequencies && typeof s.recap_child_frequencies === "object" ? s.recap_child_frequencies : {};
+      this._recapDraft = {
+        family: [...family],
+        children: Object.fromEntries(Object.entries(kids).map(([id, v]) => [id, Array.isArray(v) ? [...v] : []])),
+      };
+    }
+    return this._recapDraft;
+  }
+
+  _recapChips(selected, who, readOnly) {
+    return RECAP_FREQUENCIES.map(f => {
+      const on = selected.includes(f);
+      return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}"
+        ${readOnly ? "disabled" : `data-act="recap-tog" data-who="${this._esc(who)}" data-freq="${f}"`}>${on ? "✓ " : ""}${this._esc(this._t("recap.freq." + f))}</button>`;
+    }).join("");
+  }
+
+  _recapNextList(selected) {
+    if (!selected.length) {
+      return `<span class="tm-recap-off"><ha-icon icon="mdi:information-outline"></ha-icon> ${this._t("panel.recaps_off")}</span>`;
+    }
+    const next = this._recapSchedule?.next || {};
+    const lang = this._hass?.locale?.language || this._hass?.language || undefined;
+    return RECAP_FREQUENCIES.filter(f => selected.includes(f)).map(f => {
+      let when = "…";
+      if (next[f]) {
+        const [y, m, d] = next[f].split("-").map(Number);
+        try {
+          when = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(lang, { timeZone: "UTC", weekday: "short", day: "numeric", month: "short", year: "numeric" });
+        } catch (e) { when = next[f]; }
+      }
+      return `<span><b>${this._esc(this._t("recap.freq." + f))}:</b> ${this._esc(when)}</span>`;
+    }).join("");
+  }
+
+  _recapFamilyRow() {
+    const d = this._recapDraftState();
+    return `
+      <div class="tm-setting-label">${this._t("panel.recaps_frequency_label")}<small>${this._t("panel.recaps_frequency_hint")}</small></div>
+      <div class="tm-recap-cell">
+        <div class="tm-chip-row">${this._recapChips(d.family, "__family__", false)}</div>
+        <div class="tm-recap-next">${this._recapNextList(d.family)}</div>
+        ${d.family.includes("every_9_months") ? `<div class="tm-meta">${this._t("panel.recaps_nine_month_note")}</div>` : ""}
+      </div>`;
+  }
+
+  _recapChildRow(child) {
+    const d = this._recapDraftState();
+    const custom = Object.prototype.hasOwnProperty.call(d.children, child.id);
+    const selected = custom ? d.children[child.id] : d.family;
+    const id = this._esc(child.id);
+    return `
+      <td><strong>${this._esc(child.name)}</strong></td>
+      <td>
+        <div class="tm-recap-cell">
+          <div class="tm-recap-mode" role="group">
+            <button type="button" class="${custom ? "" : "on"}" aria-pressed="${!custom}" data-act="recap-mode" data-who="${id}" data-mode="default">${this._t("panel.recaps_mode_default")}</button>
+            <button type="button" class="${custom ? "on" : ""}" aria-pressed="${custom}" data-act="recap-mode" data-who="${id}" data-mode="custom">${this._t("panel.recaps_mode_custom")}</button>
+          </div>
+          <div class="tm-chip-row">${this._recapChips(selected, child.id, !custom)}</div>
+        </div>
+      </td>
+      <td><div class="tm-recap-next">${this._recapNextList(selected)}</div></td>`;
+  }
+
+  _renderRecapsSection() {
+    const s = this._state?.settings || {};
+    const children = this._state?.children || [];
+    if (!this._recapSchedule && !this._recapScheduleLoading) this._loadRecapSchedule();
+    const retention = s.recap_retention || "forever";
+    return `
+        <div class="tm-section tm-recaps">
+          <div class="tm-section-head"><div><h3>${this._t("panel.recaps_title")}</h3><p class="tm-meta">${this._t("panel.recaps_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row" data-recap-row="__family__">${this._recapFamilyRow()}</div>
+            ${children.length ? `
+            <div class="tm-recap-kids">
+              <div class="tm-setting-label">${this._t("panel.recaps_per_child_label")}<small>${this._t("panel.recaps_per_child_hint")}</small></div>
+              <div class="tm-table-wrap"><table class="tm-table">
+                <thead><tr><th>${this._t("panel.recaps_col_child")}</th><th>${this._t("panel.recaps_col_frequency")}</th><th>${this._t("panel.recaps_col_next")}</th></tr></thead>
+                <tbody>
+                  ${children.map(c => `<tr data-recap-row="${this._esc(c.id)}">${this._recapChildRow(c)}</tr>`).join("")}
+                </tbody>
+              </table></div>
+            </div>` : ""}
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.recaps_notify_label")}<small>${this._t("panel.recaps_notify_hint")}</small></div>
+              <div class="tm-recap-switches">
+                <label><ha-switch data-setting="recap_notify_children" ${s.recap_notify_children !== false ? "checked" : ""}></ha-switch> ${this._t("panel.recaps_notify_children")}</label>
+                <label><ha-switch data-setting="recap_notify_parents" ${s.recap_notify_parents !== false ? "checked" : ""}></ha-switch> ${this._t("panel.recaps_notify_parents")}</label>
+              </div>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.recaps_send_time_label")}<small>${this._t("panel.recaps_send_time_hint")}</small></div>
+              <input type="time" class="tm-input" data-setting="recap_send_time" value="${this._esc(s.recap_send_time || "08:00")}" style="max-width:140px">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.recaps_retention_label")}<small>${this._t("panel.recaps_retention_hint")}</small></div>
+              <select class="tm-select" data-setting="recap_retention">
+                ${["1y", "2y", "forever"].map(v => `<option value="${v}" ${v === retention ? "selected" : ""}>${this._esc(this._t("panel.recaps_retention_" + v))}</option>`).join("")}
+              </select>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.recaps_compare_label")}<small>${this._t("panel.recaps_compare_hint")}</small></div>
+              <ha-switch data-setting="recap_compare" ${s.recap_compare !== false ? "checked" : ""}></ha-switch>
+            </div>
+            ${children.length ? `
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.recaps_preview_label")}<small>${this._t("panel.recaps_preview_hint")}</small></div>
+              <div class="tm-recap-preview">
+                <select class="tm-select" data-recap-preview-child aria-label="${this._esc(this._t("panel.recaps_col_child"))}">
+                  ${children.map(c => `<option value="${this._esc(c.id)}">${this._esc(c.name)}</option>`).join("")}
+                </select>
+                <button type="button" class="tm-btn" data-act="recap-preview"><ha-icon icon="mdi:eye-outline"></ha-icon> ${this._t("panel.recaps_preview_btn")}</button>
+              </div>
+            </div>` : ""}
+          </div>
+        </div>`;
+  }
+
+  _recapRepaintRows() {
+    const family = this.querySelector('[data-recap-row="__family__"]');
+    if (family) family.innerHTML = this._recapFamilyRow();
+    for (const c of this._state?.children || []) {
+      const row = this.querySelector(`tr[data-recap-row="${CSS.escape(c.id)}"]`);
+      if (row) row.innerHTML = this._recapChildRow(c);
+    }
+  }
+
+  _recapToggle(who, freq) {
+    if (!RECAP_FREQUENCIES.includes(freq)) return;
+    const d = this._recapDraftState();
+    const list = who === "__family__" ? d.family : d.children[who];
+    if (!list) return;
+    const i = list.indexOf(freq);
+    if (i >= 0) list.splice(i, 1); else list.push(freq);
+    this._recapRepaintRows();
+  }
+
+  _recapSetMode(who, mode) {
+    const d = this._recapDraftState();
+    if (mode === "custom") {
+      if (!Object.prototype.hasOwnProperty.call(d.children, who)) d.children[who] = [...d.family];
+    } else {
+      delete d.children[who];
+    }
+    this._recapRepaintRows();
+  }
+
+  async _loadRecapSchedule() {
+    this._recapScheduleLoading = true;
+    const { ok, res } = await this._callWS({ type: "taskmate/recaps/schedule" });
+    this._recapScheduleLoading = false;
+    if (!ok) return;
+    this._recapSchedule = res;
+    this._recapRepaintRows();
+  }
+
+  async _doRecapPreview() {
+    const childId = this.querySelector("[data-recap-preview-child]")?.value;
+    if (!childId) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/recaps/preview", child_id: childId });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._showToast("ok", this._t("panel.recaps_preview_done"));
+  }
+
   _renderVacationSection() {
     if (!this._vacationDraft) {
       const saved = (this._state?.settings?.vacation_periods) || [];
@@ -2455,8 +2637,16 @@ class TaskMatePanel extends HTMLElement {
       }
       payload.vacation_periods = vacs;
     }
+    if (this._recapDraft) {
+      // Recaps (#929): only children that still exist keep a Custom override.
+      const ids = new Set((this._state.children || []).map(c => c.id));
+      payload.recap_frequencies = [...this._recapDraft.family];
+      payload.recap_child_frequencies = Object.fromEntries(
+        Object.entries(this._recapDraft.children).filter(([id]) => ids.has(id)));
+    }
     const { ok, err, res } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
+    this._recapDraft = null;
     this._timePeriodsDraft = null;  // rebuild from saved state on next render
     this._vacationDraft = null;
     this._settingsEntityDraft = null;
@@ -5042,6 +5232,8 @@ class TaskMatePanel extends HTMLElement {
             </div>
           </div>
         </div>
+
+        ${this._renderRecapsSection()}
 
         <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.settings_show_ids_label")}</h3><p class="tm-meta">${this._t("panel.settings_show_ids_hint")}</p></div></div>
@@ -8190,6 +8382,21 @@ class TaskMatePanel extends HTMLElement {
       .tm-sched-tick { color: var(--tm-success, #2e7d32); font-weight: 800; }
 
       .tm-chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+      /* Recaps (#929) */
+      .tm-recap-cell { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+      .tm-recap-next { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--tm-text-muted); }
+      .tm-recap-next b { color: var(--tm-text); font-weight: 500; }
+      .tm-recap-off { display: inline-flex; align-items: center; gap: 6px; color: var(--tm-warning, #f5b041); }
+      .tm-recap-off ha-icon { --mdc-icon-size: 14px; }
+      .tm-recap-kids { padding: 14px 20px; border-top: 1px solid var(--tm-border-soft); display: flex; flex-direction: column; gap: 10px; }
+      .tm-recap-kids .tm-table td { vertical-align: top; }
+      .tm-recap-mode { display: inline-flex; align-self: flex-start; border: 1px solid var(--tm-border); border-radius: 8px; overflow: hidden; }
+      .tm-recap-mode button { background: transparent; border: 0; color: var(--tm-text-muted); padding: 5px 11px; font: inherit; font-size: 12px; cursor: pointer; }
+      .tm-recap-mode button.on { background: var(--tm-accent-soft); color: var(--tm-accent-text); font-weight: 600; }
+      .tm-chip-btn[disabled] { opacity: 0.55; cursor: default; }
+      .tm-recap-switches { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
+      .tm-recap-switches label { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--tm-text-muted); }
+      .tm-recap-preview { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
       .tm-chip-btn {
         background: var(--tm-surface-0);
         color: var(--tm-text-muted);

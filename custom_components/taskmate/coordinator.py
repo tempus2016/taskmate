@@ -28,6 +28,7 @@ from .coord_mandatory import MandatoryMixin
 from .coord_notifications import NotificationCoordinator
 from .coord_points import PointsMixin
 from .coord_quests import QuestsMixin
+from .coord_recaps import RecapsMixin
 from .coord_reports import ReportsMixin
 from .coord_rewards import RewardsMixin
 from .coord_roulette import RouletteMixin
@@ -67,6 +68,7 @@ class TaskMateCoordinator(
     BirthdaysMixin,
     TagsMixin,
     TeamworkMixin,
+    RecapsMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -396,6 +398,9 @@ class TaskMateCoordinator(
         # Mandatory-chore period-end detection (#532)
         self.arm_mandatory_schedules()
         await self.async_catchup_mandatory_misses()
+        # Recaps (#929): build any recap whose period ended while HA was off,
+        # then arm the midnight build and the daily announcement.
+        await self.async_start_recaps()
 
     @callback
     def _async_weekly_digest_check(self, now: datetime) -> None:
@@ -752,6 +757,7 @@ class TaskMateCoordinator(
                 unsub()
                 setattr(self, attr, None)
         self.disarm_mandatory_schedules()
+        self.disarm_recap_schedules()
         # Flush any pending debounced save so an entry unload/reload can't drop
         # the last mutation (PERF-3).
         await self.storage.async_save_now()

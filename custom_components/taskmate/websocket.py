@@ -1745,6 +1745,14 @@ _SUBKEY_SETTINGS = {
     "require_linked_child",
     "chore_undo_seconds",
     "history_days",
+    # Recaps (#929)
+    "recap_frequencies",
+    "recap_child_frequencies",
+    "recap_notify_children",
+    "recap_notify_parents",
+    "recap_send_time",
+    "recap_retention",
+    "recap_compare",
     "streak_reset_mode",
     "card_design",
     "weekend_multiplier",
@@ -1939,6 +1947,35 @@ def _validate_vacation_periods(raw: list) -> tuple[list[dict] | None, str | None
     return sorted(periods, key=lambda p: p["start"]), None
 
 
+def _validate_recap_child_frequencies(value: Any) -> dict[str, list[str]]:
+    """Per-child recap overrides (#929): {child_id: [frequency, ...]}.
+
+    A child present here is on "Custom" (an empty list = recaps off); a child
+    absent inherits the family default.
+    """
+    from .coord_recaps import RECAP_FREQUENCIES
+
+    if not isinstance(value, dict) or len(value) > 100:
+        raise vol.Invalid("recap_child_frequencies must be an object of child id -> frequencies")
+    out: dict[str, list[str]] = {}
+    for child_id, freqs in value.items():
+        if not isinstance(child_id, str) or not isinstance(freqs, list):
+            raise vol.Invalid("recap_child_frequencies must map child ids to lists")
+        bad = [f for f in freqs if f not in RECAP_FREQUENCIES]
+        if bad:
+            raise vol.Invalid(f"unknown recap frequency: {bad[0]}")
+        out[child_id] = [f for f in RECAP_FREQUENCIES if f in freqs]
+    return out
+
+
+def _validate_recap_frequencies(value: Any) -> list[str]:
+    from .coord_recaps import RECAP_FREQUENCIES
+
+    if not isinstance(value, list) or any(f not in RECAP_FREQUENCIES for f in value):
+        raise vol.Invalid("recap_frequencies must be a list of recap frequencies")
+    return [f for f in RECAP_FREQUENCIES if f in value]
+
+
 def _validate_chore_undo_seconds(value: Any) -> int:
     """A whole number of seconds from 0 to 3600 (#918). Booleans are refused."""
     if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 3600:
@@ -1976,6 +2013,13 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("unlock_allowlist"): [str],
     vol.Optional("require_linked_child"): bool,
     vol.Optional("chore_undo_seconds"): _validate_chore_undo_seconds,
+    vol.Optional("recap_frequencies"): _validate_recap_frequencies,
+    vol.Optional("recap_child_frequencies"): _validate_recap_child_frequencies,
+    vol.Optional("recap_notify_children"): bool,
+    vol.Optional("recap_notify_parents"): bool,
+    vol.Optional("recap_send_time"): vol.Match(r"^([01]\d|2[0-3]):[0-5]\d$"),
+    vol.Optional("recap_retention"): vol.In(["1y", "2y", "forever"]),
+    vol.Optional("recap_compare"): bool,
     vol.Optional("parent_routing"): vol.In(["all", "home", "round_robin"]),
     vol.Optional("read_aloud_media_player"): str,
     vol.Optional("read_aloud_tts_entity"): str,
@@ -2080,6 +2124,9 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
         # Period boundaries moved → re-arm the mandatory-chore end-of-period checks (#532)
         if "time_periods" in changed:
             await coordinator.async_rearm_mandatory_schedules()
+        # Recaps (#929): note when a frequency was switched on, re-arm the send time.
+        if any(k.startswith("recap_") for k in changed):
+            await coordinator.async_recap_settings_changed()
         await coordinator.async_refresh()
     connection.send_result(msg["id"], {"updated": changed})
 
@@ -2995,7 +3042,9 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     if hass.data.get(DOMAIN, {}).get(WS_REGISTERED):
         _LOGGER.debug("TaskMate WS commands already registered, skipping")
         return
-    for cmd in _COMMANDS:
+    from .websocket_recaps import RECAP_COMMANDS
+
+    for cmd in (*_COMMANDS, *RECAP_COMMANDS):
         websocket_api.async_register_command(hass, cmd)
     hass.data.setdefault(DOMAIN, {})[WS_REGISTERED] = True
-    _LOGGER.info("Registered %d TaskMate WebSocket commands", len(_COMMANDS))
+    _LOGGER.info("Registered %d TaskMate WebSocket commands", len(_COMMANDS) + len(RECAP_COMMANDS))

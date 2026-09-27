@@ -38,6 +38,7 @@ from .const import (
     NOTIF_TYPE_PENDING_CHORE_APPROVAL,
     NOTIF_TYPE_PENDING_REWARD_CLAIM,
     NOTIF_TYPE_PRESENCE_ARRIVAL,
+    NOTIF_TYPE_RECAP_READY,
     NOTIF_TYPE_SEASON_CHAMPION,
     NOTIF_TYPE_STREAK_AT_RISK,
     NOTIF_TYPE_STREAK_FREEZE_USED,
@@ -104,6 +105,9 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_BIRTHDAY, "child", True, True, False, False),
     NotificationTypeMeta(NOTIF_TYPE_STREAK_FREEZE_USED, "both", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_PRESENCE_ARRIVAL, "child", False, False, False, False),
+    # Recaps (#929): one push per child plus one grouped parent message, sent
+    # at the recap send time rather than at midnight when they're built.
+    NotificationTypeMeta(NOTIF_TYPE_RECAP_READY, "both", True, False, False, True),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
@@ -355,6 +359,7 @@ class NotificationCoordinator:
             "goal_reward": "a family movie night",
             "multiplier": "2",
             "count": 3,
+            "period": "January",
             "points_name": self.storage.get_points_name(),
         }
         message = "[TEST] " + self._render_template(meta, ctx)
@@ -436,6 +441,7 @@ class NotificationCoordinator:
             NOTIF_TYPE_BIRTHDAY: "🎂 Happy birthday, {child_name}! Every chore pays {multiplier}× today.",
             NOTIF_TYPE_STREAK_FREEZE_USED: "❄️ A streak freeze saved {child_name}'s {streak}-day streak ({freezes_left} left).",
             NOTIF_TYPE_PRESENCE_ARRIVAL: "🏠 You're home, {child_name} — {count} chores left today.",
+            NOTIF_TYPE_RECAP_READY: "✨ Your {period} recap is ready, {child_name}! Tap to watch it.",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:
@@ -498,6 +504,11 @@ class NotificationCoordinator:
         if nav_url and service.startswith("mobile_app"):
             push["clickAction"] = nav_url
             push["url"] = nav_url
+
+        # A caller-supplied tag makes a re-send replace the earlier push on the
+        # phone instead of stacking (recaps, #929). Approvals set their own.
+        if context.get("tag") and service.startswith("mobile_app"):
+            push.setdefault("tag", context["tag"])
 
         # Grouping (#811): stack TaskMate's notifications into one bundle so
         # they don't scatter through the phone's other HA alerts. Android reads
@@ -667,6 +678,64 @@ class NotificationCoordinator:
             # A stale push: the item was reviewed elsewhere, or the reward has
             # since sold out. Nothing to do, but say why in the log.
             _LOGGER.info("Mobile action %s could not be applied: %s", action, err)
+
+    async def send_recap_ready(
+        self,
+        per_child: list[dict[str, Any]],
+        parent_message: str,
+        *,
+        to_children: bool = True,
+        to_parents: bool = True,
+    ) -> list[str]:
+        """Announce new recaps (#929): one push per child, one grouped for parents.
+
+        Goes around ``fire()`` because a single dispatch here is several
+        messages with different text. The routing rules are the same: the
+        master switch, each recipient's route, child quiet hours and the parent
+        routing policy. One ``taskmate_recap_ready`` event fires per child even
+        when the notification is switched off, like every other type.
+        """
+        meta = NOTIFICATION_TYPES_BY_ID[NOTIF_TYPE_RECAP_READY]
+        cfg = self.storage.get_notification_config(NOTIF_TYPE_RECAP_READY)
+        nav_url = self._resolve_nav_url(cfg)
+        group = self._resolve_group(cfg)
+        sent: list[str] = []
+        for item in per_child:
+            rid = f"child:{item['child_id']}"
+            fired: list[str] = []
+            route = cfg.routes.get(rid)
+            if (
+                cfg.master_enabled
+                and to_children
+                and route is not None
+                and route.enabled
+                and not self._child_in_quiet_hours(rid)
+            ):
+                notify_service = self._resolve_notify_service(rid)
+                if notify_service:
+                    ctx = {**item, "tag": f"taskmate_recap_{item['child_id']}"}
+                    await self._send_to(notify_service, item["message"], meta, ctx, nav_url, group)
+                    fired.append(rid)
+            sent.extend(fired)
+            self._fire_bus_event(
+                NOTIF_TYPE_RECAP_READY,
+                {
+                    "child_id": item["child_id"],
+                    "child_name": item["child_name"],
+                    "count": len(item.get("recaps", [])),
+                    "recaps": item.get("recaps", []),
+                },
+                fired,
+            )
+        if cfg.master_enabled and to_parents and per_child:
+            for rid in sorted(self._route_parents(NOTIF_TYPE_RECAP_READY, cfg, None)):
+                notify_service = self._resolve_notify_service(rid)
+                if not notify_service:
+                    continue
+                ctx = {"tag": "taskmate_recaps"}
+                await self._send_to(notify_service, parent_message, meta, ctx, nav_url, group)
+                sent.append(rid)
+        return sent
 
     # ------------------------------------------------------------------
     # Scheduler — time-gated callbacks

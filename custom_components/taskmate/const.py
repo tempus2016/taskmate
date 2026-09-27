@@ -279,6 +279,7 @@ NOTIF_TYPE_FAMILY_GOAL_REACHED: Final = "family_goal_reached"
 NOTIF_TYPE_BIRTHDAY: Final = "birthday"
 NOTIF_TYPE_STREAK_FREEZE_USED: Final = "streak_freeze_used"
 NOTIF_TYPE_PRESENCE_ARRIVAL: Final = "presence_arrival"
+NOTIF_TYPE_RECAP_READY: Final = "recap_ready"
 
 # Presence-aware reminders (#926): the default for how long a child must have
 # been away before arriving home earns a "you're home" nudge.
