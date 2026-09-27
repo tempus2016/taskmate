@@ -923,6 +923,170 @@
           "description": "Pontos a converter em dinheiro e deduzir"
         }
       }
+    },
+    "add_wish": {
+      "name": "Adicionar desejo",
+      "description": "Uma criança adiciona algo para o qual quer economizar. Fica aguardando a aprovação de um responsável.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que faz o desejo"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "O que a criança quer"
+        },
+        "target": {
+          "name": "Meta",
+          "description": "Número de pontos sugerido. O responsável pode alterá-lo ao aprovar."
+        },
+        "link": {
+          "name": "Link",
+          "description": "Endereço web opcional (http ou https) do item"
+        },
+        "photo_url": {
+          "name": "Imagem",
+          "description": "Imagem opcional recém-enviada pelo endpoint de fotos do TaskMate"
+        }
+      }
+    },
+    "withdraw_wish": {
+      "name": "Retirar desejo",
+      "description": "Uma criança retira um desejo que ainda aguarda aprovação, ou remove um que foi recusado.",
+      "fields": {
+        "wish_id": {
+          "name": "ID do desejo",
+          "description": "O ID do desejo"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança dona do desejo"
+        }
+      }
+    },
+    "move_points_to_wish": {
+      "name": "Mover pontos para desejo",
+      "description": "Move pontos do saldo disponível de uma criança para um de seus desejos aprovados.",
+      "fields": {
+        "wish_id": {
+          "name": "ID do desejo",
+          "description": "O ID do desejo"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança dona do desejo"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "Quantos pontos mover (limitado ao saldo e ao que ainda falta para o desejo)"
+        }
+      }
+    },
+    "take_points_from_wish": {
+      "name": "Retirar pontos do desejo",
+      "description": "Devolve à criança parte dos próprios pontos guardados em um desejo. Os pontos prometidos nunca saem.",
+      "fields": {
+        "wish_id": {
+          "name": "ID do desejo",
+          "description": "O ID do desejo"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança dona do desejo"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "Quantos pontos guardados retirar (limitado ao que a criança guardou)"
+        }
+      }
+    },
+    "request_wish_redeem": {
+      "name": "Pedir para resgatar desejo",
+      "description": "Um desejo totalmente financiado vira um pedido de recompensa aguardando a aprovação do responsável.",
+      "fields": {
+        "wish_id": {
+          "name": "ID do desejo",
+          "description": "O ID do desejo"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança dona do desejo"
+        }
+      }
+    },
+    "approve_wish": {
+      "name": "Aprovar desejo",
+      "description": "Transforma um desejo pendente em uma meta de economia, opcionalmente com outro valor.",
+      "fields": {
+        "wish_id": {
+          "name": "ID do desejo",
+          "description": "O ID do desejo"
+        },
+        "target": {
+          "name": "Meta",
+          "description": "Pontos que o desejo custa. Deixe vazio para manter a sugestão da criança."
+        }
+      }
+    },
+    "decline_wish": {
+      "name": "Recusar desejo",
+      "description": "Recusa um desejo. Os pontos guardados voltam para a criança e as promessas são anuladas.",
+      "fields": {
+        "wish_id": {
+          "name": "ID do desejo",
+          "description": "O ID do desejo"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo opcional mostrado à criança"
+        }
+      }
+    },
+    "pledge_to_wish": {
+      "name": "Prometer para desejo",
+      "description": "Registra pontos que um familiar oferece para o desejo de uma criança. Nunca mexem em nenhum saldo.",
+      "fields": {
+        "wish_id": {
+          "name": "ID do desejo",
+          "description": "O ID do desejo"
+        },
+        "name": {
+          "name": "De",
+          "description": "De quem é a promessa, ex.: Vovó"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "Quantos pontos prometer (limitado ao que ainda falta para o desejo)"
+        },
+        "message": {
+          "name": "Mensagem",
+          "description": "Mensagem opcional para a criança"
+        }
+      }
+    },
+    "remove_wish_pledge": {
+      "name": "Remover promessa",
+      "description": "Desfaz uma promessa. Possível até o desejo ser resgatado.",
+      "fields": {
+        "wish_id": {
+          "name": "ID do desejo",
+          "description": "O ID do desejo"
+        },
+        "pledge_id": {
+          "name": "ID da promessa",
+          "description": "O ID da promessa a remover"
+        }
+      }
+    },
+    "remove_wish": {
+      "name": "Remover desejo",
+      "description": "Exclui um desejo. Os pontos guardados voltam para a criança e as promessas são anuladas.",
+      "fields": {
+        "wish_id": {
+          "name": "ID do desejo",
+          "description": "O ID do desejo"
+        }
+      }
     }
   },
   "entity": {

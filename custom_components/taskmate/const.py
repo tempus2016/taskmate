@@ -293,3 +293,27 @@ DEFAULT_NOTIFICATION_NAV_URL: Final = "/taskmate-admin"
 # scattering through the rest of the phone's HA notifications. Applied by
 # default — set it to "" in the panel to turn grouping off.
 DEFAULT_NOTIFICATION_GROUP: Final = "taskmate"
+
+# --- Wishlist with pledges (#932) ---
+# Wishes a child has open at once: waiting for approval, saving, or waiting
+# for the parent to hand the thing over.
+WISH_MAX_OPEN_PER_CHILD: Final = 5
+WISH_MAX_TARGET: Final = 100000
+# Pledges on one wish; each is typed by a parent, so this only bounds abuse.
+WISH_MAX_PLEDGES: Final = 50
+# Finished wishes kept per child: declined ones stay on the card (with the
+# reason) until dismissed, redeemed ones are the panel's history.
+WISH_KEEP_DECLINED_PER_CHILD: Final = 3
+WISH_KEEP_REDEEMED_PER_CHILD: Final = 20
+NOTIF_TYPE_WISH_REQUESTED: Final = "wish_requested"
+NOTIF_TYPE_WISH_PLEDGED: Final = "wish_pledged"
+SERVICE_ADD_WISH: Final = "add_wish"
+SERVICE_WITHDRAW_WISH: Final = "withdraw_wish"
+SERVICE_MOVE_POINTS_TO_WISH: Final = "move_points_to_wish"
+SERVICE_TAKE_POINTS_FROM_WISH: Final = "take_points_from_wish"
+SERVICE_REQUEST_WISH_REDEEM: Final = "request_wish_redeem"
+SERVICE_APPROVE_WISH: Final = "approve_wish"
+SERVICE_DECLINE_WISH: Final = "decline_wish"
+SERVICE_PLEDGE_TO_WISH: Final = "pledge_to_wish"
+SERVICE_REMOVE_WISH_PLEDGE: Final = "remove_wish_pledge"
+SERVICE_REMOVE_WISH: Final = "remove_wish"

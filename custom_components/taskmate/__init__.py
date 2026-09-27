@@ -247,6 +247,7 @@ _DYNAMIC_SELECTOR_FIELDS: dict[str, str] = {
     "penalty_id": "get_penalties",
     "bonus_id": "get_bonuses",
     "group_id": "get_task_groups",
+    "wish_id": "get_wishes",
 }
 
 _BASE_SERVICE_DESCRIPTIONS: dict | None = None
@@ -353,6 +354,7 @@ _AUDIT_TARGET_KEYS = (
     "claim_id",
     "transaction_id",
     "type_id",
+    "wish_id",
 )
 
 
@@ -1773,6 +1775,17 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         schema=vol.Schema({}),
     )
 
+    # Wishlist (#932): registered from its own module, through these same gates.
+    from .wishlist_services import async_register_wishlist_services
+
+    async_register_wishlist_services(
+        hass,
+        child_action=_audited,
+        parent_action=_parent,
+        get_coordinator=lambda: _get_coordinator(hass),
+        require_linked_child=lambda *args: _async_require_linked_child(*args),
+    )
+
 
 def _async_unregister_services(hass: HomeAssistant) -> None:
     """Unregister TaskMate services."""
@@ -1823,5 +1836,8 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         "revoke_badge",
         "rebuild_badges",
     ]
+    from .wishlist_services import WISHLIST_SERVICES
+
+    services.extend(WISHLIST_SERVICES)
     for service in services:
         hass.services.async_remove(DOMAIN, service)

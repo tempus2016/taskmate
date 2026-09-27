@@ -43,6 +43,8 @@ from .const import (
     NOTIF_TYPE_STREAK_FREEZE_USED,
     NOTIF_TYPE_STREAK_MILESTONE,
     NOTIF_TYPE_WEEKLY_DIGEST,
+    NOTIF_TYPE_WISH_PLEDGED,
+    NOTIF_TYPE_WISH_REQUESTED,
     QUALITY_RATINGS,
 )
 from .models import NotificationRoute
@@ -104,6 +106,11 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_BIRTHDAY, "child", True, True, False, False),
     NotificationTypeMeta(NOTIF_TYPE_STREAK_FREEZE_USED, "both", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_PRESENCE_ARRIVAL, "child", False, False, False, False),
+    # Wishlist (#932): a parent hears about a new wish to approve; the child
+    # hears when someone pledges towards one of theirs. Off until turned on,
+    # like every type added after the first release.
+    NotificationTypeMeta(NOTIF_TYPE_WISH_REQUESTED, "parent", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_WISH_PLEDGED, "child", False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
@@ -355,6 +362,9 @@ class NotificationCoordinator:
             "goal_reward": "a family movie night",
             "multiplier": "2",
             "count": 3,
+            "wish_name": "Lego set",
+            "target": 600,
+            "pledger": "Grandma",
             "points_name": self.storage.get_points_name(),
         }
         message = "[TEST] " + self._render_template(meta, ctx)
@@ -436,6 +446,8 @@ class NotificationCoordinator:
             NOTIF_TYPE_BIRTHDAY: "🎂 Happy birthday, {child_name}! Every chore pays {multiplier}× today.",
             NOTIF_TYPE_STREAK_FREEZE_USED: "❄️ A streak freeze saved {child_name}'s {streak}-day streak ({freezes_left} left).",
             NOTIF_TYPE_PRESENCE_ARRIVAL: "🏠 You're home, {child_name} — {count} chores left today.",
+            NOTIF_TYPE_WISH_REQUESTED: "{child_name} wished for '{wish_name}' ({target} {points_name}) — waiting for your approval.",
+            NOTIF_TYPE_WISH_PLEDGED: "💝 {pledger} added {points} {points_name} to your wish '{wish_name}'!",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:

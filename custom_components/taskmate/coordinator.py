@@ -39,6 +39,7 @@ from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
 from .coord_tts import ReadAloudMixin
 from .coord_unlocks import UnlocksMixin
+from .coord_wishlist import WishlistMixin
 from .models import Child
 from .storage import TaskMateStorage
 
@@ -67,6 +68,7 @@ class TaskMateCoordinator(
     BirthdaysMixin,
     TagsMixin,
     TeamworkMixin,
+    WishlistMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -928,6 +930,8 @@ class TaskMateCoordinator(
         # And out of any teamwork chore they had joined (#928), or the team
         # would count a member who can never be paid.
         self.storage.remove_team_joins_for_child(child_id)
+        # Their wishes (#932) go too — and the pictures stored for them.
+        await self._async_remove_wishes_for_child(child_id)
         # Remove child from chore assigned_to lists, and clear any approved swap
         # override that pointed at them so the chore isn't left assigned to a
         # child who no longer exists.

@@ -923,6 +923,170 @@
           "description": "Punkte, die in Bargeld umgerechnet und abgezogen werden"
         }
       }
+    },
+    "add_wish": {
+      "name": "Wunsch hinzufügen",
+      "description": "Ein Kind fügt etwas hinzu, auf das es sparen möchte. Es wartet auf die Freigabe durch ein Elternteil.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Die ID des Kindes, das sich etwas wünscht"
+        },
+        "name": {
+          "name": "Name",
+          "description": "Was sich das Kind wünscht"
+        },
+        "target": {
+          "name": "Ziel",
+          "description": "Vorgeschlagene Punktzahl, die es kostet. Das Elternteil kann sie bei der Freigabe ändern."
+        },
+        "link": {
+          "name": "Link",
+          "description": "Optionale Webadresse (http oder https) zum Artikel"
+        },
+        "photo_url": {
+          "name": "Bild",
+          "description": "Optionales Bild, das gerade über den TaskMate-Foto-Endpunkt hochgeladen wurde"
+        }
+      }
+    },
+    "withdraw_wish": {
+      "name": "Wunsch zurückziehen",
+      "description": "Ein Kind zieht einen Wunsch zurück, der noch auf Freigabe wartet, oder entfernt einen abgelehnten.",
+      "fields": {
+        "wish_id": {
+          "name": "Wunsch-ID",
+          "description": "Die ID des Wunsches"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Die ID des Kindes, dem der Wunsch gehört"
+        }
+      }
+    },
+    "move_points_to_wish": {
+      "name": "Punkte auf Wunsch übertragen",
+      "description": "Überträgt Punkte vom verfügbaren Guthaben eines Kindes auf einen seiner freigegebenen Wünsche.",
+      "fields": {
+        "wish_id": {
+          "name": "Wunsch-ID",
+          "description": "Die ID des Wunsches"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Die ID des Kindes, dem der Wunsch gehört"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Wie viele Punkte übertragen werden (höchstens das Guthaben und was dem Wunsch noch fehlt)"
+        }
+      }
+    },
+    "take_points_from_wish": {
+      "name": "Punkte aus Wunsch nehmen",
+      "description": "Gibt einem Kind einen Teil seiner eigenen gesparten Punkte aus einem Wunsch zurück. Zugesagte Punkte bleiben immer drin.",
+      "fields": {
+        "wish_id": {
+          "name": "Wunsch-ID",
+          "description": "Die ID des Wunsches"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Die ID des Kindes, dem der Wunsch gehört"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Wie viele gesparte Punkte zurückgenommen werden (höchstens das Gesparte des Kindes)"
+        }
+      }
+    },
+    "request_wish_redeem": {
+      "name": "Wunsch einlösen",
+      "description": "Ein voll finanzierter Wunsch wird zu einer Belohnungsanfrage, die auf die Freigabe der Eltern wartet.",
+      "fields": {
+        "wish_id": {
+          "name": "Wunsch-ID",
+          "description": "Die ID des Wunsches"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Die ID des Kindes, dem der Wunsch gehört"
+        }
+      }
+    },
+    "approve_wish": {
+      "name": "Wunsch freigeben",
+      "description": "Macht aus einem wartenden Wunsch ein Sparziel, optional mit einem anderen Zielwert.",
+      "fields": {
+        "wish_id": {
+          "name": "Wunsch-ID",
+          "description": "Die ID des Wunsches"
+        },
+        "target": {
+          "name": "Ziel",
+          "description": "Punkte, die der Wunsch kostet. Leer lassen, um den Vorschlag des Kindes zu übernehmen."
+        }
+      }
+    },
+    "decline_wish": {
+      "name": "Wunsch ablehnen",
+      "description": "Lehnt einen Wunsch ab. Gesparte Punkte gehen an das Kind zurück, Zusagen verfallen.",
+      "fields": {
+        "wish_id": {
+          "name": "Wunsch-ID",
+          "description": "Die ID des Wunsches"
+        },
+        "reason": {
+          "name": "Grund",
+          "description": "Optionaler Grund, der dem Kind angezeigt wird"
+        }
+      }
+    },
+    "pledge_to_wish": {
+      "name": "Für Wunsch zusagen",
+      "description": "Erfasst Punkte, die ein Verwandter zum Wunsch eines Kindes beisteuert. Sie berühren nie ein Guthaben.",
+      "fields": {
+        "wish_id": {
+          "name": "Wunsch-ID",
+          "description": "Die ID des Wunsches"
+        },
+        "name": {
+          "name": "Von",
+          "description": "Von wem die Zusage kommt, z. B. Oma"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Wie viele Punkte zugesagt werden (höchstens was dem Wunsch noch fehlt)"
+        },
+        "message": {
+          "name": "Nachricht",
+          "description": "Optionale Nachricht an das Kind"
+        }
+      }
+    },
+    "remove_wish_pledge": {
+      "name": "Zusage entfernen",
+      "description": "Macht eine Zusage rückgängig. Möglich, bis der Wunsch eingelöst ist.",
+      "fields": {
+        "wish_id": {
+          "name": "Wunsch-ID",
+          "description": "Die ID des Wunsches"
+        },
+        "pledge_id": {
+          "name": "Zusage-ID",
+          "description": "Die ID der Zusage, die entfernt werden soll"
+        }
+      }
+    },
+    "remove_wish": {
+      "name": "Wunsch entfernen",
+      "description": "Löscht einen Wunsch. Gesparte Punkte gehen an das Kind zurück, Zusagen verfallen.",
+      "fields": {
+        "wish_id": {
+          "name": "Wunsch-ID",
+          "description": "Die ID des Wunsches"
+        }
+      }
     }
   },
   "entity": {
