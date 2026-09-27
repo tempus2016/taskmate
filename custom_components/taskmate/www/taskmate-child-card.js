@@ -1730,6 +1730,12 @@ class TaskMateChildCard extends LitElement {
          Ported from docs/design/redesigns/frag/03-child.html.
       ══════════════════════════════════════════════════════════════════ */
       .tmd-chores { display: grid; gap: 11px; }
+      /* The designed chore lists are one-column grids. An auto column sizes
+         to the widest row's min-content, and a nowrap chore name makes that
+         the whole name, so a long name pushed every row's Done button off a
+         phone-width card (#916). minmax(0, 1fr) pins the column to the card
+         width, and the name ellipsises instead. */
+      .tmd-chores, .tmd-quests, .tmd-checklist { grid-template-columns: minmax(0, 1fr); }
       .tmd-chore {
         display: flex; align-items: center; gap: 10px;
         background: var(--tmd-surface-2);
@@ -2689,7 +2695,7 @@ class TaskMateChildCard extends LitElement {
 
   _designConsole(child, rows, _remaining, _tone) {
     if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
-    return html`<div class="grid">
+    return html`<div class="grid tmd-quests">
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
         <div class="tmd-quest ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""}" style="--ac:${r.tone}">
           <div class="num q-num" style="${r.done ? "color:var(--tmd-good)" : ""}">${r.done ? "✓" : String(r.index + 1).padStart(2, "0")}</div>

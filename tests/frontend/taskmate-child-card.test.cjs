@@ -290,3 +290,66 @@ test("weekly target: under the quota a multi-per-day chore stays outstanding", (
   const { done } = card.card._isChoreDone(chore, card.child, card.card.hass.states[ENTITY].attributes.todays_completions);
   assert.equal(done, false, "two of the three are still owed");
 });
+
+// ── long chore names stay on the card (#916) ─────────────────────────────
+// The designed chore lists are one-column grids. With an auto column the
+// widest row's min-content sets the column, and a nowrap name makes that the
+// whole name, so the Done button slid off a phone-width card. There is no
+// layout engine here, so pin the two halves of the fix: each designed list
+// renders into a container whose column can shrink, and the name still
+// truncates rather than wrapping.
+
+const STYLES = render(ChildCard.styles).markup;
+
+/** Every `selector { body }` rule in the card's stylesheet. */
+const RULES = Array.from(STYLES.matchAll(/([^{}]+)\{([^{}]*)\}/g), ([, sel, body]) => ({
+  selectors: sel.replace(/\/\*[\s\S]*?\*\//g, "").split(",").map((s) => s.trim()),
+  body,
+}));
+
+function rulesFor(selector) {
+  return RULES.filter((r) => r.selectors.includes(selector)).map((r) => r.body).join(";");
+}
+
+function designedList(method) {
+  const { card, child } = makeWeeklyCard({ chore: cello({ weekly_target: 0 }) });
+  const row = {
+    chore: card.hass.states[ENTITY].attributes.chores[0],
+    child,
+    done: false,
+    loading: false,
+    onAct() {},
+    index: 0,
+    tone: "#123456",
+    glyph: "",
+    points: 10,
+    pointsIcon: POINTS_ICON,
+    todaysCompletions: [],
+    dimmed: false,
+    mandatory: false,
+    photo: false,
+    timed: false,
+  };
+  return render(card[method](child, [row], 1, "#123456")).markup;
+}
+
+for (const { design, method, name } of [
+  { design: "playroom", method: "_designPlayroom", name: ".tmd-chore .ch-name" },
+  { design: "console", method: "_designConsole", name: ".tmd-quest .q-name" },
+  { design: "cleanpro", method: "_designCleanpro", name: ".tmd-check .c-name" },
+]) {
+  test(`long names: the ${design} chore list column can shrink to the card`, () => {
+    const outer = designedList(method).match(/^\s*<div class="([^"]*)"/);
+    assert.ok(outer, "the list should render inside a container");
+    const shrinkable = outer[1]
+      .split(/\s+/)
+      .some((cls) => /grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(rulesFor(`.${cls}`)));
+    assert.ok(shrinkable, `.${outer[1]} needs grid-template-columns: minmax(0, 1fr)`);
+  });
+
+  test(`long names: the ${design} chore name still truncates with an ellipsis`, () => {
+    const body = rulesFor(name);
+    assert.match(body, /white-space:\s*nowrap/);
+    assert.match(body, /text-overflow:\s*ellipsis/);
+  });
+}
