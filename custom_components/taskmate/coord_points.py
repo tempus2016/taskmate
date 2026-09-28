@@ -556,6 +556,8 @@ class PointsMixin:
         self.storage.update_child(child)
         self.storage.append_career_score_snapshot(child.id, dt_util.now().date().isoformat(), child.career_score)
         self.storage.remove_points_transaction(transaction_id)
+        # An inspection's pass bonus: take the pass back with it (#996).
+        self._inspection_on_bonus_undone(transaction_id)
         await self.storage.async_save()
         await self.async_refresh()
 
