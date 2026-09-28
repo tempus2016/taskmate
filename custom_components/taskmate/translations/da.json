@@ -1258,5 +1258,34 @@
         "name": "Kortdesign"
       }
     }
+  },
+  "exceptions": {
+    "calendar_unknown_event": {
+      "message": "Denne begivenhed er ikke en TaskMate-opgave i dette barns kalender."
+    },
+    "calendar_series_not_supported": {
+      "message": "En gentagen opgave kan kun flyttes eller fjernes én dag ad gangen fra kalenderen. Rediger opgaven i TaskMate for at ændre hele serien."
+    },
+    "calendar_repeating_create": {
+      "message": "Gentagne begivenheder kan ikke tilføjes fra kalenderen. Opret i stedet en gentagen opgave i TaskMate."
+    },
+    "calendar_rename_series": {
+      "message": "Omdøb en gentagen opgave i TaskMate. Fra kalenderen kan du kun flytte eller fjerne en enkelt dag."
+    },
+    "calendar_time_follows_chore": {
+      "message": "En gentagen opgave beholder sit tidspunkt på dagen. Kun datoen for en enkelt forekomst kan ændres fra kalenderen."
+    },
+    "calendar_past_date": {
+      "message": "Opgaver kan ikke tilføjes til, flyttes til eller flyttes fra en dag i fortiden."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} ligger allerede den {date}."
+    },
+    "calendar_empty_title": {
+      "message": "Giv opgaven en titel."
+    },
+    "calendar_own_event": {
+      "message": "Denne begivenhed er udgivet af TaskMate selv, så den tilføjes ikke som en ny opgave."
+    }
   }
 }

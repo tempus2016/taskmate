@@ -239,6 +239,9 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
     """
     chores = common["chores"]
     chores_list = []
+    today = dt_util.as_local(dt_util.now()).date()
+    # Calendar moves older than the calendar card's week view are history only.
+    moved_floor = (today - timedelta(days=7)).isoformat()
     for c in chores:
         assigned_to = c.assigned_to if isinstance(c.assigned_to, list) else []
         depends_on = c.depends_on if isinstance(getattr(c, "depends_on", None), list) else []
@@ -292,6 +295,17 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         due_days = getattr(c, "due_days", []) or []
         if due_days:
             record["due_days"] = due_days
+        # Occurrences moved or removed from the HA calendar (#977). Only chores
+        # that have one carry these: `occ_today` settles today for the cards'
+        # weekday filters, the map lets the calendar card place other days.
+        moved = getattr(c, "moved_occurrences", None) or {}
+        if moved:
+            override = coordinator.occurrence_override(c, today)
+            if override is not None:
+                record["occ_today"] = override
+            recent = {src: dst for src, dst in moved.items() if src >= moved_floor or (dst and dst >= moved_floor)}
+            if recent:
+                record["moved_occurrences"] = recent
         requires_approval = getattr(c, "requires_approval", True)
         if not requires_approval:
             record["requires_approval"] = False

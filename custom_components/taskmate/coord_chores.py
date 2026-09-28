@@ -81,6 +81,7 @@ class ChoresMixin:
         team_size: int = 0,
         team_points_mode: str = "each",
         team_bonus: int = 0,
+        due_time: str = "",
     ) -> Chore:
         """Add a new chore."""
         # Teamwork (#928) is refused up front, before anything is stored.
@@ -141,6 +142,7 @@ class ChoresMixin:
             team_size=int(team_size or 0),
             team_points_mode=team_points_mode,
             team_bonus=max(0, int(team_bonus or 0)),
+            due_time=due_time,
         )
         # Cache today's active child so the card can show it immediately
         active = self._compute_active_children(chore, today)
@@ -355,6 +357,7 @@ class ChoresMixin:
         data["assignment_swap_child_id"] = ""
         data["assignment_swap_date"] = ""
         data["publish_calendar_published_dates"] = []
+        data["moved_occurrences"] = {}
         data["disabled_for"] = []
         data["enabled"] = True
 
@@ -1724,6 +1727,13 @@ class ChoresMixin:
                 if not satisfied:
                     return False
 
+        # Calendar moves/removals (#977): an occurrence removed from today, or
+        # moved away from it, takes the chore off today's list; one moved onto
+        # today puts it on, whatever the regular schedule says.
+        override = self.occurrence_override(chore, dt_util.as_local(dt_util.now()).date())
+        if override is False:
+            return False
+
         schedule_mode = getattr(chore, "schedule_mode", "specific_days")
 
         # One-shot chores: only available on the day they were created
@@ -1758,6 +1768,14 @@ class ChoresMixin:
         record = self.storage.get_last_completed(chore.id, child_id)
         current_iso = record.get("current")
 
+        if override is True:
+            # Moved onto today: open until it is done today. The regular window
+            # and anchor maths would measure from the wrong day.
+            try:
+                return not current_iso or date.fromisoformat(current_iso[:10]) < today
+            except (ValueError, TypeError):
+                return True
+
         if not current_iso:
             # Never completed — a future recurrence anchor always defers
             # availability, regardless of first_occurrence_mode
@@ -1777,6 +1795,9 @@ class ChoresMixin:
             last_dt = date.fromisoformat(current_iso[:10])
         except (ValueError, TypeError):
             return True
+        # A completion of a moved occurrence counts from the day it was moved
+        # from, so moving one week's chore doesn't shift every week after it.
+        last_dt = self.occurrence_origin(chore, last_dt)
 
         # every_2_days with anchor — check alignment
         if recurrence == "every_2_days" and recurrence_start:
@@ -1855,7 +1876,8 @@ class ChoresMixin:
             if due_days:
                 today = dt_util.as_local(dt_util.now()).date()
                 dow = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")[today.weekday()]
-                if dow not in due_days:
+                # An occurrence moved onto today (#977) is due whatever the weekday.
+                if dow not in due_days and self.occurrence_override(chore, today) is not True:
                     return False
         return True
 

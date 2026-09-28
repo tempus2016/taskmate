@@ -164,13 +164,23 @@ class ReportsMixin:
         if mode == "one_shot":
             return 1
 
+        # Calendar moves/removals (#977): every entry took an occurrence off its
+        # original day, and a move put one back on its new day.
+        lo, hi = start.isoformat(), end.isoformat()
+        shift = 0
+        for src, dst in (getattr(chore, "moved_occurrences", None) or {}).items():
+            if lo <= src <= hi:
+                shift -= 1
+            if dst and lo <= dst <= hi:
+                shift += 1
+
         if mode == "recurring":
             period_days = RECURRENCE_PERIOD_DAYS.get(getattr(chore, "recurrence", "weekly"), 7)
-            return max(0, span // period_days)
+            return max(0, span // period_days + shift)
 
         due_days = [d.lower() for d in (getattr(chore, "due_days", []) or [])]
         if not due_days:
-            return span  # no restriction = every day
+            return max(0, span + shift)  # no restriction = every day
         wanted = {
             "monday": 0,
             "tuesday": 1,
@@ -182,8 +192,8 @@ class ReportsMixin:
         }
         targets = {wanted[d] for d in due_days if d in wanted}
         if not targets:
-            return span
-        return sum(1 for i in range(span) if (start + timedelta(days=i)).weekday() in targets)
+            return max(0, span + shift)
+        return max(0, sum(1 for i in range(span) if (start + timedelta(days=i)).weekday() in targets) + shift)
 
     def friction_report(self, days: int | None = None) -> dict[str, Any]:
         """Which chores are not working, and what to do about them.
@@ -323,6 +333,11 @@ class ReportsMixin:
                     return False
             except (TypeError, ValueError):
                 pass
+
+        # A single occurrence moved or removed from the calendar (#977).
+        override = self.occurrence_override(chore, day)
+        if override is not None:
+            return override
 
         if mode == "recurring":
             period_days = RECURRENCE_PERIOD_DAYS.get(getattr(chore, "recurrence", "weekly"), 7)

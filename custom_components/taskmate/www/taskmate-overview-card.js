@@ -573,7 +573,9 @@ class TaskMateOverviewCard extends LitElement {
       const at = Array.isArray(c.assigned_to) ? c.assigned_to.map(String) : [];
       const assigned = at.length === 0 || at.includes(String(child.id));
       if (!assigned) return false;
-      if (c.schedule_mode !== 'recurring') {
+      // Calendar move/removal (#977) settles today outright.
+      if (c.occ_today === false) return false;
+      if (c.schedule_mode !== 'recurring' && c.occ_today !== true) {
         const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
         if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
       }
@@ -716,8 +718,11 @@ class TaskMateOverviewCard extends LitElement {
       const assigned = at.length === 0 || at.includes(String(child.id));
       if (!assigned) return false;
 
+      // Calendar move/removal (#977) settles today outright.
+      if (c.occ_today === false) return false;
+
       // Mode A: due days check
-      if (c.schedule_mode !== 'recurring') {
+      if (c.schedule_mode !== 'recurring' && c.occ_today !== true) {
         const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
         if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
       }

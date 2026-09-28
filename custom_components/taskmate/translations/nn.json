@@ -1258,5 +1258,34 @@
         "name": "Kortdesign"
       }
     }
+  },
+  "exceptions": {
+    "calendar_unknown_event": {
+      "message": "Denne hendinga er ikkje ei TaskMate-oppgåve i kalenderen til dette barnet."
+    },
+    "calendar_series_not_supported": {
+      "message": "Ei gjentakande oppgåve kan berre flyttast eller fjernast éin dag om gongen frå kalenderen. Rediger oppgåva i TaskMate for å endre heile serien."
+    },
+    "calendar_repeating_create": {
+      "message": "Gjentakande hendingar kan ikkje leggjast til frå kalenderen. Opprett ei gjentakande oppgåve i TaskMate i staden."
+    },
+    "calendar_rename_series": {
+      "message": "Gi ei gjentakande oppgåve nytt namn i TaskMate. Frå kalenderen kan du berre flytte eller fjerne éin einskild dag."
+    },
+    "calendar_time_follows_chore": {
+      "message": "Ei gjentakande oppgåve held på tidspunktet på dagen. Berre datoen for éin einskild førekomst kan endrast frå kalenderen."
+    },
+    "calendar_past_date": {
+      "message": "Oppgåver kan ikkje leggjast til, flyttast til eller flyttast frå ein dag som har vore."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} ligg allereie på {date}."
+    },
+    "calendar_empty_title": {
+      "message": "Gi oppgåva ein tittel."
+    },
+    "calendar_own_event": {
+      "message": "Denne hendinga er publisert av TaskMate sjølv, så ho blir ikkje lagd til som ei ny oppgåve."
+    }
   }
 }

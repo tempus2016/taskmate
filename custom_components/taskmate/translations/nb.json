@@ -1258,5 +1258,34 @@
         "name": "Kortdesign"
       }
     }
+  },
+  "exceptions": {
+    "calendar_unknown_event": {
+      "message": "Denne hendelsen er ikke en TaskMate-oppgave i dette barnets kalender."
+    },
+    "calendar_series_not_supported": {
+      "message": "En gjentakende oppgave kan bare flyttes eller fjernes én dag om gangen fra kalenderen. Rediger oppgaven i TaskMate for å endre hele serien."
+    },
+    "calendar_repeating_create": {
+      "message": "Gjentakende hendelser kan ikke legges til fra kalenderen. Opprett en gjentakende oppgave i TaskMate i stedet."
+    },
+    "calendar_rename_series": {
+      "message": "Gi en gjentakende oppgave nytt navn i TaskMate. Fra kalenderen kan du bare flytte eller fjerne én enkelt dag."
+    },
+    "calendar_time_follows_chore": {
+      "message": "En gjentakende oppgave beholder tidspunktet på dagen. Bare datoen for én enkelt forekomst kan endres fra kalenderen."
+    },
+    "calendar_past_date": {
+      "message": "Oppgaver kan ikke legges til, flyttes til eller flyttes fra en dag som har vært."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} ligger allerede på {date}."
+    },
+    "calendar_empty_title": {
+      "message": "Gi oppgaven en tittel."
+    },
+    "calendar_own_event": {
+      "message": "Denne hendelsen er publisert av TaskMate selv, så den legges ikke til som en ny oppgave."
+    }
   }
 }

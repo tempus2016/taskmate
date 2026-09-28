@@ -1258,5 +1258,34 @@
         "name": "Design de carte"
       }
     }
+  },
+  "exceptions": {
+    "calendar_unknown_event": {
+      "message": "Cet événement n'est pas une tâche TaskMate du calendrier de cet enfant."
+    },
+    "calendar_series_not_supported": {
+      "message": "Une tâche récurrente ne peut être déplacée ou supprimée depuis le calendrier qu'un jour à la fois. Pour modifier toute la série, modifiez la tâche dans TaskMate."
+    },
+    "calendar_repeating_create": {
+      "message": "Les événements récurrents ne peuvent pas être ajoutés depuis le calendrier. Créez plutôt une tâche récurrente dans TaskMate."
+    },
+    "calendar_rename_series": {
+      "message": "Renommez une tâche récurrente dans TaskMate. Depuis le calendrier, vous ne pouvez déplacer ou supprimer qu'un seul jour."
+    },
+    "calendar_time_follows_chore": {
+      "message": "Une tâche récurrente garde son moment de la journée. Seule la date d'une occurrence peut être modifiée depuis le calendrier."
+    },
+    "calendar_past_date": {
+      "message": "Une tâche ne peut pas être ajoutée à un jour passé, ni déplacée vers ou depuis un jour passé."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} est déjà prévue le {date}."
+    },
+    "calendar_empty_title": {
+      "message": "Donnez un titre à la tâche."
+    },
+    "calendar_own_event": {
+      "message": "Cet événement a été publié par TaskMate lui-même : il n'est donc pas ajouté comme nouvelle tâche."
+    }
   }
 }

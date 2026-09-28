@@ -8,11 +8,13 @@ from calendar import monthrange
 from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING
 
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.util import dt as dt_util
 
 from .const import (
     DEFAULT_CALENDAR_PROJECTION_DAYS,
     DEFAULT_TIME_PERIODS,
+    DOMAIN,
     MAX_CALENDAR_PROJECTION_DAYS,
     MIN_CALENDAR_PROJECTION_DAYS,
     TIME_CATEGORY_ICONS,
@@ -121,12 +123,64 @@ class CalendarMixin:
             raw = DEFAULT_CALENDAR_PROJECTION_DAYS
         return max(MIN_CALENDAR_PROJECTION_DAYS, min(MAX_CALENDAR_PROJECTION_DAYS, raw))
 
+    @staticmethod
+    def occurrence_override(chore: Chore, day: date) -> bool | None:
+        """How a calendar move/removal (#977) changes ``day`` for ``chore``.
+
+        True: an occurrence was moved onto ``day``. False: the occurrence that
+        belonged to ``day`` was moved away or removed. None: nothing was
+        changed on ``day`` and the regular schedule decides.
+        """
+        moved = getattr(chore, "moved_occurrences", None) or {}
+        if not moved:
+            return None
+        iso = day.isoformat()
+        if iso in moved.values():
+            return True
+        if iso in moved:
+            return False
+        return None
+
+    @staticmethod
+    def occurrence_origin(chore: Chore, day: date) -> date:
+        """The scheduled date the occurrence held on ``day`` belongs to.
+
+        A moved occurrence keeps the identity of the day it was moved from, so
+        a recurrence window measures from the original date and the calendar
+        event keeps the same uid wherever it is moved to.
+        """
+        moved = getattr(chore, "moved_occurrences", None) or {}
+        iso = day.isoformat()
+        for src, dst in moved.items():
+            if dst == iso:
+                try:
+                    return date.fromisoformat(src)
+                except ValueError:
+                    break
+        return day
+
     def _is_chore_scheduled_for_date(self, chore: Chore, day: date) -> bool:
-        """Return True if the chore's schedule places it on `day`.
+        """Return True if the chore is due on `day`, calendar moves included.
+
+        Every caller that asks "is this chore on this day" — the calendar
+        entity, the ICS feed, calendar publishing, streaks, perfect weeks and
+        mandatory misses — goes through here, so a moved or removed occurrence
+        (#977) is honoured everywhere at once.
+        """
+        if not getattr(chore, "enabled", True):
+            return False
+        override = self.occurrence_override(chore, day)
+        if override is not None:
+            return override
+        return self._is_chore_base_scheduled_for_date(chore, day)
+
+    def _is_chore_base_scheduled_for_date(self, chore: Chore, day: date) -> bool:
+        """Return True if the chore's regular schedule places it on `day`.
 
         Mirrors the client-side `_isChoreScheduledOn` in taskmate-calendar-card.js
         so the HA calendar projection matches what the card shows. Does not
-        consult completion state — this is purely the recurrence/schedule math.
+        consult completion state or calendar moves — this is purely the
+        recurrence/schedule math.
         """
         if not getattr(chore, "enabled", True):
             return False
@@ -386,3 +440,169 @@ class CalendarMixin:
 
         await asyncio.gather(*(_purge(e) for e in ents), return_exceptions=True)
         chore.publish_calendar_published_dates = []
+
+    # ── Two-way calendar edits (#977) ─────────────────────────────────────
+    # How long a spent move/removal is kept. Long enough that a recurrence
+    # window after a moved occurrence still measures from its original date,
+    # short enough that the map can't grow without bound.
+    _MOVED_OCCURRENCE_RETENTION_DAYS = 62
+
+    @staticmethod
+    def _calendar_error(key: str, **placeholders: str) -> ServiceValidationError:
+        """A translated, user-facing refusal for a calendar edit."""
+        return ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key=key,
+            translation_placeholders=placeholders or None,
+        )
+
+    def _period_for_time(self, value: time) -> str:
+        """The time-of-day period containing ``value``, or "anytime"."""
+        for period in self.get_time_periods():
+            start = self._parse_hhmm(period["start"])
+            end = self._parse_hhmm(period["end"])
+            if start is not None and end is not None and start <= value < end:
+                return period["id"]
+        return "anytime"
+
+    def _occurrence_start_time(self, chore: Chore, day: date) -> time | None:
+        """The start time the calendar shows for ``chore`` on ``day`` (None = all-day)."""
+        window = self._time_category_window(getattr(chore, "time_category", "anytime"), day)
+        return window[0].time() if window else None
+
+    def _prune_moved_occurrences(self, moved: dict[str, str], today: date) -> dict[str, str]:
+        """Drop moves/removals that lie entirely in the distant past."""
+        cutoff = (today - timedelta(days=self._MOVED_OCCURRENCE_RETENTION_DAYS)).isoformat()
+        return {src: dst for src, dst in moved.items() if src >= cutoff or (dst and dst >= cutoff)}
+
+    async def async_calendar_add_chore(
+        self,
+        child_id: str,
+        name: str,
+        day: date,
+        *,
+        description: str = "",
+        start_time: time | None = None,
+    ) -> Chore:
+        """Create a one-off chore for ``child_id`` on ``day`` from a calendar event.
+
+        Goes through ``async_add_chore`` like the ``add_chore`` service, with
+        its default points. A timed event sets the chore's due time and files
+        it under the time-of-day period that contains it.
+        """
+        name = (name or "").strip()
+        if not name:
+            raise self._calendar_error("calendar_empty_title")
+        today = dt_util.as_local(dt_util.now()).date()
+        if day < today:
+            raise self._calendar_error("calendar_past_date")
+        if not self.storage.get_child(child_id):
+            raise ValueError(f"Unknown child: {child_id}")
+        return await self.async_add_chore(
+            name=name,
+            description=(description or "").strip(),
+            assigned_to=[child_id],
+            schedule_mode="one_shot",
+            created_date=day.isoformat(),
+            time_category=self._period_for_time(start_time) if start_time else "anytime",
+            due_time=start_time.strftime("%H:%M") if start_time else "",
+        )
+
+    async def async_move_chore_occurrence(
+        self,
+        chore_id: str,
+        origin: date,
+        new_day: date,
+        *,
+        start_time: time | None = None,
+        all_day: bool | None = None,
+        summary: str | None = None,
+    ) -> Chore:
+        """Move one occurrence of a chore to ``new_day``.
+
+        ``origin`` is the occurrence's scheduled date (its identity, which a
+        move never changes). A one-off chore simply takes the new date — and a
+        new title or time if the event changed them. A repeating chore moves
+        only this occurrence; its title and time of day belong to the whole
+        series, so changing those here is refused.
+        """
+        chore = self.storage.get_chore(chore_id)
+        if not chore:
+            raise self._calendar_error("calendar_unknown_event")
+        today = dt_util.as_local(dt_util.now()).date()
+        current = self._occurrence_day(chore, origin)
+        if new_day < today or current < today:
+            raise self._calendar_error("calendar_past_date")
+
+        old_start = self._occurrence_start_time(chore, current)
+        time_changed = all_day is not None and (
+            (all_day and old_start is not None) or (not all_day and start_time != old_start)
+        )
+        title = (summary or "").strip()
+
+        if getattr(chore, "schedule_mode", "specific_days") == "one_shot":
+            if title:
+                chore.name = title
+            chore.created_date = new_day.isoformat()
+            if time_changed:
+                chore.time_category = self._period_for_time(start_time) if start_time else "anytime"
+                chore.due_time = start_time.strftime("%H:%M") if start_time else ""
+            await self.async_update_chore(chore)
+            return chore
+
+        if title and title != chore.name:
+            raise self._calendar_error("calendar_rename_series")
+        if time_changed:
+            raise self._calendar_error("calendar_time_follows_chore")
+        if new_day == current:
+            return chore
+        if self._is_chore_scheduled_for_date(chore, new_day):
+            raise self._calendar_error("calendar_already_scheduled", chore=chore.name, date=new_day.isoformat())
+
+        moved = dict(getattr(chore, "moved_occurrences", None) or {})
+        if new_day == origin:
+            moved.pop(origin.isoformat(), None)
+        else:
+            moved[origin.isoformat()] = new_day.isoformat()
+        chore.moved_occurrences = self._prune_moved_occurrences(moved, today)
+        await self.async_update_chore(chore)
+        return chore
+
+    async def async_remove_chore_occurrence(self, chore_id: str, origin: date) -> Chore:
+        """Remove one occurrence of a chore — that day only.
+
+        A repeating chore records the removal and carries on as normal on every
+        other day. A one-off chore has only the one occurrence, so it is
+        switched off, exactly as if it had expired.
+        """
+        chore = self.storage.get_chore(chore_id)
+        if not chore:
+            raise self._calendar_error("calendar_unknown_event")
+        today = dt_util.as_local(dt_util.now()).date()
+        if self._occurrence_day(chore, origin) < today:
+            raise self._calendar_error("calendar_past_date")
+
+        if getattr(chore, "schedule_mode", "specific_days") == "one_shot":
+            chore.enabled = False
+        else:
+            moved = dict(getattr(chore, "moved_occurrences", None) or {})
+            moved[origin.isoformat()] = ""
+            chore.moved_occurrences = self._prune_moved_occurrences(moved, today)
+        await self.async_update_chore(chore)
+        return chore
+
+    @staticmethod
+    def _occurrence_day(chore: Chore, origin: date) -> date:
+        """Where the occurrence scheduled for ``origin`` currently sits."""
+        if getattr(chore, "schedule_mode", "specific_days") == "one_shot":
+            try:
+                return date.fromisoformat(getattr(chore, "created_date", "") or "")
+            except ValueError:
+                return origin
+        dst = (getattr(chore, "moved_occurrences", None) or {}).get(origin.isoformat())
+        if dst:
+            try:
+                return date.fromisoformat(dst)
+            except ValueError:
+                pass
+        return origin

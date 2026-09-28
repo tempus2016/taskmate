@@ -3185,10 +3185,14 @@ class TaskMateChildCard extends LitElement {
       chore._visibilityEntity = visibilityEntity;
       chore._visibilityOK = visibilityOK;
 
-      // Check due_days — if chore has due_days set and today isn't one of them
+      // Check due_days — if chore has due_days set and today isn't one of them.
+      // A calendar move/removal (#977) settles today outright: occ_today is
+      // false when today's occurrence was moved away or removed, true when one
+      // was moved onto today, and absent otherwise.
+      if (chore.occ_today === false) return false;
       const dueDays = chore.due_days || [];
       const hasDueDays = dueDays.length > 0;
-      const isDueToday = !hasDueDays || dueDays.includes(todayDow);
+      const isDueToday = chore.occ_today === true || !hasDueDays || dueDays.includes(todayDow);
 
       // If due_days filtering is on and mode is "hide", exclude not-due chores
       if (showDueDaysOnly && hasDueDays && !isDueToday && dueDaysMode === 'hide') {

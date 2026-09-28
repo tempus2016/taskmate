@@ -681,10 +681,12 @@ class TaskMateParentDashboardCard extends LitElement {
       const assigned = at.length === 0 || at.includes(child.id);
       if (!assigned) return false;
       const perChild = availability[c.id];
+      // Calendar move/removal (#977) settles today outright.
+      if (c.occ_today === false) return false;
       if (c.schedule_mode === 'one_shot') {
         if (perChild && perChild[child.id] === false) return false;
       }
-      if (c.schedule_mode === 'specific_days') {
+      if (c.schedule_mode === 'specific_days' && c.occ_today !== true) {
         const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
         if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
       }
@@ -1029,12 +1031,14 @@ class TaskMateParentDashboardCard extends LitElement {
           const assigned = at.length === 0 || at.includes(child.id);
           if (!assigned) return false;
           const perChild = availability[c.id];
+          // Calendar move/removal (#977) settles today outright.
+          if (c.occ_today === false) return false;
           // One-shot: use is_available check (same as recurring)
           if (c.schedule_mode === 'one_shot') {
             if (perChild && perChild[child.id] === false) return false;
           }
           // Mode A: due days check
-          if (c.schedule_mode === 'specific_days') {
+          if (c.schedule_mode === 'specific_days' && c.occ_today !== true) {
             const dueDays = Array.isArray(c.due_days) ? c.due_days : [];
             if (dueDays.length > 0 && !dueDays.includes(todayDow)) return false;
           }
