@@ -214,7 +214,9 @@ class TaskMateGraphCard extends LitElement {
       .tmg-plot-pl { background: var(--tmd-surface-2); border-radius: 16px; padding: 12px 10px 6px; }
       .tmg-plot-cn { background: #0b1424; border: 1px solid var(--tmd-border); border-radius: 8px; padding: 12px 10px 6px; }
       .tmg-plot-cp { padding: 2px 2px 0; }
-      .tmg-xaxis { justify-content: space-between; font-size: 10.5px; font-weight: 600; margin-top: 4px; }
+      /* The plot is an SVG drawn left to right in every language, so its date
+         labels must not mirror under RTL (#979) or they'd sit under the wrong day. */
+      .tmg-xaxis { justify-content: space-between; font-size: 10.5px; font-weight: 600; margin-top: 4px; direction: ltr; }
       .tmg-plot-cn .tmg-xaxis { font-size: 9.5px; }
       .tmg-legend { gap: 14px; justify-content: center; margin-top: 11px; font-size: 12px; font-weight: 700; flex-wrap: wrap; }
       .tmg-plot-cp ~ .tmg-legend { justify-content: flex-start; font-weight: 600; }
@@ -942,7 +944,7 @@ class TaskMateGraphCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }

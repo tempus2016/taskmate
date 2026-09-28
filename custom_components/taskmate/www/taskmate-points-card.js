@@ -283,7 +283,7 @@ class TaskMatePointsCard extends LitElement {
         text-transform: uppercase;
         letter-spacing: 0.5px;
         color: var(--secondary-text-color);
-        text-align: right;
+        text-align: end;
         margin-bottom: 1px;
       }
 
@@ -291,8 +291,8 @@ class TaskMatePointsCard extends LitElement {
       .dialog-overlay {
         position: fixed;
         top: 0;
-        left: 0;
-        right: 0;
+        inset-inline-start: 0;
+        inset-inline-end: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.5);
         display: flex;
@@ -478,7 +478,7 @@ class TaskMatePointsCard extends LitElement {
       .notification {
         position: fixed;
         bottom: 24px;
-        left: 50%;
+        left: 50%; /* rtl-ok: centred with translate(-50%), symmetric */
         transform: translateX(-50%);
         max-width: calc(100vw - 24px);
         white-space: normal;
@@ -609,7 +609,7 @@ class TaskMatePointsCard extends LitElement {
       .pc-mid { flex: 1; min-width: 0; }
       .pc-name { font-weight: 800; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .pc-pts { font-family: var(--tmd-font-display); font-weight: 800; font-size: 22px; line-height: 1; color: var(--tmd-accent); }
-      .pc-pts span { font-size: 12px; margin-left: 2px; }
+      .pc-pts span { font-size: 12px; margin-inline-start: 2px; }
       .pc-sub { font-size: 11px; }
 
       /* Console list variant */
@@ -622,7 +622,7 @@ class TaskMatePointsCard extends LitElement {
       .cp-row { background: transparent; border-radius: 0; padding: 11px 2px; }
       .cp-row + .cp-row { border-top: 1px solid var(--tmd-border); }
       .cp-name { flex: 1; min-width: 0; font-weight: 600; }
-      .cp-num { width: 46px; text-align: right; font-size: 16px; }
+      .cp-num { width: 46px; text-align: end; font-size: 16px; }
 
       .pc-quick { gap: 7px; flex-wrap: wrap; }
       .pc-reason { margin-top: 12px; cursor: pointer; }
@@ -1235,7 +1235,7 @@ class TaskMatePointsCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }

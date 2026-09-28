@@ -215,7 +215,7 @@ class TaskMateApprovalsCard extends LitElement {
       }
 
       .time-group {
-        margin-left: 8px;
+        margin-inline-start: 8px;
         margin-bottom: 12px;
       }
 
@@ -334,11 +334,11 @@ class TaskMateApprovalsCard extends LitElement {
       }
 
       .action-buttons.left {
-        margin-right: 12px;
+        margin-inline-end: 12px;
       }
 
       .action-buttons.right {
-        margin-left: 12px;
+        margin-inline-start: 12px;
       }
 
       .action-button {
@@ -414,8 +414,8 @@ class TaskMateApprovalsCard extends LitElement {
       }
 
       .tm-rv-quote {
-        border-left: 3px solid var(--accent-color, #ffc107);
-        padding: 6px 0 6px 10px;
+        border-inline-start: 3px solid var(--accent-color, #ffc107);
+        padding-block: 6px; padding-inline: 10px 0;
         margin-bottom: 12px;
         font-size: 0.92rem;
         white-space: pre-wrap;
@@ -512,7 +512,7 @@ class TaskMateApprovalsCard extends LitElement {
       }
 
       .approval-item.mandatory {
-        border-left: 5px solid var(--fun-red, #e74c3c);
+        border-inline-start: 5px solid var(--fun-red, #e74c3c);
       }
 
       .approval-item.mandatory .penalty-note {
@@ -631,7 +631,7 @@ class TaskMateApprovalsCard extends LitElement {
       /* Clean Pro — divided list */
       .ap-cp-item { padding: 10px 0; flex-wrap: wrap; row-gap: 8px; }
       .ap-cp-mid { flex: 1 1 130px; min-width: 130px; }
-      .ap-cp-actions { display: flex; gap: 8px; flex: 0 0 auto; margin-left: auto; }
+      .ap-cp-actions { display: flex; gap: 8px; flex: 0 0 auto; margin-inline-start: auto; }
       .ap-cp-title { font-weight: 600; }
       .ap-cp-sub { font-size: 12px; }
       .ap-cp-photo { width: 32px; height: 32px; border-radius: 8px; overflow: hidden;
@@ -1123,7 +1123,7 @@ class TaskMateApprovalsCard extends LitElement {
     return html`
       <div class="day-group">
         <div class="day-header">
-          <ha-icon icon="mdi:gift-outline" style="--mdc-icon-size: 18px; vertical-align: -3px; margin-right: 6px;"></ha-icon>
+          <ha-icon icon="mdi:gift-outline" style="--mdc-icon-size: 18px; vertical-align: -3px; margin-inline-end: 6px;"></ha-icon>
           ${this._t('approvals.reward_claims_section')}
         </div>
         ${claims.map((claim) => this._renderClaimItem(claim))}
@@ -1152,7 +1152,7 @@ class TaskMateApprovalsCard extends LitElement {
         </div>
         <div class="item-info">
           <span class="chore-name">
-            <ha-icon icon="${claim.reward_icon || 'mdi:gift'}" style="--mdc-icon-size: 16px; vertical-align: -3px; margin-right: 4px;"></ha-icon>
+            <ha-icon icon="${claim.reward_icon || 'mdi:gift'}" style="--mdc-icon-size: 16px; vertical-align: -3px; margin-inline-end: 4px;"></ha-icon>
             ${rewardName}
           </span>
           <div class="item-details">
@@ -1222,7 +1222,7 @@ class TaskMateApprovalsCard extends LitElement {
     return html`
       <div class="day-group">
         <div class="day-header">
-          <ha-icon icon="mdi:alert-octagon-outline" style="--mdc-icon-size: 18px; vertical-align: -3px; margin-right: 6px;"></ha-icon>
+          <ha-icon icon="mdi:alert-octagon-outline" style="--mdc-icon-size: 18px; vertical-align: -3px; margin-inline-end: 6px;"></ha-icon>
           ${this._t('approvals.mandatory_section')}
         </div>
         ${misses.map((miss) => this._renderMissItem(miss))}
@@ -1241,7 +1241,7 @@ class TaskMateApprovalsCard extends LitElement {
       <div class="approval-item mandatory ${isLoading ? 'loading' : ''}">
         <div class="item-info">
           <span class="chore-name">
-            <ha-icon icon="mdi:alert-circle-outline" style="--mdc-icon-size: 16px; vertical-align: -3px; margin-right: 4px;"></ha-icon>
+            <ha-icon icon="mdi:alert-circle-outline" style="--mdc-icon-size: 16px; vertical-align: -3px; margin-inline-end: 4px;"></ha-icon>
             ${choreName}
           </span>
           <div class="item-details">
@@ -1901,7 +1901,7 @@ class TaskMateApprovalsCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }

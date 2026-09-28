@@ -151,8 +151,8 @@
 .tmd-hd .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.22);font-size:17px;flex:none}
 .tmd-hd .tt{font-family:var(--tmd-font-display);font-weight:800;font-size:16px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tmd-hd .tt small{display:block;font-family:var(--tmd-font-body);font-weight:600;font-size:11px;opacity:.85;margin-top:1px}
-.tmd-hd .pill{margin-left:auto;font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.25);text-transform:capitalize}
-.tmd-hd .cnt{margin-left:auto;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--tmd-bad);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center}
+.tmd-hd .pill{margin-inline-start:auto;font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.25);text-transform:capitalize}
+.tmd-hd .cnt{margin-inline-start:auto;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--tmd-bad);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center}
 .tmd-bd{padding:15px}
 .tmd-empty{text-align:center;padding:26px 12px;color:var(--tmd-dim);font-size:.9rem}
 .av{width:var(--av,42px);height:var(--av,42px);border-radius:50%;flex:none;display:grid;place-items:center;font-family:var(--tmd-font-display);font-weight:800;color:#fff;font-size:calc(var(--av,42px)*.4);line-height:1;text-align:center;background:var(--ac,var(--tmd-accent));box-shadow:0 2px 6px rgba(0,0,0,.18);overflow:hidden}
@@ -233,7 +233,7 @@
 :host([data-tm-design="graphite"]) .tmd-checklist{border:1px solid var(--tmd-border);border-radius:var(--tmd-radius-sm)}
 :host([data-tm-design="graphite"]) .tmd-check{position:relative;padding:9px 12px;min-height:46px;box-sizing:border-box}
 :host([data-tm-design="graphite"]) .tmd-check+.tmd-check{border-top:0}
-:host([data-tm-design="graphite"]) .tmd-check+.tmd-check::before{content:"";position:absolute;top:0;left:46px;right:0;height:1px;background:var(--tmd-border)}
+:host([data-tm-design="graphite"]) .tmd-check+.tmd-check::before{content:"";position:absolute;top:0;inset-inline-start:46px;inset-inline-end:0;height:1px;background:var(--tmd-border)}
 :host([data-tm-design="graphite"]) .tmd-check .c-num{width:22px;height:22px;border-radius:50%;
   background:transparent;border:1.5px solid var(--tmd-border);color:transparent;font-size:0}
 :host([data-tm-design="graphite"]) .tmd-check.done .c-num{background:var(--tmd-good);border-color:var(--tmd-good);color:#fff;font-size:13px}
@@ -306,7 +306,7 @@
 :host([data-tm-design="graphite"]) .lb-cp-score{font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:-.6px}
 :host([data-tm-design="graphite"]) .lb-cp-unit{color:var(--tmd-dim);font-weight:400}
 :host([data-tm-design="graphite"]) .lb-cp-row.win{background:transparent}
-:host([data-tm-design="graphite"]) .lb-cp-meta ha-icon{--mdc-icon-size:14px;vertical-align:-2px;margin-right:3px;color:var(--tmd-dim)}
+:host([data-tm-design="graphite"]) .lb-cp-meta ha-icon{--mdc-icon-size:14px;vertical-align:-2px;margin-inline-end:3px;color:var(--tmd-dim)}
 
 /* Overview: hairline-separated stats, then a grouped per-child list. */
 :host([data-tm-design="graphite"]) .ov-kids{border:1px solid var(--tmd-border);border-radius:var(--tmd-radius-sm)}
@@ -317,7 +317,13 @@
 :host([data-tm-design="graphite"]) .ov-today .val,
 :host([data-tm-design="graphite"]) .pts{font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:-.6px}
 :host([data-tm-design="graphite"]) .nm,
-:host([data-tm-design="graphite"]) .ttl{font-weight:500;letter-spacing:-.18px}`;
+:host([data-tm-design="graphite"]) .ttl{font-weight:500;letter-spacing:-.18px}
+
+/* Right-to-left (#979). apply() stamps dir on the host; an icon that points
+   along the reading direction (chevron, undo, backspace) carries .tm-rtl-flip
+   so it turns round with the layout. Text arrows (→ ↩) swap to their mirrored
+   character instead, which leaves LTR markup untouched. Not design-scoped. */
+:host([dir="rtl"]) .tm-rtl-flip,[dir="rtl"] .tm-rtl-flip{transform:scaleX(-1)}`;
 
   if (!document.getElementById("taskmate-design-fonts")) {
     const styleEl = document.createElement("style");
@@ -411,15 +417,30 @@
   }
 
   /**
+   * Text direction of HA's current language (#979): "rtl" or "ltr". HA marks
+   * RTL languages in its translation metadata (the same isRTL flag its own
+   * computeRTL reads); for a language it has no metadata for, follow the
+   * direction HA already gave the page.
+   */
+  function direction(hass) {
+    const lang = hass && hass.language;
+    const meta = hass && hass.translationMetadata && hass.translationMetadata.translations;
+    if (lang && meta && meta[lang]) return meta[lang].isRTL ? "rtl" : "ltr";
+    const root = typeof document !== "undefined" && document.documentElement;
+    return root && root.dir === "rtl" ? "rtl" : "ltr";
+  }
+
+  /**
    * Resolve the design AND stamp the host element: data-tm-design + (in dark
-   * mode) data-tm-dark. Cards call this once at the top of render() and branch
-   * on the returned id. Returns "classic" when no design applies.
+   * mode) data-tm-dark + dir. Cards call this once at the top of render() and
+   * branch on the returned id. Returns "classic" when no design applies.
    */
   function apply(el, hass, config, entity) {
     const design = resolve(hass, config, entity);
     if (el) {
       el.setAttribute("data-tm-design", design);
       el.toggleAttribute("data-tm-dark", design !== "classic" && isDark(hass, el));
+      el.setAttribute("dir", direction(hass));
     }
     // The host keeps the real id (its CSS keys off it); the card gets the
     // layout id so aliased styles reuse an existing render path.
@@ -487,7 +508,7 @@
     `;
   }
 
-  window.__taskmate_design = { IDS, resolve, isDark, apply, active, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker };
+  window.__taskmate_design = { IDS, resolve, isDark, direction, apply, active, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker };
 
   /**
    * The single place that decides what a chore looks like (#750).
@@ -605,7 +626,7 @@
         "background:#111;box-shadow:0 18px 60px rgba(0,0,0,.6);}" +
         ".tm-lightbox .tm-lb-cap{color:#f4f6fb;font-size:14px;font-weight:600;text-align:center;" +
         "max-width:92vw;line-height:1.4;text-shadow:0 1px 2px rgba(0,0,0,.6);}" +
-        ".tm-lightbox .tm-lb-close{position:absolute;top:14px;right:16px;width:42px;height:42px;border:none;" +
+        ".tm-lightbox .tm-lb-close{position:absolute;top:14px;inset-inline-end:16px;width:42px;height:42px;border:none;" +
         "border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:22px;line-height:1;" +
         "cursor:pointer;transition:background .15s;}" +
         ".tm-lightbox .tm-lb-close:hover{background:rgba(255,255,255,.28);}" +

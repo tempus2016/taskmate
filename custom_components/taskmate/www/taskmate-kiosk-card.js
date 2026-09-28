@@ -627,7 +627,7 @@ class TaskMateKioskCard extends LitElement {
     return html`
       <div class="km-pin" style="--kc:${tone}">
         <button class="km-ghost km-pin-back" @click=${() => this._toPicker()}>
-          <ha-icon icon="mdi:chevron-left"></ha-icon> ${this._t("kiosk.back")}
+          <ha-icon class="tm-rtl-flip" icon="mdi:chevron-left"></ha-icon> ${this._t("kiosk.back")}
         </button>
         <div class="km-pin-left">
           ${this._face(child, tone, "big")}
@@ -644,7 +644,7 @@ class TaskMateKioskCard extends LitElement {
           <button class="km-key fn" @click=${() => this._toPicker()}>${this._t("kiosk.cancel")}</button>
           <button class="km-key" ?disabled=${disabled} @click=${() => this._pressDigit(0)}>0</button>
           <button class="km-key fn" aria-label="${this._t("kiosk.delete_digit")}" ?disabled=${disabled}
-                  @click=${() => this._deleteDigit()}><ha-icon icon="mdi:backspace-outline"></ha-icon></button>
+                  @click=${() => this._deleteDigit()}><ha-icon class="tm-rtl-flip" icon="mdi:backspace-outline"></ha-icon></button>
         </div>
       </div>
     `;
@@ -658,7 +658,7 @@ class TaskMateKioskCard extends LitElement {
         <h2>${this._t("kiosk.blocked_title", { name: child.name })}</h2>
         <p>${this._t("kiosk.blocked_body", { name: child.name })}</p>
         <button class="km-primary" @click=${() => this._toPicker()}>
-          <ha-icon icon="mdi:chevron-left"></ha-icon> ${this._t("kiosk.back")}
+          <ha-icon class="tm-rtl-flip" icon="mdi:chevron-left"></ha-icon> ${this._t("kiosk.back")}
         </button>
       </div>
     `;
@@ -788,7 +788,7 @@ class TaskMateKioskCard extends LitElement {
             ${undoable ? html`<button class="km-undo" ?disabled=${!!this._busy}
                                       aria-label="${this._t("child.undo_named", { name: chore.name })}"
                                       @click=${() => this._undo(undoable)}>
-                                <ha-icon icon="mdi:undo-variant"></ha-icon> ${this._t("kiosk.undo")}</button>` : ""}
+                                <ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon> ${this._t("kiosk.undo")}</button>` : ""}
           </div>
         </div>
         ${action}
@@ -835,7 +835,7 @@ class TaskMateKioskCard extends LitElement {
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
       .km-clock { font-variant-numeric: tabular-nums; opacity: 0.9; white-space: nowrap; }
-      .km-clock b { font-size: 1.15rem; margin-right: 8px; }
+      .km-clock b { font-size: 1.15rem; margin-inline-end: 8px; }
       .km-icon-btn {
         background: rgba(255, 255, 255, 0.18); border: 0; color: inherit;
         width: 40px; height: 40px; border-radius: 50%;
@@ -891,7 +891,7 @@ class TaskMateKioskCard extends LitElement {
       .km-kid:disabled { cursor: progress; }
       .km-face-wrap { position: relative; }
       .km-lock {
-        position: absolute; right: 0; bottom: 4px;
+        position: absolute; inset-inline-end: 0; bottom: 4px;
         width: 40px; height: 40px; border-radius: 50%;
         display: grid; place-items: center;
         background: var(--tmd-surface-2, var(--card-background-color, #222));
@@ -925,7 +925,7 @@ class TaskMateKioskCard extends LitElement {
         display: grid; grid-template-columns: 1fr 1fr; align-items: center;
         padding: 64px 24px 24px;
       }
-      .km-pin-back { position: absolute; left: 18px; top: 16px; }
+      .km-pin-back { position: absolute; inset-inline-start: 18px; top: 16px; }
       .km-pin-left { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
       .km-pin-left h2 { margin: 6px 0 0; font-size: 2rem; font-family: var(--tmd-font-display, inherit); }
       .km-pin-left p { margin: 0; color: var(--tmd-dim, var(--secondary-text-color)); font-size: 1.1rem; }
@@ -992,7 +992,7 @@ class TaskMateKioskCard extends LitElement {
         display: flex; align-items: center; gap: 10px;
         background: rgba(0, 0, 0, 0.18); color: #fff;
         border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 40px;
-        padding: 6px 8px 6px 16px; font-size: 1rem; font-weight: 700; cursor: pointer;
+        padding-block: 6px; padding-inline: 16px 8px; font-size: 1rem; font-weight: 700; cursor: pointer;
       }
       .km-ring {
         width: 40px; height: 40px; border-radius: 50%;
@@ -1024,7 +1024,7 @@ class TaskMateKioskCard extends LitElement {
       .km-celebrate ha-icon { --mdc-icon-size: 30px; }
       .km-row {
         display: flex; align-items: center; gap: 14px;
-        padding: 10px 12px 10px 14px; min-height: 72px;
+        padding-block: 10px; padding-inline: 14px 12px; min-height: 72px;
         background: var(--tmd-surface, var(--card-background-color, #fff));
         border: 2px solid color-mix(in srgb, var(--kc) 45%, var(--tmd-border, transparent));
         border-radius: var(--tmd-radius, 16px);
@@ -1079,7 +1079,7 @@ class TaskMateKioskCard extends LitElement {
       }
       .km-done.is-wait, .km-done.is-elsewhere {
         background: transparent; cursor: default;
-        font-size: 0.9rem; line-height: 1.15; text-align: left; padding: 0 12px; min-width: 180px; max-width: 220px;
+        font-size: 0.9rem; line-height: 1.15; text-align: start; padding: 0 12px; min-width: 180px; max-width: 220px;
         color: var(--tmd-text, var(--primary-text-color));
       }
       .km-done.is-wait { border: 3px dashed var(--tmd-warn, #f39c12); }
@@ -1447,7 +1447,7 @@ class TaskMateKioskCardEditor extends LitElement {
         border-radius: 4px;
         padding: 4px 10px;
         cursor: pointer;
-        margin-left: auto;
+        margin-inline-start: auto;
       }
       .colour-helper {
         color: var(--secondary-text-color);
