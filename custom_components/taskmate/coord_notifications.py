@@ -1143,6 +1143,8 @@ class NotificationCoordinator:
 
     async def delete_parent(self, parent_id: str) -> None:
         self.storage.delete_parent_recipient(parent_id)
+        # Their routes and custom-reminder slots go with them (#946).
+        self.storage.remove_notification_recipient(parent_id)
         await self.storage.async_save()
         await self.async_setup_schedules()  # in case routes referenced this id
 

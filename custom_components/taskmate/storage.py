@@ -170,6 +170,12 @@ class TaskMateStorage:
 
         self._migrate_nav_url_default()
 
+        # Deleting a child or parent used to leave their notification routes
+        # and missed-mandatory records behind (#946). Sweep up what existing
+        # installs already carry; like the swap-request prune above it is a
+        # cheap filter, so it runs on every load.
+        self._drop_dead_recipient_records()
+
         # Badge migration / seeding
         self._seed_builtin_badges(is_fresh=is_fresh)
 
@@ -371,6 +377,13 @@ class TaskMateStorage:
         self._data["children"] = [c for c in self._data.get("children", []) if c.get("id") != child_id]
         self.remove_awards_for_child(child_id)
         self.set_kiosk_pin_hash(child_id, "")
+        # Per-child maps kept in settings (#946): the birthday guard and a
+        # Custom recap schedule would otherwise outlive the child.
+        settings = self._data.get("settings", {})
+        for key in ("birthday_celebrated", "recap_child_frequencies"):
+            value = settings.get(key)
+            if isinstance(value, dict) and child_id in value:
+                settings[key] = {k: v for k, v in value.items() if k != child_id}
 
     # Kiosk PINs (#930): {child_id: salted hash}. Kept apart from the child
     # records so the hash never rides along wherever children are serialised
@@ -518,6 +531,12 @@ class TaskMateStorage:
     def remove_mandatory_miss(self, miss_id: str) -> None:
         """Remove a mandatory-miss item by id."""
         self._data["mandatory_misses"] = [m for m in self._data.get("mandatory_misses", []) if m.get("id") != miss_id]
+
+    def remove_mandatory_misses_for_child(self, child_id: str) -> None:
+        """Drop a deleted child's mandatory-miss review items (#946)."""
+        self._data["mandatory_misses"] = [
+            m for m in self._data.get("mandatory_misses", []) if m.get("child_id") != child_id
+        ]
 
     def replace_mandatory_misses(self, misses: list[MandatoryMiss]) -> None:
         """Replace the whole mandatory-miss collection."""
@@ -800,6 +819,65 @@ class TaskMateStorage:
                 rows[i] = p.to_dict()
                 return
         rows.append(p.to_dict())
+
+    def remove_notification_recipient(self, recipient_id: str) -> bool:
+        """Drop a recipient from every notification route and custom reminder.
+
+        ``recipient_id`` is the prefixed id (``child:<id>`` / ``parent:<id>``).
+        Returns True if anything changed.
+        """
+        changed = False
+        for raw in (self._data.get("notification_config", {}) or {}).values():
+            routes = raw.get("routes") if isinstance(raw, dict) else None
+            if isinstance(routes, dict) and recipient_id in routes:
+                routes.pop(recipient_id)
+                changed = True
+        for row in self._data.get("custom_notifications", []) or []:
+            ids = row.get("recipient_ids") if isinstance(row, dict) else None
+            if isinstance(ids, list) and recipient_id in ids:
+                row["recipient_ids"] = [r for r in ids if r != recipient_id]
+                changed = True
+        return changed
+
+    def _drop_dead_recipient_records(self) -> None:
+        """Prune routes, reminders and misses naming a deleted child or parent (#946).
+
+        Called from ``async_load``. Only ``child:``/``parent:`` recipient ids
+        are judged — anything else is left alone.
+        """
+        child_ids = {c.get("id") for c in self._data.get("children", [])}
+        parent_ids = {p.get("id") for p in self._data.get("parent_recipients", [])}
+
+        def _dead(rid: str) -> bool:
+            if rid.startswith("child:"):
+                return rid.split(":", 1)[1] not in child_ids
+            if rid.startswith("parent:"):
+                return rid not in parent_ids
+            return False
+
+        dead: set[str] = set()
+        for raw in (self._data.get("notification_config", {}) or {}).values():
+            routes = raw.get("routes") if isinstance(raw, dict) else None
+            if isinstance(routes, dict):
+                dead.update(rid for rid in routes if isinstance(rid, str) and _dead(rid))
+        for row in self._data.get("custom_notifications", []) or []:
+            ids = row.get("recipient_ids") if isinstance(row, dict) else None
+            if isinstance(ids, list):
+                dead.update(rid for rid in ids if isinstance(rid, str) and _dead(rid))
+        for rid in dead:
+            self.remove_notification_recipient(rid)
+
+        misses = self._data.get("mandatory_misses")
+        kept = [m for m in misses or [] if m.get("child_id") in child_ids]
+        if misses and len(kept) != len(misses):
+            self._data["mandatory_misses"] = kept
+
+        if dead or (misses and len(kept) != len(misses)):
+            _LOGGER.debug(
+                "Dropped %d orphaned notification recipient(s) and %d orphaned mandatory miss(es)",
+                len(dead),
+                len(misses or []) - len(kept),
+            )
 
     def delete_parent_recipient(self, parent_id: str) -> None:
         self._data["parent_recipients"] = [
@@ -1831,6 +1909,12 @@ class TaskMateStorage:
     def remove_timed_session(self, session_id: str) -> None:
         """Remove a timed session."""
         self._data["timed_sessions"] = [s for s in self._data.get("timed_sessions", []) if s.get("id") != session_id]
+
+    def remove_timed_sessions_for_child(self, child_id: str) -> None:
+        """Drop a deleted child's timed sessions (#946)."""
+        self._data["timed_sessions"] = [
+            s for s in self._data.get("timed_sessions", []) if s.get("child_id") != child_id
+        ]
 
     # Generic settings
     def get_setting(self, key: str, default: Any = "") -> Any:
