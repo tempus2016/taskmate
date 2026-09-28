@@ -141,7 +141,7 @@ class TaskMateLeaderboardCard extends LitElement {
       .stat-chip ha-icon { --mdc-icon-size: 13px; }
 
       .rank-score {
-        text-align: right; flex-shrink: 0;
+        text-align: end; flex-shrink: 0;
         display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
       }
 
@@ -165,7 +165,7 @@ class TaskMateLeaderboardCard extends LitElement {
       }
 
       .tie-line .tie-label {
-        position: absolute; top: 50%; left: 50%;
+        position: absolute; top: 50%; left: 50%; /* rtl-ok: centred with translate(-50%), symmetric */
         transform: translate(-50%, -50%);
         background: var(--secondary-background-color, #f5f5f5);
         padding: 0 6px;
@@ -264,7 +264,7 @@ class TaskMateLeaderboardCard extends LitElement {
       .lb-cn-mid { flex: 1; min-width: 0; }
       .lb-cn-name { font-weight: 700; }
       .lb-cn-meta { font-size: 10px; gap: 8px; margin-top: 5px; }
-      .lb-cn-right { text-align: right; }
+      .lb-cn-right { text-align: end; }
       .lb-cn-score { font-size: 23px; }
       .lb-cn-score.win { color: var(--tmd-accent); }
       .lb-cn-unit { font-size: 10px; }
@@ -278,7 +278,7 @@ class TaskMateLeaderboardCard extends LitElement {
       .lb-cp-mid { flex: 1; min-width: 0; }
       .lb-cp-name { font-weight: 600; }
       .lb-cp-meta { font-size: 11.5px; gap: 10px; margin-top: 2px; }
-      .lb-cp-right { text-align: right; }
+      .lb-cp-right { text-align: end; }
       .lb-cp-score { font-size: 19px; }
       .lb-cp-unit { font-size: 10.5px; }
     `;
@@ -787,7 +787,7 @@ class TaskMateLeaderboardCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }

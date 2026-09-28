@@ -158,7 +158,7 @@ class TaskMateRewardProgressCard extends LitElement {
       }
 
       .child-progress-cost {
-        text-align: right;
+        text-align: end;
         flex-shrink: 0;
       }
 
@@ -207,7 +207,7 @@ class TaskMateRewardProgressCard extends LitElement {
       .big-progress-fill::after {
         content: '';
         position: absolute;
-        top: 0; left: -100%;
+        top: 0; inset-inline-start: -100%;
         width: 60%;
         height: 100%;
         background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
@@ -215,8 +215,8 @@ class TaskMateRewardProgressCard extends LitElement {
       }
 
       @keyframes shimmer {
-        0% { left: -100%; }
-        100% { left: 200%; }
+        0% { inset-inline-start: -100%; }
+        100% { inset-inline-start: 200%; }
       }
 
       .big-progress-fill.affordable {
@@ -367,7 +367,7 @@ class TaskMateRewardProgressCard extends LitElement {
         gap: 6px;
         background: var(--card-background-color, #fff);
         border-radius: 20px;
-        padding: 4px 10px 4px 6px;
+        padding-block: 4px; padding-inline: 6px 10px;
         font-size: 0.82rem;
         font-weight: 600;
         color: var(--primary-text-color);
@@ -413,7 +413,7 @@ class TaskMateRewardProgressCard extends LitElement {
       :host([data-tm-design="console"]) .rp-hero-emoji {
         filter: drop-shadow(0 0 18px color-mix(in srgb, var(--tmd-accent) 70%, transparent)); }
       .rp-name { font-size: 24px; color: var(--tmd-accent); }
-      .rp-desc { font-size: 13px; margin-top: 4px; max-width: 280px; margin-left: auto; margin-right: auto; }
+      .rp-desc { font-size: 13px; margin-top: 4px; max-width: 280px; margin-inline-start: auto; margin-inline-end: auto; }
       .rp-jackpot { margin-top: 8px; background: var(--tmd-gold); color: #3a2e26;
                     border-color: transparent; font-weight: 800; text-transform: uppercase;
                     letter-spacing: 0.04em; font-size: 11px; }
@@ -430,7 +430,7 @@ class TaskMateRewardProgressCard extends LitElement {
       .rp-need-c { font-weight: 800; font-size: 15px; margin-top: 2px; }
       .rp-stat { justify-content: space-between; margin-top: 10px; }
       .rp-stat .rp-pct { font-size: 34px; }
-      .rp-stat-r { text-align: right; }
+      .rp-stat-r { text-align: end; }
       .rp-frac { font-size: 18px; }
       .rp-need { font-size: 12px; }
       .rp-kids { grid-template-columns: repeat(var(--n, 3), 1fr); gap: 9px; margin-top: 16px; }
@@ -440,7 +440,7 @@ class TaskMateRewardProgressCard extends LitElement {
                 flex-direction: column; align-items: center; gap: 4px; }
       .rp-kid .av { margin: 0 auto 2px; }
       .rp-kid-pts { font-size: 20px; color: var(--tmd-accent); }
-      .rp-kid-pts span { font-size: 12px; margin-left: 1px; }
+      .rp-kid-pts span { font-size: 12px; margin-inline-start: 1px; }
       .rp-kid-name { font-size: 12px; font-weight: 800; }
       .rp-kid-bar { width: 100%; height: 7px; margin-top: 3px; }
     `;
@@ -865,7 +865,7 @@ class TaskMateRewardProgressCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }

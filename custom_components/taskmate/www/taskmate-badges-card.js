@@ -324,7 +324,7 @@ class TaskMateBadgesCard extends LitElement {
       .badge-bonus {
         position: absolute;
         top: -4px;
-        right: -4px;
+        inset-inline-end: -4px;
         background: linear-gradient(135deg, var(--t), color-mix(in srgb, var(--t), black 15%));
         color: #fff;
         font-size: 0.65rem;
@@ -374,7 +374,7 @@ class TaskMateBadgesCard extends LitElement {
       .bd-bonus {
         position: absolute;
         top: 6px;
-        right: 8px;
+        inset-inline-end: 8px;
         font-size: 10px;
         font-weight: 800;
         color: var(--tmd-good);

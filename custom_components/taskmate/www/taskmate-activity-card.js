@@ -209,7 +209,7 @@ class TaskMateActivityCard extends LitElement {
       .header-meta {
         font-size: 0.78rem;
         color: rgba(255, 255, 255, 0.85);
-        margin-left: 2px;
+        margin-inline-start: 2px;
         white-space: nowrap;
       }
 
@@ -281,7 +281,7 @@ class TaskMateActivityCard extends LitElement {
         letter-spacing: 0.2px;
         font-weight: 500;
         opacity: 0.75;
-        margin-left: 4px;
+        margin-inline-start: 4px;
       }
 
       /* ── Activity item ─────────────────────────────────── */
@@ -381,7 +381,7 @@ class TaskMateActivityCard extends LitElement {
       .activity-time { color: var(--secondary-text-color); }
       .activity-ago::before {
         content: "·";
-        margin-right: 4px;
+        margin-inline-end: 4px;
         opacity: 0.6;
       }
 
@@ -460,7 +460,7 @@ class TaskMateActivityCard extends LitElement {
         justify-content: center;
         width: 28px;
         height: 28px;
-        margin-left: 2px;
+        margin-inline-start: 2px;
         border-radius: 50%;
         border: 1px solid var(--divider-color, #e0e0e0);
         background: transparent;
@@ -502,14 +502,14 @@ class TaskMateActivityCard extends LitElement {
       .act-cn-row { gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--tmd-border); }
       .act-cn-row:last-child { border-bottom: none; }
       .act-cn-mid { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; }
-      .act-cn-time { font-size: 11px; flex-shrink: 0; text-align: right; line-height: 1.3; white-space: nowrap; }
+      .act-cn-time { font-size: 11px; flex-shrink: 0; text-align: end; line-height: 1.3; white-space: nowrap; }
 
       /* Clean Pro — connecting rail */
-      .act-cp-rail { position: relative; padding-left: 26px; }
-      .act-cp-line { position: absolute; left: 11px; top: 6px; bottom: 6px; width: 2px; background: var(--tmd-border); }
+      .act-cp-rail { position: relative; padding-inline-start: 26px; }
+      .act-cp-line { position: absolute; inset-inline-start: 11px; top: 6px; bottom: 6px; width: 2px; background: var(--tmd-border); }
       .act-cp { gap: 14px; }
       .act-cp-node { position: relative; }
-      .act-cp-dot { position: absolute; left: -26px; top: 0; width: 22px; height: 22px; border-radius: 50%;
+      .act-cp-dot { position: absolute; inset-inline-start: -26px; top: 0; width: 22px; height: 22px; border-radius: 50%;
         background: color-mix(in srgb, var(--ac, var(--tmd-accent)) 18%, transparent); color: var(--ac, var(--tmd-accent));
         display: grid; place-items: center; font-size: 11px; line-height: 1; box-shadow: 0 0 0 3px var(--tmd-surface); }
       .act-cp-head { justify-content: space-between; align-items: flex-start; gap: 10px; }
@@ -519,7 +519,7 @@ class TaskMateActivityCard extends LitElement {
       /* Vertical scroll (parity with classic) — extend to the card edge so the
          scrollbar sits at the edge, not floating inset by the body padding. */
       .act-pl, .act-cn, .act-cp-rail { max-height: 360px; overflow-y: auto;
-        margin-right: -15px; padding-right: 8px; }
+        margin-inline-end: -15px; padding-inline-end: 8px; }
 
       /* Undo confirm overlay (works in classic + designed; no mwc dependency) */
       .undo-ov { position: fixed; inset: 0; z-index: 99; display: grid; place-items: center;
@@ -922,7 +922,7 @@ class TaskMateActivityCard extends LitElement {
         ?disabled=${loading}
         @click=${() => { this._confirm = { kind, id, message }; }}
       >
-        <ha-icon icon="mdi:undo-variant"></ha-icon>
+        <ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon>
       </button>
     `;
   }
@@ -941,7 +941,7 @@ class TaskMateActivityCard extends LitElement {
               ${this._t('common.cancel')}
             </button>
             <button class="undo-modal-btn go" @click=${() => this._doUndo()}>
-              ↩ ${this._t('activity.undo')}
+              ${this.getAttribute?.("dir") === "rtl" ? "↪" : "↩"} ${this._t('activity.undo')}
             </button>
           </div>
         </div>
@@ -1068,7 +1068,7 @@ class TaskMateActivityCard extends LitElement {
       ? this._t('activity.undo_confirm_chore', { detail: undo.detail, child: undo.child, points: undo.points })
       : this._t('activity.undo_confirm_txn', { detail: undo.detail, child: undo.child, points: undo.points });
     return html`<button class="btn ghost sm tmd-undo" ?disabled=${loading}
-      @click=${() => { this._confirm = { kind: undo.kind, id: undo.id, message }; }}>↩ ${label}</button>`;
+      @click=${() => { this._confirm = { kind: undo.kind, id: undo.id, message }; }}>${this.getAttribute?.("dir") === "rtl" ? "↪" : "↩"} ${label}</button>`;
   }
 
   _designFilterChips() {
@@ -1280,7 +1280,7 @@ class TaskMateActivityCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }

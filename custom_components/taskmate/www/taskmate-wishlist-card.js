@@ -541,7 +541,7 @@ class TaskMateWishlistCard extends LitElement {
     const chips = [10, 25, 50].filter((n) => n < max);
     const service = isMove ? "move_points_to_wish" : "take_points_from_wish";
     return html`
-      <h3><ha-icon icon="${isMove ? "mdi:piggy-bank-outline" : "mdi:undo-variant"}"></ha-icon>${this._t(isMove ? "wishlist.move_title" : "wishlist.take_title", { name: wish.name })}</h3>
+      <h3><ha-icon class=${isMove ? "" : "tm-rtl-flip"} icon="${isMove ? "mdi:piggy-bank-outline" : "mdi:undo-variant"}"></ha-icon>${this._t(isMove ? "wishlist.move_title" : "wishlist.take_title", { name: wish.name })}</h3>
       <div class="wl-big-amt">${amount}<ha-icon icon="${pointsIcon}"></ha-icon></div>
       <input class="wl-range" type="range" min="0" max="${max}" step="1" .value=${String(amount)}
         @input=${(e) => this._setSheet({ amount: Number(e.target.value) })}>
@@ -641,7 +641,7 @@ class TaskMateWishlistCard extends LitElement {
       }
       .wl-balance > ha-icon { color: var(--wl-accent); }
       .wl-amount { display: inline-flex; align-items: center; gap: 3px; font-size: 1.05rem; color: var(--wl-gold); }
-      .wl-reserved { margin-left: auto; font-size: .78rem; color: var(--wl-dim); }
+      .wl-reserved { margin-inline-start: auto; font-size: .78rem; color: var(--wl-dim); }
       .wl-flash { margin: 10px 16px 0; font-size: .85rem; color: var(--tmd-bad, #e74c3c); }
 
       .wl-content { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -702,10 +702,10 @@ class TaskMateWishlistCard extends LitElement {
         display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
         padding: 6px 12px 0; font-size: .8rem; color: var(--wl-dim);
       }
-      .wl-sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 4px; vertical-align: -1px; }
+      .wl-sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-inline-end: 4px; vertical-align: -1px; }
       .wl-sw-me { background: var(--wl-me); }
       .wl-sw-fam { background: var(--wl-gold); }
-      .wl-tot { margin-left: auto; color: var(--wl-text); font-weight: 700; font-variant-numeric: tabular-nums; }
+      .wl-tot { margin-inline-start: auto; color: var(--wl-text); font-weight: 700; font-variant-numeric: tabular-nums; }
       .wl-pledges { padding: 8px 12px 0; display: flex; flex-wrap: wrap; gap: 6px; }
       .wl-pl {
         display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; border-radius: 999px; padding: 3px 9px;

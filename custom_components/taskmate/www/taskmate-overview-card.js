@@ -219,7 +219,7 @@ class TaskMateOverviewCard extends LitElement {
         color: var(--secondary-text-color);
         white-space: nowrap;
         min-width: 36px;
-        text-align: right;
+        text-align: end;
       }
 
       .progress-label.complete { color: var(--ov-green); }
@@ -327,11 +327,11 @@ class TaskMateOverviewCard extends LitElement {
       @media (max-width: 480px) { .ov-kids { grid-template-columns: repeat(2, 1fr); } }
       .ov-kid { text-align: center; padding: 11px; border-radius: 16px; background: var(--tmd-surface-2); position: relative; }
       .ov-kid.tm-clickable { cursor: pointer; }
-      .ov-kid-flags { position: absolute; top: 6px; right: 7px; display: flex; gap: 4px; }
+      .ov-kid-flags { position: absolute; top: 6px; inset-inline-end: 7px; display: flex; gap: 4px; }
       .ov-kid-flag { font-size: 9.5px; font-weight: 800; padding: 1px 5px; border-radius: 999px; line-height: 1.5; }
       .ov-kid-flag.pend { background: color-mix(in srgb, var(--tmd-warn) 22%, transparent); color: var(--tmd-warn); }
       .ov-kid-flag.wait { background: color-mix(in srgb, var(--tmd-bad) 20%, transparent); color: var(--tmd-bad); }
-      .ov-behalf { margin-top: 10px; text-align: left; background: var(--tmd-surface-2); border-radius: var(--tmd-radius-sm); padding: 9px 11px; }
+      .ov-behalf { margin-top: 10px; text-align: start; background: var(--tmd-surface-2); border-radius: var(--tmd-radius-sm); padding: 9px 11px; }
       .ov-behalf-hdr { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--tmd-dim); margin-bottom: 6px; }
       .ov-behalf-done { font-size: 12px; font-style: italic; color: var(--tmd-dim); padding: 3px 0; }
       .ov-behalf-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
@@ -871,7 +871,7 @@ class TaskMateOverviewCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }
