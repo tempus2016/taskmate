@@ -142,6 +142,16 @@ test("a loss names the winner, the winning price and my own bid", async () => {
   assert.ok(view.markup.includes(localize("auction.sibling_won_sub_bid", { points: 18, bid: 22 })));
 });
 
+test("a tie lost on timing says so instead of telling them to bid lower", async () => {
+  for (const design of DESIGNS) {
+    const card = await cardFor([lot({ status: "closed", winner_id: "k2", price: 18, my_bid: 18, closed_at: iso(-H) })], { design });
+    const view = render(card.render());
+    assert.ok(view.markup.includes(localize("auction.sibling_won", { name: "Vaiha" })));
+    assert.ok(view.markup.includes(localize("auction.tied_sub", { points: 18, name: "Vaiha" })));
+    assert.ok(!view.markup.includes(localize("auction.sibling_won_sub_bid", { points: 18, bid: 18 })));
+  }
+});
+
 test("no bids says the chore goes back to its normal assignment", async () => {
   const view = render((await cardFor([lot({ status: "closed", winner_id: "", price: 0, closed_at: iso(-H) })])).render());
   assert.ok(view.markup.includes(localize("auction.no_bids")));

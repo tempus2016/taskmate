@@ -573,6 +573,19 @@ def test_a_child_sees_only_their_own_bid_and_the_count():
     assert coord.auctions_for_child("k3") == []  # not eligible: not shown at all
 
 
+def test_a_no_bids_result_is_hidden_while_the_occurrence_is_re_auctioned():
+    coord = _coord()
+    first = _start(coord)
+    run(coord.async_close_auction(first.id))  # no bids
+    assert [a["id"] for a in coord.auctions_for_child("k1")] == [first.id]
+    again = _start(coord, max_points=60)
+    assert [a["id"] for a in coord.auctions_for_child("k1")] == [again.id]
+    _bid(coord, again, "k1", 20)
+    run(coord.async_close_auction(again.id))
+    view = coord.auctions_for_child("k1")
+    assert [(a["id"], a["winner_id"]) for a in view] == [(again.id, "k1")]
+
+
 def test_the_public_digest_carries_counts_never_amounts():
     coord = _coord()
     auction = _start(coord)

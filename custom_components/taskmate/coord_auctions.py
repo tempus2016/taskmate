@@ -671,6 +671,14 @@ class AuctionsMixin:
         for auction in self.storage.get_auctions():
             if child_id not in auction.eligible_child_ids or not self._auction_recent(auction, now):
                 continue
+            # A "no bids" result is stale once the occurrence is re-auctioned
+            # (or that re-run was won): show the live one, not both.
+            if (
+                auction.status == "closed"
+                and not auction.winner_id
+                and self._auction_blocks(auction.chore_id, auction.occurrence, ignore_id=auction.id)
+            ):
+                continue
             row = self._auction_base(auction)
             mine = auction.bids.get(child_id)
             row["my_bid"] = int(mine["points"]) if mine else None

@@ -492,7 +492,7 @@ class TaskMatePanel extends HTMLElement {
       const res = await this._hass.callWS(payload);
       return { ok: true, res };
     } catch (err) {
-      return { ok: false, err: (err && err.message) || String(err) };
+      return { ok: false, err: (err && err.message) || String(err), code: err && err.code };
     }
   }
 
@@ -5347,13 +5347,30 @@ class TaskMatePanel extends HTMLElement {
     return { children, child_updates, chores, rewards };
   }
 
+  // "YYYY-MM-DD" naming a day that exists (no 13th month, no 30 February).
+  _wizardRealDate(value) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
+    if (!m) return false;
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
+  }
+
+  // True when the plan would add or fill in anything at all.
+  _wizardPlanHasWork(plan) {
+    return !!(plan.children.length || plan.child_updates.length || plan.chores.length || plan.rewards.length);
+  }
+
   _wizardAddKid() {
     const wz = this._wz;
     const f = wz.form;
     const name = (f.name || "").trim();
     if (!name) return false;
     const today = new Date().toISOString().slice(0, 10);
-    if (f.mode === "bday" && (!/^\d{4}-\d{2}-\d{2}$/.test(f.bday || "") || f.bday > today)) {
+    if (f.mode === "bday" && !this._wizardRealDate(f.bday)) {
+      this._showToast("err", this._t("wizard.toast_invalid_birthday"));
+      return false;
+    }
+    if (f.mode === "bday" && f.bday > today) {
       this._showToast("err", this._t("wizard.toast_bad_birthday"));
       return false;
     }
@@ -5541,13 +5558,17 @@ class TaskMatePanel extends HTMLElement {
     const wz = this._wz;
     if (wz.busy) return;
     const plan = this._wizardPlan();
+    if (!this._wizardPlanHasWork(plan)) return;
     wz.busy = true;
     this._render();
-    const { ok, res, err } = await this._callWS({ type: "taskmate/setup_wizard/apply", ...plan });
+    const { ok, res, err, code } = await this._callWS({ type: "taskmate/setup_wizard/apply", ...plan });
     if (!ok) {
       wz.busy = false;
       this._render();
-      this._showToast("err", this._t("wizard.toast_create_failed", { error: err }));
+      // Birthday problems come back as codes, so the parent reads them in
+      // their own language rather than Python's wording.
+      const known = { invalid_birthday: "wizard.toast_invalid_birthday", future_birthday: "wizard.toast_bad_birthday" }[code];
+      this._showToast("err", known ? this._t(known) : this._t("wizard.toast_create_failed", { error: err }));
       return;
     }
     // The points name is only touched when it was changed on the Welcome step.
@@ -5558,7 +5579,7 @@ class TaskMatePanel extends HTMLElement {
     if (wz.notify) await this._wizardEnableApprovalAlerts();
     let dashboard = "off";
     if (wz.dash) dashboard = await this._wizardCreateDashboard(res.children || {});
-    wz.result = { ...res, dashboard };
+    wz.result = { ...res, dashboard, updated: plan.child_updates.length };
     wz.busy = false;
     wz.step = 5;
     localStorage.removeItem(WZ_DRAFT_KEY);
@@ -5706,7 +5727,7 @@ class TaskMatePanel extends HTMLElement {
               ${step === 0 && wz.mode === "fresh" ? `<button type="button" class="tm-btn tm-wz-text-btn" data-act="wz-restore">${this._t("wizard.restore")}</button>` : ""}
               ${step === 1 ? `<span class="tm-wz-foot-hint">${typed ? this._esc(this._t("wizard.foot_will_add", { name: typed })) : ""}</span>` : ""}
               ${step === 4
-                ? `<button type="button" class="tm-btn tm-btn-raised tm-wz-create" data-act="wz-create" ${wz.busy ? "disabled" : ""}>${wz.busy ? `<span class="tm-btn-spinner"></span>${this._t("wizard.creating")}` : this._t(wz.mode === "existing" ? "wizard.create_existing" : "wizard.create")}</button>`
+                ? `<button type="button" class="tm-btn tm-btn-raised tm-wz-create" data-act="wz-create" ${wz.busy || !this._wizardPlanHasWork(this._wizardPlan()) ? "disabled" : ""}>${wz.busy ? `<span class="tm-btn-spinner"></span>${this._t("wizard.creating")}` : this._t(wz.mode === "existing" ? "wizard.create_existing" : "wizard.create")}</button>`
                 : `<button type="button" class="tm-btn tm-btn-raised" data-act="wz-next">${this._t(nextKey)}<ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon></button>`}
             </div>`}
         </div>
@@ -6002,7 +6023,8 @@ class TaskMatePanel extends HTMLElement {
     const plan = this._wizardPlan();
     const c = this._wizardCounts(plan);
     const keep = { ...c, have_chores: this._wizardCount("chores", (s.chores || []).length), have_rewards: this._wizardCount("rewards", (s.rewards || []).length) };
-    const intro = wz.mode !== "existing" ? this._t("wizard.review_fresh", c)
+    const intro = !this._wizardPlanHasWork(plan) ? this._t("wizard.review_nothing")
+      : wz.mode !== "existing" ? this._t("wizard.review_fresh", c)
       : this._t(plan.children.length ? "wizard.review_existing" : "wizard.review_existing_no_children", keep);
     const packNames = plan.chores.filter(ch => !ch.assigned_to.length).map(ch => ch.name);
     const kidCards = wz.kids.map(k => {
@@ -6047,7 +6069,11 @@ class TaskMatePanel extends HTMLElement {
     const r = wz.result || {};
     const conf = Array.from({ length: 36 }, (_, i) =>
       `<i style="inset-inline-start:${(i * 37) % 100}%;top:${(i * 53) % 60}%;background:${WZ_KID_COLORS[i % 8]};transform:rotate(${i * 29}deg)"></i>`).join("");
-    const phrase = (noun, n) => this._wizardCount(noun, n);
+    // Only what was actually added: never a row of zeros.
+    const phrase = (noun, n) => (n ? `<span>${this._wizardCount(noun, n)}</span>` : "");
+    const added = (r.children_added || 0) + (r.chores_added || 0) + (r.rewards_added || 0) + (r.updated || 0);
+    const copy = !added && r.dashboard !== "created" ? "wizard.done_copy_nothing"
+      : wz.mode === "existing" ? "wizard.done_copy_existing" : "wizard.done_copy";
     const dash = r.dashboard === "created" || r.dashboard === "exists";
     const dashNote = r.dashboard === "exists" ? this._t("wizard.dash_existed")
       : r.dashboard === "failed" ? this._t("wizard.dash_failed") : "";
@@ -6056,11 +6082,11 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-wz-confetti" aria-hidden="true">${conf}</div>
         <div class="tm-wz-done-ic"><ha-icon icon="mdi:check"></ha-icon></div>
         <h2 class="tm-wz-h tm-wz-h-big">${this._t("wizard.done_title")}</h2>
-        <p class="tm-wz-p tm-wz-center">${this._t(wz.mode === "existing" ? "wizard.done_copy_existing" : "wizard.done_copy")}</p>
+        <p class="tm-wz-p tm-wz-center">${this._t(copy)}</p>
         <div class="tm-wz-stats">
-          <span>${phrase("children", r.children_added || 0)}</span>
-          <span>${phrase("chores", r.chores_added || 0)}</span>
-          <span>${phrase("rewards", r.rewards_added || 0)}</span>
+          ${phrase("children", r.children_added || 0)}
+          ${phrase("chores", r.chores_added || 0)}
+          ${phrase("rewards", r.rewards_added || 0)}
           ${r.dashboard === "created" ? `<span>${this._t("wizard.one_dashboard")}</span>` : ""}
         </div>
         ${dashNote ? `<p class="tm-wz-hint tm-wz-center">${dashNote}</p>` : ""}

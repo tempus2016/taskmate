@@ -378,3 +378,76 @@ test("with a family already set up, the wizard asks first", () => {
   assert.equal(p._dialog.kind, "wizard-confirm");
   assert.match(p._renderWizardConfirmDialog(), /data-act="wz-open-confirmed"/);
 });
+
+// #1000: wording and validation polish.
+
+async function nothingNew() {
+  const p = await opened({
+    children: [{ id: "k1", name: "Vaiha", birthday: age(6), age_group: "6_8" }],
+    chores: [{ id: "c1", name: "Make bed" }],
+    rewards: [],
+  });
+  for (const c of Object.values(p._wz.chores)) c.on = false;
+  for (const r of Object.values(p._wz.rewards)) r.on = false;
+  p._wz.packs = [];
+  return p;
+}
+
+test("with nothing new to add, Review says so and the create button is disabled", async () => {
+  const p = await nothingNew();
+  p._wz.step = 4;
+  const html = p._wizardBody();
+  assert.match(html, /wizard\.review_nothing/);
+  assert.doesNotMatch(html, /wizard\.review_existing/);
+  assert.match(html, /data-act="wz-create" disabled/);
+  const sent = [];
+  p._callWS = async (msg) => { sent.push(msg); return { ok: true, res: {} }; };
+  await p._wizardCreate();
+  deq(sent, []);
+  assert.equal(p._wz.step, 4);
+});
+
+test("the create button stays live when there is something to add", async () => {
+  const p = await opened({}, [{ name: "Isla", mode: "age", age: 4 }]);
+  p._wz.step = 4;
+  assert.doesNotMatch(p._wizardBody(), /data-act="wz-create" disabled/);
+});
+
+test("a finish that added nothing doesn't claim new chores or show 0/0/0", async () => {
+  const p = await opened({ children: [{ id: "k1", name: "Vaiha", birthday: age(6) }] });
+  p._wz.step = 5;
+  p._wz.result = { children_added: 0, chores_added: 0, rewards_added: 0, dashboard: "off" };
+  const done = p._wizardBody();
+  assert.match(done, /wizard\.done_copy_nothing/);
+  assert.doesNotMatch(done, /wizard\.done_copy_existing/);
+  assert.doesNotMatch(done, /count=0/);
+  p._wz.result = { children_added: 0, chores_added: 3, rewards_added: 0, dashboard: "off" };
+  const some = p._wizardBody();
+  assert.match(some, /wizard\.done_copy_existing/);
+  assert.match(some, /count=3/);
+  assert.doesNotMatch(some, /count=0/);
+  // Filling in an existing child's age group is a change too.
+  p._wz.result = { children_added: 0, chores_added: 0, rewards_added: 0, updated: 1, dashboard: "off" };
+  assert.match(p._wizardBody(), /wizard\.done_copy_existing/);
+});
+
+test("a birthday that isn't a real date is refused with its own message", async () => {
+  const p = await opened({});
+  Object.assign(p._wz.form, { name: "Isla", mode: "bday", bday: "2019-13-01" });
+  assert.equal(p._wizardAddKid(), false);
+  assert.equal(p._wz.kids.length, 0);
+  deq(p._toasts.at(-1), ["err", "wizard.toast_invalid_birthday"]);
+  Object.assign(p._wz.form, { bday: "2019-02-30" });
+  assert.equal(p._wizardAddKid(), false);
+});
+
+test("the server's birthday error codes show translated messages, not Python's", async () => {
+  for (const [code, key] of [["invalid_birthday", "wizard.toast_invalid_birthday"], ["future_birthday", "wizard.toast_bad_birthday"]]) {
+    const p = await opened({}, [{ name: "Isla", mode: "age", age: 4 }]);
+    p._wizardGo(4);
+    p._callWS = async () => ({ ok: false, code, err: "month must be in 1..12" });
+    await p._wizardCreate();
+    assert.equal(p._wz.step, 4);
+    deq(p._toasts.at(-1), ["err", key]);
+  }
+});
