@@ -111,3 +111,25 @@ test("won at auction: the calendar places a won day on the winner alone", () => 
   assert.equal(card._rotationRenderMode(chore, "kid1", "2026-10-04", "2026-10-01"), "hidden");
   assert.equal(card._rotationRenderMode(chore, "kid1", "2026-10-05", "2026-10-01"), "rotating");
 });
+
+// #998: a won day ahead shows the winning price on the calendar, not the
+// chore's normal points. The slice ships `auction_prices` beside the wins.
+test("won at auction: the calendar prices a future won day at the winning bid", () => {
+  const card = new CalendarCard();
+  card._t = (k) => k;
+  const chore = bathroom({
+    effective_points: undefined,
+    auction: undefined,
+    auction_wins: { "2026-10-04": "kid2" },
+    auction_prices: { "2026-10-04": 9 },
+  });
+  const day = { key: "2026-10-04", dow: "sunday", date: new Date("2026-10-04T12:00:00"), todayKey: "2026-10-01" };
+  const view = render(card._renderChildBlock(CHILDREN[1], day, [chore], [], "mdi:star", "UTC"));
+  assert.match(view.markup, /mdi:star"?>?[^0-9]*9\b/);
+  assert.doesNotMatch(view.markup, /\b6\b/);
+  // Any other day keeps the chore's normal points.
+  const other = { key: "2026-10-05", dow: "monday", date: new Date("2026-10-05T12:00:00"), todayKey: "2026-10-01" };
+  const plain = render(card._renderChildBlock(CHILDREN[1], other, [chore], [], "mdi:star", "UTC"));
+  assert.match(plain.markup, /\b6\b/);
+  assert.doesNotMatch(plain.markup, /\b9\b/);
+});

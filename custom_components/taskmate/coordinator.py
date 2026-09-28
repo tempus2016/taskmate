@@ -415,7 +415,9 @@ class TaskMateCoordinator(
         # while HA was off.
         await self.async_sweep_bounties(refresh=False)
         # Chore auctions (#982): settle any whose bidding closed while HA was
-        # off, then arm the timer for the next closing time.
+        # off, then arm the timer for the next closing time. Auctions left
+        # behind by a chore deleted before they followed it go first (#999).
+        await self.async_remove_orphaned_auctions()
         await self.async_sweep_auctions(refresh=False)
         self._arm_auction_timer()
         await self.async_refresh()
