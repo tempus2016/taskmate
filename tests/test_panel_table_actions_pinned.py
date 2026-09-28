@@ -5,7 +5,8 @@ action buttons in a trailing column. With the HA sidebar open at 1400 px, or
 at tablet/phone widths, the table outgrows the panel and that last column
 lands past the right edge of the scroll container — Fulfil clipped, delete
 out of sight (issue #951). They now ride inside the pinned name cell, the way
-the Chores table already does it (#533/#568).
+the Chores table already does it (#533/#568). The Pledges and Wish history
+tables on the same tab had the same trailing delete column (issue #962).
 
 Structural (grep over source) because the layout depends on the surrounding
 Home Assistant frontend, which no unit test instantiates; the rendering was
@@ -55,6 +56,37 @@ def test_active_wishes_table_has_no_trailing_actions_column():
     assert 'class="tm-col-sticky"' in head
 
 
+def _wishlists_table(start_marker: str, end_marker: str) -> str:
+    body = _method("_renderWishlistsTab")
+    start = body.index(start_marker)
+    return body[start : body.index(end_marker, start)]
+
+
+def test_pledge_delete_rides_in_the_pinned_from_cell():
+    table = _wishlists_table("const pledgesHtml", "const historyHtml")
+    row = table[table.index('<tr class="tm-row">') :]
+    cell = _first_cell(row)
+    assert "tm-col-sticky" in cell
+    assert 'data-act="wish-unpledge"' in cell, "pledge delete must sit in the pinned From cell"
+    assert row.count("<td") == 5, "no trailing actions cell"
+
+
+def test_pledges_table_has_no_trailing_actions_column():
+    table = _wishlists_table("const pledgesHtml", "const historyHtml")
+    head = table[table.index("<thead>") : table.index("</thead>")]
+    assert "<th></th>" not in head
+    assert 'class="tm-col-sticky"' in head
+
+
+def test_history_delete_rides_in_the_pinned_wish_cell():
+    table = _wishlists_table("const historyHtml", "return `")
+    row = table[table.index('<tr class="tm-row">') :]
+    cell = _first_cell(row)
+    assert "tm-col-sticky" in cell
+    assert 'data-act="wish-delete"' in cell, "history delete must sit in the pinned wish cell"
+    assert row.count("<td") == 4, "no trailing actions cell"
+
+
 def test_bounty_actions_ride_in_the_pinned_name_cell():
     row = _method("_renderBountyRow")
     row = row[row.index('<tr class="tm-row">') :]
@@ -77,3 +109,13 @@ def test_wrapping_name_cell_lets_text_and_actions_wrap():
     assert rule and "white-space: normal" in rule.group(1)
     rule = re.search(r"\.tm-name-cell-wrap\s*\{([^}]*)\}", src)
     assert rule and "flex-wrap: wrap" in rule.group(1)
+
+
+def test_icon_only_name_cell_keeps_the_icon_beside_a_wrapping_name():
+    src = PANEL.read_text(encoding="utf-8")
+    rule = re.search(r"\.tm-name-cell-icon \.tm-name-main\s*\{([^}]*)\}", src)
+    assert rule and "min-width" in rule.group(1)
+    body = _method("_renderWishlistsTab")
+    for marker, end in (("const pledgesHtml", "const historyHtml"), ("const historyHtml", "return `")):
+        table = body[body.index(marker) : body.index(end, body.index(marker))]
+        assert "tm-name-cell tm-name-cell-icon" in table

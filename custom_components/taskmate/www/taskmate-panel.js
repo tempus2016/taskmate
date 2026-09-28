@@ -4201,20 +4201,22 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-table-wrap">
         <table class="tm-table">
           <thead><tr>
-            <th>${this._t("panel.wish_col_from")}</th><th>${this._t("panel.wish_col_to")}</th><th>${this._t("panel.wish_col_amount")}</th>
-            <th>${this._t("panel.wish_col_message")}</th><th>${this._t("panel.wish_col_date")}</th><th></th>
+            <th class="tm-col-sticky">${this._t("panel.wish_col_from")}</th><th>${this._t("panel.wish_col_to")}</th><th>${this._t("panel.wish_col_amount")}</th>
+            <th>${this._t("panel.wish_col_message")}</th><th>${this._t("panel.wish_col_date")}</th>
           </tr></thead>
           <tbody>
             ${pledges.map(p => `
               <tr class="tm-row">
-                <td><strong>${this._esc(p.name)}</strong></td>
+                <td class="tm-col-sticky tm-cell-wrap"><div class="tm-name-cell tm-name-cell-icon">
+                  <div class="tm-name-main"><strong>${this._esc(p.name)}</strong></div>
+                  ${p.wish.status === "active" || p.wish.status === "redeem_requested"
+                    ? `<div class="tm-name-actions"><button type="button" class="tm-icon-btn" data-act="wish-unpledge" data-id="${this._esc(p.wish.id)}" data-pledge="${this._esc(p.id)}" title="${this._esc(this._t("panel.wish_unpledge"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button></div>`
+                    : ""}
+                </div></td>
                 <td>${who(p.wish)} · ${this._esc(p.wish.name)}</td>
                 <td class="tm-numeric tm-wl-gold">+${this._fmtNum(p.points)}</td>
                 <td class="tm-meta">${this._esc(p.message || "—")}</td>
                 <td class="tm-meta">${this._esc(this._timeAgo(p.created_at))}</td>
-                <td>${p.wish.status === "active" || p.wish.status === "redeem_requested"
-                  ? `<button type="button" class="tm-icon-btn" data-act="wish-unpledge" data-id="${this._esc(p.wish.id)}" data-pledge="${this._esc(p.id)}" title="${this._esc(this._t("panel.wish_unpledge"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>`
-                  : ""}</td>
               </tr>`).join("")}
           </tbody>
         </table>
@@ -4226,13 +4228,15 @@ class TaskMatePanel extends HTMLElement {
           <tbody>
             ${history.map(w => `
               <tr class="tm-row">
-                <td><div class="tm-wl-cell">${this._wishThumb(w, 32)}<div><strong>${this._esc(w.name)}</strong><div class="tm-meta">${who(w)}</div></div></div></td>
+                <td class="tm-col-sticky tm-cell-wrap"><div class="tm-name-cell tm-name-cell-icon">
+                  <div class="tm-name-main tm-wl-cell">${this._wishThumb(w, 32)}<div><strong>${this._esc(w.name)}</strong><div class="tm-meta">${who(w)}</div></div></div>
+                  <div class="tm-name-actions"><button type="button" class="tm-icon-btn" data-act="wish-delete" data-id="${this._esc(w.id)}" title="${this._esc(this._t("panel.wish_delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button></div>
+                </div></td>
                 <td>${w.status === "redeemed"
                   ? `<span class="tm-pill tm-pill-success">${this._t("panel.wish_status_redeemed")}</span>`
                   : `<span class="tm-pill tm-pill-danger">${this._t("panel.wish_status_declined")}</span>${w.decline_reason ? ` <span class="tm-meta">${this._esc(w.decline_reason)}</span>` : ""}`}</td>
                 <td class="tm-numeric">${this._fmtNum(w.target)}</td>
                 <td class="tm-meta">${this._esc(this._timeAgo(w.redeemed_at || w.declined_at || w.created_at))}</td>
-                <td><button type="button" class="tm-icon-btn" data-act="wish-delete" data-id="${this._esc(w.id)}" title="${this._esc(this._t("panel.wish_delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button></td>
               </tr>`).join("")}
           </tbody>
         </table>
@@ -8418,6 +8422,9 @@ class TaskMatePanel extends HTMLElement {
       .tm-table td.tm-cell-wrap { white-space: normal; }
       .tm-name-cell-wrap { flex-wrap: wrap; row-gap: 8px; }
       .tm-name-cell-wrap .tm-name-main { flex: 1 1 auto; min-width: 150px; }
+      /* Icon-only actions (Pledges, Wish history; #962) stay beside the name,
+         which wraps instead, so a lone delete icon doesn't take its own line. */
+      .tm-name-cell-icon .tm-name-main { flex: 1 1 auto; min-width: 150px; }
 
       /* Floating kebab (⋮) action menu for chore rows. Rendered fixed at the
          document root so the table wrap's overflow never clips it. */
