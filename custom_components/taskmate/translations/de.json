@@ -1252,6 +1252,74 @@
           "description": "Die ID des Wunsches"
         }
       }
+    },
+    "start_inspection": {
+      "name": "Kontrolle starten",
+      "description": "Markiert eine in den letzten 24 Stunden bestätigte Aufgabe für eine Überraschungskontrolle. Bestehen oder durchfallen lassen, bevor das Zeitfenster endet; eine offene Kontrolle endet still.",
+      "fields": {
+        "completion_id": {
+          "name": "Erledigungs-ID",
+          "description": "Die ID der bestätigten Aufgaben-Erledigung, die kontrolliert wird"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Punkte, wenn sie besteht. Standard ist der Wert aus den Einstellungen."
+        },
+        "window": {
+          "name": "Zeitfenster",
+          "description": "Wie lange du zum Prüfen hast: 1h, 2h, 4h oder bed (bis zur Schlafenszeit). Standard ist der Wert aus den Einstellungen."
+        },
+        "tell_child": {
+          "name": "Kind informieren",
+          "description": "Zeigt jetzt „Kontrolle kommt“ auf der Karte des Kindes. Für eine geheime Kontrolle ausschalten."
+        }
+      }
+    },
+    "pass_inspection": {
+      "name": "Kontrolle bestanden",
+      "description": "Die kontrollierte Aufgabe hat bestanden. Zahlt den Bonus als normalen Punkteeintrag und feiert auf der Karte des Kindes.",
+      "fields": {
+        "inspection_id": {
+          "name": "Kontroll-ID",
+          "description": "Die ID der offenen Kontrolle"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Auszuzahlende Punkte. Standard ist der beim Start festgelegte Bonus."
+        },
+        "note": {
+          "name": "Notiz",
+          "description": "Optionale Notiz für das Kind"
+        }
+      }
+    },
+    "fail_inspection": {
+      "name": "Kontrolle nicht bestanden",
+      "description": "Die kontrollierte Aufgabe hat nicht bestanden. Es werden keine Punkte abgezogen. Sie kann zum Nachbessern zurückgeschickt werden; das bringt keine zusätzlichen Punkte.",
+      "fields": {
+        "inspection_id": {
+          "name": "Kontroll-ID",
+          "description": "Die ID der offenen Kontrolle"
+        },
+        "redo": {
+          "name": "Zum Nachbessern zurückschicken",
+          "description": "Setzt die Aufgabe für heute wieder als nicht erledigt auf die Liste des Kindes. Standard ist der Wert aus den Einstellungen."
+        },
+        "note": {
+          "name": "Notiz",
+          "description": "Optionale Notiz für das Kind (was nachgebessert werden muss)"
+        }
+      }
+    },
+    "cancel_inspection": {
+      "name": "Kontrolle abbrechen",
+      "description": "Bricht eine offene Kontrolle ab, als hätte sie nie begonnen.",
+      "fields": {
+        "inspection_id": {
+          "name": "Kontroll-ID",
+          "description": "Die ID der offenen Kontrolle"
+        }
+      }
     }
   },
   "entity": {

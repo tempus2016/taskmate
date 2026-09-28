@@ -39,6 +39,7 @@ class TaskMateChildCard extends LitElement {
       _avatarPickerOpen: { type: Boolean },
       _photoCapture: { type: Object },
       _extraCapture: { type: Object },
+      _inspCelebration: { type: Object },
     };
   }
 
@@ -93,6 +94,7 @@ class TaskMateChildCard extends LitElement {
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
       || this.hass?.states?.[this.config?.entity]?.attributes || {};
     this._maybeBirthdayConfetti(attrs);
+    this._maybeInspectionCelebration(attrs);
     this._scheduleUndoExpiry(attrs);
     const sessions = attrs.active_timed_sessions || [];
     const hasRunning = sessions.some(s => s.state === 'running' && s.child_id === this.config?.child_id);
@@ -103,7 +105,8 @@ class TaskMateChildCard extends LitElement {
       if (!c.deadline_at) return false;
       const at = new Date(c.deadline_at).getTime();
       return !Number.isNaN(at) && at > now;
-    });
+    }) || this._inspectionsOf((attrs.children || []).find(c => c.id === this.config?.child_id))
+      .some(i => i.status === "open");
     if ((hasRunning || hasDeadline) && !this._timerInterval) {
       this._timerInterval = setInterval(() => { this._timerTick++; this.requestUpdate(); }, 1000);
     } else if (!hasRunning && !hasDeadline && this._timerInterval) {
@@ -897,6 +900,71 @@ class TaskMateChildCard extends LitElement {
         color: var(--secondary-text-color);
       }
       .dependency-label ha-icon { --mdc-icon-size: 12px; }
+
+      /* Surprise inspections (#981). Shared by every design: the tokens fall
+         back to the classic colours, so classic renders them unchanged. */
+      .tm-insp-banner {
+        display: flex; align-items: center; gap: 12px;
+        margin: 0 12px 10px; padding: 12px 14px;
+        border-radius: var(--tmd-r, 16px);
+        border: 2px solid var(--ib, #f39c12);
+        background: color-mix(in srgb, var(--ib, #f39c12) 16%, var(--tmd-card, var(--card-background-color, #fff)));
+        color: var(--tmd-ink, var(--primary-text-color));
+      }
+      .tm-insp-banner.designed { margin: 0 0 10px; }
+      .tm-insp-banner.is-open { --ib: #f39c12; }
+      .tm-insp-banner.is-passed { --ib: var(--tmd-good, #2ecc71); }
+      .tm-insp-banner.is-redo { --ib: #e67e22; }
+      .tm-insp-banner.is-failed { --ib: var(--tmd-dim, #9aa3ad); border-width: 1px; }
+      .tm-insp-bi {
+        width: 40px; height: 40px; border-radius: 12px; flex: none;
+        display: grid; place-items: center; color: #fff; background: var(--ib, #f39c12);
+      }
+      .tm-insp-bi ha-icon { --mdc-icon-size: 24px; }
+      .tm-insp-bt { display: flex; flex-direction: column; min-width: 0; }
+      .tm-insp-title { font-weight: 800; font-size: 1rem; line-height: 1.25; }
+      .tm-insp-sub { font-size: 0.82rem; font-weight: 600; opacity: 0.85; overflow-wrap: anywhere; }
+      .tm-insp-tag {
+        display: inline-flex; align-items: center; gap: 3px; margin-block: 3px 0; margin-inline: 0 4px;
+        padding: 1px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 800;
+        color: #fff; background: #f39c12; white-space: nowrap; vertical-align: middle;
+        width: fit-content; align-self: flex-start;
+      }
+      .tm-insp-tag ha-icon { --mdc-icon-size: 12px; }
+      .tm-insp-tag.is-passed { background: #f1c40f; color: #5a4300; }
+      .tm-insp-tag.is-redo { background: #e67e22; }
+      .tm-insp-tag.is-failed { background: var(--tmd-dim, #7f8c8d); }
+      .chore-card.tm-insp-row-open, .tm-insp-row-open { outline: 2px dashed #f39c12; outline-offset: -2px; }
+      .chore-card.tm-insp-row-passed, .tm-insp-row-passed { box-shadow: inset 0 0 0 2px #f1c40f; }
+      .tm-insp-note {
+        margin: 3px 0 2px; padding: 4px 8px; border-radius: 8px;
+        font-size: 0.75rem; font-weight: 600; line-height: 1.3;
+        white-space: normal; overflow-wrap: anywhere;
+        background: rgba(230, 126, 34, 0.14); color: #b35900;
+      }
+      .tm-insp-note ha-icon { --mdc-icon-size: 13px; }
+      .tm-insp-note.designed { color: var(--tmd-ink, #b35900); background: color-mix(in srgb, #e67e22 16%, transparent); }
+      .tm-insp-cele {
+        position: relative; text-align: center; color: #fff;
+        padding: 28px 34px 22px; border-radius: 28px; max-width: 320px; margin: 16px;
+        background: linear-gradient(160deg, #f5b301, #e67e22);
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+        font-family: var(--tmd-font, inherit);
+      }
+      .tm-insp-cele-mag {
+        width: 76px; height: 76px; margin: 0 auto 10px; border-radius: 50%;
+        display: grid; place-items: center; background: rgba(255, 255, 255, 0.22);
+      }
+      .tm-insp-cele-mag ha-icon { --mdc-icon-size: 46px; }
+      .tm-insp-cele-title { font-size: 1.7rem; font-weight: 900; }
+      .tm-insp-cele-msg { font-size: 1rem; font-weight: 600; opacity: 0.92; margin-top: 2px; }
+      .tm-insp-cele-big { font-size: 2.4rem; font-weight: 900; margin: 10px 0 4px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+      .tm-insp-cele-big ha-icon { --mdc-icon-size: 34px; }
+      .tm-insp-cele-note { font-style: italic; font-weight: 600; background: rgba(255, 255, 255, 0.18); border-radius: 12px; padding: 8px 12px; overflow-wrap: anywhere; }
+      .tm-insp-cele-btn {
+        margin-top: 16px; padding: 10px 28px; border: 0; border-radius: 999px; cursor: pointer;
+        font: inherit; font-weight: 800; font-size: 1rem; color: #fff; background: rgba(255, 255, 255, 0.28);
+      }
 
       /* Reject reason (#976): a parent's "why" on a chore they sent back. */
       .tm-reject-note {
@@ -2229,6 +2297,7 @@ class TaskMateChildCard extends LitElement {
         </div>
 
         ${this._renderBirthdayBanner(child, false)}
+        ${this._renderInspectionBanners(child, false, pointsName)}
         ${this._renderChildUndo(child, todaysCompletions)}
 
         ${attrs.vacation_active ? html`
@@ -2313,6 +2382,7 @@ class TaskMateChildCard extends LitElement {
         ${this._renderSwappable(allChores, child, pointsIcon)}
 
         ${this._celebrating ? this._renderCelebration() : ""}
+        ${this._renderInspectionCelebration(pointsIcon)}
         ${this._confetti.length > 0 ? this._renderConfetti() : ""}
         ${this._renderPhotoCapture()}
         ${this._renderExtraCapture()}
@@ -2697,6 +2767,7 @@ class TaskMateChildCard extends LitElement {
       ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints)}
       <div class="tmd-bd">
         ${this._renderBirthdayBanner(child, true)}
+        ${this._renderInspectionBanners(child, true, attrs.points_name || this._t("common.stars"))}
         ${this._renderChildUndo(child, todaysCompletions)}
         ${attrs.vacation_active ? html`
           <div class="tmd-vacation">
@@ -2742,6 +2813,7 @@ class TaskMateChildCard extends LitElement {
         ${this._renderSwappable(allChores, child, pointsIcon)}
       </div>
       ${this._celebrating ? this._renderCelebration() : ""}
+      ${this._renderInspectionCelebration(pointsIcon)}
       ${this._confetti.length > 0 ? this._renderConfetti() : ""}
       ${this._renderPhotoCapture()}
       ${this._renderExtraCapture()}
@@ -2830,7 +2902,9 @@ class TaskMateChildCard extends LitElement {
           ${r.team && !r.done ? this._renderTeamProgress(r.team, "tmd-tag") : ""}
         </div>` : ""}
       ${showDesc ? html`<div class="tmd-desc">${r.chore.description}</div>` : ""}
-      ${r.done ? "" : this._renderRejectNote(r.chore, r.child, "tmd-reject")}`;
+      ${r.done ? "" : this._renderRejectNote(r.chore, r.child, "tmd-reject")}
+      ${this._renderInspectionTag(r.chore, r.child)}
+      ${r.done ? "" : this._renderInspectionNote(r.chore, r.child, "tm-insp-note designed")}`;
   }
 
   /**
@@ -2890,7 +2964,7 @@ class TaskMateChildCard extends LitElement {
     if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
     return html`<div class="tmd-chores">
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
-        <div class="tmd-chore ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""}" style="--ac:${r.tone}">
+        <div class="tmd-chore ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""} ${this._inspectionRowClass(r.chore, r.child)}" style="--ac:${r.tone}">
           <div class="num-badge" style="${r.done ? "--ac:var(--tmd-good)" : ""}">${r.done ? "✓" : r.index + 1}</div>
           <span class="ch-emoji">${r.glyph}</span>
           <div class="ch-mid">
@@ -2910,7 +2984,7 @@ class TaskMateChildCard extends LitElement {
     if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
     return html`<div class="grid tmd-quests">
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
-        <div class="tmd-quest ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""}" style="--ac:${r.tone}">
+        <div class="tmd-quest ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""} ${this._inspectionRowClass(r.chore, r.child)}" style="--ac:${r.tone}">
           <div class="num q-num" style="${r.done ? "color:var(--tmd-good)" : ""}">${r.done ? "✓" : String(r.index + 1).padStart(2, "0")}</div>
           <span class="q-emoji">${r.glyph}</span>
           <div class="q-mid">
@@ -2932,7 +3006,7 @@ class TaskMateChildCard extends LitElement {
     if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
     return html`<div class="tmd-checklist">
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
-        <div class="tmd-check ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""}" style="--ac:${r.tone}">
+        <div class="tmd-check ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""} ${this._inspectionRowClass(r.chore, r.child)}" style="--ac:${r.tone}">
           <div class="c-num" style="${r.done ? "--ac:var(--tmd-good)" : ""}">${r.done ? "✓" : r.index + 1}</div>
           <span class="c-emoji">${r.glyph}</span>
           <div class="c-mid">
@@ -3926,7 +4000,7 @@ class TaskMateChildCard extends LitElement {
 
     return html`
       <div
-        class="chore-card ${chore.mandatory ? "mandatory" : ""} ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence || weeklyDone ? "recurrence-unavailable" : ""} ${notAvailableFirstCome ? "first-come-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""} ${depDimmed ? "dependency-blocked" : ""}"
+        class="chore-card ${chore.mandatory ? "mandatory" : ""} ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence || weeklyDone ? "recurrence-unavailable" : ""} ${notAvailableFirstCome ? "first-come-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""} ${depDimmed ? "dependency-blocked" : ""} ${this._inspectionRowClass(chore, child)}"
         role="button"
         tabindex="${isInteractive ? '0' : '-1'}"
         aria-disabled="${isInteractive ? 'false' : 'true'}"
@@ -3943,6 +4017,8 @@ class TaskMateChildCard extends LitElement {
             <div class="chore-name">${chore.name}${chore.mandatory ? html`<span class="mandatory-badge">⚠ ${this._t('child.mandatory')}</span>` : ''}</div>
             ${this._renderDeadlineBadge(chore, isCompletedForToday)}
             ${isCompletedForToday ? '' : this._renderRejectNote(chore, child, 'tm-reject-note')}
+            ${this._renderInspectionTag(chore, child)}
+            ${isCompletedForToday ? '' : this._renderInspectionNote(chore, child, 'tm-insp-note')}
             ${chore.difficulty ? html`<span class="difficulty-badge difficulty-${chore.difficulty}">${this._t('child.difficulty_' + chore.difficulty) || chore.difficulty}</span>` : ''}
             ${this.config.show_description && chore.description ? html`
               <div class="chore-description">${chore.description}</div>
@@ -5005,6 +5081,126 @@ class TaskMateChildCard extends LitElement {
       this._loading = { ...this._loading, [chore.id]: false };
       this.requestUpdate();
     }
+  }
+
+  /* Surprise inspections (#981). The overview sensor carries a child's
+     inspections for today (`child.inspections`): an open one only when the
+     child was told, a pass / fail / redo decided today. Every helper below is
+     called from BOTH render paths (classic render() and _renderDesigned /
+     _designChoreMeta / the designed row builders), and the pass celebration
+     is triggered from updated(), which runs for every design. */
+  _inspectionsOf(child) {
+    return (child && Array.isArray(child.inspections)) ? child.inspections : [];
+  }
+
+  _inspectionFor(chore, child) {
+    return this._inspectionsOf(child).find(i => i.chore_id === chore.id) || null;
+  }
+
+  _inspLeft(iso) {
+    const ms = new Date(iso).getTime() - Date.now();
+    if (!Number.isFinite(ms)) return "";
+    const mins = Math.max(0, Math.ceil(ms / 60000));
+    const h = Math.floor(mins / 60);
+    return h ? `${h}h ${String(mins % 60).padStart(2, "0")}m` : `${mins}m`;
+  }
+
+  _renderInspectionBanners(child, designed, pointsName) {
+    const items = this._inspectionsOf(child);
+    if (!items.length) return "";
+    return html`${items.map(i => {
+      const name = i.name || "";
+      let icon = "mdi:magnify-scan";
+      let title;
+      let sub;
+      if (i.status === "open") {
+        title = this._t("inspection.coming_title");
+        sub = this._t("inspection.coming_sub", { name, time: this._inspLeft(i.until), bonus: i.bonus, points_name: pointsName });
+      } else if (i.status === "passed") {
+        icon = "mdi:check-decagram";
+        title = this._t("inspection.passed_title", { bonus: i.bonus, points_name: pointsName });
+        sub = i.note
+          ? this._t("inspection.passed_sub_note", { name, note: i.note })
+          : this._t("inspection.passed_sub", { name });
+      } else if (i.status === "redo") {
+        icon = "mdi:restore";
+        title = this._t("inspection.redo_title", { name });
+        sub = this._t("inspection.redo_sub", { points: i.points || 0, points_name: pointsName });
+      } else {
+        title = this._t("inspection.nope_title");
+        sub = this._t("inspection.nope_sub", { name });
+      }
+      return html`
+        <div class="tm-insp-banner ${designed ? "designed" : ""} is-${i.status}" role="status">
+          <span class="tm-insp-bi"><ha-icon icon="${icon}"></ha-icon></span>
+          <div class="tm-insp-bt">
+            <span class="tm-insp-title">${title}</span>
+            <span class="tm-insp-sub">${sub}</span>
+          </div>
+        </div>`;
+    })}`;
+  }
+
+  /** Extra class for a chore row under inspection (dashed amber / gold). */
+  _inspectionRowClass(chore, child) {
+    const i = this._inspectionFor(chore, child);
+    if (!i) return "";
+    return i.status === "open" ? "tm-insp-row-open" : i.status === "passed" ? "tm-insp-row-passed" : "";
+  }
+
+  _renderInspectionTag(chore, child) {
+    const i = this._inspectionFor(chore, child);
+    if (!i) return "";
+    const tags = {
+      open: ["mdi:magnify-scan", this._t("inspection.tag_open")],
+      passed: ["mdi:star", this._t("inspection.tag_passed", { bonus: i.bonus })],
+      redo: ["mdi:restore", this._t("inspection.tag_redo")],
+      failed: ["mdi:magnify-scan", this._t("inspection.tag_failed")],
+    };
+    const [icon, label] = tags[i.status] || tags.failed;
+    return html`<span class="tm-insp-tag is-${i.status}"><ha-icon icon="${icon}"></ha-icon>${label}</span>`;
+  }
+
+  /** The parent's "what needs fixing" under a chore sent back to redo. */
+  _renderInspectionNote(chore, child, cls) {
+    const i = this._inspectionFor(chore, child);
+    if (!i || i.status !== "redo" || !i.note) return "";
+    return html`<div class="${cls}" role="note"><ha-icon icon="mdi:information-outline"></ha-icon> “${i.note}”</div>`;
+  }
+
+  /* The pass celebration plays once per inspection on this device — the next
+     time the card loads after the pass, not on every hass update. */
+  _maybeInspectionCelebration(attrs) {
+    const child = (attrs.children || []).find(c => c.id === this.config?.child_id);
+    const passed = this._inspectionsOf(child).filter(i => i.status === "passed" && i.id);
+    if (!passed.length || this._inspCelebration) return;
+    const KEY = "taskmate_inspections_celebrated";
+    let seen;
+    try { seen = JSON.parse(window.localStorage.getItem(KEY) || "[]") || []; } catch (e) { seen = []; }
+    if (!Array.isArray(seen)) seen = [];
+    const next = passed.find(i => !seen.includes(i.id));
+    if (!next) return;
+    seen.push(next.id);
+    try { window.localStorage.setItem(KEY, JSON.stringify(seen.slice(-50))); } catch (e) { /* private mode: plays each load */ }
+    this._inspCelebration = next;
+    this._spawnConfetti();
+  }
+
+  _renderInspectionCelebration(pointsIcon) {
+    const i = this._inspCelebration;
+    if (!i) return "";
+    const close = () => { this._inspCelebration = null; this.requestUpdate(); };
+    return html`
+      <div class="celebration-overlay tm-insp-cele-ov" @click=${close}>
+        <div class="tm-insp-cele" role="dialog" aria-label="${this._t("inspection.celebrate_title")}" @click=${(e) => e.stopPropagation()}>
+          <div class="tm-insp-cele-mag"><ha-icon icon="mdi:magnify-scan"></ha-icon></div>
+          <div class="tm-insp-cele-title">${this._t("inspection.celebrate_title")}</div>
+          <div class="tm-insp-cele-msg">${this._t("inspection.celebrate_sub", { name: i.name || "" })}</div>
+          <div class="tm-insp-cele-big">+${i.bonus || 0} <ha-icon icon="${pointsIcon || "mdi:star"}"></ha-icon></div>
+          ${i.note ? html`<div class="tm-insp-cele-note">“${i.note}”</div>` : ""}
+          <button class="tm-insp-cele-btn" @click=${close}>${this._t("inspection.celebrate_ok")}</button>
+        </div>
+      </div>`;
   }
 
   /* Birthday mode (#924). The backend only sends `child.birthday` on the day

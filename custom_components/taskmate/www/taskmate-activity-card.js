@@ -92,6 +92,8 @@ class TaskMateActivityCard extends LitElement {
       ['Pool refund (reward assignment changed):', 'activity.reason_pool_refund_assignment_changed'],
       ['Penalty:', 'activity.reason_penalty'],
       ['Bonus:', 'activity.reason_bonus'],
+      // Surprise inspections (#981): the pass bonus.
+      ['Inspection passed:', 'activity.reason_inspection_passed'],
     ];
     for (const [prefix, key] of prefixMap) {
       if (reason.startsWith(prefix)) {
@@ -306,6 +308,9 @@ class TaskMateActivityCard extends LitElement {
       .activity-item.t-penalty    .event-stripe { background: var(--tm-stripe-penalty); }
       .activity-item.t-reward     .event-stripe { background: var(--tm-stripe-reward); }
       .activity-item.t-bonus      .event-stripe { background: var(--tm-stripe-bonus); }
+      .activity-item.t-inspection .event-stripe { background: #f39c12; }
+      .activity-icon.t-inspection { background: rgba(243,156,18,0.16); color: #c2740a; }
+      .activity-insp-note { font-size: 0.8rem; font-style: italic; color: var(--secondary-text-color); margin-top: 2px; overflow-wrap: anywhere; }
 
       .activity-row {
         flex: 1;
@@ -491,6 +496,7 @@ class TaskMateActivityCard extends LitElement {
       .tmd-undo { padding: 4px 11px; }
       .act-line { font-weight: 700; font-size: 13.5px; line-height: 1.35; }
       .act-line .reason { font-weight: 400; color: var(--tmd-dim); }
+      .act-insp-note { font-size: 12px; font-style: italic; font-weight: 400; color: var(--tmd-dim); margin-top: 2px; overflow-wrap: anywhere; }
       .act-reject-reason { font-size: 12px; font-weight: 600; color: var(--tmd-bad); margin-top: 2px; overflow-wrap: anywhere; }
       /* Quality rating the parent gave at approval (#927), both render paths. */
       .act-rating { color: var(--tmd-gold, #f5b301); font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
@@ -584,9 +590,10 @@ class TaskMateActivityCard extends LitElement {
   _classifyItem(item) {
     const t = item.type || "chore";
     if (t === "chore_rejected" || t === "reward_rejected") return "rejected";
+    if (t.startsWith("inspection_")) return "inspection";
     if (t === "points_added") {
       const reason = item.reason || "";
-      if (reason.startsWith("Bonus:") || reason.startsWith("Perfect week bonus") ||
+      if (reason.startsWith("Bonus:") || reason.startsWith("Inspection passed:") || reason.startsWith("Perfect week bonus") ||
           reason.startsWith("Weekend bonus") || reason.startsWith("Streak milestone bonus")) {
         return "bonus";
       }
@@ -791,7 +798,8 @@ class TaskMateActivityCard extends LitElement {
                  : isSpend ? this._t('activity.spent')
                  : this._t('activity.lost');
       const pillClass = isAdd ? 'gain' : (isSpend ? 'spend' : 'loss');
-      const icon = isAdd ? 'mdi:star-plus' : (isPenalty ? 'mdi:minus-circle' : 'mdi:star-minus');
+      const icon = reason.startsWith('Inspection passed:') ? 'mdi:magnify-scan'
+        : isAdd ? 'mdi:star-plus' : (isPenalty ? 'mdi:minus-circle' : 'mdi:star-minus');
       const displayReason = this._translateReason(item.reason);
 
       return html`
@@ -819,6 +827,32 @@ class TaskMateActivityCard extends LitElement {
             ${this._txnReversible(reason)
               ? this._renderUndoButton('txn', item.transaction_id, displayReason || reason, childName, pts)
               : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Surprise inspections (#981) ───────────────────────
+    if (type.startsWith("inspection_")) {
+      const d = this._inspectionText(item);
+      return html`
+        <div class="activity-item t-inspection">
+          ${this.config.accent_stripes !== false ? html`<div class="event-stripe"></div>` : ''}
+          <div class="activity-row">
+            <div class="activity-icon t-inspection">
+              <ha-icon icon="${type === "inspection_redo" ? "mdi:restore" : "mdi:magnify-scan"}"></ha-icon>
+            </div>
+            <div class="activity-body">
+              <div class="activity-title">
+                <strong>${childName}</strong> · ${d.label}
+                <span class="reason">— ${d.name}</span>
+              </div>
+              ${item.note ? html`<div class="activity-insp-note">“${item.note}”</div>` : ''}
+              <div class="activity-meta">
+                <span class="activity-time">${time}</span>
+                ${this.config.show_relative_time !== false ? html`<span class="activity-ago">${ago}</span>` : ''}
+              </div>
+            </div>
           </div>
         </div>
       `;
@@ -1019,6 +1053,20 @@ class TaskMateActivityCard extends LitElement {
      Ported from docs/design/redesigns/frag/17-activity.html
   ══════════════════════════════════════════════════════════════════════ */
 
+  // Surprise inspections (#981): label + chore for an inspection_* event.
+  _inspectionText(item) {
+    const keys = {
+      inspection_started: 'activity.inspection_started',
+      inspection_passed: 'activity.inspection_passed',
+      inspection_failed: 'activity.inspection_failed',
+      inspection_redo: 'activity.inspection_redo',
+    };
+    return {
+      label: this._t(keys[item.type] || 'activity.inspection_started'),
+      name: item.chore_name || this._t('activity.a_chore'),
+    };
+  }
+
   // Normalise a raw event into a descriptor the designed renderers consume.
   // Preserves the SAME undo affordance/handler used by the classic path.
   _describeEvent(item, childNames, pointsIcon, chorePointsMap) {
@@ -1051,7 +1099,7 @@ class TaskMateActivityCard extends LitElement {
       const verb = isAdd ? this._t('activity.received') : isSpend ? this._t('activity.spent') : this._t('activity.lost');
       const sign = isAdd ? '+' : '−';
       const tone = isAdd ? 'good' : (isSpend ? 'accent' : 'bad');
-      const emoji = isAdd ? '⭐' : (isPenalty ? '⚠️' : '➖');
+      const emoji = reason.startsWith('Inspection passed:') ? '🔍' : isAdd ? '⭐' : (isPenalty ? '⚠️' : '➖');
       return {
         childName, tone, emoji, sign, pts,
         text: html`<strong>${childName}</strong> ${verb} <strong>${pts}</strong>${item.reason ? html` <span class="reason">— ${displayReason}</span>` : ''}`,
@@ -1061,6 +1109,19 @@ class TaskMateActivityCard extends LitElement {
         undo: this._txnReversible(reason)
           ? { kind: 'txn', id: item.transaction_id, detail: displayReason || reason, child: childName, points: pts }
           : null,
+      };
+    }
+
+    if (type.startsWith("inspection_")) {
+      const d = this._inspectionText(item);
+      return {
+        childName, tone: type === "inspection_failed" ? 'accent' : 'good',
+        emoji: type === "inspection_redo" ? '🔁' : '🔍', sign: '', pts: '',
+        text: html`<strong>${childName}</strong> · ${d.label} <span class="reason">— ${d.name}</span>${item.note ? html`<div class="act-insp-note">“${item.note}”</div>` : ''}`,
+        plain: `${childName} · ${d.label} — ${d.name}`,
+        ago, time,
+        ptsClass: 'good',
+        undo: null,
       };
     }
 

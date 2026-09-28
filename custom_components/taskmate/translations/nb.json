@@ -1252,6 +1252,74 @@
           "description": "ID-en til ønsket"
         }
       }
+    },
+    "start_inspection": {
+      "name": "Start inspeksjon",
+      "description": "Merk en oppgave som er godkjent de siste 24 timene for en overraskelsesinspeksjon. Godkjenn eller underkjenn den før vinduet lukkes; en uavgjort inspeksjon lukkes stille.",
+      "fields": {
+        "completion_id": {
+          "name": "Fullførings-ID",
+          "description": "ID-en til den godkjente fullføringen som skal inspiseres"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Poeng som betales hvis den består. Standard er verdien fra Innstillinger."
+        },
+        "window": {
+          "name": "Vindu",
+          "description": "Hvor lenge du har på å sjekke: 1h, 2h, 4h eller bed (til leggetid). Standard er verdien fra Innstillinger."
+        },
+        "tell_child": {
+          "name": "Si fra til barnet",
+          "description": "Vis «Inspeksjon på vei» på barnets kort nå. Slå av for en hemmelig sjekk."
+        }
+      }
+    },
+    "pass_inspection": {
+      "name": "Godkjenn inspeksjon",
+      "description": "Den inspiserte oppgaven besto. Betaler bonusen som en vanlig poengføring og feirer på barnets kort.",
+      "fields": {
+        "inspection_id": {
+          "name": "Inspeksjons-ID",
+          "description": "ID-en til den åpne inspeksjonen"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Poeng som skal betales. Standard er bonusen som ble satt da inspeksjonen startet."
+        },
+        "note": {
+          "name": "Notat",
+          "description": "Valgfritt notat som vises til barnet"
+        }
+      }
+    },
+    "fail_inspection": {
+      "name": "Underkjenn inspeksjon",
+      "description": "Den inspiserte oppgaven besto ikke. Ingen poeng trekkes. Den kan sendes tilbake for å gjøres på nytt; det gir ingen ekstra poeng.",
+      "fields": {
+        "inspection_id": {
+          "name": "Inspeksjons-ID",
+          "description": "ID-en til den åpne inspeksjonen"
+        },
+        "redo": {
+          "name": "Send tilbake for å gjøres på nytt",
+          "description": "Setter oppgaven tilbake på barnets liste som ikke gjort i dag. Standard er verdien fra Innstillinger."
+        },
+        "note": {
+          "name": "Notat",
+          "description": "Valgfritt notat som vises til barnet (hva som må fikses)"
+        }
+      }
+    },
+    "cancel_inspection": {
+      "name": "Avbryt inspeksjon",
+      "description": "Avlys en åpen inspeksjon, som om den aldri startet.",
+      "fields": {
+        "inspection_id": {
+          "name": "Inspeksjons-ID",
+          "description": "ID-en til den åpne inspeksjonen"
+        }
+      }
     }
   },
   "entity": {

@@ -383,6 +383,8 @@ class TaskMateStorage:
         self.set_kiosk_pin_hash(child_id, "")
         if self._data.get("rejections"):
             self._data["rejections"] = [r for r in self.get_rejections() if r.get("child_id") != child_id]
+        if self.get_inspections():
+            self.set_inspections([i for i in self.get_inspections() if i.get("child_id") != child_id])
         # Per-child maps kept in settings (#946): the birthday guard and a
         # Custom recap schedule would otherwise outlive the child.
         settings = self._data.get("settings", {})
@@ -1214,6 +1216,31 @@ class TaskMateStorage:
 
     def set_rejections(self, rows: list[dict]) -> None:
         self._data["rejections"] = list(rows)
+
+    # ── Surprise inspections (#981) ──────────────────────────────────────
+    # Their own key: {"items": [inspection dicts, see coord_inspections],
+    # "last_pick": ISO date of the last random daily pick, "last_pick_child"}.
+    def _inspection_store(self) -> dict:
+        store = self._data.get("inspections")
+        if not isinstance(store, dict):
+            store = {"items": []}
+            self._data["inspections"] = store
+        return store
+
+    def get_inspections(self) -> list[dict]:
+        store = self._data.get("inspections")
+        rows = store.get("items") if isinstance(store, dict) else None
+        return [dict(r) for r in rows if isinstance(r, dict)] if isinstance(rows, list) else []
+
+    def set_inspections(self, rows: list[dict]) -> None:
+        self._inspection_store()["items"] = [dict(r) for r in rows]
+
+    def get_inspection_meta(self, key: str, default: str = "") -> str:
+        store = self._data.get("inspections")
+        return str(store.get(key) or default) if isinstance(store, dict) else default
+
+    def set_inspection_meta(self, key: str, value: str) -> None:
+        self._inspection_store()[key] = value
 
     # ── Chore swap requests ──────────────────────────────────────────────
     def get_swap_requests(self) -> list[dict]:

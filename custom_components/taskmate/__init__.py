@@ -379,6 +379,7 @@ _AUDIT_TARGET_KEYS = (
     "type_id",
     "wish_id",
     "bounty_id",
+    "inspection_id",
 )
 
 
@@ -1981,6 +1982,15 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         require_linked_child=lambda *args: _async_require_linked_child(*args),
     )
 
+    # Surprise inspections (#981): parent actions, same gate and audit trail.
+    from .inspection_services import async_register_inspection_services
+
+    async_register_inspection_services(
+        hass,
+        parent_action=_parent,
+        get_coordinator=lambda: _get_coordinator(hass),
+    )
+
 
 def _async_unregister_services(hass: HomeAssistant) -> None:
     """Unregister TaskMate services."""
@@ -2038,8 +2048,10 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         "revoke_badge",
         "rebuild_badges",
     ]
+    from .inspection_services import INSPECTION_SERVICES
     from .wishlist_services import WISHLIST_SERVICES
 
     services.extend(WISHLIST_SERVICES)
+    services.extend(INSPECTION_SERVICES)
     for service in services:
         hass.services.async_remove(DOMAIN, service)

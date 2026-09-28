@@ -315,6 +315,12 @@ NOTIF_TYPE_RECAP_READY: Final = "recap_ready"
 # Reject reasons (#976): tells a child a chore or reward claim was sent back,
 # with the parent's reason when one was given.
 NOTIF_TYPE_ITEM_REJECTED: Final = "item_rejected"
+# Surprise inspections (#981): the child hears an inspection is coming (only
+# when they're told) and that it passed; the parent is reminded 30 minutes
+# before an undecided inspection closes.
+NOTIF_TYPE_INSPECTION_STARTED: Final = "inspection_started"
+NOTIF_TYPE_INSPECTION_PASSED: Final = "inspection_passed"
+NOTIF_TYPE_INSPECTION_REMINDER: Final = "inspection_reminder"
 
 # Presence-aware reminders (#926): the default for how long a child must have
 # been away before arriving home earns a "you're home" nudge.
