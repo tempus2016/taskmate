@@ -33,6 +33,7 @@ from .const import (
     NOTIF_TYPE_BOUNTY_POSTED,
     NOTIF_TYPE_CELEBRATION,
     NOTIF_TYPE_FAMILY_GOAL_REACHED,
+    NOTIF_TYPE_ITEM_REJECTED,
     NOTIF_TYPE_LEVEL_UP,
     NOTIF_TYPE_MANDATORY_PARENT_ALERT,
     NOTIF_TYPE_MANDATORY_REMINDER,
@@ -65,6 +66,17 @@ _APPROVE_IN_PANEL_HINT = "Open the TaskMate panel to approve or reject."
 # TASKMATE_RATE_<n>_<completion id>. Distinct from TASKMATE_APPROVE_ so the
 # original Approve/Reject ids keep working unchanged when ratings are off.
 _RATE_ACTION_PREFIX = "TASKMATE_RATE_"
+
+
+def _reject_action(entry_id: str) -> dict[str, str]:
+    """The Reject button of an approval push, with a reply box for the reason (#976)."""
+    return {
+        "action": f"TASKMATE_REJECT_{entry_id}",
+        "title": "Reject",
+        "behavior": "textInput",
+        "textInputButtonTitle": "Reject",
+        "textInputPlaceholder": "Reason (optional)",
+    }
 
 
 def _approval_tag(entry_id: str) -> str:
@@ -123,6 +135,9 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     # at the recap send time rather than at midnight when they're built. Off
     # at install; switched on the first time a parent turns recaps on (#944).
     NotificationTypeMeta(NOTIF_TYPE_RECAP_READY, "both", True, False, False, False),
+    # Reject reasons (#976): the child hears their chore / claim was sent
+    # back, with the parent's reason. Off until turned on.
+    NotificationTypeMeta(NOTIF_TYPE_ITEM_REJECTED, "child", False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
@@ -380,6 +395,9 @@ class NotificationCoordinator:
             "bounty_name": "Wash the car",
             "minutes": 15,
             "period": "January",
+            "item_name": "Tidy room",
+            "reason": "Not finished",
+            "reason_text": ": Not finished",
             "points_name": self.storage.get_points_name(),
         }
         message = "[TEST] " + self._render_template(meta, ctx)
@@ -466,6 +484,7 @@ class NotificationCoordinator:
             NOTIF_TYPE_BOUNTY_POSTED: "🏁 New bounty: {bounty_name} — {points} {points_name}. First to claim it gets it!",
             NOTIF_TYPE_BOUNTY_CLAIM_LAPSING: "⏳ {child_name}, {minutes} minutes left to finish '{bounty_name}' before it goes back on the board.",
             NOTIF_TYPE_RECAP_READY: "✨ Your {period} recap is ready, {child_name}! Tap to watch it.",
+            NOTIF_TYPE_ITEM_REJECTED: "↩️ {child_name}, '{item_name}' was sent back{reason_text}",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:
@@ -559,6 +578,11 @@ class NotificationCoordinator:
         ratings take priority there and Reject stays in the panel/card. With
         the feature off — and always for reward claims — the push keeps the
         original Approve/Reject ids, so older pushes still in flight resolve.
+
+        Reject asks for a reason in place (#976): the companion app's
+        ``textInput`` behaviour opens a reply box and returns what was typed
+        as ``reply_text`` on the action event. The id is unchanged, and an
+        empty reply (or an older push without the box) is a plain reject.
         """
         coordinator = getattr(self, "coordinator", None)
         rated = (
@@ -569,11 +593,11 @@ class NotificationCoordinator:
         if rated:
             return [
                 *({"action": f"{_RATE_ACTION_PREFIX}{n}_{entry_id}", "title": "★" * n} for n in QUALITY_RATINGS),
-                {"action": f"TASKMATE_REJECT_{entry_id}", "title": "Reject"},
+                _reject_action(entry_id),
             ]
         return [
             {"action": f"TASKMATE_APPROVE_{entry_id}", "title": "Approve"},
-            {"action": f"TASKMATE_REJECT_{entry_id}", "title": "Reject"},
+            _reject_action(entry_id),
         ]
 
     async def clear_approval(self, type_id: str, entry_id: str) -> None:
@@ -673,11 +697,20 @@ class NotificationCoordinator:
                 coordinator.async_approve_reward,
             )
         elif action.startswith("TASKMATE_REJECT_"):
+            # The reply box's text (#976); absent on a plain tap or an old push.
+            reason = str((event.data or {}).get("reply_text") or "")
+
+            async def _reject_chore(completion_id: str) -> None:
+                await coordinator.async_reject_chore(completion_id, reason=reason)
+
+            async def _reject_reward(claim_id: str) -> None:
+                await coordinator.async_reject_reward(claim_id, reason=reason)
+
             await self._review_from_mobile(
                 action,
                 action[len("TASKMATE_REJECT_") :],
-                coordinator.async_reject_chore,
-                coordinator.async_reject_reward,
+                _reject_chore,
+                _reject_reward,
             )
 
     async def _review_from_mobile(self, action: str, entry_id: str, review_chore, review_reward) -> None:

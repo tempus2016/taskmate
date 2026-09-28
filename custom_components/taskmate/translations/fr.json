@@ -207,6 +207,10 @@
         "completion_id": {
           "name": "ID de complétion",
           "description": "L'identifiant de l'exécution à rejeter"
+        },
+        "reason": {
+          "name": "Raison",
+          "description": "Raison facultative affichée à l'enfant"
         }
       }
     },
@@ -325,6 +329,10 @@
         "claim_id": {
           "name": "ID de la demande",
           "description": "L'identifiant de la demande à rejeter"
+        },
+        "reason": {
+          "name": "Raison",
+          "description": "Raison facultative affichée à l'enfant"
         }
       }
     },

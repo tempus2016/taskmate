@@ -207,6 +207,10 @@
         "completion_id": {
           "name": "Fullførings-ID",
           "description": "ID-en til oppgavefullføringen som skal avvises"
+        },
+        "reason": {
+          "name": "Begrunnelse",
+          "description": "Valgfri begrunnelse som vises for barnet"
         }
       }
     },
@@ -325,6 +329,10 @@
         "claim_id": {
           "name": "Krav-ID",
           "description": "ID-en til belønningskravet som skal avvises"
+        },
+        "reason": {
+          "name": "Begrunnelse",
+          "description": "Valgfri begrunnelse som vises for barnet"
         }
       }
     },

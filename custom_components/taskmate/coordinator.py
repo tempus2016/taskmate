@@ -32,6 +32,7 @@ from .coord_notifications import NotificationCoordinator
 from .coord_points import PointsMixin
 from .coord_quests import QuestsMixin
 from .coord_recaps import RecapsMixin
+from .coord_rejections import RejectionsMixin
 from .coord_reports import ReportsMixin
 from .coord_rewards import RewardsMixin
 from .coord_roulette import RouletteMixin
@@ -98,6 +99,7 @@ class TaskMateCoordinator(
     WishlistMixin,
     BountiesMixin,
     RecapsMixin,
+    RejectionsMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""

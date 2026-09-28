@@ -912,9 +912,21 @@ class TaskMatePanel extends HTMLElement {
       this._render();
       return;
     }
-    if (act === "reject-chore")   { this._doReject("chore", t.dataset.id); return; }
+    // Reject asks why first (#976); an empty reason is a plain reject.
+    if (act === "reject-chore")   { this._openRejectDialog("chore", t.dataset.id); return; }
     if (act === "approve-reward") { this._doApprove("reward", t.dataset.id); return; }
-    if (act === "reject-reward")  { this._doReject("reward", t.dataset.id); return; }
+    if (act === "reject-reward")  { this._openRejectDialog("reward", t.dataset.id); return; }
+    if (act === "reject-chip" && this._dialog?.kind === "reject") {
+      const d = this._dialog.data;
+      d.reason = d.reason === t.dataset.reason ? "" : t.dataset.reason;
+      this._render();
+      return;
+    }
+    if (act === "save-reject" && this._dialog?.kind === "reject") {
+      const d = this._dialog.data;
+      this._doReject(d.kind, d.id, d.reason);
+      return;
+    }
 
     // Filter clear
     if (act === "clear-filter") { this._filter = ""; this._render(); return; }
@@ -1410,11 +1422,52 @@ class TaskMatePanel extends HTMLElement {
     this._showToast("ok", this._t("panel.activity_approve_all_done", { count: pending.length }));
   }
 
-  async _doReject(kind, id) {
+  // Reject reasons (#976): name the item, offer quick-pick chips + free text.
+  _openRejectDialog(kind, id) {
+    const { choreById, rewardById } = this._activityMaps();
+    let name;
+    if (kind === "chore") {
+      const c = (this._state.pending_completions || []).find(x => x.id === id);
+      const chore = c && choreById[c.chore_id];
+      const bounty = c && c.bounty_id && (this._state.bounties || []).find(b => b.id === c.bounty_id);
+      name = (chore && chore.name) || (bounty && bounty.title) || this._t("panel.activity_deleted_chore");
+    } else {
+      const c = (this._state.pending_reward_claims || []).find(x => x.id === id);
+      const reward = c && rewardById[c.reward_id];
+      name = (reward && reward.name) || this._t("panel.activity_deleted_reward");
+    }
+    this._openDialog({ kind: "reject", data: { kind, id, name, reason: "" } });
+  }
+
+  _renderRejectDialog() {
+    const d = this._dialog.data;
+    const chips = ["reject.chip_not_finished", "reject.chip_redo", "reject.chip_not_today"].map(k => this._t(k));
+    const body = `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("reject.reason_label")}</span>
+        <div class="tm-chip-row" style="margin-bottom:8px">
+          ${chips.map(c => `<button type="button" class="tm-chip-btn ${d.reason === c ? "tm-chip-on" : ""}" aria-pressed="${d.reason === c}"
+            data-act="reject-chip" data-reason="${this._esc(c)}">${this._esc(c)}</button>`).join("")}
+        </div>
+        <input class="tm-input" type="text" data-field="reason" maxlength="200"
+          value="${this._esc(d.reason || "")}" placeholder="${this._esc(this._t("reject.reason_placeholder"))}">
+        <span class="tm-field-hint">${this._esc(this._t("reject.reason_hint"))}</span>
+      </div>`;
+    return this._dialogShell(
+      this._t("reject.title", { name: d.name }),
+      body,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-danger" data-act="save-reject">${this._t("reject.confirm")}</button>`
+    );
+  }
+
+  async _doReject(kind, id, reasonText = "") {
     const wsType = kind === "chore" ? "taskmate/reject_chore" : "taskmate/reject_reward";
     const idField = kind === "chore" ? "completion_id" : "claim_id";
-    const { ok, err } = await this._callWS({ type: wsType, [idField]: id });
+    const reason = String(reasonText || "").trim().slice(0, 200);
+    const { ok, err } = await this._callWS({ type: wsType, [idField]: id, ...(reason ? { reason } : {}) });
     if (!ok) { this._showToast("err", this._t("panel.toast_reject_failed", {error: err})); return; }
+    if (this._dialog?.kind === "reject") this._closeDialog(true);
     await this._fetchState();
     this._showToast("ok", this._t("panel.toast_rejected"));
   }
@@ -7098,6 +7151,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "award-badge") return this._renderAwardDialog();
     if (this._dialog.kind === "wish-pledge")  return this._renderWishPledgeDialog();
     if (this._dialog.kind === "wish-decline") return this._renderWishDeclineDialog();
+    if (this._dialog.kind === "reject")       return this._renderRejectDialog();
     return "";
   }
 

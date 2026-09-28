@@ -368,6 +368,13 @@ class TaskMateActivityCard extends LitElement {
         color: var(--secondary-text-color);
         font-style: normal;
       }
+      .activity-reject-reason {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--tm-stripe-rejected, #ef4444);
+        margin-top: 2px;
+        overflow-wrap: anywhere;
+      }
 
       .activity-meta {
         display: flex;
@@ -484,6 +491,7 @@ class TaskMateActivityCard extends LitElement {
       .tmd-undo { padding: 4px 11px; }
       .act-line { font-weight: 700; font-size: 13.5px; line-height: 1.35; }
       .act-line .reason { font-weight: 400; color: var(--tmd-dim); }
+      .act-reject-reason { font-size: 12px; font-weight: 600; color: var(--tmd-bad); margin-top: 2px; overflow-wrap: anywhere; }
       /* Quality rating the parent gave at approval (#927), both render paths. */
       .act-rating { color: var(--tmd-gold, #f5b301); font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
       .act-rating .off { color: var(--tmd-dim, var(--secondary-text-color, #999)); font-weight: 400; }
@@ -569,12 +577,13 @@ class TaskMateActivityCard extends LitElement {
   _eventBucket(item) {
     const t = item.type || "chore";
     if (t === "points_added" || t === "points_removed") return "adjustments";
-    if (t === "reward" || t === "reward_claimed" || t === "reward_approved") return "rewards";
+    if (t === "reward" || t === "reward_claimed" || t === "reward_approved" || t === "reward_rejected") return "rewards";
     return "chores";
   }
 
   _classifyItem(item) {
     const t = item.type || "chore";
+    if (t === "chore_rejected" || t === "reward_rejected") return "rejected";
     if (t === "points_added") {
       const reason = item.reason || "";
       if (reason.startsWith("Bonus:") || reason.startsWith("Perfect week bonus") ||
@@ -815,6 +824,34 @@ class TaskMateActivityCard extends LitElement {
       `;
     }
 
+    // ── Rejected with a reason (#976) ─────────────────────
+    if (type === "chore_rejected" || type === "reward_rejected") {
+      const isReward = type === "reward_rejected";
+      const name = (isReward ? item.reward_name : item.chore_name)
+        || this._t(isReward ? 'activity.a_reward' : 'activity.a_chore');
+      return html`
+        <div class="activity-item t-rejected">
+          ${this.config.accent_stripes !== false ? html`<div class="event-stripe"></div>` : ''}
+          <div class="activity-row">
+            <div class="activity-icon t-rejected">
+              <ha-icon icon="${isReward ? 'mdi:gift-off-outline' : 'mdi:close-circle'}"></ha-icon>
+            </div>
+            <div class="activity-body">
+              <div class="activity-title">
+                <strong>${childName}</strong> · ${name}
+                <span class="activity-status rejected">${this._t('common.rejected')}</span>
+              </div>
+              ${item.reason ? html`<div class="activity-reject-reason">${this._t('activity.rejected_reason', { reason: item.reason })}</div>` : ''}
+              <div class="activity-meta">
+                <span class="activity-time">${time}</span>
+                ${this.config.show_relative_time !== false ? html`<span class="activity-ago">${ago}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     // ── Reward claim events ───────────────────────────────
     if (type === "reward_claimed" || type === "reward_approved") {
       const pts = Math.abs(item.points || 0);
@@ -1024,6 +1061,21 @@ class TaskMateActivityCard extends LitElement {
         undo: this._txnReversible(reason)
           ? { kind: 'txn', id: item.transaction_id, detail: displayReason || reason, child: childName, points: pts }
           : null,
+      };
+    }
+
+    if (type === "chore_rejected" || type === "reward_rejected") {
+      const isReward = type === "reward_rejected";
+      const name = (isReward ? item.reward_name : item.chore_name)
+        || this._t(isReward ? 'activity.a_reward' : 'activity.a_chore');
+      const why = item.reason ? this._t('activity.rejected_reason', { reason: item.reason }) : '';
+      return {
+        childName, tone: 'bad', emoji: '↩️', sign: '', pts: '',
+        text: html`<strong>${childName}</strong> · ${name} <span class="reason">— ${this._t('common.rejected')}</span>${why ? html`<div class="act-reject-reason">${why}</div>` : ''}`,
+        plain: `${childName} · ${name} · ${this._t('common.rejected')}${why ? ` — ${why}` : ''}`,
+        ago, time,
+        ptsClass: 'bad',
+        undo: null,
       };
     }
 

@@ -35,6 +35,7 @@ class TaskMateApprovalsCard extends LitElement {
       _signed: { state: true },
       _review: { state: true },
       _ratings: { state: true },
+      _rejecting: { state: true },
     };
   }
 
@@ -470,6 +471,29 @@ class TaskMateApprovalsCard extends LitElement {
         color: var(--primary-text-color, #33373d);
       }
       .tm-rv-btn.primary { background: #4caf50; color: #fff; }
+      .tm-rv-btn.danger { background: #f44336; color: #fff; }
+
+      /* Reject-with-a-reason sheet (#976) */
+      .tm-rj-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+      .tm-rj-chip {
+        border: 2px solid var(--divider-color, #e0e0e0);
+        background: var(--card-background-color, #fff);
+        color: var(--primary-text-color, #33373d);
+        border-radius: 999px;
+        padding: 5px 12px;
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .tm-rj-chip.on { border-color: #f44336; background: rgba(244, 67, 54, 0.12); }
+      .tm-rj-input { font-size: 0.95rem; font-weight: 600; }
+      .tm-rj-input:focus { border-color: #f44336; }
+      .tm-rj-hint {
+        font-size: 0.75rem;
+        color: var(--secondary-text-color, #6b7280);
+        margin-top: 6px;
+      }
 
       /* Mandatory-miss review actions (#532) */
       .action-button.penalty {
@@ -750,6 +774,7 @@ class TaskMateApprovalsCard extends LitElement {
               `}
         </div>
         ${this._renderReview()}
+        ${this._renderRejectSheet()}
       </ha-card>
     `;
   }
@@ -912,6 +937,7 @@ class TaskMateApprovalsCard extends LitElement {
       ${this._designHeader(hd, items.length, completions)}
       <div class="tmd-bd">${body}</div>
       ${this._renderReview()}
+      ${this._renderRejectSheet()}
     </ha-card>`;
   }
 
@@ -942,7 +968,7 @@ class TaskMateApprovalsCard extends LitElement {
     }
     if (it.kind === "claim") {
       const approve = () => this._handleApproveReward(it.id);
-      const reject = () => this._handleRejectReward(it.id);
+      const reject = () => this._handleRejectReward(it.id, it.title, it.childName);
       return this._apActionPair(approve, reject, isLoading, shape);
     }
     // mandatory miss: apply penalty (if any) / postpone / dismiss
@@ -1117,7 +1143,7 @@ class TaskMateApprovalsCard extends LitElement {
         <div class="action-buttons left">
           <button
             class="action-button reject ${isLoading ? 'loading' : ''}"
-            @click="${() => this._handleRejectReward(claimId)}"
+            @click="${() => this._handleRejectReward(claimId, rewardName, childName)}"
             title="${this._t('approvals.reject')}"
             ?disabled="${isLoading}"
           >
@@ -1158,16 +1184,16 @@ class TaskMateApprovalsCard extends LitElement {
     await this._callClaimService('approve_reward', claimId);
   }
 
-  async _handleRejectReward(claimId) {
-    await this._callClaimService('reject_reward', claimId);
+  _handleRejectReward(claimId, name = "", childName = "") {
+    this._openRejectSheet({ kind: "reward", id: claimId, name, childName });
   }
 
-  async _callClaimService(service, claimId) {
+  async _callClaimService(service, claimId, extra = null) {
     if (this._loading[claimId]) return;
     this._loading = { ...this._loading, [claimId]: true };
     this.requestUpdate();
     try {
-      await this.hass.callService('taskmate', service, { claim_id: claimId });
+      await this.hass.callService('taskmate', service, { claim_id: claimId, ...(extra || {}) });
     } catch (error) {
       console.error(`Failed to call ${service}:`, error);
       if (this.hass.callService) {
@@ -1612,8 +1638,98 @@ class TaskMateApprovalsCard extends LitElement {
     </span>`;
   }
 
-  async _handleReject(completion) {
-    await this._callService("reject_chore", completion.completion_id);
+  _handleReject(completion) {
+    this._openRejectSheet({
+      kind: "chore",
+      id: completion.completion_id,
+      name: completion.chore_name || "",
+      childName: completion.child_name || "",
+    });
+  }
+
+  /* ── Reject with a reason (#976) ─────────────────────────────────────
+     Reject opens a small sheet: quick-pick chips or free text, both
+     optional — an empty box rejects exactly as before. Rendered from both
+     the classic and the designed paths. The input is uncontrolled so a
+     coordinator refresh can't wipe what the parent is typing. */
+
+  _rejectChips() {
+    return ["reject.chip_not_finished", "reject.chip_redo", "reject.chip_not_today"].map(k => this._t(k));
+  }
+
+  _rejectInput() {
+    return this.renderRoot && this.renderRoot.querySelector("#tm-reject-reason");
+  }
+
+  _openRejectSheet(target) {
+    this._rejecting = { ...target, chip: "" };
+    this.updateComplete.then(() => {
+      const input = this._rejectInput();
+      if (!input) return;
+      input.value = "";
+      input.focus();
+    });
+  }
+
+  _closeRejectSheet() {
+    this._rejecting = null;
+  }
+
+  _pickRejectChip(text) {
+    const input = this._rejectInput();
+    const chip = this._rejecting && this._rejecting.chip === text ? "" : text;
+    if (input) input.value = chip;
+    this._rejecting = { ...this._rejecting, chip };
+  }
+
+  async _confirmReject() {
+    const target = this._rejecting;
+    if (!target) return;
+    const input = this._rejectInput();
+    const reason = String((input && input.value) || "").trim().slice(0, 200);
+    this._closeRejectSheet();
+    const extra = reason ? { reason } : null;
+    if (target.kind === "reward") await this._callClaimService("reject_reward", target.id, extra);
+    else await this._callService("reject_chore", target.id, extra);
+  }
+
+  _renderRejectSheet() {
+    const target = this._rejecting;
+    if (!target) return "";
+    const stop = (e) => e.stopPropagation();
+    const onKey = (e) => { if (e.key === "Enter") this._confirmReject(); };
+    const onInput = (e) => {
+      const chip = this._rejectChips().includes(e.target.value) ? e.target.value : "";
+      if (chip !== target.chip) this._rejecting = { ...target, chip };
+    };
+    return html`
+      <div class="tm-rv-overlay" @click="${() => this._closeRejectSheet()}">
+        <div class="tm-rv-sheet tm-rj-sheet" role="dialog" aria-modal="true"
+             aria-label="${this._t('reject.title', { name: target.name })}" @click="${stop}">
+          <div class="tm-rv-title">${this._t('reject.title', { name: target.name })}</div>
+          ${target.childName ? html`<div class="tm-rv-sub">${target.childName}</div>` : ""}
+          <label class="tm-rv-label" for="tm-reject-reason">${this._t('reject.reason_label')}</label>
+          <div class="tm-rj-chips">
+            ${this._rejectChips().map(c => html`
+              <button type="button" class="tm-rj-chip ${target.chip === c ? "on" : ""}"
+                aria-pressed="${target.chip === c}"
+                @click="${() => this._pickRejectChip(c)}">${c}</button>`)}
+          </div>
+          <input id="tm-reject-reason" class="tm-rv-points tm-rj-input" type="text" maxlength="200"
+                 placeholder="${this._t('reject.reason_placeholder')}"
+                 @input="${onInput}" @keydown="${onKey}">
+          <div class="tm-rj-hint">${this._t('reject.reason_hint')}</div>
+          <div class="tm-rv-row">
+            <button class="tm-rv-btn ghost" @click="${() => this._closeRejectSheet()}">
+              ${this._t('common.cancel')}
+            </button>
+            <button class="tm-rv-btn danger" @click="${() => this._confirmReject()}">
+              ${this._t('reject.confirm')}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   async _handleApproveAll(completions) {

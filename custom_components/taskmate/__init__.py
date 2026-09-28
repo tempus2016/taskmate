@@ -134,7 +134,7 @@ from .const import (
 )
 from .coordinator import TaskMateCoordinator
 from .frontend import async_register_cards, async_register_frontend
-from .models import Badge, BadgeCriterion
+from .models import REJECT_REASON_MAX, Badge, BadgeCriterion
 from .panel import async_register_panel
 from .websocket import async_register_websocket_commands
 
@@ -715,7 +715,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             _LOGGER.error("No TaskMate coordinator available")
             return
         completion_id = call.data["completion_id"]
-        await coordinator.async_reject_chore(completion_id)
+        await coordinator.async_reject_chore(completion_id, reason=call.data.get("reason", ""))
 
     async def handle_undo_chore(call: ServiceCall) -> None:
         """A child takes back their own chore inside the undo window (#918).
@@ -882,7 +882,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             _LOGGER.error("No TaskMate coordinator available")
             return
         claim_id = call.data["claim_id"]
-        await coordinator.async_reject_reward(claim_id)
+        await coordinator.async_reject_reward(claim_id, reason=call.data.get("reason", ""))
 
     async def handle_claim_reward(call: ServiceCall) -> None:
         """Handle the claim_reward service call."""
@@ -1437,6 +1437,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         schema=vol.Schema(
             {
                 vol.Required("completion_id"): cv.string,
+                vol.Optional("reason", default=""): vol.All(cv.string, vol.Length(max=REJECT_REASON_MAX)),
             }
         ),
     )
@@ -1602,7 +1603,12 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         DOMAIN,
         SERVICE_REJECT_REWARD,
         _parent(handle_reject_reward),
-        schema=vol.Schema({vol.Required("claim_id"): cv.string}),
+        schema=vol.Schema(
+            {
+                vol.Required("claim_id"): cv.string,
+                vol.Optional("reason", default=""): vol.All(cv.string, vol.Length(max=REJECT_REASON_MAX)),
+            }
+        ),
     )
 
     hass.services.async_register(

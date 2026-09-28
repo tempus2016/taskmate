@@ -85,7 +85,7 @@ from .const import (
 from .coord_birthdays import normalize_birthday
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
-from .models import BonusSubTask, Reward, normalize_tag_ids
+from .models import REJECT_REASON_MAX, BonusSubTask, Reward, normalize_tag_ids
 from .sounds import MAX_NAME_LEN as MAX_SOUND_NAME_LEN
 
 _LOGGER = logging.getLogger(__name__)
@@ -2297,12 +2297,13 @@ async def _ws_approve_all_chores(hass, connection, msg, coordinator):
     {
         vol.Required("type"): WS_REJECT_CHORE,
         vol.Required("completion_id"): str,
+        vol.Optional("reason", default=""): vol.All(str, vol.Length(max=REJECT_REASON_MAX)),
     }
 )
 @websocket_api.async_response
 @_admin_only
 async def _ws_reject_chore(hass, connection, msg, coordinator):
-    await coordinator.async_reject_chore(msg["completion_id"])
+    await coordinator.async_reject_chore(msg["completion_id"], reason=msg.get("reason", ""))
     connection.send_result(msg["id"], {"completion_id": msg["completion_id"]})
 
 
@@ -2323,12 +2324,13 @@ async def _ws_approve_reward(hass, connection, msg, coordinator):
     {
         vol.Required("type"): WS_REJECT_REWARD,
         vol.Required("claim_id"): str,
+        vol.Optional("reason", default=""): vol.All(str, vol.Length(max=REJECT_REASON_MAX)),
     }
 )
 @websocket_api.async_response
 @_admin_only
 async def _ws_reject_reward(hass, connection, msg, coordinator):
-    await coordinator.async_reject_reward(msg["claim_id"])
+    await coordinator.async_reject_reward(msg["claim_id"], reason=msg.get("reason", ""))
     connection.send_result(msg["id"], {"claim_id": msg["claim_id"]})
 
 

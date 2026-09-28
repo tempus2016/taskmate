@@ -207,6 +207,10 @@
         "completion_id": {
           "name": "Completion ID",
           "description": "The ID of the chore completion to reject"
+        },
+        "reason": {
+          "name": "Reason",
+          "description": "Optional reason shown to the child"
         }
       }
     },
@@ -325,6 +329,10 @@
         "claim_id": {
           "name": "Claim ID",
           "description": "The ID of the reward claim to reject"
+        },
+        "reason": {
+          "name": "Reason",
+          "description": "Optional reason shown to the child"
         }
       }
     },

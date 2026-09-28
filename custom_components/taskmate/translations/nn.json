@@ -207,6 +207,10 @@
         "completion_id": {
           "name": "Fullførings-ID",
           "description": "ID-en til oppgåvefullføringa som skal avvisast"
+        },
+        "reason": {
+          "name": "Grunngjeving",
+          "description": "Valfri grunngjeving som blir vist til barnet"
         }
       }
     },
@@ -325,6 +329,10 @@
         "claim_id": {
           "name": "Krav-ID",
           "description": "ID-en til løningskravet som skal avvisast"
+        },
+        "reason": {
+          "name": "Grunngjeving",
+          "description": "Valfri grunngjeving som blir vist til barnet"
         }
       }
     },

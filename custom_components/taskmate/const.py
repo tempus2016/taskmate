@@ -305,6 +305,9 @@ NOTIF_TYPE_PRESENCE_ARRIVAL: Final = "presence_arrival"
 NOTIF_TYPE_BOUNTY_POSTED: Final = "bounty_posted"
 NOTIF_TYPE_BOUNTY_CLAIM_LAPSING: Final = "bounty_claim_lapsing"
 NOTIF_TYPE_RECAP_READY: Final = "recap_ready"
+# Reject reasons (#976): tells a child a chore or reward claim was sent back,
+# with the parent's reason when one was given.
+NOTIF_TYPE_ITEM_REJECTED: Final = "item_rejected"
 
 # Presence-aware reminders (#926): the default for how long a child must have
 # been away before arriving home earns a "you're home" nudge.

@@ -207,6 +207,10 @@
         "completion_id": {
           "name": "Fuldførelses-ID",
           "description": "ID'et på den fuldførelse, der skal afvises"
+        },
+        "reason": {
+          "name": "Begrundelse",
+          "description": "Valgfri begrundelse, som barnet kan se"
         }
       }
     },
@@ -325,6 +329,10 @@
         "claim_id": {
           "name": "Indløsnings-ID",
           "description": "ID'et på den indløsning, der skal afvises"
+        },
+        "reason": {
+          "name": "Begrundelse",
+          "description": "Valgfri begrundelse, som barnet kan se"
         }
       }
     },

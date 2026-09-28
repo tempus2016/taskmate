@@ -220,6 +220,9 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 "avatar_options": coordinator.avatar_options_for_child(c),
                 "challenges": coordinator.challenge_progress_for_child(c.id),
                 **({"weekly_chore_progress": weekly_progress} if weekly_progress else {}),
+                # Reject reasons (#976): why a chore / claim was just sent back,
+                # only while there's one to show.
+                **({"rejections": rej} if (rej := coordinator.rejections_for_child(c.id)) else {}),
             }
         )
     return summary
@@ -703,7 +706,10 @@ def _build_photo_gallery(common: dict, limit: int = 40) -> list[dict]:
     return out
 
 
-def _build_recent_transactions(common: dict, limit: int = 20) -> list[dict]:
+_FEED_REJECTIONS_MAX = 8
+
+
+def _build_recent_transactions(common: dict, limit: int = 20, rejections: list[dict] | None = None) -> list[dict]:
     """Unified activity feed of manual point adjustments and reward claims.
 
     Capped at 20 so the combined activity slice (completions + transactions)
@@ -754,6 +760,28 @@ def _build_recent_transactions(common: dict, limit: int = 20) -> list[dict]:
                 "points": -(rc.approved_cost if rc.approved and rc.approved_cost is not None else reward.cost),
                 "approved": rc.approved,
                 "created_at": timestamp.isoformat() if hasattr(timestamp, "isoformat") else str(timestamp),
+            }
+        )
+
+    # Reasoned rejections (#976): the completion / claim itself is gone, so
+    # these come from the rejection log rather than the records above. A
+    # reason can run to 200 characters, so only the newest few make the feed
+    # (the 16 KB cap).
+    for r in (rejections or [])[-_FEED_REJECTIONS_MAX:]:
+        child = child_lookup.get(r.get("child_id"))
+        if not child:
+            continue
+        kind = "reward" if r.get("kind") == "reward" else "chore"
+        events.append(
+            {
+                "transaction_id": r.get("id", ""),
+                "type": f"{kind}_rejected",
+                "child_id": child.id,
+                "child_name": child.name,
+                f"{kind}_id": r.get("item_id", ""),
+                f"{kind}_name": r.get("item_name", ""),
+                "reason": r.get("reason", ""),
+                "created_at": str(r.get("rejected_at", "")),
             }
         )
 
@@ -1156,7 +1184,7 @@ class TaskMateActivitySensor(_CachedAttrsSensor):
             career_history[c.id] = self.coordinator.storage.get_career_score_history(c.id)
         return {
             "recent_completions": _build_recent_completions(common),
-            "recent_transactions": _build_recent_transactions(common),
+            "recent_transactions": _build_recent_transactions(common, rejections=self.coordinator.recent_rejections()),
             "career_score_history": career_history,
             "photo_gallery": _build_photo_gallery(common),
         }
