@@ -56,8 +56,11 @@ INSPECTION_CARD_MAX = 4
 INSPECTION_WINDOWS = ("1h", "2h", "4h", "bed")
 INSPECTION_FAIL_MODES = ("note", "redo", "ask")
 _WINDOW_HOURS = {"1h": 1, "2h": 2, "4h": 4}
-# "Until bedtime" asked for too close to bedtime gets an hour instead.
+# "Until bedtime" asked for too close to bedtime gets an hour instead. The
+# admin panel reads both numbers from its state (``inspection_bed_rule``) so
+# the start dialog shows the closing time the server will really use (#997).
 _BEDTIME_MIN_MINUTES = 30
+_BEDTIME_FALLBACK_HOURS = 1
 
 DEFAULT_INSPECTION_BONUS = 10
 DEFAULT_INSPECTION_WINDOW = "2h"
@@ -124,8 +127,12 @@ class InspectionsMixin:
             until = local.replace(hour=hour, minute=minute, second=0, microsecond=0)
             if until - local >= timedelta(minutes=_BEDTIME_MIN_MINUTES):
                 return until
-            return now + timedelta(hours=1)
+            return now + timedelta(hours=_BEDTIME_FALLBACK_HOURS)
         return now + timedelta(hours=_WINDOW_HOURS.get(window, 2))
+
+    def inspection_bed_rule(self) -> dict:
+        """The "Until bedtime" fallback, for the panel to mirror ``inspection_until``."""
+        return {"min_minutes": _BEDTIME_MIN_MINUTES, "fallback_hours": _BEDTIME_FALLBACK_HOURS}
 
     # ── reads ────────────────────────────────────────────────────────────
 
@@ -404,6 +411,36 @@ class InspectionsMixin:
             kept.append(r)
         if changed:
             self.storage.set_inspections(kept)
+
+    def _inspection_on_bonus_undone(self, transaction_id: str) -> None:
+        """A parent undid a pass bonus (#996): the pass is taken back with it.
+
+        Still inside its window, the inspection is open again for the parent
+        to decide afresh (the child's card shows it as coming, not passed).
+        Past its window, or with the inspected chore since undone, it closes
+        undecided, as if the window had run out. Either way nothing says
+        "passed" any more. The caller saves and refreshes.
+        """
+        record = next(
+            (r for r in self.storage.get_inspections() if transaction_id and r.get("bonus_txn_id") == transaction_id),
+            None,
+        )
+        if record is None or record.get("status") != "passed":
+            return
+        now = dt_util.now()
+        until = _at(record.get("until"))
+        reopen = (
+            until is not None
+            and until > now
+            and self._inspected_completion(record.get("completion_id", "")) is not None
+        )
+        record["bonus_txn_id"] = ""
+        record["note"] = ""
+        record["status"] = "open" if reopen else "expired"
+        record["decided_at"] = None if reopen else format_datetime(now)
+        self._save_inspection(record)
+        self._arm_inspection_timer()
+        self._fire_inspection_event("taskmate_inspection_reopened" if reopen else "taskmate_inspection_expired", record)
 
     # ── housekeeping ─────────────────────────────────────────────────────
 

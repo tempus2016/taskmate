@@ -13,6 +13,7 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 
 from .const import AGE_GROUPS, SCHEDULE_MODES
+from .coord_birthdays import normalize_birthday, parse_birthday
 from .setup_catalogue import setup_catalogue
 from .websocket import WS_SETUP_APPLY, WS_SETUP_CATALOGUE, _admin_only
 
@@ -63,6 +64,27 @@ _REWARD_SCHEMA = {
 }
 
 
+def _birthday_error(msg) -> tuple[str, str] | None:
+    """(code, message) for the first birthday that can't be stored, or None.
+
+    Checked here so the panel gets a code it can show in the parent's own
+    language, rather than Python's "month must be in 1..12".
+    """
+    for spec in (*msg.get("children", []), *msg.get("child_updates", [])):
+        value = (spec.get("birthday") or "").strip()
+        if not value:
+            continue
+        try:
+            parse_birthday(value)
+        except ValueError:
+            return "invalid_birthday", f"Birthday {value!r} is not a valid date"
+        try:
+            normalize_birthday(value)
+        except ValueError:
+            return "future_birthday", "Birthday can't be in the future"
+    return None
+
+
 @websocket_api.websocket_command({vol.Required("type"): WS_SETUP_CATALOGUE})
 @websocket_api.async_response
 @_admin_only
@@ -82,6 +104,10 @@ async def ws_setup_catalogue(hass, connection, msg, coordinator):
 @websocket_api.async_response
 @_admin_only
 async def ws_setup_apply(hass, connection, msg, coordinator):
+    error = _birthday_error(msg)
+    if error:
+        connection.send_error(msg["id"], *error)
+        return
     result = await coordinator.async_apply_setup_wizard(
         children=msg.get("children"),
         child_updates=msg.get("child_updates"),

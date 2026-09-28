@@ -573,6 +573,19 @@ def test_a_child_sees_only_their_own_bid_and_the_count():
     assert coord.auctions_for_child("k3") == []  # not eligible: not shown at all
 
 
+def test_a_no_bids_result_is_hidden_while_the_occurrence_is_re_auctioned():
+    coord = _coord()
+    first = _start(coord)
+    run(coord.async_close_auction(first.id))  # no bids
+    assert [a["id"] for a in coord.auctions_for_child("k1")] == [first.id]
+    again = _start(coord, max_points=60)
+    assert [a["id"] for a in coord.auctions_for_child("k1")] == [again.id]
+    _bid(coord, again, "k1", 20)
+    run(coord.async_close_auction(again.id))
+    view = coord.auctions_for_child("k1")
+    assert [(a["id"], a["winner_id"]) for a in view] == [(again.id, "k1")]
+
+
 def test_the_public_digest_carries_counts_never_amounts():
     coord = _coord()
     auction = _start(coord)
@@ -631,13 +644,111 @@ def test_deleting_a_child_drops_their_bids_and_eligibility():
     assert coord.storage.get_auction(only_k1.id) is None
 
 
-def test_deleting_a_chore_drops_its_live_auctions_but_keeps_history():
+def _finished(coord):
+    """One of each finished kind, on separate days: cancelled, no bids, and
+    a win whose day has passed (the clock is moved on two days)."""
+    cancelled = _start(coord, occurrence=TOMORROW)
+    run(coord.async_cancel_auction(cancelled.id))
+    no_bids = _start(coord, occurrence="2026-04-24")
+    run(coord.async_close_auction(no_bids.id))
+    won = _won(coord, "k1", occurrence="2026-04-25")
+    return cancelled, no_bids, won
+
+
+def test_a_parent_can_delete_a_finished_auction():
+    """#999: cancelled, no-bid and past wins can be cleared off the list."""
     coord = _coord()
-    won = _won(coord, "k1")
+    cancelled, no_bids, won = _finished(coord)
+    _at(days=4)
+    for auction in (cancelled, no_bids, won):
+        run(coord.async_delete_auction(auction.id))
+        assert coord.storage.get_auction(auction.id) is None
+    assert coord.storage.get_auctions() == []
+    with pytest.raises(ValueError, match="no longer exists"):
+        run(coord.async_delete_auction(cancelled.id))
+
+
+def test_a_live_auction_cannot_be_deleted_only_cancelled():
+    """Open bidding, and a win whose day is still to come, are cancelled
+    instead — that path tells the bidders."""
+    coord = _coord()
+    live = _start(coord)
+    won = _won(coord, "k1", occurrence="2026-04-24")
+    for auction in (live, won):
+        with pytest.raises(ValueError, match="Cancel it instead"):
+            run(coord.async_delete_auction(auction.id))
+        assert coord.storage.get_auction(auction.id) is not None
+    _at(days=2)  # the win's day has come: still live
+    with pytest.raises(ValueError, match="Cancel it instead"):
+        run(coord.async_delete_auction(won.id))
+    _at(days=3)  # and gone
+    run(coord.async_delete_auction(won.id))
+
+
+def test_the_parents_view_says_which_auctions_can_be_deleted():
+    coord = _coord()
+    live = _start(coord, occurrence="2026-04-28")
+    upcoming_win = _won(coord, "k2", occurrence="2026-04-29")
+    cancelled, no_bids, won = _finished(coord)
+    _at(days=4)
+    rows = {r["id"]: r["deletable"] for r in coord.auctions_state()}
+    assert rows == {
+        live.id: False,
+        upcoming_win.id: False,
+        cancelled.id: True,
+        no_bids.id: True,
+        won.id: True,
+    }
+
+
+def test_deleting_a_chore_removes_all_its_auctions_and_calls_off_the_live_ones():
+    """#999: nothing is left listed for a chore that's gone; the live ones
+    are called off first, with the usual push to whoever bid."""
+    coord = _coord(chores=[_chore(), _chore(id="c2", name="Hoover")])
+    cancelled = _start(coord, occurrence=TOMORROW)
+    run(coord.async_cancel_auction(cancelled.id))
+    no_bids = _start(coord, occurrence="2026-04-24")
+    run(coord.async_close_auction(no_bids.id))
+    live = _start(coord, occurrence="2026-04-26")
+    _bid(coord, live, "k2", 12)
+    upcoming_win = _won(coord, "k3", occurrence="2026-04-27")
+    other = _start(coord, chore_id="c2", occurrence="2026-04-26")
+    coord.notifications.fire.reset_mock()
+    coord.hass.bus.async_fire.reset_mock()
+
+    run(coord.async_remove_chore("c1"))
+
+    assert [a.id for a in coord.storage.get_auctions()] == [other.id]
+    called_off = {e["auction_id"] for e in _fired(coord, "taskmate_auction_cancelled")}
+    assert called_off == {live.id, upcoming_win.id}
+    told = [n.kwargs["only_recipients"] for n in _notified(coord, "auction_result")]
+    assert sorted(told, key=sorted) == [{"child:k2"}, {"child:k3"}]
+    assert all("called off" in n.args[1]["result_text"] for n in _notified(coord, "auction_result"))
+    assert coord.auction_winner(_chore(), _day("2026-04-27")) == ""
+
+
+def test_bulk_deleting_chores_removes_their_auctions_too():
+    coord = _coord()
+    cancelled = _start(coord)
+    run(coord.async_cancel_auction(cancelled.id))
     live = _start(coord, occurrence="2026-04-24")
-    coord.remove_chore_from_auctions("c1")
-    assert coord.storage.get_auction(live.id) is None
-    assert coord.storage.get_auction(won.id).chore_name == "Clean the bathroom"
+    _bid(coord, live, "k1", 10)
+    coord.notifications.fire.reset_mock()
+    assert run(coord.async_bulk_chore_action("delete", ["c1"])) == 1
+    assert coord.storage.get_auctions() == []
+    assert [n.kwargs["only_recipients"] for n in _notified(coord, "auction_result")] == [{"child:k1"}]
+
+
+def test_auctions_left_behind_by_a_deleted_chore_are_cleaned_up_on_load():
+    coord = _coord(chores=[_chore(), _chore(id="c2", name="Hoover")])
+    kept = _start(coord)
+    orphan_live = _start(coord, chore_id="c2", occurrence=TOMORROW)
+    orphan_done = _start(coord, chore_id="c2", occurrence="2026-04-24")
+    run(coord.async_close_auction(orphan_done.id))
+    coord.storage.remove_chore("c2")  # the pre-#999 delete: auctions stay behind
+    run(coord.async_remove_orphaned_auctions())
+    assert [a.id for a in coord.storage.get_auctions()] == [kept.id]
+    assert coord.storage.get_auction(orphan_live.id) is None
 
 
 def test_finished_auctions_are_pruned_with_the_history():

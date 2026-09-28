@@ -317,8 +317,30 @@ def test_apply_command_reports_a_bad_payload_as_an_error(coord):
         "children": [{"ref": "n", "name": "Isla", "birthday": "3000-01-01"}],
     }
     run(websocket_setup.ws_setup_apply(hass, conn, msg))
-    assert conn.send_error.call_args.args[1] == "invalid"
+    assert conn.send_error.call_args.args[1] == "future_birthday"
     assert coord.storage.get_children() == []
+
+
+@pytest.mark.parametrize(
+    ("field", "birthday", "code"),
+    [
+        ("children", "2019-13-01", "invalid_birthday"),
+        ("children", "2019-02-30", "invalid_birthday"),
+        ("children", "31/12/2019", "invalid_birthday"),
+        ("children", "3000-01-01", "future_birthday"),
+        ("child_updates", "2019-13-01", "invalid_birthday"),
+    ],
+)
+def test_apply_command_reports_a_bad_birthday_by_code_not_the_python_error(coord, field, birthday, code):
+    coord.storage._data["children"] = [Child(name="Malia", id="k1").to_dict()]
+    hass, conn = _ws_env(coord)
+    spec = {"ref": "n", "name": "Isla"} if field == "children" else {"child_id": "k1"}
+    msg = {"id": 4, "type": "taskmate/setup_wizard/apply", field: [{**spec, "birthday": birthday}]}
+    run(websocket_setup.ws_setup_apply(hass, conn, msg))
+    conn.send_result.assert_not_called()
+    assert conn.send_error.call_args.args[1] == code
+    assert "month must be" not in conn.send_error.call_args.args[2]
+    assert [c.name for c in coord.storage.get_children()] == ["Malia"]
 
 
 def test_apply_schemas():

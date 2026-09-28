@@ -408,6 +408,15 @@ class TaskMateCalendarCard extends LitElement {
     return assignedTo.includes(childId);
   }
 
+  // What the chore pays ``childId`` on ``dayKey``: a won auction occurrence
+  // pays the winning bid, days ahead included (#998).
+  _dayPoints(chore, childId, dayKey) {
+    const won = (chore.auction_wins || {})[dayKey];
+    const price = (chore.auction_prices || {})[dayKey];
+    if (won && String(won) === String(childId) && Number.isFinite(price)) return price;
+    return chore.points;
+  }
+
   _rotationRenderMode(chore, childId, dayKey, todayKey) {
     // Won at auction (#982): that day's occurrence is the winner's alone.
     const won = (chore.auction_wins || {})[dayKey];
@@ -573,7 +582,7 @@ class TaskMateCalendarCard extends LitElement {
           <ha-icon class="chore-icon ${state}" icon="${stateIcon}"></ha-icon>
           <span class="chore-name">${chore.name}</span>
           <span class="chore-points">
-            <ha-icon icon="${pointsIcon}"></ha-icon>${chore.points}
+            <ha-icon icon="${pointsIcon}"></ha-icon>${this._dayPoints(chore, child.id, day.key)}
           </span>
         </div>
       `;

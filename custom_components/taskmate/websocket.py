@@ -452,6 +452,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         # completions can still be flagged (the magnifier).
         "inspections": coordinator.inspections_state(),
         "inspectable_completions": coordinator.inspectable_completion_ids(),
+        "inspection_bed_rule": coordinator.inspection_bed_rule(),
     }
 
 

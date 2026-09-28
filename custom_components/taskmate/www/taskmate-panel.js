@@ -492,7 +492,7 @@ class TaskMatePanel extends HTMLElement {
       const res = await this._hass.callWS(payload);
       return { ok: true, res };
     } catch (err) {
-      return { ok: false, err: (err && err.message) || String(err) };
+      return { ok: false, err: (err && err.message) || String(err), code: err && err.code };
     }
   }
 
@@ -777,6 +777,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "auction-reopen")     { this._openAuctionDialog({ fromId: t.dataset.id }); return; }
     if (act === "auction-close-now")  { this._doCloseAuction(t.dataset.id); return; }
     if (act === "auction-cancel")     { this._doCancelAuction(t.dataset.id); return; }
+    if (act === "auction-delete")     { this._doDeleteAuction(t.dataset.id); return; }
     if (act === "auction-occ")        { this._auctionDialogSet("occurrence", t.dataset.id); return; }
     if (act === "auction-max-step")   { this._auctionDialogSet("max_step", Number(t.dataset.id)); return; }
     if (act === "auction-max-set")    { this._auctionDialogSet("max_points", Number(t.dataset.id)); return; }
@@ -1089,6 +1090,12 @@ class TaskMatePanel extends HTMLElement {
         }
       } else {
         this._dialog.data[field] = value;
+      }
+      // Inspection pass (#997): relabel the button as the bonus is typed,
+      // without a re-render that would steal the input's focus.
+      if (this._dialog.kind === "insp-pass" && field === "bonus") {
+        const btn = this.querySelector('[data-act="insp-pass-save"]');
+        if (btn) btn.textContent = this._inspPassLabel(value);
       }
       return;
     }
@@ -1562,9 +1569,44 @@ class TaskMatePanel extends HTMLElement {
     return (this._state && this._state.settings && this._state.settings.inspection_bedtime) || "20:00";
   }
 
-  _inspWindowLabel(w) {
-    if (w === "bed") return this._t("panel.insp_window_bed", { time: this._inspBedtime() });
+  _inspWindowLabel(w, bed = null) {
+    if (w === "bed") return this._t("panel.insp_window_bed", { time: bed ? bed.time : this._inspBedtime() });
     return this._t(`panel.insp_window_${w}`);
+  }
+
+  // When "Until bedtime" started at `now` really closes (#997). Mirrors the
+  // server's inspection_until: bedtime today in HA's time zone, or the
+  // fallback when that's under min_minutes away. Both numbers come from the
+  // server (inspection_bed_rule) so the two can't drift.
+  _inspBedUntil(now = Date.now()) {
+    const rule = (this._state && this._state.inspection_bed_rule) || {};
+    const minMinutes = Number.isFinite(rule.min_minutes) ? rule.min_minutes : 30;
+    const fallbackHours = Number.isFinite(rule.fallback_hours) ? rule.fallback_hours : 1;
+    const tz = (this._hass && this._hass.config && this._hass.config.time_zone) || undefined;
+    let fmt;
+    try {
+      fmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit",
+        day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    } catch (_e) {
+      fmt = new Intl.DateTimeFormat("en-US", { hourCycle: "h23", year: "numeric", month: "2-digit",
+        day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+    const wall = (ms) => {
+      const p = {};
+      for (const { type, value } of fmt.formatToParts(new Date(ms))) p[type] = Number(value);
+      return p;
+    };
+    const p = wall(now);
+    const nowSec = Math.floor(now / 1000) * 1000;
+    // The zone's offset right now, as wall-clock minus UTC.
+    const offset = Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second) - nowSec;
+    const [bh, bm] = this._inspBedtime().split(":").map(Number);
+    const bedtime = Date.UTC(p.year, p.month - 1, p.day, bh || 0, bm || 0) - offset;
+    const fallback = bedtime - now < minMinutes * 60000;
+    const at = fallback ? now + fallbackHours * 3600000 : bedtime;
+    const w = wall(at);
+    const time = `${String(w.hour % 24).padStart(2, "0")}:${String(w.minute).padStart(2, "0")}`;
+    return { at, time, fallback, minutes: minMinutes };
   }
 
   // The tag / magnifier shown beside an approved completion.
@@ -1693,14 +1735,19 @@ class TaskMatePanel extends HTMLElement {
 
   _renderInspectionStartDialog() {
     const d = this._dialog.data;
+    const bed = this._inspBedUntil();
+    const bedSoon = d.window === "bed" && bed.fallback
+      ? `<p class="tm-field-hint tm-insp-hint"><ha-icon icon="mdi:information-outline"></ha-icon>${this._esc(this._t("panel.insp_window_bed_soon", { bedtime: this._inspBedtime(), minutes: bed.minutes, time: bed.time }))}</p>`
+      : "";
     const body = `
       ${this._inspDialogCtx(d)}
       <div class="tm-field">
         <span class="tm-field-label">${this._t("panel.insp_window_label")}</span>
         <div class="tm-chip-row">
           ${["1h", "2h", "4h", "bed"].map(w => `<button type="button" class="tm-chip-btn ${d.window === w ? "tm-chip-on" : ""}" aria-pressed="${d.window === w}"
-            data-act="insp-window" data-window="${w}">${this._esc(this._inspWindowLabel(w))}</button>`).join("")}
+            data-act="insp-window" data-window="${w}">${this._esc(this._inspWindowLabel(w, bed))}</button>`).join("")}
         </div>
+        ${bedSoon}
       </div>
       <div class="tm-field">
         <span class="tm-field-label">${this._t("panel.insp_bonus_label")}</span>
@@ -1732,8 +1779,14 @@ class TaskMatePanel extends HTMLElement {
       this._t("panel.insp_pass_title"),
       body,
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
-       <button type="button" class="tm-btn tm-btn-raised" data-act="insp-pass-save">${this._t("panel.insp_pass_btn", { bonus: this._num(d.bonus || 0) })}</button>`
+       <button type="button" class="tm-btn tm-btn-raised" data-act="insp-pass-save">${this._inspPassLabel(d.bonus)}</button>`
     );
+  }
+
+  // The pass button names the bonus that will be paid — the same rounding
+  // and clamp insp-pass-save sends, so it can't show a stale amount (#997).
+  _inspPassLabel(bonus) {
+    return this._t("panel.insp_pass_btn", { bonus: this._num(Math.max(0, Math.min(10000, Math.round(Number(bonus) || 0)))) });
   }
 
   _renderInspectionFailDialog() {
@@ -5347,13 +5400,30 @@ class TaskMatePanel extends HTMLElement {
     return { children, child_updates, chores, rewards };
   }
 
+  // "YYYY-MM-DD" naming a day that exists (no 13th month, no 30 February).
+  _wizardRealDate(value) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
+    if (!m) return false;
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
+  }
+
+  // True when the plan would add or fill in anything at all.
+  _wizardPlanHasWork(plan) {
+    return !!(plan.children.length || plan.child_updates.length || plan.chores.length || plan.rewards.length);
+  }
+
   _wizardAddKid() {
     const wz = this._wz;
     const f = wz.form;
     const name = (f.name || "").trim();
     if (!name) return false;
     const today = new Date().toISOString().slice(0, 10);
-    if (f.mode === "bday" && (!/^\d{4}-\d{2}-\d{2}$/.test(f.bday || "") || f.bday > today)) {
+    if (f.mode === "bday" && !this._wizardRealDate(f.bday)) {
+      this._showToast("err", this._t("wizard.toast_invalid_birthday"));
+      return false;
+    }
+    if (f.mode === "bday" && f.bday > today) {
       this._showToast("err", this._t("wizard.toast_bad_birthday"));
       return false;
     }
@@ -5541,13 +5611,17 @@ class TaskMatePanel extends HTMLElement {
     const wz = this._wz;
     if (wz.busy) return;
     const plan = this._wizardPlan();
+    if (!this._wizardPlanHasWork(plan)) return;
     wz.busy = true;
     this._render();
-    const { ok, res, err } = await this._callWS({ type: "taskmate/setup_wizard/apply", ...plan });
+    const { ok, res, err, code } = await this._callWS({ type: "taskmate/setup_wizard/apply", ...plan });
     if (!ok) {
       wz.busy = false;
       this._render();
-      this._showToast("err", this._t("wizard.toast_create_failed", { error: err }));
+      // Birthday problems come back as codes, so the parent reads them in
+      // their own language rather than Python's wording.
+      const known = { invalid_birthday: "wizard.toast_invalid_birthday", future_birthday: "wizard.toast_bad_birthday" }[code];
+      this._showToast("err", known ? this._t(known) : this._t("wizard.toast_create_failed", { error: err }));
       return;
     }
     // The points name is only touched when it was changed on the Welcome step.
@@ -5558,7 +5632,7 @@ class TaskMatePanel extends HTMLElement {
     if (wz.notify) await this._wizardEnableApprovalAlerts();
     let dashboard = "off";
     if (wz.dash) dashboard = await this._wizardCreateDashboard(res.children || {});
-    wz.result = { ...res, dashboard };
+    wz.result = { ...res, dashboard, updated: plan.child_updates.length };
     wz.busy = false;
     wz.step = 5;
     localStorage.removeItem(WZ_DRAFT_KEY);
@@ -5706,7 +5780,7 @@ class TaskMatePanel extends HTMLElement {
               ${step === 0 && wz.mode === "fresh" ? `<button type="button" class="tm-btn tm-wz-text-btn" data-act="wz-restore">${this._t("wizard.restore")}</button>` : ""}
               ${step === 1 ? `<span class="tm-wz-foot-hint">${typed ? this._esc(this._t("wizard.foot_will_add", { name: typed })) : ""}</span>` : ""}
               ${step === 4
-                ? `<button type="button" class="tm-btn tm-btn-raised tm-wz-create" data-act="wz-create" ${wz.busy ? "disabled" : ""}>${wz.busy ? `<span class="tm-btn-spinner"></span>${this._t("wizard.creating")}` : this._t(wz.mode === "existing" ? "wizard.create_existing" : "wizard.create")}</button>`
+                ? `<button type="button" class="tm-btn tm-btn-raised tm-wz-create" data-act="wz-create" ${wz.busy || !this._wizardPlanHasWork(this._wizardPlan()) ? "disabled" : ""}>${wz.busy ? `<span class="tm-btn-spinner"></span>${this._t("wizard.creating")}` : this._t(wz.mode === "existing" ? "wizard.create_existing" : "wizard.create")}</button>`
                 : `<button type="button" class="tm-btn tm-btn-raised" data-act="wz-next">${this._t(nextKey)}<ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon></button>`}
             </div>`}
         </div>
@@ -6002,7 +6076,8 @@ class TaskMatePanel extends HTMLElement {
     const plan = this._wizardPlan();
     const c = this._wizardCounts(plan);
     const keep = { ...c, have_chores: this._wizardCount("chores", (s.chores || []).length), have_rewards: this._wizardCount("rewards", (s.rewards || []).length) };
-    const intro = wz.mode !== "existing" ? this._t("wizard.review_fresh", c)
+    const intro = !this._wizardPlanHasWork(plan) ? this._t("wizard.review_nothing")
+      : wz.mode !== "existing" ? this._t("wizard.review_fresh", c)
       : this._t(plan.children.length ? "wizard.review_existing" : "wizard.review_existing_no_children", keep);
     const packNames = plan.chores.filter(ch => !ch.assigned_to.length).map(ch => ch.name);
     const kidCards = wz.kids.map(k => {
@@ -6047,7 +6122,11 @@ class TaskMatePanel extends HTMLElement {
     const r = wz.result || {};
     const conf = Array.from({ length: 36 }, (_, i) =>
       `<i style="inset-inline-start:${(i * 37) % 100}%;top:${(i * 53) % 60}%;background:${WZ_KID_COLORS[i % 8]};transform:rotate(${i * 29}deg)"></i>`).join("");
-    const phrase = (noun, n) => this._wizardCount(noun, n);
+    // Only what was actually added: never a row of zeros.
+    const phrase = (noun, n) => (n ? `<span>${this._wizardCount(noun, n)}</span>` : "");
+    const added = (r.children_added || 0) + (r.chores_added || 0) + (r.rewards_added || 0) + (r.updated || 0);
+    const copy = !added && r.dashboard !== "created" ? "wizard.done_copy_nothing"
+      : wz.mode === "existing" ? "wizard.done_copy_existing" : "wizard.done_copy";
     const dash = r.dashboard === "created" || r.dashboard === "exists";
     const dashNote = r.dashboard === "exists" ? this._t("wizard.dash_existed")
       : r.dashboard === "failed" ? this._t("wizard.dash_failed") : "";
@@ -6056,11 +6135,11 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-wz-confetti" aria-hidden="true">${conf}</div>
         <div class="tm-wz-done-ic"><ha-icon icon="mdi:check"></ha-icon></div>
         <h2 class="tm-wz-h tm-wz-h-big">${this._t("wizard.done_title")}</h2>
-        <p class="tm-wz-p tm-wz-center">${this._t(wz.mode === "existing" ? "wizard.done_copy_existing" : "wizard.done_copy")}</p>
+        <p class="tm-wz-p tm-wz-center">${this._t(copy)}</p>
         <div class="tm-wz-stats">
-          <span>${phrase("children", r.children_added || 0)}</span>
-          <span>${phrase("chores", r.chores_added || 0)}</span>
-          <span>${phrase("rewards", r.rewards_added || 0)}</span>
+          ${phrase("children", r.children_added || 0)}
+          ${phrase("chores", r.chores_added || 0)}
+          ${phrase("rewards", r.rewards_added || 0)}
           ${r.dashboard === "created" ? `<span>${this._t("wizard.one_dashboard")}</span>` : ""}
         </div>
         ${dashNote ? `<p class="tm-wz-hint tm-wz-center">${dashNote}</p>` : ""}
@@ -7363,6 +7442,11 @@ class TaskMatePanel extends HTMLElement {
         actions = `<button type="button" class="tm-btn tm-btn-sm" data-act="auction-reopen" data-id="${id}"><ha-icon icon="mdi:replay"></ha-icon>${this._t("panel.auction_reopen")}</button>`;
       }
     }
+    // Finished (#999): a parent can clear it off the list. A live one keeps
+    // its Cancel above, which tells the bidders.
+    if (a.deletable) {
+      actions += `<button type="button" class="tm-icon-btn" data-act="auction-delete" data-id="${id}" title="${this._t("panel.btn_delete")}"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>`;
+    }
     return `
       <tr class="tm-row">
         <td class="tm-col-sticky tm-cell-wrap"><div class="tm-name-cell tm-name-cell-wrap">${chore}
@@ -7571,6 +7655,15 @@ class TaskMatePanel extends HTMLElement {
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
     await this._fetchState();
     this._showToast("ok", this._t("panel.toast_auction_cancelled"));
+  }
+
+  async _doDeleteAuction(id) {
+    const a = (this._state.auctions || []).find(x => x.id === id);
+    if (!a || !confirm(this._t("panel.auction_delete_confirm", { chore: a.chore_name }))) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/auctions/delete", auction_id: id });
+    if (!ok) { this._showToast("err", this._t("panel.toast_delete_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.toast_auction_deleted"));
   }
 
   // -- Badges tab --------------------------------------------------------

@@ -10,8 +10,8 @@ Bids are sealed, so what a caller sees depends on who they are:
 * The same command without a ``child_id`` is the parents' view, with every bid
   amount — for TaskMate parents and admins only (``authz.async_user_is_parent``).
 * Bidding acts *as* a child, so it runs the same linked-child check.
-* Opening, closing and cancelling are the admin panel's, admin-only like every
-  other panel command.
+* Opening, closing, cancelling and deleting a finished one are the admin
+  panel's, admin-only like every other panel command.
 
 The auctions sensor carries only a digest (counts, never amounts); the card
 watches it to know when to re-fetch.
@@ -38,6 +38,7 @@ WS_AUCTIONS_WITHDRAW = "taskmate/auctions/withdraw"
 WS_AUCTIONS_START = "taskmate/auctions/start"
 WS_AUCTIONS_CLOSE = "taskmate/auctions/close"
 WS_AUCTIONS_CANCEL = "taskmate/auctions/cancel"
+WS_AUCTIONS_DELETE = "taskmate/auctions/delete"
 WS_AUCTIONS_OCCURRENCES = "taskmate/auctions/occurrences"
 
 
@@ -179,6 +180,15 @@ async def ws_auctions_cancel(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"id": msg["auction_id"]})
 
 
+@websocket_api.websocket_command({vol.Required("type"): WS_AUCTIONS_DELETE, vol.Required("auction_id"): str})
+@websocket_api.async_response
+@_admin_only
+async def ws_auctions_delete(hass, connection, msg, coordinator):
+    """Delete a finished auction (#999); a live one must be cancelled."""
+    await coordinator.async_delete_auction(msg["auction_id"])
+    connection.send_result(msg["id"], {"id": msg["auction_id"]})
+
+
 @websocket_api.websocket_command({vol.Required("type"): WS_AUCTIONS_OCCURRENCES, vol.Required("chore_id"): str})
 @websocket_api.async_response
 @_admin_only
@@ -206,5 +216,6 @@ AUCTION_COMMANDS = (
     ws_auctions_start,
     ws_auctions_close,
     ws_auctions_cancel,
+    ws_auctions_delete,
     ws_auctions_occurrences,
 )

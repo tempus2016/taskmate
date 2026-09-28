@@ -384,14 +384,18 @@ class TaskMateAuctionCard extends LitElement {
           <div class="ac-lot-foot"><span class="ac-faint">${this._t("auction.in_your_chores", { date: this._date(a.occurrence, false) })}</span></div>
         </div>`;
     }
+    // Lowest bid wins and the earliest breaks a tie, so a losing bid equal to
+    // the price lost on timing, not on the amount.
+    const winner = this._childName(a.winner_id);
+    const sub = a.my_bid == null ? this._t("auction.sibling_won_sub", { points: a.price })
+      : Number(a.my_bid) === Number(a.price) ? this._t("auction.tied_sub", { points: a.price, name: winner })
+      : this._t("auction.sibling_won_sub_bid", { points: a.price, bid: a.my_bid });
     return html`
       <div class="ac-lot ac-lost">
         ${head}
         <div class="ac-result ac-lose">
           <span class="ac-ri ac-ri-av">${this._avatar(a.winner_id)}</span>
-          <div>${this._t("auction.sibling_won", { name: this._childName(a.winner_id) })}<small>${a.my_bid != null
-            ? this._t("auction.sibling_won_sub_bid", { points: a.price, bid: a.my_bid })
-            : this._t("auction.sibling_won_sub", { points: a.price })}</small></div>
+          <div>${this._t("auction.sibling_won", { name: winner })}<small>${sub}</small></div>
         </div>
         ${closed}
       </div>`;
