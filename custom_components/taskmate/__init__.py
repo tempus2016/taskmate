@@ -206,6 +206,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Entities of children deleted before #946 stayed in the registry. Never
+    # let the sweep block setup.
+    try:
+        coordinator.async_prune_orphan_child_entities()
+    except Exception:  # noqa: BLE001
+        _LOGGER.exception("Could not prune entities of deleted children")
+
     # Register services (only once)
     if not hass.data[DOMAIN].get(SERVICES_REGISTERED):
         await _async_register_services(hass)

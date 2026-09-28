@@ -2738,7 +2738,8 @@ class TaskMatePanel extends HTMLElement {
   }
 
   async _notifSetRoute(typeId, recipientId, enabled, time) {
-    await this._callWS({ type: "taskmate/notifications/set_route", type_id: typeId, recipient_id: recipientId, enabled, time });
+    const { ok, err } = await this._callWS({ type: "taskmate/notifications/set_route", type_id: typeId, recipient_id: recipientId, enabled, time });
+    if (!ok) this._showToast("err", this._t("panel.toast_save_failed", { error: err }));
     await this._fetchState();
   }
 
@@ -4566,7 +4567,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-meta">${this._t("panel.bounty_completed_meta", { name: this._esc(name(b.claimed_by)), points: this._num(b.points_awarded || b.points) })}</div>`;
     } else if (b.status === "expired") {
       status = `<span class="tm-pill tm-pill-muted">${this._t("panel.bounty_status_expired")}</span>
-        <div class="tm-meta">${this._t("panel.bounty_expired_meta", { date: b.closed_at ? this._esc(new Date(b.closed_at).toLocaleDateString([], { day: "numeric", month: "short" })) : "" })}</div>`;
+        <div class="tm-meta">${this._t(b.lapse_count > 0 ? "panel.bounty_expired_lapsed_meta" : "panel.bounty_expired_meta", { date: b.closed_at ? this._esc(new Date(b.closed_at).toLocaleDateString([], { day: "numeric", month: "short" })) : "" })}</div>`;
     }
     if (b.lapse_count > 0) status += `<div class="tm-meta">${this._t("panel.bounty_lapsed_meta", { count: b.lapse_count })}</div>`;
     const expires = (b.status === "open" || b.status === "claimed")

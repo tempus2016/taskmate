@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 from collections.abc import Callable
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
@@ -46,6 +48,9 @@ from .models import Child
 from .storage import TaskMateStorage
 
 _LOGGER = logging.getLogger(__name__)
+
+# Shape of generate_id() — how a child id is recognised in a unique id (#946).
+_CHILD_ID_RE = re.compile(r"[0-9a-f]{16}")
 
 
 class TaskMateCoordinator(
@@ -951,6 +956,11 @@ class TaskMateCoordinator(
         await self._async_remove_wishes_for_child(child_id)
         # Free any bounty they had claimed and take them off eligibility (#931).
         self.remove_child_from_bounties(child_id)
+        # Their missed-mandatory reviews, timed sessions and notification
+        # routes (#946) — nothing else would ever clear them.
+        self.storage.remove_mandatory_misses_for_child(child_id)
+        self.storage.remove_timed_sessions_for_child(child_id)
+        routes_changed = self.storage.remove_notification_recipient(f"child:{child_id}")
         # Remove child from chore assigned_to lists, and clear any approved swap
         # override that pointed at them so the chore isn't left assigned to a
         # child who no longer exists.
@@ -977,7 +987,52 @@ class TaskMateCoordinator(
                 chore.assignment_current_child_id = daily.get(chore.id, "")
                 self.storage.update_chore(chore)
         await self.storage.async_save()
+        self._remove_child_entities(child_id)
+        if routes_changed:
+            # A bedtime/birthday route arms a per-child timer.
+            await self.notifications.async_setup_schedules()
         await self.async_refresh()
+
+    def _child_entity_entries(self, child_ids: set[str] | None = None, *, orphans: bool = False) -> list:
+        """Registry entries of per-child entities (#946).
+
+        Per-child unique ids are ``<entry_id>_<child_id>_...``. With
+        ``orphans`` set, returns entries whose child id (a generated 16-hex id)
+        no longer belongs to any child; otherwise those for ``child_ids``.
+        """
+        registry = er.async_get(self.hass)
+        entry_id = self.storage.entry_id
+        prefix = f"{entry_id}_"
+        known = {c.id for c in self.storage.get_children()}
+        found = []
+        for entry in er.async_entries_for_config_entry(registry, entry_id):
+            uid = entry.unique_id or ""
+            if not uid.startswith(prefix):
+                continue
+            rest = uid[len(prefix) :]
+            if orphans:
+                cid = rest.split("_", 1)[0]
+                if "_" in rest and _CHILD_ID_RE.fullmatch(cid) and cid not in known:
+                    found.append(entry)
+            elif any(rest.startswith(f"{cid}_") for cid in child_ids or ()):
+                found.append(entry)
+        return found
+
+    def _remove_child_entities(self, child_id: str) -> None:
+        """Drop a deleted child's entities from the entity registry (#946)."""
+        registry = er.async_get(self.hass)
+        for entry in self._child_entity_entries({child_id}):
+            registry.async_remove(entry.entity_id)
+
+    def async_prune_orphan_child_entities(self) -> int:
+        """Remove registry entries left by children deleted before #946."""
+        registry = er.async_get(self.hass)
+        stale = self._child_entity_entries(orphans=True)
+        for entry in stale:
+            registry.async_remove(entry.entity_id)
+        if stale:
+            _LOGGER.info("Removed %d entities left behind by deleted children", len(stale))
+        return len(stale)
 
     def get_child(self, child_id: str) -> Child | None:
         """Get a child by ID."""

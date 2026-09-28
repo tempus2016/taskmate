@@ -328,6 +328,76 @@ test("finishing the last chore here celebrates, then goes back to the picker", a
   assert.equal(card._screen, "picker");
 });
 
+// ── chores the kiosk can't complete (#952) ──────────────────────────────────
+
+const PHONE_CHORES = [
+  chore("dishes"),
+  chore("photo", { require_photo: true }),
+  chore("timer", { task_type: "timed" }),
+  chore("open", { open_ended: true }),
+];
+const phoneStatus = (due) => ({ children: [{ id: "vaiha", has_pin: false, can_act: true, due }] });
+const waiting = (id) => ({ completion_id: `c-${id}`, chore_id: id, child_id: "vaiha", approved: false, completed_at: new Date().toISOString() });
+
+test("photo, timed and open-ended chores stay out of the done/total count", async () => {
+  const card = await childView({ chores: PHONE_CHORES, status: phoneStatus(["dishes", "photo", "timer", "open"]) });
+  const { done, total } = card._progress(card._entry("vaiha").child);
+  assert.deepEqual([done, total], [0, 1]);
+  assert.match(view(card).markup, /<b>0\/1<\/b>/);
+});
+
+test("they show greyed out in their own 'do these on your phone' group, below today's list", async () => {
+  const card = await childView({ chores: PHONE_CHORES, status: phoneStatus(["dishes", "photo", "timer", "open"]) });
+  const { markup, controls } = view(card);
+  const group = markup.indexOf("km-phone-group");
+  assert.ok(group > markup.indexOf("Dishes"), "the group comes after the kiosk's own chores");
+  assert.match(markup.slice(group), new RegExp(localize("kiosk.phone_group")));
+  for (const name of ["Photo", "Timer", "Open"]) assert.ok(markup.indexOf(name, group) > group, `${name} is in the group`);
+  assert.equal((markup.match(/km-row elsewhere/g) || []).length, 3);
+  assert.equal(controls.filter((c) => c.attrs.includes('class="km-done"')).length, 1, "only dishes gets a Done button");
+});
+
+test("finishing the last kiosk chore reaches all done even with phone chores still due", async () => {
+  const card = await childView({ chores: PHONE_CHORES, status: phoneStatus(["dishes", "photo", "timer", "open"]) });
+  await view(card).control("km-done").click();
+  card._status.vaiha.due = new Set(["photo", "timer", "open"]);
+  card.hass.states[ENTITY].attributes.todays_completions = [waiting("dishes")];
+  assert.match(view(card).markup, new RegExp(localize("kiosk.all_done", { name: "Vaiha" })));
+  card._maybeCelebrate();
+  assert.equal(card._celebrating, true, "a chore waiting for approval counts: the child has done their part");
+  timers.at(-1).fn();
+  assert.equal(card._screen, "picker");
+  assert.match(view(card).markup, new RegExp(localize("kiosk.all_done_short")));
+});
+
+test("a phone chore done on the phone keeps its state in the group, still outside the count", async () => {
+  const card = await childView({
+    chores: PHONE_CHORES,
+    status: phoneStatus(["dishes", "timer", "open"]),
+    completions: [waiting("photo")],
+  });
+  const { done, total } = card._progress(card._entry("vaiha").child);
+  assert.deepEqual([done, total], [0, 1]);
+  const { markup } = view(card);
+  const group = markup.indexOf("km-phone-group");
+  assert.ok(markup.indexOf("km-row wait", group) > group, "the photo chore shows as waiting inside the group");
+});
+
+test("a child with only phone chores isn't told there's nothing to do", async () => {
+  const card = await childView({ chores: PHONE_CHORES, status: phoneStatus(["photo"]) });
+  const child = view(card).markup;
+  assert.doesNotMatch(child, new RegExp(localize("kiosk.nothing_today")));
+  assert.match(child, new RegExp(localize("kiosk.nothing_here")));
+  card._maybeCelebrate();
+  assert.equal(card._celebrating, false);
+  card._toPicker();
+  const markup = view(card).markup;
+  const at = markup.indexOf('data-kid="vaiha"');
+  const picker = markup.slice(at, markup.indexOf("</button>", at));
+  assert.doesNotMatch(picker, new RegExp(localize("kiosk.nothing_today")));
+  assert.match(picker, new RegExp(localize("kiosk.nothing_here")));
+});
+
 // ── designs ───────────────────────────────────────────────────────────────
 
 for (const design of DESIGNS) {
