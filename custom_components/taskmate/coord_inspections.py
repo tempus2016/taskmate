@@ -405,6 +405,36 @@ class InspectionsMixin:
         if changed:
             self.storage.set_inspections(kept)
 
+    def _inspection_on_bonus_undone(self, transaction_id: str) -> None:
+        """A parent undid a pass bonus (#996): the pass is taken back with it.
+
+        Still inside its window, the inspection is open again for the parent
+        to decide afresh (the child's card shows it as coming, not passed).
+        Past its window, or with the inspected chore since undone, it closes
+        undecided, as if the window had run out. Either way nothing says
+        "passed" any more. The caller saves and refreshes.
+        """
+        record = next(
+            (r for r in self.storage.get_inspections() if transaction_id and r.get("bonus_txn_id") == transaction_id),
+            None,
+        )
+        if record is None or record.get("status") != "passed":
+            return
+        now = dt_util.now()
+        until = _at(record.get("until"))
+        reopen = (
+            until is not None
+            and until > now
+            and self._inspected_completion(record.get("completion_id", "")) is not None
+        )
+        record["bonus_txn_id"] = ""
+        record["note"] = ""
+        record["status"] = "open" if reopen else "expired"
+        record["decided_at"] = None if reopen else format_datetime(now)
+        self._save_inspection(record)
+        self._arm_inspection_timer()
+        self._fire_inspection_event("taskmate_inspection_reopened" if reopen else "taskmate_inspection_expired", record)
+
     # ── housekeeping ─────────────────────────────────────────────────────
 
     def _prune_inspections(self, now: datetime) -> None:
