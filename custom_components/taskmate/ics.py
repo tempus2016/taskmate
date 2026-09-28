@@ -107,7 +107,7 @@ def build_chore_events(coordinator, start_day: date, end_day: date) -> list[dict
                         continue
                     window = coordinator._time_category_window(getattr(chore, "time_category", "anytime"), day)
                     summary = f"{chore.name} — {child.name}"
-                    desc = _chore_description(chore)
+                    desc = _chore_description(chore, coordinator.auction_price_for(chore, child.id, day))
                     if window is None:
                         events.append(
                             {

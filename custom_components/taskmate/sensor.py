@@ -330,6 +330,8 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         wins = coordinator.auction_wins_for_chore(c, today, 7)
         if isinstance(wins, dict) and wins:
             record["auction_wins"] = {day: w["child_id"] for day, w in wins.items()}
+            # What each won day pays, so a future one shows it too (#998).
+            record["auction_prices"] = {day: w["points"] for day, w in wins.items()}
             today_win = wins.get(today.isoformat())
             if today_win:
                 record["auction"] = today_win
