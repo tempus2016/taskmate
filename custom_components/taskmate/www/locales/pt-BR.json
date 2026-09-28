@@ -2439,6 +2439,8 @@
   "panel.toast_auction_started": "Leilão iniciado — já está nos cartões das crianças",
   "panel.toast_auction_closed": "Leilão fechado",
   "panel.toast_auction_cancelled": "Leilão cancelado — de volta à atribuição normal",
+  "panel.auction_delete_confirm": "Excluir o leilão encerrado de \"{chore}\"? Ele sai da lista. Isso não pode ser desfeito.",
+  "panel.toast_auction_deleted": "Leilão excluído",
   "notification.auction_opened.name": "Novo leilão",
   "notification.auction_opened.description": "Avisa as crianças que podem dar lance quando um responsável inicia um leilão de tarefas com \"Avisar as crianças\" ligado.",
   "notification.auction_closing.name": "Leilão fechando",

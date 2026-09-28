@@ -2439,6 +2439,8 @@
   "panel.toast_auction_started": "Auktion startet — den er nu på børnenes kort",
   "panel.toast_auction_closed": "Auktion afsluttet",
   "panel.toast_auction_cancelled": "Auktion annulleret — tilbage til normal fordeling",
+  "panel.auction_delete_confirm": "Slet den afsluttede auktion for \"{chore}\"? Den fjernes fra listen. Det kan ikke fortrydes.",
+  "panel.toast_auction_deleted": "Auktion slettet",
   "notification.auction_opened.name": "Ny auktion",
   "notification.auction_opened.description": "Fortæller de børn, der må byde, at en forælder har startet en pligtauktion med \"Fortæl børnene, at den er åben\" slået til.",
   "notification.auction_closing.name": "Auktion slutter snart",

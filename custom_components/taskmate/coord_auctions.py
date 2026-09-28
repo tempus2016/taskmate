@@ -348,17 +348,44 @@ class AuctionsMixin:
         self._fire_auction_event("taskmate_auction_cancelled", auction)
         self._arm_auction_timer()
         await self.async_refresh()
-        if bidders:
-            await self.notifications.fire(
-                NOTIF_TYPE_AUCTION_RESULT,
-                {
-                    "chore_name": auction.chore_name,
-                    "date": self._auction_date_label(auction),
-                    "result_text": f"the auction for '{auction.chore_name}' was called off. "
-                    "It goes back to the normal rota.",
-                },
-                only_recipients={f"child:{c}" for c in bidders},
-            )
+        await self._async_tell_bidders_called_off(auction, bidders)
+
+    async def _async_tell_bidders_called_off(self, auction: Auction, bidders: list[str]) -> None:
+        """The "called off" push, to the children who bid on ``auction``."""
+        if not bidders:
+            return
+        await self.notifications.fire(
+            NOTIF_TYPE_AUCTION_RESULT,
+            {
+                "chore_name": auction.chore_name,
+                "date": self._auction_date_label(auction),
+                "result_text": f"the auction for '{auction.chore_name}' was called off. "
+                "It goes back to the normal rota.",
+            },
+            only_recipients={f"child:{c}" for c in bidders},
+        )
+
+    def _auction_is_live(self, auction: Auction) -> bool:
+        """Still in play: bidding open, or a win whose day hasn't passed."""
+        if auction.status == "open":
+            return True
+        today = dt_util.as_local(dt_util.now()).date().isoformat()
+        return auction.status == "closed" and bool(auction.winner_id) and auction.occurrence >= today
+
+    def auction_deletable(self, auction: Auction) -> bool:
+        """Finished, so a parent may delete it: cancelled, closed with no
+        bids, or a win whose day has passed. A live one is cancelled instead,
+        which tells the bidders (#999)."""
+        return not self._auction_is_live(auction)
+
+    async def async_delete_auction(self, auction_id: str) -> None:
+        """A parent deletes a finished auction from the list (#999)."""
+        auction = self._require_auction(auction_id)
+        if not self.auction_deletable(auction):
+            raise ValueError("This auction is still live. Cancel it instead.")
+        self.storage.remove_auction(auction.id)
+        await self.storage.async_save()
+        await self.async_refresh()
 
     # ── child: bid / withdraw ─────────────────────────────────────────────
 
@@ -593,12 +620,40 @@ class AuctionsMixin:
                     continue
                 self.storage.update_auction(auction)
 
-    def remove_chore_from_auctions(self, chore_id: str) -> None:
-        """A deleted chore has no occurrences left to auction: drop its live
-        auctions. Finished ones stay as history under their saved name."""
+    def remove_chore_from_auctions(self, chore_id: str) -> list[tuple[Auction, list[str]]]:
+        """A deleted chore takes its auctions with it (#999).
+
+        Live ones are cancelled first — the bus event fires here, and the
+        caller sends the usual "called off" push to the returned
+        ``(auction, bidders)`` pairs once it has saved. In storage only.
+        """
+        called_off = []
         for auction in self.storage.get_auctions():
-            if auction.chore_id == chore_id and auction.status == "open":
-                self.storage.remove_auction(auction.id)
+            if auction.chore_id != chore_id:
+                continue
+            if self._auction_is_live(auction):
+                bidders = list(auction.bids)
+                auction.status = "cancelled"
+                auction.winner_id = ""
+                auction.price = 0
+                auction.closed_at = dt_util.now()
+                self._fire_auction_event("taskmate_auction_cancelled", auction)
+                called_off.append((auction, bidders))
+            self.storage.remove_auction(auction.id)
+        if called_off:
+            self._arm_auction_timer()
+        return called_off
+
+    async def async_remove_orphaned_auctions(self) -> None:
+        """On load: drop auctions whose chore no longer exists (#999) — left
+        behind by deletes from before auctions followed their chore."""
+        chore_ids = {c.id for c in self.storage.get_chores()}
+        orphans = [a.id for a in self.storage.get_auctions() if a.chore_id not in chore_ids]
+        if not orphans:
+            return
+        for auction_id in orphans:
+            self.storage.remove_auction(auction_id)
+        await self.storage.async_save()
 
     # ── views ─────────────────────────────────────────────────────────────
 
@@ -687,6 +742,7 @@ class AuctionsMixin:
             row = self._auction_base(auction)
             row["created_at"] = format_datetime(auction.created_at)
             row["notify_children"] = auction.notify_children
+            row["deletable"] = self.auction_deletable(auction)
             row["bids"] = [
                 {"child_id": cid, "points": pts, "at": format_datetime(at)} for cid, pts, at in auction.ranked_bids()
             ]

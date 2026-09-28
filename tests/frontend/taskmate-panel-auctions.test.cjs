@@ -64,6 +64,42 @@ test("a no-bid auction offers a re-open, a won one shows the winner and the chor
   assert.ok(markup.includes("Vaiha") && markup.includes('panel.auction_status_done{"points":17}'));
 });
 
+test("finished auctions get a Delete; live ones keep Cancel instead (#999)", () => {
+  const closed = new Date().toISOString();
+  const panel = panelWith([
+    live({ id: "open", deletable: false }),
+    live({ id: "gone", status: "cancelled", winner_id: "", price: 0, closed_at: closed, deletable: true }),
+    live({ id: "nb", status: "closed", winner_id: "", price: 0, bids: [], closed_at: closed, deletable: true }),
+    live({ id: "past", status: "closed", winner_id: "k2", price: 17, occurrence: isoDate(-2 * DAY), chore_status: "done", closed_at: closed, deletable: true }),
+    live({ id: "soon", status: "closed", winner_id: "k2", price: 17, chore_status: "todo", closed_at: closed, deletable: false }),
+  ]);
+  panel._auctionSubTab = "closed";
+  const markup = panel._renderAuctionsTab();
+  for (const id of ["gone", "nb", "past"]) assert.ok(markup.includes(`data-act="auction-delete" data-id="${id}"`), id);
+  assert.ok(!markup.includes('data-act="auction-delete" data-id="soon"'));
+  assert.ok(markup.includes('data-act="auction-cancel" data-id="soon"'));
+  assert.ok(markup.includes('data-act="auction-reopen" data-id="nb"'));
+  panel._auctionSubTab = "live";
+  assert.ok(!panel._renderAuctionsTab().includes('data-act="auction-delete"'));
+});
+
+test("deleting asks first, then calls the delete command", async () => {
+  let answer = false;
+  const Panel = loadCard("taskmate-panel.js", { sandbox: { confirm: () => answer } }).get("taskmate-panel");
+  const panel = Object.assign(Object.create(Panel.prototype), panelWith([live({ id: "gone", status: "cancelled", deletable: true })]));
+  const calls = [];
+  const toasts = [];
+  panel._callWS = async (msg) => { calls.push(msg); return { ok: true }; };
+  panel._fetchState = async () => {};
+  panel._showToast = (kind, text) => toasts.push([kind, text]);
+  await panel._doDeleteAuction("gone");
+  assert.equal(calls.length, 0);
+  answer = true;
+  await panel._doDeleteAuction("gone");
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [{ type: "taskmate/auctions/delete", auction_id: "gone" }]);
+  assert.deepEqual(toasts, [["ok", "panel.toast_auction_deleted"]]);
+});
+
 test("only chores that can go to one child at a price are offered", () => {
   const panel = panelWith([]);
   const offered = panel._state.chores.filter((c) => panel._auctionable(c)).map((c) => c.id);

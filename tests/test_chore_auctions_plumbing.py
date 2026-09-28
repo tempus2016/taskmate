@@ -142,6 +142,25 @@ def test_the_panel_commands_are_admin_only():
     assert connection.send_result.called and len(coord.storage.get_auctions()) == 1
 
 
+def test_deleting_a_finished_auction_is_admin_only_and_refuses_a_live_one():
+    """#999: the panel's delete for a finished auction."""
+    coord = _wired(u_mum=False)
+    live = run(coord.async_start_auction("c1", TOMORROW, 40, CLOSES))
+    done = run(coord.async_start_auction("c1", "2026-04-24", 40, CLOSES))
+    run(coord.async_cancel_auction(done.id))
+    msg = {"id": 1, "type": wsa.WS_AUCTIONS_DELETE, "auction_id": done.id}
+    connection = _conn("u_mum")
+    run(wsa.ws_auctions_delete(coord.hass, connection, msg))
+    assert connection.send_error.called and coord.storage.get_auction(done.id) is not None
+    connection = _conn("u_admin", admin=True)
+    run(wsa.ws_auctions_delete(coord.hass, connection, msg))
+    assert connection.send_result.called and coord.storage.get_auction(done.id) is None
+    connection = _conn("u_admin", admin=True)
+    run(wsa.ws_auctions_delete(coord.hass, connection, {**msg, "auction_id": live.id}))
+    assert connection.send_error.call_args.args[1] == "invalid"
+    assert coord.storage.get_auction(live.id) is not None
+
+
 def test_the_occurrence_lookup_offers_dates_the_pool_and_the_normal_price():
     coord = _wired()
     connection = _conn("u_admin", admin=True)
@@ -154,7 +173,7 @@ def test_the_occurrence_lookup_offers_dates_the_pool_and_the_normal_price():
 def test_every_command_is_registered():
     source = (INTEGRATION / "websocket.py").read_text(encoding="utf-8")
     assert "AUCTION_COMMANDS" in source.split("def async_register_websocket_commands")[1]
-    assert len(wsa.AUCTION_COMMANDS) == 7
+    assert len(wsa.AUCTION_COMMANDS) == 8
 
 
 def test_the_panel_snapshot_carries_the_auctions():

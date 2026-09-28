@@ -777,6 +777,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "auction-reopen")     { this._openAuctionDialog({ fromId: t.dataset.id }); return; }
     if (act === "auction-close-now")  { this._doCloseAuction(t.dataset.id); return; }
     if (act === "auction-cancel")     { this._doCancelAuction(t.dataset.id); return; }
+    if (act === "auction-delete")     { this._doDeleteAuction(t.dataset.id); return; }
     if (act === "auction-occ")        { this._auctionDialogSet("occurrence", t.dataset.id); return; }
     if (act === "auction-max-step")   { this._auctionDialogSet("max_step", Number(t.dataset.id)); return; }
     if (act === "auction-max-set")    { this._auctionDialogSet("max_points", Number(t.dataset.id)); return; }
@@ -7363,6 +7364,11 @@ class TaskMatePanel extends HTMLElement {
         actions = `<button type="button" class="tm-btn tm-btn-sm" data-act="auction-reopen" data-id="${id}"><ha-icon icon="mdi:replay"></ha-icon>${this._t("panel.auction_reopen")}</button>`;
       }
     }
+    // Finished (#999): a parent can clear it off the list. A live one keeps
+    // its Cancel above, which tells the bidders.
+    if (a.deletable) {
+      actions += `<button type="button" class="tm-icon-btn" data-act="auction-delete" data-id="${id}" title="${this._t("panel.btn_delete")}"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>`;
+    }
     return `
       <tr class="tm-row">
         <td class="tm-col-sticky tm-cell-wrap"><div class="tm-name-cell tm-name-cell-wrap">${chore}
@@ -7571,6 +7577,15 @@ class TaskMatePanel extends HTMLElement {
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
     await this._fetchState();
     this._showToast("ok", this._t("panel.toast_auction_cancelled"));
+  }
+
+  async _doDeleteAuction(id) {
+    const a = (this._state.auctions || []).find(x => x.id === id);
+    if (!a || !confirm(this._t("panel.auction_delete_confirm", { chore: a.chore_name }))) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/auctions/delete", auction_id: id });
+    if (!ok) { this._showToast("err", this._t("panel.toast_delete_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.toast_auction_deleted"));
   }
 
   // -- Badges tab --------------------------------------------------------
