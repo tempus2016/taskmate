@@ -5295,14 +5295,14 @@ class TaskMatePanel extends HTMLElement {
           ${last ? "" : `
             <div class="tm-wz-foot">
               ${step
-                ? `<button type="button" class="tm-btn" data-act="wz-back" ${wz.busy ? "disabled" : ""}><ha-icon icon="mdi:chevron-left"></ha-icon>${this._t("wizard.back")}</button>`
+                ? `<button type="button" class="tm-btn" data-act="wz-back" ${wz.busy ? "disabled" : ""}><ha-icon class="tm-rtl-flip" icon="mdi:chevron-left"></ha-icon>${this._t("wizard.back")}</button>`
                 : `<button type="button" class="tm-btn tm-wz-text-btn" data-act="wz-close">${this._t("wizard.skip")}</button>`}
               <span class="tm-wz-sp"></span>
               ${step === 0 && wz.mode === "fresh" ? `<button type="button" class="tm-btn tm-wz-text-btn" data-act="wz-restore">${this._t("wizard.restore")}</button>` : ""}
               ${step === 1 ? `<span class="tm-wz-foot-hint">${typed ? this._esc(this._t("wizard.foot_will_add", { name: typed })) : ""}</span>` : ""}
               ${step === 4
                 ? `<button type="button" class="tm-btn tm-btn-raised tm-wz-create" data-act="wz-create" ${wz.busy ? "disabled" : ""}>${wz.busy ? `<span class="tm-btn-spinner"></span>${this._t("wizard.creating")}` : this._t(wz.mode === "existing" ? "wizard.create_existing" : "wizard.create")}</button>`
-                : `<button type="button" class="tm-btn tm-btn-raised" data-act="wz-next">${this._t(nextKey)}<ha-icon icon="mdi:chevron-right"></ha-icon></button>`}
+                : `<button type="button" class="tm-btn tm-btn-raised" data-act="wz-next">${this._t(nextKey)}<ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon></button>`}
             </div>`}
         </div>
       </div>`;
@@ -5641,7 +5641,7 @@ class TaskMatePanel extends HTMLElement {
     const wz = this._wz;
     const r = wz.result || {};
     const conf = Array.from({ length: 36 }, (_, i) =>
-      `<i style="left:${(i * 37) % 100}%;top:${(i * 53) % 60}%;background:${WZ_KID_COLORS[i % 8]};transform:rotate(${i * 29}deg)"></i>`).join("");
+      `<i style="inset-inline-start:${(i * 37) % 100}%;top:${(i * 53) % 60}%;background:${WZ_KID_COLORS[i % 8]};transform:rotate(${i * 29}deg)"></i>`).join("");
     const phrase = (noun, n) => this._wizardCount(noun, n);
     const dash = r.dashboard === "created" || r.dashboard === "exists";
     const dashNote = r.dashboard === "exists" ? this._t("wizard.dash_existed")
@@ -5666,7 +5666,7 @@ class TaskMatePanel extends HTMLElement {
         </div>
         <div class="tm-wz-done-acts">
           ${dash ? `<button type="button" class="tm-btn" data-act="wz-dashboard"><ha-icon icon="mdi:view-dashboard-outline"></ha-icon>${this._t("wizard.open_dashboard")}</button>` : ""}
-          <button type="button" class="tm-btn tm-btn-raised" data-act="wz-today">${this._t("wizard.go_today")}<ha-icon icon="mdi:chevron-right"></ha-icon></button>
+          <button type="button" class="tm-btn tm-btn-raised" data-act="wz-today">${this._t("wizard.go_today")}<ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon></button>
         </div>
       </div>`;
   }
@@ -5742,7 +5742,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-wz-h-big { font-size: 26px; }
       .tm-wz-p { color: var(--tm-text-muted); margin: 0 0 20px; max-width: 680px; }
       .tm-wz-p0 { margin: 0; }
-      .tm-wz-center { margin-left: auto; margin-right: auto; text-align: center; }
+      .tm-wz-center { margin-inline: auto; text-align: center; }
       .tm-wz-hint { font-size: 12.5px; color: var(--tm-text-faint); margin: 6px 0 0; }
       .tm-wz-faint { color: var(--tm-text-faint); font-size: 12px; }
       .tm-wz-gold { color: var(--tm-gold); }
@@ -5768,7 +5768,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-wz-kid { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border: 1px solid var(--tm-border); border-radius: 12px; background: var(--tm-bg); }
       .tm-wz-kid-name { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
       .tm-wz-kid-meta { font-size: 12.5px; color: var(--tm-text-muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
-      .tm-wz-kid-meta ha-icon { --mdc-icon-size: 14px; margin-right: 4px; vertical-align: -2px; }
+      .tm-wz-kid-meta ha-icon { --mdc-icon-size: 14px; margin-inline-end: 4px; vertical-align: -2px; }
       .tm-wz-warn { color: var(--tm-warning); }
       .tm-wz-bandpick { margin-top: 8px; }
       .tm-wz-tag { font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--c), transparent 78%); color: var(--tm-text); white-space: nowrap; }
@@ -5777,7 +5777,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-wz-add { border: 1px dashed var(--tm-border-strong); border-radius: 14px; padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 20px; }
       .tm-wz-add h4 { margin: 0 0 4px; font-size: 14px; display: flex; align-items: center; gap: 6px; }
       .tm-wz-add h4 ha-icon { --mdc-icon-size: 16px; }
-      .tm-wz-seg { margin-left: 0; }
+      .tm-wz-seg { margin-inline-start: 0; }
       .tm-wz-agectl { margin-top: 10px; }
       .tm-wz-inline { display: flex; align-items: center; gap: 12px; }
       .tm-wz-date { width: 200px; }
@@ -5813,7 +5813,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-wz-band-sub { font-size: 12.5px; color: var(--tm-text-muted); }
       .tm-wz-band-ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; color: #fff; flex: none; --mdc-icon-size: 20px; }
       .tm-wz-stack { display: inline-flex; }
-      .tm-wz-stack .tm-wz-kav + .tm-wz-kav { margin-left: -8px; }
+      .tm-wz-stack .tm-wz-kav + .tm-wz-kav { margin-inline-start: -8px; }
       .tm-wz-lnk { background: none; border: 0; color: var(--tm-accent); font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; padding: 4px; }
       .tm-wz-sg { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; grid-template-areas: "cb ic nm who pts"; gap: 12px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--tm-border-soft); cursor: pointer; }
       .tm-wz-band-h + .tm-wz-sg { border-top: 0; }
@@ -5838,7 +5838,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-wz-wk { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--tm-border-soft); }
       .tm-wz-wk:first-of-type { border-top: 0; }
       .tm-wz-wk-sm { padding: 6px 0; --mdc-icon-size: 16px; }
-      .tm-wz-pack { display: flex; align-items: center; gap: 10px; padding: 7px 0; font: inherit; font-size: 13px; cursor: pointer; width: 100%; background: none; border: 0; color: var(--tm-text); text-align: left; --mdc-icon-size: 16px; }
+      .tm-wz-pack { display: flex; align-items: center; gap: 10px; padding: 7px 0; font: inherit; font-size: 13px; cursor: pointer; width: 100%; background: none; border: 0; color: var(--tm-text); text-align: start; --mdc-icon-size: 16px; }
       .tm-wz-pack > ha-icon { color: var(--tm-accent); }
       .tm-wz-pack .tm-wz-cbx { width: 18px; height: 18px; border-radius: 5px; --mdc-icon-size: 12px; }
       /* Rewards */
@@ -5847,31 +5847,31 @@ class TaskMatePanel extends HTMLElement {
       .tm-wz-rw-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
       .tm-wz-rw { border: 1px solid var(--tm-border); border-radius: 14px; background: var(--tm-bg); padding: 14px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; position: relative; }
       .tm-wz-rw.tm-wz-on { border-color: #9b59b6; background: color-mix(in srgb, #9b59b6 9%, var(--tm-bg)); }
-      .tm-wz-rw-top { display: flex; gap: 10px; align-items: center; padding-right: 26px; }
+      .tm-wz-rw-top { display: flex; gap: 10px; align-items: center; padding-inline-end: 26px; }
       .tm-wz-rw-top b { font-size: 14px; line-height: 1.25; }
       .tm-wz-rw .tm-wz-ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: var(--tm-surface-2); color: var(--tm-text-muted); flex: none; --mdc-icon-size: 20px; }
       .tm-wz-rw.tm-wz-on .tm-wz-ic { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #fff; }
-      .tm-wz-rw > .tm-wz-cbx { position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; }
+      .tm-wz-rw > .tm-wz-cbx { position: absolute; top: 10px; inset-inline-end: 10px; width: 20px; height: 20px; }
       .tm-wz-rw.tm-wz-on > .tm-wz-cbx { background: #9b59b6; border-color: #9b59b6; }
       .tm-wz-rw-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
       .tm-wz-when { font-size: 11.5px; color: var(--tm-text-faint); white-space: nowrap; }
       .tm-wz-rw-add { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
       .tm-wz-rw-add .tm-input { flex: 1; min-width: 160px; }
       .tm-wz-rw-add .tm-wz-cost { flex: 0 0 90px; min-width: 0; }
-      .tm-wz-tips { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--tm-text-muted); line-height: 1.6; }
+      .tm-wz-tips { margin: 0; padding-inline-start: 18px; font-size: 12.5px; color: var(--tm-text-muted); line-height: 1.6; }
       /* Review */
       .tm-wz-rv-kids { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin-bottom: 18px; }
       .tm-wz-rv-kid .tm-wz-mini-av { width: 36px; height: 36px; --mdc-icon-size: 20px; }
       .tm-wz-rv-kid .tm-wz-mini-name { font-size: 1.05rem; }
-      .tm-wz-rv-kid ul { margin: 0; padding: 10px 14px 12px 30px; font-size: 12.5px; color: var(--tm-text-muted); line-height: 1.6; }
+      .tm-wz-rv-kid ul { margin: 0; padding-block: 10px 12px; padding-inline: 30px 14px; font-size: 12.5px; color: var(--tm-text-muted); line-height: 1.6; }
       .tm-wz-more { font-size: 12px; color: var(--tm-text-faint); padding: 0 14px 12px; }
       .tm-wz-tog { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--tm-border-soft); font-size: 13.5px; flex-wrap: wrap; }
       .tm-wz-opts h4 + .tm-wz-tog { border-top: 0; }
       .tm-wz-tog small { display: block; color: var(--tm-text-faint); font-size: 12px; }
       .tm-wz-sw { width: 36px; height: 20px; border-radius: 999px; background: var(--tm-border-strong); position: relative; cursor: pointer; flex: none; border: 0; padding: 0; }
-      .tm-wz-sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left 0.15s; }
+      .tm-wz-sw::after { content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: inset-inline-start 0.15s; }
       .tm-wz-sw.tm-wz-on { background: var(--tm-accent); }
-      .tm-wz-sw.tm-wz-on::after { left: 18px; }
+      .tm-wz-sw.tm-wz-on::after { inset-inline-start: 18px; }
       /* Done */
       .tm-wz-finish { text-align: center; padding: 26px 10px 10px; position: relative; }
       .tm-wz-done-ic { width: 92px; height: 92px; border-radius: 50%; margin: 0 auto 16px; display: grid; place-items: center; background: linear-gradient(135deg, #2ecc71, #16a085); color: #fff; box-shadow: 0 10px 30px rgba(46, 204, 113, 0.35); --mdc-icon-size: 48px; position: relative; }
@@ -5880,7 +5880,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-wz-finish > :not(.tm-wz-confetti) { position: relative; }
       .tm-wz-stats { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 14px 0 24px; position: relative; }
       .tm-wz-stats span { background: var(--tm-bg); border: 1px solid var(--tm-border); border-radius: 999px; padding: 6px 14px; font-size: 13px; }
-      .tm-wz-next { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: left; max-width: 860px; margin: 0 auto; position: relative; }
+      .tm-wz-next { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: start; max-width: 860px; margin: 0 auto; position: relative; }
       .tm-wz-next div { background: var(--tm-bg); border: 1px solid var(--tm-border); border-radius: 12px; padding: 14px; font-size: 13px; color: var(--tm-text-muted); }
       .tm-wz-next b { display: flex; gap: 8px; align-items: center; color: var(--tm-text); margin-bottom: 4px; font-size: 14px; --mdc-icon-size: 18px; }
       .tm-wz-next b ha-icon { color: var(--tm-accent); }
@@ -5894,14 +5894,14 @@ class TaskMatePanel extends HTMLElement {
       .tm-wz-settings { border-color: var(--tm-accent-border); }
       .tm-wz-settings-t { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; --mdc-icon-size: 16px; }
       .tm-wz-settings-t ha-icon { color: var(--tm-accent); }
-      .tm-wz-confirm { margin: 8px 0 0; padding-left: 20px; line-height: 1.7; }
+      .tm-wz-confirm { margin: 8px 0 0; padding-inline-start: 20px; line-height: 1.7; }
       .tm-wz-nudge { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 16px; border-radius: 12px; background: var(--tm-accent-soft); border: 1px solid var(--tm-accent-border); }
       .tm-wz-nudge-text { flex: 1; min-width: 180px; }
       .tm-wz-nudge .tm-btn ha-icon { --mdc-icon-size: 16px; }
       @container tm-wz (max-width: 640px) {
         .tm-wz-step .tm-wz-l, .tm-wz-sep { display: none; }
         .tm-wz-steps { gap: 6px; }
-        .tm-wz-mlabel { display: block; margin-left: auto; }
+        .tm-wz-mlabel { display: block; margin-inline-start: auto; }
         .tm-wz-body { padding: 18px 14px; min-height: 0; }
         .tm-wz-h { font-size: 19px; }
         .tm-wz-cols, .tm-wz-add { grid-template-columns: 1fr; }
