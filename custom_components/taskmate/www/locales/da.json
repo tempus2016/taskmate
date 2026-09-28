@@ -1855,6 +1855,7 @@
   "panel.bounty_claimed_meta": "{name} · {time} tilbage",
   "panel.bounty_completed_meta": "{name} · +{points} ★",
   "panel.bounty_expired_meta": "Ingen tog den · {date}",
+  "panel.bounty_expired_lapsed_meta": "Udløbet efter en reservation udløb · {date}",
   "panel.bounty_lapsed_meta": "Reservation udløbet {count}×",
   "panel.bounty_no_expiry": "Udløber ikke",
   "panel.bounty_release": "Frigiv reservation",

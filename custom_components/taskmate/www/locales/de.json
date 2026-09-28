@@ -1855,6 +1855,7 @@
   "panel.bounty_claimed_meta": "{name} · noch {time}",
   "panel.bounty_completed_meta": "{name} · +{points} ★",
   "panel.bounty_expired_meta": "Niemand hat ihn übernommen · {date}",
+  "panel.bounty_expired_lapsed_meta": "Abgelaufen nach verfallener Reservierung · {date}",
   "panel.bounty_lapsed_meta": "Reservierung {count}× verfallen",
   "panel.bounty_no_expiry": "Kein Ablauf",
   "panel.bounty_release": "Reservierung aufheben",
