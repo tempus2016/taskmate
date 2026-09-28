@@ -24,6 +24,7 @@ from .coord_rewards import reward_is_time_locked
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
 from .models import Child
+from .watch import DEFAULT_STATE_STRINGS, watch_state, watch_summary
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -242,6 +243,9 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
     """
     chores = common["chores"]
     chores_list = []
+    today = dt_util.as_local(dt_util.now()).date()
+    # Calendar moves older than the calendar card's week view are history only.
+    moved_floor = (today - timedelta(days=7)).isoformat()
     for c in chores:
         assigned_to = c.assigned_to if isinstance(c.assigned_to, list) else []
         depends_on = c.depends_on if isinstance(getattr(c, "depends_on", None), list) else []
@@ -295,6 +299,17 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         due_days = getattr(c, "due_days", []) or []
         if due_days:
             record["due_days"] = due_days
+        # Occurrences moved or removed from the HA calendar (#977). Only chores
+        # that have one carry these: `occ_today` settles today for the cards'
+        # weekday filters, the map lets the calendar card place other days.
+        moved = getattr(c, "moved_occurrences", None) or {}
+        if moved:
+            override = coordinator.occurrence_override(c, today)
+            if override is not None:
+                record["occ_today"] = override
+            recent = {src: dst for src, dst in moved.items() if src >= moved_floor or (dst and dst >= moved_floor)}
+            if recent:
+                record["moved_occurrences"] = recent
         requires_approval = getattr(c, "requires_approval", True)
         if not requires_approval:
             record["requires_approval"] = False
@@ -847,6 +862,7 @@ async def async_setup_entry(
         entities.append(ChildStatsSensor(coordinator, entry, child))
         entities.append(ChildBadgesSensor(coordinator, entry, child))
         entities.append(ChildWishlistSensor(coordinator, entry, child))
+        entities.append(ChildWatchSensor(coordinator, entry, child))
         tracked_child_ids.add(child.id)
 
     # Add pending approvals sensor
@@ -866,6 +882,7 @@ async def async_setup_entry(
                 new_entities.append(ChildStatsSensor(coordinator, entry, child))
                 new_entities.append(ChildBadgesSensor(coordinator, entry, child))
                 new_entities.append(ChildWishlistSensor(coordinator, entry, child))
+                new_entities.append(ChildWatchSensor(coordinator, entry, child))
                 tracked_child_ids.add(child.id)
 
         if new_entities:
@@ -1472,6 +1489,81 @@ class ChildWishlistSensor(TaskMateBaseSensor):
             "wishes": self.coordinator.wishlist_sensor_rows(self.child_id),
             "wish_max_open": WISH_MAX_OPEN_PER_CHILD,
         }
+
+
+class ChildWatchSensor(TaskMateBaseSensor):
+    """A child's day in a few characters, for watch complications (#978).
+
+    The state is a short, already-translated phrase ("3 left", "All done")
+    because the companion apps render complication templates server-side and
+    show the raw state — the frontend's state translation never reaches the
+    wrist. The attributes are a handful of scalars so templates can build
+    gauges and rings (``progress`` is 0–1) without touching the heavy sensors.
+    """
+
+    _attr_icon = "mdi:watch"
+    _attr_translation_key = "child_watch"
+
+    def __init__(
+        self,
+        coordinator: TaskMateCoordinator,
+        entry: ConfigEntry,
+        child: Child,
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self.child_id = child.id
+        self._attr_unique_id = f"{entry.entry_id}_{child.id}_watch"
+        self._attr_name = f"{child.name} Watch"
+        self._state_strings: dict[str, str] = dict(DEFAULT_STATE_STRINGS)
+        self._summary_key: tuple | None = None
+        self._summary: dict | None = None
+
+    def _current_summary(self) -> dict | None:
+        """The summary once per coordinator update — state and attributes share it."""
+        key = (
+            id(self.coordinator.data),
+            getattr(self.coordinator, "external_state_version", 0),
+            dt_util.as_local(dt_util.now()).date(),
+        )
+        if key != self._summary_key:
+            self._summary = watch_summary(self.coordinator, self.child_id)
+            self._summary_key = key
+        return self._summary
+
+    async def async_added_to_hass(self) -> None:
+        """Load the state phrases in the server's language."""
+        await super().async_added_to_hass()
+        self._state_strings = await _async_watch_state_strings(self.hass)
+
+    @property
+    def native_value(self) -> str | None:
+        return watch_state(self._current_summary(), self._state_strings)
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return self._current_summary() or {}
+
+
+async def _async_watch_state_strings(hass: HomeAssistant) -> dict[str, str]:
+    """The watch sensor's state phrases from TaskMate's entity translations.
+
+    Falls back to English per phrase, so a missing or broken translation
+    never leaves the sensor without a state.
+    """
+    strings = dict(DEFAULT_STATE_STRINGS)
+    try:
+        from homeassistant.helpers.translation import async_get_translations
+
+        translations = await async_get_translations(hass, hass.config.language, "entity", {DOMAIN})
+    except Exception:  # noqa: BLE001 - translations are cosmetic; never block the sensor
+        _LOGGER.debug("Could not load TaskMate watch translations", exc_info=True)
+        return strings
+    prefix = f"component.{DOMAIN}.entity.sensor.child_watch.state."
+    for key in strings:
+        value = translations.get(prefix + key) if isinstance(translations, dict) else None
+        if isinstance(value, str) and value:
+            strings[key] = value
+    return strings
 
 
 class ChildBadgesSensor(TaskMateBaseSensor):

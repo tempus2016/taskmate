@@ -668,6 +668,16 @@
         }
       }
     },
+    "complete_next_chore": {
+      "name": "Udfør næste pligt",
+      "description": "Udfører barnets næste udestående pligt i den rækkefølge, som barnekortet viser dem. Pligter, der kræver et foto, en note, en timer eller et hold, springes over. Lavet til urknapper og genveje; de normale godkendelsesregler gælder.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på barnet, hvis næste pligt skal udføres"
+        }
+      }
+    },
     "post_bounty": {
       "name": "Udlov dusør",
       "description": "Sæt en engangsopgave op på dusørtavlen til et fast antal point. Alle børn, der må, kan tage den; når den er lavet, går den gennem den normale godkendelse.",
@@ -1248,6 +1258,13 @@
       },
       "child_badges": {
         "unit_of_measurement": "badges"
+      },
+      "child_watch": {
+        "state": {
+          "left": "# tilbage",
+          "all_done": "Alt klaret",
+          "no_chores": "Ingen pligter"
+        }
       }
     },
     "number": {
@@ -1265,6 +1282,35 @@
       "card_design": {
         "name": "Kortdesign"
       }
+    }
+  },
+  "exceptions": {
+    "calendar_unknown_event": {
+      "message": "Denne begivenhed er ikke en TaskMate-opgave i dette barns kalender."
+    },
+    "calendar_series_not_supported": {
+      "message": "En gentagen opgave kan kun flyttes eller fjernes én dag ad gangen fra kalenderen. Rediger opgaven i TaskMate for at ændre hele serien."
+    },
+    "calendar_repeating_create": {
+      "message": "Gentagne begivenheder kan ikke tilføjes fra kalenderen. Opret i stedet en gentagen opgave i TaskMate."
+    },
+    "calendar_rename_series": {
+      "message": "Omdøb en gentagen opgave i TaskMate. Fra kalenderen kan du kun flytte eller fjerne en enkelt dag."
+    },
+    "calendar_time_follows_chore": {
+      "message": "En gentagen opgave beholder sit tidspunkt på dagen. Kun datoen for en enkelt forekomst kan ændres fra kalenderen."
+    },
+    "calendar_past_date": {
+      "message": "Opgaver kan ikke tilføjes til, flyttes til eller flyttes fra en dag i fortiden."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} ligger allerede den {date}."
+    },
+    "calendar_empty_title": {
+      "message": "Giv opgaven en titel."
+    },
+    "calendar_own_event": {
+      "message": "Denne begivenhed er udgivet af TaskMate selv, så den tilføjes ikke som en ny opgave."
     }
   }
 }

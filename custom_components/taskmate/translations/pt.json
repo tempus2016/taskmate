@@ -668,6 +668,16 @@
         }
       }
     },
+    "complete_next_chore": {
+      "name": "Concluir a próxima tarefa",
+      "description": "Conclui a próxima tarefa pendente da criança, pela ordem mostrada no cartão da criança. As tarefas que exigem uma fotografia, uma nota, um temporizador ou uma equipa são ignoradas. Pensado para botões e atalhos do relógio; aplicam-se as regras de aprovação habituais.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança cuja próxima tarefa deve ser concluída"
+        }
+      }
+    },
     "post_bounty": {
       "name": "Publicar tarefa extra",
       "description": "Publicar uma tarefa extra pontual no quadro de tarefas extra por um número fixo de pontos. Qualquer criança elegível pode ficar com ela; quando feita, passa pela aprovação normal.",
@@ -1248,6 +1258,13 @@
       },
       "child_badges": {
         "unit_of_measurement": "medalhas"
+      },
+      "child_watch": {
+        "state": {
+          "left": "Faltam #",
+          "all_done": "Tudo feito",
+          "no_chores": "Sem tarefas"
+        }
       }
     },
     "number": {
@@ -1265,6 +1282,35 @@
       "card_design": {
         "name": "Design do cartão"
       }
+    }
+  },
+  "exceptions": {
+    "calendar_unknown_event": {
+      "message": "Este evento não é uma tarefa TaskMate no calendário desta criança."
+    },
+    "calendar_series_not_supported": {
+      "message": "Uma tarefa repetida só pode ser movida ou removida no calendário um dia de cada vez. Para alterar toda a série, edite a tarefa no TaskMate."
+    },
+    "calendar_repeating_create": {
+      "message": "Não é possível adicionar eventos repetidos a partir do calendário. Crie antes uma tarefa repetida no TaskMate."
+    },
+    "calendar_rename_series": {
+      "message": "Mude o nome de uma tarefa repetida no TaskMate. No calendário só pode mover ou remover um único dia."
+    },
+    "calendar_time_follows_chore": {
+      "message": "Uma tarefa repetida mantém a sua hora do dia. No calendário só é possível alterar a data de uma única ocorrência."
+    },
+    "calendar_past_date": {
+      "message": "Não é possível adicionar tarefas a um dia passado, nem movê-las para ou de um dia passado."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} já está marcada para {date}."
+    },
+    "calendar_empty_title": {
+      "message": "Dê um título à tarefa."
+    },
+    "calendar_own_event": {
+      "message": "Este evento foi publicado pelo próprio TaskMate, por isso não é adicionado como nova tarefa."
     }
   }
 }

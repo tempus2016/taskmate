@@ -310,6 +310,17 @@ class TaskMateCalendarCard extends LitElement {
   _isChoreScheduledOn(chore, dayDow, dayDate, todayKey, tz) {
     if (chore.enabled === false) return false;
 
+    // One occurrence moved or removed from the HA calendar (#977):
+    // {scheduled date: new date, or "" when removed}. Mirrors the backend's
+    // occurrence_override — a day something was moved onto is on, a day
+    // something was moved away from or removed is off.
+    const moved = chore.moved_occurrences;
+    if (moved && typeof moved === "object") {
+      const key = ymd(dayDate, tz);
+      if (Object.values(moved).includes(key)) return true;
+      if (Object.prototype.hasOwnProperty.call(moved, key)) return false;
+    }
+
     const scheduleMode = chore.schedule_mode || "specific_days";
     const createdDate = chore.created_date || "";
 

@@ -668,6 +668,16 @@
         }
       }
     },
+    "complete_next_chore": {
+      "name": "Nächste Aufgabe erledigen",
+      "description": "Erledigt die nächste offene Aufgabe des Kindes in der Reihenfolge, die die Kinderkarte anzeigt. Aufgaben, die ein Foto, eine Notiz, einen Timer oder ein Team brauchen, werden übersprungen. Gedacht für Uhr-Tasten und Verknüpfungen; die normalen Genehmigungsregeln gelten.",
+      "fields": {
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, dessen nächste Aufgabe erledigt werden soll"
+        }
+      }
+    },
     "post_bounty": {
       "name": "Sonderjob ausschreiben",
       "description": "Einen einmaligen Sonderjob für eine feste Punktzahl an die Sonderjob-Tafel hängen. Jedes berechtigte Kind kann ihn übernehmen; die Erledigung läuft durch die normale Freigabe.",
@@ -1248,6 +1258,13 @@
       },
       "child_badges": {
         "unit_of_measurement": "Abzeichen"
+      },
+      "child_watch": {
+        "state": {
+          "left": "Noch #",
+          "all_done": "Alles erledigt",
+          "no_chores": "Keine Aufgaben"
+        }
       }
     },
     "number": {
@@ -1265,6 +1282,35 @@
       "card_design": {
         "name": "Kartendesign"
       }
+    }
+  },
+  "exceptions": {
+    "calendar_unknown_event": {
+      "message": "Dieser Termin ist keine TaskMate-Aufgabe im Kalender dieses Kindes."
+    },
+    "calendar_series_not_supported": {
+      "message": "Eine wiederkehrende Aufgabe kann im Kalender nur tageweise verschoben oder entfernt werden. Um die ganze Serie zu ändern, bearbeite die Aufgabe in TaskMate."
+    },
+    "calendar_repeating_create": {
+      "message": "Wiederkehrende Termine können nicht im Kalender angelegt werden. Lege stattdessen in TaskMate eine wiederkehrende Aufgabe an."
+    },
+    "calendar_rename_series": {
+      "message": "Benenne eine wiederkehrende Aufgabe in TaskMate um. Im Kalender kannst du nur einen einzelnen Tag verschieben oder entfernen."
+    },
+    "calendar_time_follows_chore": {
+      "message": "Eine wiederkehrende Aufgabe behält ihre Tageszeit. Im Kalender lässt sich nur das Datum eines einzelnen Termins ändern."
+    },
+    "calendar_past_date": {
+      "message": "Aufgaben können nicht an einem vergangenen Tag angelegt, dorthin verschoben oder von dort verschoben werden."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} steht am {date} bereits an."
+    },
+    "calendar_empty_title": {
+      "message": "Gib der Aufgabe einen Titel."
+    },
+    "calendar_own_event": {
+      "message": "Dieser Termin wurde von TaskMate selbst veröffentlicht und wird deshalb nicht als neue Aufgabe angelegt."
     }
   }
 }

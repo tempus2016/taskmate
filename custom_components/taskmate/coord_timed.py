@@ -171,12 +171,16 @@ class TimedMixin:
         assigned = getattr(chore, "assigned_to", []) or []
         if assigned and child_id not in assigned:
             return False
+        # Calendar moves/removals (#977) outrank the weekday list for today.
+        today = dt_util.as_local(dt_util.now()).date()
+        override = self.occurrence_override(chore, today)
+        if override is False:
+            return False
         if getattr(chore, "schedule_mode", "specific_days") == "specific_days":
             due_days = getattr(chore, "due_days", []) or []
             if due_days:
-                today = dt_util.as_local(dt_util.now()).date()
                 dow = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")[today.weekday()]
-                if dow not in due_days:
+                if dow not in due_days and override is not True:
                     return False
         return True
 

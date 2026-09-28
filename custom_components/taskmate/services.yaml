@@ -1000,6 +1000,18 @@ leave_team_chore:
       selector:
         text:
 
+complete_next_chore:
+  name: Complete Next Chore
+  description: >-
+    Complete the child's next outstanding chore, in the order the child card shows them. Chores that need a photo, a note, a timer or a team are skipped. Made for watch buttons and shortcuts; normal approval rules apply.
+  fields:
+    child_id:
+      name: Child ID
+      description: The ID of the child whose next chore to complete
+      required: true
+      selector:
+        text:
+
 post_bounty:
   name: Post Bounty
   description: >-

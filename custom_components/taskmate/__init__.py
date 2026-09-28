@@ -95,6 +95,7 @@ from .const import (
     SERVICE_COMPLETE_BONUS_SUBTASK,
     SERVICE_COMPLETE_BOUNTY,
     SERVICE_COMPLETE_CHORE,
+    SERVICE_COMPLETE_NEXT_CHORE,
     SERVICE_DISMISS_MANDATORY_CHORE,
     SERVICE_GIFT_POINTS,
     SERVICE_GIVE_BACK_BOUNTY,
@@ -567,6 +568,32 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             # no-ops inside the coordinator. Surface real errors as a clean
             # validation error rather than an unhandled 500 + traceback.
             raise ServiceValidationError(str(err)) from err
+
+    async def handle_complete_next_chore(call: ServiceCall) -> None:
+        """Complete the child's next outstanding chore (#978), e.g. from a watch.
+
+        "Next" is the child card's order (see watch.next_chore_for_child); chores
+        that need a photo, a note, a timer or a team are skipped. The completion
+        goes through the normal path, so approval rules apply exactly as if the
+        child had tapped it. Nothing left to do is a quiet no-op, not an error —
+        a watch button pressed once too often shouldn't raise an alert.
+        """
+        from .watch import next_chore_for_child
+
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        child_id = call.data[ATTR_CHILD_ID]
+        # The same gate as a child completing a chore for themselves.
+        await _async_require_linked_child(hass, call, coordinator, child_id)
+        if coordinator.get_child(child_id) is None:
+            raise ServiceValidationError(f"Child {child_id} not found")
+        chore = next_chore_for_child(coordinator, child_id)
+        if chore is None:
+            _LOGGER.debug("complete_next_chore: nothing left to complete for %s", child_id)
+            return
+        await coordinator.async_complete_chore(chore.id, child_id)
 
     async def handle_leave_team_chore(call: ServiceCall) -> None:
         """Take a child back out of a teamwork chore they joined (#928)."""
@@ -1284,6 +1311,13 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN,
+        SERVICE_COMPLETE_NEXT_CHORE,
+        _audited(handle_complete_next_chore),
+        schema=vol.Schema({vol.Required(ATTR_CHILD_ID): cv.string}),
+    )
+
+    hass.services.async_register(
+        DOMAIN,
         SERVICE_COMPLETE_BONUS_SUBTASK,
         _audited(handle_complete_bonus_subtask),
         schema=vol.Schema(
@@ -1952,6 +1986,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
     """Unregister TaskMate services."""
     services = [
         SERVICE_COMPLETE_CHORE,
+        SERVICE_COMPLETE_NEXT_CHORE,
         SERVICE_COMPLETE_BONUS_SUBTASK,
         SERVICE_APPROVE_CHORE,
         SERVICE_APPROVE_ALL_CHORES,
