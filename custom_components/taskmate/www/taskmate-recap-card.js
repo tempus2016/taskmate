@@ -108,6 +108,16 @@ class TaskMateRecapCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
+  // Count strings have a `<key>_singular` twin. Which form a number takes follows
+  // the language of the strings (French and Brazilian Portuguese also say "0 tâche"),
+  // not a bare `=== 1`. Intl's "pt" is Brazilian; HA's "pt" is European.
+  _tn(key, count, params) {
+    const lang = this.hass?.language === "pt" ? "pt-PT" : this.hass?.language || "en";
+    let one;
+    try { one = new Intl.PluralRules(lang).select(Number(count)) === "one"; } catch { one = Number(count) === 1; }
+    return this._t(one ? `${key}_singular` : key, params);
+  }
+
   setConfig(config) {
     this.config = {
       entity: "sensor.taskmate_overview",
@@ -456,7 +466,7 @@ class TaskMateRecapCard extends LitElement {
     return html`
       <div class="kick">${this._t("recap.slide.you_finished")}</div>
       <div class="huge">${this._num(r.chores)}</div>
-      <div class="unit">${this._t("recap.slide.chores_unit")}</div>
+      <div class="unit">${this._tn("recap.slide.chores_unit", r.chores)}</div>
       ${say ? html`<div class="say">${say}</div>` : ""}
       ${bars.length > 1 ? html`
         <div class="minibars">
@@ -492,7 +502,7 @@ class TaskMateRecapCard extends LitElement {
       <div class="kick">${this._t("recap.slide.top_chore")}</div>
       <div class="glyph"><ha-icon icon="${icon}"></ha-icon></div>
       <div class="big">${top.name}</div>
-      <div class="say"><b class="times">${this._t("recap.slide.times", { count: this._num(top.count) })}</b></div>`;
+      <div class="say"><b class="times">${this._tn("recap.slide.times", top.count, { count: this._num(top.count) })}</b></div>`;
   }
 
   _slideStreak(r) {
@@ -504,7 +514,7 @@ class TaskMateRecapCard extends LitElement {
       <div class="kick">${this._t("recap.slide.longest_streak")}</div>
       <div class="glyph round"><ha-icon icon="mdi:fire"></ha-icon></div>
       <div class="huge">${this._num(st.days)}</div>
-      <div class="unit">${this._t("recap.slide.days_in_a_row")}</div>
+      <div class="unit">${this._tn("recap.slide.days_in_a_row", st.days)}</div>
       <div class="say">${range}</div>`;
   }
 
@@ -520,7 +530,7 @@ class TaskMateRecapCard extends LitElement {
     return html`
       <div class="kick">${this._t("recap.slide.best_day")}</div>
       <div class="big">${this._fmt(best.date, { weekday: "long", day: "numeric", month: "long" })}</div>
-      <div class="say">${this._t("recap.slide.best_day_say", { chores: this._num(best.chores), points: this._num(best.points), points_name: this._pointsName() })}</div>
+      <div class="say">${this._tn("recap.slide.best_day_say", best.chores, { chores: this._num(best.chores), points: this._num(best.points), points_name: this._pointsName() })}</div>
       <div class="dow">
         ${order.map((i) => html`
           <div class="${i === top ? "hi" : ""}"><b style="height:${Math.round((dow[i] / dmax) * 50) + 4}px"></b>${this._fmt(dayIso(i), { weekday: "narrow" })}</div>`)}
@@ -581,9 +591,9 @@ class TaskMateRecapCard extends LitElement {
 
   _shareStats(r) {
     return [
-      [this._num(r.chores), this._t("recap.share.chores")],
+      [this._num(r.chores), this._tn("recap.share.chores", r.chores)],
       [this._num(r.points), this._pointsName()],
-      [this._num(r.streak?.days || 0), this._t("recap.share.streak")],
+      [this._num(r.streak?.days || 0), this._tn("recap.share.streak", r.streak?.days || 0)],
       [r.top_chore?.name || "—", this._t("recap.share.top")],
     ];
   }
@@ -631,7 +641,7 @@ class TaskMateRecapCard extends LitElement {
               <span class="ic"><ha-icon icon="${x.frequency === "weekly" ? "mdi:calendar-week" : x.frequency === "yearly" ? "mdi:trophy" : "mdi:creation"}"></ha-icon></span>
               <span class="grow">
                 <span class="t">${this._periodLabel(x)}</span>
-                <span class="s">${this._freqName(x.frequency)} · ${this._t("recap.chores_count", { count: this._num(x.chores) })} · ${this._num(x.points)} ${this._pointsName()}</span>
+                <span class="s">${this._freqName(x.frequency)} · ${this._tn("recap.chores_count", x.chores, { count: this._num(x.chores) })} · ${this._num(x.points)} ${this._pointsName()}</span>
               </span>
               ${this._isNew(x) && x.id !== this._recap?.id ? html`<span class="newdot">${this._t("recap.new")}</span>` : ""}
               <ha-icon icon="mdi:chevron-right"></ha-icon>
