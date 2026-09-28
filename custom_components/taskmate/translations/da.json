@@ -1253,7 +1253,7 @@
       },
       "child_watch": {
         "state": {
-          "left": "{count} tilbage",
+          "left": "# tilbage",
           "all_done": "Alt klaret",
           "no_chores": "Ingen pligter"
         }

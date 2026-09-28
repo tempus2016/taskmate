@@ -19,9 +19,11 @@ WATCH_STATUS_ALL_DONE = "all_done"
 WATCH_STATUS_NO_CHORES = "no_chores"
 
 # English fallback for the sensor state, used until (or if) the HA entity
-# translations for the configured language can't be loaded.
+# translations for the configured language can't be loaded. "#" stands for
+# the count: hassfest rejects {placeholders} in entity state translations.
+COUNT_TOKEN = "#"
 DEFAULT_STATE_STRINGS = {
-    "left": "{count} left",
+    "left": "# left",
     WATCH_STATUS_ALL_DONE: "All done",
     WATCH_STATUS_NO_CHORES: "No chores",
 }
@@ -126,9 +128,8 @@ def watch_state(summary: dict | None, strings: dict[str, str]) -> str | None:
         return None
     status = summary["status"]
     if status == WATCH_STATUS_TO_DO:
-        template = strings.get("left") or DEFAULT_STATE_STRINGS["left"]
-        try:
-            return template.format(count=summary["left"])
-        except (KeyError, IndexError, ValueError):
-            return DEFAULT_STATE_STRINGS["left"].format(count=summary["left"])
+        template = strings.get("left") or ""
+        if COUNT_TOKEN not in template:
+            template = DEFAULT_STATE_STRINGS["left"]
+        return template.replace(COUNT_TOKEN, str(summary["left"]), 1)
     return strings.get(status) or DEFAULT_STATE_STRINGS[status]

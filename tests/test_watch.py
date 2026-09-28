@@ -226,8 +226,9 @@ def test_summary_attributes_stay_tiny():
 
 def test_watch_state_uses_translated_template_and_survives_a_bad_one():
     summary = {"status": "to_do", "left": 2}
-    assert watch_state(summary, {"left": "Noch {count}"}) == "Noch 2"
-    assert watch_state(summary, {"left": "broken {nope}"}) == "2 left"
+    assert watch_state(summary, {"left": "Noch #"}) == "Noch 2"
+    # A translation that lost its count token falls back rather than hiding the number.
+    assert watch_state(summary, {"left": "broken"}) == "2 left"
     assert watch_state({"status": "all_done", "left": 0}, {"all_done": "Alles erledigt"}) == "Alles erledigt"
     assert watch_state(None, DEFAULT_STATE_STRINGS) is None
 
@@ -260,12 +261,12 @@ def test_state_strings_come_from_entity_translations(monkeypatch):
 
     prefix = "component.taskmate.entity.sensor.child_watch.state."
     fake = types.ModuleType("homeassistant.helpers.translation")
-    fake.async_get_translations = AsyncMock(return_value={prefix + "left": "Noch {count}", prefix + "all_done": ""})
+    fake.async_get_translations = AsyncMock(return_value={prefix + "left": "Noch #", prefix + "all_done": ""})
     monkeypatch.setitem(sys.modules, "homeassistant.helpers.translation", fake)
     hass = MagicMock()
     hass.config.language = "de"
     strings = asyncio.run(_async_watch_state_strings(hass))
-    assert strings["left"] == "Noch {count}"
+    assert strings["left"] == "Noch #"
     # Empty/missing phrases fall back to English.
     assert strings["all_done"] == "All done"
     assert strings["no_chores"] == "No chores"
@@ -282,10 +283,12 @@ def test_state_strings_fall_back_when_loading_fails(monkeypatch):
 
 
 @pytest.mark.parametrize("path", sorted(TRANSLATIONS.glob("*.json")), ids=lambda p: p.stem)
-def test_every_locale_has_a_formattable_left_phrase(path):
+def test_every_locale_has_a_count_token_and_no_placeholders(path):
     states = json.loads(path.read_text(encoding="utf-8"))["entity"]["sensor"]["child_watch"]["state"]
     assert set(states) == {"left", "all_done", "no_chores"}
-    assert "3" in states["left"].format(count=3)
+    assert states["left"].count("#") == 1
+    # hassfest rejects {placeholders} in entity state translations.
+    assert not any("{" in v for v in states.values())
 
 
 # ── the complete_next_chore service ──────────────────────────────────────────

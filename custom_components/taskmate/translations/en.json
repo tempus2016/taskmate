@@ -1253,7 +1253,7 @@
       },
       "child_watch": {
         "state": {
-          "left": "{count} left",
+          "left": "# left",
           "all_done": "All done",
           "no_chores": "No chores"
         }
