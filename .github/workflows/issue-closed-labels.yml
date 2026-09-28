@@ -1,0 +1,39 @@
+name: Tidy labels on close
+
+# Strips the in-flight status labels (planned, in-progress, …) when an issue
+# is closed, so closed issues don't keep advertising work that's finished.
+# The closed state, linked PR and milestone already say what happened; the
+# `released` label (release-labels.yml) says when it shipped. Reopening an
+# issue drops `released` since the fix no longer covers it.
+
+on:
+  issues:
+    types: [closed, reopened]
+
+permissions:
+  issues: write
+
+jobs:
+  tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issue = context.payload.issue;
+            const stale = context.payload.action === 'closed'
+              ? ['planned', 'in-progress', 'blocked', 'needs-info', 'needs-triage']
+              : ['released'];
+            const present = issue.labels.map(l => l.name).filter(n => stale.includes(n));
+
+            for (const name of present) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner, repo, issue_number: issue.number, name,
+                });
+                console.log(`Removed ${name} from #${issue.number}`);
+              } catch (err) {
+                if (err.status !== 404) throw err;
+              }
+            }
