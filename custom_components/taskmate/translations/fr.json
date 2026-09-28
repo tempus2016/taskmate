@@ -660,6 +660,16 @@
         }
       }
     },
+    "complete_next_chore": {
+      "name": "Terminer la tâche suivante",
+      "description": "Termine la prochaine tâche en attente de l'enfant, dans l'ordre affiché par la carte enfant. Les tâches qui demandent une photo, une note, un minuteur ou une équipe sont ignorées. Conçu pour les boutons et raccourcis de montre ; les règles d'approbation habituelles s'appliquent.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'ID de l'enfant dont la prochaine tâche doit être terminée"
+        }
+      }
+    },
     "post_bounty": {
       "name": "Publier une prime",
       "description": "Publier une tâche ponctuelle sur le tableau des primes pour un nombre de points fixe. Tout enfant éligible peut la réserver ; une fois faite, elle passe par la validation habituelle.",
@@ -1240,6 +1250,13 @@
       },
       "child_badges": {
         "unit_of_measurement": "badges"
+      },
+      "child_watch": {
+        "state": {
+          "left": "Encore #",
+          "all_done": "Tout est fait",
+          "no_chores": "Aucune tâche"
+        }
       }
     },
     "number": {

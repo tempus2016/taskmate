@@ -660,6 +660,16 @@
         }
       }
     },
+    "complete_next_chore": {
+      "name": "Udfør næste pligt",
+      "description": "Udfører barnets næste udestående pligt i den rækkefølge, som barnekortet viser dem. Pligter, der kræver et foto, en note, en timer eller et hold, springes over. Lavet til urknapper og genveje; de normale godkendelsesregler gælder.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på barnet, hvis næste pligt skal udføres"
+        }
+      }
+    },
     "post_bounty": {
       "name": "Udlov dusør",
       "description": "Sæt en engangsopgave op på dusørtavlen til et fast antal point. Alle børn, der må, kan tage den; når den er lavet, går den gennem den normale godkendelse.",
@@ -1240,6 +1250,13 @@
       },
       "child_badges": {
         "unit_of_measurement": "badges"
+      },
+      "child_watch": {
+        "state": {
+          "left": "# tilbage",
+          "all_done": "Alt klaret",
+          "no_chores": "Ingen pligter"
+        }
       }
     },
     "number": {

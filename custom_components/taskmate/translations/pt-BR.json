@@ -660,6 +660,16 @@
         }
       }
     },
+    "complete_next_chore": {
+      "name": "Concluir a próxima tarefa",
+      "description": "Conclui a próxima tarefa pendente da criança, na ordem mostrada no cartão da criança. Tarefas que exigem uma foto, uma nota, um cronômetro ou uma equipe são puladas. Feito para botões e atalhos do relógio; as regras normais de aprovação se aplicam.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança cuja próxima tarefa deve ser concluída"
+        }
+      }
+    },
     "post_bounty": {
       "name": "Publicar tarefa extra",
       "description": "Publique uma tarefa extra avulsa no quadro de tarefas extras por um número fixo de pontos. Qualquer criança elegível pode pegá-la; quando feita, ela passa pela aprovação normal.",
@@ -1240,6 +1250,13 @@
       },
       "child_badges": {
         "unit_of_measurement": "medalhas"
+      },
+      "child_watch": {
+        "state": {
+          "left": "Faltam #",
+          "all_done": "Tudo feito",
+          "no_chores": "Sem tarefas"
+        }
       }
     },
     "number": {
