@@ -284,6 +284,12 @@ DIFFICULTY_TIERS: Final = ("easy", "medium", "hard")
 DEFAULT_DIFFICULTY: Final = "medium"
 DEFAULT_DIFFICULTY_MULTIPLIERS: Final = {"easy": 0.5, "medium": 1.0, "hard": 2.0}
 
+# Setup wizard age groups (#980), youngest first. A child's age group only
+# decides which chores the wizard suggests; "" means none picked. It is stored
+# separately from the birthday so an age without a date never becomes a fake
+# birthday (which would set off birthday mode on the wrong day).
+AGE_GROUPS: Final = ("3_5", "6_8", "9_12", "13_plus")
+
 # --- Chore quality rating (#927) ---
 # When the "quality_rating_enabled" setting is on, a parent may rate an approval
 # 1-3 stars and the chore's base points are scaled by that star's multiplier

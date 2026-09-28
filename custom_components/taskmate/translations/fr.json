@@ -15,6 +15,9 @@
     },
     "abort": {
       "already_configured": "TaskMate est déjà configuré"
+    },
+    "create_entry": {
+      "default": "TaskMate est prêt. [Ouvrez le panneau TaskMate](/taskmate-admin) pour ajouter vos enfants avec l'assistant de configuration, qui suggère des tâches adaptées à leur âge."
     }
   },
   "selector": {

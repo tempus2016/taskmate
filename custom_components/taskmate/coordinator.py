@@ -39,6 +39,7 @@ from .coord_reports import ReportsMixin
 from .coord_rewards import RewardsMixin
 from .coord_roulette import RouletteMixin
 from .coord_scheduled import ScheduledChangesMixin
+from .coord_setup import SetupWizardMixin
 from .coord_sounds import SoundsMixin
 from .coord_tags import TagsMixin
 from .coord_teamwork import TeamworkMixin
@@ -103,6 +104,7 @@ class TaskMateCoordinator(
     AuctionsMixin,
     RecapsMixin,
     RejectionsMixin,
+    SetupWizardMixin,
     InspectionsMixin,
     DataUpdateCoordinator,
 ):
@@ -959,8 +961,14 @@ class TaskMateCoordinator(
         linked_user_id: str = "",
         birthday: str = "",
         presence_entity: str = "",
+        age_group: str = "",
+        refresh: bool = True,
     ) -> Child:
-        """Add a new child."""
+        """Add a new child.
+
+        ``refresh=False`` lets a batch (the setup wizard, #980) add several
+        children and refresh once at the end.
+        """
         child = Child(
             name=name,
             avatar=avatar,
@@ -971,20 +979,23 @@ class TaskMateCoordinator(
             linked_user_id=linked_user_id,
             birthday=birthday,
             presence_entity=presence_entity,
+            age_group=age_group,
         )
         self.storage.add_child(child)
         await self.storage.async_save()
         # A birthday entered on the day still gets its badge and celebration.
         await self.async_check_birthdays(refresh=False)
-        await self.async_refresh()
+        if refresh:
+            await self.async_refresh()
         return child
 
-    async def async_update_child(self, child: Child) -> None:
+    async def async_update_child(self, child: Child, refresh: bool = True) -> None:
         """Update a child."""
         self.storage.update_child(child)
         await self.storage.async_save()
         await self.async_check_birthdays(refresh=False)
-        await self.async_refresh()
+        if refresh:
+            await self.async_refresh()
 
     async def async_remove_child(self, child_id: str) -> None:
         """Remove a child and all associated data."""

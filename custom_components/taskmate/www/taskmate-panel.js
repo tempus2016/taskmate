@@ -160,6 +160,19 @@ const TASK_GROUP_POLICIES = [
 ];
 
 
+// Setup wizard (#980). Age groups mirror AGE_GROUP_INFO in setup_catalogue.py
+// (youngest age, oldest age) — tests/test_setup_wizard.py keeps them in step.
+const WZ_AGE_GROUPS = [["3_5", 3, 5], ["6_8", 6, 8], ["9_12", 9, 12], ["13_plus", 13, 999]];
+const WZ_STEPS = ["welcome", "children", "chores", "rewards", "review", "done"];
+const WZ_KID_ICONS = ["mdi:star", "mdi:heart", "mdi:paw", "mdi:white-balance-sunny", "mdi:weather-night", "mdi:trophy",
+  "mdi:leaf", "mdi:creation", "mdi:fire", "mdi:medal", "mdi:book-open-variant", "mdi:car-sports"];
+const WZ_KID_COLORS = ["#ff6b9d", "#3498db", "#1abc9c", "#9b59b6", "#e67e22", "#f1c40f", "#e74c3c", "#2ecc71"];
+const WZ_POINT_NAMES = [["points", "mdi:star"], ["stars", "mdi:star"], ["coins", "mdi:circle-multiple"], ["gems", "mdi:diamond-stone"]];
+const WZ_DRAFT_KEY = "taskmate-setup-draft";
+const WZ_SKIP_KEY = "taskmate-setup-skipped";
+const WZ_DASH_PATH = "family-chores";
+
+
 class TaskMatePanel extends HTMLElement {
   constructor() {
     super();
@@ -471,6 +484,7 @@ class TaskMatePanel extends HTMLElement {
     }
     this._loading = false;
     this._render();
+    this._wizardMaybeAutoOpen();
   }
 
   async _callWS(payload) {
@@ -542,6 +556,8 @@ class TaskMatePanel extends HTMLElement {
     if (this._palette && t && t.closest(".tm-pal-item")) this._palette = null;
     if (!t) { if (closedNewMenu) this._render(); return; }
     const act = t.dataset.act;
+    // Setup wizard (#980) actions all start "wz-".
+    if (act.startsWith("wz-")) { this._wizardAct(t, e); return; }
 
     if (act === "new-menu")      { this._newMenuOpen = !this._newMenuOpen; this._render(); return; }
     if (act === "palette-open")  { this._openPalette(); return; }
@@ -971,6 +987,7 @@ class TaskMatePanel extends HTMLElement {
   _onInput(e) {
     const t = e.target;
     if (!t.dataset) return;
+    if (t.dataset.wzIn) { this._wizardInput(t); return; }
     if (t.dataset.palette === "q" && this._palette) {
       this._palette.q = t.value || "";
       this._palette.hi = 0;
@@ -1239,6 +1256,12 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _onKeyDown(e) {
+    // The wizard's tick rows are role="checkbox" divs (#980).
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches('[role="checkbox"][data-act^="wz-"]')) {
+      e.preventDefault();
+      e.target.click();
+      return;
+    }
     if (e.key === "Escape") {
       if (this._rowMenuEl) { this._closeRowMenu(); return; }
       if (this._inlineRename) { this._inlineRename = null; this._render(); return; }
@@ -1875,6 +1898,7 @@ class TaskMatePanel extends HTMLElement {
         pause_streak_when_unavailable: !!c.pause_streak_when_unavailable,
         linked_user_id: c.linked_user_id || "",
         birthday: c.birthday || "",
+        age_group: c.age_group || "",
         presence_entity: c.presence_entity || "",
         // Kiosk PIN (#930): write-only. The panel only knows whether one is set.
         kiosk_pin: "", kiosk_pin_clear: false,
@@ -1886,7 +1910,7 @@ class TaskMatePanel extends HTMLElement {
         availability_inverted: false, unavailability_entity: "",
         pause_streak_when_unavailable: false,
         linked_user_id: "", presence_entity: "",
-        birthday: "",
+        birthday: "", age_group: "",
         kiosk_pin: "", kiosk_pin_clear: false, has_kiosk_pin: false,
       } });
     }
@@ -1935,13 +1959,13 @@ class TaskMatePanel extends HTMLElement {
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
-          birthday: (d.birthday || "").trim(),
+          birthday: (d.birthday || "").trim(), age_group: d.age_group || "",
           presence_entity: d.presence_entity || "" }
       : { type: "taskmate/update_child", child_id: d.id, name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
-          birthday: (d.birthday || "").trim(),
+          birthday: (d.birthday || "").trim(), age_group: d.age_group || "",
           presence_entity: d.presence_entity || "" };
     const { ok, err, res } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
@@ -3432,7 +3456,7 @@ class TaskMatePanel extends HTMLElement {
 
     if (!this._shellReady) {
       if (!this._cachedStyles) {
-        this._cachedStyles = this._styles();
+        this._cachedStyles = this._styles() + this._wizardStyles();
       }
       const existingToast = this.querySelector(".tm-toast");
       this.innerHTML = `
@@ -3673,7 +3697,7 @@ class TaskMatePanel extends HTMLElement {
     const crumb = this._sidebarGroups()
       .flatMap(g => g.items)
       .find(i => i.id === this._activeTab);
-    const crumbLabel = crumb ? crumb.label : "";
+    const crumbLabel = crumb ? crumb.label : (this._activeTab === "setup" ? this._t("wizard.title") : "");
     const pendingCount = this._state
       ? (this._state.pending_completions || []).length + (this._state.pending_reward_claims || []).length + (this._state.swap_requests || []).length
       : 0;
@@ -3840,7 +3864,7 @@ class TaskMatePanel extends HTMLElement {
     const groups = this._sidebarGroups();
     const open = !!this._mobileNavOpen;
     const current = groups.flatMap(g => g.items).find(it => it.id === this._activeTab)
-      || { id: this._activeTab, label: "", icon: "mdi:cog-outline" };
+      || { id: this._activeTab, label: this._activeTab === "setup" ? this._t("wizard.title") : "", icon: this._activeTab === "setup" ? "mdi:auto-fix" : "mdi:cog-outline" };
     const curUrgent = (current.id === "activity" || current.id === "today") && current.count > 0;
     const curShowCount = current.count != null && current.count > 0;
     return `
@@ -3931,6 +3955,7 @@ class TaskMatePanel extends HTMLElement {
       case "notifications": return this._renderNotificationsTab();
       case "audit":         return this._renderAuditTab();
       case "settings":      return this._renderSettingsTab();
+      case "setup":         return this._wizardBody();
       default:          return `<div class="tm-card">${this._t("panel.tab_unknown")}</div>`;
     }
   }
@@ -4702,7 +4727,7 @@ class TaskMatePanel extends HTMLElement {
     if ((this._state.children || []).length === 0) {
       return `
         <div class="tm-toolbar"><h2 class="tm-toolbar-title">${this._esc(greet)}</h2></div>
-        ${this._emptyState("👨‍👩‍👧‍👦", this._t("panel.empty_children_title"), this._t("panel.empty_children_copy"), "add-child", this._t("panel.btn_add_child"))}
+        ${this._wizardTodayEmpty()}
       `;
     }
 
@@ -4712,6 +4737,7 @@ class TaskMatePanel extends HTMLElement {
         <h2 class="tm-toolbar-title">${this._esc(greet)}</h2>
         <div class="tm-meta">${this._esc(dateText)} · ${needs}</div>
       </div>
+      ${this._wizardNudge()}
 
       <div class="tm-today-kids">
         ${kids.map(c => this._renderTodayKid(c, pointsName)).join("")}
@@ -4946,6 +4972,7 @@ class TaskMatePanel extends HTMLElement {
     }
     const actions = this._t("panel.palette_group_actions");
     for (const it of this._newMenuItems()) cmds.push({ group: actions, icon: it.icon, label: it.label, data: { act: it.act } });
+    cmds.push({ group: actions, icon: "mdi:auto-fix", label: this._t("wizard.run_btn"), data: { act: "wz-open" } });
     if ((s.pending_completions || []).length) {
       cmds.push({ group: actions, icon: "mdi:check-all", label: this._t("panel.activity_approve_all"), data: { act: "approve-all-chores" } });
     }
@@ -5021,6 +5048,1280 @@ class TaskMatePanel extends HTMLElement {
         </div>
       </div>
     `;
+  }
+
+  // -- Setup wizard (#980) ------------------------------------------------
+  // A guided first run: children (with a birthday, an age or an age group),
+  // chores suggested for their ages, starter rewards, then one backend call
+  // that creates the lot (taskmate/setup_wizard/apply) and, optionally, a
+  // "Family chores" dashboard. It only ever adds. The draft lives in this
+  // browser's storage until it is created, so leaving part-way loses nothing.
+
+  _wizardHasData() {
+    const s = this._state || {};
+    return (s.children || []).length + (s.chores || []).length + (s.rewards || []).length > 0;
+  }
+
+  // Opens by itself once, when the panel first loads a family with no
+  // children — unless it was skipped before in this browser.
+  _wizardMaybeAutoOpen() {
+    if (this._wzAutoChecked || !this._state) return;
+    this._wzAutoChecked = true;
+    if ((this._state.children || []).length) return;
+    if (localStorage.getItem(WZ_SKIP_KEY) === "true") return;
+    if (this._activeTab !== "today") return;
+    this._wizardOpen();
+  }
+
+  // Settings and the command search ask first when a family already exists.
+  _wizardRequestOpen() {
+    if (!this._wizardHasData()) { this._wizardOpen(); return; }
+    const s = this._state;
+    this._openDialog({ kind: "wizard-confirm", data: {
+      children: (s.children || []).length, chores: (s.chores || []).length, rewards: (s.rewards || []).length,
+    } });
+  }
+
+  async _wizardOpen(opts = {}) {
+    if (!this._wzCatalogue) {
+      const { ok, res, err } = await this._callWS({ type: "taskmate/setup_wizard/catalogue" });
+      if (!ok) { this._showToast("err", this._t("wizard.toast_load_failed", { error: err })); return; }
+      this._wzCatalogue = res;
+    }
+    if (!this._wz || this._wz.step === 5) {
+      const draft = this._wizardLoadDraft();
+      this._wz = draft || this._wizardFresh();
+    }
+    this._wizardSyncExisting();
+    if (opts.step != null) this._wz.step = opts.step;
+    localStorage.removeItem(WZ_SKIP_KEY);
+    this._activeTab = "setup";
+    this._mobileNavOpen = false;
+    this._render();
+  }
+
+  _wizardClose(toTab = "today") {
+    // A finished run leaves nothing to come back to; anything else stays as a draft.
+    if (this._wz && this._wz.step === 5) this._wz = null;
+    else this._wizardSaveDraft();
+    localStorage.setItem(WZ_SKIP_KEY, "true");
+    this._activeTab = toTab;
+    this._render();
+  }
+
+  _wizardLoadDraft() {
+    try {
+      const d = JSON.parse(localStorage.getItem(WZ_DRAFT_KEY) || "null");
+      if (!d || d.v !== 1 || !Array.isArray(d.kids)) return null;
+      d.busy = false;
+      d.result = null;
+      d.step = Math.min(Math.max(0, Number(d.step) || 0), 4);
+      return d;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  _wizardSaveDraft() {
+    const wz = this._wz;
+    if (!wz || wz.step === 5) return;
+    try {
+      const { busy: _busy, result: _result, ...keep } = wz;
+      localStorage.setItem(WZ_DRAFT_KEY, JSON.stringify(keep));
+    } catch (_) { /* storage full or blocked: the wizard still works */ }
+  }
+
+  _wizardFresh() {
+    const settings = (this._state && this._state.settings) || {};
+    const pname = settings.points_name || this._t("wizard.pname_stars");
+    const picon = settings.points_icon || "mdi:star";
+    const wz = {
+      v: 1, step: 0, seq: 1,
+      pname, picon, pnameOrig: pname, piconOrig: picon, pnameCustom: false,
+      kids: [], form: null,
+      chores: {}, packs: [], rewards: {}, custom: [], rwName: "", rwCost: 20,
+      approval: "big", dash: true, notify: true, showAll: false,
+    };
+    wz.pnameCustom = !WZ_POINT_NAMES.some(([k]) => this._t(`wizard.pname_${k}`) === pname);
+    return wz;
+  }
+
+  // Existing children join the wizard as "Already set up", so their ages can
+  // steer the suggestions. Keeps any age group the parent picked in the draft.
+  _wizardSyncExisting() {
+    const wz = this._wz;
+    const children = ((this._state && this._state.children) || []).filter(c => !c.is_guest);
+    const picked = Object.fromEntries(wz.kids.filter(k => k.existing).map(k => [k.key, k.band]));
+    const existing = children.map(c => {
+      const full = /^\d{4}-\d{2}-\d{2}$/.test(c.birthday || "");
+      return {
+        key: c.id, name: c.name, icon: c.avatar || "mdi:account-circle", color: this._childColor(c.id),
+        existing: true, mode: full ? "bday" : "none", bday: full ? c.birthday : "", age: 0,
+        band: c.age_group || picked[c.id] || "", origBand: c.age_group || "",
+      };
+    });
+    const ids = new Set(children.map(c => c.id));
+    // A draft's new child who has since been added by hand is dropped here too.
+    const names = new Set(children.map(c => (c.name || "").trim().toLowerCase()));
+    const fresh = wz.kids.filter(k => !k.existing && !ids.has(k.key) && !names.has(k.name.trim().toLowerCase()));
+    wz.kids = [...existing, ...fresh];
+    wz.mode = this._wizardHasData() ? "existing" : "fresh";
+    if (!wz.form) wz.form = this._wizardNewForm();
+    this._wizardInitChores();
+    this._wizardInitRewards();
+  }
+
+  _wizardNewForm() {
+    const used = new Set((this._wz ? this._wz.kids : []).map(k => k.color));
+    const d = new Date();
+    return {
+      name: "", mode: "bday",
+      bday: `${d.getFullYear() - 6}-${String(d.getMonth() + 1).padStart(2, "0")}-01`,
+      age: 6, band: "6_8", icon: WZ_KID_ICONS[(this._wz ? this._wz.kids.length : 0) % WZ_KID_ICONS.length],
+      color: WZ_KID_COLORS.find(c => !used.has(c)) || WZ_KID_COLORS[0],
+    };
+  }
+
+  _wizardAgeOf(kid) {
+    if (kid.mode === "bday" && /^\d{4}-\d{2}-\d{2}$/.test(kid.bday || "")) {
+      const [y, m, d] = kid.bday.split("-").map(Number);
+      const now = new Date();
+      let age = now.getFullYear() - y;
+      if (now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < d)) age--;
+      return Math.max(0, age);
+    }
+    if (kid.mode === "age") return Number(kid.age) || 0;
+    return null;
+  }
+
+  // An age maps onto its group; under-3s get the youngest group.
+  _wizardGroupForAge(age) {
+    if (age == null) return "";
+    const hit = WZ_AGE_GROUPS.find(([, lo, hi]) => age >= lo && age <= hi);
+    return hit ? hit[0] : WZ_AGE_GROUPS[0][0];
+  }
+
+  _wizardBand(kid) {
+    const age = this._wizardAgeOf(kid);
+    return age == null ? (kid.band || "") : this._wizardGroupForAge(age);
+  }
+
+  _wizardBandIdx(id) { return WZ_AGE_GROUPS.findIndex(g => g[0] === id); }
+
+  // A chore can go to children in its age group or older, never younger.
+  _wizardEligible(groupId) {
+    const gi = this._wizardBandIdx(groupId);
+    return this._wz.kids.filter(k => { const b = this._wizardBand(k); return b && this._wizardBandIdx(b) >= gi; });
+  }
+
+  _wizardChoreName(s) { return this._t(`wizard.chore.${s.id}`); }
+  _wizardRewardName(r) { return this._t(`wizard.reward.${r.id}`); }
+
+  // Built-in pack names and their chores are translated here; a key the
+  // locale lacks (a pack added later) falls back to the stored English.
+  _wizardPackName(tpl) {
+    const key = `wizard.pack.${tpl.id}.name`;
+    const t = this._t(key);
+    return t === key ? tpl.name : t;
+  }
+
+  _wizardPackChoreName(tpl, idx) {
+    const key = `wizard.pack.${tpl.id}.chore_${idx}`;
+    const t = this._t(key);
+    return t === key ? tpl.chores[idx].name : t;
+  }
+
+  _wizardPacks() {
+    return ((this._state && this._state.templates) || []).filter(t => t.builtin);
+  }
+
+  _wizardHave(list, name) {
+    const n = (name || "").trim().toLowerCase();
+    return ((this._state && this._state[list]) || []).some(x => (x.name || "").trim().toLowerCase() === n);
+  }
+
+  _wizardInitChores() {
+    const wz = this._wz;
+    const groups = {};
+    for (const s of this._wzCatalogue.chores) (groups[s.age_group] = groups[s.age_group] || []).push(s);
+    for (const [gid, list] of Object.entries(groups)) {
+      const inGroup = wz.kids.filter(k => this._wizardBand(k) === gid).map(k => k.key);
+      list.forEach((s, i) => {
+        const prev = wz.chores[s.id];
+        const keys = new Set(wz.kids.map(k => k.key));
+        if (prev && prev.touched) {
+          prev.who = prev.who.filter(k => keys.has(k));
+          if (!prev.who.length) prev.on = false;
+          return;
+        }
+        const have = this._wizardHave("chores", this._wizardChoreName(s));
+        wz.chores[s.id] = { on: inGroup.length > 0 && i < 5 && !have, pts: s.points, who: inGroup, touched: false };
+      });
+    }
+  }
+
+  _wizardInitRewards() {
+    const wz = this._wz;
+    for (const r of this._wzCatalogue.rewards) {
+      if (wz.rewards[r.id]) continue;
+      wz.rewards[r.id] = { on: !!r.picked && !this._wizardHave("rewards", this._wizardRewardName(r)), cost: r.cost };
+    }
+  }
+
+  _wizardPerWeek(s) { return Number(s.per_week) || 0; }
+
+  // A pack chore named like a ticked suggestion (or a chore the family has)
+  // is only added once.
+  _wizardPackDupe(name) {
+    const n = name.trim().toLowerCase();
+    if (this._wizardHave("chores", name)) return true;
+    return this._wzCatalogue.chores.some(s => this._wz.chores[s.id].on && this._wizardChoreName(s).trim().toLowerCase() === n);
+  }
+
+  _wizardWeekly(kid) {
+    let pts = 0, n = 0;
+    for (const s of this._wzCatalogue.chores) {
+      const c = this._wz.chores[s.id];
+      if (c.on && c.who.includes(kid.key) && !this._wizardHave("chores", this._wizardChoreName(s))) {
+        n++; pts += c.pts * this._wizardPerWeek(s);
+      }
+    }
+    for (const tpl of this._wizardPacks()) {
+      if (!this._wz.packs.includes(tpl.id)) continue;
+      (tpl.chores || []).forEach((c, i) => {
+        if (this._wizardPackDupe(this._wizardPackChoreName(tpl, i))) return;
+        n++; pts += (c.points || 0) * ((c.due_days || []).length || 7);
+      });
+    }
+    return { n, pts: Math.round(pts) };
+  }
+
+  _wizardApproval(points) {
+    const a = this._wz.approval;
+    return a === "all" || (a === "big" && points >= 4);
+  }
+
+  // Everything the Create button will send, built from the current picks.
+  _wizardPlan() {
+    const wz = this._wz;
+    const children = wz.kids.filter(k => !k.existing).map(k => ({
+      ref: k.key, name: k.name.trim(), avatar: k.icon,
+      birthday: k.mode === "bday" ? k.bday : "",
+      age_group: this._wizardBand(k),
+    }));
+    // Existing children: only fill in a missing age group, never change one.
+    const child_updates = wz.kids
+      .filter(k => k.existing && !k.origBand && this._wizardBand(k))
+      .map(k => ({ child_id: k.key, age_group: this._wizardBand(k) }));
+    const chores = [];
+    for (const s of this._wzCatalogue.chores) {
+      const c = wz.chores[s.id];
+      const name = this._wizardChoreName(s);
+      if (!c.on || !c.who.length || this._wizardHave("chores", name)) continue;
+      chores.push({
+        name, points: c.pts, icon: s.icon, assigned_to: [...c.who],
+        requires_approval: this._wizardApproval(c.pts), time_category: s.time_category, daily_limit: 1,
+        ...s.schedule,
+      });
+    }
+    for (const tpl of this._wizardPacks()) {
+      if (!wz.packs.includes(tpl.id)) continue;
+      (tpl.chores || []).forEach((c, i) => {
+        const name = this._wizardPackChoreName(tpl, i);
+        if (this._wizardPackDupe(name)) return;
+        chores.push({
+          name, points: c.points || 0, assigned_to: [],
+          requires_approval: this._wizardApproval(c.points || 0),
+          time_category: c.time_category || "anytime", daily_limit: c.daily_limit || 1,
+          schedule_mode: c.schedule_mode || "specific_days", due_days: [...(c.due_days || [])],
+        });
+      });
+    }
+    const rewards = [];
+    for (const r of this._wzCatalogue.rewards) {
+      const pick = wz.rewards[r.id];
+      const name = this._wizardRewardName(r);
+      if (pick.on && !this._wizardHave("rewards", name)) rewards.push({ name, cost: pick.cost, icon: r.icon });
+    }
+    for (const r of wz.custom) if (r.on) rewards.push({ name: r.name, cost: r.cost, icon: "mdi:gift-outline" });
+    return { children, child_updates, chores, rewards };
+  }
+
+  _wizardAddKid() {
+    const wz = this._wz;
+    const f = wz.form;
+    const name = (f.name || "").trim();
+    if (!name) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    if (f.mode === "bday" && (!/^\d{4}-\d{2}-\d{2}$/.test(f.bday || "") || f.bday > today)) {
+      this._showToast("err", this._t("wizard.toast_bad_birthday"));
+      return false;
+    }
+    if (wz.kids.some(k => k.name.trim().toLowerCase() === name.toLowerCase())) {
+      this._showToast("err", this._t("wizard.toast_child_exists", { name }));
+      return false;
+    }
+    wz.kids.push({ key: `new${wz.seq++}`, name, icon: f.icon, color: f.color, mode: f.mode,
+      bday: f.bday, age: f.age, band: f.band, existing: false });
+    wz.form = this._wizardNewForm();
+    this._wizardInitChores();
+    return true;
+  }
+
+  _wizardGo(step) {
+    const wz = this._wz;
+    if (wz.busy || step === 5) return;
+    // Leaving Children with a name typed adds that child, as the footer says.
+    if (wz.step === 1 && step > 1 && (wz.form.name || "").trim() && !this._wizardAddKid()) return;
+    if (step >= 2 && !wz.kids.length) { this._showToast("err", this._t("wizard.toast_need_child")); wz.step = 1; this._render(); return; }
+    wz.step = Math.max(0, Math.min(4, step));
+    this._wizardSaveDraft();
+    this._render();
+    const body = this.querySelector(".tm-body");
+    if (body) body.scrollTop = 0;
+  }
+
+  _wizardAct(t, e) {
+    const wz = this._wz;
+    const act = t.dataset.act;
+    const v = t.dataset.v;
+    if (act === "wz-open") { this._wizardRequestOpen(); return; }
+    if (act === "wz-open-confirmed") { this._closeDialog(true); this._wizardOpen(); return; }
+    if (act === "wz-nudge") { this._wizardNudgeAct(t.dataset.id, t.dataset.v, true); return; }
+    if (act === "wz-nudge-dismiss") { this._wizardNudgeAct(t.dataset.id, t.dataset.v, false); return; }
+    if (!wz) return;
+    if (wz.busy && act !== "wz-noop") return;
+    const f = wz.form;
+    switch (act) {
+      case "wz-close": this._wizardClose(); return;
+      case "wz-today": this._wz = null; this._activeTab = "today"; this._render(); return;
+      case "wz-restore": this._wizardClose("settings"); return;
+      case "wz-dashboard":
+        history.pushState(null, "", `/${WZ_DASH_PATH}`);
+        window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+        return;
+      case "wz-go": this._wizardGo(Number(v)); return;
+      case "wz-next": this._wizardGo(wz.step + 1); return;
+      case "wz-back": this._wizardGo(wz.step - 1); return;
+      case "wz-create": this._wizardCreate(); return;
+      case "wz-pname":
+        wz.pnameCustom = v === "custom";
+        if (!wz.pnameCustom) {
+          const hit = WZ_POINT_NAMES.find(([k]) => k === v);
+          wz.pname = this._t(`wizard.pname_${v}`);
+          wz.picon = hit ? hit[1] : wz.picon;
+        }
+        break;
+      case "wz-fmode": f.mode = v; break;
+      case "wz-fage": f.age = Math.max(2, Math.min(18, (Number(f.age) || 0) + Number(t.dataset.d))); break;
+      case "wz-fband": f.band = v; break;
+      case "wz-ficon": f.icon = v; break;
+      case "wz-fcolor": f.color = v; break;
+      case "wz-add-kid": this._wizardAddKid(); break;
+      case "wz-edit-kid": {
+        const k = wz.kids.find(x => x.key === t.dataset.id);
+        if (!k || k.existing) return;
+        wz.kids = wz.kids.filter(x => x !== k);
+        wz.form = { name: k.name, mode: k.mode, bday: k.bday, age: k.age, band: k.band || "6_8", icon: k.icon, color: k.color };
+        this._wizardInitChores();
+        break;
+      }
+      case "wz-del-kid":
+        wz.kids = wz.kids.filter(k => k.existing || k.key !== t.dataset.id);
+        this._wizardInitChores();
+        break;
+      case "wz-kband": {
+        const k = wz.kids.find(x => x.key === t.dataset.id);
+        if (k && k.existing && !k.origBand) { k.band = v; this._wizardInitChores(); }
+        break;
+      }
+      case "wz-sg": {
+        const c = wz.chores[t.dataset.id];
+        const s = this._wzCatalogue.chores.find(x => x.id === t.dataset.id);
+        if (!c || !s) return;
+        if (!c.on && !c.who.length) c.who = this._wizardEligible(s.age_group).map(k => k.key);
+        if (!c.who.length) return;
+        c.on = !c.on; c.touched = true;
+        break;
+      }
+      case "wz-sg-who": {
+        e.stopPropagation();
+        const c = wz.chores[t.dataset.id];
+        if (!c) return;
+        const i = c.who.indexOf(t.dataset.k);
+        if (i >= 0) c.who.splice(i, 1); else c.who.push(t.dataset.k);
+        c.touched = true;
+        // Nobody left means nobody would get it (and an empty list is "everyone").
+        c.on = c.who.length > 0;
+        break;
+      }
+      case "wz-sg-pts": {
+        e.stopPropagation();
+        const c = wz.chores[t.dataset.id];
+        if (!c) return;
+        c.pts = Math.max(1, Math.min(100, c.pts + Number(t.dataset.d)));
+        c.touched = true;
+        break;
+      }
+      case "wz-band-all": {
+        const list = this._wzCatalogue.chores.filter(s => s.age_group === v && !this._wizardHave("chores", this._wizardChoreName(s)));
+        const el = this._wizardEligible(v).map(k => k.key);
+        const all = list.every(s => wz.chores[s.id].on);
+        for (const s of list) {
+          const c = wz.chores[s.id];
+          if (!all && !c.who.length) c.who = [...el];
+          c.on = !all && c.who.length > 0;
+          c.touched = true;
+        }
+        break;
+      }
+      case "wz-show-all": wz.showAll = true; break;
+      case "wz-pack":
+        wz.packs = wz.packs.includes(v) ? wz.packs.filter(p => p !== v) : [...wz.packs, v];
+        break;
+      case "wz-rw": {
+        const r = wz.rewards[t.dataset.id];
+        if (r) r.on = !r.on;
+        break;
+      }
+      case "wz-rw-cost": {
+        e.stopPropagation();
+        const r = wz.rewards[t.dataset.id] || wz.custom.find(x => x.key === t.dataset.id);
+        if (r) r.cost = Math.max(5, Math.min(100000, r.cost + Number(t.dataset.d)));
+        break;
+      }
+      case "wz-rw-custom-toggle": {
+        const r = wz.custom.find(x => x.key === t.dataset.id);
+        if (r) r.on = !r.on;
+        break;
+      }
+      case "wz-rw-add": {
+        const name = (wz.rwName || "").trim();
+        if (!name) return;
+        wz.custom.push({ key: `rw${wz.seq++}`, name, cost: Math.max(0, Math.round(Number(wz.rwCost) || 0)), on: true });
+        wz.rwName = ""; wz.rwCost = 20;
+        break;
+      }
+      case "wz-appr": wz.approval = v; break;
+      case "wz-dash": wz.dash = !wz.dash; break;
+      case "wz-notify": wz.notify = !wz.notify; break;
+      default: return;
+    }
+    this._wizardSaveDraft();
+    this._render();
+  }
+
+  // Typing must not rebuild the page (it would steal the focus), so inputs
+  // update the draft and patch only what shows the value.
+  _wizardInput(t) {
+    const wz = this._wz;
+    if (!wz) return;
+    const key = t.dataset.wzIn;
+    if (key === "pname") { wz.pname = t.value; }
+    else if (key === "rw-name") { wz.rwName = t.value; }
+    else if (key === "rw-cost") { wz.rwCost = t.value; }
+    else if (key === "name") {
+      wz.form.name = t.value;
+      const label = this._t("wizard.add_named", { name: t.value.trim() || this._t("wizard.child_word") });
+      this.querySelectorAll('[data-act="wz-add-kid"]').forEach(b => { b.disabled = !t.value.trim(); b.lastElementChild.textContent = label; });
+      this.querySelectorAll(".tm-wz-mini-name").forEach(el => { el.textContent = t.value.trim() || this._t("wizard.new_child"); });
+      const hint = this.querySelector(".tm-wz-foot-hint");
+      if (hint) hint.textContent = t.value.trim() ? this._t("wizard.foot_will_add", { name: t.value.trim() }) : "";
+    } else if (key === "bday") {
+      wz.form.bday = t.value;
+      const age = this._wizardAgeOf({ mode: "bday", bday: t.value });
+      const text = age != null ? this._t("wizard.age_n", { age }) : "";
+      this.querySelectorAll(".tm-wz-age-now").forEach(el => { el.textContent = text; });
+      this.querySelectorAll(".tm-wz-add .tm-wz-mini-sub").forEach(el => { el.textContent = text || this._t("wizard.ready_for_chores"); });
+    }
+    this._wizardSaveDraft();
+  }
+
+  async _wizardCreate() {
+    const wz = this._wz;
+    if (wz.busy) return;
+    const plan = this._wizardPlan();
+    wz.busy = true;
+    this._render();
+    const { ok, res, err } = await this._callWS({ type: "taskmate/setup_wizard/apply", ...plan });
+    if (!ok) {
+      wz.busy = false;
+      this._render();
+      this._showToast("err", this._t("wizard.toast_create_failed", { error: err }));
+      return;
+    }
+    // The points name is only touched when it was changed on the Welcome step.
+    const pname = (wz.pname || "").trim();
+    if (pname && (pname !== wz.pnameOrig || wz.picon !== wz.piconOrig)) {
+      await this._callWS({ type: "taskmate/update_settings", points_name: pname.slice(0, 120), points_icon: wz.picon });
+    }
+    if (wz.notify) await this._wizardEnableApprovalAlerts();
+    let dashboard = "off";
+    if (wz.dash) dashboard = await this._wizardCreateDashboard(res.children || {});
+    wz.result = { ...res, dashboard };
+    wz.busy = false;
+    wz.step = 5;
+    localStorage.removeItem(WZ_DRAFT_KEY);
+    await this._fetchState();
+  }
+
+  // "Tell me when something needs approving": turn the two approval alerts on
+  // if they were off. Never turns anything off.
+  async _wizardEnableApprovalAlerts() {
+    const cfg = (this._notifState && this._notifState.config) || {};
+    for (const typeId of ["pending_chore_approval", "pending_reward_claim"]) {
+      if (cfg[typeId] && cfg[typeId].master_enabled) continue;
+      await this._callWS({ type: "taskmate/notifications/set_master_enabled", type_id: typeId, enabled: true });
+    }
+  }
+
+  _wizardOverviewEntity() {
+    const states = (this._hass && this._hass.states) || {};
+    if (states["sensor.taskmate_overview"]) return "sensor.taskmate_overview";
+    const hit = Object.keys(states).find(id => {
+      const a = id.startsWith("sensor.") && states[id].attributes;
+      return a && a.points_name !== undefined && Array.isArray(a.children);
+    });
+    return hit || "sensor.taskmate_overview";
+  }
+
+  // A "Family chores" dashboard: one child card per child plus the rewards
+  // card. Created only when the url is free — an existing dashboard (or any
+  // panel on that path) is never touched.
+  async _wizardCreateDashboard(refToId) {
+    if (this._hass && this._hass.panels && this._hass.panels[WZ_DASH_PATH]) return "exists";
+    const list = await this._callWS({ type: "lovelace/dashboards/list" });
+    if (!list.ok) return "failed";
+    if ((list.res || []).some(d => d.url_path === WZ_DASH_PATH)) return "exists";
+    const title = this._t("wizard.dash_title");
+    const created = await this._callWS({
+      type: "lovelace/dashboards/create", url_path: WZ_DASH_PATH, title,
+      icon: "mdi:checkbox-marked-circle-plus-outline", mode: "storage", show_in_sidebar: true, require_admin: false,
+    });
+    if (!created.ok) return "failed";
+    const entity = this._wizardOverviewEntity();
+    const cards = this._wz.kids.map(k => ({
+      type: "custom:taskmate-child-card", entity, child_id: refToId[k.key] || k.key,
+      time_category: "all", header_color: k.color,
+    }));
+    cards.push({ type: "custom:taskmate-rewards-card", entity });
+    const saved = await this._callWS({
+      type: "lovelace/config/save", url_path: WZ_DASH_PATH,
+      config: { title, views: [{ title, path: "chores", icon: "mdi:checkbox-marked-circle-outline", cards }] },
+    });
+    return saved.ok ? "created" : "failed";
+  }
+
+  // "Vaiha is 9 now — see new chore ideas" (#980): suggestions never move up
+  // by themselves. Shown once per step up: either button records the new group.
+  _wizardNudgeKid() {
+    for (const c of (this._state && this._state.children) || []) {
+      if (!c.age_group || !/^\d{4}-\d{2}-\d{2}$/.test(c.birthday || "")) continue;
+      const kid = { mode: "bday", bday: c.birthday };
+      const now = this._wizardBand(kid);
+      if (this._wizardBandIdx(now) > this._wizardBandIdx(c.age_group)) return { child: c, age: this._wizardAgeOf(kid), group: now };
+    }
+    return null;
+  }
+
+  _wizardNudge() {
+    const hit = this._wizardNudgeKid();
+    if (!hit) return "";
+    const id = this._esc(hit.child.id);
+    return `
+      <div class="tm-wz-nudge" style="--kc:${this._childColor(hit.child.id)}">
+        ${this._childAvatar(hit.child)}
+        <span class="tm-wz-nudge-text">${this._t("wizard.nudge_text", { name: `<strong>${this._esc(hit.child.name)}</strong>`, age: hit.age })}</span>
+        <button type="button" class="tm-btn tm-btn-sm tm-btn-raised" data-act="wz-nudge" data-id="${id}" data-v="${hit.group}">
+          <ha-icon icon="mdi:auto-fix"></ha-icon>${this._t("wizard.nudge_btn")}
+        </button>
+        <button type="button" class="tm-icon-btn" data-act="wz-nudge-dismiss" data-id="${id}" data-v="${hit.group}" title="${this._esc(this._t("wizard.nudge_dismiss"))}" aria-label="${this._esc(this._t("wizard.nudge_dismiss"))}">
+          <ha-icon icon="mdi:close"></ha-icon>
+        </button>
+      </div>`;
+  }
+
+  async _wizardNudgeAct(childId, group, open) {
+    const { ok, err } = await this._callWS({ type: "taskmate/update_child", child_id: childId, age_group: group });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    await this._fetchState();
+    if (open) await this._wizardOpen({ step: 2 });
+  }
+
+  // ---- wizard rendering ----
+  _wizardKav(kid, size = 44, off = false) {
+    return `<span class="tm-wz-kav ${off ? "tm-wz-kav-off" : ""}" style="--kc:${this._esc(kid.color)};--s:${size}px" title="${this._esc(kid.name)}"><ha-icon icon="${this._esc(kid.icon)}"></ha-icon></span>`;
+  }
+
+  _wizardUnit(n) {
+    return `<span class="tm-wz-unit">${this._fmtNum(n)}<ha-icon icon="${this._esc(this._wz.picon || "mdi:star")}"></ha-icon></span>`;
+  }
+
+  _wizardGroupLabel(id) { return this._t(`wizard.age_group.${id}`); }
+
+  _wizardFreqLabel(s) {
+    const time = this._t(`panel.time_${s.time_category}`);
+    let freq;
+    if (s.frequency === "days") freq = s.days.map(d => this._labelOf(DAYS, d)).join(", ");
+    else freq = this._t(`wizard.freq_${s.frequency}`);
+    return `${freq} · ${time}`;
+  }
+
+  _wizardBody() {
+    const wz = this._wz;
+    if (!wz || !this._wzCatalogue) {
+      return this._emptyState("🪄", this._t("wizard.title"), this._t("wizard.intro_existing"), "wz-open", this._t("wizard.run_btn"));
+    }
+    const step = wz.step;
+    const last = step === 5;
+    const steps = WZ_STEPS.map((id, i) => `
+      ${i ? `<i class="tm-wz-sep ${i <= step ? "tm-wz-done" : ""}"></i>` : ""}
+      <button type="button" class="tm-wz-step ${i === step ? "tm-wz-on" : i < step ? "tm-wz-done" : ""}" data-act="wz-go" data-v="${i}" ${last || i === 5 ? "disabled" : ""} ${i === step ? 'aria-current="step"' : ""}>
+        <span class="tm-wz-n">${i < step ? `<ha-icon icon="mdi:check"></ha-icon>` : i + 1}</span><span class="tm-wz-l">${this._t(`wizard.step_${id}`)}</span>
+      </button>`).join("");
+    const nextKey = ["wizard.next_welcome", "wizard.next_children", "wizard.next_chores", "wizard.next_rewards"][step];
+    const body = [
+      () => this._wizardStepWelcome(), () => this._wizardStepChildren(), () => this._wizardStepChores(),
+      () => this._wizardStepRewards(), () => this._wizardStepReview(), () => this._wizardStepDone(),
+    ][step]();
+    const typed = step === 1 && (wz.form.name || "").trim();
+    return `
+      <div class="tm-wz">
+        <div class="tm-wz-box">
+          <div class="tm-wz-top">
+            <span class="tm-wz-title"><ha-icon icon="mdi:auto-fix"></ha-icon>${this._t("wizard.title")}</span>
+            ${last ? "" : `<button type="button" class="tm-icon-btn tm-wz-x" data-act="wz-close" title="${this._esc(this._t("wizard.close_hint"))}" aria-label="${this._esc(this._t("wizard.close_hint"))}"><ha-icon icon="mdi:close"></ha-icon></button>`}
+          </div>
+          <nav class="tm-wz-steps" aria-label="${this._esc(this._t("wizard.title"))}">
+            ${steps}
+            <span class="tm-wz-mlabel">${this._t("wizard.step_of", { n: step + 1, total: WZ_STEPS.length, name: this._t(`wizard.step_${WZ_STEPS[step]}`) })}</span>
+          </nav>
+          <div class="tm-wz-body">${body}</div>
+          ${last ? "" : `
+            <div class="tm-wz-foot">
+              ${step
+                ? `<button type="button" class="tm-btn" data-act="wz-back" ${wz.busy ? "disabled" : ""}><ha-icon class="tm-rtl-flip" icon="mdi:chevron-left"></ha-icon>${this._t("wizard.back")}</button>`
+                : `<button type="button" class="tm-btn tm-wz-text-btn" data-act="wz-close">${this._t("wizard.skip")}</button>`}
+              <span class="tm-wz-sp"></span>
+              ${step === 0 && wz.mode === "fresh" ? `<button type="button" class="tm-btn tm-wz-text-btn" data-act="wz-restore">${this._t("wizard.restore")}</button>` : ""}
+              ${step === 1 ? `<span class="tm-wz-foot-hint">${typed ? this._esc(this._t("wizard.foot_will_add", { name: typed })) : ""}</span>` : ""}
+              ${step === 4
+                ? `<button type="button" class="tm-btn tm-btn-raised tm-wz-create" data-act="wz-create" ${wz.busy ? "disabled" : ""}>${wz.busy ? `<span class="tm-btn-spinner"></span>${this._t("wizard.creating")}` : this._t(wz.mode === "existing" ? "wizard.create_existing" : "wizard.create")}</button>`
+                : `<button type="button" class="tm-btn tm-btn-raised" data-act="wz-next">${this._t(nextKey)}<ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon></button>`}
+            </div>`}
+        </div>
+      </div>`;
+  }
+
+  _wizardStepWelcome() {
+    const wz = this._wz;
+    const ex = wz.mode === "existing";
+    const s = this._state;
+    const tiles = [
+      ["mdi:account-multiple", "#3498db", "children"],
+      ["mdi:check-circle-outline", "#2ecc71", "chores"],
+      ["mdi:gift-outline", "#9b59b6", "rewards"],
+    ];
+    return `
+      ${ex ? `<div class="tm-wz-banner"><ha-icon icon="mdi:information-outline"></ha-icon><div>${this._t("wizard.existing_banner", {
+        children: this._wizardCount("children", (s.children || []).length),
+        chores: this._wizardCount("chores", (s.chores || []).length),
+        rewards: this._wizardCount("rewards", (s.rewards || []).length) })}</div></div>` : ""}
+      <div class="tm-wz-hero">
+        <span class="tm-wz-hero-ic"><ha-icon icon="mdi:auto-fix"></ha-icon></span>
+        <div>
+          <h2 class="tm-wz-h">${this._t(ex ? "wizard.welcome_title_existing" : "wizard.welcome_title")}</h2>
+          <p class="tm-wz-p tm-wz-p0">${this._t(ex ? "wizard.welcome_copy_existing" : "wizard.welcome_copy")}</p>
+        </div>
+      </div>
+      <div class="tm-wz-tiles">
+        ${tiles.map(([icon, color, id], i) => `
+          <div class="tm-wz-tile"><span class="tm-wz-tile-ic" style="--c:${color}"><ha-icon icon="${icon}"></ha-icon></span>
+            <div><b>${i + 1} · ${this._t(`wizard.step_${id}`)}</b><span>${this._t(`wizard.tile_${id}`)}</span></div></div>`).join("")}
+      </div>
+      <div class="tm-wz-lbl tm-wz-lbl-lg">${this._t("wizard.pname_question")}</div>
+      <div class="tm-chip-row">
+        ${WZ_POINT_NAMES.map(([k, icon]) => {
+          const on = !wz.pnameCustom && wz.pname === this._t(`wizard.pname_${k}`);
+          return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" data-act="wz-pname" data-v="${k}" aria-pressed="${on}"><ha-icon icon="${icon}"></ha-icon>${this._t(`wizard.pname_${k}`)}</button>`;
+        }).join("")}
+        <button type="button" class="tm-chip-btn ${wz.pnameCustom ? "tm-chip-on" : ""}" data-act="wz-pname" data-v="custom" aria-pressed="${wz.pnameCustom}"><ha-icon icon="mdi:pencil-outline"></ha-icon>${this._t("wizard.pname_custom")}</button>
+      </div>
+      ${wz.pnameCustom ? `<input type="text" class="tm-input tm-wz-pname" data-wz-in="pname" maxlength="120" value="${this._esc(wz.pname)}" aria-label="${this._esc(this._t("wizard.pname_question"))}">` : ""}
+      <p class="tm-wz-hint">${this._t("wizard.pname_hint")}</p>`;
+  }
+
+  _wizardKidMeta(k) {
+    const bits = [];
+    const age = this._wizardAgeOf(k);
+    if (k.mode === "bday" && age != null) {
+      const [y, m, d] = k.bday.split("-").map(Number);
+      const when = new Date(y, m - 1, d).toLocaleDateString([], { day: "numeric", month: "long", year: "numeric" });
+      bits.push(`<span><ha-icon icon="mdi:cake-variant-outline"></ha-icon>${this._esc(when)} · ${this._t("wizard.age_n", { age })}</span>`);
+    } else if (k.mode === "age" && age != null) {
+      bits.push(`<span>${this._t("wizard.age_n", { age })}</span>`);
+    }
+    const band = this._wizardBand(k);
+    if (band) {
+      const g = this._wzCatalogue.age_groups.find(x => x.id === band) || {};
+      bits.push(`<span class="tm-wz-tag" style="--c:${this._esc(g.color || "#888")}">${this._t("wizard.group_chores", { group: this._wizardGroupLabel(band) })}</span>`);
+    }
+    return bits.join(`<span class="tm-wz-faint">·</span>`);
+  }
+
+  _wizardStepChildren() {
+    const wz = this._wz;
+    const f = wz.form;
+    const preview = { mode: f.mode, bday: f.bday, age: f.age };
+    const pa = this._wizardAgeOf(preview);
+    const groups = this._wzCatalogue.age_groups;
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = wz.kids.map(k => {
+      const needsBand = k.existing && !this._wizardBand(k);
+      const bandPick = k.existing && !k.origBand && k.mode !== "bday";
+      return `
+        <div class="tm-wz-kid">
+          ${this._wizardKav(k)}
+          <div class="tm-wz-grow">
+            <div class="tm-wz-kid-name">${this._esc(k.name)}${k.existing ? `<span class="tm-pill tm-pill-success">${this._t("wizard.already_set_up")}</span>` : ""}</div>
+            <div class="tm-wz-kid-meta">${needsBand ? `<span class="tm-wz-warn"><ha-icon icon="mdi:information-outline"></ha-icon>${this._t("wizard.no_age_yet")}</span>` : this._wizardKidMeta(k)}</div>
+            ${bandPick ? `<div class="tm-chip-row tm-wz-bandpick">${groups.map(g => `<button type="button" class="tm-chip-btn ${k.band === g.id ? "tm-chip-on" : ""}" data-act="wz-kband" data-id="${this._esc(k.key)}" data-v="${g.id}">${this._wizardGroupLabel(g.id)}</button>`).join("")}</div>` : ""}
+          </div>
+          ${k.existing ? "" : `
+            <button type="button" class="tm-icon-btn" data-act="wz-edit-kid" data-id="${this._esc(k.key)}" title="${this._esc(this._t("panel.btn_edit"))}" aria-label="${this._esc(this._t("panel.btn_edit"))}"><ha-icon icon="mdi:pencil-outline"></ha-icon></button>
+            <button type="button" class="tm-icon-btn" data-act="wz-del-kid" data-id="${this._esc(k.key)}" title="${this._esc(this._t("wizard.remove"))}" aria-label="${this._esc(this._t("wizard.remove"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>`}
+        </div>`;
+    }).join("");
+    const modes = [["bday", "wizard.age_mode_bday"], ["age", "wizard.age_mode_age"], ["none", "wizard.age_mode_none"]];
+    let ageCtl;
+    if (f.mode === "bday") {
+      ageCtl = `<div class="tm-wz-inline"><input type="date" class="tm-input tm-wz-date" data-wz-in="bday" max="${today}" value="${this._esc(f.bday)}" aria-label="${this._esc(this._t("wizard.age_mode_bday"))}">
+        <span class="tm-meta tm-wz-age-now">${pa != null ? this._t("wizard.age_n", { age: pa }) : ""}</span></div>
+        <p class="tm-wz-hint">${this._t("wizard.bday_hint")}</p>`;
+    } else if (f.mode === "age") {
+      ageCtl = `<div class="tm-wz-stepper"><button type="button" data-act="wz-fage" data-d="-1" aria-label="−">−</button><span>${this._num(f.age)}</span><button type="button" data-act="wz-fage" data-d="1" aria-label="+">+</button></div>`;
+    } else {
+      ageCtl = `<div class="tm-chip-row">${groups.map(g => `<button type="button" class="tm-chip-btn ${f.band === g.id ? "tm-chip-on" : ""}" data-act="wz-fband" data-v="${g.id}">${this._wizardGroupLabel(g.id)}</button>`).join("")}</div>
+        <p class="tm-wz-hint">${this._t("wizard.group_hint")}</p>`;
+    }
+    const typed = (f.name || "").trim();
+    return `
+      <h2 class="tm-wz-h">${this._t("wizard.children_title")}</h2>
+      <p class="tm-wz-p">${this._t("wizard.children_copy")}</p>
+      ${rows ? `<div class="tm-wz-kids">${rows}</div>` : ""}
+      <div class="tm-wz-add" style="--kc:${this._esc(f.color)}">
+        <div>
+          <h4><ha-icon icon="mdi:plus"></ha-icon>${this._t("wizard.add_child")}</h4>
+          <label class="tm-wz-lbl" for="tm-wz-name">${this._t("wizard.name")}</label>
+          <input id="tm-wz-name" type="text" class="tm-input tm-wz-full" data-wz-in="name" maxlength="120" placeholder="${this._esc(this._t("wizard.name_placeholder"))}" value="${this._esc(f.name)}">
+          <div class="tm-wz-lbl">${this._t("wizard.age")}</div>
+          <div class="tm-seg tm-wz-seg" role="tablist">${modes.map(([m, key]) => `<button type="button" role="tab" class="${f.mode === m ? "tm-seg-on" : ""}" aria-selected="${f.mode === m}" data-act="wz-fmode" data-v="${m}">${this._t(key)}</button>`).join("")}</div>
+          <div class="tm-wz-agectl">${ageCtl}</div>
+          <div class="tm-wz-lbl">${this._t("wizard.avatar")}</div>
+          <div class="tm-wz-icons">${WZ_KID_ICONS.map(ic => `<button type="button" class="${f.icon === ic ? "tm-wz-on" : ""}" data-act="wz-ficon" data-v="${ic}" aria-pressed="${f.icon === ic}"><ha-icon icon="${ic}"></ha-icon></button>`).join("")}</div>
+          <div class="tm-wz-lbl">${this._t("wizard.colour")}</div>
+          <div class="tm-wz-swatches">${WZ_KID_COLORS.map(c => `<button type="button" class="${f.color === c ? "tm-wz-on" : ""}" style="background:${c}" data-act="wz-fcolor" data-v="${c}" aria-pressed="${f.color === c}" aria-label="${c}"></button>`).join("")}</div>
+          <button type="button" class="tm-btn tm-btn-raised tm-wz-addbtn" data-act="wz-add-kid" ${typed ? "" : "disabled"}><ha-icon icon="mdi:plus"></ha-icon><span>${this._esc(this._t("wizard.add_named", { name: typed || this._t("wizard.child_word") }))}</span></button>
+        </div>
+        <div>
+          <div class="tm-wz-lbl tm-wz-lbl-top">${this._t("wizard.preview")}</div>
+          <div class="tm-wz-mini" style="--hd:${this._esc(f.color)}">
+            <div class="tm-wz-mini-head">
+              <span class="tm-wz-mini-av"><ha-icon icon="${this._esc(f.icon)}"></ha-icon></span>
+              <div class="tm-wz-grow"><div class="tm-wz-mini-name">${this._esc(typed || this._t("wizard.new_child"))}</div>
+                <div class="tm-wz-mini-sub">${pa != null ? this._t("wizard.age_n", { age: pa }) : this._t("wizard.ready_for_chores")}</div></div>
+              <span class="tm-wz-mini-pts"><ha-icon icon="${this._esc(wz.picon)}"></ha-icon>0</span>
+            </div>
+            <div class="tm-wz-mini-body">
+              <div class="tm-wz-mini-row"><ha-icon icon="mdi:check"></ha-icon>${this._t("wizard.preview_chores")}</div>
+              <div class="tm-wz-mini-row tm-wz-dim"><ha-icon icon="mdi:gift-outline"></ha-icon>${this._t("wizard.preview_rewards")}</div>
+            </div>
+          </div>
+          <p class="tm-wz-hint">${this._t("wizard.preview_hint")}</p>
+        </div>
+      </div>`;
+  }
+
+  _wizardSuggestionRow(g, s) {
+    const c = this._wz.chores[s.id];
+    const name = this._wizardChoreName(s);
+    if (this._wizardHave("chores", name)) {
+      return `<div class="tm-wz-sg tm-wz-have" style="--bc:${this._esc(g.color)}"><span class="tm-wz-cbx"><ha-icon icon="mdi:check"></ha-icon></span>
+        <span class="tm-wz-ic"><ha-icon icon="${this._esc(s.icon)}"></ha-icon></span>
+        <div class="tm-wz-nm"><b>${this._esc(name)}</b><small>${this._t("wizard.have_chore")}</small></div>
+        <span class="tm-wz-who"></span><span class="tm-wz-pts"><span class="tm-pill tm-pill-success">${this._t("wizard.already_have")}</span></span></div>`;
+    }
+    const el = this._wizardEligible(g.id);
+    return `
+      <div class="tm-wz-sg ${c.on ? "tm-wz-on" : ""} ${el.length ? "" : "tm-wz-have"}" style="--bc:${this._esc(g.color)}" data-act="wz-sg" data-id="${s.id}" role="checkbox" aria-checked="${c.on}" tabindex="0">
+        <span class="tm-wz-cbx"><ha-icon icon="mdi:check"></ha-icon></span>
+        <span class="tm-wz-ic"><ha-icon icon="${this._esc(s.icon)}"></ha-icon></span>
+        <div class="tm-wz-nm"><b>${this._esc(name)}</b><small>${el.length ? this._esc(this._wizardFreqLabel(s)) : this._t("wizard.nobody_old_enough")}</small></div>
+        <span class="tm-wz-who">${el.map(k => `<button type="button" data-act="wz-sg-who" data-id="${s.id}" data-k="${this._esc(k.key)}" aria-pressed="${c.who.includes(k.key)}" title="${this._esc(k.name)}">${this._wizardKav(k, 26, !c.who.includes(k.key))}</button>`).join("")}</span>
+        <span class="tm-wz-pts"><span class="tm-wz-mstep"><button type="button" data-act="wz-sg-pts" data-id="${s.id}" data-d="-1" aria-label="−">−</button><span>${this._wizardUnit(c.pts)}</span><button type="button" data-act="wz-sg-pts" data-id="${s.id}" data-d="1" aria-label="+">+</button></span></span>
+      </div>`;
+  }
+
+  _wizardStepChores() {
+    const wz = this._wz;
+    const withKids = new Set(wz.kids.map(k => this._wizardBand(k)).filter(Boolean));
+    const bands = this._wzCatalogue.age_groups.map(g => {
+      const list = this._wzCatalogue.chores.filter(s => s.age_group === g.id);
+      const kids = wz.kids.filter(k => this._wizardBand(k) === g.id);
+      const open = withKids.has(g.id) || wz.showAll;
+      const pickable = list.filter(s => !this._wizardHave("chores", this._wizardChoreName(s)));
+      const onN = list.filter(s => wz.chores[s.id].on).length;
+      const allOn = pickable.length > 0 && pickable.every(s => wz.chores[s.id].on);
+      return `
+        <section class="tm-wz-band ${open ? "" : "tm-wz-band-empty"}">
+          <div class="tm-wz-band-h">
+            <span class="tm-wz-band-ic" style="background:${this._esc(g.color)}"><ha-icon icon="${this._esc(g.icon)}"></ha-icon></span>
+            <div class="tm-wz-grow">
+              <div class="tm-wz-band-age">${this._wizardGroupLabel(g.id)}${kids.length ? `<span class="tm-wz-stack">${kids.map(k => this._wizardKav(k, 22)).join("")}</span>` : ""}</div>
+              <div class="tm-wz-band-sub">${open ? this._t(`wizard.age_group_sub.${g.id}`) : this._t("wizard.nobody_in_group")}</div>
+            </div>
+            ${open
+              ? `<span class="tm-pill ${onN ? "tm-pill-accent" : ""}">${this._t("wizard.picked_n", { count: onN })}</span>
+                 ${this._wizardEligible(g.id).length ? `<button type="button" class="tm-wz-lnk" data-act="wz-band-all" data-v="${g.id}">${this._t(allOn ? "wizard.clear" : "wizard.pick_all")}</button>` : ""}`
+              : `<button type="button" class="tm-wz-lnk" data-act="wz-show-all">${this._t("wizard.show_anyway")}</button>`}
+          </div>
+          ${open ? list.map(s => this._wizardSuggestionRow(g, s)).join("") : ""}
+        </section>`;
+    }).join("");
+    const packs = this._wizardPacks();
+    const packBands = packs.filter(p => wz.packs.includes(p.id)).map(p => `
+      <section class="tm-wz-band">
+        <div class="tm-wz-band-h">
+          <span class="tm-wz-band-ic" style="background:var(--tm-accent)"><ha-icon icon="${this._esc(p.icon || "mdi:clipboard-list")}"></ha-icon></span>
+          <div class="tm-wz-grow"><div class="tm-wz-band-age">${this._esc(this._wizardPackName(p))}<span class="tm-pill">${this._t("wizard.template_pack")}</span></div>
+            <div class="tm-wz-band-sub">${this._t("wizard.pack_sub")}</div></div>
+          <button type="button" class="tm-wz-lnk" data-act="wz-pack" data-v="${this._esc(p.id)}">${this._t("wizard.remove")}</button>
+        </div>
+        ${(p.chores || []).map((c, i) => {
+          const name = this._wizardPackChoreName(p, i);
+          const dupe = this._wizardPackDupe(name);
+          const days = (c.due_days || []).length ? c.due_days.map(d => this._labelOf(DAYS, d)).join(", ") : this._t("wizard.freq_daily");
+          return `<div class="tm-wz-sg ${dupe ? "tm-wz-have" : "tm-wz-on"} tm-wz-static" style="--bc:var(--tm-accent)">
+            <span class="tm-wz-cbx"><ha-icon icon="mdi:check"></ha-icon></span>
+            <span class="tm-wz-ic"><ha-icon icon="${this._esc(p.icon || "mdi:clipboard-list")}"></ha-icon></span>
+            <div class="tm-wz-nm"><b>${this._esc(name)}</b><small>${dupe ? this._t("wizard.pack_dupe") : this._esc(`${days} · ${this._t(`panel.time_${c.time_category || "anytime"}`)}`)}</small></div>
+            <span class="tm-wz-who">${wz.kids.map(k => this._wizardKav(k, 26)).join("")}</span>
+            <span class="tm-wz-pts">${this._wizardUnit(c.points || 0)}</span>
+          </div>`;
+        }).join("")}
+      </section>`).join("");
+    return `
+      <h2 class="tm-wz-h">${this._t("wizard.chores_title")}</h2>
+      <p class="tm-wz-p">${this._t("wizard.chores_copy")}</p>
+      <div class="tm-wz-cols">
+        <div>${bands}${packBands}</div>
+        <aside class="tm-wz-aside">
+          <div class="tm-wz-panel"><h4>${this._t("wizard.per_week")}</h4>
+            ${wz.kids.map(k => { const w = this._wizardWeekly(k); return `
+              <div class="tm-wz-wk">${this._wizardKav(k, 28)}<div class="tm-wz-grow"><b>${this._esc(k.name)}</b><div class="tm-wz-faint">${this._wizardCount("chores", w.n)}</div></div>${this._wizardUnit(w.pts)}</div>`; }).join("")}
+            <p class="tm-wz-hint">${this._t("wizard.per_week_hint")}</p>
+          </div>
+          <div class="tm-wz-panel"><h4>${this._t("wizard.packs_title")}</h4>
+            ${packs.map(p => { const on = wz.packs.includes(p.id); return `
+              <button type="button" class="tm-wz-pack ${on ? "tm-wz-on" : ""}" data-act="wz-pack" data-v="${this._esc(p.id)}" aria-pressed="${on}">
+                <span class="tm-wz-cbx"><ha-icon icon="mdi:check"></ha-icon></span><ha-icon icon="${this._esc(p.icon || "mdi:clipboard-list")}"></ha-icon>
+                <span class="tm-wz-grow">${this._esc(this._wizardPackName(p))}</span><span class="tm-wz-faint">${(p.chores || []).length}</span>
+              </button>`; }).join("")}
+            <p class="tm-wz-hint">${this._t("wizard.packs_hint")}</p>
+          </div>
+        </aside>
+      </div>`;
+  }
+
+  _wizardTopEarner() {
+    return this._wz.kids.map(k => [k, this._wizardWeekly(k).pts]).filter(([, p]) => p > 0).sort((a, b) => b[1] - a[1])[0] || null;
+  }
+
+  _wizardEvery(cost, top) {
+    if (!top) return "";
+    const days = Math.max(1, Math.round(cost / (top[1] / 7)));
+    return this._t(days === 1 ? "wizard.every_day" : "wizard.every_n_days", { count: days });
+  }
+
+  _wizardStepRewards() {
+    const wz = this._wz;
+    const top = this._wizardTopEarner();
+    const card = (id, name, icon, pick, have, custom = false) => {
+      if (have) return `<div class="tm-wz-rw tm-wz-have"><div class="tm-wz-rw-top"><span class="tm-wz-ic"><ha-icon icon="${this._esc(icon)}"></ha-icon></span><b>${this._esc(name)}</b></div>
+        <div class="tm-wz-rw-foot"><span class="tm-pill tm-pill-success">${this._t("wizard.already_have")}</span></div></div>`;
+      return `<div class="tm-wz-rw ${pick.on ? "tm-wz-on" : ""}" data-act="${custom ? "wz-rw-custom-toggle" : "wz-rw"}" data-id="${this._esc(id)}" role="checkbox" aria-checked="${pick.on}" tabindex="0">
+        <span class="tm-wz-cbx"><ha-icon icon="mdi:check"></ha-icon></span>
+        <div class="tm-wz-rw-top"><span class="tm-wz-ic"><ha-icon icon="${this._esc(icon)}"></ha-icon></span><b>${this._esc(name)}</b></div>
+        <div class="tm-wz-rw-foot"><span class="tm-wz-mstep"><button type="button" data-act="wz-rw-cost" data-id="${this._esc(id)}" data-d="-5" aria-label="−">−</button><span>${this._wizardUnit(pick.cost)}</span><button type="button" data-act="wz-rw-cost" data-id="${this._esc(id)}" data-d="5" aria-label="+">+</button></span>
+          <span class="tm-wz-when">${this._esc(this._wizardEvery(pick.cost, top))}</span></div>
+      </div>`;
+    };
+    const tiers = this._wzCatalogue.reward_tiers.map(tier => `
+      <div class="tm-wz-tier">${this._t(`wizard.tier.${tier}`)}</div>
+      <div class="tm-wz-rw-grid">${this._wzCatalogue.rewards.filter(r => r.tier === tier).map(r => {
+        const name = this._wizardRewardName(r);
+        return card(r.id, name, r.icon, wz.rewards[r.id], this._wizardHave("rewards", name));
+      }).join("")}</div>`).join("");
+    const custom = wz.custom.length ? `
+      <div class="tm-wz-tier">${this._t("wizard.tier.custom")}</div>
+      <div class="tm-wz-rw-grid">${wz.custom.map(r => card(r.key, r.name, "mdi:gift-outline", r, false, true)).join("")}</div>` : "";
+    const earn = top ? this._t("wizard.rewards_earns", {
+      name: this._esc(top[0].name), amount: `<b class="tm-wz-gold">${top[1]} ${this._esc(wz.pname)}</b>` }) : "";
+    return `
+      <h2 class="tm-wz-h">${this._t("wizard.rewards_title")}</h2>
+      <p class="tm-wz-p">${this._t("wizard.rewards_copy")} ${earn}</p>
+      <div class="tm-wz-cols">
+        <div>
+          ${tiers}${custom}
+          <div class="tm-wz-rw-add">
+            <input type="text" class="tm-input" data-wz-in="rw-name" maxlength="200" placeholder="${this._esc(this._t("wizard.own_reward_placeholder"))}" value="${this._esc(wz.rwName)}" aria-label="${this._esc(this._t("wizard.own_reward_placeholder"))}">
+            <input type="number" class="tm-input tm-wz-cost" data-wz-in="rw-cost" min="0" step="5" value="${this._num(wz.rwCost, 20)}" aria-label="${this._esc(this._t("wizard.cost"))}">
+            <button type="button" class="tm-btn" data-act="wz-rw-add"><ha-icon icon="mdi:plus"></ha-icon>${this._t("wizard.own_reward_add")}</button>
+          </div>
+        </div>
+        <aside class="tm-wz-aside"><div class="tm-wz-panel"><h4>${this._t("wizard.tips")}</h4>
+          <ul class="tm-wz-tips"><li>${this._t("wizard.tip_1")}</li><li>${this._t("wizard.tip_2")}</li><li>${this._t("wizard.tip_3")}</li></ul></div></aside>
+      </div>`;
+  }
+
+  _wizardCount(noun, n) {
+    return this._t(`wizard.count_${noun}_${n === 1 ? "one" : "many"}`, { count: n });
+  }
+
+  _wizardCounts(plan) {
+    return {
+      children: this._wizardCount("children", plan.children.length),
+      chores: this._wizardCount("chores", plan.chores.length),
+      rewards: this._wizardCount("rewards", plan.rewards.length),
+    };
+  }
+
+  _wizardStepReview() {
+    const wz = this._wz;
+    const s = this._state;
+    const plan = this._wizardPlan();
+    const c = this._wizardCounts(plan);
+    const keep = { ...c, have_chores: this._wizardCount("chores", (s.chores || []).length), have_rewards: this._wizardCount("rewards", (s.rewards || []).length) };
+    const intro = wz.mode !== "existing" ? this._t("wizard.review_fresh", c)
+      : this._t(plan.children.length ? "wizard.review_existing" : "wizard.review_existing_no_children", keep);
+    const packNames = plan.chores.filter(ch => !ch.assigned_to.length).map(ch => ch.name);
+    const kidCards = wz.kids.map(k => {
+      const names = plan.chores.filter(ch => ch.assigned_to.includes(k.key)).map(ch => ch.name).concat(packNames);
+      const w = this._wizardWeekly(k);
+      const age = this._wizardAgeOf(k);
+      return `
+        <div class="tm-wz-rv-kid">
+          <div class="tm-wz-mini-head" style="--hd:${this._esc(k.color)}">
+            <span class="tm-wz-mini-av"><ha-icon icon="${this._esc(k.icon)}"></ha-icon></span>
+            <div class="tm-wz-grow"><div class="tm-wz-mini-name">${this._esc(k.name)}</div>
+              <div class="tm-wz-mini-sub">${age != null ? `${this._t("wizard.age_n", { age })} · ` : this._wizardBand(k) ? `${this._wizardGroupLabel(this._wizardBand(k))} · ` : ""}${this._t(k.existing ? "wizard.kid_existing" : "wizard.kid_new")}</div></div>
+            <span class="tm-wz-mini-pts">${this._t("wizard.per_week_short", { amount: w.pts })}<ha-icon icon="${this._esc(wz.picon)}"></ha-icon></span>
+          </div>
+          <ul>${names.slice(0, 5).map(n => `<li>${this._esc(n)}</li>`).join("") || `<li class="tm-wz-faint">${this._t("wizard.no_new_chores")}</li>`}</ul>
+          ${names.length > 5 ? `<div class="tm-wz-more">${this._t("wizard.n_more", { count: names.length - 5 })}</div>` : ""}
+        </div>`;
+    }).join("");
+    const appr = [["none", "wizard.appr_none"], ["big", "wizard.appr_big"], ["all", "wizard.appr_all"]];
+    const sw = (act, on, title, hint) => `
+      <div class="tm-wz-tog"><div class="tm-wz-grow">${title}<small>${hint}</small></div>
+        <button type="button" class="tm-wz-sw ${on ? "tm-wz-on" : ""}" data-act="${act}" role="switch" aria-checked="${on}" aria-label="${this._esc(title)}"></button></div>`;
+    return `
+      <h2 class="tm-wz-h">${this._t("wizard.review_title")}</h2>
+      <p class="tm-wz-p">${intro}</p>
+      <div class="tm-wz-rv-kids">${kidCards}</div>
+      <div class="tm-wz-cols">
+        <div class="tm-wz-panel tm-wz-opts"><h4>${this._t("wizard.defaults")}</h4>
+          <div class="tm-wz-tog"><div class="tm-wz-grow">${this._t("wizard.appr_title")}<small>${this._t("wizard.appr_hint")}</small></div>
+            <div class="tm-seg tm-wz-seg" role="tablist">${appr.map(([v, key]) => `<button type="button" role="tab" class="${wz.approval === v ? "tm-seg-on" : ""}" aria-selected="${wz.approval === v}" data-act="wz-appr" data-v="${v}">${this._t(key)}</button>`).join("")}</div></div>
+          ${sw("wz-dash", wz.dash, this._t("wizard.dash_toggle"), this._t("wizard.dash_hint"))}
+          ${sw("wz-notify", wz.notify, this._t("wizard.notify_toggle"), this._t("wizard.notify_hint"))}
+        </div>
+        <div class="tm-wz-panel"><h4>${this._t("wizard.rewards_n", { count: plan.rewards.length })}</h4>
+          ${plan.rewards.map(r => `<div class="tm-wz-wk tm-wz-wk-sm"><ha-icon icon="${this._esc(r.icon)}"></ha-icon><span class="tm-wz-grow">${this._esc(r.name)}</span>${this._wizardUnit(r.cost)}</div>`).join("") || `<p class="tm-wz-hint">${this._t("wizard.no_rewards")}</p>`}
+        </div>
+      </div>`;
+  }
+
+  _wizardStepDone() {
+    const wz = this._wz;
+    const r = wz.result || {};
+    const conf = Array.from({ length: 36 }, (_, i) =>
+      `<i style="inset-inline-start:${(i * 37) % 100}%;top:${(i * 53) % 60}%;background:${WZ_KID_COLORS[i % 8]};transform:rotate(${i * 29}deg)"></i>`).join("");
+    const phrase = (noun, n) => this._wizardCount(noun, n);
+    const dash = r.dashboard === "created" || r.dashboard === "exists";
+    const dashNote = r.dashboard === "exists" ? this._t("wizard.dash_existed")
+      : r.dashboard === "failed" ? this._t("wizard.dash_failed") : "";
+    return `
+      <div class="tm-wz-finish">
+        <div class="tm-wz-confetti" aria-hidden="true">${conf}</div>
+        <div class="tm-wz-done-ic"><ha-icon icon="mdi:check"></ha-icon></div>
+        <h2 class="tm-wz-h tm-wz-h-big">${this._t("wizard.done_title")}</h2>
+        <p class="tm-wz-p tm-wz-center">${this._t(wz.mode === "existing" ? "wizard.done_copy_existing" : "wizard.done_copy")}</p>
+        <div class="tm-wz-stats">
+          <span>${phrase("children", r.children_added || 0)}</span>
+          <span>${phrase("chores", r.chores_added || 0)}</span>
+          <span>${phrase("rewards", r.rewards_added || 0)}</span>
+          ${r.dashboard === "created" ? `<span>${this._t("wizard.one_dashboard")}</span>` : ""}
+        </div>
+        ${dashNote ? `<p class="tm-wz-hint tm-wz-center">${dashNote}</p>` : ""}
+        <div class="tm-wz-next">
+          <div><b><ha-icon icon="mdi:tablet"></ha-icon>${this._t("wizard.next_tablet_title")}</b>${this._t("wizard.next_tablet")}</div>
+          <div><b><ha-icon icon="mdi:home-outline"></ha-icon>${this._t("wizard.next_today_title")}</b>${this._t("wizard.next_today")}</div>
+          <div><b><ha-icon icon="mdi:auto-fix"></ha-icon>${this._t("wizard.next_change_title")}</b>${this._t("wizard.next_change")}</div>
+        </div>
+        <div class="tm-wz-done-acts">
+          ${dash ? `<button type="button" class="tm-btn" data-act="wz-dashboard"><ha-icon icon="mdi:view-dashboard-outline"></ha-icon>${this._t("wizard.open_dashboard")}</button>` : ""}
+          <button type="button" class="tm-btn tm-btn-raised" data-act="wz-today">${this._t("wizard.go_today")}<ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon></button>
+        </div>
+      </div>`;
+  }
+
+  _renderWizardConfirmDialog() {
+    const d = this._dialog.data;
+    return this._dialogShell(this._t("wizard.confirm_title"),
+      `<p>${this._t("wizard.confirm_have", { children: this._wizardCount("children", d.children), chores: this._wizardCount("chores", d.chores), rewards: this._wizardCount("rewards", d.rewards) })}</p>
+       <ul class="tm-wz-confirm">
+         <li>${this._t("wizard.confirm_add")}</li>
+         <li>${this._t("wizard.confirm_have_shown")}</li>
+         <li>${this._t("wizard.confirm_never")}</li>
+       </ul>`,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="wz-open-confirmed"><ha-icon icon="mdi:auto-fix"></ha-icon>${this._t("wizard.open_btn")}</button>`);
+  }
+
+  // Settings → Setup wizard (#980), at the top of Settings.
+  _wizardSettingsSection() {
+    return `
+      <div class="tm-section tm-wz-settings">
+        <div class="tm-setting-row">
+          <div class="tm-setting-label"><span class="tm-wz-settings-t"><ha-icon icon="mdi:auto-fix"></ha-icon>${this._t("wizard.title")}</span><small>${this._t("wizard.settings_hint")}</small></div>
+          <div><button type="button" class="tm-btn tm-btn-raised" data-act="wz-open"><ha-icon icon="mdi:auto-fix"></ha-icon>${this._t("wizard.run_btn")}</button></div>
+        </div>
+      </div>`;
+  }
+
+  // The Today page with no children yet: start the wizard or go it alone.
+  _wizardTodayEmpty() {
+    return `
+      <div class="tm-card tm-wz-empty">
+        <div class="tm-wz-empty-ic"><ha-icon icon="mdi:auto-fix"></ha-icon></div>
+        <h2>${this._t("wizard.empty_title")}</h2>
+        <p>${this._t("wizard.empty_copy")}</p>
+        <div class="tm-wz-empty-acts">
+          <button type="button" class="tm-btn tm-btn-raised" data-act="wz-open"><ha-icon icon="mdi:auto-fix"></ha-icon>${this._t("wizard.start_btn")}</button>
+          <button type="button" class="tm-btn" data-act="add-child"><ha-icon icon="mdi:plus"></ha-icon>${this._t("wizard.add_child_myself")}</button>
+        </div>
+      </div>`;
+  }
+
+  _wizardStyles() {
+    return `<style>
+      /* Setup wizard (#980) */
+      .tm-wz { container: tm-wz / inline-size; max-width: 1020px; margin: 0 auto; }
+      .tm-wz-box { background: var(--tm-surface-0); border: 1px solid var(--tm-border); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
+      .tm-wz-top { display: flex; align-items: center; gap: 10px; padding: 14px 20px 0; }
+      .tm-wz-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; flex: 1; }
+      .tm-wz-title ha-icon { color: var(--tm-accent); --mdc-icon-size: 18px; }
+      .tm-wz-x ha-icon { --mdc-icon-size: 20px; }
+      .tm-wz-steps { display: flex; align-items: center; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--tm-border-soft); }
+      .tm-wz-step { display: flex; align-items: center; gap: 8px; color: var(--tm-text-faint); font: 500 13px/1.3 inherit; font-family: inherit; white-space: nowrap; background: none; border: 0; padding: 0; cursor: pointer; }
+      .tm-wz-step:disabled { cursor: default; }
+      .tm-wz-n { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--tm-border-strong); display: grid; place-items: center; font-size: 11.5px; font-weight: 700; flex: none; --mdc-icon-size: 14px; }
+      .tm-wz-step.tm-wz-on { color: var(--tm-text); }
+      .tm-wz-step.tm-wz-on .tm-wz-n { border-color: var(--tm-accent); background: var(--tm-accent); color: #fff; }
+      .tm-wz-step.tm-wz-done { color: var(--tm-text-muted); }
+      .tm-wz-step.tm-wz-done .tm-wz-n { border-color: var(--tm-positive); background: var(--tm-positive); color: #fff; }
+      .tm-wz-sep { flex: 1; height: 2px; min-width: 10px; background: var(--tm-border); border-radius: 2px; }
+      .tm-wz-sep.tm-wz-done { background: var(--tm-positive); }
+      .tm-wz-mlabel { display: none; font-size: 12.5px; color: var(--tm-text-muted); }
+      .tm-wz-body { padding: 26px 28px; min-height: 480px; }
+      .tm-wz-foot { display: flex; gap: 10px; align-items: center; padding: 14px 20px; border-top: 1px solid var(--tm-border-soft); background: var(--tm-surface-2); }
+      .tm-wz-foot .tm-btn ha-icon { --mdc-icon-size: 18px; }
+      .tm-wz-sp { flex: 1; }
+      .tm-wz-text-btn { border-color: transparent; background: none; color: var(--tm-text-muted); }
+      .tm-wz-text-btn:hover { color: var(--tm-text); background: none; border-color: transparent; }
+      .tm-wz-foot-hint { font-size: 12.5px; color: var(--tm-text-faint); }
+      .tm-wz-create { background: var(--tm-positive); border-color: var(--tm-positive); }
+      .tm-wz-create:hover { background: color-mix(in srgb, var(--tm-positive), #000 12%); border-color: color-mix(in srgb, var(--tm-positive), #000 12%); }
+      .tm-wz-h { font-size: 22px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.01em; }
+      .tm-wz-h-big { font-size: 26px; }
+      .tm-wz-p { color: var(--tm-text-muted); margin: 0 0 20px; max-width: 680px; }
+      .tm-wz-p0 { margin: 0; }
+      .tm-wz-center { margin-inline: auto; text-align: center; }
+      .tm-wz-hint { font-size: 12.5px; color: var(--tm-text-faint); margin: 6px 0 0; }
+      .tm-wz-faint { color: var(--tm-text-faint); font-size: 12px; }
+      .tm-wz-gold { color: var(--tm-gold); }
+      .tm-wz-grow { flex: 1; min-width: 0; }
+      .tm-wz-lbl { display: block; font-size: 12.5px; font-weight: 600; color: var(--tm-text-muted); margin: 14px 0 6px; }
+      .tm-wz-lbl-lg { font-size: 14px; color: var(--tm-text); }
+      .tm-wz-lbl-top { margin-top: 0; }
+      .tm-wz-full { width: 100%; box-sizing: border-box; }
+      .tm-wz-pname { margin-top: 10px; max-width: 260px; }
+      .tm-wz-banner { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: var(--tm-accent-soft); border: 1px solid var(--tm-accent-border); margin-bottom: 18px; font-size: 13.5px; }
+      .tm-wz-banner ha-icon { color: var(--tm-accent); flex: none; --mdc-icon-size: 18px; }
+      .tm-wz-hero { display: flex; gap: 18px; align-items: center; margin-bottom: 22px; }
+      .tm-wz-hero-ic { width: 72px; height: 72px; border-radius: 20px; background: linear-gradient(135deg, #03a9f4, #9b59b6); display: grid; place-items: center; color: #fff; flex: none; --mdc-icon-size: 36px; }
+      .tm-wz-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+      .tm-wz-tile { background: var(--tm-bg); border: 1px solid var(--tm-border); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start; }
+      .tm-wz-tile b { display: block; margin-bottom: 2px; }
+      .tm-wz-tile span:not(.tm-wz-tile-ic) { font-size: 12.5px; color: var(--tm-text-muted); }
+      .tm-wz-tile-ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none; background: color-mix(in srgb, var(--c), transparent 82%); color: var(--c); --mdc-icon-size: 18px; }
+      .tm-wz .tm-chip-btn { display: inline-flex; align-items: center; gap: 5px; }
+      .tm-wz .tm-chip-btn ha-icon { --mdc-icon-size: 14px; }
+      /* Children */
+      .tm-wz-kids { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+      .tm-wz-kid { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border: 1px solid var(--tm-border); border-radius: 12px; background: var(--tm-bg); }
+      .tm-wz-kid-name { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .tm-wz-kid-meta { font-size: 12.5px; color: var(--tm-text-muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+      .tm-wz-kid-meta ha-icon { --mdc-icon-size: 14px; margin-inline-end: 4px; vertical-align: -2px; }
+      .tm-wz-warn { color: var(--tm-warning); }
+      .tm-wz-bandpick { margin-top: 8px; }
+      .tm-wz-tag { font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--c), transparent 78%); color: var(--tm-text); white-space: nowrap; }
+      .tm-wz-kav { width: var(--s, 44px); height: var(--s, 44px); border-radius: 50%; background: var(--kc); display: grid; place-items: center; color: #fff; flex: none; box-sizing: border-box; border: 2px solid rgba(255, 255, 255, 0.25); --mdc-icon-size: calc(var(--s, 44px) * 0.5); }
+      .tm-wz-kav-off { opacity: 0.3; filter: grayscale(0.6); }
+      .tm-wz-add { border: 1px dashed var(--tm-border-strong); border-radius: 14px; padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 20px; }
+      .tm-wz-add h4 { margin: 0 0 4px; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+      .tm-wz-add h4 ha-icon { --mdc-icon-size: 16px; }
+      .tm-wz-seg { margin-inline-start: 0; }
+      .tm-wz-agectl { margin-top: 10px; }
+      .tm-wz-inline { display: flex; align-items: center; gap: 12px; }
+      .tm-wz-date { width: 200px; }
+      .tm-wz-stepper { display: inline-flex; align-items: center; border: 1px solid var(--tm-border); border-radius: 8px; overflow: hidden; }
+      .tm-wz-stepper button { width: 34px; height: 34px; border: 0; background: var(--tm-surface-2); color: var(--tm-text); cursor: pointer; font-size: 18px; font-family: inherit; }
+      .tm-wz-stepper span { min-width: 54px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .tm-wz-icons { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+      .tm-wz-icons button { height: 36px; border-radius: 9px; border: 1px solid var(--tm-border); background: var(--tm-bg); color: var(--tm-text-muted); display: grid; place-items: center; cursor: pointer; --mdc-icon-size: 18px; }
+      .tm-wz-icons button.tm-wz-on { border-color: var(--kc); background: color-mix(in srgb, var(--kc), transparent 80%); color: var(--tm-text); }
+      .tm-wz-swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+      .tm-wz-swatches button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+      .tm-wz-swatches button.tm-wz-on { box-shadow: 0 0 0 2px var(--tm-surface-0), 0 0 0 4px var(--tm-text); }
+      .tm-wz-addbtn { margin-top: 16px; }
+      .tm-wz-mini, .tm-wz-rv-kid { border-radius: 12px; overflow: hidden; background: var(--tm-surface-0); border: 1px solid var(--tm-border); }
+      .tm-wz-mini-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--hd); color: #fff; }
+      .tm-wz-mini-av { width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.35); display: grid; place-items: center; flex: none; --mdc-icon-size: 22px; box-sizing: border-box; }
+      .tm-wz-mini-name { font-weight: 700; font-size: 1.1rem; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .tm-wz-mini-sub { font-size: 12.5px; opacity: 0.9; }
+      .tm-wz-mini-pts { display: inline-flex; align-items: center; gap: 4px; background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.28); padding: 4px 10px; border-radius: 20px; font-weight: 800; white-space: nowrap; --mdc-icon-size: 15px; }
+      .tm-wz-mini-pts ha-icon { color: #ffd54f; }
+      .tm-wz-mini-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+      .tm-wz-mini-row { height: 34px; border-radius: 12px; border: 2px solid color-mix(in srgb, var(--kc), transparent 30%); background: color-mix(in srgb, var(--kc), transparent 92%); display: flex; align-items: center; padding: 0 10px; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--tm-text-muted); --mdc-icon-size: 14px; }
+      .tm-wz-dim { opacity: 0.6; }
+      /* Chores */
+      .tm-wz-cols { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 22px; align-items: start; }
+      .tm-wz-aside { position: sticky; top: 0; display: flex; flex-direction: column; gap: 14px; }
+      .tm-wz-panel { background: var(--tm-bg); border: 1px solid var(--tm-border); border-radius: 12px; padding: 14px; }
+      .tm-wz-panel h4 { margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tm-text-muted); }
+      .tm-wz-band { border: 1px solid var(--tm-border); border-radius: 14px; margin-bottom: 14px; overflow: hidden; background: var(--tm-bg); }
+      .tm-wz-band-h { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--tm-surface-2); border-bottom: 1px solid var(--tm-border-soft); }
+      .tm-wz-band-empty .tm-wz-band-h { border-bottom: 0; }
+      .tm-wz-band-age { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .tm-wz-band-sub { font-size: 12.5px; color: var(--tm-text-muted); }
+      .tm-wz-band-ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; color: #fff; flex: none; --mdc-icon-size: 20px; }
+      .tm-wz-stack { display: inline-flex; }
+      .tm-wz-stack .tm-wz-kav + .tm-wz-kav { margin-inline-start: -8px; }
+      .tm-wz-lnk { background: none; border: 0; color: var(--tm-accent); font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; padding: 4px; }
+      .tm-wz-sg { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; grid-template-areas: "cb ic nm who pts"; gap: 12px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--tm-border-soft); cursor: pointer; }
+      .tm-wz-band-h + .tm-wz-sg { border-top: 0; }
+      .tm-wz-sg.tm-wz-on { background: color-mix(in srgb, var(--tm-accent), transparent 94%); }
+      .tm-wz-cbx { grid-area: cb; width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--tm-border-strong); display: grid; place-items: center; color: transparent; background: var(--tm-surface-0); box-sizing: border-box; --mdc-icon-size: 14px; flex: none; }
+      .tm-wz-on > .tm-wz-cbx { background: var(--tm-accent); border-color: var(--tm-accent); color: #fff; }
+      .tm-wz-sg .tm-wz-ic { grid-area: ic; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--tm-surface-2); color: var(--tm-text-muted); --mdc-icon-size: 18px; }
+      .tm-wz-sg.tm-wz-on .tm-wz-ic { color: #fff; background: var(--bc); }
+      .tm-wz-nm { grid-area: nm; min-width: 0; }
+      .tm-wz-nm b { font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .tm-wz-nm small { font-size: 12px; color: var(--tm-text-muted); }
+      .tm-wz-who { grid-area: who; display: flex; gap: 4px; }
+      .tm-wz-who button { padding: 0; border: 0; background: none; cursor: pointer; }
+      .tm-wz-pts { grid-area: pts; }
+      .tm-wz-have, .tm-wz-static { cursor: default; }
+      .tm-wz-have { opacity: 0.5; }
+      .tm-wz-have .tm-wz-cbx { visibility: hidden; }
+      .tm-wz-mstep { display: inline-flex; align-items: center; border: 1px solid var(--tm-border); border-radius: 8px; overflow: hidden; background: var(--tm-surface-0); }
+      .tm-wz-mstep button { width: 26px; height: 28px; border: 0; background: var(--tm-surface-2); color: var(--tm-text); cursor: pointer; font-size: 15px; font-family: inherit; }
+      .tm-wz-mstep > span { min-width: 48px; text-align: center; }
+      .tm-wz-unit { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; font-size: 13px; color: var(--tm-gold); font-variant-numeric: tabular-nums; white-space: nowrap; --mdc-icon-size: 13px; }
+      .tm-wz-wk { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--tm-border-soft); }
+      .tm-wz-wk:first-of-type { border-top: 0; }
+      .tm-wz-wk-sm { padding: 6px 0; --mdc-icon-size: 16px; }
+      .tm-wz-pack { display: flex; align-items: center; gap: 10px; padding: 7px 0; font: inherit; font-size: 13px; cursor: pointer; width: 100%; background: none; border: 0; color: var(--tm-text); text-align: start; --mdc-icon-size: 16px; }
+      .tm-wz-pack > ha-icon { color: var(--tm-accent); }
+      .tm-wz-pack .tm-wz-cbx { width: 18px; height: 18px; border-radius: 5px; --mdc-icon-size: 12px; }
+      /* Rewards */
+      .tm-wz-tier { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tm-text-muted); margin: 16px 0 8px; }
+      .tm-wz-tier:first-child { margin-top: 0; }
+      .tm-wz-rw-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+      .tm-wz-rw { border: 1px solid var(--tm-border); border-radius: 14px; background: var(--tm-bg); padding: 14px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; position: relative; }
+      .tm-wz-rw.tm-wz-on { border-color: #9b59b6; background: color-mix(in srgb, #9b59b6 9%, var(--tm-bg)); }
+      .tm-wz-rw-top { display: flex; gap: 10px; align-items: center; padding-inline-end: 26px; }
+      .tm-wz-rw-top b { font-size: 14px; line-height: 1.25; }
+      .tm-wz-rw .tm-wz-ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: var(--tm-surface-2); color: var(--tm-text-muted); flex: none; --mdc-icon-size: 20px; }
+      .tm-wz-rw.tm-wz-on .tm-wz-ic { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #fff; }
+      .tm-wz-rw > .tm-wz-cbx { position: absolute; top: 10px; inset-inline-end: 10px; width: 20px; height: 20px; }
+      .tm-wz-rw.tm-wz-on > .tm-wz-cbx { background: #9b59b6; border-color: #9b59b6; }
+      .tm-wz-rw-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+      .tm-wz-when { font-size: 11.5px; color: var(--tm-text-faint); white-space: nowrap; }
+      .tm-wz-rw-add { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+      .tm-wz-rw-add .tm-input { flex: 1; min-width: 160px; }
+      .tm-wz-rw-add .tm-wz-cost { flex: 0 0 90px; min-width: 0; }
+      .tm-wz-tips { margin: 0; padding-inline-start: 18px; font-size: 12.5px; color: var(--tm-text-muted); line-height: 1.6; }
+      /* Review */
+      .tm-wz-rv-kids { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin-bottom: 18px; }
+      .tm-wz-rv-kid .tm-wz-mini-av { width: 36px; height: 36px; --mdc-icon-size: 20px; }
+      .tm-wz-rv-kid .tm-wz-mini-name { font-size: 1.05rem; }
+      .tm-wz-rv-kid ul { margin: 0; padding-block: 10px 12px; padding-inline: 30px 14px; font-size: 12.5px; color: var(--tm-text-muted); line-height: 1.6; }
+      .tm-wz-more { font-size: 12px; color: var(--tm-text-faint); padding: 0 14px 12px; }
+      .tm-wz-tog { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--tm-border-soft); font-size: 13.5px; flex-wrap: wrap; }
+      .tm-wz-opts h4 + .tm-wz-tog { border-top: 0; }
+      .tm-wz-tog small { display: block; color: var(--tm-text-faint); font-size: 12px; }
+      .tm-wz-sw { width: 36px; height: 20px; border-radius: 999px; background: var(--tm-border-strong); position: relative; cursor: pointer; flex: none; border: 0; padding: 0; }
+      .tm-wz-sw::after { content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: inset-inline-start 0.15s; }
+      .tm-wz-sw.tm-wz-on { background: var(--tm-accent); }
+      .tm-wz-sw.tm-wz-on::after { inset-inline-start: 18px; }
+      /* Done */
+      .tm-wz-finish { text-align: center; padding: 26px 10px 10px; position: relative; }
+      .tm-wz-done-ic { width: 92px; height: 92px; border-radius: 50%; margin: 0 auto 16px; display: grid; place-items: center; background: linear-gradient(135deg, #2ecc71, #16a085); color: #fff; box-shadow: 0 10px 30px rgba(46, 204, 113, 0.35); --mdc-icon-size: 48px; position: relative; }
+      .tm-wz-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+      .tm-wz-confetti i { position: absolute; width: 9px; height: 14px; border-radius: 2px; opacity: 0.7; }
+      .tm-wz-finish > :not(.tm-wz-confetti) { position: relative; }
+      .tm-wz-stats { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 14px 0 24px; position: relative; }
+      .tm-wz-stats span { background: var(--tm-bg); border: 1px solid var(--tm-border); border-radius: 999px; padding: 6px 14px; font-size: 13px; }
+      .tm-wz-next { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: start; max-width: 860px; margin: 0 auto; position: relative; }
+      .tm-wz-next div { background: var(--tm-bg); border: 1px solid var(--tm-border); border-radius: 12px; padding: 14px; font-size: 13px; color: var(--tm-text-muted); }
+      .tm-wz-next b { display: flex; gap: 8px; align-items: center; color: var(--tm-text); margin-bottom: 4px; font-size: 14px; --mdc-icon-size: 18px; }
+      .tm-wz-next b ha-icon { color: var(--tm-accent); }
+      .tm-wz-done-acts { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 26px; position: relative; }
+      /* Entry points */
+      .tm-wz-empty { text-align: center; padding: 50px 20px; }
+      .tm-wz-empty-ic { width: 84px; height: 84px; border-radius: 24px; margin: 0 auto 16px; background: linear-gradient(135deg, #03a9f4, #9b59b6); display: grid; place-items: center; color: #fff; --mdc-icon-size: 40px; }
+      .tm-wz-empty h2 { margin: 0 0 6px; font-size: 22px; }
+      .tm-wz-empty p { color: var(--tm-text-muted); margin: 0 auto 20px; max-width: 520px; }
+      .tm-wz-empty-acts { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+      .tm-wz-settings { border-color: var(--tm-accent-border); }
+      .tm-wz-settings-t { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; --mdc-icon-size: 16px; }
+      .tm-wz-settings-t ha-icon { color: var(--tm-accent); }
+      .tm-wz-confirm { margin: 8px 0 0; padding-inline-start: 20px; line-height: 1.7; }
+      .tm-wz-nudge { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 16px; border-radius: 12px; background: var(--tm-accent-soft); border: 1px solid var(--tm-accent-border); }
+      .tm-wz-nudge-text { flex: 1; min-width: 180px; }
+      .tm-wz-nudge .tm-btn ha-icon { --mdc-icon-size: 16px; }
+      @container tm-wz (max-width: 640px) {
+        .tm-wz-step .tm-wz-l, .tm-wz-sep { display: none; }
+        .tm-wz-steps { gap: 6px; }
+        .tm-wz-mlabel { display: block; margin-inline-start: auto; }
+        .tm-wz-body { padding: 18px 14px; min-height: 0; }
+        .tm-wz-h { font-size: 19px; }
+        .tm-wz-cols, .tm-wz-add { grid-template-columns: 1fr; }
+        .tm-wz-aside { position: static; }
+        .tm-wz-tiles { grid-template-columns: 1fr; }
+        .tm-wz-hero-ic { width: 54px; height: 54px; --mdc-icon-size: 28px; }
+        .tm-wz-rw-grid { grid-template-columns: 1fr; }
+        .tm-wz-sg { grid-template-columns: auto auto minmax(0, 1fr) auto; grid-template-areas: "cb ic nm pts" ". . who who"; row-gap: 6px; padding: 9px 10px; }
+        .tm-wz-next { grid-template-columns: 1fr; }
+        .tm-wz-foot { padding: 12px 14px; flex-wrap: wrap; }
+        .tm-wz-icons { grid-template-columns: repeat(6, 1fr); }
+        .tm-wz-band-sub { display: none; }
+        .tm-wz-date { width: 170px; }
+      }
+    </style>`;
   }
 
   // -- Chores tab --------------------------------------------------------
@@ -7121,6 +8422,7 @@ class TaskMatePanel extends HTMLElement {
         <h2 class="tm-toolbar-title">${this._t("panel.settings_title")}</h2>
       </div>
       <div class="tm-settings">
+        ${this._wizardSettingsSection()}
         <div class="tm-section">
           <div class="tm-section-head">
             <div>
@@ -7917,6 +9219,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "wish-pledge")  return this._renderWishPledgeDialog();
     if (this._dialog.kind === "wish-decline") return this._renderWishDeclineDialog();
     if (this._dialog.kind === "reject")       return this._renderRejectDialog();
+    if (this._dialog.kind === "wizard-confirm") return this._renderWizardConfirmDialog();
     if (this._dialog.kind === "insp-start")   return this._renderInspectionStartDialog();
     if (this._dialog.kind === "insp-pass")    return this._renderInspectionPassDialog();
     if (this._dialog.kind === "insp-fail")    return this._renderInspectionFailDialog();
@@ -7987,6 +9290,10 @@ class TaskMatePanel extends HTMLElement {
         this._iconPickerField(this._t("panel.child_avatar_label"), "avatar", d.avatar),
         this._field(this._t("panel.child_birthday_label"), "birthday", d.birthday, "text",
           this._esc(this._t("panel.child_birthday_hint"))),
+        // Setup wizard age group (#980): only steers chore suggestions.
+        this._select(this._t("panel.child_age_group_label"), "age_group", d.age_group || "",
+          [{ v: "", l: this._t("panel.child_age_group_none") }].concat(WZ_AGE_GROUPS.map(([id]) => ({ v: id, l: this._t(`wizard.age_group.${id}`) }))),
+          this._esc(this._t("panel.child_age_group_hint"))),
         this._entityPickerField(this._t("panel.child_availability_label"), "availability_entity", d.availability_entity, ["binary_sensor", "sensor", "input_boolean", "person"],
           this._t("panel.child_availability_hint")),
         hasAvail ? this._switch(this._t("panel.child_invert_label"), "availability_inverted", d.availability_inverted,
