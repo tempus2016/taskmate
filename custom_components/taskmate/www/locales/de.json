@@ -2008,6 +2008,8 @@
   "kiosk.waiting": "Warte auf einen Erwachsenen",
   "kiosk.needs_check": "Ein Erwachsener prüft das",
   "kiosk.do_on_phone": "Mach diese auf deinem Handy",
+  "kiosk.phone_group": "Mach diese auf deinem Handy",
+  "kiosk.nothing_here": "Heute hier nichts abzuhaken",
   "kiosk.team_waiting": "Warte auf dein Team ({joined}/{size})",
   "kiosk.undo": "Rückgängig",
   "kiosk.today": "Heute",

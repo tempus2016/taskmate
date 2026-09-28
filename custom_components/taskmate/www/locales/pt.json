@@ -2008,6 +2008,8 @@
   "kiosk.waiting": "À espera de um adulto",
   "kiosk.needs_check": "Um adulto vai verificar",
   "kiosk.do_on_phone": "Faz esta no teu telemóvel",
+  "kiosk.phone_group": "Faz estas no teu telemóvel",
+  "kiosk.nothing_here": "Nada para marcar aqui hoje",
   "kiosk.team_waiting": "À espera da tua equipa ({joined}/{size})",
   "kiosk.undo": "Anular",
   "kiosk.today": "Hoje",

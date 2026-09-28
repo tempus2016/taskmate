@@ -264,6 +264,10 @@ class TaskMateKioskCard extends LitElement {
    * the todo platform uses) says what is still to do; today's completions
    * say what is done or waiting. Before the first status reply, the
    * availability matrix stands in so the view isn't blank.
+   *
+   * Photo, timed and open-ended chores can't be finished here, so they carry
+   * `phone: true`: they're listed in their own group and left out of the
+   * done/total count, or a child with one due could never reach all done.
    */
   _rows(child) {
     const attrs = this._attrs();
@@ -297,19 +301,27 @@ class TaskMateKioskCard extends LitElement {
       const team = chore.team;
       const joined = team && Array.isArray(team.joined) ? team.joined.map(String) : [];
       if (!due && !comp) continue;
+      const phone = !!(chore.require_photo || chore.open_ended || chore.task_type === "timed");
       let state;
       if (due && team && joined.includes(id)) state = "team";
-      else if (due) state = chore.require_photo || chore.open_ended || chore.task_type === "timed" ? "elsewhere" : "todo";
+      else if (due) state = phone ? "elsewhere" : "todo";
       else state = comp.approved ? "done" : "wait";
-      rows.push({ chore, state, completion: comp || null, team: team ? { size: Number(team.size) || 0, joined: joined.length } : null });
+      rows.push({ chore, state, phone, completion: comp || null, team: team ? { size: Number(team.size) || 0, joined: joined.length } : null });
     }
     return rows;
   }
 
+  /**
+   * Counts only what can be ticked off on this tablet. A chore waiting for a
+   * grown-up counts as done — the child has done their part, as on the child
+   * card.
+   */
   _progress(child) {
-    const rows = this._rows(child);
+    const all = this._rows(child);
+    const rows = all.filter(r => !r.phone);
+    const phoneRows = all.filter(r => r.phone);
     const done = rows.filter(r => r.state === "done" || r.state === "wait").length;
-    return { done, total: rows.length, rows };
+    return { done, total: rows.length, rows, phoneRows };
   }
 
   _pointsFor(chore) { return chore.effective_points ?? chore.points ?? 0; }
@@ -579,8 +591,9 @@ class TaskMateKioskCard extends LitElement {
           ${entries.map(entry => {
             const { child, tone } = entry;
             const blocked = !this._canAct(child.id);
-            const { done, total } = this._progress(child);
+            const { done, total, phoneRows } = this._progress(child);
             const all = total > 0 && done === total;
+            const none = phoneRows.length ? this._t("kiosk.nothing_here") : this._t("kiosk.nothing_today");
             return html`
               <button class="km-kid ${all ? "all-done" : ""} ${blocked ? "blocked" : ""}" style="--kc:${tone}"
                       data-kid="${child.id}" ?disabled=${!this._status} @click=${() => this._openKid(entry)}>
@@ -594,7 +607,7 @@ class TaskMateKioskCard extends LitElement {
                   : showProgress ? html`
                     <div class="km-prog">
                       <div class="km-bar"><i style="width:${total ? Math.round((done / total) * 100) : 0}%"></i></div>
-                      <small>${!total ? this._t("kiosk.nothing_today") : all ? this._t("kiosk.all_done_short") : this._t("kiosk.progress", { done, total })}</small>
+                      <small>${!total ? none : all ? this._t("kiosk.all_done_short") : this._t("kiosk.progress", { done, total })}</small>
                     </div>` : ""}
                 ${showPoints ? html`<div class="km-pts"><ha-icon icon="${icon}"></ha-icon> ${child.points ?? 0}</div>` : ""}
               </button>`;
@@ -654,7 +667,7 @@ class TaskMateKioskCard extends LitElement {
   _renderChild(entry, attrs) {
     const { child, tone } = entry;
     const icon = attrs.points_icon || "mdi:star";
-    const { done, total, rows } = this._progress(child);
+    const { done, total, rows, phoneRows } = this._progress(child);
     const all = total > 0 && done === total;
     const timeout = this._timeout();
     const left = Math.max(0, timeout - this._idle);
@@ -691,8 +704,13 @@ class TaskMateKioskCard extends LitElement {
           <div class="km-list">
             <h3><ha-icon icon="mdi:calendar-check"></ha-icon> ${this._t("kiosk.todays_chores")}</h3>
             ${all ? html`<div class="km-celebrate"><ha-icon icon="mdi:trophy"></ha-icon> ${this._t("kiosk.all_done", { name: child.name })}</div>` : ""}
-            ${!total ? html`<div class="km-none">${this._t("kiosk.nothing_today")}</div>` : ""}
+            ${!total ? html`<div class="km-none">${phoneRows.length ? this._t("kiosk.nothing_here") : this._t("kiosk.nothing_today")}</div>` : ""}
             ${rows.map(row => this._renderRow(child, row, icon))}
+            ${phoneRows.length ? html`
+              <div class="km-phone-group">
+                <h3><ha-icon icon="mdi:cellphone"></ha-icon> ${this._t("kiosk.phone_group")}</h3>
+                ${phoneRows.map(row => this._renderRow(child, row, icon))}
+              </div>` : ""}
           </div>
           <div class="km-side">
             <div class="km-tile km-center">
@@ -995,6 +1013,8 @@ class TaskMateKioskCard extends LitElement {
         margin: 0 0 2px; font-size: 1.2rem; font-weight: 700; color: var(--kc);
         display: flex; align-items: center; gap: 8px; font-family: var(--tmd-font-display, inherit);
       }
+      .km-phone-group { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+      .km-phone-group h3 { color: var(--tmd-dim, var(--secondary-text-color)); }
       .km-none { color: var(--tmd-dim, var(--secondary-text-color)); padding: 20px 4px; font-size: 1.1rem; }
       .km-celebrate {
         display: flex; align-items: center; gap: 12px;

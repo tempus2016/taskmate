@@ -2008,6 +2008,8 @@
   "kiosk.waiting": "Waiting for a grown-up",
   "kiosk.needs_check": "A grown-up will check",
   "kiosk.do_on_phone": "Do this one on your phone",
+  "kiosk.phone_group": "Do these on your phone",
+  "kiosk.nothing_here": "Nothing to tick off here today",
   "kiosk.team_waiting": "Waiting for your team ({joined}/{size})",
   "kiosk.undo": "Undo",
   "kiosk.today": "Today",

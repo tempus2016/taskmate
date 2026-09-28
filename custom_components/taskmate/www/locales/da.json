@@ -2008,6 +2008,8 @@
   "kiosk.waiting": "Venter på en voksen",
   "kiosk.needs_check": "En voksen tjekker",
   "kiosk.do_on_phone": "Gør denne på din telefon",
+  "kiosk.phone_group": "Gør disse på din telefon",
+  "kiosk.nothing_here": "Intet at sætte flueben ved her i dag",
   "kiosk.team_waiting": "Venter på dit hold ({joined}/{size})",
   "kiosk.undo": "Fortryd",
   "kiosk.today": "I dag",
