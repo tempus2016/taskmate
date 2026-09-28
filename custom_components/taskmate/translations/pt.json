@@ -1249,6 +1249,74 @@
           "description": "O ID do desejo"
         }
       }
+    },
+    "start_inspection": {
+      "name": "Iniciar inspeção",
+      "description": "Marca uma tarefa aprovada nas últimas 24 horas para uma inspeção surpresa. Aprova-a ou reprova-a antes de o prazo terminar; uma inspeção por decidir fecha-se discretamente.",
+      "fields": {
+        "completion_id": {
+          "name": "ID da conclusão",
+          "description": "O ID da conclusão aprovada a inspecionar"
+        },
+        "bonus": {
+          "name": "Bónus",
+          "description": "Pontos pagos se passar. Por omissão, o valor das Definições."
+        },
+        "window": {
+          "name": "Prazo",
+          "description": "Quanto tempo tens para verificar: 1h, 2h, 4h ou bed (até à hora de dormir). Por omissão, o valor das Definições."
+        },
+        "tell_child": {
+          "name": "Avisar a criança",
+          "description": "Mostra «Vem aí uma inspeção» no cartão da criança já. Desliga para uma verificação secreta."
+        }
+      }
+    },
+    "pass_inspection": {
+      "name": "Aprovar inspeção",
+      "description": "A tarefa inspecionada passou. Paga o bónus como uma entrada de pontos normal e celebra no cartão da criança.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID da inspeção",
+          "description": "O ID da inspeção em curso"
+        },
+        "bonus": {
+          "name": "Bónus",
+          "description": "Pontos a pagar. Por omissão, o bónus definido ao iniciar."
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Nota opcional mostrada à criança"
+        }
+      }
+    },
+    "fail_inspection": {
+      "name": "Reprovar inspeção",
+      "description": "A tarefa inspecionada não passou. Não são retirados pontos. Pode ser devolvida para refazer; refazê-la não dá pontos extra.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID da inspeção",
+          "description": "O ID da inspeção em curso"
+        },
+        "redo": {
+          "name": "Devolver para refazer",
+          "description": "Volta a pôr a tarefa na lista da criança como não feita hoje. Por omissão, o valor das Definições."
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Nota opcional mostrada à criança (o que é preciso corrigir)"
+        }
+      }
+    },
+    "cancel_inspection": {
+      "name": "Cancelar inspeção",
+      "description": "Cancela uma inspeção em curso, como se nunca tivesse começado.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID da inspeção",
+          "description": "O ID da inspeção em curso"
+        }
+      }
     }
   },
   "entity": {

@@ -843,10 +843,14 @@ class ChoresMixin:
             )
             return None
 
-        # Check daily limit (only count parent completions, not bonus sub-tasks)
+        # Check daily limit (only count parent completions, not bonus sub-tasks).
+        # A completion an inspection sent back to redo (#981) no longer counts.
         all_completions = self.storage.get_completions()
+        redo_ids = self.inspection_redo_completion_ids()
         todays_completions_count = 0
         for comp in all_completions:
+            if comp.id in redo_ids:
+                continue
             if comp.chore_id == chore_id and comp.child_id == child_id and not comp.bonus_subtask_id:
                 comp_dt = comp.completed_at
                 if isinstance(comp_dt, str):
@@ -916,6 +920,12 @@ class ChoresMixin:
                 now,
             ),
         )
+        # Redoing a chore an inspection sent back (#981): the original
+        # completion's points stand, so this one earns nothing extra. It still
+        # goes through the normal approval path.
+        redo = self._inspection_redo_for(chore.id, child_id)
+        if redo is not None:
+            effective_points = 0
         completion = await self._async_record_completion(
             chore,
             child,
@@ -927,12 +937,20 @@ class ChoresMixin:
             note=note,
             suggested_points=suggested_points,
         )
+        if redo is not None:
+            self._inspection_on_redo_recorded(redo, completion.id)
         await self._async_after_completions(
             chore,
             # An open-ended chore has no points of its own, so quote the
             # child's own estimate — otherwise every one of these pushes
             # announces "+0" (#832).
-            [(child, completion, completion.suggested_points if is_open_ended else chore.points)],
+            [
+                (
+                    child,
+                    completion,
+                    0 if redo is not None else completion.suggested_points if is_open_ended else chore.points,
+                )
+            ],
             auto_approve=auto_approve,
         )
         return completion
@@ -1563,6 +1581,8 @@ class ChoresMixin:
                 self._record_rejection(
                     "chore", target_completion.child_id, target_completion.chore_id, chore_name, reason
                 )
+            # An open inspection of it is void; a redo it was is owed again (#981).
+            self._inspection_on_completion_removed(completion_id)
         await self.storage.async_save()
         await self.async_refresh()
 
@@ -1910,8 +1930,10 @@ class ChoresMixin:
         """
         today = dt_util.as_local(dt_util.now()).date()
         out = []
+        # Sent back to redo by an inspection (#981): owed again today.
+        redo_ids = self.inspection_redo_completion_ids()
         with self.availability_build_scope():
-            completions = self._cached_completions()
+            completions = [c for c in self._cached_completions() if c.id not in redo_ids]
             for chore in self.storage.get_chores():
                 if not self._is_chore_completable_by_child(chore, child_id):
                     continue
@@ -1954,10 +1976,12 @@ class ChoresMixin:
         today_iso = today.isoformat()
         missed = {(m.child_id, m.chore_id) for m in self.storage.get_mandatory_misses() if m.due_date == today_iso}
         children = []
+        redo_ids = self.inspection_redo_completion_ids()
         with self.availability_build_scope():
             done_today: dict[tuple[str, str], list[bool]] = {}
             for c in self._cached_completions():
-                if getattr(c, "bonus_subtask_id", ""):
+                # Sent back to redo by an inspection (#981): not done any more.
+                if getattr(c, "bonus_subtask_id", "") or c.id in redo_ids:
                     continue
                 try:
                     if dt_util.as_local(c.completed_at).date() != today:

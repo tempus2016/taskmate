@@ -371,6 +371,8 @@ class TaskMatePanel extends HTMLElement {
       ['Pool refund (reward assignment changed):', 'activity.reason_pool_refund_assignment_changed'],
       ['Penalty:', 'activity.reason_penalty'],
       ['Bonus:', 'activity.reason_bonus'],
+      // Surprise inspections (#981): the pass bonus.
+      ['Inspection passed:', 'activity.reason_inspection_passed'],
     ];
     for (const [prefix, key] of prefixMap) {
       if (reason.startsWith(prefix)) {
@@ -912,6 +914,8 @@ class TaskMatePanel extends HTMLElement {
       this._render();
       return;
     }
+    // Surprise inspections (#981): flag / pass / fail / cancel + their dialogs.
+    if (act && act.startsWith("insp-") && this._onInspectionAction(act, t)) return;
     // Reject asks why first (#976); an empty reason is a plain reject.
     if (act === "reject-chore")   { this._openRejectDialog("chore", t.dataset.id); return; }
     if (act === "approve-reward") { this._doApprove("reward", t.dataset.id); return; }
@@ -1470,6 +1474,363 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog?.kind === "reject") this._closeDialog(true);
     await this._fetchState();
     this._showToast("ok", this._t("panel.toast_rejected"));
+  }
+
+  // ---- Surprise inspections (#981) --------------------------------------
+  // get_state carries the kept inspection log and which approved completions
+  // can still be flagged. Open ones sit in "Needs you"; the magnifier on an
+  // approved row in Recent activity starts one.
+
+  _inspections() {
+    return (this._state && this._state.inspections) || [];
+  }
+
+  _openInspections() {
+    return this._inspections().filter(i => i.status === "open" && this._childInScope(i.child_id));
+  }
+
+  _inspectionForCompletion(completionId) {
+    return this._inspections().find(i => i.completion_id === completionId) || null;
+  }
+
+  // "1h 58m" / "12m" until an ISO time (never negative).
+  _inspLeft(iso) {
+    const ms = new Date(iso).getTime() - Date.now();
+    if (!Number.isFinite(ms)) return "—";
+    const mins = Math.max(0, Math.round(ms / 60000));
+    const h = Math.floor(mins / 60);
+    return h ? `${h}h ${String(mins % 60).padStart(2, "0")}m` : `${mins}m`;
+  }
+
+  _inspClock(iso) {
+    const d = new Date(iso);
+    return isNaN(d) ? "" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  _inspBedtime() {
+    return (this._state && this._state.settings && this._state.settings.inspection_bedtime) || "20:00";
+  }
+
+  _inspWindowLabel(w) {
+    if (w === "bed") return this._t("panel.insp_window_bed", { time: this._inspBedtime() });
+    return this._t(`panel.insp_window_${w}`);
+  }
+
+  // The tag / magnifier shown beside an approved completion.
+  _inspSlot(completionId) {
+    const insp = this._inspectionForCompletion(completionId);
+    if (insp) {
+      const tags = {
+        open: ["tm-pill-warn", "panel.insp_tag_open", { time: this._inspLeft(insp.until) }],
+        passed: ["tm-pill-success", "panel.insp_tag_passed", { bonus: this._num(insp.bonus) }],
+        redo: ["tm-pill-warn", "panel.insp_tag_redo", {}],
+        failed: ["", "panel.insp_tag_failed", {}],
+        expired: ["", "panel.insp_tag_expired", {}],
+      };
+      const [cls, key, params] = tags[insp.status] || tags.expired;
+      return `<span class="tm-pill tm-insp-tag ${cls}"><ha-icon icon="mdi:magnify-scan"></ha-icon>${this._esc(this._t(key, params))}</span>`;
+    }
+    if ((this._state.inspectable_completions || []).includes(completionId)) {
+      return `<button type="button" class="tm-icon-btn tm-insp-flag" data-act="insp-flag" data-id="${this._esc(completionId)}"
+        title="${this._esc(this._t("panel.insp_flag_tooltip"))}" aria-label="${this._esc(this._t("panel.insp_flag_tooltip"))}"><ha-icon icon="mdi:magnify-scan"></ha-icon></button>`;
+    }
+    return "";
+  }
+
+  // Open inspections as "Needs you" rows (#981), next to approvals.
+  _inspectionQueueHtml() {
+    const { childById } = this._activityMaps();
+    return this._openInspections().map(i => {
+      const child = childById[i.child_id];
+      const name = (child && child.name) || "?";
+      const meta = [
+        this._t("panel.insp_needs_meta", { bonus: this._num(i.bonus), time: this._inspLeft(i.until) }),
+        i.tell_child ? this._t("panel.insp_told", { name }) : this._t("panel.insp_secret"),
+      ].join(" · ");
+      return `
+        <div class="tm-approval-item tm-insp-item">
+          <div class="tm-approval-icon tm-insp-icon"><ha-icon icon="mdi:magnify-scan"></ha-icon></div>
+          <div class="tm-approval-body">
+            <div class="tm-approval-line">${this._t("panel.insp_needs_line", { child: this._esc(name), chore: this._esc(i.chore_name || this._t("panel.activity_deleted_chore")) })}</div>
+            <div class="tm-meta">${this._esc(meta)}</div>
+          </div>
+          <div class="tm-approval-actions">
+            <button type="button" class="tm-btn tm-btn-sm" data-act="insp-fail" data-id="${this._esc(i.id)}">${this._t("panel.insp_fail")}</button>
+            <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="insp-pass" data-id="${this._esc(i.id)}">${this._t("panel.insp_pass")}</button>
+            <button type="button" class="tm-icon-btn" data-act="insp-cancel" data-id="${this._esc(i.id)}"
+              title="${this._esc(this._t("panel.insp_cancel"))}" aria-label="${this._esc(this._t("panel.insp_cancel"))}"><ha-icon icon="mdi:close"></ha-icon></button>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // Inspection entries for the Recent activity timeline.
+  _inspectionEvents() {
+    const { childById } = this._activityMaps();
+    const out = [];
+    for (const i of this._inspections()) {
+      if (!this._childInScope(i.child_id)) continue;
+      const child = (childById[i.child_id] || {}).name || "?";
+      const chore = i.chore_name || this._t("panel.activity_deleted_chore");
+      const push = (ts, key, points = null, note = "") => out.push({
+        ts, kind: "inspection", child_id: i.child_id, child,
+        label: this._t(key, { chore }), points, note,
+      });
+      if (i.tell_child || i.status !== "open") push(i.started_at, "panel.insp_event_started");
+      // A pass with a bonus is its points transaction ("Inspection passed: …").
+      if (i.status === "passed" && !i.bonus_txn_id) push(i.decided_at, "panel.insp_event_passed", 0, i.note);
+      if (i.status === "failed") push(i.decided_at, "panel.insp_event_failed", null, i.note);
+      if (i.status === "redo") push(i.decided_at, "panel.insp_event_redo", null, i.note);
+      if (i.status === "expired") push(i.decided_at, "panel.insp_event_expired");
+    }
+    return out;
+  }
+
+  _inspDialogCtx(d) {
+    const pointsName = (this._state.settings && this._state.settings.points_name) || this._t("common.points");
+    const child = (this._state.children || []).find(c => c.id === d.child_id);
+    const when = d.approved_at ? this._inspClock(d.approved_at) : "";
+    return `
+      <div class="tm-insp-ctx">
+        <span class="tm-insp-ctx-ic"><ha-icon icon="mdi:magnify-scan"></ha-icon></span>
+        <div>
+          <div><strong>${this._esc(d.chore_name)}</strong> · <span style="color:${child ? this._childColor(child.id) : "inherit"};font-weight:600">${this._esc(d.child_name)}</span></div>
+          <div class="tm-meta">${this._esc(this._t("panel.insp_ctx", { time: when, points: this._num(d.points), points_name: pointsName }))}</div>
+        </div>
+      </div>`;
+  }
+
+  _inspStepper(value) {
+    return `
+      <div class="tm-insp-stepper">
+        <button type="button" class="tm-btn tm-btn-sm" data-act="insp-bonus" data-d="-5" aria-label="−5">−</button>
+        <input type="number" class="tm-input" min="0" max="10000" step="1" data-field="bonus" value="${this._esc(value)}" aria-label="${this._esc(this._t("panel.insp_bonus"))}">
+        <button type="button" class="tm-btn tm-btn-sm" data-act="insp-bonus" data-d="5" aria-label="+5">+</button>
+      </div>`;
+  }
+
+  _openInspectionStart(completionId) {
+    const c = (this._state.completions || []).find(x => x.id === completionId);
+    if (!c) return;
+    const { childById, choreById } = this._activityMaps();
+    const s = this._state.settings || {};
+    this._openDialog({ kind: "insp-start", data: {
+      completion_id: c.id, child_id: c.child_id,
+      child_name: (childById[c.child_id] || {}).name || "?",
+      chore_name: (choreById[c.chore_id] || {}).name || this._t("panel.activity_deleted_chore"),
+      approved_at: c.approved_at || c.completed_at, points: c.points_awarded || 0,
+      window: ["1h", "2h", "4h", "bed"].includes(s.inspection_window) ? s.inspection_window : "2h",
+      bonus: Number.isFinite(Number(s.inspection_bonus)) && s.inspection_bonus !== undefined ? Number(s.inspection_bonus) : 10,
+      tell: s.inspection_tell_child !== false,
+    } });
+  }
+
+  _openInspectionDecision(kind, inspectionId) {
+    const i = this._inspections().find(x => x.id === inspectionId);
+    if (!i) return;
+    const c = (this._state.completions || []).find(x => x.id === i.completion_id);
+    const child = (this._state.children || []).find(x => x.id === i.child_id);
+    const failMode = (this._state.settings || {}).inspection_fail_mode;
+    this._openDialog({ kind, data: {
+      inspection_id: i.id, child_id: i.child_id, child_name: (child && child.name) || "?",
+      chore_name: i.chore_name || this._t("panel.activity_deleted_chore"),
+      approved_at: c ? (c.approved_at || c.completed_at) : "", points: i.points || 0,
+      bonus: i.bonus, note: "", can_redo: !!i.can_redo,
+      mode: failMode === "redo" && i.can_redo ? "redo" : "note",
+    } });
+  }
+
+  _renderInspectionStartDialog() {
+    const d = this._dialog.data;
+    const body = `
+      ${this._inspDialogCtx(d)}
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.insp_window_label")}</span>
+        <div class="tm-chip-row">
+          ${["1h", "2h", "4h", "bed"].map(w => `<button type="button" class="tm-chip-btn ${d.window === w ? "tm-chip-on" : ""}" aria-pressed="${d.window === w}"
+            data-act="insp-window" data-window="${w}">${this._esc(this._inspWindowLabel(w))}</button>`).join("")}
+        </div>
+      </div>
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.insp_bonus_label")}</span>
+        ${this._inspStepper(d.bonus)}
+      </div>
+      ${this._switch(this._t("panel.insp_tell_label", { name: d.child_name }), "tell", d.tell, this._esc(this._t("panel.insp_tell_hint", { name: d.child_name })))}`;
+    return this._dialogShell(
+      this._t("panel.insp_start_title"),
+      body,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised tm-insp-go" data-act="insp-start-save"><ha-icon icon="mdi:magnify-scan"></ha-icon>${this._t("panel.insp_start_btn")}</button>`
+    );
+  }
+
+  _renderInspectionPassDialog() {
+    const d = this._dialog.data;
+    const body = `
+      ${this._inspDialogCtx(d)}
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.insp_bonus")}</span>
+        ${this._inspStepper(d.bonus)}
+      </div>
+      <div class="tm-field">
+        <span class="tm-field-label">${this._esc(this._t("panel.insp_note_pass_label", { name: d.child_name }))}</span>
+        <textarea class="tm-input" data-field="note" maxlength="200" rows="2"
+          placeholder="${this._esc(this._t("panel.insp_note_pass_placeholder"))}">${this._esc(d.note || "")}</textarea>
+      </div>`;
+    return this._dialogShell(
+      this._t("panel.insp_pass_title"),
+      body,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="insp-pass-save">${this._t("panel.insp_pass_btn", { bonus: this._num(d.bonus || 0) })}</button>`
+    );
+  }
+
+  _renderInspectionFailDialog() {
+    const d = this._dialog.data;
+    const pointsName = (this._state.settings && this._state.settings.points_name) || this._t("common.points");
+    const opt = (mode, titleKey, hintKey, disabled = false) => `
+      <button type="button" class="tm-insp-opt ${d.mode === mode ? "tm-insp-opt-on" : ""}" role="radio" aria-checked="${d.mode === mode}"
+        data-act="insp-fail-mode" data-mode="${mode}" ${disabled ? "disabled" : ""}>
+        <span class="tm-insp-radio"></span>
+        <span><strong>${this._t(titleKey)}</strong>
+          <small>${this._esc(disabled ? this._t("panel.insp_fail_redo_unavailable") : this._t(hintKey, { name: d.child_name, points: this._num(d.points), points_name: pointsName }))}</small></span>
+      </button>`;
+    const body = `
+      ${this._inspDialogCtx(d)}
+      <div class="tm-insp-opts" role="radiogroup">
+        ${opt("note", "panel.insp_fail_note_label", "panel.insp_fail_note_hint")}
+        ${opt("redo", "panel.insp_fail_redo_label", "panel.insp_fail_redo_hint", !d.can_redo)}
+      </div>
+      <div class="tm-field">
+        <span class="tm-field-label">${this._esc(this._t("panel.insp_fail_fix_label", { name: d.child_name }))}</span>
+        <textarea class="tm-input" data-field="note" maxlength="200" rows="2">${this._esc(d.note || "")}</textarea>
+      </div>
+      <p class="tm-field-hint tm-insp-hint"><ha-icon icon="mdi:information-outline"></ha-icon>${this._t("panel.insp_fail_no_penalty")}</p>`;
+    return this._dialogShell(
+      this._t("panel.insp_fail_title"),
+      body,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="insp-fail-save">${this._t(d.mode === "redo" ? "panel.insp_fail_send_back" : "panel.insp_fail_save")}</button>`
+    );
+  }
+
+  async _inspectionCall(payload, toastKey, params = {}) {
+    const { ok, err } = await this._callWS(payload);
+    if (!ok) { this._showToast("err", this._t("panel.insp_toast_failed", { error: err })); return false; }
+    if (this._dialog && String(this._dialog.kind).startsWith("insp-")) this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", this._t(toastKey, params));
+    return true;
+  }
+
+  _onInspectionAction(act, t) {
+    const d = this._dialog && this._dialog.data;
+    if (act === "insp-flag") { this._openInspectionStart(t.dataset.id); return true; }
+    if (act === "insp-pass") { this._openInspectionDecision("insp-pass", t.dataset.id); return true; }
+    if (act === "insp-fail") { this._openInspectionDecision("insp-fail", t.dataset.id); return true; }
+    if (act === "insp-kid") {
+      const on = !t.classList.contains("tm-chip-on");
+      t.classList.toggle("tm-chip-on", on);
+      t.setAttribute("aria-pressed", String(on));
+      return true;
+    }
+    if (act === "insp-cancel") {
+      if (!confirm(this._t("panel.insp_cancel_confirm"))) return true;
+      this._inspectionCall({ type: "taskmate/inspection/cancel", inspection_id: t.dataset.id }, "panel.insp_toast_cancelled");
+      return true;
+    }
+    if (!d) return false;
+    if (act === "insp-window") { d.window = t.dataset.window; this._render(); return true; }
+    if (act === "insp-bonus") {
+      d.bonus = Math.max(0, Math.min(10000, (Number(d.bonus) || 0) + Number(t.dataset.d)));
+      this._render();
+      return true;
+    }
+    if (act === "insp-fail-mode") { d.mode = t.dataset.mode === "redo" && d.can_redo ? "redo" : "note"; this._render(); return true; }
+    const bonus = Math.max(0, Math.min(10000, Math.round(Number(d.bonus) || 0)));
+    if (act === "insp-start-save") {
+      this._inspectionCall(
+        { type: "taskmate/inspection/start", completion_id: d.completion_id, bonus, window: d.window, tell_child: !!d.tell },
+        d.tell ? "panel.insp_toast_started_told" : "panel.insp_toast_started", { name: d.child_name });
+      return true;
+    }
+    if (act === "insp-pass-save") {
+      const note = String(d.note || "").trim().slice(0, 200);
+      this._inspectionCall({ type: "taskmate/inspection/pass", inspection_id: d.inspection_id, bonus, note },
+        "panel.insp_toast_passed", { name: d.child_name, bonus: this._num(bonus) });
+      return true;
+    }
+    if (act === "insp-fail-save") {
+      const note = String(d.note || "").trim().slice(0, 200);
+      const redo = d.mode === "redo";
+      this._inspectionCall({ type: "taskmate/inspection/fail", inspection_id: d.inspection_id, redo, note },
+        redo ? "panel.insp_toast_sent_back" : "panel.insp_toast_noted", { name: d.child_name });
+      return true;
+    }
+    return false;
+  }
+
+  _renderInspectionsSection() {
+    const s = (this._state && this._state.settings) || {};
+    const children = (this._state && this._state.children) || [];
+    const picked = Array.isArray(s.inspection_pick_children) ? s.inspection_pick_children : [];
+    const win = ["1h", "2h", "4h", "bed"].includes(s.inspection_window) ? s.inspection_window : "2h";
+    const fail = ["note", "redo", "ask"].includes(s.inspection_fail_mode) ? s.inspection_fail_mode : "note";
+    return `
+        <div class="tm-section tm-insp-settings">
+          <div class="tm-section-head"><div><h3><ha-icon icon="mdi:magnify-scan"></ha-icon> ${this._t("panel.settings_insp_title")}</h3><p class="tm-meta">${this._t("panel.settings_insp_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_insp_enabled_label")}<small>${this._t("panel.settings_insp_enabled_hint")}</small></div>
+              <ha-switch data-setting="inspections_enabled" ${s.inspections_enabled !== false ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_insp_bonus_label")}<small>${this._t("panel.settings_insp_bonus_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="10000" step="1" data-setting="inspection_bonus" value="${this._num(s.inspection_bonus, 10)}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_insp_window_label")}<small>${this._t("panel.settings_insp_window_hint")}</small></div>
+              <select class="tm-select" data-setting="inspection_window">
+                ${["1h", "2h", "4h", "bed"].map(w => `<option value="${w}" ${w === win ? "selected" : ""}>${this._esc(this._inspWindowLabel(w))}</option>`).join("")}
+              </select>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_insp_bedtime_label")}<small>${this._t("panel.settings_insp_bedtime_hint")}</small></div>
+              <input type="time" class="tm-input" data-setting="inspection_bedtime" value="${this._esc(this._inspBedtime())}" style="max-width:140px">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_insp_fail_label")}<small>${this._t("panel.settings_insp_fail_hint")}</small></div>
+              <select class="tm-select" data-setting="inspection_fail_mode">
+                ${["note", "redo", "ask"].map(v => `<option value="${v}" ${v === fail ? "selected" : ""}>${this._esc(this._t("panel.settings_insp_fail_" + v))}</option>`).join("")}
+              </select>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_insp_tell_label")}<small>${this._t("panel.settings_insp_tell_hint")}</small></div>
+              <ha-switch data-setting="inspection_tell_child" ${s.inspection_tell_child !== false ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label"><span><ha-icon icon="mdi:dice-5-outline"></ha-icon> ${this._t("panel.settings_insp_pick_label")}</span><small>${this._t("panel.settings_insp_pick_hint")}</small></div>
+              <ha-switch data-setting="inspection_pick_enabled" ${s.inspection_pick_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row tm-insp-sub">
+              <div class="tm-setting-label">${this._t("panel.settings_insp_pick_when_label")}<small>${this._t("panel.settings_insp_pick_when_hint")}</small></div>
+              <div class="tm-difficulty-mults">
+                <label>${this._t("panel.settings_insp_pick_time")}<input type="time" class="tm-input" data-setting="inspection_pick_time" value="${this._esc(s.inspection_pick_time || "17:00")}"></label>
+                <label>${this._t("panel.settings_insp_pick_chance")}<input type="number" class="tm-input" min="0" max="100" step="1" data-setting="inspection_pick_chance" value="${this._num(s.inspection_pick_chance, 30)}"></label>
+              </div>
+            </div>
+            ${children.length ? `
+            <div class="tm-setting-row tm-insp-sub">
+              <div class="tm-setting-label">${this._t("panel.settings_insp_pick_children_label")}<small>${this._t("panel.settings_insp_pick_children_hint")}</small></div>
+              <div class="tm-chip-row">
+                ${children.map(c => {
+                  const on = picked.includes(c.id);
+                  return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}" data-act="insp-kid" data-insp-kid="${this._esc(c.id)}">${this._childAvatar(c)} ${this._esc(c.name)}</button>`;
+                }).join("")}
+              </div>
+            </div>` : ""}
+          </div>
+        </div>`;
   }
 
   // ---- Children --------------------------------------------------------
@@ -2794,6 +3155,13 @@ class TaskMatePanel extends HTMLElement {
         return;
       }
     }
+    // Surprise inspections (#981): the children the random pick may choose.
+    const inspKids = root.querySelectorAll("[data-insp-kid]");
+    if (inspKids.length) {
+      payload.inspection_pick_children = Array.from(inspKids)
+        .filter(el => el.classList.contains("tm-chip-on"))
+        .map(el => el.dataset.inspKid);
+    }
     // Non-admin parent role (#661): collect the switched-on HA users.
     const parentBoxes = root.querySelectorAll("[data-parent-user]");
     if (parentBoxes.length) {
@@ -3156,7 +3524,8 @@ class TaskMatePanel extends HTMLElement {
     return (s.pending_completions || []).filter(c => this._childInScope(c.child_id)).length
       + (s.pending_reward_claims || []).filter(c => this._childInScope(c.child_id)).length
       + (s.swap_requests || []).filter(r => this._childInScope(r.requester_id)).length
-      + (s.wishes || []).filter(w => w.status === "pending" && this._childInScope(w.child_id)).length;
+      + (s.wishes || []).filter(w => w.status === "pending" && this._childInScope(w.child_id)).length
+      + this._openInspections().length;
   }
 
   _sidebarGroups() {
@@ -4054,7 +4423,7 @@ class TaskMatePanel extends HTMLElement {
     const transactions = this._state.points_transactions || [];
     const events = [];
     completions.filter(c => c.approved && this._childInScope(c.child_id)).forEach(c => events.push({
-      ts: c.approved_at || c.completed_at, kind: "completion", child_id: c.child_id,
+      ts: c.approved_at || c.completed_at, kind: "completion", child_id: c.child_id, completion_id: c.id,
       child: c.child_id === "__parent__" ? "Parent" : ((childById[c.child_id] || {}).name || "?"),
       label: `${this._t("panel.activity_completed_chore", {name: (choreById[c.chore_id] || {}).name || this._t("panel.activity_deleted_chore")})}`,
       points: c.points_awarded,
@@ -4065,12 +4434,16 @@ class TaskMatePanel extends HTMLElement {
       label: `${this._t("panel.activity_claimed_reward", {name: (rewardById[c.reward_id] || {}).name || this._t("panel.activity_deleted_reward")})}`,
       points: -(c.approved_cost ?? (rewardById[c.reward_id] || {}).cost ?? 0),
     }));
+    // A pass bonus's transaction carries the parent's note along (#981).
+    const passNotes = Object.fromEntries(this._inspections().filter(i => i.bonus_txn_id).map(i => [i.bonus_txn_id, i.note || ""]));
     transactions.filter(t => this._childInScope(t.child_id)).forEach(t => events.push({
-      ts: t.created_at, kind: "manual", child_id: t.child_id,
+      ts: t.created_at, kind: String(t.reason || "").startsWith("Inspection passed:") ? "inspection" : "manual", child_id: t.child_id,
       child: (childById[t.child_id] || {}).name || "?",
       label: this._translateReason(t.reason) || (t.points >= 0 ? this._t("panel.activity_manual_addition") : this._t("panel.activity_manual_deduction")),
       points: t.points,
+      note: passNotes[t.id] || "",
     }));
+    events.push(...this._inspectionEvents());
     events.sort((a, b) => (b.ts || "").localeCompare(a.ts || ""));
     return events;
   }
@@ -4081,11 +4454,12 @@ class TaskMatePanel extends HTMLElement {
         ${events.map(ev => `
           <div class="tm-timeline-row">
             <div class="tm-timeline-time">${this._esc(this._timeAgo(ev.ts))}</div>
-            <div class="tm-timeline-icon tm-timeline-${ev.kind}"><ha-icon icon="${ev.kind === 'completion' ? 'mdi:check-circle' : ev.kind === 'claim' ? 'mdi:gift' : ev.points >= 0 ? 'mdi:plus-circle' : 'mdi:minus-circle'}"></ha-icon></div>
+            <div class="tm-timeline-icon tm-timeline-${ev.kind}"><ha-icon icon="${ev.kind === 'completion' ? 'mdi:check-circle' : ev.kind === 'claim' ? 'mdi:gift' : ev.kind === 'inspection' ? 'mdi:magnify-scan' : ev.points >= 0 ? 'mdi:plus-circle' : 'mdi:minus-circle'}"></ha-icon></div>
             <div class="tm-timeline-body">
-              <div><strong>${this._esc(ev.child)}</strong> · ${this._esc(ev.label)}</div>
+              <div><strong>${this._esc(ev.child)}</strong> · ${this._esc(ev.label)}${ev.kind === "completion" && ev.completion_id ? ` ${this._inspSlot(ev.completion_id)}` : ""}</div>
+              ${ev.note ? `<div class="tm-meta tm-insp-note">“${this._esc(ev.note)}”</div>` : ""}
             </div>
-            <div class="tm-timeline-points ${ev.points >= 0 ? 'tm-pos' : 'tm-neg'} tm-numeric">${ev.points >= 0 ? '+' : ''}${this._num(ev.points)}</div>
+            <div class="tm-timeline-points ${ev.points >= 0 ? 'tm-pos' : 'tm-neg'} tm-numeric">${ev.points == null ? "" : `${ev.points >= 0 ? '+' : ''}${this._num(ev.points)}`}</div>
           </div>
         `).join("")}
       </div>
@@ -4101,7 +4475,11 @@ class TaskMatePanel extends HTMLElement {
     const pendingWishes = wishes ? (this._state.wishes || []).filter(w => w.status === "pending" && this._childInScope(w.child_id)) : [];
     const { childById, choreById, rewardById } = this._activityMaps();
     const pointsName = (this._state.settings && this._state.settings.points_name) || this._t("common.points");
+    // A redo an inspection sent back (#981) pays nothing extra: say so.
+    const redoIds = new Set(this._inspections().map(i => i.redo_completion_id).filter(Boolean));
+    const inspections = this._openInspections();
     const html = `
+    ${this._inspectionQueueHtml()}
     ${pendingCompletions.map(c => {
       const chore = choreById[c.chore_id];
       const child = childById[c.child_id];
@@ -4129,7 +4507,7 @@ class TaskMatePanel extends HTMLElement {
           ${this._safePhotoUrl(c.photo_url) ? `<a class="tm-approval-photo" href="${this._esc(this._safePhotoUrl(c.photo_url))}" target="_blank" rel="noopener" data-act="view-photo" data-photo="${this._esc(this._safePhotoUrl(c.photo_url))}" data-cap="${this._esc(photoCap)}" title="${this._t("panel.activity_view_photo")}"><img src="${this._esc(this._safePhotoUrl(c.photo_url))}" alt="" loading="lazy"></a>` : ""}
           <div class="tm-approval-body">
             <div class="tm-approval-line">${this._t("panel.activity_completed_text", {child: this._esc((child && child.name) || "?"), chore: this._esc(choreName)})}</div>
-            <div class="tm-meta">${this._timeAgo(c.completed_at)} · ${chorePoints} ${this._t("panel.activity_points")}</div>
+            <div class="tm-meta">${this._timeAgo(c.completed_at)} · ${chorePoints} ${this._t("panel.activity_points")}${redoIds.has(c.id) ? ` · ${this._esc(this._t("panel.insp_redo_queue"))}` : ""}</div>
           </div>
           <div class="tm-approval-actions">
             ${this._ratingOn() ? this._ratingPicker(c.id) : ""}
@@ -4192,7 +4570,7 @@ class TaskMatePanel extends HTMLElement {
     }).join("")}
     `;
     return {
-      count: pendingCompletions.length + pendingClaims.length + pendingSwaps.length + pendingWishes.length,
+      count: pendingCompletions.length + pendingClaims.length + pendingSwaps.length + pendingWishes.length + inspections.length,
       chores: pendingCompletions.length,
       html,
     };
@@ -6576,6 +6954,8 @@ class TaskMatePanel extends HTMLElement {
 
         ${this._renderVacationSection()}
 
+        ${this._renderInspectionsSection()}
+
         <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.settings_bonuses_title")}</h3></div></div>
           <div class="tm-section-body">
@@ -7152,6 +7532,9 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "wish-pledge")  return this._renderWishPledgeDialog();
     if (this._dialog.kind === "wish-decline") return this._renderWishDeclineDialog();
     if (this._dialog.kind === "reject")       return this._renderRejectDialog();
+    if (this._dialog.kind === "insp-start")   return this._renderInspectionStartDialog();
+    if (this._dialog.kind === "insp-pass")    return this._renderInspectionPassDialog();
+    if (this._dialog.kind === "insp-fail")    return this._renderInspectionFailDialog();
     return "";
   }
 
@@ -9387,6 +9770,49 @@ class TaskMatePanel extends HTMLElement {
       .tm-timeline-completion ha-icon { color: var(--tm-positive); }
       .tm-timeline-claim ha-icon      { color: var(--tm-gold); }
       .tm-timeline-manual ha-icon     { color: var(--tm-accent); }
+      /* Surprise inspections (#981) */
+      .tm-timeline-inspection ha-icon { color: #e67e22; }
+      .tm-insp-note { font-style: italic; margin-top: 2px; overflow-wrap: anywhere; }
+      .tm-insp-tag { margin-left: 0; margin-top: 3px; max-width: 100%; white-space: normal; }
+      .tm-insp-tag ha-icon { --mdc-icon-size: 13px; }
+      .tm-insp-flag { vertical-align: middle; margin-left: 4px; color: #e67e22; }
+      .tm-insp-flag ha-icon { --mdc-icon-size: 18px; }
+      .tm-insp-icon { background: color-mix(in srgb, #e67e22, transparent 86%); color: #e67e22; }
+      .tm-insp-item { border-color: color-mix(in srgb, #e67e22, transparent 60%); }
+      .tm-insp-ctx {
+        display: flex; gap: 12px; align-items: center; margin-bottom: 14px;
+        padding: 10px 12px; border-radius: var(--tm-radius-sm);
+        background: var(--tm-surface-2); border: 1px solid var(--tm-border);
+      }
+      .tm-insp-ctx-ic {
+        width: 40px; height: 40px; border-radius: 10px; flex: none; display: grid; place-items: center;
+        background: color-mix(in srgb, #e67e22, transparent 86%); color: #e67e22;
+      }
+      .tm-insp-stepper { display: inline-flex; align-items: center; gap: 6px; }
+      .tm-insp-stepper .tm-input { width: 90px; text-align: center; }
+      .tm-insp-stepper .tm-btn { min-width: 36px; justify-content: center; font-size: 16px; }
+      .tm-insp-go { background: #e67e22 !important; border-color: #e67e22 !important; color: #fff !important; }
+      .tm-insp-go ha-icon { --mdc-icon-size: 18px; }
+      .tm-insp-opts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+      .tm-insp-opt {
+        display: flex; gap: 10px; align-items: flex-start; text-align: left; width: 100%;
+        padding: 10px 12px; border-radius: var(--tm-radius-sm); cursor: pointer;
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border); color: inherit; font: inherit;
+      }
+      .tm-insp-opt small { display: block; color: var(--tm-text-muted); margin-top: 2px; font-size: 12.5px; }
+      .tm-insp-opt-on { border-color: var(--tm-accent); background: var(--tm-accent-soft); }
+      .tm-insp-opt:disabled { opacity: 0.55; cursor: not-allowed; }
+      .tm-insp-radio {
+        width: 16px; height: 16px; border-radius: 50%; flex: none; margin-top: 2px;
+        border: 2px solid var(--tm-text-muted); box-sizing: border-box;
+      }
+      .tm-insp-opt-on .tm-insp-radio { border-color: var(--tm-accent); box-shadow: inset 0 0 0 3px var(--tm-surface-0); background: var(--tm-accent); }
+      .tm-insp-hint { display: flex; gap: 6px; align-items: center; }
+      .tm-insp-hint ha-icon { --mdc-icon-size: 15px; }
+      .tm-insp-settings { border-color: color-mix(in srgb, #e67e22, transparent 55%); }
+      .tm-insp-settings h3 ha-icon { --mdc-icon-size: 18px; color: #e67e22; vertical-align: -3px; }
+      .tm-insp-sub { padding-left: 18px; }
+      .tm-insp-settings .tm-setting-label ha-icon { --mdc-icon-size: 16px; vertical-align: -3px; }
       .tm-timeline-points { font-weight: 600; }
 
       /* Settings */

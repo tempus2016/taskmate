@@ -27,6 +27,7 @@ from .coord_calendar import CalendarMixin
 from .coord_challenges import ChallengesMixin
 from .coord_chores import ChoresMixin
 from .coord_guests import GuestsMixin
+from .coord_inspections import InspectionsMixin
 from .coord_mandatory import MandatoryMixin
 from .coord_notifications import NotificationCoordinator
 from .coord_points import PointsMixin
@@ -100,6 +101,7 @@ class TaskMateCoordinator(
     BountiesMixin,
     RecapsMixin,
     RejectionsMixin,
+    InspectionsMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -440,6 +442,9 @@ class TaskMateCoordinator(
         # Recaps (#929): build any recap whose period ended while HA was off,
         # then arm the midnight build and the daily announcement.
         await self.async_start_recaps()
+        # Surprise inspections (#981): close / remind what came due while HA
+        # was off, catch up on a missed daily pick, then arm the timers.
+        await self.async_start_inspections()
 
     @callback
     def _async_weekly_digest_check(self, now: datetime) -> None:
@@ -798,6 +803,7 @@ class TaskMateCoordinator(
                 setattr(self, attr, None)
         self.disarm_mandatory_schedules()
         self.disarm_recap_schedules()
+        self.disarm_inspection_schedules()
         # Flush any pending debounced save so an entry unload/reload can't drop
         # the last mutation (PERF-3).
         await self.storage.async_save_now()

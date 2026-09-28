@@ -1641,3 +1641,101 @@ remove_wish:
       required: true
       selector:
         text:
+
+start_inspection:
+  name: Start Inspection
+  description: >-
+    Flag a chore approved in the last 24 hours for a surprise inspection. Pass or fail it before the window closes; an undecided inspection closes quietly.
+  fields:
+    completion_id:
+      name: Completion ID
+      description: The ID of the approved chore completion to inspect
+      required: true
+      selector:
+        text:
+    bonus:
+      name: Bonus
+      description: Points paid if it passes. Defaults to the Settings value.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 10000
+          mode: box
+    window:
+      name: Window
+      description: "How long you have to check it: 1h, 2h, 4h or bed (until bedtime). Defaults to the Settings value."
+      required: false
+      selector:
+        select:
+          options:
+            - "1h"
+            - "2h"
+            - "4h"
+            - "bed"
+    tell_child:
+      name: Tell the child
+      description: Show "Inspection coming" on the child's card now. Turn off for a secret check.
+      required: false
+      selector:
+        boolean:
+
+pass_inspection:
+  name: Pass Inspection
+  description: The inspected chore passed. Pays the bonus as a normal points entry and celebrates on the child's card.
+  fields:
+    inspection_id:
+      name: Inspection ID
+      description: The ID of the open inspection
+      required: true
+      selector:
+        text:
+    bonus:
+      name: Bonus
+      description: Points to pay. Defaults to the bonus set when the inspection started.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 10000
+          mode: box
+    note:
+      name: Note
+      description: Optional note shown to the child
+      required: false
+      selector:
+        text:
+
+fail_inspection:
+  name: Fail Inspection
+  description: The inspected chore didn't pass. No points are taken. It can be sent back to redo; the redo earns nothing extra.
+  fields:
+    inspection_id:
+      name: Inspection ID
+      description: The ID of the open inspection
+      required: true
+      selector:
+        text:
+    redo:
+      name: Send back to redo
+      description: Put the chore back on the child's list as not done for today. Defaults to the Settings value.
+      required: false
+      selector:
+        boolean:
+    note:
+      name: Note
+      description: Optional note shown to the child (what needs fixing)
+      required: false
+      selector:
+        text:
+
+cancel_inspection:
+  name: Cancel Inspection
+  description: Call off an open inspection, as if it never started.
+  fields:
+    inspection_id:
+      name: Inspection ID
+      description: The ID of the open inspection
+      required: true
+      selector:
+        text:
