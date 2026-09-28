@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import asyncio
 import datetime as dt
-import json
 from datetime import timezone
 from unittest.mock import AsyncMock, MagicMock
 
@@ -111,6 +110,20 @@ def _fired(coord, event):
 
 def _notified(coord, type_id):
     return [c for c in coord.notifications.fire.call_args_list if c.args[0] == type_id]
+
+
+def _numbers(obj) -> set:
+    """Every number anywhere in a payload — ids and timestamps can contain
+    any digits, so a secret amount is looked for as a value, not a substring."""
+    if isinstance(obj, bool):
+        return set()
+    if isinstance(obj, (int, float)):
+        return {obj}
+    if isinstance(obj, dict):
+        return set().union(*(_numbers(v) for v in obj.values())) if obj else set()
+    if isinstance(obj, (list, tuple)):
+        return set().union(*(_numbers(v) for v in obj)) if obj else set()
+    return set()
 
 
 def _day(iso):
@@ -556,7 +569,7 @@ def test_a_child_sees_only_their_own_bid_and_the_count():
     _bid(coord, auction, "k2", 17)
     view = coord.auctions_for_child("k1")
     assert [(a["my_bid"], a["bid_count"]) for a in view] == [(31, 2)]
-    assert "17" not in json.dumps(view) and "bids" not in view[0]
+    assert 17 not in _numbers(view) and "bids" not in view[0]
     assert coord.auctions_for_child("k3") == []  # not eligible: not shown at all
 
 
@@ -566,7 +579,7 @@ def test_the_public_digest_carries_counts_never_amounts():
     _bid(coord, auction, "k1", 31)
     digest = coord.auctions_public_state()
     assert digest[0]["bids"] == 1
-    assert "31" not in json.dumps(digest) and "k1" not in json.dumps({"x": digest[0].get("bidders")})
+    assert 31 not in _numbers(digest) and "bidders" not in digest[0]
 
 
 def test_results_stay_on_the_card_for_a_day_then_leave():

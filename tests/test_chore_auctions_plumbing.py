@@ -26,7 +26,7 @@ from custom_components.taskmate.const import DOMAIN
 from custom_components.taskmate.coord_notifications import NOTIFICATION_TYPES_BY_ID
 
 from .conftest import dt_util_mock
-from .test_chore_auctions import CLOSES, NOW, TOMORROW, _chore, _coord
+from .test_chore_auctions import CLOSES, NOW, TOMORROW, _chore, _coord, _numbers
 
 INTEGRATION = Path(__file__).resolve().parent.parent / "custom_components" / "taskmate"
 LOCALES = INTEGRATION / "www" / "locales"
@@ -80,7 +80,7 @@ def test_a_childs_view_has_their_own_bid_and_never_a_siblings():
     run(wsa.ws_auctions_list(coord.hass, connection, {"id": 1, "type": wsa.WS_AUCTIONS_LIST, "child_id": "k1"}))
     result = connection.send_result.call_args.args[1]
     assert result["auctions"][0]["my_bid"] == 31 and result["auctions"][0]["bid_count"] == 2
-    assert "17" not in json.dumps(result)
+    assert 17 not in _numbers(result)
 
 
 def test_a_child_linked_to_someone_else_cannot_read_the_view_or_bid():
@@ -174,7 +174,7 @@ def test_the_auctions_sensor_publishes_counts_not_amounts():
     sensor = sensor_module.TaskMateAuctionsSensor(coord, SimpleNamespace(entry_id="e1"))
     attrs = sensor._build_attributes()
     assert attrs["auctions"][0]["bids"] == 2 and attrs["auctions"][0]["id"] == auction.id
-    assert "31" not in json.dumps(attrs) and "17" not in json.dumps(attrs)
+    assert not {31, 17} & _numbers(attrs)
     assert sensor.native_value == 1
     assert "auctions" in sensor._unrecorded_attributes
 
