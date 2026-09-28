@@ -819,6 +819,17 @@ def _safe_int(value: Any, default: int = 0) -> int:
         return default
 
 
+def _bounty_claim_count(data: dict[str, Any]) -> int:
+    """The stored claim count, or the least a record from before it was kept
+    (#961) proves: every lapse was a claim, and a bounty that is or was held
+    was claimed at least once."""
+    count = max(0, _safe_int(data.get("claim_count", 0)))
+    count = max(count, _safe_int(data.get("lapse_count", 0)))
+    if data.get("status") in ("claimed", "pending", "completed"):
+        count = max(count, 1)
+    return count
+
+
 @dataclass
 class Bounty:
     """A one-off job on the bounty board (#931).
@@ -850,6 +861,9 @@ class Bounty:
     completion_id: str = ""  # the pending / approved ChoreCompletion
     points_awarded: int = 0
     lapse_count: int = 0  # how many claims ran out before someone finished it
+    # How many times a child claimed it off the board (#961). A rejection
+    # hands the same claim back, so it doesn't count again.
+    claim_count: int = 0
     created_at: datetime | None = None
     closed_at: datetime | None = None  # when it was completed or expired
     id: str = field(default_factory=generate_id)
@@ -874,6 +888,7 @@ class Bounty:
             completion_id=str(data.get("completion_id", "") or ""),
             points_awarded=max(0, _safe_int(data.get("points_awarded", 0))),
             lapse_count=max(0, _safe_int(data.get("lapse_count", 0))),
+            claim_count=_bounty_claim_count(data),
             created_at=parse_datetime(data.get("created_at")),
             closed_at=parse_datetime(data.get("closed_at")),
             id=data.get("id") or generate_id(),
@@ -898,6 +913,7 @@ class Bounty:
             "completion_id": self.completion_id,
             "points_awarded": self.points_awarded,
             "lapse_count": self.lapse_count,
+            "claim_count": self.claim_count,
             "created_at": format_datetime(self.created_at),
             "closed_at": format_datetime(self.closed_at),
             "id": self.id,

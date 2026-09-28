@@ -14,7 +14,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import authz
 from .const import DOMAIN
-from .coordinator import TaskMateCoordinator
+from .coordinator import TaskMateCoordinator, button_keys, chore_has_button
 from .entity import taskmate_device_info
 from .models import Child, Chore, Reward
 
@@ -38,32 +38,25 @@ async def async_setup_entry(
 
     for child in children:
         # Chore completion buttons
-        for chore in chores:
-            if getattr(chore, "assignment_mode", "everyone") == "unassigned":
-                continue
-            if not chore.assigned_to or child.id in chore.assigned_to:
-                entities.append(CompleteChoreButton(coordinator, entry, child, chore))
+        entities.extend(
+            CompleteChoreButton(coordinator, entry, child, chore)
+            for chore in chores
+            if chore_has_button(chore, child.id)
+        )
 
         # Reward claim buttons
         entities.extend(ClaimRewardButton(coordinator, entry, child, reward) for reward in rewards)
 
     # Track which entity combos already exist
-    tracked_combos: set[str] = set()
-    for child in children:
-        for chore in chores:
-            if getattr(chore, "assignment_mode", "everyone") == "unassigned":
-                continue
-            if not chore.assigned_to or child.id in chore.assigned_to:
-                tracked_combos.add(f"{child.id}_{chore.id}_complete")
-        for reward in rewards:
-            tracked_combos.add(f"{child.id}_{reward.id}_claim")
+    tracked_combos: set[str] = button_keys(children, chores, rewards)
 
     async_add_entities(entities)
 
-    # Set up listener to add buttons for new children/chores/rewards
+    # Set up listener to add buttons for new children/chores/rewards, and drop
+    # those whose chore/reward was deleted or child unassigned (#960).
     @callback
     def async_update_entities() -> None:
-        """Add button entities for newly created children, chores, or rewards."""
+        """Keep button entities in step with children, chores and rewards."""
         new_entities: list[ButtonEntity] = []
         current_children = coordinator.data.get("children", [])
         current_chores = coordinator.data.get("chores", [])
@@ -71,9 +64,7 @@ async def async_setup_entry(
 
         for child in current_children:
             for chore in current_chores:
-                if getattr(chore, "assignment_mode", "everyone") == "unassigned":
-                    continue
-                if not chore.assigned_to or child.id in chore.assigned_to:
+                if chore_has_button(chore, child.id):
                     key = f"{child.id}_{chore.id}_complete"
                     if key not in tracked_combos:
                         new_entities.append(CompleteChoreButton(coordinator, entry, child, chore))
@@ -83,6 +74,12 @@ async def async_setup_entry(
                 if key not in tracked_combos:
                     new_entities.append(ClaimRewardButton(coordinator, entry, child, reward))
                     tracked_combos.add(key)
+
+        # Forget stale keys too, so re-assigning a child brings the button back.
+        stale = tracked_combos - button_keys(current_children, current_chores, current_rewards)
+        if stale:
+            tracked_combos.difference_update(stale)
+            coordinator.remove_button_entities(stale)
 
         if new_entities:
             async_add_entities(new_entities)

@@ -1856,6 +1856,7 @@
   "panel.bounty_completed_meta": "{name} · +{points} ★",
   "panel.bounty_expired_meta": "Ninguém ficou com ela · {date}",
   "panel.bounty_expired_lapsed_meta": "Expirou depois de uma reserva ter caducado · {date}",
+  "panel.bounty_expired_unfinished_meta": "Reservada mas nunca concluída · {date}",
   "panel.bounty_lapsed_meta": "Reserva expirou {count}×",
   "panel.bounty_no_expiry": "Sem prazo",
   "panel.bounty_release": "Libertar reserva",

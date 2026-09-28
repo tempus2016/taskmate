@@ -1,5 +1,6 @@
-// Admin panel → Bounties → History (#949): an expired bounty whose claim ran
-// out must not say "Nobody claimed".
+// Admin panel → Bounties → History (#949, #961): an expired bounty that anyone
+// ever claimed — whose claim ran out, or who gave it back — must not say
+// "Nobody claimed".
 
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
@@ -21,14 +22,32 @@ const base = {
 };
 
 test("an expired bounty nobody claimed says so", () => {
-  const html = panel()._renderBountyRow({ ...base, lapse_count: 0 }, {});
+  const html = panel()._renderBountyRow({ ...base, lapse_count: 0, claim_count: 0 }, {});
   assert.ok(html.includes("panel.bounty_expired_meta"));
   assert.ok(!html.includes("panel.bounty_expired_lapsed_meta"));
 });
 
 test("an expired bounty whose claim lapsed does not say nobody claimed", () => {
-  const html = panel()._renderBountyRow({ ...base, lapse_count: 1 }, {});
+  const html = panel()._renderBountyRow({ ...base, lapse_count: 1, claim_count: 1 }, {});
   assert.ok(!html.includes("panel.bounty_expired_meta"), "a lapsed claim is not 'nobody claimed'");
   assert.ok(html.includes("panel.bounty_expired_lapsed_meta"));
   assert.ok(html.includes("panel.bounty_lapsed_meta:1"), "the lapse count still shows");
+});
+
+test("an expired bounty that was claimed and given back does not say nobody claimed", () => {
+  const html = panel()._renderBountyRow({ ...base, lapse_count: 0, claim_count: 1 }, {});
+  assert.ok(!html.includes("panel.bounty_expired_meta"), "a given-back claim is not 'nobody claimed'");
+  assert.ok(html.includes("panel.bounty_expired_unfinished_meta"));
+  assert.ok(!html.includes("panel.bounty_lapsed_meta"), "no lapse to report");
+});
+
+test("a lapse wins over a give-back in a mixed history", () => {
+  const html = panel()._renderBountyRow({ ...base, lapse_count: 1, claim_count: 3 }, {});
+  assert.ok(html.includes("panel.bounty_expired_lapsed_meta"));
+  assert.ok(!html.includes("panel.bounty_expired_unfinished_meta"));
+});
+
+test("a bounty from before claims were counted still reads as nobody claimed", () => {
+  const html = panel()._renderBountyRow({ ...base, lapse_count: 0 }, {});
+  assert.ok(html.includes("panel.bounty_expired_meta"));
 });

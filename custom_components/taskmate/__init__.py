@@ -212,6 +212,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         coordinator.async_prune_orphan_child_entities()
     except Exception:  # noqa: BLE001
         _LOGGER.exception("Could not prune entities of deleted children")
+    # Likewise the buttons of chores/rewards deleted before #960.
+    try:
+        coordinator.async_prune_orphan_button_entities()
+    except Exception:  # noqa: BLE001
+        _LOGGER.exception("Could not prune buttons of deleted chores or rewards")
 
     # Register services (only once)
     if not hass.data[DOMAIN].get(SERVICES_REGISTERED):

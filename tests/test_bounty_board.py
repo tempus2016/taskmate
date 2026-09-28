@@ -105,6 +105,7 @@ def test_bounty_round_trips_through_storage():
         claimed_at=NOW,
         claim_until=NOW + dt.timedelta(hours=3),
         lapse_count=2,
+        claim_count=3,
     )
     back = Bounty.from_dict(b.to_dict())
     assert back == b
@@ -425,6 +426,53 @@ def test_an_unclaimed_bounty_expires():
     assert _sweep(coord) is True
     assert _bounty(coord, b.id).status == "expired"
     assert "taskmate_bounty_expired" in _events(coord)
+
+
+# ── the claim count (#961) ───────────────────────────────────────────────────
+
+
+def test_every_claim_from_the_board_is_counted():
+    coord = _coord()
+    b = _claimed(coord)
+    run(coord.async_give_back_bounty(b.id, "k1"))
+    run(coord.async_claim_bounty(b.id, "k2"))
+    run(coord.async_release_bounty(b.id))
+    assert _bounty(coord, b.id).claim_count == 2
+
+
+def test_a_rejection_is_the_same_claim_not_a_new_one():
+    coord = _coord()
+    b = _claimed(coord)
+    comp = run(coord.async_complete_bounty(b.id, "k1"))
+    run(coord.async_reject_chore(comp.id))
+    assert _bounty(coord, b.id).claim_count == 1
+
+
+def test_a_bounty_given_back_then_expired_remembers_it_was_claimed():
+    coord = _coord()
+    b = _claimed(coord, expires_at=(NOW + dt.timedelta(hours=1)).isoformat())
+    run(coord.async_give_back_bounty(b.id, "k1"))
+    _at(hours=1)
+    _sweep(coord)
+    stored = _bounty(coord, b.id)
+    assert (stored.status, stored.claim_count, stored.lapse_count) == ("expired", 1, 0)
+
+
+def test_a_failed_claim_is_not_counted():
+    coord = _coord()
+    b = _claimed(coord)
+    with pytest.raises(ValueError):
+        run(coord.async_claim_bounty(b.id, "k2"))
+    assert _bounty(coord, b.id).claim_count == 1
+
+
+def test_older_records_without_a_claim_count_load_safely():
+    assert Bounty.from_dict({"title": "x", "status": "expired"}).claim_count == 0
+    # Every lapse was a claim, and a bounty that is (or was) held was claimed.
+    assert Bounty.from_dict({"title": "x", "status": "expired", "lapse_count": 2}).claim_count == 2
+    for status in ("claimed", "pending", "completed"):
+        assert Bounty.from_dict({"title": "x", "status": status}).claim_count == 1
+    assert Bounty.from_dict({"title": "x", "claim_count": "junk"}).claim_count == 0
 
 
 def test_a_waiting_bounty_neither_lapses_nor_expires():

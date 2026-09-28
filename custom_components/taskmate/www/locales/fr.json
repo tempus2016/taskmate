@@ -1856,6 +1856,7 @@
   "panel.bounty_completed_meta": "{name} · +{points} ★",
   "panel.bounty_expired_meta": "Personne ne l'a réservée · {date}",
   "panel.bounty_expired_lapsed_meta": "Expirée après une réservation expirée · {date}",
+  "panel.bounty_expired_unfinished_meta": "Réservée mais jamais terminée · {date}",
   "panel.bounty_lapsed_meta": "Réservation expirée {count}×",
   "panel.bounty_no_expiry": "Sans limite",
   "panel.bounty_release": "Libérer la réservation",
