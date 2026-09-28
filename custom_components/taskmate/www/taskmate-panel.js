@@ -2738,7 +2738,8 @@ class TaskMatePanel extends HTMLElement {
   }
 
   async _notifSetRoute(typeId, recipientId, enabled, time) {
-    await this._callWS({ type: "taskmate/notifications/set_route", type_id: typeId, recipient_id: recipientId, enabled, time });
+    const { ok, err } = await this._callWS({ type: "taskmate/notifications/set_route", type_id: typeId, recipient_id: recipientId, enabled, time });
+    if (!ok) this._showToast("err", this._t("panel.toast_save_failed", { error: err }));
     await this._fetchState();
   }
 

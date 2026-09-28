@@ -61,12 +61,18 @@ async def test_set_master_enabled(setup, hass):
 @pytest.mark.asyncio
 async def test_set_route(setup, hass):
     coord = setup
+    from custom_components.taskmate.models import Child
+
+    c = Child(name="Maria")
+    coord.storage.add_child(c)
+    rid = f"child:{c.id}"
+
     connection = MagicMock()
     msg = {
         "id": 3,
         "type": "taskmate/notifications/set_route",
         "type_id": "bedtime_reminder",
-        "recipient_id": "child:abc",
+        "recipient_id": rid,
         "enabled": True,
         "time": "21:00",
     }
@@ -76,8 +82,90 @@ async def test_set_route(setup, hass):
     assert args[0] == 3
     assert args[1] == {"ok": True}
     cfg = coord.storage.get_notification_config("bedtime_reminder")
-    assert cfg.routes["child:abc"].enabled is True
-    assert cfg.routes["child:abc"].time == "21:00"
+    assert cfg.routes[rid].enabled is True
+    assert cfg.routes[rid].time == "21:00"
+
+
+@pytest.mark.asyncio
+async def test_set_route_parent_recipient(setup, hass):
+    coord = setup
+    from custom_components.taskmate.models import ParentRecipient
+
+    p = ParentRecipient(name="Mum", notify_service="notify.mum", enabled=False)
+    coord.storage.upsert_parent_recipient(p)
+
+    connection = MagicMock()
+    msg = {
+        "id": 6,
+        "type": "taskmate/notifications/set_route",
+        "type_id": "pending_chore_approval",
+        "recipient_id": p.id,
+        "enabled": True,
+    }
+    await ws.ws_notif_set_route(hass, connection, msg)
+
+    connection.send_error.assert_not_called()
+    assert coord.storage.get_notification_config("pending_chore_approval").routes[p.id].enabled is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "recipient_id",
+    ["child:nonexistent", "parent:nonexistent", "parent:parent:x", "abc", "child:", ""],
+)
+async def test_set_route_rejects_unknown_recipient(setup, hass, recipient_id):
+    coord = setup
+    from custom_components.taskmate.models import Child, ParentRecipient
+
+    c = Child(name="Maria")
+    coord.storage.add_child(c)
+    p = ParentRecipient(name="Mum", notify_service="notify.mum")
+    coord.storage.upsert_parent_recipient(p)
+    if recipient_id == "parent:parent:x":
+        recipient_id = f"parent:{p.id}"  # doubled prefix of a real parent id
+    before = dict(coord.storage.get_notification_config("bedtime_reminder").routes)
+
+    connection = MagicMock()
+    msg = {
+        "id": 7,
+        "type": "taskmate/notifications/set_route",
+        "type_id": "bedtime_reminder",
+        "recipient_id": recipient_id,
+        "enabled": True,
+    }
+    await ws.ws_notif_set_route(hass, connection, msg)
+
+    connection.send_result.assert_not_called()
+    connection.send_error.assert_called_once()
+    args, _ = connection.send_error.call_args
+    assert args[1] == "invalid"
+    assert "recipient" in args[2].lower()
+    assert coord.storage.get_notification_config("bedtime_reminder").routes == before
+
+
+@pytest.mark.asyncio
+async def test_set_route_rejects_unknown_type(setup, hass):
+    coord = setup
+    from custom_components.taskmate.models import Child
+
+    c = Child(name="Maria")
+    coord.storage.add_child(c)
+
+    connection = MagicMock()
+    msg = {
+        "id": 8,
+        "type": "taskmate/notifications/set_route",
+        "type_id": "no_such_type",
+        "recipient_id": f"child:{c.id}",
+        "enabled": True,
+    }
+    await ws.ws_notif_set_route(hass, connection, msg)
+
+    connection.send_result.assert_not_called()
+    args, _ = connection.send_error.call_args
+    assert args[1] == "invalid"
+    assert "no_such_type" in args[2]
+    assert "no_such_type" not in coord.storage.get_all_notification_configs()
 
 
 @pytest.mark.asyncio
