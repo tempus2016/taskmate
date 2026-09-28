@@ -3520,13 +3520,30 @@ class TaskMateChildCard extends LitElement {
     });
   }
 
-  _getMidnightCountdown() {
-    const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const now = new Date();
-    // Get tomorrow midnight in HA timezone
-    const tomorrow = new Date(now.toLocaleDateString("en-CA", { timeZone: tz }) + "T00:00:00");
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const diffMs = tomorrow - now;
+  /** Wall-clock parts of `date` in `tz`, as a UTC timestamp (ms). */
+  _wallClockMs(date, tz) {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: tz, hourCycle: "h23",
+        year: "numeric", month: "numeric", day: "numeric",
+        hour: "numeric", minute: "numeric", second: "numeric",
+      }).formatToParts(date).map(p => [p.type, Number(p.value)])
+    );
+    return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  }
+
+  _getMidnightCountdown(now = new Date()) {
+    // Everything happens in HA's zone (#948): parsing a "YYYY-MM-DDT00:00" string
+    // would land on the browser's midnight instead, hours off when they differ.
+    const tz = this._getTimezone();
+    const wall = this._wallClockMs(now, tz);
+    const d = new Date(wall);
+    const nextMidnightWall = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
+    // Turn that wall-clock midnight into an instant using HA's UTC offset at
+    // midnight itself, so a DST change during the day is counted correctly.
+    let tomorrow = nextMidnightWall - (wall - now.getTime());
+    tomorrow = nextMidnightWall - (this._wallClockMs(new Date(tomorrow), tz) - tomorrow);
+    const diffMs = tomorrow - now.getTime();
     if (diffMs <= 0) return null;
 
     const totalMins = Math.floor(diffMs / 60000);
