@@ -296,6 +296,7 @@ class BountiesMixin:
         bounty.claimed_at = now
         bounty.claim_until = self._bounty_lock_until(bounty, now)
         bounty.lapse_warned = False
+        bounty.claim_count += 1
         self.storage.update_bounty(bounty)
         await self.storage.async_save()
         self._fire_bounty_event("taskmate_bounty_claimed", bounty, child_id)
