@@ -12,29 +12,50 @@ to keep in sync:
     coalesced into multi-day all-day events. On an away day the child's chores
     are hidden, mirroring the rest of the integration.
 
-Read-only for now: completing a chore from the calendar is intentionally not
-supported.
+Two-way (#977): a parent or admin can edit the calendar from Home Assistant.
+Creating an event adds a one-off chore for the child; moving an occurrence
+moves that one day (a one-off chore just changes date); deleting one removes
+that day only. Each chore occurrence carries a uid of
+``taskmate-chore:<chore id>:<scheduled date>`` so an edit can find it again —
+the scheduled date stays the identity even after the occurrence is moved.
+Moving or removing a whole repeating series is refused: edit the chore.
+Completing a chore from the calendar is intentionally not supported.
 """
 
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
+from typing import Any
 
-from homeassistant.components.calendar import CalendarEntity, CalendarEvent
+from homeassistant.components.calendar import CalendarEntity, CalendarEntityFeature, CalendarEvent
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ServiceValidationError, Unauthorized
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
+from . import authz
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
 from .models import Child, Chore
 
+try:  # The websocket connection a calendar-panel edit arrived on (see _acting_user_ids).
+    from homeassistant.components.websocket_api.connection import current_connection
+except ImportError:  # pragma: no cover - present on every supported HA version
+    current_connection = None
+
 _LOGGER = logging.getLogger(__name__)
+
+# Prefix of every chore occurrence's event uid: taskmate-chore:<chore id>:<date>.
+_UID_PREFIX = "taskmate-chore"
+# The description marker TaskMate stamps on events it publishes to other
+# calendars. A create_event carrying it is TaskMate talking to itself (a chore
+# published to a TaskMate calendar) and must not spawn a new chore.
+_PUBLISHED_MARKER = "taskmate:chore:"
 
 # How far ahead the `event` (next-up) property scans for the soonest event.
 _NEXT_EVENT_HORIZON_DAYS = 60
@@ -100,6 +121,42 @@ def _chore_description(chore: Chore) -> str:
     return " · ".join(parts)
 
 
+def _occurrence_uid(chore_id: str, origin: date) -> str:
+    """The stable uid for the occurrence of ``chore_id`` scheduled on ``origin``."""
+    return f"{_UID_PREFIX}:{chore_id}:{origin.isoformat()}"
+
+
+def _parse_day(value: str) -> date | None:
+    """Parse an occurrence date: ISO (2026-06-22) or RFC 5545 (20260622[T...])."""
+    digits = str(value or "").replace("-", "")[:8]
+    try:
+        return date(int(digits[:4]), int(digits[4:6]), int(digits[6:8]))
+    except ValueError:
+        return None
+
+
+def _parse_occurrence_uid(uid: str, recurrence_id: str | None) -> tuple[str, date] | None:
+    """Split an event uid into (chore id, scheduled date), or None if not ours.
+
+    Accepts the full per-occurrence uid, or the bare ``taskmate-chore:<id>``
+    series uid plus a ``recurrence_id`` naming the occurrence.
+    """
+    parts = str(uid or "").split(":")
+    if len(parts) < 2 or parts[0] != _UID_PREFIX or not parts[1]:
+        return None
+    raw = parts[2] if len(parts) >= 3 else recurrence_id
+    day = _parse_day(raw) if raw else None
+    return (parts[1], day) if day else None
+
+
+def _local_date_time(value: date | datetime) -> tuple[date, time | None]:
+    """Split an event start into its local date and time (None = all-day)."""
+    if isinstance(value, datetime):
+        local = dt_util.as_local(value) if value.tzinfo else value
+        return local.date(), local.time().replace(second=0, microsecond=0)
+    return value, None
+
+
 def _as_local_dt(value: date | datetime) -> datetime:
     """Normalise a CalendarEvent start/end to an aware local datetime for sorting."""
     if isinstance(value, datetime):
@@ -110,9 +167,14 @@ def _as_local_dt(value: date | datetime) -> datetime:
 
 
 class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
-    """A read-only calendar of one child's chores and away periods."""
+    """A calendar of one child's chores and away periods, editable by parents."""
 
     _attr_icon = "mdi:calendar-account"
+    _attr_supported_features = (
+        CalendarEntityFeature.CREATE_EVENT | CalendarEntityFeature.UPDATE_EVENT | CalendarEntityFeature.DELETE_EVENT
+    )
+    # Context handed over by a calendar.* service call (see async_set_context).
+    _edit_context: Any = None
 
     def __init__(
         self,
@@ -180,10 +242,147 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
         self, hass: HomeAssistant, start_date: datetime, end_date: datetime
     ) -> list[CalendarEvent]:
         """Return all events overlapping the requested range."""
+        # A calendar.get_events service call hands us a context too; drop it
+        # so it can never vouch for a later edit (see async_set_context).
+        self._edit_context = None
         child = self._child
         if not child:
             return []
         return self._build_events(child, start_date.date(), end_date.date())
+
+    # ── Two-way editing (#977) ─────────────────────────────────────────────
+
+    @callback
+    def async_set_context(self, context: Any) -> None:
+        """Remember the context of a calendar.* service call for the edit it precedes.
+
+        Home Assistant sets the context immediately before invoking the entity
+        method, with no await in between, and the edit consumes it at once.
+        """
+        parent = getattr(super(), "async_set_context", None)
+        if parent is not None:
+            parent(context)
+        self._edit_context = context
+
+    def _acting_user_ids(self) -> set[str]:
+        """Every HA user behind the current edit.
+
+        The calendar panel edits over the calendar/event/* websocket commands,
+        which call the entity directly without setting a context — so the
+        user there comes from the websocket connection itself. A calendar.*
+        service call sets a context. Both are checked when both are present;
+        neither (an automation or script) is a trusted caller, as elsewhere.
+        """
+        ids: set[str] = set()
+        conn = current_connection.get() if current_connection is not None else None
+        user = getattr(conn, "user", None) if conn is not None else None
+        if user is not None and getattr(user, "id", None):
+            ids.add(user.id)
+        ctx, self._edit_context = self._edit_context, None
+        if ctx is not None and getattr(ctx, "user_id", None):
+            ids.add(ctx.user_id)
+        return ids
+
+    async def _async_require_parent(self) -> str:
+        """Refuse the edit unless every acting user is a parent or an admin.
+
+        Returns the acting user id for the audit log ("" when trusted).
+        """
+        ids = self._acting_user_ids()
+        for user_id in ids:
+            if not await authz.async_user_is_parent(self.hass, self.coordinator, user_id):
+                raise Unauthorized(user_id=user_id)
+        return sorted(ids)[0] if ids else ""
+
+    async def _async_audit(self, user_id: str, action: str, target: str) -> None:
+        """Record the edit in TaskMate's audit log. Never blocks the edit."""
+        user_name = ""
+        if user_id:
+            try:
+                user = await self.hass.auth.async_get_user(user_id)
+                user_name = user.name if user else ""
+            except Exception:  # noqa: BLE001 - audit must never break the action
+                user_name = ""
+        child = self._child
+        who = child.name if child else self._child_id
+        try:
+            await self.coordinator.async_record_audit(user_id, user_name, action, f"{who}: {target}")
+        except Exception:  # noqa: BLE001 - audit must never break the action
+            _LOGGER.debug("Failed to record calendar audit for %s", action, exc_info=True)
+
+    def _resolve_occurrence(self, uid: str, recurrence_id: str | None) -> tuple[Chore, date]:
+        """The chore and scheduled date behind ``uid`` — on *this* child's calendar."""
+        parsed = _parse_occurrence_uid(uid, recurrence_id)
+        chore = self.coordinator.storage.get_chore(parsed[0]) if parsed else None
+        if chore is None:
+            raise self.coordinator._calendar_error("calendar_unknown_event")
+        origin = parsed[1]
+        current = self.coordinator._occurrence_day(chore, origin)
+        with self.coordinator.availability_build_scope():
+            applies = _chore_applies_to_child(self.coordinator, chore, self._child_id, current)
+        if not applies:
+            raise self.coordinator._calendar_error("calendar_unknown_event")
+        return chore, origin
+
+    @staticmethod
+    def _refuse_series(recurrence_range: str | None, rrule: str | None = None) -> None:
+        if (recurrence_range or "").upper() == "THISANDFUTURE" or rrule:
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="calendar_series_not_supported")
+
+    async def async_create_event(self, **kwargs: Any) -> None:
+        """Add a one-off chore for this child on the event's date."""
+        user_id = await self._async_require_parent()
+        description = str(kwargs.get("description") or "")
+        if _PUBLISHED_MARKER in description:
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="calendar_own_event")
+        if kwargs.get("rrule"):
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="calendar_repeating_create")
+        day, start_time = _local_date_time(kwargs["dtstart"])
+        chore = await self.coordinator.async_calendar_add_chore(
+            self._child_id,
+            str(kwargs.get("summary") or ""),
+            day,
+            description=description,
+            start_time=start_time,
+        )
+        await self._async_audit(user_id, "calendar.create_event", f"{chore.name} ({day.isoformat()})")
+
+    async def async_update_event(
+        self,
+        uid: str,
+        event: dict[str, Any],
+        recurrence_id: str | None = None,
+        recurrence_range: str | None = None,
+    ) -> None:
+        """Move one occurrence (or a one-off chore) to the event's new date."""
+        user_id = await self._async_require_parent()
+        self._refuse_series(recurrence_range, event.get("rrule"))
+        chore, origin = self._resolve_occurrence(uid, recurrence_id)
+        new_day, start_time = _local_date_time(event["dtstart"])
+        await self.coordinator.async_move_chore_occurrence(
+            chore.id,
+            origin,
+            new_day,
+            start_time=start_time,
+            all_day=start_time is None,
+            summary=event.get("summary"),
+        )
+        await self._async_audit(
+            user_id, "calendar.move_event", f"{chore.name} ({origin.isoformat()} → {new_day.isoformat()})"
+        )
+
+    async def async_delete_event(
+        self,
+        uid: str,
+        recurrence_id: str | None = None,
+        recurrence_range: str | None = None,
+    ) -> None:
+        """Remove one occurrence — that day only."""
+        user_id = await self._async_require_parent()
+        self._refuse_series(recurrence_range)
+        chore, origin = self._resolve_occurrence(uid, recurrence_id)
+        await self.coordinator.async_remove_chore_occurrence(chore.id, origin)
+        await self._async_audit(user_id, "calendar.delete_event", f"{chore.name} ({origin.isoformat()})")
 
     def _build_events(self, child: Child, start_day: date, end_day: date) -> list[CalendarEvent]:
         with self.coordinator.availability_build_scope():
@@ -225,6 +424,9 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
                         continue
                     window = coord._time_category_window(getattr(chore, "time_category", "anytime"), day)
                     desc = _chore_description(chore)
+                    # The uid names the scheduled date, so an edit finds the
+                    # occurrence again even after it has been moved (#977).
+                    ident = _occurrence_ident(coord, chore, day)
                     if window is None:
                         events.append(
                             CalendarEvent(
@@ -232,6 +434,7 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
                                 end=day + timedelta(days=1),
                                 summary=chore.name,
                                 description=desc,
+                                **ident,
                             )
                         )
                     else:
@@ -242,11 +445,20 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
                                 end=end_dt.replace(tzinfo=tz),
                                 summary=chore.name,
                                 description=desc,
+                                **ident,
                             )
                         )
             day += timedelta(days=1)
 
         return events
+
+
+def _occurrence_ident(coord: TaskMateCoordinator, chore: Chore, day: date) -> dict[str, str]:
+    """uid (+ recurrence_id for a repeating chore) of the occurrence shown on ``day``."""
+    if getattr(chore, "schedule_mode", "specific_days") == "one_shot":
+        return {"uid": _occurrence_uid(chore.id, day)}
+    origin = coord.occurrence_origin(chore, day)
+    return {"uid": _occurrence_uid(chore.id, origin), "recurrence_id": origin.isoformat()}
 
 
 def _away_event(start_day: date, end_day_exclusive: date, label: str | None) -> CalendarEvent:

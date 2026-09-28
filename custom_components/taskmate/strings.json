@@ -660,6 +660,16 @@
         }
       }
     },
+    "complete_next_chore": {
+      "name": "Complete Next Chore",
+      "description": "Complete the child's next outstanding chore, in the order the child card shows them. Chores that need a photo, a note, a timer or a team are skipped. Made for watch buttons and shortcuts; normal approval rules apply.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child whose next chore to complete"
+        }
+      }
+    },
     "post_bounty": {
       "name": "Post Bounty",
       "description": "Post a one-off job to the bounty board for a fixed number of points. Any eligible child can claim it; finishing it goes through the normal approval queue.",
@@ -1240,6 +1250,13 @@
       },
       "child_badges": {
         "unit_of_measurement": "badges"
+      },
+      "child_watch": {
+        "state": {
+          "left": "# left",
+          "all_done": "All done",
+          "no_chores": "No chores"
+        }
       }
     },
     "number": {
@@ -1257,6 +1274,35 @@
       "card_design": {
         "name": "Card design"
       }
+    }
+  },
+  "exceptions": {
+    "calendar_unknown_event": {
+      "message": "This event isn't a TaskMate chore on this child's calendar."
+    },
+    "calendar_series_not_supported": {
+      "message": "A repeating chore can only be moved or removed one day at a time from the calendar. To change the whole series, edit the chore in TaskMate."
+    },
+    "calendar_repeating_create": {
+      "message": "Repeating events can't be added from the calendar. Create a repeating chore in TaskMate instead."
+    },
+    "calendar_rename_series": {
+      "message": "Rename a repeating chore in TaskMate. From the calendar you can only move or remove a single day."
+    },
+    "calendar_time_follows_chore": {
+      "message": "A repeating chore keeps its time of day. Only the date of a single occurrence can be changed from the calendar."
+    },
+    "calendar_past_date": {
+      "message": "Chores can't be added to, moved to or moved from a day in the past."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} is already on {date}."
+    },
+    "calendar_empty_title": {
+      "message": "Give the chore a title."
+    },
+    "calendar_own_event": {
+      "message": "This event was published by TaskMate itself, so it isn't added as a new chore."
     }
   }
 }

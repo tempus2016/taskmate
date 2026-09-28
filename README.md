@@ -117,6 +117,7 @@ Every card takes a `header_color` and a `card_design` option. See [Dashboard Car
 | [Sensor Reference](https://github.com/tempus2016/taskmate/wiki/Sensor-Reference) | All entities and their attributes |
 | [Automations](https://github.com/tempus2016/taskmate/wiki/Automations) | Bus events, blueprints, and examples |
 | [Voice Assistants](https://github.com/tempus2016/taskmate/wiki/Voice-Assistants) | Ask Assist about chores and points |
+| [Watch Complications](https://github.com/tempus2016/taskmate/wiki/Watch-Complications) | TaskMate on Apple Watch and Wear OS |
 | [Localization](https://github.com/tempus2016/taskmate/wiki/Localization) | Supported languages and translating |
 | [Troubleshooting](https://github.com/tempus2016/taskmate/wiki/Troubleshooting) | Common issues and fixes |
 | [FAQ](https://github.com/tempus2016/taskmate/wiki/FAQ) | Frequently asked questions |

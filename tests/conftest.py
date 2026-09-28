@@ -8,7 +8,9 @@ statements resolve without needing a real HA installation.
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import datetime as _dt
+import enum
 import sys
 from unittest.mock import AsyncMock, MagicMock
 
@@ -135,6 +137,9 @@ class FakeServiceValidationError(Exception):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args)
+        # Kept so tests can assert which translated message was raised.
+        self.translation_key = kwargs.get("translation_key")
+        self.translation_placeholders = kwargs.get("translation_placeholders")
 
 
 _ha_exceptions = MagicMock()
@@ -259,9 +264,21 @@ class _FakeCalendarEvent:
             setattr(self, k, v)
 
 
+class _FakeCalendarEntityFeature(enum.IntFlag):
+    CREATE_EVENT = 1
+    DELETE_EVENT = 2
+    UPDATE_EVENT = 4
+
+
 _ha_components_calendar = MagicMock()
 _ha_components_calendar.CalendarEntity = _FakeCalendarEntity
 _ha_components_calendar.CalendarEvent = _FakeCalendarEvent
+_ha_components_calendar.CalendarEntityFeature = _FakeCalendarEntityFeature
+
+# homeassistant.components.websocket_api.connection — only the contextvar the
+# calendar entity reads to find the user behind a calendar-panel edit.
+_ha_websocket_api_connection = MagicMock()
+_ha_websocket_api_connection.current_connection = contextvars.ContextVar("current_connection", default=None)
 
 
 _ha_helpers_entity = MagicMock()
@@ -355,6 +372,7 @@ sys.modules.update(
         "homeassistant.components.todo": _ha_components_todo,
         "homeassistant.components.calendar": _ha_components_calendar,
         "homeassistant.components.websocket_api": _ha_websocket_api,
+        "homeassistant.components.websocket_api.connection": _ha_websocket_api_connection,
         "homeassistant.util": _ha_util,
         "homeassistant.util.dt": dt_util_mock,
         # Stub the frontend sub-module so __init__.py's relative import succeeds

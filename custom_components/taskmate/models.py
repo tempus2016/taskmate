@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
 from .const import BOUNTY_STATUSES, MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
@@ -432,6 +432,11 @@ class Chore:
     # idempotence (don't re-publish the same day) and projection cleanup
     # (entries < today are pruned before each publish pass).
     publish_calendar_published_dates: list[str] = field(default_factory=list)
+    # Per-occurrence calendar edits (#977): {original ISO date: new ISO date}.
+    # An empty value means that one occurrence was removed. Written by the
+    # two-way calendar; every due-date computation consults it through
+    # ``occurrence_override`` so a moved chore is due on its new day only.
+    moved_occurrences: dict[str, str] = field(default_factory=dict)
     # Bonus sub-tasks: optional extra-credit tasks that unlock after the parent chore is completed
     bonus_subtasks: list[BonusSubTask] = field(default_factory=list)
     # Timed task fields
@@ -515,6 +520,7 @@ class Chore:
                 list(data.get("publish_calendar_published_dates", []))
                 or ([data["publish_calendar_last_date"]] if data.get("publish_calendar_last_date") else [])
             ),
+            moved_occurrences=clean_moved_occurrences(data.get("moved_occurrences")),
             bonus_subtasks=[BonusSubTask.from_dict(b) for b in data.get("bonus_subtasks", [])],
             task_type=data.get("task_type", "standard"),
             timed_rate_points=data.get("timed_rate_points", 10),
@@ -581,6 +587,7 @@ class Chore:
             "assignment_swap_date": self.assignment_swap_date,
             "publish_calendar_entities": self.publish_calendar_entities,
             "publish_calendar_published_dates": self.publish_calendar_published_dates,
+            "moved_occurrences": self.moved_occurrences,
             "bonus_subtasks": [b.to_dict() for b in self.bonus_subtasks],
             "task_type": self.task_type,
             "timed_rate_points": self.timed_rate_points,
@@ -589,6 +596,30 @@ class Chore:
             "tag_ids": self.tag_ids,
             "id": self.id,
         }
+
+
+def clean_moved_occurrences(raw: Any) -> dict[str, str]:
+    """Coerce a stored ``moved_occurrences`` map to {ISO date: ISO date or ""}.
+
+    Anything unparseable is dropped rather than raised, so a hand-edited or
+    older store can never stop the integration loading (#977).
+    """
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, str] = {}
+    for key, value in raw.items():
+        try:
+            src = date.fromisoformat(str(key)).isoformat()
+        except ValueError:
+            continue
+        if value in ("", None):
+            out[src] = ""
+            continue
+        try:
+            out[src] = date.fromisoformat(str(value)).isoformat()
+        except ValueError:
+            continue
+    return out
 
 
 def _clean_weekdays(raw: Any) -> list[int]:

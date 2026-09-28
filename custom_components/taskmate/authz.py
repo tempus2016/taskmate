@@ -51,6 +51,20 @@ async def async_context_is_parent(hass: HomeAssistant, coordinator: Any, context
     return user_id in parent_ids
 
 
+async def async_user_is_parent(hass: HomeAssistant, coordinator: Any, user_id: str) -> bool:
+    """True if ``user_id`` is an admin or a configured TaskMate parent.
+
+    For doors that know the acting user but have no ``Context`` — the calendar
+    panel's websocket edits (#977).
+    """
+    if not user_id:
+        return False
+    if await async_user_is_admin(hass, user_id):
+        return True
+    parent_ids = coordinator.storage.get_parent_user_ids() if coordinator else []
+    return user_id in (parent_ids or [])
+
+
 async def async_context_allows_child(hass: HomeAssistant, coordinator: Any, context: Any, child_id: str) -> bool:
     """True if the context user may act *as* ``child_id`` (linked-child rule).
 
