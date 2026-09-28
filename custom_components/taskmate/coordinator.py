@@ -44,13 +44,33 @@ from .coord_timed import TimedMixin
 from .coord_tts import ReadAloudMixin
 from .coord_unlocks import UnlocksMixin
 from .coord_wishlist import WishlistMixin
-from .models import Child
+from .models import Child, Chore
 from .storage import TaskMateStorage
 
 _LOGGER = logging.getLogger(__name__)
 
 # Shape of generate_id() — how a child id is recognised in a unique id (#946).
 _CHILD_ID_RE = re.compile(r"[0-9a-f]{16}")
+
+# A complete/claim button's unique id minus its ``<entry_id>_`` prefix, with
+# both ids in generate_id() shape (#960). Anything else is never swept.
+_BUTTON_UID_RE = re.compile(r"([0-9a-f]{16})_([0-9a-f]{16})_(complete|claim)")
+
+
+def chore_has_button(chore: Chore, child_id: str) -> bool:
+    """Whether ``child_id`` gets a complete button for ``chore``."""
+    if getattr(chore, "assignment_mode", "everyone") == "unassigned":
+        return False
+    return not chore.assigned_to or child_id in chore.assigned_to
+
+
+def button_keys(children: list, chores: list, rewards: list) -> set[str]:
+    """``<child>_<item>_<kind>`` keys of every button that should exist."""
+    keys: set[str] = set()
+    for child in children:
+        keys.update(f"{child.id}_{chore.id}_complete" for chore in chores if chore_has_button(chore, child.id))
+        keys.update(f"{child.id}_{reward.id}_claim" for reward in rewards)
+    return keys
 
 
 class TaskMateCoordinator(
@@ -1032,6 +1052,44 @@ class TaskMateCoordinator(
             registry.async_remove(entry.entity_id)
         if stale:
             _LOGGER.info("Removed %d entities left behind by deleted children", len(stale))
+        return len(stale)
+
+    def remove_button_entities(self, keys: set[str]) -> None:
+        """Drop buttons whose chore/reward or assignment went (#960).
+
+        ``keys`` are ``<child>_<item>_<kind>`` as the button platform tracks
+        them; only exact ``<entry_id>_<key>`` unique ids are removed.
+        """
+        if not keys:
+            return
+        registry = er.async_get(self.hass)
+        wanted = {f"{self.storage.entry_id}_{key}" for key in keys}
+        for entry in er.async_entries_for_config_entry(registry, self.storage.entry_id):
+            if entry.domain == "button" and entry.unique_id in wanted:
+                registry.async_remove(entry.entity_id)
+
+    def async_prune_orphan_button_entities(self) -> int:
+        """Remove buttons left by chores/rewards deleted before #960.
+
+        Also catches a child's button for a chore they were since unassigned
+        from. Only unique ids that parse as a generated-id button are judged.
+        """
+        registry = er.async_get(self.hass)
+        entry_id = self.storage.entry_id
+        prefix = f"{entry_id}_"
+        live = button_keys(self.storage.get_children(), self.storage.get_chores(), self.storage.get_rewards())
+        stale = [
+            entry
+            for entry in er.async_entries_for_config_entry(registry, entry_id)
+            if entry.domain == "button"
+            and (entry.unique_id or "").startswith(prefix)
+            and _BUTTON_UID_RE.fullmatch(entry.unique_id[len(prefix) :])
+            and entry.unique_id[len(prefix) :] not in live
+        ]
+        for entry in stale:
+            registry.async_remove(entry.entity_id)
+        if stale:
+            _LOGGER.info("Removed %d buttons left behind by deleted chores or rewards", len(stale))
         return len(stale)
 
     def get_child(self, child_id: str) -> Child | None:
