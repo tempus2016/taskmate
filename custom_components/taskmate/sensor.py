@@ -141,9 +141,20 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
         "pool_by_child_reward": pool_by_child_reward,
         "pool_total_by_reward": pool_total_by_reward,
         "total_allocated_by_child": total_allocated_by_child,
+        # Sent back to redo by an inspection (#981): not "done" on the card.
+        "inspection_redo_ids": _inspection_redo_ids(coordinator),
     }
     setattr(coordinator, _COMMON_CACHE_ATTR, {"data_id": data_id, "common": common})
     return common
+
+
+def _inspection_redo_ids(coordinator) -> set[str]:
+    getter = getattr(coordinator, "inspection_redo_completion_ids", None)
+    try:
+        return set(getter()) if callable(getter) else set()
+    except Exception:  # noqa: BLE001
+        _LOGGER.debug("inspection redo ids unavailable", exc_info=True)
+        return set()
 
 
 def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> list[dict]:
@@ -224,6 +235,8 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 # Reject reasons (#976): why a chore / claim was just sent back,
                 # only while there's one to show.
                 **({"rejections": rej} if (rej := coordinator.rejections_for_child(c.id)) else {}),
+                # Surprise inspections (#981): today's banner(s), only when any.
+                **({"inspections": insp} if (insp := coordinator.inspections_for_child(c.id)) else {}),
             }
         )
     return summary
@@ -460,8 +473,13 @@ def _build_todays_completions(common: dict) -> list[dict]:
     today = now.date()
     child_lookup = common["child_lookup"]
     chore_lookup = common["chore_lookup"]
+    redo_ids = common.get("inspection_redo_ids") or set()
     out = []
     for comp in common["all_completions"]:
+        # An inspection sent this one back to redo (#981): the chore is owed
+        # again today, so the card must not see it as done.
+        if comp.id in redo_ids:
+            continue
         comp_dt = comp.completed_at
         if hasattr(comp_dt, "astimezone"):
             comp_dt = dt_util.as_local(comp_dt)
@@ -733,9 +751,15 @@ def _build_photo_gallery(common: dict, limit: int = 40) -> list[dict]:
 
 
 _FEED_REJECTIONS_MAX = 8
+_FEED_INSPECTIONS_MAX = 8
 
 
-def _build_recent_transactions(common: dict, limit: int = 20, rejections: list[dict] | None = None) -> list[dict]:
+def _build_recent_transactions(
+    common: dict,
+    limit: int = 20,
+    rejections: list[dict] | None = None,
+    inspections: list[dict] | None = None,
+) -> list[dict]:
     """Unified activity feed of manual point adjustments and reward claims.
 
     Capped at 20 so the combined activity slice (completions + transactions)
@@ -810,6 +834,15 @@ def _build_recent_transactions(common: dict, limit: int = 20, rejections: list[d
                 "created_at": str(r.get("rejected_at", "")),
             }
         )
+
+    # Surprise inspections (#981): started / didn't pass / sent back (a pass
+    # with a bonus is already here as its "Inspection passed:" transaction).
+    for e in (inspections or [])[-_FEED_INSPECTIONS_MAX:]:
+        child = child_lookup.get(e.get("child_id"))
+        if not child:
+            continue
+        row = {k: v for k, v in e.items() if k != "id"}
+        events.append({**row, "transaction_id": e.get("id", ""), "child_name": child.name})
 
     events.sort(key=lambda e: e["created_at"], reverse=True)
     return events[:limit]
@@ -1213,7 +1246,11 @@ class TaskMateActivitySensor(_CachedAttrsSensor):
             career_history[c.id] = self.coordinator.storage.get_career_score_history(c.id)
         return {
             "recent_completions": _build_recent_completions(common),
-            "recent_transactions": _build_recent_transactions(common, rejections=self.coordinator.recent_rejections()),
+            "recent_transactions": _build_recent_transactions(
+                common,
+                rejections=self.coordinator.recent_rejections(),
+                inspections=self.coordinator.recent_inspection_events(),
+            ),
             "career_score_history": career_history,
             "photo_gallery": _build_photo_gallery(common),
         }

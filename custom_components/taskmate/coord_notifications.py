@@ -36,6 +36,9 @@ from .const import (
     NOTIF_TYPE_BOUNTY_POSTED,
     NOTIF_TYPE_CELEBRATION,
     NOTIF_TYPE_FAMILY_GOAL_REACHED,
+    NOTIF_TYPE_INSPECTION_PASSED,
+    NOTIF_TYPE_INSPECTION_REMINDER,
+    NOTIF_TYPE_INSPECTION_STARTED,
     NOTIF_TYPE_ITEM_REJECTED,
     NOTIF_TYPE_LEVEL_UP,
     NOTIF_TYPE_MANDATORY_PARENT_ALERT,
@@ -147,6 +150,13 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_AUCTION_OPENED, "child", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_AUCTION_CLOSING, "child", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_AUCTION_RESULT, "both", False, False, False, False),
+    # Surprise inspections (#981): the child hears one is coming (when they're
+    # told) and that it passed — both off until turned on. The parent's
+    # reminder before an undecided inspection closes quietly is on: it only
+    # ever fires for an inspection a parent started (or switched on).
+    NotificationTypeMeta(NOTIF_TYPE_INSPECTION_STARTED, "child", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_INSPECTION_PASSED, "child", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_INSPECTION_REMINDER, "parent", False, False, False, True),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
@@ -407,6 +417,9 @@ class NotificationCoordinator:
             "item_name": "Tidy room",
             "reason": "Not finished",
             "reason_text": ": Not finished",
+            "until": "18:20",
+            "bonus": 10,
+            "note_text": ": Brilliant job!",
             "points_name": self.storage.get_points_name(),
         }
         message = "[TEST] " + self._render_template(meta, ctx)
@@ -497,6 +510,9 @@ class NotificationCoordinator:
             NOTIF_TYPE_AUCTION_OPENED: "🔨 New auction: {chore_name} on {date}, up to {max_points} {points_name}. Lowest bid wins!",
             NOTIF_TYPE_AUCTION_CLOSING: "⏳ {child_name}, bidding on '{chore_name}' closes in {minutes} minutes.",
             NOTIF_TYPE_AUCTION_RESULT: "🔨 Auction closed: {result_text}",
+            NOTIF_TYPE_INSPECTION_STARTED: "🔍 {child_name}, a grown-up is coming to inspect '{chore_name}' before {until}. Keep it looking great for +{bonus} {points_name}!",
+            NOTIF_TYPE_INSPECTION_PASSED: "🌟 Inspection passed, {child_name}! '{chore_name}' looked great: +{bonus} {points_name}{note_text}",
+            NOTIF_TYPE_INSPECTION_REMINDER: "🔍 {child_name}'s '{chore_name}' inspection closes in {minutes} minutes — pass or fail it before {until}.",
         }
         tpl = context.get("message_template") or templates.get(meta.id, "")
         try:

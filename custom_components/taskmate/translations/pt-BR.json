@@ -1249,6 +1249,74 @@
           "description": "O ID do desejo"
         }
       }
+    },
+    "start_inspection": {
+      "name": "Iniciar inspeção",
+      "description": "Marca uma tarefa aprovada nas últimas 24 horas para uma inspeção surpresa. Aprove ou reprove antes de o prazo acabar; uma inspeção sem decisão fecha discretamente.",
+      "fields": {
+        "completion_id": {
+          "name": "ID da conclusão",
+          "description": "O ID da conclusão aprovada a ser inspecionada"
+        },
+        "bonus": {
+          "name": "Bônus",
+          "description": "Pontos pagos se passar. O padrão é o valor das Configurações."
+        },
+        "window": {
+          "name": "Prazo",
+          "description": "Quanto tempo você tem para conferir: 1h, 2h, 4h ou bed (até a hora de dormir). O padrão é o valor das Configurações."
+        },
+        "tell_child": {
+          "name": "Avisar a criança",
+          "description": "Mostra \"Vem aí uma inspeção\" no cartão da criança agora. Desligue para uma checagem secreta."
+        }
+      }
+    },
+    "pass_inspection": {
+      "name": "Aprovar inspeção",
+      "description": "A tarefa inspecionada passou. Paga o bônus como uma entrada de pontos normal e comemora no cartão da criança.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID da inspeção",
+          "description": "O ID da inspeção em andamento"
+        },
+        "bonus": {
+          "name": "Bônus",
+          "description": "Pontos a pagar. O padrão é o bônus definido ao iniciar."
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Nota opcional mostrada à criança"
+        }
+      }
+    },
+    "fail_inspection": {
+      "name": "Reprovar inspeção",
+      "description": "A tarefa inspecionada não passou. Nenhum ponto é retirado. Ela pode ser devolvida para refazer; refazer não dá pontos extras.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID da inspeção",
+          "description": "O ID da inspeção em andamento"
+        },
+        "redo": {
+          "name": "Devolver para refazer",
+          "description": "Coloca a tarefa de volta na lista da criança como não feita hoje. O padrão é o valor das Configurações."
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Nota opcional mostrada à criança (o que precisa ser corrigido)"
+        }
+      }
+    },
+    "cancel_inspection": {
+      "name": "Cancelar inspeção",
+      "description": "Cancela uma inspeção em andamento, como se nunca tivesse começado.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID da inspeção",
+          "description": "O ID da inspeção em andamento"
+        }
+      }
     }
   },
   "entity": {

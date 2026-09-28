@@ -323,6 +323,12 @@ NOTIF_TYPE_ITEM_REJECTED: Final = "item_rejected"
 NOTIF_TYPE_AUCTION_OPENED: Final = "auction_opened"
 NOTIF_TYPE_AUCTION_CLOSING: Final = "auction_closing"
 NOTIF_TYPE_AUCTION_RESULT: Final = "auction_result"
+# Surprise inspections (#981): the child hears an inspection is coming (only
+# when they're told) and that it passed; the parent is reminded 30 minutes
+# before an undecided inspection closes.
+NOTIF_TYPE_INSPECTION_STARTED: Final = "inspection_started"
+NOTIF_TYPE_INSPECTION_PASSED: Final = "inspection_passed"
+NOTIF_TYPE_INSPECTION_REMINDER: Final = "inspection_reminder"
 
 # Presence-aware reminders (#926): the default for how long a child must have
 # been away before arriving home earns a "you're home" nudge.

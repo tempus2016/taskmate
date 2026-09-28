@@ -623,7 +623,11 @@ class AssignmentsMixin:
         active_child_id = getattr(chore, "assignment_current_child_id", "") or ""
         completions_today = 0
         completed_bonus_ids_today: set[str] = set()
+        # Sent back to redo by an inspection (#981): no longer fills the quota.
+        redo_ids = self.inspection_redo_completion_ids()
         for comp in self._cached_completions_for_chore(chore.id):
+            if comp.id in redo_ids:
+                continue
             comp_dt = comp.completed_at
             try:
                 if hasattr(comp_dt, "astimezone"):

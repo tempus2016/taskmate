@@ -83,6 +83,7 @@ from .const import (
     is_valid_completion_sound,
 )
 from .coord_birthdays import normalize_birthday
+from .coord_inspections import INSPECTION_BONUS_MAX, INSPECTION_FAIL_MODES, INSPECTION_WINDOWS
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
 from .models import REJECT_REASON_MAX, BonusSubTask, Reward, normalize_tag_ids
@@ -277,6 +278,7 @@ def _audit_target(coordinator, msg: dict) -> str:
         "transaction_id",
         "bounty_id",
         "auction_id",
+        "inspection_id",
     ):
         if msg.get(key):
             return str(msg[key])
@@ -440,6 +442,10 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "kiosk_pin_children": coordinator.storage.get_kiosk_pin_child_ids(),
         # Today page (#966): each child's chores today + the last 7 days.
         "today": _today_state(coordinator),
+        # Surprise inspections (#981): the kept log, and which approved
+        # completions can still be flagged (the magnifier).
+        "inspections": coordinator.inspections_state(),
+        "inspectable_completions": coordinator.inspectable_completion_ids(),
     }
 
 
@@ -1903,6 +1909,17 @@ _SUBKEY_SETTINGS = {
     "surprise_bonus_chance",
     "surprise_bonus_min",
     "surprise_bonus_max",
+    # Surprise inspections (#981)
+    "inspections_enabled",
+    "inspection_bonus",
+    "inspection_window",
+    "inspection_bedtime",
+    "inspection_fail_mode",
+    "inspection_tell_child",
+    "inspection_pick_enabled",
+    "inspection_pick_time",
+    "inspection_pick_chance",
+    "inspection_pick_children",
     "points_decay_enabled",
     "points_decay_period",
     "points_decay_percent",
@@ -2148,6 +2165,16 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("surprise_bonus_chance"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=100.0)),
     vol.Optional("surprise_bonus_min"): vol.All(int, vol.Range(min=0, max=10000)),
     vol.Optional("surprise_bonus_max"): vol.All(int, vol.Range(min=0, max=10000)),
+    vol.Optional("inspections_enabled"): bool,
+    vol.Optional("inspection_bonus"): vol.All(vol.Coerce(int), vol.Range(min=0, max=INSPECTION_BONUS_MAX)),
+    vol.Optional("inspection_window"): vol.In(INSPECTION_WINDOWS),
+    vol.Optional("inspection_bedtime"): vol.Match(r"^([01]\d|2[0-3]):[0-5]\d$"),
+    vol.Optional("inspection_fail_mode"): vol.In(INSPECTION_FAIL_MODES),
+    vol.Optional("inspection_tell_child"): bool,
+    vol.Optional("inspection_pick_enabled"): bool,
+    vol.Optional("inspection_pick_time"): vol.Match(r"^([01]\d|2[0-3]):[0-5]\d$"),
+    vol.Optional("inspection_pick_chance"): vol.All(vol.Coerce(int), vol.Range(min=0, max=100)),
+    vol.Optional("inspection_pick_children"): vol.All([str], vol.Length(max=100)),
     vol.Optional("points_decay_enabled"): bool,
     vol.Optional("points_decay_period"): vol.In(["weekly", "monthly"]),
     vol.Optional("points_decay_percent"): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=100.0)),
@@ -2241,6 +2268,9 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
         # Recaps (#929): note when a frequency was switched on, re-arm the send time.
         if any(k.startswith("recap_") for k in changed):
             await coordinator.async_recap_settings_changed()
+        # Surprise inspections (#981): move the daily pick to its new time.
+        if "inspection_pick_time" in changed:
+            await coordinator.async_inspection_settings_changed()
         await coordinator.async_refresh()
     connection.send_result(msg["id"], {"updated": changed})
 
@@ -3166,9 +3196,10 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     # build on this module's _admin_only / _get_coordinator helpers.
     from .kiosk import KIOSK_COMMANDS
     from .websocket_auctions import AUCTION_COMMANDS
+    from .websocket_inspections import INSPECTION_COMMANDS
     from .websocket_recaps import RECAP_COMMANDS
 
-    commands = (*_COMMANDS, *KIOSK_COMMANDS, *RECAP_COMMANDS, *AUCTION_COMMANDS)
+    commands = (*_COMMANDS, *KIOSK_COMMANDS, *RECAP_COMMANDS, *INSPECTION_COMMANDS, *AUCTION_COMMANDS)
     for cmd in commands:
         websocket_api.async_register_command(hass, cmd)
     hass.data.setdefault(DOMAIN, {})[WS_REGISTERED] = True

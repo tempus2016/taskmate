@@ -1249,6 +1249,74 @@
           "description": "L'ID du souhait"
         }
       }
+    },
+    "start_inspection": {
+      "name": "Lancer une inspection",
+      "description": "Marque une tâche approuvée au cours des dernières 24 heures pour une inspection surprise. Valide-la ou refuse-la avant la fin du délai ; une inspection non tranchée se ferme discrètement.",
+      "fields": {
+        "completion_id": {
+          "name": "ID de réalisation",
+          "description": "L'ID de la réalisation approuvée à inspecter"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Points versés si elle est réussie. Par défaut, la valeur des Paramètres."
+        },
+        "window": {
+          "name": "Délai",
+          "description": "Combien de temps tu as pour vérifier : 1h, 2h, 4h ou bed (jusqu'au coucher). Par défaut, la valeur des Paramètres."
+        },
+        "tell_child": {
+          "name": "Prévenir l'enfant",
+          "description": "Affiche « Inspection en approche » sur la carte de l'enfant dès maintenant. Désactive pour une vérification secrète."
+        }
+      }
+    },
+    "pass_inspection": {
+      "name": "Valider l'inspection",
+      "description": "La tâche inspectée est réussie. Verse le bonus comme une entrée de points normale et fête ça sur la carte de l'enfant.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID d'inspection",
+          "description": "L'ID de l'inspection en cours"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Points à verser. Par défaut, le bonus fixé au lancement."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Note facultative affichée à l'enfant"
+        }
+      }
+    },
+    "fail_inspection": {
+      "name": "Refuser l'inspection",
+      "description": "La tâche inspectée n'est pas réussie. Aucun point n'est retiré. Elle peut être renvoyée à refaire ; la refaire ne rapporte rien de plus.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID d'inspection",
+          "description": "L'ID de l'inspection en cours"
+        },
+        "redo": {
+          "name": "Renvoyer à refaire",
+          "description": "Remet la tâche sur la liste de l'enfant comme non faite pour aujourd'hui. Par défaut, la valeur des Paramètres."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Note facultative affichée à l'enfant (ce qu'il faut corriger)"
+        }
+      }
+    },
+    "cancel_inspection": {
+      "name": "Annuler l'inspection",
+      "description": "Annule une inspection en cours, comme si elle n'avait jamais commencé.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID d'inspection",
+          "description": "L'ID de l'inspection en cours"
+        }
+      }
     }
   },
   "entity": {
