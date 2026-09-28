@@ -1151,7 +1151,7 @@ class TaskMateChildCard extends LitElement {
         text-transform: uppercase;
         border-radius: 8px;
         padding: 2px 7px;
-        margin-left: 8px;
+        margin-inline-start: 8px;
         vertical-align: middle;
         white-space: nowrap;
       }

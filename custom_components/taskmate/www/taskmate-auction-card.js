@@ -419,7 +419,7 @@ class TaskMateAuctionCard extends LitElement {
             ${keys.map(k => html`<button type="button" @click=${() => this._key(k, a)}>${k}</button>`)}
             <button type="button" class="ac-key-clear" @click=${() => this._key("c", a)}>${this._t("auction.clear")}</button>
             <button type="button" @click=${() => this._key("0", a)}>0</button>
-            <button type="button" aria-label="${this._t("auction.backspace")}" @click=${() => this._key("bs", a)}><ha-icon icon="mdi:backspace-outline"></ha-icon></button>
+            <button type="button" aria-label="${this._t("auction.backspace")}" @click=${() => this._key("bs", a)}><ha-icon class="tm-rtl-flip" icon="mdi:backspace-outline"></ha-icon></button>
           </div>
           <div class="ac-rules">
             <div><ha-icon icon="mdi:lock-outline"></ha-icon><span>${this._t("auction.rule_secret")}${others ? ` ${others === 1 ? this._t("auction.other_bids_one") : this._t("auction.other_bids", { count: others })}.` : ""}</span></div>
@@ -546,6 +546,8 @@ class TaskMateAuctionCard extends LitElement {
         height: 10px; border-radius: 5px; margin: 6px 0;
         background: linear-gradient(90deg, var(--tmd-good, #2ecc71), var(--tmd-gold, #f1c40f) 60%, var(--tmd-warn, #e67e22));
       }
+      /* Low (green) sits at the reading start, beside the minimum label. */
+      :host([dir="rtl"]) .ac-gauge-bar { transform: scaleX(-1); }
       .ac-gauge-hint { font-size: .78rem; text-align: center; color: var(--tmd-dim, var(--secondary-text-color)); }
 
       .ac-sealed {
@@ -822,7 +824,7 @@ class TaskMateAuctionCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }

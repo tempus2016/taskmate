@@ -9372,15 +9372,15 @@ class TaskMatePanel extends HTMLElement {
       .tm-auc-gold { color: var(--tm-gold, #d4ac0d); }
       .tm-auc-stats { grid-template-columns: repeat(3, 1fr); margin-bottom: 14px; }
       .tm-auc-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-      .tm-auc-reveal { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+      .tm-auc-reveal { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
       .tm-auc-chip {
         display: inline-flex; align-items: center; gap: 5px;
-        padding: 2px 8px 2px 2px; margin: 2px 4px 2px 0;
+        padding-block: 2px; padding-inline: 2px 8px; margin-block: 2px; margin-inline: 0 4px;
         border-radius: 999px; background: var(--tm-surface-2); font-size: 12px; white-space: nowrap;
       }
       .tm-auc-chip b { color: var(--tm-gold, #d4ac0d); }
       .tm-auc-stack { display: inline-flex; }
-      .tm-auc-stack .tm-av + .tm-av { margin-left: -6px; }
+      .tm-auc-stack .tm-av + .tm-av { margin-inline-start: -6px; }
       .tm-auc-cdown { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; font-variant-numeric: tabular-nums; color: #7e57c2; }
       .tm-auc-cdown ha-icon { --mdc-icon-size: 15px; }
       .tm-auc-win { display: flex; align-items: center; gap: 8px; }
