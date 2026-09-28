@@ -5580,7 +5580,7 @@ class TaskMatePanel extends HTMLElement {
       : ["col_chore", "col_max", "col_bids", "col_result", "col_status"];
     return `
       <div class="tm-toolbar">
-        <div>
+        <div class="tm-auc-head">
           <h2 class="tm-toolbar-title">${this._t("panel.tab_auctions")} <span class="tm-toolbar-count">${live.length}</span></h2>
           <div class="tm-meta">${this._t("panel.auction_page_sub")}</div>
         </div>
@@ -5787,7 +5787,7 @@ class TaskMatePanel extends HTMLElement {
       : d.refusal
         ? `<div class="tm-meta tm-auc-warn">${this._esc(d.refusal)}</div>`
         : d.occurrences.length
-          ? `<div class="tm-chip-row">${d.occurrences.map(o => chip("auction-occ", o, d.occurrence === o, `<ha-icon icon="mdi:calendar-blank-outline"></ha-icon>${this._esc(this._auctionDate(o))}`)).join("")}</div>`
+          ? `<div class="tm-chip-row tm-auc-chips">${d.occurrences.map(o => chip("auction-occ", o, d.occurrence === o, `<ha-icon icon="mdi:calendar-blank-outline"></ha-icon>${this._esc(this._auctionDate(o))}`)).join("")}</div>`
           : `<div class="tm-meta tm-auc-warn">${this._t("panel.auction_no_occurrences")}</div>`;
     const body = chores.length === 0 ? `<p class="tm-meta">${this._t("panel.auction_no_chores")}</p>` : [
       section("chore", [
@@ -5831,7 +5831,7 @@ class TaskMatePanel extends HTMLElement {
         </div>`,
         `<div class="tm-field">
           <span class="tm-field-label">${this._t("panel.auction_who_label")}</span>
-          <div class="tm-chip-row">
+          <div class="tm-chip-row tm-auc-chips">
             ${children.filter(c => (d.pool || []).includes(c.id)).map(c => chip("toggle-auction-el", c.id, (d.eligible_child_ids || []).includes(c.id), `${this._childAvatar(c)}${this._esc(c.name)}`)).join("")}
           </div>
         </div>`,
@@ -9370,6 +9370,10 @@ class TaskMatePanel extends HTMLElement {
       .tm-auc-ic { width: 34px; height: 34px; border-radius: 10px; color: #fff; background: linear-gradient(135deg, #7e57c2, #5e35b1); }
       .tm-auc-ic ha-icon { --mdc-icon-size: 18px; }
       .tm-auc-gold { color: var(--tm-gold, #d4ac0d); }
+      .tm-auc-head { flex: 1; min-width: 0; }
+      .tm-auc-chips .tm-chip-btn { display: inline-flex; flex-direction: row; align-items: center; gap: 6px; }
+      .tm-auc-chips .tm-chip-btn > ha-icon { --mdc-icon-size: 15px; }
+      .tm-auc-chips .tm-av { width: 20px; height: 20px; --mdc-icon-size: 14px; }
       .tm-auc-stats { grid-template-columns: repeat(3, 1fr); margin-bottom: 14px; }
       .tm-auc-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
       .tm-auc-reveal { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
