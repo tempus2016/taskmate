@@ -1,0 +1,46 @@
+name: Label released issues
+
+# When a stable release is published, marks every issue closed as completed
+# in the matching milestone (milestone title == tag, e.g. v5.9.0) with
+# `released`, so "fixed in main" and "installable now" are told apart.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    if: github.event.release.prerelease == false
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const tag = context.payload.release.tag_name;
+
+            const milestones = await github.paginate(github.rest.issues.listMilestones, {
+              owner, repo, state: 'all', per_page: 100,
+            });
+            const milestone = milestones.find(m => m.title === tag);
+            if (!milestone) {
+              console.log(`No milestone titled ${tag} — nothing to label`);
+              return;
+            }
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, milestone: milestone.number, state: 'closed', per_page: 100,
+            });
+            let count = 0;
+            for (const issue of issues) {
+              if (issue.pull_request || issue.state_reason === 'not_planned') continue;
+              if (issue.labels.some(l => l.name === 'released')) continue;
+              await github.rest.issues.addLabels({
+                owner, repo, issue_number: issue.number, labels: ['released'],
+              });
+              count++;
+            }
+            console.log(`Labelled ${count} issue(s) in ${tag} as released`);

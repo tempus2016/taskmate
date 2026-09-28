@@ -55,6 +55,9 @@
 - name: invalid
   color: e4e669
   description: This doesn't seem right
+- name: released
+  color: 8250df
+  description: Fix or feature is in a published release
 
 # ── Areas (also applied automatically by the path labeler) ───────────────────
 - name: cards
