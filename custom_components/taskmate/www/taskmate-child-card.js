@@ -925,7 +925,7 @@ class TaskMateChildCard extends LitElement {
       .tm-insp-title { font-weight: 800; font-size: 1rem; line-height: 1.25; }
       .tm-insp-sub { font-size: 0.82rem; font-weight: 600; opacity: 0.85; overflow-wrap: anywhere; }
       .tm-insp-tag {
-        display: inline-flex; align-items: center; gap: 3px; margin: 3px 4px 0 0;
+        display: inline-flex; align-items: center; gap: 3px; margin-block: 3px 0; margin-inline: 0 4px;
         padding: 1px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 800;
         color: #fff; background: #f39c12; white-space: nowrap; vertical-align: middle;
         width: fit-content; align-self: flex-start;

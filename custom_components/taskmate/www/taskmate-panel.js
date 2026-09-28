@@ -9779,9 +9779,9 @@ class TaskMatePanel extends HTMLElement {
       /* Surprise inspections (#981) */
       .tm-timeline-inspection ha-icon { color: #e67e22; }
       .tm-insp-note { font-style: italic; margin-top: 2px; overflow-wrap: anywhere; }
-      .tm-insp-tag { margin-left: 0; margin-top: 3px; max-width: 100%; white-space: normal; }
+      .tm-insp-tag { margin-inline-start: 0; margin-top: 3px; max-width: 100%; white-space: normal; }
       .tm-insp-tag ha-icon { --mdc-icon-size: 13px; }
-      .tm-insp-flag { vertical-align: middle; margin-left: 4px; color: #e67e22; }
+      .tm-insp-flag { vertical-align: middle; margin-inline-start: 4px; color: #e67e22; }
       .tm-insp-flag ha-icon { --mdc-icon-size: 18px; }
       .tm-insp-icon { background: color-mix(in srgb, #e67e22, transparent 86%); color: #e67e22; }
       .tm-insp-item { border-color: color-mix(in srgb, #e67e22, transparent 60%); }
@@ -9801,7 +9801,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-insp-go ha-icon { --mdc-icon-size: 18px; }
       .tm-insp-opts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
       .tm-insp-opt {
-        display: flex; gap: 10px; align-items: flex-start; text-align: left; width: 100%;
+        display: flex; gap: 10px; align-items: flex-start; text-align: start; width: 100%;
         padding: 10px 12px; border-radius: var(--tm-radius-sm); cursor: pointer;
         background: var(--tm-surface-0); border: 1px solid var(--tm-border); color: inherit; font: inherit;
       }
@@ -9817,7 +9817,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-insp-hint ha-icon { --mdc-icon-size: 15px; }
       .tm-insp-settings { border-color: color-mix(in srgb, #e67e22, transparent 55%); }
       .tm-insp-settings h3 ha-icon { --mdc-icon-size: 18px; color: #e67e22; vertical-align: -3px; }
-      .tm-insp-sub { padding-left: 18px; }
+      .tm-insp-sub { padding-inline-start: 18px; }
       .tm-insp-settings .tm-setting-label ha-icon { --mdc-icon-size: 16px; vertical-align: -3px; }
       .tm-timeline-points { font-weight: 600; }
 
