@@ -1146,7 +1146,22 @@ class NotificationCoordinator:
         await self.storage.async_save()
         await self.async_setup_schedules()  # in case routes referenced this id
 
+    def _recipient_exists(self, recipient_id: str) -> bool:
+        """True if ``recipient_id`` resolves to an existing child or parent recipient."""
+        if recipient_id.startswith("child:"):
+            child_id = recipient_id.split(":", 1)[1]
+            return bool(child_id) and self.storage.get_child(child_id) is not None
+        if recipient_id.startswith("parent:"):
+            return any(p.id == recipient_id for p in self.storage.get_parent_recipients())
+        return False
+
     async def set_route(self, type_id: str, recipient_id: str, route) -> None:
+        # Reject unknown types/recipients (#947) — a stored route for an id
+        # that resolves to nobody is silently dead weight in the config.
+        if type_id not in NOTIFICATION_TYPES_BY_ID:
+            raise ValueError(f"Unknown notification type {type_id}")
+        if not self._recipient_exists(recipient_id):
+            raise ValueError(f"Unknown notification recipient {recipient_id}")
         self.storage.set_notification_route(type_id, recipient_id, route)
         await self.storage.async_save()
         if NOTIFICATION_TYPES_BY_ID.get(type_id) and NOTIFICATION_TYPES_BY_ID[type_id].time_gated:
