@@ -236,8 +236,92 @@ def test_pass_pays_the_bonus_as_an_undoable_transaction_and_celebrates():
         # A normal bonus entry: the generic undo takes it back.
         await coord.async_undo_transaction(txn.id)
         assert coord.get_child(child.id).points == before
+
+    run(go())
+
+
+def _passed_with_bonus(coord, completion, **start_kw):
+    async def go():
+        record = await coord.async_start_inspection(completion.id, **start_kw)
+        coord._celebrate = AsyncMock()
+        await coord.async_pass_inspection(record["id"], note="Great")
+        return coord._find_inspection(record["id"])
+
+    return go()
+
+
+def test_undoing_the_pass_bonus_reopens_an_inspection_still_in_its_window():
+    """#996: the undo takes the pass back, so it's open to decide again."""
+
+    async def go():
+        coord = await _system()
+        child, _chore, completion = await _approved(coord)
+        record = await _passed_with_bonus(coord, completion, bonus=9, window="2h")
+        dt_util_mock._now = NOW + dt.timedelta(minutes=20)
+        with patch.object(ci, "async_track_point_in_time") as track:
+            await coord.async_undo_transaction(record["bonus_txn_id"])
+        undone = coord._find_inspection(record["id"])
+        assert undone["status"] == "open" and undone["bonus"] == 9
+        assert undone["decided_at"] is None and undone["note"] == "" and undone["bonus_txn_id"] == ""
+        # The window timer is armed again for it.
+        assert track.called
+        # The child card shows it open again, not "passed +9".
+        (item,) = coord.inspections_for_child(child.id)
+        assert item["status"] == "open" and item["bonus"] == 9
+        # The feed: started, and no pass (its transaction is gone).
+        assert [e["type"] for e in coord.recent_inspection_events()] == ["inspection_started"]
+        assert _events(coord, "taskmate_inspection_reopened")[0]["inspection_id"] == record["id"]
+        # The parent can decide again: pass pays once more.
+        before = coord.get_child(child.id).points
+        await coord.async_pass_inspection(record["id"])
+        assert coord.get_child(child.id).points == before + 9
+
+    run(go())
+
+
+def test_undoing_the_pass_bonus_after_the_window_closes_it_undecided():
+    async def go():
+        coord = await _system()
+        child, _chore, completion = await _approved(coord)
+        record = await _passed_with_bonus(coord, completion, bonus=9, window="1h")
+        dt_util_mock._now = NOW + dt.timedelta(hours=3)
+        await coord.async_undo_transaction(record["bonus_txn_id"])
+        undone = coord._find_inspection(record["id"])
+        assert undone["status"] == "expired" and undone["bonus_txn_id"] == "" and undone["note"] == ""
+        assert undone["decided_at"] == ci.format_datetime(NOW + dt.timedelta(hours=3))
+        assert coord.inspections_for_child(child.id) == []
+        assert [e["type"] for e in coord.recent_inspection_events()] == ["inspection_started"]
         with pytest.raises(ValueError, match="already been decided"):
             await coord.async_pass_inspection(record["id"])
+
+    run(go())
+
+
+def test_undoing_the_pass_bonus_of_a_chore_since_undone_closes_it():
+    """Nothing left to inspect: don't reopen it."""
+
+    async def go():
+        coord = await _system()
+        _child, _chore, completion = await _approved(coord)
+        record = await _passed_with_bonus(coord, completion, bonus=9)
+        coord.storage._data["completions"] = [
+            c for c in coord.storage._data.get("completions", []) if c.get("id") != completion.id
+        ]
+        await coord.async_undo_transaction(record["bonus_txn_id"])
+        assert coord._find_inspection(record["id"])["status"] == "expired"
+
+    run(go())
+
+
+def test_undoing_an_unrelated_bonus_leaves_inspections_alone():
+    async def go():
+        coord = await _system()
+        child, _chore, completion = await _approved(coord)
+        record = await _passed_with_bonus(coord, completion, bonus=9)
+        await coord.async_add_points(child.id, 5, reason="Bonus: helped out")
+        other = coord.storage.get_points_transactions()[-1]
+        await coord.async_undo_transaction(other.id)
+        assert coord._find_inspection(record["id"])["status"] == "passed"
 
     run(go())
 
