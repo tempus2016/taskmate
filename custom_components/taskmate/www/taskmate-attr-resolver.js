@@ -169,8 +169,19 @@
    */
   const TASKMATE_BUTTON_PREFIX = "button.taskmate_";
 
+  // HA's RTL flag for the language, as taskmate-design.js direction() reads it.
+  function isRTL(hass) {
+    const meta = hass.translationMetadata && hass.translationMetadata.translations;
+    const entry = meta && hass.language && meta[hass.language];
+    return entry ? !!entry.isRTL : undefined;
+  }
+
   function hasRelevantChange(oldHass, newHass, primaryEntityId) {
     if (!oldHass || !oldHass.states || !newHass || !newHass.states) return true;
+    // A language change (#994) keeps the same states object, but every card
+    // renders translated strings and stamps dir from the language.
+    if (oldHass.language !== newHass.language) return true;
+    if (isRTL(oldHass) !== isRTL(newHass)) return true;
     if (oldHass.states === newHass.states) return false;
 
     if (primaryEntityId) {
