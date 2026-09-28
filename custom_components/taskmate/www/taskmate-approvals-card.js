@@ -675,6 +675,9 @@ class TaskMateApprovalsCard extends LitElement {
       header_color: '#27ae60',
       ...config,
     };
+    // Dashboards saved before #1010 stored the English default title; treat it
+    // as unset so the translated default is shown instead.
+    if (this.config.title === "Pending Approvals") this.config.title = "";
   }
 
   getCardSize() {
@@ -688,7 +691,6 @@ class TaskMateApprovalsCard extends LitElement {
   static getStubConfig() {
     return {
       entity: "sensor.taskmate_overview",
-      title: "Pending Approvals",
     };
   }
 

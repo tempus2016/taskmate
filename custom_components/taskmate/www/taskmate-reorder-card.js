@@ -520,9 +520,12 @@ class TaskMateReorderCard extends LitElement {
       throw new Error("Please define a child_id");
     }
     this.config = {
-      title: "Reorder Chores",
+      title: "",
     ...config,
     };
+    // Dashboards saved before #1010 stored the English default title; treat it
+    // as unset so the translated default is shown instead.
+    if (this.config.title === "Reorder Chores") this.config.title = "";
   }
 
   getCardSize() {
@@ -537,7 +540,6 @@ class TaskMateReorderCard extends LitElement {
     return {
       entity: "sensor.taskmate_overview",
       child_id: "",
-      title: "Reorder Chores",
     };
   }
 

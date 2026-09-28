@@ -555,18 +555,21 @@ class TaskMateParentDashboardCard extends LitElement {
   setConfig(config) {
     if (!config.entity) throw new Error("Please define an entity");
     this.config = {
-      title: "Parent Dashboard",
+      title: "",
       quick_points_amount: 5,
       show_claims: true,
             header_color: '#c0392b',
     ...config,
     };
+    // Dashboards saved before #1010 stored the English default title; treat it
+    // as unset so the translated default is shown instead.
+    if (this.config.title === "Parent Dashboard") this.config.title = "";
   }
 
   getCardSize() { return 6; }
   static getConfigElement() { return document.createElement("taskmate-parent-dashboard-card-editor"); }
   static getStubConfig() {
-    return { entity: "sensor.taskmate_overview", title: "Parent Dashboard" };
+    return { entity: "sensor.taskmate_overview" };
   }
 
   render() {

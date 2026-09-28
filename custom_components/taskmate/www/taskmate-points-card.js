@@ -673,9 +673,12 @@ class TaskMatePointsCard extends LitElement {
       throw new Error("Please define an entity (taskmate overview sensor)");
     }
     this.config = {
-      title: "Manage Points",
+      title: "",
     ...config,
     };
+    // Dashboards saved before #1010 stored the English default title; treat it
+    // as unset so the translated default is shown instead.
+    if (this.config.title === "Manage Points") this.config.title = "";
   }
 
   getCardSize() {
@@ -689,7 +692,6 @@ class TaskMatePointsCard extends LitElement {
   static getStubConfig() {
     return {
       entity: "sensor.taskmate_overview",
-      title: "Manage Points",
     };
   }
 

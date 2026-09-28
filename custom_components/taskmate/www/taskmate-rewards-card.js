@@ -1077,6 +1077,9 @@ class TaskMateRewardsCard extends LitElement {
       header_color: '#e67e22',
       ...config,
     };
+    // Dashboards saved before #1010 stored the English default title; treat it
+    // as unset so the translated default is shown instead.
+    if (this.config.title === "Rewards") this.config.title = "";
   }
 
   getCardSize() {
@@ -1090,7 +1093,6 @@ class TaskMateRewardsCard extends LitElement {
   static getStubConfig() {
     return {
       entity: "sensor.taskmate_overview",
-      title: "Rewards",
       child_id: null,
       show_child_badges: true,
       enable_pool_mode: false,
