@@ -56,8 +56,11 @@ INSPECTION_CARD_MAX = 4
 INSPECTION_WINDOWS = ("1h", "2h", "4h", "bed")
 INSPECTION_FAIL_MODES = ("note", "redo", "ask")
 _WINDOW_HOURS = {"1h": 1, "2h": 2, "4h": 4}
-# "Until bedtime" asked for too close to bedtime gets an hour instead.
+# "Until bedtime" asked for too close to bedtime gets an hour instead. The
+# admin panel reads both numbers from its state (``inspection_bed_rule``) so
+# the start dialog shows the closing time the server will really use (#997).
 _BEDTIME_MIN_MINUTES = 30
+_BEDTIME_FALLBACK_HOURS = 1
 
 DEFAULT_INSPECTION_BONUS = 10
 DEFAULT_INSPECTION_WINDOW = "2h"
@@ -124,8 +127,12 @@ class InspectionsMixin:
             until = local.replace(hour=hour, minute=minute, second=0, microsecond=0)
             if until - local >= timedelta(minutes=_BEDTIME_MIN_MINUTES):
                 return until
-            return now + timedelta(hours=1)
+            return now + timedelta(hours=_BEDTIME_FALLBACK_HOURS)
         return now + timedelta(hours=_WINDOW_HOURS.get(window, 2))
+
+    def inspection_bed_rule(self) -> dict:
+        """The "Until bedtime" fallback, for the panel to mirror ``inspection_until``."""
+        return {"min_minutes": _BEDTIME_MIN_MINUTES, "fallback_hours": _BEDTIME_FALLBACK_HOURS}
 
     # ── reads ────────────────────────────────────────────────────────────
 

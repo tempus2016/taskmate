@@ -308,3 +308,54 @@ test("panel: settings section carries every inspection setting", () => {
   assert.ok(settings.includes("${this._renderInspectionsSection()}"), "wired into the Settings tab");
   assert.ok(settings.includes("payload.inspection_pick_children"), "the children chips are saved");
 });
+
+// ── #997: the dialogs show what will really happen ───────────────────────
+
+test("panel: the pass button follows a typed bonus without a re-render", () => {
+  const p = panel({ inspections: [OPEN_RECORD] });
+  p._onInspectionAction("insp-pass", { dataset: { id: "i1" } });
+  const btn = { textContent: "" };
+  p.querySelector = (sel) => (sel === '[data-act="insp-pass-save"]' ? btn : null);
+  let rendered = 0;
+  p._render = () => rendered++;
+  p._onInput({ target: { dataset: { field: "bonus" }, type: "number", value: "9" } });
+  assert.equal(p._dialog.data.bonus, 9);
+  assert.equal(btn.textContent, "panel.insp_pass_btn:9", "the label names what will be paid");
+  assert.equal(rendered, 0, "typing keeps the input's focus");
+  assert.ok(p._renderInspectionPassDialog().includes("panel.insp_pass_btn:9"));
+  p._onInput({ target: { dataset: { field: "bonus" }, type: "number", value: "" } });
+  assert.equal(btn.textContent, "panel.insp_pass_btn:0", "an empty box pays nothing, and says so");
+});
+
+const BED_CASES = JSON.parse(readFileSync(path.join(__dirname, "../data/inspection_bed_cases.json"), "utf8")).cases;
+
+for (const c of BED_CASES) {
+  test(`panel: "Until bedtime" closes when the server says (${c.tz} ${c.bedtime} at ${c.now})`, () => {
+    const p = panel({
+      settings: { inspection_bedtime: c.bedtime },
+      inspection_bed_rule: { min_minutes: 30, fallback_hours: 1 },
+    });
+    p._hass = { config: { time_zone: c.tz } };
+    const bed = p._inspBedUntil(Date.parse(c.now));
+    assert.equal(new Date(bed.at).toISOString(), new Date(c.until).toISOString());
+    assert.equal(bed.fallback, c.fallback);
+  });
+}
+
+test("panel: the bedtime chip shows the real closing time and why, when bedtime is too close", () => {
+  const p = panel({ settings: { inspection_bedtime: "20:00" }, inspection_bed_rule: { min_minutes: 30, fallback_hours: 1 } });
+  p._hass = { config: { time_zone: "UTC" } };
+  p._onInspectionAction("insp-flag", { dataset: { id: "c1" } });
+  p._onInspectionAction("insp-window", { dataset: { window: "bed" } });
+  // The panel runs in its own vm realm, so pin "now" on the helper itself.
+  const at = (iso) => (p._inspBedUntil = () => TaskMatePanel.prototype._inspBedUntil.call(p, Date.parse(iso)));
+  at("2024-03-20T19:45:00Z");
+  const soon = p._renderInspectionStartDialog();
+  assert.ok(soon.includes("panel.insp_window_bed:20:45"), "the fallback's closing time");
+  assert.ok(soon.includes("panel.insp_window_bed_soon:20:00:30:20:45"), "and why");
+  at("2024-03-20T12:00:00Z");
+  const early = p._renderInspectionStartDialog();
+  assert.ok(early.includes("panel.insp_window_bed:20:00") && !early.includes("insp_window_bed_soon"));
+  // The Settings default isn't "now": it keeps naming the bedtime itself.
+  assert.ok(p._renderInspectionsSection().includes("panel.insp_window_bed:20:00"));
+});

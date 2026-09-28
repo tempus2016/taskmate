@@ -182,6 +182,39 @@ def test_until_bedtime_and_too_close_to_it():
     run(go())
 
 
+BED_CASES = json.loads((ROOT / "tests" / "data" / "inspection_bed_cases.json").read_text())["cases"]
+
+
+@pytest.mark.parametrize("case", BED_CASES, ids=lambda c: f"{c['tz']}-{c['bedtime']}-{c['now']}")
+def test_until_bedtime_matches_the_shared_cases(case, monkeypatch):
+    """The panel's start dialog checks the same table (#997), so the two can't drift."""
+    from zoneinfo import ZoneInfo
+
+    zone = ZoneInfo(case["tz"])
+    monkeypatch.setattr(dt_util_mock, "as_local", lambda value: value.astimezone(zone))
+
+    async def go():
+        coord = await _system({"inspection_bedtime": case["bedtime"]})
+        now = dt.datetime.fromisoformat(case["now"].replace("Z", "+00:00"))
+        until = dt.datetime.fromisoformat(case["until"].replace("Z", "+00:00"))
+        assert coord.inspection_until("bed", now) == until
+
+    run(go())
+
+
+def test_panel_state_carries_the_bedtime_fallback_rule():
+    async def go():
+        coord = await _system()
+        rule = coord.inspection_bed_rule()
+        assert rule == {"min_minutes": ci._BEDTIME_MIN_MINUTES, "fallback_hours": ci._BEDTIME_FALLBACK_HOURS}
+        # The shared cases assume these numbers; change them together.
+        assert rule == {"min_minutes": 30, "fallback_hours": 1}
+        src = (PKG / "websocket.py").read_text()
+        assert '"inspection_bed_rule": coordinator.inspection_bed_rule()' in src
+
+    run(go())
+
+
 # ── passing ──────────────────────────────────────────────────────────────
 
 

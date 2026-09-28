@@ -1,0 +1,13 @@
+{
+  "_comment": "When \"Until bedtime\" closes (#997). Shared by test_inspections.py (the server's inspection_until) and taskmate-inspections.test.cjs (the panel's _inspBedUntil) so the two can't drift.",
+  "cases": [
+    { "tz": "UTC", "bedtime": "20:00", "now": "2024-03-20T12:00:00Z", "until": "2024-03-20T20:00:00Z", "fallback": false },
+    { "tz": "UTC", "bedtime": "20:00", "now": "2024-03-20T19:30:00Z", "until": "2024-03-20T20:00:00Z", "fallback": false },
+    { "tz": "UTC", "bedtime": "20:00", "now": "2024-03-20T19:45:00Z", "until": "2024-03-20T20:45:00Z", "fallback": true },
+    { "tz": "UTC", "bedtime": "20:00", "now": "2024-03-20T21:10:00Z", "until": "2024-03-20T22:10:00Z", "fallback": true },
+    { "tz": "Europe/London", "bedtime": "20:00", "now": "2024-07-01T18:00:00Z", "until": "2024-07-01T19:00:00Z", "fallback": false },
+    { "tz": "Europe/London", "bedtime": "20:00", "now": "2024-07-01T18:45:00Z", "until": "2024-07-01T19:45:00Z", "fallback": true },
+    { "tz": "America/New_York", "bedtime": "00:15", "now": "2024-07-01T03:50:00Z", "until": "2024-07-01T04:50:00Z", "fallback": true },
+    { "tz": "Asia/Kolkata", "bedtime": "21:30", "now": "2024-07-01T15:00:00Z", "until": "2024-07-01T16:00:00Z", "fallback": false }
+  ]
+}
