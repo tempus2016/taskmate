@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from typing import Any
 
-from .const import BOUNTY_STATUSES, MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
+from .const import AUCTION_STATUSES, BOUNTY_STATUSES, MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -959,6 +959,110 @@ class Bounty:
         self.claim_until = None
         self.lapse_warned = False
         self.completion_id = ""
+
+
+def _clean_auction_bids(raw: Any) -> dict[str, dict[str, Any]]:
+    """Coerce stored bids to {child_id: {"points": int >= 1, "at": ISO}}."""
+    out: dict[str, dict[str, Any]] = {}
+    if not isinstance(raw, dict):
+        return out
+    for child_id, bid in raw.items():
+        if not child_id or not isinstance(bid, dict):
+            continue
+        points = _safe_int(bid.get("points", 0))
+        at = parse_datetime(bid.get("at"))
+        if points < 1 or at is None:
+            continue
+        out[str(child_id)] = {"points": points, "at": format_datetime(at)}
+    return out
+
+
+@dataclass
+class Auction:
+    """A reverse auction on one occurrence of a chore (#982).
+
+    A parent opens it on a scheduled date of an existing chore with a maximum
+    price and a closing time. Eligible children place sealed bids — the fewest
+    points they would do it for. At closing the lowest bid wins (the earliest
+    bid on a tie; changing a bid re-times it) and the winner is assigned that
+    one occurrence at their price: ``winner_id`` / ``price`` are what the
+    assignment and completion paths read. No bids leaves the chore on its
+    normal assignment. Bids are secret: only a parent ever sees ``bids``.
+    """
+
+    chore_id: str
+    occurrence: str  # ISO date of the auctioned occurrence
+    max_points: int = 1
+    min_points: int = 1
+    closes_at: datetime | None = None
+    eligible_child_ids: list[str] = field(default_factory=list)
+    notify_children: bool = True
+    status: str = "open"  # open | closed | cancelled
+    bids: dict[str, dict[str, Any]] = field(default_factory=dict)
+    winner_id: str = ""
+    price: int = 0
+    reminder_sent: bool = False  # the "closes within the hour" push went out
+    # What the chore was called and worth when the auction opened, so the
+    # history still reads right after the chore is renamed or deleted.
+    chore_name: str = ""
+    chore_points: int = 0
+    created_at: datetime | None = None
+    closed_at: datetime | None = None
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Auction:
+        max_points = max(1, _safe_int(data.get("max_points", 1), 1))
+        return cls(
+            chore_id=str(data.get("chore_id", "") or ""),
+            occurrence=str(data.get("occurrence", "") or ""),
+            max_points=max_points,
+            min_points=min(max_points, max(1, _safe_int(data.get("min_points", 1), 1))),
+            closes_at=parse_datetime(data.get("closes_at")),
+            eligible_child_ids=[str(c) for c in (data.get("eligible_child_ids") or []) if c],
+            notify_children=data.get("notify_children", True) is not False,
+            status=data.get("status") if data.get("status") in AUCTION_STATUSES else "open",
+            bids=_clean_auction_bids(data.get("bids")),
+            winner_id=str(data.get("winner_id", "") or ""),
+            price=max(0, _safe_int(data.get("price", 0))),
+            reminder_sent=data.get("reminder_sent") is True,
+            chore_name=str(data.get("chore_name", "") or ""),
+            chore_points=max(0, _safe_int(data.get("chore_points", 0))),
+            created_at=parse_datetime(data.get("created_at")),
+            closed_at=parse_datetime(data.get("closed_at")),
+            id=data.get("id") or generate_id(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "chore_id": self.chore_id,
+            "occurrence": self.occurrence,
+            "max_points": self.max_points,
+            "min_points": self.min_points,
+            "closes_at": format_datetime(self.closes_at),
+            "eligible_child_ids": list(self.eligible_child_ids),
+            "notify_children": self.notify_children,
+            "status": self.status,
+            "bids": {k: dict(v) for k, v in self.bids.items()},
+            "winner_id": self.winner_id,
+            "price": self.price,
+            "reminder_sent": self.reminder_sent,
+            "chore_name": self.chore_name,
+            "chore_points": self.chore_points,
+            "created_at": format_datetime(self.created_at),
+            "closed_at": format_datetime(self.closed_at),
+            "id": self.id,
+        }
+
+    def ranked_bids(self) -> list[tuple[str, int, datetime]]:
+        """(child_id, points, placed_at), winner first: lowest, then earliest."""
+        ranked = []
+        for child_id, bid in self.bids.items():
+            at = parse_datetime(bid.get("at"))
+            if at is not None:
+                ranked.append((child_id, int(bid.get("points", 0)), at))
+        ranked.sort(key=lambda b: (b[1], b[2]))
+        return ranked
 
 
 @dataclass

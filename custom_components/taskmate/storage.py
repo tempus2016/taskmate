@@ -11,6 +11,7 @@ from homeassistant.helpers.storage import Store
 
 from .const import DEFAULT_NOTIFICATION_NAV_URL, DEFAULT_PRESENCE_ARRIVAL_MIN_AWAY, DOMAIN
 from .models import (
+    Auction,
     AwardedBadge,
     Badge,
     Bonus,
@@ -1390,6 +1391,35 @@ class TaskMateStorage:
             b for b in self._data.get("bounties", []) if not (isinstance(b, dict) and b.get("id") == bounty_id)
         ]
 
+    # ── Chore auctions (#982) ────────────────────────────────────────────
+    # Their own list: an auction is about one occurrence of a chore, not the
+    # chore itself, so the chore record is never touched. Missing on installs
+    # from before the feature, so every reader defaults it.
+    def get_auctions(self) -> list[Auction]:
+        return [Auction.from_dict(a) for a in self._data.get("auctions", []) if isinstance(a, dict)]
+
+    def get_auction(self, auction_id: str) -> Auction | None:
+        for a in self._data.get("auctions", []):
+            if isinstance(a, dict) and a.get("id") == auction_id:
+                return Auction.from_dict(a)
+        return None
+
+    def add_auction(self, auction: Auction) -> None:
+        self._data.setdefault("auctions", []).append(auction.to_dict())
+
+    def update_auction(self, auction: Auction) -> None:
+        items = self._data.setdefault("auctions", [])
+        for i, a in enumerate(items):
+            if isinstance(a, dict) and a.get("id") == auction.id:
+                items[i] = auction.to_dict()
+                return
+        items.append(auction.to_dict())
+
+    def remove_auction(self, auction_id: str) -> None:
+        self._data["auctions"] = [
+            a for a in self._data.get("auctions", []) if not (isinstance(a, dict) and a.get("id") == auction_id)
+        ]
+
     # ── Quests (chore chains) ────────────────────────────────────────────
     def get_quests(self) -> list[Quest]:
         return [Quest.from_dict(q) for q in self._data.get("quests", [])]
@@ -1509,6 +1539,7 @@ class TaskMateStorage:
             "challenges",
             "wishes",
             "bounties",
+            "auctions",
         )
         for k in list_keys:
             if not isinstance(self._data.get(k), list):

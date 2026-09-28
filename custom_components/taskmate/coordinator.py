@@ -19,6 +19,7 @@ from homeassistant.util import dt as dt_util
 from . import photos
 from .const import DOMAIN
 from .coord_assignments import AssignmentsMixin
+from .coord_auctions import AuctionsMixin
 from .coord_avatars import AvatarsMixin
 from .coord_badges import BadgeCoordinator
 from .coord_birthdays import BirthdaysMixin
@@ -98,6 +99,7 @@ class TaskMateCoordinator(
     TeamworkMixin,
     WishlistMixin,
     BountiesMixin,
+    AuctionsMixin,
     RecapsMixin,
     RejectionsMixin,
     DataUpdateCoordinator,
@@ -138,6 +140,8 @@ class TaskMateCoordinator(
         self._data_snapshot_cache: tuple[int, dict[str, Any]] | None = None
         # Scheduled reverts for timed unlock rewards (#678).
         self._unlock_timers: list = []
+        # Wakes for the next chore-auction closing time or reminder (#982).
+        self._unsub_auction_timer: Callable[[], None] | None = None
 
     def difficulty_multiplier(self, tier: str) -> float:
         """Return the points multiplier for a difficulty tier.
@@ -406,6 +410,10 @@ class TaskMateCoordinator(
         # Bounty board (#931): claims that ran out and bounties that expired
         # while HA was off.
         await self.async_sweep_bounties(refresh=False)
+        # Chore auctions (#982): settle any whose bidding closed while HA was
+        # off, then arm the timer for the next closing time.
+        await self.async_sweep_auctions(refresh=False)
+        self._arm_auction_timer()
         await self.async_refresh()
         # Schedule midnight streak check at 00:00:05
         self._unsub_midnight = async_track_time_change(
@@ -792,6 +800,7 @@ class TaskMateCoordinator(
             "_unsub_tag_scanned",
             "_unsub_surprise",
             "_unsub_weekly",
+            "_unsub_auction_timer",
         ):
             if unsub := getattr(self, attr, None):
                 unsub()
@@ -843,6 +852,8 @@ class TaskMateCoordinator(
             self._async_sweep_orphan_photos,
             # Finished bounties leave with the completion history (#931).
             self.async_prune_bounties,
+            # Finished auctions likewise (#982).
+            self.async_prune_auctions,
         ]
         # Check for perfect week bonus every Monday at midnight
         if now.weekday() == 0:
@@ -895,6 +906,8 @@ class TaskMateCoordinator(
         # Bounty claims last hours, not days (#931): lapse and expire them on
         # this tick, and warn a claimer whose time is nearly up.
         await self.async_sweep_bounties(refresh=False)
+        # Auction closings (#982) have their own timer; this is the backstop.
+        await self.async_sweep_auctions(refresh=False)
         self._refresh_tracked_availability_entities()
         # Presence-aware reminders (#926): follow child presence-entity edits.
         # A no-op unless the child -> entity map actually changed.
@@ -990,6 +1003,8 @@ class TaskMateCoordinator(
         await self._async_remove_wishes_for_child(child_id)
         # Free any bounty they had claimed and take them off eligibility (#931).
         self.remove_child_from_bounties(child_id)
+        # And their bids and auction eligibility (#982).
+        self.remove_child_from_auctions(child_id)
         # Their missed-mandatory reviews, timed sessions and notification
         # routes (#946) — nothing else would ever clear them.
         self.storage.remove_mandatory_misses_for_child(child_id)

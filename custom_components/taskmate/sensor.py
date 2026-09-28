@@ -310,6 +310,17 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
             recent = {src: dst for src, dst in moved.items() if src >= moved_floor or (dst and dst >= moved_floor)}
             if recent:
                 record["moved_occurrences"] = recent
+        # Won at auction (#982). Only chores with a won occurrence this week
+        # carry these: `auction` settles today for the cards (the winner alone,
+        # at the winning price, which is also what the chore pays today); the
+        # map lets the calendar card place the other days.
+        wins = coordinator.auction_wins_for_chore(c, today, 7)
+        if isinstance(wins, dict) and wins:
+            record["auction_wins"] = {day: w["child_id"] for day, w in wins.items()}
+            today_win = wins.get(today.isoformat())
+            if today_win:
+                record["auction"] = today_win
+                record["effective_points"] = today_win["points"]
         requires_approval = getattr(c, "requires_approval", True)
         if not requires_approval:
             record["requires_approval"] = False
@@ -855,6 +866,7 @@ async def async_setup_entry(
     entities.append(TaskMateActivitySensor(coordinator, entry))
     entities.append(TaskMateIncentivesSensor(coordinator, entry))
     entities.append(TaskMateBountiesSensor(coordinator, entry))
+    entities.append(TaskMateAuctionsSensor(coordinator, entry))
 
     # Add sensors for each child
     for child in coordinator.data.get("children", []):
@@ -1320,6 +1332,38 @@ class TaskMateBountiesSensor(_CachedAttrsSensor):
         return {"bounties": _build_bounties_list(self.coordinator, common)}
 
 
+class TaskMateAuctionsSensor(_CachedAttrsSensor):
+    """Chore auctions (#982): live auctions as the state, and a public digest
+    the auction card watches to know when to re-fetch its view.
+
+    Bids are secret, so the digest carries only how many are in — never who
+    bid or how much. The card fetches its own bid over the
+    ``taskmate/auctions/list`` WebSocket command, which enforces that.
+    """
+
+    _unrecorded_attributes = frozenset({"auctions"})
+
+    def __init__(
+        self,
+        coordinator: TaskMateCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_auctions"
+        self._attr_name = "TaskMate Auctions"
+
+    @property
+    def native_value(self) -> int:
+        return sum(1 for a in self.coordinator.storage.get_auctions() if a.status == "open")
+
+    @property
+    def icon(self) -> str:
+        return "mdi:gavel"
+
+    def _build_attributes(self) -> dict:
+        return {"auctions": self.coordinator.auctions_public_state()}
+
+
 class ChildPointsSensor(TaskMateBaseSensor):
     """Sensor for a child's points."""
 
@@ -1421,6 +1465,10 @@ class ChildStatsSensor(TaskMateBaseSensor):
         def _included(c):
             if not (child.id in c.assigned_to or not c.assigned_to):
                 return False
+            # Won at auction (#982): today's occurrence is the winner's alone.
+            winner = self.coordinator.auction_winner(c)
+            if isinstance(winner, str) and winner:
+                return winner == child.id
             mode = getattr(c, "assignment_mode", "everyone")
             if mode not in ("everyone", "first_come") and getattr(c, "assignment_current_child_id", "") != child.id:
                 return False

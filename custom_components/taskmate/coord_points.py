@@ -872,7 +872,13 @@ class PointsMixin:
             if child_id in getattr(chore, "disabled_for", []):
                 continue
             mode = getattr(chore, "assignment_mode", "everyone")
-            if mode not in ("", "everyone"):
+            # Won at auction (#982): that day's occurrence is the winner's
+            # alone — due for them in any mode, and for nobody else.
+            winner = self.auction_winner(chore, day)
+            if winner:
+                if winner != child_id:
+                    continue
+            elif mode not in ("", "everyone"):
                 if not include_rotation:
                     continue
                 if child_id not in self._compute_active_children(chore, day):

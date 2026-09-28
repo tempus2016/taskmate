@@ -747,6 +747,20 @@ class TaskMatePanel extends HTMLElement {
     if (act === "bounty-el-all")    { this._bountyDialogSet("eligible_child_ids", []); return; }
     if (act === "toggle-bounty-el") { this._syncIconPickers(); this._toggleArrayField("eligible_child_ids", t.dataset.id); return; }
 
+    // Chore auctions (#982)
+    if (act === "auction-subtab")     { this._auctionSubTab = t.dataset.id; this._render(); return; }
+    if (act === "add-auction")        { this._openAuctionDialog(); return; }
+    if (act === "auction-chore-next") { this._openAuctionDialog({ choreId: t.dataset.id }); return; }
+    if (act === "auction-reopen")     { this._openAuctionDialog({ fromId: t.dataset.id }); return; }
+    if (act === "auction-close-now")  { this._doCloseAuction(t.dataset.id); return; }
+    if (act === "auction-cancel")     { this._doCancelAuction(t.dataset.id); return; }
+    if (act === "auction-occ")        { this._auctionDialogSet("occurrence", t.dataset.id); return; }
+    if (act === "auction-max-step")   { this._auctionDialogSet("max_step", Number(t.dataset.id)); return; }
+    if (act === "auction-max-set")    { this._auctionDialogSet("max_points", Number(t.dataset.id)); return; }
+    if (act === "auction-close-at")   { this._auctionDialogSet("close_mode", t.dataset.id); return; }
+    if (act === "toggle-auction-el")  { this._toggleArrayField("eligible_child_ids", t.dataset.id); return; }
+    if (act === "save-auction")       { this._doSaveAuction(); return; }
+
     // Avatar unlockables
     if (act === "manage-avatars")     { this._openAvatarCatalogDialog(); return; }
     if (act === "avatar-add-row")     { this._avatarAddRow(); return; }
@@ -1067,6 +1081,15 @@ class TaskMatePanel extends HTMLElement {
       const file = t.files && t.files[0];
       t.value = "";  // allow re-selecting the same file later
       if (file) this._doImportConfig(file);
+      return;
+    }
+    if (t.dataset.local === "auction-reveal") {
+      this._auctionReveal = t.checked;
+      this._render();
+      return;
+    }
+    if (t.dataset.role === "auction-chore") {
+      this._auctionPickChore(t.value);
       return;
     }
     if (t.dataset.local === "show-ids") {
@@ -3173,6 +3196,7 @@ class TaskMatePanel extends HTMLElement {
       groups:    (this._state.task_groups || []).length,
       templates: (this._state.templates || []).length,
       bounties:  (this._state.bounties || []).filter(b => ["open", "claimed", "pending"].includes(b.status)).length,
+      auctions:  (this._state.auctions || []).filter(a => a.status === "open").length,
     } : {};
     // Grouped by what the parent is doing (#966). Group keys use `key`, not
     // `id`: only nav items carry an id.
@@ -3187,6 +3211,7 @@ class TaskMatePanel extends HTMLElement {
       { key: "earn", head: this._t("panel.nav_earn"), items: [
         { id: "chores",    label: this._t("panel.tab_chores"),    icon: "mdi:check-circle-outline" },
         { id: "bounties",  label: this._t("panel.tab_bounties"),  icon: "mdi:flag-outline" },
+        { id: "auctions",  label: this._t("panel.tab_auctions"),  icon: "mdi:gavel" },
         { id: "quests",    label: this._t("panel.tab_quests"),    icon: "mdi:map-marker-path" },
         { id: "challenges", label: this._t("panel.tab_challenges"), icon: "mdi:trophy-outline" },
         { id: "templates", label: this._t("panel.tab_templates"), icon: "mdi:clipboard-list-outline" },
@@ -3386,6 +3411,7 @@ class TaskMatePanel extends HTMLElement {
     return [
       { act: "add-chore",     icon: "mdi:check-circle-outline", label: this._t("panel.new_chore") },
       { act: "add-bounty",    icon: "mdi:flag-outline",         label: this._t("panel.new_bounty") },
+      { act: "add-auction",   icon: "mdi:gavel",                label: this._t("panel.new_auction") },
       { act: "add-reward",    icon: "mdi:gift-outline",         label: this._t("panel.new_reward") },
       { act: "add-quest",     icon: "mdi:map-marker-path",      label: this._t("panel.new_quest") },
       { act: "add-challenge", icon: "mdi:trophy-outline",       label: this._t("panel.new_challenge") },
@@ -3525,6 +3551,7 @@ class TaskMatePanel extends HTMLElement {
       case "quests":    return this._renderQuestsTab();
       case "challenges": return this._renderChallengesTab();
       case "bounties":   return this._renderBountiesTab();
+      case "auctions":   return this._renderAuctionsTab();
       case "badges":    return this._renderBadgesTab();
       case "templates":     return this._renderTemplatesTab();
       case "notifications": return this._renderNotificationsTab();
@@ -5510,6 +5537,358 @@ class TaskMatePanel extends HTMLElement {
     );
   }
 
+  // -- Auctions tab (#982) ----------------------------------------------
+  // Reverse auctions on one occurrence of a chore. Live = bidding open, with
+  // the sealed bids (parents may see the amounts); Closed = settled or
+  // cancelled, with the winner and how the won chore itself is going.
+  _auctionable(c) {
+    return !!c && c.enabled !== false
+      && (c.assignment_mode || "everyone") !== "unassigned"
+      && c.task_type !== "timed"
+      && !c.open_ended
+      && !(Number(c.team_size) >= 2);
+  }
+
+  _auctionDate(iso, opts = { weekday: "short", day: "numeric", month: "short" }) {
+    const d = new Date(`${iso}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? String(iso || "") : d.toLocaleDateString(this._hass?.locale?.language, opts);
+  }
+
+  _auctionWhen(iso) {
+    const d = new Date(iso || "");
+    return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(this._hass?.locale?.language, { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  }
+
+  _renderAuctionsTab() {
+    const all = this._state.auctions || [];
+    const live = all.filter(a => a.status === "open");
+    const closed = all.filter(a => a.status !== "open")
+      .sort((a, b) => String(b.closed_at || "").localeCompare(String(a.closed_at || "")));
+    const sub = this._auctionSubTab || "live";
+    const reveal = this._auctionReveal !== false;
+    const monthAgo = Date.now() - 30 * 86400e3;
+    const recent = closed.filter(a => a.status === "closed" && Date.parse(a.closed_at || "") >= monthAgo);
+    const childById = Object.fromEntries((this._state.children || []).map(c => [c.id, c]));
+    const rows = sub === "live" ? live : closed;
+    const heads = sub === "live"
+      ? ["col_chore", "col_max", "col_who", "col_bids", "col_closes"]
+      : ["col_chore", "col_max", "col_bids", "col_result", "col_status"];
+    return `
+      <div class="tm-toolbar">
+        <div>
+          <h2 class="tm-toolbar-title">${this._t("panel.tab_auctions")} <span class="tm-toolbar-count">${live.length}</span></h2>
+          <div class="tm-meta">${this._t("panel.auction_page_sub")}</div>
+        </div>
+        <button type="button" class="tm-btn tm-btn-raised" data-act="add-auction"><ha-icon icon="mdi:gavel"></ha-icon>${this._t("panel.auction_start_btn")}</button>
+      </div>
+      ${all.length === 0 ? this._emptyState("🔨", this._t("panel.auction_empty_title"), this._t("panel.auction_empty_copy"), "add-auction", this._t("panel.auction_start_btn")) : `
+        <div class="tm-stats-row tm-auc-stats">
+          <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(live.length)}</div><div class="tm-stat-label">${this._t("panel.auction_stat_live")}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(live.reduce((n, a) => n + (a.bids || []).length, 0))}</div><div class="tm-stat-label">${this._t("panel.auction_stat_bids")}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(recent.filter(a => a.winner_id).length)} / ${this._fmtNum(recent.length)}</div><div class="tm-stat-label">${this._t("panel.auction_stat_won")}</div></div>
+        </div>
+        <div class="tm-auc-bar">
+          <div class="tm-chip-row">
+            <button type="button" class="tm-chip-btn ${sub === "live" ? "tm-chip-on" : ""}" data-act="auction-subtab" data-id="live">${this._esc(this._t("panel.auction_tab_live", { count: live.length }))}</button>
+            <button type="button" class="tm-chip-btn ${sub === "closed" ? "tm-chip-on" : ""}" data-act="auction-subtab" data-id="closed">${this._esc(this._t("panel.auction_tab_closed", { count: closed.length }))}</button>
+          </div>
+          ${sub === "live" ? `
+            <label class="tm-auc-reveal">
+              <span class="tm-meta">${this._t("panel.auction_show_amounts")}</span>
+              <ha-switch data-local="auction-reveal" ${reveal ? "checked" : ""}></ha-switch>
+            </label>` : ""}
+        </div>
+        <div class="tm-table-wrap">
+          <table class="tm-table">
+            <thead><tr>${heads.map((h, i) => `<th class="${i === 0 ? "tm-col-sticky" : ""}">${this._t(`panel.auction_${h}`)}</th>`).join("")}</tr></thead>
+            <tbody>
+              ${rows.length === 0
+                ? `<tr><td colspan="5" class="tm-meta" style="text-align:center;padding:26px">${this._t("panel.auction_nothing")}</td></tr>`
+                : rows.map(a => this._renderAuctionRow(a, childById, reveal)).join("")}
+            </tbody>
+          </table>
+        </div>
+      `}
+    `;
+  }
+
+  _auctionBidChips(a, childById, reveal) {
+    const bids = a.bids || [];
+    if (!bids.length) return `<span class="tm-text-muted">${this._t(a.status === "open" ? "panel.auction_no_bids_yet" : "panel.auction_no_bids")}</span>`;
+    const show = reveal || a.status !== "open";
+    return bids.map((b, i) => {
+      const child = childById[b.child_id];
+      return `<span class="tm-auc-chip" title="${this._esc(child ? child.name : "?")}">
+        ${child ? this._childAvatar(child) : ""}
+        ${show ? `<b>${this._num(b.points)} ★</b>` : `<span class="tm-text-muted">${this._t("panel.auction_sealed")}</span>`}
+        ${i === 0 && a.status === "open" && show ? `<span class="tm-meta">· ${this._t("panel.auction_leading")}</span>` : ""}
+      </span>`;
+    }).join("");
+  }
+
+  _renderAuctionRow(a, childById, reveal) {
+    const id = this._esc(a.id);
+    const chore = `
+      <div class="tm-name-main tm-bounty-cell">
+        <span class="tm-avatar tm-auc-ic">${this._mdi(a.icon || "mdi:gavel")}</span>
+        <div><strong>${this._esc(a.chore_name)}</strong><div class="tm-meta">${this._esc(this._t("panel.auction_normally", { date: this._auctionDate(a.occurrence), points: this._num(a.normal_points) }))}</div></div>
+      </div>`;
+    const max = `<strong class="tm-numeric tm-auc-gold">${this._num(a.max_points)} ★</strong>${a.min_points > 1 ? `<div class="tm-meta">${this._t("panel.auction_min_meta", { points: this._num(a.min_points) })}</div>` : ""}`;
+    if (a.status === "open") {
+      const left = Date.parse(a.closes_at || "") - Date.now();
+      const who = (a.eligible_child_ids || []).map(cid => childById[cid]).filter(Boolean)
+        .map(c => this._childAvatar(c)).join("");
+      return `
+        <tr class="tm-row">
+          <td class="tm-col-sticky tm-cell-wrap"><div class="tm-name-cell tm-name-cell-wrap">${chore}
+            <div class="tm-name-actions tm-bounty-actions">
+              <button type="button" class="tm-btn tm-btn-sm" data-act="auction-close-now" data-id="${id}">${this._t("panel.auction_close_now")}</button>
+              <button type="button" class="tm-icon-btn" data-act="auction-cancel" data-id="${id}" title="${this._t("panel.auction_cancel")}"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>
+            </div></div></td>
+          <td>${max}</td>
+          <td><span class="tm-auc-stack">${who}</span></td>
+          <td>${this._auctionBidChips(a, childById, reveal)}</td>
+          <td><span class="tm-auc-cdown"><ha-icon icon="mdi:timer-sand"></ha-icon>${this._esc(this._bountyDur(left))}</span><div class="tm-meta">${this._esc(this._auctionWhen(a.closes_at))}</div></td>
+        </tr>`;
+    }
+    const winner = a.winner_id && childById[a.winner_id];
+    let result;
+    let status;
+    let actions = "";
+    const today = new Date();
+    const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    if (a.status === "cancelled") {
+      result = `<span class="tm-pill tm-pill-muted">${this._t("panel.auction_status_cancelled")}</span>`;
+      status = `<span class="tm-pill tm-pill-muted">${this._t("panel.auction_status_normal")}</span>`;
+    } else if (a.winner_id) {
+      result = `<div class="tm-auc-win">${winner ? this._childAvatar(winner) : ""}<div><strong>${this._esc(winner ? winner.name : "?")}</strong> ${this._t("panel.auction_won_at", { points: `<strong class="tm-auc-gold">${this._num(a.price)} ★</strong>` })}
+        <div class="tm-meta">${this._esc(this._t("panel.auction_assigned_for", { date: this._auctionDate(a.occurrence) }))}</div></div></div>`;
+      const st = a.chore_status || "todo";
+      status = st === "done"
+        ? `<span class="tm-pill tm-pill-success">${this._t("panel.auction_status_done", { points: this._num(a.points_awarded) })}</span>`
+        : st === "pending" ? `<span class="tm-pill tm-pill-warn">${this._t("panel.auction_status_pending")}</span>`
+          : st === "missed" ? `<span class="tm-pill tm-pill-muted">${this._t("panel.auction_status_missed")}</span>`
+            : `<span class="tm-pill tm-pill-accent">${this._t("panel.auction_status_todo")}</span>`;
+      if (a.occurrence >= todayIso && st !== "done" && st !== "pending") {
+        actions = `<button type="button" class="tm-icon-btn" data-act="auction-cancel" data-id="${id}" title="${this._t("panel.auction_cancel")}"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>`;
+      }
+    } else {
+      result = `<span class="tm-pill tm-pill-muted">${this._t("panel.auction_no_bids")}</span><div class="tm-meta">${this._t("panel.auction_fallback")}</div>`;
+      status = `<span class="tm-pill tm-pill-muted">${this._t("panel.auction_status_normal")}</span>`;
+      if (a.occurrence > todayIso) {
+        actions = `<button type="button" class="tm-btn tm-btn-sm" data-act="auction-reopen" data-id="${id}"><ha-icon icon="mdi:replay"></ha-icon>${this._t("panel.auction_reopen")}</button>`;
+      }
+    }
+    return `
+      <tr class="tm-row">
+        <td class="tm-col-sticky tm-cell-wrap"><div class="tm-name-cell tm-name-cell-wrap">${chore}
+          <div class="tm-name-actions tm-bounty-actions">${actions}</div></div></td>
+        <td>${max}</td>
+        <td>${this._auctionBidChips(a, childById, true)}</td>
+        <td>${result}</td>
+        <td>${status}</td>
+      </tr>`;
+  }
+
+  /** Open the start sheet, optionally for a chore or re-opening a no-bid auction. */
+  _openAuctionDialog({ choreId = "", fromId = "" } = {}) {
+    const chores = (this._state.chores || []).filter(c => this._auctionable(c));
+    const from = fromId ? (this._state.auctions || []).find(a => a.id === fromId) : null;
+    const chore_id = (from && from.chore_id) || choreId || (chores[0] && chores[0].id) || "";
+    this._openDialog({ kind: "auction", mode: "add", data: {
+      chore_id, occurrences: [], occurrence: from ? from.occurrence : "", pool: [], eligible_child_ids: [],
+      normal_points: 0, max_points: from ? Math.ceil(from.max_points * 1.5) : 0, reopen: !!from,
+      min_on: false, min_points: 1, close_mode: "", close_pick: "", notify_children: true, loading: !!chore_id, refusal: "",
+    } });
+    if (chore_id) this._auctionPickChore(chore_id);
+  }
+
+  async _auctionPickChore(choreId) {
+    if (!this._dialog || this._dialog.kind !== "auction") return;
+    const d = this._dialog.data;
+    d.chore_id = choreId;
+    d.loading = true;
+    this._render();
+    const { ok, res, err } = await this._callWS({ type: "taskmate/auctions/occurrences", chore_id: choreId });
+    if (!this._dialog || this._dialog.kind !== "auction" || this._dialog.data.chore_id !== choreId) return;
+    d.loading = false;
+    if (!ok) { d.occurrences = []; d.refusal = err; this._render(); return; }
+    d.occurrences = res.occurrences || [];
+    d.refusal = res.refusal || "";
+    if (!d.occurrences.includes(d.occurrence)) d.occurrence = d.occurrences[0] || "";
+    d.pool = res.pool || [];
+    d.eligible_child_ids = [...d.pool];
+    d.normal_points = Number(res.normal_points) || 0;
+    if (!d.reopen || !d.max_points) d.max_points = Math.max(1, d.normal_points * 2);
+    d.reopen = false;
+    d.close_mode = this._auctionDefaultClose(d);
+    this._dialogInitialHash = this._hashDialog();
+    this._render();
+  }
+
+  /** A preset's closing instant (Date), or null when it can't be used. */
+  _auctionCloseAt(d, mode) {
+    if (!d.occurrence) return null;
+    const now = new Date();
+    const dayStart = new Date(`${d.occurrence}T00:00:00`);
+    let when = null;
+    if (mode === "tonight") { when = new Date(now); when.setHours(19, 0, 0, 0); }
+    else if (mode === "tomorrow") { when = new Date(now); when.setDate(when.getDate() + 1); when.setHours(8, 0, 0, 0); }
+    else if (mode === "daybefore") { when = new Date(dayStart); when.setDate(when.getDate() - 1); when.setHours(18, 0, 0, 0); }
+    else if (mode === "pick") { when = d.close_pick ? new Date(d.close_pick) : null; }
+    if (!when || Number.isNaN(when.getTime())) return null;
+    if (when <= now || when > dayStart) return null;
+    return when;
+  }
+
+  _auctionDefaultClose(d) {
+    return ["tonight", "tomorrow", "daybefore"].find(m => this._auctionCloseAt(d, m)) || "pick";
+  }
+
+  _auctionDialogSet(field, value) {
+    if (!this._dialog || this._dialog.kind !== "auction") return;
+    const d = this._dialog.data;
+    if (field === "max_step") d.max_points = Math.max(1, (Number(d.max_points) || 0) + value);
+    else d[field] = value;
+    const body = this.querySelector(".tm-dialog-body");
+    const scrollY = body ? body.scrollTop : 0;
+    this._render();
+    const b = this.querySelector(".tm-dialog-body");
+    if (b) b.scrollTop = scrollY;
+  }
+
+  _renderAuctionDialog() {
+    const d = this._dialog.data;
+    const children = this._state.children || [];
+    const chores = (this._state.chores || []).filter(c => this._auctionable(c) || c.id === d.chore_id)
+      .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    const chip = (act, id, on, label, extra = "") =>
+      `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" data-act="${act}" data-id="${this._esc(id)}"${extra}>${label}</button>`;
+    const section = (key, parts) => `
+      <section class="tm-drawer-sec">
+        <h3 class="tm-drawer-sec-h">${this._t(`panel.auction_sec_${key}`)}</h3>
+        ${parts.join("")}
+      </section>`;
+    const normal = this._num(d.normal_points);
+    const multiples = [1, 1.5, 2, 3].map(m => [m, Math.max(1, Math.round(normal * m))]);
+    const closeChips = [
+      ["tonight", this._t("panel.auction_close_tonight")],
+      ["tomorrow", this._t("panel.auction_close_tomorrow")],
+      ["daybefore", this._t("panel.auction_close_daybefore")],
+      ["pick", this._t("panel.auction_close_pick")],
+    ];
+    const occurrences = d.loading
+      ? `<div class="tm-meta">${this._t("panel.auction_loading")}</div>`
+      : d.refusal
+        ? `<div class="tm-meta tm-auc-warn">${this._esc(d.refusal)}</div>`
+        : d.occurrences.length
+          ? `<div class="tm-chip-row">${d.occurrences.map(o => chip("auction-occ", o, d.occurrence === o, `<ha-icon icon="mdi:calendar-blank-outline"></ha-icon>${this._esc(this._auctionDate(o))}`)).join("")}</div>`
+          : `<div class="tm-meta tm-auc-warn">${this._t("panel.auction_no_occurrences")}</div>`;
+    const body = chores.length === 0 ? `<p class="tm-meta">${this._t("panel.auction_no_chores")}</p>` : [
+      section("chore", [
+        `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.auction_chore_label")}</span>
+          <select class="tm-input" data-role="auction-chore">
+            ${chores.map(c => `<option value="${this._esc(c.id)}" ${c.id === d.chore_id ? "selected" : ""}>${this._esc(c.name)}</option>`).join("")}
+          </select>
+        </div>`,
+        `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.auction_which_label")}</span>
+          ${occurrences}
+          <span class="tm-field-hint">${this._t("panel.auction_which_hint")}</span>
+        </div>`,
+      ]),
+      section("price", [
+        `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.auction_max_label")}</span>
+          <div class="tm-auc-steprow">
+            <div class="tm-auc-stepper">
+              <button type="button" data-act="auction-max-step" data-id="-1" aria-label="−">−</button>
+              <span>${this._num(d.max_points)} ★</span>
+              <button type="button" data-act="auction-max-step" data-id="1" aria-label="+">+</button>
+            </div>
+            <span class="tm-meta">${this._t("panel.auction_normally_worth", { points: normal })}</span>
+          </div>
+          <div class="tm-chip-row" style="margin-top:8px">
+            ${multiples.map(([m, n]) => chip("auction-max-set", n, Number(d.max_points) === n, `${m}× · ${n}`)).join("")}
+          </div>
+          <span class="tm-field-hint">${this._t("panel.auction_max_hint")}</span>
+        </div>`,
+        this._switch(this._t("panel.auction_min_label"), "min_on", !!d.min_on, this._t("panel.auction_min_hint"), true),
+        d.min_on ? `<div class="tm-field"><input class="tm-input" type="number" min="1" data-field="min_points" style="max-width:140px" value="${this._esc(d.min_points ?? 1)}"></div>` : "",
+      ]),
+      section("bidding", [
+        `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.auction_closes_label")}</span>
+          <div class="tm-chip-row">${closeChips.map(([k, l]) => chip("auction-close-at", k, d.close_mode === k, this._esc(l), k !== "pick" && !this._auctionCloseAt(d, k) ? " disabled" : "")).join("")}</div>
+          ${d.close_mode === "pick" ? `<input class="tm-input" type="datetime-local" data-field="close_pick" style="margin-top:8px;max-width:260px" value="${this._esc(d.close_pick || "")}">` : ""}
+          <span class="tm-field-hint">${this._t("panel.auction_close_hint")}</span>
+        </div>`,
+        `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.auction_who_label")}</span>
+          <div class="tm-chip-row">
+            ${children.filter(c => (d.pool || []).includes(c.id)).map(c => chip("toggle-auction-el", c.id, (d.eligible_child_ids || []).includes(c.id), `${this._childAvatar(c)}${this._esc(c.name)}`)).join("")}
+          </div>
+        </div>`,
+        `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.auction_nobid_label")}</span>
+          <span class="tm-field-hint">${this._t("panel.auction_nobid_copy")}</span>
+        </div>`,
+        this._switch(this._t("panel.auction_notify_label"), "notify_children", d.notify_children !== false, this._t("panel.auction_notify_hint")),
+      ]),
+    ].join("");
+    return this._dialogShell(this._t("panel.auction_dialog_title"), body,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-auction" ${d.loading || !d.occurrence ? "disabled" : ""}><ha-icon icon="mdi:gavel"></ha-icon>${this._t("panel.auction_start_save")}</button>`,
+      { drawer: true });
+  }
+
+  async _doSaveAuction() {
+    const d = this._dialog && this._dialog.data;
+    if (!d) return;
+    if (!d.occurrence) { this._showToast("err", this._t("panel.auction_err_occurrence")); return; }
+    const closes = this._auctionCloseAt(d, d.close_mode);
+    if (!closes) { this._showToast("err", this._t("panel.auction_err_close")); return; }
+    const eligible = d.eligible_child_ids || [];
+    if (!eligible.length) { this._showToast("err", this._t("panel.auction_err_who")); return; }
+    const max = Math.max(1, Math.round(Number(d.max_points) || 0));
+    const min = d.min_on ? Math.max(1, Math.round(Number(d.min_points) || 1)) : 1;
+    if (min > max) { this._showToast("err", this._t("panel.auction_err_min")); return; }
+    const { ok, err } = await this._callWS({
+      type: "taskmate/auctions/start",
+      chore_id: d.chore_id,
+      occurrence: d.occurrence,
+      max_points: max,
+      min_points: min,
+      closes_at: closes.toISOString(),
+      eligible_child_ids: eligible,
+      notify_children: d.notify_children !== false,
+    });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._closeDialog(true);
+    this._auctionSubTab = "live";
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.toast_auction_started"));
+  }
+
+  async _doCloseAuction(id) {
+    const a = (this._state.auctions || []).find(x => x.id === id);
+    if (!a || !confirm(this._t("panel.auction_close_confirm", { chore: a.chore_name }))) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/auctions/close", auction_id: id });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.toast_auction_closed"));
+  }
+
+  async _doCancelAuction(id) {
+    const a = (this._state.auctions || []).find(x => x.id === id);
+    if (!a || !confirm(this._t("panel.auction_cancel_confirm", { chore: a.chore_name }))) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/auctions/cancel", auction_id: id });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.toast_auction_cancelled"));
+  }
+
   // -- Badges tab --------------------------------------------------------
   _renderBadgesTab() {
     const allBadges = this._state.badges || [];
@@ -7142,6 +7521,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "avatar-catalog") return this._renderAvatarCatalogDialog();
     if (this._dialog.kind === "challenge")    return this._renderChallengeDialog();
     if (this._dialog.kind === "bounty")       return this._renderBountyDialog();
+    if (this._dialog.kind === "auction")      return this._renderAuctionDialog();
     if (this._dialog.kind === "apply-penalty") return this._renderApplyDialog("penalty");
     if (this._dialog.kind === "apply-bonus")   return this._renderApplyDialog("bonus");
     if (this._dialog.kind === "bulk-chore")    return this._renderBulkChoreDialog();
@@ -8394,6 +8774,8 @@ class TaskMatePanel extends HTMLElement {
       items.push({ act: "skip-chore", icon: "⏭", label: this._t("panel.btn_skip_chore") });
     if (["alternating", "random", "balanced", "first_come"].includes(c.assignment_mode))
       items.push({ act: "request-swap", icon: "⇄", label: this._t("panel.swap_btn") });
+    if (this._auctionable(c))
+      items.push({ act: "auction-chore-next", icon: "🔨", label: this._t("panel.auction_row_menu") });
     items.push({ act: "toggle-chore-active", icon: c.enabled === false ? "▶" : "⏸", label: c.enabled === false ? this._t("panel.btn_activate_chore") : this._t("panel.btn_deactivate_chore") });
     items.push({ act: "clone-chore", icon: "⧉", label: this._t("panel.btn_clone_chore") });
     items.push({ act: "delete-chore", icon: "🗑", label: this._t("panel.btn_delete"), danger: true });
@@ -8978,6 +9360,29 @@ class TaskMatePanel extends HTMLElement {
       .tm-bounty-ic { width: 34px; height: 34px; border-radius: 50%; color: var(--tm-gold, #d4ac0d); }
       .tm-bounty-ic ha-icon { --mdc-icon-size: 18px; }
       .tm-bounty-note { margin: 0 0 12px; }
+      /* Chore auctions (#982) */
+      .tm-auc-ic { width: 34px; height: 34px; border-radius: 10px; color: #fff; background: linear-gradient(135deg, #7e57c2, #5e35b1); }
+      .tm-auc-ic ha-icon { --mdc-icon-size: 18px; }
+      .tm-auc-gold { color: var(--tm-gold, #d4ac0d); }
+      .tm-auc-stats { grid-template-columns: repeat(3, 1fr); margin-bottom: 14px; }
+      .tm-auc-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+      .tm-auc-reveal { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+      .tm-auc-chip {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 2px 8px 2px 2px; margin: 2px 4px 2px 0;
+        border-radius: 999px; background: var(--tm-surface-2); font-size: 12px; white-space: nowrap;
+      }
+      .tm-auc-chip b { color: var(--tm-gold, #d4ac0d); }
+      .tm-auc-stack { display: inline-flex; }
+      .tm-auc-stack .tm-av + .tm-av { margin-left: -6px; }
+      .tm-auc-cdown { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; font-variant-numeric: tabular-nums; color: #7e57c2; }
+      .tm-auc-cdown ha-icon { --mdc-icon-size: 15px; }
+      .tm-auc-win { display: flex; align-items: center; gap: 8px; }
+      .tm-auc-warn { color: var(--tm-warning, #b9770e); }
+      .tm-auc-steprow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .tm-auc-stepper { display: inline-flex; align-items: center; border: 1px solid var(--tm-border); border-radius: 8px; overflow: hidden; }
+      .tm-auc-stepper button { width: 34px; height: 34px; border: 0; cursor: pointer; font-size: 18px; background: var(--tm-surface-2); color: var(--tm-text); }
+      .tm-auc-stepper span { min-width: 64px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
       .tm-bounty-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
       .tm-avatar-reward  { color: var(--tm-gold); }
       .tm-child-name { min-width: 0; flex: 1; }

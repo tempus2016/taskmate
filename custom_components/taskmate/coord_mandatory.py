@@ -42,8 +42,12 @@ class MandatoryMixin:
         key = f"{chore.id}:{child_id}:{day.isoformat()}"
         return self.mandatory_postpone.get(key) or (chore.time_category or "anytime")
 
-    def _mandatory_owers(self, chore) -> list[str]:
-        """Child IDs responsible for this chore right now."""
+    def _mandatory_owers(self, chore, day: date | None = None) -> list[str]:
+        """Child IDs responsible for this chore on ``day`` (default today)."""
+        # Won at auction (#982): the winner owes that occurrence, nobody else.
+        winner = self.auction_winner(chore, day)
+        if winner:
+            return [winner]
         mode = getattr(chore, "assignment_mode", "everyone")
         assigned = list(getattr(chore, "assigned_to", []) or [])
         if mode in _SHARED_MODES:
@@ -112,7 +116,7 @@ class MandatoryMixin:
                 continue
             if not self._is_chore_scheduled_for_date(chore, day):
                 continue
-            for child_id in self._mandatory_owers(chore):
+            for child_id in self._mandatory_owers(chore, day):
                 if self._effective_period_for(chore, child_id, day) != period_id:
                     continue
                 if child_id in (getattr(chore, "disabled_for", []) or []):

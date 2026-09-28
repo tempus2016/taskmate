@@ -406,6 +406,9 @@ class TaskMateCalendarCard extends LitElement {
   }
 
   _rotationRenderMode(chore, childId, dayKey, todayKey) {
+    // Won at auction (#982): that day's occurrence is the winner's alone.
+    const won = (chore.auction_wins || {})[dayKey];
+    if (won) return String(won) === String(childId) ? "active" : "hidden";
     const mode = chore.assignment_mode || "everyone";
     if (mode === "everyone") return "active";
     const current = chore.assignment_current_child_id || "";

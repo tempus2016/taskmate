@@ -37,6 +37,9 @@
     "sensor.taskmate_pending_approvals",
     // The bounty board (#931): `bounties` for the bounty card.
     "sensor.taskmate_bounties",
+    // Chore auctions (#982): `auctions`, a digest with no bid amounts. The
+    // auction card re-fetches its own view over the WebSocket when it moves.
+    "sensor.taskmate_auctions",
   ];
 
   // Attributes a companion must NOT contribute to the merge, because another

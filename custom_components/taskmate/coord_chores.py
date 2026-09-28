@@ -174,6 +174,9 @@ class ChoresMixin:
             raise ValueError(f"Chore {chore_id} not found")
         if getattr(chore, "assignment_mode", "everyone") in ("everyone", "unassigned"):
             raise ValueError("Only rotation chores can be swapped")
+        # A chore won at auction (#982) is the winner's by their own bid.
+        if self.auction_winner(chore):
+            raise ValueError("This chore was won at auction today, so it can't be swapped")
         requester = self.get_child(requester_id)
         if not requester:
             raise ValueError(f"Child {requester_id} not found")
@@ -593,6 +596,8 @@ class ChoresMixin:
         self.storage.remove_swap_requests_for_chore(chore_id)
         # Teamwork joins (#928) belong to the occurrence of a chore that's gone.
         self.storage.remove_team_joins_for_chore(chore_id)
+        # Its live auctions (#982) have no occurrence left to settle.
+        self.remove_chore_from_auctions(chore_id)
         # Remove chore from children's chore_order lists
         for child in self.storage.get_children():
             if chore_id in child.chore_order:
@@ -907,15 +912,21 @@ class ChoresMixin:
         # Open-ended completions always go to a parent: the child suggested the
         # point value, so self-awarding it would let them set their own pay.
         auto_approve = as_parent or (not chore.requires_approval and not requires_photo and not is_open_ended)
-        effective_points = self._apply_roulette_multiplier(
-            chore,
-            child_id,
-            self._apply_speed_bonus(
+        # Won at auction (#982): the winner is paid their winning bid for this
+        # occurrence instead of the chore's own points — exactly what they bid.
+        auction_price = self.auction_price_for(chore, child_id, today)
+        if auction_price is not None:
+            effective_points = auction_price
+        else:
+            effective_points = self._apply_roulette_multiplier(
                 chore,
-                self._apply_time_adjustment(chore, self.effective_chore_points(chore), now),
-                now,
-            ),
-        )
+                child_id,
+                self._apply_speed_bonus(
+                    chore,
+                    self._apply_time_adjustment(chore, self.effective_chore_points(chore), now),
+                    now,
+                ),
+            )
         completion = await self._async_record_completion(
             chore,
             child,
@@ -932,7 +943,15 @@ class ChoresMixin:
             # An open-ended chore has no points of its own, so quote the
             # child's own estimate — otherwise every one of these pushes
             # announces "+0" (#832).
-            [(child, completion, completion.suggested_points if is_open_ended else chore.points)],
+            [
+                (
+                    child,
+                    completion,
+                    auction_price
+                    if auction_price is not None
+                    else (completion.suggested_points if is_open_ended else chore.points),
+                )
+            ],
             auto_approve=auto_approve,
         )
         return completion
@@ -1693,6 +1712,12 @@ class ChoresMixin:
         # Check per-child disabling (one-shot chores completed by this child)
         disabled_for = getattr(chore, "disabled_for", [])
         if child_id in disabled_for:
+            return False
+
+        # Chore auction (#982): today's occurrence was won at auction, so it is
+        # the winner's alone — whatever the mode, "everyone" included.
+        winner = self.auction_winner(chore)
+        if winner and winner != child_id:
             return False
 
         # Dynamic assignment — only the active child(ren) see alternating/random chores

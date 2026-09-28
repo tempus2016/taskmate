@@ -390,6 +390,13 @@ class AssignmentsMixin:
         if mode == "unassigned":
             return []
 
+        # A chore auction (#982) settles one occurrence outright: the winner
+        # does it, ahead of every mode's own logic and of a sibling swap. Like a
+        # swap, `require_availability` is not re-applied — the child bid for it.
+        winner = self.auction_winner(chore, today)
+        if winner:
+            return [winner]
+
         # An approved swap replaces the whole active set for that day, ahead of
         # every mode's own logic. `require_availability` is deliberately not
         # re-applied: a parent explicitly approved this child for today, which

@@ -1138,6 +1138,23 @@ class TaskMateChildCard extends LitElement {
         font-weight: 900;
       }
 
+      /* Won at auction (#982): same shape as the mandatory badge, auction purple. */
+      .auction-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: #7e57c2;
+        color: #fff;
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        border-radius: 8px;
+        padding: 2px 7px;
+        margin-left: 8px;
+        vertical-align: middle;
+        white-space: nowrap;
+      }
       .mandatory-badge {
         display: inline-flex;
         align-items: center;
@@ -1906,6 +1923,7 @@ class TaskMateChildCard extends LitElement {
         border: 1px solid var(--tmd-border);
       }
       .tmd-tag.mandatory { background: color-mix(in srgb, var(--tmd-bad) 16%, transparent); color: var(--tmd-bad); border-color: transparent; }
+      .tmd-tag.auction { background: color-mix(in srgb, #7e57c2 18%, transparent); color: color-mix(in srgb, #7e57c2 70%, var(--tmd-text)); border-color: transparent; }
       .tmd-tag.photo { background: color-mix(in srgb, var(--tmd-accent) 14%, transparent); color: var(--tmd-accent); border-color: transparent; }
       .tmd-desc { font-size: 11.5px; color: var(--tmd-dim); margin-top: 3px; white-space: normal; line-height: 1.3; }
       .tmd-reject {
@@ -2654,6 +2672,7 @@ class TaskMateChildCard extends LitElement {
         mandatory: chore.mandatory === true,
         photo: chore.require_photo === true,
         openEnded: chore.open_ended === true,
+        auction: !!(chore.auction && chore.auction.child_id),
         team: this._teamState(chore, child),
         pointsIcon,
         todaysCompletions,
@@ -2818,9 +2837,10 @@ class TaskMateChildCard extends LitElement {
       ? this._t("child.weekly_target_progress", { done: r.chore._weeklyProgress, target: r.chore._weeklyTarget })
       : "";
     return html`
-      ${r.mandatory || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || weeklyLabel || (r.team && !r.done) ? html`
+      ${r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || weeklyLabel || (r.team && !r.done) ? html`
         <div class="tmd-meta">
           ${r.mandatory ? html`<span class="tmd-tag mandatory">⚠ ${this._t("child.mandatory")}</span>` : ""}
+          ${r.auction ? html`<span class="tmd-tag auction">🔨 ${this._t("child.won_at_auction")}</span>` : ""}
           ${r.photo ? html`<span class="tmd-tag photo">📷 ${this._t("child.photo_needed")}</span>` : ""}
           ${r.openEnded ? html`<span class="tmd-tag photo">✍️ ${this._t("child.open_ended_tag")}</span>` : ""}
           ${depNames.length ? html`<span class="tmd-tag">🔒 ${this._t("child.blocked_by_dependency", { chores: depNames.join(", ") })}</span>` : ""}
@@ -2959,6 +2979,7 @@ class TaskMateChildCard extends LitElement {
     const swappable = (allChores || []).filter(c =>
       !["everyone", "unassigned"].includes(c.assignment_mode || "everyone") &&
       c.enabled !== false &&
+      !c.auction &&
       c.assignment_current_child_id &&
       c.assignment_current_child_id !== child.id &&
       (!Array.isArray(c.assigned_to) || c.assigned_to.length === 0 || c.assigned_to.includes(child.id))
@@ -3084,6 +3105,10 @@ class TaskMateChildCard extends LitElement {
       const assignedToStrings = assignedTo.map(id => String(id));
       const isAssignedToAll = assignedToStrings.length === 0;
       let isAssignedToChild = isAssignedToAll || assignedToStrings.includes(childId);
+      // Won at auction (#982): today's occurrence belongs to the winner alone,
+      // whatever the assignment mode — "everyone" chores included.
+      const auctionWin = chore.auction && chore.auction.child_id ? String(chore.auction.child_id) : "";
+      if (auctionWin) isAssignedToChild = auctionWin === String(childId);
 
       // Dynamic assignment. Rotation modes (alternating / random / balanced):
       // only the currently-active child sees the chore — the backend caches
@@ -3095,8 +3120,8 @@ class TaskMateChildCard extends LitElement {
       // everyone — including today's active child.
       const assignmentMode = chore.assignment_mode || 'everyone';
       if (assignmentMode !== 'everyone' && isAssignedToChild) {
-        const activeId = chore.assignment_current_child_id ? String(chore.assignment_current_child_id) : '';
-        if (assignmentMode !== 'first_come') {
+        const activeId = auctionWin || (chore.assignment_current_child_id ? String(chore.assignment_current_child_id) : '');
+        if (assignmentMode !== 'first_come' && !auctionWin) {
           isAssignedToChild = activeId !== '' && activeId === String(childId);
         }
         if (isAssignedToChild) {
@@ -3940,7 +3965,7 @@ class TaskMateChildCard extends LitElement {
             ${this._choreNumberBadge(chore, colorClass, choreNumber)}
           </div>
           <div class="chore-details">
-            <div class="chore-name">${chore.name}${chore.mandatory ? html`<span class="mandatory-badge">⚠ ${this._t('child.mandatory')}</span>` : ''}</div>
+            <div class="chore-name">${chore.name}${chore.mandatory ? html`<span class="mandatory-badge">⚠ ${this._t('child.mandatory')}</span>` : ''}${chore.auction && chore.auction.child_id ? html`<span class="auction-badge">🔨 ${this._t('child.won_at_auction')}</span>` : ''}</div>
             ${this._renderDeadlineBadge(chore, isCompletedForToday)}
             ${isCompletedForToday ? '' : this._renderRejectNote(chore, child, 'tm-reject-note')}
             ${chore.difficulty ? html`<span class="difficulty-badge difficulty-${chore.difficulty}">${this._t('child.difficulty_' + chore.difficulty) || chore.difficulty}</span>` : ''}
