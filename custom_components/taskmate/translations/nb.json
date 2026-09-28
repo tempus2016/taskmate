@@ -660,6 +660,16 @@
         }
       }
     },
+    "complete_next_chore": {
+      "name": "Fullfør neste oppgave",
+      "description": "Fullfører barnets neste utestående oppgave, i rekkefølgen barnekortet viser dem. Oppgaver som krever bilde, notat, tidtaker eller lag hoppes over. Laget for klokkeknapper og snarveier; vanlige godkjenningsregler gjelder.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID-en til barnet som skal få neste oppgave fullført"
+        }
+      }
+    },
     "post_bounty": {
       "name": "Legg ut dusør",
       "description": "Legg ut en engangsjobb på dusørtavlen for et fast antall poeng. Alle barn som kan, får ta den; når den er gjort, går den gjennom vanlig godkjenning.",
@@ -1240,6 +1250,13 @@
       },
       "child_badges": {
         "unit_of_measurement": "merker"
+      },
+      "child_watch": {
+        "state": {
+          "left": "{count} igjen",
+          "all_done": "Alt ferdig",
+          "no_chores": "Ingen oppgaver"
+        }
       }
     },
     "number": {

@@ -660,6 +660,16 @@
         }
       }
     },
+    "complete_next_chore": {
+      "name": "Nächste Aufgabe erledigen",
+      "description": "Erledigt die nächste offene Aufgabe des Kindes in der Reihenfolge, die die Kinderkarte anzeigt. Aufgaben, die ein Foto, eine Notiz, einen Timer oder ein Team brauchen, werden übersprungen. Gedacht für Uhr-Tasten und Verknüpfungen; die normalen Genehmigungsregeln gelten.",
+      "fields": {
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, dessen nächste Aufgabe erledigt werden soll"
+        }
+      }
+    },
     "post_bounty": {
       "name": "Sonderjob ausschreiben",
       "description": "Einen einmaligen Sonderjob für eine feste Punktzahl an die Sonderjob-Tafel hängen. Jedes berechtigte Kind kann ihn übernehmen; die Erledigung läuft durch die normale Freigabe.",
@@ -1240,6 +1250,13 @@
       },
       "child_badges": {
         "unit_of_measurement": "Abzeichen"
+      },
+      "child_watch": {
+        "state": {
+          "left": "Noch {count}",
+          "all_done": "Alles erledigt",
+          "no_chores": "Keine Aufgaben"
+        }
       }
     },
     "number": {

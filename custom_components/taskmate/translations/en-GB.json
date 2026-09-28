@@ -660,6 +660,16 @@
         }
       }
     },
+    "complete_next_chore": {
+      "name": "Complete Next Chore",
+      "description": "Complete the child's next outstanding chore, in the order the child card shows them. Chores that need a photo, a note, a timer or a team are skipped. Made for watch buttons and shortcuts; normal approval rules apply.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child whose next chore to complete"
+        }
+      }
+    },
     "post_bounty": {
       "name": "Post Bounty",
       "description": "Post a one-off job to the bounty board for a fixed number of points. Any eligible child can claim it; finishing it goes through the normal approval queue.",
@@ -1240,6 +1250,13 @@
       },
       "child_badges": {
         "unit_of_measurement": "badges"
+      },
+      "child_watch": {
+        "state": {
+          "left": "{count} left",
+          "all_done": "All done",
+          "no_chores": "No chores"
+        }
       }
     },
     "number": {
