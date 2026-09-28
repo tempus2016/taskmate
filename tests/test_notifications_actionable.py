@@ -41,9 +41,9 @@ async def coord(hass):
     return notif
 
 
-def _evt(action: str):
+def _evt(action: str, **extra):
     class _E:
-        data = {"action": action}
+        data = {"action": action, **extra}
 
     return _E()
 
@@ -58,8 +58,21 @@ async def test_approve_chore_action_routes(coord):
 @pytest.mark.asyncio
 async def test_reject_chore_action_routes(coord):
     await coord.handle_mobile_action(_evt("TASKMATE_REJECT_completion-123"))
-    coord.coordinator.async_reject_chore.assert_called_once_with("completion-123")
+    coord.coordinator.async_reject_chore.assert_called_once_with("completion-123", reason="")
     coord.coordinator.async_reject_reward.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_reject_reply_text_becomes_the_reason(coord):
+    """The push's Reject reply box (#976) sends what was typed as reply_text."""
+    await coord.handle_mobile_action(_evt("TASKMATE_REJECT_completion-123", reply_text="Not finished"))
+    coord.coordinator.async_reject_chore.assert_called_once_with("completion-123", reason="Not finished")
+
+
+@pytest.mark.asyncio
+async def test_reward_reject_reply_text_becomes_the_reason(coord):
+    await coord.handle_mobile_action(_evt("TASKMATE_REJECT_claim-456", reply_text="Not today"))
+    coord.coordinator.async_reject_reward.assert_called_once_with("claim-456", reason="Not today")
 
 
 @pytest.mark.asyncio
@@ -80,7 +93,7 @@ async def test_approve_reward_action_routes(coord):
 @pytest.mark.asyncio
 async def test_reject_reward_action_routes(coord):
     await coord.handle_mobile_action(_evt("TASKMATE_REJECT_claim-456"))
-    coord.coordinator.async_reject_reward.assert_called_once_with("claim-456")
+    coord.coordinator.async_reject_reward.assert_called_once_with("claim-456", reason="")
     coord.coordinator.async_reject_chore.assert_not_called()
 
 
@@ -96,4 +109,4 @@ async def test_a_refused_review_is_swallowed(coord):
     """A stale push — the claim was approved from the panel a moment ago."""
     coord.coordinator.async_reject_reward.side_effect = ValueError("already approved")
     await coord.handle_mobile_action(_evt("TASKMATE_REJECT_claim-456"))
-    coord.coordinator.async_reject_reward.assert_called_once_with("claim-456")
+    coord.coordinator.async_reject_reward.assert_called_once_with("claim-456", reason="")

@@ -207,6 +207,10 @@
         "completion_id": {
           "name": "ID de conclusão",
           "description": "O ID da conclusão da tarefa a rejeitar"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo opcional mostrado à criança"
         }
       }
     },
@@ -325,6 +329,10 @@
         "claim_id": {
           "name": "ID do pedido",
           "description": "O ID do pedido de recompensa a rejeitar"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo opcional mostrado à criança"
         }
       }
     },

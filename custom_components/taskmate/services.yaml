@@ -126,6 +126,12 @@ reject_chore:
       required: true
       selector:
         text:
+    reason:
+      name: Reason
+      description: Optional reason shown to the child
+      required: false
+      selector:
+        text:
 
 apply_mandatory_penalty:
   name: Apply Mandatory Penalty
@@ -411,6 +417,12 @@ reject_reward:
       name: Claim ID
       description: The ID of the reward claim to reject
       required: true
+      selector:
+        text:
+    reason:
+      name: Reason
+      description: Optional reason shown to the child
+      required: false
       selector:
         text:
 

@@ -207,6 +207,10 @@
         "completion_id": {
           "name": "Abschluss-ID",
           "description": "Die ID des abzulehnenden Aufgabenabschlusses"
+        },
+        "reason": {
+          "name": "Grund",
+          "description": "Optionaler Grund, der dem Kind angezeigt wird"
         }
       }
     },
@@ -325,6 +329,10 @@
         "claim_id": {
           "name": "Anspruchs-ID",
           "description": "Die ID des abzulehnenden Prämienanspruchs"
+        },
+        "reason": {
+          "name": "Grund",
+          "description": "Optionaler Grund, der dem Kind angezeigt wird"
         }
       }
     },

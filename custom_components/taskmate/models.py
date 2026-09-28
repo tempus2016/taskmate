@@ -1661,6 +1661,9 @@ class CustomSound:
 WISH_NAME_MAX = 60
 WISH_LINK_MAX = 500
 WISH_DECLINE_REASON_MAX = 200
+# Why a parent rejected a chore or reward claim (#976) — same cap as a wish's
+# decline reason, which it mirrors.
+REJECT_REASON_MAX = WISH_DECLINE_REASON_MAX
 PLEDGE_NAME_MAX = 40
 PLEDGE_MESSAGE_MAX = 140
 WISH_STATUSES = ("pending", "active", "redeem_requested", "redeemed", "declined")

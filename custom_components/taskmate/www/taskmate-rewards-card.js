@@ -549,6 +549,20 @@ class TaskMateRewardsCard extends LitElement {
         border-inline-start: 3px solid #e67e22;
       }
 
+      /* Reject reason (#976) */
+      .reject-note {
+        margin-top: 6px;
+        padding: 4px 8px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.3;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        background: rgba(244, 67, 54, 0.12);
+        color: var(--error-color, #d32f2f);
+      }
+
       .pending-label {
         display: inline-flex;
         align-items: center;
@@ -995,6 +1009,12 @@ class TaskMateRewardsCard extends LitElement {
       .rw-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
       .rw-name { font-weight: 800; font-size: 15px; }
       .rw-desc { font-size: 12px; }
+      .rw-reject {
+        margin: 2px 0 6px; padding: 4px 8px; border-radius: 8px;
+        font-size: 12px; font-weight: 700; line-height: 1.3;
+        white-space: normal; overflow-wrap: anywhere;
+        background: color-mix(in srgb, var(--tmd-bad, #e74c3c) 14%, transparent); color: var(--tmd-bad, #e74c3c);
+      }
       .rw-avail { align-self: flex-start; font-size: 11px; }
       .rw-avail-warn { background: color-mix(in srgb, var(--tmd-warn) 16%, transparent);
                        color: var(--tmd-warn); }
@@ -1437,7 +1457,7 @@ class TaskMateRewardsCard extends LitElement {
               <ha-icon icon="mdi:clock-outline"></ha-icon>
               ${this._t('rewards.awaiting_approval')}
             </div>
-          ` : ''}
+          ` : this._renderRejectNote(reward, childId ? relevantChild : null, 'reject-note')}
 
           ${showChildBadges && !isJackpot
             ? html`
@@ -1470,6 +1490,17 @@ class TaskMateRewardsCard extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Reject reasons (#976): why a parent turned down this child's last claim.
+   * Only with a child in context — the reason is personal. Called from the
+   * classic row AND _designRewardRow, so every design shows it.
+   */
+  _renderRejectNote(reward, child, cls) {
+    const rej = ((child && child.rejections) || []).find(r => r.kind === "reward" && r.id === reward.id);
+    if (!rej || !rej.reason) return '';
+    return html`<div class="${cls}" role="note">↩️ ${this._t('rewards.rejected_note', { reason: rej.reason })}</div>`;
   }
 
   /** "Available Fri, Sat · 18:00–21:00" for a time-locked reward (#857). */
@@ -2076,6 +2107,7 @@ class TaskMateRewardsCard extends LitElement {
           </div>
           ${costBadge}
         </div>
+        ${d.hasPendingClaim ? '' : this._renderRejectNote(reward, d.childId ? d.relevantChild : null, 'rw-reject')}
         ${bar}
         ${d.isJackpot ? html`
           <div class="row rw-pool-foot">

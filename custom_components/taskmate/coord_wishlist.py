@@ -435,7 +435,7 @@ class WishlistMixin:
         if getattr(self, "badges", None):
             await self.badges.evaluate_for_child(child.id, "reward_redeemed")
 
-    async def _async_reject_wish_claim(self, claim: RewardClaim) -> None:
+    async def _async_reject_wish_claim(self, claim: RewardClaim, reason: str = "") -> None:
         """Parent says "not yet": the claim goes, the wish keeps its savings."""
         self.storage.remove_reward_claim(claim.id)
         wish = self.storage.get_wish(claim.wish_id)
@@ -443,6 +443,7 @@ class WishlistMixin:
             wish.status = "active"
             wish.claim_id = ""
             self.storage.upsert_wish(wish)
+        self._record_rejection("reward", claim.child_id, claim.reward_id, getattr(wish, "name", ""), reason)
         await self.storage.async_save()
         await self.async_refresh()
         child = self.get_child(claim.child_id)
@@ -455,10 +456,12 @@ class WishlistMixin:
                 "reward_name": getattr(wish, "name", ""),
                 "wish_id": claim.wish_id,
                 "claim_id": claim.id,
+                "reason": reason,
                 "timestamp": dt_util.now().isoformat(),
             },
         )
         await self._async_after_release([claim.id], [])
+        await self._async_notify_rejected("reward", child, getattr(wish, "name", ""), reason)
 
     # ── internals ────────────────────────────────────────────────────────
     def _cancel_wish_claim(self, wish: Wish) -> list[str]:

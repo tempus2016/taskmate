@@ -381,6 +381,8 @@ class TaskMateStorage:
         self._data["children"] = [c for c in self._data.get("children", []) if c.get("id") != child_id]
         self.remove_awards_for_child(child_id)
         self.set_kiosk_pin_hash(child_id, "")
+        if self._data.get("rejections"):
+            self._data["rejections"] = [r for r in self.get_rejections() if r.get("child_id") != child_id]
         # Per-child maps kept in settings (#946): the birthday guard and a
         # Custom recap schedule would otherwise outlive the child.
         settings = self._data.get("settings", {})
@@ -1202,6 +1204,16 @@ class TaskMateStorage:
         """Remove all audit entries."""
         self._data["audit_log"] = []
         self._data["audit_log_dropped"] = 0
+
+    # ── Reject reasons (#976) ────────────────────────────────────────────
+    # Rejection deletes the completion / claim, so the reason a parent gave is
+    # kept here instead: small dicts (see coord_rejections), newest last.
+    def get_rejections(self) -> list[dict]:
+        rows = self._data.get("rejections")
+        return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else []
+
+    def set_rejections(self, rows: list[dict]) -> None:
+        self._data["rejections"] = list(rows)
 
     # ── Chore swap requests ──────────────────────────────────────────────
     def get_swap_requests(self) -> list[dict]:

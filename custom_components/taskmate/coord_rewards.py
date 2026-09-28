@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
 
+from .coord_rejections import clean_reject_reason
 from .models import Child, PointsTransaction, PoolAllocation, Reward, RewardClaim
 from .timewindow import has_window, is_within_window
 
@@ -692,7 +693,7 @@ class RewardsMixin:
                 return
         _LOGGER.warning("Reward claim %s not found for approval", claim_id)
 
-    async def async_reject_reward(self, claim_id: str) -> None:
+    async def async_reject_reward(self, claim_id: str, reason: str = "") -> None:
         """Reject a *pending* reward claim — no refund needed as points were never deducted.
 
         That "no refund needed" only holds while the claim is pending. Two
@@ -701,20 +702,25 @@ class RewardsMixin:
         longer matches storage. Deleting an approved claim there would erase
         the purchase from history while its points, its stock and any timed
         unlock stayed spent, so the stale review is refused instead.
+
+        ``reason`` (#976) is the parent's optional "why", shown to the child.
         """
+        reason = clean_reject_reason(reason)
         claim = next((c for c in self.storage.get_reward_claims() if c.id == claim_id), None)
         if claim is not None and claim.approved:
             reward = self.get_reward(claim.reward_id)
             name = reward.name if reward else "This reward"
             raise ValueError(f"'{name}' has already been approved and can no longer be rejected")
         if claim is not None and claim.wish_id:
-            await self._async_reject_wish_claim(claim)
+            await self._async_reject_wish_claim(claim, reason)
             return
         self.storage.remove_reward_claim(claim_id)
+        reward = self.get_reward(claim.reward_id) if claim else None
+        if claim:
+            self._record_rejection("reward", claim.child_id, claim.reward_id, getattr(reward, "name", ""), reason)
         await self.storage.async_save()
         await self.async_refresh()
         if claim:
-            reward = self.get_reward(claim.reward_id)
             child = self.get_child(claim.child_id)
             self.hass.bus.async_fire(
                 "taskmate_reward_rejected",
@@ -724,12 +730,14 @@ class RewardsMixin:
                     "reward_id": claim.reward_id,
                     "reward_name": getattr(reward, "name", ""),
                     "claim_id": claim.id,
+                    "reason": reason,
                     "timestamp": dt_util.now().isoformat(),
                 },
             )
             # Dismiss the mobile approval push for this reviewed claim.
             if getattr(self, "notifications", None):
                 await self.notifications.clear_approval("pending_reward_claim", claim_id)
+            await self._async_notify_rejected("reward", child, getattr(reward, "name", ""), reason)
 
     async def async_allocate_points_to_pool(self, child_id: str, reward_id: str, points: int) -> PoolAllocation:
         """Move `points` from a child's spendable balance into a reward pool.

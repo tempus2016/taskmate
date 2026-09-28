@@ -127,7 +127,11 @@ async def test_pending_chore_approval_dispatches_actionable(coord, hass):
     assert len(notify_calls) == 1
     data = notify_calls[0][0][2]["data"]
     assert {"action": "TASKMATE_APPROVE_completion-123", "title": "Approve"} in data["actions"]
-    assert {"action": "TASKMATE_REJECT_completion-123", "title": "Reject"} in data["actions"]
+    # Reject keeps its id and asks for a reason in a reply box (#976).
+    reject = next(a for a in data["actions"] if a["action"] == "TASKMATE_REJECT_completion-123")
+    assert reject["title"] == "Reject"
+    assert reject["behavior"] == "textInput"
+    assert reject["textInputPlaceholder"]
 
 
 @pytest.mark.asyncio

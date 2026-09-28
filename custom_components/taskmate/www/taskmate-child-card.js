@@ -898,6 +898,20 @@ class TaskMateChildCard extends LitElement {
       }
       .dependency-label ha-icon { --mdc-icon-size: 12px; }
 
+      /* Reject reason (#976): a parent's "why" on a chore they sent back. */
+      .tm-reject-note {
+        margin: 3px 0 2px;
+        padding: 4px 8px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.3;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        background: rgba(244, 67, 54, 0.12);
+        color: var(--error-color, #d32f2f);
+      }
+
 
       /* Recurring chore not yet available — dimmed/greyed */
       .chore-card.recurrence-unavailable {
@@ -1894,6 +1908,12 @@ class TaskMateChildCard extends LitElement {
       .tmd-tag.mandatory { background: color-mix(in srgb, var(--tmd-bad) 16%, transparent); color: var(--tmd-bad); border-color: transparent; }
       .tmd-tag.photo { background: color-mix(in srgb, var(--tmd-accent) 14%, transparent); color: var(--tmd-accent); border-color: transparent; }
       .tmd-desc { font-size: 11.5px; color: var(--tmd-dim); margin-top: 3px; white-space: normal; line-height: 1.3; }
+      .tmd-reject {
+        margin-top: 4px; padding: 4px 8px; border-radius: 8px;
+        font-size: 11.5px; font-weight: 700; line-height: 1.3;
+        white-space: normal; overflow-wrap: anywhere;
+        background: color-mix(in srgb, var(--tmd-bad) 14%, transparent); color: var(--tmd-bad);
+      }
       .tmd-chore.mandatory, .tmd-quest.mandatory, .tmd-check.mandatory {
         box-shadow: inset 3px 0 0 0 var(--tmd-bad);
         padding-inline-start: 20px;
@@ -2809,7 +2829,20 @@ class TaskMateChildCard extends LitElement {
           ${weeklyLabel ? html`<span class="tmd-tag">📅 ${weeklyLabel}</span>` : ""}
           ${r.team && !r.done ? this._renderTeamProgress(r.team, "tmd-tag") : ""}
         </div>` : ""}
-      ${showDesc ? html`<div class="tmd-desc">${r.chore.description}</div>` : ""}`;
+      ${showDesc ? html`<div class="tmd-desc">${r.chore.description}</div>` : ""}
+      ${r.done ? "" : this._renderRejectNote(r.chore, r.child, "tmd-reject")}`;
+  }
+
+  /**
+   * Reject reasons (#976): why a parent sent this chore back. The overview
+   * sensor carries at most a few per child, and drops one as soon as the
+   * child has another go. Called from the classic chore card, the timed card
+   * AND _designChoreMeta, so every design shows it (two-render-paths rule).
+   */
+  _renderRejectNote(chore, child, cls) {
+    const rej = ((child && child.rejections) || []).find(r => r.kind === "chore" && r.id === chore.id);
+    if (!rej || !rej.reason) return "";
+    return html`<div class="${cls}" role="note">↩️ ${this._t("child.rejected_note", { reason: rej.reason })}</div>`;
   }
 
   _designHeader(child, tt, sub, tone, pillText) {
@@ -3909,6 +3942,7 @@ class TaskMateChildCard extends LitElement {
           <div class="chore-details">
             <div class="chore-name">${chore.name}${chore.mandatory ? html`<span class="mandatory-badge">⚠ ${this._t('child.mandatory')}</span>` : ''}</div>
             ${this._renderDeadlineBadge(chore, isCompletedForToday)}
+            ${isCompletedForToday ? '' : this._renderRejectNote(chore, child, 'tm-reject-note')}
             ${chore.difficulty ? html`<span class="difficulty-badge difficulty-${chore.difficulty}">${this._t('child.difficulty_' + chore.difficulty) || chore.difficulty}</span>` : ''}
             ${this.config.show_description && chore.description ? html`
               <div class="chore-description">${chore.description}</div>
@@ -4062,6 +4096,7 @@ class TaskMateChildCard extends LitElement {
           </div>
           <div class="chore-details">
             <div class="chore-name">${chore.name}</div>
+            ${state === 'idle' ? this._renderRejectNote(chore, child, 'tm-reject-note') : ''}
           </div>
           <div class="timed-rate">${rateLabel}</div>
         </div>

@@ -12,6 +12,7 @@ from homeassistant.util import dt as dt_util
 from . import images, photos
 from .chore_undo import child_can_undo, undo_window_seconds
 from .const import CHORE_NOTE_MAX_LENGTH, CHORE_SUGGESTED_POINTS_MAX, DAILY_PROGRESS_KEEP_DAYS, QUALITY_RATINGS
+from .coord_rejections import clean_reject_reason
 from .coord_teamwork import teamwork_config_error
 from .models import Chore, ChoreCompletion, PointsTransaction
 
@@ -1519,15 +1520,20 @@ class ChoresMixin:
             raise ValueError("This chore can't be undone any more. Ask a parent to undo it.")
         await self.async_reject_chore(completion_id, event="taskmate_chore_undone")
 
-    async def async_reject_chore(self, completion_id: str, event: str = "taskmate_chore_rejected") -> None:
+    async def async_reject_chore(
+        self, completion_id: str, event: str = "taskmate_chore_rejected", reason: str = ""
+    ) -> None:
         """Reject a chore completion and fully reverse all awards if already granted.
 
         ``event`` is the bus event fired afterwards; a child's own undo fires
         ``taskmate_chore_undone`` so automations can tell it from a parent's
-        rejection.
+        rejection. ``reason`` (#976) is the parent's optional "why", shown to
+        the child; only a parent's rejection carries one.
         """
         completions = self.storage.get_completions()
         target_completion = next((c for c in completions if c.id == completion_id), None)
+        rejected = event == "taskmate_chore_rejected"
+        reason = clean_reject_reason(reason) if rejected else ""
 
         if target_completion:
             bonus_completions = self._reverse_completion_awards(target_completion, completions)
@@ -1538,7 +1544,7 @@ class ChoresMixin:
         if target_completion and getattr(target_completion, "bounty_id", ""):
             # A bounty goes back to the same child rather than to the board
             # (#931): renewed on a rejection, as it was on their own undo.
-            self._bounty_on_withdrawn(target_completion, rejected=event == "taskmate_chore_rejected")
+            self._bounty_on_withdrawn(target_completion, rejected=rejected)
         if target_completion and target_completion.approved and not target_completion.bonus_subtask_id:
             # Same as undo: a rejected completion must not leave the quest
             # chain standing on the step it unlocked.
@@ -1548,23 +1554,33 @@ class ChoresMixin:
         # delete it (best-effort; foreign/blank URLs are ignored).
         if target_completion and getattr(target_completion, "photo_url", ""):
             await photos.async_delete_photo(self.hass, target_completion.photo_url)
+        chore_name = ""
+        if target_completion:
+            chore = self.get_chore(target_completion.chore_id)
+            bounty = None if chore else self.storage.get_bounty(getattr(target_completion, "bounty_id", "") or "")
+            chore_name = getattr(chore, "name", "") or getattr(bounty, "title", "") or ""
+            if rejected and not target_completion.bonus_subtask_id:
+                self._record_rejection(
+                    "chore", target_completion.child_id, target_completion.chore_id, chore_name, reason
+                )
         await self.storage.async_save()
         await self.async_refresh()
 
         if target_completion:
             child = self.get_child(target_completion.child_id)
-            chore = self.get_chore(target_completion.chore_id)
-            self.hass.bus.async_fire(
-                event,
-                {
-                    "child_id": target_completion.child_id,
-                    "child_name": getattr(child, "name", ""),
-                    "chore_id": target_completion.chore_id,
-                    "chore_name": getattr(chore, "name", ""),
-                    "completion_id": completion_id,
-                    "timestamp": dt_util.now().isoformat(),
-                },
-            )
+            payload = {
+                "child_id": target_completion.child_id,
+                "child_name": getattr(child, "name", ""),
+                "chore_id": target_completion.chore_id,
+                "chore_name": chore_name,
+                "completion_id": completion_id,
+                "timestamp": dt_util.now().isoformat(),
+            }
+            if rejected:
+                payload["reason"] = reason
+            self.hass.bus.async_fire(event, payload)
+            if rejected and not target_completion.bonus_subtask_id:
+                await self._async_notify_rejected("chore", child, chore_name, reason)
             # Dismiss the mobile approval push for this reviewed completion. Also
             # covers undoing an already-approved chore (whose push was cleared at
             # approval): re-clearing a stale tag is a harmless no-op.
