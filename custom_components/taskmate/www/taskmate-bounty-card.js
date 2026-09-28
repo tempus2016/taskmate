@@ -381,7 +381,7 @@ class TaskMateBountyCard extends LitElement {
           <span class="bb-tag warn bb-wait"><ha-icon icon="mdi:timer-sand"></ha-icon>${this._t("bounty.waiting", { points: b.points })}</span>
           ${b.undo && b.completion_id ? html`
             <button class="bb-btn bb-text" ?disabled=${this._busy} @click=${() => this._undo(b)}>
-              <ha-icon icon="mdi:undo-variant"></ha-icon>${this._t("bounty.undo")}
+              <ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon>${this._t("bounty.undo")}
             </button>` : ""}
         </div>`;
     } else if (b.status === "pending") {
@@ -562,7 +562,7 @@ class TaskMateBountyCard extends LitElement {
       .bb-tag.bb-wait { font-size: .8rem; padding: 5px 10px; white-space: normal; border-radius: 10px; }
       :host([data-tm-dark]) .bb-tag.purple { color: #c39bd3; }
       .bb-stack { display: inline-flex; }
-      .bb-stack .bb-av + .bb-av { margin-left: -8px; }
+      .bb-stack .bb-av + .bb-av { margin-inline-start: -8px; }
       .bb-av {
         width: var(--bb-s, 22px); height: var(--bb-s, 22px); flex: none;
         border-radius: 50%;
@@ -784,7 +784,7 @@ class TaskMateBountyCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }

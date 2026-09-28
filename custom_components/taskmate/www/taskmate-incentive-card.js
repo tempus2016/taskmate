@@ -332,7 +332,7 @@ export function createIncentiveCard(P) {
         .toast {
           position: fixed;
           bottom: 24px;
-          left: 50%;
+          left: 50%; /* rtl-ok: centred with translate(-50%), symmetric */
           transform: translateX(-50%) translateY(0);
           background: #333;
           color: white;
@@ -365,7 +365,7 @@ export function createIncentiveCard(P) {
         .d-tabs { display: flex; gap: 8px; margin-bottom: 13px; align-items: center;
                   overflow-x: auto; scrollbar-width: none; }
         .d-tabs::-webkit-scrollbar { display: none; }
-        .d-tab { display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 4px;
+        .d-tab { display: flex; align-items: center; gap: 6px; padding-block: 4px; padding-inline: 4px 12px;
                  border-radius: 999px; font-weight: 800; font-size: 13px; cursor: pointer;
                  white-space: nowrap; color: var(--tmd-text);
                  background: color-mix(in srgb, var(--ac, var(--tmd-accent)) 16%, transparent);
@@ -980,7 +980,7 @@ export function createIncentiveCard(P) {
           <span class="tt">${this.config.title || this._tp('default_title')}${
             bonuses.length ? html`<small>${bonuses.length}</small>` : ""}</span>
           ${this._canManage() ? html`
-            <button class="btn ghost sm" style="margin-left:auto"
+            <button class="btn ghost sm" style="margin-inline-start:auto"
                     title="${this._tp('manage_title')}"
                     @click=${this._toggleEditMode}>
               <ha-icon icon="mdi:pencil"></ha-icon>
@@ -1054,7 +1054,7 @@ export function createIncentiveCard(P) {
         .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
         .preset-swatch:hover { transform: scale(1.15); }
         .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-        .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+        .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
         .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
       `;
     }

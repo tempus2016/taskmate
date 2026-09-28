@@ -1,8 +1,11 @@
 name: Label released issues
 
 # When a stable release is published, marks every issue closed as completed
-# in the matching milestone (milestone title == tag, e.g. v5.9.0) with
-# `released`, so "fixed in main" and "installable now" are told apart.
+# in any milestone at or below the tag's version with `released`, so "fixed
+# in main" and "installable now" are told apart. Comparing versions rather
+# than matching the title means a skipped milestone (v5.9.0 shipped as
+# v6.0.0) is still picked up. Matched milestones with no open issues left
+# are closed.
 
 on:
   release:
@@ -22,25 +25,46 @@ jobs:
             const { owner, repo } = context.repo;
             const tag = context.payload.release.tag_name;
 
-            const milestones = await github.paginate(github.rest.issues.listMilestones, {
-              owner, repo, state: 'all', per_page: 100,
-            });
-            const milestone = milestones.find(m => m.title === tag);
-            if (!milestone) {
-              console.log(`No milestone titled ${tag} — nothing to label`);
+            const parse = s => {
+              const m = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(s.trim());
+              return m ? m.slice(1).map(Number) : null;
+            };
+            const cmp = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+
+            const release = parse(tag);
+            if (!release) {
+              console.log(`Tag ${tag} isn't a plain version — nothing to label`);
               return;
             }
 
-            const issues = await github.paginate(github.rest.issues.listForRepo, {
-              owner, repo, milestone: milestone.number, state: 'closed', per_page: 100,
+            const milestones = (await github.paginate(github.rest.issues.listMilestones, {
+              owner, repo, state: 'all', per_page: 100,
+            })).filter(m => {
+              const v = parse(m.title);
+              return v && cmp(v, release) <= 0;
             });
+
             let count = 0;
-            for (const issue of issues) {
-              if (issue.pull_request || issue.state_reason === 'not_planned') continue;
-              if (issue.labels.some(l => l.name === 'released')) continue;
-              await github.rest.issues.addLabels({
-                owner, repo, issue_number: issue.number, labels: ['released'],
+            for (const milestone of milestones) {
+              const issues = await github.paginate(github.rest.issues.listForRepo, {
+                owner, repo, milestone: milestone.number, state: 'closed', per_page: 100,
               });
-              count++;
+              for (const issue of issues) {
+                if (issue.pull_request || issue.state_reason === 'not_planned') continue;
+                if (issue.labels.some(l => l.name === 'released')) continue;
+                await github.rest.issues.addLabels({
+                  owner, repo, issue_number: issue.number, labels: ['released'],
+                });
+                count++;
+              }
+
+              if (milestone.state === 'open' && milestone.open_issues === 0) {
+                await github.rest.issues.updateMilestone({
+                  owner, repo, milestone_number: milestone.number, state: 'closed',
+                });
+                console.log(`Closed milestone ${milestone.title}`);
+              } else if (milestone.state === 'open') {
+                console.log(`Left ${milestone.title} open — ${milestone.open_issues} open issue(s)`);
+              }
             }
-            console.log(`Labelled ${count} issue(s) in ${tag} as released`);
+            console.log(`Labelled ${count} issue(s) as released in ${tag}`);

@@ -302,7 +302,7 @@ class TaskMateChildCard extends LitElement {
 
       .avatar-clickable { cursor: pointer; position: relative; }
       .avatar-edit-dot {
-        position: absolute; bottom: -2px; right: -2px;
+        position: absolute; bottom: -2px; inset-inline-end: -2px;
         width: 18px; height: 18px; border-radius: 50%;
         background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center;
       }
@@ -316,7 +316,7 @@ class TaskMateChildCard extends LitElement {
       .tmd-av-wrap { position: relative; display: inline-flex; align-items: center; flex: none; }
       .tmd-av-wrap.avatar-clickable { cursor: pointer; }
       .tmd-av-edit {
-        position: absolute; bottom: -2px; right: -2px;
+        position: absolute; bottom: -2px; inset-inline-end: -2px;
         width: 15px; height: 15px; border-radius: 50%;
         background: var(--tmd-accent, #7c3aed); color: #fff;
         display: grid; place-items: center;
@@ -833,10 +833,10 @@ class TaskMateChildCard extends LitElement {
       }
       .tm-team.team-label {
         background: color-mix(in srgb, var(--primary-text-color, #212121) 8%, transparent);
-        border-radius: 999px; padding: 2px 8px 2px 3px; margin-top: 3px;
+        border-radius: 999px; padding-block: 2px; padding-inline: 3px 8px; margin-top: 3px;
       }
       .tm-team.mine { color: var(--tmd-good, #2e7d32); }
-      .tm-team.tmd-tag { padding: 2px 7px 2px 2px; }
+      .tm-team.tmd-tag { padding-block: 2px; padding-inline: 2px 7px; }
       .tm-team-avs { display: inline-flex; }
       .tm-team-avs:empty { display: none; }
       .tm-team-av {
@@ -845,9 +845,9 @@ class TaskMateChildCard extends LitElement {
         background: var(--ac, #7e57c2); color: #fff;
         font-size: 10px; font-weight: 800; line-height: 1;
         border: 2px solid var(--card-background-color, #fff);
-        margin-left: -5px;
+        margin-inline-start: -5px;
       }
-      .tm-team-av:first-child { margin-left: 0; }
+      .tm-team-av:first-child { margin-inline-start: 0; }
       .tm-team-av img { width: 100%; height: 100%; object-fit: cover; }
       .tm-team-av ha-icon { --mdc-icon-size: 12px; }
       .tm-team-txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1028,8 +1028,8 @@ class TaskMateChildCard extends LitElement {
 
       /* Bonus sub-task cards */
       .chore-card.bonus-subtask {
-        margin-left: 24px;
-        border-left: 3px solid var(--fun-amber, #f39c12);
+        margin-inline-start: 24px;
+        border-inline-start: 3px solid var(--fun-amber, #f39c12);
         background: linear-gradient(135deg,
           rgba(243, 156, 18, 0.08) 0%,
           rgba(241, 196, 15, 0.12) 100%);
@@ -1063,12 +1063,12 @@ class TaskMateChildCard extends LitElement {
         background: rgba(243, 156, 18, 0.15);
         padding: 1px 5px;
         border-radius: 3px;
-        margin-left: 6px;
+        margin-inline-start: 6px;
       }
 
       .chore-card.bonus-subtask.completed {
         border-color: var(--fun-green) !important;
-        border-left: 3px solid var(--fun-green);
+        border-inline-start: 3px solid var(--fun-green);
       }
 
       /* Mandatory chores (#532): red border + tint + left spine + badge. */
@@ -1079,7 +1079,7 @@ class TaskMateChildCard extends LitElement {
       .chore-card.mandatory::before {
         content: "";
         position: absolute;
-        left: 0;
+        inset-inline-start: 0;
         top: 0;
         bottom: 0;
         width: 6px;
@@ -1218,7 +1218,7 @@ class TaskMateChildCard extends LitElement {
         text-transform: uppercase;
         border-radius: 8px;
         padding: 2px 7px;
-        margin-left: 8px;
+        margin-inline-start: 8px;
         vertical-align: middle;
         white-space: nowrap;
       }
@@ -1233,7 +1233,7 @@ class TaskMateChildCard extends LitElement {
         color: var(--secondary-text-color);
         background: var(--secondary-background-color, #f5f5f5);
         border-radius: 20px;
-        padding: 2px 8px 2px 6px;
+        padding-block: 2px; padding-inline: 6px 8px;
         white-space: nowrap;
         flex-shrink: 0;
       }
@@ -1287,8 +1287,8 @@ class TaskMateChildCard extends LitElement {
       .celebration-overlay {
         position: fixed;
         top: 0;
-        left: 0;
-        right: 0;
+        inset-inline-start: 0;
+        inset-inline-end: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.5);
         display: flex;
@@ -1336,7 +1336,7 @@ class TaskMateChildCard extends LitElement {
       }
       .photo-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
       .photo-size-tag {
-        position: absolute; bottom: 8px; right: 8px;
+        position: absolute; bottom: 8px; inset-inline-end: 8px;
         background: rgba(0, 0, 0, 0.6); color: #fff;
         font-size: 0.66rem; padding: 3px 8px; border-radius: 999px;
       }
@@ -1451,7 +1451,7 @@ class TaskMateChildCard extends LitElement {
       .confetti-container {
         position: fixed;
         top: 0;
-        left: 0;
+        inset-inline-start: 0;
         width: 100%;
         height: 100%;
         pointer-events: none;
@@ -1575,7 +1575,7 @@ class TaskMateChildCard extends LitElement {
         gap: 12px;
       }
       .timed-rate {
-        margin-left: auto;
+        margin-inline-start: auto;
         font-size: 0.8rem;
         font-weight: 700;
         color: var(--fun-cyan);
@@ -1782,7 +1782,7 @@ class TaskMateChildCard extends LitElement {
       .badge-strip-label {
         font-size: 11px;
         color: var(--secondary-text-color);
-        margin-right: 2px;
+        margin-inline-end: 2px;
         white-space: nowrap;
       }
       .badge-mini {
@@ -1807,7 +1807,7 @@ class TaskMateChildCard extends LitElement {
       .badge-strip-more {
         font-size: 11px;
         color: var(--primary-color);
-        margin-left: 2px;
+        margin-inline-start: 2px;
         white-space: nowrap;
       }
 
@@ -1860,7 +1860,7 @@ class TaskMateChildCard extends LitElement {
         white-space: nowrap;
       }
       .next-badge-count {
-        margin-left: auto;
+        margin-inline-start: auto;
         font-size: 11px;
         font-weight: 700;
         color: var(--secondary-text-color);
@@ -1984,7 +1984,7 @@ class TaskMateChildCard extends LitElement {
       }
       .tmd-chore.mandatory, .tmd-quest.mandatory, .tmd-check.mandatory {
         box-shadow: inset 3px 0 0 0 var(--tmd-bad);
-        padding-left: 20px;
+        padding-inline-start: 20px;
       }
       .tmd-chore.dimmed, .tmd-quest.dimmed, .tmd-check.dimmed { opacity: 0.5; }
       /* Clickable done-state chips (tap to undo) */
@@ -2004,13 +2004,13 @@ class TaskMateChildCard extends LitElement {
 
       /* Designed: pending-points + countdown chips on the header/section */
       .tmd-freeze {
-        margin-left: auto; display: inline-flex; align-items: center; gap: 3px;
+        margin-inline-start: auto; display: inline-flex; align-items: center; gap: 3px;
         font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
         background: rgba(255,255,255,.22); color: #fff; white-space: nowrap;
       }
-      .tmd-freeze + .tmd-pending { margin-left: 6px; }
+      .tmd-freeze + .tmd-pending { margin-inline-start: 6px; }
       .tmd-pending {
-        margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+        margin-inline-start: auto; display: inline-flex; align-items: center; gap: 4px;
         font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
         background: rgba(255,255,255,.22); color: #fff;
       }
@@ -2019,7 +2019,7 @@ class TaskMateChildCard extends LitElement {
         font-family: var(--tmd-font-display); font-weight: 800; font-size: 14px; color: var(--tmd-text);
       }
       .tmd-countdown {
-        margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+        margin-inline-start: auto; display: inline-flex; align-items: center; gap: 4px;
         font-size: 11px; font-weight: 700; color: var(--tmd-dim);
       }
       .tmd-countdown.soon { color: var(--tmd-warn); }
@@ -2063,7 +2063,7 @@ class TaskMateChildCard extends LitElement {
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       }
       .tmd-next-badge .cnt {
-        margin-left: auto; font-size: 11px; font-weight: 800;
+        margin-inline-start: auto; font-size: 11px; font-weight: 800;
         color: var(--tmd-dim); white-space: nowrap;
       }
       .tmd-next-badge .bar {
@@ -2316,7 +2316,7 @@ class TaskMateChildCard extends LitElement {
                 <ha-icon icon="${b.icon || 'mdi:medal'}"></ha-icon>
               </div>
             `)}
-            ${earnedBadges.length > 5 ? html`<span class="badge-strip-more">+${earnedBadges.length - 5} →</span>` : ''}
+            ${earnedBadges.length > 5 ? html`<span class="badge-strip-more">+${earnedBadges.length - 5} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"}</span>` : ''}
           </div>
         ` : ''}
 
@@ -2782,7 +2782,7 @@ class TaskMateChildCard extends LitElement {
                 style="--t:${this._tierColor(b.tier)}">
                 <ha-icon icon="${b.icon || "mdi:medal"}"></ha-icon>
               </div>`)}
-            ${earnedBadges.length > 5 ? html`<span class="more">+${earnedBadges.length - 5} →</span>` : ""}
+            ${earnedBadges.length > 5 ? html`<span class="more">+${earnedBadges.length - 5} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"}</span>` : ""}
           </div>` : ""}
         ${nextBadge ? html`
           <div class="tmd-next-badge" role="button" tabindex="0"
@@ -2995,7 +2995,7 @@ class TaskMateChildCard extends LitElement {
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
-            ? this._designUndoChip(r, html`↩`, "q-undo")
+            ? this._designUndoChip(r, html`${this.getAttribute?.("dir") === "rtl" ? "↪" : "↩"}`, "q-undo")
             : this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "CLAIM"}` : (this._t("child.done") || "CLAIM"))}
         </div>
         ${this._designBonus(r)}`)}
@@ -4435,7 +4435,7 @@ class TaskMateChildCard extends LitElement {
           <div
             class="confetti"
             style="
-              left: ${piece.x}%;
+              inset-inline-start: ${piece.x}%;
               animation-delay: ${piece.delay}s;
               background: ${colors[index % colors.length]};
               border-radius: ${piece.round ? '50%' : '0'};
@@ -4955,7 +4955,7 @@ class TaskMateChildCard extends LitElement {
           <button type="button" class="tm-child-undo-btn"
             ?disabled=${!!this._loading[`undo_${c.completion_id || c.id}`]}
             @click=${() => this._childUndo(c)}>
-            <ha-icon icon="mdi:undo-variant"></ha-icon>
+            <ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon>
             ${this._t("child.undo_named", { name: c.chore_name || "" })}
           </button>`)}
       </div>`;
@@ -5347,7 +5347,7 @@ class TaskMateChildCardEditor extends LitElement {
         border-radius: 4px;
         padding: 4px 10px;
         cursor: pointer;
-        margin-left: auto;
+        margin-inline-start: auto;
       }
       .colour-helper {
         color: var(--secondary-text-color);
