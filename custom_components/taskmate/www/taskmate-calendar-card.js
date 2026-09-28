@@ -185,10 +185,10 @@ class TaskMateCalendarCard extends LitElement {
         padding: 6px 10px;
         background: var(--card-background-color, white);
         border-radius: 8px;
-        border-left: 4px solid var(--cal-grey);
+        border-inline-start: 4px solid var(--cal-grey);
       }
-      .chore-row.approved { border-left-color: var(--cal-green); }
-      .chore-row.pending  { border-left-color: var(--cal-amber); }
+      .chore-row.approved { border-inline-start-color: var(--cal-green); }
+      .chore-row.pending  { border-inline-start-color: var(--cal-amber); }
       .chore-row.rotating { opacity: 0.6; font-style: italic; }
 
       .chore-icon { --mdc-icon-size: 18px; color: var(--secondary-text-color); }
@@ -261,7 +261,7 @@ class TaskMateCalendarCard extends LitElement {
       .cal-card-cn { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border); border-radius: 8px; padding: 10px 11px; }
       .cal-head-cn { margin-bottom: 7px; }
       .cal-name-cn { font-weight: 700; font-size: 12.5px; }
-      .cal-count { margin-left: auto; font-size: 10px; }
+      .cal-count { margin-inline-start: auto; font-size: 10px; }
 
       /* Clean Pro */
       .cal-grid-cp { gap: 0; }
@@ -497,11 +497,11 @@ class TaskMateCalendarCard extends LitElement {
           </div>
           <div class="day-nav">
             <button @click=${() => this._shiftDay(-1)} title=${this._t("calendar.prev_day")}>
-              <ha-icon icon="mdi:chevron-left"></ha-icon>
+              <ha-icon class="tm-rtl-flip" icon="mdi:chevron-left"></ha-icon>
             </button>
             <span class="day-label">${isToday ? this._t("common.today") : dayLabel}</span>
             <button @click=${() => this._shiftDay(1)} title=${this._t("calendar.next_day")}>
-              <ha-icon icon="mdi:chevron-right"></ha-icon>
+              <ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon>
             </button>
             ${!isToday ? html`
               <button @click=${() => this._resetDay()} title=${this._t("common.today")}>
@@ -793,7 +793,7 @@ class TaskMateCalendarCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }

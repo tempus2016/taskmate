@@ -413,8 +413,8 @@ class TaskMateRecapCard extends LitElement {
         <div class="slide">${this._slide(kind, r)}</div>
         <div class="tapzone prev" @click=${(e) => this._prev(e)}></div>
         <div class="tapzone next" @click=${(e) => this._next(e)}></div>
-        ${idx > 0 ? html`<button class="story-nav l" @click=${(e) => this._prev(e)} aria-label="${this._t("recap.prev")}"><ha-icon icon="mdi:chevron-left"></ha-icon></button>` : ""}
-        ${!last ? html`<button class="story-nav r" @click=${(e) => this._next(e)} aria-label="${this._t("recap.next")}"><ha-icon icon="mdi:chevron-right"></ha-icon></button>` : ""}
+        ${idx > 0 ? html`<button class="story-nav l" @click=${(e) => this._prev(e)} aria-label="${this._t("recap.prev")}"><ha-icon class="tm-rtl-flip" icon="mdi:chevron-left"></ha-icon></button>` : ""}
+        ${!last ? html`<button class="story-nav r" @click=${(e) => this._next(e)} aria-label="${this._t("recap.next")}"><ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon></button>` : ""}
         <div class="story-foot">${idx + 1} / ${slides.length}${!last ? html` · ${this._t("recap.tap_to_continue")}` : ""}</div>
       </div>`;
   }
@@ -644,7 +644,7 @@ class TaskMateRecapCard extends LitElement {
                 <span class="s">${this._freqName(x.frequency)} · ${this._tn("recap.chores_count", x.chores, { count: this._num(x.chores) })} · ${this._num(x.points)} ${this._pointsName()}</span>
               </span>
               ${this._isNew(x) && x.id !== this._recap?.id ? html`<span class="newdot">${this._t("recap.new")}</span>` : ""}
-              <ha-icon icon="mdi:chevron-right"></ha-icon>
+              <ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon>
             </button>`)}
           ${upcoming ? html`
             <div class="per locked">
@@ -681,8 +681,10 @@ class TaskMateRecapCard extends LitElement {
   }
 
   _onKey(e) {
-    if (e.key === "ArrowRight") { e.preventDefault(); this._next(); }
-    else if (e.key === "ArrowLeft") { e.preventDefault(); this._prev(); }
+    // The story reads in the layout's direction, so in RTL left is forward (#979).
+    const rtl = this.getAttribute("dir") === "rtl";
+    if (e.key === (rtl ? "ArrowLeft" : "ArrowRight")) { e.preventDefault(); this._next(); }
+    else if (e.key === (rtl ? "ArrowRight" : "ArrowLeft")) { e.preventDefault(); this._prev(); }
   }
 
   _openSheet(e) {
@@ -819,7 +821,7 @@ class TaskMateRecapCard extends LitElement {
       .header-pill, .rc-older {
         display: inline-flex; align-items: center; gap: 5px; flex: none; cursor: pointer;
         background: rgba(255, 255, 255, 0.2); color: #fff; border: 0; border-radius: 16px;
-        padding: 4px 10px 4px 12px; font: inherit; font-size: 0.88rem; font-weight: 600;
+        padding-block: 4px; padding-inline: 12px 10px; font: inherit; font-size: 0.88rem; font-weight: 600;
       }
       .header-pill ha-icon, .rc-older ha-icon { --mdc-icon-size: 16px; }
       .tmd-hd .ic ha-icon { --mdc-icon-size: 18px; }
@@ -846,13 +848,13 @@ class TaskMateRecapCard extends LitElement {
       }
       .story:focus-visible { box-shadow: 0 0 0 3px var(--primary-color, #03a9f4); }
       .blob { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.1); pointer-events: none; }
-      .b1 { width: 240px; height: 240px; top: -80px; right: -80px; }
-      .b2 { width: 210px; height: 210px; bottom: -70px; left: -70px; }
-      .segs { position: absolute; top: 10px; left: 12px; right: 12px; display: flex; gap: 4px; z-index: 3; }
+      .b1 { width: 240px; height: 240px; top: -80px; inset-inline-end: -80px; }
+      .b2 { width: 210px; height: 210px; bottom: -70px; inset-inline-start: -70px; }
+      .segs { position: absolute; top: 10px; inset-inline-start: 12px; inset-inline-end: 12px; display: flex; gap: 4px; z-index: 3; }
       .segs i { flex: 1; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.35); display: block; }
       .segs i.done { background: #fff; }
       .story-who {
-        position: absolute; top: 22px; left: 12px; right: 12px; display: flex; align-items: center; gap: 8px;
+        position: absolute; top: 22px; inset-inline-start: 12px; inset-inline-end: 12px; display: flex; align-items: center; gap: 8px;
         z-index: 3; font-size: 13px; font-weight: 600; min-width: 0;
       }
       .story-who .p { opacity: 0.85; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -863,17 +865,17 @@ class TaskMateRecapCard extends LitElement {
       .who-av ha-icon { --mdc-icon-size: 16px; }
       .who-av img { width: 100%; height: 100%; object-fit: cover; }
       .tapzone { position: absolute; top: 0; bottom: 0; z-index: 2; cursor: pointer; }
-      .tapzone.prev { left: 0; width: 33%; }
-      .tapzone.next { right: 0; width: 67%; }
+      .tapzone.prev { inset-inline-start: 0; width: 33%; }
+      .tapzone.next { inset-inline-end: 0; width: 67%; }
       .story-nav {
         position: absolute; top: 50%; transform: translateY(-50%); z-index: 4; width: 34px; height: 34px;
         border-radius: 50%; border: 0; background: rgba(0, 0, 0, 0.22); color: #fff; display: grid; place-items: center; cursor: pointer; padding: 0;
       }
       .story-nav ha-icon { --mdc-icon-size: 20px; }
-      .story-nav.l { left: 8px; }
-      .story-nav.r { right: 8px; }
+      .story-nav.l { inset-inline-start: 8px; }
+      .story-nav.r { inset-inline-end: 8px; }
       .story-foot {
-        position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; font-size: 12px; opacity: 0.8; z-index: 3;
+        position: absolute; bottom: 12px; inset-inline-start: 0; inset-inline-end: 0; text-align: center; font-size: 12px; opacity: 0.8; z-index: 3;
       }
       .slide {
         position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -920,7 +922,7 @@ class TaskMateRecapCard extends LitElement {
       .medal .m ha-icon { --mdc-icon-size: 30px; }
       .rc-rw {
         margin-top: 12px; background: rgba(255, 255, 255, 0.16); border-radius: 14px; padding: 10px 14px; display: flex;
-        align-items: center; gap: 10px; text-align: left; font-size: 13px; width: 100%; max-width: 280px; box-sizing: border-box;
+        align-items: center; gap: 10px; text-align: start; font-size: 13px; width: 100%; max-width: 280px; box-sizing: border-box;
       }
       .rc-rw .grow { flex: 1; min-width: 0; }
       .rc-rw-cost { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
@@ -929,7 +931,7 @@ class TaskMateRecapCard extends LitElement {
       .cmp { width: 100%; max-width: 300px; margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
       .cmp-row {
         display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; background: rgba(255, 255, 255, 0.08);
-        border-radius: 12px; padding: 10px 12px; text-align: left; font-size: 13px;
+        border-radius: 12px; padding: 10px 12px; text-align: start; font-size: 13px;
       }
       .cmp-row .v { font-weight: 800; font-size: 17px; }
       .was { font-size: 11px; opacity: 0.7; display: block; font-weight: 400; }
@@ -964,9 +966,9 @@ class TaskMateRecapCard extends LitElement {
         box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35); font-family: var(--tmd-font-body, inherit);
       }
       .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--tmd-border, var(--divider-color, #999)); margin: 4px auto 8px; }
-      .sheet h4 { margin: 0; padding: 6px 12px 10px 18px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+      .sheet h4 { margin: 0; padding-block: 6px 10px; padding-inline: 18px 12px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
       .sheet h4 ha-icon { --mdc-icon-size: 18px; }
-      .x-btn { margin-left: auto; background: none; border: 0; color: inherit; cursor: pointer; padding: 4px; display: grid; place-items: center; }
+      .x-btn { margin-inline-start: auto; background: none; border: 0; color: inherit; cursor: pointer; padding: 4px; display: grid; place-items: center; }
       .freq-tabs { display: flex; gap: 6px; padding: 0 16px 10px; flex-wrap: wrap; }
       .rc-chip {
         font: inherit; font-size: 12.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px; cursor: pointer;
@@ -975,7 +977,7 @@ class TaskMateRecapCard extends LitElement {
       }
       .rc-chip.on { background: color-mix(in srgb, var(--hd) 16%, transparent); color: var(--tmd-text, var(--primary-text-color)); border-color: var(--hd); }
       .per {
-        display: flex; align-items: center; gap: 12px; padding: 11px 18px; cursor: pointer; width: 100%; text-align: left;
+        display: flex; align-items: center; gap: 12px; padding: 11px 18px; cursor: pointer; width: 100%; text-align: start;
         border: 0; border-top: 1px solid var(--tmd-border, var(--divider-color, #e0e0e0)); background: none; color: inherit; font: inherit;
         box-sizing: border-box;
       }
@@ -992,7 +994,7 @@ class TaskMateRecapCard extends LitElement {
       .per .s { font-size: 12px; color: var(--tmd-dim, var(--secondary-text-color)); }
       .per > ha-icon { --mdc-icon-size: 16px; opacity: 0.6; }
       .rc-toast {
-        position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); background: #323232; color: #fff;
+        position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); background: #323232; color: #fff; /* rtl-ok: centred with translate(-50%), symmetric */
         padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 20; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
         max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       }
@@ -1074,7 +1076,7 @@ class TaskMateRecapCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }

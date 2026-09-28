@@ -230,7 +230,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         content: "\u2B50";
         font-size: 7rem;
         position: absolute;
-        right: -12px;
+        inset-inline-end: -12px;
         bottom: -18px;
         opacity: 0.06;
         line-height: 1;
@@ -256,7 +256,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         font-size: 2rem;
         animation: star-spin 3s linear infinite;
         display: inline-block;
-        margin-right: 6px;
+        margin-inline-end: 6px;
         vertical-align: middle;
       }
       @keyframes star-spin {
@@ -331,7 +331,7 @@ class TaskMatePointsDisplayCard extends LitElement {
       .child-tile .rank-badge {
         position: absolute;
         top: 8px;
-        right: 10px;
+        inset-inline-end: 10px;
         font-size: 1.1rem;
         line-height: 1;
       }
@@ -353,7 +353,7 @@ class TaskMatePointsDisplayCard extends LitElement {
       .child-tile .tile-star {
         font-size: 1rem;
         vertical-align: middle;
-        margin-right: 2px;
+        margin-inline-end: 2px;
         display: inline-block;
         animation: star-spin 4s linear infinite;
       }
@@ -385,8 +385,8 @@ class TaskMatePointsDisplayCard extends LitElement {
         content: "";
         position: absolute;
         bottom: 0;
-        left: 0;
-        right: 0;
+        inset-inline-start: 0;
+        inset-inline-end: 0;
         height: 4px;
         border-radius: 0 0 18px 18px;
       }
@@ -416,7 +416,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         content: "\u{1F31F}";
         font-size: 6rem;
         position: absolute;
-        right: -10px;
+        inset-inline-end: -10px;
         bottom: -14px;
         opacity: 0.07;
         pointer-events: none;
@@ -476,7 +476,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         font-size: 0.85rem;
         animation: star-spin 5s linear infinite;
         display: inline-block;
-        margin-right: 2px;
+        margin-inline-end: 2px;
       }
       .cumul-bar-wrap {
         width: 100%;
@@ -524,7 +524,7 @@ class TaskMatePointsDisplayCard extends LitElement {
       .tmd-birthday .bday-title { font-weight: 800; font-size: 14px; }
       .tmd-birthday .bday-sub { font-size: 12px; font-weight: 600; color: var(--tmd-dim); }
       .confetti-container {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        position: fixed; top: 0; inset-inline-start: 0; width: 100%; height: 100%;
         pointer-events: none; z-index: 10000; overflow: hidden;
       }
       .confetti { position: absolute; width: 10px; height: 10px; animation: confetti-fall 3s linear forwards; }
@@ -540,10 +540,10 @@ class TaskMatePointsDisplayCard extends LitElement {
       .pl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 11px; }
       .pl-tile { background: var(--tmd-surface-2); border-radius: 18px; padding: 22px 12px 15px; text-align: center;
                  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-      .pl-medal { position: absolute; top: 9px; left: 11px; font-size: 16px; line-height: 1; }
+      .pl-medal { position: absolute; top: 9px; inset-inline-start: 11px; font-size: 16px; line-height: 1; }
       .pl-pts { font-family: var(--tmd-font-display); font-weight: 800; font-size: 1.85rem; line-height: 1;
                 color: var(--tmd-accent); }
-      .pl-pts span { font-size: 0.9rem; margin-left: 2px; }
+      .pl-pts span { font-size: 0.9rem; margin-inline-start: 2px; }
       .pl-name { font-weight: 800; font-size: 0.95rem; }
       .pl-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 
@@ -554,7 +554,7 @@ class TaskMatePointsDisplayCard extends LitElement {
       .cn-rank { font-size: 20px; width: 34px; color: var(--tmd-dim); }
       .cn-mid { flex: 1; min-width: 0; }
       .cn-name { font-weight: 700; margin-bottom: 6px; }
-      .cn-right { text-align: right; }
+      .cn-right { text-align: end; }
       .cn-pts { font-size: 22px; }
       .cn-sub { font-size: 10px; }
 
@@ -778,7 +778,7 @@ class TaskMatePointsDisplayCard extends LitElement {
                 <div class="tile-weekly">${this._t("points_display.weekly_plus", { count: weekly })}</div>` : ""}
               ${this.config.show_streak ? html`
                 <div class="streak-chip">\u{1F525} ${streak}</div>` : ""}
-              ${isTop ? html`<div style="position:absolute;bottom:0;left:0;right:0;height:4px;background:${colour};border-radius:0 0 18px 18px;"></div>` : ""}
+              ${isTop ? html`<div style="position:absolute;bottom:0;inset-inline-start:0;inset-inline-end:0;height:4px;background:${colour};border-radius:0 0 18px 18px;"></div>` : ""}
             </div>`;
         })}
       </div>`;
@@ -899,7 +899,7 @@ class TaskMatePointsDisplayCard extends LitElement {
     return html`
       <div class="confetti-container">
         ${this._confetti.map((p, i) => html`
-          <div class="confetti" style="left:${p.x}%;animation-delay:${p.delay}s;background:${colors[i % colors.length]};border-radius:${p.round ? "50%" : "0"};width:${p.size}px;height:${p.size}px;"></div>`)}
+          <div class="confetti" style="inset-inline-start:${p.x}%;animation-delay:${p.delay}s;background:${colors[i % colors.length]};border-radius:${p.round ? "50%" : "0"};width:${p.size}px;height:${p.size}px;"></div>`)}
       </div>`;
   }
 
@@ -1142,7 +1142,7 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }

@@ -180,7 +180,7 @@ class TaskMateReorderCard extends LitElement {
       }
 
       .time-category-header .count {
-        margin-left: auto;
+        margin-inline-start: auto;
         font-size: 0.85em;
         color: var(--secondary-text-color);
         background: var(--card-background-color);
@@ -192,7 +192,7 @@ class TaskMateReorderCard extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 8px;
-        padding-left: 8px;
+        padding-inline-start: 8px;
       }
 
       .chore-item {
@@ -441,10 +441,10 @@ class TaskMateReorderCard extends LitElement {
          NOTE: no ha-card { padding } rule — body padding comes from .tmd-bd.
       ══════════════════════════════════════════════════════════════════ */
 
-      .d-childchip { display: flex; align-items: center; gap: 5px; margin-left: auto;
+      .d-childchip { display: flex; align-items: center; gap: 5px; margin-inline-start: auto;
                      font-weight: 800; font-size: 12px; color: #fff;
                      background: rgba(255,255,255,.25); border-radius: 999px;
-                     padding: 3px 10px 3px 3px; white-space: nowrap; }
+                     padding-block: 3px; padding-inline: 3px 10px; white-space: nowrap; }
       :host([data-tm-design="console"]) .d-childchip { border-radius: 6px; font-weight: 700; font-size: 11px;
                      background: var(--tmd-surface-2);
                      border: 1px solid color-mix(in srgb, var(--ac, var(--tmd-accent)) 55%, transparent);
@@ -1199,7 +1199,7 @@ class TaskMateReorderCardEditor extends LitElement {
       .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
       .preset-swatch:hover { transform: scale(1.15); }
       .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-left: auto; }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
       .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }

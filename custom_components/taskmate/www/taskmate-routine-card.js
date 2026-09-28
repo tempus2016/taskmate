@@ -366,7 +366,7 @@ class TaskMateRoutineCard extends LitElement {
                      return undoable
                        ? html`<button class="rt-btn rt-undo" ?disabled=${this._busy}
                                       @click=${() => this._undo(chore, undoable)}>
-                                <ha-icon icon="mdi:undo-variant"></ha-icon>
+                                <ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon>
                                 ${this._t("child.undo_named", { name: chore.name })}
                               </button>`
                        : "";

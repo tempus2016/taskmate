@@ -235,6 +235,11 @@ class TaskMatePanel extends HTMLElement {
     const isDark = this._isHaDark();
     this.classList.toggle("dark", isDark);
     this.classList.toggle("light", !isDark);
+    // Follow HA's text direction (#979). The CSS is logical; the few physical
+    // rules left have [dir="rtl"] overrides that key off this attribute.
+    const design = window.__taskmate_design;
+    const dir = design && design.direction ? design.direction(value) : "ltr";
+    if (this.getAttribute("dir") !== dir) this.setAttribute("dir", dir);
     const connNow = !!(value && value.connection && value.connection.connected !== false);
     this._lastConnected = connNow;
 
@@ -3259,7 +3264,7 @@ class TaskMatePanel extends HTMLElement {
             <ha-icon icon="mdi:book-open-variant"></ha-icon>
           </a>
           <button type="button" class="tm-rail-btn" data-act="nav-rail" title="${this._esc(railLabel)}" aria-label="${this._esc(railLabel)}" aria-pressed="${rail ? "true" : "false"}">
-            <ha-icon icon="${rail ? "mdi:chevron-double-right" : "mdi:chevron-double-left"}"></ha-icon>
+            <ha-icon class="tm-rtl-flip" icon="${rail ? "mdi:chevron-double-right" : "mdi:chevron-double-left"}"></ha-icon>
           </button>
         </div>
         <nav class="tm-nav">
@@ -3852,7 +3857,7 @@ class TaskMatePanel extends HTMLElement {
                 <div class="tm-fair-name">${this._esc(c.name)}</div>
                 <div class="tm-fair-bar">
                   <i class="tm-fair-${c.status}" style="width:${Math.round(c.share_completions / maxShare * 100)}%"></i>
-                  <span class="tm-fair-target" style="left:${Math.round(report.fair_share / maxShare * 100)}%"></span>
+                  <span class="tm-fair-target" style="inset-inline-start:${Math.round(report.fair_share / maxShare * 100)}%"></span>
                 </div>
                 <div class="tm-fair-figs">
                   <strong>${c.completions}</strong> ${this._t(c.completions === 1 ? "panel.insights_chore" : "panel.insights_chores")}
@@ -4227,7 +4232,7 @@ class TaskMatePanel extends HTMLElement {
 
   _approveAllButton(chores) {
     if (!chores) return "";
-    return `<button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="approve-all-chores" style="margin-left:auto"${this._approvingAll ? " disabled" : ""}>${this._approvingAll
+    return `<button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="approve-all-chores" style="margin-inline-start:auto"${this._approvingAll ? " disabled" : ""}>${this._approvingAll
       ? `<span class="tm-btn-spinner"></span>${this._t("panel.activity_approve_all_busy")}`
       : this._t("panel.activity_approve_all")}</button>`;
   }
@@ -4283,7 +4288,7 @@ class TaskMatePanel extends HTMLElement {
                       <td>${this._esc((child && child.name) || "?")}</td>
                       <td><strong class="tm-numeric ${t.points >= 0 ? 'tm-pos' : 'tm-neg'}">${t.points >= 0 ? '+' : ''}${this._num(t.points)}</strong></td>
                       <td>${this._esc(this._translateReason(t.reason) || "—")}</td>
-                      <td>${undoable ? `<button type="button" class="tm-icon-btn" data-act="undo-tx" data-id="${this._esc(t.id)}" title="${this._esc(this._t("panel.activity_undo"))}"><ha-icon icon="mdi:undo-variant"></ha-icon></button>` : ""}</td>
+                      <td>${undoable ? `<button type="button" class="tm-icon-btn" data-act="undo-tx" data-id="${this._esc(t.id)}" title="${this._esc(this._t("panel.activity_undo"))}"><ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon></button>` : ""}</td>
                     </tr>
                   `;
                 }).join("")}
@@ -4370,7 +4375,7 @@ class TaskMatePanel extends HTMLElement {
 
           <div class="tm-card">
             <h3 class="tm-section-title"><ha-icon icon="mdi:pulse"></ha-icon>${this._t("panel.activity_recent")}
-              <button type="button" class="tm-btn tm-btn-sm" data-act="tab" data-tab="activity" style="margin-left:auto">${this._t("panel.today_view_all")}</button>
+              <button type="button" class="tm-btn tm-btn-sm" data-act="tab" data-tab="activity" style="margin-inline-start:auto">${this._t("panel.today_view_all")}</button>
             </h3>
             ${recent.length === 0 ? `<p class="tm-meta">${this._t("panel.activity_no_recent")}</p>` : this._timelineHtml(recent)}
           </div>
@@ -5952,8 +5957,8 @@ class TaskMatePanel extends HTMLElement {
               <tr class="tm-row tm-badge-row ${this._tierClass(b.tier)}">
                 <td>
                   <div class="tm-badge-icon-sm">${this._mdi(b.icon)}</div>
-                  <span style="margin-left:8px"><strong>${this._esc(this._badgeName(b))}</strong>
-                  <span class="tm-pill" style="background:var(--tm-surface-2);font-size:10px;margin-left:4px">${this._t("panel.badge_builtin_pill")}</span></span>
+                  <span style="margin-inline-start:8px"><strong>${this._esc(this._badgeName(b))}</strong>
+                  <span class="tm-pill" style="background:var(--tm-surface-2);font-size:10px;margin-inline-start:4px">${this._t("panel.badge_builtin_pill")}</span></span>
                   ${this._badgeDesc(b) ? `<div class="tm-meta">${this._esc(this._badgeDesc(b))}</div>` : ""}
                 </td>
                 <td><span class="tm-badge-tier-label">${this._t("badge.tier_" + (b.tier || "bronze"))}</span></td>
@@ -5994,7 +5999,7 @@ class TaskMatePanel extends HTMLElement {
               <tr class="tm-row tm-badge-row ${this._tierClass(b.tier)}">
                 <td>
                   <div class="tm-badge-icon-sm">${this._mdi(b.icon || "mdi:medal")}</div>
-                  <span style="margin-left:8px"><strong>${this._esc(b.name)}</strong></span>
+                  <span style="margin-inline-start:8px"><strong>${this._esc(b.name)}</strong></span>
                   ${b.description ? `<div class="tm-meta">${this._esc(b.description)}</div>` : ""}
                 </td>
                 <td><span class="tm-badge-tier-label">${this._t("badge.tier_" + (b.tier || "bronze"))}</span></td>
@@ -6044,7 +6049,7 @@ class TaskMatePanel extends HTMLElement {
                 <tr class="tm-row tm-badge-row ${tierCls}">
                   <td>
                     <div class="tm-badge-icon-sm">${this._mdi(badge.icon || "mdi:medal")}</div>
-                    <span style="margin-left:8px"><strong>${this._esc(this._badgeName(badge) || a.badge_id)}</strong></span>
+                    <span style="margin-inline-start:8px"><strong>${this._esc(this._badgeName(badge) || a.badge_id)}</strong></span>
                   </td>
                   <td><strong style="color:var(--tm-accent)">${this._esc(child.name || a.child_id)}</strong></td>
                   <td class="tm-meta">${this._esc(when)}</td>
@@ -6432,7 +6437,7 @@ class TaskMatePanel extends HTMLElement {
     return `
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">${this._esc(tpl.name)}</h2>
-        <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}" style="margin-left:8px">${tpl.builtin ? this._t("panel.template_builtin") : this._t("panel.template_custom")}</span>
+        <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}" style="margin-inline-start:8px">${tpl.builtin ? this._t("panel.template_builtin") : this._t("panel.template_custom")}</span>
         <span style="flex:1"></span>
         <button type="button" class="tm-btn" data-act="tpl-back">${this._t("panel.btn_back")}</button>
       </div>
@@ -6521,7 +6526,7 @@ class TaskMatePanel extends HTMLElement {
                 <label class="tm-tpl-check-row">
                   <input type="checkbox" data-tpl-chore-check="${this._esc(c.id)}">
                   <span>${this._esc(c.name)}</span>
-                  <span class="tm-text-muted" style="margin-left:auto">${this._t("panel.pts_display", {count: c.points})}</span>
+                  <span class="tm-text-muted" style="margin-inline-start:auto">${this._t("panel.pts_display", {count: c.points})}</span>
                 </label>
               `).join("")}
             </div>
@@ -7089,7 +7094,7 @@ class TaskMatePanel extends HTMLElement {
                   <tr>
                     <td>${this._esc((p.date || "").slice(0, 10))}</td>
                     <td>${this._esc(p.child_name || "")}</td>
-                    <td style="text-align:right">${this._num(p.points)} → ${this._esc(p.currency || "")}${this._esc(String(p.amount))}</td>
+                    <td style="text-align:end">${this._num(p.points)} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"} ${this._esc(p.currency || "")}${this._esc(String(p.amount))}</td>
                   </tr>
                 `).join("")}
               </tbody></table></div>
@@ -7278,7 +7283,7 @@ class TaskMatePanel extends HTMLElement {
               ` : ""}
               <div style="margin-top:6px">
                 <button type="button" class="tm-btn" data-act="notif-send-test" data-type-id="${this._esc(t.id)}" style="padding:2px 10px;font-size:12px">
-                  <ha-icon icon="mdi:send" style="--mdc-icon-size:14px"></ha-icon> ${this._t("panel.notif_send_test")}
+                  <ha-icon class="tm-rtl-flip" icon="mdi:send" style="--mdc-icon-size:14px"></ha-icon> ${this._t("panel.notif_send_test")}
                 </button>
               </div>
               <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
@@ -7832,7 +7837,7 @@ class TaskMatePanel extends HTMLElement {
                   <div class="tm-chip-row">
                     ${WEATHER_CONDITIONS.map(w => `
                       <button type="button" class="tm-chip-btn ${(d.weather_block_conditions || []).includes(w.v) ? "tm-chip-on" : ""}" data-act="toggle-weather-condition" data-id="${w.v}">
-                        <ha-icon icon="${w.icon}" style="--mdc-icon-size:16px;margin-right:4px"></ha-icon>${this._t("weather.condition_" + w.v.replace(/-/g, "_"))}
+                        <ha-icon icon="${w.icon}" style="--mdc-icon-size:16px;margin-inline-end:4px"></ha-icon>${this._t("weather.condition_" + w.v.replace(/-/g, "_"))}
                       </button>
                     `).join("")}
                   </div>
@@ -7869,7 +7874,7 @@ class TaskMatePanel extends HTMLElement {
     const typed = selected.filter(id => !known.has(id));
     const chip = (id, label) => `
       <button type="button" class="tm-chip-btn ${selected.includes(id) ? "tm-chip-on" : ""}" data-act="toggle-tag" data-id="${this._esc(id)}" title="${this._esc(id)}">
-        <ha-icon icon="mdi:nfc-variant" style="--mdc-icon-size:16px;margin-right:4px"></ha-icon>${this._esc(label || id)}
+        <ha-icon icon="mdi:nfc-variant" style="--mdc-icon-size:16px;margin-inline-end:4px"></ha-icon>${this._esc(label || id)}
       </button>`;
     const cantTag = d.require_photo || d.open_ended || d.task_type === "timed";
     const open = this._dialog._openAdvanced?.has("tags");
@@ -8790,10 +8795,11 @@ class TaskMatePanel extends HTMLElement {
        </button>`).join("");
     this.appendChild(menu);
 
-    // Position fixed at the kebab, right-aligned, flipping up / clamping to viewport.
+    // Position fixed at the kebab, end-aligned (right, or left in RTL),
+    // flipping up / clamping to viewport.
     const rect = btn.getBoundingClientRect();
     const mw = menu.offsetWidth, mh = menu.offsetHeight, gap = 4, pad = 8;
-    let left = rect.right - mw;
+    let left = this.getAttribute("dir") === "rtl" ? rect.left : rect.right - mw;
     if (left < pad) left = pad;
     if (left + mw > window.innerWidth - pad) left = window.innerWidth - pad - mw;
     let top = rect.bottom + gap;
@@ -8998,7 +9004,7 @@ class TaskMatePanel extends HTMLElement {
       /* ===== Sidebar ===== */
       .tm-sidebar {
         background: var(--tm-surface-0);
-        border-right: 1px solid var(--tm-border);
+        border-inline-end: 1px solid var(--tm-border);
         display: flex; flex-direction: column;
         overflow: hidden;
       }
@@ -9070,7 +9076,7 @@ class TaskMatePanel extends HTMLElement {
         font-weight: 500;
         font-family: inherit;
         background: transparent; border: 0;
-        width: 100%; text-align: left;
+        width: 100%; text-align: start;
         position: relative;
         transition: all 0.1s var(--tm-easing);
       }
@@ -9082,9 +9088,9 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-nav-active::before {
         content: ""; position: absolute;
-        left: -8px; top: 6px; bottom: 6px; width: 2px;
+        inset-inline-start: -8px; top: 6px; bottom: 6px; width: 2px;
         background: var(--tm-accent);
-        border-radius: 0 2px 2px 0;
+        border-start-start-radius: 0; border-start-end-radius: 2px; border-end-end-radius: 2px; border-end-start-radius: 0;
       }
       .tm-nav-icon {
         width: 16px; height: 16px;
@@ -9128,7 +9134,7 @@ class TaskMatePanel extends HTMLElement {
         border: 0;
         color: var(--tm-text);
         padding: 6px;
-        margin-left: -6px;
+        margin-inline-start: -6px;
         border-radius: 8px;
         cursor: pointer;
         align-items: center; justify-content: center;
@@ -9155,7 +9161,7 @@ class TaskMatePanel extends HTMLElement {
            panel's only route to the pending-approvals queue. */
         min-height: 32px;
         box-sizing: border-box;
-        padding: 4px 12px 4px 10px;
+        padding-block: 4px; padding-inline: 10px 12px;
         border-radius: 999px;
         font-size: 12px; font-weight: 500;
         cursor: pointer;
@@ -9199,7 +9205,7 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-toolbar-count {
         color: var(--tm-text-faint); font-weight: 400;
-        margin-left: 6px;
+        margin-inline-start: 6px;
         font-variant-numeric: tabular-nums;
         font-size: 16px;
       }
@@ -9210,7 +9216,7 @@ class TaskMatePanel extends HTMLElement {
         flex: 1; min-width: 240px; max-width: 400px;
       }
       .tm-search-icon {
-        position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+        position: absolute; inset-inline-start: 10px; top: 50%; transform: translateY(-50%);
         --mdc-icon-size: 14px; color: var(--tm-text-faint);
         pointer-events: none;
       }
@@ -9220,7 +9226,7 @@ class TaskMatePanel extends HTMLElement {
         background: var(--tm-surface-0);
         border: 1px solid var(--tm-border);
         border-radius: var(--tm-radius-sm);
-        padding: 6px 10px 6px 32px;
+        padding-block: 6px; padding-inline: 32px 10px;
         color: var(--tm-text);
         font-size: 13px;
         font-family: inherit;
@@ -9235,7 +9241,7 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-search::placeholder { color: var(--tm-text-vfaint); }
       .tm-search-clear {
-        position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+        position: absolute; inset-inline-end: 6px; top: 50%; transform: translateY(-50%);
         background: var(--tm-surface-2);
         color: var(--tm-text-muted);
         border: 0;
@@ -9333,7 +9339,7 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-card:last-child { margin-bottom: 0; }
       .tm-card:hover { border-color: var(--tm-border-strong); box-shadow: var(--tm-shadow-sm); }
-      .tm-card-error { border-left: 3px solid var(--tm-danger); color: var(--tm-danger); }
+      .tm-card-error { border-inline-start: 3px solid var(--tm-danger); color: var(--tm-danger); }
       .tm-loading { color: var(--tm-text-muted); }
 
       .tm-section-title {
@@ -9523,7 +9529,7 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
       .tm-table th, .tm-table td {
-        text-align: left;
+        text-align: start;
         padding: 11px 16px;
         border-bottom: 1px solid var(--tm-border-soft);
         vertical-align: middle;
@@ -9542,15 +9548,15 @@ class TaskMatePanel extends HTMLElement {
       .tm-row { transition: background 0.1s var(--tm-easing); }
       .tm-row:hover { background: var(--tm-surface-hover); }
       .tm-row-disabled { opacity: 0.5; }
-      .tm-row-icon { display: inline-flex; vertical-align: middle; margin-right: 10px; opacity: 0.7; --mdc-icon-size: 18px; color: var(--tm-text-muted); }
-      .tm-row-actions { text-align: right; white-space: nowrap; }
+      .tm-row-icon { display: inline-flex; vertical-align: middle; margin-inline-end: 10px; opacity: 0.7; --mdc-icon-size: 18px; color: var(--tm-text-muted); }
+      .tm-row-actions { text-align: end; white-space: nowrap; }
       .tm-row-actions > div { display: inline-flex; gap: 4px; align-items: center; justify-content: flex-end; }
 
       /* Keep the task-name column visible when a wide table scrolls
          horizontally (issue #533). Pinned only outside bulk-select mode,
          where the checkbox column sits to the name's left. */
       .tm-table th.tm-col-sticky, .tm-table td.tm-col-sticky {
-        position: sticky; left: 0; z-index: 1;
+        position: sticky; inset-inline-start: 0; z-index: 1;
       }
       .tm-table td.tm-col-sticky { background: var(--tm-surface-0); }
       .tm-table th.tm-col-sticky { z-index: 3; }
@@ -9562,7 +9568,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-name-cell { display: flex; align-items: center; gap: 12px; }
       .tm-name-cell .tm-name-main { min-width: 0; }
       .tm-name-cell .tm-name-actions {
-        margin-left: auto; display: inline-flex; gap: 4px;
+        margin-inline-start: auto; display: inline-flex; gap: 4px;
         align-items: center; flex-shrink: 0;
       }
       /* Variant for rows whose actions are full buttons (Wishlists, Bounties;
@@ -9595,7 +9601,7 @@ class TaskMatePanel extends HTMLElement {
         padding: 8px 10px; border: 0; background: transparent;
         border-radius: var(--tm-radius-sm);
         color: var(--tm-text); font-family: inherit; font-size: 13px;
-        text-align: left; cursor: pointer; white-space: nowrap;
+        text-align: start; cursor: pointer; white-space: nowrap;
         transition: background 0.08s var(--tm-easing);
       }
       .tm-row-menu-item:hover { background: var(--tm-surface-hover); }
@@ -9632,7 +9638,7 @@ class TaskMatePanel extends HTMLElement {
         line-height: 1.5;
         background: var(--tm-surface-2); color: var(--tm-text-muted);
         border: 1px solid var(--tm-border);
-        margin-left: 4px; vertical-align: middle;
+        margin-inline-start: 4px; vertical-align: middle;
       }
       .tm-pill-accent  { background: var(--tm-accent-soft);   color: var(--tm-accent-text); border-color: var(--tm-accent-border); }
       .tm-pill-success { background: var(--tm-positive-soft); color: var(--tm-positive);    border-color: var(--tm-positive-border); }
@@ -9646,7 +9652,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-pill-jackpot { background: var(--tm-gold-soft);     color: var(--tm-gold);        border-color: color-mix(in srgb, var(--tm-gold), transparent 75%); }
       .tm-pill-muted   { background: var(--tm-surface-2);     color: var(--tm-text-muted);  border-color: var(--tm-border); }
       .tm-quest-inactive { opacity: 0.6; }
-      .tm-quest-steps { margin: 8px 0 4px; padding-left: 20px; color: var(--tm-text); font-size: 13px; }
+      .tm-quest-steps { margin: 8px 0 4px; padding-inline-start: 20px; color: var(--tm-text); font-size: 13px; }
       .tm-quest-steps li { margin: 2px 0; }
       .tm-quest-step-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
       .tm-quest-step-row { display: flex; align-items: center; gap: 8px; }
@@ -9726,10 +9732,10 @@ class TaskMatePanel extends HTMLElement {
         border: 1px solid var(--tm-border);
       }
       .tm-empty h3 { margin: 0 0 4px; font-size: 14px; font-weight: 600; letter-spacing: -0.005em; color: var(--tm-text); }
-      .tm-empty p  { margin: 0 0 16px; color: var(--tm-text-muted); font-size: 13px; max-width: 360px; margin-left: auto; margin-right: auto; }
+      .tm-empty p  { margin: 0 0 16px; color: var(--tm-text-muted); font-size: 13px; max-width: 360px; margin-inline-start: auto; margin-inline-end: auto; }
 
       /* Group list */
-      .tm-group-list { margin: 8px 0 0; padding-left: 20px; color: var(--tm-text-muted); font-size: 13px; }
+      .tm-group-list { margin: 8px 0 0; padding-inline-start: 20px; color: var(--tm-text-muted); font-size: 13px; }
       .tm-group-list li { margin-bottom: 2px; }
 
       /* Activity tab */
@@ -9753,13 +9759,13 @@ class TaskMatePanel extends HTMLElement {
       .tm-approval-body { flex: 1; min-width: 0; }
       .tm-approval-photo img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; display: block; }
       .tm-approval-line { font-size: 13px; }
-      .tm-approval-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; margin-left: auto; }
+      .tm-approval-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; margin-inline-start: auto; }
       /* Let the actions drop below the text on a narrow screen instead of
          crushing it into a one-word column (the star picker made it worse). */
       .tm-approval-item { flex-wrap: wrap; }
       .tm-approval-body { flex: 1 1 180px; }
       /* Quality rating star picker (#927) */
-      .tm-stars { display: inline-flex; gap: 2px; margin-right: 4px; }
+      .tm-stars { display: inline-flex; gap: 2px; margin-inline-end: 4px; }
       .tm-star {
         background: none; border: 0; padding: 2px 3px; cursor: pointer;
         font-size: 20px; line-height: 1; color: var(--tm-text-muted, #888);
@@ -9768,7 +9774,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-star:hover { color: #f5b301; }
       .tm-star.tm-star-on { color: #f5b301; }
       .tm-star:focus-visible { outline: 2px solid var(--tm-accent); outline-offset: 1px; }
-      .tm-q-stars { color: #f5b301; letter-spacing: 1px; margin-right: 6px; }
+      .tm-q-stars { color: #f5b301; letter-spacing: 1px; margin-inline-end: 6px; }
       .tm-q-off { color: var(--tm-text-muted, #888); }
       .tm-quality td, .tm-quality th { font-size: 13px; }
 
@@ -9864,7 +9870,7 @@ class TaskMatePanel extends HTMLElement {
         background: var(--secondary-background-color, #f1f1f1);
         border-radius: 10px;
       }
-      .tm-bulk-count { font-weight: 600; margin-right: auto; }
+      .tm-bulk-count { font-weight: 600; margin-inline-end: auto; }
       .tm-btn-on { background: var(--primary-color, #5b8def); color: #fff; }
       .tm-audit-row {
         display: grid;
@@ -9950,11 +9956,15 @@ class TaskMatePanel extends HTMLElement {
       .tm-dialog.tm-drawer {
         width: min(520px, 100vw); max-width: none; box-sizing: border-box;
         height: 100%; max-height: none;
-        border-radius: 0; border-width: 0 0 0 1px;
+        border-radius: 0; border-width: 0; border-inline-start-width: 1px;
         box-shadow: -16px 0 40px rgba(0, 0, 0, 0.18);
       }
       .tm-scrim.tm-enter > .tm-dialog.tm-drawer { animation: tm-drawer-in 0.22s var(--tm-easing); }
       @keyframes tm-drawer-in { from { transform: translateX(100%); } to { transform: none; } }
+      /* RTL (#979): the drawer sits on the left, so it casts and slides the other way. */
+      [dir="rtl"] .tm-dialog.tm-drawer { box-shadow: 16px 0 40px rgba(0, 0, 0, 0.18); }
+      [dir="rtl"] .tm-scrim.tm-enter > .tm-dialog.tm-drawer { animation-name: tm-drawer-in-rtl; }
+      @keyframes tm-drawer-in-rtl { from { transform: translateX(-100%); } to { transform: none; } }
       .tm-drawer .tm-dialog-body { flex: 1; padding-top: 4px; }
       .tm-drawer-sec { padding-bottom: 6px; margin-bottom: 14px; border-bottom: 1px solid var(--tm-border-soft); }
       .tm-drawer-sec:last-child { border-bottom: 0; margin-bottom: 0; }
@@ -9962,7 +9972,7 @@ class TaskMatePanel extends HTMLElement {
         margin: 12px 0 12px; font-size: 11.5px; font-weight: 600;
         letter-spacing: 0.06em; text-transform: uppercase; color: var(--tm-text-muted);
       }
-      .tm-drawer-delete { margin-right: auto; color: var(--tm-danger); display: inline-flex; align-items: center; gap: 4px; }
+      .tm-drawer-delete { margin-inline-end: auto; color: var(--tm-danger); display: inline-flex; align-items: center; gap: 4px; }
       .tm-drawer-delete ha-icon { --mdc-icon-size: 18px; }
       @media (prefers-reduced-motion: reduce) { .tm-scrim.tm-enter > .tm-dialog.tm-drawer { animation: none; } }
 
@@ -10010,11 +10020,12 @@ class TaskMatePanel extends HTMLElement {
       .tm-select {
         cursor: pointer;
         appearance: none; -webkit-appearance: none;
-        padding-right: 32px;
+        padding-inline-end: 32px;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%23888' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
-        background-position: right 10px center;
+        background-position: right 10px center; /* rtl-ok: [dir="rtl"] override below */
       }
+      [dir="rtl"] .tm-select { background-position: left 10px center; } /* rtl-ok: RTL side of the rule above */
       .tm-select option { background: var(--tm-surface-0); color: var(--tm-text); }
       .tm-textarea {
         width: 100%;
@@ -10047,7 +10058,7 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-ep-search-icon {
         --mdc-icon-size: 18px;
-        color: var(--tm-text-faint); flex-shrink: 0; margin-right: 6px;
+        color: var(--tm-text-faint); flex-shrink: 0; margin-inline-end: 6px;
       }
       .tm-ep-input {
         flex: 1; border: 0; background: transparent; outline: 0;
@@ -10078,7 +10089,7 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-entity-clear:hover { background: var(--tm-danger-soft); color: var(--tm-danger); }
       .tm-ep-dropdown {
-        position: absolute; top: 100%; left: 0; right: 0;
+        position: absolute; top: 100%; inset-inline-start: 0; inset-inline-end: 0;
         max-height: 260px; overflow-y: auto;
         background: var(--tm-surface-0); border: 1px solid var(--tm-border);
         border-radius: var(--tm-radius); z-index: 200;
@@ -10222,7 +10233,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-proj-kid { display: grid; grid-template-columns: 120px 1fr; gap: 6px 12px; align-items: center; }
       .tm-proj-kid .tm-fair-figs { grid-column: 2; }
       .tm-projection td, .tm-projection th { font-size: 13px; text-align: center; }
-      .tm-projection td:first-child, .tm-projection th:first-child { text-align: left; }
+      .tm-projection td:first-child, .tm-projection th:first-child { text-align: start; }
       .tm-proj-date { color: var(--tm-text-muted); font-size: 11.5px; }
       .tm-proj-count { color: var(--tm-text-muted); font-size: 11.5px; }
 
@@ -10245,7 +10256,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-allow-chip {
         display: inline-flex; align-items: center; gap: 6px;
         background: var(--tm-surface-0); border: 1px solid var(--tm-border);
-        border-radius: 999px; padding: 4px 6px 4px 12px;
+        border-radius: 999px; padding-block: 4px; padding-inline: 12px 6px;
         font-size: 12.5px; font-family: var(--tm-mono, monospace);
       }
       .tm-allow-chip button {
@@ -10362,6 +10373,7 @@ class TaskMatePanel extends HTMLElement {
         font-size: 10px;
       }
       details.tm-advanced[open] summary::before { transform: rotate(90deg); }
+      [dir="rtl"] details.tm-advanced:not([open]) summary::before { transform: scaleX(-1); }
       details.tm-advanced > div {
         padding: 14px;
         border-top: 1px solid var(--tm-border-soft);
@@ -10400,7 +10412,7 @@ class TaskMatePanel extends HTMLElement {
 
       /* Toast */
       .tm-toast {
-        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); /* rtl-ok: centred with translate(-50%), symmetric */
         padding: 10px 16px; border-radius: var(--tm-radius);
         font-size: 13px; font-weight: 500;
         box-shadow: var(--tm-shadow);
@@ -10457,6 +10469,10 @@ class TaskMatePanel extends HTMLElement {
       .tm-tpl-preview-header:hover { background: var(--tm-surface-hover); }
       .tm-tpl-expand { font-size: 11px; color: var(--tm-text-faint); transition: transform 0.2s; }
       .tm-tpl-expand.open { transform: rotate(90deg); }
+      [dir="rtl"] .tm-tpl-expand { display: inline-block; }
+      [dir="rtl"] .tm-tpl-expand:not(.open) { transform: scaleX(-1); }
+      /* RTL (#979): icons that point along the reading direction turn round. */
+      [dir="rtl"] .tm-rtl-flip { transform: scaleX(-1); }
       .tm-tpl-preview-name { font-size: 14px; font-weight: 600; flex: 1; }
       .tm-tpl-preview-summary { font-size: 12px; color: var(--tm-text-muted); display: flex; gap: 12px; }
       .tm-tpl-remove {
@@ -10533,12 +10549,13 @@ class TaskMatePanel extends HTMLElement {
         position: relative; transition: background 0.15s; flex-shrink: 0;
       }
       .tm-badge-toggle::after {
-        content: ""; position: absolute; top: 2px; left: 2px;
+        content: ""; position: absolute; top: 2px; inset-inline-start: 2px;
         width: 16px; height: 16px; border-radius: 50%;
         background: #fff; transition: transform 0.15s;
       }
       .tm-badge-toggle-on { background: var(--tm-accent); }
       .tm-badge-toggle-on::after { transform: translateX(16px); }
+      [dir="rtl"] .tm-badge-toggle-on::after { transform: translateX(-16px); }
 
       .tm-badge-src {
         font-size: 10px; font-weight: 700; padding: 2px 8px;
@@ -10630,12 +10647,13 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-notif-switch::after {
         content: ""; position: absolute;
-        top: 3px; left: 3px;
+        top: 3px; inset-inline-start: 3px;
         width: 16px; height: 16px; border-radius: 50%;
         background: #fff; transition: transform 0.15s;
       }
       .tm-notif-switch:checked { background: var(--tm-accent); }
       .tm-notif-switch:checked::after { transform: translateX(16px); }
+      [dir="rtl"] .tm-notif-switch:checked::after { transform: translateX(-16px); }
       .tm-notif-switch:disabled { opacity: 0.35; cursor: not-allowed; }
 
       /* Notification matrix cells */
@@ -10682,7 +10700,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-notif-info-box {
         margin-top: 16px; padding: 14px 16px;
         background: var(--tm-surface-1); border: 1px solid var(--tm-border);
-        border-left: 3px solid var(--tm-accent, #4fc3f7);
+        border-inline-start: 3px solid var(--tm-accent, #4fc3f7);
         border-radius: var(--tm-radius-sm);
         font-size: 12.5px; color: var(--tm-text-muted); line-height: 1.55;
       }
@@ -10699,7 +10717,7 @@ class TaskMatePanel extends HTMLElement {
         .tm-topbar { padding: 0 12px; }
         /* Redundant with the section picker below — hide on mobile. */
         .tm-crumbs { display: none; }
-        .tm-approval-pill { margin-left: auto; }
+        .tm-approval-pill { margin-inline-start: auto; }
 
         /* Section picker replaces the old horizontal tab strip. */
         .tm-main { position: relative; }
@@ -10722,7 +10740,7 @@ class TaskMatePanel extends HTMLElement {
           cursor: pointer;
           font-family: inherit;
           color: var(--tm-text);
-          text-align: left;
+          text-align: start;
           transition: background 0.12s var(--tm-easing), border-color 0.12s var(--tm-easing);
         }
         .tm-mnav-trigger:active { background: var(--tm-surface-3); }
@@ -10762,7 +10780,7 @@ class TaskMatePanel extends HTMLElement {
         }
         .tm-mnav-scrim {
           position: absolute;
-          top: 100%; left: 0; right: 0;
+          top: 100%; inset-inline-start: 0; inset-inline-end: 0;
           height: 100vh;
           background: rgba(10, 15, 22, 0.32);
           z-index: 30;
@@ -10770,7 +10788,7 @@ class TaskMatePanel extends HTMLElement {
         }
         .tm-mnav-sheet {
           position: absolute;
-          top: calc(100% + 6px); left: 8px; right: 8px;
+          top: calc(100% + 6px); inset-inline-start: 8px; inset-inline-end: 8px;
           z-index: 31;
           background: var(--tm-surface-0);
           border: 1px solid var(--tm-border);
@@ -10789,7 +10807,7 @@ class TaskMatePanel extends HTMLElement {
         .tm-mnav-item {
           display: flex; align-items: center; gap: 12px; width: 100%;
           background: none; border: 0; font-family: inherit; cursor: pointer;
-          padding: 11px 16px; color: var(--tm-text); text-align: left;
+          padding: 11px 16px; color: var(--tm-text); text-align: start;
         }
         .tm-mnav-item:active { background: var(--tm-surface-2); }
         .tm-mnav-item-ico {
@@ -10811,7 +10829,7 @@ class TaskMatePanel extends HTMLElement {
         .tm-scrim { padding: 0; }
         .tm-dialog-body .tm-field-row { grid-template-columns: 1fr; }
         .tm-setting-row { grid-template-columns: 1fr; gap: 6px; padding: 12px 16px; }
-        .tm-section-head, .tm-setting-row { padding-left: 16px; padding-right: 16px; }
+        .tm-section-head, .tm-setting-row { padding-inline-start: 16px; padding-inline-end: 16px; }
         .tm-timeline-row { grid-template-columns: 1fr auto; }
         .tm-timeline-time, .tm-timeline-icon { display: none; }
       }
@@ -10826,7 +10844,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-wl-appr { align-items: center; }
       .tm-wl-target { display: inline-flex; align-items: center; gap: 6px; }
       .tm-wl-target .tm-input { width: 96px; padding: 6px 8px; }
-      .tm-wl-link { text-decoration: none; --mdc-icon-size: 13px; margin-left: 4px; }
+      .tm-wl-link { text-decoration: none; --mdc-icon-size: 13px; margin-inline-start: 4px; }
       .tm-wl-cell { display: flex; align-items: center; gap: 10px; }
       .tm-wl-progress { min-width: 180px; }
       .tm-wl-acts { display: flex; align-items: center; justify-content: flex-end; gap: 6px; white-space: nowrap; }
@@ -10855,7 +10873,7 @@ class TaskMatePanel extends HTMLElement {
       button.tm-nav-head {
         display: flex; align-items: center; gap: 4px;
         width: 100%; background: none; border: 0; cursor: pointer;
-        font-family: inherit; text-align: left;
+        font-family: inherit; text-align: start;
         border-radius: 6px;
       }
       button.tm-nav-head:hover { color: var(--tm-text); }
@@ -10884,7 +10902,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-shell-rail .tm-nav-icon, .tm-shell-rail .tm-nav-icon ha-icon { --mdc-icon-size: 20px; width: 20px; height: 20px; }
       .tm-shell-rail .tm-nav-badge { display: none; }
       .tm-shell-rail .tm-nav-badge-urgent {
-        display: block; position: absolute; top: 2px; right: 6px;
+        display: block; position: absolute; top: 2px; inset-inline-end: 6px;
         padding: 0 5px; font-size: 10px; line-height: 16px;
       }
 
@@ -10896,7 +10914,7 @@ class TaskMatePanel extends HTMLElement {
         height: 36px; padding: 0 10px;
         border-radius: 10px; border: 1px solid var(--tm-border);
         background: var(--tm-bg); color: var(--tm-text-faint);
-        font-family: inherit; font-size: 13px; cursor: text; text-align: left;
+        font-family: inherit; font-size: 13px; cursor: text; text-align: start;
       }
       .tm-search-btn:hover { border-color: var(--tm-accent-border); }
       .tm-search-btn ha-icon { --mdc-icon-size: 18px; flex-shrink: 0; }
@@ -10913,7 +10931,7 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-scope-btn {
         display: inline-flex; align-items: center; gap: 6px;
-        min-height: 30px; padding: 0 10px 0 3px; border-radius: 999px;
+        min-height: 30px; padding-block: 0; padding-inline: 3px 10px; border-radius: 999px;
         background: none; border: 0; cursor: pointer;
         font-family: inherit; font-size: 12.5px; color: var(--tm-text-muted);
       }
@@ -10937,7 +10955,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-new-btn { display: inline-flex; align-items: center; gap: 4px; }
       .tm-new-btn ha-icon { --mdc-icon-size: 18px; }
       .tm-new-menu {
-        position: absolute; right: 0; top: calc(100% + 6px); z-index: 40;
+        position: absolute; inset-inline-end: 0; top: calc(100% + 6px); z-index: 40;
         min-width: 210px; padding: 6px;
         background: var(--tm-surface-0); border: 1px solid var(--tm-border);
         border-radius: 12px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
@@ -10946,7 +10964,7 @@ class TaskMatePanel extends HTMLElement {
         display: flex; align-items: center; gap: 10px; width: 100%;
         padding: 9px 10px; border: 0; border-radius: 8px; background: none;
         font-family: inherit; font-size: 13.5px; color: var(--tm-text);
-        cursor: pointer; text-align: left;
+        cursor: pointer; text-align: start;
       }
       .tm-new-item:hover, .tm-new-item:focus-visible { background: var(--tm-surface-2); }
       .tm-new-item ha-icon { --mdc-icon-size: 18px; color: var(--tm-text-muted); }
@@ -10976,7 +10994,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-kid-main {
         display: flex; align-items: center; gap: 14px; min-width: 0;
         background: none; border: 0; padding: 0; cursor: pointer;
-        font-family: inherit; color: inherit; text-align: left;
+        font-family: inherit; color: inherit; text-align: start;
       }
       .tm-ring {
         --p: 0; width: 54px; height: 54px; border-radius: 50%; flex-shrink: 0;
@@ -10992,10 +11010,10 @@ class TaskMatePanel extends HTMLElement {
       .tm-kid-text { display: flex; flex-direction: column; min-width: 0; }
       .tm-kid-name { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .tm-kid-pts { font-size: 13px; color: var(--tm-text-muted); }
-      .tm-kid-pts strong { font-size: 18px; color: var(--tm-gold); margin-right: 2px; }
+      .tm-kid-pts strong { font-size: 18px; color: var(--tm-gold); margin-inline-end: 2px; }
       .tm-kid-adj { align-self: start; }
       .tm-kid-pills { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
-      .tm-kid-pills ha-icon { --mdc-icon-size: 13px; margin-right: 2px; }
+      .tm-kid-pills ha-icon { --mdc-icon-size: 13px; margin-inline-end: 2px; }
       .tm-today-cols {
         display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
         gap: 18px; align-items: start;
@@ -11010,7 +11028,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-today-quick .tm-btn { justify-content: flex-start; gap: 8px; }
       .tm-today-quick ha-icon { --mdc-icon-size: 18px; }
       .tm-seg {
-        margin-left: auto; display: inline-flex; padding: 2px; gap: 2px;
+        margin-inline-start: auto; display: inline-flex; padding: 2px; gap: 2px;
         border-radius: 8px; background: var(--tm-surface-2);
       }
       .tm-seg button {
@@ -11035,9 +11053,9 @@ class TaskMatePanel extends HTMLElement {
       .tm-board-none { color: var(--tm-text-vfaint); }
       .tm-bchip {
         display: inline-flex; align-items: center; gap: 7px; max-width: 100%;
-        background: none; border: 0; padding: 3px 4px; margin-left: -4px;
+        background: none; border: 0; padding: 3px 4px; margin-inline-start: -4px;
         border-radius: 6px; cursor: pointer;
-        font-family: inherit; font-size: 12.5px; color: var(--tm-text); text-align: left;
+        font-family: inherit; font-size: 12.5px; color: var(--tm-text); text-align: start;
       }
       button.tm-bchip:hover { background: var(--tm-surface-2); }
       .tm-bchip > span:not(.tm-sr) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -11107,7 +11125,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-pal-item {
         display: flex; align-items: center; gap: 12px; width: 100%;
         padding: 8px 16px; border: 0; background: none; cursor: pointer;
-        font-family: inherit; font-size: 14px; color: var(--tm-text); text-align: left;
+        font-family: inherit; font-size: 14px; color: var(--tm-text); text-align: start;
       }
       .tm-pal-item ha-icon { --mdc-icon-size: 18px; color: var(--tm-text-muted); flex-shrink: 0; }
       .tm-pal-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -11127,7 +11145,7 @@ class TaskMatePanel extends HTMLElement {
       }
       @media (max-width: 900px) {
         .tm-shell.tm-shell-rail { grid-template-columns: 1fr; }
-        .tm-search-btn { flex: 0 0 auto; width: 38px; height: 38px; margin: 0 0 0 auto; padding: 0; justify-content: center; border: 0; background: none; color: var(--tm-text-muted); }
+        .tm-search-btn { flex: 0 0 auto; width: 38px; height: 38px; margin-block: 0; margin-inline: auto 0; padding: 0; justify-content: center; border: 0; background: none; color: var(--tm-text-muted); }
         .tm-search-btn-text, .tm-search-btn kbd, .tm-new-text { display: none; }
         .tm-approval-pill { display: none; }
         .tm-new-btn { width: 38px; height: 38px; padding: 0; justify-content: center; border-radius: 10px; }
@@ -11156,7 +11174,7 @@ class TaskMatePanel extends HTMLElement {
         .tm-bnav-item ha-icon { --mdc-icon-size: 22px; }
         .tm-bnav-on { color: var(--tm-accent-text); }
         .tm-bnav-dot {
-          position: absolute; top: 6px; left: calc(50% + 6px);
+          position: absolute; top: 6px; inset-inline-start: calc(50% + 6px);
           min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
           background: var(--tm-warning); color: #fff;
           font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
