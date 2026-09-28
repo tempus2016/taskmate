@@ -1091,6 +1091,12 @@ class TaskMatePanel extends HTMLElement {
       } else {
         this._dialog.data[field] = value;
       }
+      // Inspection pass (#997): relabel the button as the bonus is typed,
+      // without a re-render that would steal the input's focus.
+      if (this._dialog.kind === "insp-pass" && field === "bonus") {
+        const btn = this.querySelector('[data-act="insp-pass-save"]');
+        if (btn) btn.textContent = this._inspPassLabel(value);
+      }
       return;
     }
   }
@@ -1563,9 +1569,44 @@ class TaskMatePanel extends HTMLElement {
     return (this._state && this._state.settings && this._state.settings.inspection_bedtime) || "20:00";
   }
 
-  _inspWindowLabel(w) {
-    if (w === "bed") return this._t("panel.insp_window_bed", { time: this._inspBedtime() });
+  _inspWindowLabel(w, bed = null) {
+    if (w === "bed") return this._t("panel.insp_window_bed", { time: bed ? bed.time : this._inspBedtime() });
     return this._t(`panel.insp_window_${w}`);
+  }
+
+  // When "Until bedtime" started at `now` really closes (#997). Mirrors the
+  // server's inspection_until: bedtime today in HA's time zone, or the
+  // fallback when that's under min_minutes away. Both numbers come from the
+  // server (inspection_bed_rule) so the two can't drift.
+  _inspBedUntil(now = Date.now()) {
+    const rule = (this._state && this._state.inspection_bed_rule) || {};
+    const minMinutes = Number.isFinite(rule.min_minutes) ? rule.min_minutes : 30;
+    const fallbackHours = Number.isFinite(rule.fallback_hours) ? rule.fallback_hours : 1;
+    const tz = (this._hass && this._hass.config && this._hass.config.time_zone) || undefined;
+    let fmt;
+    try {
+      fmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit",
+        day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    } catch (_e) {
+      fmt = new Intl.DateTimeFormat("en-US", { hourCycle: "h23", year: "numeric", month: "2-digit",
+        day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+    const wall = (ms) => {
+      const p = {};
+      for (const { type, value } of fmt.formatToParts(new Date(ms))) p[type] = Number(value);
+      return p;
+    };
+    const p = wall(now);
+    const nowSec = Math.floor(now / 1000) * 1000;
+    // The zone's offset right now, as wall-clock minus UTC.
+    const offset = Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second) - nowSec;
+    const [bh, bm] = this._inspBedtime().split(":").map(Number);
+    const bedtime = Date.UTC(p.year, p.month - 1, p.day, bh || 0, bm || 0) - offset;
+    const fallback = bedtime - now < minMinutes * 60000;
+    const at = fallback ? now + fallbackHours * 3600000 : bedtime;
+    const w = wall(at);
+    const time = `${String(w.hour % 24).padStart(2, "0")}:${String(w.minute).padStart(2, "0")}`;
+    return { at, time, fallback, minutes: minMinutes };
   }
 
   // The tag / magnifier shown beside an approved completion.
@@ -1694,14 +1735,19 @@ class TaskMatePanel extends HTMLElement {
 
   _renderInspectionStartDialog() {
     const d = this._dialog.data;
+    const bed = this._inspBedUntil();
+    const bedSoon = d.window === "bed" && bed.fallback
+      ? `<p class="tm-field-hint tm-insp-hint"><ha-icon icon="mdi:information-outline"></ha-icon>${this._esc(this._t("panel.insp_window_bed_soon", { bedtime: this._inspBedtime(), minutes: bed.minutes, time: bed.time }))}</p>`
+      : "";
     const body = `
       ${this._inspDialogCtx(d)}
       <div class="tm-field">
         <span class="tm-field-label">${this._t("panel.insp_window_label")}</span>
         <div class="tm-chip-row">
           ${["1h", "2h", "4h", "bed"].map(w => `<button type="button" class="tm-chip-btn ${d.window === w ? "tm-chip-on" : ""}" aria-pressed="${d.window === w}"
-            data-act="insp-window" data-window="${w}">${this._esc(this._inspWindowLabel(w))}</button>`).join("")}
+            data-act="insp-window" data-window="${w}">${this._esc(this._inspWindowLabel(w, bed))}</button>`).join("")}
         </div>
+        ${bedSoon}
       </div>
       <div class="tm-field">
         <span class="tm-field-label">${this._t("panel.insp_bonus_label")}</span>
@@ -1733,8 +1779,14 @@ class TaskMatePanel extends HTMLElement {
       this._t("panel.insp_pass_title"),
       body,
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
-       <button type="button" class="tm-btn tm-btn-raised" data-act="insp-pass-save">${this._t("panel.insp_pass_btn", { bonus: this._num(d.bonus || 0) })}</button>`
+       <button type="button" class="tm-btn tm-btn-raised" data-act="insp-pass-save">${this._inspPassLabel(d.bonus)}</button>`
     );
+  }
+
+  // The pass button names the bonus that will be paid — the same rounding
+  // and clamp insp-pass-save sends, so it can't show a stale amount (#997).
+  _inspPassLabel(bonus) {
+    return this._t("panel.insp_pass_btn", { bonus: this._num(Math.max(0, Math.min(10000, Math.round(Number(bonus) || 0)))) });
   }
 
   _renderInspectionFailDialog() {

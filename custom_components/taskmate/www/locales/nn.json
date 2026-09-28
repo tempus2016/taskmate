@@ -417,6 +417,7 @@
   "panel.insp_window_2h": "2 timar",
   "panel.insp_window_4h": "4 timar",
   "panel.insp_window_bed": "Til {time}",
+  "panel.insp_window_bed_soon": "Leggjetid ({bedtime}) er under {minutes} minutt unna, så han vert stengd kl. {time} i staden.",
   "panel.insp_bonus_label": "Bonus om ho står",
   "panel.insp_bonus": "Bonus",
   "panel.insp_tell_label": "Sei frå til {name} no",

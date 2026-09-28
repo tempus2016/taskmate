@@ -417,6 +417,7 @@
   "panel.insp_window_2h": "2 timer",
   "panel.insp_window_4h": "4 timer",
   "panel.insp_window_bed": "Til {time}",
+  "panel.insp_window_bed_soon": "Leggetid ({bedtime}) er under {minutes} minutter unna, så den lukkes kl. {time} i stedet.",
   "panel.insp_bonus_label": "Bonus hvis den består",
   "panel.insp_bonus": "Bonus",
   "panel.insp_tell_label": "Si fra til {name} nå",

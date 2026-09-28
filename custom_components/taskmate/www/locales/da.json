@@ -428,6 +428,7 @@
   "panel.insp_window_2h": "2 timer",
   "panel.insp_window_4h": "4 timer",
   "panel.insp_window_bed": "Indtil {time}",
+  "panel.insp_window_bed_soon": "Sengetid ({bedtime}) er under {minutes} minutter væk, så den lukker kl. {time} i stedet.",
   "panel.insp_bonus_label": "Bonus hvis den består",
   "panel.insp_bonus": "Bonus",
   "panel.insp_tell_label": "Fortæl {name} det nu",

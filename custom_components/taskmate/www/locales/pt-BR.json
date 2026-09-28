@@ -417,6 +417,7 @@
   "panel.insp_window_2h": "2 horas",
   "panel.insp_window_4h": "4 horas",
   "panel.insp_window_bed": "Até {time}",
+  "panel.insp_window_bed_soon": "A hora de dormir ({bedtime}) é daqui a menos de {minutes} minutos, então termina às {time}.",
   "panel.insp_bonus_label": "Bônus se passar",
   "panel.insp_bonus": "Bônus",
   "panel.insp_tell_label": "Avisar {name} agora",

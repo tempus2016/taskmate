@@ -109,6 +109,22 @@ class CalendarMixin:
         start_t, end_t = window
         return datetime.combine(today, start_t), datetime.combine(today, end_t)
 
+    # A chore with a due_time shows as a short event starting then (#993).
+    _DUE_TIME_EVENT_MINUTES = 30
+
+    def _chore_event_window(self, chore: Chore, day: date) -> tuple[datetime, datetime] | None:
+        """Return the (start, end) a chore's event covers on ``day``, or None for all-day.
+
+        A valid due_time wins: the event starts at it and lasts
+        ``_DUE_TIME_EVENT_MINUTES`` (possibly past midnight). Without one, the
+        event spans the chore's time-of-day period, or the whole day for anytime.
+        """
+        due = self._parse_hhmm(getattr(chore, "due_time", "") or "")
+        if due is not None:
+            start = datetime.combine(day, due)
+            return start, start + timedelta(minutes=self._DUE_TIME_EVENT_MINUTES)
+        return self._time_category_window(getattr(chore, "time_category", "anytime"), day)
+
     def _chore_event_marker(self, chore: Chore) -> str:
         """Marker stitched into the event description so we can find our own events."""
         return f"taskmate:chore:{chore.id}"
@@ -263,7 +279,7 @@ class CalendarMixin:
     def _build_event_payload(self, chore: Chore, day: date, summary: str) -> dict:
         """Build the calendar.create_event payload for one (chore, day)."""
         description = self._chore_event_marker(chore)
-        window = self._time_category_window(getattr(chore, "time_category", "anytime"), day)
+        window = self._chore_event_window(chore, day)
         if window is None:
             return {
                 "summary": summary,
@@ -467,7 +483,7 @@ class CalendarMixin:
 
     def _occurrence_start_time(self, chore: Chore, day: date) -> time | None:
         """The start time the calendar shows for ``chore`` on ``day`` (None = all-day)."""
-        window = self._time_category_window(getattr(chore, "time_category", "anytime"), day)
+        window = self._chore_event_window(chore, day)
         return window[0].time() if window else None
 
     def _prune_moved_occurrences(self, moved: dict[str, str], today: date) -> dict[str, str]:

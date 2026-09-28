@@ -323,6 +323,11 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
             recent = {src: dst for src, dst in moved.items() if src >= moved_floor or (dst and dst >= moved_floor)}
             if recent:
                 record["moved_occurrences"] = recent
+        # A one-off belongs to its own date only (#992) — a calendar-added one
+        # for later in the week, or yesterday's before the midnight sweep. Same
+        # flag, so every card's today filter drops it as the backend does.
+        if record["schedule_mode"] == "one_shot" and record["enabled"] and _one_off_not_today(c, today):
+            record["occ_today"] = False
         # Won at auction (#982). Only chores with a won occurrence this week
         # carry these: `auction` settles today for the cards (the winner alone,
         # at the winning price, which is also what the chore pays today); the
@@ -330,6 +335,8 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         wins = coordinator.auction_wins_for_chore(c, today, 7)
         if isinstance(wins, dict) and wins:
             record["auction_wins"] = {day: w["child_id"] for day, w in wins.items()}
+            # What each won day pays, so a future one shows it too (#998).
+            record["auction_prices"] = {day: w["points"] for day, w in wins.items()}
             today_win = wins.get(today.isoformat())
             if today_win:
                 record["auction"] = today_win
@@ -420,6 +427,21 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
             record["bonus_subtasks"] = [{"id": b.id, "name": b.name, "points": b.points} for b in bonus_subtasks]
         chores_list.append(record)
     return chores_list
+
+
+def _one_off_not_today(chore, today: date) -> bool:
+    """True when a one-off chore is dated for a day other than ``today``.
+
+    Mirrors the one_shot branch of is_chore_available_for_child: no date, or
+    one that doesn't parse, counts as today.
+    """
+    created_date = getattr(chore, "created_date", "") or ""
+    if not created_date:
+        return False
+    try:
+        return date.fromisoformat(created_date) != today
+    except ValueError:
+        return False
 
 
 def _build_chore_availability(coordinator: TaskMateCoordinator, common: dict) -> dict:

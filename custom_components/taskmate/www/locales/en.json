@@ -428,6 +428,7 @@
   "panel.insp_window_2h": "2 hours",
   "panel.insp_window_4h": "4 hours",
   "panel.insp_window_bed": "Until {time}",
+  "panel.insp_window_bed_soon": "Bedtime ({bedtime}) is less than {minutes} minutes away, so this closes at {time} instead.",
   "panel.insp_bonus_label": "Bonus if it passes",
   "panel.insp_bonus": "Bonus",
   "panel.insp_tell_label": "Tell {name} now",

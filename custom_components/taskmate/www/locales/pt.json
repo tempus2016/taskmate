@@ -422,6 +422,7 @@
   "panel.insp_window_2h": "2 horas",
   "panel.insp_window_4h": "4 horas",
   "panel.insp_window_bed": "Até às {time}",
+  "panel.insp_window_bed_soon": "A hora de deitar ({bedtime}) é daqui a menos de {minutes} minutos, por isso termina às {time}.",
   "panel.insp_bonus_label": "Bónus se passar",
   "panel.insp_bonus": "Bónus",
   "panel.insp_tell_label": "Avisar {name} agora",

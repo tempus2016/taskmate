@@ -417,6 +417,7 @@
   "panel.insp_window_2h": "2 Stunden",
   "panel.insp_window_4h": "4 Stunden",
   "panel.insp_window_bed": "Bis {time}",
+  "panel.insp_window_bed_soon": "Schlafenszeit ({bedtime}) ist weniger als {minutes} Minuten entfernt, daher endet sie stattdessen um {time}.",
   "panel.insp_bonus_label": "Bonus, wenn sie besteht",
   "panel.insp_bonus": "Bonus",
   "panel.insp_tell_label": "{name} jetzt informieren",
