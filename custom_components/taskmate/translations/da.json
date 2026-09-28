@@ -15,6 +15,9 @@
     },
     "abort": {
       "already_configured": "TaskMate er allerede konfigureret"
+    },
+    "create_entry": {
+      "default": "TaskMate er klar. [Åbn TaskMate-panelet](/taskmate-admin) for at tilføje dine børn med opsætningsguiden, som foreslår pligter efter deres alder."
     }
   },
   "selector": {

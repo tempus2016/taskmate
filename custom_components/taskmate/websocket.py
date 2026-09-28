@@ -62,6 +62,7 @@ from homeassistant.core import HomeAssistant
 
 from . import images, photos
 from .const import (
+    AGE_GROUPS,
     ASSIGNMENT_MODES,
     BOUNTY_CLAIM_HOURS_DEFAULT,
     BOUNTY_CLAIM_HOURS_MAX,
@@ -112,6 +113,10 @@ WS_REPORT_QUALITY: Final = "taskmate/reports/quality"
 WS_SCHEDULED_LIST: Final = "taskmate/scheduled/list"
 WS_SCHEDULED_ADD: Final = "taskmate/scheduled/add"
 WS_SCHEDULED_REMOVE: Final = "taskmate/scheduled/remove"
+
+# Setup wizard (#980); the handlers live in websocket_setup.py.
+WS_SETUP_CATALOGUE: Final = "taskmate/setup_wizard/catalogue"
+WS_SETUP_APPLY: Final = "taskmate/setup_wizard/apply"
 
 WS_ADD_REWARD: Final = "taskmate/add_reward"
 WS_UPDATE_REWARD: Final = "taskmate/update_reward"
@@ -243,6 +248,7 @@ _AUDIT_EXCLUDE: Final = {
     WS_REPORT_PROJECTION,
     WS_REPORT_HEALTH,
     WS_REPORT_QUALITY,
+    WS_SETUP_CATALOGUE,
 }
 
 
@@ -470,6 +476,7 @@ async def _ws_get_state(hass, connection, msg, coordinator):
         vol.Optional("linked_user_id", default=""): str,
         vol.Optional("birthday", default=""): vol.All(str, vol.Length(max=10)),
         vol.Optional("presence_entity", default=""): _validate_presence_entity,
+        vol.Optional("age_group", default=""): vol.In(("", *AGE_GROUPS)),
     }
 )
 @websocket_api.async_response
@@ -490,6 +497,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         linked_user_id=_opt_str(msg.get("linked_user_id")),
         birthday=birthday,
         presence_entity=msg.get("presence_entity", ""),
+        age_group=msg.get("age_group", ""),
     )
     connection.send_result(msg["id"], {"id": child.id})
 
@@ -509,6 +517,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         vol.Optional("is_guest"): bool,
         vol.Optional("guest_expires_on"): str,
         vol.Optional("birthday"): vol.All(str, vol.Length(max=10)),
+        vol.Optional("age_group"): vol.In(("", *AGE_GROUPS)),
     }
 )
 @websocket_api.async_response
@@ -540,6 +549,8 @@ async def _ws_update_child(hass, connection, msg, coordinator):
             return
     if "presence_entity" in msg:
         existing.presence_entity = msg["presence_entity"]
+    if "age_group" in msg:
+        existing.age_group = msg["age_group"]
     if "is_guest" in msg or "guest_expires_on" in msg:
         # Routed through the coordinator so the expiry is validated and an
         # archived guest is un-archived when promoted to a family member.
@@ -3160,10 +3171,10 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     # _admin_only / _get_coordinator helpers.
     from .kiosk import KIOSK_COMMANDS
     from .websocket_recaps import RECAP_COMMANDS
+    from .websocket_setup import SETUP_COMMANDS
 
-    for cmd in (*_COMMANDS, *KIOSK_COMMANDS, *RECAP_COMMANDS):
+    extra = (*KIOSK_COMMANDS, *RECAP_COMMANDS, *SETUP_COMMANDS)
+    for cmd in (*_COMMANDS, *extra):
         websocket_api.async_register_command(hass, cmd)
     hass.data.setdefault(DOMAIN, {})[WS_REGISTERED] = True
-    _LOGGER.info(
-        "Registered %d TaskMate WebSocket commands", len(_COMMANDS) + len(KIOSK_COMMANDS) + len(RECAP_COMMANDS)
-    )
+    _LOGGER.info("Registered %d TaskMate WebSocket commands", len(_COMMANDS) + len(extra))

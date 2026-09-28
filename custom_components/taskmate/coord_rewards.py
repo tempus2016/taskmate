@@ -99,8 +99,9 @@ class RewardsMixin:
         pool_enabled: bool = False,
         quantity: int | None = None,
         expires_at: str | None = None,
+        refresh: bool = True,
     ) -> Reward:
-        """Add a new reward."""
+        """Add a new reward. ``refresh=False`` defers the refresh to a batch."""
         reward = Reward(
             name=name,
             cost=cost,
@@ -114,7 +115,8 @@ class RewardsMixin:
         )
         self.storage.add_reward(reward)
         await self.storage.async_save()
-        await self.async_refresh()
+        if refresh:
+            await self.async_refresh()
         return reward
 
     async def async_update_reward(self, reward: Reward) -> None:

@@ -37,7 +37,10 @@
     "points_display.editor.show_streak",
     "points_display.editor.title_placeholder",
     "points_display.streak",
-    "rewards.jackpot"
+    "rewards.jackpot",
+    "wizard.avatar",
+    "wizard.one_dashboard",
+    "wizard.tips"
   ],
   "de.json": [
     "activity.reason_bonus",
@@ -81,7 +84,9 @@
     "penalties.form_name_label",
     "points_card.quick_label_add",
     "points_card.quick_label_remove",
-    "rewards.jackpot"
+    "rewards.jackpot",
+    "wizard.avatar",
+    "wizard.name"
   ],
   "fr.json": [
     "approvals.timed_duration",
@@ -159,7 +164,9 @@
     "points_display.editor.title_placeholder",
     "points_display.points_label",
     "points_display.weekly_pts",
-    "rewards.jackpot"
+    "rewards.jackpot",
+    "wizard.avatar",
+    "wizard.pname_points"
   ],
   "nb.json": [
     "activity.reason_bonus",
@@ -195,7 +202,9 @@
     "points_card.quick_label_add",
     "points_card.quick_label_remove",
     "points_display.editor.title_placeholder",
-    "rewards.jackpot"
+    "rewards.jackpot",
+    "wizard.avatar",
+    "wizard.tips"
   ],
   "nn.json": [
     "activity.reason_bonus",
@@ -234,7 +243,9 @@
     "points_card.quick_label_remove",
     "points_display.editor.title_placeholder",
     "rewards.jackpot",
-    "weekly.day_sun"
+    "weekly.day_sun",
+    "wizard.avatar",
+    "wizard.tips"
   ],
   "pt-BR.json": [
     "approvals.timed_duration",
@@ -266,7 +277,8 @@
     "points_card.quick_label_add",
     "points_card.quick_label_remove",
     "points_display.weekly_pts",
-    "rewards.jackpot"
+    "rewards.jackpot",
+    "wizard.avatar"
   ],
   "pt.json": [
     "approvals.timed_duration",
@@ -295,6 +307,7 @@
     "points_card.quick_label_add",
     "points_card.quick_label_remove",
     "points_display.weekly_pts",
-    "rewards.jackpot"
+    "rewards.jackpot",
+    "wizard.avatar"
   ]
 }

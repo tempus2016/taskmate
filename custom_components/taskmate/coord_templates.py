@@ -54,8 +54,11 @@ class TemplatesMixin:
                 return dict(tpl)
         return self.storage.get_custom_template(template_id)
 
-    async def async_apply_template(self, chores: list[dict]) -> list[str]:
-        """Create chores from a template's chore definitions. Returns created IDs."""
+    async def async_apply_template(self, chores: list[dict], refresh: bool = True) -> list[str]:
+        """Create chores from a template's chore definitions. Returns created IDs.
+
+        ``refresh=False`` defers the refresh to a batch (the setup wizard, #980).
+        """
         if not chores:
             raise ValueError("Cannot apply template with no chores")
         created_ids = []
@@ -90,10 +93,15 @@ class TemplatesMixin:
                 timed_rate_minutes=chore_def.get("timed_rate_minutes", 5),
                 timed_max_daily_minutes=chore_def.get("timed_max_daily_minutes", 0),
             )
+            # The setup wizard's suggestions carry an icon (#980); template
+            # packs don't, and keep the chore's default.
+            if chore_def.get("icon"):
+                chore.icon = chore_def["icon"]
             self.storage.add_chore(chore)
             created_ids.append(chore.id)
         await self.storage.async_save()
-        await self.async_refresh()
+        if refresh:
+            await self.async_refresh()
         return created_ids
 
     async def async_save_template_from_chores(self, chore_ids: list[str], name: str, icon: str) -> str:

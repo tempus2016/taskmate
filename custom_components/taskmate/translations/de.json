@@ -15,6 +15,9 @@
     },
     "abort": {
       "already_configured": "TaskMate ist bereits konfiguriert"
+    },
+    "create_entry": {
+      "default": "TaskMate ist bereit. [Öffnen Sie das TaskMate-Panel](/taskmate-admin), um Ihre Kinder mit dem Einrichtungsassistenten hinzuzufügen, der altersgerechte Aufgaben vorschlägt."
     }
   },
   "selector": {

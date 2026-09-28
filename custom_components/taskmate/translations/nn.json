@@ -15,6 +15,9 @@
     },
     "abort": {
       "already_configured": "TaskMate er allereie konfigurert"
+    },
+    "create_entry": {
+      "default": "TaskMate er klar. [Opne TaskMate-panelet](/taskmate-admin) for å leggje til borna dine med oppsettsvegvisaren, som føreslår oppgåver etter alderen deira."
     }
   },
   "selector": {

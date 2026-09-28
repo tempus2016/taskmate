@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from typing import Any
 
-from .const import BOUNTY_STATUSES, MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
+from .const import AGE_GROUPS, BOUNTY_STATUSES, MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -197,6 +197,11 @@ class BonusSubTask:
         }
 
 
+def normalize_age_group(value: Any) -> str:
+    """A stored age group (#980): one of AGE_GROUPS, anything else is none ("")."""
+    return value if isinstance(value, str) and value in AGE_GROUPS else ""
+
+
 @dataclass
 class Child:
     """Represents a child."""
@@ -240,6 +245,9 @@ class Child:
     guest_expires_on: str = ""  # ISO date; profile auto-archives the day after
     # Birthday mode (#924): "YYYY-MM-DD", or "MM-DD" when no age should show.
     birthday: str = ""
+    # Setup wizard age group (#980): one of AGE_GROUPS, or "" when none was
+    # picked (every child that predates the wizard). Only steers suggestions.
+    age_group: str = ""
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -265,6 +273,7 @@ class Child:
             is_guest=bool(data.get("is_guest", False)),
             guest_expires_on=str(data.get("guest_expires_on", "") or ""),
             birthday=str(data.get("birthday", "") or ""),
+            age_group=normalize_age_group(data.get("age_group")),
             availability_entity=data.get("availability_entity", ""),
             availability_inverted=data.get("availability_inverted", False),
             unavailability_entity=data.get("unavailability_entity", ""),
@@ -302,6 +311,7 @@ class Child:
             "is_guest": self.is_guest,
             "guest_expires_on": self.guest_expires_on,
             "birthday": self.birthday,
+            "age_group": self.age_group,
             "availability_entity": self.availability_entity,
             "availability_inverted": self.availability_inverted,
             "unavailability_entity": self.unavailability_entity,
