@@ -422,7 +422,7 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
                 for chore in chores:
                     if not _chore_applies_to_child(coord, chore, child.id, day):
                         continue
-                    window = coord._time_category_window(getattr(chore, "time_category", "anytime"), day)
+                    window = coord._chore_event_window(chore, day)
                     desc = _chore_description(chore)
                     # The uid names the scheduled date, so an edit finds the
                     # occurrence again even after it has been moved (#977).

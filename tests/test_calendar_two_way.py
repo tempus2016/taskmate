@@ -206,6 +206,108 @@ class TestProjection:
         assert _parse_occurrence_uid("taskmate-chore:abc:not-a-date", None) is None
 
 
+# ── Timed events start at the chore's due time (#993) ────────────────────
+
+
+class TestDueTimeEvents:
+    """A chore with a due_time shows as a 30-minute event starting then (#993)."""
+
+    async def test_entity_event_starts_at_due_time(self, hass):
+        chore = Chore(name="Bins", due_days=["monday"], time_category="evening", due_time="17:30")
+        coord = await _coord(hass, [chore])
+        ev = _event(_cal(coord), MON, "Bins")
+        assert (ev.start.hour, ev.start.minute) == (17, 30)
+        assert ev.end - ev.start == dt.timedelta(minutes=30)
+        assert ev.start.date() == MON and ev.start.tzinfo is not None
+
+    async def test_anytime_chore_with_due_time_is_timed(self, hass):
+        chore = Chore(name="Meds", due_days=["monday"], time_category="anytime", due_time="08:15")
+        coord = await _coord(hass, [chore])
+        ev = _event(_cal(coord), MON, "Meds")
+        assert isinstance(ev.start, dt.datetime) and (ev.start.hour, ev.start.minute) == (8, 15)
+
+    async def test_without_due_time_keeps_period_window(self, hass):
+        chore = Chore(name="Bins", due_days=["monday"], time_category="evening")
+        coord = await _coord(hass, [chore])
+        ev = _event(_cal(coord), MON, "Bins")
+        assert (ev.start.hour, ev.end.hour) == (17, 21)
+
+    async def test_invalid_due_time_falls_back_to_period(self, hass):
+        chore = Chore(name="Bins", due_days=["monday"], time_category="evening", due_time="junk")
+        coord = await _coord(hass, [chore])
+        ev = _event(_cal(coord), MON, "Bins")
+        assert (ev.start.hour, ev.end.hour) == (17, 21)
+
+    async def test_late_due_time_runs_past_midnight(self, hass):
+        chore = Chore(name="Lock up", due_days=["monday"], time_category="evening", due_time="23:45")
+        coord = await _coord(hass, [chore])
+        ev = _event(_cal(coord), MON, "Lock up")
+        assert ev.start.date() == MON and ev.end.date() == TUE
+        assert (ev.end.hour, ev.end.minute) == (0, 15)
+
+    async def test_ics_event_starts_at_due_time(self, hass):
+        chore = Chore(name="Bins", due_days=["monday"], time_category="evening", due_time="17:30")
+        coord = await _coord(hass, [chore])
+        [ev] = [e for e in ics.build_chore_events(coord, MON, MON) if e["summary"] == "Bins — Alex"]
+        assert ev["all_day"] is False
+        assert (ev["start"].hour, ev["start"].minute) == (17, 30)
+        assert ev["end"] - ev["start"] == dt.timedelta(minutes=30)
+
+    async def test_published_event_starts_at_due_time(self, hass):
+        chore = Chore(
+            name="Bins",
+            due_days=["monday"],
+            time_category="evening",
+            due_time="17:30",
+            assigned_to=["alex"],
+        )
+        coord = await _coord(hass, [chore])
+        payload = coord._build_event_payload(chore, MON, "Bins — Alex")
+        assert payload["start_date_time"] == "2026-06-22T17:30:00"
+        assert payload["end_date_time"] == "2026-06-22T18:00:00"
+
+    async def test_one_off_moved_by_calendar_keeps_the_new_time(self, hass):
+        cal_coord = await _coord(hass)
+        cal = _cal(cal_coord)
+        await _run_as(PARENT, cal.async_create_event(dtstart=_at(WED, 17), dtend=_at(WED, 18), summary="Walk dog"))
+        [chore] = cal_coord.storage.get_chores()
+        uid = _occurrence_uid(chore.id, WED)
+        start = dt.datetime.combine(THU, dt.time(9, 0), tzinfo=UTC)
+        await _run_as(
+            PARENT,
+            cal.async_update_event(
+                uid, {"dtstart": start, "dtend": start + dt.timedelta(minutes=30), "summary": "Walk dog"}
+            ),
+        )
+        ev = _event(cal, THU, "Walk dog")
+        assert (ev.start.hour, ev.start.minute) == (9, 0)
+
+    async def test_series_occurrence_moved_keeps_due_time(self, hass):
+        chore = Chore(name="Bins", due_days=["monday"], time_category="evening", due_time="17:30")
+        coord = await _coord(hass, [chore])
+        cal = _cal(coord)
+        start = dt.datetime.combine(WED, dt.time(17, 30), tzinfo=UTC)
+        # Dragging the 17:30 event to Wednesday at the same time is a plain date move.
+        await _run_as(
+            PARENT,
+            cal.async_update_event(
+                _occurrence_uid(chore.id, MON),
+                {"dtstart": start, "dtend": start + dt.timedelta(minutes=30), "summary": "Bins"},
+                recurrence_id="2026-06-22",
+            ),
+        )
+        assert coord.storage.get_chore(chore.id).moved_occurrences == {"2026-06-22": "2026-06-24"}
+        ev = _event(cal, WED, "Bins")
+        assert (ev.start.hour, ev.start.minute) == (17, 30)
+        [ics_ev] = [e for e in ics.build_chore_events(coord, WED, WED) if e["summary"] == "Bins — Alex"]
+        assert (ics_ev["start"].hour, ics_ev["start"].minute) == (17, 30)
+        # A different time on a series is still the chore's, not the occurrence's.
+        other = dt.datetime.combine(THU, dt.time(9, 0), tzinfo=UTC)
+        with pytest.raises(FakeServiceValidationError) as err:
+            await coord.async_move_chore_occurrence(chore.id, MON, THU, start_time=other.time(), all_day=False)
+        assert err.value.translation_key == "calendar_time_follows_chore"
+
+
 # ── Today's availability (cards, todo, reminders, completion gate) ───────
 
 

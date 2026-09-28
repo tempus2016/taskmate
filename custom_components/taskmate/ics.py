@@ -105,7 +105,7 @@ def build_chore_events(coordinator, start_day: date, end_day: date) -> list[dict
                 for chore in chores:
                     if not _chore_applies_to_child(coordinator, chore, child.id, day):
                         continue
-                    window = coordinator._time_category_window(getattr(chore, "time_category", "anytime"), day)
+                    window = coordinator._chore_event_window(chore, day)
                     summary = f"{chore.name} — {child.name}"
                     desc = _chore_description(chore)
                     if window is None:
