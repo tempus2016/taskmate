@@ -422,12 +422,41 @@
    * computeRTL reads); for a language it has no metadata for, follow the
    * direction HA already gave the page.
    */
+  let _lastDir = "ltr";
   function direction(hass) {
     const lang = hass && hass.language;
     const meta = hass && hass.translationMetadata && hass.translationMetadata.translations;
-    if (lang && meta && meta[lang]) return meta[lang].isRTL ? "rtl" : "ltr";
     const root = typeof document !== "undefined" && document.documentElement;
-    return root && root.dir === "rtl" ? "rtl" : "ltr";
+    if (lang && meta && meta[lang]) _lastDir = meta[lang].isRTL ? "rtl" : "ltr";
+    else _lastDir = root && root.dir === "rtl" ? "rtl" : "ltr";
+    return _lastDir;
+  }
+
+  /**
+   * Keep number runs reading left to right inside right-to-left text (#995).
+   * "3 / 1", "1,200 / 5,000" and "3-day" are one unit each, but the Unicode
+   * bidi algorithm lays their parts out right to left in an RTL paragraph, so
+   * "3 / 1" shows as "1 / 3" and "3-Day Streak" as "Day Streak-3". Each run is
+   * wrapped in a left-to-right isolate, and a label holding one, or opening
+   * with a number ("2 of 5 done", which otherwise reads "of 5 done 2"), is
+   * wrapped in a first-strong isolate so it keeps its own reading order (an
+   * English label stays English-ordered, a translated RTL one stays RTL). The
+   * isolates (U+2066/2068 … U+2069) are invisible, but splitting a text run
+   * still nudges glyph positioning by a sub-pixel, so they are only added
+   * while the page is right-to-left: the direction last resolved by
+   * direction(), which every card calls through apply() at the top of
+   * render() and the panel calls in its hass setter (HA has one language per
+   * page). In LTR, and for text with no number run that doesn't open with a
+   * number, the value comes back untouched. Works on plain strings: Lit text,
+   * the panel's HTML strings and translated messages alike.
+   */
+  const _NUM = String.raw`\p{Nd}+(?:[.,\u066B\u066C]\p{Nd}+)*`;
+  const _NUM_RUN = new RegExp(String.raw`${_NUM}(?:\s*\/\s*${_NUM})+|(?<![\p{L}-])${_NUM}-\p{L}+`, "gu");
+  function ltrNums(text) {
+    if (text === null || text === undefined || _lastDir !== "rtl") return text;
+    const s = String(text);
+    const out = s.replace(_NUM_RUN, (run) => "\u2066" + run + "\u2069");
+    return out === s && !/^\p{Nd}/u.test(s) ? s : "\u2068" + out + "\u2069";
   }
 
   /**
@@ -508,7 +537,7 @@
     `;
   }
 
-  window.__taskmate_design = { IDS, resolve, isDark, direction, apply, active, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker };
+  window.__taskmate_design = { IDS, resolve, isDark, direction, ltrNums, apply, active, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker };
 
   /**
    * The single place that decides what a chore looks like (#750).

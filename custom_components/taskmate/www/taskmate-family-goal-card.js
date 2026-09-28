@@ -18,6 +18,16 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+// Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
+// identity until the design layer has loaded (it is also what stamps dir).
+const _ltrNums = (s) => (window.__taskmate_design && window.__taskmate_design.ltrNums ? window.__taskmate_design.ltrNums(s) : s);
+// "a / b" for a template: the same text nodes as a literal `${a} / ${b}` in
+// LTR (so it renders pixel-for-pixel as before), the isolated string in RTL.
+const _ltrRatio = (a, b) => {
+  const s = `${a} / ${b}`;
+  const r = _ltrNums(s);
+  return r === s ? html`${a} / ${b}` : r;
+};
 const DEFAULT_ACCENT = "#16a085";
 
 class TaskMateFamilyGoalCard extends LitElement {
@@ -93,7 +103,7 @@ class TaskMateFamilyGoalCard extends LitElement {
         <div class="fg-body">
           <div class="fg-bar"><div class="fg-fill ${achieved ? "done" : ""}" style="width:${pct}%"></div></div>
           <div class="fg-stats">
-            <span>${progress} / ${target} ${pointsName}</span>
+            <span>${_ltrRatio(progress, target)} ${pointsName}</span>
             <span>${pct}%</span>
           </div>
           ${achieved

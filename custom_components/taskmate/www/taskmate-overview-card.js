@@ -15,6 +15,16 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+// Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
+// identity until the design layer has loaded (it is also what stamps dir).
+const _ltrNums = (s) => (window.__taskmate_design && window.__taskmate_design.ltrNums ? window.__taskmate_design.ltrNums(s) : s);
+// "a / b" for a template: the same text nodes as a literal `${a} / ${b}` in
+// LTR (so it renders pixel-for-pixel as before), the isolated string in RTL.
+const _ltrRatio = (a, b) => {
+  const s = `${a} / ${b}`;
+  const r = _ltrNums(s);
+  return r === s ? html`${a} / ${b}` : r;
+};
 
 class TaskMateOverviewCard extends LitElement {
   static get properties() {
@@ -688,7 +698,7 @@ class TaskMateOverviewCard extends LitElement {
         <div class="divide"></div>
         <div class="ov-today cp">
           <span class="lbl">${this._t("overview.designed.todays_progress")}</span>
-          <span class="val num">${this._t("overview.designed.progress_detail", { done, total, pct })}</span>
+          <span class="val num">${_ltrNums(this._t("overview.designed.progress_detail", { done, total, pct }))}</span>
         </div>`;
     }
     const lbl = design === "console"
@@ -697,7 +707,7 @@ class TaskMateOverviewCard extends LitElement {
     return html`
       <div class="ov-today ${cls}">
         <span class="lbl">${lbl}</span>
-        <span class="val">${done} / ${total}</span>
+        <span class="val">${_ltrRatio(done, total)}</span>
       </div>`;
   }
 

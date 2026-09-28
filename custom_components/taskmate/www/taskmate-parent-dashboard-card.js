@@ -27,6 +27,9 @@ const tmSafePhotoUrl = (u) =>
 const tmClaimList = (v) => (Array.isArray(v) ? v : []);
 
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+// Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
+// identity until the design layer has loaded (it is also what stamps dir).
+const _ltrNums = (s) => (window.__taskmate_design && window.__taskmate_design.ltrNums ? window.__taskmate_design.ltrNums(s) : s);
 
 class TaskMateParentDashboardCard extends LitElement {
   static get properties() {
@@ -858,7 +861,7 @@ class TaskMateParentDashboardCard extends LitElement {
             ${this._av(child.name, child.avatar, tone, 42)}
             <div style="flex:1;min-width:0">
               <div class="pd-name">${child.name}</div>
-              <div class="muted pd-sub">${this._t('dashboard.chores_done', { done: approved, total }, `${approved} / ${total} chores done`)}</div>
+              <div class="muted pd-sub">${_ltrNums(this._t('dashboard.chores_done', { done: approved, total }, `${approved} / ${total} chores done`))}</div>
             </div>
             <div class="big pd-pts">${child.points}⭐</div>
           </div>

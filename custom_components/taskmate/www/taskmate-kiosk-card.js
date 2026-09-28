@@ -33,6 +33,16 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+// Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
+// identity until the design layer has loaded (it is also what stamps dir).
+const _ltrNums = (s) => (window.__taskmate_design && window.__taskmate_design.ltrNums ? window.__taskmate_design.ltrNums(s) : s);
+// "a / b" for a template: the same text nodes as a literal `${a} / ${b}` in
+// LTR (so it renders pixel-for-pixel as before), the isolated string in RTL.
+const _ltrRatio = (a, b) => {
+  const s = `${a} / ${b}`;
+  const r = _ltrNums(s);
+  return r === s ? html`${a} / ${b}` : r;
+};
 
 const DEFAULT_HEADER = "#9b59b6";
 const DEFAULT_TIMEOUT = 60;
@@ -607,7 +617,7 @@ class TaskMateKioskCard extends LitElement {
                   : showProgress ? html`
                     <div class="km-prog">
                       <div class="km-bar"><i style="width:${total ? Math.round((done / total) * 100) : 0}%"></i></div>
-                      <small>${!total ? none : all ? this._t("kiosk.all_done_short") : this._t("kiosk.progress", { done, total })}</small>
+                      <small>${!total ? none : all ? this._t("kiosk.all_done_short") : _ltrNums(this._t("kiosk.progress", { done, total }))}</small>
                     </div>` : ""}
                 ${showPoints ? html`<div class="km-pts"><ha-icon icon="${icon}"></ha-icon> ${child.points ?? 0}</div>` : ""}
               </button>`;
@@ -729,7 +739,7 @@ class TaskMateKioskCard extends LitElement {
                 <div class="km-reward-row">
                   <ha-icon icon="${next.reward.icon || "mdi:gift"}"></ha-icon>
                   <b class="km-grow">${next.reward.name}</b>
-                  <span class="km-dim">${child.points ?? 0} / ${next.cost}</span>
+                  <span class="km-dim">${_ltrRatio(child.points ?? 0, next.cost)}</span>
                 </div>
                 <div class="km-bar"><i style="width:${Math.min(100, Math.round(((Number(child.points) || 0) / next.cost) * 100))}%"></i></div>
                 <div class="km-dim km-small">${this._t("kiosk.to_go", { points: next.cost - (Number(child.points) || 0) })}</div>

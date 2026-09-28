@@ -21,6 +21,9 @@ const css = LitElement.prototype.css;
 const DESIGN_HEADER = "#6c5ce7";
 
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+// Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
+// identity until the design layer has loaded (it is also what stamps dir).
+const _ltrNums = (s) => (window.__taskmate_design && window.__taskmate_design.ltrNums ? window.__taskmate_design.ltrNums(s) : s);
 
 class TaskMateBadgesCard extends LitElement {
   static get properties() {
@@ -506,8 +509,8 @@ class TaskMateBadgesCard extends LitElement {
 
     const latestEarned = earned.length > 0 ? earned[0] : null;
     const countLabel = earned.length > 0 && latestEarned
-      ? this._t("badges.count_label_latest", { earned: earned.length, total: totalBadges, latest: latestEarned.name })
-      : this._t("badges.count_label", { earned: earned.length, total: totalBadges });
+      ? _ltrNums(this._t("badges.count_label_latest", { earned: earned.length, total: totalBadges, latest: latestEarned.name }))
+      : _ltrNums(this._t("badges.count_label", { earned: earned.length, total: totalBadges }));
 
     const title = this.config.title || (childName ? this._t("badges.title_with_name", { name: childName }) : this._t("badges.default_title"));
 
@@ -561,7 +564,7 @@ class TaskMateBadgesCard extends LitElement {
           <ha-icon icon="${b.icon || 'mdi:medal'}"></ha-icon>
         </div>
         <div class="badge-tier">${this._tierLabel(b.tier)}</div>
-        <div class="badge-name">${b.name}</div>
+        <div class="badge-name">${_ltrNums(b.name)}</div>
         <div class="badge-meta">${this._t("badge.earned_date", { date: this._formatDate(b.earned_at) })}</div>
       </div>
     `;
@@ -571,8 +574,8 @@ class TaskMateBadgesCard extends LitElement {
     // progress: either provided directly, or computed from closest_criterion
     const pct = (b.progress_pct != null) ? b.progress_pct
       : (b.closest_criterion ? Math.min(100, Math.round((b.closest_criterion.current / b.closest_criterion.target) * 100)) : 0);
-    const progressLabel = b.progress_label
-      || (b.closest_criterion ? `${b.closest_criterion.current} / ${b.closest_criterion.target}` : null);
+    const crit = b.closest_criterion;
+    const progressLabel = _ltrNums(b.progress_label || (crit ? `${crit.current} / ${crit.target}` : null));
 
     return html`
       <div class="badge locked tier-${b.tier}">
@@ -581,7 +584,7 @@ class TaskMateBadgesCard extends LitElement {
           <ha-icon icon="${b.icon || 'mdi:medal-outline'}"></ha-icon>
         </div>
         <div class="badge-tier">${this._tierLabel(b.tier)}</div>
-        <div class="badge-name">${b.name}</div>
+        <div class="badge-name">${_ltrNums(b.name)}</div>
         ${progressLabel ? html`
           <div class="badge-progress">
             <div class="badge-progress-fill" style="width:${pct}%"></div>
@@ -626,7 +629,7 @@ TaskMateBadgesCard.prototype._designEarnedTile = function (b) {
     <div class="bd-tile earned" style="--bt:${tone}">
       ${b.point_bonus > 0 ? html`<div class="bd-bonus">+${b.point_bonus}</div>` : ""}
       <div class="bd-ic earned" style="--bt:${tone}">${icon}</div>
-      <div class="bd-name">${b.name}</div>
+      <div class="bd-name">${_ltrNums(b.name)}</div>
       <div class="muted bd-date">${this._formatDate(b.earned_at)}</div>
     </div>`;
 };
@@ -635,15 +638,15 @@ TaskMateBadgesCard.prototype._designLockedTile = function (b) {
   const tone = this._tierTone(b.tier);
   const pct = (b.progress_pct != null) ? b.progress_pct
     : (b.closest_criterion ? Math.min(100, Math.round((b.closest_criterion.current / b.closest_criterion.target) * 100)) : 0);
-  const progressLabel = b.progress_label
-    || (b.closest_criterion ? `${b.closest_criterion.current} / ${b.closest_criterion.target}` : null);
+  const crit = b.closest_criterion;
+  const progressLabel = _ltrNums(b.progress_label || (crit ? `${crit.current} / ${crit.target}` : null));
   const a = b.icon || "mdi:medal-outline";
   const icon = a.startsWith("mdi:") ? html`<ha-icon icon="${a}"></ha-icon>` : a;
   return html`
     <div class="bd-tile locked" style="--bt:${tone}">
       ${b.point_bonus > 0 ? html`<div class="bd-bonus" style="opacity:0.45">+${b.point_bonus}</div>` : ""}
       <div class="bd-ic locked">${icon}</div>
-      <div class="bd-name">${b.name}</div>
+      <div class="bd-name">${_ltrNums(b.name)}</div>
       ${progressLabel ? html`
         <div class="bar" style="height:7px;margin-top:6px"><i style="width:${pct}%"></i></div>
         <div class="muted bd-prog-label">${progressLabel}</div>` : ""}
@@ -654,7 +657,7 @@ TaskMateBadgesCard.prototype._renderDesigned = function (design, d) {
   const hd = _safeColor(this.config.header_color, DESIGN_HEADER);
   const ic = design === "console" ? "✦" : design === "cleanpro" ? "◈" : "🎖️";
   const sub = d.childName;
-  const countPill = this._t("badges.count_label", { earned: d.earned.length, total: d.totalBadges });
+  const countPill = _ltrNums(this._t("badges.count_label", { earned: d.earned.length, total: d.totalBadges }));
 
   return html`
     <ha-card class="tmd" style="--hd:${hd}">
@@ -666,7 +669,7 @@ TaskMateBadgesCard.prototype._renderDesigned = function (design, d) {
       <div class="tmd-bd">
         ${this._designFilters(d.filter)}
         ${(d.filteredEarned.length + d.filteredLocked.length) === 0
-          ? html`<div class="tmd-empty">${this._t("badges.count_label", { earned: 0, total: d.totalBadges })}</div>`
+          ? html`<div class="tmd-empty">${_ltrNums(this._t("badges.count_label", { earned: 0, total: d.totalBadges }))}</div>`
           : html`<div class="bd-grid">
               ${d.filteredEarned.map((b) => this._designEarnedTile(b))}
               ${d.filteredLocked.map((b) => this._designLockedTile(b))}

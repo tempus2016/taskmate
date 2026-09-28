@@ -26,6 +26,16 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+// Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
+// identity until the design layer has loaded (it is also what stamps dir).
+const _ltrNums = (s) => (window.__taskmate_design && window.__taskmate_design.ltrNums ? window.__taskmate_design.ltrNums(s) : s);
+// "a / b" for a template: the same text nodes as a literal `${a} / ${b}` in
+// LTR (so it renders pixel-for-pixel as before), the isolated string in RTL.
+const _ltrRatio = (a, b) => {
+  const s = `${a} / ${b}`;
+  const r = _ltrNums(s);
+  return r === s ? html`${a} / ${b}` : r;
+};
 const DEFAULT_ACCENT = "#e91e63";
 const IMAGE_PREFIX = "/api/taskmate/image/";
 const TARGET_STEP = 10;
@@ -431,7 +441,7 @@ class TaskMateWishlistCard extends LitElement {
           <div class="wl-legend">
             <span><span class="wl-sw wl-sw-me"></span>${this._t("wishlist.legend_me", { points: saved })}</span>
             <span><span class="wl-sw wl-sw-fam"></span>${this._t("wishlist.legend_family", { points: pledged })}</span>
-            <span class="wl-tot">${Math.min(target, saved + pledged)} / ${target}</span>
+            <span class="wl-tot">${_ltrRatio(Math.min(target, saved + pledged), target)}</span>
           </div>
           ${Array.isArray(w.pledges) && w.pledges.length ? html`
             <div class="wl-pledges">

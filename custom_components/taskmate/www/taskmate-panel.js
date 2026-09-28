@@ -4300,7 +4300,7 @@ class TaskMatePanel extends HTMLElement {
               <tr class="tm-row">
                 <td><strong>${this._esc(r.name)}</strong></td>
                 <td>${stars(r.average)}</td>
-                <td class="tm-numeric">${r.rated} / ${r.total}</td>
+                <td class="tm-numeric">${this._ltrNums(`${r.rated} / ${r.total}`)}</td>
                 <td class="tm-numeric">${r.counts["1"]}</td>
                 <td class="tm-numeric">${r.counts["2"]}</td>
                 <td class="tm-numeric">${r.counts["3"]}</td>
@@ -4814,7 +4814,7 @@ class TaskMatePanel extends HTMLElement {
           <ha-icon icon="mdi:plus-minus-variant"></ha-icon>
         </button>
         <div class="tm-kid-pills">
-          ${streak > 0 ? `<span class="tm-pill"><ha-icon icon="mdi:fire"></ha-icon>${this._t("panel.today_streak", { count: streak })}</span>` : ""}
+          ${streak > 0 ? `<span class="tm-pill"><ha-icon icon="mdi:fire"></ha-icon>${this._ltrNums(this._t("panel.today_streak", { count: streak }))}</span>` : ""}
           ${dayPill}
         </div>
       </div>
@@ -6489,7 +6489,7 @@ class TaskMatePanel extends HTMLElement {
         </div>
         ${showProgress ? `
           <div class="tm-progress"><span style="width:${pct}%"></span></div>
-          <div class="tm-progress-text"><span><strong>${this._fmtNum(totalPooled)}</strong> / ${this._fmtNum(r.cost)}</span><span>${pct}%</span></div>
+          <div class="tm-progress-text"><span${this.getAttribute("dir") === "rtl" ? ' dir="ltr"' : ""}><strong>${this._fmtNum(totalPooled)}</strong> / ${this._fmtNum(r.cost)}</span><span>${pct}%</span></div>
         ` : ""}
         <div class="tm-card-foot">
           <button type="button" class="tm-btn tm-btn-sm" data-act="edit-reward" data-id="${this._esc(r.id)}">${this._t("panel.btn_edit")}</button>
@@ -6541,7 +6541,7 @@ class TaskMatePanel extends HTMLElement {
     const pct = (n) => (target > 0 ? Math.max(0, Math.min(100, (n / target) * 100)) : 0);
     return `
       <div class="tm-wl-split"><i class="tm-wl-me" style="width:${pct(saved)}%"></i><i class="tm-wl-fam" style="width:${pct(Math.min(pledged, Math.max(0, target - saved)))}%"></i></div>
-      <div class="tm-meta tm-numeric">${this._fmtNum(Math.min(target, saved + pledged))} / ${this._fmtNum(target)}</div>`;
+      <div class="tm-meta tm-numeric">${this._ltrNums(`${this._fmtNum(Math.min(target, saved + pledged))} / ${this._fmtNum(target)}`)}</div>`;
   }
 
   _renderWishlistsTab() {
@@ -6734,7 +6734,7 @@ class TaskMatePanel extends HTMLElement {
         <i class="tm-wl-fam" style="width:${pct(this._num(w.pledged))}%"></i>
         <i class="tm-wl-new" style="width:${pct(amount)}%"></i>
       </div>
-      <p class="tm-meta">${this._t("panel.wish_pledge_preview", { total: this._fmtNum(Math.min(target, this._num(w.saved) + this._num(w.pledged) + amount)), target: this._fmtNum(target) })}</p>`;
+      <p class="tm-meta">${this._ltrNums(this._t("panel.wish_pledge_preview", { total: this._fmtNum(Math.min(target, this._num(w.saved) + this._num(w.pledged) + amount)), target: this._fmtNum(target) }))}</p>`;
     return this._dialogShell(
       this._t("panel.wish_pledge_title", { child: child.name || "", wish: w.name }),
       body,
@@ -7269,7 +7269,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-stats-row tm-auc-stats">
           <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(live.length)}</div><div class="tm-stat-label">${this._t("panel.auction_stat_live")}</div></div>
           <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(live.reduce((n, a) => n + (a.bids || []).length, 0))}</div><div class="tm-stat-label">${this._t("panel.auction_stat_bids")}</div></div>
-          <div class="tm-stat"><div class="tm-stat-value">${this._fmtNum(recent.filter(a => a.winner_id).length)} / ${this._fmtNum(recent.length)}</div><div class="tm-stat-label">${this._t("panel.auction_stat_won")}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value">${this._ltrNums(`${this._fmtNum(recent.filter(a => a.winner_id).length)} / ${this._fmtNum(recent.length)}`)}</div><div class="tm-stat-label">${this._t("panel.auction_stat_won")}</div></div>
         </div>
         <div class="tm-auc-bar">
           <div class="tm-chip-row">
@@ -7636,7 +7636,7 @@ class TaskMatePanel extends HTMLElement {
               <tr class="tm-row tm-badge-row ${this._tierClass(b.tier)}">
                 <td>
                   <div class="tm-badge-icon-sm">${this._mdi(b.icon)}</div>
-                  <span style="margin-inline-start:8px"><strong>${this._esc(this._badgeName(b))}</strong>
+                  <span style="margin-inline-start:8px"><strong>${this._esc(this._ltrNums(this._badgeName(b)))}</strong>
                   <span class="tm-pill" style="background:var(--tm-surface-2);font-size:10px;margin-inline-start:4px">${this._t("panel.badge_builtin_pill")}</span></span>
                   ${this._badgeDesc(b) ? `<div class="tm-meta">${this._esc(this._badgeDesc(b))}</div>` : ""}
                 </td>
@@ -7728,7 +7728,7 @@ class TaskMatePanel extends HTMLElement {
                 <tr class="tm-row tm-badge-row ${tierCls}">
                   <td>
                     <div class="tm-badge-icon-sm">${this._mdi(badge.icon || "mdi:medal")}</div>
-                    <span style="margin-inline-start:8px"><strong>${this._esc(this._badgeName(badge) || a.badge_id)}</strong></span>
+                    <span style="margin-inline-start:8px"><strong>${this._esc(this._ltrNums(this._badgeName(badge) || a.badge_id))}</strong></span>
                   </td>
                   <td><strong style="color:var(--tm-accent)">${this._esc(child.name || a.child_id)}</strong></td>
                   <td class="tm-meta">${this._esc(when)}</td>
@@ -10568,6 +10568,14 @@ class TaskMatePanel extends HTMLElement {
   _fmtNum(n) {
     if (n == null) return "0";
     return new Intl.NumberFormat().format(n);
+  }
+
+  // Keeps number runs like "3 / 1" reading left to right when the panel is
+  // right-to-left (#995). Plain string in and out; the isolates it adds are
+  // not HTML-special, so it can sit either side of _esc().
+  _ltrNums(s) {
+    const design = window.__taskmate_design;
+    return design && design.ltrNums ? design.ltrNums(s) : s;
   }
 
   // A number bound for a markup or attribute slot. The panel assembles its

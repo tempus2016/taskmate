@@ -18,6 +18,16 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+// Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
+// identity until the design layer has loaded (it is also what stamps dir).
+const _ltrNums = (s) => (window.__taskmate_design && window.__taskmate_design.ltrNums ? window.__taskmate_design.ltrNums(s) : s);
+// "a / b" for a template: the same text nodes as a literal `${a} / ${b}` in
+// LTR (so it renders pixel-for-pixel as before), the isolated string in RTL.
+const _ltrRatio = (a, b) => {
+  const s = `${a} / ${b}`;
+  const r = _ltrNums(s);
+  return r === s ? html`${a} / ${b}` : r;
+};
 
 const RECAP_FREQUENCIES = ["weekly", "monthly", "every_3_months", "every_6_months", "every_9_months", "yearly"];
 // Longest first: several recaps on one day open with the longest period.
@@ -415,7 +425,7 @@ class TaskMateRecapCard extends LitElement {
         <div class="tapzone next" @click=${(e) => this._next(e)}></div>
         ${idx > 0 ? html`<button class="story-nav l" @click=${(e) => this._prev(e)} aria-label="${this._t("recap.prev")}"><ha-icon class="tm-rtl-flip" icon="mdi:chevron-left"></ha-icon></button>` : ""}
         ${!last ? html`<button class="story-nav r" @click=${(e) => this._next(e)} aria-label="${this._t("recap.next")}"><ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon></button>` : ""}
-        <div class="story-foot">${idx + 1} / ${slides.length}${!last ? html` · ${this._t("recap.tap_to_continue")}` : ""}</div>
+        <div class="story-foot">${_ltrRatio(idx + 1, slides.length)}${!last ? html` · ${this._t("recap.tap_to_continue")}` : ""}</div>
       </div>`;
   }
 

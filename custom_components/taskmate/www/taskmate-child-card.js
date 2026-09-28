@@ -24,6 +24,9 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+// Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
+// identity until the design layer has loaded (it is also what stamps dir).
+const _ltrNums = (s) => (window.__taskmate_design && window.__taskmate_design.ltrNums ? window.__taskmate_design.ltrNums(s) : s);
 
 class TaskMateChildCard extends LitElement {
   static get properties() {
@@ -2279,7 +2282,7 @@ class TaskMateChildCard extends LitElement {
             <div class="child-name-container">
               <div class="child-name">${child.name}</div>
               ${child.level ? html`
-                <div class="child-level" title="${child.level_progress || 0} / ${child.level_target || 100} XP">
+                <div class="child-level" title="${_ltrNums(`${child.level_progress || 0} / ${child.level_target || 100}`)} XP">
                   <span class="level-badge">${this._t('child.level_label', { level: child.level })}</span>
                   <div class="level-xp-track">
                     <div class="level-xp-fill" style="width: ${Math.max(0, Math.min(100, Math.round(((child.level_progress || 0) / (child.level_target || 100)) * 100)))}%"></div>
@@ -2473,8 +2476,8 @@ class TaskMateChildCard extends LitElement {
     const c = best.badge.closest_criterion;
     // Older backends (and criteria-free, manual-award badges) have no
     // closest_criterion — fall back to the percentage.
-    best.label = c && c.target ? `${c.current} / ${c.target}` : `${best.pct}%`;
-    best.name = this._badgeName(best.badge);
+    best.label = c && c.target ? _ltrNums(`${c.current} / ${c.target}`) : `${best.pct}%`;
+    best.name = _ltrNums(this._badgeName(best.badge));
     return best;
   }
 
@@ -2534,7 +2537,7 @@ class TaskMateChildCard extends LitElement {
       || this.hass?.states?.[this.config.entity]?.attributes || {};
     const kids = attrs.children || [];
     const fallback = ["#ff7043", "#42a5f5", "#66bb6a", "#ab47bc", "#ffa726", "#26c6da"];
-    const label = this._t("child.team_progress", { joined: team.joined.length, size: team.size });
+    const label = _ltrNums(this._t("child.team_progress", { joined: team.joined.length, size: team.size }));
     return html`<span class="tm-team ${cls} ${team.mine ? "mine" : ""}" aria-label="${label}">
       <span class="tm-team-avs">${team.joined.map((id) => {
         const i = kids.findIndex((k) => String(k.id) === id);
@@ -2860,7 +2863,7 @@ class TaskMateChildCard extends LitElement {
       : this._t("points_display.single_title", { name: child.name });
     const sub = design === "console"
       ? (child.level ? `${this._t("child.level_label", { level: child.level })} · ${remaining} ACTIVE` : `${remaining} ACTIVE`)
-      : design === "cleanpro" ? `${remaining} / ${total}`
+      : design === "cleanpro" ? _ltrNums(`${remaining} / ${total}`)
       : `${remaining} · ${this._t("child.todays_chores")}`;
     // Avatar picker: classic makes the avatar tappable; the designed header
     // must too, or the picker only ever works on classic. Same eligibility
@@ -4245,7 +4248,7 @@ class TaskMateChildCard extends LitElement {
 
         ${maxMin > 0 ? html`
           <div class="daily-cap-bar">
-            <span class="cap-label ${nearCap ? 'near-cap' : ''}">${this._t('child.timed_cap_label', {used: usedMin, max: maxMin})}</span>
+            <span class="cap-label ${nearCap ? 'near-cap' : ''}">${_ltrNums(this._t('child.timed_cap_label', {used: usedMin, max: maxMin}))}</span>
             <div class="cap-track">
               <div class="cap-fill ${nearCap ? 'warning' : ''}" style="width: ${capPct}%"></div>
             </div>

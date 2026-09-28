@@ -13,6 +13,16 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+// Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
+// identity until the design layer has loaded (it is also what stamps dir).
+const _ltrNums = (s) => (window.__taskmate_design && window.__taskmate_design.ltrNums ? window.__taskmate_design.ltrNums(s) : s);
+// "a / b" for a template: the same text nodes as a literal `${a} / ${b}` in
+// LTR (so it renders pixel-for-pixel as before), the isolated string in RTL.
+const _ltrRatio = (a, b) => {
+  const s = `${a} / ${b}`;
+  const r = _ltrNums(s);
+  return r === s ? html`${a} / ${b}` : r;
+};
 
 class TaskMateRewardProgressCard extends LitElement {
   static get properties() {
@@ -612,7 +622,7 @@ class TaskMateRewardProgressCard extends LitElement {
             <div class="big-progress-fill ${cls}" style="width: ${pct}%"></div>
           </div>
           <div class="progress-stat-row">
-            <span class="progress-have">${have} / ${cost} ${pointsName}</span>
+            <span class="progress-have">${_ltrRatio(have, cost)} ${pointsName}</span>
             ${canAfford
               ? html`<span class="progress-need">${this._t('reward_progress.ready_to_claim_emoji')}</span>`
               : html`<span class="progress-need">${this._t('reward_progress.more_needed', { amount: cost - have })}</span>`}
@@ -678,7 +688,7 @@ class TaskMateRewardProgressCard extends LitElement {
               <div class="big-progress-fill ${cls}" style="width: ${pct}%"></div>
             </div>
             <div class="progress-stat-row">
-              <span class="progress-have">${totalHave} / ${cost} ${pointsName}</span>
+              <span class="progress-have">${_ltrRatio(totalHave, cost)} ${pointsName}</span>
               ${canAfford
                 ? html`<span class="progress-need">${this._t('reward_progress.ready')}</span>`
                 : html`<span class="progress-need">${this._t('reward_progress.more_needed', { amount: cost - totalHave })}</span>`}
@@ -816,7 +826,7 @@ class TaskMateRewardProgressCard extends LitElement {
           ? html`<div class="row rp-stat">
               <div class="big rp-pct">${pct}%</div>
               <div class="rp-stat-r">
-                <div class="num rp-frac">${have} / ${cost}</div>
+                <div class="num rp-frac">${_ltrRatio(have, cost)}</div>
                 <div class="muted rp-need">${this._t('reward_progress.more_needed', { amount: remaining })}</div>
               </div>
             </div>`

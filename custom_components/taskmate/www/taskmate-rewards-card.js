@@ -23,6 +23,16 @@ const css = LitElement.prototype.css;
 const tmClaimList = (v) => (Array.isArray(v) ? v : []);
 
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+// Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
+// identity until the design layer has loaded (it is also what stamps dir).
+const _ltrNums = (s) => (window.__taskmate_design && window.__taskmate_design.ltrNums ? window.__taskmate_design.ltrNums(s) : s);
+// "a / b" for a template: the same text nodes as a literal `${a} / ${b}` in
+// LTR (so it renders pixel-for-pixel as before), the isolated string in RTL.
+const _ltrRatio = (a, b) => {
+  const s = `${a} / ${b}`;
+  const r = _ltrNums(s);
+  return r === s ? html`${a} / ${b}` : r;
+};
 
 class TaskMateRewardsCard extends LitElement {
   static get properties() {
@@ -1307,8 +1317,10 @@ class TaskMateRewardsCard extends LitElement {
         <ha-icon icon="${pointsIcon}"></ha-icon>
         <span class="spendable-label">${this._t('rewards.spendable_balance')}</span>
         <span class="spendable-value">
-          ${spendable}
-          ${detail}
+          ${spendable !== gross && this.getAttribute("dir") === "rtl"
+            // "12 / 40" spans two elements, so isolate it with markup (#995).
+            ? html`<bdi dir="ltr">${spendable} ${detail}</bdi>`
+            : html`${spendable} ${detail}`}
         </span>
       </div>
     `;
@@ -2091,7 +2103,7 @@ class TaskMateRewardsCard extends LitElement {
       ? html`<span class="muted rw-status">⏳ ${this._t('rewards.awaiting_approval')}</span>`
       : d.canAfford && d.showClaim
         ? html`<span class="rw-status rw-status-good">${this._t('reward_progress.ready_to_claim')}</span>`
-        : html`<span class="muted rw-status">${d.currentStars} / ${d.displayCost}</span>`;
+        : html`<span class="muted rw-status">${_ltrRatio(d.currentStars, d.displayCost)}</span>`;
 
     return html`
       <div class="rw-card ${d.isJackpot ? 'rw-jackpot' : ''} ${d.isUnavailable || d.isTimeLocked ? 'rw-unavail' : ''}"

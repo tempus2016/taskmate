@@ -13,6 +13,9 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
+// Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
+// identity until the design layer has loaded (it is also what stamps dir).
+const _ltrNums = (s) => (window.__taskmate_design && window.__taskmate_design.ltrNums ? window.__taskmate_design.ltrNums(s) : s);
 
 const DAY_NAMES = [
   "monday", "tuesday", "wednesday", "thursday",
@@ -578,7 +581,7 @@ class TaskMateCalendarCard extends LitElement {
 
     const summary = dueCount === 0
       ? this._t("calendar.no_chores_today")
-      : this._t("calendar.child_summary", { done: doneCount, total: dueCount });
+      : _ltrNums(this._t("calendar.child_summary", { done: doneCount, total: dueCount }));
 
     return html`
       <div class="child-block">
@@ -681,7 +684,7 @@ class TaskMateCalendarCard extends LitElement {
 
     const sub = isToday ? this._t("common.today") : dayShort;
     const pill = design === "console" && totalPending
-      ? this._t("calendar.child_summary", { done: 0, total: totalPending }) : "";
+      ? _ltrNums(this._t("calendar.child_summary", { done: 0, total: totalPending })) : "";
     return wrap(sub, pill, body);
   }
 
