@@ -1855,6 +1855,7 @@
   "panel.bounty_claimed_meta": "{name} · {time} att",
   "panel.bounty_completed_meta": "{name} · +{points} ★",
   "panel.bounty_expired_meta": "Ingen tok han · {date}",
+  "panel.bounty_expired_lapsed_meta": "Gått ut etter at ei reservasjon gjekk ut · {date}",
   "panel.bounty_lapsed_meta": "Reservasjon gått ut {count}×",
   "panel.bounty_no_expiry": "Går ikkje ut",
   "panel.bounty_release": "Frigje reservasjon",

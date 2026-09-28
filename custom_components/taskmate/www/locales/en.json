@@ -1855,6 +1855,7 @@
   "panel.bounty_claimed_meta": "{name} · {time} left",
   "panel.bounty_completed_meta": "{name} · +{points} ★",
   "panel.bounty_expired_meta": "Nobody claimed · {date}",
+  "panel.bounty_expired_lapsed_meta": "Expired after a claim lapsed · {date}",
   "panel.bounty_lapsed_meta": "Claim lapsed {count}×",
   "panel.bounty_no_expiry": "No expiry",
   "panel.bounty_release": "Release claim",

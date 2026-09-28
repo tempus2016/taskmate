@@ -1855,6 +1855,7 @@
   "panel.bounty_claimed_meta": "{name} · {time} igjen",
   "panel.bounty_completed_meta": "{name} · +{points} ★",
   "panel.bounty_expired_meta": "Ingen tok den · {date}",
+  "panel.bounty_expired_lapsed_meta": "Utløpt etter at en reservasjon gikk ut · {date}",
   "panel.bounty_lapsed_meta": "Reservasjon utløpt {count}×",
   "panel.bounty_no_expiry": "Utløper ikke",
   "panel.bounty_release": "Frigi reservasjon",
