@@ -4163,9 +4163,9 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-table-wrap">
         <table class="tm-table tm-wl-table">
           <thead><tr>
-            <th>${this._t("panel.wish_col_wish")}</th><th class="tm-wl-progress">${this._t("panel.wish_col_progress")}</th>
+            <th class="tm-col-sticky">${this._t("panel.wish_col_wish")}</th><th class="tm-wl-progress">${this._t("panel.wish_col_progress")}</th>
             <th>${this._t("panel.wish_col_saved")}</th><th>${this._t("panel.wish_col_pledged")}</th>
-            <th>${this._t("panel.wish_col_status")}</th><th></th>
+            <th>${this._t("panel.wish_col_status")}</th>
           </tr></thead>
           <tbody>
             ${active.map(w => {
@@ -4180,14 +4180,16 @@ class TaskMatePanel extends HTMLElement {
                   : "";
               return `
                 <tr class="tm-row">
-                  <td><div class="tm-wl-cell">${this._wishThumb(w, 32)}<div><strong>${this._esc(w.name)}</strong><div class="tm-meta">${who(w)} ${this._wishLinkChip(w)}</div></div></div></td>
+                  <td class="tm-col-sticky tm-cell-wrap"><div class="tm-name-cell tm-name-cell-wrap">
+                    <div class="tm-name-main tm-wl-cell">${this._wishThumb(w, 32)}<div><strong>${this._esc(w.name)}</strong><div class="tm-meta">${who(w)} ${this._wishLinkChip(w)}</div></div></div>
+                    <div class="tm-name-actions tm-wl-acts">${main}
+                      <button type="button" class="tm-icon-btn" data-act="wish-delete" data-id="${this._esc(w.id)}" title="${this._esc(this._t("panel.wish_delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>
+                    </div>
+                  </div></td>
                   <td class="tm-wl-progress">${this._wishBar(w)}</td>
                   <td class="tm-numeric">${this._fmtNum(w.saved)}</td>
                   <td class="tm-numeric">${this._fmtNum(w.pledged)}</td>
                   <td>${status}</td>
-                  <td><div class="tm-wl-acts">${main}
-                    <button type="button" class="tm-icon-btn" data-act="wish-delete" data-id="${this._esc(w.id)}" title="${this._esc(this._t("panel.wish_delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>
-                  </div></td>
                 </tr>`;
             }).join("")}
           </tbody>
@@ -4527,11 +4529,11 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr>
-              <th>${this._t("panel.bounty_col_bounty")}</th><th>${this._t("panel.bounty_col_points")}</th><th>${this._t("panel.bounty_col_eligible")}</th><th>${this._t("panel.bounty_col_status")}</th><th>${this._t("panel.bounty_col_expires")}</th><th></th>
+              <th class="tm-col-sticky">${this._t("panel.bounty_col_bounty")}</th><th>${this._t("panel.bounty_col_points")}</th><th>${this._t("panel.bounty_col_eligible")}</th><th>${this._t("panel.bounty_col_status")}</th><th>${this._t("panel.bounty_col_expires")}</th>
             </tr></thead>
             <tbody>
               ${rows.length === 0
-                ? `<tr><td colspan="6" class="tm-meta" style="text-align:center;padding:26px">${this._t("panel.bounty_nothing")}</td></tr>`
+                ? `<tr><td colspan="5" class="tm-meta" style="text-align:center;padding:26px">${this._t("panel.bounty_nothing")}</td></tr>`
                 : rows.map(b => this._renderBountyRow(b, childById)).join("")}
             </tbody>
           </table>
@@ -4588,15 +4590,17 @@ class TaskMatePanel extends HTMLElement {
     }
     return `
       <tr class="tm-row">
-        <td><div class="tm-bounty-cell">
-          <span class="tm-avatar tm-bounty-ic">${this._mdi(b.icon || "mdi:flag-outline")}</span>
-          <div><strong>${this._esc(b.title)}</strong><div class="tm-meta">${this._esc(meta.join(" · "))}</div></div>
+        <td class="tm-col-sticky tm-cell-wrap"><div class="tm-name-cell tm-name-cell-wrap">
+          <div class="tm-name-main tm-bounty-cell">
+            <span class="tm-avatar tm-bounty-ic">${this._mdi(b.icon || "mdi:flag-outline")}</span>
+            <div><strong>${this._esc(b.title)}</strong><div class="tm-meta">${this._esc(meta.join(" · "))}</div></div>
+          </div>
+          <div class="tm-name-actions tm-bounty-actions">${actions}</div>
         </div></td>
         <td><strong class="tm-numeric">${this._num(b.points)}</strong></td>
         <td>${eligible}</td>
         <td>${status}</td>
         <td class="tm-meta">${expires}</td>
-        <td><div class="tm-bounty-actions">${actions}</div></td>
       </tr>`;
   }
 
@@ -8407,6 +8411,12 @@ class TaskMatePanel extends HTMLElement {
         margin-left: auto; display: inline-flex; gap: 4px;
         align-items: center; flex-shrink: 0;
       }
+      /* Variant for rows whose actions are full buttons (Wishlists, Bounties;
+         #951): the name wraps and the actions drop under it, so the pinned
+         cell shrinks on a narrow panel instead of pushing them off the edge. */
+      .tm-table td.tm-cell-wrap { white-space: normal; }
+      .tm-name-cell-wrap { flex-wrap: wrap; row-gap: 8px; }
+      .tm-name-cell-wrap .tm-name-main { flex: 1 1 auto; min-width: 150px; }
 
       /* Floating kebab (⋮) action menu for chore rows. Rendered fixed at the
          document root so the table wrap's overflow never clips it. */
