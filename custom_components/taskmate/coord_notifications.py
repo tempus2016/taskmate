@@ -161,6 +161,32 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
 
+# Types whose feature fires its own ``taskmate_<type>`` event (#1014). Their
+# notification-side event is ``taskmate_<type>_notification`` instead, so an
+# automation on the feature event runs once, not twice.
+_OWN_EVENT_TYPES: frozenset[str] = frozenset(
+    {
+        NOTIF_TYPE_AUCTION_OPENED,
+        NOTIF_TYPE_BADGE_EARNED,
+        NOTIF_TYPE_BOUNTY_POSTED,
+        NOTIF_TYPE_CELEBRATION,
+        NOTIF_TYPE_FAMILY_GOAL_REACHED,
+        NOTIF_TYPE_INSPECTION_PASSED,
+        NOTIF_TYPE_INSPECTION_STARTED,
+        NOTIF_TYPE_LEVEL_UP,
+        NOTIF_TYPE_SEASON_CHAMPION,
+        NOTIF_TYPE_STREAK_FREEZE_USED,
+        NOTIF_TYPE_WISH_PLEDGED,
+    }
+)
+
+
+def notification_event_name(type_id: str) -> str:
+    """The bus event fired when a notification of ``type_id`` goes out."""
+    if type_id in _OWN_EVENT_TYPES:
+        return f"taskmate_{type_id}_notification"
+    return f"taskmate_{type_id}"
+
 
 def _validate_nav_url(value: str) -> str:
     """Normalise and vet a notification tap target.
@@ -686,7 +712,7 @@ class NotificationCoordinator:
     def _fire_bus_event(self, type_id: str, context: dict[str, Any], recipients: list[str]) -> None:
         payload = dict(context)
         payload["recipients"] = recipients
-        self.hass.bus.async_fire(f"taskmate_{type_id}", payload)
+        self.hass.bus.async_fire(notification_event_name(type_id), payload)
 
     async def handle_mobile_action(self, event) -> None:
         """Route TASKMATE_APPROVE_<id> / TASKMATE_REJECT_<id> mobile actions."""

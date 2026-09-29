@@ -28,7 +28,7 @@ async def test_fire_skips_when_master_disabled(coord, hass):
     hass.services.async_call.assert_not_called()
     bus_fire.assert_called_once()
     args = bus_fire.call_args[0]
-    assert args[0] == "taskmate_badge_earned"
+    assert args[0] == "taskmate_badge_earned_notification"
     assert args[1]["recipients"] == []
 
 
@@ -83,7 +83,7 @@ async def test_fire_emits_bus_event_with_recipients(coord, hass):
 
     bus_fire.assert_called_once()
     name, payload = bus_fire.call_args[0]
-    assert name == "taskmate_badge_earned"
+    assert name == "taskmate_badge_earned_notification"
     assert p.id in payload["recipients"]
 
 
