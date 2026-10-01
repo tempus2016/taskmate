@@ -24,7 +24,7 @@ from .coord_rewards import reward_is_time_locked
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
 from .models import Child
-from .watch import DEFAULT_STATE_STRINGS, watch_state, watch_summary
+from .watch import DEFAULT_STATE_STRINGS, today_board, watch_state, watch_summary
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -922,6 +922,7 @@ async def async_setup_entry(
     entities.append(TaskMateIncentivesSensor(coordinator, entry))
     entities.append(TaskMateBountiesSensor(coordinator, entry))
     entities.append(TaskMateAuctionsSensor(coordinator, entry))
+    entities.append(TaskMateChoreBoardSensor(coordinator, entry))
 
     # Add sensors for each child
     for child in coordinator.data.get("children", []):
@@ -1421,6 +1422,54 @@ class TaskMateAuctionsSensor(_CachedAttrsSensor):
 
     def _build_attributes(self) -> dict:
         return {"auctions": self.coordinator.auctions_public_state()}
+
+
+class TaskMateChoreBoardSensor(TaskMateBaseSensor):
+    """The Today page's chore board, for the chore board card (#1017).
+
+    The state is how many chores are still to do today across every child.
+    The ``chore_board`` attribute is what the admin panel's Today page draws:
+    today's status of each child's chores, plus the last seven days of
+    done/total per child for the week view. The panel reads it over the
+    admin-only WebSocket; this puts it where a non-admin dashboard can.
+
+    Keyed on the date as well as the coordinator snapshot, like the watch
+    sensors, so a quiet midnight still rolls the board over.
+    """
+
+    _unrecorded_attributes = frozenset({"chore_board"})
+    _attr_icon = "mdi:view-grid-outline"
+
+    def __init__(
+        self,
+        coordinator: TaskMateCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_chore_board"
+        self._attr_name = "TaskMate Chore Board"
+        self._board_key: tuple | None = None
+        self._board: dict | None = None
+
+    def _current_board(self) -> dict:
+        key = (
+            id(self.coordinator.data),
+            getattr(self.coordinator, "external_state_version", 0),
+            dt_util.as_local(dt_util.now()).date(),
+        )
+        if key != self._board_key or self._board is None:
+            self._board = self.coordinator.daily_progress_state(board=today_board(self.coordinator))
+            self._board_key = key
+        return self._board
+
+    @property
+    def native_value(self) -> int:
+        children = self._current_board()["board"]["children"]
+        return sum(1 for e in children for c in e["chores"] if c["status"] in ("todo", "missed"))
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return {"chore_board": self._current_board()}
 
 
 class ChildPointsSensor(TaskMateBaseSensor):

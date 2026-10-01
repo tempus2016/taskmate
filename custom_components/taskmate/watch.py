@@ -68,8 +68,9 @@ def next_chore_for_child(coordinator, child_id: str):
     return sorted(candidates, key=lambda c: rank.get(c.id, unranked))[0]
 
 
-def _today_board(coordinator) -> dict:
-    """``get_today_board`` once per coordinator update, shared by every child's sensor."""
+def today_board(coordinator) -> dict:
+    """``get_today_board`` once per coordinator update, shared by every child's watch
+    sensor and the chore board sensor (#1017)."""
     key = (
         id(coordinator.data),
         getattr(coordinator, "external_state_version", 0),
@@ -94,7 +95,7 @@ def watch_summary(coordinator, child_id: str) -> dict | None:
     child = coordinator.get_child(child_id)
     if child is None:
         return None
-    entry = next((e for e in _today_board(coordinator)["children"] if e["child_id"] == child_id), None)
+    entry = next((e for e in today_board(coordinator)["children"] if e["child_id"] == child_id), None)
     items = entry["chores"] if entry else []
     total = len(items)
     left = sum(1 for i in items if i["status"] in ("todo", "missed"))

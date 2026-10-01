@@ -2060,9 +2060,13 @@ class ChoresMixin:
             self.storage.upsert_daily_progress(entry["child_id"], board["date"], entry["due"], entry["done"], cutoff)
         await self.storage.async_save()
 
-    def daily_progress_state(self, days: int = 7) -> dict:
-        """Last ``days`` days of stored done/total per child, today included live."""
-        board = self.get_today_board()
+    def daily_progress_state(self, days: int = 7, board: dict | None = None) -> dict:
+        """Last ``days`` days of stored done/total per child, today included live.
+
+        ``board`` is today's ``get_today_board()`` when the caller already has it.
+        """
+        if board is None:
+            board = self.get_today_board()
         today = date.fromisoformat(board["date"])
         dates = [(today - timedelta(days=n)).isoformat() for n in range(days - 1, -1, -1)]
         out = {}

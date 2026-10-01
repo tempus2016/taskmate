@@ -40,6 +40,8 @@
     // Chore auctions (#982): `auctions`, a digest with no bid amounts. The
     // auction card re-fetches its own view over the WebSocket when it moves.
     "sensor.taskmate_auctions",
+    // The Today page's chore board (#1017): `chore_board` for the board card.
+    "sensor.taskmate_chore_board",
   ];
 
   // Attributes a companion must NOT contribute to the merge, because another
