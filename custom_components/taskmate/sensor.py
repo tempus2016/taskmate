@@ -148,6 +148,8 @@ def _compute_common(coordinator: TaskMateCoordinator) -> dict:
         # Each child's photo (from their chosen picture entity), resolved once
         # per update: every call site that draws a child's face reads this.
         "child_avatar_images": {c.id: coordinator.child_avatar_image(c) for c in children},
+        # This week's points earned vs. the most on offer, per child.
+        "child_week_progress": coordinator.week_progress(children, chores, all_completions),
         # Sent back to redo by an inspection (#981): not "done" on the card.
         "inspection_redo_ids": _inspection_redo_ids(coordinator),
     }
@@ -225,6 +227,8 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 "avatar": getattr(c, "avatar", "mdi:account-circle") or "mdi:account-circle",
                 # The child's photo, or "" — cards fall back to `avatar`.
                 "avatar_image": common.get("child_avatar_images", {}).get(c.id, ""),
+                "week_points_earned": common.get("child_week_progress", {}).get(c.id, {}).get("earned", 0),
+                "week_points_available": common.get("child_week_progress", {}).get(c.id, {}).get("available", 0),
                 "last_completion_date": getattr(c, "last_completion_date", None),
                 "streak_paused": getattr(c, "streak_paused", False),
                 "on_vacation": coordinator._is_child_on_vacation(c),

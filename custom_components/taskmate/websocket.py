@@ -173,6 +173,7 @@ WS_SET_CHORE_ORDER: Final = "taskmate/set_chore_order"
 WS_SET_GLOBAL_CHORE_ORDER: Final = "taskmate/set_global_chore_order"
 WS_ADD_CHORES_BULK: Final = "taskmate/add_chores_bulk"
 WS_PARENT_COMPLETE_CHORE: Final = "taskmate/parent_complete_chore"
+WS_DAY_COMPLETIONS: Final = "taskmate/day_completions"
 
 # Templates
 WS_TEMPLATES_LIST: Final = "taskmate/templates/list"
@@ -2417,6 +2418,19 @@ async def _ws_parent_complete_chore(hass, connection, msg, coordinator):
 
 @websocket_api.websocket_command(
     {
+        vol.Required("type"): WS_DAY_COMPLETIONS,
+        vol.Required("date"): vol.All(str, vol.Coerce(date.fromisoformat)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_day_completions(hass, connection, msg, coordinator):
+    """What was done on one day — for logging past jobs from the panel."""
+    connection.send_result(msg["id"], {"completions": coordinator.completions_on_date(msg["date"])})
+
+
+@websocket_api.websocket_command(
+    {
         vol.Required("type"): WS_SET_CHORE_ORDER,
         vol.Required("child_id"): str,
         vol.Required("chore_order"): [str],
@@ -3188,6 +3202,7 @@ _COMMANDS = (
     _ws_approve_reward,
     _ws_reject_reward,
     _ws_parent_complete_chore,
+    _ws_day_completions,
     _ws_set_chore_order,
     _ws_set_global_chore_order,
     _ws_add_chores_bulk,
