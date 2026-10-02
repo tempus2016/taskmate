@@ -11,7 +11,8 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -1003,6 +1004,22 @@ class _CachedAttrsSensor(TaskMateBaseSensor):
         raise NotImplementedError
 
 
+# The singleton sensors the cards merge into the overview's attributes, by
+# unique_id suffix. The suffix doubles as the key in `companion_entities` and
+# matches the default entity id (sensor.taskmate_<suffix>) the cards fall back to.
+COMPANION_SUFFIXES = (
+    "chores",
+    "chore_availability",
+    "rewards",
+    "activity",
+    "incentives",
+    "pending_approvals",
+    "bounties",
+    "auctions",
+    "chore_board",
+)
+
+
 class TaskMateOverallStatsSensor(_CachedAttrsSensor):
     """Overview sensor — scalars plus the compact per-child summary.
 
@@ -1012,7 +1029,9 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
 
     # The per-child summary grows with the family; the scalars stay recorded
     # so history/statistics on them keep working (#817).
-    _unrecorded_attributes = frozenset({"children", "vacation_periods", "season_champions"})
+    _unrecorded_attributes = frozenset(
+        {"children", "vacation_periods", "season_champions", "companion_entities", "badge_entities"}
+    )
 
     def __init__(
         self,
@@ -1022,6 +1041,44 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_overall_stats"
         self._attr_name = "TaskMate Overview"
+        self._published_entity_map: dict | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self.hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, self._async_entity_registry_updated)
+        )
+
+    @callback
+    def _async_entity_registry_updated(self, _event: Event) -> None:
+        """Republish when a companion sensor is created, removed or renamed."""
+        if self._entity_map() != self._published_entity_map:
+            self.async_write_ha_state()
+
+    def _entity_map(self) -> dict:
+        """The entity ids the companion and per-child badges sensors really
+        have (#1018). Home Assistant puts the device's area in front of a new
+        entity's id (2026.6+), and users rename entities, so the cards can't
+        rely on the sensor.taskmate_<suffix> defaults."""
+        if getattr(self, "hass", None) is None:
+            return {"companion_entities": {}, "badge_entities": {}}
+        registry = er.async_get(self.hass)
+        prefix = self._entry.entry_id
+
+        def lookup(suffix: str) -> str | None:
+            return registry.async_get_entity_id("sensor", DOMAIN, f"{prefix}_{suffix}")
+
+        companions = {s: eid for s in COMPANION_SUFFIXES if (eid := lookup(s))}
+        badges = {c.id: eid for c in self.coordinator.storage.get_children() if (eid := lookup(f"{c.id}_badges"))}
+        return {"companion_entities": companions, "badge_entities": badges}
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        # Kept out of the cached build: a rename doesn't touch the coordinator
+        # data the cache is keyed on.
+        entity_map = self._entity_map()
+        self._published_entity_map = entity_map
+        return {**super().extra_state_attributes, **entity_map}
 
     @property
     def native_value(self) -> int:

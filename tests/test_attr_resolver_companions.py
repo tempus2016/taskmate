@@ -134,3 +134,65 @@ class TestCollidingAttributesAreNotMerged:
     def test_skip_lists_only_name_real_companions(self):
         unknown = [e for e in _skip_keys() if e not in _companions()]
         assert unknown == [], f"skip list names non-companion sensors: {unknown}"
+
+
+class TestOverviewPublishesRealEntityIds:
+    """#1018: Home Assistant 2026.6+ prefixes a new entity's id with its
+    device's area, so the bounties sensor came up as
+    sensor.familie_taskmate_bounties and the bounty card found nothing. The
+    overview publishes the ids the registry really holds."""
+
+    def test_suffixes_match_the_resolver_defaults(self):
+        from custom_components.taskmate.sensor import COMPANION_SUFFIXES
+
+        assert [f"sensor.taskmate_{s}" for s in COMPANION_SUFFIXES] == _companions()
+
+    def test_suffixes_are_the_companion_unique_ids(self):
+        from custom_components.taskmate.sensor import COMPANION_SUFFIXES
+
+        unique = set(re.findall(r'_attr_unique_id = f"\{entry\.entry_id\}_([a-z_]+)"', SENSOR_SRC))
+        assert set(COMPANION_SUFFIXES) <= unique
+
+    def _sensor(self, registry_ids: dict[str, str]):
+        from unittest.mock import MagicMock, patch
+
+        from custom_components.taskmate import sensor as sensor_mod
+        from custom_components.taskmate.sensor import TaskMateOverallStatsSensor
+
+        from .test_sensor_attributes import _stress_coordinator
+
+        coord = _stress_coordinator()
+        coord.storage.get_children = MagicMock(return_value=[MagicMock(id="k1"), MagicMock(id="k2")])
+        entry = MagicMock(entry_id="E")
+        ent = TaskMateOverallStatsSensor(coord, entry)
+        ent.hass = MagicMock()
+        registry = MagicMock()
+        registry.async_get_entity_id = lambda domain, platform, uid: registry_ids.get(uid)
+        return ent, patch.object(sensor_mod.er, "async_get", return_value=registry)
+
+    def test_map_carries_area_prefixed_ids(self):
+        ent, patched = self._sensor(
+            {
+                "E_bounties": "sensor.familie_taskmate_bounties",
+                "E_chores": "sensor.taskmate_chores",
+                "E_k1_badges": "sensor.familie_taskmate_nils_badges",
+            }
+        )
+        with patched:
+            m = ent._entity_map()
+        assert m["companion_entities"] == {
+            "bounties": "sensor.familie_taskmate_bounties",
+            "chores": "sensor.taskmate_chores",
+        }
+        assert m["badge_entities"] == {"k1": "sensor.familie_taskmate_nils_badges"}
+
+    def test_no_hass_publishes_empty_maps(self):
+        ent, patched = self._sensor({})
+        ent.hass = None
+        with patched:
+            assert ent._entity_map() == {"companion_entities": {}, "badge_entities": {}}
+
+    def test_map_is_unrecorded(self):
+        from custom_components.taskmate.sensor import TaskMateOverallStatsSensor
+
+        assert {"companion_entities", "badge_entities"} <= TaskMateOverallStatsSensor._unrecorded_attributes

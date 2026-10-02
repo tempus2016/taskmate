@@ -2443,6 +2443,10 @@ class TaskMateChildCard extends LitElement {
   // child_id — so resolve it robustly or the badge strip never finds it.
   _resolveBadgesEntity(child) {
     if (!this.hass || !child) return null;
+    // The real id from the overview's entity map (#1018) — the guesses below
+    // miss an area-prefixed or renamed sensor.
+    const mapped = window.__taskmate_badges_state && window.__taskmate_badges_state(this.hass, child.id);
+    if (mapped) return mapped;
     const slug = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
     const nameSlug = slug(child.name);
     const candidates = [

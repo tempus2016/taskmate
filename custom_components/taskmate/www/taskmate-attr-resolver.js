@@ -19,8 +19,13 @@
 (function () {
   "use strict";
 
-  // Fixed companion entity ids. TaskMate is a single-instance integration
-  // (config_flow enforces unique_id == DOMAIN), so these ids are stable.
+  // Default companion entity ids. TaskMate is a single-instance integration
+  // (config_flow enforces unique_id == DOMAIN), but these are only the ids
+  // Home Assistant generates by default: since 2026.6 a new entity on a device
+  // with an area gets the area in front ("sensor.familie_taskmate_bounties"),
+  // and users rename entities. The overview sensor publishes the real ids as
+  // `companion_entities`, keyed by the part after "sensor.taskmate_" (#1018);
+  // these defaults are the fallback when that map is missing.
   const COMPANIONS = [
     "sensor.taskmate_chores",
     "sensor.taskmate_chore_availability",
@@ -68,6 +73,37 @@
     ],
   };
 
+  const DEFAULT_PREFIX = "sensor.taskmate_";
+  const OVERVIEW_ENTITY = "sensor.taskmate_overview";
+
+  // The overview's entity map (#1018). Looked up under its default id first,
+  // then on whichever state carries it, in case the overview was renamed too.
+  function entityMap(hass) {
+    const ov = hass.states[OVERVIEW_ENTITY];
+    if (ov && ov.attributes && ov.attributes.companion_entities) return ov.attributes;
+    for (const id in hass.states) {
+      const st = hass.states[id];
+      if (st && st.attributes && st.attributes.companion_entities) return st.attributes;
+    }
+    return null;
+  }
+
+  // [defaultId, realId] for every companion, cached per hass.states object.
+  let _idCache = { stateRef: null, pairs: null, badges: null };
+
+  function resolvedIds(hass) {
+    if (_idCache.stateRef !== hass.states) {
+      const map = entityMap(hass);
+      const real = (map && map.companion_entities) || {};
+      _idCache = {
+        stateRef: hass.states,
+        pairs: COMPANIONS.map((id) => [id, real[id.slice(DEFAULT_PREFIX.length)] || id]),
+        badges: (map && map.badge_entities) || {},
+      };
+    }
+    return _idCache;
+  }
+
   function mergedAttributes(hass, primaryEntityId) {
     if (!hass || !hass.states) return {};
     const merged = {};
@@ -75,10 +111,10 @@
     if (primary && primary.attributes) {
       Object.assign(merged, primary.attributes);
     }
-    for (const id of COMPANIONS) {
+    for (const [defaultId, id] of resolvedIds(hass).pairs) {
       const s = hass.states[id];
       if (!s || !s.attributes) continue;
-      const skip = COMPANION_SKIP_KEYS[id];
+      const skip = COMPANION_SKIP_KEYS[defaultId];
       if (!skip) {
         Object.assign(merged, s.attributes);
         continue;
@@ -106,6 +142,19 @@
   }
 
   window.__taskmate_attrs = resolveAttrs;
+
+  /**
+   * A child's badges sensor state, by child id, from the overview's entity
+   * map (#1018). Null when the map doesn't list one — callers fall back to
+   * guessing from the default entity id.
+   */
+  function badgesState(hass, childId) {
+    if (!hass || !hass.states || childId == null) return null;
+    const id = resolvedIds(hass).badges[String(childId)];
+    return (id && hass.states[id]) || null;
+  }
+
+  window.__taskmate_badges_state = badgesState;
 
   /**
    * Non-admin parent role (#661). True for Home Assistant admins and for users
@@ -190,7 +239,7 @@
       if (oldHass.states[primaryEntityId] !== newHass.states[primaryEntityId]) return true;
     }
 
-    for (const id of COMPANIONS) {
+    for (const [, id] of resolvedIds(newHass).pairs) {
       if (oldHass.states[id] !== newHass.states[id]) return true;
     }
 
