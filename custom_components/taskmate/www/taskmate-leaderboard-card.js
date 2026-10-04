@@ -249,8 +249,8 @@ class TaskMateLeaderboardCard extends LitElement {
       .lb-pod.win .lb-pod-name { font-size: 14px; }
       .lb-pod-score { font-size: 22px; color: var(--tmd-accent); margin-top: 2px; }
       .lb-pod.win .lb-pod-score { font-size: 28px; }
-      .lb-pod-score span { font-size: 11px; }
-      .lb-pod.win .lb-pod-score span { font-size: 13px; }
+      .lb-pod-score ha-icon { --mdc-icon-size: 16px; vertical-align: -2px; margin-inline-start: 2px; }
+      .lb-pod.win .lb-pod-score ha-icon { --mdc-icon-size: 20px; }
       .lb-list { display: flex; flex-direction: column; gap: 9px; }
       .lb-list .lb-row { background: var(--tmd-surface-2); border-radius: 18px; padding: 11px 13px; }
 
@@ -278,6 +278,7 @@ class TaskMateLeaderboardCard extends LitElement {
       .lb-cp-mid { flex: 1; min-width: 0; }
       .lb-cp-name { font-weight: 600; }
       .lb-cp-meta { font-size: 11.5px; gap: 10px; margin-top: 2px; }
+      .lb-cn-meta ha-icon, .lb-cp-meta ha-icon { --mdc-icon-size: 1.2em; vertical-align: -0.2em; margin-inline-end: 2px; }
       .lb-cp-right { text-align: end; }
       .lb-cp-score { font-size: 19px; }
       .lb-cp-unit { font-size: 10.5px; }
@@ -594,6 +595,7 @@ class TaskMateLeaderboardCard extends LitElement {
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     const children = [...(attrs.children || [])].filter(c => !c.is_guest);
     const pointsName = attrs.points_name || this._t('common.points');
+    const pointsIcon = attrs.points_icon || "mdi:star";
 
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const weeklyPoints = this._buildWeeklyPoints(attrs, tz);
@@ -635,7 +637,7 @@ class TaskMateLeaderboardCard extends LitElement {
       career: child.career_score || 0,
     }));
 
-    const ctx = { sortBy, pointsName };
+    const ctx = { sortBy, pointsName, pointsIcon };
     const body =
       design === "playroom" ? this._lbPlayroom(rows, scoreUnit, ctx) :
       design === "console"  ? this._lbConsole(rows, scoreUnit, ctx) :
@@ -663,12 +665,12 @@ class TaskMateLeaderboardCard extends LitElement {
     // icons there. active() returns the real design id (apply() hands the
     // render path the layout alias, which for graphite is "cleanpro").
     const mono = window.__taskmate_design?.active?.(this) === "graphite";
-    const stat = (icon, emoji, value) => (mono
+    const stat = (icon, emoji, value) => (mono || !emoji
       ? html`<span><ha-icon icon="${icon}"></ha-icon>${value}</span>`
       : html`<span>${emoji} ${value}</span>`);
     if (this.config.show_streak !== false && sortBy !== "streak") chips.push(stat("mdi:fire", "🔥", r.streak));
     if (this.config.show_weekly !== false && sortBy !== "weekly") chips.push(stat("mdi:calendar-blank-outline", "📅", r.weekly));
-    if (sortBy !== "points") chips.push(stat("mdi:star-outline", "⭐", r.points));
+    if (sortBy !== "points") chips.push(stat(ctx.pointsIcon, null, r.points));
     if (this.config.show_career !== false && sortBy !== "career") chips.push(stat("mdi:trophy-outline", "🏆", r.career));
     if (!chips.length) return "";
     return html`<div class="row muted ${cls}">${chips}</div>`;
@@ -685,7 +687,7 @@ class TaskMateLeaderboardCard extends LitElement {
           <div class="medal">${MEDAL[r.idx]}</div>
           ${this._av(r.child, r.tone, win ? 58 : 46)}
           <div class="lb-pod-name">${r.child.name}</div>
-          <div class="big lb-pod-score">${r.score.toLocaleString()}<span>⭐</span></div>
+          <div class="big lb-pod-score">${r.score.toLocaleString()}<ha-icon icon="${ctx.sortBy === "streak" ? "mdi:fire" : ctx.sortBy === "career" ? "mdi:trophy-outline" : ctx.pointsIcon}"></ha-icon></div>
           ${win && this.config.show_streak !== false && r.streak
             ? html`<div class="chip soft" style="margin-top:7px">🔥 ${this._t('common.d_streak', { count: r.streak })}</div>` : ""}
         </div>`;

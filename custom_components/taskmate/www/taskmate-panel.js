@@ -7076,7 +7076,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-meta">${this._esc(name(b.claimed_by))}${comp ? ` · ${this._timeAgo(comp.completed_at)}` : ""}</div>`;
     } else if (b.status === "completed") {
       status = `<span class="tm-pill tm-pill-success">${this._t("panel.bounty_status_completed")}</span>
-        <div class="tm-meta">${this._t("panel.bounty_completed_meta", { name: this._esc(name(b.claimed_by)), points: this._num(b.points_awarded || b.points) })}</div>`;
+        <div class="tm-meta">${this._t("panel.bounty_completed_meta", { name: this._esc(name(b.claimed_by)), points: this._num(b.points_awarded || b.points), points_name: this._esc(this._pointsName()) })}</div>`;
     } else if (b.status === "expired") {
       status = `<span class="tm-pill tm-pill-muted">${this._t("panel.bounty_status_expired")}</span>
         <div class="tm-meta">${this._t(b.lapse_count > 0 ? "panel.bounty_expired_lapsed_meta" : b.claim_count > 0 ? "panel.bounty_expired_unfinished_meta" : "panel.bounty_expired_meta", { date: b.closed_at ? this._esc(new Date(b.closed_at).toLocaleDateString([], { day: "numeric", month: "short" })) : "" })}</div>`;
@@ -7383,7 +7383,7 @@ class TaskMatePanel extends HTMLElement {
       const child = childById[b.child_id];
       return `<span class="tm-auc-chip" title="${this._esc(child ? child.name : "?")}">
         ${child ? this._childAvatar(child) : ""}
-        ${show ? `<b>${this._num(b.points)} ★</b>` : `<span class="tm-text-muted">${this._t("panel.auction_sealed")}</span>`}
+        ${show ? `<b>${this._num(b.points)} ${this._pointsIconHtml()}</b>` : `<span class="tm-text-muted">${this._t("panel.auction_sealed")}</span>`}
         ${i === 0 && a.status === "open" && show ? `<span class="tm-meta">· ${this._t("panel.auction_leading")}</span>` : ""}
       </span>`;
     }).join("");
@@ -7394,9 +7394,9 @@ class TaskMatePanel extends HTMLElement {
     const chore = `
       <div class="tm-name-main tm-bounty-cell">
         <span class="tm-avatar tm-auc-ic">${this._mdi(a.icon || "mdi:gavel")}</span>
-        <div><strong>${this._esc(a.chore_name)}</strong><div class="tm-meta">${this._esc(this._t("panel.auction_normally", { date: this._auctionDate(a.occurrence), points: this._num(a.normal_points) }))}</div></div>
+        <div><strong>${this._esc(a.chore_name)}</strong><div class="tm-meta">${this._esc(this._t("panel.auction_normally", { date: this._auctionDate(a.occurrence), points: this._num(a.normal_points), points_name: this._pointsName() }))}</div></div>
       </div>`;
-    const max = `<strong class="tm-numeric tm-auc-gold">${this._num(a.max_points)} ★</strong>${a.min_points > 1 ? `<div class="tm-meta">${this._t("panel.auction_min_meta", { points: this._num(a.min_points) })}</div>` : ""}`;
+    const max = `<strong class="tm-numeric tm-auc-gold">${this._num(a.max_points)} ${this._pointsIconHtml()}</strong>${a.min_points > 1 ? `<div class="tm-meta">${this._t("panel.auction_min_meta", { points: this._num(a.min_points), points_name: this._esc(this._pointsName()) })}</div>` : ""}`;
     if (a.status === "open") {
       const left = Date.parse(a.closes_at || "") - Date.now();
       const who = (a.eligible_child_ids || []).map(cid => childById[cid]).filter(Boolean)
@@ -7424,7 +7424,7 @@ class TaskMatePanel extends HTMLElement {
       result = `<span class="tm-pill tm-pill-muted">${this._t("panel.auction_status_cancelled")}</span>`;
       status = `<span class="tm-pill tm-pill-muted">${this._t("panel.auction_status_normal")}</span>`;
     } else if (a.winner_id) {
-      result = `<div class="tm-auc-win">${winner ? this._childAvatar(winner) : ""}<div><strong>${this._esc(winner ? winner.name : "?")}</strong> ${this._t("panel.auction_won_at", { points: `<strong class="tm-auc-gold">${this._num(a.price)} ★</strong>` })}
+      result = `<div class="tm-auc-win">${winner ? this._childAvatar(winner) : ""}<div><strong>${this._esc(winner ? winner.name : "?")}</strong> ${this._t("panel.auction_won_at", { points: `<strong class="tm-auc-gold">${this._num(a.price)} ${this._pointsIconHtml()}</strong>` })}
         <div class="tm-meta">${this._esc(this._t("panel.auction_assigned_for", { date: this._auctionDate(a.occurrence) }))}</div></div></div>`;
       const st = a.chore_status || "todo";
       status = st === "done"
@@ -7572,10 +7572,10 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-auc-steprow">
             <div class="tm-auc-stepper">
               <button type="button" data-act="auction-max-step" data-id="-1" aria-label="−">−</button>
-              <span>${this._num(d.max_points)} ★</span>
+              <span>${this._num(d.max_points)} ${this._pointsIconHtml()}</span>
               <button type="button" data-act="auction-max-step" data-id="1" aria-label="+">+</button>
             </div>
-            <span class="tm-meta">${this._t("panel.auction_normally_worth", { points: normal })}</span>
+            <span class="tm-meta">${this._t("panel.auction_normally_worth", { points: normal, points_name: this._esc(this._pointsName()) })}</span>
           </div>
           <div class="tm-chip-row" style="margin-top:8px">
             ${multiples.map(([m, n]) => chip("auction-max-set", n, Number(d.max_points) === n, `${m}× · ${n}`)).join("")}
@@ -8148,7 +8148,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-tpl-icon"><ha-icon icon="${this._esc(tpl.icon || "mdi:clipboard-list")}"></ha-icon></div>
         <div class="tm-manage-tpl-info">
           <div class="tm-manage-tpl-name">${this._esc(tpl.name)}${locked ? ' <span class="tm-text-vfaint" style="font-size:12px">🔒</span>' : ""}</div>
-          <div class="tm-meta">${this._t("panel.template_pts_total", {count, points: pts})}</div>
+          <div class="tm-meta">${this._t("panel.template_pts_total", {count, points: pts, points_name: this._esc(this._pointsName())})}</div>
         </div>
         <div class="tm-row-actions">
           ${locked ? "" : `<button type="button" class="tm-btn tm-btn-sm" data-act="tpl-edit" data-id="${this._esc(tpl.id)}">${this._t("panel.btn_edit")}</button>`}
@@ -8190,7 +8190,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-tpl-icon"><ha-icon icon="${this._esc(tpl.icon || "mdi:clipboard-list")}"></ha-icon></div>
           <div style="flex:1">
             <div class="tm-tpl-picker-name">${this._esc(tpl.name)}</div>
-            <div class="tm-meta">${this._t("panel.template_pts_total", {count, points: pts})}</div>
+            <div class="tm-meta">${this._t("panel.template_pts_total", {count, points: pts, points_name: this._esc(this._pointsName())})}</div>
           </div>
           <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}">${tpl.builtin ? this._t("panel.template_builtin") : this._t("panel.template_custom")}</span>
         </div>
@@ -8217,7 +8217,7 @@ class TaskMatePanel extends HTMLElement {
       ${chores.map((c, i) => this._renderTemplateChoreCard(c, i)).join("")}
       ${chores.length > 0 ? `
         <div class="tm-tpl-confirm-bar">
-          <div>${this._t("panel.template_confirm_bar", {count: chores.length, points: totalPts})}</div>
+          <div>${this._t("panel.template_confirm_bar", {count: chores.length, points: totalPts, points_name: this._esc(this._pointsName())})}</div>
           <button type="button" class="tm-btn tm-btn-raised" data-act="tpl-apply">${this._t("panel.template_create_btn", {count: chores.length})}</button>
         </div>
       ` : `<div class="tm-card tm-empty"><p>${this._t("panel.empty_template_all_removed")}</p></div>`}
@@ -8233,7 +8233,7 @@ class TaskMatePanel extends HTMLElement {
           <span class="tm-tpl-expand ${expanded ? "open" : ""}">▶</span>
           <span class="tm-tpl-preview-name">${this._esc(chore.name)}</span>
           <span class="tm-tpl-preview-summary">
-            <span>${this._t("panel.pts_display", {count: chore.points || 0})}</span>
+            <span>${this._t("panel.pts_display", {count: chore.points || 0, points_name: this._esc(this._pointsName())})}</span>
             <span>${schedLabel}</span>
             <span>${this._esc(this._timeCategoryLabel(chore.time_category))}</span>
           </span>
@@ -8298,7 +8298,7 @@ class TaskMatePanel extends HTMLElement {
                 <label class="tm-tpl-check-row">
                   <input type="checkbox" data-tpl-chore-check="${this._esc(c.id)}">
                   <span>${this._esc(c.name)}</span>
-                  <span class="tm-text-muted" style="margin-inline-start:auto">${this._t("panel.pts_display", {count: c.points})}</span>
+                  <span class="tm-text-muted" style="margin-inline-start:auto">${this._t("panel.pts_display", {count: c.points, points_name: this._esc(this._pointsName())})}</span>
                 </label>
               `).join("")}
             </div>
@@ -8639,8 +8639,8 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-setting-label">${this._t("panel.settings_surprise_params_label")}<small>${this._t("panel.settings_surprise_params_hint")}</small></div>
               <div class="tm-difficulty-mults">
                 <label>${this._t("panel.settings_surprise_chance")}<input type="number" class="tm-input" step="1" min="0" max="100" data-setting="surprise_bonus_chance" value="${this._num(s.surprise_bonus_chance, 15)}"></label>
-                <label>${this._t("panel.settings_surprise_min")}<input type="number" class="tm-input" step="1" min="0" data-setting="surprise_bonus_min" value="${this._num(s.surprise_bonus_min, 5)}"></label>
-                <label>${this._t("panel.settings_surprise_max")}<input type="number" class="tm-input" step="1" min="0" data-setting="surprise_bonus_max" value="${this._num(s.surprise_bonus_max, 20)}"></label>
+                <label>${this._t("panel.settings_surprise_min", { points_name: this._esc(this._pointsName()) })}<input type="number" class="tm-input" step="1" min="0" data-setting="surprise_bonus_min" value="${this._num(s.surprise_bonus_min, 5)}"></label>
+                <label>${this._t("panel.settings_surprise_max", { points_name: this._esc(this._pointsName()) })}<input type="number" class="tm-input" step="1" min="0" data-setting="surprise_bonus_max" value="${this._num(s.surprise_bonus_max, 20)}"></label>
               </div>
             </div>
             <div class="tm-setting-row tm-setting-stack">
@@ -8701,7 +8701,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_spendcap_params_label")}<small>${this._t("panel.settings_spendcap_params_hint")}</small></div>
               <div class="tm-difficulty-mults">
-                <label>${this._t("panel.settings_spendcap_amount")}<input type="number" class="tm-input" step="1" min="0" data-setting="spend_cap_amount" value="${this._num(s.spend_cap_amount, 0)}"></label>
+                <label>${this._t("panel.settings_spendcap_amount", { points_name: this._esc(this._pointsName()) })}<input type="number" class="tm-input" step="1" min="0" data-setting="spend_cap_amount" value="${this._num(s.spend_cap_amount, 0)}"></label>
                 <label>${this._t("panel.settings_decay_period")}
                   <select class="tm-select" data-setting="spend_cap_period">
                     <option value="weekly" ${s.spend_cap_period === "weekly" ? "selected" : ""}>${this._t("panel.reward_restock_weekly")}</option>
@@ -9339,7 +9339,7 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-tpl-preview-card" style="margin-bottom:8px">
                 <div style="display:flex;align-items:center;gap:10px;padding:10px 14px">
                   <span style="font-weight:600;flex:1">${this._esc(c.name || this._t("panel.template_unnamed"))}</span>
-                  <span class="tm-meta">${this._t("panel.pts_display", {count: c.points || 0})}</span>
+                  <span class="tm-meta">${this._t("panel.pts_display", {count: c.points || 0, points_name: this._esc(this._pointsName())})}</span>
                   <button type="button" class="tm-tpl-remove" data-act="tpl-dialog-remove-chore" data-idx="${i}">✕</button>
                 </div>
                 <div style="padding:0 14px 12px;border-top:1px solid var(--tm-border-soft)">
@@ -10698,6 +10698,15 @@ class TaskMatePanel extends HTMLElement {
     return `<ha-icon icon="${this._esc(name || "mdi:account-circle")}"></ha-icon>`;
   }
 
+  _pointsName() {
+    return this._state.settings?.points_name || this._t("common.points");
+  }
+
+  /** The configured points icon, sized to sit inline after a number. */
+  _pointsIconHtml() {
+    return `<ha-icon class="tm-pts-ic" icon="${this._esc(this._state.settings?.points_icon || "mdi:star")}"></ha-icon>`;
+  }
+
   _styles() {
     return `<style>
       /* Fill the panel area without depending on a percentage-height chain.
@@ -11161,6 +11170,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-auc-ic { width: 34px; height: 34px; border-radius: 10px; color: #fff; background: linear-gradient(135deg, #7e57c2, #5e35b1); }
       .tm-auc-ic ha-icon { --mdc-icon-size: 18px; }
       .tm-auc-gold { color: var(--tm-gold, #d4ac0d); }
+      .tm-pts-ic { --mdc-icon-size: 1.1em; vertical-align: -0.15em; }
       .tm-auc-head { flex: 1; min-width: 0; }
       .tm-auc-chips .tm-chip-btn { display: inline-flex; flex-direction: row; align-items: center; gap: 6px; }
       .tm-auc-chips .tm-chip-btn > ha-icon { --mdc-icon-size: 15px; }

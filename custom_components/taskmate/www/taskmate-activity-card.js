@@ -1099,7 +1099,9 @@ class TaskMateActivityCard extends LitElement {
       const verb = isAdd ? this._t('activity.received') : isSpend ? this._t('activity.spent') : this._t('activity.lost');
       const sign = isAdd ? '+' : '−';
       const tone = isAdd ? 'good' : (isSpend ? 'accent' : 'bad');
-      const emoji = reason.startsWith('Inspection passed:') ? '🔍' : isAdd ? '⭐' : (isPenalty ? '⚠️' : '➖');
+      const emoji = reason.startsWith('Inspection passed:') ? '🔍'
+        : isAdd ? html`<ha-icon style="--mdc-icon-size:1.1em" icon="${pointsIcon}"></ha-icon>`
+        : (isPenalty ? '⚠️' : '➖');
       return {
         childName, tone, emoji, sign, pts,
         text: html`<strong>${childName}</strong> ${verb} <strong>${pts}</strong>${item.reason ? html` <span class="reason">— ${displayReason}</span>` : ''}`,

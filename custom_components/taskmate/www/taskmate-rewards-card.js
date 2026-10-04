@@ -2030,7 +2030,7 @@ class TaskMateRewardsCard extends LitElement {
       </div>`;
   }
 
-  _designChildSelector(child, _pointsIcon, _pointsName, _design) {
+  _designChildSelector(child, pointsIcon, _pointsName, _design) {
     const spendable = typeof child.spendable_balance === 'number'
       ? child.spendable_balance : (child.points || 0);
     return html`
@@ -2038,7 +2038,7 @@ class TaskMateRewardsCard extends LitElement {
         ${this._av(child, this._designTone(0), 38)}
         <div class="rw-sel-name">${child.name}</div>
         <span class="chip soft">
-          <span style="color:var(--tmd-gold)">⭐</span>
+          <ha-icon style="color:var(--tmd-gold);--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${pointsIcon}"></ha-icon>
           ${this._t('rewards.spendable_balance')}: ${spendable}
         </span>
       </div>`;
@@ -2063,7 +2063,7 @@ class TaskMateRewardsCard extends LitElement {
           : assignedTo.map((cid) => html`<span class="chip rw-badge">${childMap[cid] || cid}</span>`))
       : '';
 
-    const costBadge = html`<span class="chip rw-cost">⭐ ${d.displayCost} ${pointsName}</span>`;
+    const costBadge = html`<span class="chip rw-cost"><ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${pointsIcon}"></ha-icon> ${d.displayCost} ${pointsName}</span>`;
 
     const bar = d.isJackpot
       ? html`<div class="bar rw-pool-bar">

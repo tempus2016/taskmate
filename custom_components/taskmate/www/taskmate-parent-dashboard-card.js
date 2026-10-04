@@ -530,6 +530,7 @@ class TaskMateParentDashboardCard extends LitElement {
       .pd-name-cp { font-weight: 600; }
       .pd-sub { font-size: 12.5px; }
       .pd-pts { font-size: 20px; color: var(--tmd-accent); }
+      .pd-pts ha-icon { --mdc-icon-size: 18px; vertical-align: -2px; margin-inline-start: 2px; }
       .pd-pts-cn { font-family: var(--tmd-font-mono); font-weight: 800; font-size: 18px; color: var(--tmd-accent); }
       .pd-mini { font-family: var(--tmd-font-mono); font-size: 10px; }
 
@@ -823,7 +824,7 @@ class TaskMateParentDashboardCard extends LitElement {
 
   _dEmpty(msg) { return html`<div class="tmd-empty">${msg}</div>`; }
 
-  _dOverview(design, children, chores, completions, attrs, _pointsIcon) {
+  _dOverview(design, children, chores, completions, attrs, pointsIcon) {
     if (!children.length) return this._dEmpty(this._t('dashboard.empty_no_children'));
     return html`${children.map((child, i) => {
       const tone = this._designTone(i);
@@ -866,7 +867,7 @@ class TaskMateParentDashboardCard extends LitElement {
               <div class="pd-name">${child.name}</div>
               <div class="muted pd-sub">${_ltrNums(this._t('dashboard.chores_done', { done: approved, total }, `${approved} / ${total} chores done`))}</div>
             </div>
-            <div class="big pd-pts">${child.points}⭐</div>
+            <div class="big pd-pts">${child.points}<ha-icon icon="${pointsIcon}"></ha-icon></div>
           </div>
           <div class="bar" style="margin-top:9px"><i style="width:${pct}%"></i></div>
         </div>`;

@@ -44,12 +44,16 @@ test("the Auctions item sits in the Earn group after Bounties, with the live cou
 });
 
 test("parents see the bid amounts, lowest first, and can hide them", () => {
-  const panel = panelWith([live()]);
+  const panel = panelWith([live()], { settings: { points_name: "Coins", points_icon: "mdi:circle-multiple" } });
+  const coin = '<ha-icon class="tm-pts-ic" icon="mdi:circle-multiple"></ha-icon>';
   const shown = panel._renderAuctionsTab();
-  assert.match(shown, /17 ★[\s\S]*leading[\s\S]*31 ★/);
+  assert.ok(shown.includes(`17 ${coin}`) && shown.indexOf(`17 ${coin}`) < shown.indexOf(`31 ${coin}`));
+  assert.ok(shown.indexOf("leading") > shown.indexOf(`17 ${coin}`));
+  // The household's own points icon, never a hardcoded star (#1030).
+  assert.ok(!shown.includes("★"));
   panel._auctionReveal = false;
   const hidden = panel._renderAuctionsTab();
-  assert.ok(!hidden.includes("17 ★") && hidden.includes("panel.auction_sealed"));
+  assert.ok(!hidden.includes(`17 ${coin}`) && hidden.includes("panel.auction_sealed"));
   assert.ok(hidden.includes('data-act="auction-close-now"') && hidden.includes('data-act="auction-cancel"'));
 });
 

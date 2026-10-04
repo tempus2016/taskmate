@@ -110,6 +110,14 @@ class TaskMateBountyCard extends LitElement {
     return this._attrs().children || [];
   }
 
+  _pointsName() {
+    return this._attrs().points_name || this._t("common.points");
+  }
+
+  _pointsIcon() {
+    return this._attrs().points_icon || "mdi:star";
+  }
+
   _child() {
     return this._children().find(c => String(c.id) === String(this.config.child_id));
   }
@@ -378,7 +386,7 @@ class TaskMateBountyCard extends LitElement {
     } else if (b.status === "pending" && mine) {
       body = html`
         <div class="bb-act">
-          <span class="bb-tag warn bb-wait"><ha-icon icon="mdi:timer-sand"></ha-icon>${this._t("bounty.waiting", { points: b.points })}</span>
+          <span class="bb-tag warn bb-wait"><ha-icon icon="mdi:timer-sand"></ha-icon>${this._t("bounty.waiting", { points: b.points, pointsName: this._pointsName() })}</span>
           ${b.undo && b.completion_id ? html`
             <button class="bb-btn bb-text" ?disabled=${this._busy} @click=${() => this._undo(b)}>
               <ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon>${this._t("bounty.undo")}
@@ -389,13 +397,13 @@ class TaskMateBountyCard extends LitElement {
       body = html`<div class="bb-sib">${this._avatar(b.claimed_by, 20)}<span>${this._t("bounty.sibling_checking", { name: this._childName(b.claimed_by) })}</span></div>`;
     } else if (b.status === "completed") {
       body = mine
-        ? html`<div class="bb-act"><span class="bb-tag good"><ha-icon icon="mdi:check"></ha-icon>${this._t("bounty.you_earned", { points: b.points_awarded ?? b.points })}</span></div>`
+        ? html`<div class="bb-act"><span class="bb-tag good"><ha-icon icon="mdi:check"></ha-icon>${this._t("bounty.you_earned", { points: b.points_awarded ?? b.points, pointsName: this._pointsName() })}</span></div>`
         : html`<div class="bb-sib">${this._avatar(b.claimed_by, 20)}<span>${this._t("bounty.done_by", { name: this._childName(b.claimed_by) })}</span></div>`;
     }
 
     return html`
       <div class="bb-row ${cls}">
-        <div class="bb-cost"><b>${b.points}</b><small>★ ${this._t("bounty.pts")}</small></div>
+        <div class="bb-cost" title="${b.points} ${this._pointsName()}"><b>${b.points}</b><ha-icon class="bb-cost-ic" icon="${this._pointsIcon()}"></ha-icon></div>
         <div class="bb-main">
           <div class="bb-title-row">
             <span class="bb-ic"><ha-icon icon="${b.icon || "mdi:flag-outline"}"></ha-icon></span>
@@ -427,7 +435,7 @@ class TaskMateBountyCard extends LitElement {
           <p>${this._t("bounty.claim_body", { hours: b.claim_hours })}</p>
           <div class="bb-dlg-acts">
             <button class="bb-btn bb-ghost" @click=${close}>${this._t("bounty.not_now")}</button>
-            <button class="bb-btn bb-claim" ?disabled=${this._busy} @click=${() => this._claim(b)}>${this._t("bounty.claim_it", { points: b.points })}</button>
+            <button class="bb-btn bb-claim" ?disabled=${this._busy} @click=${() => this._claim(b)}>${this._t("bounty.claim_it", { points: b.points, pointsName: this._pointsName() })}</button>
           </div>
         </div>`;
     } else if (d.kind === "photo") {
@@ -451,7 +459,7 @@ class TaskMateBountyCard extends LitElement {
         <div class="bb-dlg" style="--bb-dlg:var(--tmd-good, #2ecc71)">
           <div class="bb-big-ic"><ha-icon icon="mdi:check"></ha-icon></div>
           <h3>${this._t("bounty.yay_title")}</h3>
-          <p>${this._t("bounty.yay_body", { title: b.title, points: b.points })}</p>
+          <p>${this._t("bounty.yay_body", { title: b.title, points: b.points, pointsName: this._pointsName() })}</p>
           <div class="bb-dlg-acts"><button class="bb-btn bb-done" @click=${close}>${this._t("bounty.ok")}</button></div>
         </div>`;
     }
@@ -527,7 +535,7 @@ class TaskMateBountyCard extends LitElement {
         font-family: var(--tmd-font-display, inherit);
         font-size: 1.35rem; line-height: 1; text-shadow: 0 1px 2px rgba(0, 0, 0, .2);
       }
-      .bb-cost small { font-size: .62rem; font-weight: 700; letter-spacing: .5px; margin-top: 3px; opacity: .95; }
+      .bb-cost-ic { --mdc-icon-size: 14px; margin-top: 2px; opacity: .95; }
       :host([data-tm-design="accessible"]) .bb-cost { color: #111; box-shadow: none; border: 2px solid var(--tmd-border, #111); }
       :host([data-tm-design="accessible"]) .bb-cost b { text-shadow: none; }
       .bb-main { flex: 1; min-width: 0; }

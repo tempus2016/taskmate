@@ -450,7 +450,7 @@ class TaskMateRewardProgressCard extends LitElement {
                 flex-direction: column; align-items: center; gap: 4px; }
       .rp-kid .av { margin: 0 auto 2px; }
       .rp-kid-pts { font-size: 20px; color: var(--tmd-accent); }
-      .rp-kid-pts span { font-size: 12px; margin-inline-start: 1px; }
+      .rp-kid-pts ha-icon { --mdc-icon-size: 16px; vertical-align: -1px; margin-inline-start: 1px; }
       .rp-kid-name { font-size: 12px; font-weight: 800; }
       .rp-kid-bar { width: 100%; height: 7px; margin-top: 3px; }
     `;
@@ -745,6 +745,7 @@ class TaskMateRewardProgressCard extends LitElement {
     const rewards = attrs.rewards || [];
     const children = attrs.children || [];
     const pointsName = attrs.points_name || this._t("common.points");
+    const pointsIcon = attrs.points_icon || "mdi:star";
 
     let reward = this.config.reward_id
       ? rewards.find(r => r.id === this.config.reward_id)
@@ -803,10 +804,10 @@ class TaskMateRewardProgressCard extends LitElement {
       availabilityTone = 'warn';
     }
 
-    return wrap(html`${this._designBody(reward, design, cost, have, pct, remaining, contributors, pointsName, availabilityLabel, availabilityTone)}`);
+    return wrap(html`${this._designBody(reward, design, cost, have, pct, remaining, contributors, pointsName, pointsIcon, availabilityLabel, availabilityTone)}`);
   }
 
-  _designBody(reward, design, cost, have, pct, remaining, contributors, pointsName, availabilityLabel, availabilityTone) {
+  _designBody(reward, design, cost, have, pct, remaining, contributors, pointsName, pointsIcon, availabilityLabel, availabilityTone) {
     const icon = reward.icon || "mdi:gift";
     const isIcon = typeof icon === "string" && icon.startsWith("mdi:");
     const hero = isIcon
@@ -820,7 +821,7 @@ class TaskMateRewardProgressCard extends LitElement {
         ${reward.description ? html`<div class="muted rp-desc">${reward.description}</div>` : ''}
         ${reward.is_jackpot ? html`<div class="chip rp-jackpot">🎰 ${this._t('reward_progress.jackpot_reward')}</div>` : ''}
         ${availabilityLabel ? html`<div class="chip rp-avail rp-avail-${availabilityTone}">${availabilityLabel}</div>` : ''}
-        <div class="chip rp-cost">⭐ ${cost} ${pointsName}</div>
+        <div class="chip rp-cost"><ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${pointsIcon}"></ha-icon> ${cost} ${pointsName}</div>
         <div class="bar rp-bar"><i style="width:${pct}%;${pct >= 100 ? 'background:var(--tmd-good)' : ''}"></i></div>
         ${design === "cleanpro"
           ? html`<div class="row rp-stat">
@@ -840,7 +841,7 @@ class TaskMateRewardProgressCard extends LitElement {
           ${contributors.map((c) => html`
             <div class="rp-kid" style="--ac:${c.tone}">
               ${this._av(c.child, c.tone, 36)}
-              <div class="big rp-kid-pts">${c.points}<span>⭐</span></div>
+              <div class="big rp-kid-pts">${c.points}<ha-icon icon="${pointsIcon}"></ha-icon></div>
               <div class="rp-kid-name">${c.child.name}</div>
               ${design === "cleanpro" && !reward.is_jackpot && c.cost > 0
                 ? html`<div class="bar rp-kid-bar"><i style="width:${Math.min(100, Math.round((c.points / c.cost) * 100))}%;background:${c.tone}"></i></div>` : ''}

@@ -28,7 +28,7 @@ function hassWith(bounties) {
     calls,
     callService: async (domain, service, data) => { calls.push({ domain, service, data }); },
     states: {
-      [ENTITY]: { state: "ok", attributes: { children: CHILDREN, bounties } },
+      [ENTITY]: { state: "ok", attributes: { children: CHILDREN, bounties, points_name: "Coins", points_icon: "mdi:circle-multiple" } },
     },
   };
 }
@@ -67,6 +67,12 @@ for (const design of DESIGNS) {
   });
 }
 
+test("the cost badge uses the household's points icon, not a hardcoded star (#1030)", () => {
+  const view = render(cardFor([open()]).render());
+  assert.ok(view.markup.includes('<ha-icon class="bb-cost-ic" icon="mdi:circle-multiple">'));
+  assert.ok(!view.markup.includes("★") && !view.markup.includes("PTS"));
+});
+
 test("a bounty the child can't claim is hidden", () => {
   const view = render(cardFor([open({ eligible: ["k2"] })]).render());
   assert.ok(!view.markup.includes("Wash the car"));
@@ -96,7 +102,7 @@ test("claiming asks first, then calls claim_bounty for this child", async () => 
   assert.equal(card._dialog.kind, "claim");
   const view = render(card.render());
   assert.ok(view.markup.includes(localize("bounty.claim_title", { title: "Wash the car" })));
-  await button(view, localize("bounty.claim_it", { points: 50 })).click();
+  await button(view, localize("bounty.claim_it", { points: 50, pointsName: "Coins" })).click();
   assert.deepEqual(plain(card.hass.calls), [{ domain: "taskmate", service: "claim_bounty", data: { bounty_id: "b1", child_id: "k1" } }]);
   assert.equal(card._dialog, null);
 });
@@ -128,7 +134,7 @@ test("a submitted bounty waits for a grown-up, with undo while it's allowed", as
   const b = open({ status: "pending", claimed_by: "k1", completion_id: "c1", undo: true });
   const card = cardFor([b]);
   const view = render(card.render());
-  assert.ok(view.markup.includes(localize("bounty.waiting", { points: 50 })));
+  assert.ok(view.markup.includes(localize("bounty.waiting", { points: 50, pointsName: "Coins" })));
   await button(view, localize("bounty.undo")).click();
   assert.deepEqual(plain(card.hass.calls[0]), { domain: "taskmate", service: "undo_chore", data: { completion_id: "c1" } });
   delete b.undo;
@@ -138,7 +144,7 @@ test("a submitted bounty waits for a grown-up, with undo while it's allowed", as
 test("a completed bounty shows under Recently completed", () => {
   const view = render(cardFor([open({ status: "completed", claimed_by: "k1", points_awarded: 60 })]).render());
   assert.ok(view.markup.includes(localize("bounty.recent")));
-  assert.ok(view.markup.includes(localize("bounty.you_earned", { points: 60 })));
+  assert.ok(view.markup.includes(localize("bounty.you_earned", { points: 60, pointsName: "Coins" })));
 });
 
 test("the expiry counts down, and says so when there is none", () => {

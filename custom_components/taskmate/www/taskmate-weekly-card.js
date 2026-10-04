@@ -671,6 +671,9 @@ class TaskMateWeeklyCard extends LitElement {
 
   _wkKids(design, d) {
     if (!d.kids.length) return "";
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+      || this.hass?.states?.[this.config.entity]?.attributes || {};
+    const pointsIcon = attrs.points_icon || "mdi:star";
     const wrapClass = design === "cleanpro" ? "wk-kids cp" : "wk-kids";
     const valColor = design === "cleanpro" ? "var(--tmd-good)" : "var(--tmd-accent)";
     const av = design === "playroom" ? 34 : design === "console" ? 30 : 28;
@@ -684,7 +687,7 @@ class TaskMateWeeklyCard extends LitElement {
               ${this._av(r.child, tone, av)}
               <div class="name">${r.child.name}</div>
               ${design === "playroom"
-                ? html`<div class="chip soft">+${r.points} ⭐</div>`
+                ? html`<div class="chip soft">+${r.points} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${pointsIcon}"></ha-icon></div>`
                 : html`<div class="num" style="color:${valColor}">+${r.points}</div>`}
             </div>`;
         })}

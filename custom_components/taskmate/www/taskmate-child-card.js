@@ -2996,7 +2996,7 @@ class TaskMateChildCard extends LitElement {
           <span class="ch-emoji">${r.glyph}</span>
           <div class="ch-mid">
             <div class="ch-name">${r.chore.name}</div>
-            ${r.done ? "" : html`<div class="chip soft" style="margin-top:3px">+${r.points} ⭐</div>`}
+            ${r.done ? "" : html`<div class="chip soft" style="margin-top:3px">+${r.points} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>`}
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
@@ -4141,9 +4141,10 @@ class TaskMateChildCard extends LitElement {
     const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
     // Rate display
+    const pointsName = attrs.points_name || this._t('common.stars');
     const rateLabel = chore.timed_rate_minutes === 1
-      ? `${ratePoints} ${this._t('child.pts_per_min')}`
-      : `${ratePoints} ${this._t('child.pts_per_n_min', {count: chore.timed_rate_minutes})}`;
+      ? `${ratePoints} ${this._t('child.pts_per_min', {pointsName})}`
+      : `${ratePoints} ${this._t('child.pts_per_n_min', {count: chore.timed_rate_minutes, pointsName})}`;
 
     // Daily cap info
     const maxMin = chore.timed_max_daily_minutes || 0;
@@ -5181,12 +5182,18 @@ class TaskMateChildCard extends LitElement {
     return i.status === "open" ? "tm-insp-row-open" : i.status === "passed" ? "tm-insp-row-passed" : "";
   }
 
+  _pointsIcon() {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
+      || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    return attrs.points_icon || "mdi:star";
+  }
+
   _renderInspectionTag(chore, child) {
     const i = this._inspectionFor(chore, child);
     if (!i) return "";
     const tags = {
       open: ["mdi:magnify-scan", this._t("inspection.tag_open")],
-      passed: ["mdi:star", this._t("inspection.tag_passed", { bonus: i.bonus })],
+      passed: [this._pointsIcon(), this._t("inspection.tag_passed", { bonus: i.bonus })],
       redo: ["mdi:restore", this._t("inspection.tag_redo")],
       failed: ["mdi:magnify-scan", this._t("inspection.tag_failed")],
     };

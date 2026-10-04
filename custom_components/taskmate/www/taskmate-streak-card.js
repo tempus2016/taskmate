@@ -462,6 +462,9 @@ class TaskMateStreakCard extends LitElement {
       : (entity_ref?.attributes?.total_completions_all_time || completions.filter(comp => comp.child_id === child.id).length);
     const totalPoints = (child.total_points_earned !== undefined ? child.total_points_earned : child.points) || 0;
     const bestStreak = child.best_streak || streak || 0;
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+      || entity_ref?.attributes || {};
+    const pointsName = attrs.points_name || this._t('common.points');
 
     const milestones = [
       { id: "first", name: this._t('streak.achievement.first_name'), emoji: "🌟", description: this._t('streak.achievement.first_desc'), earned: totalCompletions >= 1 },
@@ -472,8 +475,8 @@ class TaskMateStreakCard extends LitElement {
       { id: "streak7", name: this._t('streak.achievement.streak7_name'), emoji: "🔥", description: this._t('streak.achievement.streak7_desc'), earned: bestStreak >= 7 },
       { id: "streak14", name: this._t('streak.achievement.streak14_name'), emoji: "🔥🔥", description: this._t('streak.achievement.streak14_desc'), earned: bestStreak >= 14 },
       { id: "streak30", name: this._t('streak.achievement.streak30_name'), emoji: "💎", description: this._t('streak.achievement.streak30_desc'), earned: bestStreak >= 30 },
-      { id: "points50", name: this._t('streak.achievement.points50_name'), emoji: "🎯", description: this._t('streak.achievement.points50_desc'), earned: totalPoints >= 50 },
-      { id: "points100", name: this._t('streak.achievement.points100_name'), emoji: "💰", description: this._t('streak.achievement.points100_desc'), earned: totalPoints >= 100 },
+      { id: "points50", name: this._t('streak.achievement.points50_name', { pointsName }), emoji: "🎯", description: this._t('streak.achievement.points50_desc'), earned: totalPoints >= 50 },
+      { id: "points100", name: this._t('streak.achievement.points100_name', { pointsName }), emoji: "💰", description: this._t('streak.achievement.points100_desc'), earned: totalPoints >= 100 },
     ];
 
     // Show earned ones + next locked milestone

@@ -609,7 +609,7 @@ class TaskMatePointsCard extends LitElement {
       .pc-mid { flex: 1; min-width: 0; }
       .pc-name { font-weight: 800; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .pc-pts { font-family: var(--tmd-font-display); font-weight: 800; font-size: 22px; line-height: 1; color: var(--tmd-accent); }
-      .pc-pts span { font-size: 12px; margin-inline-start: 2px; }
+      .pc-pts ha-icon { --mdc-icon-size: 16px; vertical-align: -1px; margin-inline-start: 2px; }
       .pc-sub { font-size: 11px; }
 
       /* Console list variant */
@@ -877,7 +877,7 @@ class TaskMatePointsCard extends LitElement {
               ${this._av(child, tone, 46)}
               <div class="pc-mid">
                 <div class="pc-name">${child.name}</div>
-                <div class="pc-pts">${child.points}<span>⭐</span></div>
+                <div class="pc-pts">${child.points}<ha-icon icon="${pointsIcon}"></ha-icon></div>
               </div>
               ${this._designQuickActions(child, pointsName, pointsIcon, isLoading)}
             </div>`;

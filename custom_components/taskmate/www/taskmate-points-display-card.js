@@ -226,9 +226,8 @@ class TaskMatePointsDisplayCard extends LitElement {
         position: relative;
         overflow: hidden;
       }
-      .big-points::before {
-        content: "\u2B50";
-        font-size: 7rem;
+      .pd-wm {
+        --mdc-icon-size: 7rem;
         position: absolute;
         inset-inline-end: -12px;
         bottom: -18px;
@@ -253,7 +252,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         transition: color 0.3s;
       }
       .points-star {
-        font-size: 2rem;
+        --mdc-icon-size: 2rem;
         animation: star-spin 3s linear infinite;
         display: inline-block;
         margin-inline-end: 6px;
@@ -351,7 +350,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         letter-spacing: -0.02em;
       }
       .child-tile .tile-star {
-        font-size: 1rem;
+        --mdc-icon-size: 1rem;
         vertical-align: middle;
         margin-inline-end: 2px;
         display: inline-block;
@@ -412,14 +411,11 @@ class TaskMatePointsDisplayCard extends LitElement {
         position: relative;
         overflow: hidden;
       }
-      .cumulative-total::before {
-        content: "\u{1F31F}";
-        font-size: 6rem;
-        position: absolute;
+      .cumulative-total .pd-wm {
+        --mdc-icon-size: 6rem;
         inset-inline-end: -10px;
         bottom: -14px;
         opacity: 0.07;
-        pointer-events: none;
       }
       .cumulative-total .points-label { margin-bottom: 6px; }
       .cumulative-total .points-number { font-size: 3.8rem; }
@@ -473,7 +469,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         flex-shrink: 0;
       }
       .cumul-row .cumul-star {
-        font-size: 0.85rem;
+        --mdc-icon-size: 0.85rem;
         animation: star-spin 5s linear infinite;
         display: inline-block;
         margin-inline-end: 2px;
@@ -537,13 +533,14 @@ class TaskMatePointsDisplayCard extends LitElement {
       /* Shared .tmd kit + design tokens are provided by taskmate-design.js styles(). */
 
       /* Points Display — Playroom */
+      .tmd-hd .ic ha-icon { --mdc-icon-size: 18px; }
       .pl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 11px; }
       .pl-tile { background: var(--tmd-surface-2); border-radius: 18px; padding: 22px 12px 15px; text-align: center;
                  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
       .pl-medal { position: absolute; top: 9px; inset-inline-start: 11px; font-size: 16px; line-height: 1; }
       .pl-pts { font-family: var(--tmd-font-display); font-weight: 800; font-size: 1.85rem; line-height: 1;
                 color: var(--tmd-accent); }
-      .pl-pts span { font-size: 0.9rem; margin-inline-start: 2px; }
+      .pl-pts ha-icon { --mdc-icon-size: 0.9rem; margin-inline-start: 2px; vertical-align: 0.1em; }
       .pl-name { font-weight: 800; font-size: 0.95rem; }
       .pl-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 
@@ -571,7 +568,7 @@ class TaskMatePointsDisplayCard extends LitElement {
       /* Points Display — Cumulative (designed) */
       .cumul-total-d { text-align: center; padding: 8px 0 14px; }
       .cumul-big { font-size: 2.3rem; color: var(--tmd-accent); margin-top: 2px; }
-      .cumul-big-star { font-size: 1rem; }
+      .cumul-big-star { --mdc-icon-size: 1rem; vertical-align: 0.15em; }
       .cumul-list { display: flex; flex-direction: column; gap: 10px; }
       .cumul-row-d { display: flex; align-items: center; gap: 11px; background: var(--tmd-surface-2);
                      border: 1px solid var(--tmd-border); border-radius: 14px; padding: 11px; }
@@ -612,6 +609,18 @@ class TaskMatePointsDisplayCard extends LitElement {
 
   _stateObj() {
     return this.hass?.states?.[this.config.entity];
+  }
+
+  _pointsIcon() {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+      || this._stateObj()?.attributes || {};
+    return attrs.points_icon || "mdi:star";
+  }
+
+  _pointsName() {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+      || this._stateObj()?.attributes || {};
+    return attrs.points_name || this._t("common.points");
   }
 
   _allChildren() {
@@ -697,9 +706,10 @@ class TaskMatePointsDisplayCard extends LitElement {
         </div>
 
         <div class="big-points">
+          <ha-icon class="pd-wm" icon="${this._pointsIcon()}"></ha-icon>
           <div class="points-label">${this._primaryLabel()}</div>
           <div class="points-number" style="color:${colour}">
-            <span class="points-star">\u2B50</span>${primary.toLocaleString()}
+            <ha-icon class="points-star" icon="${this._pointsIcon()}"></ha-icon>${primary.toLocaleString()}
           </div>
           <div class="secondary-info">
             ${this._secondaryLabel()}: <span class="secondary-value">${secondary.toLocaleString()}</span>
@@ -711,7 +721,7 @@ class TaskMatePointsDisplayCard extends LitElement {
             <div class="stat-pill">
               <ha-icon icon="mdi:calendar-week"></ha-icon>
               <div>
-                <div>${this._t("points_display.weekly_pts", { count: weekly })}</div>
+                <div>${this._t("points_display.weekly_pts", { count: weekly, pointsName: this._pointsName() })}</div>
                 <div class="pill-label">${this._t("points_display.this_week")}</div>
               </div>
             </div>` : ""}
@@ -766,7 +776,7 @@ class TaskMatePointsDisplayCard extends LitElement {
               ${childAvatar(child, colour)}
               <div class="child-name">${child.name}</div>
               <div class="tile-points" style="color:${colour}">
-                <span class="tile-star">\u2B50</span>${primary.toLocaleString()}
+                <ha-icon class="tile-star" icon="${this._pointsIcon()}"></ha-icon>${primary.toLocaleString()}
               </div>
               <div class="tile-label">${this._isCareerMode()
                 ? this._t("points_display.career_score_label")
@@ -801,9 +811,10 @@ class TaskMatePointsDisplayCard extends LitElement {
     return html`
       <div class="cumulative-wrap">
         <div class="cumulative-total">
+          <ha-icon class="pd-wm" icon="${this._pointsIcon()}"></ha-icon>
           <div class="points-label">${this._t("points_display.combined_family_total")}</div>
           <div class="points-number" style="color:${_safeColor(this.config.header_color, DEFAULT_HEADER)}">
-            <span class="points-star">\u{1F31F}</span>${total.toLocaleString()}
+            <ha-icon class="points-star" icon="${this._pointsIcon()}"></ha-icon>${total.toLocaleString()}
           </div>
           <div class="secondary-info">
             ${this._secondaryLabel()}: <span class="secondary-value">${secTotal.toLocaleString()}</span>
@@ -825,7 +836,7 @@ class TaskMatePointsDisplayCard extends LitElement {
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
                   <span class="child-name">${child.name}</span>
                   <span class="cumul-points" style="color:${colour}">
-                    <span class="cumul-star">\u2B50</span>${primary.toLocaleString()}
+                    <ha-icon class="cumul-star" icon="${this._pointsIcon()}"></ha-icon>${primary.toLocaleString()}
                   </span>
                 </div>
                 <div class="secondary-info" style="margin-top:0;margin-bottom:4px;">
@@ -973,7 +984,7 @@ class TaskMatePointsDisplayCard extends LitElement {
 
     const header = html`
       <div class="tmd-hd">
-        <span class="ic">⭐</span>
+        <span class="ic"><ha-icon icon="${this._pointsIcon()}"></ha-icon></span>
         <span class="tt">${title}</span>
         ${mode === "multi" ? html`<span class="pill">${this._t("points_display.mode_multi")}</span>` : ""}
       </div>`;
@@ -1017,7 +1028,7 @@ class TaskMatePointsDisplayCard extends LitElement {
           <div class="pl-tile" style="--ac:${r.tone}">
             ${showRank && r.rank < 3 ? html`<div class="pl-medal">${RANK_MEDAL[r.rank]}</div>` : ""}
             ${this._av(r.child, r.tone, 52)}
-            <div class="pl-pts">${r.points.toLocaleString()}<span>⭐</span></div>
+            <div class="pl-pts">${r.points.toLocaleString()}<ha-icon icon="${this._pointsIcon()}"></ha-icon></div>
             <div class="pl-name">${r.child.name}</div>
             ${showWeekly || (showStreak && r.streak) ? html`
               <div class="pl-chips">
@@ -1082,7 +1093,7 @@ class TaskMatePointsDisplayCard extends LitElement {
     return html`
       <div class="cumul-total-d">
         <div class="muted">${this._t("points_display.combined_family_total")}</div>
-        <div class="big cumul-big">${total.toLocaleString()} <span class="cumul-big-star">⭐</span></div>
+        <div class="big cumul-big">${total.toLocaleString()} <ha-icon class="cumul-big-star" icon="${this._pointsIcon()}"></ha-icon></div>
       </div>
       <div class="cumul-list">
         ${rows.map((r) => html`
