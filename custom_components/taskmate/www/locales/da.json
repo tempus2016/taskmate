@@ -364,6 +364,8 @@
   "common.editor.header_colour_helper": "Baggrundsfarve på kortets overskrift",
   "common.editor.overview_entity": "Oversigtsentitet",
   "common.editor.overview_entity_helper": "TaskMates oversigtssensor",
+  "common.editor.show_parent_actions": "Vis forældrehandlinger",
+  "common.editor.show_parent_actions_helper": "Slå fra på et delt børnedashboard, så kortet vises præcis som et barn ser det, også når en forælder er logget ind. Kun visning — rettighederne ændres ikke.",
   "common.entity": "Entitet",
   "common.entity_not_found": "Entiteten blev ikke fundet: {entity}",
   "common.error": "Fejl",

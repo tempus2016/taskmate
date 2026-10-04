@@ -364,6 +364,8 @@
   "common.editor.header_colour_helper": "Card header background colour",
   "common.editor.overview_entity": "Overview Entity",
   "common.editor.overview_entity_helper": "The TaskMate overview sensor entity",
+  "common.editor.show_parent_actions": "Show parent actions",
+  "common.editor.show_parent_actions_helper": "Turn off on a shared kids' dashboard to show this card exactly as a child sees it, even while a parent is signed in. Display only — permissions are unchanged.",
   "common.entity": "Entity",
   "common.entity_not_found": "Entity not found: {entity}",
   "common.error": "Error",

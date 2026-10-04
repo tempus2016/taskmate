@@ -245,7 +245,8 @@ class TaskMateChoreBoardCard extends LitElement {
       return;
     }
     let service;
-    if (window.__taskmate_is_parent && window.__taskmate_is_parent(this.hass)) {
+    if (this.config?.show_parent_actions !== false
+      && window.__taskmate_is_parent && window.__taskmate_is_parent(this.hass)) {
       service = "reject_chore";
     } else {
       // A child's own tick, inside the undo window the server publishes (#918).
@@ -664,6 +665,7 @@ class TaskMateChoreBoardCardEditor extends LitElement {
       { name: "tap_to_complete", selector: { boolean: {} } },
       { name: "show_legend", selector: { boolean: {} } },
       { name: "hide_done_periods", selector: { boolean: {} } },
+      { name: "show_parent_actions", selector: { boolean: {} } },
       {
         name: "card_design",
         selector: {
@@ -687,6 +689,7 @@ class TaskMateChoreBoardCardEditor extends LitElement {
     tap_to_complete: this._t("chore_board.editor.tap_to_complete"),
     show_legend: this._t("chore_board.editor.show_legend"),
     hide_done_periods: this._t("chore_board.editor.hide_done_periods"),
+    show_parent_actions: this._t("common.editor.show_parent_actions"),
     card_design: this._t("common.design.field_label"),
   }[entry.name] ?? entry.name);
 
@@ -695,6 +698,7 @@ class TaskMateChoreBoardCardEditor extends LitElement {
     children: this._t("chore_board.editor.children_helper"),
     tap_to_complete: this._t("chore_board.editor.tap_to_complete_helper"),
     hide_done_periods: this._t("chore_board.editor.hide_done_periods_helper"),
+    show_parent_actions: this._t("common.editor.show_parent_actions_helper"),
   }[entry.name] ?? "");
 
   render() {
@@ -708,6 +712,7 @@ class TaskMateChoreBoardCardEditor extends LitElement {
       tap_to_complete: this.config.tap_to_complete !== false,
       show_legend: this.config.show_legend !== false,
       hide_done_periods: this.config.hide_done_periods === true,
+      show_parent_actions: this.config.show_parent_actions !== false,
       card_design: this.config.card_design || "global",
     };
     return html`
@@ -745,7 +750,7 @@ class TaskMateChoreBoardCardEditor extends LitElement {
     if (key === "card_design") return value === "global";
     if (key === "default_view") return value === "today";
     if (key === "children") return Array.isArray(value) && value.length === 0;
-    if (["show_week", "tap_to_complete", "show_legend"].includes(key)) return value === true;
+    if (["show_week", "tap_to_complete", "show_legend", "show_parent_actions"].includes(key)) return value === true;
     if (key === "hide_done_periods") return value === false;
     return false;
   }

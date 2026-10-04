@@ -354,6 +354,8 @@
   "common.editor.header_colour_helper": "Couleur d'arrière-plan de l'en-tête de la carte",
   "common.editor.overview_entity": "Entité de vue d'ensemble",
   "common.editor.overview_entity_helper": "L'entité du capteur de vue d'ensemble TaskMate",
+  "common.editor.show_parent_actions": "Afficher les actions parentales",
+  "common.editor.show_parent_actions_helper": "Désactivez sur un tableau de bord partagé des enfants pour afficher cette carte exactement comme un enfant la voit, même lorsqu'un parent est connecté. Affichage uniquement — les autorisations ne changent pas.",
   "common.entity": "Entité",
   "common.entity_not_found": "Entité non trouvée : {entity}",
   "common.evening": "Soir",

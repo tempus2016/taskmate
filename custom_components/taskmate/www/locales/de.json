@@ -354,6 +354,8 @@
   "common.editor.header_colour_helper": "Hintergrundfarbe der Kartenkopfzeile",
   "common.editor.overview_entity": "Übersichtseinheit",
   "common.editor.overview_entity_helper": "Die TaskMate-Übersichtssensoreinheit",
+  "common.editor.show_parent_actions": "Elternaktionen anzeigen",
+  "common.editor.show_parent_actions_helper": "Auf einem gemeinsamen Kinder-Dashboard ausschalten, damit die Karte genau wie für ein Kind angezeigt wird, auch wenn ein Elternteil angemeldet ist. Nur die Anzeige — Berechtigungen bleiben unverändert.",
   "common.entity": "Entität",
   "common.entity_not_found": "Entität nicht gefunden: {entity}",
   "common.evening": "Abend",

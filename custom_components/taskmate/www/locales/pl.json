@@ -364,6 +364,8 @@
   "common.editor.header_colour_helper": "Kolor tła nagłówka karty",
   "common.editor.overview_entity": "Encja przeglądu",
   "common.editor.overview_entity_helper": "Encja sensora przeglądu TaskMate",
+  "common.editor.show_parent_actions": "Pokaż działania rodzica",
+  "common.editor.show_parent_actions_helper": "Wyłącz na wspólnym pulpicie dzieci, aby karta wyglądała dokładnie tak, jak widzi ją dziecko, nawet gdy zalogowany jest rodzic. Tylko wyświetlanie — uprawnienia się nie zmieniają.",
   "common.entity": "Encja",
   "common.entity_not_found": "Nie znaleziono encji: {entity}",
   "common.error": "Błąd",

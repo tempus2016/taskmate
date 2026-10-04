@@ -358,6 +358,8 @@
   "common.editor.header_colour_helper": "Cor de fundo do cabeçalho do cartão",
   "common.editor.overview_entity": "Entidade de Visão Geral",
   "common.editor.overview_entity_helper": "A entidade sensor de visão geral do TaskMate",
+  "common.editor.show_parent_actions": "Mostrar ações dos pais",
+  "common.editor.show_parent_actions_helper": "Desative num painel partilhado das crianças para mostrar este cartão exatamente como uma criança o vê, mesmo com um pai ou mãe com sessão iniciada. Apenas visualização — as permissões não mudam.",
   "common.entity": "Entidade",
   "common.entity_not_found": "Entidade não encontrada: {entity}",
   "common.error": "Erro",
