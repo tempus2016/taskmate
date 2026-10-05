@@ -58,6 +58,24 @@ test("ltrNums isolates ratios and number-word compounds", () => {
   assert.equal(ltrNums(arabic), label(run(arabic)), "Arabic-Indic digits too");
 });
 
+test("a number-word compound right after another letter or digit run splits the same way", () => {
+  assert.equal(ltrNums("x12-day"), label("x1", run("2-day")));
+  assert.equal(ltrNums("ab3-day"), "ab3-day");
+  assert.equal(ltrNums("re-3-day"), "re-3-day");
+  assert.equal(ltrNums("1 / 2 then 3-day, 4-week"), label(run("1 / 2"), " then ", run("3-day"), ", ", run("4-week")));
+});
+
+// iOS 15 / Safari < 16.4 can't compile a lookbehind: a SyntaxError in the
+// design layer leaves window.__taskmate_chore_visual undefined and the child
+// card blank (#1034). Keep every served file free of them.
+test("no served file uses a regex lookbehind (Safari < 16.4 can't compile one)", () => {
+  const offenders = [];
+  for (const file of FILES) {
+    for (const { n, line } of codeLines(file)) if (/\(\?<[=!]/.test(line)) offenders.push(`${file}:${n}`);
+  }
+  assert.deepEqual(offenders, []);
+});
+
 test("in a left-to-right page ltrNums changes nothing, so LTR renders exactly as before", () => {
   for (const s of ["3 / 1", "2 / 0 joined", "3-Day Streak", "After this pledge: 40 / 60"]) assert.equal(ltrNums(s, LTR), s);
   assert.equal(ltrNums(7, LTR), 7);

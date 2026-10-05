@@ -449,13 +449,19 @@
    * page). In LTR, and for text with no number run that doesn't open with a
    * number, the value comes back untouched. Works on plain strings: Lit text,
    * the panel's HTML strings and translated messages alike.
+   *
+   * "3-day" mustn't follow a letter or hyphen ("re-3-day" stays as is). That
+   * is matched as a captured lead character, not a lookbehind: Safari before
+   * 16.4 (iOS 15) can't compile a lookbehind, and the SyntaxError took this
+   * whole file down with it, blanking the child card (#1034).
    */
   const _NUM = String.raw`\p{Nd}+(?:[.,\u066B\u066C]\p{Nd}+)*`;
-  const _NUM_RUN = new RegExp(String.raw`${_NUM}(?:\s*\/\s*${_NUM})+|(?<![\p{L}-])${_NUM}-\p{L}+`, "gu");
+  const _NUM_RUN = new RegExp(String.raw`${_NUM}(?:\s*\/\s*${_NUM})+|(^|[^\p{L}-])(${_NUM}-\p{L}+)`, "gu");
   function ltrNums(text) {
     if (text === null || text === undefined || _lastDir !== "rtl") return text;
     const s = String(text);
-    const out = s.replace(_NUM_RUN, (run) => "\u2066" + run + "\u2069");
+    const out = s.replace(_NUM_RUN, (run, lead, word) =>
+      word === undefined ? "\u2066" + run + "\u2069" : lead + "\u2066" + word + "\u2069");
     return out === s && !/^\p{Nd}/u.test(s) ? s : "\u2068" + out + "\u2069";
   }
 
