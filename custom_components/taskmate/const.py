@@ -1,5 +1,6 @@
 """Constants for TaskMate integration."""
 
+import re
 from typing import Final
 
 DOMAIN: Final = "taskmate"
@@ -75,6 +76,28 @@ RECURRENCE_PERIOD_DAYS: Final = {
     "every_3_months": 91,
     "every_6_months": 182,
 }
+
+# Custom "every N days" recurrences (#1038) are stored as ``every_<N>_days``;
+# the original every_2_days is simply the N=2 case. N is bounded so a typo
+# can't park a chore for years.
+MIN_RECURRENCE_INTERVAL_DAYS: Final = 2
+MAX_RECURRENCE_INTERVAL_DAYS: Final = 365
+_EVERY_N_DAYS_RE: Final = re.compile(r"every_(\d{1,3})_days")
+
+
+def recurrence_interval_days(recurrence: str | None) -> int | None:
+    """N for an ``every_<N>_days`` recurrence, else None (also when N is out of range)."""
+    match = _EVERY_N_DAYS_RE.fullmatch(recurrence) if isinstance(recurrence, str) else None
+    if not match:
+        return None
+    days = int(match.group(1))
+    return days if MIN_RECURRENCE_INTERVAL_DAYS <= days <= MAX_RECURRENCE_INTERVAL_DAYS else None
+
+
+def recurrence_period_days(recurrence: str | None) -> int:
+    """Nominal period of a Mode-B recurrence in days (weekly when unknown)."""
+    return recurrence_interval_days(recurrence) or RECURRENCE_PERIOD_DAYS.get(recurrence or "", 7)
+
 
 # Badge tiers, lowest to highest.
 BADGE_TIERS: Final = ["bronze", "silver", "gold", "platinum"]

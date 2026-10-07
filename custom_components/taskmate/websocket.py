@@ -75,13 +75,16 @@ from .const import (
     DIFFICULTY_TIERS,
     DOMAIN,
     MAX_CHORE_TAGS,
+    MAX_RECURRENCE_INTERVAL_DAYS,
     MAX_TIME_PERIODS,
+    MIN_RECURRENCE_INTERVAL_DAYS,
     SCHEDULE_MODES,
     TAG_ID_MAX_LENGTH,
     TEAM_POINTS_MODES,
     TEAM_SIZE_MAX,
     TIME_CATEGORY_ICONS,
     is_valid_completion_sound,
+    recurrence_interval_days,
 )
 from .coord_birthdays import normalize_birthday
 from .coord_inspections import INSPECTION_BONUS_MAX, INSPECTION_FAIL_MODES, INSPECTION_WINDOWS
@@ -718,6 +721,16 @@ _CHORE_EDITABLE_FIELDS = {
 }
 
 
+def _recurrence(value):
+    """A recurrence name; a custom every_<N>_days interval (#1038) must have N in range."""
+    text = str(value)
+    if text.startswith("every_") and text.endswith("_days") and recurrence_interval_days(text) is None:
+        raise vol.Invalid(
+            f"Custom recurrence must be every {MIN_RECURRENCE_INTERVAL_DAYS}-{MAX_RECURRENCE_INTERVAL_DAYS} days"
+        )
+    return text
+
+
 def _tag_id_list(value):
     """Validate the NFC / QR tag ids linked to a chore (#923).
 
@@ -755,7 +768,7 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("difficulty"): vol.In(DIFFICULTY_TIERS),
         vol.Optional("schedule_mode"): vol.In(SCHEDULE_MODES),
         vol.Optional("due_days"): [str],
-        vol.Optional("recurrence"): str,
+        vol.Optional("recurrence"): _recurrence,
         vol.Optional("recurrence_day"): str,
         vol.Optional("recurrence_start"): str,
         vol.Optional("first_occurrence_mode"): str,
@@ -2500,7 +2513,7 @@ async def _ws_templates_get(hass, connection, msg, coordinator):
                 vol.Optional("completion_sound"): _completion_sound,
                 vol.Optional("schedule_mode"): vol.In(SCHEDULE_MODES),
                 vol.Optional("due_days"): [str],
-                vol.Optional("recurrence"): str,
+                vol.Optional("recurrence"): _recurrence,
                 vol.Optional("recurrence_day"): str,
                 vol.Optional("recurrence_start"): str,
                 vol.Optional("first_occurrence_mode"): str,

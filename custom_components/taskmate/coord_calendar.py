@@ -18,6 +18,7 @@ from .const import (
     MAX_CALENDAR_PROJECTION_DAYS,
     MIN_CALENDAR_PROJECTION_DAYS,
     TIME_CATEGORY_ICONS,
+    recurrence_interval_days,
 )
 from .models import Chore
 
@@ -245,11 +246,12 @@ class CalendarMixin:
                     pass
             return True
 
-        if recurrence == "every_2_days" and anchor_iso:
+        interval_days = recurrence_interval_days(recurrence)
+        if interval_days and anchor_iso:
             try:
                 anchor = date.fromisoformat(anchor_iso)
                 diff = (day - anchor).days
-                return diff >= 0 and diff % 2 == 0
+                return diff >= 0 and diff % interval_days == 0
             except ValueError:
                 return False
 
