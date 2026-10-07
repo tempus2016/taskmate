@@ -22,6 +22,8 @@ from datetime import date
 
 from homeassistant.util import dt as dt_util
 
+from . import notify_strings
+
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_BIRTHDAY_MULTIPLIER = 2.0
@@ -154,7 +156,7 @@ class BirthdaysMixin:
             await self._celebrate(
                 child,
                 "birthday",
-                f"Happy birthday, {child.name}!",
+                notify_strings.render(self.hass, "celebrate_birthday", {"child_name": child.name}),
                 tier=3,
                 extra={"multiplier": self.birthday_multiplier(), **({"age": age} if age is not None else {})},
             )

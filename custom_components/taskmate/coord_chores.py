@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
 
-from . import images, photos
+from . import images, notify_strings, photos
 from .chore_undo import child_can_undo, undo_window_seconds
 from .const import (
     CHORE_NOTE_MAX_LENGTH,
@@ -1416,7 +1416,7 @@ class ChoresMixin:
                         await self._celebrate(
                             child,
                             "all_chores_done",
-                            f"{child.name} finished every chore today!",
+                            notify_strings.render(self.hass, "celebrate_all_chores_done", {"child_name": child.name}),
                             tier=1,
                         )
                 else:

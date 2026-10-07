@@ -13,6 +13,7 @@ from datetime import timedelta
 
 from homeassistant.util import dt as dt_util
 
+from . import notify_strings
 from .models import Challenge, PointsTransaction
 
 _LOGGER = logging.getLogger(__name__)
@@ -173,7 +174,11 @@ class ChallengesMixin:
             await self._celebrate(
                 child,
                 "challenge_completed",
-                f"{child.name} completed the challenge '{challenge.name}'!",
+                notify_strings.render(
+                    self.hass,
+                    "celebrate_challenge_completed",
+                    {"child_name": child.name, "challenge_name": challenge.name},
+                ),
                 tier=2,
                 extra={"challenge_id": challenge.id, "bonus": bonus},
             )

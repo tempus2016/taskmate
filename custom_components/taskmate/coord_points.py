@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
 
-from . import photos
+from . import notify_strings, photos
 from .models import Bonus, Child, Penalty, PointsTransaction, generate_id
 
 if TYPE_CHECKING:
@@ -143,7 +143,11 @@ class PointsMixin:
                 await self._celebrate(
                     child,
                     "perfect_week",
-                    f"{child.name} earned a perfect week — +{perfect_week_bonus}!",
+                    notify_strings.render(
+                        self.hass,
+                        "celebrate_perfect_week",
+                        {"child_name": child.name, "bonus": perfect_week_bonus},
+                    ),
                     tier=3,
                     extra={"bonus": perfect_week_bonus},
                 )
@@ -657,7 +661,7 @@ class PointsMixin:
             await self._celebrate(
                 child,
                 "level_up",
-                f"{child.name} reached level {lvl}!",
+                notify_strings.render(self.hass, "celebrate_level_up", {"child_name": child.name, "level": lvl}),
                 tier=3 if lvl % 5 == 0 else 2,
                 extra={"level": lvl},
             )
@@ -1130,7 +1134,9 @@ class PointsMixin:
             await self._celebrate(
                 child,
                 "streak_milestone",
-                f"{child.name} hit a {days}-day streak!",
+                notify_strings.render(
+                    self.hass, "celebrate_streak_milestone", {"child_name": child.name, "days": days}
+                ),
                 tier=3 if days >= 30 else 2,
                 extra={"days": days},
             )

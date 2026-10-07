@@ -28,6 +28,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
+from . import notify_strings
 from .models import generate_id
 from .timewindow import parse_hhmm
 
@@ -86,22 +87,6 @@ _SUNDAY_FIRST = frozenset(
 )
 _SATURDAY_FIRST = frozenset("AE AF BH DJ DZ EG IQ IR JO KW LY OM QA SD SY".split())
 
-_MONTH_ABBR = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-_MONTH_NAME = (
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-)
-
 
 def _add_months(day: date, months: int) -> date:
     """The first of the month ``months`` after ``day``'s month (may be negative)."""
@@ -143,15 +128,22 @@ def completed_periods(freq: str, today: date, week_start: int = 0, limit: int = 
         day = start - timedelta(days=1)
 
 
-def period_label(freq: str, start: date, end: date) -> str:
-    """Short English label for a period, used in notification text."""
+def period_label(freq: str, start: date, end: date, hass: Any = None) -> str:
+    """Short label for a period, used in notification text (HA's language)."""
     if freq == "weekly":
-        return "weekly"
+        return notify_strings.text(hass, "period_weekly")
     if freq == "monthly":
-        return _MONTH_NAME[start.month - 1]
+        return notify_strings.month_name(hass, start.month)
     if freq == "yearly":
         return str(start.year)
-    return f"{_MONTH_ABBR[start.month - 1]}–{_MONTH_ABBR[end.month - 1]}"
+    return notify_strings.render(
+        hass,
+        "period_range",
+        {
+            "start": notify_strings.text(hass, f"month_short_{start.month}"),
+            "end": notify_strings.text(hass, f"month_short_{end.month}"),
+        },
+    )
 
 
 def _valid_frequencies(raw: Any) -> list[str]:
@@ -754,12 +746,14 @@ class RecapsMixin:
                 continue
             first = recaps[0]
             label = period_label(
-                first["frequency"], date.fromisoformat(first["start"]), date.fromisoformat(first["end"])
+                first["frequency"], date.fromisoformat(first["start"]), date.fromisoformat(first["end"]), self.hass
             )
             if len(recaps) == 1:
-                message = f"✨ Your {label} recap is ready, {child.name}! Tap to watch it."
+                message = notify_strings.render(self.hass, "recap_ready", {"period": label, "child_name": child.name})
             else:
-                message = f"✨ {len(recaps)} new recaps are ready, {child.name}! Tap to watch them."
+                message = notify_strings.render(
+                    self.hass, "recap_ready_many", {"count": len(recaps), "child_name": child.name}
+                )
             per_child.append(
                 {
                     "child_id": child_id,
@@ -775,13 +769,14 @@ class RecapsMixin:
         if not per_child:
             return 0
 
-        names = [c["child_name"] for c in per_child]
-        joined = names[0] if len(names) == 1 else ", ".join(names[:-1]) + f" and {names[-1]}"
+        joined = notify_strings.join_names(self.hass, [c["child_name"] for c in per_child])
         labels = {c["label"] for c in per_child}
         if len(labels) == 1:
-            parent_message = f"✨ {per_child[0]['label'].capitalize()} recaps are ready for {joined}. Tap to see them."
+            parent_message = notify_strings.render(
+                self.hass, "recap_parent_one", {"period": per_child[0]["label"], "names": joined}
+            )
         else:
-            parent_message = f"✨ New recaps are ready for {joined}. Tap to see them."
+            parent_message = notify_strings.render(self.hass, "recap_parent_many", {"names": joined})
 
         await self.notifications.send_recap_ready(
             per_child,
