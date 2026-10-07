@@ -11,12 +11,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from custom_components.taskmate.coord_notifications import (
-    _APPROVE_IN_PANEL_HINT,
-    NotificationCoordinator,
-)
+from custom_components.taskmate.coord_notifications import NotificationCoordinator
 from custom_components.taskmate.models import NotificationRoute, ParentRecipient
+from custom_components.taskmate.notify_strings import DEFAULTS
 from custom_components.taskmate.storage import TaskMateStorage
+
+_APPROVE_IN_PANEL_HINT = DEFAULTS["approve_in_panel_hint"]
 
 
 @pytest.fixture

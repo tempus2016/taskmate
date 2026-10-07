@@ -16,6 +16,7 @@ UTC = timezone.utc
 
 def _coord(children, completions):
     c = object.__new__(TaskMateCoordinator)
+    c.hass = None
     s = MagicMock()
     s.get_children = MagicMock(return_value=children)
     s.get_completions = MagicMock(return_value=completions)

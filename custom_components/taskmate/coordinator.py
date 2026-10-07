@@ -16,7 +16,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
-from . import photos
+from . import notify_strings, photos
 from .const import DOMAIN
 from .coord_assignments import AssignmentsMixin
 from .coord_auctions import AuctionsMixin
@@ -470,6 +470,7 @@ class TaskMateCoordinator(
 
     async def _async_send_weekly_digest(self) -> None:
         """Build and send the weekly digest to parents (opt-in)."""
+        await notify_strings.async_load(self.hass)
         summary = self._build_weekly_digest()
         if not summary:
             return
@@ -492,7 +493,14 @@ class TaskMateCoordinator(
             done[comp.child_id] = done.get(comp.child_id, 0) + 1
             earned[comp.child_id] = earned.get(comp.child_id, 0) + (comp.points_awarded or 0)
         pts = self.storage.get_points_name()
-        lines = [f"• {c.name}: {done.get(c.id, 0)} chores, {earned.get(c.id, 0)} {pts} earned" for c in children]
+        lines = [
+            notify_strings.render(
+                self.hass,
+                "weekly_digest_line",
+                {"child_name": c.name, "chores": done.get(c.id, 0), "points": earned.get(c.id, 0), "points_name": pts},
+            )
+            for c in children
+        ]
         return "\n".join(lines)
 
     async def _async_send_monthly_report(self) -> None:
@@ -500,6 +508,7 @@ class TaskMateCoordinator(
         today = dt_util.now().date()
         month_end = today.replace(day=1) - timedelta(days=1)
         month_start = month_end.replace(day=1)
+        await notify_strings.async_load(self.hass)
         summary = self._build_monthly_report(month_start, month_end)
         if not summary:
             return
@@ -528,8 +537,18 @@ class TaskMateCoordinator(
             earned[comp.child_id] = earned.get(comp.child_id, 0) + (comp.points_awarded or 0)
         pts = self.storage.get_points_name()
         lines = [
-            f"• {c.name}: {done.get(c.id, 0)} chores, {earned.get(c.id, 0)} {pts}, "
-            f"level {getattr(c, 'level', 1)}, best streak {getattr(c, 'best_streak', 0)}"
+            notify_strings.render(
+                self.hass,
+                "monthly_report_line",
+                {
+                    "child_name": c.name,
+                    "chores": done.get(c.id, 0),
+                    "points": earned.get(c.id, 0),
+                    "points_name": pts,
+                    "level": getattr(c, "level", 1),
+                    "streak": getattr(c, "best_streak", 0),
+                },
+            )
             for c in children
         ]
         return "\n".join(lines)
