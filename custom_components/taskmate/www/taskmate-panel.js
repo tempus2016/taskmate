@@ -52,12 +52,25 @@ const SCHEDULE_MODES = [
 
 const RECURRENCES = [
   { v: "every_2_days",   lk: "panel.recurrence_every_2_days" },
+  { v: "every_n_days",   lk: "panel.recurrence_every_n_days" },
   { v: "weekly",         lk: "panel.recurrence_weekly" },
   { v: "every_2_weeks",  lk: "panel.recurrence_every_2_weeks" },
   { v: "monthly",        lk: "panel.recurrence_monthly" },
   { v: "every_3_months", lk: "panel.recurrence_every_3_months" },
   { v: "every_6_months", lk: "panel.recurrence_every_6_months" },
 ];
+
+// Custom "every N days" recurrences (#1038) are stored as every_<N>_days; the
+// editor shows them as the "every_n_days" option plus a number field. Bounds
+// match recurrence_interval_days() in const.py.
+const RECURRENCE_INTERVAL_MIN = 2;
+const RECURRENCE_INTERVAL_MAX = 365;
+function recurrenceIntervalDays(recurrence) {
+  const m = /^every_(\d{1,3})_days$/.exec(recurrence || "");
+  if (!m) return null;
+  const n = Number(m[1]);
+  return n >= RECURRENCE_INTERVAL_MIN && n <= RECURRENCE_INTERVAL_MAX ? n : null;
+}
 
 const FIRST_OCCURRENCE = [
   { v: "available_immediately",     lk: "panel.first_occ_available_immediately" },
@@ -2185,7 +2198,7 @@ class TaskMatePanel extends HTMLElement {
       difficulty: "medium",
       claim_allowance_minutes: 0,
       schedule_mode: "specific_days",
-      due_days: [], recurrence: "weekly", recurrence_day: "", recurrence_start: "",
+      due_days: [], recurrence: "weekly", recurrence_interval: 3, recurrence_day: "", recurrence_start: "",
       first_occurrence_mode: "available_immediately",
       assignment_mode: "everyone", assignment_rotation_anchor: "",
       manual_start_child_id: "",
@@ -2229,6 +2242,7 @@ class TaskMatePanel extends HTMLElement {
         weather_temp_max: c.weather_temp_max ?? "",
         weather_wind_max: c.weather_wind_max ?? "",
         manual_start_child_id: "",
+        ...this._recurrenceDraft(c.recurrence),
       } });
     } else {
       this._openDialog({ kind: "chore", mode: "add", data: blank });
@@ -2423,6 +2437,16 @@ class TaskMatePanel extends HTMLElement {
       this._showToast("err", this._t("panel.chore_team_conflict"));
       return;
     }
+    let recurrence = d.recurrence || "weekly";
+    if (recurrence === "every_n_days") {
+      const n = Number(d.recurrence_interval);
+      if (!Number.isInteger(n) || n < RECURRENCE_INTERVAL_MIN || n > RECURRENCE_INTERVAL_MAX) {
+        this._showToast("err", this._t("panel.chore_recurrence_interval_invalid",
+          { min: RECURRENCE_INTERVAL_MIN, max: RECURRENCE_INTERVAL_MAX }));
+        return;
+      }
+      recurrence = `every_${n}_days`;
+    }
     const base = {
       name: d.name.trim(),
       description: d.description || "",
@@ -2443,7 +2467,7 @@ class TaskMatePanel extends HTMLElement {
       weekly_target: Math.max(0, Number(d.weekly_target) || 0),
       schedule_mode: d.schedule_mode || "specific_days",
       due_days: d.due_days || [],
-      recurrence: d.recurrence || "weekly",
+      recurrence,
       recurrence_day: d.recurrence_day || "",
       recurrence_start: d.recurrence_start || "",
       first_occurrence_mode: d.first_occurrence_mode || "available_immediately",
@@ -6474,7 +6498,7 @@ class TaskMatePanel extends HTMLElement {
       ? `<strong>${this._esc(childById[curChild].name)}</strong>`
       : isRotation ? `<span class="tm-text-muted">—</span>` : "";
     const schedLabel = c.schedule_mode === "recurring"
-      ? this._labelOf(RECURRENCES, c.recurrence) + (c.recurrence_day && c.recurrence_day !== "any_day" ? ` · ${this._labelOf(DAYS, c.recurrence_day)}` : "")
+      ? this._recurrenceLabel(c.recurrence) + (c.recurrence_day && c.recurrence_day !== "any_day" ? ` · ${this._labelOf(DAYS, c.recurrence_day)}` : "")
       : c.schedule_mode === "one_shot"
       ? this._t("panel.common_one_shot")
       : ((c.due_days || []).length === 0 ? this._t("panel.common_daily") : (c.due_days || []).map(d => this._labelOf(DAYS, d)).join(" · "));
@@ -9519,8 +9543,11 @@ class TaskMatePanel extends HTMLElement {
           ` : "",
           showRecurring ? `
             <div class="tm-field-row">
-              ${this._select(this._t("panel.chore_recurrence_label"), "recurrence", d.recurrence, RECURRENCES)}
-              ${this._field(this._t("panel.chore_recurrence_day_label"), "recurrence_day", d.recurrence_day, "text", this._t("panel.chore_recurrence_day_hint"))}
+              ${this._select(this._t("panel.chore_recurrence_label"), "recurrence", d.recurrence, RECURRENCES, "", true)}
+              ${d.recurrence === "every_n_days"
+                ? this._field(this._t("panel.chore_recurrence_interval_label"), "recurrence_interval", d.recurrence_interval, "number",
+                    this._t("panel.chore_recurrence_interval_hint", { min: RECURRENCE_INTERVAL_MIN, max: RECURRENCE_INTERVAL_MAX }))
+                : this._field(this._t("panel.chore_recurrence_day_label"), "recurrence_day", d.recurrence_day, "text", this._t("panel.chore_recurrence_day_hint"))}
             </div>
             <div class="tm-field-row">
               ${this._dateField(this._t("panel.chore_recurrence_start_label"), "recurrence_start", d.recurrence_start, this._t("panel.chore_recurrence_start_hint"))}
@@ -10628,6 +10655,18 @@ class TaskMatePanel extends HTMLElement {
   _idBadge(id) {
     if (!this._showIds || !id) return "";
     return `<span class="tm-id-badge"><code>${this._esc(id)}</code><button type="button" class="tm-id-copy" data-act="copy-id" data-id="${this._esc(id)}" title="${this._t("panel.toast_copied")}"><ha-icon icon="mdi:content-copy"></ha-icon></button></span>`;
+  }
+
+  /** Editor fields for a stored recurrence: every_<N>_days opens as the custom option. */
+  _recurrenceDraft(recurrence) {
+    const n = recurrenceIntervalDays(recurrence);
+    return n && n !== 2 ? { recurrence: "every_n_days", recurrence_interval: n } : {};
+  }
+
+  _recurrenceLabel(recurrence) {
+    const n = recurrenceIntervalDays(recurrence);
+    if (n && n !== 2) return this._t("panel.recurrence_every_count_days", { count: n });
+    return this._labelOf(RECURRENCES, recurrence);
   }
 
   _labelOf(arr, val) {

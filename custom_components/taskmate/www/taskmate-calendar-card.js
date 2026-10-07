@@ -31,6 +31,15 @@ const WINDOW_DAYS = {
   every_6_months: 180,
 };
 
+// Custom "every N days" recurrences (#1038) are stored as every_<N>_days
+// (every_2_days included); bounds match recurrence_interval_days() in const.py.
+function recurrenceIntervalDays(recurrence) {
+  const m = /^every_(\d{1,3})_days$/.exec(recurrence || "");
+  if (!m) return null;
+  const n = Number(m[1]);
+  return n >= 2 && n <= 365 ? n : null;
+}
+
 function ymd(date, tz) {
   return date.toLocaleDateString("en-CA", { timeZone: tz });
 }
@@ -366,12 +375,13 @@ class TaskMateCalendarCard extends LitElement {
         return true;
       }
 
-      if (recurrence === "every_2_days" && anchorStr) {
+      const intervalDays = recurrenceIntervalDays(recurrence);
+      if (intervalDays && anchorStr) {
         try {
           const anchor = new Date(anchorStr + "T00:00:00");
           const diff = diffDays(dayDate, anchor);
           if (diff < 0) return false;
-          return diff % 2 === 0;
+          return diff % intervalDays === 0;
         } catch (e) { return false; }
       }
 

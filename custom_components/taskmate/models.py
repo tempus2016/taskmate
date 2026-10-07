@@ -362,9 +362,11 @@ class Chore:
     schedule_mode: str = "specific_days"
     due_days: list[str] = field(default_factory=list)  # Mode A: days to show chore
     # Mode B fields
-    recurrence: str = "weekly"  # every_2_days | weekly | every_2_weeks | monthly | every_3_months | every_6_months
+    recurrence: str = (
+        "weekly"  # every_<N>_days (N 2-365) | weekly | every_2_weeks | monthly | every_3_months | every_6_months
+    )
     recurrence_day: str = ""  # optional: which day of week for weekly/every_2_weeks
-    recurrence_start: str = ""  # optional: ISO date anchor for every_2_days
+    recurrence_start: str = ""  # optional: ISO date anchor for every_<N>_days
     first_occurrence_mode: str = "available_immediately"  # available_immediately | wait_for_first_occurrence
     # Dynamic visibility
     visibility_entity: str = ""  # optional: entity_id to check for visibility

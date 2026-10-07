@@ -11,7 +11,13 @@ from homeassistant.util import dt as dt_util
 
 from . import images, photos
 from .chore_undo import child_can_undo, undo_window_seconds
-from .const import CHORE_NOTE_MAX_LENGTH, CHORE_SUGGESTED_POINTS_MAX, DAILY_PROGRESS_KEEP_DAYS, QUALITY_RATINGS
+from .const import (
+    CHORE_NOTE_MAX_LENGTH,
+    CHORE_SUGGESTED_POINTS_MAX,
+    DAILY_PROGRESS_KEEP_DAYS,
+    QUALITY_RATINGS,
+    recurrence_interval_days,
+)
 from .coord_rejections import clean_reject_reason
 from .coord_teamwork import teamwork_config_error
 from .models import Chore, ChoreCompletion, PointsTransaction
@@ -1823,11 +1829,8 @@ class ChoresMixin:
         now = dt_util.now()
         today = dt_util.as_local(now).date()
 
-        window_days = {
-            "every_2_days": 2,
-            "weekly": 7,
-            "every_2_weeks": 14,
-        }.get(recurrence, 7)
+        interval_days = recurrence_interval_days(recurrence)
+        window_days = interval_days or {"weekly": 7, "every_2_weeks": 14}.get(recurrence, 7)
 
         record = self.storage.get_last_completed(chore.id, child_id)
         current_iso = record.get("current")
@@ -1863,14 +1866,14 @@ class ChoresMixin:
         # from, so moving one week's chore doesn't shift every week after it.
         last_dt = self.occurrence_origin(chore, last_dt)
 
-        # every_2_days with anchor — check alignment
-        if recurrence == "every_2_days" and recurrence_start:
+        # every_<N>_days with anchor — check alignment
+        if interval_days and recurrence_start:
             try:
                 anchor = date.fromisoformat(recurrence_start)
                 days_since_anchor = (today - anchor).days
                 if days_since_anchor < 0:
                     return False
-                if days_since_anchor % 2 != 0:
+                if days_since_anchor % interval_days != 0:
                     return False
                 return last_dt < today
             except ValueError:
