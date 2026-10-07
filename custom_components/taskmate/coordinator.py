@@ -136,6 +136,7 @@ class TaskMateCoordinator(
         self.external_state_version: int = 0
         self._unsub_surprise: Callable[[], None] | None = None
         self._unsub_weekly: Callable[[], None] | None = None
+        self._unsub_language: Callable[[], None] | None = None
         self._unsub_mandatory: list[Callable[[], None]] = []
         # Per-build memo for the availability matrix (PERF-1). Non-None only
         # inside `availability_build_scope()`; see coord_chores/coord_assignments.
@@ -392,6 +393,10 @@ class TaskMateCoordinator(
         """Initialize the coordinator."""
         await self.storage.async_load()
         self.notifications.coordinator = self
+        # Notification wording follows HA's language (#1037): load it now, and
+        # again whenever the language is changed.
+        await notify_strings.async_load(self.hass)
+        self._unsub_language = notify_strings.async_watch_language(self.hass)
         # Wire existing parent recipients to default-on parent-audience types
         # that have no routes yet (e.g. a parent added after the one-time seed),
         # so pending-approval notifications actually reach a parent.
@@ -516,7 +521,7 @@ class TaskMateCoordinator(
             "monthly_report",
             {
                 "summary": summary,
-                "month": month_start.strftime("%B %Y"),
+                "month": notify_strings.month_year(self.hass, month_start),
             },
         )
 
@@ -707,7 +712,7 @@ class TaskMateCoordinator(
             {
                 "child_name": top["name"],
                 "points": top["points"],
-                "month": prev_end.strftime("%B %Y"),
+                "month": notify_strings.month_year(self.hass, prev_end),
                 "points_name": self.storage.get_points_name(),
             },
         )
@@ -828,6 +833,7 @@ class TaskMateCoordinator(
             "_unsub_tag_scanned",
             "_unsub_surprise",
             "_unsub_weekly",
+            "_unsub_language",
             "_unsub_auction_timer",
         ):
             if unsub := getattr(self, attr, None):

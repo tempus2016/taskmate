@@ -33,6 +33,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_point_in_time, async_track_time_change
 from homeassistant.util import dt as dt_util
 
+from . import notify_strings
 from .const import (
     NOTIF_TYPE_INSPECTION_PASSED,
     NOTIF_TYPE_INSPECTION_REMINDER,
@@ -306,7 +307,11 @@ class InspectionsMixin:
             await self._celebrate(
                 child,
                 "inspection_passed",
-                f"{child.name}'s {record['chore_name']} passed inspection!",
+                notify_strings.render(
+                    self.hass,
+                    "celebrate_inspection_passed",
+                    {"child_name": child.name, "chore_name": record["chore_name"]},
+                ),
                 tier=1,
                 extra={"inspection_id": record["id"], "bonus": record["bonus"]},
             )

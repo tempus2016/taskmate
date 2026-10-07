@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import string
 from pathlib import Path
@@ -31,6 +32,14 @@ def _fresh_cache():
     notify_strings._cache.clear()
     yield
     notify_strings._cache.clear()
+
+
+def asyncio_run(coro):
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
 
 
 def _lang(hass, language: str):
@@ -151,3 +160,66 @@ async def test_custom_message_template_is_left_alone(coord, hass):
         {"entry_id": "c1", "child_name": "Alex", "message_template": "Hey {child_name}"},
     )
     assert _sent(hass)["message"].startswith("Hey Alex")
+
+
+def test_german_dates_months_and_name_lists(hass):
+    from datetime import date
+
+    _lang(hass, "de")
+    asyncio_run(notify_strings.async_load(hass))
+    assert notify_strings.short_date(hass, date(2026, 10, 4)) == "So, 4. Okt"
+    assert notify_strings.month_year(hass, date(2026, 3, 1)) == "März 2026"
+    assert notify_strings.join_names(hass, ["Malia", "Vaiha", "Alex"]) == "Malia, Vaiha und Alex"
+    assert notify_strings.join_names(hass, ["Malia"]) == "Malia"
+
+
+def test_english_dates_and_name_lists_without_a_language():
+    from datetime import date
+
+    assert notify_strings.short_date(None, date(2026, 10, 4)) == "Sun 4 Oct"
+    assert notify_strings.month_year(None, date(2026, 9, 1)) == "September 2026"
+    assert notify_strings.join_names(None, ["Malia", "Vaiha"]) == "Malia and Vaiha"
+
+
+def test_german_recap_labels(hass):
+    from datetime import date
+
+    from custom_components.taskmate.coord_recaps import period_label
+
+    _lang(hass, "de")
+    asyncio_run(notify_strings.async_load(hass))
+    assert period_label("weekly", date(2026, 9, 7), date(2026, 9, 13), hass) == "Woche"
+    assert period_label("monthly", date(2026, 3, 1), date(2026, 3, 31), hass) == "März"
+    assert period_label("every_3_months", date(2026, 7, 1), date(2026, 9, 30), hass) == "Jul–Sep"
+
+
+def test_language_change_reloads_the_strings(hass):
+    _lang(hass, "en")
+    listeners = {}
+    hass.bus.async_listen = lambda event, cb: listeners.setdefault(event, cb)
+    tasks = []
+    hass.async_create_task = tasks.append
+    notify_strings.async_watch_language(hass)
+    hass.config.language = "fr"
+    listeners["core_config_updated"](None)
+    asyncio_run(tasks[0])
+    assert notify_strings.text(hass, "action_approve") == "Valider"
+
+
+@pytest.mark.parametrize("path", sorted(LOCALES.glob("*.json")), ids=lambda p: p.stem)
+@pytest.mark.asyncio
+async def test_every_test_push_fills_its_placeholders(coord, hass, path):
+    """A test push of each type, in each language, leaves no {placeholder} behind."""
+    from custom_components.taskmate.coord_notifications import NOTIFICATION_TYPES
+
+    _lang(hass, path.stem)
+    parent = ParentRecipient(name="Sam", notify_service="notify.mobile_app_phone")
+    coord.storage.upsert_parent_recipient(parent)
+    for meta in NOTIFICATION_TYPES:
+        coord.storage.set_notification_route(meta.id, parent.id, NotificationRoute(enabled=True))
+        hass.services.async_call.reset_mock()
+        await coord.send_test(meta.id)
+        message = _sent(hass)["message"]
+        assert "{" not in message, f"{path.name} {meta.id}: {message}"
+        if path.stem not in ("en", "en-GB"):
+            assert "Tidy room" not in message and "Movie night" not in message, f"{path.name} {meta.id}: {message}"

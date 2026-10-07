@@ -382,7 +382,7 @@ async def test_one_push_per_child_one_grouped_parent_message(hass, clock):
     assert by_service["mobile_app_malia"]["data"]["tag"] == f"taskmate_recap_{coord.kids['Malia']}"
     assert (
         by_service["mobile_app_john"]["message"]
-        == "✨ September recaps are ready for Malia and Vaiha. Tap to see them."
+        == "✨ New September recaps are ready for Malia and Vaiha. Tap to see them."
     )
     # No stats and no image in the push.
     assert "image" not in by_service["mobile_app_malia"]["data"]

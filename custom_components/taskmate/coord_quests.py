@@ -13,6 +13,7 @@ import logging
 
 from homeassistant.util import dt as dt_util
 
+from . import notify_strings
 from .models import PointsTransaction, Quest
 
 _LOGGER = logging.getLogger(__name__)
@@ -223,7 +224,11 @@ class QuestsMixin:
             await self._celebrate(
                 child,
                 "quest_completed",
-                f"{child.name} completed the quest '{quest.name}'!",
+                notify_strings.render(
+                    self.hass,
+                    "celebrate_quest_completed",
+                    {"child_name": child.name, "quest_name": quest.name},
+                ),
                 tier=3,
                 extra={"quest_id": quest.id, "bonus": bonus},
             )

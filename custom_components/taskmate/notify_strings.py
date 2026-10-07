@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Mapping
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -73,12 +74,73 @@ DEFAULTS: dict[str, str] = {
     "auction_called_off": "the auction for '{chore_name}' was called off. It goes back to the normal rota.",
     "weekly_digest_line": "• {child_name}: {chores} chores, {points} {points_name} earned",
     "monthly_report_line": "• {child_name}: {chores} chores, {points} {points_name}, level {level}, best streak {streak}",
+    # Celebration messages (the celebration push and the taskmate_celebration
+    # event), keyed celebrate_<kind>.
+    "celebrate_all_chores_done": "{child_name} finished every chore today!",
+    "celebrate_birthday": "Happy birthday, {child_name}!",
+    "celebrate_challenge_completed": "{child_name} completed the challenge '{challenge_name}'!",
+    "celebrate_inspection_passed": "{child_name}'s {chore_name} passed inspection!",
+    "celebrate_level_up": "{child_name} reached level {level}!",
+    "celebrate_perfect_week": "{child_name} earned a perfect week — +{bonus}!",
+    "celebrate_quest_completed": "{child_name} completed the quest '{quest_name}'!",
+    "celebrate_streak_milestone": "{child_name} hit a {days}-day streak!",
+    # Recap announcements: the single-recap child push is recap_ready above.
+    "recap_ready_many": "✨ {count} new recaps are ready, {child_name}! Tap to watch them.",
+    "recap_parent_one": "✨ New {period} recaps are ready for {names}. Tap to see them.",
+    "recap_parent_many": "✨ New recaps are ready for {names}. Tap to see them.",
+    "period_weekly": "weekly",
+    "period_range": "{start}–{end}",
+    # Lists, dates and month names used inside messages.
+    "names_and": "{names} and {last}",
+    "month_year": "{month} {year}",
+    "short_date": "{weekday} {day} {month}",
+    **{
+        f"month_{i}": name
+        for i, name in enumerate(
+            (
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+            ),
+            1,
+        )
+    },
+    **{
+        f"month_short_{i}": name
+        for i, name in enumerate(
+            ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), 1
+        )
+    },
+    # ISO weekday numbers: 1 = Monday.
+    **{f"weekday_short_{i}": name for i, name in enumerate(("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"), 1)},
+    # Stand-in names for a test push from the panel.
+    "sample_chore": "Tidy room",
+    "sample_reward": "Movie night",
+    "sample_badge": "Star Helper",
+    "sample_goal": "Movie night fund",
+    "sample_goal_reward": "a family movie night",
+    "sample_wish": "Lego set",
+    "sample_pledger": "Grandma",
+    "sample_bounty": "Wash the car",
+    "sample_reason": "Not finished",
+    "sample_note": "Brilliant job!",
     # Approval push buttons and the hint for backends that can't show them.
     "action_approve": "Approve",
     "action_reject": "Reject",
     "action_reject_placeholder": "Reason (optional)",
     "approve_in_panel_hint": "Open the TaskMate panel to approve or reject.",
 }
+
+_EVENT_CORE_CONFIG_UPDATE = "core_config_updated"
 
 # language -> merged strings (DEFAULTS overlaid with the locale's own).
 _cache: dict[str, dict[str, str]] = {}
@@ -143,3 +205,41 @@ def render(hass: Any, key: str, params: Mapping[str, Any]) -> str:
     except (ValueError, IndexError, KeyError, AttributeError):
         _LOGGER.warning("Malformed TaskMate notification text for %s, using English", key)
         return DEFAULTS.get(key, "").format_map(SafeDict(params))
+
+
+def async_watch_language(hass: Any):
+    """Reload the strings when HA's language changes; returns the unsubscribe."""
+
+    def _changed(_event) -> None:
+        hass.async_create_task(async_load(hass))
+
+    return hass.bus.async_listen(_EVENT_CORE_CONFIG_UPDATE, _changed)
+
+
+def month_name(hass: Any, month: int) -> str:
+    return text(hass, f"month_{month}")
+
+
+def month_year(hass: Any, day: date) -> str:
+    """Month and year, like "September 2026", in HA's language."""
+    return render(hass, "month_year", {"month": month_name(hass, day.month), "year": day.year})
+
+
+def short_date(hass: Any, day: date) -> str:
+    """A short date, like "Sat 4 Oct", in HA's language."""
+    return render(
+        hass,
+        "short_date",
+        {
+            "weekday": text(hass, f"weekday_short_{day.isoweekday()}"),
+            "day": day.day,
+            "month": text(hass, f"month_short_{day.month}"),
+        },
+    )
+
+
+def join_names(hass: Any, names: list[str]) -> str:
+    """A list of names, like "Malia, Vaiha and Alex", in HA's language."""
+    if len(names) <= 1:
+        return names[0] if names else ""
+    return render(hass, "names_and", {"names": ", ".join(names[:-1]), "last": names[-1]})

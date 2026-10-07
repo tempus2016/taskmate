@@ -15,7 +15,7 @@ from __future__ import annotations
 import contextlib
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
@@ -68,6 +68,9 @@ DEFAULT_MORNING_NOTIFY_TIME = "08:00"
 # TASKMATE_RATE_<n>_<completion id>. Distinct from TASKMATE_APPROVE_ so the
 # original Approve/Reject ids keep working unchanged when ratings are off.
 _RATE_ACTION_PREFIX = "TASKMATE_RATE_"
+
+# Stand-in names for a test push, translated like the rest (notify.sample_*).
+_SAMPLE_KEYS = ("chore", "reward", "badge", "goal", "goal_reward", "wish", "pledger", "bounty", "reason", "note")
 
 
 def _reject_action(hass: HomeAssistant, entry_id: str) -> dict[str, str]:
@@ -410,39 +413,54 @@ class NotificationCoordinator:
         meta = NOTIFICATION_TYPES_BY_ID.get(type_id)
         if meta is None:
             raise ValueError(f"Unknown notification type {type_id}")
+        await notify_strings.async_load(self.hass)
+        points_name = self.storage.get_points_name()
+        sample_month = date(2026, 1, 1)
+        sample = {key: notify_strings.text(self.hass, f"sample_{key}") for key in _SAMPLE_KEYS}
         ctx = {
             "child_name": "Alex",
-            "chore_name": "Tidy room",
-            "reward_name": "Movie night",
-            "badge_name": "Star Helper",
+            "chore_name": sample["chore"],
+            "reward_name": sample["reward"],
+            "badge_name": sample["badge"],
             "points": 10,
             "cost": 50,
             "streak": 7,
             "days": 7,
             "level": 5,
             "tier": 3,
-            "message": "Alex reached level 5!",
-            "summary": "• Alex: 5 chores, 50 Stars earned",
-            "month": "January 2026",
-            "goal_name": "Movie night fund",
-            "goal_reward": "a family movie night",
+            "message": notify_strings.render(self.hass, "celebrate_level_up", {"child_name": "Alex", "level": 5}),
+            "summary": notify_strings.render(
+                self.hass,
+                "weekly_digest_line",
+                {"child_name": "Alex", "chores": 5, "points": 50, "points_name": points_name},
+            ),
+            "month": notify_strings.month_year(self.hass, sample_month),
+            "goal_name": sample["goal"],
+            "goal_reward": sample["goal_reward"],
             "multiplier": "2",
             "count": 3,
-            "wish_name": "Lego set",
+            "freezes_left": 2,
+            "wish_name": sample["wish"],
             "target": 600,
-            "pledger": "Grandma",
-            "bounty_name": "Wash the car",
+            "pledger": sample["pledger"],
+            "bounty_name": sample["bounty"],
             "minutes": 15,
-            "period": "January",
-            "item_name": "Tidy room",
-            "reason": "Not finished",
-            "reason_text": ": Not finished",
+            "period": notify_strings.month_name(self.hass, sample_month.month),
+            "item_name": sample["chore"],
+            "reason": sample["reason"],
+            "reason_text": f": {sample['reason']}",
+            "date": notify_strings.short_date(self.hass, sample_month),
+            "max_points": 20,
             "until": "18:20",
             "bonus": 10,
-            "note_text": ": Brilliant job!",
-            "points_name": self.storage.get_points_name(),
+            "note_text": f": {sample['note']}",
+            "points_name": points_name,
         }
-        await notify_strings.async_load(self.hass)
+        ctx["result_text"] = notify_strings.render(
+            self.hass,
+            "auction_won",
+            {**ctx, "points": 12},
+        )
         message = "[TEST] " + self._render_template(meta, ctx)
         cfg = self.storage.get_notification_config(type_id)
         nav_url = self._resolve_nav_url(cfg)

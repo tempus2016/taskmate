@@ -69,11 +69,6 @@ _OCCURRENCE_HORIZON_DAYS = 60
 _OCCURRENCE_LIMIT = 6
 
 
-def _short_date(day: date) -> str:
-    """A short date like "Sat 4 Oct", for push messages (rendered server-side)."""
-    return f"{day.strftime('%a')} {day.day} {day.strftime('%b')}"
-
-
 def _as_int(value, default: int = 0) -> int:
     try:
         return int(value)
@@ -303,7 +298,7 @@ class AuctionsMixin:
                 NOTIF_TYPE_AUCTION_OPENED,
                 {
                     "chore_name": auction.chore_name,
-                    "date": _short_date(day),
+                    "date": notify_strings.short_date(self.hass, day),
                     "max_points": auction.max_points,
                     "points_name": self.storage.get_points_name(),
                 },
@@ -670,7 +665,7 @@ class AuctionsMixin:
 
     def _auction_date_label(self, auction: Auction) -> str:
         try:
-            return _short_date(date.fromisoformat(auction.occurrence))
+            return notify_strings.short_date(self.hass, date.fromisoformat(auction.occurrence))
         except ValueError:
             return auction.occurrence
 
