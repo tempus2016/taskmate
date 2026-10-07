@@ -11,6 +11,9 @@
  * no complete-on-behalf, no points adjustments, no reward claiming, no
  * settings — there is no option to turn them on.
  *
+ * Each completion gets the child card's feedback (#1039): the chore's
+ * completion sound, confetti and a short popup — each can be switched off.
+ *
  * PINs are set by a parent in the admin panel and checked on the server
  * (taskmate/kiosk/verify_pin, rate-limited); the card never sees a PIN or its
  * hash, and only remembers which child is unlocked until it returns to the
@@ -52,6 +55,10 @@ const MAX_TIMEOUT = 600;
 const WARN_SECONDS = 10;
 // How long the all-done celebration stays up before the picker comes back.
 const CELEBRATE_MS = 4000;
+// How long the per-chore popup and its confetti stay up (#1039), as on the child card.
+const POPUP_MS = 2500;
+const CONFETTI_MS = 3500;
+const CONFETTI_COLOURS = ["#ff6b9d", "#9b59b6", "#3498db", "#2ecc71", "#f1c40f", "#e67e22"];
 const PIN_LENGTH = 4;
 // The same six-colour ring the child card uses for per-child tones.
 const CHILD_FALLBACK = ["#ff7043", "#42a5f5", "#66bb6a", "#ab47bc", "#ffa726", "#26c6da"];
@@ -76,6 +83,8 @@ class TaskMateKioskCard extends LitElement {
       _idle: { type: Number },
       _busy: { type: String },
       _celebrating: { type: Boolean },
+      _popup: { type: Object },
+      _confetti: { type: Array },
       _fullscreen: { type: Boolean },
     };
   }
@@ -94,6 +103,8 @@ class TaskMateKioskCard extends LitElement {
     this._busy = "";
     this._celebrating = false;
     this._armCelebrate = false;
+    this._popup = null;
+    this._confetti = [];
     this._fullscreen = false;
     this._now = new Date();
     // Any touch or key press counts as activity and restarts the idle timer.
@@ -137,6 +148,8 @@ class TaskMateKioskCard extends LitElement {
     this._ticker = null;
     clearTimeout(this._statusTimer);
     clearTimeout(this._celebrateTimer);
+    clearTimeout(this._popupTimer);
+    clearTimeout(this._confettiTimer);
     clearTimeout(this._undoExpiryTimer);
     if (typeof document !== "undefined") document.removeEventListener?.("fullscreenchange", this._onFullscreen);
     // Leaving the dashboard locks the kiosk again.
@@ -404,6 +417,10 @@ class TaskMateKioskCard extends LitElement {
 
   _resetToPicker() {
     clearTimeout(this._celebrateTimer);
+    clearTimeout(this._popupTimer);
+    clearTimeout(this._confettiTimer);
+    this._popup = null;
+    this._confetti = [];
     this._screen = "picker";
     this._kid = null;
     this._pin = "";
@@ -476,6 +493,7 @@ class TaskMateKioskCard extends LitElement {
       } else {
         await this.hass.callService("taskmate", "complete_chore", { chore_id: chore.id, child_id: child.id });
       }
+      this._cheer(chore);
     } catch (err) {
       this._notify(String(err?.message || err));
     } finally {
@@ -492,12 +510,47 @@ class TaskMateKioskCard extends LitElement {
       await this.hass.callService("taskmate", "undo_chore", {
         completion_id: completion.completion_id || completion.id,
       });
+      if (this.config.play_sounds !== false) this._playSound(this.config.undo_sound || "undo");
     } catch (err) {
       this._notify(String(err?.message || err));
     } finally {
       this._busy = "";
       this._scheduleStatus(0);
     }
+  }
+
+  // ── Completion feedback (#1039) ──────────────────────────────────────────
+
+  /** The child card's reward for a tap: the chore's sound, confetti, a popup. */
+  _cheer(chore) {
+    if (this.config.play_sounds !== false) {
+      this._playSound(chore.completion_sound || this.config.default_sound || "coin");
+    }
+    if (this.config.show_confetti !== false) this._spawnConfetti();
+    if (this.config.show_completion_popup !== false) {
+      this._popup = { points: this._pointsFor(chore) };
+      clearTimeout(this._popupTimer);
+      this._popupTimer = setTimeout(() => { this._popup = null; }, POPUP_MS);
+    }
+  }
+
+  /** Shared engine in taskmate-sounds.js; custom sounds (#856) resolve
+   *  through the custom_sounds table the attr resolver merges in. */
+  _playSound(name) {
+    const engine = window.__taskmate_sounds;
+    if (!engine) return;
+    engine.play(name, this._attrs().custom_sounds || []);
+  }
+
+  _spawnConfetti() {
+    this._confetti = Array.from({ length: 50 }, () => ({
+      x: Math.random() * 100,
+      delay: Math.random() * 0.5,
+      size: Math.random() * 8 + 6,
+      round: Math.random() > 0.5,
+    }));
+    clearTimeout(this._confettiTimer);
+    this._confettiTimer = setTimeout(() => { this._confetti = []; }, CONFETTI_MS);
   }
 
   /** Straight back to the picker once a child finishes their last chore here. */
@@ -509,6 +562,9 @@ class TaskMateKioskCard extends LitElement {
     if (!total || done < total) return;
     this._armCelebrate = false;
     this._celebrating = true;
+    // The all-done overlay is the bigger party: it replaces the chore popup.
+    clearTimeout(this._popupTimer);
+    this._popup = null;
     clearTimeout(this._celebrateTimer);
     this._celebrateTimer = setTimeout(() => this._toPicker(), CELEBRATE_MS);
   }
@@ -581,6 +637,10 @@ class TaskMateKioskCard extends LitElement {
             </button>` : ""}
         </div>
         <div class="km-main">${body}</div>
+        ${this._confetti.length ? html`
+          <div class="km-confetti" aria-hidden="true">
+            ${this._confetti.map((p, i) => html`<i style="inset-inline-start:${p.x}%;animation-delay:${p.delay}s;background:${CONFETTI_COLOURS[i % CONFETTI_COLOURS.length]};border-radius:${p.round ? "50%" : "0"};width:${p.size}px;height:${p.size}px"></i>`)}
+          </div>` : ""}
       </ha-card>
     `;
   }
@@ -684,7 +744,7 @@ class TaskMateKioskCard extends LitElement {
     const showPoints = this.config.show_points !== false;
     const showStreak = this.config.show_streak !== false;
     const showReward = this.config.show_reward_progress !== false;
-    const warn = this.config.warn_before_return !== false && left <= WARN_SECONDS && left > 0 && !this._celebrating;
+    const warn = this.config.warn_before_return !== false && left <= WARN_SECONDS && left > 0 && !this._celebrating && !this._popup;
     const earnedToday = (attrs.todays_completions || [])
       .filter(c => String(c.child_id) === String(child.id))
       .reduce((sum, c) => sum + (Number(c.points) || 0), 0);
@@ -755,6 +815,15 @@ class TaskMateKioskCard extends LitElement {
             <button class="km-primary" @click=${() => { this._idle = 0; this.requestUpdate(); }}>
               <ha-icon icon="mdi:hand-wave"></ha-icon> ${this._t("kiosk.still_here")}
             </button>
+          </div>` : ""}
+        ${this._popup && !this._celebrating ? html`
+          <div class="km-idle km-pop" role="status" @click=${() => { this._popup = null; }}>
+            <div class="km-pop-card">
+              <div class="km-pop-stars">🌟🌟🌟</div>
+              <h2>${this._t("child.celebration_title")}</h2>
+              <p>${this._t("child.celebration_message")}</p>
+              ${showPoints ? html`<div class="km-pop-pts"><ha-icon icon="${icon}"></ha-icon> +${this._popup.points}</div>` : ""}
+            </div>
           </div>` : ""}
         ${this._celebrating ? html`
           <div class="km-idle km-party">
@@ -1148,6 +1217,36 @@ class TaskMateKioskCard extends LitElement {
       }
       .km-cheer { font-size: 96px; line-height: 1; }
 
+      /* Per-chore popup + confetti (#1039), after the child card's */
+      .km-pop { cursor: pointer; animation: km-fade 0.3s ease; }
+      .km-pop-card {
+        background: var(--tmd-surface, var(--card-background-color, #fff));
+        border-radius: calc(var(--tmd-radius, 16px) + 14px); padding: 36px 48px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+        animation: km-pop-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+      .km-pop-stars { font-size: 3.5rem; line-height: 1; margin-bottom: 12px; animation: km-star 0.6s ease infinite; }
+      .km-pop h2 { color: var(--tmd-accent, #9b59b6); font-size: 2.4rem; }
+      .km-pop p { margin: 8px 0 14px; }
+      .km-pop-pts {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        font-size: 1.8rem; font-weight: 800; color: var(--tmd-gold, #e67e22);
+      }
+      .km-pop-pts ha-icon { --mdc-icon-size: 28px; }
+      .km-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 4; }
+      .km-confetti i { position: absolute; top: 0; animation: km-confetti 3s linear forwards; }
+      @keyframes km-fade { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes km-pop-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      @keyframes km-star { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.2) rotate(10deg); } }
+      @keyframes km-confetti {
+        0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .km-confetti { display: none; }
+        .km-pop, .km-pop-card, .km-pop-stars { animation: none; }
+      }
+
       .km-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; color: var(--tmd-dim, var(--secondary-text-color)); }
       .km-empty ha-icon { --mdc-icon-size: 56px; opacity: 0.5; }
 
@@ -1217,6 +1316,9 @@ class TaskMateKioskCardEditor extends LitElement {
       { name: "show_streak", selector: { boolean: {} } },
       { name: "show_reward_progress", selector: { boolean: {} } },
       { name: "show_picker_progress", selector: { boolean: {} } },
+      { name: "play_sounds", selector: { boolean: {} } },
+      { name: "show_confetti", selector: { boolean: {} } },
+      { name: "show_completion_popup", selector: { boolean: {} } },
     ];
   }
 
@@ -1230,6 +1332,9 @@ class TaskMateKioskCardEditor extends LitElement {
     show_streak: this._t("kiosk.editor.show_streak"),
     show_reward_progress: this._t("kiosk.editor.show_reward_progress"),
     show_picker_progress: this._t("kiosk.editor.show_picker_progress"),
+    play_sounds: this._t("kiosk.editor.play_sounds"),
+    show_confetti: this._t("kiosk.editor.show_confetti"),
+    show_completion_popup: this._t("kiosk.editor.show_completion_popup"),
   })[entry.name] ?? entry.name;
 
   _computeHelper = (entry) => ({
@@ -1237,6 +1342,8 @@ class TaskMateKioskCardEditor extends LitElement {
     timeout: this._t("kiosk.editor.timeout_helper"),
     warn_before_return: this._t("kiosk.editor.warn_before_return_helper"),
     show_picker_progress: this._t("kiosk.editor.show_picker_progress_helper"),
+    play_sounds: this._t("kiosk.editor.play_sounds_helper"),
+    show_completion_popup: this._t("kiosk.editor.show_completion_popup_helper"),
   })[entry.name] ?? "";
 
   /** Every child, configured ones first in their order, each with shown/require_pin. */
@@ -1295,6 +1402,9 @@ class TaskMateKioskCardEditor extends LitElement {
       show_streak: this.config.show_streak !== false,
       show_reward_progress: this.config.show_reward_progress !== false,
       show_picker_progress: this.config.show_picker_progress !== false,
+      play_sounds: this.config.play_sounds !== false,
+      show_confetti: this.config.show_confetti !== false,
+      show_completion_popup: this.config.show_completion_popup !== false,
     };
     const rows = this._childRows();
     const pins = this._pins || {};
