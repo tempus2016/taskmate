@@ -328,6 +328,88 @@ test("finishing the last chore here celebrates, then goes back to the picker", a
   assert.equal(card._screen, "picker");
 });
 
+// ── completion feedback (#1039) ─────────────────────────────────────────────
+
+// Records what the shared sound engine was asked to play.
+function withSounds(fn) {
+  const played = [];
+  cardWindow.__taskmate_sounds = { play: (name, custom) => played.push({ name, custom }) };
+  return Promise.resolve(fn(played)).finally(() => { delete cardWindow.__taskmate_sounds; });
+}
+
+test("Done plays the chore's sound, drops confetti and pops up the points", () => withSounds(async (played) => {
+  const card = await childView({
+    chores: [chore("dishes", { completion_sound: "fanfare", effective_points: 15 })],
+    status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes"] }] },
+  });
+  card.hass.states[ENTITY].attributes.custom_sounds = [{ file: "x.mp3" }];
+  await view(card).control("km-done").click();
+  assert.deepEqual(plain(played), [{ name: "fanfare", custom: [{ file: "x.mp3" }] }]);
+  assert.equal(card._confetti.length, 50);
+  assert.match(view(card).markup, /km-confetti/);
+  const { markup } = view(card);
+  assert.match(markup, /km-pop/);
+  assert.match(markup, new RegExp(localize("child.celebration_title")));
+  assert.match(markup, /\+15/);
+  // The popup closes itself.
+  timers.findLast((t) => t.ms === 2500).fn();
+  assert.equal(card._popup, null);
+}));
+
+test("without a chore sound, default_sound then coin; undo plays undo_sound", () => withSounds(async (played) => {
+  const card = await childView({ status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes"] }] } });
+  await view(card).control("km-done").click();
+  card.config = { ...card.config, default_sound: "chime", undo_sound: "fart3" };
+  card._busy = "";
+  await card._complete(card._entry("vaiha").child, chore("dishes"));
+  await card._undo({ completion_id: "c1" });
+  assert.deepEqual(plain(played.map((p) => p.name)), ["coin", "chime", "fart3"]);
+}));
+
+test("play_sounds, show_confetti and show_completion_popup: false switch each off", () => withSounds(async (played) => {
+  const card = await childView({
+    config: { play_sounds: false, show_confetti: false, show_completion_popup: false },
+    status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes"] }] },
+  });
+  await view(card).control("km-done").click();
+  await card._undo({ completion_id: "c1" });
+  assert.deepEqual(plain(played), []);
+  assert.equal(card._confetti.length, 0);
+  assert.equal(card._popup, null);
+  assert.doesNotMatch(view(card).markup, /km-pop|km-confetti/);
+}));
+
+test("a failed completion doesn't celebrate", () => withSounds(async (played) => {
+  const card = await childView({ status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes"] }] } });
+  card.hass.callService = async () => { throw new Error("nope"); };
+  await view(card).control("km-done").click();
+  assert.deepEqual(plain(played), []);
+  assert.equal(card._popup, null);
+}));
+
+test("the all-done overlay replaces the chore popup; the picker clears both", () => withSounds(async () => {
+  const card = await childView({ status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes"] }] } });
+  await view(card).control("km-done").click();
+  assert.ok(card._popup);
+  card._status.vaiha.due = new Set();
+  card.hass.states[ENTITY].attributes.todays_completions = [
+    { completion_id: "c1", chore_id: "dishes", child_id: "vaiha", approved: false, completed_at: new Date().toISOString() },
+  ];
+  card._maybeCelebrate();
+  assert.equal(card._popup, null);
+  assert.match(view(card).markup, /km-party/);
+  card._toPicker();
+  assert.equal(card._confetti.length, 0);
+}));
+
+test("the editor offers the three feedback switches, on by default", () => {
+  const editor = new KioskEditor();
+  editor.hass = makeCard().hass;
+  editor.config = { entity: ENTITY };
+  const names = editor._schema().map((f) => f.name);
+  for (const n of ["play_sounds", "show_confetti", "show_completion_popup"]) assert.ok(names.includes(n), n);
+});
+
 // ── chores the kiosk can't complete (#952) ──────────────────────────────────
 
 const PHONE_CHORES = [
