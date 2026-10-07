@@ -22,6 +22,7 @@ def run(coro):
 
 def _coord(children, completions):
     coord = object.__new__(TaskMateCoordinator)
+    coord.hass = None
     storage = MagicMock()
     storage.get_children = MagicMock(return_value=children)
     storage.get_completions = MagicMock(return_value=completions)

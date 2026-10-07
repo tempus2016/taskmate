@@ -21,7 +21,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_state_change_event, async_track_time_change
 
-from . import authz
+from . import authz, notify_strings
 from .const import (
     DEFAULT_NOTIFICATION_GROUP,
     DEFAULT_NOTIFICATION_NAV_URL,
@@ -64,24 +64,21 @@ _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_MORNING_NOTIFY_TIME = "08:00"
 
-# Appended to actionable notifications sent to non-mobile_app backends, which
-# silently ignore tap actions. Gives those recipients a way to act.
-_APPROVE_IN_PANEL_HINT = "Open the TaskMate panel to approve or reject."
-
 # Mobile action id prefix for "approve with an N-star quality rating" (#927):
 # TASKMATE_RATE_<n>_<completion id>. Distinct from TASKMATE_APPROVE_ so the
 # original Approve/Reject ids keep working unchanged when ratings are off.
 _RATE_ACTION_PREFIX = "TASKMATE_RATE_"
 
 
-def _reject_action(entry_id: str) -> dict[str, str]:
+def _reject_action(hass: HomeAssistant, entry_id: str) -> dict[str, str]:
     """The Reject button of an approval push, with a reply box for the reason (#976)."""
+    reject = notify_strings.text(hass, "action_reject")
     return {
         "action": f"TASKMATE_REJECT_{entry_id}",
-        "title": "Reject",
+        "title": reject,
         "behavior": "textInput",
-        "textInputButtonTitle": "Reject",
-        "textInputPlaceholder": "Reason (optional)",
+        "textInputButtonTitle": reject,
+        "textInputPlaceholder": notify_strings.text(hass, "action_reject_placeholder"),
     }
 
 
@@ -255,11 +252,7 @@ _parse_hhmm = parse_hhmm
 _is_within_quiet_hours = is_within_window
 
 
-class _SafeDict(dict):
-    """str.format_map dict that leaves missing keys as `{key}` literal."""
-
-    def __missing__(self, key: str) -> str:
-        return "{" + key + "}"
+_SafeDict = notify_strings.SafeDict
 
 
 class NotificationCoordinator:
@@ -300,6 +293,7 @@ class NotificationCoordinator:
             return
 
         recipients_fired: list[str] = []
+        await notify_strings.async_load(self.hass)
         message = self._render_template(meta, context)
         nav_url = self._resolve_nav_url(cfg)
         group = self._resolve_group(cfg)
@@ -448,6 +442,7 @@ class NotificationCoordinator:
             "note_text": ": Brilliant job!",
             "points_name": self.storage.get_points_name(),
         }
+        await notify_strings.async_load(self.hass)
         message = "[TEST] " + self._render_template(meta, ctx)
         cfg = self.storage.get_notification_config(type_id)
         nav_url = self._resolve_nav_url(cfg)
@@ -506,47 +501,17 @@ class NotificationCoordinator:
         return ""
 
     def _render_template(self, meta: "NotificationTypeMeta", context: dict[str, Any]) -> str:
-        # Built-in types use a baked-in default; will be replaced by translations
-        # in a later task. For now use a safe English fallback so dispatch works.
-        templates = {
-            NOTIF_TYPE_BEDTIME_REMINDER: "{child_name}, you still have chores to do before bedtime.",
-            NOTIF_TYPE_STREAK_AT_RISK: "{child_name}, complete a chore today to keep your {streak}-day streak!",
-            NOTIF_TYPE_ALL_CHORES_DONE: "{child_name} finished every chore today!",
-            NOTIF_TYPE_BADGE_EARNED: "{child_name} earned the {badge_name} badge!",
-            NOTIF_TYPE_PENDING_CHORE_APPROVAL: "{child_name} completed '{chore_name}' (+{points} {points_name}) — awaiting approval.",
-            NOTIF_TYPE_PENDING_REWARD_CLAIM: "{child_name} claimed '{reward_name}' ({cost} {points_name}) — awaiting approval.",
-            NOTIF_TYPE_STREAK_MILESTONE: "{child_name} hit a {days}-day streak — +{points} {points_name}!",
-            NOTIF_TYPE_LEVEL_UP: "{child_name} reached level {level}! 🎉",
-            NOTIF_TYPE_WEEKLY_DIGEST: "TaskMate weekly digest:\n{summary}",
-            NOTIF_TYPE_CELEBRATION: "🎉 {message}",
-            NOTIF_TYPE_MANDATORY_REMINDER: "{child_name}, you still need to do '{chore_name}'.",
-            NOTIF_TYPE_MANDATORY_PARENT_ALERT: "{child_name} still hasn't done the mandatory chore '{chore_name}'.",
-            NOTIF_TYPE_MONTHLY_REPORT: "TaskMate {month} report:\n{summary}",
-            NOTIF_TYPE_SEASON_CHAMPION: "🏆 {child_name} won the {month} leaderboard with {points} {points_name}!",
-            NOTIF_TYPE_FAMILY_GOAL_REACHED: "🎉 Family goal reached: {goal_name}! Time for {goal_reward}.",
-            NOTIF_TYPE_BIRTHDAY: "🎂 Happy birthday, {child_name}! Every chore pays {multiplier}× today.",
-            NOTIF_TYPE_STREAK_FREEZE_USED: "❄️ A streak freeze saved {child_name}'s {streak}-day streak ({freezes_left} left).",
-            NOTIF_TYPE_PRESENCE_ARRIVAL: "🏠 You're home, {child_name} — {count} chores left today.",
-            NOTIF_TYPE_WISH_REQUESTED: "{child_name} wished for '{wish_name}' ({target} {points_name}) — waiting for your approval.",
-            NOTIF_TYPE_WISH_PLEDGED: "💝 {pledger} added {points} {points_name} to your wish '{wish_name}'!",
-            NOTIF_TYPE_BOUNTY_POSTED: "🏁 New bounty: {bounty_name} — {points} {points_name}. First to claim it gets it!",
-            NOTIF_TYPE_BOUNTY_CLAIM_LAPSING: "⏳ {child_name}, {minutes} minutes left to finish '{bounty_name}' before it goes back on the board.",
-            NOTIF_TYPE_RECAP_READY: "✨ Your {period} recap is ready, {child_name}! Tap to watch it.",
-            NOTIF_TYPE_ITEM_REJECTED: "↩️ {child_name}, '{item_name}' was sent back{reason_text}",
-            NOTIF_TYPE_AUCTION_OPENED: "🔨 New auction: {chore_name} on {date}, up to {max_points} {points_name}. Lowest bid wins!",
-            NOTIF_TYPE_AUCTION_CLOSING: "⏳ {child_name}, bidding on '{chore_name}' closes in {minutes} minutes.",
-            NOTIF_TYPE_AUCTION_RESULT: "🔨 Auction closed: {result_text}",
-            NOTIF_TYPE_INSPECTION_STARTED: "🔍 {child_name}, a grown-up is coming to inspect '{chore_name}' before {until}. Keep it looking great for +{bonus} {points_name}!",
-            NOTIF_TYPE_INSPECTION_PASSED: "🌟 Inspection passed, {child_name}! '{chore_name}' looked great: +{bonus} {points_name}{note_text}",
-            NOTIF_TYPE_INSPECTION_REMINDER: "🔍 {child_name}'s '{chore_name}' inspection closes in {minutes} minutes — pass or fail it before {until}.",
-        }
-        tpl = context.get("message_template") or templates.get(meta.id, "")
+        # Built-in types read their wording from the locale catalogue in HA's
+        # language (#1037); a custom message_template is the user's own text.
+        custom = context.get("message_template")
+        if not custom:
+            return notify_strings.render(self.hass, meta.id, context)
         try:
-            return tpl.format_map(_SafeDict(context))
+            return custom.format_map(_SafeDict(context))
         except (ValueError, IndexError, KeyError):
             # Malformed user template (e.g. stray '{') — fall back to raw text
-            _LOGGER.warning("Malformed notification template %r, sending raw", tpl)
-            return tpl
+            _LOGGER.warning("Malformed notification template %r, sending raw", custom)
+            return custom
 
     async def _send_to(
         self,
@@ -587,7 +552,7 @@ class NotificationCoordinator:
                     push["tag"] = _approval_tag(entry_id)
                     push["actions"] = self._approval_actions(meta.id, entry_id)
             else:
-                data["message"] = f"{message} {_APPROVE_IN_PANEL_HINT}"
+                data["message"] = f"{message} {notify_strings.text(self.hass, 'approve_in_panel_hint')}"
 
         if attach_photo:
             # "image" renders inline on Android; iOS needs it under
@@ -647,11 +612,11 @@ class NotificationCoordinator:
         if rated:
             return [
                 *({"action": f"{_RATE_ACTION_PREFIX}{n}_{entry_id}", "title": "★" * n} for n in QUALITY_RATINGS),
-                _reject_action(entry_id),
+                _reject_action(self.hass, entry_id),
             ]
         return [
-            {"action": f"TASKMATE_APPROVE_{entry_id}", "title": "Approve"},
-            _reject_action(entry_id),
+            {"action": f"TASKMATE_APPROVE_{entry_id}", "title": notify_strings.text(self.hass, "action_approve")},
+            _reject_action(self.hass, entry_id),
         ]
 
     async def clear_approval(self, type_id: str, entry_id: str) -> None:

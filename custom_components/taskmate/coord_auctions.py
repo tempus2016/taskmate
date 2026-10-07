@@ -50,6 +50,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_point_in_utc_time
 from homeassistant.util import dt as dt_util
 
+from . import notify_strings
 from .const import (
     AUCTION_POINTS_MAX,
     AUCTION_REMINDER_MINUTES,
@@ -354,13 +355,15 @@ class AuctionsMixin:
         """The "called off" push, to the children who bid on ``auction``."""
         if not bidders:
             return
+        await notify_strings.async_load(self.hass)
         await self.notifications.fire(
             NOTIF_TYPE_AUCTION_RESULT,
             {
                 "chore_name": auction.chore_name,
                 "date": self._auction_date_label(auction),
-                "result_text": f"the auction for '{auction.chore_name}' was called off. "
-                "It goes back to the normal rota.",
+                "result_text": notify_strings.render(
+                    self.hass, "auction_called_off", {"chore_name": auction.chore_name}
+                ),
             },
             only_recipients={f"child:{c}" for c in bidders},
         )
@@ -471,13 +474,21 @@ class AuctionsMixin:
         """Announce a settled auction: bus event and the results push."""
         winner = self.get_child(auction.winner_id) if auction.winner_id else None
         self._fire_auction_event("taskmate_auction_closed", auction, auction.winner_id)
+        await notify_strings.async_load(self.hass)
         if winner is not None:
-            result = (
-                f"{winner.name} won '{auction.chore_name}' on {self._auction_date_label(auction)} "
-                f"for {auction.price} {self.storage.get_points_name()}."
+            result = notify_strings.render(
+                self.hass,
+                "auction_won",
+                {
+                    "child_name": winner.name,
+                    "chore_name": auction.chore_name,
+                    "date": self._auction_date_label(auction),
+                    "points": auction.price,
+                    "points_name": self.storage.get_points_name(),
+                },
             )
         else:
-            result = f"no bids for '{auction.chore_name}', so it goes back to the normal rota."
+            result = notify_strings.render(self.hass, "auction_no_bids", {"chore_name": auction.chore_name})
         recipients = {f"child:{c}" for c in auction.eligible_child_ids}
         recipients |= {p.id for p in self.storage.get_parent_recipients()}
         await self.notifications.fire(
