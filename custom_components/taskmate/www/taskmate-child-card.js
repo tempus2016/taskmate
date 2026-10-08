@@ -61,6 +61,7 @@ class TaskMateChildCard extends LitElement {
     super();
     this._loading = {};
     this._celebrating = null;
+    this._celebrationWeeklyBonus = 0;
     this._confetti = [];
     // Optimistic completions: track chores that were just completed
     // These are used to immediately hide the DONE button before the server confirms
@@ -1460,6 +1461,13 @@ class TaskMateChildCard extends LitElement {
         align-items: center;
         justify-content: center;
         gap: 8px;
+      }
+
+      .celebration-weekly-bonus {
+        margin-top: 8px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: var(--fun-purple);
       }
 
       .celebration-points ha-icon {
@@ -4455,6 +4463,9 @@ class TaskMateChildCard extends LitElement {
             <ha-icon icon="${pointsIcon}"></ha-icon>
             +${points}
           </div>
+          ${this._celebrationWeeklyBonus ? html`
+            <div class="celebration-weekly-bonus">${this._t('child.weekly_target_bonus_reached', { points: this._celebrationWeeklyBonus })}</div>
+          ` : ''}
         </div>
       </div>
     `;
@@ -4559,6 +4570,17 @@ class TaskMateChildCard extends LitElement {
         count: existingOptimisticCount + 1,
       },
     };
+
+    // Weekly target bonus (#1044): this tap fills the week's quota, and the
+    // chore pays without approval, so the bonus lands right now — say so in
+    // the celebration. Read before the call, while progress is still pre-tap.
+    const weeklyTarget = Number(chore.weekly_target) || 0;
+    const weeklyBonus = Number(chore.weekly_target_bonus) || 0;
+    const weeklyProgress = Number((child.weekly_chore_progress || {})[chore.id] || 0);
+    this._celebrationWeeklyBonus = weeklyTarget > 0 && weeklyBonus > 0
+      && chore.requires_approval === false && !chore.require_photo && !chore.open_ended
+      && weeklyProgress + 1 === weeklyTarget
+      ? weeklyBonus : 0;
 
     this._loading = { ...this._loading, [chore.id]: true };
     this.requestUpdate();
@@ -5306,6 +5328,7 @@ class TaskMateChildCard extends LitElement {
 
   _closeCelebration() {
     this._celebrating = null;
+    this._celebrationWeeklyBonus = 0;
     this.requestUpdate();
   }
 }

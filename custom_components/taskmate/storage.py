@@ -1523,6 +1523,33 @@ class TaskMateStorage:
     def set_challenge_child_progress(self, challenge_id: str, child_id: str, progress: dict) -> None:
         self.get_challenge_progress().setdefault(challenge_id, {})[child_id] = progress
 
+    def _weekly_target_bonuses(self) -> dict:
+        """Weekly-target bonuses paid (#1044): {"<chore_id>:<child_id>": {week, points}}."""
+        bonuses = self._data.get("weekly_target_bonuses")
+        if not isinstance(bonuses, dict):
+            bonuses = self._data["weekly_target_bonuses"] = {}
+        return bonuses
+
+    def get_weekly_target_bonus(self, chore_id: str, child_id: str) -> dict:
+        record = self._weekly_target_bonuses().get(f"{chore_id}:{child_id}")
+        return record if isinstance(record, dict) else {}
+
+    def set_weekly_target_bonus(self, chore_id: str, child_id: str, record: dict | None) -> None:
+        """Record (or with ``None``, forget) the bonus paid for a chore/child."""
+        key = f"{chore_id}:{child_id}"
+        if record is None:
+            self._weekly_target_bonuses().pop(key, None)
+        else:
+            self._weekly_target_bonuses()[key] = record
+
+    def remove_weekly_target_bonuses(self, *, chore_id: str = "", child_id: str = "") -> None:
+        """Forget the bonuses paid for a removed chore or child."""
+        bonuses = self._weekly_target_bonuses()
+        for key in list(bonuses):
+            chore, _, child = key.partition(":")
+            if chore == chore_id or child == child_id:
+                del bonuses[key]
+
     def remove_challenge_progress_for_child(self, child_id: str) -> None:
         for child_map in self.get_challenge_progress().values():
             child_map.pop(child_id, None)
@@ -1577,6 +1604,8 @@ class TaskMateStorage:
             self._data["quest_progress"] = {}
         if not isinstance(self._data.get("challenge_progress"), dict):
             self._data["challenge_progress"] = {}
+        if not isinstance(self._data.get("weekly_target_bonuses"), dict):
+            self._data["weekly_target_bonuses"] = {}
         self._sanitize_imported_records()
 
     def _sanitize_imported_records(self) -> None:

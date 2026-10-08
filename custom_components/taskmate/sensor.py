@@ -307,6 +307,9 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         weekly_target = int(getattr(c, "weekly_target", 0) or 0)
         if weekly_target:
             record["weekly_target"] = weekly_target
+            weekly_target_bonus = int(getattr(c, "weekly_target_bonus", 0) or 0)
+            if weekly_target_bonus:
+                record["weekly_target_bonus"] = weekly_target_bonus
         claim_allowance_minutes = getattr(c, "claim_allowance_minutes", 0) or 0
         if claim_allowance_minutes:
             record["claim_allowance_minutes"] = claim_allowance_minutes

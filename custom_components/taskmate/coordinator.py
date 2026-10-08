@@ -1036,6 +1036,7 @@ class TaskMateCoordinator(
         self.storage.remove_daily_progress_for_child(child_id)
         self.storage.remove_quest_progress_for_child(child_id)
         self.storage.remove_challenge_progress_for_child(child_id)
+        self.storage.remove_weekly_target_bonuses(child_id=child_id)
         # Drop pending swap requests either side of this child (#785) — a
         # handover to or from a deleted child can never complete, and the
         # approval queue would render them as "?".
