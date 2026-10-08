@@ -82,6 +82,7 @@ DEFAULTS: dict[str, str] = {
     "celebrate_inspection_passed": "{child_name}'s {chore_name} passed inspection!",
     "celebrate_level_up": "{child_name} reached level {level}!",
     "celebrate_perfect_week": "{child_name} earned a perfect week — +{bonus}!",
+    "celebrate_weekly_target": "{child_name} reached the weekly target for '{chore_name}' — +{bonus}!",
     "celebrate_quest_completed": "{child_name} completed the quest '{quest_name}'!",
     "celebrate_streak_milestone": "{child_name} hit a {days}-day streak!",
     # Recap announcements: the single-recap child push is recap_ready above.

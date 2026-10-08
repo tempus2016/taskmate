@@ -598,6 +598,7 @@ class ChoresMixin:
         self.storage.remove_chore(chore_id)
         self.storage.remove_completions_for_chore(chore_id)
         self.storage.remove_last_completed_for_chore(chore_id)
+        self.storage.remove_weekly_target_bonuses(chore_id=chore_id)
         # Strip chore from any task group it belonged to.
         self.storage.remove_chore_from_task_groups(chore_id)
         # Drop queued scheduled changes (#675) — nothing left to apply them to.
@@ -1031,6 +1032,7 @@ class ChoresMixin:
             completion.approved_at = dt_util.now()
             completion.points_awarded = total_awarded
             self.storage.update_completion(completion)
+            await self._async_pay_weekly_target_bonus(chore, child, completion)
 
         self.hass.bus.async_fire(
             "taskmate_chore_completed",
@@ -1362,6 +1364,7 @@ class ChoresMixin:
                     self.storage.update_completion(completion)
                     if getattr(completion, "bounty_id", ""):
                         self._bounty_on_approved(completion)
+                    await self._async_pay_weekly_target_bonus(chore, child, completion)
 
                     # Dismiss the mobile approval push now this completion is
                     # reviewed (covers single approve AND "approve all", which
@@ -1505,6 +1508,8 @@ class ChoresMixin:
                                     )
                                 )
                             child.streak_milestones_achieved = sorted(d for d in achieved if d <= child.current_streak)
+                    # The weekly target bonus this completion helped earn (#1044).
+                    self._reverse_weekly_target_bonus(completion, child)
 
         bonus_completions: list = []
         is_parent = not target_completion.bonus_subtask_id
@@ -1922,6 +1927,125 @@ class ChoresMixin:
         if target <= 0:
             return False
         return self.weekly_completion_count(chore.id, child_id) >= target
+
+    @staticmethod
+    def _week_key(when) -> str:
+        """Monday (ISO date) of the local week ``when`` falls in."""
+        day = dt_util.as_local(when).date()
+        return (day - timedelta(days=day.weekday())).isoformat()
+
+    def _weekly_approved_count(self, chore_id: str, child_id: str, week: str, exclude_id: str = "") -> int:
+        """Approved, non-bonus completions of a chore by a child in ``week``.
+
+        Unlike ``weekly_completion_count`` this ignores pending work: the target
+        bonus (#1044) is points, and points are only paid on approval.
+        """
+        count = 0
+        for comp in self.storage.get_completions():
+            if (
+                comp.id == exclude_id
+                or comp.chore_id != chore_id
+                or comp.child_id != child_id
+                or not comp.approved
+                or comp.bonus_subtask_id
+            ):
+                continue
+            try:
+                if self._week_key(comp.completed_at) == week:
+                    count += 1
+            except (AttributeError, TypeError, ValueError):
+                continue
+        return count
+
+    async def _async_pay_weekly_target_bonus(self, chore, child, completion) -> None:
+        """Pay the chore's weekly target bonus once its week's quota is approved (#1044).
+
+        Paid once per chore, child and week — the week the completions belong
+        to, so approving last Sunday's work on a Monday still settles last
+        week. ``_reverse_weekly_target_bonus`` takes it back if the week drops
+        below the target again.
+        """
+        bonus = int(getattr(chore, "weekly_target_bonus", 0) or 0)
+        target = int(getattr(chore, "weekly_target", 0) or 0)
+        if bonus <= 0 or target <= 0 or completion.bonus_subtask_id:
+            return
+        week = self._week_key(completion.completed_at)
+        paid = dict(self.storage.get_weekly_target_bonus(chore.id, child.id))
+        if week in paid:
+            return
+        if self._weekly_approved_count(chore.id, child.id, week) < target:
+            return
+        # Claim the week before anything below can suspend, so two approvals
+        # landing together can't both pay it. Only the last few weeks are kept.
+        paid[week] = bonus
+        self.storage.set_weekly_target_bonus(chore.id, child.id, dict(sorted(paid.items())[-4:]))
+        child.points += bonus
+        child.total_points_earned += bonus
+        child.career_score = child.total_points_earned - child.total_penalties_received
+        self.storage.add_points_transaction(
+            PointsTransaction(
+                child_id=child.id,
+                points=bonus,
+                reason=f"Weekly target bonus: {chore.name}",
+                created_at=dt_util.now(),
+            )
+        )
+        await self._maybe_level_up(child)
+        self.storage.update_child(child)
+        _LOGGER.info("Weekly target for '%s' reached by %s (+%d)", chore.name, child.name, bonus)
+        self.hass.bus.async_fire(
+            "taskmate_weekly_target_reached",
+            {
+                "child_id": child.id,
+                "child_name": child.name,
+                "chore_id": chore.id,
+                "chore_name": chore.name,
+                "target": target,
+                "bonus": bonus,
+                "timestamp": dt_util.now().isoformat(),
+            },
+        )
+        await self._celebrate(
+            child,
+            "weekly_target_reached",
+            notify_strings.render(
+                self.hass,
+                "celebrate_weekly_target",
+                {"child_name": child.name, "chore_name": chore.name, "bonus": bonus},
+            ),
+            tier=2,
+            extra={"chore_id": chore.id, "bonus": bonus},
+        )
+
+    def _reverse_weekly_target_bonus(self, completion, child) -> None:
+        """Refund a paid weekly target bonus the approved ``completion`` no
+        longer leaves standing (#1044). The caller syncs the career score."""
+        if completion.bonus_subtask_id or not child:
+            return
+        week = self._week_key(completion.completed_at)
+        paid = dict(self.storage.get_weekly_target_bonus(completion.chore_id, child.id))
+        if week not in paid:
+            return
+        chore = self.get_chore(completion.chore_id)
+        target = int(getattr(chore, "weekly_target", 0) or 0)
+        if target > 0 and (
+            self._weekly_approved_count(completion.chore_id, child.id, week, exclude_id=completion.id) >= target
+        ):
+            return
+        refund = int(paid.pop(week) or 0)
+        self.storage.set_weekly_target_bonus(completion.chore_id, child.id, paid or None)
+        if refund <= 0:
+            return
+        child.points = max(0, child.points - refund)
+        child.total_points_earned = max(0, child.total_points_earned - refund)
+        self.storage.add_points_transaction(
+            PointsTransaction(
+                child_id=child.id,
+                points=-refund,
+                reason=f"Weekly target bonus reversed: {getattr(chore, 'name', '')}".rstrip(": "),
+                created_at=dt_util.now(),
+            )
+        )
 
     def _is_chore_completable_by_child(self, chore, child_id: str) -> bool:
         """Whether ``child_id`` may complete ``chore`` right now (card parity).

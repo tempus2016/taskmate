@@ -376,7 +376,7 @@ class TaskMatePanel extends HTMLElement {
   // tests/test_panel_undo_deny_list.py pins all three copies together.
   static get _UNDO_DENY_PREFIXES() {
     return [
-      "Weekend bonus", "Streak milestone bonus", "Perfect week bonus",
+      "Weekend bonus", "Streak milestone bonus", "Perfect week bonus", "Weekly target bonus",
       "Allocated to pool:", "Pool refund", "Points decay",
       "Savings interest", "Badge", "Streak freeze",
       "Wish savings", "Wish refund", "Wish pledge", "Wish redeemed",
@@ -2195,6 +2195,7 @@ class TaskMatePanel extends HTMLElement {
       assigned_to: [], requires_approval: true,
       time_category: "anytime", completion_sound: "coin", daily_limit: 1,
       weekly_target: 0,
+      weekly_target_bonus: 0,
       difficulty: "medium",
       claim_allowance_minutes: 0,
       schedule_mode: "specific_days",
@@ -2465,6 +2466,7 @@ class TaskMatePanel extends HTMLElement {
       difficulty: d.difficulty || "medium",
       daily_limit: Number(d.daily_limit) || 1,
       weekly_target: Math.max(0, Number(d.weekly_target) || 0),
+      weekly_target_bonus: Math.max(0, Number(d.weekly_target_bonus) || 0),
       schedule_mode: d.schedule_mode || "specific_days",
       due_days: d.due_days || [],
       recurrence,
@@ -9538,8 +9540,12 @@ class TaskMatePanel extends HTMLElement {
                 `).join("")}
               </div>
             </div>
-            ${this._field(this._t("panel.chore_weekly_target_label"), "weekly_target", d.weekly_target || 0, "number",
-              this._t("panel.chore_weekly_target_hint"))}
+            <div class="tm-field-row">
+              ${this._field(this._t("panel.chore_weekly_target_label"), "weekly_target", d.weekly_target || 0, "number",
+                this._t("panel.chore_weekly_target_hint"))}
+              ${this._field(this._t("panel.chore_weekly_target_bonus_label"), "weekly_target_bonus", d.weekly_target_bonus || 0, "number",
+                this._t("panel.chore_weekly_target_bonus_hint"))}
+            </div>
           ` : "",
           showRecurring ? `
             <div class="tm-field-row">

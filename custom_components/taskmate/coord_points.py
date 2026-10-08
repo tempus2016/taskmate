@@ -493,6 +493,8 @@ class PointsMixin:
         "Weekend bonus",
         "Streak milestone bonus",
         "Perfect week bonus",
+        # Paid and refunded alongside the completions that reach the target.
+        "Weekly target bonus",
         "Allocated to pool:",
         "Pool refund",
         "Points decay",

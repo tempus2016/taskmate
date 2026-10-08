@@ -38,7 +38,7 @@ class TaskMateActivityCard extends LitElement {
   // Everything else (penalty, bonus, gift, manual add/remove) is reversible.
   static get _UNDO_DENY_PREFIXES() {
     return [
-      "Weekend bonus", "Streak milestone bonus", "Perfect week bonus",
+      "Weekend bonus", "Streak milestone bonus", "Perfect week bonus", "Weekly target bonus",
       "Allocated to pool:", "Pool refund", "Points decay",
       "Savings interest", "Badge", "Streak freeze",
       "Wish savings", "Wish refund", "Wish pledge", "Wish redeemed",
