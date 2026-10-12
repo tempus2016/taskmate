@@ -206,6 +206,14 @@ def test_language_change_reloads_the_strings(hass):
     assert notify_strings.text(hass, "action_approve") == "Valider"
 
 
+def test_language_listener_runs_on_the_event_loop(hass):
+    """A plain function would be run in the executor, where async_create_task raises (#1049)."""
+    listeners = {}
+    hass.bus.async_listen = lambda event, cb: listeners.setdefault(event, cb)
+    notify_strings.async_watch_language(hass)
+    assert getattr(listeners["core_config_updated"], "_hass_callback", False)
+
+
 @pytest.mark.parametrize("path", sorted(LOCALES.glob("*.json")), ids=lambda p: p.stem)
 @pytest.mark.asyncio
 async def test_every_test_push_fills_its_placeholders(coord, hass, path):

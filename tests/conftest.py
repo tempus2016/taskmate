@@ -44,7 +44,15 @@ class FakeHass:
 
 _ha_core = MagicMock()
 _ha_core.HomeAssistant = FakeHass
-_ha_core.callback = lambda f: f  # pass-through decorator
+
+
+def _callback(func):
+    # Mirror HA: tag the function so tests can check it runs on the event loop.
+    func._hass_callback = True
+    return func
+
+
+_ha_core.callback = _callback
 _ha_core.ServiceCall = MagicMock
 
 
