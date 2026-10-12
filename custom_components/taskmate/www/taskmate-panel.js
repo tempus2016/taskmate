@@ -176,14 +176,22 @@ const TASK_GROUP_POLICIES = [
 // Setup wizard (#980). Age groups mirror AGE_GROUP_INFO in setup_catalogue.py
 // (youngest age, oldest age) — tests/test_setup_wizard.py keeps them in step.
 const WZ_AGE_GROUPS = [["3_5", 3, 5], ["6_8", 6, 8], ["9_12", 9, 12], ["13_plus", 13, 999]];
-const WZ_STEPS = ["welcome", "children", "chores", "rewards", "review", "done"];
+const WZ_STEPS = ["welcome", "children", "chores", "rewards", "dashboards", "review", "done"];
+const WZ_REVIEW = WZ_STEPS.indexOf("review");
+const WZ_DONE = WZ_STEPS.indexOf("done");
 const WZ_KID_ICONS = ["mdi:star", "mdi:heart", "mdi:paw", "mdi:white-balance-sunny", "mdi:weather-night", "mdi:trophy",
   "mdi:leaf", "mdi:creation", "mdi:fire", "mdi:medal", "mdi:book-open-variant", "mdi:car-sports"];
 const WZ_KID_COLORS = ["#ff6b9d", "#3498db", "#1abc9c", "#9b59b6", "#e67e22", "#f1c40f", "#e74c3c", "#2ecc71"];
 const WZ_POINT_NAMES = [["points", "mdi:star"], ["stars", "mdi:star"], ["coins", "mdi:circle-multiple"], ["gems", "mdi:diamond-stone"]];
 const WZ_DRAFT_KEY = "taskmate-setup-draft";
 const WZ_SKIP_KEY = "taskmate-setup-skipped";
-const WZ_DASH_PATH = "family-chores";
+// Ready-made dashboards (#1053).
+const DASH_KINDS = ["kids", "parents", "wall"];
+const DASH_PATHS = { kids: "taskmate-kids", parents: "taskmate-parents", wall: "taskmate-wall" };
+const DASH_ICONS = { kids: "mdi:human-child", parents: "mdi:account-supervisor", wall: "mdi:tablet-dashboard" };
+const DASH_COLORS = { kids: "#ff6b9d", parents: "#9b59b6", wall: "#e67e22" };
+// Home Assistant's rule for a dashboard address: a slug with at least one dash.
+const DASH_PATH_RE = /^[a-z0-9]+(-[a-z0-9]+)+$/;
 
 
 class TaskMatePanel extends HTMLElement {
@@ -571,6 +579,8 @@ class TaskMatePanel extends HTMLElement {
     const act = t.dataset.act;
     // Setup wizard (#980) actions all start "wz-".
     if (act.startsWith("wz-")) { this._wizardAct(t, e); return; }
+    // Ready-made dashboards (#1053) actions all start "dash-".
+    if (act.startsWith("dash-")) { this._dashAct(t); return; }
 
     if (act === "new-menu")      { this._newMenuOpen = !this._newMenuOpen; this._render(); return; }
     if (act === "palette-open")  { this._openPalette(); return; }
@@ -3535,7 +3545,7 @@ class TaskMatePanel extends HTMLElement {
 
     if (!this._shellReady) {
       if (!this._cachedStyles) {
-        this._cachedStyles = this._styles() + this._wizardStyles();
+        this._cachedStyles = this._styles() + this._wizardStyles() + this._dashStyles();
       }
       const existingToast = this.querySelector(".tm-toast");
       this.innerHTML = `
@@ -5052,6 +5062,9 @@ class TaskMatePanel extends HTMLElement {
     const actions = this._t("panel.palette_group_actions");
     for (const it of this._newMenuItems()) cmds.push({ group: actions, icon: it.icon, label: it.label, data: { act: it.act } });
     cmds.push({ group: actions, icon: "mdi:auto-fix", label: this._t("wizard.run_btn"), data: { act: "wz-open" } });
+    for (const kind of DASH_KINDS) {
+      cmds.push({ group: actions, icon: DASH_ICONS[kind], label: this._t("panel.dash_palette", { kind: this._t(`panel.dash_kind_${kind}`) }), data: { act: "dash-new", v: kind } });
+    }
     if ((s.pending_completions || []).length) {
       cmds.push({ group: actions, icon: "mdi:check-all", label: this._t("panel.activity_approve_all"), data: { act: "approve-all-chores" } });
     }
@@ -5167,7 +5180,7 @@ class TaskMatePanel extends HTMLElement {
       if (!ok) { this._showToast("err", this._t("wizard.toast_load_failed", { error: err })); return; }
       this._wzCatalogue = res;
     }
-    if (!this._wz || this._wz.step === 5) {
+    if (!this._wz || this._wz.step === WZ_DONE) {
       const draft = this._wizardLoadDraft();
       this._wz = draft || this._wizardFresh();
     }
@@ -5181,7 +5194,7 @@ class TaskMatePanel extends HTMLElement {
 
   _wizardClose(toTab = "today") {
     // A finished run leaves nothing to come back to; anything else stays as a draft.
-    if (this._wz && this._wz.step === 5) this._wz = null;
+    if (this._wz && this._wz.step === WZ_DONE) this._wz = null;
     else this._wizardSaveDraft();
     localStorage.setItem(WZ_SKIP_KEY, "true");
     this._activeTab = toTab;
@@ -5194,7 +5207,14 @@ class TaskMatePanel extends HTMLElement {
       if (!d || d.v !== 1 || !Array.isArray(d.kids)) return null;
       d.busy = false;
       d.result = null;
-      d.step = Math.min(Math.max(0, Number(d.step) || 0), 4);
+      // Drafts from before #1053 had a single "Family chores" switch and
+      // Review as step 4; Review is now after the Dashboards step.
+      if (!d.dashOpts) {
+        d.dash = { kids: d.dash !== false, parents: false, wall: false };
+        d.dashOpts = this._wizardDashOpts();
+        if (Number(d.step) === 4) d.step = WZ_REVIEW;
+      }
+      d.step = Math.min(Math.max(0, Number(d.step) || 0), WZ_REVIEW);
       return d;
     } catch (_) {
       return null;
@@ -5203,7 +5223,7 @@ class TaskMatePanel extends HTMLElement {
 
   _wizardSaveDraft() {
     const wz = this._wz;
-    if (!wz || wz.step === 5) return;
+    if (!wz || wz.step === WZ_DONE) return;
     try {
       const { busy: _busy, result: _result, ...keep } = wz;
       localStorage.setItem(WZ_DRAFT_KEY, JSON.stringify(keep));
@@ -5219,10 +5239,15 @@ class TaskMatePanel extends HTMLElement {
       pname, picon, pnameOrig: pname, piconOrig: picon, pnameCustom: false,
       kids: [], form: null,
       chores: {}, packs: [], rewards: {}, custom: [], rwName: "", rwCost: 20,
-      approval: "big", dash: true, notify: true, showAll: false,
+      approval: "big", notify: true, showAll: false,
+      dash: { kids: true, parents: false, wall: false }, dashOpts: this._wizardDashOpts(),
     };
     wz.pnameCustom = !WZ_POINT_NAMES.some(([k]) => this._t(`wizard.pname_${k}`) === pname);
     return wz;
+  }
+
+  _wizardDashOpts() {
+    return { layout: "tabs", hide: true, admin: false, board: true };
   }
 
   // Existing children join the wizard as "Already set up", so their ages can
@@ -5439,6 +5464,11 @@ class TaskMatePanel extends HTMLElement {
     return !!(plan.children.length || plan.child_updates.length || plan.chores.length || plan.rewards.length);
   }
 
+  // Dashboards on their own are worth a run of the wizard too (#1053).
+  _wizardHasWork(plan) {
+    return this._wizardPlanHasWork(plan) || DASH_KINDS.some(k => this._wz.dash[k]);
+  }
+
   _wizardAddKid() {
     const wz = this._wz;
     const f = wz.form;
@@ -5466,11 +5496,11 @@ class TaskMatePanel extends HTMLElement {
 
   _wizardGo(step) {
     const wz = this._wz;
-    if (wz.busy || step === 5) return;
+    if (wz.busy || step === WZ_DONE) return;
     // Leaving Children with a name typed adds that child, as the footer says.
     if (wz.step === 1 && step > 1 && (wz.form.name || "").trim() && !this._wizardAddKid()) return;
     if (step >= 2 && !wz.kids.length) { this._showToast("err", this._t("wizard.toast_need_child")); wz.step = 1; this._render(); return; }
-    wz.step = Math.max(0, Math.min(4, step));
+    wz.step = Math.max(0, Math.min(WZ_REVIEW, step));
     this._wizardSaveDraft();
     this._render();
     const body = this.querySelector(".tm-body");
@@ -5492,10 +5522,7 @@ class TaskMatePanel extends HTMLElement {
       case "wz-close": this._wizardClose(); return;
       case "wz-today": this._wz = null; this._activeTab = "today"; this._render(); return;
       case "wz-restore": this._wizardClose("settings"); return;
-      case "wz-dashboard":
-        history.pushState(null, "", `/${WZ_DASH_PATH}`);
-        window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
-        return;
+      case "wz-dashboard": this._dashOpen(v); return;
       case "wz-go": this._wizardGo(Number(v)); return;
       case "wz-next": this._wizardGo(wz.step + 1); return;
       case "wz-back": this._wizardGo(wz.step - 1); return;
@@ -5599,7 +5626,9 @@ class TaskMatePanel extends HTMLElement {
         break;
       }
       case "wz-appr": wz.approval = v; break;
-      case "wz-dash": wz.dash = !wz.dash; break;
+      case "wz-dash": if (DASH_KINDS.includes(v)) wz.dash[v] = !wz.dash[v]; break;
+      case "wz-dash-layout": wz.dashOpts.layout = v === "each" ? "each" : "tabs"; break;
+      case "wz-dash-opt": if (v in wz.dashOpts) wz.dashOpts[v] = !wz.dashOpts[v]; break;
       case "wz-notify": wz.notify = !wz.notify; break;
       default: return;
     }
@@ -5637,10 +5666,13 @@ class TaskMatePanel extends HTMLElement {
     const wz = this._wz;
     if (wz.busy) return;
     const plan = this._wizardPlan();
-    if (!this._wizardPlanHasWork(plan)) return;
+    if (!this._wizardHasWork(plan)) return;
     wz.busy = true;
     this._render();
-    const { ok, res, err, code } = await this._callWS({ type: "taskmate/setup_wizard/apply", ...plan });
+    // Only dashboards picked: there is nothing for the backend to add.
+    const { ok, res, err, code } = this._wizardPlanHasWork(plan)
+      ? await this._callWS({ type: "taskmate/setup_wizard/apply", ...plan })
+      : { ok: true, res: { children: {} } };
     if (!ok) {
       wz.busy = false;
       this._render();
@@ -5656,11 +5688,10 @@ class TaskMatePanel extends HTMLElement {
       await this._callWS({ type: "taskmate/update_settings", points_name: pname.slice(0, 120), points_icon: wz.picon });
     }
     if (wz.notify) await this._wizardEnableApprovalAlerts();
-    let dashboard = "off";
-    if (wz.dash) dashboard = await this._wizardCreateDashboard(res.children || {});
-    wz.result = { ...res, dashboard, updated: plan.child_updates.length };
+    const dashboards = await this._wizardCreateDashboards(res.children || {});
+    wz.result = { ...res, dashboards, updated: plan.child_updates.length };
     wz.busy = false;
-    wz.step = 5;
+    wz.step = WZ_DONE;
     localStorage.removeItem(WZ_DRAFT_KEY);
     await this._fetchState();
   }
@@ -5685,31 +5716,19 @@ class TaskMatePanel extends HTMLElement {
     return hit || "sensor.taskmate_overview";
   }
 
-  // A "Family chores" dashboard: one child card per child plus the rewards
-  // card. Created only when the url is free — an existing dashboard (or any
-  // panel on that path) is never touched.
-  async _wizardCreateDashboard(refToId) {
-    if (this._hass && this._hass.panels && this._hass.panels[WZ_DASH_PATH]) return "exists";
-    const list = await this._callWS({ type: "lovelace/dashboards/list" });
-    if (!list.ok) return "failed";
-    if ((list.res || []).some(d => d.url_path === WZ_DASH_PATH)) return "exists";
-    const title = this._t("wizard.dash_title");
-    const created = await this._callWS({
-      type: "lovelace/dashboards/create", url_path: WZ_DASH_PATH, title,
-      icon: "mdi:checkbox-marked-circle-plus-outline", mode: "storage", show_in_sidebar: true, require_admin: false,
-    });
-    if (!created.ok) return "failed";
-    const entity = this._wizardOverviewEntity();
-    const cards = this._wz.kids.map(k => ({
-      type: "custom:taskmate-child-card", entity, child_id: refToId[k.key] || k.key,
-      time_category: "all", header_color: k.color,
-    }));
-    cards.push({ type: "custom:taskmate-rewards-card", entity });
-    const saved = await this._callWS({
-      type: "lovelace/config/save", url_path: WZ_DASH_PATH,
-      config: { title, views: [{ title, path: "chores", icon: "mdi:checkbox-marked-circle-outline", cards }] },
-    });
-    return saved.ok ? "created" : "failed";
+  // The dashboards picked on the Dashboards step (#1053), filled in with the
+  // children as they are once created. An address already in use is skipped.
+  async _wizardCreateDashboards(refToId) {
+    const wz = this._wz;
+    const kinds = DASH_KINDS.filter(k => wz.dash[k]);
+    if (!kinds.length) return [];
+    const kids = wz.kids.map(k => ({ id: refToId[k.key] || k.key, name: k.name, color: k.color, icon: k.icon }));
+    // Children added a moment ago get their badges sensor shortly after.
+    for (let i = 0; i < 10 && kinds.includes("kids") && kids.some(k => !this._dashBadgeEntities()[k.id]); i++) {
+      await new Promise(r => setTimeout(r, 500));
+    }
+    const specs = kinds.flatMap(kind => this._dashSpecs({ ...this._dashDefaults(kind), ...wz.dashOpts }, kids));
+    return this._dashCreate(specs);
   }
 
   // "Vaiha is 9 now — see new chore ideas" (#980): suggestions never move up
@@ -5773,16 +5792,17 @@ class TaskMatePanel extends HTMLElement {
       return this._emptyState("🪄", this._t("wizard.title"), this._t("wizard.intro_existing"), "wz-open", this._t("wizard.run_btn"));
     }
     const step = wz.step;
-    const last = step === 5;
+    const last = step === WZ_DONE;
     const steps = WZ_STEPS.map((id, i) => `
       ${i ? `<i class="tm-wz-sep ${i <= step ? "tm-wz-done" : ""}"></i>` : ""}
-      <button type="button" class="tm-wz-step ${i === step ? "tm-wz-on" : i < step ? "tm-wz-done" : ""}" data-act="wz-go" data-v="${i}" ${last || i === 5 ? "disabled" : ""} ${i === step ? 'aria-current="step"' : ""}>
+      <button type="button" class="tm-wz-step ${i === step ? "tm-wz-on" : i < step ? "tm-wz-done" : ""}" data-act="wz-go" data-v="${i}" ${last || i === WZ_DONE ? "disabled" : ""} ${i === step ? 'aria-current="step"' : ""}>
         <span class="tm-wz-n">${i < step ? `<ha-icon icon="mdi:check"></ha-icon>` : i + 1}</span><span class="tm-wz-l">${this._t(`wizard.step_${id}`)}</span>
       </button>`).join("");
-    const nextKey = ["wizard.next_welcome", "wizard.next_children", "wizard.next_chores", "wizard.next_rewards"][step];
+    const nextKey = ["wizard.next_welcome", "wizard.next_children", "wizard.next_chores", "wizard.next_rewards", "wizard.next_dashboards"][step];
     const body = [
       () => this._wizardStepWelcome(), () => this._wizardStepChildren(), () => this._wizardStepChores(),
-      () => this._wizardStepRewards(), () => this._wizardStepReview(), () => this._wizardStepDone(),
+      () => this._wizardStepRewards(), () => this._wizardStepDashboards(), () => this._wizardStepReview(),
+      () => this._wizardStepDone(),
     ][step]();
     const typed = step === 1 && (wz.form.name || "").trim();
     return `
@@ -5805,8 +5825,8 @@ class TaskMatePanel extends HTMLElement {
               <span class="tm-wz-sp"></span>
               ${step === 0 && wz.mode === "fresh" ? `<button type="button" class="tm-btn tm-wz-text-btn" data-act="wz-restore">${this._t("wizard.restore")}</button>` : ""}
               ${step === 1 ? `<span class="tm-wz-foot-hint">${typed ? this._esc(this._t("wizard.foot_will_add", { name: typed })) : ""}</span>` : ""}
-              ${step === 4
-                ? `<button type="button" class="tm-btn tm-btn-raised tm-wz-create" data-act="wz-create" ${wz.busy || !this._wizardPlanHasWork(this._wizardPlan()) ? "disabled" : ""}>${wz.busy ? `<span class="tm-btn-spinner"></span>${this._t("wizard.creating")}` : this._t(wz.mode === "existing" ? "wizard.create_existing" : "wizard.create")}</button>`
+              ${step === WZ_REVIEW
+                ? `<button type="button" class="tm-btn tm-btn-raised tm-wz-create" data-act="wz-create" ${wz.busy || !this._wizardHasWork(this._wizardPlan()) ? "disabled" : ""}>${wz.busy ? `<span class="tm-btn-spinner"></span>${this._t("wizard.creating")}` : this._t(wz.mode === "existing" ? "wizard.create_existing" : "wizard.create")}</button>`
                 : `<button type="button" class="tm-btn tm-btn-raised" data-act="wz-next">${this._t(nextKey)}<ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon></button>`}
             </div>`}
         </div>
@@ -6084,6 +6104,42 @@ class TaskMatePanel extends HTMLElement {
       </div>`;
   }
 
+  // Dashboards step (#1053): any of the three ready-made dashboards, with the
+  // children from the earlier steps filled in when it's all created.
+  _wizardStepDashboards() {
+    const wz = this._wz;
+    const o = wz.dashOpts;
+    const sw = (v, on, title, hint) => `
+      <div class="tm-wz-tog"><div class="tm-wz-grow">${title}<small>${hint}</small></div>
+        <button type="button" class="tm-wz-sw ${on ? "tm-wz-on" : ""}" data-act="wz-dash-opt" data-v="${v}" role="switch" aria-checked="${on}" aria-label="${this._esc(title)}"></button></div>`;
+    const opts = {
+      kids: () => `
+        <div class="tm-wz-tog"><div class="tm-wz-grow">${this._t("panel.dash_layout_label")}<small>${this._t(o.layout === "each" ? "panel.dash_layout_each_hint" : "panel.dash_layout_tabs_hint")}</small></div>
+          <div class="tm-seg tm-wz-seg" role="tablist">${["tabs", "each"].map(v => `<button type="button" role="tab" class="${o.layout === v ? "tm-seg-on" : ""}" aria-selected="${o.layout === v}" data-act="wz-dash-layout" data-v="${v}">${this._t(`panel.dash_layout_${v}`)}</button>`).join("")}</div></div>
+        ${sw("hide", o.hide, this._t("panel.dash_hide_parent"), this._t("panel.dash_hide_parent_hint"))}`,
+      parents: () => sw("admin", o.admin, this._t("panel.dash_admin"), this._t("panel.dash_admin_hint")),
+      wall: () => sw("board", o.board, this._t("panel.dash_board"), this._t("panel.dash_board_hint")),
+    };
+    const tiles = DASH_KINDS.map(kind => {
+      const on = !!wz.dash[kind];
+      const path = kind === "kids" && o.layout === "each" ? `/${DASH_PATHS[kind]}-…` : `/${DASH_PATHS[kind]}`;
+      return `
+        <div class="tm-dash-pick ${on ? "tm-dash-on" : ""}" style="--dc:${DASH_COLORS[kind]}">
+          <button type="button" class="tm-dash-pick-h" data-act="wz-dash" data-v="${kind}" aria-pressed="${on}">
+            <span class="tm-dash-pick-ic"><ha-icon icon="${DASH_ICONS[kind]}"></ha-icon></span>
+            <span class="tm-wz-grow"><b>${this._t(`panel.dash_kind_${kind}`)}</b><small>${this._t(`panel.dash_desc_${kind}`)}</small><code>${this._esc(path)}</code></span>
+            <ha-icon class="tm-dash-tick" icon="${on ? "mdi:check-circle" : "mdi:circle-outline"}"></ha-icon>
+          </button>
+          ${on ? `<div class="tm-dash-pick-o">${opts[kind]()}</div>` : ""}
+        </div>`;
+    }).join("");
+    return `
+      <h2 class="tm-wz-h">${this._t("wizard.dash_step_title")}</h2>
+      <p class="tm-wz-p">${this._t("wizard.dash_step_copy")}</p>
+      <div class="tm-dash-picks">${tiles}</div>
+      <p class="tm-wz-hint">${this._t("wizard.dash_step_later")}</p>`;
+  }
+
   _wizardCount(noun, n) {
     return this._t(`wizard.count_${noun}_${n === 1 ? "one" : "many"}`, { count: n });
   }
@@ -6102,7 +6158,8 @@ class TaskMatePanel extends HTMLElement {
     const plan = this._wizardPlan();
     const c = this._wizardCounts(plan);
     const keep = { ...c, have_chores: this._wizardCount("chores", (s.chores || []).length), have_rewards: this._wizardCount("rewards", (s.rewards || []).length) };
-    const intro = !this._wizardPlanHasWork(plan) ? this._t("wizard.review_nothing")
+    const intro = !this._wizardHasWork(plan) ? this._t("wizard.review_nothing")
+      : !this._wizardPlanHasWork(plan) ? this._t("wizard.review_dashboards_only")
       : wz.mode !== "existing" ? this._t("wizard.review_fresh", c)
       : this._t(plan.children.length ? "wizard.review_existing" : "wizard.review_existing_no_children", keep);
     const packNames = plan.chores.filter(ch => !ch.assigned_to.length).map(ch => ch.name);
@@ -6134,7 +6191,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-wz-panel tm-wz-opts"><h4>${this._t("wizard.defaults")}</h4>
           <div class="tm-wz-tog"><div class="tm-wz-grow">${this._t("wizard.appr_title")}<small>${this._t("wizard.appr_hint")}</small></div>
             <div class="tm-seg tm-wz-seg" role="tablist">${appr.map(([v, key]) => `<button type="button" role="tab" class="${wz.approval === v ? "tm-seg-on" : ""}" aria-selected="${wz.approval === v}" data-act="wz-appr" data-v="${v}">${this._t(key)}</button>`).join("")}</div></div>
-          ${sw("wz-dash", wz.dash, this._t("wizard.dash_toggle"), this._t("wizard.dash_hint"))}
+          <div class="tm-wz-tog"><div class="tm-wz-grow">${this._t("wizard.review_dashboards")}<small>${this._esc(DASH_KINDS.filter(k => wz.dash[k]).map(k => this._t(`panel.dash_kind_${k}`)).join(", ") || this._t("wizard.review_no_dashboards"))}</small></div></div>
           ${sw("wz-notify", wz.notify, this._t("wizard.notify_toggle"), this._t("wizard.notify_hint"))}
         </div>
         <div class="tm-wz-panel"><h4>${this._t("wizard.rewards_n", { count: plan.rewards.length })}</h4>
@@ -6151,11 +6208,13 @@ class TaskMatePanel extends HTMLElement {
     // Only what was actually added: never a row of zeros.
     const phrase = (noun, n) => (n ? `<span>${this._wizardCount(noun, n)}</span>` : "");
     const added = (r.children_added || 0) + (r.chores_added || 0) + (r.rewards_added || 0) + (r.updated || 0);
-    const copy = !added && r.dashboard !== "created" ? "wizard.done_copy_nothing"
+    const dashes = r.dashboards || [];
+    const made = dashes.filter(x => x.status === "created").length;
+    const copy = !added && !made ? "wizard.done_copy_nothing"
+      : !added ? "wizard.done_copy_dashboards"
       : wz.mode === "existing" ? "wizard.done_copy_existing" : "wizard.done_copy";
-    const dash = r.dashboard === "created" || r.dashboard === "exists";
-    const dashNote = r.dashboard === "exists" ? this._t("wizard.dash_existed")
-      : r.dashboard === "failed" ? this._t("wizard.dash_failed") : "";
+    const dashNotes = dashes.filter(x => x.status !== "created")
+      .map(x => this._t(x.status === "exists" ? "wizard.dash_existed" : "wizard.dash_failed", { title: x.title }));
     return `
       <div class="tm-wz-finish">
         <div class="tm-wz-confetti" aria-hidden="true">${conf}</div>
@@ -6166,16 +6225,16 @@ class TaskMatePanel extends HTMLElement {
           ${phrase("children", r.children_added || 0)}
           ${phrase("chores", r.chores_added || 0)}
           ${phrase("rewards", r.rewards_added || 0)}
-          ${r.dashboard === "created" ? `<span>${this._t("wizard.one_dashboard")}</span>` : ""}
+          ${phrase("dashboards", made)}
         </div>
-        ${dashNote ? `<p class="tm-wz-hint tm-wz-center">${dashNote}</p>` : ""}
+        ${dashNotes.map(n => `<p class="tm-wz-hint tm-wz-center">${this._esc(n)}</p>`).join("")}
         <div class="tm-wz-next">
           <div><b><ha-icon icon="mdi:tablet"></ha-icon>${this._t("wizard.next_tablet_title")}</b>${this._t("wizard.next_tablet")}</div>
           <div><b><ha-icon icon="mdi:home-outline"></ha-icon>${this._t("wizard.next_today_title")}</b>${this._t("wizard.next_today")}</div>
           <div><b><ha-icon icon="mdi:auto-fix"></ha-icon>${this._t("wizard.next_change_title")}</b>${this._t("wizard.next_change")}</div>
         </div>
         <div class="tm-wz-done-acts">
-          ${dash ? `<button type="button" class="tm-btn" data-act="wz-dashboard"><ha-icon icon="mdi:view-dashboard-outline"></ha-icon>${this._t("wizard.open_dashboard")}</button>` : ""}
+          ${dashes.filter(x => x.status !== "failed").slice(0, 4).map(x => `<button type="button" class="tm-btn" data-act="wz-dashboard" data-v="${this._esc(x.url_path)}"><ha-icon icon="mdi:view-dashboard-outline"></ha-icon>${this._esc(this._t("wizard.open_named", { title: x.title }))}</button>`).join("")}
           <button type="button" class="tm-btn tm-btn-raised" data-act="wz-today">${this._t("wizard.go_today")}<ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon></button>
         </div>
       </div>`;
@@ -6217,6 +6276,354 @@ class TaskMatePanel extends HTMLElement {
           <button type="button" class="tm-btn" data-act="add-child"><ha-icon icon="mdi:plus"></ha-icon>${this._t("wizard.add_child_myself")}</button>
         </div>
       </div>`;
+  }
+
+  // -- Ready-made dashboards (#1053) ----------------------------------------
+  // Kids, Parents and Wall tablet presets, built from the family as it is now
+  // and saved once as ordinary storage dashboards, which are then the user's
+  // to edit. Settings and the setup wizard share this. An address that is
+  // already a dashboard or a panel is never written to.
+
+  _dashDefaults(kind) {
+    return {
+      kind, title: this._t(`panel.dash_title_${kind}`), path: DASH_PATHS[kind],
+      layout: "tabs", hide: true, admin: false, board: true, sidebar: kind !== "wall",
+    };
+  }
+
+  // The children a dashboard can be made for: guests come and go, so not them.
+  _dashKids() {
+    return ((this._state && this._state.children) || []).filter(c => !c.is_guest).map(c => ({
+      id: c.id, name: c.name, color: this._childColor(c.id), icon: c.avatar,
+    }));
+  }
+
+  // "Zoë" -> "zoe", for a view or dashboard address.
+  _dashSlug(text) {
+    return String(text || "").normalize("NFKD").replace(/[̀-ͯ]/g, "")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+
+  // One spec per dashboard to create: { url_path, title, icon, require_admin,
+  // show_in_sidebar, config }. kids: [{ id, name, color, icon }].
+  _dashSpecs(o, kids) {
+    const entity = this._wizardOverviewEntity();
+    const card = (type, extra = {}) => ({ type: `custom:taskmate-${type}-card`, entity, ...extra });
+    const view = (title, path, icon, cards, panel = false) => ({ title, path, icon, ...(panel ? { type: "panel" } : {}), cards });
+    const base = { title: o.title, icon: DASH_ICONS[o.kind], require_admin: o.kind === "parents" && !!o.admin, show_in_sidebar: !!o.sidebar };
+    const one = views => [{ ...base, url_path: o.path, config: { title: o.title, views } }];
+    if (o.kind === "parents") {
+      return one([
+        view(this._t("panel.dash_view_today"), "today", "mdi:calendar-today", [card("approvals"), card("chore-board"), card("parent-dashboard")]),
+        view(this._t("panel.dash_view_points"), "points", "mdi:star-circle-outline", [card("points-display", { mode: "multi" }), card("bonuses"), card("penalties"), card("leaderboard")]),
+        view(this._t("panel.dash_view_insights"), "insights", "mdi:chart-line", [card("weekly"), card("graph"), card("activity"), card("calendar")]),
+      ]);
+    }
+    if (o.kind === "wall") {
+      const views = [view(this._t("panel.dash_card_kiosk"), "kiosk", "mdi:tablet", [card("kiosk")], true)];
+      if (o.board) views.push(view(this._t("panel.today_board_title"), "board", "mdi:view-grid-outline", [card("chore-board")], true));
+      return one(views);
+    }
+    const family = () => view(this._t("panel.dash_view_family"), "family", "mdi:home-heart", [card("leaderboard"), card("family-goal")]);
+    const badges = this._dashBadgeEntities();
+    const used = new Set(["family"]);
+    const kidViews = kids.map(k => {
+      let slug = this._dashSlug(k.name) || this._dashSlug(k.id) || "child";
+      // Two Sams, or a child called Family, still get an address each.
+      for (let n = 2; used.has(slug); n++) slug = `${this._dashSlug(k.name) || "child"}-${n}`;
+      used.add(slug);
+      const own = { child_id: k.id, header_color: k.color };
+      const chores = card("child", { ...own, time_category: "all" });
+      if (o.hide) chores.show_parent_actions = false;
+      const icon = /^mdi:/.test(k.icon || "") ? k.icon : "mdi:account";
+      const cards = [chores, card("reward-progress", own), card("streak", own)];
+      // The badges card reads the child's own badges sensor, not the overview.
+      if (badges[k.id]) cards.push({ ...card("badges"), entity: badges[k.id], header_color: k.color });
+      cards.push(card("rewards", own));
+      return { slug, view: view(k.name, slug, icon, cards) };
+    });
+    if (o.layout === "each") {
+      return kidViews.map(({ slug, view: v }) => {
+        const title = `${o.title} · ${v.title}`;
+        return { ...base, title, url_path: `${o.path}-${slug}`, config: { title, views: [v, family()] } };
+      });
+    }
+    return one([...kidViews.map(x => x.view), family()]);
+  }
+
+  // child id -> that child's badges sensor, as the overview publishes it
+  // (entity ids can carry an area prefix, so they are never guessed).
+  _dashBadgeEntities() {
+    const states = (this._hass && this._hass.states) || {};
+    const ov = states[this._wizardOverviewEntity()];
+    return (ov && ov.attributes && ov.attributes.badge_entities) || {};
+  }
+
+  // Which of these addresses are already taken; null if the list can't be read.
+  async _dashTaken(paths) {
+    const panels = (this._hass && this._hass.panels) || {};
+    const list = await this._callWS({ type: "lovelace/dashboards/list" });
+    if (!list.ok) return null;
+    const have = new Set((list.res || []).map(d => d.url_path));
+    return paths.filter(p => panels[p] || have.has(p));
+  }
+
+  // Creates each spec whose address is free: [{ url_path, title, status }],
+  // status "created", "exists" or "failed".
+  async _dashCreate(specs, taken = null) {
+    taken = taken || await this._dashTaken(specs.map(s => s.url_path));
+    const out = [];
+    for (const { config, ...meta } of specs) {
+      const r = { url_path: meta.url_path, title: meta.title };
+      if (!taken) { out.push({ ...r, status: "failed" }); continue; }
+      if (taken.includes(meta.url_path)) { out.push({ ...r, status: "exists" }); continue; }
+      const created = await this._callWS({ type: "lovelace/dashboards/create", mode: "storage", ...meta });
+      const saved = created.ok && await this._callWS({ type: "lovelace/config/save", url_path: meta.url_path, config });
+      const ok = !!(saved && saved.ok);
+      if (ok) (this._dashMade = this._dashMade || new Set()).add(meta.url_path);
+      out.push({ ...r, status: ok ? "created" : "failed" });
+    }
+    return out;
+  }
+
+  _dashOpen(path) {
+    if (!path) return;
+    history.pushState(null, "", `/${path}`);
+    window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+  }
+
+  // The dashboard a preset already made, if any: its own address, or the
+  // first of a per-child set.
+  _dashFound(kind) {
+    const have = new Set([...Object.keys((this._hass && this._hass.panels) || {}), ...(this._dashMade || [])]);
+    const path = DASH_PATHS[kind];
+    return have.has(path) ? path : [...have].find(p => p.startsWith(`${path}-`)) || "";
+  }
+
+  _dashNew(kind) {
+    if (!DASH_KINDS.includes(kind)) return;
+    const kids = this._dashKids();
+    if (kind === "kids" && !kids.length) { this._showToast("err", this._t("panel.dash_need_child")); return; }
+    this._openDialog({ kind: "dash-create", data: { ...this._dashDefaults(kind), kids: kids.map(k => k.id), err: "", busy: false } });
+  }
+
+  _dashAct(t) {
+    const act = t.dataset.act;
+    const v = t.dataset.v;
+    if (act === "dash-new") { this._dashNew(v); return; }
+    if (act === "dash-open") { this._dashOpen(v); return; }
+    const d = this._dialog && this._dialog.kind === "dash-create" ? this._dialog.data : null;
+    if (!d || d.busy) return;
+    if (act === "dash-kind") {
+      if (!DASH_KINDS.includes(v) || v === d.kind) return;
+      Object.assign(d, this._dashDefaults(v), { err: "" });
+    } else if (act === "dash-kid") {
+      const id = t.dataset.id;
+      d.kids = d.kids.includes(id) ? d.kids.filter(x => x !== id) : [...d.kids, id];
+    } else if (act === "dash-layout") {
+      d.layout = v === "each" ? "each" : "tabs";
+    } else if (act === "dash-save") {
+      this._dashSave();
+      return;
+    } else {
+      return;
+    }
+    this._render();
+  }
+
+  // The dialog's choices as specs, or an error key if they can't be made.
+  _dashDialogSpecs(d) {
+    const title = String(d.title || "").trim();
+    const path = String(d.path || "").trim().toLowerCase();
+    if (!title) return { err: "panel.dash_need_title" };
+    if (!DASH_PATH_RE.test(path)) return { err: "panel.dash_path_invalid" };
+    const kids = this._dashKids().filter(k => d.kids.includes(k.id));
+    if (d.kind === "kids" && !kids.length) return { err: "panel.dash_pick_child" };
+    return { specs: this._dashSpecs({ ...d, title, path }, kids) };
+  }
+
+  async _dashSave() {
+    const d = this._dialog.data;
+    const { specs, err } = this._dashDialogSpecs(d);
+    if (err) { d.err = this._t(err); this._render(); return; }
+    d.busy = true;
+    d.err = "";
+    this._render();
+    // Everything is checked before anything is written.
+    const taken = await this._dashTaken(specs.map(s => s.url_path));
+    if (!taken || taken.length) {
+      d.busy = false;
+      d.err = taken ? this._t("panel.dash_path_taken", { paths: taken.map(p => `/${p}`).join(", ") }) : this._t("panel.dash_list_failed");
+      this._render();
+      return;
+    }
+    const res = await this._dashCreate(specs, taken);
+    d.busy = false;
+    const made = res.filter(r => r.status === "created");
+    const failed = res.filter(r => r.status !== "created");
+    if (made.length) this._showToast("ok", this._t("panel.dash_toast_created", { titles: made.map(r => r.title).join(", ") }));
+    if (failed.length) {
+      this._showToast("err", this._t("panel.dash_toast_failed", { titles: failed.map(r => r.title).join(", ") }));
+      this._render();
+      return;
+    }
+    this._closeDialog(true);
+  }
+
+  _dashSettingsSection() {
+    const noKids = !this._dashKids().length;
+    const tiles = DASH_KINDS.map(kind => {
+      const found = this._dashFound(kind);
+      const off = kind === "kids" && noKids;
+      return `
+        <div class="tm-dash-tile" style="--dc:${DASH_COLORS[kind]}">
+          <div class="tm-dash-tile-h"><ha-icon icon="${DASH_ICONS[kind]}"></ha-icon>${this._t(`panel.dash_kind_${kind}`)}</div>
+          <div class="tm-dash-tile-b">
+            <p>${this._t(`panel.dash_desc_${kind}`)}</p>
+            <small>${this._t(off ? "panel.dash_need_child" : `panel.dash_for_${kind}`)}</small>
+          </div>
+          <div class="tm-dash-tile-f">
+            ${found ? `<span class="tm-dash-made"><ha-icon icon="mdi:check"></ha-icon>${this._t("panel.dash_created")}</span>` : ""}
+            <span class="tm-dash-sp"></span>
+            ${found ? `<button type="button" class="tm-btn tm-btn-sm" data-act="dash-open" data-v="${this._esc(found)}">${this._t("panel.dash_open")}</button>` : ""}
+            <button type="button" class="tm-btn tm-btn-sm ${found ? "" : "tm-btn-raised"}" data-act="dash-new" data-v="${kind}" ${off ? "disabled" : ""}>${this._t("panel.dash_create_btn")}</button>
+          </div>
+        </div>`;
+    }).join("");
+    return `
+      <div class="tm-section">
+        <div class="tm-section-head">
+          <div>
+            <h3>${this._t("panel.dash_section_title")}</h3>
+            <p class="tm-meta">${this._t("panel.dash_section_hint")}</p>
+          </div>
+        </div>
+        <div class="tm-dash-tiles">${tiles}</div>
+      </div>`;
+  }
+
+  // What each card is called in the preview.
+  _dashCardLabel(c, viewTitle) {
+    const type = c.type.replace(/^custom:taskmate-|-card$/g, "");
+    const keys = {
+      "reward-progress": "reward_progress.default_title", streak: "streak.default_title", rewards: "rewards.default_title",
+      leaderboard: "leaderboard.default_title", "family-goal": "family_goal.default_title", badges: "badges.default_title",
+      approvals: "approvals.default_title", "chore-board": "panel.today_board_title", "parent-dashboard": "dashboard.default_title",
+      "points-display": "points_display.default_title", bonuses: "bonuses.default_title", penalties: "penalties.default_title",
+      weekly: "weekly.default_title", graph: "graph.default_title", activity: "activity.default_title",
+      calendar: "calendar.default_title", kiosk: "panel.dash_card_kiosk",
+    };
+    if (type === "child") return this._t("panel.dash_card_chores", { name: viewTitle });
+    return keys[type] ? this._t(keys[type]) : type;
+  }
+
+  _dashPreview(specs) {
+    const shown = specs.slice(0, 3).map(s => `
+      <div class="tm-dash-pv">
+        <div class="tm-dash-pv-h"><ha-icon icon="${this._esc(s.icon)}"></ha-icon><b>${this._esc(s.title)}</b><code>/${this._esc(s.url_path)}</code></div>
+        ${s.config.views.map(v => `
+          <div class="tm-dash-pv-v">
+            <span class="tm-dash-pv-tab"><ha-icon icon="${this._esc(v.icon)}"></ha-icon>${this._esc(v.title)}</span>
+            <span class="tm-dash-pv-cards">${v.cards.map(c => `<span style="${c.header_color ? `--cc:${this._esc(c.header_color)}` : ""}">${this._esc(this._dashCardLabel(c, v.title))}</span>`).join("")}</span>
+          </div>`).join("")}
+      </div>`).join("");
+    const more = specs.length > 3 ? `<p class="tm-field-hint">${this._t("panel.dash_more", { count: specs.length - 3 })}</p>` : "";
+    return shown + more;
+  }
+
+  _renderDashDialog() {
+    const d = this._dialog.data;
+    const kinds = DASH_KINDS.map(k => `
+      <button type="button" class="tm-dash-kind ${d.kind === k ? "tm-dash-on" : ""}" style="--dc:${DASH_COLORS[k]}" aria-pressed="${d.kind === k}" data-act="dash-kind" data-v="${k}">
+        <ha-icon icon="${DASH_ICONS[k]}"></ha-icon><span><b>${this._t(`panel.dash_kind_${k}`)}</b><small>${this._t(`panel.dash_for_${k}`)}</small></span>
+      </button>`).join("");
+    let opts;
+    if (d.kind === "kids") {
+      opts = `
+        <div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.dash_children_label")}</span>
+          <div class="tm-chip-row">${this._dashKids().map(k => {
+            const on = d.kids.includes(k.id);
+            return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}" data-act="dash-kid" data-id="${this._esc(k.id)}"><i class="tm-dash-dot" style="background:${this._esc(k.color)}"></i>${this._esc(k.name)}</button>`;
+          }).join("")}</div>
+        </div>
+        <div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.dash_layout_label")}</span>
+          <div class="tm-seg tm-dash-seg" role="tablist">${["tabs", "each"].map(v => `<button type="button" role="tab" class="${d.layout === v ? "tm-seg-on" : ""}" aria-selected="${d.layout === v}" data-act="dash-layout" data-v="${v}">${this._t(`panel.dash_layout_${v}`)}</button>`).join("")}</div>
+          <span class="tm-field-hint">${this._t(d.layout === "each" ? "panel.dash_layout_each_hint" : "panel.dash_layout_tabs_hint")}</span>
+        </div>
+        ${this._switch(this._t("panel.dash_hide_parent"), "hide", d.hide, this._esc(this._t("panel.dash_hide_parent_hint")))}`;
+    } else if (d.kind === "parents") {
+      opts = this._switch(this._t("panel.dash_admin"), "admin", d.admin, this._esc(this._t("panel.dash_admin_hint")));
+    } else {
+      opts = this._switch(this._t("panel.dash_board"), "board", d.board, this._esc(this._t("panel.dash_board_hint")), true);
+    }
+    const pv = this._dashDialogSpecs({ ...d, title: d.title || this._t(`panel.dash_title_${d.kind}`), path: DASH_PATH_RE.test(d.path || "") ? d.path : DASH_PATHS[d.kind] });
+    const body = `
+      <div class="tm-dash-kinds">${kinds}</div>
+      <div class="tm-dash-two">
+        ${this._field(this._t("panel.dash_title_label"), "title", d.title)}
+        ${this._field(this._t("panel.dash_path_label"), "path", d.path, "text", this._esc(this._t("panel.dash_path_hint")))}
+      </div>
+      ${opts}
+      ${this._switch(this._t("panel.dash_sidebar"), "sidebar", d.sidebar)}
+      ${d.err ? `<p class="tm-dash-err" role="alert"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._esc(d.err)}</p>` : ""}
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.dash_preview")}</span>
+        ${pv.specs ? this._dashPreview(pv.specs) : `<p class="tm-field-hint">${this._t(pv.err)}</p>`}
+      </div>`;
+    return this._dialogShell(this._t("panel.dash_dialog_title"), body,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="dash-save" ${d.busy ? "disabled" : ""}>${d.busy ? `<span class="tm-btn-spinner"></span>` : `<ha-icon icon="mdi:view-dashboard-outline"></ha-icon>`}${this._t("panel.dash_create")}</button>`,
+      { wide: true });
+  }
+
+  _dashStyles() {
+    return `<style>
+      /* Ready-made dashboards (#1053) */
+      .tm-dash-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
+      .tm-dash-tile { display: flex; flex-direction: column; border: 1px solid var(--tm-border); border-radius: 12px; overflow: hidden; background: var(--tm-surface-1, var(--tm-bg)); }
+      .tm-dash-tile-h { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--dc); color: #fff; font-weight: 600; font-size: 15px; --mdc-icon-size: 22px; }
+      .tm-dash-tile-b { flex: 1; padding: 12px 14px; }
+      .tm-dash-tile-b p { margin: 0 0 8px; font-size: 13px; color: var(--tm-text-muted); }
+      .tm-dash-tile-b small { color: var(--tm-text-faint); font-size: 12px; }
+      .tm-dash-tile-f { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--tm-border-soft); }
+      .tm-dash-sp { flex: 1; }
+      .tm-dash-made { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--tm-positive); white-space: nowrap; --mdc-icon-size: 14px; }
+      .tm-dash-kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+      .tm-dash-kind { display: flex; align-items: center; gap: 10px; text-align: start; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--tm-border); background: var(--tm-surface-0); color: var(--tm-text); font-family: inherit; cursor: pointer; --mdc-icon-size: 22px; }
+      .tm-dash-kind ha-icon { color: var(--dc); flex: none; }
+      .tm-dash-kind b { display: block; font-size: 13.5px; }
+      .tm-dash-kind small { display: block; font-size: 11.5px; color: var(--tm-text-muted); }
+      .tm-dash-kind.tm-dash-on { border-color: var(--dc); box-shadow: inset 0 0 0 1px var(--dc); background: color-mix(in srgb, var(--dc) 10%, var(--tm-surface-0)); }
+      .tm-dash-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .tm-dash-seg { margin-inline-start: 0; align-self: flex-start; }
+      .tm-dash-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 6px; vertical-align: middle; }
+      .tm-dash-err { display: flex; align-items: center; gap: 8px; color: var(--tm-danger); font-size: 13px; margin: 4px 0 10px; --mdc-icon-size: 18px; }
+      .tm-dash-pv { border: 1px dashed var(--tm-border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--tm-bg); }
+      .tm-dash-pv-h { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 6px; --mdc-icon-size: 16px; }
+      .tm-dash-pv-h code { margin-inline-start: auto; color: var(--tm-text-faint); font-size: 11.5px; }
+      .tm-dash-pv-v { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; border-top: 1px solid var(--tm-border-soft); font-size: 12px; }
+      .tm-dash-pv-tab { display: inline-flex; align-items: center; gap: 4px; min-width: 110px; color: var(--tm-text-muted); font-weight: 600; --mdc-icon-size: 14px; }
+      .tm-dash-pv-cards { display: flex; flex-wrap: wrap; gap: 4px; }
+      .tm-dash-pv-cards span { padding: 2px 8px; border-radius: 6px; background: var(--tm-surface-2); border-inline-start: 3px solid var(--cc, var(--tm-border-strong)); }
+      /* Wizard step */
+      .tm-dash-picks { display: grid; gap: 10px; }
+      .tm-dash-pick { border: 1px solid var(--tm-border); border-radius: 12px; overflow: hidden; background: var(--tm-bg); }
+      .tm-dash-pick.tm-dash-on { border-color: var(--dc); }
+      .tm-dash-pick-h { display: flex; align-items: center; gap: 14px; width: 100%; text-align: start; padding: 12px 14px; background: none; border: 0; color: var(--tm-text); font-family: inherit; cursor: pointer; }
+      .tm-dash-pick-h b { display: block; font-size: 15px; }
+      .tm-dash-pick-h small { display: block; font-size: 12.5px; color: var(--tm-text-muted); margin-top: 2px; }
+      .tm-dash-pick-h code { display: block; font-size: 11.5px; color: var(--tm-text-faint); margin-top: 4px; }
+      .tm-dash-pick-ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--dc); color: #fff; flex: none; --mdc-icon-size: 24px; }
+      .tm-dash-tick { color: var(--tm-text-faint); --mdc-icon-size: 24px; flex: none; }
+      .tm-dash-on .tm-dash-tick { color: var(--dc); }
+      .tm-dash-pick-o { padding: 0 14px 4px; padding-inline-start: 70px; }
+      @media (max-width: 600px) {
+        .tm-dash-kinds, .tm-dash-two { grid-template-columns: 1fr; }
+        .tm-dash-pick-o { padding-inline-start: 14px; }
+      }
+    </style>`;
   }
 
   _wizardStyles() {
@@ -6408,6 +6815,10 @@ class TaskMatePanel extends HTMLElement {
       .tm-wz-nudge { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 16px; border-radius: 12px; background: var(--tm-accent-soft); border: 1px solid var(--tm-accent-border); }
       .tm-wz-nudge-text { flex: 1; min-width: 180px; }
       .tm-wz-nudge .tm-btn ha-icon { --mdc-icon-size: 16px; }
+      /* Seven steps outgrow a mid-width box: only the current one keeps its name. */
+      @container tm-wz (max-width: 960px) {
+        .tm-wz-step:not(.tm-wz-on) .tm-wz-l { display: none; }
+      }
       @container tm-wz (max-width: 640px) {
         .tm-wz-step .tm-wz-l, .tm-wz-sep { display: none; }
         .tm-wz-steps { gap: 6px; }
@@ -8542,6 +8953,7 @@ class TaskMatePanel extends HTMLElement {
       </div>
       <div class="tm-settings">
         ${this._wizardSettingsSection()}
+        ${this._dashSettingsSection()}
         <div class="tm-section">
           <div class="tm-section-head">
             <div>
@@ -9339,6 +9751,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "wish-decline") return this._renderWishDeclineDialog();
     if (this._dialog.kind === "reject")       return this._renderRejectDialog();
     if (this._dialog.kind === "wizard-confirm") return this._renderWizardConfirmDialog();
+    if (this._dialog.kind === "dash-create")    return this._renderDashDialog();
     if (this._dialog.kind === "insp-start")   return this._renderInspectionStartDialog();
     if (this._dialog.kind === "insp-pass")    return this._renderInspectionPassDialog();
     if (this._dialog.kind === "insp-fail")    return this._renderInspectionFailDialog();

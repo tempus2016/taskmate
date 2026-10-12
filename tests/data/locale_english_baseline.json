@@ -28,6 +28,8 @@
     "panel.child_avatar_label",
     "panel.child_stat_level",
     "panel.chore_image_upload",
+    "panel.dash_card_kiosk",
+    "panel.dash_layout_label",
     "panel.entity_bonus",
     "panel.health_count_badges",
     "panel.insp_bonus",
@@ -48,7 +50,10 @@
     "streak.achievement.points100_name",
     "streak.achievement.points50_name",
     "wizard.avatar",
-    "wizard.one_dashboard",
+    "wizard.count_dashboards_many",
+    "wizard.count_dashboards_one",
+    "wizard.review_dashboards",
+    "wizard.step_dashboards",
     "wizard.tips"
   ],
   "de.json": [
@@ -90,6 +95,7 @@
     "panel.chore_name_label",
     "panel.chore_table_name",
     "panel.common_name",
+    "panel.dash_card_kiosk",
     "panel.entity_bonus",
     "panel.group_policy_sticky_short",
     "panel.insights_view_fairness",
@@ -116,7 +122,9 @@
     "streak.achievement.points100_name",
     "streak.achievement.points50_name",
     "wizard.avatar",
-    "wizard.name"
+    "wizard.name",
+    "wizard.review_dashboards",
+    "wizard.step_dashboards"
   ],
   "fr.json": [
     "approvals.timed_duration",
@@ -169,6 +177,9 @@
     "panel.chore_subtask_points_placeholder",
     "panel.chore_table_points",
     "panel.common_points",
+    "panel.dash_kind_parents",
+    "panel.dash_title_parents",
+    "panel.dash_view_points",
     "panel.entity_bonus",
     "panel.health_count_badges",
     "panel.health_sev_info",
@@ -231,6 +242,7 @@
     "panel.bounty_col_status",
     "panel.bounty_completed_meta",
     "panel.child_avatar_label",
+    "panel.dash_card_kiosk",
     "panel.entity_bonus",
     "panel.group_policy_sticky_short",
     "panel.insp_bonus",
@@ -280,6 +292,7 @@
     "panel.bounty_col_status",
     "panel.bounty_completed_meta",
     "panel.child_avatar_label",
+    "panel.dash_card_kiosk",
     "panel.day_sun",
     "panel.entity_bonus",
     "panel.group_policy_sticky_short",
@@ -322,6 +335,7 @@
     "overview.default_title",
     "panel.bounty_col_status",
     "panel.bounty_completed_meta",
+    "panel.dash_card_kiosk",
     "panel.nav_system",
     "panel.notif_escalation_minutes_suffix",
     "panel.pts_display",
@@ -333,7 +347,7 @@
     "streak.achievement.points100_name",
     "streak.achievement.points50_name",
     "wishlist.field_link",
-    "wizard.one_dashboard"
+    "wizard.count_dashboards_one"
   ],
   "pt-BR.json": [
     "approvals.timed_duration",
@@ -357,6 +371,7 @@
     "panel.bounty_completed_meta",
     "panel.child_avatar_label",
     "panel.chore_subtask_points_placeholder",
+    "panel.dash_layout_label",
     "panel.group_policy_spread_short",
     "panel.group_policy_sticky_short",
     "panel.notif_escalation_minutes_suffix",
