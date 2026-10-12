@@ -2657,6 +2657,8 @@
   "kiosk.editor.show_points": "Punkty i poziom",
   "kiosk.editor.show_streak": "Seria",
   "kiosk.editor.show_reward_progress": "Postęp do następnej nagrody",
+  "kiosk.editor.show_bounties": "Tablica zleceń",
+  "kiosk.editor.show_bounties_helper": "Każde dziecko może tu brać i kończyć zlecenia, ze zdjęciem z tabletu, gdy jest wymagane",
   "kiosk.editor.show_picker_progress": "Postęp na ekranie wyboru",
   "kiosk.editor.show_picker_progress_helper": "„Zrobione: 3 z 6” pod każdą buzią",
   "kiosk.editor.play_sounds": "Dźwięki",

@@ -11,6 +11,11 @@
  * no complete-on-behalf, no points adjustments, no reward claiming, no
  * settings — there is no option to turn them on.
  *
+ * Bounties (#1054), off unless `show_bounties: true`: the unlocked child sees
+ * the bounty board's child side — claim, give back, finish (taking a photo
+ * with the tablet when the bounty asks for one) and undo. Each call names the
+ * child and runs the same linked-child check as complete_chore.
+ *
  * Each completion gets the child card's feedback (#1039): the chore's
  * completion sound, confetti and a short popup — each can be switched off.
  *
@@ -60,6 +65,9 @@ const POPUP_MS = 2500;
 const CONFETTI_MS = 3500;
 const CONFETTI_COLOURS = ["#ff6b9d", "#9b59b6", "#3498db", "#2ecc71", "#f1c40f", "#e67e22"];
 const PIN_LENGTH = 4;
+// The idle clock waits this long for a bounty photo: the camera covers the
+// card, so no tap reaches it while the child lines up the shot.
+const PHOTO_GRACE_MS = 120000;
 // The same six-colour ring the child card uses for per-child tones.
 const CHILD_FALLBACK = ["#ff7043", "#42a5f5", "#66bb6a", "#ab47bc", "#ffa726", "#26c6da"];
 
@@ -86,6 +94,7 @@ class TaskMateKioskCard extends LitElement {
       _popup: { type: Object },
       _confetti: { type: Array },
       _fullscreen: { type: Boolean },
+      _bountyDlg: { type: Object },
     };
   }
 
@@ -106,6 +115,12 @@ class TaskMateKioskCard extends LitElement {
     this._popup = null;
     this._confetti = [];
     this._fullscreen = false;
+    this._bountyDlg = null;
+    // The bounty a photo is being taken for; outlives a return to the picker
+    // so a photo that comes back late still lands on the right child.
+    this._photoFor = null;
+    this._photoSince = 0;
+    this._uploading = false;
     this._now = new Date();
     // Any touch or key press counts as activity and restarts the idle timer.
     this._onActivity = () => { this._idle = 0; };
@@ -421,6 +436,7 @@ class TaskMateKioskCard extends LitElement {
     clearTimeout(this._confettiTimer);
     this._popup = null;
     this._confetti = [];
+    this._bountyDlg = null;
     this._screen = "picker";
     this._kid = null;
     this._pin = "";
@@ -519,6 +535,191 @@ class TaskMateKioskCard extends LitElement {
     }
   }
 
+  // ── Bounties (#1054) ─────────────────────────────────────────────────────
+  // The bounty card's child side for the unlocked child. Every call names the
+  // child, so the backend's linked-child check decides, as for chores.
+
+  _showBounties() { return this.config.show_bounties === true; }
+
+  /** What this child may claim, anything they hold, and what they finished. */
+  _bountiesFor(child) {
+    const id = String(child.id);
+    const list = this._attrs().bounties;
+    if (!Array.isArray(list)) return [];
+    const shown = list.filter(b => {
+      const mine = String(b.claimed_by || "") === id;
+      if (b.status === "completed") return mine;
+      return mine || !Array.isArray(b.eligible) || !b.eligible.length || b.eligible.map(String).includes(id);
+    });
+    return shown.filter(b => b.status !== "completed").concat(shown.filter(b => b.status === "completed"));
+  }
+
+  _msUntil(iso, now) {
+    const t = Date.parse(iso || "");
+    return Number.isFinite(t) ? t - now : null;
+  }
+
+  _fmtDur(ms) {
+    const sec = Math.max(0, Math.round(ms / 1000));
+    const d = Math.floor(sec / 86400);
+    const h = Math.floor((sec % 86400) / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (d) return this._t("bounty.dur_days", { d, h });
+    if (h) return this._t("bounty.dur_hours", { h, m: String(m).padStart(2, "0") });
+    return this._t("bounty.dur_minutes", { m, s: String(s).padStart(2, "0") });
+  }
+
+  _pointsName() { return this._attrs().points_name || this._t("common.points"); }
+
+  async _bountyAction(b, run) {
+    if (this._busy) return false;
+    this._busy = `bounty:${b.id}`;
+    try {
+      await run();
+      return true;
+    } catch (err) {
+      this._notify(String(err?.message || err));
+      return false;
+    } finally {
+      this._busy = "";
+      this.requestUpdate();
+    }
+  }
+
+  async _claimBounty(child, b) {
+    const ok = await this._bountyAction(b, () =>
+      this.hass.callService("taskmate", "claim_bounty", { bounty_id: b.id, child_id: child.id }));
+    if (ok) this._bountyDlg = null;
+  }
+
+  _giveBackBounty(child, b) {
+    return this._bountyAction(b, () =>
+      this.hass.callService("taskmate", "give_back_bounty", { bounty_id: b.id, child_id: child.id }));
+  }
+
+  async _finishBounty(child, b) {
+    if (b.require_photo) {
+      this._bountyDlg = { kind: "photo", id: b.id };
+      return;
+    }
+    const ok = await this._bountyAction(b, () =>
+      this.hass.callService("taskmate", "complete_bounty", { bounty_id: b.id, child_id: child.id }));
+    if (ok) this._bountyDone(b);
+  }
+
+  _undoBounty(b) {
+    return this._bountyAction(b, () =>
+      this.hass.callService("taskmate", "undo_chore", { completion_id: b.completion_id }));
+  }
+
+  /** The bounty goes to a grown-up: a sound, confetti, and a note saying so. */
+  _bountyDone(b) {
+    if (this.config.play_sounds !== false) this._playSound(this.config.default_sound || "coin");
+    if (this.config.show_confetti !== false) this._spawnConfetti();
+    this._bountyDlg = { kind: "yay", id: b.id };
+  }
+
+  /**
+   * Opens the tablet's camera (or photo library). No `capture` attribute: a
+   * wall-mounted tablet's rear camera faces the wall, so the child picks.
+   */
+  _pickBountyPhoto(child, b) {
+    this._photoFor = { childId: String(child.id), bountyId: b.id };
+    this._photoSince = Date.now();
+    this._idle = 0;
+    const input = this.renderRoot && this.renderRoot.querySelector("#km-photo");
+    if (input) input.click();
+  }
+
+  _photoCancelled() {
+    this._photoFor = null;
+    this._photoSince = 0;
+  }
+
+  /** Shrink the photo, upload it, then complete — for the child who asked. */
+  async _bountyPhotoPicked(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    const target = this._photoFor;
+    this._photoCancelled();
+    if (!file || !target || this._busy) return;
+    // The kiosk may have gone back to the picker meanwhile: the completion
+    // still counts for the child who took the photo, but only their own
+    // screen shows the result.
+    const here = () => this._screen === "child" && this._kid === target.childId;
+    this._busy = `bounty:${target.bountyId}`;
+    this._uploading = true;
+    if (here()) this._bountyDlg = { kind: "photo", id: target.bountyId, uploading: true };
+    try {
+      const photoUrl = await this._upload(await this._shrink(file));
+      await this.hass.callService("taskmate", "complete_bounty", {
+        bounty_id: target.bountyId, child_id: target.childId, photo_url: photoUrl,
+      });
+      if (here()) this._bountyDone({ id: target.bountyId });
+      this._idle = 0;
+    } catch (err) {
+      if (here()) {
+        this._bountyDlg = { kind: "photo", id: target.bountyId, error: this._t("child.photo_upload_failed") };
+      } else {
+        this._notify(String(err?.message || err));
+      }
+    } finally {
+      this._busy = "";
+      this._uploading = false;
+      this.requestUpdate();
+    }
+  }
+
+  _shrink(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const max = 1280;
+        let { width, height } = img;
+        if (width > max || height > max) {
+          const scale = Math.min(max / width, max / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(blob => (blob ? resolve(blob) : reject(new Error("no blob"))), "image/jpeg", 0.8);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("bad image")); };
+      img.src = url;
+    });
+  }
+
+  async _upload(blob) {
+    // Bearer-authenticated POST, refreshing a stale access token once on 401 —
+    // the same upload the bounty and child cards use.
+    const post = () => {
+      const token = this.hass?.auth?.data?.access_token;
+      const fd = new FormData();
+      fd.append("file", blob, "evidence.jpg");
+      return fetch("/api/taskmate/photo", {
+        method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd,
+      });
+    };
+    if (this.hass?.auth?.expired && this.hass.auth.refreshAccessToken) {
+      try { await this.hass.auth.refreshAccessToken(); } catch (_e) { /* retried below */ }
+    }
+    let resp = await post();
+    if (resp.status === 401 && this.hass?.auth?.refreshAccessToken) {
+      await this.hass.auth.refreshAccessToken();
+      resp = await post();
+    }
+    if (!resp.ok) throw new Error(`upload failed (${resp.status})`);
+    const { photo_url: photoUrl } = await resp.json();
+    if (!photoUrl) throw new Error("no photo_url");
+    return photoUrl;
+  }
+
   // ── Completion feedback (#1039) ──────────────────────────────────────────
 
   /** The child card's reward for a tap: the chore's sound, confetti, a popup. */
@@ -578,7 +779,8 @@ class TaskMateKioskCard extends LitElement {
       dirty = true;
     }
     if (this._screen !== "picker") {
-      this._idle += 1;
+      const photo = this._uploading || (this._photoSince && Date.now() - this._photoSince < PHOTO_GRACE_MS);
+      if (!photo) this._idle += 1;
       if (this._idle >= this._timeout()) {
         this._resetToPicker();
       }
@@ -637,6 +839,9 @@ class TaskMateKioskCard extends LitElement {
             </button>` : ""}
         </div>
         <div class="km-main">${body}</div>
+        ${this._showBounties() ? html`
+          <input id="km-photo" type="file" accept="image/*" hidden
+                 @change=${e => this._bountyPhotoPicked(e)} @cancel=${() => this._photoCancelled()}>` : ""}
         ${this._confetti.length ? html`
           <div class="km-confetti" aria-hidden="true">
             ${this._confetti.map((p, i) => html`<i style="inset-inline-start:${p.x}%;animation-delay:${p.delay}s;background:${CONFETTI_COLOURS[i % CONFETTI_COLOURS.length]};border-radius:${p.round ? "50%" : "0"};width:${p.size}px;height:${p.size}px"></i>`)}
@@ -781,6 +986,7 @@ class TaskMateKioskCard extends LitElement {
                 <h3><ha-icon icon="mdi:cellphone"></ha-icon> ${this._t("kiosk.phone_group")}</h3>
                 ${phoneRows.map(row => this._renderRow(child, row, icon))}
               </div>` : ""}
+            ${this._showBounties() ? this._renderBounties(child, icon) : ""}
           </div>
           <div class="km-side">
             <div class="km-tile km-center">
@@ -807,6 +1013,7 @@ class TaskMateKioskCard extends LitElement {
           </div>
         </div>
 
+        ${this._showBounties() ? this._renderBountyDialog(child) : ""}
         ${warn ? html`
           <div class="km-idle">
             <div class="km-idle-n" style="--p:${left / WARN_SECONDS}"><span>${left}</span></div>
@@ -871,6 +1078,123 @@ class TaskMateKioskCard extends LitElement {
           </div>
         </div>
         ${action}
+      </div>
+    `;
+  }
+
+  _renderBounties(child, icon) {
+    const list = this._bountiesFor(child);
+    if (!list.length) return "";
+    const me = String(child.id);
+    const now = Date.now();
+    const holding = list.some(b => b.status === "claimed" && String(b.claimed_by) === me);
+    return html`
+      <div class="km-bounty-group">
+        <h3><ha-icon icon="mdi:flag-outline"></ha-icon> ${this._t("bounty.title")}</h3>
+        ${list.map(b => this._renderBountyRow(child, b, me, now, holding, icon))}
+      </div>
+    `;
+  }
+
+  _renderBountyRow(child, b, me, now, holding, icon) {
+    const mine = String(b.claimed_by || "") === me;
+    const busy = !!this._busy;
+    const live = b.status === "open" || b.status === "claimed";
+    const expLeft = live && b.expires_at ? this._msUntil(b.expires_at, now) : null;
+    const sibling = (this._attrs().children || []).find(c => String(c.id) === String(b.claimed_by))?.name || "?";
+    const box = (cls, mdi, text) =>
+      html`<div class="km-done ${cls}"><ha-icon icon="${mdi}"></ha-icon><span>${text}</span></div>`;
+    let state = b.status;
+    let action;
+    let extra = "";
+    if (b.status === "open") {
+      action = html`<button class="km-done km-claim" ?disabled=${busy || holding}
+                            @click=${() => { this._bountyDlg = { kind: "claim", id: b.id }; }}>
+        <ha-icon icon="mdi:hand-back-right-outline"></ha-icon> ${this._t("bounty.claim")}</button>`;
+      extra = html`<span class="km-dim">${holding ? this._t("bounty.finish_first") : this._t("bounty.claim_hint", { hours: b.claim_hours })}</span>`;
+    } else if (b.status === "claimed" && mine) {
+      state = "mine";
+      action = html`<button class="km-done" ?disabled=${busy} @click=${() => this._finishBounty(child, b)}>
+        <ha-icon icon="${b.require_photo ? "mdi:camera" : "mdi:check-bold"}"></ha-icon> ${this._t("bounty.done")}</button>`;
+      extra = html`
+        <span class="km-claim-left"><ha-icon icon="mdi:timer-sand"></ha-icon> ${this._t("bounty.claimed_by_you", { time: this._fmtDur(this._msUntil(b.claim_until, now) ?? 0) })}</span>
+        <button class="km-undo" ?disabled=${busy} @click=${() => this._giveBackBounty(child, b)}>${this._t("bounty.give_back")}</button>`;
+    } else if (b.status === "claimed") {
+      state = "locked";
+      action = box("is-elsewhere", "mdi:account-clock", this._t("bounty.sibling_on_it", { name: sibling }));
+      extra = html`<span class="km-dim">${this._t("bounty.sibling_back_in", { time: this._fmtDur(this._msUntil(b.claim_until, now) ?? 0) })}</span>`;
+    } else if (b.status === "pending" && mine) {
+      state = "wait";
+      action = box("is-wait", "mdi:timer-sand", this._t("kiosk.waiting"));
+      if (b.undo && b.completion_id) {
+        extra = html`<button class="km-undo" ?disabled=${busy} aria-label="${this._t("child.undo_named", { name: b.title })}"
+                             @click=${() => this._undoBounty(b)}>
+          <ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon> ${this._t("kiosk.undo")}</button>`;
+      }
+    } else if (b.status === "pending") {
+      state = "locked";
+      action = box("is-elsewhere", "mdi:account-clock", this._t("bounty.sibling_checking", { name: sibling }));
+    } else {
+      state = "done";
+      action = box("is-done", "mdi:check-bold", this._t("bounty.you_earned", { points: b.points_awarded ?? b.points, pointsName: this._pointsName() }));
+    }
+    return html`
+      <div class="km-row km-bounty ${state}" data-bounty="${b.id}">
+        <div class="km-row-icon"><ha-icon icon="${b.icon || "mdi:flag-outline"}"></ha-icon></div>
+        <div class="km-row-body">
+          <div class="km-row-name">${b.title}</div>
+          ${b.description ? html`<div class="km-row-desc">${b.description}</div>` : ""}
+          <div class="km-row-meta">
+            <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${b.points}</span>
+            ${expLeft !== null ? html`<span class="km-tag"><ha-icon icon="mdi:clock-outline"></ha-icon> ${this._t("bounty.left", { time: this._fmtDur(expLeft) })}</span>` : ""}
+            ${b.require_photo ? html`<span class="km-tag"><ha-icon icon="mdi:camera-outline"></ha-icon> ${this._t("bounty.photo_tag")}</span>` : ""}
+            ${extra}
+          </div>
+        </div>
+        ${action}
+      </div>
+    `;
+  }
+
+  _renderBountyDialog(child) {
+    const d = this._bountyDlg;
+    if (!d) return "";
+    const b = this._bountiesFor(child).find(x => x.id === d.id);
+    if (!b) return "";
+    const close = () => { if (!d.uploading) this._bountyDlg = null; };
+    const pointsName = this._pointsName();
+    let inner;
+    if (d.kind === "claim") {
+      inner = html`
+        <div class="km-bdlg-ic"><ha-icon icon="${b.icon || "mdi:flag-outline"}"></ha-icon></div>
+        <h2>${this._t("bounty.claim_title", { title: b.title })}</h2>
+        <p>${this._t("bounty.claim_body", { hours: b.claim_hours })}</p>
+        <div class="km-bdlg-acts">
+          <button class="km-ghost" @click=${close}>${this._t("bounty.not_now")}</button>
+          <button class="km-primary" ?disabled=${!!this._busy} @click=${() => this._claimBounty(child, b)}>
+            ${this._t("bounty.claim_it", { points: b.points, pointsName })}</button>
+        </div>`;
+    } else if (d.kind === "photo") {
+      inner = html`
+        <div class="km-bdlg-ic"><ha-icon icon="mdi:camera-outline"></ha-icon></div>
+        <h2>${this._t("bounty.photo_title")}</h2>
+        <p>${this._t("bounty.photo_body", { title: b.title })}</p>
+        ${d.error ? html`<p class="km-error" role="alert">${d.error}</p>` : ""}
+        <div class="km-bdlg-acts">
+          <button class="km-ghost" ?disabled=${!!d.uploading} @click=${close}>${this._t("bounty.cancel")}</button>
+          <button class="km-primary" ?disabled=${!!d.uploading || !!this._busy} @click=${() => this._pickBountyPhoto(child, b)}>
+            <ha-icon icon="mdi:camera"></ha-icon> ${d.uploading ? this._t("bounty.uploading") : this._t("bounty.take_photo")}</button>
+        </div>`;
+    } else {
+      inner = html`
+        <div class="km-bdlg-ic good"><ha-icon icon="mdi:check-bold"></ha-icon></div>
+        <h2>${this._t("bounty.yay_title")}</h2>
+        <p>${this._t("bounty.yay_body", { title: b.title, points: b.points, pointsName })}</p>
+        <div class="km-bdlg-acts"><button class="km-primary" @click=${close}>${this._t("bounty.ok")}</button></div>`;
+    }
+    return html`
+      <div class="km-idle km-bdlg" role="dialog" aria-modal="true" @click=${e => { if (e.target === e.currentTarget) close(); }}>
+        <div class="km-bdlg-card">${inner}</div>
       </div>
     `;
   }
@@ -1164,6 +1488,57 @@ class TaskMateKioskCard extends LitElement {
       .km-done.is-wait { border: 3px dashed var(--tmd-warn, #f39c12); }
       .km-done.is-elsewhere { border: 3px dashed var(--tmd-dim, #8a939d); }
       .km-side { display: flex; flex-direction: column; gap: 14px; }
+
+      /* Bounties (#1054) */
+      .km-bounty-group { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+      .km-bounty-group h3 { color: var(--tmd-warn, #e67e22); }
+      .km-row.km-bounty.mine {
+        border-color: var(--tmd-warn, #e67e22);
+        background: color-mix(in srgb, var(--tmd-warn, #e67e22) 8%, var(--tmd-surface, var(--card-background-color, #fff)));
+      }
+      .km-row.km-bounty.locked { opacity: 0.62; }
+      .km-row.km-bounty .km-done.is-done {
+        font-size: 0.9rem; line-height: 1.15; text-align: start; padding: 0 12px; min-width: 180px; max-width: 220px;
+      }
+      .km-row.km-bounty .km-row-icon {
+        background: color-mix(in srgb, var(--tmd-warn, #e67e22) 18%, transparent); color: var(--tmd-warn, #e67e22);
+      }
+      .km-row-desc {
+        font-size: 0.95rem; color: var(--tmd-dim, var(--secondary-text-color)); margin-top: 2px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .km-row-meta .km-tag { display: inline-flex; align-items: center; gap: 4px; }
+      .km-row-meta .km-tag ha-icon { --mdc-icon-size: 14px; }
+      .km-row-meta .km-dim { font-size: 0.9rem; }
+      .km-claim-left {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 0.9rem; font-weight: 700; color: var(--tmd-warn, #d68910);
+      }
+      .km-claim-left ha-icon { --mdc-icon-size: 16px; }
+      button.km-done.km-claim { background: var(--tmd-warn, #e67e22); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) button.km-done.km-claim { color: #2b1700; }
+      /* The overlay spans the whole child view, which can run far past the
+         screen outside full screen: the card sticks to where the child is. */
+      .km-bdlg { z-index: 3; justify-content: flex-start; }
+      .km-bdlg-card {
+        position: sticky; top: 15vh; margin-top: 12vh;
+        max-width: 520px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+        background: var(--tmd-surface, var(--card-background-color, #fff));
+        border: 1px solid var(--tmd-border, transparent);
+        border-radius: calc(var(--tmd-radius, 16px) + 14px); padding: 30px 36px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+      }
+      .km-bdlg .km-bdlg-card h2 { font-size: 1.7rem; }
+      .km-bdlg .km-bdlg-card p { max-width: 440px; }
+      .km-bdlg-ic {
+        width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center;
+        background: color-mix(in srgb, var(--tmd-warn, #e67e22) 18%, transparent); color: var(--tmd-warn, #e67e22);
+      }
+      .km-bdlg-ic.good { background: color-mix(in srgb, var(--tmd-good, #27ae60) 18%, transparent); color: var(--tmd-good, #27ae60); }
+      .km-bdlg-ic ha-icon { --mdc-icon-size: 40px; }
+      .km-bdlg-acts { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+      .km-bdlg-acts .km-ghost { padding: 14px 24px; font-size: 1.1rem; border-radius: 40px; }
+      .km-primary:disabled, .km-ghost:disabled { opacity: 0.5; cursor: default; }
       .km-tile {
         background: var(--tmd-surface, var(--card-background-color, #fff));
         border: 1px solid var(--tmd-border, var(--divider-color, transparent));
@@ -1315,6 +1690,7 @@ class TaskMateKioskCardEditor extends LitElement {
       { name: "show_points", selector: { boolean: {} } },
       { name: "show_streak", selector: { boolean: {} } },
       { name: "show_reward_progress", selector: { boolean: {} } },
+      { name: "show_bounties", selector: { boolean: {} } },
       { name: "show_picker_progress", selector: { boolean: {} } },
       { name: "play_sounds", selector: { boolean: {} } },
       { name: "show_confetti", selector: { boolean: {} } },
@@ -1331,6 +1707,7 @@ class TaskMateKioskCardEditor extends LitElement {
     show_points: this._t("kiosk.editor.show_points"),
     show_streak: this._t("kiosk.editor.show_streak"),
     show_reward_progress: this._t("kiosk.editor.show_reward_progress"),
+    show_bounties: this._t("kiosk.editor.show_bounties"),
     show_picker_progress: this._t("kiosk.editor.show_picker_progress"),
     play_sounds: this._t("kiosk.editor.play_sounds"),
     show_confetti: this._t("kiosk.editor.show_confetti"),
@@ -1341,6 +1718,7 @@ class TaskMateKioskCardEditor extends LitElement {
     title: this._t("kiosk.editor.title_helper"),
     timeout: this._t("kiosk.editor.timeout_helper"),
     warn_before_return: this._t("kiosk.editor.warn_before_return_helper"),
+    show_bounties: this._t("kiosk.editor.show_bounties_helper"),
     show_picker_progress: this._t("kiosk.editor.show_picker_progress_helper"),
     play_sounds: this._t("kiosk.editor.play_sounds_helper"),
     show_completion_popup: this._t("kiosk.editor.show_completion_popup_helper"),
@@ -1401,6 +1779,7 @@ class TaskMateKioskCardEditor extends LitElement {
       show_points: this.config.show_points !== false,
       show_streak: this.config.show_streak !== false,
       show_reward_progress: this.config.show_reward_progress !== false,
+      show_bounties: this.config.show_bounties === true,
       show_picker_progress: this.config.show_picker_progress !== false,
       play_sounds: this.config.play_sounds !== false,
       show_confetti: this.config.show_confetti !== false,
@@ -1472,6 +1851,10 @@ class TaskMateKioskCardEditor extends LitElement {
       else if (key === "timeout") {
         if (clampTimeout(value) === DEFAULT_TIMEOUT) delete next[key];
         else next[key] = clampTimeout(value);
+      } else if (key === "show_bounties") {
+        // The one toggle that defaults to off: store only the "on" choice.
+        if (value) next[key] = true;
+        else delete next[key];
       } else if (typeof value === "boolean" && key !== "entity") {
         // Every toggle defaults to on: store only the "off" choice.
         if (value) delete next[key];

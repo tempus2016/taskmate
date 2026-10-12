@@ -2657,6 +2657,8 @@
   "kiosk.editor.show_points": "Poeng og nivå",
   "kiosk.editor.show_streak": "Rekke",
   "kiosk.editor.show_reward_progress": "Framgang mot neste løning",
+  "kiosk.editor.show_bounties": "Dusørtavle",
+  "kiosk.editor.show_bounties_helper": "La kvart barn ta og fullføre dusørar her, med bilete frå nettbrettet når det trengst",
   "kiosk.editor.show_picker_progress": "Framgang i veljaren",
   "kiosk.editor.show_picker_progress_helper": "«3 av 6 ferdig» under kvart andlet",
   "kiosk.editor.play_sounds": "Lydar",

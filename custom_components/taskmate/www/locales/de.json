@@ -2657,6 +2657,8 @@
   "kiosk.editor.show_points": "Punkte und Stufe",
   "kiosk.editor.show_streak": "Serie",
   "kiosk.editor.show_reward_progress": "Fortschritt zur nächsten Belohnung",
+  "kiosk.editor.show_bounties": "Sonderjobs",
+  "kiosk.editor.show_bounties_helper": "Jedes Kind kann hier Sonderjobs übernehmen und abschließen – mit einem Foto vom Tablet, wenn eins verlangt wird",
   "kiosk.editor.show_picker_progress": "Fortschritt in der Auswahl",
   "kiosk.editor.show_picker_progress_helper": "„3 von 6 erledigt“ unter jedem Gesicht",
   "kiosk.editor.play_sounds": "Töne",

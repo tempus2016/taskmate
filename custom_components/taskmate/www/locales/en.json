@@ -2657,6 +2657,8 @@
   "kiosk.editor.show_points": "Points and level",
   "kiosk.editor.show_streak": "Streak",
   "kiosk.editor.show_reward_progress": "Next reward progress",
+  "kiosk.editor.show_bounties": "Bounty Board",
+  "kiosk.editor.show_bounties_helper": "Let each child claim and finish bounties here, with a photo from the tablet when one is asked for",
   "kiosk.editor.show_picker_progress": "Progress on the picker",
   "kiosk.editor.show_picker_progress_helper": "“3 of 6 done” under each face",
   "kiosk.editor.play_sounds": "Sounds",

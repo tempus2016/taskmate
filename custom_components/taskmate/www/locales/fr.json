@@ -2657,6 +2657,8 @@
   "kiosk.editor.show_points": "Points et niveau",
   "kiosk.editor.show_streak": "Série",
   "kiosk.editor.show_reward_progress": "Progression vers la prochaine récompense",
+  "kiosk.editor.show_bounties": "Tableau des primes",
+  "kiosk.editor.show_bounties_helper": "Chaque enfant peut réserver et terminer des primes ici, avec une photo prise sur la tablette quand elle est demandée",
   "kiosk.editor.show_picker_progress": "Progression sur l'écran de choix",
   "kiosk.editor.show_picker_progress_helper": "« 3 sur 6 faites » sous chaque visage",
   "kiosk.editor.play_sounds": "Sons",

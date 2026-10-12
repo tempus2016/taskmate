@@ -2657,6 +2657,8 @@
   "kiosk.editor.show_points": "Point og niveau",
   "kiosk.editor.show_streak": "Dage i træk",
   "kiosk.editor.show_reward_progress": "Fremskridt mod næste belønning",
+  "kiosk.editor.show_bounties": "Dusørtavle",
+  "kiosk.editor.show_bounties_helper": "Lad hvert barn tage og klare dusører her, med et foto fra tabletten når der bedes om et",
   "kiosk.editor.show_picker_progress": "Fremskridt i vælgeren",
   "kiosk.editor.show_picker_progress_helper": "“3 af 6 klaret” under hvert ansigt",
   "kiosk.editor.play_sounds": "Lyde",

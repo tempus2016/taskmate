@@ -2657,6 +2657,8 @@
   "kiosk.editor.show_points": "Pontos e nível",
   "kiosk.editor.show_streak": "Sequência",
   "kiosk.editor.show_reward_progress": "Progresso para a próxima recompensa",
+  "kiosk.editor.show_bounties": "Tarefas extra",
+  "kiosk.editor.show_bounties_helper": "Cada criança pode reservar e concluir tarefas extra aqui, com uma fotografia do tablet quando for pedida",
   "kiosk.editor.show_picker_progress": "Progresso no ecrã de escolha",
   "kiosk.editor.show_picker_progress_helper": "“3 de 6 feitas” debaixo de cada cara",
   "kiosk.editor.play_sounds": "Sons",

@@ -65,7 +65,15 @@ def test_no_parent_action_in_the_kiosk():
     """Approve/reject, complete-as-parent, points and reward claims have no
     place on a shared child-facing tablet, and there's no toggle for them."""
     services = set(re.findall(r'callService\("(\w+)",\s*"(\w+)"', SOURCE))
-    assert services == {("button", "press"), ("taskmate", "complete_chore"), ("taskmate", "undo_chore")}
+    assert services == {
+        ("button", "press"),
+        ("taskmate", "complete_chore"),
+        ("taskmate", "undo_chore"),
+        # The child side of the bounty board (#1054), each naming the child.
+        ("taskmate", "claim_bounty"),
+        ("taskmate", "give_back_bounty"),
+        ("taskmate", "complete_bounty"),
+    }
     for forbidden in (
         "as_parent",
         "approve_",
