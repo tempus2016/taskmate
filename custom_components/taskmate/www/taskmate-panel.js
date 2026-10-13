@@ -6484,9 +6484,10 @@ class TaskMatePanel extends HTMLElement {
           </div>
           <div class="tm-dash-tile-f">
             ${found ? `<span class="tm-dash-made"><ha-icon icon="mdi:check"></ha-icon>${this._t("panel.dash_created")}</span>` : ""}
-            <span class="tm-dash-sp"></span>
-            ${found ? `<button type="button" class="tm-btn tm-btn-sm" data-act="dash-open" data-v="${this._esc(found)}">${this._t("panel.dash_open")}</button>` : ""}
-            <button type="button" class="tm-btn tm-btn-sm ${found ? "" : "tm-btn-raised"}" data-act="dash-new" data-v="${kind}" ${off ? "disabled" : ""}>${this._t("panel.dash_create_btn")}</button>
+            <span class="tm-dash-acts">
+              ${found ? `<button type="button" class="tm-btn tm-btn-sm" data-act="dash-open" data-v="${this._esc(found)}">${this._t("panel.dash_open")}</button>` : ""}
+              <button type="button" class="tm-btn tm-btn-sm ${found ? "" : "tm-btn-raised"}" data-act="dash-new" data-v="${kind}" ${off ? "disabled" : ""}>${this._t("panel.dash_create_btn")}</button>
+            </span>
           </div>
         </div>`;
     }).join("");
@@ -6587,8 +6588,11 @@ class TaskMatePanel extends HTMLElement {
       .tm-dash-tile-b { flex: 1; padding: 12px 14px; }
       .tm-dash-tile-b p { margin: 0 0 8px; font-size: 13px; color: var(--tm-text-muted); }
       .tm-dash-tile-b small { color: var(--tm-text-faint); font-size: 12px; }
-      .tm-dash-tile-f { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--tm-border-soft); }
-      .tm-dash-sp { flex: 1; }
+      /* Wraps rather than squeezing: with "Created" + Open + Create… a narrow
+         tile drops the buttons to their own right-aligned line (#1059). */
+      .tm-dash-tile-f { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--tm-border-soft); }
+      .tm-dash-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-inline-start: auto; }
+      .tm-dash-acts .tm-btn { flex: none; }
       .tm-dash-made { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--tm-positive); white-space: nowrap; --mdc-icon-size: 14px; }
       .tm-dash-kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
       .tm-dash-kind { display: flex; align-items: center; gap: 10px; text-align: start; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--tm-border); background: var(--tm-surface-0); color: var(--tm-text); font-family: inherit; cursor: pointer; --mdc-icon-size: 22px; }
