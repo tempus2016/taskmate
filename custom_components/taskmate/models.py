@@ -1120,6 +1120,11 @@ class ChoreCompletion:
     # Set when this completion is a bounty's (#931). chore_id then carries the
     # bounty id too, so nothing that groups completions by chore mixes the two.
     bounty_id: str = ""
+    # True on a completion a parent logged afterwards for an earlier day. It was
+    # paid without touching the child's streak (rewriting last_completion_date
+    # to a past day would break a streak they are on today), so undoing it must
+    # not take a day off the streak either.
+    backdated: bool = False
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ChoreCompletion:
@@ -1144,6 +1149,7 @@ class ChoreCompletion:
             quality_rating=parse_quality_rating(data.get("quality_rating")),
             child_undo_allowed=data.get("child_undo_allowed") is True,
             bounty_id=str(data.get("bounty_id", "") or ""),
+            backdated=data.get("backdated") is True,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1170,6 +1176,8 @@ class ChoreCompletion:
             data["child_undo_allowed"] = True
         if self.bounty_id:
             data["bounty_id"] = self.bounty_id
+        if self.backdated:
+            data["backdated"] = True
         return data
 
 

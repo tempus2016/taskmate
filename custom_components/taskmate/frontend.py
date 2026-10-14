@@ -49,6 +49,7 @@ CARDS: Final = [
     "taskmate-calendar-card.js",
     "taskmate-photo-gallery-card.js",
     "taskmate-family-goal-card.js",
+    "taskmate-sticker-chart-card.js",
     "taskmate-wishlist-card.js",
     "taskmate-kiosk-card.js",
     "taskmate-bounty-card.js",
