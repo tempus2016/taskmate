@@ -779,7 +779,7 @@
   "panel.child_link_user_label": "Link to Home Assistant user (optional)",
   "panel.child_link_user_hint": "When set, only this Home Assistant user (or an admin) can complete chores, claim rewards, or run timers as this child via service calls. Leave as \"Anyone\" for a shared family tablet.",
   "panel.child_picture_entity_label": "Photo from",
-  "panel.child_picture_entity_hint": "Pick the child's person to show their photo instead of the icon above. Set the photo under Settings › People; with none set, the icon is shown.",
+  "panel.child_picture_entity_hint": "Pick any entity with a picture, usually the child's person, to show it instead of the icon above. A person's photo is set under Settings › People; with no picture, the icon is shown.",
   "panel.child_kiosk_pin_label": "Kiosk PIN",
   "panel.child_kiosk_pin_hint": "Optional. 4 digits this child types on a shared kiosk tablet. Stored hashed, so it can't be read back — leave blank to keep the current PIN.",
   "panel.child_kiosk_pin_set": "A PIN is set.",
