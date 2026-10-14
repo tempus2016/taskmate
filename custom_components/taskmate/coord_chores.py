@@ -1218,6 +1218,10 @@ class ChoresMixin:
             return f"'{chore.name}' is open-ended, so it needs the child's note and a price. Use the child's card."
         if self.is_vacation_day(day):
             return f"{day.strftime('%A')} was a holiday, so no jobs were due."
+        # A birthday with "chores off" is a day off for everything but mandatory
+        # chores, the same rule today's chore list follows.
+        if not getattr(chore, "mandatory", False) and self.is_birthday_day_off(child, day):
+            return f"{day.strftime('%A')} was {child.name}'s birthday, a day off from jobs."
         if self.auction_winner(chore, day):
             return f"'{chore.name}' was won at auction that day, so it can't be logged afterwards."
 
@@ -1695,8 +1699,10 @@ class ChoresMixin:
                                     )
                                 )
                             child.streak_milestones_achieved = sorted(d for d in achieved if d <= child.current_streak)
-                    # The weekly target bonus this completion helped earn (#1044).
-                    self._reverse_weekly_target_bonus(completion, child)
+                # The weekly target bonus this completion helped earn (#1044).
+                # Outside the streak block: a backdated job never moved the
+                # streak, but it can complete a week's target like any other.
+                self._reverse_weekly_target_bonus(completion, child)
 
         bonus_completions: list = []
         is_parent = not target_completion.bonus_subtask_id

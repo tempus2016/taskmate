@@ -444,3 +444,33 @@ def test_the_day_lookup_sends_the_loggable_chores():
     src = (Path(__file__).parents[1] / "custom_components/taskmate/websocket.py").read_text()
     block = src[src.index("async def _ws_day_completions") :][:700]
     assert '"loggable": coordinator.loggable_on(msg["date"])' in block
+
+
+def test_undoing_a_backdated_job_takes_back_the_weekly_bonus_it_earned():
+    """Copilot review on #1063: the refund sat inside the streak block, which
+    skips backdated jobs, so the bonus outlived the job that earned it."""
+    child = Child(name="Millie", id="millie", points=20, total_points_earned=20)
+    completion = _approved(backdated=True)
+    paid = {"2026-09-14": 5}  # the Monday of that completion's week
+    coord = _make_coord(children=[child], completions=[completion])
+    coord.storage.get_chore = MagicMock(return_value=None)
+    coord.storage.get_last_completed = MagicMock(return_value={})
+    coord.storage.undo_last_completed = MagicMock()
+    coord.storage.get_weekly_target_bonus = MagicMock(side_effect=lambda ch, c: dict(paid))
+    coord.storage.set_weekly_target_bonus = MagicMock(side_effect=lambda ch, c, v: paid.clear() or paid.update(v or {}))
+    with patch.object(coord_chores.dt_util, "_now", NOW):
+        coord._reverse_completion_awards(completion, [completion])
+    assert paid == {}
+    assert child.points == 20 - 2 - 5  # the job's points and its bonus
+
+
+def test_refuses_a_birthday_day_off_but_not_a_mandatory_chore():
+    """Copilot review on #1063: with birthday chores off, a child's birthday is
+    a day off for every chore but the mandatory ones."""
+    coord, _ = _setup(_bed())
+    coord.is_birthday_day_off = MagicMock(side_effect=lambda child, on=None: on == MONDAY)
+    with pytest.raises(ValueError, match="birthday"):
+        _run(coord)
+    mandatory, _ = _setup(_bed(mandatory=True))
+    mandatory.is_birthday_day_off = MagicMock(side_effect=lambda child, on=None: on == MONDAY)
+    _run(mandatory)
