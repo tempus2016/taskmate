@@ -344,3 +344,51 @@ test("the plain list asks TaskMate about a day it hasn't described yet", async (
   await new Promise((resolve) => setTimeout(resolve, 5));
   assert.equal(asked, 1);
 });
+
+// ── Keyboard ─────────────────────────────────────────────────────────────────
+
+function keyOn(config, mine) {
+  const { card, calls } = cardFor(config);
+  card.dayCompletions = mine;
+  card.dispatchEvent = () => true;
+  const attrs = card._attrs();
+  const child = attrs.children[0];
+  const row = card._todaysChores(child, attrs)[0];
+  const press = async (key) => {
+    let prevented = false;
+    card._key({ key, preventDefault: () => { prevented = true; } }, child, row);
+    await new Promise((r) => setTimeout(r, 0));
+    return prevented;
+  };
+  return { card, calls, row, press };
+}
+
+const TICKED = [{ completion_id: "c1", chore_id: "bed", child_id: "k1", approved: true }];
+
+test("Delete on a ticked tile undoes it, as press-and-hold does", async () => {
+  const { calls, press } = keyOn({ date: "2026-09-14" }, TICKED);
+  assert.equal(await press("Delete"), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [
+    { domain: "taskmate", service: "reject_chore", data: { completion_id: "c1" } },
+  ]);
+});
+
+test("Backspace undoes too, and the tile advertises both keys", async () => {
+  const { card, calls, row, press } = keyOn({ date: "2026-09-14" }, TICKED);
+  assert.equal(card._undoable(row), true);
+  await press("Backspace");
+  assert.equal(calls[0].service, "reject_chore");
+});
+
+test("Delete leaves an unticked tile alone and lets the key through", async () => {
+  const { card, calls, row, press } = keyOn({ date: "2026-09-14" }, []);
+  assert.equal(card._undoable(row), false);
+  assert.equal(await press("Delete"), false);
+  assert.deepEqual(calls, []);
+});
+
+test("Delete does nothing when undo is switched off", async () => {
+  const { calls, press } = keyOn({ date: "2026-09-14", allow_undo: false }, TICKED);
+  assert.equal(await press("Delete"), false);
+  assert.deepEqual(calls, []);
+});

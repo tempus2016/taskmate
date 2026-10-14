@@ -855,11 +855,22 @@ class TaskMateStickerChartCard extends LitElement {
       </div>`;
   }
 
+  // Keyboard twin of the pointer gestures: Enter/Space completes, and
+  // Delete/Backspace stands in for press-and-hold, which a keyboard can't do.
   _key(e, child, row) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       this._complete(child, row);
+    } else if ((e.key === "Delete" || e.key === "Backspace") && this._undoable(row)) {
+      e.preventDefault();
+      this._undo(row);
     }
+  }
+
+  /** Whether the tile has a tick of the child's own that undo would take back. */
+  _undoable(row) {
+    return this.config.allow_undo !== false
+      && row.mine.some(c => c.child_id !== "__parent__" && c.completion_id);
   }
 
   disconnectedCallback() {
@@ -887,6 +898,7 @@ class TaskMateStickerChartCard extends LitElement {
       <button class="tile ${row.state}"
               style="--grad:${grad};--pct:${pct}%"
               aria-label="${label}: ${stateLabel}"
+              aria-keyshortcuts="${this._undoable(row) ? "Delete Backspace" : ""}"
               @pointerdown=${() => this._down(row)}
               @pointerup=${() => this._up(child, row)}
               @pointerleave=${() => this._cancel()}

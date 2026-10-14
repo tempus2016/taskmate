@@ -123,3 +123,24 @@ def test_a_teamwork_chore_offers_each_members_share_not_the_whole_pot():
 def test_a_teamwork_chore_includes_its_team_bonus():
     each = _chore(points=4, team_size=2, team_points_mode="each", team_bonus=1)
     assert _progress([each])["millie"]["available"] == 5 * 7
+
+
+BIRTHDAY_GIRL = Child(name="Millie", id="millie", birthday="2016-09-17")
+
+
+def test_a_birthday_doubles_what_that_day_offers():
+    # Thursday 17th is her birthday: 6 ordinary days plus one at 2x.
+    progress = _progress([_chore(points=2)], settings={"birthday_points_multiplier": "2"}, children=(BIRTHDAY_GIRL,))
+    assert progress["millie"]["available"] == 16
+
+
+def test_a_birthday_day_off_drops_that_days_optional_chores():
+    settings = {"birthday_points_multiplier": "2", "birthday_chores_off": "true"}
+    progress = _progress([_chore(points=2)], settings=settings, children=(BIRTHDAY_GIRL,))
+    assert progress["millie"]["available"] == 12
+
+
+def test_a_birthday_day_off_still_counts_mandatory_chores():
+    settings = {"birthday_points_multiplier": "2", "birthday_chores_off": "true"}
+    progress = _progress([_chore(points=2, mandatory=True)], settings=settings, children=(BIRTHDAY_GIRL,))
+    assert progress["millie"]["available"] == 16

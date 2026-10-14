@@ -55,6 +55,8 @@ class PointsMixin:
                 continue
             earned[comp.child_id] = earned.get(comp.child_id, 0) + (comp.points_awarded or 0)
 
+        celebration_multiplier = self.birthday_multiplier()
+
         progress: dict[str, dict[str, int]] = {}
         for child in children:
             available = 0
@@ -82,9 +84,16 @@ class PointsMixin:
                 for day in days:
                     if self.is_vacation_day(day) or not self._is_chore_scheduled_for_date(chore, day):
                         continue
+                    # A birthday off (#924) only excuses non-mandatory chores.
+                    birthday = self.is_birthday(child, day)
+                    if birthday and not getattr(chore, "mandatory", False) and self.birthday_chores_off():
+                        continue
                     per = points
                     if day.weekday() in (5, 6) and multiplier > 1.0:
                         per += round(points * (multiplier - 1.0))
+                    # The birthday multiplier stacks on the weekend one, as paid.
+                    if birthday and celebration_multiplier > 1.0:
+                        per += round(per * (celebration_multiplier - 1.0))
                     available += per * limit
             progress[child.id] = {"earned": earned.get(child.id, 0), "available": available}
         return progress
