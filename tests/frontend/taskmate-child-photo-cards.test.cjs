@@ -73,3 +73,19 @@ test("a teamwork chore's joined children show their photos on the child card", (
   assert.match(out, new RegExp(`<img src="${PHOTO}"`));
   assert.match(out, /<ha-icon icon="mdi:unicorn">/);
 });
+
+// Third Copilot review on #1062: the badges header, and the photo picker.
+
+test("the badges card shows the child's photo, and their avatar without one", () => {
+  const badges = card("taskmate-badges-card.js", "taskmate-badges-card");
+  assert.match(markup(badges._face({ avatar_image: PHOTO }, "mdi:unicorn")), new RegExp(`<img src="${PHOTO}"`));
+  assert.match(markup(badges._face({}, "mdi:unicorn")), /<ha-icon icon="mdi:unicorn">/);
+});
+
+test("the photo picker offers any entity with a picture, not only people", () => {
+  const src = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "../../custom_components/taskmate/www/taskmate-panel.js"), "utf8");
+  const call = src.slice(src.indexOf('"picture_entity", d.picture_entity,'));
+  assert.match(call.slice(0, 200), /\[\], this\._t\("panel\.child_picture_entity_hint"\), \{ withPicture: true \}/);
+  assert.match(src, /if \(picker\.dataset\.epPicture && !st\.attributes\?\.entity_picture\) return false;/);
+});

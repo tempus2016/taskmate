@@ -10093,8 +10093,10 @@ class TaskMatePanel extends HTMLElement {
             (this._haUsers || []).map(u => ({ v: u.id, l: u.is_admin ? `${u.name} (admin)` : u.name }))
           ),
           this._t("panel.child_link_user_hint")),
+        // Any entity with a picture: normally the child's person, but an image
+        // or camera entity works the same way.
         this._entityPickerField(this._t("panel.child_picture_entity_label"), "picture_entity", d.picture_entity,
-          ["person"], this._t("panel.child_picture_entity_hint")),
+          [], this._t("panel.child_picture_entity_hint"), { withPicture: true }),
         this._kioskPinField(d),
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
@@ -11165,13 +11167,13 @@ class TaskMatePanel extends HTMLElement {
     else { (this._settingsEntityDraft = this._settingsEntityDraft || {})[field] = value; }
   }
 
-  _entityPickerField(label, name, value, domains, hintHtml = "") {
+  _entityPickerField(label, name, value, domains, hintHtml = "", { withPicture = false } = {}) {
     const friendly = value && this._hass?.states?.[value]?.attributes?.friendly_name || "";
     const icon = value ? (this._hass?.states?.[value]?.attributes?.icon || this._entityDomainIcon(value)) : "";
     return `
       <div class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
-        <div class="tm-ep" data-ep-field="${name}" data-ep-domains="${(domains || []).join(",")}">
+        <div class="tm-ep" data-ep-field="${name}" data-ep-domains="${(domains || []).join(",")}"${withPicture ? ' data-ep-picture="1"' : ""}>
           ${value
             ? `<div class="tm-ep-selected">
                 <ha-icon icon="${this._esc(icon)}" class="tm-ep-selected-icon"></ha-icon>
@@ -11198,6 +11200,8 @@ class TaskMatePanel extends HTMLElement {
     const entities = Object.entries(this._hass.states)
       .filter(([id, st]) => {
         if (domains.length && !domains.some(d => id.startsWith(d + "."))) return false;
+        // A photo picker lists only entities that have a picture to show.
+        if (picker.dataset.epPicture && !st.attributes?.entity_picture) return false;
         if (!query) return true;
         const fn = st.attributes?.friendly_name || "";
         return id.toLowerCase().includes(query) || fn.toLowerCase().includes(query);

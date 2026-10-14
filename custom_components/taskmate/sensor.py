@@ -1898,6 +1898,10 @@ class ChildBadgesSensor(TaskMateBaseSensor):
         earned.sort(key=lambda e: e.get("earned_at") or "", reverse=True)
 
         return {
+            # Who the badges belong to, so the card can put a face to them.
+            "child_name": child.name,
+            "child_avatar": getattr(child, "avatar", "mdi:account-circle") or "mdi:account-circle",
+            "avatar_image": self.coordinator.child_avatar_image(child),
             "earned": earned,
             "available": available,
             "total_badges": len(applicable),

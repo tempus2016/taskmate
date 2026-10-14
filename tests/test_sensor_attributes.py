@@ -387,6 +387,18 @@ class TestChildBadgesSensor:
         sensor = ChildBadgesSensor(coord, _MockEntry(), child)
         assert sensor.native_value == 2
 
+    def test_attrs_say_whose_badges_they_are(self, hass):
+        """Copilot review on #1062: the badges card can only show the child's
+        face (photo or avatar) if the sensor says who the child is."""
+        child = Child(name="Mia", avatar="mdi:unicorn")
+        child.id = "c1"
+        coord = self._coordinator_for(child, [], [])
+        coord.child_avatar_image = MagicMock(return_value="/api/image/serve/mia/512x512")
+        attrs = ChildBadgesSensor(coord, _MockEntry(), child).extra_state_attributes
+        assert attrs["child_name"] == "Mia"
+        assert attrs["child_avatar"] == "mdi:unicorn"
+        assert attrs["avatar_image"] == "/api/image/serve/mia/512x512"
+
     def test_attrs_include_earned_and_available(self, hass):
         child = Child(name="Mia", total_chores_completed=5)
         child.id = "c1"
