@@ -235,7 +235,10 @@ function loadCard(filename, overrides = {}) {
     "import.meta.url",
     JSON.stringify(`http://localhost/${filename}?v=test`),
   );
-  vm.runInNewContext(source, sandbox);
+  // A module with top-level `await` is not a valid script, so it is wrapped in
+  // an async function. When nothing is actually awaited (the Lit base is found
+  // straight away) the whole body still runs synchronously.
+  vm.runInNewContext(overrides.topLevelAwait ? `(async () => {\n${source}\n})()` : source, sandbox);
   return { elements, window: sandboxWindow, get: (name) => elements.get(name) };
 }
 
