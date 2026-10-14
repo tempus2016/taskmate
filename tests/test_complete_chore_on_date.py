@@ -306,3 +306,52 @@ def test_undoing_a_backdated_job_that_set_last_completed_restores_it():
     child = Child(name="Millie", id="millie", points=10)
     coord = _undo(_approved(backdated=True), child, {"current": "2026-09-14T12:00:00+00:00"})
     coord.storage.undo_last_completed.assert_called_once_with("bed", "millie")
+
+
+# ── Weekly target bonus (#1044) ─────────────────────────────────────────────
+
+
+def test_logging_the_job_that_fills_last_weeks_target_pays_last_weeks_bonus():
+    """The bonus is settled for the week the completion belongs to, so a job
+    logged for last Thursday that fills last week's quota pays last week's."""
+    chore = _bed(weekly_target=2, weekly_target_bonus=5, due_days=[])
+    earlier = ChoreCompletion(
+        chore_id="bed", child_id="millie", completed_at=datetime(2026, 9, 9, 8, tzinfo=UTC), approved=True
+    )
+    coord, _ = _setup(chore, [earlier])  # one already approved last week
+    paid = {}
+    coord.storage.get_weekly_target_bonus = MagicMock(side_effect=lambda ch, c: dict(paid))
+    coord.storage.set_weekly_target_bonus = MagicMock(side_effect=lambda ch, c, v: paid.update(v or {}))
+    coord._maybe_level_up = AsyncMock()
+    coord._celebrate = AsyncMock()
+    _run(coord, day=date(2026, 9, 10))
+    assert paid == {"2026-09-07": 5}  # Monday of last week, not this week
+
+
+def test_logging_a_job_that_does_not_fill_the_target_pays_nothing():
+    chore = _bed(weekly_target=2, weekly_target_bonus=5, due_days=[])
+    coord, _ = _setup(chore)
+    coord.storage.get_weekly_target_bonus = MagicMock(return_value={})
+    coord.storage.set_weekly_target_bonus = MagicMock()
+    _run(coord)
+    coord.storage.set_weekly_target_bonus.assert_not_called()
+
+
+# ── Every-N-days recurrence (#1038) ─────────────────────────────────────────
+
+
+def _every_3_days():
+    # Anchored on Saturday 12 Sept: due the 12th, 15th, 18th...
+    return _bed(schedule_mode="recurring", recurrence="every_3_days", recurrence_start="2026-09-12")
+
+
+def test_an_every_n_days_chore_can_be_logged_on_one_of_its_days():
+    coord, stored = _setup(_every_3_days())
+    _run(coord, day=date(2026, 9, 15))
+    assert len(stored) == 1
+
+
+def test_an_every_n_days_chore_is_refused_between_its_days():
+    coord, _ = _setup(_every_3_days())
+    with pytest.raises(ValueError, match="wasn't due"):
+        _run(coord, day=MONDAY)
