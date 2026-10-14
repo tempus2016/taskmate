@@ -183,7 +183,11 @@ class TaskMateAuctionCard extends LitElement {
     const idx = Math.max(0, children.findIndex(c => String(c.id) === String(childId)));
     const name = this._childName(childId);
     const colour = `var(--tmd-c${(idx % 6) + 1}, ${CHILD_COLOURS[idx % CHILD_COLOURS.length]})`;
-    return html`<span class="ac-av" style="--ac-ac:${colour};--ac-s:${size}px" title="${name}">${name.charAt(0).toUpperCase()}</span>`;
+    // The child's photo when they have one (the shared face helper), else their initial.
+    const child = children.find(c => String(c.id) === String(childId));
+    const face = child && window.__taskmate_child_visual ? window.__taskmate_child_visual(child) : null;
+    const inner = face && face.kind === "image" ? html`<img src="${face.url}" alt="">` : name.charAt(0).toUpperCase();
+    return html`<span class="ac-av" style="--ac-ac:${colour};--ac-s:${size}px" title="${name}">${inner}</span>`;
   }
 
   /**
@@ -623,8 +627,9 @@ class TaskMateAuctionCard extends LitElement {
         background: var(--ac-ac, #9b59b6); color: #fff;
         display: inline-grid; place-items: center;
         font-weight: 700; font-size: calc(var(--ac-s, 30px) * .42); line-height: 1;
-        box-sizing: border-box;
+        box-sizing: border-box; overflow: hidden;
       }
+      .ac-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
       .ac-btn {
         display: inline-flex; align-items: center; justify-content: center; gap: 6px;

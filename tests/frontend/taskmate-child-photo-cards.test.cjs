@@ -45,3 +45,31 @@ test("the recap shows a child's photo, and their avatar without one", () => {
   assert.match(markup(recap._avatar(withPhoto)), new RegExp(`<img src="${PHOTO}"`));
   assert.match(markup(recap._avatar(withoutPhoto)), /<ha-icon icon="mdi:unicorn">/);
 });
+
+// Second Copilot review on #1062: bounty, auction and the child card's team row.
+
+test("the bounty board shows a child's photo, and their initial without one", () => {
+  const bounty = card("taskmate-bounty-card.js", "taskmate-bounty-card");
+  bounty._children = () => [withPhoto, withoutPhoto];
+  bounty._childName = (id) => (id === "k1" ? "Millie" : "Evie");
+  assert.match(markup(bounty._avatar("k1")), new RegExp(`<img src="${PHOTO}"`));
+  assert.match(markup(bounty._avatar("k2")), />E<\/span>/);
+});
+
+test("the auction card shows a child's photo, and their initial without one", () => {
+  const auction = card("taskmate-auction-card.js", "taskmate-auction-card");
+  auction._children = () => [withPhoto, withoutPhoto];
+  auction._childName = (id) => (id === "k1" ? "Millie" : "Evie");
+  assert.match(markup(auction._avatar("k1")), new RegExp(`<img src="${PHOTO}"`));
+  assert.match(markup(auction._avatar("k2")), />E<\/span>/);
+});
+
+test("a teamwork chore's joined children show their photos on the child card", () => {
+  const child = card("taskmate-child-card.js", "taskmate-child-card");
+  child.config = { entity: "sensor.taskmate_overview" };
+  child.hass = { states: { "sensor.taskmate_overview": { attributes: { children: [withPhoto, withoutPhoto] } } } };
+  child._t = (key) => key;
+  const out = markup(child._renderTeamProgress({ joined: ["k1", "k2"], size: 3, mine: false }));
+  assert.match(out, new RegExp(`<img src="${PHOTO}"`));
+  assert.match(out, /<ha-icon icon="mdi:unicorn">/);
+});

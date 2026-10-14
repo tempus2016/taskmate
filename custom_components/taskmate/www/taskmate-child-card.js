@@ -2565,11 +2565,12 @@ class TaskMateChildCard extends LitElement {
       <span class="tm-team-avs">${team.joined.map((id) => {
         const i = kids.findIndex((k) => String(k.id) === id);
         const kid = kids[i] || { name: "?" };
-        const a = kid.avatar || "";
+        // The shared face helper: the child's photo, else their MDI avatar.
+        const face = window.__taskmate_child_visual ? window.__taskmate_child_visual(kid) : { kind: "none" };
         const tone = `var(--tmd-c${((i < 0 ? 0 : i) % 6) + 1}, ${fallback[(i < 0 ? 0 : i) % 6]})`;
-        return html`<span class="tm-team-av" style="--ac:${tone}" title="${kid.name || ""}">${a.startsWith("mdi:")
-          ? html`<ha-icon icon="${a}"></ha-icon>`
-          : a ? html`<img src="${a}" alt="">` : (kid.name || "?").slice(0, 1).toUpperCase()}</span>`;
+        return html`<span class="tm-team-av" style="--ac:${tone}" title="${kid.name || ""}">${face.kind === "icon"
+          ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+          : face.kind === "image" ? html`<img src="${face.url}" alt="">` : (kid.name || "?").slice(0, 1).toUpperCase()}</span>`;
       })}</span>
       <span class="tm-team-txt">👥 ${label}${team.mine ? html` · ${this._t("child.team_you_joined")}` : ""}</span>
     </span>`;
