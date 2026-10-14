@@ -310,7 +310,7 @@ class TaskMateStreakCard extends LitElement {
     }
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    let children = attrs.children || [];
+    let children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     // Use recent_completions (all-time history, last 50) for streak/achievement calculation
     const completions = [...(attrs.recent_completions || attrs.todays_completions || [])];
     const pointsIcon = attrs.points_icon || "mdi:star";
@@ -555,7 +555,7 @@ class TaskMateStreakCard extends LitElement {
     }
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    let children = attrs.children || [];
+    let children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const completions = [...(attrs.recent_completions || attrs.todays_completions || [])];
     const chores = attrs.chores || [];
 
@@ -737,6 +737,7 @@ class TaskMateStreakCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t('common.editor.show_adults'),
       entity: this._t('common.editor.overview_entity'),
       title: this._t('streak.editor.title'),
       child_id: this._t('common.editor.filter_by_child'),
@@ -748,6 +749,7 @@ class TaskMateStreakCardEditor extends LitElement {
 
   _computeHelper = (entry) => {
     const helpers = {
+      show_adults: this._t('common.editor.show_adults_helper'),
       entity: this._t('common.editor.overview_entity_helper'),
       child_id: this._t('streak.editor.child_helper'),
       streak_days_shown: this._t('streak.editor.days_shown_helper'),
@@ -768,7 +770,7 @@ class TaskMateStreakCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}

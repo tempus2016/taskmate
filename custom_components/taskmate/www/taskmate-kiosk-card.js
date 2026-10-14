@@ -233,7 +233,7 @@ class TaskMateKioskCard extends LitElement {
     };
     const configured = Array.isArray(this.config.children) ? this.config.children : null;
     if (!configured) {
-      return all.filter(c => !c.is_guest).map(c => ({ child: c, requirePin: true, tone: tone(c) }));
+      return (window.__taskmate_family_children ? window.__taskmate_family_children(all, this.config) : all).filter(c => !c.is_guest).map(c => ({ child: c, requirePin: true, tone: tone(c) }));
     }
     const out = [];
     for (const entry of configured) {
@@ -1735,7 +1735,7 @@ class TaskMateKioskCardEditor extends LitElement {
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity || "sensor.taskmate_overview")) || {};
     const all = attrs.children || [];
     const configured = Array.isArray(this.config.children) ? this.config.children : null;
-    if (!configured) return all.map(c => ({ child: c, shown: !c.is_guest, requirePin: true }));
+    if (!configured) return all.map(c => ({ child: c, shown: !c.is_guest && (!c.is_adult || this.config.show_adults === true), requirePin: true }));
     const rows = [];
     for (const entry of configured) {
       const child = all.find(c => String(c.id) === String(entry && (entry.child_id ?? entry)));

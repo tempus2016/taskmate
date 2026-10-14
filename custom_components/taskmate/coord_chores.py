@@ -929,7 +929,10 @@ class ChoresMixin:
             return await self._async_join_team_chore(chore, child, now, as_parent=as_parent, photo_url=photo_url)
         # Open-ended completions always go to a parent: the child suggested the
         # point value, so self-awarding it would let them set their own pay.
-        auto_approve = as_parent or (not chore.requires_approval and not requires_photo and not is_open_ended)
+        # A grown-up's own completion never waits for approval (#1061).
+        auto_approve = (
+            as_parent or child.is_adult or (not chore.requires_approval and not requires_photo and not is_open_ended)
+        )
         # Won at auction (#982): the winner is paid their winning bid for this
         # occurrence instead of the chore's own points — exactly what they bid.
         auction_price = self.auction_price_for(chore, child_id, today)
@@ -1401,12 +1404,14 @@ class ChoresMixin:
         if already_done:
             raise ValueError(f"Bonus sub-task '{subtask.name}' already completed today.")
 
+        # A grown-up's own sub-task never waits for approval (#1061).
+        needs_approval = chore.requires_approval and not child.is_adult
         completion = ChoreCompletion(
             chore_id=chore_id,
             child_id=child_id,
             completed_at=now,
-            approved=not chore.requires_approval,
-            points_awarded=subtask.points if not chore.requires_approval else 0,
+            approved=not needs_approval,
+            points_awarded=subtask.points if not needs_approval else 0,
             submitted_points=subtask.points,
             bonus_subtask_id=bonus_subtask_id,
             child_undo_allowed=by_child and undo_window_seconds(self.storage) > 0,
@@ -1417,7 +1422,7 @@ class ChoresMixin:
         # awarding can suspend.
         self.storage.add_completion(completion)
 
-        if not chore.requires_approval:
+        if not needs_approval:
             total_awarded = await self._award_points(child, subtask.points, skip_streak=True)
             completion.approved = True
             completion.approved_at = dt_util.now()
@@ -1425,7 +1430,7 @@ class ChoresMixin:
             self.storage.update_completion(completion)
         await self.storage.async_save()
 
-        if chore.requires_approval:
+        if needs_approval:
             await self._async_notify_pending_approval(
                 child.name, f"{chore.name} › {subtask.name}", subtask.points, completion_id=completion.id
             )

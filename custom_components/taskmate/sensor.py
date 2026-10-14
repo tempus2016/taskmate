@@ -201,6 +201,8 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                     if getattr(c, "is_guest", False)
                     else {}
                 ),
+                # Grown-ups (#1061): cards leave these out unless show_adults is set.
+                **({"is_adult": True} if getattr(c, "is_adult", False) else {}),
                 # Chore roulette (#677): today's pick + spins left, so the card can
                 # show the result and disable the button once the allowance is used.
                 **(

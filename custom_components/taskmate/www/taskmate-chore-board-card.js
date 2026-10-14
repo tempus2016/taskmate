@@ -105,7 +105,7 @@ class TaskMateChoreBoardCard extends LitElement {
   _kids(attrs) {
     const all = attrs.children || [];
     const picked = Array.isArray(this.config.children) ? this.config.children.map(String) : [];
-    return picked.length ? all.filter(c => picked.includes(String(c.id))) : all;
+    return picked.length ? all.filter(c => picked.includes(String(c.id))) : (window.__taskmate_family_children ? window.__taskmate_family_children(all, this.config) : all);
   }
 
   _kidIndex(attrs, id) {

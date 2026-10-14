@@ -144,6 +144,34 @@
   window.__taskmate_attrs = resolveAttrs;
 
   /**
+   * The children a family-wide card lists (#1061). Grown-ups' profiles stay
+   * out unless the card sets show_adults, and when shown they follow the
+   * kids. A card pinned to one child_id gets the full list back, so an adult
+   * can still have a card of their own.
+   */
+  function familyChildren(children, config) {
+    const list = Array.isArray(children) ? children : [];
+    if (!list.some(c => c && c.is_adult) || (config && config.child_id)) return list;
+    const kids = list.filter(c => !c.is_adult);
+    return config && config.show_adults === true ? kids.concat(list.filter(c => c.is_adult)) : kids;
+  }
+
+  window.__taskmate_family_children = familyChildren;
+
+  /**
+   * The editor's "Show grown-ups" toggle, as ha-form schema entries. Only
+   * offered once the family has an adult profile (or the card already has
+   * the option set), so everyone else's editor stays as it was.
+   */
+  function adultsEditorField(hass, config) {
+    const attrs = (config && config.entity && resolveAttrs(hass, config.entity)) || {};
+    const hasAdult = (attrs.children || []).some(c => c && c.is_adult);
+    return hasAdult || (config && config.show_adults) ? [{ name: "show_adults", selector: { boolean: {} } }] : [];
+  }
+
+  window.__taskmate_adults_field = adultsEditorField;
+
+  /**
    * A child's badges sensor state, by child id, from the overview's entity
    * map (#1018). Null when the map doesn't list one — callers fall back to
    * guessing from the default entity id.

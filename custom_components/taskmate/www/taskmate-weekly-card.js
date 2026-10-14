@@ -346,7 +346,7 @@ class TaskMateWeeklyCard extends LitElement {
 
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    let children = attrs.children || [];
+    let children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const chores = attrs.chores || [];
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t("common.stars");
@@ -519,7 +519,7 @@ class TaskMateWeeklyCard extends LitElement {
 
   _weekData(entity, tz) {
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    let children = attrs.children || [];
+    let children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const chores = attrs.chores || [];
     const pointsName = attrs.points_name || this._t("common.stars");
     const rewardsClaimed = (attrs.rewards_claimed || attrs.recent_rewards || []);
@@ -801,6 +801,7 @@ class TaskMateWeeklyCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t('common.editor.show_adults'),
       entity: this._t('common.editor.overview_entity'),
       title: this._t('weekly.editor.title'),
       child_id: this._t('common.editor.filter_by_child'),
@@ -811,6 +812,7 @@ class TaskMateWeeklyCardEditor extends LitElement {
 
   _computeHelper = (entry) => {
     const helpers = {
+      show_adults: this._t('common.editor.show_adults_helper'),
       entity: this._t('common.editor.overview_entity_helper'),
       child_id: this._t('weekly.editor.child_helper'),
     };
@@ -829,7 +831,7 @@ class TaskMateWeeklyCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}

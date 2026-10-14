@@ -495,6 +495,7 @@ async def _ws_get_state(hass, connection, msg, coordinator):
         vol.Optional("birthday", default=""): vol.All(str, vol.Length(max=10)),
         vol.Optional("presence_entity", default=""): _validate_presence_entity,
         vol.Optional("age_group", default=""): vol.In(("", *AGE_GROUPS)),
+        vol.Optional("is_adult", default=False): bool,
     }
 )
 @websocket_api.async_response
@@ -517,6 +518,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         birthday=birthday,
         presence_entity=msg.get("presence_entity", ""),
         age_group=msg.get("age_group", ""),
+        is_adult=bool(msg.get("is_adult", False)),
     )
     connection.send_result(msg["id"], {"id": child.id})
 
@@ -538,6 +540,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         vol.Optional("guest_expires_on"): str,
         vol.Optional("birthday"): vol.All(str, vol.Length(max=10)),
         vol.Optional("age_group"): vol.In(("", *AGE_GROUPS)),
+        vol.Optional("is_adult"): bool,
     }
 )
 @websocket_api.async_response
@@ -573,6 +576,8 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.presence_entity = msg["presence_entity"]
     if "age_group" in msg:
         existing.age_group = msg["age_group"]
+    if "is_adult" in msg:
+        existing.is_adult = bool(msg["is_adult"])
     if "is_guest" in msg or "guest_expires_on" in msg:
         # Routed through the coordinator so the expiry is validated and an
         # archived guest is un-archived when promoted to a family member.
