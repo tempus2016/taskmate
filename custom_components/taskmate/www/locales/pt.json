@@ -2042,8 +2042,6 @@
   "panel.child_birthday_label": "Aniversário",
   "panel.child_birthday_hint": "AAAA-MM-DD, ou MM-DD para não mostrar a idade. No dia: pontos bónus, um distintivo e uma celebração. O 29 de fevereiro é celebrado a 28 de fevereiro nos anos não bissextos.",
   "panel.child_link_user_none": "Qualquer pessoa (partilhado / quiosque)",
-  "panel.child_picture_entity_label": "Fotografia de",
-  "panel.child_picture_entity_hint": "Escolhe a pessoa da criança para mostrar a fotografia em vez do ícone acima. A fotografia define-se em Definições › Pessoas; sem fotografia, é mostrado o ícone.",
   "panel.chore_difficulty_label": "Dificuldade",
   "panel.difficulty_easy": "Fácil",
   "panel.difficulty_hard": "Difícil",

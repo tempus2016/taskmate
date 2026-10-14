@@ -2042,8 +2042,6 @@
   "panel.child_birthday_label": "Bursdag",
   "panel.child_birthday_hint": "ÅÅÅÅ-MM-DD, eller MM-DD for å la vere å vise alderen. På dagen: bonuspoeng, eit merke og ei feiring. 29. feb. vert feira 28. feb. i år som ikkje er skotår.",
   "panel.child_link_user_none": "Kven som helst (delt / kiosk)",
-  "panel.child_picture_entity_label": "Bilete frå",
-  "panel.child_picture_entity_hint": "Vel personen til barnet for å vise biletet i staden for ikonet over. Biletet vert sett under Innstillingar › Personar; utan bilete vert ikonet vist.",
   "panel.chore_difficulty_label": "Vanskegrad",
   "panel.difficulty_easy": "Lett",
   "panel.difficulty_hard": "Vanskeleg",

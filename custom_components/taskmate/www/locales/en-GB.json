@@ -789,8 +789,6 @@
   "panel.child_birthday_label": "Birthday",
   "panel.child_birthday_hint": "YYYY-MM-DD, or MM-DD to leave the age off. On the day: bonus points, a badge and a celebration. 29 Feb is celebrated on 28 Feb in non-leap years.",
   "panel.child_link_user_none": "Anyone (shared / kiosk)",
-  "panel.child_picture_entity_label": "Photo from",
-  "panel.child_picture_entity_hint": "Pick the child's person to show their photo instead of the icon above. Set the photo under Settings › People; with none set, the icon is shown.",
   "panel.child_name_label": "Name",
   "panel.child_name_placeholder": "e.g. Malia",
   "panel.child_no_availability": "No availability sensor",

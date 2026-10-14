@@ -3058,8 +3058,6 @@
   "notify.sample_bounty": "Umyj samochód",
   "notify.sample_reason": "Niedokończone",
   "notify.sample_note": "Świetna robota!",
-  "panel.child_picture_entity_label": "Zdjęcie z",
-  "panel.child_picture_entity_hint": "Wybierz osobę dziecka, aby pokazać jego zdjęcie zamiast ikony powyżej. Zdjęcie ustawisz w Ustawienia › Osoby; bez zdjęcia pokazywana jest ikona.",
   "sticker_chart.error.entity_required": "Zdefiniuj encję",
   "sticker_chart.default_title": "Tabela naklejek: {name}",
   "sticker_chart.today": "Dziś: {done} / {total} zadań zrobionych",

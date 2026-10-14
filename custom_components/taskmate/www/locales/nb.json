@@ -2042,8 +2042,6 @@
   "panel.child_birthday_label": "Bursdag",
   "panel.child_birthday_hint": "ÅÅÅÅ-MM-DD, eller MM-DD for å utelate alderen. På dagen: bonuspoeng, et merke og en feiring. 29. feb. feires 28. feb. i år som ikke er skuddår.",
   "panel.child_link_user_none": "Hvem som helst (delt / kiosk)",
-  "panel.child_picture_entity_label": "Bilde fra",
-  "panel.child_picture_entity_hint": "Velg barnets person for å vise bildet i stedet for ikonet over. Bildet settes under Innstillinger › Personer; uten bilde vises ikonet.",
   "panel.chore_difficulty_label": "Vanskelighetsgrad",
   "panel.difficulty_easy": "Lett",
   "panel.difficulty_hard": "Vanskelig",

@@ -2042,8 +2042,6 @@
   "panel.child_birthday_label": "Geburtstag",
   "panel.child_birthday_hint": "JJJJ-MM-TT, oder MM-TT ohne Altersangabe. Am Tag selbst: Bonuspunkte, ein Abzeichen und eine Feier. Der 29. Feb. wird in Nicht-Schaltjahren am 28. Feb. gefeiert.",
   "panel.child_link_user_none": "Beliebig (geteilt / Kiosk)",
-  "panel.child_picture_entity_label": "Foto von",
-  "panel.child_picture_entity_hint": "Wähle die Person des Kindes, um ihr Foto anstelle des Symbols oben zu zeigen. Das Foto wird unter Einstellungen › Personen gesetzt; ohne Foto wird das Symbol angezeigt.",
   "panel.chore_difficulty_label": "Schwierigkeit",
   "panel.difficulty_easy": "Leicht",
   "panel.difficulty_hard": "Schwer",

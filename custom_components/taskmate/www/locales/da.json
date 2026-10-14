@@ -3058,8 +3058,6 @@
   "notify.sample_bounty": "Vask bilen",
   "notify.sample_reason": "Ikke færdig",
   "notify.sample_note": "Flot klaret!",
-  "panel.child_picture_entity_label": "Foto fra",
-  "panel.child_picture_entity_hint": "Vælg barnets person for at vise deres foto i stedet for ikonet ovenfor. Fotoet indstilles under Indstillinger › Personer; uden foto vises ikonet.",
   "sticker_chart.error.entity_required": "Angiv en entitet",
   "sticker_chart.default_title": "{name}s klistermærkeskema",
   "sticker_chart.today": "I dag: {done} / {total} opgaver klaret",

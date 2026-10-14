@@ -2042,8 +2042,6 @@
   "panel.child_birthday_label": "Anniversaire",
   "panel.child_birthday_hint": "AAAA-MM-JJ, ou MM-JJ pour ne pas afficher l'âge. Le jour J : points bonus, un badge et une fête. Le 29 février est fêté le 28 février les années non bissextiles.",
   "panel.child_link_user_none": "N'importe qui (partagé / kiosque)",
-  "panel.child_picture_entity_label": "Photo de",
-  "panel.child_picture_entity_hint": "Choisissez la personne de l'enfant pour afficher sa photo à la place de l'icône ci-dessus. La photo se définit dans Paramètres › Personnes ; sans photo, l'icône est affichée.",
   "panel.chore_difficulty_label": "Difficulté",
   "panel.difficulty_easy": "Facile",
   "panel.difficulty_hard": "Difficile",
