@@ -87,5 +87,13 @@ test("the photo picker offers any entity with a picture, not only people", () =>
     require("node:path").join(__dirname, "../../custom_components/taskmate/www/taskmate-panel.js"), "utf8");
   const call = src.slice(src.indexOf('"picture_entity", d.picture_entity,'));
   assert.match(call.slice(0, 200), /\[\], this\._t\("panel\.child_picture_entity_hint"\), \{ withPicture: true \}/);
-  assert.match(src, /if \(picker\.dataset\.epPicture && !st\.attributes\?\.entity_picture\) return false;/);
+  const filter = src.slice(src.indexOf("if (picker.dataset.epPicture) {"));
+  assert.match(filter.slice(0, 200), /if \(!st\.attributes\?\.entity_picture\) return false;/);
+});
+
+test("the photo picker leaves out TaskMate's own child sensors, which show the photo chosen there", () => {
+  const src = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "../../custom_components/taskmate/www/taskmate-panel.js"), "utf8");
+  const filter = src.slice(src.indexOf("if (picker.dataset.epPicture) {"));
+  assert.match(filter.slice(0, 200), /this\._hass\.entities\?\.\[id\]\?\.platform === "taskmate"\) return false;/);
 });

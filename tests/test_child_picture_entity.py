@@ -12,8 +12,9 @@ Every lookup fails safe to "" and the caller falls back to the MDI avatar.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
+import custom_components.taskmate.coord_avatars as coord_avatars
 from custom_components.taskmate.coord_avatars import AvatarsMixin
 from custom_components.taskmate.models import Child
 
@@ -183,3 +184,26 @@ class TestPhotoChangesReachTheSensors:
         assert coord._tracked_picture_entities == {"person.millie"}
         coord._availability_state_changed(self._event("person.millie", MILLIE_PIC, "/api/image/serve/new/512x512"))
         assert coord.external_state_version == 1
+
+
+class TestOwnSensorsRefused:
+    """A TaskMate child sensor shows the chosen photo, so it can't be the source."""
+
+    def _registry(self, platform):
+        entry = MagicMock()
+        entry.platform = platform
+        registry = MagicMock()
+        registry.async_get = MagicMock(return_value=entry)
+        return registry
+
+    def test_a_taskmate_sensor_is_not_used_as_the_photo(self):
+        child = Child(name="Millie", id="millie", picture_entity="sensor.millie_stats")
+        coord = _coord([child], {"sensor.millie_stats": _state(MILLIE_PIC)})
+        with patch.object(coord_avatars.er, "async_get", return_value=self._registry("taskmate")):
+            assert coord.child_avatar_image(child) == ""
+
+    def test_another_integrations_entity_is_used(self):
+        child = Child(name="Millie", id="millie", picture_entity="person.millie")
+        coord = _coord([child], {"person.millie": _state(MILLIE_PIC)})
+        with patch.object(coord_avatars.er, "async_get", return_value=self._registry("person")):
+            assert coord.child_avatar_image(child) == MILLIE_PIC

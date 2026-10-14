@@ -10,6 +10,10 @@ from __future__ import annotations
 
 import logging
 
+from homeassistant.helpers import entity_registry as er
+
+from .const import DOMAIN
+
 _LOGGER = logging.getLogger(__name__)
 
 # Shipped defaults so the feature is useful out of the box. Parents can replace
@@ -46,9 +50,15 @@ class AvatarsMixin:
         Empty when no entity is chosen, it no longer exists, or it has no
         picture — every call site then shows the MDI avatar, so a child is
         never left with a blank face.
+
+        TaskMate's own child sensors are refused: they show this very photo,
+        so choosing one would make the face its own source and leave it stale.
         """
         entity_id = (getattr(child, "picture_entity", "") or "").strip()
         if not entity_id:
+            return ""
+        entry = er.async_get(self.hass).async_get(entity_id)
+        if entry is not None and entry.platform == DOMAIN:
             return ""
         state = self.hass.states.get(entity_id)
         if state is None:

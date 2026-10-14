@@ -11200,8 +11200,13 @@ class TaskMatePanel extends HTMLElement {
     const entities = Object.entries(this._hass.states)
       .filter(([id, st]) => {
         if (domains.length && !domains.some(d => id.startsWith(d + "."))) return false;
-        // A photo picker lists only entities that have a picture to show.
-        if (picker.dataset.epPicture && !st.attributes?.entity_picture) return false;
+        // A photo picker lists only entities that have a picture to show, and
+        // never TaskMate's own child sensors: they show the photo chosen here,
+        // so picking one would make the face its own source.
+        if (picker.dataset.epPicture) {
+          if (!st.attributes?.entity_picture) return false;
+          if (this._hass.entities?.[id]?.platform === "taskmate") return false;
+        }
         if (!query) return true;
         const fn = st.attributes?.friendly_name || "";
         return id.toLowerCase().includes(query) || fn.toLowerCase().includes(query);
