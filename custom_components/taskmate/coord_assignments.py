@@ -55,8 +55,10 @@ class AssignmentsMixin:
 
         # A child's photo is read from their picture entity, so a photo changed
         # there has to reach the sensors without waiting for a TaskMate edit.
+        # Trimmed the same way child_avatar_image reads it, so a stray space in
+        # a stored id can't leave the photo untracked.
         self._tracked_picture_entities = {
-            c.picture_entity for c in self.storage.get_children() if getattr(c, "picture_entity", "")
+            entity for c in self.storage.get_children() if (entity := (getattr(c, "picture_entity", "") or "").strip())
         }
 
     @callback

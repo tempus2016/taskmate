@@ -175,3 +175,11 @@ class TestPhotoChangesReachTheSensors:
         coord = self._tracking_coord()
         coord._availability_state_changed(self._event("person.someone_else", None, MILLIE_PIC))
         assert coord.external_state_version == 0
+
+    def test_a_stray_space_in_the_stored_id_is_still_tracked(self):
+        """Copilot review on #1062: the photo lookup trims the id, so tracking
+        must too, or a change to that entity would never refresh the sensors."""
+        coord = self._tracking_coord(entity=" person.millie ")
+        assert coord._tracked_picture_entities == {"person.millie"}
+        coord._availability_state_changed(self._event("person.millie", MILLIE_PIC, "/api/image/serve/new/512x512"))
+        assert coord.external_state_version == 1
