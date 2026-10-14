@@ -9841,7 +9841,10 @@ class TaskMatePanel extends HTMLElement {
     const day = d.day;
     const { ok, res, err } = await this._callWS({ type: "taskmate/day_completions", date: day });
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
-    if (this._dialog && this._dialog.data.day === day) card.dayCompletions = res.completions || [];
+    if (this._dialog && this._dialog.data.day === day) {
+      card.dayWeekProgress = res.week_progress || {};
+      card.dayCompletions = res.completions || [];
+    }
   }
 
   _renderBackdateDialog() {

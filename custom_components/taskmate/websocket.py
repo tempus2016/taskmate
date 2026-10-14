@@ -2426,7 +2426,13 @@ async def _ws_parent_complete_chore(hass, connection, msg, coordinator):
 @_admin_only
 async def _ws_day_completions(hass, connection, msg, coordinator):
     """What was done on one day — for logging past jobs from the panel."""
-    connection.send_result(msg["id"], {"completions": coordinator.completions_on_date(msg["date"])})
+    connection.send_result(
+        msg["id"],
+        {
+            "completions": coordinator.completions_on_date(msg["date"]),
+            "week_progress": coordinator.week_progress_on(msg["date"]),
+        },
+    )
 
 
 @websocket_api.websocket_command(

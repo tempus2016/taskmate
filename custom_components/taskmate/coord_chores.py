@@ -1228,6 +1228,23 @@ class ChoresMixin:
             if not comp.bonus_subtask_id and dt_util.as_local(comp.completed_at).date() == day
         ]
 
+    def week_progress_on(self, day: date) -> dict[str, dict[str, int]]:
+        """Each child's count for every weekly-target chore, in the week of ``day``.
+
+        The past-day sticker chart caps a weekly-target chore at what is left
+        of that week's quota, the way today's chart reads ``weekly_chore_progress``,
+        so it never offers a tick the backend would refuse.
+        """
+        progress: dict[str, dict[str, int]] = {}
+        for chore in self.storage.get_chores():
+            if int(getattr(chore, "weekly_target", 0) or 0) <= 0:
+                continue
+            for child in self.storage.get_children():
+                count = self.weekly_completion_count(chore.id, child.id, on=day)
+                if count:
+                    progress.setdefault(child.id, {})[chore.id] = count
+        return progress
+
     async def async_parent_complete_chore(self, chore_id: str) -> ChoreCompletion:
         """Mark a chore as completed by the parent — zero points, advances recurrence."""
         chore = self.get_chore(chore_id)

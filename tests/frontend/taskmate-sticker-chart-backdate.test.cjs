@@ -126,6 +126,28 @@ test("a weekly-target chore with quota left is offered, capped at what's left", 
   assert.equal(rows[0].limit, 0 + 1, "one left in the week, however high the daily limit");
 });
 
+test("a past day caps a weekly-target chore at what that day's week has left", () => {
+  const chore = { id: "w", name: "Read", points: 2, weekly_target: 3, daily_limit: 5 };
+  const past = (weekCount) => {
+    const { card } = cardFor({ date: "2026-09-14" });
+    card.dayWeekProgress = { k1: { w: weekCount } };
+    const attrs = card._attrs();
+    attrs.chores = [{ enabled: true, requires_approval: false, ...chore }];
+    return card._todaysChores(attrs.children[0], attrs);
+  };
+  assert.equal(past(3).length, 0, "that week's quota is already full");
+  const rows = past(2);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].limit, 1, "one left in that week, however high the daily limit");
+});
+
+test("a past day ignores today's weekly progress", () => {
+  // Today's week is full, but the day being logged is in another week.
+  const chore = { id: "w", name: "Read", points: 2, weekly_target: 3 };
+  const rows = rowsFor([chore], { config: { date: "2026-09-14" }, child: { weekly_chore_progress: { w: 3 } } });
+  assert.equal(rows.length, 1);
+});
+
 test("a past day does not offer a team chore, which can't be reconstructed", () => {
   const team = { id: "t", name: "Wash up", points: 2, team: { size: 2 } };
   assert.equal(rowsFor([team], { config: { date: "2026-09-14" } }).length, 0);

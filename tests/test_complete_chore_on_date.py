@@ -355,3 +355,30 @@ def test_an_every_n_days_chore_is_refused_between_its_days():
     coord, _ = _setup(_every_3_days())
     with pytest.raises(ValueError, match="wasn't due"):
         _run(coord, day=MONDAY)
+
+
+# ── The past-day chart's weekly caps ─────────────────────────────────────────
+
+
+def test_week_progress_on_counts_each_weekly_target_chore_for_that_week():
+    reading = _bed(id="read", name="Read", weekly_target=3, due_days=[])
+    plain = _bed()
+    done = [
+        ChoreCompletion(chore_id="read", child_id="millie", completed_at=datetime(2026, 9, d, 8, tzinfo=UTC))
+        for d in (8, 10, 14)  # two last week, one this week
+    ]
+    coord, _ = _setup(reading, done)
+    coord.storage.get_chores = MagicMock(return_value=[reading, plain])
+    with patch.object(coord_chores.dt_util, "_now", NOW):
+        assert coord.week_progress_on(date(2026, 9, 9)) == {"millie": {"read": 2}}
+        assert coord.week_progress_on(MONDAY) == {"millie": {"read": 1}}
+        # A week with nothing logged, and a chore with no target, add nothing.
+        assert coord.week_progress_on(date(2026, 9, 1)) == {}
+
+
+def test_the_day_lookup_sends_that_weeks_progress():
+    from pathlib import Path
+
+    src = (Path(__file__).parents[1] / "custom_components/taskmate/websocket.py").read_text()
+    block = src[src.index("async def _ws_day_completions") :][:600]
+    assert '"week_progress": coordinator.week_progress_on(msg["date"])' in block

@@ -125,6 +125,8 @@ class TaskMateStickerChartCard extends LitElement {
       // A past day's completions, when `config.date` is set (the admin
       // panel's "Log a past job"); today's come from the sensors instead.
       dayCompletions: { type: Array },
+      // That day's week, per child and weekly-target chore (count so far).
+      dayWeekProgress: { type: Object },
       _optimistic: { state: true },
       _confirming: { state: true },
       _celebrating: { state: true },
@@ -565,12 +567,13 @@ class TaskMateStickerChartCard extends LitElement {
 
       let limit = mode === "first_come" ? 1 : Math.max(1, Number(chore.daily_limit) || 1);
       // Weekly target (#883): the quota caps it a level above the day. Once the
-      // earlier days have filled it there is nothing left to tick, so the row
-      // goes; a tick made today that filled it stays, so it can still be undone.
-      // (A past day's weekly total isn't known here; TaskMate checks it.)
+      // other days have filled it there is nothing left to tick, so the row
+      // goes; a tick made on this day that filled it stays, so it can still be
+      // undone. A past day reads the progress of that day's week instead.
       const weeklyTarget = Number(chore.weekly_target) || 0;
-      if (weeklyTarget > 0 && !past) {
-        const left = Math.max(0, weeklyTarget - Number((child.weekly_chore_progress || {})[chore.id] || 0));
+      if (weeklyTarget > 0) {
+        const weekProgress = past ? (this.dayWeekProgress || {})[childId] : child.weekly_chore_progress;
+        const left = Math.max(0, weeklyTarget - Number((weekProgress || {})[chore.id] || 0));
         if (mine.length === 0 && left === 0) continue;
         limit = Math.min(limit, mine.length + left);
       }
