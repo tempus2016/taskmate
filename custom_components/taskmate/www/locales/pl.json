@@ -778,6 +778,8 @@
   "panel.child_inverted": "(odwrócone)",
   "panel.child_link_user_label": "Powiąż z użytkownikiem Home Assistant (opcjonalnie)",
   "panel.child_link_user_hint": "Po ustawieniu tylko ten użytkownik Home Assistant (lub administrator) może wykonywać obowiązki, odbierać nagrody i uruchamiać stopery jako to dziecko przez wywołania usług. Pozostaw „Każdy” dla wspólnego tabletu rodzinnego.",
+  "panel.child_picture_entity_label": "Zdjęcie z",
+  "panel.child_picture_entity_hint": "Wybierz osobę dziecka, aby pokazać jego zdjęcie zamiast ikony powyżej. Zdjęcie ustawisz w Ustawienia › Osoby; bez zdjęcia pokazywana jest ikona.",
   "panel.child_kiosk_pin_label": "PIN kiosku",
   "panel.child_kiosk_pin_hint": "Opcjonalny. 4 cyfry, które dziecko wpisuje na wspólnym tablecie w trybie kiosku. Przechowywany jako hash, więc nie da się go odczytać — pozostaw puste, aby zachować obecny PIN.",
   "panel.child_kiosk_pin_set": "PIN jest ustawiony.",

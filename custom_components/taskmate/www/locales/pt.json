@@ -1980,6 +1980,8 @@
   "panel.btn_clone_chore": "Duplicar",
   "panel.child_link_user_label": "Associar a um utilizador do Home Assistant (opcional)",
   "panel.child_link_user_hint": "Quando definido, apenas este utilizador do Home Assistant (ou um admin) pode concluir tarefas, resgatar recompensas ou iniciar temporizadores por esta criança via serviços. Deixe em \"Qualquer pessoa\" para um tablet familiar partilhado.",
+  "panel.child_picture_entity_label": "Fotografia de",
+  "panel.child_picture_entity_hint": "Escolhe a pessoa da criança para mostrar a fotografia em vez do ícone acima. A fotografia define-se em Definições › Pessoas; sem fotografia, é mostrado o ícone.",
   "panel.child_kiosk_pin_label": "PIN do quiosque",
   "panel.child_kiosk_pin_hint": "Opcional. 4 dígitos que a criança escreve num tablet de quiosque partilhado. Guardado com hash, não pode ser lido de volta — deixe em branco para manter o PIN atual.",
   "panel.child_kiosk_pin_set": "Há um PIN definido.",

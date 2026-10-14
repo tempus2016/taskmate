@@ -1980,6 +1980,8 @@
   "panel.btn_clone_chore": "Dupliquer",
   "panel.child_link_user_label": "Lier à un utilisateur Home Assistant (facultatif)",
   "panel.child_link_user_hint": "Si défini, seul cet utilisateur Home Assistant (ou un admin) peut terminer des tâches, échanger des récompenses ou lancer des minuteurs pour cet enfant via les services. Laissez sur « N'importe qui » pour une tablette familiale partagée.",
+  "panel.child_picture_entity_label": "Photo de",
+  "panel.child_picture_entity_hint": "Choisissez la personne de l'enfant pour afficher sa photo à la place de l'icône ci-dessus. La photo se définit dans Paramètres › Personnes ; sans photo, l'icône est affichée.",
   "panel.child_kiosk_pin_label": "Code PIN du kiosque",
   "panel.child_kiosk_pin_hint": "Facultatif. 4 chiffres que l'enfant tape sur une tablette kiosque partagée. Stocké haché, il ne peut pas être relu — laissez vide pour garder le code actuel.",
   "panel.child_kiosk_pin_set": "Un code PIN est défini.",

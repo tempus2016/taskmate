@@ -430,11 +430,12 @@ class TaskMateRecapCard extends LitElement {
   }
 
   _avatar(child) {
-    const a = child?.avatar || "";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : /^(https?:|\/)/.test(a)
-        ? html`<img src="${a}" alt="">`
+    // The shared face helper: the child's photo, else their MDI avatar.
+    const face = window.__taskmate_child_visual ? window.__taskmate_child_visual(child) : { kind: "none" };
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image" && /^(https?:|\/)/.test(face.url)
+        ? html`<img src="${face.url}" alt="">`
         : (child?.name || "?").slice(0, 1).toUpperCase();
     return html`<span class="who-av">${inner}</span>`;
   }

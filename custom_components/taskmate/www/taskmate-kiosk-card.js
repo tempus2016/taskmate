@@ -798,7 +798,12 @@ class TaskMateKioskCard extends LitElement {
   // ── Render ───────────────────────────────────────────────────────────────
 
   _face(child, tone, size = "") {
-    const avatar = child.avatar || "";
+    // The child's photo first (the shared face helper), then their avatar.
+    const face = window.__taskmate_child_visual ? window.__taskmate_child_visual(child) : { kind: "none" };
+    if (face.kind === "image") {
+      return html`<div class="km-face ${size}" style="--kc:${tone}"><img src="${face.url}" alt=""></div>`;
+    }
+    const avatar = face.kind === "icon" ? face.icon : "";
     // The default avatar is a generic silhouette, so a child who never picked
     // one gets their initial instead — easier to tell apart on a picker.
     const icon = avatar.startsWith("mdi:") && avatar !== "mdi:account-circle";
@@ -1256,6 +1261,7 @@ class TaskMateKioskCard extends LitElement {
         box-shadow: 0 0 0 6px color-mix(in srgb, var(--kc) 25%, transparent);
       }
       .km-face ha-icon { --mdc-icon-size: 72px; }
+      .km-face img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
       .km-face.big { width: 160px; height: 160px; font-size: 76px; }
       .km-face.big ha-icon { --mdc-icon-size: 90px; }
       .km-face.head {

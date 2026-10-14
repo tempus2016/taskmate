@@ -1980,6 +1980,8 @@
   "panel.btn_clone_chore": "Duplizieren",
   "panel.child_link_user_label": "Mit Home-Assistant-Benutzer verknüpfen (optional)",
   "panel.child_link_user_hint": "Wenn gesetzt, kann nur dieser Home-Assistant-Benutzer (oder ein Admin) per Dienstaufruf Aufgaben erledigen, Belohnungen einlösen oder Timer für dieses Kind starten. Für ein gemeinsames Familien-Tablet auf \"Beliebig\" lassen.",
+  "panel.child_picture_entity_label": "Foto von",
+  "panel.child_picture_entity_hint": "Wähle die Person des Kindes, um ihr Foto anstelle des Symbols oben zu zeigen. Das Foto wird unter Einstellungen › Personen gesetzt; ohne Foto wird das Symbol angezeigt.",
   "panel.child_kiosk_pin_label": "Kiosk-PIN",
   "panel.child_kiosk_pin_hint": "Optional. 4 Ziffern, die das Kind auf einem gemeinsamen Kiosk-Tablet eintippt. Wird als Hash gespeichert und kann nicht ausgelesen werden — leer lassen, um die aktuelle PIN zu behalten.",
   "panel.child_kiosk_pin_set": "Eine PIN ist gesetzt.",

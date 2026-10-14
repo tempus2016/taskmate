@@ -10,6 +10,10 @@ from __future__ import annotations
 
 import logging
 
+from homeassistant.helpers import entity_registry as er
+
+from .const import DOMAIN
+
 _LOGGER = logging.getLogger(__name__)
 
 # Shipped defaults so the feature is useful out of the box. Parents can replace
@@ -35,6 +39,31 @@ class AvatarsMixin:
         if isinstance(raw, list) and raw:
             return [a for a in raw if isinstance(a, dict) and a.get("icon")]
         return list(DEFAULT_AVATAR_CATALOG)
+
+    def child_avatar_image(self, child) -> str:
+        """The picture of the entity chosen for a child's face, or ``""``.
+
+        Read from that entity on every update rather than stored, so a photo
+        changed in HA appears here with nothing to re-save, and a deleted
+        entity simply falls back to the MDI avatar instead of a broken image.
+
+        Empty when no entity is chosen, it no longer exists, or it has no
+        picture — every call site then shows the MDI avatar, so a child is
+        never left with a blank face.
+
+        TaskMate's own child sensors are refused: they show this very photo,
+        so choosing one would make the face its own source and leave it stale.
+        """
+        entity_id = (getattr(child, "picture_entity", "") or "").strip()
+        if not entity_id:
+            return ""
+        entry = er.async_get(self.hass).async_get(entity_id)
+        if entry is not None and entry.platform == DOMAIN:
+            return ""
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            return ""
+        return str(state.attributes.get("entity_picture") or "")
 
     def _avatar_unlocked(self, entry: dict, child) -> bool:
         kind = entry.get("unlock_type", "free")

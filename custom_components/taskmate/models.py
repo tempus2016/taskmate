@@ -235,6 +235,12 @@ class Child:
     total_penalties_received: int = 0
     notify_service: str | None = None
     linked_user_id: str = ""  # HA user id; when set, only that user (or an admin) may self-serve as this child
+    # Entity whose picture replaces the MDI avatar — normally the child's
+    # person.* entity. Deliberately independent of linked_user_id: a young
+    # child often has a person (with a photo) but no HA login of their own.
+    # Only the entity id is stored; the picture is read from it on every
+    # update, so a new photo set in HA shows up with nothing to re-save here.
+    picture_entity: str = ""
     quiet_hours_start: str = ""  # "HH:MM" — start of do-not-disturb window; empty = no quiet hours
     quiet_hours_end: str = ""  # "HH:MM" — end of do-not-disturb window; start>end means overnight
     presence_entity: str = ""  # person./device_tracker.; while not home, reminders wait for arrival (#926)
@@ -282,6 +288,7 @@ class Child:
             total_penalties_received=data.get("total_penalties_received", 0),
             notify_service=data.get("notify_service"),
             linked_user_id=data.get("linked_user_id", ""),
+            picture_entity=str(data.get("picture_entity", "") or ""),
             quiet_hours_start=data.get("quiet_hours_start", ""),
             quiet_hours_end=data.get("quiet_hours_end", ""),
             presence_entity=str(data.get("presence_entity", "") or ""),
@@ -320,6 +327,7 @@ class Child:
             "total_penalties_received": self.total_penalties_received,
             "notify_service": self.notify_service,
             "linked_user_id": self.linked_user_id,
+            "picture_entity": self.picture_entity,
             "quiet_hours_start": self.quiet_hours_start,
             "quiet_hours_end": self.quiet_hours_end,
             "presence_entity": self.presence_entity,

@@ -778,6 +778,8 @@
   "panel.child_inverted": "(omvendt)",
   "panel.child_link_user_label": "Knyt til Home Assistant-bruger (valgfrit)",
   "panel.child_link_user_hint": "Når det er sat, kan kun denne Home Assistant-bruger (eller en admin) fuldføre pligter, indløse belønninger eller køre timere som dette barn via service-kald. Vælg \"Alle\" til en fælles familie-tablet.",
+  "panel.child_picture_entity_label": "Foto fra",
+  "panel.child_picture_entity_hint": "Vælg barnets person for at vise deres foto i stedet for ikonet ovenfor. Fotoet indstilles under Indstillinger › Personer; uden foto vises ikonet.",
   "panel.child_kiosk_pin_label": "Kiosk-PIN-kode",
   "panel.child_kiosk_pin_hint": "Valgfri. 4 cifre, som barnet taster på en delt kiosk-tablet. Gemmes som hash og kan ikke læses igen — lad feltet stå tomt for at beholde den nuværende kode.",
   "panel.child_kiosk_pin_set": "Der er sat en PIN-kode.",

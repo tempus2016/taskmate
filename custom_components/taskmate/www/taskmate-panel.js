@@ -1973,6 +1973,7 @@ class TaskMatePanel extends HTMLElement {
         unavailability_entity: c.unavailability_entity || "",
         pause_streak_when_unavailable: !!c.pause_streak_when_unavailable,
         linked_user_id: c.linked_user_id || "",
+        picture_entity: c.picture_entity || "",
         birthday: c.birthday || "",
         age_group: c.age_group || "",
         presence_entity: c.presence_entity || "",
@@ -1985,7 +1986,7 @@ class TaskMatePanel extends HTMLElement {
         name: "", avatar: "mdi:account-circle", availability_entity: "",
         availability_inverted: false, unavailability_entity: "",
         pause_streak_when_unavailable: false,
-        linked_user_id: "", presence_entity: "",
+        linked_user_id: "", picture_entity: "", presence_entity: "",
         birthday: "", age_group: "",
         kiosk_pin: "", kiosk_pin_clear: false, has_kiosk_pin: false,
       } });
@@ -2036,13 +2037,15 @@ class TaskMatePanel extends HTMLElement {
           unavailability_entity: d.unavailability_entity || "",
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
           birthday: (d.birthday || "").trim(), age_group: d.age_group || "",
-          presence_entity: d.presence_entity || "" }
+          presence_entity: d.presence_entity || "",
+          picture_entity: d.picture_entity || "" }
       : { type: "taskmate/update_child", child_id: d.id, name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
           birthday: (d.birthday || "").trim(), age_group: d.age_group || "",
-          presence_entity: d.presence_entity || "" };
+          presence_entity: d.presence_entity || "",
+          picture_entity: d.picture_entity || "" };
     const { ok, err, res } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
     // The PIN goes through its own command so it is hashed server-side and
@@ -9846,6 +9849,10 @@ class TaskMatePanel extends HTMLElement {
             (this._haUsers || []).map(u => ({ v: u.id, l: u.is_admin ? `${u.name} (admin)` : u.name }))
           ),
           this._t("panel.child_link_user_hint")),
+        // Any entity with a picture: normally the child's person, but an image
+        // or camera entity works the same way.
+        this._entityPickerField(this._t("panel.child_picture_entity_label"), "picture_entity", d.picture_entity,
+          [], this._t("panel.child_picture_entity_hint"), { withPicture: true }),
         this._kioskPinField(d),
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
@@ -10916,13 +10923,13 @@ class TaskMatePanel extends HTMLElement {
     else { (this._settingsEntityDraft = this._settingsEntityDraft || {})[field] = value; }
   }
 
-  _entityPickerField(label, name, value, domains, hintHtml = "") {
+  _entityPickerField(label, name, value, domains, hintHtml = "", { withPicture = false } = {}) {
     const friendly = value && this._hass?.states?.[value]?.attributes?.friendly_name || "";
     const icon = value ? (this._hass?.states?.[value]?.attributes?.icon || this._entityDomainIcon(value)) : "";
     return `
       <div class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
-        <div class="tm-ep" data-ep-field="${name}" data-ep-domains="${(domains || []).join(",")}">
+        <div class="tm-ep" data-ep-field="${name}" data-ep-domains="${(domains || []).join(",")}"${withPicture ? ' data-ep-picture="1"' : ""}>
           ${value
             ? `<div class="tm-ep-selected">
                 <ha-icon icon="${this._esc(icon)}" class="tm-ep-selected-icon"></ha-icon>
@@ -10949,6 +10956,13 @@ class TaskMatePanel extends HTMLElement {
     const entities = Object.entries(this._hass.states)
       .filter(([id, st]) => {
         if (domains.length && !domains.some(d => id.startsWith(d + "."))) return false;
+        // A photo picker lists only entities that have a picture to show, and
+        // never TaskMate's own child sensors: they show the photo chosen here,
+        // so picking one would make the face its own source.
+        if (picker.dataset.epPicture) {
+          if (!st.attributes?.entity_picture) return false;
+          if (this._hass.entities?.[id]?.platform === "taskmate") return false;
+        }
         if (!query) return true;
         const fn = st.attributes?.friendly_name || "";
         return id.toLowerCase().includes(query) || fn.toLowerCase().includes(query);

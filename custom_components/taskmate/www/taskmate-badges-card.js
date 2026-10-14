@@ -145,6 +145,8 @@ class TaskMateBadgesCard extends LitElement {
         --mdc-icon-size: 26px;
         color: white;
       }
+      .child-avatar { overflow: hidden; }
+      .child-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
       .badges-title {
         font-size: 1.1rem;
@@ -479,6 +481,17 @@ class TaskMateBadgesCard extends LitElement {
     }
   }
 
+  // The child's photo when they have one (the shared face helper), else the
+  // avatar icon the sensor sends.
+  _face(attrs, avatar) {
+    const face = window.__taskmate_child_visual
+      ? window.__taskmate_child_visual({ avatar, avatar_image: attrs.avatar_image })
+      : { kind: "icon", icon: avatar };
+    return face.kind === "image"
+      ? html`<img src="${face.url}" alt="">`
+      : html`<ha-icon icon="${face.kind === "icon" ? face.icon : avatar}"></ha-icon>`;
+  }
+
   render() {
     if (!this.hass || !this.config) return html``;
 
@@ -528,9 +541,7 @@ class TaskMateBadgesCard extends LitElement {
       <ha-card>
         <div class="badges-head">
           <div class="badges-head-left">
-            <div class="child-avatar">
-              <ha-icon icon="${childAvatar}"></ha-icon>
-            </div>
+            <div class="child-avatar">${this._face(attrs, childAvatar)}</div>
             <div>
               <div class="badges-title">${title}</div>
               <div class="badges-count">${countLabel}</div>

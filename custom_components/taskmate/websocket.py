@@ -490,6 +490,7 @@ async def _ws_get_state(hass, connection, msg, coordinator):
         vol.Optional("unavailability_entity", default=""): str,
         vol.Optional("pause_streak_when_unavailable", default=False): bool,
         vol.Optional("linked_user_id", default=""): str,
+        vol.Optional("picture_entity", default=""): str,
         vol.Optional("birthday", default=""): vol.All(str, vol.Length(max=10)),
         vol.Optional("presence_entity", default=""): _validate_presence_entity,
         vol.Optional("age_group", default=""): vol.In(("", *AGE_GROUPS)),
@@ -511,6 +512,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         unavailability_entity=_opt_str(msg.get("unavailability_entity")),
         pause_streak_when_unavailable=bool(msg.get("pause_streak_when_unavailable", False)),
         linked_user_id=_opt_str(msg.get("linked_user_id")),
+        picture_entity=_opt_str(msg.get("picture_entity")),
         birthday=birthday,
         presence_entity=msg.get("presence_entity", ""),
         age_group=msg.get("age_group", ""),
@@ -529,6 +531,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         vol.Optional("unavailability_entity"): str,
         vol.Optional("pause_streak_when_unavailable"): bool,
         vol.Optional("linked_user_id"): str,
+        vol.Optional("picture_entity"): str,
         vol.Optional("presence_entity"): _validate_presence_entity,
         vol.Optional("is_guest"): bool,
         vol.Optional("guest_expires_on"): str,
@@ -557,6 +560,8 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.pause_streak_when_unavailable = bool(msg["pause_streak_when_unavailable"])
     if "linked_user_id" in msg:
         existing.linked_user_id = _opt_str(msg["linked_user_id"])
+    if "picture_entity" in msg:
+        existing.picture_entity = _opt_str(msg["picture_entity"])
     if "birthday" in msg:
         try:
             existing.birthday = normalize_birthday(msg["birthday"])

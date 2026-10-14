@@ -1980,6 +1980,8 @@
   "panel.btn_clone_chore": "Dupliser",
   "panel.child_link_user_label": "Koble til Home Assistant-bruker (valgfritt)",
   "panel.child_link_user_hint": "Når satt, kan bare denne Home Assistant-brukeren (eller en admin) fullføre gjøremål, løse inn belønninger eller starte tidtakere for dette barnet via tjenestekall. La stå på «Hvem som helst» for et delt familiebrett.",
+  "panel.child_picture_entity_label": "Bilde fra",
+  "panel.child_picture_entity_hint": "Velg barnets person for å vise bildet i stedet for ikonet over. Bildet settes under Innstillinger › Personer; uten bilde vises ikonet.",
   "panel.child_kiosk_pin_label": "Kiosk-PIN",
   "panel.child_kiosk_pin_hint": "Valgfritt. 4 sifre barnet taster på et delt kiosk-nettbrett. Lagres som hash og kan ikke leses tilbake — la feltet stå tomt for å beholde gjeldende kode.",
   "panel.child_kiosk_pin_set": "En PIN-kode er satt.",
