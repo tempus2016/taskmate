@@ -990,6 +990,7 @@ class TaskMateCoordinator(
         birthday: str = "",
         presence_entity: str = "",
         age_group: str = "",
+        is_adult: bool = False,
         refresh: bool = True,
     ) -> Child:
         """Add a new child.
@@ -1009,6 +1010,7 @@ class TaskMateCoordinator(
             birthday=birthday,
             presence_entity=presence_entity,
             age_group=age_group,
+            is_adult=is_adult,
         )
         self.storage.add_child(child)
         await self.storage.async_save()

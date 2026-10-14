@@ -417,7 +417,7 @@ class TaskMateOverviewCard extends LitElement {
     if (design !== "classic") return this._renderDesigned(design, entity);
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    const children = attrs.children || [];
+    const children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const chores = attrs.chores || [];
     const completions = [...(attrs.todays_completions || [])];
     const chorePointsMap = {};
@@ -534,7 +534,7 @@ class TaskMateOverviewCard extends LitElement {
 
   _renderDesigned(design, entity) {
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    const children = attrs.children || [];
+    const children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const chores = attrs.chores || [];
     const completions = [...(attrs.todays_completions || [])];
     const hd = _safeColor(this.config.header_color, "#8e44ad");
@@ -936,6 +936,7 @@ class TaskMateOverviewCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t('common.editor.show_adults'),
       entity: this._t('overview.editor.entity_label'),
       title: this._t('overview.editor.title_label'),
       approvals_entity: this._t('overview.editor.approvals_entity_label'),
@@ -947,6 +948,7 @@ class TaskMateOverviewCardEditor extends LitElement {
 
   _computeHelper = (entry) => {
     const helpers = {
+      show_adults: this._t('common.editor.show_adults_helper'),
       entity: this._t('overview.editor.entity_helper'),
       approvals_entity: this._t('overview.editor.approvals_entity_helper'),
       show_parent_actions: this._t('common.editor.show_parent_actions_helper'),
@@ -967,7 +969,7 @@ class TaskMateOverviewCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}

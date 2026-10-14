@@ -1980,6 +1980,7 @@ class TaskMatePanel extends HTMLElement {
         picture_entity: c.picture_entity || "",
         birthday: c.birthday || "",
         age_group: c.age_group || "",
+        is_adult: !!c.is_adult,
         presence_entity: c.presence_entity || "",
         // Kiosk PIN (#930): write-only. The panel only knows whether one is set.
         kiosk_pin: "", kiosk_pin_clear: false,
@@ -1991,7 +1992,7 @@ class TaskMatePanel extends HTMLElement {
         availability_inverted: false, unavailability_entity: "",
         pause_streak_when_unavailable: false,
         linked_user_id: "", picture_entity: "", presence_entity: "",
-        birthday: "", age_group: "",
+        birthday: "", age_group: "", is_adult: false,
         kiosk_pin: "", kiosk_pin_clear: false, has_kiosk_pin: false,
       } });
     }
@@ -2040,14 +2041,14 @@ class TaskMatePanel extends HTMLElement {
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
-          birthday: (d.birthday || "").trim(), age_group: d.age_group || "",
+          birthday: (d.birthday || "").trim(), age_group: d.age_group || "", is_adult: !!d.is_adult,
           presence_entity: d.presence_entity || "",
           picture_entity: d.picture_entity || "" }
       : { type: "taskmate/update_child", child_id: d.id, name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
-          birthday: (d.birthday || "").trim(), age_group: d.age_group || "",
+          birthday: (d.birthday || "").trim(), age_group: d.age_group || "", is_adult: !!d.is_adult,
           presence_entity: d.presence_entity || "",
           picture_entity: d.picture_entity || "" };
     const { ok, err, res } = await this._callWS(payload);
@@ -4501,7 +4502,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-child-head">
           <div class="tm-avatar">${this._mdi(child.avatar)}</div>
           <div class="tm-child-name">
-            <h3>${this._esc(child.name || this._t("panel.child_unnamed"))}</h3>
+            <h3>${this._esc(child.name || this._t("panel.child_unnamed"))}${child.is_adult ? ` <span class="tm-pill tm-pill-accent">${this._t("panel.child_adult_pill")}</span>` : ""}</h3>
             ${this._idBadge(child.id)}
             <div class="tm-meta">${child.availability_entity ? `<code title="${this._esc(child.availability_entity)}">${this._esc(child.availability_entity)}</code>${child.availability_inverted ? ` <em>${this._t("panel.child_inverted")}</em>` : ""}` : `${this._t("panel.child_no_availability")}`}${child.unavailability_entity ? ` · ${this._t("panel.child_busy_label")} <code title="${this._esc(child.unavailability_entity)}">${this._esc(child.unavailability_entity)}</code>` : ""}</div>
           </div>
@@ -10071,6 +10072,9 @@ class TaskMatePanel extends HTMLElement {
       [
         this._field(this._t("panel.child_name_label"), "name", d.name, "text", this._t("panel.child_name_placeholder")),
         this._iconPickerField(this._t("panel.child_avatar_label"), "avatar", d.avatar),
+        // A grown-up's profile (#1061): auto-approved, hidden from cards by default.
+        this._switch(this._t("panel.child_adult_label"), "is_adult", !!d.is_adult,
+          this._esc(this._t("panel.child_adult_hint"))),
         this._field(this._t("panel.child_birthday_label"), "birthday", d.birthday, "text",
           this._esc(this._t("panel.child_birthday_hint"))),
         // Setup wizard age group (#980): only steers chore suggestions.

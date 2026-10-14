@@ -624,7 +624,8 @@ class TaskMatePointsDisplayCard extends LitElement {
 
   _allChildren() {
     const s = this._stateObj();
-    return s ? getChildren(s) : [];
+    const all = s ? getChildren(s) : [];
+    return window.__taskmate_family_children ? window.__taskmate_family_children(all, this.config) : all;
   }
 
   _isCareerMode() {
@@ -1241,6 +1242,7 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t('common.editor.show_adults'),
       entity: this._t('points_display.editor.entity_label'),
       title: this._t('common.editor.card_title'),
       mode: this._t('points_display.editor.mode_label'),
@@ -1254,7 +1256,7 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
     return labels[entry.name] ?? entry.name;
   };
 
-  _computeHelper = () => '';
+  _computeHelper = (entry) => (entry.name === 'show_adults' ? this._t('common.editor.show_adults_helper') : '');
 
   render() {
     if (!this.config) return html``;
@@ -1274,7 +1276,7 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}

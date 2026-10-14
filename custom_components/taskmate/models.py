@@ -254,6 +254,9 @@ class Child:
     # Setup wizard age group (#980): one of AGE_GROUPS, or "" when none was
     # picked (every child that predates the wizard). Only steers suggestions.
     age_group: str = ""
+    # A grown-up's profile (#1061): their own completions never wait for
+    # approval, and cards leave them out unless a card opts in (show_adults).
+    is_adult: bool = False
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -280,6 +283,7 @@ class Child:
             guest_expires_on=str(data.get("guest_expires_on", "") or ""),
             birthday=str(data.get("birthday", "") or ""),
             age_group=normalize_age_group(data.get("age_group")),
+            is_adult=bool(data.get("is_adult", False)),
             availability_entity=data.get("availability_entity", ""),
             availability_inverted=data.get("availability_inverted", False),
             unavailability_entity=data.get("unavailability_entity", ""),
@@ -319,6 +323,7 @@ class Child:
             "guest_expires_on": self.guest_expires_on,
             "birthday": self.birthday,
             "age_group": self.age_group,
+            "is_adult": self.is_adult,
             "availability_entity": self.availability_entity,
             "availability_inverted": self.availability_inverted,
             "unavailability_entity": self.unavailability_entity,

@@ -468,7 +468,7 @@ class TaskMateStickerChartCard extends LitElement {
   }
 
   _children(attrs) {
-    const all = attrs.children || [];
+    const all = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const wanted = this.config.child_id;
     if (!wanted) return all;
     return all.filter(c => c.id === wanted || c.name === wanted);
@@ -1172,6 +1172,7 @@ class TaskMateStickerChartCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t("common.editor.show_adults"),
       entity: this._t("common.editor.overview_entity"),
       child_id: this._t("sticker_chart.editor.child"),
       reward_id: this._t("sticker_chart.editor.reward"),
@@ -1189,6 +1190,7 @@ class TaskMateStickerChartCardEditor extends LitElement {
 
   _computeHelper = (entry) => {
     const helpers = {
+      show_adults: this._t("common.editor.show_adults_helper"),
       entity: this._t("common.editor.overview_entity_helper"),
       reward_id: this._t("sticker_chart.editor.reward_helper"),
       goal: this._t("sticker_chart.editor.goal_helper"),
@@ -1226,7 +1228,7 @@ class TaskMateStickerChartCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._valueChanged}

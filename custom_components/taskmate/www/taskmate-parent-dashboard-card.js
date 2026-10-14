@@ -595,6 +595,9 @@ class TaskMateParentDashboardCard extends LitElement {
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     const children = attrs.children || [];
+    // Grown-ups (#1061) only drop out of the per-child lists; approvals and
+    // rotation still need every profile to name whoever did the job.
+    const family = (window.__taskmate_family_children ? window.__taskmate_family_children(children, this.config) : children);
     const chores = attrs.chores || [];
     const completions = attrs.todays_completions || [];
     // Pending approvals come from the full pending list (not filtered to
@@ -654,11 +657,11 @@ class TaskMateParentDashboardCard extends LitElement {
         </div>
 
         <div class="tab-content">
-          ${this._activeSection === "overview" ? this._renderOverview(children, chores, completions, pointsIcon, pointsName) : ''}
+          ${this._activeSection === "overview" ? this._renderOverview(family, chores, completions, pointsIcon, pointsName) : ''}
           ${this._activeSection === "rotation" ? this._renderRotation(rotationChores, children, attrs) : ''}
           ${this._activeSection === "approvals" ? this._renderApprovals(pendingCompletions, children, chores, pointsIcon) : ''}
           ${this._activeSection === "claims" ? this._renderClaims(pendingRewardClaims, pointsIcon) : ''}
-          ${this._activeSection === "points" ? this._renderPoints(children, pointsIcon, pointsName) : ''}
+          ${this._activeSection === "points" ? this._renderPoints(family, pointsIcon, pointsName) : ''}
         </div>
       </ha-card>
     `;
@@ -738,6 +741,9 @@ class TaskMateParentDashboardCard extends LitElement {
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     const children = attrs.children || [];
+    // Grown-ups (#1061) only drop out of the per-child lists; approvals and
+    // rotation still need every profile to name whoever did the job.
+    const family = (window.__taskmate_family_children ? window.__taskmate_family_children(children, this.config) : children);
     const chores = attrs.chores || [];
     const completions = attrs.todays_completions || [];
     const pendingCompletions = attrs.chore_completions || completions.filter(c => !c.approved);
@@ -772,11 +778,11 @@ class TaskMateParentDashboardCard extends LitElement {
 
     let body;
     const sec = this._activeSection;
-    if (sec === "overview") body = this._dOverview(design, children, chores, completions, attrs, pointsIcon);
+    if (sec === "overview") body = this._dOverview(design, family, chores, completions, attrs, pointsIcon);
     else if (sec === "rotation") body = this._dRotation(design, rotationChores, children, attrs);
     else if (sec === "approvals") body = this._dApprovals(design, pendingCompletions, children, chores, pointsIcon);
     else if (sec === "claims") body = this._dClaims(design, pendingRewardClaims, pointsIcon);
-    else if (sec === "points") body = this._dPoints(design, children, pointsIcon, pointsName);
+    else if (sec === "points") body = this._dPoints(design, family, pointsIcon, pointsName);
 
     return html`<ha-card class="tmd" style="--hd:${hd}">
       ${this._dHeader(hd, totalPending)}
@@ -1500,6 +1506,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t('common.editor.show_adults'),
       entity: this._t('dashboard.editor.entity_label'),
       title: this._t('dashboard.editor.title_label'),
       card_design: this._t('common.design.field_label'),
@@ -1511,6 +1518,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
 
   _computeHelper = (entry) => {
     const helpers = {
+      show_adults: this._t('common.editor.show_adults_helper'),
       entity: this._t('dashboard.editor.entity_helper'),
       quick_points_amount: this._t('dashboard.editor.quick_points_helper'),
     };
@@ -1530,7 +1538,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
