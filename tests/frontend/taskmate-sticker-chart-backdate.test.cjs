@@ -148,6 +148,50 @@ test("a past day ignores today's weekly progress", () => {
   assert.equal(rows.length, 1);
 });
 
+// ── A past day follows what TaskMate would accept (Copilot review on #1063) ──
+
+function pastRows(chores, { loggable, completions = [], child = {} } = {}) {
+  const { card } = cardFor({ date: "2026-09-14" });
+  card.dayLoggable = loggable;
+  card.dayCompletions = completions;
+  const attrs = card._attrs();
+  attrs.chores = chores.map((c) => ({ enabled: true, requires_approval: false, ...c }));
+  return card._todaysChores({ ...attrs.children[0], ...child }, attrs).map((r) => r.chore.id);
+}
+
+test("a past day offers only the chores TaskMate says could be logged then", () => {
+  // A recurring chore the weekday rule alone can't place, and one the backend refuses.
+  const chores = [{ id: "every3", name: "Bins", schedule_mode: "recurring", recurrence: "every_3_days" }, { id: "bed", name: "Bed" }];
+  assert.deepEqual([...pastRows(chores, { loggable: { k1: ["every3"] } })], ["every3"]);
+  assert.deepEqual([...pastRows(chores, { loggable: { k1: [] } })], []);
+});
+
+test("a past day keeps a job ticked that day even if it is no longer loggable, so it can be undone", () => {
+  const done = [{ completion_id: "x", chore_id: "bed", child_id: "k1", approved: true, points: 2 }];
+  assert.deepEqual([...pastRows([{ id: "bed", name: "Bed" }], { loggable: { k1: [] }, completions: done })], ["bed"]);
+});
+
+test("before the day has been described the weekday rule is used as a first guess", () => {
+  const chores = [{ id: "sat", name: "Car", schedule_mode: "specific_days", due_days: ["saturday"] }, { id: "bed", name: "Bed" }];
+  assert.deepEqual([...pastRows(chores, { loggable: undefined })], ["bed"]);
+});
+
+test("a finished one-off job keeps its tile on the day it was done, so it can be undone", () => {
+  const chore = { id: "once", name: "Tidy shed", schedule_mode: "one_shot", disabled_for: ["k1"] };
+  const done = [{ completion_id: "x", chore_id: "once", child_id: "k1", approved: true, points: 2 }];
+  assert.deepEqual([...pastRows([chore], { loggable: { k1: [] }, completions: done })], ["once"]);
+  assert.deepEqual([...pastRows([chore], { loggable: { k1: [] } })], [], "not done that day: it stays hidden");
+});
+
+test("reduced motion stops the celebration bouncing and the confetti falling", () => {
+  const src = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "../../custom_components/taskmate/www/taskmate-sticker-chart-card.js"), "utf8");
+  const block = src.slice(src.indexOf("@media (prefers-reduced-motion: reduce)"));
+  const rule = block.slice(0, block.indexOf("}\n      }") + 1);
+  assert.match(rule, /\.celebration-overlay, \.celebration-content, \.celebration-stars \{ animation: none; \}/);
+  assert.match(rule, /\.confetti-container \{ display: none; \}/);
+});
+
 test("a past day does not offer a team chore, which can't be reconstructed", () => {
   const team = { id: "t", name: "Wash up", points: 2, team: { size: 2 } };
   assert.equal(rowsFor([team], { config: { date: "2026-09-14" } }).length, 0);
@@ -264,4 +308,39 @@ test("each offered day carries the weekday the backend will check", () => {
     const weekday = new Date(`${day.v}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
     assert.equal(day.dow, weekday.toLowerCase());
   }
+});
+
+// ── The plain list follows the day TaskMate described ────────────────────────
+
+test("the plain list offers what TaskMate would accept, minus weekly quotas already full", () => {
+  const panel = panelWith();
+  panel._state.chores = [
+    { id: "bed", name: "Bed", points: 1 },
+    { id: "bins", name: "Bins", points: 1, schedule_mode: "recurring" },
+    { id: "read", name: "Read", points: 1, weekly_target: 2 },
+    { id: "swim", name: "Swim", points: 1, weekly_target: 2 },
+    { id: "off", name: "Off", points: 1 },
+  ];
+  panel._backdateInfo = {
+    day: "2026-09-14",
+    loggable: { k1: ["bins", "read", "swim"] },
+    week_progress: { k1: { read: 2, swim: 1 } },
+  };
+  const ids = panel._backdateChores("k1", "monday", "2026-09-14").map((c) => c.id);
+  assert.deepEqual([...ids], ["bins", "swim"]);
+});
+
+test("the plain list asks TaskMate about a day it hasn't described yet", async () => {
+  const panel = panelWith();
+  panel._backdateUseList = true;
+  panel._backdateCardReady = false;
+  panel._backdateDays = () => [{ v: "2026-09-14", l: "Monday", dow: "monday" }];
+  panel._select = () => "";
+  panel._esc = (x) => x;
+  panel._dialogShell = () => "";
+  let asked = 0;
+  panel._refreshBackdateDay = () => { asked += 1; };
+  panel._renderBackdateDialog();
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(asked, 1);
 });

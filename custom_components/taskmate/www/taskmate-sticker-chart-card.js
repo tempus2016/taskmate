@@ -127,6 +127,10 @@ class TaskMateStickerChartCard extends LitElement {
       dayCompletions: { type: Array },
       // That day's week, per child and weekly-target chore (count so far).
       dayWeekProgress: { type: Object },
+      // The chores TaskMate would let be logged that day, per child: the
+      // backend's own rules, so every schedule (recurrences, calendar moves,
+      // holidays) is followed without re-implementing it here.
+      dayLoggable: { type: Object },
       _optimistic: { state: true },
       _confirming: { state: true },
       _celebrating: { state: true },
@@ -437,6 +441,9 @@ class TaskMateStickerChartCard extends LitElement {
       }
       @media (prefers-reduced-motion: reduce) {
         .tile, .tile.done .glyph { animation: none; transition: none; }
+        /* The pop-up still says well done; it just doesn't bounce or rain. */
+        .celebration-overlay, .celebration-content, .celebration-stars { animation: none; }
+        .confetti-container { display: none; }
       }
       @media (max-width: 420px) {
         .face { width: 76px; height: 76px; min-width: 76px; }
@@ -534,10 +541,18 @@ class TaskMateStickerChartCard extends LitElement {
     const completions = this._completions(attrs);
     const order = (child.chore_order || []).map(String);
 
+    // A past day the backend has described: only what it would accept, plus
+    // anything already ticked that day so it can still be undone.
+    const loggable = past && this.dayLoggable ? (this.dayLoggable[childId] || []).map(String) : null;
+
     const rows = [];
     for (const chore of attrs.chores || []) {
+      const mine = this._mine(childId, chore, completions);
+      if (loggable && !loggable.includes(String(chore.id)) && mine.length === 0) continue;
       if (chore.enabled === false) continue;
-      if ((chore.disabled_for || []).map(String).includes(childId)) continue;
+      // A one-off job is switched off for the child once it's done; its tile
+      // stays while it has a tick on this day, so it can still be undone.
+      if ((chore.disabled_for || []).map(String).includes(childId) && mine.length === 0) continue;
       const assigned = (Array.isArray(chore.assigned_to) ? chore.assigned_to : []).map(String);
       if (assigned.length && !assigned.includes(childId)) continue;
 
@@ -556,12 +571,11 @@ class TaskMateStickerChartCard extends LitElement {
         if (active !== childId) continue;
       }
 
-      if (chore.schedule_mode === "specific_days") {
+      if (!loggable && chore.schedule_mode === "specific_days") {
         const days = Array.isArray(chore.due_days) ? chore.due_days : [];
-        if (days.length && !days.includes(todayDow)) continue;
+        if (days.length && !days.includes(todayDow) && mine.length === 0) continue;
       }
 
-      const mine = this._mine(childId, chore, completions);
       const perChild = availability[chore.id];
       if (perChild && perChild[childId] === false && mine.length === 0) continue;
 

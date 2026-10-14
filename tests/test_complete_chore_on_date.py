@@ -382,3 +382,65 @@ def test_the_day_lookup_sends_that_weeks_progress():
     src = (Path(__file__).parents[1] / "custom_components/taskmate/websocket.py").read_text()
     block = src[src.index("async def _ws_day_completions") :][:600]
     assert '"week_progress": coordinator.week_progress_on(msg["date"])' in block
+
+
+# ── Switched-off chores and holidays (Copilot review on #1063) ──────────────
+
+
+def test_refuses_a_switched_off_chore_even_with_a_weekly_target():
+    """A weekly-target chore skips the due-day check, which is where a
+    switched-off chore used to be caught."""
+    coord, _ = _setup(_bed(weekly_target=2, due_days=[], enabled=False))
+    with pytest.raises(ValueError, match="switched off"):
+        _run(coord)
+
+
+def test_refuses_a_day_inside_a_holiday():
+    coord, _ = _setup(_bed())
+    coord.is_vacation_day = MagicMock(side_effect=lambda on=None: on == MONDAY)
+    with pytest.raises(ValueError, match="holiday"):
+        _run(coord)
+    _run(coord, day=date(2026, 9, 15))  # the day after is fine
+
+
+# ── What the panel offers for a day ─────────────────────────────────────────
+
+
+def _loggable(chores, completions=(), day=MONDAY):
+    coord, _ = _setup(chores[0], completions)
+    coord.storage.get_chores = MagicMock(return_value=list(chores))
+    with patch.object(coord_chores.dt_util, "_now", NOW):
+        return coord.loggable_on(day)
+
+
+def test_loggable_lists_only_what_could_be_logged_that_day():
+    chores = [
+        _bed(),
+        _bed(id="sat", name="Car", due_days=["saturday"]),
+        _bed(id="off", name="Off", enabled=False),
+        _bed(id="team", name="Wash up", team_size=2),
+        _bed(id="open", name="Extra", open_ended=True),
+        _bed(id="evie", name="Evie's", assigned_to=["evie"]),
+    ]
+    assert _loggable(chores) == {"millie": ["bed"]}
+
+
+def test_loggable_follows_recurrences_not_just_weekdays():
+    every_3 = _bed(schedule_mode="recurring", recurrence="every_3_days", recurrence_start="2026-09-12")
+    assert _loggable([every_3], day=date(2026, 9, 15)) == {"millie": ["bed"]}
+    assert _loggable([every_3], day=MONDAY) == {}
+
+
+def test_loggable_keeps_a_chore_whose_quota_that_day_or_week_is_used_up():
+    """The chart shows those as done tiles that can still be undone, so the
+    lookup leaves the quotas out; logging one more is still refused."""
+    done = ChoreCompletion(chore_id="bed", child_id="millie", completed_at=datetime(2026, 9, 14, 8, tzinfo=UTC))
+    assert _loggable([_bed()], [done]) == {"millie": ["bed"]}
+
+
+def test_the_day_lookup_sends_the_loggable_chores():
+    from pathlib import Path
+
+    src = (Path(__file__).parents[1] / "custom_components/taskmate/websocket.py").read_text()
+    block = src[src.index("async def _ws_day_completions") :][:700]
+    assert '"loggable": coordinator.loggable_on(msg["date"])' in block

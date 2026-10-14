@@ -37,7 +37,7 @@ class PointsMixin:
         chooses, so it adds its quota (target × points) once rather than a slot
         per scheduled day. An open-ended chore has no price of its own, so it
         adds nothing to ``available`` (what was paid for it still counts in
-        ``earned``).
+        ``earned``). A teamwork chore counts each member's share, as paid.
         """
         today = dt_util.now().date()
         week_start = today - timedelta(days=today.weekday())
@@ -72,7 +72,9 @@ class PointsMixin:
                 if getattr(chore, "open_ended", False):
                     continue
                 limit = 1 if mode == "first_come" else max(1, int(getattr(chore, "daily_limit", 1) or 1))
-                points = self.effective_chore_points(chore)
+                # A teamwork chore (#928) pays each member their share (plus any
+                # team bonus), so that is what it can add to a child's week.
+                points = self.team_share_points(chore)
                 weekly_target = int(getattr(chore, "weekly_target", 0) or 0)
                 if weekly_target:
                     available += weekly_target * points

@@ -2431,6 +2431,7 @@ async def _ws_day_completions(hass, connection, msg, coordinator):
         {
             "completions": coordinator.completions_on_date(msg["date"]),
             "week_progress": coordinator.week_progress_on(msg["date"]),
+            "loggable": coordinator.loggable_on(msg["date"]),
         },
     )
 

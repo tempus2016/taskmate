@@ -112,3 +112,14 @@ def test_an_open_ended_chore_adds_nothing_to_whats_available_but_its_pay_still_c
     out = _progress([chore], done)["millie"]
     assert out["available"] == 0
     assert out["earned"] == 7
+
+
+def test_a_teamwork_chore_offers_each_members_share_not_the_whole_pot():
+    """Copilot review on #1063: a split teamwork chore pays each child half."""
+    split = _chore(points=4, team_size=2, team_points_mode="split")
+    assert _progress([split])["millie"]["available"] == 2 * 7
+
+
+def test_a_teamwork_chore_includes_its_team_bonus():
+    each = _chore(points=4, team_size=2, team_points_mode="each", team_bonus=1)
+    assert _progress([each])["millie"]["available"] == 5 * 7

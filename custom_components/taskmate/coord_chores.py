@@ -1159,42 +1159,9 @@ class ChoresMixin:
         if not (today - timedelta(days=self.BACKDATE_MAX_DAYS) <= day < today):
             raise ValueError(f"Pick a day in the last {self.BACKDATE_MAX_DAYS} days, before today.")
 
-        assigned = chore.assigned_to or []
-        if (assigned and child_id not in assigned) or child_id in (getattr(chore, "disabled_for", None) or []):
-            raise ValueError(f"'{chore.name}' isn't one of {child.name}'s jobs.")
-        if (getattr(chore, "assignment_mode", "everyone") or "everyone") != "everyone" or self.teamwork_size(chore):
-            raise ValueError(f"'{chore.name}' rotates or needs a team, so it can't be logged for a past day.")
-        if getattr(chore, "open_ended", False):
-            raise ValueError(
-                f"'{chore.name}' is open-ended, so it needs the child's note and a price. Use the child's card."
-            )
-        if self.auction_winner(chore, day):
-            raise ValueError(f"'{chore.name}' was won at auction that day, so it can't be logged afterwards.")
-
-        # A weekly-target chore (#883) has no fixed days — the child picks them —
-        # so it isn't "due" on any one day; its quota is the gate instead.
-        weekly_target = int(getattr(chore, "weekly_target", 0) or 0)
-        if weekly_target:
-            if self.weekly_target_met(chore, child_id, on=day):
-                raise ValueError(f"'{chore.name}' already reached its {weekly_target} for that week.")
-        elif not self._is_chore_scheduled_for_date(chore, day):
-            raise ValueError(f"'{chore.name}' wasn't due on {day.strftime('%A')}.")
-
-        redo_ids = self.inspection_redo_completion_ids()
-        done_that_day = sum(
-            1
-            for comp in self.storage.get_completions()
-            if comp.id not in redo_ids
-            and comp.chore_id == chore_id
-            and comp.child_id == child_id
-            and not comp.bonus_subtask_id
-            and dt_util.as_local(comp.completed_at).date() == day
-        )
-        daily_limit = max(1, int(getattr(chore, "daily_limit", 1) or 1))
-        if done_that_day >= daily_limit:
-            raise ValueError(
-                f"'{chore.name}' was already done {done_that_day}/{daily_limit} times on {day.strftime('%A')}."
-            )
+        refusal = self._backdate_refusal(chore, child, day)
+        if refusal:
+            raise ValueError(refusal)
 
         points = self.effective_chore_points(chore)
         completed_at = datetime.combine(day, time(12, 0), tzinfo=dt_util.DEFAULT_TIME_ZONE)
@@ -1227,6 +1194,77 @@ class ChoresMixin:
             for comp in self.storage.get_completions()
             if not comp.bonus_subtask_id and dt_util.as_local(comp.completed_at).date() == day
         ]
+
+    def _backdate_refusal(self, chore, child, day: date, *, quota: bool = True) -> str | None:
+        """Why ``chore`` can't be logged for ``child`` on ``day``, or None if it can.
+
+        The one place the past-day rules live: logging a job refuses with this
+        message, and the panel's day lookup offers exactly the chores it lets
+        through, so the dialog never offers a tap TaskMate would then refuse.
+
+        ``quota=False`` leaves out what that day and week have already used
+        (the daily limit and a weekly target's quota). The sticker chart shows
+        those itself, as done tiles that can still be undone.
+        """
+        child_id = child.id
+        if not getattr(chore, "enabled", True):
+            return f"'{chore.name}' is switched off."
+        assigned = chore.assigned_to or []
+        if (assigned and child_id not in assigned) or child_id in (getattr(chore, "disabled_for", None) or []):
+            return f"'{chore.name}' isn't one of {child.name}'s jobs."
+        if (getattr(chore, "assignment_mode", "everyone") or "everyone") != "everyone" or self.teamwork_size(chore):
+            return f"'{chore.name}' rotates or needs a team, so it can't be logged for a past day."
+        if getattr(chore, "open_ended", False):
+            return f"'{chore.name}' is open-ended, so it needs the child's note and a price. Use the child's card."
+        if self.is_vacation_day(day):
+            return f"{day.strftime('%A')} was a holiday, so no jobs were due."
+        if self.auction_winner(chore, day):
+            return f"'{chore.name}' was won at auction that day, so it can't be logged afterwards."
+
+        # A weekly-target chore (#883) has no fixed days — the child picks them —
+        # so it isn't "due" on any one day; its quota is the gate instead.
+        weekly_target = int(getattr(chore, "weekly_target", 0) or 0)
+        if weekly_target:
+            if quota and self.weekly_target_met(chore, child_id, on=day):
+                return f"'{chore.name}' already reached its {weekly_target} for that week."
+        elif not self._is_chore_scheduled_for_date(chore, day):
+            return f"'{chore.name}' wasn't due on {day.strftime('%A')}."
+
+        if not quota:
+            return None
+        redo_ids = self.inspection_redo_completion_ids()
+        done_that_day = sum(
+            1
+            for comp in self.storage.get_completions()
+            if comp.id not in redo_ids
+            and comp.chore_id == chore.id
+            and comp.child_id == child_id
+            and not comp.bonus_subtask_id
+            and dt_util.as_local(comp.completed_at).date() == day
+        )
+        daily_limit = max(1, int(getattr(chore, "daily_limit", 1) or 1))
+        if done_that_day >= daily_limit:
+            return f"'{chore.name}' was already done {done_that_day}/{daily_limit} times on {day.strftime('%A')}."
+        return None
+
+    def loggable_on(self, day: date) -> dict[str, list[str]]:
+        """The chores each child could have had logged for ``day``.
+
+        Everything ``_backdate_refusal`` allows apart from the day's and week's
+        quotas, which the sticker chart shows itself. The panel uses it so its
+        list and the past-day chart follow every schedule TaskMate knows —
+        recurrences, calendar moves, holidays — not just fixed weekdays.
+        """
+        loggable: dict[str, list[str]] = {}
+        for child in self.storage.get_children():
+            ids = [
+                chore.id
+                for chore in self.storage.get_chores()
+                if self._backdate_refusal(chore, child, day, quota=False) is None
+            ]
+            if ids:
+                loggable[child.id] = ids
+        return loggable
 
     def week_progress_on(self, day: date) -> dict[str, dict[str, int]]:
         """Each child's count for every weekly-target chore, in the week of ``day``.

@@ -9733,7 +9733,20 @@ class TaskMatePanel extends HTMLElement {
     return days;
   }
 
-  _backdateChores(childId, dow) {
+  _backdateChores(childId, dow, dayKey) {
+    // Once TaskMate has described the day, offer exactly what it would accept
+    // that hasn't already used up that week's quota. Until then, a first guess
+    // from the weekday alone (logging still checks everything).
+    const info = this._backdateInfo;
+    if (info && info.day === dayKey) {
+      const ids = (info.loggable && info.loggable[childId]) || [];
+      const week = (info.week_progress && info.week_progress[childId]) || {};
+      return (this._state.chores || []).filter(c => {
+        if (!ids.includes(c.id)) return false;
+        const target = Number(c.weekly_target) || 0;
+        return !target || (Number(week[c.id]) || 0) < target;
+      });
+    }
     return (this._state.chores || []).filter(c => {
       if (c.enabled === false) return false;
       if ((c.disabled_for || []).includes(childId)) return false;
@@ -9756,10 +9769,11 @@ class TaskMatePanel extends HTMLElement {
     const child = (this._state.children || []).find(c => c.id === childId);
     if (!child) return;
     const day = this._backdateDays()[0];
-    const first = this._backdateChores(childId, day.dow)[0];
+    const first = this._backdateChores(childId, day.dow, day.v)[0];
     this._backdateKey = "";
     this._backdateUseList = false;
     this._backdateCardReady = undefined;
+    this._backdateInfo = null;
     this._openDialog({ kind: "backdate", data: { child_id: childId, day: day.v, chore_id: first ? first.id : "" } });
     this._backdateCardReady = await this._loadBackdateCard();
     if (this._dialog && this._dialog.kind === "backdate") this._render();
@@ -9816,6 +9830,9 @@ class TaskMatePanel extends HTMLElement {
       if (this._backdateKey !== key) {
         card.setConfig({ entity, child_id: d.child_id, date: d.day, show_claim: false });
         this._backdateKey = key;
+        // Nothing from the previous day may linger while this one loads.
+        card.dayLoggable = undefined;
+        card.dayWeekProgress = {};
         card.dayCompletions = [];
         this._refreshBackdateDay();
         // Changing the day isn't an unsaved edit: every tick is saved as it's made.
@@ -9834,16 +9851,30 @@ class TaskMatePanel extends HTMLElement {
     }
   }
 
+  // What TaskMate says about the chosen day: its completions, that week's
+  // weekly-target progress and the chores it would accept. Feeds both the
+  // card and the plain-list fallback.
   async _refreshBackdateDay() {
-    const card = this._backdateCard;
     const d = this._dialog && this._dialog.data;
-    if (!card || !d) return;
+    if (!d) return;
     const day = d.day;
+    this._backdateInfoPending = day;
     const { ok, res, err } = await this._callWS({ type: "taskmate/day_completions", date: day });
+    if (this._backdateInfoPending === day) this._backdateInfoPending = null;
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
-    if (this._dialog && this._dialog.data.day === day) {
-      card.dayWeekProgress = res.week_progress || {};
+    if (!this._dialog || this._dialog.kind !== "backdate" || this._dialog.data.day !== day) return;
+    this._backdateInfo = {
+      day,
+      loggable: res.loggable || {},
+      week_progress: res.week_progress || {},
+    };
+    const card = this._backdateCard;
+    if (card) {
+      card.dayLoggable = this._backdateInfo.loggable;
+      card.dayWeekProgress = this._backdateInfo.week_progress;
       card.dayCompletions = res.completions || [];
+    } else {
+      this._render();
     }
   }
 
@@ -9864,7 +9895,11 @@ class TaskMatePanel extends HTMLElement {
         `<button type="button" class="tm-btn tm-btn-raised" data-act="close-backdate">${this._t("panel.backdate_finish")}</button>`
       );
     }
-    const chores = this._backdateChores(d.child_id, day.dow);
+    // The plain list needs the day described too; fetched once per day.
+    if ((!this._backdateInfo || this._backdateInfo.day !== day.v) && this._backdateInfoPending !== day.v) {
+      setTimeout(() => this._refreshBackdateDay(), 0);
+    }
+    const chores = this._backdateChores(d.child_id, day.dow, day.v);
     if (!chores.some(c => c.id === d.chore_id)) d.chore_id = chores[0] ? chores[0].id : "";
     return this._dialogShell(
       this._t("panel.backdate_title", { name }),
