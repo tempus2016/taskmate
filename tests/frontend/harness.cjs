@@ -231,10 +231,13 @@ function loadCard(filename, overrides = {}) {
   // `import.meta.url` is how the panel reads its cache-busting version. It is
   // module syntax, which a plain script context cannot parse, so it is given a
   // stand-in URL of the same shape.
-  const source = readFileSync(path.join(WWW, filename), "utf8").replaceAll(
+  let source = readFileSync(path.join(WWW, filename), "utf8").replaceAll(
     "import.meta.url",
     JSON.stringify(`http://localhost/${filename}?v=test`),
   );
+  // A test can rewrite module-only syntax (e.g. an `export` on a base class
+  // factory) into something a plain script context can run.
+  if (overrides.transform) source = overrides.transform(source);
   // A module with top-level `await` is not a valid script, so it is wrapped in
   // an async function. When nothing is actually awaited (the Lit base is found
   // straight away) the whole body still runs synchronously.

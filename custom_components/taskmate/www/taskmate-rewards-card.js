@@ -1112,12 +1112,44 @@ class TaskMateRewardsCard extends LitElement {
     // in-card selection to the first child so the claim button renders (and the
     // child tabs have a selection). Without this, childId stays null and no claim
     // button is ever shown, making rewards impossible to claim.
-    if (this.hass && this.config && !this.config.child_id && !this._selectedChildId) {
+    // Adult profiles (#1071): the default is the first family child, and a
+    // selection that's no longer listed (show_adults switched off) moves back.
+    if (this.hass && this.config && !this.config.child_id) {
       const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
         || this.hass.states?.[this.config.entity]?.attributes || {};
-      const kids = attrs.children || [];
-      if (kids.length) this._selectedChildId = kids[0].id;
+      const kids = this._family(attrs.children || []);
+      if (kids.length && !kids.some((c) => c.id === this._selectedChildId)) this._selectedChildId = kids[0].id;
     }
+  }
+
+  // The children a family-wide view lists (#1061/#1071): adults only with
+  // show_adults, and everyone when the card is pinned to a child_id.
+  _family(children) {
+    return (window.__taskmate_family_children ? window.__taskmate_family_children(children, this.config) : children);
+  }
+
+  /**
+   * Who a reward row lists (#1071). Non-jackpot rewards and the child badges
+   * follow the family filter. A jackpot's breakdown does too, except that an
+   * adult who has put points into it stays listed — dropping them would leave
+   * the segments and the total not adding up.
+   */
+  _rewardPeople(reward, children) {
+    const assignedTo = reward.assigned_to || [];
+    const family = this._family(children);
+    const assigned = (c) => assignedTo.length === 0 || assignedTo.includes(c.id);
+    const relevantChildren = family.filter(assigned);
+    const listed = new Set(family.map((c) => c.id));
+    const hidden = new Set(children.filter((c) => !listed.has(c.id)).map((c) => c.id));
+    const allocations = reward.pool_allocations || {};
+    const contributors = relevantChildren.concat(
+      children.filter((c) => hidden.has(c.id) && assigned(c) && (allocations[c.id] || 0) !== 0)
+    );
+    return {
+      relevantChildren,
+      contributors,
+      badgeIds: assignedTo.filter((cid) => !hidden.has(cid)),
+    };
   }
 
   _selectChild(id) {
@@ -1234,7 +1266,7 @@ class TaskMateRewardsCard extends LitElement {
             : ""}
         </div>
 
-        ${this._renderChildTabs(children)}
+        ${this._renderChildTabs(this._family(children))}
 
         ${anyPoolReward && activeChild ? this._renderSpendableBanner(activeChild, pointsIcon, pointsName) : ''}
 
@@ -1361,10 +1393,8 @@ class TaskMateRewardsCard extends LitElement {
     // All costs are static — just use reward.cost
     const displayCost = this._getDisplayCost(reward);
 
-    // Get relevant children for this reward
-    const relevantChildren = assignedTo.length === 0
-      ? children
-      : children.filter(c => assignedTo.includes(c.id));
+    // Get relevant children for this reward (family-filtered, #1071)
+    const { relevantChildren, contributors, badgeIds } = this._rewardPeople(reward, children);
 
     // Determine active child context
     const childId = this.config?.child_id || this._selectedChildId;
@@ -1381,7 +1411,7 @@ class TaskMateRewardsCard extends LitElement {
     let childContributions = [];
 
     if (isJackpot) {
-      relevantChildren.forEach((child, index) => {
+      contributors.forEach((child, index) => {
         // In pool mode, show allocated points only; in wallet mode show wallet points
         const points = enablePoolMode
           ? (poolAllocations[child.id] || 0)
@@ -1484,7 +1514,7 @@ class TaskMateRewardsCard extends LitElement {
                 <div class="assigned-children">
                   ${assignedTo.length === 0
                     ? html`<span class="child-badge all-children">${this._t('rewards.all_children')}</span>`
-                    : assignedTo.map(
+                    : badgeIds.map(
                         (cid) =>
                           html`<span class="child-badge">${childMap[cid] || cid}</span>`
                       )}
@@ -1858,7 +1888,6 @@ class TaskMateRewardsCard extends LitElement {
    * _getDisplayCost — static only). Returns everything the designed rows need.
    */
   _rewardData(reward, children) {
-    const assignedTo = reward.assigned_to || [];
     const isJackpot = reward.is_jackpot || false;
     const cardForcesPool = this.config.enable_pool_mode === true;
     // Jackpot rewards are always pool-mode (#552): everyone deposits into the
@@ -1867,9 +1896,7 @@ class TaskMateRewardsCard extends LitElement {
     const enablePoolMode = cardForcesPool || reward.pool_enabled === true || isJackpot;
     const displayCost = this._getDisplayCost(reward);
 
-    const relevantChildren = assignedTo.length === 0
-      ? children
-      : children.filter(c => assignedTo.includes(c.id));
+    const { relevantChildren, contributors } = this._rewardPeople(reward, children);
 
     const childId = this.config?.child_id || this._selectedChildId;
     const relevantChild = childId
@@ -1883,7 +1910,7 @@ class TaskMateRewardsCard extends LitElement {
     const childContributions = [];
 
     if (isJackpot) {
-      relevantChildren.forEach((child, index) => {
+      contributors.forEach((child, index) => {
         const points = enablePoolMode
           ? (poolAllocations[child.id] || 0)
           : (child.points || 0);
@@ -2006,7 +2033,7 @@ class TaskMateRewardsCard extends LitElement {
     const body = sortedRewards.length === 0
       ? html`<div class="tmd-empty">${this._t('rewards.empty_title')}<br>${this._t('rewards.empty_subtitle')}</div>`
       : html`
-        ${this._designChildTabs(children)}
+        ${this._designChildTabs(this._family(children))}
         ${(anyPoolReward && activeChild) || activeChild
           ? this._designChildSelector(activeChild, pointsIcon, pointsName, design)
           : ''}
@@ -2064,7 +2091,7 @@ class TaskMateRewardsCard extends LitElement {
     const badges = showChildBadges && !d.isJackpot
       ? (assignedTo.length === 0
           ? html`<span class="chip soft rw-badge rw-badge-all">${this._t('rewards.all_children')}</span>`
-          : assignedTo.map((cid) => html`<span class="chip rw-badge">${childMap[cid] || cid}</span>`))
+          : this._rewardPeople(reward, children).badgeIds.map((cid) => html`<span class="chip rw-badge">${childMap[cid] || cid}</span>`))
       : '';
 
     const costBadge = html`<span class="chip rw-cost"><ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${pointsIcon}"></ha-icon> ${d.displayCost} ${pointsName}</span>`;
@@ -2353,6 +2380,7 @@ class TaskMateRewardsCardEditor extends LitElement {
       show_child_badges: this._t('rewards.editor.show_child_badges'),
       enable_pool_mode: this._t('rewards.editor.enable_pool_mode'),
       expand_to_fit: this._t('rewards.editor.expand_to_fit'),
+      show_adults: this._t('common.editor.show_adults'),
     };
     return labels[schemaEntry.name] ?? schemaEntry.name;
   };
@@ -2365,6 +2393,7 @@ class TaskMateRewardsCardEditor extends LitElement {
       show_child_badges: this._t('rewards.editor.show_child_badges_helper'),
       enable_pool_mode: this._t('rewards.editor.enable_pool_mode_helper'),
       expand_to_fit: this._t('rewards.editor.expand_to_fit_helper'),
+      show_adults: this._t('common.editor.show_adults_helper'),
     };
     return helpers[schemaEntry.name] ?? '';
   };
@@ -2382,13 +2411,14 @@ class TaskMateRewardsCardEditor extends LitElement {
       show_child_badges: this.config.show_child_badges !== false,
       enable_pool_mode: this.config.enable_pool_mode === true,
       expand_to_fit: this.config.expand_to_fit !== false,
+      show_adults: this.config.show_adults === true,
     };
 
     return html`
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
@@ -2427,7 +2457,7 @@ class TaskMateRewardsCardEditor extends LitElement {
       } else if (key === 'show_child_badges' && value === true) {
         // Default is true — omit to keep config minimal
         delete newConfig[key];
-      } else if (key === 'enable_pool_mode' && value === false) {
+      } else if ((key === 'enable_pool_mode' || key === 'show_adults') && value === false) {
         delete newConfig[key];
       } else if (key === 'expand_to_fit' && value === true) {
         // Default is true (fluid) — omit to keep config minimal
