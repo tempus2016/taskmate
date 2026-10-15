@@ -35,6 +35,7 @@ from .coord_points import PointsMixin
 from .coord_quests import QuestsMixin
 from .coord_recaps import RecapsMixin
 from .coord_rejections import RejectionsMixin
+from .coord_repairs import RepairsMixin
 from .coord_reports import ReportsMixin
 from .coord_rewards import RewardsMixin
 from .coord_roulette import RouletteMixin
@@ -106,6 +107,7 @@ class TaskMateCoordinator(
     RejectionsMixin,
     SetupWizardMixin,
     InspectionsMixin,
+    RepairsMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -842,6 +844,7 @@ class TaskMateCoordinator(
         self.disarm_mandatory_schedules()
         self.disarm_recap_schedules()
         self.disarm_inspection_schedules()
+        self.clear_repairs()
         # Flush any pending debounced save so an entry unload/reload can't drop
         # the last mutation (PERF-3).
         await self.storage.async_save_now()
@@ -948,6 +951,8 @@ class TaskMateCoordinator(
         # A no-op unless the child -> entity map actually changed.
         if notifications := getattr(self, "notifications", None):
             notifications.sync_presence_tracking()
+        # Repairs: raise/clear HA repair issues for setups that can't work.
+        self.async_update_repairs()
         version = self.storage.data_version
         cached = getattr(self, "_data_snapshot_cache", None)
         if cached is not None and cached[0] == version:

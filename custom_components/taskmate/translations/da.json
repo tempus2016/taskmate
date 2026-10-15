@@ -1353,6 +1353,59 @@
       "card_design": {
         "name": "Kortdesign"
       }
+    },
+    "event": {
+      "child_activity": {
+        "name": "TaskMate-aktivitet",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Opgave udført",
+              "chore_approved": "Opgave godkendt",
+              "chore_rejected": "Opgave afvist",
+              "chore_approval_undone": "Godkendelse fortrudt",
+              "reward_claimed": "Belønning indløst",
+              "reward_approved": "Belønning godkendt",
+              "reward_rejected": "Belønning afvist",
+              "badge_earned": "Mærke optjent",
+              "level_up": "Nyt niveau",
+              "streak_updated": "Stime opdateret",
+              "streak_freeze_used": "Stimefrysning brugt",
+              "perfect_week": "Perfekt uge",
+              "weekly_target_reached": "Ugens mål nået",
+              "quest_completed": "Mission fuldført",
+              "challenge_completed": "Udfordring fuldført",
+              "bonus_applied": "Bonus givet",
+              "penalty_applied": "Straf givet",
+              "surprise_bonus": "Overraskelsesbonus",
+              "mandatory_missed": "Obligatorisk opgave overset",
+              "team_chore_completed": "Holdopgave udført",
+              "points_gifted": "Point givet væk",
+              "help_requested": "Bad om hjælp",
+              "mood_logged": "Humør registreret",
+              "weekly_goal_reached": "Ugemål nået",
+              "sick_day": "Sygedag",
+              "chore_auto_approved": "Opgave godkendt automatisk",
+              "penalty_redeemed": "Straf tjent tilbage",
+              "raffle_won": "Lodtrækning vundet"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "TaskMate-familieaktivitet",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Familiemål nået",
+              "season_champion": "Sæsonmester",
+              "bounty_posted": "Dusør slået op",
+              "scheduled_change_applied": "Planlagt ændring udført",
+              "raffle_drawn": "Lodtrækning trukket"
+            }
+          }
+        }
+      }
     }
   },
   "exceptions": {
@@ -1382,6 +1435,36 @@
     },
     "calendar_own_event": {
       "message": "Denne begivenhed er udgivet af TaskMate selv, så den tilføjes ikke som en ny opgave."
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate kan ikke sende notifikationer til {who}",
+      "description": "TaskMate er sat op til at give {who} besked via `{service}`, men den tjeneste findes ikke længere — typisk fordi telefonen er fjernet eller omdøbt i Mobile App-integrationen.\n\nÅbn TaskMate-adminpanelet → Notifikationer, og vælg den aktuelle tjeneste for {who}. Reparationen forsvinder af sig selv, når tjenesten findes."
+    },
+    "child_entity_missing": {
+      "title": "{child}s profil bruger en manglende entitet",
+      "description": "{child}s profil bruger `{entity}`, som ikke findes længere. Tilgængelighed, påmindelser efter tilstedeværelse eller profilbilledet, der afhænger af den, virker ikke.\n\nÅbn TaskMate-adminpanelet → Børn, redigér {child}, og vælg en entitet, der findes (eller ryd feltet)."
+    },
+    "chore_entity_missing": {
+      "title": "“{chore}” bruger en manglende entitet",
+      "description": "“{chore}” bruger `{entity}` til at afgøre, hvornår den vises, men entiteten findes ikke længere, så tjekket springes over.\n\nÅbn TaskMate-adminpanelet → Opgaver, redigér “{chore}”, og vælg en entitet, der findes (eller ryd den)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "Opgaven “{chore}” er ikke tildelt nogen",
+      "description": "Alle de børn, “{chore}” var tildelt, er fjernet, så ingen vil nogensinde se den.\n\nÅbn TaskMate-adminpanelet → Opgaver, og tildel “{chore}” til et barn, eller slet den."
+    },
+    "chore_dependency_missing": {
+      "title": "Opgaven “{chore}” kan aldrig låses op",
+      "description": "“{chore}” venter på, at en anden opgave bliver udført først, men den opgave er slettet, så “{chore}” forbliver låst for altid.\n\nÅbn TaskMate-adminpanelet → Opgaver, redigér “{chore}”, og fjern den manglende afhængighed."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "Intet barn kan indløse belønningen “{reward}”",
+      "description": "Alle de børn, “{reward}” var tiltænkt, er fjernet, så ingen kan indløse den.\n\nÅbn TaskMate-adminpanelet → Belønninger, og vælg, hvem “{reward}” er til, eller slet den."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "Belønningen “{reward}” låser intet op",
+      "description": "“{reward}” er sat til at tænde `{entity}`, men den entitet er ikke længere på TaskMates liste over tilladte oplåsninger, så der sker intet, når belønningen godkendes.\n\nÅbn TaskMate-adminpanelet → Indstillinger, og tilføj `{entity}` til listen, eller redigér “{reward}”."
     }
   }
 }

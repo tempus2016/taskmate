@@ -1353,6 +1353,59 @@
       "card_design": {
         "name": "Design de carte"
       }
+    },
+    "event": {
+      "child_activity": {
+        "name": "Activité TaskMate",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Tâche terminée",
+              "chore_approved": "Tâche approuvée",
+              "chore_rejected": "Tâche refusée",
+              "chore_approval_undone": "Approbation annulée",
+              "reward_claimed": "Récompense demandée",
+              "reward_approved": "Récompense approuvée",
+              "reward_rejected": "Récompense refusée",
+              "badge_earned": "Badge obtenu",
+              "level_up": "Niveau supérieur",
+              "streak_updated": "Série mise à jour",
+              "streak_freeze_used": "Gel de série utilisé",
+              "perfect_week": "Semaine parfaite",
+              "weekly_target_reached": "Objectif hebdomadaire atteint",
+              "quest_completed": "Quête terminée",
+              "challenge_completed": "Défi relevé",
+              "bonus_applied": "Bonus appliqué",
+              "penalty_applied": "Pénalité appliquée",
+              "surprise_bonus": "Bonus surprise",
+              "mandatory_missed": "Tâche obligatoire manquée",
+              "team_chore_completed": "Tâche d’équipe terminée",
+              "points_gifted": "Points offerts",
+              "help_requested": "Aide demandée",
+              "mood_logged": "Humeur enregistrée",
+              "weekly_goal_reached": "Objectif de la semaine atteint",
+              "sick_day": "Jour de maladie",
+              "chore_auto_approved": "Tâche approuvée automatiquement",
+              "penalty_redeemed": "Pénalité regagnée",
+              "raffle_won": "Tombola gagnée"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "Activité familiale TaskMate",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Objectif familial atteint",
+              "season_champion": "Champion de la saison",
+              "bounty_posted": "Prime publiée",
+              "scheduled_change_applied": "Modification planifiée appliquée",
+              "raffle_drawn": "Tombola tirée"
+            }
+          }
+        }
+      }
     }
   },
   "exceptions": {
@@ -1382,6 +1435,36 @@
     },
     "calendar_own_event": {
       "message": "Cet événement a été publié par TaskMate lui-même : il n'est donc pas ajouté comme nouvelle tâche."
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate ne peut pas envoyer de notifications à {who}",
+      "description": "TaskMate doit prévenir {who} via `{service}`, mais ce service n’existe plus — généralement parce que le téléphone a été supprimé ou renommé dans l’intégration Mobile App.\n\nOuvrez le panneau d’administration TaskMate → Notifications et choisissez le service actuel pour {who}. Cette réparation disparaît d’elle-même dès que le service existe."
+    },
+    "child_entity_missing": {
+      "title": "Le profil de {child} utilise une entité absente",
+      "description": "Le profil de {child} utilise `{entity}`, qui n’existe plus. La disponibilité, les rappels selon la présence ou la photo de profil qui en dépendent ne fonctionneront pas.\n\nOuvrez le panneau d’administration TaskMate → Enfants, modifiez {child} et choisissez une entité existante (ou videz le champ)."
+    },
+    "chore_entity_missing": {
+      "title": "« {chore} » utilise une entité absente",
+      "description": "« {chore} » consulte `{entity}` pour savoir quand s’afficher, mais cette entité n’existe plus : la vérification est ignorée.\n\nOuvrez le panneau d’administration TaskMate → Tâches, modifiez « {chore} » et choisissez une entité existante (ou videz le champ)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "La tâche « {chore} » n’est attribuée à personne",
+      "description": "Tous les enfants à qui « {chore} » était attribuée ont été supprimés : personne ne la verra jamais.\n\nOuvrez le panneau d’administration TaskMate → Tâches et attribuez « {chore} » à un enfant, ou supprimez-la."
+    },
+    "chore_dependency_missing": {
+      "title": "La tâche « {chore} » ne peut jamais se débloquer",
+      "description": "« {chore} » attend qu’une autre tâche soit faite d’abord, mais celle-ci a été supprimée : « {chore} » reste verrouillée pour toujours.\n\nOuvrez le panneau d’administration TaskMate → Tâches, modifiez « {chore} » et retirez la dépendance manquante."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "Aucun enfant ne peut demander la récompense « {reward} »",
+      "description": "Tous les enfants à qui « {reward} » était destinée ont été supprimés : personne ne peut la demander.\n\nOuvrez le panneau d’administration TaskMate → Récompenses et choisissez à qui « {reward} » est destinée, ou supprimez-la."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "La récompense « {reward} » ne débloque rien",
+      "description": "« {reward} » doit allumer `{entity}`, mais cette entité n’est plus dans la liste d’autorisation de TaskMate : rien ne se passe à l’approbation.\n\nOuvrez le panneau d’administration TaskMate → Paramètres et ajoutez `{entity}` à la liste, ou modifiez « {reward} »."
     }
   }
 }

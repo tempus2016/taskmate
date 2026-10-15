@@ -149,6 +149,7 @@ PLATFORMS: list[Platform] = [
     Platform.NUMBER,
     Platform.SELECT,
     Platform.TODO,
+    Platform.EVENT,
 ]
 
 # Track if services are registered

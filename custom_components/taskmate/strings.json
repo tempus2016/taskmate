@@ -1353,6 +1353,59 @@
       "card_design": {
         "name": "Card design"
       }
+    },
+    "event": {
+      "child_activity": {
+        "name": "TaskMate activity",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Chore completed",
+              "chore_approved": "Chore approved",
+              "chore_rejected": "Chore rejected",
+              "chore_approval_undone": "Chore approval undone",
+              "reward_claimed": "Reward claimed",
+              "reward_approved": "Reward approved",
+              "reward_rejected": "Reward rejected",
+              "badge_earned": "Badge earned",
+              "level_up": "Level up",
+              "streak_updated": "Streak updated",
+              "streak_freeze_used": "Streak freeze used",
+              "perfect_week": "Perfect week",
+              "weekly_target_reached": "Weekly target reached",
+              "quest_completed": "Quest completed",
+              "challenge_completed": "Challenge completed",
+              "bonus_applied": "Bonus applied",
+              "penalty_applied": "Penalty applied",
+              "surprise_bonus": "Surprise bonus",
+              "mandatory_missed": "Mandatory chore missed",
+              "team_chore_completed": "Team chore completed",
+              "points_gifted": "Points gifted",
+              "help_requested": "Help requested",
+              "mood_logged": "Mood logged",
+              "weekly_goal_reached": "Weekly goal reached",
+              "sick_day": "Sick day",
+              "chore_auto_approved": "Chore auto-approved",
+              "penalty_redeemed": "Penalty earned back",
+              "raffle_won": "Raffle won"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "TaskMate family activity",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Family goal reached",
+              "season_champion": "Season champion",
+              "bounty_posted": "Bounty posted",
+              "scheduled_change_applied": "Scheduled change applied",
+              "raffle_drawn": "Raffle drawn"
+            }
+          }
+        }
+      }
     }
   },
   "exceptions": {
@@ -1382,6 +1435,36 @@
     },
     "calendar_own_event": {
       "message": "This event was published by TaskMate itself, so it isn't added as a new chore."
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate can't send notifications to {who}",
+      "description": "TaskMate is set to notify {who} through `{service}`, but that service doesn't exist any more — usually because the phone was removed or renamed in the Mobile App integration.\n\nOpen the TaskMate admin panel → Notifications and pick the current service for {who}. This repair clears itself once the service exists."
+    },
+    "child_entity_missing": {
+      "title": "{child}'s profile uses a missing entity",
+      "description": "{child}'s profile uses `{entity}`, which no longer exists. Availability, presence-aware reminders or the profile picture that rely on it won't work.\n\nOpen the TaskMate admin panel → Children, edit {child} and pick an entity that exists (or clear the field)."
+    },
+    "chore_entity_missing": {
+      "title": "“{chore}” uses a missing entity",
+      "description": "“{chore}” checks `{entity}` to decide when it shows, but that entity no longer exists, so the check is skipped.\n\nOpen the TaskMate admin panel → Chores, edit “{chore}” and pick an entity that exists (or clear it)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "The chore “{chore}” is assigned to nobody",
+      "description": "Every child “{chore}” was assigned to has been removed, so no one will ever see it.\n\nOpen the TaskMate admin panel → Chores and assign “{chore}” to a child, or delete it."
+    },
+    "chore_dependency_missing": {
+      "title": "The chore “{chore}” can never unlock",
+      "description": "“{chore}” waits for another chore to be done first, but that chore has been deleted, so “{chore}” stays locked for ever.\n\nOpen the TaskMate admin panel → Chores, edit “{chore}” and remove the missing dependency."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "No child can claim the reward “{reward}”",
+      "description": "Every child “{reward}” was meant for has been removed, so no one can claim it.\n\nOpen the TaskMate admin panel → Rewards and choose who “{reward}” is for, or delete it."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "The reward “{reward}” unlocks nothing",
+      "description": "“{reward}” is set to switch on `{entity}`, but that entity is no longer on TaskMate's unlock allowlist, so nothing happens when the reward is approved.\n\nOpen the TaskMate admin panel → Settings and add `{entity}` to the unlock allowlist, or edit “{reward}”."
     }
   }
 }

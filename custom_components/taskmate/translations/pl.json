@@ -1353,6 +1353,59 @@
       "card_design": {
         "name": "Wygląd karty"
       }
+    },
+    "event": {
+      "child_activity": {
+        "name": "Aktywność TaskMate",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Zadanie wykonane",
+              "chore_approved": "Zadanie zatwierdzone",
+              "chore_rejected": "Zadanie odrzucone",
+              "chore_approval_undone": "Cofnięto zatwierdzenie",
+              "reward_claimed": "Nagroda odebrana",
+              "reward_approved": "Nagroda zatwierdzona",
+              "reward_rejected": "Nagroda odrzucona",
+              "badge_earned": "Zdobyto odznakę",
+              "level_up": "Nowy poziom",
+              "streak_updated": "Seria zaktualizowana",
+              "streak_freeze_used": "Użyto zamrożenia serii",
+              "perfect_week": "Idealny tydzień",
+              "weekly_target_reached": "Osiągnięto cel tygodniowy",
+              "quest_completed": "Misja ukończona",
+              "challenge_completed": "Wyzwanie ukończone",
+              "bonus_applied": "Przyznano premię",
+              "penalty_applied": "Nałożono karę",
+              "surprise_bonus": "Premia niespodzianka",
+              "mandatory_missed": "Pominięto obowiązkowe zadanie",
+              "team_chore_completed": "Zadanie zespołowe wykonane",
+              "points_gifted": "Podarowano punkty",
+              "help_requested": "Poproszono o pomoc",
+              "mood_logged": "Zapisano nastrój",
+              "weekly_goal_reached": "Osiągnięto własny cel tygodnia",
+              "sick_day": "Dzień choroby",
+              "chore_auto_approved": "Zadanie zatwierdzone automatycznie",
+              "penalty_redeemed": "Odrobiono karę",
+              "raffle_won": "Wygrano losowanie"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "Aktywność rodziny TaskMate",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Osiągnięto cel rodziny",
+              "season_champion": "Mistrz sezonu",
+              "bounty_posted": "Ogłoszono nagrodę",
+              "scheduled_change_applied": "Zastosowano zaplanowaną zmianę",
+              "raffle_drawn": "Rozlosowano"
+            }
+          }
+        }
+      }
     }
   },
   "exceptions": {
@@ -1382,6 +1435,36 @@
     },
     "calendar_own_event": {
       "message": "To wydarzenie zostało opublikowane przez sam TaskMate, więc nie zostanie dodane jako nowy obowiązek."
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate nie może wysyłać powiadomień do: {who}",
+      "description": "TaskMate ma powiadamiać {who} przez `{service}`, ale ta usługa już nie istnieje — zwykle dlatego, że telefon usunięto lub zmieniono jego nazwę w integracji Mobile App.\n\nOtwórz panel administracyjny TaskMate → Powiadomienia i wybierz aktualną usługę dla: {who}. Ta naprawa zniknie sama, gdy usługa będzie istnieć."
+    },
+    "child_entity_missing": {
+      "title": "Profil {child} używa brakującej encji",
+      "description": "Profil {child} używa `{entity}`, który już nie istnieje. Dostępność, przypomnienia zależne od obecności lub zdjęcie profilowe, które z niego korzystają, nie będą działać.\n\nOtwórz panel administracyjny TaskMate → Dzieci, edytuj {child} i wybierz istniejącą encję (lub wyczyść pole)."
+    },
+    "chore_entity_missing": {
+      "title": "„{chore}” używa brakującej encji",
+      "description": "„{chore}” sprawdza `{entity}`, aby zdecydować, kiedy się wyświetlać, ale ta encja już nie istnieje, więc sprawdzenie jest pomijane.\n\nOtwórz panel administracyjny TaskMate → Zadania, edytuj „{chore}” i wybierz istniejącą encję (lub wyczyść pole)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "Zadanie „{chore}” nie jest przypisane nikomu",
+      "description": "Wszystkie dzieci, którym przypisano „{chore}”, zostały usunięte, więc nikt go nie zobaczy.\n\nOtwórz panel administracyjny TaskMate → Zadania i przypisz „{chore}” dziecku albo je usuń."
+    },
+    "chore_dependency_missing": {
+      "title": "Zadanie „{chore}” nigdy się nie odblokuje",
+      "description": "„{chore}” czeka, aż najpierw zostanie wykonane inne zadanie, ale zostało ono usunięte, więc „{chore}” pozostanie zablokowane na zawsze.\n\nOtwórz panel administracyjny TaskMate → Zadania, edytuj „{chore}” i usuń brakującą zależność."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "Żadne dziecko nie może odebrać nagrody „{reward}”",
+      "description": "Wszystkie dzieci, dla których była „{reward}”, zostały usunięte, więc nikt nie może jej odebrać.\n\nOtwórz panel administracyjny TaskMate → Nagrody i wybierz, dla kogo jest „{reward}”, albo ją usuń."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "Nagroda „{reward}” niczego nie odblokowuje",
+      "description": "„{reward}” ma włączać `{entity}`, ale ta encja nie jest już na liście dozwolonych odblokowań TaskMate, więc po zatwierdzeniu nic się nie dzieje.\n\nOtwórz panel administracyjny TaskMate → Ustawienia i dodaj `{entity}` do listy albo edytuj „{reward}”."
     }
   }
 }
