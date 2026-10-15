@@ -456,7 +456,9 @@ export function createIncentiveCard(P) {
     }
 
     _getChildren() {
-      return this._getAttrs().children || [];
+      // Adult profiles stay off the picker unless show_adults is set (#1071).
+      const all = this._getAttrs().children || [];
+      return (window.__taskmate_family_children ? window.__taskmate_family_children(all, this.config) : all);
     }
 
     _getBonuses() {
@@ -1095,6 +1097,7 @@ export function createIncentiveCard(P) {
         title: this._t('common.editor.card_title'),
         show_parent_actions: this._t('common.editor.show_parent_actions'),
         card_design: this._t('common.design.field_label'),
+        show_adults: this._t('common.editor.show_adults'),
       };
       return labels[entry.name] ?? entry.name;
     };
@@ -1103,6 +1106,7 @@ export function createIncentiveCard(P) {
       const helpers = {
         entity: this._t('common.editor.overview_entity_helper'),
         show_parent_actions: this._t('common.editor.show_parent_actions_helper'),
+        show_adults: this._t('common.editor.show_adults_helper'),
       };
       return helpers[entry.name] ?? '';
     };
@@ -1114,6 +1118,7 @@ export function createIncentiveCard(P) {
         title: this.config.title || '',
         show_parent_actions: this.config.show_parent_actions !== false,
         card_design: this.config.card_design || 'global',
+        show_adults: this.config.show_adults === true,
       };
       return html`
         <div class="info-note">
@@ -1123,7 +1128,7 @@ export function createIncentiveCard(P) {
         <ha-form
           .hass=${this.hass}
           .data=${data}
-          .schema=${this._buildSchema()}
+          .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
           .computeLabel=${this._computeLabel}
           .computeHelper=${this._computeHelper}
           @value-changed=${this._formChanged}
@@ -1153,6 +1158,7 @@ export function createIncentiveCard(P) {
       for (const [key, value] of Object.entries(newValues)) {
         if (value === '' || value === null || value === undefined) delete newConfig[key];
         else if (key === 'card_design' && value === 'global') delete newConfig[key];
+        else if (key === 'show_adults' && value === false) delete newConfig[key];
         else newConfig[key] = value;
       }
       this._fire(newConfig);

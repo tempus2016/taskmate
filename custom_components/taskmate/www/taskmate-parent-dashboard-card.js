@@ -1537,7 +1537,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
     return html`
       <ha-form
         .hass=${this.hass}
-        .data=${data}
+        .data=${this.config.show_adults === true ? { ...data, show_adults: true } : data}
         .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}

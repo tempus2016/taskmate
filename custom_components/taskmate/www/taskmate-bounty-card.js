@@ -127,6 +127,20 @@ class TaskMateBountyCard extends LitElement {
     return c ? c.name : "?";
   }
 
+  /**
+   * Who an open-to-everyone bounty shows as able to claim it (#1071). That
+   * avatar row is family-wide even though the card belongs to one child, so
+   * adult profiles stay out of it unless show_adults is set. The card's own
+   * child is always in it.
+   */
+  _everyoneIds() {
+    const all = this._children();
+    const cfg = { ...this.config, child_id: undefined };
+    const listed = (window.__taskmate_family_children ? window.__taskmate_family_children(all, cfg) : all);
+    const me = String(this.config.child_id);
+    return listed.concat(all.filter(c => String(c.id) === me && !listed.includes(c))).map(c => c.id);
+  }
+
   _eligible(b, childId) {
     return !Array.isArray(b.eligible) || b.eligible.length === 0 || b.eligible.map(String).includes(String(childId));
   }
@@ -349,7 +363,7 @@ class TaskMateBountyCard extends LitElement {
 
   _row(b, me, now, holdingClaim) {
     const mine = String(b.claimed_by || "") === me;
-    const eligibleIds = Array.isArray(b.eligible) && b.eligible.length ? b.eligible : this._children().map(c => c.id);
+    const eligibleIds = Array.isArray(b.eligible) && b.eligible.length ? b.eligible : this._everyoneIds();
     const expLeft = b.expires_at ? this._msUntil(b.expires_at, now) : null;
     const showMeta = b.status === "open" || b.status === "claimed";
     let cls = "";
@@ -713,11 +727,13 @@ class TaskMateBountyCardEditor extends LitElement {
     child_id: this._t("bounty.editor.child"),
     title: this._t("common.editor.card_title"),
     card_design: this._t("common.design.field_label"),
+    show_adults: this._t("common.editor.show_adults"),
   }[entry.name] ?? entry.name);
 
   _computeHelper = (entry) => ({
     entity: this._t("common.editor.overview_entity_helper"),
     child_id: this._t("bounty.editor.child_helper"),
+    show_adults: this._t("common.editor.show_adults_helper"),
   }[entry.name] ?? "");
 
   render() {
@@ -727,12 +743,13 @@ class TaskMateBountyCardEditor extends LitElement {
       child_id: this.config.child_id || "",
       title: this.config.title || "",
       card_design: this.config.card_design || "global",
+      show_adults: this.config.show_adults === true,
     };
     return html`
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
@@ -761,7 +778,8 @@ class TaskMateBountyCardEditor extends LitElement {
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
       // "global" is the absence of a per-card override, not a value to store.
-      if (value === "" || value === null || value === undefined || (key === "card_design" && value === "global")) {
+      if (value === "" || value === null || value === undefined || (key === "card_design" && value === "global")
+        || (key === "show_adults" && value === false)) {
         delete newConfig[key];
       } else {
         newConfig[key] = value;
