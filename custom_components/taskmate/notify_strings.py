@@ -70,6 +70,11 @@ DEFAULTS: dict[str, str] = {
     "inspection_reminder": (
         "🔍 {child_name}'s '{chore_name}' inspection closes in {minutes} minutes — pass or fail it before {until}."
     ),
+    "help_requested": "🙋 {child_name} needs help with '{chore_name}'{message_text}",
+    "mood_low": "{emoji} {child_name} had a tough day today. Maybe check in?",
+    "weekly_goal_reached": "🎯 {child_name} reached their weekly goal of {target} {points_name} — +{bonus} bonus!",
+    "penalty_redeemed": "🤝 {child_name} made it right with '{chore_name}' and earned back {points} {points_name}.",
+    "raffle_drawn": "🎟️ {raffle_name}: {winner_name} won! ({tickets} tickets in the draw)",
     # Pieces that callers assemble into the messages above.
     "auction_won": "{child_name} won '{chore_name}' on {date} for {points} {points_name}.",
     "auction_no_bids": "no bids for '{chore_name}', so it goes back to the normal rota.",
@@ -136,6 +141,8 @@ DEFAULTS: dict[str, str] = {
     "sample_bounty": "Wash the car",
     "sample_reason": "Not finished",
     "sample_note": "Brilliant job!",
+    "sample_penalty": "Slammed the door",
+    "sample_raffle": "Saturday raffle",
     # Approval push buttons and the hint for backends that can't show them.
     "action_approve": "Approve",
     "action_reject": "Reject",

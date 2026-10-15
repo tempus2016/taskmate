@@ -358,6 +358,16 @@ NOTIF_TYPE_AUCTION_RESULT: Final = "auction_result"
 NOTIF_TYPE_INSPECTION_STARTED: Final = "inspection_started"
 NOTIF_TYPE_INSPECTION_PASSED: Final = "inspection_passed"
 NOTIF_TYPE_INSPECTION_REMINDER: Final = "inspection_reminder"
+# "I'm stuck": a child asks a parent for help with a chore.
+NOTIF_TYPE_HELP_REQUESTED: Final = "help_requested"
+# Mood check-in: a child said today was a sad or upset day.
+NOTIF_TYPE_MOOD_LOW: Final = "mood_low"
+# Personal weekly goals: a child reached the target they set.
+NOTIF_TYPE_WEEKLY_GOAL_REACHED: Final = "weekly_goal_reached"
+# Make it right: a child earned a penalty back by doing its chore.
+NOTIF_TYPE_PENALTY_REDEEMED: Final = "penalty_redeemed"
+# Raffles: the winner was drawn.
+NOTIF_TYPE_RAFFLE_DRAWN: Final = "raffle_drawn"
 
 # Presence-aware reminders (#926): the default for how long a child must have
 # been away before arriving home earns a "you're home" nudge.

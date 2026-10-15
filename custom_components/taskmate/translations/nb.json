@@ -1324,6 +1324,108 @@
           "description": "ID-en til den åpne inspeksjonen"
         }
       }
+    },
+    "request_help": {
+      "name": "Be om hjelp",
+      "description": "Et barn sier at det står fast på en oppgave. Sender foreldrene et varsel; ingenting fullføres eller hoppes over.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som ber om hjelp"
+        },
+        "chore_id": {
+          "name": "Oppgave-ID",
+          "description": "Oppgaven barnet står fast på"
+        },
+        "message": {
+          "name": "Melding",
+          "description": "Valgfrie ord fra barnet, f.eks. «Jeg når ikke hylla»."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Svar på en hjelpeforespørsel",
+      "description": "Marker et barns hjelpeforespørsel som besvart, så kortet slutter å si at hjelpen er på vei.",
+      "fields": {
+        "request_id": {
+          "name": "Forespørsels-ID",
+          "description": "Forespørselen som skal lukkes"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Registrer humør",
+      "description": "Et barn forteller hvordan dagen var. Én per dag; en ny erstatter den gamle.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet"
+        },
+        "mood": {
+          "name": "Humør",
+          "description": "great, good, ok, sad eller upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Sett sykedag",
+      "description": "Gi et barn en sykedag. Oppgavene skjules, rekken fryses og ingen obligatorisk oppgave regnes som glemt.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som er sykt"
+        },
+        "date": {
+          "name": "Dato",
+          "description": "Dagen (standard i dag). Fra en uke tilbake til en måned frem."
+        },
+        "sick": {
+          "name": "Syk",
+          "description": "Slå av for å ta sykedagen tilbake."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Sett ukesmål",
+      "description": "Sett et barns eget poengmål for uka. Når det nås, betales familiens ukesmålbonus én gang per uke. 0 fjerner det.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet"
+        },
+        "target": {
+          "name": "Mål",
+          "description": "Poeng å tjene denne uka"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Kjøp lodd",
+      "description": "Et barn bruker poeng på lodd i en loddtrekning. Hvert lodd er én sjanse i trekningen.",
+      "fields": {
+        "raffle_id": {
+          "name": "Loddtreknings-ID",
+          "description": "Loddtrekningen"
+        },
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som kjøper"
+        },
+        "tickets": {
+          "name": "Lodd",
+          "description": "Hvor mange lodd som skal kjøpes"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Trekk vinner",
+      "description": "Trekk vinneren av en loddtrekning nå i stedet for å vente på trekningstidspunktet.",
+      "fields": {
+        "raffle_id": {
+          "name": "Loddtreknings-ID",
+          "description": "Loddtrekningen som skal trekkes"
+        }
+      }
     }
   },
   "entity": {

@@ -1324,6 +1324,108 @@
           "description": "ID-en til den opne inspeksjonen"
         }
       }
+    },
+    "request_help": {
+      "name": "Be om hjelp",
+      "description": "Eit barn seier at det står fast på ei oppgåve. Sender foreldra eit varsel; ingenting blir fullført eller hoppa over.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som bed om hjelp"
+        },
+        "chore_id": {
+          "name": "Oppgåve-ID",
+          "description": "Oppgåva barnet står fast på"
+        },
+        "message": {
+          "name": "Melding",
+          "description": "Valfrie ord frå barnet, t.d. «Eg når ikkje hylla»."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Svar på ein hjelpeførespurnad",
+      "description": "Merk ein hjelpeførespurnad frå eit barn som svara, så kortet sluttar å seie at hjelpa er på veg.",
+      "fields": {
+        "request_id": {
+          "name": "Førespurnads-ID",
+          "description": "Førespurnaden som skal lukkast"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Registrer humør",
+      "description": "Eit barn fortel korleis dagen var. Éin per dag; ein ny erstattar den gamle.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet"
+        },
+        "mood": {
+          "name": "Humør",
+          "description": "great, good, ok, sad eller upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Set sjukedag",
+      "description": "Gje eit barn ein sjukedag. Oppgåvene blir gøymde, rekkja blir fryst og inga obligatorisk oppgåve blir rekna som gløymd.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som er sjukt"
+        },
+        "date": {
+          "name": "Dato",
+          "description": "Dagen (standard i dag). Frå ei veke tilbake til ein månad fram."
+        },
+        "sick": {
+          "name": "Sjuk",
+          "description": "Slå av for å ta sjukedagen tilbake."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Set vekesmål",
+      "description": "Set eit barn sitt eige poengmål for veka. Når det blir nådd, blir familien sin vekesmålbonus betalt éin gong per veke. 0 fjernar det.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet"
+        },
+        "target": {
+          "name": "Mål",
+          "description": "Poeng å tene denne veka"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Kjøp lodd",
+      "description": "Eit barn brukar poeng på lodd i ei loddtrekning. Kvart lodd er éin sjanse i trekkinga.",
+      "fields": {
+        "raffle_id": {
+          "name": "Loddtreknings-ID",
+          "description": "Loddtrekninga"
+        },
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som kjøper"
+        },
+        "tickets": {
+          "name": "Lodd",
+          "description": "Kor mange lodd som skal kjøpast"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Trekk vinnar",
+      "description": "Trekk vinnaren av ei loddtrekning no i staden for å vente på trekketidspunktet.",
+      "fields": {
+        "raffle_id": {
+          "name": "Loddtreknings-ID",
+          "description": "Loddtrekninga som skal trekkjast"
+        }
+      }
     }
   },
   "entity": {

@@ -252,6 +252,24 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 **({"rejections": rej} if (rej := coordinator.rejections_for_child(c.id)) else {}),
                 # Surprise inspections (#981): today's banner(s), only when any.
                 **({"inspections": insp} if (insp := coordinator.inspections_for_child(c.id)) else {}),
+                # "I'm stuck": chores with an open help request, newest first.
+                **({"help": [r["chore_id"] for r in helps]} if (helps := coordinator.open_help_requests(c.id)) else {}),
+                # Today's mood, once the child has said.
+                **({"mood_today": mood} if (mood := coordinator.mood_on(c.id)) else {}),
+                **({"sick_today": True} if coordinator.is_sick_day(c.id) else {}),
+                # Personal weekly goal, while the feature is on.
+                **({"weekly_goal": goal} if (goal := coordinator.weekly_goal_state(c.id)) is not None else {}),
+                # Make it right: open offers to earn a penalty back.
+                **(
+                    {
+                        "redemptions": [
+                            {k: o[k] for k in ("id", "chore_id", "chore_name", "penalty_name", "points", "expires")}
+                            for o in offers
+                        ]
+                    }
+                    if (offers := coordinator.open_redemptions(c.id))
+                    else {}
+                ),
             }
         )
     return summary

@@ -808,7 +808,8 @@ class ChoresMixin:
         # time, not just in the card UI — otherwise a caller can award every pool
         # member by completing the chore once per child_id (one call each).
         assignment_mode = getattr(chore, "assignment_mode", "everyone")
-        if assignment_mode != "everyone":
+        # A make-it-right offer is this child's own job, outside any rotation.
+        if assignment_mode != "everyone" and self.open_redemption_for(chore.id, child_id) is None:
             if self._is_rotation_done_today(chore):
                 _LOGGER.debug(
                     "complete_chore no-op: '%s' already completed today (rotation quota filled)",
@@ -1095,6 +1096,7 @@ class ChoresMixin:
             completion.points_awarded = total_awarded
             self.storage.update_completion(completion)
             await self._async_pay_weekly_target_bonus(chore, child, completion)
+            await self._async_redeem_penalty(chore, child, completion)
 
         self.hass.bus.async_fire(
             "taskmate_chore_completed",
@@ -1264,6 +1266,8 @@ class ChoresMixin:
             return f"'{chore.name}' is open-ended, so it needs the child's note and a price. Use the child's card."
         if self.is_vacation_day(day):
             return f"{day.strftime('%A')} was a holiday, so no jobs were due."
+        if self.is_sick_day(child.id, day):
+            return f"{day.strftime('%A')} was {child.name}'s sick day, so no jobs were due."
         # A birthday with "chores off" is a day off for everything but mandatory
         # chores, the same rule today's chore list follows.
         if not getattr(chore, "mandatory", False) and self.is_birthday_day_off(child, day):
@@ -1605,6 +1609,7 @@ class ChoresMixin:
                     if getattr(completion, "bounty_id", ""):
                         self._bounty_on_approved(completion)
                     await self._async_pay_weekly_target_bonus(chore, child, completion)
+                    await self._async_redeem_penalty(chore, child, completion)
 
                     # Dismiss the mobile approval push now this completion is
                     # reviewed (covers single approve AND "approve all", which
@@ -1753,6 +1758,8 @@ class ChoresMixin:
                 # Outside the streak block: a backdated job never moved the
                 # streak, but it can complete a week's target like any other.
                 self._reverse_weekly_target_bonus(completion, child)
+                # And a penalty it earned back (make it right).
+                self._reverse_penalty_redemption(completion, child)
 
         bonus_completions: list = []
         is_parent = not target_completion.bonus_subtask_id
@@ -1994,6 +2001,11 @@ class ChoresMixin:
         # Check if chore is globally disabled (soft-disabled one-shot chores)
         if not getattr(chore, "enabled", True):
             return False
+
+        # Make it right: an open offer to earn a penalty back makes its chore
+        # doable now, whatever its schedule says.
+        if self.open_redemption_for(chore.id, child_id) is not None:
+            return True
 
         # Check per-child disabling (one-shot chores completed by this child)
         disabled_for = getattr(chore, "disabled_for", [])
@@ -2318,6 +2330,9 @@ class ChoresMixin:
         """
         if not self.is_chore_available_for_child(chore, child_id):
             return False
+        # An open make-it-right offer is for this child, today, whatever the chore's rota.
+        if self.open_redemption_for(chore.id, child_id) is not None:
+            return True
         assigned = getattr(chore, "assigned_to", []) or []
         if assigned and child_id not in assigned:
             return False

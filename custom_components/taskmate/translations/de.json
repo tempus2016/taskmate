@@ -1324,6 +1324,108 @@
           "description": "Die ID der offenen Kontrolle"
         }
       }
+    },
+    "request_help": {
+      "name": "Um Hilfe bitten",
+      "description": "Ein Kind sagt, dass es bei einer Aufgabe nicht weiterkommt. Schickt den Eltern eine Benachrichtigung; nichts wird erledigt oder übersprungen.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das Kind, das um Hilfe bittet"
+        },
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die Aufgabe, bei der es hängt"
+        },
+        "message": {
+          "name": "Nachricht",
+          "description": "Optionale Worte des Kindes, z. B. „Ich komme nicht ans Regal“."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Hilfeanfrage beantworten",
+      "description": "Markiert die Hilfeanfrage eines Kindes als beantwortet, damit seine Karte nicht mehr „Hilfe ist unterwegs“ sagt.",
+      "fields": {
+        "request_id": {
+          "name": "Anfrage-ID",
+          "description": "Die Anfrage, die geschlossen wird"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Stimmung erfassen",
+      "description": "Ein Kind sagt, wie sein Tag war. Einmal pro Tag; ein neuer Eintrag ersetzt den alten.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das Kind"
+        },
+        "mood": {
+          "name": "Stimmung",
+          "description": "great, good, ok, sad oder upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Krankheitstag setzen",
+      "description": "Gib einem Kind einen Krankheitstag. Seine Aufgaben werden ausgeblendet, die Serie eingefroren und keine Pflichtaufgabe gilt als verpasst.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das kranke Kind"
+        },
+        "date": {
+          "name": "Datum",
+          "description": "Der Tag (Standard: heute). Von einer Woche zurück bis einen Monat voraus."
+        },
+        "sick": {
+          "name": "Krank",
+          "description": "Ausschalten, um den Krankheitstag zurückzunehmen."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Wochenziel setzen",
+      "description": "Setzt das eigene Punkteziel eines Kindes für die Woche. Wer es erreicht, bekommt einmal pro Woche den Wochenziel-Bonus. 0 löscht es.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das Kind"
+        },
+        "target": {
+          "name": "Ziel",
+          "description": "Punkte, die diese Woche verdient werden sollen"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Lose kaufen",
+      "description": "Ein Kind gibt Punkte für Lose einer Verlosung aus. Jedes Los ist eine Chance bei der Ziehung.",
+      "fields": {
+        "raffle_id": {
+          "name": "Verlosungs-ID",
+          "description": "Die Verlosung"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das Kind, das kauft"
+        },
+        "tickets": {
+          "name": "Lose",
+          "description": "Wie viele Lose gekauft werden"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Verlosung ziehen",
+      "description": "Zieht den Gewinner einer Verlosung sofort, statt auf den Ziehungszeitpunkt zu warten.",
+      "fields": {
+        "raffle_id": {
+          "name": "Verlosungs-ID",
+          "description": "Die Verlosung, die gezogen wird"
+        }
+      }
     }
   },
   "entity": {

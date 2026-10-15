@@ -1324,6 +1324,108 @@
           "description": "L'ID de l'inspection en cours"
         }
       }
+    },
+    "request_help": {
+      "name": "Demander de l’aide",
+      "description": "Un enfant indique qu’il est bloqué sur une tâche. Envoie une notification aux parents ; rien n’est terminé ni sauté.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l’enfant",
+          "description": "L’enfant qui demande de l’aide"
+        },
+        "chore_id": {
+          "name": "ID de la tâche",
+          "description": "La tâche sur laquelle il est bloqué"
+        },
+        "message": {
+          "name": "Message",
+          "description": "Mots facultatifs de l’enfant, p. ex. « Je n’atteins pas l’étagère »."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Répondre à une demande d’aide",
+      "description": "Marque la demande d’aide d’un enfant comme traitée, pour que sa carte cesse d’indiquer que l’aide arrive.",
+      "fields": {
+        "request_id": {
+          "name": "ID de la demande",
+          "description": "La demande à clore"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Enregistrer l’humeur",
+      "description": "Un enfant dit comment s’est passée sa journée. Une par jour ; une nouvelle remplace l’ancienne.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l’enfant",
+          "description": "L’enfant"
+        },
+        "mood": {
+          "name": "Humeur",
+          "description": "great, good, ok, sad ou upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Jour de maladie",
+      "description": "Accorde un jour de maladie à un enfant. Ses tâches sont masquées, sa série est gelée et aucune tâche obligatoire n’est manquée.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l’enfant",
+          "description": "L’enfant malade"
+        },
+        "date": {
+          "name": "Date",
+          "description": "Le jour (aujourd’hui par défaut). D’une semaine en arrière à un mois en avant."
+        },
+        "sick": {
+          "name": "Malade",
+          "description": "Désactivez pour annuler le jour de maladie."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Fixer l’objectif de la semaine",
+      "description": "Fixe l’objectif de points personnel d’un enfant pour la semaine. L’atteindre verse le bonus d’objectif une fois par semaine. 0 l’efface.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l’enfant",
+          "description": "L’enfant"
+        },
+        "target": {
+          "name": "Objectif",
+          "description": "Points à gagner cette semaine"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Acheter des tickets",
+      "description": "Un enfant dépense des points en tickets de tombola. Chaque ticket est une chance au tirage.",
+      "fields": {
+        "raffle_id": {
+          "name": "ID de la tombola",
+          "description": "La tombola"
+        },
+        "child_id": {
+          "name": "ID de l’enfant",
+          "description": "L’enfant qui achète"
+        },
+        "tickets": {
+          "name": "Tickets",
+          "description": "Nombre de tickets à acheter"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Tirer la tombola",
+      "description": "Tire le gagnant d’une tombola maintenant, sans attendre l’heure du tirage.",
+      "fields": {
+        "raffle_id": {
+          "name": "ID de la tombola",
+          "description": "La tombola à tirer"
+        }
+      }
     }
   },
   "entity": {

@@ -17,11 +17,20 @@ from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import (
+    DOMAIN,
+    NOTIF_TYPE_HELP_REQUESTED,
+    NOTIF_TYPE_PENALTY_REDEEMED,
+    NOTIF_TYPE_RAFFLE_DRAWN,
+    NOTIF_TYPE_WEEKLY_GOAL_REACHED,
+)
+from .coord_notifications import notification_event_name
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
 
 # Bus events that are about one child, by the event type the entity reports.
+# Moments that only a notification announces take that notification's event
+# name, so they stay right if the feature ever fires its own event (#1014).
 CHILD_EVENTS: dict[str, str] = {
     "chore_completed": "taskmate_chore_completed",
     "chore_approved": "taskmate_chore_approved",
@@ -44,12 +53,12 @@ CHILD_EVENTS: dict[str, str] = {
     "mandatory_missed": "taskmate_mandatory_missed",
     "team_chore_completed": "taskmate_team_chore_completed",
     "points_gifted": "taskmate_points_gifted",
-    "help_requested": "taskmate_help_requested",
+    "help_requested": notification_event_name(NOTIF_TYPE_HELP_REQUESTED),
     "mood_logged": "taskmate_mood_logged",
-    "weekly_goal_reached": "taskmate_weekly_goal_reached",
+    "weekly_goal_reached": notification_event_name(NOTIF_TYPE_WEEKLY_GOAL_REACHED),
     "sick_day": "taskmate_sick_day",
     "chore_auto_approved": "taskmate_chore_auto_approved",
-    "penalty_redeemed": "taskmate_penalty_redeemed",
+    "penalty_redeemed": notification_event_name(NOTIF_TYPE_PENALTY_REDEEMED),
     "raffle_won": "taskmate_raffle_won",
 }
 
@@ -59,7 +68,7 @@ FAMILY_EVENTS: dict[str, str] = {
     "season_champion": "taskmate_season_champion",
     "bounty_posted": "taskmate_bounty_posted",
     "scheduled_change_applied": "taskmate_scheduled_change_applied",
-    "raffle_drawn": "taskmate_raffle_drawn",
+    "raffle_drawn": notification_event_name(NOTIF_TYPE_RAFFLE_DRAWN),
 }
 
 # Payload keys never copied onto the entity: they are long or internal.

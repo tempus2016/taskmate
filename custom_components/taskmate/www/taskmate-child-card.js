@@ -43,6 +43,9 @@ class TaskMateChildCard extends LitElement {
       _photoCapture: { type: Object },
       _extraCapture: { type: Object },
       _quantityCapture: { type: Object },
+      _goalSheet: { type: Object },
+      _helpSent: { type: Object },
+      _moodSent: { type: Object },
       _inspCelebration: { type: Object },
     };
   }
@@ -1420,6 +1423,35 @@ class TaskMateChildCard extends LitElement {
       .tm-qty-unit { text-align: center; font-weight: 700; opacity: .75; }
       .tm-qty-worth { text-align: center; font-size: 1.05rem; font-weight: 800; color: var(--fun-green, #2e9e5b); margin: 6px 0 2px; }
       .tm-minutes-left { white-space: nowrap; }
+      .tm-tag-wrap { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+      .tm-help-btn { border: 0; cursor: pointer; font-family: inherit; line-height: inherit; }
+      .tm-help-on { opacity: .85; }
+      .tm-care-wrap { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 10px; }
+      .tm-care-wrap.tmd { margin: 4px 0 10px; }
+      .tm-care { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; text-align: start;
+        background: var(--secondary-background-color, #f3f3f3); color: var(--primary-text-color, #33373d); font: inherit; font-size: .9rem; line-height: 1.3; border: 0; }
+      .tm-care .ic { font-size: 1.6rem; line-height: 1; }
+      .tm-care-sick { background: #e8f1ff; color: #1e3a6e; }
+      .tm-care-redeem { background: #fff4e0; color: #6b4200; }
+      .tm-care-goal { background: #ecf8ef; color: #1d5b2c; }
+      .tm-care-goal.reached { background: #d9f5df; }
+      .tm-goal-set { cursor: pointer; width: 100%; }
+      .tm-goal-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+      .tm-goal-bar { display: block; height: 8px; border-radius: 6px; background: rgba(0,0,0,.08); overflow: hidden; }
+      .tm-goal-bar i { display: block; height: 100%; background: #2e9e5b; border-radius: 6px; }
+      .tm-goal-change { border: 0; background: rgba(0,0,0,.06); color: inherit; border-radius: 10px; padding: 6px 10px; font: inherit; font-size: .8rem; cursor: pointer; }
+      .tm-goal-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 6px 0; }
+      .tm-goal-chip { border: 2px solid var(--divider-color, #ddd); background: var(--card-background-color, #fff); color: var(--primary-text-color);
+        border-radius: 999px; padding: 6px 14px; font: inherit; font-weight: 700; cursor: pointer; }
+      .tm-goal-chip.on { border-color: #2e9e5b; background: #ecf8ef; color: #1d5b2c; }
+      .tm-mood { margin: 12px 0 4px; padding: 12px; border-radius: 16px; background: var(--secondary-background-color, #f3f3f3); text-align: center; }
+      .tm-mood .q { font-weight: 700; margin-bottom: 8px; }
+      .tm-mood .faces { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+      .tm-mood .face { font-size: 2rem; line-height: 1; border: 0; background: var(--card-background-color, #fff); border-radius: 50%;
+        width: 54px; height: 54px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+      .tm-mood .face:active { transform: scale(.92); }
+      .tm-mood.said { font-weight: 700; padding: 10px; }
+      .tm-mood.classic { margin: 12px 16px 16px; }
       .extra-points { font-size: 1.05rem; font-weight: 800; }
       .extra-note:focus, .extra-points:focus { outline: none; border-color: var(--fun-purple); }
       .extra-points-label {
@@ -2395,6 +2427,7 @@ class TaskMateChildCard extends LitElement {
           </div>
         ` : ''}
 
+        ${this._renderCareBlocks(child, "classic")}
         <div class="chores-container">
           ${childChores.length === 0
             ? this._renderEmptyState()
@@ -2430,6 +2463,7 @@ class TaskMateChildCard extends LitElement {
               `}
         </div>
 
+        ${this._renderMoodStrip(child, ...this._moodCounts(childChores, child, todaysCompletions), "classic")}
         ${this._renderSwappable(allChores, child, pointsIcon)}
 
         ${this._celebrating ? this._renderCelebration() : ""}
@@ -2866,9 +2900,11 @@ class TaskMateChildCard extends LitElement {
                 : ""}
             </div>
           </div>` : ""}
+        ${this._renderCareBlocks(child, "tmd")}
         ${sectionLine}
         ${this._renderRoulette(child, childChores, pointsIcon)}
         ${body}
+        ${this._renderMoodStrip(child, ...this._moodCounts(childChores, child, todaysCompletions), "tmd")}
         ${this._renderSwappable(allChores, child, pointsIcon)}
       </div>
       ${this._celebrating ? this._renderCelebration() : ""}
@@ -2951,9 +2987,10 @@ class TaskMateChildCard extends LitElement {
       : "";
     return html`
       ${r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || weeklyLabel || (r.team && !r.done)
-        || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit)) ? html`
+        || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit || this._helpEnabled())) ? html`
         <div class="tmd-meta">
           ${this._choreExtraTags(r.chore, r.done, "tmd-tag")}
+          ${r.done ? "" : this._renderHelp(r.chore, r.child, "tmd-tag")}
           ${r.mandatory ? html`<span class="tmd-tag mandatory">⚠ ${this._t("child.mandatory")}</span>` : ""}
           ${r.auction ? html`<span class="tmd-tag auction">🔨 ${this._t("child.won_at_auction")}</span>` : ""}
           ${r.photo ? html`<span class="tmd-tag photo">📷 ${this._t("child.photo_needed")}</span>` : ""}
@@ -3186,6 +3223,13 @@ class TaskMateChildCard extends LitElement {
 
     // First, filter chores for this child and time category
     const filteredChores = chores.filter(chore => {
+      // Penalty amends: an open offer to earn a penalty back makes its chore
+      // this child's job today, whatever its rota says (the backend agrees).
+      const redeemOffer = (child.redemptions || []).some(o => o.chore_id === chore.id);
+      // Sick day: nothing is owed today. What was already ticked stays listed,
+      // so it can still be undone.
+      if (child.sick_today && !allCompletionsToday.some(c => c.chore_id === chore.id
+          && String(c.child_id) === childId && !c.bonus_subtask_id)) return false;
       // Check if chore is disabled (one-shot chores that are completed or expired)
       if (chore.enabled === false) return false;
       const disabledFor = chore.disabled_for || [];
@@ -3299,6 +3343,8 @@ class TaskMateChildCard extends LitElement {
         }
       }
 
+      if (redeemOffer) isAssignedToChild = true;
+
       // Check visibility_entity — if set, chore is only visible if entity matches visibility_state
       // Supports exact match, numeric comparisons, and attributes
       const visibilityEntity = chore.visibility_entity || '';
@@ -3365,10 +3411,10 @@ class TaskMateChildCard extends LitElement {
       // false when today's occurrence was moved away or removed, true when one
       // was moved onto today, and absent otherwise. A one-off chore dated for
       // another day carries occ_today false too (#992).
-      if (chore.occ_today === false) return false;
+      if (chore.occ_today === false && !redeemOffer) return false;
       const dueDays = chore.due_days || [];
       const hasDueDays = dueDays.length > 0;
-      const isDueToday = chore.occ_today === true || !hasDueDays || dueDays.includes(todayDow);
+      const isDueToday = redeemOffer || chore.occ_today === true || !hasDueDays || dueDays.includes(todayDow);
 
       // If due_days filtering is on and mode is "hide", exclude not-due chores
       if (showDueDaysOnly && hasDueDays && !isDueToday && dueDaysMode === 'hide') {
@@ -4128,8 +4174,8 @@ class TaskMateChildCard extends LitElement {
                 <span class="photo-badge">✍️ ${this._t('child.open_ended_tag')}</span>
               </div>
             ` : ''}
-            ${(chore.estimated_minutes || chore.quantity_unit) && !isCompletedForToday ? html`
-              <div class="recurrence-label">${this._choreExtraTags(chore, false, 'photo-badge')}</div>
+            ${(chore.estimated_minutes || chore.quantity_unit || this._helpEnabled()) && !isCompletedForToday ? html`
+              <div class="tm-tag-wrap">${this._choreExtraTags(chore, false, 'photo-badge')}${this._renderHelp(chore, child, 'photo-badge')}</div>
             ` : ''}
             ${team ? html`<div>${this._renderTeamProgress(team, 'team-label')}</div>` : ''}
           </div>
@@ -5039,6 +5085,170 @@ class TaskMateChildCard extends LitElement {
       ${mins && !done ? html`<span class="${cls}">⏱ ${this._t("child.minutes_tag", { minutes: mins })}</span>` : ""}`;
   }
 
+  // ── Help, mood, sick day, weekly goal, make it right ─────────────────────
+
+  _helpEnabled() {
+    return this.config.show_help_button !== false && this.config.pre_reader !== true;
+  }
+
+  /** Done for today: completions (incl. optimistic ones) reach the daily limit. */
+  _isDoneForToday(chore, child, todaysCompletions) {
+    const done = (todaysCompletions || []).filter(c => c.chore_id === chore.id && c.child_id === child.id && !c.bonus_subtask_id).length;
+    const optimistic = (this._optimisticCompletions || {})[`${chore.id}_${child.id}`]?.count || 0;
+    return done + optimistic >= (Number(chore.daily_limit) || 1);
+  }
+
+  /** "🙋 I'm stuck" on an outstanding chore, or "help is on its way" once asked. */
+  _renderHelp(chore, child, cls) {
+    if (!this._helpEnabled()) return "";
+    const asked = (child.help || []).includes(chore.id) || (this._helpSent || {})[`${chore.id}_${child.id}`];
+    if (asked) return html`<span class="${cls} tm-help-on">🙋 ${this._t("child.help_on_way")}</span>`;
+    return html`<button type="button" class="${cls} tm-help-btn"
+      @click=${(e) => { e.stopPropagation(); this._askForHelp(chore, child); }}>🙋 ${this._t("child.help_ask")}</button>`;
+  }
+
+  async _askForHelp(chore, child) {
+    const key = `${chore.id}_${child.id}`;
+    this._helpSent = { ...(this._helpSent || {}), [key]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "request_help", { child_id: child.id, chore_id: chore.id });
+    } catch (err) {
+      // "Already on its way" is fine to swallow; anything else un-marks the row.
+      if (!/on its way/i.test(String(err?.message || err))) {
+        this._helpSent = { ...this._helpSent, [key]: false };
+        this.requestUpdate();
+      }
+    }
+  }
+
+  /** Sick-day banner, make-it-right offers and the weekly goal, above the chores. */
+  _renderCareBlocks(child, mode) {
+    const parts = [];
+    if (child.sick_today) {
+      parts.push(html`<div class="tm-care tm-care-sick" role="status">
+        <span class="ic">🤒</span><span><b>${this._t("child.sick_title")}</b><br>${this._t("child.sick_body")}</span></div>`);
+    }
+    for (const offer of child.redemptions || []) {
+      parts.push(html`<div class="tm-care tm-care-redeem" role="note">
+        <span class="ic">🤝</span><span><b>${this._t("child.redeem_title")}</b><br>${this._t("child.redeem_body", {
+          chore: offer.chore_name, points: offer.points, date: this._shortDate(offer.expires) })}</span></div>`);
+    }
+    const goal = child.weekly_goal;
+    if (goal && this.config.show_weekly_goal !== false) {
+      if (!goal.target) {
+        parts.push(html`<button type="button" class="tm-care tm-care-goal tm-goal-set" @click=${() => this._openGoalSheet(child)}>
+          <span class="ic">🎯</span><span><b>${this._t("child.goal_set_title")}</b><br>${goal.bonus
+            ? this._t("child.goal_set_body", { bonus: goal.bonus }) : this._t("child.goal_set_body_plain")}</span></button>`);
+      } else {
+        const pct = Math.min(100, Math.round(((goal.earned || 0) / goal.target) * 100));
+        parts.push(html`<div class="tm-care tm-care-goal ${goal.reached ? "reached" : ""}">
+          <span class="ic">🎯</span>
+          <span class="tm-goal-body">
+            <b>${goal.reached ? (goal.bonus ? this._t("child.goal_reached", { bonus: goal.bonus }) : this._t("child.goal_reached_plain")) : _ltrNums(this._t("child.goal_progress", { earned: goal.earned || 0, target: goal.target }))}</b>
+            <span class="tm-goal-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></span>
+          </span>
+          <button type="button" class="tm-goal-change" @click=${() => this._openGoalSheet(child)}>${this._t("child.goal_change")}</button>
+        </div>`);
+      }
+    }
+    if (!parts.length) return "";
+    return html`<div class="tm-care-wrap ${mode}">${parts}</div>${this._renderGoalSheet()}`;
+  }
+
+  _shortDate(iso) {
+    const d = iso ? new Date(`${iso}T12:00:00`) : null;
+    if (!d || isNaN(d)) return iso || "";
+    const today = new Date();
+    if (d.toDateString() === today.toDateString()) return this._t("child.redeem_today");
+    return d.toLocaleDateString(this.hass?.locale?.language || undefined, { weekday: "long" });
+  }
+
+  _openGoalSheet(child) {
+    const goal = child.weekly_goal || {};
+    const avail = Number(child.week_points_available) || 0;
+    this._goalSheet = { child, value: goal.target || (avail ? Math.max(10, Math.round(avail * 0.6 / 10) * 10) : 50), avail };
+    this.requestUpdate();
+  }
+
+  _renderGoalSheet() {
+    const sheet = this._goalSheet;
+    if (!sheet) return "";
+    const close = () => { this._goalSheet = null; this.requestUpdate(); };
+    const set = (v) => { this._goalSheet = { ...sheet, value: Math.max(0, Math.min(100000, Math.round(Number(v) || 0))) }; this.requestUpdate(); };
+    const base = sheet.avail || 100;
+    const chips = [...new Set([0.25, 0.5, 0.75, 1].map(f => Math.max(5, Math.round(base * f / 5) * 5)))];
+    const save = () => this._saveGoalSheet();
+    return html`
+      <div class="photo-overlay" @click=${close}>
+        <div class="photo-sheet tm-goal-sheet" role="dialog" aria-modal="true" aria-label="${this._t("child.goal_sheet_title")}" @click=${(e) => e.stopPropagation()}>
+          <div class="photo-title">🎯 ${this._t("child.goal_sheet_title")}</div>
+          <div class="photo-dropzone-hint">${sheet.avail ? this._t("child.goal_sheet_hint", { available: sheet.avail }) : ""}</div>
+          <div class="tm-goal-chips">
+            ${chips.map(v => html`<button type="button" class="tm-goal-chip ${v === sheet.value ? "on" : ""}" @click=${() => set(v)}>${v}</button>`)}
+          </div>
+          <div class="tm-qty-row">
+            <button class="tm-qty-step" aria-label="−" @click=${() => set(sheet.value - 5)}>−</button>
+            <input class="tm-qty-input" type="number" min="0" inputmode="numeric" .value=${String(sheet.value)}
+                   aria-label="${this._t("child.goal_sheet_title")}" @input=${(e) => set(e.target.value)}>
+            <button class="tm-qty-step" aria-label="+" @click=${() => set(sheet.value + 5)}>+</button>
+          </div>
+          <div class="photo-btn-row">
+            <button class="photo-btn ghost" @click=${close}>${this._t("child.photo_cancel")}</button>
+            <button class="photo-btn primary" @click=${save}>✓ ${this._t("child.goal_save")}</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  async _saveGoalSheet() {
+    const sheet = this._goalSheet;
+    if (!sheet) return;
+    this._goalSheet = null;
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "set_weekly_goal", { child_id: sheet.child.id, target: sheet.value });
+    } catch (err) { console.error("set_weekly_goal failed", err); }
+  }
+
+  /**
+   * [total, remaining] for the mood check-in's "all done" test. An open-ended
+   * placeholder ("I did something extra") is never finished, and a chore not
+   * due today or not open yet isn't owed, so neither holds the check-in back.
+   */
+  _moodCounts(chores, child, todaysCompletions) {
+    const owed = (chores || []).filter(c => !c.open_ended && !c._isLockedPreview
+      && !(c._hasDueDays && !c._isDueToday) && !c._isRecurrenceLocked && !c._isFirstComeLocked);
+    return [owed.length, owed.filter(c => !this._isDoneForToday(c, child, todaysCompletions)).length];
+  }
+
+  /** End-of-day mood check-in, once everything's done (or once said). */
+  _renderMoodStrip(child, total, remaining, mode) {
+    if (this.config.show_mood === false) return "";
+    const said = child.mood_today || (this._moodSent || {})[child.id];
+    if (!said && !(total > 0 && remaining === 0)) return "";
+    const moods = [["great", "😄"], ["good", "🙂"], ["ok", "😐"], ["sad", "😢"], ["upset", "😠"]];
+    if (said) {
+      const face = (moods.find(m => m[0] === said) || [])[1] || "🙂";
+      return html`<div class="tm-mood ${mode} said">${this._t("child.mood_said", { face })}</div>`;
+    }
+    const pick = async (mood) => {
+      this._moodSent = { ...(this._moodSent || {}), [child.id]: mood };
+      this.requestUpdate();
+      try {
+        await this.hass.callService("taskmate", "log_mood", { child_id: child.id, mood });
+      } catch (err) {
+        this._moodSent = { ...this._moodSent, [child.id]: "" };
+        this.requestUpdate();
+      }
+    };
+    return html`<div class="tm-mood ${mode}" role="group" aria-label="${this._t("child.mood_question")}">
+      <div class="q">${this._t("child.mood_question")}</div>
+      <div class="faces">${moods.map(([m, f]) => html`<button type="button" class="face" title="${this._t(`child.mood_${m}`)}"
+        aria-label="${this._t(`child.mood_${m}`)}" @click=${() => pick(m)}>${f}</button>`)}</div>
+    </div>`;
+  }
+
   _renderPhotoCapture() {
     const cap = this._photoCapture;
     if (!cap) return "";
@@ -5717,6 +5927,9 @@ class TaskMateChildCardEditor extends LitElement {
       { name: 'include_anytime_chores', selector: { boolean: {} } },
       { name: 'show_countdown', selector: { boolean: {} } },
       { name: 'show_minutes_left', selector: { boolean: {} } },
+      { name: 'show_help_button', selector: { boolean: {} } },
+      { name: 'show_mood', selector: { boolean: {} } },
+      { name: 'show_weekly_goal', selector: { boolean: {} } },
       { name: 'show_description', selector: { boolean: {} } },
       { name: 'pre_reader', selector: { boolean: {} } },
       { name: 'pre_reader_labels', selector: { boolean: {} } },
@@ -5740,6 +5953,9 @@ class TaskMateChildCardEditor extends LitElement {
       include_anytime_chores: this._t('child.editor.include_anytime_chores'),
       show_countdown: this._t('child.editor.show_countdown'),
       show_minutes_left: this._t('child.editor.show_minutes_left'),
+      show_help_button: this._t('child.editor.show_help_button'),
+      show_mood: this._t('child.editor.show_mood'),
+      show_weekly_goal: this._t('child.editor.show_weekly_goal'),
       show_description: this._t('child.editor.show_description'),
       pre_reader: this._t('child.editor.pre_reader'),
       pre_reader_labels: this._t('child.editor.pre_reader_labels'),
@@ -5782,6 +5998,9 @@ class TaskMateChildCardEditor extends LitElement {
       include_anytime_chores: this.config.include_anytime_chores !== false,
       show_countdown: this.config.show_countdown !== false,
       show_minutes_left: this.config.show_minutes_left !== false,
+      show_help_button: this.config.show_help_button !== false,
+      show_mood: this.config.show_mood !== false,
+      show_weekly_goal: this.config.show_weekly_goal !== false,
       show_description: this.config.show_description === true,
       pre_reader: this.config.pre_reader === true,
       pre_reader_labels: this.config.pre_reader_labels === true,
@@ -5823,7 +6042,8 @@ class TaskMateChildCardEditor extends LitElement {
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
       const defaults = {
-        show_countdown: true, show_minutes_left: true, show_description: false, debug: false,
+        show_countdown: true, show_minutes_left: true, show_help_button: true, show_mood: true, show_weekly_goal: true,
+        show_description: false, debug: false,
         time_category: 'morning', due_days_mode: 'hide',
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',
         first_come_claimed_mode: 'hide',

@@ -1,0 +1,139 @@
+"""``taskmate.*`` services for help requests, moods, sick days, weekly goals and raffles.
+
+Kept out of ``__init__.py`` like the wishlist and inspection services. A child
+may ask for help, log a mood, set their own weekly goal and buy raffle
+tickets for themselves (through the same linked-child gate as completing a
+chore); answering help, sick days and running raffles are parent actions.
+"""
+
+from __future__ import annotations
+
+import logging
+from collections.abc import Awaitable, Callable
+
+import voluptuous as vol
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers import config_validation as cv
+
+from .const import DOMAIN
+from .coord_goals import WEEKLY_GOAL_MAX
+from .coord_wellbeing import HELP_MESSAGE_MAX, MOODS
+
+_LOGGER = logging.getLogger(__name__)
+
+SERVICE_REQUEST_HELP = "request_help"
+SERVICE_ANSWER_HELP = "answer_help"
+SERVICE_LOG_MOOD = "log_mood"
+SERVICE_SET_SICK_DAY = "set_sick_day"
+SERVICE_SET_WEEKLY_GOAL = "set_weekly_goal"
+SERVICE_BUY_RAFFLE_TICKETS = "buy_raffle_tickets"
+SERVICE_DRAW_RAFFLE = "draw_raffle"
+
+FAMILY_SERVICES: tuple[str, ...] = (
+    SERVICE_REQUEST_HELP,
+    SERVICE_ANSWER_HELP,
+    SERVICE_LOG_MOOD,
+    SERVICE_SET_SICK_DAY,
+    SERVICE_SET_WEEKLY_GOAL,
+    SERVICE_BUY_RAFFLE_TICKETS,
+    SERVICE_DRAW_RAFFLE,
+)
+
+Handler = Callable[[ServiceCall], Awaitable[None]]
+Wrapper = Callable[[Handler], Handler]
+
+
+def async_register_family_services(
+    hass: HomeAssistant,
+    *,
+    child_action: Wrapper,
+    parent_action: Wrapper,
+    get_coordinator: Callable[[], object],
+    require_linked_child: Callable[..., Awaitable[None]],
+) -> None:
+    """Register the services behind the caller's child and parent gates."""
+
+    def _wrap(action, *, child: bool):
+        async def handler(call: ServiceCall) -> None:
+            coordinator = get_coordinator()
+            if not coordinator:
+                _LOGGER.error("No TaskMate coordinator available")
+                return
+            if child:
+                await require_linked_child(hass, call, coordinator, call.data["child_id"])
+            await action(coordinator, call)
+
+        return child_action(handler) if child else parent_action(handler)
+
+    async def request_help(coordinator, call):
+        await coordinator.async_request_help(call.data["child_id"], call.data["chore_id"], call.data.get("message", ""))
+
+    async def answer_help(coordinator, call):
+        await coordinator.async_answer_help(call.data["request_id"])
+
+    async def log_mood(coordinator, call):
+        await coordinator.async_log_mood(call.data["child_id"], call.data["mood"])
+
+    async def set_sick_day(coordinator, call):
+        await coordinator.async_set_sick_day(call.data["child_id"], call.data.get("date"), call.data.get("sick", True))
+
+    async def set_weekly_goal(coordinator, call):
+        await coordinator.async_set_weekly_goal(call.data["child_id"], call.data["target"])
+
+    async def buy_raffle_tickets(coordinator, call):
+        await coordinator.async_buy_raffle_tickets(call.data["raffle_id"], call.data["child_id"], call.data["tickets"])
+
+    async def draw_raffle(coordinator, call):
+        await coordinator.async_draw_raffle(call.data["raffle_id"])
+
+    registrations = (
+        (
+            SERVICE_REQUEST_HELP,
+            request_help,
+            True,
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Required("chore_id"): cv.string,
+                vol.Optional("message", default=""): vol.All(cv.string, vol.Length(max=HELP_MESSAGE_MAX)),
+            },
+        ),
+        (SERVICE_ANSWER_HELP, answer_help, False, {vol.Required("request_id"): cv.string}),
+        (
+            SERVICE_LOG_MOOD,
+            log_mood,
+            True,
+            {vol.Required("child_id"): cv.string, vol.Required("mood"): vol.In(MOODS)},
+        ),
+        (
+            SERVICE_SET_SICK_DAY,
+            set_sick_day,
+            False,
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Optional("date"): cv.date,
+                vol.Optional("sick", default=True): cv.boolean,
+            },
+        ),
+        (
+            SERVICE_SET_WEEKLY_GOAL,
+            set_weekly_goal,
+            True,
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Required("target"): vol.All(vol.Coerce(int), vol.Range(min=0, max=WEEKLY_GOAL_MAX)),
+            },
+        ),
+        (
+            SERVICE_BUY_RAFFLE_TICKETS,
+            buy_raffle_tickets,
+            True,
+            {
+                vol.Required("raffle_id"): cv.string,
+                vol.Required("child_id"): cv.string,
+                vol.Required("tickets"): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
+            },
+        ),
+        (SERVICE_DRAW_RAFFLE, draw_raffle, False, {vol.Required("raffle_id"): cv.string}),
+    )
+    for name, action, child, schema in registrations:
+        hass.services.async_register(DOMAIN, name, _wrap(action, child=child), schema=vol.Schema(schema))

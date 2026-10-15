@@ -1324,6 +1324,108 @@
           "description": "ID'et på den åbne inspektion"
         }
       }
+    },
+    "request_help": {
+      "name": "Bed om hjælp",
+      "description": "Et barn siger, at det sidder fast i en opgave. Sender forældrene en notifikation; intet bliver udført eller sprunget over.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet, der beder om hjælp"
+        },
+        "chore_id": {
+          "name": "Opgave-ID",
+          "description": "Opgaven, barnet sidder fast i"
+        },
+        "message": {
+          "name": "Besked",
+          "description": "Valgfrie ord fra barnet, f.eks. \"Jeg kan ikke nå hylden\"."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Besvar en anmodning om hjælp",
+      "description": "Markér et barns anmodning om hjælp som besvaret, så kortet holder op med at sige, at hjælpen er på vej.",
+      "fields": {
+        "request_id": {
+          "name": "Anmodnings-ID",
+          "description": "Anmodningen, der skal lukkes"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Registrér humør",
+      "description": "Et barn fortæller, hvordan dagen gik. Én pr. dag; en ny erstatter den gamle.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet"
+        },
+        "mood": {
+          "name": "Humør",
+          "description": "great, good, ok, sad eller upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Sæt sygedag",
+      "description": "Giv et barn en sygedag. Opgaverne skjules, stimen fryses, og ingen obligatorisk opgave bliver overset.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet, der er sygt"
+        },
+        "date": {
+          "name": "Dato",
+          "description": "Dagen (standard i dag). Fra en uge tilbage til en måned frem."
+        },
+        "sick": {
+          "name": "Syg",
+          "description": "Slå fra for at tage sygedagen tilbage."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Sæt ugemål",
+      "description": "Sæt et barns eget pointmål for ugen. Når det nås, udbetales familiens ugemålsbonus én gang om ugen. 0 fjerner det.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet"
+        },
+        "target": {
+          "name": "Mål",
+          "description": "Point, der skal tjenes i denne uge"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Køb lodder",
+      "description": "Et barn bruger point på lodder til en lodtrækning. Hvert lod er én chance i trækningen.",
+      "fields": {
+        "raffle_id": {
+          "name": "Lodtræknings-ID",
+          "description": "Lodtrækningen"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet, der køber"
+        },
+        "tickets": {
+          "name": "Lodder",
+          "description": "Hvor mange lodder der skal købes"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Træk lodtrækning",
+      "description": "Træk en lodtræknings vinder nu i stedet for at vente på tidspunktet.",
+      "fields": {
+        "raffle_id": {
+          "name": "Lodtræknings-ID",
+          "description": "Lodtrækningen, der skal trækkes"
+        }
+      }
     }
   },
   "entity": {

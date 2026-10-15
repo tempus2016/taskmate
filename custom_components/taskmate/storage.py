@@ -2032,6 +2032,35 @@ class TaskMateStorage:
             self._data["settings"] = {}
         self._data["settings"][key] = value
 
+    # ── Feature sections ───────────────────────────────────────────────────
+    # Small per-feature stores kept at the root of _data (help requests, moods,
+    # sick days, weekly goals, penalty redemptions, raffles, pets). Each is a
+    # dict or list; a missing or wrong-typed one reads as empty. The getter
+    # returns the live object so a caller mutates it and then saves.
+
+    def get_section(self, key: str, kind: type = dict) -> Any:
+        value = self._data.get(key)
+        if not isinstance(value, kind):
+            value = kind()
+            self._data[key] = value
+        return value
+
+    def remove_child_from_sections(self, child_id: str) -> None:
+        """Forget a deleted child in every per-child feature section."""
+        for key in ("moods", "sick_days", "weekly_goals", "pets"):
+            section = self._data.get(key)
+            if isinstance(section, dict):
+                section.pop(child_id, None)
+        for key in ("help_requests", "penalty_redemptions"):
+            section = self._data.get(key)
+            if isinstance(section, list):
+                self._data[key] = [r for r in section if not (isinstance(r, dict) and r.get("child_id") == child_id)]
+        raffles = self._data.get("raffles")
+        if isinstance(raffles, list):
+            for raffle in raffles:
+                if isinstance(raffle, dict) and isinstance(raffle.get("tickets"), dict):
+                    raffle["tickets"].pop(child_id, None)
+
     def get_settings(self) -> dict[str, Any]:
         """The whole settings dict (live reference; callers must not assume a copy)."""
         return self._data.get("settings", {}) or {}

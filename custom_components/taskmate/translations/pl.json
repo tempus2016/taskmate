@@ -1324,6 +1324,108 @@
           "description": "ID otwartej kontroli"
         }
       }
+    },
+    "request_help": {
+      "name": "Poproś o pomoc",
+      "description": "Dziecko zgłasza, że utknęło przy zadaniu. Wysyła rodzicom powiadomienie; nic nie zostaje wykonane ani pominięte.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko proszące o pomoc"
+        },
+        "chore_id": {
+          "name": "ID zadania",
+          "description": "Zadanie, przy którym utknęło"
+        },
+        "message": {
+          "name": "Wiadomość",
+          "description": "Opcjonalne słowa dziecka, np. „Nie sięgam do półki”."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Odpowiedz na prośbę o pomoc",
+      "description": "Oznacz prośbę dziecka o pomoc jako obsłużoną, aby karta przestała pokazywać, że pomoc jest w drodze.",
+      "fields": {
+        "request_id": {
+          "name": "ID prośby",
+          "description": "Prośba do zamknięcia"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Zapisz nastrój",
+      "description": "Dziecko mówi, jak minął mu dzień. Jeden wpis dziennie; nowy zastępuje stary.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko"
+        },
+        "mood": {
+          "name": "Nastrój",
+          "description": "great, good, ok, sad lub upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Ustaw dzień choroby",
+      "description": "Daj dziecku dzień choroby. Jego zadania są ukryte, seria zamrożona i żadne obowiązkowe zadanie nie przepada.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Chore dziecko"
+        },
+        "date": {
+          "name": "Data",
+          "description": "Dzień (domyślnie dziś). Od tygodnia wstecz do miesiąca naprzód."
+        },
+        "sick": {
+          "name": "Chory",
+          "description": "Wyłącz, aby cofnąć dzień choroby."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Ustaw cel tygodnia",
+      "description": "Ustaw własny cel punktowy dziecka na tydzień. Osiągnięcie go raz w tygodniu wypłaca premię rodzinną. 0 go usuwa.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko"
+        },
+        "target": {
+          "name": "Cel",
+          "description": "Punkty do zdobycia w tym tygodniu"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Kup losy",
+      "description": "Dziecko wydaje punkty na losy w losowaniu. Każdy los to jedna szansa.",
+      "fields": {
+        "raffle_id": {
+          "name": "ID losowania",
+          "description": "Losowanie"
+        },
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko kupujące"
+        },
+        "tickets": {
+          "name": "Losy",
+          "description": "Ile losów kupić"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Rozlosuj",
+      "description": "Wylosuj zwycięzcę teraz, zamiast czekać na czas losowania.",
+      "fields": {
+        "raffle_id": {
+          "name": "ID losowania",
+          "description": "Losowanie do rozstrzygnięcia"
+        }
+      }
     }
   },
   "entity": {

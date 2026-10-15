@@ -36,6 +36,7 @@ from .const import (
     NOTIF_TYPE_BOUNTY_POSTED,
     NOTIF_TYPE_CELEBRATION,
     NOTIF_TYPE_FAMILY_GOAL_REACHED,
+    NOTIF_TYPE_HELP_REQUESTED,
     NOTIF_TYPE_INSPECTION_PASSED,
     NOTIF_TYPE_INSPECTION_REMINDER,
     NOTIF_TYPE_INSPECTION_STARTED,
@@ -44,15 +45,19 @@ from .const import (
     NOTIF_TYPE_MANDATORY_PARENT_ALERT,
     NOTIF_TYPE_MANDATORY_REMINDER,
     NOTIF_TYPE_MONTHLY_REPORT,
+    NOTIF_TYPE_MOOD_LOW,
+    NOTIF_TYPE_PENALTY_REDEEMED,
     NOTIF_TYPE_PENDING_CHORE_APPROVAL,
     NOTIF_TYPE_PENDING_REWARD_CLAIM,
     NOTIF_TYPE_PRESENCE_ARRIVAL,
+    NOTIF_TYPE_RAFFLE_DRAWN,
     NOTIF_TYPE_RECAP_READY,
     NOTIF_TYPE_SEASON_CHAMPION,
     NOTIF_TYPE_STREAK_AT_RISK,
     NOTIF_TYPE_STREAK_FREEZE_USED,
     NOTIF_TYPE_STREAK_MILESTONE,
     NOTIF_TYPE_WEEKLY_DIGEST,
+    NOTIF_TYPE_WEEKLY_GOAL_REACHED,
     NOTIF_TYPE_WISH_PLEDGED,
     NOTIF_TYPE_WISH_REQUESTED,
     QUALITY_RATINGS,
@@ -70,7 +75,20 @@ DEFAULT_MORNING_NOTIFY_TIME = "08:00"
 _RATE_ACTION_PREFIX = "TASKMATE_RATE_"
 
 # Stand-in names for a test push, translated like the rest (notify.sample_*).
-_SAMPLE_KEYS = ("chore", "reward", "badge", "goal", "goal_reward", "wish", "pledger", "bounty", "reason", "note")
+_SAMPLE_KEYS = (
+    "chore",
+    "reward",
+    "badge",
+    "goal",
+    "goal_reward",
+    "wish",
+    "pledger",
+    "bounty",
+    "reason",
+    "note",
+    "penalty",
+    "raffle",
+)
 
 
 def _reject_action(hass: HomeAssistant, entry_id: str) -> dict[str, str]:
@@ -157,6 +175,14 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_INSPECTION_STARTED, "child", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_INSPECTION_PASSED, "child", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_INSPECTION_REMINDER, "parent", False, False, False, True),
+    # "I'm stuck": on from the start — a help button that reaches nobody is
+    # worse than no button.
+    NotificationTypeMeta(NOTIF_TYPE_HELP_REQUESTED, "parent", False, False, False, True),
+    # The rest of this batch are opt-in, like every type added after release.
+    NotificationTypeMeta(NOTIF_TYPE_MOOD_LOW, "parent", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_WEEKLY_GOAL_REACHED, "both", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_PENALTY_REDEEMED, "both", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_RAFFLE_DRAWN, "both", False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
@@ -455,6 +481,13 @@ class NotificationCoordinator:
             "bonus": 10,
             "note_text": f": {sample['note']}",
             "points_name": points_name,
+            "message_text": "",
+            "emoji": "😢",
+            "earned": 650,
+            "penalty_name": sample["penalty"],
+            "raffle_name": sample["raffle"],
+            "winner_name": "Alex",
+            "tickets": 12,
         }
         ctx["result_text"] = notify_strings.render(
             self.hass,
@@ -1201,9 +1234,15 @@ class NotificationCoordinator:
                 continue
             if self.storage.get_notification_config(meta.id).routes:
                 continue  # already configured — leave it alone
+            # A type this install has never seen (added in an update) starts in
+            # its default state, as it would on a fresh install — otherwise a
+            # default-on type like help_requested reaches nobody after upgrading.
+            never_seen = meta.id not in (self.storage.data.get("notification_config") or {})
             for p in parents:
                 self.storage.set_notification_route(meta.id, p.id, NotificationRoute(enabled=True))
                 changed = True
+            if never_seen:
+                self.storage.set_notification_master(meta.id, True)
         return changed
 
     async def upsert_parent(self, p) -> None:

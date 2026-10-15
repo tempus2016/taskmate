@@ -92,3 +92,23 @@ async def test_fire_routes_to_subscribed_parent(coord, hass):
     notify_calls = [c for c in hass.services.async_call.call_args_list if c[0][0] == "notify"]
     assert len(notify_calls) == 1
     assert notify_calls[0][0][1] == "mobile_app_john"
+
+
+@pytest.mark.asyncio
+async def test_a_default_on_type_new_in_an_update_starts_on(coord):
+    """help_requested is on by default: an install that predates it gets it on too."""
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_john")
+    coord.storage.upsert_parent_recipient(p)
+    coord.ensure_parent_default_routes()
+    cfg = coord.storage.get_notification_config("help_requested")
+    assert cfg.master_enabled is True
+    assert p.id in cfg.routes
+
+
+@pytest.mark.asyncio
+async def test_a_type_the_parent_switched_off_stays_off(coord):
+    coord.storage.set_notification_master("help_requested", False)
+    p = ParentRecipient(name="John", notify_service="notify.mobile_app_john")
+    coord.storage.upsert_parent_recipient(p)
+    coord.ensure_parent_default_routes()
+    assert coord.storage.get_notification_config("help_requested").master_enabled is False

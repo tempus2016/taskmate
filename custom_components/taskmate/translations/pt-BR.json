@@ -1324,6 +1324,108 @@
           "description": "O ID da inspeção em andamento"
         }
       }
+    },
+    "request_help": {
+      "name": "Pedir ajuda",
+      "description": "Uma criança diz que está travada em uma tarefa. Envia uma notificação aos pais; nada é concluído nem pulado.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança que pede ajuda"
+        },
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "A tarefa em que está travada"
+        },
+        "message": {
+          "name": "Mensagem",
+          "description": "Palavras opcionais da criança, ex.: \"Não alcanço a prateleira\"."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Responder pedido de ajuda",
+      "description": "Marca o pedido de ajuda de uma criança como respondido, para o cartão parar de dizer que a ajuda está a caminho.",
+      "fields": {
+        "request_id": {
+          "name": "ID do pedido",
+          "description": "O pedido a fechar"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Registrar humor",
+      "description": "Uma criança conta como foi o dia. Um por dia; um novo substitui o anterior.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança"
+        },
+        "mood": {
+          "name": "Humor",
+          "description": "great, good, ok, sad ou upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Marcar dia de doença",
+      "description": "Dá a uma criança um dia de doença. As tarefas ficam ocultas, a sequência congela e nenhuma tarefa obrigatória é perdida.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança doente"
+        },
+        "date": {
+          "name": "Data",
+          "description": "O dia (padrão: hoje). De uma semana atrás a um mês à frente."
+        },
+        "sick": {
+          "name": "Doente",
+          "description": "Desligue para desfazer o dia de doença."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Definir meta semanal",
+      "description": "Define a meta de pontos pessoal de uma criança para a semana. Atingir paga o bônus uma vez por semana. 0 apaga.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança"
+        },
+        "target": {
+          "name": "Meta",
+          "description": "Pontos a ganhar nesta semana"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Comprar bilhetes",
+      "description": "Uma criança gasta pontos em bilhetes de um sorteio. Cada bilhete é uma chance.",
+      "fields": {
+        "raffle_id": {
+          "name": "ID do sorteio",
+          "description": "O sorteio"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança que compra"
+        },
+        "tickets": {
+          "name": "Bilhetes",
+          "description": "Quantos bilhetes comprar"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Realizar sorteio",
+      "description": "Sorteia o vencedor agora em vez de esperar o horário do sorteio.",
+      "fields": {
+        "raffle_id": {
+          "name": "ID do sorteio",
+          "description": "O sorteio a realizar"
+        }
+      }
     }
   },
   "entity": {

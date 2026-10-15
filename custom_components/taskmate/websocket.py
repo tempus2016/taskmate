@@ -123,6 +123,7 @@ WS_REPORT_FRICTION: Final = "taskmate/reports/friction"
 WS_REPORT_PROJECTION: Final = "taskmate/reports/projection"
 WS_REPORT_HEALTH: Final = "taskmate/reports/health"
 WS_REPORT_QUALITY: Final = "taskmate/reports/quality"
+WS_REPORT_MOODS: Final = "taskmate/reports/moods"
 WS_SCHEDULED_LIST: Final = "taskmate/scheduled/list"
 WS_SCHEDULED_ADD: Final = "taskmate/scheduled/add"
 WS_SCHEDULED_REMOVE: Final = "taskmate/scheduled/remove"
@@ -264,6 +265,7 @@ _AUDIT_EXCLUDE: Final = {
     WS_REPORT_PROJECTION,
     WS_REPORT_HEALTH,
     WS_REPORT_QUALITY,
+    WS_REPORT_MOODS,
     WS_SETUP_CATALOGUE,
 }
 
@@ -489,6 +491,10 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "inspections": coordinator.inspections_state(),
         "inspectable_completions": coordinator.inspectable_completion_ids(),
         "inspection_bed_rule": coordinator.inspection_bed_rule(),
+        # Today page: open help requests, who is off sick and today's moods.
+        "help_requests": coordinator.open_help_requests(),
+        "sick_today": [c.id for c in coordinator.storage.get_children() if coordinator.is_sick_day(c.id)],
+        "moods_today": {c.id: m for c in coordinator.storage.get_children() if (m := coordinator.mood_on(c.id))},
     }
 
 
@@ -1112,6 +1118,18 @@ async def _ws_report_quality(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], coordinator.quality_report(msg.get("days")))
 
 
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REPORT_MOODS,
+        vol.Optional("days"): vol.All(vol.Coerce(int), vol.Range(min=1, max=90)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_report_moods(hass, connection, msg, coordinator):
+    connection.send_result(msg["id"], coordinator.mood_report(msg.get("days", 14)))
+
+
 @websocket_api.websocket_command({vol.Required("type"): WS_REPORT_HEALTH})
 @websocket_api.async_response
 @_admin_only
@@ -1639,6 +1657,14 @@ async def _ws_delete_challenge(hass, connection, msg, coordinator):
 # Penalties
 # ---------------------------------------------------------------------------
 
+# Make it right: the chore that earns a penalty back, how much, and how long for.
+_REDEMPTION_FIELDS = ("redemption_chore_id", "redemption_percent", "redemption_days")
+_REDEMPTION_SCHEMA = {
+    vol.Optional("redemption_chore_id"): str,
+    vol.Optional("redemption_percent"): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
+    vol.Optional("redemption_days"): vol.All(vol.Coerce(int), vol.Range(min=1, max=7)),
+}
+
 
 @websocket_api.websocket_command(
     {
@@ -1648,6 +1674,7 @@ async def _ws_delete_challenge(hass, connection, msg, coordinator):
         vol.Optional("description", default=""): str,
         vol.Optional("icon", default="mdi:alert-circle-outline"): str,
         vol.Optional("assigned_to", default=[]): [str],
+        **_REDEMPTION_SCHEMA,
     }
 )
 @websocket_api.async_response
@@ -1660,6 +1687,11 @@ async def _ws_add_penalty(hass, connection, msg, coordinator):
         icon=msg.get("icon", "mdi:alert-circle-outline"),
         assigned_to=list(msg.get("assigned_to", []) or []),
     )
+    if any(k in msg for k in _REDEMPTION_FIELDS):
+        for k in _REDEMPTION_FIELDS:
+            if k in msg:
+                setattr(pen, k, msg[k])
+        await coordinator.async_update_penalty(pen)
     connection.send_result(msg["id"], {"id": pen.id})
 
 
@@ -1672,6 +1704,7 @@ async def _ws_add_penalty(hass, connection, msg, coordinator):
         vol.Optional("description"): str,
         vol.Optional("icon"): str,
         vol.Optional("assigned_to"): [str],
+        **_REDEMPTION_SCHEMA,
     }
 )
 @websocket_api.async_response
@@ -1681,7 +1714,7 @@ async def _ws_update_penalty(hass, connection, msg, coordinator):
     if not existing:
         connection.send_error(msg["id"], "not_found", f"Penalty {msg['penalty_id']} not found")
         return
-    for k in ("name", "points", "description", "icon", "assigned_to"):
+    for k in ("name", "points", "description", "icon", "assigned_to", *_REDEMPTION_FIELDS):
         if k in msg:
             val = msg[k]
             if k == "name" and val:
@@ -1948,6 +1981,8 @@ _SUBKEY_SETTINGS = {
     "require_linked_child",
     "chore_undo_seconds",
     "auto_approve_hours",
+    "weekly_goal_enabled",
+    "weekly_goal_bonus",
     "history_days",
     # Recaps (#929)
     "recap_frequencies",
@@ -2229,6 +2264,8 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("require_linked_child"): bool,
     vol.Optional("chore_undo_seconds"): _validate_chore_undo_seconds,
     vol.Optional("auto_approve_hours"): vol.All(vol.Coerce(int), vol.Range(min=0, max=AUTO_APPROVE_MAX_HOURS)),
+    vol.Optional("weekly_goal_enabled"): bool,
+    vol.Optional("weekly_goal_bonus"): vol.All(vol.Coerce(int), vol.Range(min=0, max=100000)),
     vol.Optional("recap_frequencies"): _validate_recap_frequencies,
     vol.Optional("recap_child_frequencies"): _validate_recap_child_frequencies,
     vol.Optional("recap_notify_children"): bool,
@@ -3214,6 +3251,7 @@ _COMMANDS = (
     _ws_report_projection,
     _ws_report_health,
     _ws_report_quality,
+    _ws_report_moods,
     _ws_templates_export,
     _ws_templates_import,
     _ws_print_chart,

@@ -1375,6 +1375,12 @@ class Penalty:
     description: str = ""
     icon: str = "mdi:alert-circle-outline"
     assigned_to: list[str] = field(default_factory=list)  # Child IDs who can receive this penalty (empty = all)
+    # Make it right: a chore the child can do afterwards to earn back
+    # redemption_percent of what was taken, within redemption_days days.
+    # "" = no way back (every penalty before this existed).
+    redemption_chore_id: str = ""
+    redemption_percent: int = 100
+    redemption_days: int = 1
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -1388,6 +1394,9 @@ class Penalty:
             description=data.get("description", ""),
             icon=data.get("icon", "mdi:alert-circle-outline"),
             assigned_to=list(data.get("assigned_to", [])),
+            redemption_chore_id=str(data.get("redemption_chore_id", "") or ""),
+            redemption_percent=_clamp_int(data.get("redemption_percent", 100), 1, 100),
+            redemption_days=_clamp_int(data.get("redemption_days", 1), 1, 7),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1399,6 +1408,9 @@ class Penalty:
             "description": self.description,
             "icon": self.icon,
             "assigned_to": self.assigned_to,
+            "redemption_chore_id": self.redemption_chore_id,
+            "redemption_percent": self.redemption_percent,
+            "redemption_days": self.redemption_days,
         }
 
 

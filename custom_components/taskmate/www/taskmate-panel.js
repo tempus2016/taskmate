@@ -195,6 +195,9 @@ const DASH_COLORS = { kids: "#ff6b9d", parents: "#9b59b6", wall: "#e67e22" };
 const DASH_PATH_RE = /^[a-z0-9]+(-[a-z0-9]+)+$/;
 
 
+// Mood check-in faces, by the mood id the backend stores.
+const MOOD_FACES = { great: "😄", good: "🙂", ok: "😐", sad: "😢", upset: "😠" };
+
 class TaskMatePanel extends HTMLElement {
   constructor() {
     super();
@@ -648,6 +651,8 @@ class TaskMatePanel extends HTMLElement {
     if (act === "save-gift")    { this._doGiftPoints(); return; }
     if (act === "adjust-points") { this._doAdjustPoints(t.dataset.id, Number(t.dataset.delta)); return; }
     if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
+    if (act === "answer-help") { this._answerHelp(t.dataset.id); return; }
+    if (act === "toggle-sick") { this._toggleSickDay(t.dataset.id); return; }
     if (act === "backdate-open") { this._openBackdateDialog(t.dataset.id); return; }
     if (act === "save-backdate") { this._saveBackdateDialog(); return; }
     if (act === "close-backdate") { this._closeDialog(true); this._fetchState(); return; }
@@ -738,6 +743,12 @@ class TaskMatePanel extends HTMLElement {
       this._frictionDays = Number(t.dataset.id);
       this._friction = null;
       this._loadFriction(this._frictionDays);
+      return;
+    }
+    if (act === "moods-window") {
+      this._moodDays = Number(t.dataset.id);
+      this._moods = null;
+      this._loadMoods(this._moodDays);
       return;
     }
     if (act === "quality-window") {
@@ -2818,7 +2829,8 @@ class TaskMatePanel extends HTMLElement {
   _openPenBonDialog(kind, id) {
     const blank = { name: "", description: "", points: 10,
       icon: kind === "penalty" ? "mdi:alert-circle-outline" : "mdi:star-circle-outline",
-      assigned_to: [] };
+      assigned_to: [],
+      ...(kind === "penalty" ? { redemption_chore_id: "", redemption_percent: 100, redemption_days: 1 } : {}) };
     if (id) {
       const item = ((kind === "penalty" ? this._state.penalties : this._state.bonuses) || []).find(x => x.id === id);
       if (!item) return;
@@ -2843,6 +2855,12 @@ class TaskMatePanel extends HTMLElement {
       description: d.description || "",
       icon: d.icon || (kind === "penalty" ? "mdi:alert-circle-outline" : "mdi:star-circle-outline"),
       assigned_to: d.assigned_to || [],
+      // Penalty amends: the chore that earns the penalty back.
+      ...(kind === "penalty" ? {
+        redemption_chore_id: d.redemption_chore_id || "",
+        redemption_percent: Math.min(100, Math.max(1, Math.round(Number(d.redemption_percent) || 100))),
+        redemption_days: Math.min(7, Math.max(1, Math.round(Number(d.redemption_days) || 1))),
+      } : {}),
     };
     const payload = wasAdd ? { type: wsType, ...base } : { type: wsType, [idField]: d.id, ...base };
     const { ok, err } = await this._callWS(payload);
@@ -4098,7 +4116,7 @@ class TaskMatePanel extends HTMLElement {
     const view = this._insightView || "fairness";
     const switcher = `
       <div class="tm-chip-row" style="margin-bottom:14px">
-        ${["fairness", "friction", "projection", ...(this._ratingOn() || view === "quality" ? ["quality"] : []), "health"].map(v => `
+        ${["fairness", "friction", "projection", ...(this._ratingOn() || view === "quality" ? ["quality"] : []), "moods", "health"].map(v => `
           <button type="button" class="tm-chip-btn ${v === view ? "tm-chip-on" : ""}"
                   data-act="insights-view" data-id="${v}">
             ${this._t("panel.insights_view_" + v)}
@@ -4109,7 +4127,56 @@ class TaskMatePanel extends HTMLElement {
     if (view === "projection") return switcher + this._renderProjectionReport();
     if (view === "health") return switcher + this._renderHealthReport();
     if (view === "quality") return switcher + this._renderQualityReport();
+    if (view === "moods") return switcher + this._renderMoodReport();
     return switcher + this._renderFairnessReport();
+  }
+
+  /** Mood check-ins: one face per child per day, so a run of tough days stands out. */
+  _renderMoodReport() {
+    const days = this._moodDays || 14;
+    const report = this._moods;
+    if (!report) {
+      this._loadMoods(days);
+      return `<div class="tm-card"><div class="tm-empty">${this._t("panel.insights_loading")}</div></div>`;
+    }
+    const anyLogged = report.children.some(c => c.logged > 0);
+    const dayLabel = iso => new Date(`${iso}T12:00:00`).toLocaleDateString([], { weekday: "narrow" });
+    return `
+      <div class="tm-card">
+        <div class="tm-card-head">
+          <h2>${this._t("panel.insights_moods_title")}</h2>
+          <div class="tm-chip-row">
+            ${[7, 14, 30].map(d => `
+              <button type="button" class="tm-chip-btn ${d === days ? "tm-chip-on" : ""}" data-act="moods-window" data-id="${d}">
+                ${this._t("panel.insights_last_days", { days: d })}
+              </button>`).join("")}
+          </div>
+        </div>
+        <span class="tm-field-hint">${this._t("panel.insights_moods_intro")}</span>
+        ${!anyLogged ? `<div class="tm-empty">${this._t("panel.insights_moods_none")}</div>` : `
+          <div class="tm-mood-grid" style="--days:${report.days}">
+            ${report.children.map(c => `
+              <div class="tm-mood-name">${this._esc(c.name)}</div>
+              <div class="tm-mood-row">
+                ${c.series.map(d => `<span class="tm-mood-cell ${d.mood ? `tm-mood-${d.mood}` : ""}" title="${this._esc(d.date)}">${d.mood ? MOOD_FACES[d.mood] : `<small>${this._esc(dayLabel(d.date))}</small>`}</span>`).join("")}
+              </div>
+              <div class="tm-mood-sum">
+                ${c.low_days >= 3 ? `<span class="tm-pill tm-pill-warn">${this._t("panel.insights_moods_low", { count: c.low_days })}</span>` : ""}
+                <span class="tm-meta">${this._ltrNums(this._t("panel.insights_moods_logged", { count: c.logged, days: report.days }))}</span>
+              </div>
+            `).join("")}
+          </div>`}
+      </div>`;
+  }
+
+  async _loadMoods(days) {
+    if (this._moodsLoading) return;
+    this._moodsLoading = true;
+    const { ok, res, err } = await this._callWS({ type: "taskmate/reports/moods", days });
+    this._moodsLoading = false;
+    if (!ok) { this._showToast("err", err); return; }
+    this._moods = res;
+    this._render();
   }
 
   /**
@@ -4876,6 +4943,7 @@ class TaskMatePanel extends HTMLElement {
 
       <div class="tm-today-cols">
         <div class="tm-today-col">
+          ${this._renderHelpCard(kids)}
           <div class="tm-card">
             <h3 class="tm-section-title"><ha-icon icon="mdi:inbox-outline"></ha-icon>${this._t("panel.today_needs_title")}
               ${queue.count > 0 ? `<span class="tm-pill tm-pill-warn">${queue.count}</span>` : ""}
@@ -4919,6 +4987,45 @@ class TaskMatePanel extends HTMLElement {
     `;
   }
 
+  /** "I'm stuck" requests still open, with an "On my way" button each. */
+  _renderHelpCard(kids) {
+    const ids = new Set(kids.map(k => k.id));
+    const reqs = (this._state.help_requests || []).filter(r => ids.has(r.child_id));
+    if (!reqs.length) return "";
+    const names = Object.fromEntries((this._state.children || []).map(c => [c.id, c.name]));
+    return `
+      <div class="tm-card tm-help-card">
+        <h3 class="tm-section-title"><span aria-hidden="true">🙋</span>${this._t("panel.today_help_title")}
+          <span class="tm-pill tm-pill-warn">${reqs.length}</span></h3>
+        <div class="tm-help-list">
+          ${reqs.map(r => `
+            <div class="tm-help-row">
+              <div class="tm-help-text">
+                <strong>${this._esc(names[r.child_id] || "?")}</strong> — ${this._esc(r.chore_name || "")}
+                ${r.message ? `<div class="tm-meta">“${this._esc(r.message)}”</div>` : ""}
+                <div class="tm-meta">${this._esc(this._timeAgo ? this._timeAgo(r.at) : new Date(r.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</div>
+              </div>
+              <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="answer-help" data-id="${this._esc(r.id)}">${this._t("panel.today_help_answer")}</button>
+            </div>`).join("")}
+        </div>
+      </div>`;
+  }
+
+  async _answerHelp(id) {
+    const { ok, err } = await this._callService("answer_help", { request_id: id });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.today_help_answered"));
+  }
+
+  async _toggleSickDay(childId) {
+    const sick = !(this._state.sick_today || []).includes(childId);
+    const { ok, err } = await this._callService("set_sick_day", { child_id: childId, sick });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t(sick ? "panel.today_sick_set" : "panel.today_sick_cleared"));
+  }
+
   _renderTodayKid(child, pointsName) {
     const entry = this._todayEntry(child.id);
     const due = entry ? entry.due : 0;
@@ -4932,6 +5039,8 @@ class TaskMatePanel extends HTMLElement {
       else dayPill = `<span class="tm-pill">${this._t("panel.today_left", { count: due - done })}</span>`;
     }
     const scopeLabel = this._t("panel.scope_only", { name: child.name });
+    const sick = (this._state.sick_today || []).includes(child.id);
+    const mood = (this._state.moods_today || {})[child.id] || "";
     return `
       <div class="tm-card tm-kid" style="--kc:${this._childColor(child.id)}">
         <button type="button" class="tm-kid-main" data-act="scope" data-child="${this._esc(child.id)}" title="${this._esc(scopeLabel)}" aria-label="${this._esc(scopeLabel)}">
@@ -4941,10 +5050,19 @@ class TaskMatePanel extends HTMLElement {
             <span class="tm-kid-pts"><strong class="tm-numeric">${this._fmtNum(child.points)}</strong> ${this._esc(pointsName)}</span>
           </span>
         </button>
+        <div class="tm-kid-btns">
         <button type="button" class="tm-icon-btn tm-kid-adj" data-act="adjust-points-custom" data-id="${this._esc(child.id)}" title="${this._esc(this._t("panel.today_adjust_points"))}" aria-label="${this._esc(this._t("panel.today_adjust_points"))}">
           <ha-icon icon="mdi:plus-minus-variant"></ha-icon>
         </button>
+        <button type="button" class="tm-icon-btn tm-kid-sick ${sick ? "tm-kid-sick-on" : ""}" data-act="toggle-sick" data-id="${this._esc(child.id)}"
+                aria-pressed="${sick ? "true" : "false"}"
+                title="${this._esc(this._t(sick ? "panel.today_sick_off" : "panel.today_sick_on"))}" aria-label="${this._esc(this._t(sick ? "panel.today_sick_off" : "panel.today_sick_on"))}">
+          <ha-icon icon="mdi:emoticon-sick-outline"></ha-icon>
+        </button>
+        </div>
         <div class="tm-kid-pills">
+          ${sick ? `<span class="tm-pill tm-pill-info">🤒 ${this._t("panel.today_sick_pill")}</span>` : ""}
+          ${mood ? `<span class="tm-pill" title="${this._esc(this._t("panel.today_mood_pill"))}">${MOOD_FACES[mood] || ""} ${this._t("panel.today_mood_pill")}</span>` : ""}
           ${streak > 0 ? `<span class="tm-pill"><ha-icon icon="mdi:fire"></ha-icon>${this._ltrNums(this._t("panel.today_streak", { count: streak }))}</span>` : ""}
           ${dayPill}
         </div>
@@ -9335,6 +9453,20 @@ class TaskMatePanel extends HTMLElement {
         </div>
 
         <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.weekly_goal_title")}</h3><p class="tm-meta">${this._t("panel.weekly_goal_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.weekly_goal_enabled")}</div>
+              <ha-switch data-setting="weekly_goal_enabled" ${s.weekly_goal_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.weekly_goal_bonus")}<small>${this._t("panel.weekly_goal_bonus_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="100000" step="1" data-setting="weekly_goal_bonus" value="${this._num(s.weekly_goal_bonus, 10)}">
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.allowance_title")}</h3><p class="tm-meta">${this._t("panel.allowance_hint")}</p></div></div>
           <div class="tm-section-body">
             <div class="tm-setting-row">
@@ -10908,6 +11040,18 @@ class TaskMatePanel extends HTMLElement {
             <span class="tm-field-hint">${this._t("panel.penbon_applies_to_hint")}</span>
           </div>
         ` : "",
+        isPenalty ? `
+          <section class="tm-drawer-sec">
+            <h3 class="tm-drawer-sec-h">🤝 ${this._t("panel.penalty_redeem_title")}</h3>
+            ${this._select(this._t("panel.penalty_redeem_chore"), "redemption_chore_id", d.redemption_chore_id || "", [
+              { v: "", l: this._t("panel.penalty_redeem_none") },
+              ...(this._state.chores || []).filter(c => c.enabled !== false).map(c => ({ v: c.id, l: c.name })),
+            ], this._t("panel.penalty_redeem_hint"), true)}
+            ${d.redemption_chore_id ? `<div class="tm-field-row">
+              ${this._field(this._t("panel.penalty_redeem_percent"), "redemption_percent", d.redemption_percent || 100, "number", this._t("panel.penalty_redeem_percent_hint"))}
+              ${this._field(this._t("panel.penalty_redeem_days"), "redemption_days", d.redemption_days || 1, "number", this._t("panel.penalty_redeem_days_hint"))}
+            </div>` : ""}
+          </section>` : "",
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-${kind}">${this._t("panel.btn_save")}</button>`
@@ -12817,6 +12961,15 @@ class TaskMatePanel extends HTMLElement {
       .tm-verdict-ok { background: rgba(46, 125, 50, 0.12); color: #2e7d32; }
       .tm-verdict-warn { background: rgba(239, 108, 0, 0.14); color: #ef6c00; }
       .tm-fairness { display: flex; flex-direction: column; gap: 14px; }
+      .tm-mood-grid { display: grid; grid-template-columns: minmax(70px, max-content) 1fr; gap: 6px 12px; align-items: center; margin-top: 12px; }
+      .tm-mood-row { display: grid; grid-template-columns: repeat(var(--days), minmax(18px, 1fr)); gap: 3px; }
+      .tm-mood-cell { display: grid; place-items: center; aspect-ratio: 1; border-radius: 6px; font-size: 15px;
+        background: var(--secondary-background-color); color: var(--tm-text-muted); }
+      .tm-mood-cell small { font-size: 10px; }
+      .tm-mood-sad, .tm-mood-upset { background: color-mix(in srgb, var(--warning-color, #ffa600) 22%, transparent); }
+      .tm-mood-great, .tm-mood-good { background: color-mix(in srgb, var(--success-color, #43a047) 16%, transparent); }
+      .tm-mood-name { font-weight: 600; }
+      .tm-mood-sum { grid-column: 2; display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
       .tm-fair-row { display: grid; grid-template-columns: 120px 1fr auto; gap: 10px 12px; align-items: center; }
       .tm-fair-name { font-weight: 700; font-size: 14px; }
       .tm-fair-bar {
@@ -13661,10 +13814,18 @@ class TaskMatePanel extends HTMLElement {
         font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
       }
       .tm-kid-text { display: flex; flex-direction: column; min-width: 0; }
+      .tm-kid-sick-on { color: var(--info-color, #039be5); background: color-mix(in srgb, var(--info-color, #039be5) 14%, transparent); }
+      .tm-pill-info { background: color-mix(in srgb, var(--info-color, #039be5) 14%, transparent); color: var(--info-color, #039be5); }
+      .tm-help-card { border-inline-start: 4px solid var(--warning-color, #ffa600); }
+      .tm-help-list { display: flex; flex-direction: column; gap: 8px; }
+      .tm-help-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--divider-color); }
+      .tm-help-row:first-child { border-top: 0; }
+      .tm-help-text { min-width: 0; }
       .tm-kid-name { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .tm-kid-pts { font-size: 13px; color: var(--tm-text-muted); }
       .tm-kid-pts strong { font-size: 18px; color: var(--tm-gold); margin-inline-end: 2px; }
       .tm-kid-adj { align-self: start; }
+      .tm-kid-btns { display: flex; flex-direction: column; gap: 2px; align-self: start; }
       .tm-kid-pills { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
       .tm-kid-pills ha-icon { --mdc-icon-size: 13px; margin-inline-end: 2px; }
       .tm-today-cols {
