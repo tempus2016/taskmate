@@ -274,7 +274,10 @@ class TaskMateStickerChartCard extends LitElement {
       .stickers-none, .muted {
         font-size: 0.92rem; font-weight: 600; color: var(--secondary-text-color);
       }
-      .overflow { font-size: 0.85rem; font-weight: 800; color: var(--secondary-text-color); margin-inline-start: 4px; }
+      .overflow {
+        display: inline-block; white-space: nowrap; word-break: normal;
+        font-size: 0.85rem; font-weight: 800; color: var(--secondary-text-color); margin-inline-start: 4px;
+      }
       .goal-line {
         margin-top: 14px;
         font-size: 0.92rem; font-weight: 700; color: var(--primary-text-color);
