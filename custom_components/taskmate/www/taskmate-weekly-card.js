@@ -38,6 +38,14 @@ class TaskMateWeeklyCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
+  /** Avatar: child's photo → MDI avatar → default icon. */
+  _avatarGlyph(source, fallback = "mdi:account-circle", cls = "tm-face-img") {
+    const face = window.__taskmate_child_visual(source);
+    return face.kind === "image"
+      ? html`<img class="${cls}" src="${face.url}" alt="" loading="lazy">`
+      : html`<ha-icon icon="${face.kind === "icon" ? face.icon : fallback}"></ha-icon>`;
+  }
+
   static get styles() {
     const base = css`
       :host {
@@ -338,7 +346,7 @@ class TaskMateWeeklyCard extends LitElement {
 
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    let children = attrs.children || [];
+    let children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const chores = attrs.chores || [];
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t("common.stars");
@@ -466,14 +474,11 @@ class TaskMateWeeklyCard extends LitElement {
                   new Date(c.completed_at).toLocaleDateString("en-CA", { timeZone: tz })
                 )).size;
 
-                // Avatar now included directly in children array from the overview sensor
-                const avatar = child.avatar || "mdi:account-circle";
-
                 const pct = Math.min((childDaysActive / 7) * 100, 100);
 
                 return html`
                   <div class="child-row">
-                    <div class="child-avatar"><ha-icon icon="${avatar}"></ha-icon></div>
+                    <div class="child-avatar">${this._avatarGlyph(child)}</div>
                     <div class="child-info">
                       <div class="child-name">${child.name}</div>
                       <div class="child-week-stats">
@@ -503,18 +508,18 @@ class TaskMateWeeklyCard extends LitElement {
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
   _av(child, tone, size) {
-    const a = child.avatar || "";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${child.name}">`
+    const face = window.__taskmate_child_visual(child);
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${child.name}">`
         : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }
 
   _weekData(entity, tz) {
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    let children = attrs.children || [];
+    let children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const chores = attrs.chores || [];
     const pointsName = attrs.points_name || this._t("common.stars");
     const rewardsClaimed = (attrs.rewards_claimed || attrs.recent_rewards || []);
@@ -796,6 +801,7 @@ class TaskMateWeeklyCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t('common.editor.show_adults'),
       entity: this._t('common.editor.overview_entity'),
       title: this._t('weekly.editor.title'),
       child_id: this._t('common.editor.filter_by_child'),
@@ -806,6 +812,7 @@ class TaskMateWeeklyCardEditor extends LitElement {
 
   _computeHelper = (entry) => {
     const helpers = {
+      show_adults: this._t('common.editor.show_adults_helper'),
       entity: this._t('common.editor.overview_entity_helper'),
       child_id: this._t('weekly.editor.child_helper'),
     };
@@ -824,7 +831,7 @@ class TaskMateWeeklyCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}

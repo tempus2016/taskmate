@@ -21,6 +21,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from homeassistant.core import callback
+
 _LOGGER = logging.getLogger(__name__)
 
 _PREFIX = "notify."
@@ -211,6 +213,7 @@ def render(hass: Any, key: str, params: Mapping[str, Any]) -> str:
 def async_watch_language(hass: Any):
     """Reload the strings when HA's language changes; returns the unsubscribe."""
 
+    @callback
     def _changed(_event) -> None:
         hass.async_create_task(async_load(hass))
 

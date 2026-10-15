@@ -53,6 +53,14 @@ class AssignmentsMixin:
                 visibility.add(chore.weather_entity)
         self._tracked_visibility_entities = visibility
 
+        # A child's photo is read from their picture entity, so a photo changed
+        # there has to reach the sensors without waiting for a TaskMate edit.
+        # Trimmed the same way child_avatar_image reads it, so a stray space in
+        # a stored id can't leave the photo untracked.
+        self._tracked_picture_entities = {
+            entity for c in self.storage.get_children() if (entity := (getattr(c, "picture_entity", "") or "").strip())
+        }
+
     @callback
     def _availability_state_changed(self, event: Any) -> None:
         """Cheap bus-filter: react only when a tracked entity changes.
@@ -66,6 +74,9 @@ class AssignmentsMixin:
         if not entity_id:
             return
 
+        if entity_id in getattr(self, "_tracked_picture_entities", set()):
+            self._picture_entity_changed(data)
+
         is_availability = entity_id in getattr(self, "_tracked_availability_entities", set())
         is_visibility = entity_id in getattr(self, "_tracked_visibility_entities", set())
         if not (is_availability or is_visibility):
@@ -78,6 +89,22 @@ class AssignmentsMixin:
 
         if is_availability:
             self.hass.async_create_task(self._async_reevaluate_availability())
+
+    def _picture_entity_changed(self, data: dict) -> None:
+        """Push a child's new photo out as soon as the entity's picture changes.
+
+        A person's state flips between home and away all day without touching
+        its picture, so only a real change of ``entity_picture`` (or the entity
+        appearing or vanishing) is worth invalidating the sensors for.
+        """
+
+        def picture(state: Any) -> str:
+            return str((getattr(state, "attributes", None) or {}).get("entity_picture") or "") if state else ""
+
+        if picture(data.get("old_state")) == picture(data.get("new_state")):
+            return
+        self.external_state_version += 1
+        self.async_update_listeners()
 
     async def _async_reevaluate_availability(self) -> None:
         """Re-run assignment for require_availability chores when availability flips.

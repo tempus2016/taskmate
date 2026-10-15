@@ -175,7 +175,11 @@ class TaskMateBountyCard extends LitElement {
     const idx = Math.max(0, children.findIndex(c => String(c.id) === String(childId)));
     const name = this._childName(childId);
     const colour = `var(--tmd-c${(idx % 6) + 1}, ${CHILD_COLOURS[idx % CHILD_COLOURS.length]})`;
-    return html`<span class="bb-av" style="--bb-ac:${colour};--bb-s:${size}px" title="${name}">${name.charAt(0).toUpperCase()}</span>`;
+    // The child's photo when they have one (the shared face helper), else their initial.
+    const child = children.find(c => String(c.id) === String(childId));
+    const face = child && window.__taskmate_child_visual ? window.__taskmate_child_visual(child) : null;
+    const inner = face && face.kind === "image" ? html`<img src="${face.url}" alt="">` : name.charAt(0).toUpperCase();
+    return html`<span class="bb-av" style="--bb-ac:${colour};--bb-s:${size}px" title="${name}">${inner}</span>`;
   }
 
   // ── actions ─────────────────────────────────────────────────────────────
@@ -578,8 +582,9 @@ class TaskMateBountyCard extends LitElement {
         display: inline-grid; place-items: center;
         font-weight: 700; font-size: calc(var(--bb-s, 22px) * .45); line-height: 1;
         border: 2px solid var(--tmd-surface, var(--ha-card-background, var(--card-background-color, #fff)));
-        box-sizing: border-box;
+        box-sizing: border-box; overflow: hidden;
       }
+      .bb-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
       .bb-act { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
       .bb-hint { font-size: 12px; color: var(--tmd-dim, var(--secondary-text-color)); }
       .bb-claim-line {

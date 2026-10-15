@@ -105,7 +105,7 @@ class TaskMateChoreBoardCard extends LitElement {
   _kids(attrs) {
     const all = attrs.children || [];
     const picked = Array.isArray(this.config.children) ? this.config.children.map(String) : [];
-    return picked.length ? all.filter(c => picked.includes(String(c.id))) : all;
+    return picked.length ? all.filter(c => picked.includes(String(c.id))) : (window.__taskmate_family_children ? window.__taskmate_family_children(all, this.config) : all);
   }
 
   _kidIndex(attrs, id) {
@@ -317,10 +317,11 @@ class TaskMateChoreBoardCard extends LitElement {
   }
 
   _avatar(attrs, kid) {
-    const a = kid.avatar || "";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a ? html`<img src="${a}" alt="">` : (kid.name || "?").charAt(0).toUpperCase();
+    // The shared face helper: the child's photo, else their MDI avatar.
+    const face = window.__taskmate_child_visual ? window.__taskmate_child_visual(kid) : { kind: "none" };
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image" ? html`<img src="${face.url}" alt="">` : (kid.name || "?").charAt(0).toUpperCase();
     return html`<span class="cb-av" style="--cb-kc:${this._kidColour(attrs, kid.id)}">${inner}</span>`;
   }
 

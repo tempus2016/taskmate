@@ -56,6 +56,14 @@ class TaskMateOverviewCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
+  /** Avatar: child's photo → MDI avatar → default icon. */
+  _avatarGlyph(source, fallback = "mdi:account-circle", cls = "tm-face-img") {
+    const face = window.__taskmate_child_visual(source);
+    return face.kind === "image"
+      ? html`<img class="${cls}" src="${face.url}" alt="" loading="lazy">`
+      : html`<ha-icon icon="${face.kind === "icon" ? face.icon : fallback}"></ha-icon>`;
+  }
+
   static get styles() {
     const base = css`
       :host {
@@ -409,7 +417,7 @@ class TaskMateOverviewCard extends LitElement {
     if (design !== "classic") return this._renderDesigned(design, entity);
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    const children = attrs.children || [];
+    const children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const chores = attrs.chores || [];
     const completions = [...(attrs.todays_completions || [])];
     const chorePointsMap = {};
@@ -493,11 +501,11 @@ class TaskMateOverviewCard extends LitElement {
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
   _av(child, tone, size) {
-    const a = child.avatar || "";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${child.name}">`
+    const face = window.__taskmate_child_visual(child);
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${child.name}">`
         : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }
@@ -526,7 +534,7 @@ class TaskMateOverviewCard extends LitElement {
 
   _renderDesigned(design, entity) {
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    const children = attrs.children || [];
+    const children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const chores = attrs.chores || [];
     const completions = [...(attrs.todays_completions || [])];
     const hd = _safeColor(this.config.header_color, "#8e44ad");
@@ -723,9 +731,6 @@ class TaskMateOverviewCard extends LitElement {
   }
 
   _renderChildTile(child, chores, completions, pointsIcon, _pointsName) {
-    // Avatar now included directly in children array from the overview sensor
-    const avatar = child.avatar || "mdi:account-circle";
-
     // Get today's day of week from sensor (e.g. "monday")
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity)) || {};
     const todayDow = attrs.today_day_of_week ||
@@ -782,7 +787,7 @@ class TaskMateOverviewCard extends LitElement {
     return html`
       <div class="child-tile">
         <div class="child-avatar">
-          <ha-icon icon="${avatar}"></ha-icon>
+          ${this._avatarGlyph(child)}
         </div>
         <div class="child-main ${isParent ? 'tm-expandable' : ''}"
           @click="${isParent ? () => { this._expanded = { ...this._expanded, [child.id]: !isOpen }; this.requestUpdate(); } : null}">
@@ -931,6 +936,7 @@ class TaskMateOverviewCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t('common.editor.show_adults'),
       entity: this._t('overview.editor.entity_label'),
       title: this._t('overview.editor.title_label'),
       approvals_entity: this._t('overview.editor.approvals_entity_label'),
@@ -942,6 +948,7 @@ class TaskMateOverviewCardEditor extends LitElement {
 
   _computeHelper = (entry) => {
     const helpers = {
+      show_adults: this._t('common.editor.show_adults_helper'),
       entity: this._t('overview.editor.entity_helper'),
       approvals_entity: this._t('overview.editor.approvals_entity_helper'),
       show_parent_actions: this._t('common.editor.show_parent_actions_helper'),
@@ -962,7 +969,7 @@ class TaskMateOverviewCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}

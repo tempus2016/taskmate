@@ -170,6 +170,14 @@ function loadCard(filename, overrides = {}) {
       editorOptions: () => [],
     },
     __taskmate_chore_visual: (chore) => (chore?.icon ? { kind: "icon", icon: chore.icon } : { kind: "none" }),
+    // Mirrors taskmate-design.js: photo -> MDI avatar -> avatar-as-picture -> none.
+    __taskmate_child_visual: (child) => {
+      const c = typeof child === "string" ? { avatar: child } : child || {};
+      if (c.avatar_image) return { kind: "image", url: c.avatar_image };
+      const av = c.avatar || "";
+      if (av.startsWith("mdi:")) return { kind: "icon", icon: av };
+      return av ? { kind: "image", url: av } : { kind: "none" };
+    },
     matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
     addEventListener() {},
     removeEventListener() {},
@@ -227,7 +235,10 @@ function loadCard(filename, overrides = {}) {
     "import.meta.url",
     JSON.stringify(`http://localhost/${filename}?v=test`),
   );
-  vm.runInNewContext(source, sandbox);
+  // A module with top-level `await` is not a valid script, so it is wrapped in
+  // an async function. When nothing is actually awaited (the Lit base is found
+  // straight away) the whole body still runs synchronously.
+  vm.runInNewContext(overrides.topLevelAwait ? `(async () => {\n${source}\n})()` : source, sandbox);
   return { elements, window: sandboxWindow, get: (name) => elements.get(name) };
 }
 

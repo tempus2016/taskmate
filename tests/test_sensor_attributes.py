@@ -246,6 +246,9 @@ def _stress_coordinator():
             "target": 100,
         }
     )
+    # No linked-account pictures in the fixture; the feature has its own tests.
+    coord.child_avatar_image = MagicMock(return_value="")
+    coord.week_progress = MagicMock(return_value={})
     coord.storage = MagicMock()
     coord.storage.get_last_completed = MagicMock(return_value={"current": "2026-04-20T08:00:00Z"})
     return coord
@@ -383,6 +386,18 @@ class TestChildBadgesSensor:
         coord = self._coordinator_for(child, [b1, b2], awarded)
         sensor = ChildBadgesSensor(coord, _MockEntry(), child)
         assert sensor.native_value == 2
+
+    def test_attrs_say_whose_badges_they_are(self, hass):
+        """Copilot review on #1062: the badges card can only show the child's
+        face (photo or avatar) if the sensor says who the child is."""
+        child = Child(name="Mia", avatar="mdi:unicorn")
+        child.id = "c1"
+        coord = self._coordinator_for(child, [], [])
+        coord.child_avatar_image = MagicMock(return_value="/api/image/serve/mia/512x512")
+        attrs = ChildBadgesSensor(coord, _MockEntry(), child).extra_state_attributes
+        assert attrs["child_name"] == "Mia"
+        assert attrs["child_avatar"] == "mdi:unicorn"
+        assert attrs["avatar_image"] == "/api/image/serve/mia/512x512"
 
     def test_attrs_include_earned_and_available(self, hass):
         child = Child(name="Mia", total_chores_completed=5)
@@ -734,3 +749,13 @@ def test_history_shows_the_price_a_reward_was_bought_at():
     assert by_id["c1"]["points"] == -50  # what it actually cost
     assert by_id["c2"]["points"] == -5  # no record kept; fall back to the live cost
     assert by_id["c3"]["points"] == -5  # still pending: today's price is the estimate
+
+
+def test_common_context_rebuilds_when_an_external_entity_changes():
+    """A child's photo lives on another entity, outside ``coordinator.data``."""
+    coord = _stress_coordinator()
+    coord.external_state_version = 1
+    before = sensor_module._compute_common(coord)
+    assert sensor_module._compute_common(coord) is before
+    coord.external_state_version = 2
+    assert sensor_module._compute_common(coord) is not before

@@ -27,6 +27,12 @@ complete_chore:
       required: false
       selector:
         text:
+    completed_date:
+      name: Done on
+      description: Log the job for an earlier day (up to 7 days back, not today) that was done but not ticked. Parents only; approved straight away. The day's daily limit still applies.
+      required: false
+      selector:
+        date:
     note:
       name: Note
       description: What the child did, in their own words. Required when the chore is open-ended, and shown to the parent during approval.

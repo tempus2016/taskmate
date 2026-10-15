@@ -43,6 +43,14 @@ class TaskMateRewardProgressCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
+  /** Avatar: child's photo → MDI avatar → default icon. */
+  _avatarGlyph(source, fallback = "mdi:account-circle", cls = "tm-face-img") {
+    const face = window.__taskmate_child_visual(source);
+    return face.kind === "image"
+      ? html`<img class="${cls}" src="${face.url}" alt="" loading="lazy">`
+      : html`<ha-icon icon="${face.kind === "icon" ? face.icon : fallback}"></ha-icon>`;
+  }
+
   static get styles() {
     const base = css`
       :host { display: block; }
@@ -489,7 +497,7 @@ class TaskMateRewardProgressCard extends LitElement {
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     const rewards = attrs.rewards || [];
-    const children = attrs.children || [];
+    const children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t("common.points");
 
@@ -601,7 +609,7 @@ class TaskMateRewardProgressCard extends LitElement {
         <div class="child-progress-header">
           <div class="child-progress-left">
             <div class="child-avatar">
-              <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
+              ${this._avatarGlyph(child)}
             </div>
             <div>
               <div class="child-progress-name">${child.name}</div>
@@ -661,7 +669,7 @@ class TaskMateRewardProgressCard extends LitElement {
               ${children.map(child => html`
                 <div class="jackpot-contributor">
                   <div class="mini-avatar">
-                    <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
+                    ${this._avatarGlyph(child)}
                   </div>
                   <span>${child.name}: ${child.points}</span>
                 </div>
@@ -716,11 +724,11 @@ class TaskMateRewardProgressCard extends LitElement {
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
   _av(child, tone, size) {
-    const a = (child && child.avatar) || "";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${child.name}">`
+    const face = window.__taskmate_child_visual(child);
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${child.name}">`
         : ((child && child.name) || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }
@@ -743,7 +751,7 @@ class TaskMateRewardProgressCard extends LitElement {
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     const rewards = attrs.rewards || [];
-    const children = attrs.children || [];
+    const children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const pointsName = attrs.points_name || this._t("common.points");
     const pointsIcon = attrs.points_icon || "mdi:star";
 
@@ -930,6 +938,7 @@ class TaskMateRewardProgressCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t('common.editor.show_adults'),
       entity: this._t('common.editor.overview_entity'),
       title: this._t('common.editor.card_title'),
       reward_id: this._t('reward_progress.editor.reward_to_display'),
@@ -941,6 +950,7 @@ class TaskMateRewardProgressCardEditor extends LitElement {
 
   _computeHelper = (entry) => {
     const helpers = {
+      show_adults: this._t('common.editor.show_adults_helper'),
       entity: this._t('common.editor.overview_entity_helper'),
       reward_id: this._t('reward_progress.editor.reward_helper'),
       child_id: this._t('reward_progress.editor.child_helper'),
@@ -961,7 +971,7 @@ class TaskMateRewardProgressCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}

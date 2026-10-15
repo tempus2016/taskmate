@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from calendar import monthrange
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
@@ -20,7 +20,7 @@ from .const import (
 )
 from .coord_rejections import clean_reject_reason
 from .coord_teamwork import teamwork_config_error
-from .models import Chore, ChoreCompletion, PointsTransaction
+from .models import Chore, ChoreCompletion, PointsTransaction, parse_datetime
 
 if TYPE_CHECKING:
     pass
@@ -929,7 +929,10 @@ class ChoresMixin:
             return await self._async_join_team_chore(chore, child, now, as_parent=as_parent, photo_url=photo_url)
         # Open-ended completions always go to a parent: the child suggested the
         # point value, so self-awarding it would let them set their own pay.
-        auto_approve = as_parent or (not chore.requires_approval and not requires_photo and not is_open_ended)
+        # A grown-up's own completion never waits for approval (#1061).
+        auto_approve = (
+            as_parent or child.is_adult or (not chore.requires_approval and not requires_photo and not is_open_ended)
+        )
         # Won at auction (#982): the winner is paid their winning bid for this
         # occurrence instead of the chore's own points — exactly what they bid.
         auction_price = self.auction_price_for(chore, child_id, today)
@@ -996,12 +999,18 @@ class ChoresMixin:
         photo_url: str = "",
         note: str = "",
         suggested_points: int = 0,
+        backdated: bool = False,
     ) -> ChoreCompletion:
         """Store one completion and, when auto-approved, pay it.
 
         The part of completing a chore that is per child. The caller has already
         run every eligibility gate and then calls _async_after_completions once
         for the whole batch (one child normally, a whole team for #928).
+
+        ``backdated`` is a parent logging a job for an earlier day: ``now`` is
+        then that day's timestamp. It is paid for that day (weekend and birthday
+        bonuses follow the day) but leaves the streak alone, and only moves the
+        recurrence window forward, never back.
         """
         completion = ChoreCompletion(
             chore_id=chore.id,
@@ -1017,6 +1026,7 @@ class ChoresMixin:
             # window (#918); one a parent made on their behalf may not, and
             # nothing made while the window is 0 (off) ever can.
             child_undo_allowed=not as_parent and undo_window_seconds(self.storage) > 0,
+            backdated=backdated,
         )
 
         # Record the completion before awarding anything. Awarding can suspend
@@ -1027,7 +1037,16 @@ class ChoresMixin:
         self.storage.add_completion(completion)
 
         if auto_approve:
-            total_awarded = await self._award_points(child, points, chore_id=chore.id)
+            if backdated:
+                total_awarded = await self._award_points(
+                    child,
+                    points,
+                    completion_date=dt_util.as_local(now).date(),
+                    skip_streak=True,
+                    chore_id=chore.id,
+                )
+            else:
+                total_awarded = await self._award_points(child, points, chore_id=chore.id)
             completion.approved = True
             completion.approved_at = dt_util.now()
             completion.points_awarded = total_awarded
@@ -1043,12 +1062,17 @@ class ChoresMixin:
                 "chore_name": chore.name,
                 "points": points,
                 "difficulty": getattr(chore, "difficulty", "medium"),
-                "timestamp": dt_util.now().isoformat(),
+                "timestamp": now.isoformat() if backdated else dt_util.now().isoformat(),
+                **({"backdated": True} if backdated else {}),
             },
         )
 
-        # Update last_completed store (window starts at completion time, midnight-rounded)
-        self.storage.set_last_completed(chore.id, child.id, now.isoformat())
+        # Update last_completed store (window starts at completion time, midnight-rounded).
+        # A job logged for an earlier day must not pull the window back behind a
+        # completion the child made since, so it only records when it is the latest.
+        current = parse_datetime((self.storage.get_last_completed(chore.id, child.id) or {}).get("current"))
+        if not backdated or current is None or now > current:
+            self.storage.set_last_completed(chore.id, child.id, now.isoformat())
 
         # One-shot: if auto-approved, disable for this child immediately
         if getattr(chore, "schedule_mode", "specific_days") == "one_shot" and auto_approve:
@@ -1096,6 +1120,175 @@ class ChoresMixin:
                 await self._async_advance_quests(child.id, chore.id)
             if hasattr(self, "_async_evaluate_challenges"):
                 await self._async_evaluate_challenges(child.id)
+
+    # How far back a grown-up may log a job that was done but not ticked.
+    BACKDATE_MAX_DAYS = 7
+
+    async def async_complete_chore_on_date(self, chore_id: str, child_id: str, day: date) -> ChoreCompletion:
+        """Log a job a child did on an earlier day but nobody ticked at the time.
+
+        Parent-only (the service gates it). The completion is stamped midday
+        on ``day`` so it lands in that day's (and that week's) totals, and it
+        is approved straight away — the grown-up logging it is the approver. It
+        is recorded and followed up by the same code a parent ticking a job
+        for a child uses, so badges, quest steps, challenges, the recurrence
+        window and one-shot disabling all behave as they do for any approval.
+
+        It must be a day in the last ``BACKDATE_MAX_DAYS`` days, not today
+        (today is ticked the normal way), for a chore that was assigned to the
+        child and due that day, with that day's daily limit — and, for a
+        weekly-target chore, that week's quota — not yet used up.
+
+        Refused, because they can't be reconstructed or priced after the fact:
+        rotation and teamwork chores (whose turn it was), a day won at auction,
+        and open-ended chores (they need the child's note and the parent's price).
+
+        Points are the chore's base points (with its difficulty) plus the
+        weekend multiplier when ``day`` was a Saturday or Sunday; the time-of-day,
+        speed and roulette adjustments are left out, as there was no live tap.
+        The streak is left alone: rewriting ``last_completion_date`` to a past
+        day would break a streak the child is on today.
+
+        Every refusal raises ValueError with a message meant for the parent.
+        """
+        chore = self.get_chore(chore_id)
+        if not chore:
+            raise ValueError(f"Chore {chore_id} not found")
+        child = self.get_child(child_id)
+        if not child:
+            raise ValueError(f"Child {child_id} not found")
+
+        today = dt_util.as_local(dt_util.now()).date()
+        if not (today - timedelta(days=self.BACKDATE_MAX_DAYS) <= day < today):
+            raise ValueError(f"Pick a day in the last {self.BACKDATE_MAX_DAYS} days, before today.")
+
+        refusal = self._backdate_refusal(chore, child, day)
+        if refusal:
+            raise ValueError(refusal)
+
+        points = self.effective_chore_points(chore)
+        completed_at = datetime.combine(day, time(12, 0), tzinfo=dt_util.DEFAULT_TIME_ZONE)
+        completion = await self._async_record_completion(
+            chore,
+            child,
+            completed_at,
+            auto_approve=True,
+            points=points,
+            as_parent=True,
+            backdated=True,
+        )
+        await self._async_after_completions(chore, [(child, completion, points)], auto_approve=True)
+        return completion
+
+    def completions_on_date(self, day: date) -> list[dict]:
+        """Every chore completion made on ``day`` (local time), sub-tasks excluded.
+
+        Shaped like the sensors' ``todays_completions`` rows, so the sticker
+        chart can show a past day with the same code it uses for today.
+        """
+        return [
+            {
+                "completion_id": comp.id,
+                "chore_id": comp.chore_id,
+                "child_id": comp.child_id,
+                "approved": comp.approved,
+                "points": comp.points_awarded,
+            }
+            for comp in self.storage.get_completions()
+            if not comp.bonus_subtask_id and dt_util.as_local(comp.completed_at).date() == day
+        ]
+
+    def _backdate_refusal(self, chore, child, day: date, *, quota: bool = True) -> str | None:
+        """Why ``chore`` can't be logged for ``child`` on ``day``, or None if it can.
+
+        The one place the past-day rules live: logging a job refuses with this
+        message, and the panel's day lookup offers exactly the chores it lets
+        through, so the dialog never offers a tap TaskMate would then refuse.
+
+        ``quota=False`` leaves out what that day and week have already used
+        (the daily limit and a weekly target's quota). The sticker chart shows
+        those itself, as done tiles that can still be undone.
+        """
+        child_id = child.id
+        if not getattr(chore, "enabled", True):
+            return f"'{chore.name}' is switched off."
+        assigned = chore.assigned_to or []
+        if (assigned and child_id not in assigned) or child_id in (getattr(chore, "disabled_for", None) or []):
+            return f"'{chore.name}' isn't one of {child.name}'s jobs."
+        if (getattr(chore, "assignment_mode", "everyone") or "everyone") != "everyone" or self.teamwork_size(chore):
+            return f"'{chore.name}' rotates or needs a team, so it can't be logged for a past day."
+        if getattr(chore, "open_ended", False):
+            return f"'{chore.name}' is open-ended, so it needs the child's note and a price. Use the child's card."
+        if self.is_vacation_day(day):
+            return f"{day.strftime('%A')} was a holiday, so no jobs were due."
+        # A birthday with "chores off" is a day off for everything but mandatory
+        # chores, the same rule today's chore list follows.
+        if not getattr(chore, "mandatory", False) and self.is_birthday_day_off(child, day):
+            return f"{day.strftime('%A')} was {child.name}'s birthday, a day off from jobs."
+        if self.auction_winner(chore, day):
+            return f"'{chore.name}' was won at auction that day, so it can't be logged afterwards."
+
+        # A weekly-target chore (#883) has no fixed days — the child picks them —
+        # so it isn't "due" on any one day; its quota is the gate instead.
+        weekly_target = int(getattr(chore, "weekly_target", 0) or 0)
+        if weekly_target:
+            if quota and self.weekly_target_met(chore, child_id, on=day):
+                return f"'{chore.name}' already reached its {weekly_target} for that week."
+        elif not self._is_chore_scheduled_for_date(chore, day):
+            return f"'{chore.name}' wasn't due on {day.strftime('%A')}."
+
+        if not quota:
+            return None
+        redo_ids = self.inspection_redo_completion_ids()
+        done_that_day = sum(
+            1
+            for comp in self.storage.get_completions()
+            if comp.id not in redo_ids
+            and comp.chore_id == chore.id
+            and comp.child_id == child_id
+            and not comp.bonus_subtask_id
+            and dt_util.as_local(comp.completed_at).date() == day
+        )
+        daily_limit = max(1, int(getattr(chore, "daily_limit", 1) or 1))
+        if done_that_day >= daily_limit:
+            return f"'{chore.name}' was already done {done_that_day}/{daily_limit} times on {day.strftime('%A')}."
+        return None
+
+    def loggable_on(self, day: date) -> dict[str, list[str]]:
+        """The chores each child could have had logged for ``day``.
+
+        Everything ``_backdate_refusal`` allows apart from the day's and week's
+        quotas, which the sticker chart shows itself. The panel uses it so its
+        list and the past-day chart follow every schedule TaskMate knows —
+        recurrences, calendar moves, holidays — not just fixed weekdays.
+        """
+        loggable: dict[str, list[str]] = {}
+        for child in self.storage.get_children():
+            ids = [
+                chore.id
+                for chore in self.storage.get_chores()
+                if self._backdate_refusal(chore, child, day, quota=False) is None
+            ]
+            if ids:
+                loggable[child.id] = ids
+        return loggable
+
+    def week_progress_on(self, day: date) -> dict[str, dict[str, int]]:
+        """Each child's count for every weekly-target chore, in the week of ``day``.
+
+        The past-day sticker chart caps a weekly-target chore at what is left
+        of that week's quota, the way today's chart reads ``weekly_chore_progress``,
+        so it never offers a tick the backend would refuse.
+        """
+        progress: dict[str, dict[str, int]] = {}
+        for chore in self.storage.get_chores():
+            if int(getattr(chore, "weekly_target", 0) or 0) <= 0:
+                continue
+            for child in self.storage.get_children():
+                count = self.weekly_completion_count(chore.id, child.id, on=day)
+                if count:
+                    progress.setdefault(child.id, {})[chore.id] = count
+        return progress
 
     async def async_parent_complete_chore(self, chore_id: str) -> ChoreCompletion:
         """Mark a chore as completed by the parent — zero points, advances recurrence."""
@@ -1211,12 +1404,14 @@ class ChoresMixin:
         if already_done:
             raise ValueError(f"Bonus sub-task '{subtask.name}' already completed today.")
 
+        # A grown-up's own sub-task never waits for approval (#1061).
+        needs_approval = chore.requires_approval and not child.is_adult
         completion = ChoreCompletion(
             chore_id=chore_id,
             child_id=child_id,
             completed_at=now,
-            approved=not chore.requires_approval,
-            points_awarded=subtask.points if not chore.requires_approval else 0,
+            approved=not needs_approval,
+            points_awarded=subtask.points if not needs_approval else 0,
             submitted_points=subtask.points,
             bonus_subtask_id=bonus_subtask_id,
             child_undo_allowed=by_child and undo_window_seconds(self.storage) > 0,
@@ -1227,7 +1422,7 @@ class ChoresMixin:
         # awarding can suspend.
         self.storage.add_completion(completion)
 
-        if not chore.requires_approval:
+        if not needs_approval:
             total_awarded = await self._award_points(child, subtask.points, skip_streak=True)
             completion.approved = True
             completion.approved_at = dt_util.now()
@@ -1235,7 +1430,7 @@ class ChoresMixin:
             self.storage.update_completion(completion)
         await self.storage.async_save()
 
-        if chore.requires_approval:
+        if needs_approval:
             await self._async_notify_pending_approval(
                 child.name, f"{chore.name} › {subtask.name}", subtask.points, completion_id=completion.id
             )
@@ -1455,8 +1650,9 @@ class ChoresMixin:
 
                 # Only reverse streak for parent completions, and only
                 # when this was the child's sole completion that day —
-                # streaks are day-based, not per-completion
-                if not completion.bonus_subtask_id:
+                # streaks are day-based, not per-completion. A backdated one
+                # never advanced the streak, so it has nothing to give back.
+                if not completion.bonus_subtask_id and not completion.backdated:
                     reject_date = dt_util.as_local(completion.completed_at).date()
                     other_same_day = any(
                         c.id != completion.id
@@ -1508,8 +1704,10 @@ class ChoresMixin:
                                     )
                                 )
                             child.streak_milestones_achieved = sorted(d for d in achieved if d <= child.current_streak)
-                    # The weekly target bonus this completion helped earn (#1044).
-                    self._reverse_weekly_target_bonus(completion, child)
+                # The weekly target bonus this completion helped earn (#1044).
+                # Outside the streak block: a backdated job never moved the
+                # streak, but it can complete a week's target like any other.
+                self._reverse_weekly_target_bonus(completion, child)
 
         bonus_completions: list = []
         is_parent = not target_completion.bonus_subtask_id
@@ -1532,8 +1730,17 @@ class ChoresMixin:
                     child.total_points_earned = max(0, child.total_points_earned - bc.points_awarded)
                     child.total_chores_completed = max(0, child.total_chores_completed - 1)
 
-            # Undo last_completed store so recurrence window resets correctly
-            self.storage.undo_last_completed(target_completion.chore_id, target_completion.child_id)
+            # Undo last_completed store so recurrence window resets correctly.
+            # A backdated completion only owns the current entry if it was the
+            # latest when logged; otherwise a later completion does, and popping
+            # it would reopen that chore's window.
+            lc_current = parse_datetime(
+                (self.storage.get_last_completed(target_completion.chore_id, target_completion.child_id) or {}).get(
+                    "current"
+                )
+            )
+            if not target_completion.backdated or lc_current == target_completion.completed_at:
+                self.storage.undo_last_completed(target_completion.chore_id, target_completion.child_id)
 
             # One-shot: re-enable for this child
             chore = self.get_chore(target_completion.chore_id)
@@ -1900,33 +2107,40 @@ class ChoresMixin:
         days_since = (today - last_dt).days
         return days_since >= window_days
 
-    def weekly_completion_count(self, chore_id: str, child_id: str) -> int:
+    def weekly_completion_count(self, chore_id: str, child_id: str, on: date | None = None) -> int:
         """How many times ``child_id`` has completed ``chore_id`` this week.
 
         Monday-anchored, matching the Challenges period convention. Bonus
         sub-tasks don't count; pending completions do, so a chore can't be
         submitted a fourth time just because the parent hasn't got round to
         approving the third yet.
+
+        ``on`` asks about the week containing that day instead of this one, for
+        a job being logged against a past week.
         """
-        today = dt_util.as_local(dt_util.now()).date()
-        week_start = today - timedelta(days=today.weekday())
+        anchor = on or dt_util.as_local(dt_util.now()).date()
+        week_start = anchor - timedelta(days=anchor.weekday())
+        week_end = week_start + timedelta(days=6)
         count = 0
         for comp in self._cached_completions_for_chore(chore_id):
             if comp.child_id != child_id or getattr(comp, "bonus_subtask_id", ""):
                 continue
             try:
-                if dt_util.as_local(comp.completed_at).date() >= week_start:
+                if week_start <= dt_util.as_local(comp.completed_at).date() <= week_end:
                     count += 1
             except (AttributeError, TypeError, ValueError):
                 continue
         return count
 
-    def weekly_target_met(self, chore, child_id: str) -> bool:
-        """True when a weekly-target chore has had its quota filled this week."""
+    def weekly_target_met(self, chore, child_id: str, on: date | None = None) -> bool:
+        """True when a weekly-target chore has had its quota filled this week.
+
+        ``on`` checks the week containing that day (see ``weekly_completion_count``).
+        """
         target = int(getattr(chore, "weekly_target", 0) or 0)
         if target <= 0:
             return False
-        return self.weekly_completion_count(chore.id, child_id) >= target
+        return self.weekly_completion_count(chore.id, child_id, on) >= target
 
     @staticmethod
     def _week_key(when) -> str:

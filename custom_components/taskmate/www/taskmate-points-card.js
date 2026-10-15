@@ -725,7 +725,7 @@ class TaskMatePointsCard extends LitElement {
     }
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    const children = attrs.children || [];
+    const children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t("common.stars");
 
@@ -783,20 +783,24 @@ class TaskMatePointsCard extends LitElement {
 
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
+  /** Avatar + photo, read off the child's own sensor. */
   _childAvatarValue(child) {
     const childEntityId = Object.keys(this.hass.states).find(
       (eid) => this.hass.states[eid].attributes?.child_id === child.id
     );
-    const childEntity = childEntityId ? this.hass.states[childEntityId] : null;
-    return childEntity?.attributes?.avatar || "mdi:account-circle";
+    const attrs = childEntityId ? this.hass.states[childEntityId].attributes : null;
+    return {
+      avatar: attrs?.avatar || "mdi:account-circle",
+      avatar_image: attrs?.avatar_image || "",
+    };
   }
 
   _av(child, tone, size) {
-    const a = this._childAvatarValue(child);
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${child.name}">`
+    const face = window.__taskmate_child_visual(this._childAvatarValue(child));
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${child.name}">`
         : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }
@@ -925,17 +929,15 @@ class TaskMatePointsCard extends LitElement {
     const isLoading = this._loading[child.id];
 
     // Get child entity for avatar
-    const childEntityId = Object.keys(this.hass.states).find(
-      (eid) => this.hass.states[eid].attributes?.child_id === child.id
-    );
-    const childEntity = childEntityId ? this.hass.states[childEntityId] : null;
-    const avatar = childEntity?.attributes?.avatar || "mdi:account-circle";
+    const face = window.__taskmate_child_visual(this._childAvatarValue(child));
 
     return html`
       <div class="child-row ${isLoading ? "loading" : ""}">
         <div class="child-info">
           <div class="child-avatar">
-            <ha-icon icon="${avatar}"></ha-icon>
+            ${face.kind === "image"
+              ? html`<img class="tm-face-img" src="${face.url}" alt="" loading="lazy">`
+              : html`<ha-icon icon="${face.kind === "icon" ? face.icon : "mdi:account-circle"}"></ha-icon>`}
           </div>
           <div class="child-details">
             <div class="child-name">${child.name}</div>
@@ -1276,6 +1278,7 @@ class TaskMatePointsCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t('common.editor.show_adults'),
       entity: this._t('points_card.editor.entity_label'),
       title: this._t('points_card.editor.title_label'),
       card_design: this._t('common.design.field_label'),
@@ -1288,6 +1291,7 @@ class TaskMatePointsCardEditor extends LitElement {
 
   _computeHelper = (entry) => {
     const helpers = {
+      show_adults: this._t('common.editor.show_adults_helper'),
       entity: this._t('points_card.editor.entity_helper'),
       quick_add_amounts: this._t('points_card.editor.add_buttons_helper'),
       quick_remove_amounts: this._t('points_card.editor.remove_buttons_helper'),
@@ -1314,7 +1318,7 @@ class TaskMatePointsCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}

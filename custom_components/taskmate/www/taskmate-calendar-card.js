@@ -470,7 +470,7 @@ class TaskMateCalendarCard extends LitElement {
 
     const tz = this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    let children = attrs.children || [];
+    let children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const chores = attrs.chores || [];
     const pointsIcon = attrs.points_icon || "mdi:star";
 
@@ -606,7 +606,12 @@ class TaskMateCalendarCard extends LitElement {
       <div class="child-block">
         <div class="child-head">
           <div class="child-avatar">
-            <ha-icon icon="${child.avatar || "mdi:account-circle"}"></ha-icon>
+            ${(() => {
+              const face = window.__taskmate_child_visual(child);
+              return face.kind === "image"
+                ? html`<img class="tm-face-img" src="${face.url}" alt="" loading="lazy">`
+                : html`<ha-icon icon="${face.kind === "icon" ? face.icon : "mdi:account-circle"}"></ha-icon>`;
+            })()}
           </div>
           <span class="child-name">${child.name}</span>
           <span class="child-summary">${summary}</span>
@@ -626,11 +631,11 @@ class TaskMateCalendarCard extends LitElement {
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
   _av(child, tone, size) {
-    const a = child.avatar || "";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${child.name}">`
+    const face = window.__taskmate_child_visual(child);
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${child.name}">`
         : (child.name || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }
@@ -658,7 +663,7 @@ class TaskMateCalendarCard extends LitElement {
     }
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
-    let children = attrs.children || [];
+    let children = (window.__taskmate_family_children ? window.__taskmate_family_children(attrs.children || [], this.config) : attrs.children || []);
     const chores = attrs.chores || [];
     const pointsIcon = attrs.points_icon || "mdi:star";
     if (this.config.child_id) children = children.filter((c) => c.id === this.config.child_id);
@@ -856,6 +861,7 @@ class TaskMateCalendarCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t("common.editor.show_adults"),
       entity: this._t("common.editor.overview_entity"),
       title: this._t("calendar.editor.title"),
       card_design: this._t("common.design.field_label"),
@@ -866,6 +872,7 @@ class TaskMateCalendarCardEditor extends LitElement {
 
   _computeHelper = (entry) => {
     const helpers = {
+      show_adults: this._t("common.editor.show_adults_helper"),
       entity: this._t("common.editor.overview_entity_helper"),
       child_id: this._t("calendar.editor.child_helper"),
     };
@@ -884,7 +891,7 @@ class TaskMateCalendarCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}

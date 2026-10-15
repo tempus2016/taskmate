@@ -509,3 +509,161 @@ test("the editor writes the ordered children list with require_pin", () => {
   editor._togglePin(1);
   assert.equal(editor.dispatched.at(-1).detail.config.children[1].require_pin, false);
 });
+
+// ── bounties (#1054) ────────────────────────────────────────────────────────
+
+const BOUNTIES = [
+  { id: "car", title: "Wash the car", points: 50, status: "open", claim_hours: 4 },
+  { id: "shed", title: "Tidy the shed", points: 30, status: "open", claim_hours: 2, eligible: ["malia"] },
+  { id: "garden", title: "Weed the garden", points: 40, status: "claimed", claim_hours: 3, claimed_by: "malia", claimed_at: new Date().toISOString(), claim_until: future(3600) },
+  { id: "old", title: "Sort the recycling", points: 20, status: "completed", claim_hours: 2, claimed_by: "malia", points_awarded: 20 },
+];
+
+async function bountyView({ bounties = BOUNTIES, config = {}, kid = "vaiha", status } = {}) {
+  const card = await childView({ config: { show_bounties: true, ...config }, status }, kid);
+  card.hass.states[ENTITY].attributes.bounties = plain(bounties);
+  return card;
+}
+
+// The dialog's backdrop is itself clickable and contains its buttons, so
+// dialog buttons are found by tag and class rather than by their text.
+const dlgButton = (card, cls) => view(card).controls.find((c) => c.tag === "button" && c.attrs.includes(`class="${cls}"`));
+
+const bountyIds = (markup) => Array.from(markup.matchAll(/data-bounty="([^"]+)"/g), (m) => m[1]);
+
+test("bounties stay off the kiosk unless show_bounties is on", async () => {
+  const card = await childView();
+  card.hass.states[ENTITY].attributes.bounties = plain(BOUNTIES);
+  const { markup } = view(card);
+  assert.deepEqual(bountyIds(markup), []);
+  assert.doesNotMatch(markup, /km-photo/);
+});
+
+test("a child sees what they may claim and a sibling's claim, not others' jobs or history", async () => {
+  const { markup } = view(await bountyView());
+  assert.deepEqual(plain(bountyIds(markup)), ["car", "garden"]);
+  assert.match(markup, new RegExp(localize("bounty.sibling_on_it", { name: "Malia" })));
+  assert.match(markup, /km-bounty locked/);
+});
+
+test("the claimer sees their own job and their finished one", async () => {
+  const { markup } = view(await bountyView({ kid: "malia", status: { children: [{ id: "malia", has_pin: false, can_act: true, due: [] }] } }));
+  assert.deepEqual(plain(bountyIds(markup)), ["car", "shed", "garden", "old"]);
+  assert.match(markup, /km-bounty mine/);
+  assert.match(markup, new RegExp(localize("bounty.you_earned", { points: 20, pointsName: localize("common.points") }).replace("+", "\\+")));
+});
+
+test("Claim asks first, then claims for the unlocked child", async () => {
+  const card = await bountyView();
+  await view(card).control("km-claim").click();
+  assert.deepEqual(card.calls, []);
+  assert.equal(card._bountyDlg.kind, "claim");
+  assert.match(view(card).markup, new RegExp(localize("bounty.claim_it", { points: 50, pointsName: localize("common.points") })));
+  await dlgButton(card, "km-primary").click();
+  assert.deepEqual(plain(card.calls), [{ domain: "taskmate", service: "claim_bounty", data: { bounty_id: "car", child_id: "vaiha" } }]);
+  assert.equal(card._bountyDlg, null);
+});
+
+test("holding a claim disables the other Claim buttons", async () => {
+  const card = await bountyView({ kid: "malia", status: { children: [{ id: "malia", has_pin: false, can_act: true, due: [] }] } });
+  const claims = view(card).controls.filter((c) => c.attrs.includes("km-claim"));
+  assert.equal(claims.length, 2);
+  assert.ok(claims.every((c) => c.disabled));
+  assert.match(view(card).markup, new RegExp(localize("bounty.finish_first")));
+});
+
+test("the claimer finishes or gives back their bounty, naming themselves", async () => {
+  const opts = { kid: "malia", status: { children: [{ id: "malia", has_pin: false, can_act: true, due: [] }] } };
+  let card = await bountyView(opts);
+  await view(card).control(localize("bounty.done")).click();
+  assert.deepEqual(plain(card.calls), [{ domain: "taskmate", service: "complete_bounty", data: { bounty_id: "garden", child_id: "malia" } }]);
+  assert.equal(card._bountyDlg.kind, "yay");
+  assert.match(view(card).markup, new RegExp(localize("bounty.yay_title")));
+
+  card = await bountyView(opts);
+  await view(card).control(localize("bounty.give_back")).click();
+  assert.deepEqual(plain(card.calls), [{ domain: "taskmate", service: "give_back_bounty", data: { bounty_id: "garden", child_id: "malia" } }]);
+});
+
+test("a pending bounty waits for a grown-up and can be undone in the window", async () => {
+  const card = await bountyView({
+    bounties: [{ id: "car", title: "Wash the car", points: 50, status: "pending", claim_hours: 4, claimed_by: "vaiha", completion_id: "c9", undo: true }],
+  });
+  const r = view(card);
+  assert.match(r.markup, new RegExp(localize("kiosk.waiting")));
+  await r.control("km-undo").click();
+  assert.deepEqual(plain(card.calls), [{ domain: "taskmate", service: "undo_chore", data: { completion_id: "c9" } }]);
+});
+
+test("a photo bounty asks for a photo, uploads it and completes for the child who took it", async () => {
+  const photoBounty = [{ id: "car", title: "Wash the car", points: 50, status: "claimed", claim_hours: 4, claimed_by: "vaiha", require_photo: true, claim_until: future(3600) }];
+  const card = await bountyView({ bounties: photoBounty });
+  assert.match(view(card).markup, /id="km-photo"/);
+  await view(card).control(localize("bounty.done")).click();
+  assert.deepEqual(card.calls, []);
+  assert.equal(card._bountyDlg.kind, "photo");
+  assert.match(view(card).markup, new RegExp(localize("bounty.take_photo")));
+  await dlgButton(card, "km-primary").click();
+  assert.deepEqual(plain(card._photoFor), { childId: "vaiha", bountyId: "car" });
+
+  // The camera covers the card: the idle clock waits instead of locking.
+  for (let i = 0; i < 90; i += 1) card._tick();
+  assert.equal(card._screen, "child");
+
+  card._shrink = async () => "blob";
+  card._upload = async (blob) => { assert.equal(blob, "blob"); return "/api/taskmate/photo/abc.jpg"; };
+  const target = { files: [{ name: "x.jpg" }], value: "x.jpg" };
+  await card._bountyPhotoPicked({ target });
+  assert.equal(target.value, "");
+  assert.deepEqual(plain(card.calls), [{
+    domain: "taskmate", service: "complete_bounty",
+    data: { bounty_id: "car", child_id: "vaiha", photo_url: "/api/taskmate/photo/abc.jpg" },
+  }]);
+  assert.equal(card._bountyDlg.kind, "yay");
+});
+
+test("a photo that comes back after the kiosk locked still lands on the right child", async () => {
+  const photoBounty = [{ id: "car", title: "Wash the car", points: 50, status: "claimed", claim_hours: 4, claimed_by: "vaiha", require_photo: true, claim_until: future(3600) }];
+  const card = await bountyView({ bounties: photoBounty });
+  card._bountyDlg = { kind: "photo", id: "car" };
+  await dlgButton(card, "km-primary").click();
+  card._toPicker();
+  card._shrink = async () => "blob";
+  card._upload = async () => "/api/taskmate/photo/abc.jpg";
+  await card._bountyPhotoPicked({ target: { files: [{}], value: "" } });
+  assert.equal(plain(card.calls)[0].data.child_id, "vaiha");
+  assert.equal(card._screen, "picker");
+  assert.equal(card._bountyDlg, null, "no stale dialog for the next child");
+});
+
+test("a cancelled camera releases the idle clock", async () => {
+  const card = await bountyView({ config: { timeout: 20 } });
+  card._pickBountyPhoto(card._entry("vaiha").child, BOUNTIES[0]);
+  card._photoCancelled();
+  for (let i = 0; i < 20; i += 1) card._tick();
+  assert.equal(card._screen, "picker");
+});
+
+test("bounties don't count towards today's chores", async () => {
+  const card = await bountyView({ status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes"] }] } });
+  const { done, total } = card._progress(card._entry("vaiha").child);
+  assert.deepEqual([done, total], [0, 1]);
+});
+
+for (const design of DESIGNS) {
+  test(`${design}: bounty rows render their Claim button`, async () => {
+    const card = await bountyView({ config: { card_design: design } });
+    assert.ok(view(card).control("km-claim"));
+  });
+}
+
+test("the editor's show_bounties switch is off by default and stores only 'on'", () => {
+  const editor = new KioskEditor();
+  editor.hass = makeCard().hass;
+  editor.setConfig({ entity: ENTITY });
+  assert.ok(editor._schema().some((f) => f.name === "show_bounties"));
+  editor._formChanged({ detail: { value: { show_bounties: true } } });
+  assert.equal(editor.dispatched.at(-1).detail.config.show_bounties, true);
+  editor._formChanged({ detail: { value: { show_bounties: false } } });
+  assert.equal("show_bounties" in editor.dispatched.at(-1).detail.config, false);
+});

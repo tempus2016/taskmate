@@ -57,6 +57,14 @@ class TaskMateParentDashboardCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
+  /** Avatar: child's photo → MDI avatar → default icon. */
+  _avatarGlyph(source, fallback = "mdi:account-circle", cls = "tm-face-img") {
+    const face = window.__taskmate_child_visual(source);
+    return face.kind === "image"
+      ? html`<img class="${cls}" src="${face.url}" alt="" loading="lazy">`
+      : html`<ha-icon icon="${face.kind === "icon" ? face.icon : fallback}"></ha-icon>`;
+  }
+
   // Build "Chore · Child · date" for the lightbox caption (missing parts drop).
   _photoCaption(chore, child, iso) {
     let when = "";
@@ -587,6 +595,9 @@ class TaskMateParentDashboardCard extends LitElement {
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     const children = attrs.children || [];
+    // Grown-ups (#1061) only drop out of the per-child lists; approvals and
+    // rotation still need every profile to name whoever did the job.
+    const family = (window.__taskmate_family_children ? window.__taskmate_family_children(children, this.config) : children);
     const chores = attrs.chores || [];
     const completions = attrs.todays_completions || [];
     // Pending approvals come from the full pending list (not filtered to
@@ -646,11 +657,11 @@ class TaskMateParentDashboardCard extends LitElement {
         </div>
 
         <div class="tab-content">
-          ${this._activeSection === "overview" ? this._renderOverview(children, chores, completions, pointsIcon, pointsName) : ''}
+          ${this._activeSection === "overview" ? this._renderOverview(family, chores, completions, pointsIcon, pointsName) : ''}
           ${this._activeSection === "rotation" ? this._renderRotation(rotationChores, children, attrs) : ''}
           ${this._activeSection === "approvals" ? this._renderApprovals(pendingCompletions, children, chores, pointsIcon) : ''}
           ${this._activeSection === "claims" ? this._renderClaims(pendingRewardClaims, pointsIcon) : ''}
-          ${this._activeSection === "points" ? this._renderPoints(children, pointsIcon, pointsName) : ''}
+          ${this._activeSection === "points" ? this._renderPoints(family, pointsIcon, pointsName) : ''}
         </div>
       </ha-card>
     `;
@@ -665,12 +676,14 @@ class TaskMateParentDashboardCard extends LitElement {
 
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
-  _av(name, avatar, tone, size) {
-    const a = avatar || "";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${name || ''}">`
+  // `source` is a child object (so the child's photo travels with
+  // the avatar) or a bare icon string; the shared helper accepts either.
+  _av(name, source, tone, size) {
+    const face = window.__taskmate_child_visual(source);
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${name || ''}">`
         : (name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }
@@ -728,6 +741,9 @@ class TaskMateParentDashboardCard extends LitElement {
 
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     const children = attrs.children || [];
+    // Grown-ups (#1061) only drop out of the per-child lists; approvals and
+    // rotation still need every profile to name whoever did the job.
+    const family = (window.__taskmate_family_children ? window.__taskmate_family_children(children, this.config) : children);
     const chores = attrs.chores || [];
     const completions = attrs.todays_completions || [];
     const pendingCompletions = attrs.chore_completions || completions.filter(c => !c.approved);
@@ -762,11 +778,11 @@ class TaskMateParentDashboardCard extends LitElement {
 
     let body;
     const sec = this._activeSection;
-    if (sec === "overview") body = this._dOverview(design, children, chores, completions, attrs, pointsIcon);
+    if (sec === "overview") body = this._dOverview(design, family, chores, completions, attrs, pointsIcon);
     else if (sec === "rotation") body = this._dRotation(design, rotationChores, children, attrs);
     else if (sec === "approvals") body = this._dApprovals(design, pendingCompletions, children, chores, pointsIcon);
     else if (sec === "claims") body = this._dClaims(design, pendingRewardClaims, pointsIcon);
-    else if (sec === "points") body = this._dPoints(design, children, pointsIcon, pointsName);
+    else if (sec === "points") body = this._dPoints(design, family, pointsIcon, pointsName);
 
     return html`<ha-card class="tmd" style="--hd:${hd}">
       ${this._dHeader(hd, totalPending)}
@@ -832,7 +848,7 @@ class TaskMateParentDashboardCard extends LitElement {
       if (design === "console") {
         return html`
           <div class="row pd-ov-cn" style="--ac:${tone}">
-            ${this._av(child.name, child.avatar, tone, 34)}
+            ${this._av(child.name, child, tone, 34)}
             <div style="flex:1;min-width:0">
               <div class="pd-name">${child.name} <span class="muted pd-mini">${approved}/${total}</span></div>
               <div class="bar" style="margin-top:6px"><i style="width:${pct}%"></i></div>
@@ -844,7 +860,7 @@ class TaskMateParentDashboardCard extends LitElement {
         const isParent = window.__taskmate_is_parent(this.hass);
         return html`
           <div class="row pd-ov-cp" style="--ac:${tone}">
-            ${this._av(child.name, child.avatar, tone, 36)}
+            ${this._av(child.name, child, tone, 36)}
             <div style="flex:1;min-width:0">
               <div class="row" style="justify-content:space-between">
                 <span class="pd-name-cp">${child.name}</span>
@@ -862,7 +878,7 @@ class TaskMateParentDashboardCard extends LitElement {
       return html`
         <div class="pd-ov-pl" style="--ac:${tone}">
           <div class="row">
-            ${this._av(child.name, child.avatar, tone, 42)}
+            ${this._av(child.name, child, tone, 42)}
             <div style="flex:1;min-width:0">
               <div class="pd-name">${child.name}</div>
               <div class="muted pd-sub">${_ltrNums(this._t('dashboard.chores_done', { done: approved, total }, `${approved} / ${total} chores done`))}</div>
@@ -899,7 +915,7 @@ class TaskMateParentDashboardCard extends LitElement {
           @click="${() => this._handleReject(comp.completion_id)}">✕</button>`;
       return html`
         <div class="row pd-item ${isLoading ? 'loading' : ''}" style="--ac:${tone}">
-          ${this._av(child?.name || '?', child?.avatar, tone, 36)}
+          ${this._av(child?.name || '?', child, tone, 36)}
           <div style="flex:1;min-width:0">
             <div class="pd-item-title">${comp.chore_name || choreMap[comp.chore_id]?.name || this._t('common.unknown')}</div>
             <div class="muted pd-item-sub">${child?.name || this._t('common.unknown')}${time ? ` · ${time}` : ""} · +${pts}</div>
@@ -955,7 +971,7 @@ class TaskMateParentDashboardCard extends LitElement {
       const loading = !!this._loading[key];
       return html`
         <div class="row pd-item ${loading ? 'loading' : ''}" style="--ac:${tone}">
-          ${this._av(currentChild?.name || '?', currentChild?.avatar || 'mdi:rotate-3d-variant', tone, 36)}
+          ${this._av(currentChild?.name || '?', currentChild?.avatar ? currentChild : 'mdi:rotate-3d-variant', tone, 36)}
           <div style="flex:1;min-width:0">
             <div class="pd-item-title">${chore.name}</div>
             <div class="muted pd-item-sub">${currentChild?.name || unknown} · ${chore.assignment_mode}${group ? ` · ${group.policy === 'sticky' ? '🔗' : '🔀'} ${group.name}` : ""}</div>
@@ -976,7 +992,7 @@ class TaskMateParentDashboardCard extends LitElement {
       const tone = this._designTone(i);
       return html`
         <div class="row pd-item" style="--ac:${tone}">
-          ${this._av(child.name, child.avatar, tone, 36)}
+          ${this._av(child.name, child, tone, 36)}
           <div style="flex:1;min-width:0">
             <div class="pd-item-title">${child.name}</div>
             <div class="muted pd-item-sub">${child.points} ${pointsName}</div>
@@ -1078,7 +1094,7 @@ class TaskMateParentDashboardCard extends LitElement {
         return html`
           <div class="child-tile ${isParent ? 'tm-expandable' : ''}">
             <div class="child-avatar">
-              <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
+              ${this._avatarGlyph(child)}
             </div>
             <div class="child-tile-main"
               @click="${isParent ? () => { this._expanded = { ...this._expanded, [child.id]: !isOpen }; this.requestUpdate(); } : null}">
@@ -1160,7 +1176,7 @@ class TaskMateParentDashboardCard extends LitElement {
         return html`
           <div class="approval-item ${loading ? 'loading' : ''}">
             <div class="approval-child-avatar" style="background: linear-gradient(135deg, #16a085, #1abc9c);">
-              <ha-icon icon="${currentChild?.avatar || 'mdi:rotate-3d-variant'}"></ha-icon>
+              ${this._avatarGlyph(currentChild, "mdi:rotate-3d-variant")}
             </div>
             <div class="approval-info">
               <span class="approval-chore">${chore.name}</span>
@@ -1211,7 +1227,7 @@ class TaskMateParentDashboardCard extends LitElement {
         return html`
           <div class="approval-item ${isLoading ? 'loading' : ''}">
             <div class="approval-child-avatar">
-              <ha-icon icon="${child?.avatar || 'mdi:account-circle'}"></ha-icon>
+              ${this._avatarGlyph(child)}
             </div>
             <div class="approval-info">
               <div class="approval-chore">${comp.chore_name || chore?.name || this._t('common.unknown')}</div>
@@ -1294,7 +1310,7 @@ class TaskMateParentDashboardCard extends LitElement {
       ${children.map(child => html`
         <div class="quick-points-row">
           <div class="qp-avatar">
-            <ha-icon icon="${child.avatar || 'mdi:account-circle'}"></ha-icon>
+            ${this._avatarGlyph(child)}
           </div>
           <span class="qp-name">${child.name}</span>
           <span class="qp-points">
@@ -1490,6 +1506,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t('common.editor.show_adults'),
       entity: this._t('dashboard.editor.entity_label'),
       title: this._t('dashboard.editor.title_label'),
       card_design: this._t('common.design.field_label'),
@@ -1501,6 +1518,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
 
   _computeHelper = (entry) => {
     const helpers = {
+      show_adults: this._t('common.editor.show_adults_helper'),
       entity: this._t('dashboard.editor.entity_helper'),
       quick_points_amount: this._t('dashboard.editor.quick_points_helper'),
     };
@@ -1520,7 +1538,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}

@@ -123,19 +123,21 @@ class TimedMixin:
         rate_seconds = chore.timed_rate_minutes * 60
         pts = (total_seconds // rate_seconds) * chore.timed_rate_points if rate_seconds > 0 else 0
 
+        # A grown-up's own session never waits for approval (#1061).
+        needs_approval = chore.requires_approval and not child.is_adult
         completion = ChoreCompletion(
             chore_id=chore_id,
             child_id=child_id,
             completed_at=now,
-            approved=not chore.requires_approval,
-            points_awarded=pts if not chore.requires_approval else 0,
+            approved=not needs_approval,
+            points_awarded=pts if not needs_approval else 0,
             submitted_points=pts,
             timed_duration_seconds=total_seconds,
             # The child's own stopped session: theirs to undo in the window (#918).
             child_undo_allowed=undo_window_seconds(self.storage) > 0,
         )
 
-        if not chore.requires_approval:
+        if not needs_approval:
             total_awarded = await self._award_points(child, pts)
             completion.approved = True
             completion.approved_at = dt_util.now()
@@ -147,7 +149,7 @@ class TimedMixin:
 
         await self.storage.async_save()
 
-        if chore.requires_approval:
+        if needs_approval:
             await self._async_notify_pending_approval(
                 child.name,
                 chore.name,
@@ -252,17 +254,18 @@ class TimedMixin:
             rate_seconds = chore.timed_rate_minutes * 60
             pts = (total_seconds // rate_seconds) * chore.timed_rate_points if rate_seconds > 0 else 0
 
+            needs_approval = chore.requires_approval and not child.is_adult
             if total_seconds > 0:
                 completion = ChoreCompletion(
                     chore_id=session.chore_id,
                     child_id=session.child_id,
                     completed_at=dt_util.now(),
-                    approved=not chore.requires_approval,
-                    points_awarded=pts if not chore.requires_approval else 0,
+                    approved=not needs_approval,
+                    points_awarded=pts if not needs_approval else 0,
                     submitted_points=pts,
                     timed_duration_seconds=total_seconds,
                 )
-                if not chore.requires_approval:
+                if not needs_approval:
                     total_awarded = await self._award_points(child, pts)
                     completion.approved = True
                     completion.approved_at = dt_util.now()

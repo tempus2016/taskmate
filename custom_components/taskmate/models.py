@@ -235,6 +235,12 @@ class Child:
     total_penalties_received: int = 0
     notify_service: str | None = None
     linked_user_id: str = ""  # HA user id; when set, only that user (or an admin) may self-serve as this child
+    # Entity whose picture replaces the MDI avatar — normally the child's
+    # person.* entity. Deliberately independent of linked_user_id: a young
+    # child often has a person (with a photo) but no HA login of their own.
+    # Only the entity id is stored; the picture is read from it on every
+    # update, so a new photo set in HA shows up with nothing to re-save here.
+    picture_entity: str = ""
     quiet_hours_start: str = ""  # "HH:MM" — start of do-not-disturb window; empty = no quiet hours
     quiet_hours_end: str = ""  # "HH:MM" — end of do-not-disturb window; start>end means overnight
     presence_entity: str = ""  # person./device_tracker.; while not home, reminders wait for arrival (#926)
@@ -248,6 +254,9 @@ class Child:
     # Setup wizard age group (#980): one of AGE_GROUPS, or "" when none was
     # picked (every child that predates the wizard). Only steers suggestions.
     age_group: str = ""
+    # A grown-up's profile (#1061): their own completions never wait for
+    # approval, and cards leave them out unless a card opts in (show_adults).
+    is_adult: bool = False
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -274,6 +283,7 @@ class Child:
             guest_expires_on=str(data.get("guest_expires_on", "") or ""),
             birthday=str(data.get("birthday", "") or ""),
             age_group=normalize_age_group(data.get("age_group")),
+            is_adult=bool(data.get("is_adult", False)),
             availability_entity=data.get("availability_entity", ""),
             availability_inverted=data.get("availability_inverted", False),
             unavailability_entity=data.get("unavailability_entity", ""),
@@ -282,6 +292,7 @@ class Child:
             total_penalties_received=data.get("total_penalties_received", 0),
             notify_service=data.get("notify_service"),
             linked_user_id=data.get("linked_user_id", ""),
+            picture_entity=str(data.get("picture_entity", "") or ""),
             quiet_hours_start=data.get("quiet_hours_start", ""),
             quiet_hours_end=data.get("quiet_hours_end", ""),
             presence_entity=str(data.get("presence_entity", "") or ""),
@@ -312,6 +323,7 @@ class Child:
             "guest_expires_on": self.guest_expires_on,
             "birthday": self.birthday,
             "age_group": self.age_group,
+            "is_adult": self.is_adult,
             "availability_entity": self.availability_entity,
             "availability_inverted": self.availability_inverted,
             "unavailability_entity": self.unavailability_entity,
@@ -320,6 +332,7 @@ class Child:
             "total_penalties_received": self.total_penalties_received,
             "notify_service": self.notify_service,
             "linked_user_id": self.linked_user_id,
+            "picture_entity": self.picture_entity,
             "quiet_hours_start": self.quiet_hours_start,
             "quiet_hours_end": self.quiet_hours_end,
             "presence_entity": self.presence_entity,
@@ -1112,6 +1125,11 @@ class ChoreCompletion:
     # Set when this completion is a bounty's (#931). chore_id then carries the
     # bounty id too, so nothing that groups completions by chore mixes the two.
     bounty_id: str = ""
+    # True on a completion a parent logged afterwards for an earlier day. It was
+    # paid without touching the child's streak (rewriting last_completion_date
+    # to a past day would break a streak they are on today), so undoing it must
+    # not take a day off the streak either.
+    backdated: bool = False
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ChoreCompletion:
@@ -1136,6 +1154,7 @@ class ChoreCompletion:
             quality_rating=parse_quality_rating(data.get("quality_rating")),
             child_undo_allowed=data.get("child_undo_allowed") is True,
             bounty_id=str(data.get("bounty_id", "") or ""),
+            backdated=data.get("backdated") is True,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1162,6 +1181,8 @@ class ChoreCompletion:
             data["child_undo_allowed"] = True
         if self.bounty_id:
             data["bounty_id"] = self.bounty_id
+        if self.backdated:
+            data["backdated"] = True
         return data
 
 

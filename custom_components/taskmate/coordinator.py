@@ -986,9 +986,11 @@ class TaskMateCoordinator(
         unavailability_entity: str = "",
         pause_streak_when_unavailable: bool = False,
         linked_user_id: str = "",
+        picture_entity: str = "",
         birthday: str = "",
         presence_entity: str = "",
         age_group: str = "",
+        is_adult: bool = False,
         refresh: bool = True,
     ) -> Child:
         """Add a new child.
@@ -1004,9 +1006,11 @@ class TaskMateCoordinator(
             unavailability_entity=unavailability_entity,
             pause_streak_when_unavailable=pause_streak_when_unavailable,
             linked_user_id=linked_user_id,
+            picture_entity=picture_entity,
             birthday=birthday,
             presence_entity=presence_entity,
             age_group=age_group,
+            is_adult=is_adult,
         )
         self.storage.add_child(child)
         await self.storage.async_save()

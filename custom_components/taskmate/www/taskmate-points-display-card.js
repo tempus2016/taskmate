@@ -59,8 +59,7 @@ function weeklyPoints(child, tz) {
 }
 
 function childAvatar(child, colour) {
-  const av = child.avatar || "mdi:account-circle";
-  const isIcon = av.startsWith("mdi:");
+  const face = window.__taskmate_child_visual(child);
   const initials = (child.name || "?")
     .split(" ")
     .map(w => w[0])
@@ -69,10 +68,10 @@ function childAvatar(child, colour) {
     .toUpperCase();
   return html`
     <div class="avatar" style="background:${colour}">
-      ${isIcon
-        ? html`<ha-icon icon="${av}"></ha-icon>`
-        : av
-          ? html`<img src="${av}" alt="${child.name}">`
+      ${face.kind === "icon"
+        ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+        : face.kind === "image"
+          ? html`<img src="${face.url}" alt="${child.name}">`
           : initials}
     </div>`;
 }
@@ -625,7 +624,8 @@ class TaskMatePointsDisplayCard extends LitElement {
 
   _allChildren() {
     const s = this._stateObj();
-    return s ? getChildren(s) : [];
+    const all = s ? getChildren(s) : [];
+    return window.__taskmate_family_children ? window.__taskmate_family_children(all, this.config) : all;
   }
 
   _isCareerMode() {
@@ -961,11 +961,11 @@ class TaskMatePointsDisplayCard extends LitElement {
   _designTone(i) { return `var(--tmd-c${(i % 6) + 1})`; }
 
   _av(child, tone, size) {
-    const a = child.avatar || "";
-    const inner = a.startsWith("mdi:")
-      ? html`<ha-icon icon="${a}"></ha-icon>`
-      : a
-        ? html`<img src="${a}" alt="${child.name}">`
+    const face = window.__taskmate_child_visual(child);
+    const inner = face.kind === "icon"
+      ? html`<ha-icon icon="${face.icon}"></ha-icon>`
+      : face.kind === "image"
+        ? html`<img src="${face.url}" alt="${child.name}">`
         : (child.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
     return html`<div class="av" style="--av:${size}px;--ac:${tone}">${inner}</div>`;
   }
@@ -1242,6 +1242,7 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
 
   _computeLabel = (entry) => {
     const labels = {
+      show_adults: this._t('common.editor.show_adults'),
       entity: this._t('points_display.editor.entity_label'),
       title: this._t('common.editor.card_title'),
       mode: this._t('points_display.editor.mode_label'),
@@ -1255,7 +1256,7 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
     return labels[entry.name] ?? entry.name;
   };
 
-  _computeHelper = () => '';
+  _computeHelper = (entry) => (entry.name === 'show_adults' ? this._t('common.editor.show_adults_helper') : '');
 
   render() {
     if (!this.config) return html``;
@@ -1275,7 +1276,7 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}

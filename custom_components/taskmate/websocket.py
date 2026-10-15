@@ -173,6 +173,7 @@ WS_SET_CHORE_ORDER: Final = "taskmate/set_chore_order"
 WS_SET_GLOBAL_CHORE_ORDER: Final = "taskmate/set_global_chore_order"
 WS_ADD_CHORES_BULK: Final = "taskmate/add_chores_bulk"
 WS_PARENT_COMPLETE_CHORE: Final = "taskmate/parent_complete_chore"
+WS_DAY_COMPLETIONS: Final = "taskmate/day_completions"
 
 # Templates
 WS_TEMPLATES_LIST: Final = "taskmate/templates/list"
@@ -490,9 +491,11 @@ async def _ws_get_state(hass, connection, msg, coordinator):
         vol.Optional("unavailability_entity", default=""): str,
         vol.Optional("pause_streak_when_unavailable", default=False): bool,
         vol.Optional("linked_user_id", default=""): str,
+        vol.Optional("picture_entity", default=""): str,
         vol.Optional("birthday", default=""): vol.All(str, vol.Length(max=10)),
         vol.Optional("presence_entity", default=""): _validate_presence_entity,
         vol.Optional("age_group", default=""): vol.In(("", *AGE_GROUPS)),
+        vol.Optional("is_adult", default=False): bool,
     }
 )
 @websocket_api.async_response
@@ -511,9 +514,11 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         unavailability_entity=_opt_str(msg.get("unavailability_entity")),
         pause_streak_when_unavailable=bool(msg.get("pause_streak_when_unavailable", False)),
         linked_user_id=_opt_str(msg.get("linked_user_id")),
+        picture_entity=_opt_str(msg.get("picture_entity")),
         birthday=birthday,
         presence_entity=msg.get("presence_entity", ""),
         age_group=msg.get("age_group", ""),
+        is_adult=bool(msg.get("is_adult", False)),
     )
     connection.send_result(msg["id"], {"id": child.id})
 
@@ -529,11 +534,13 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         vol.Optional("unavailability_entity"): str,
         vol.Optional("pause_streak_when_unavailable"): bool,
         vol.Optional("linked_user_id"): str,
+        vol.Optional("picture_entity"): str,
         vol.Optional("presence_entity"): _validate_presence_entity,
         vol.Optional("is_guest"): bool,
         vol.Optional("guest_expires_on"): str,
         vol.Optional("birthday"): vol.All(str, vol.Length(max=10)),
         vol.Optional("age_group"): vol.In(("", *AGE_GROUPS)),
+        vol.Optional("is_adult"): bool,
     }
 )
 @websocket_api.async_response
@@ -557,6 +564,8 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.pause_streak_when_unavailable = bool(msg["pause_streak_when_unavailable"])
     if "linked_user_id" in msg:
         existing.linked_user_id = _opt_str(msg["linked_user_id"])
+    if "picture_entity" in msg:
+        existing.picture_entity = _opt_str(msg["picture_entity"])
     if "birthday" in msg:
         try:
             existing.birthday = normalize_birthday(msg["birthday"])
@@ -567,6 +576,8 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.presence_entity = msg["presence_entity"]
     if "age_group" in msg:
         existing.age_group = msg["age_group"]
+    if "is_adult" in msg:
+        existing.is_adult = bool(msg["is_adult"])
     if "is_guest" in msg or "guest_expires_on" in msg:
         # Routed through the coordinator so the expiry is validated and an
         # archived guest is un-archived when promoted to a family member.
@@ -2412,6 +2423,26 @@ async def _ws_parent_complete_chore(hass, connection, msg, coordinator):
 
 @websocket_api.websocket_command(
     {
+        vol.Required("type"): WS_DAY_COMPLETIONS,
+        vol.Required("date"): vol.All(str, vol.Coerce(date.fromisoformat)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_day_completions(hass, connection, msg, coordinator):
+    """What was done on one day — for logging past jobs from the panel."""
+    connection.send_result(
+        msg["id"],
+        {
+            "completions": coordinator.completions_on_date(msg["date"]),
+            "week_progress": coordinator.week_progress_on(msg["date"]),
+            "loggable": coordinator.loggable_on(msg["date"]),
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
         vol.Required("type"): WS_SET_CHORE_ORDER,
         vol.Required("child_id"): str,
         vol.Required("chore_order"): [str],
@@ -3183,6 +3214,7 @@ _COMMANDS = (
     _ws_approve_reward,
     _ws_reject_reward,
     _ws_parent_complete_chore,
+    _ws_day_completions,
     _ws_set_chore_order,
     _ws_set_global_chore_order,
     _ws_add_chores_bulk,

@@ -40,7 +40,7 @@
 3. **Parents approve** — chores marked "requires approval" land in a pending queue
 4. **Kids claim rewards** — points are only deducted once a parent approves the claim
 
-Everything is managed from the **TaskMate panel** in the Home Assistant sidebar, and surfaced on your dashboards through 27 Lovelace cards.
+Everything is managed from the **TaskMate panel** in the Home Assistant sidebar, and surfaced on your dashboards through 28 Lovelace cards.
 
 All data stays inside your Home Assistant instance. Nothing is sent to any external service.
 
@@ -77,19 +77,19 @@ For manual installation and the first-run walkthrough, see [Installation](https:
 
 **Gamification** — [levels & XP](https://github.com/tempus2016/taskmate/wiki/Levels-and-XP), [achievement badges](https://github.com/tempus2016/taskmate/wiki/Achievement-Badges), [quests](https://github.com/tempus2016/taskmate/wiki/Quests), [challenges](https://github.com/tempus2016/taskmate/wiki/Challenges), [unlockable avatars](https://github.com/tempus2016/taskmate/wiki/Avatars), [celebrations](https://github.com/tempus2016/taskmate/wiki/Celebrations), [leaderboard seasons](https://github.com/tempus2016/taskmate/wiki/Leaderboard-Seasons), [streak freezes](https://github.com/tempus2016/taskmate/wiki/Streak-Freezes) that protect a streak through a missed day, [birthday mode](https://github.com/tempus2016/taskmate/wiki/Birthday-Mode), [surprise inspections](https://github.com/tempus2016/taskmate/wiki/Surprise-Inspections) with a bonus, and "Wrapped"-style [recaps](https://github.com/tempus2016/taskmate/wiki/Recaps) on a schedule you choose.
 
-**Parent tooling** — an [admin panel](https://github.com/tempus2016/taskmate/wiki/Admin-Panel) with a Today home page and a [setup wizard](https://github.com/tempus2016/taskmate/wiki/Setup-Wizard) that suggests chores by age, [notifications](https://github.com/tempus2016/taskmate/wiki/Notifications) in your Home Assistant language, with [quiet hours](https://github.com/tempus2016/taskmate/wiki/Quiet-Hours), [reminder escalation](https://github.com/tempus2016/taskmate/wiki/Reminder-Escalation) and [presence-aware reminders](https://github.com/tempus2016/taskmate/wiki/Presence-Aware-Reminders) that wait until a child is home, [reject reasons](https://github.com/tempus2016/taskmate/wiki/Reject-Reasons) the child can see, [multi-parent approval routing](https://github.com/tempus2016/taskmate/wiki/Multi-Parent-Approval-Routing), a [weekly digest](https://github.com/tempus2016/taskmate/wiki/Weekly-Digest), [insight reports](https://github.com/tempus2016/taskmate/wiki/Insights) on fairness and friction, an [audit log](https://github.com/tempus2016/taskmate/wiki/Admin-Audit-Log), and [backup & restore](https://github.com/tempus2016/taskmate/wiki/Backup-and-Restore).
+**Parent tooling** — an [admin panel](https://github.com/tempus2016/taskmate/wiki/Admin-Panel) with a Today home page and a [setup wizard](https://github.com/tempus2016/taskmate/wiki/Setup-Wizard) that suggests chores by age, [ready-made dashboards](https://github.com/tempus2016/taskmate/wiki/Ready-Made-Dashboards) for the kids, the parents and a wall tablet, [notifications](https://github.com/tempus2016/taskmate/wiki/Notifications) in your Home Assistant language, with [quiet hours](https://github.com/tempus2016/taskmate/wiki/Quiet-Hours), [reminder escalation](https://github.com/tempus2016/taskmate/wiki/Reminder-Escalation) and [presence-aware reminders](https://github.com/tempus2016/taskmate/wiki/Presence-Aware-Reminders) that wait until a child is home, [reject reasons](https://github.com/tempus2016/taskmate/wiki/Reject-Reasons) the child can see, [multi-parent approval routing](https://github.com/tempus2016/taskmate/wiki/Multi-Parent-Approval-Routing), a [weekly digest](https://github.com/tempus2016/taskmate/wiki/Weekly-Digest), [insight reports](https://github.com/tempus2016/taskmate/wiki/Insights) on fairness and friction, an [audit log](https://github.com/tempus2016/taskmate/wiki/Admin-Audit-Log), and [backup & restore](https://github.com/tempus2016/taskmate/wiki/Backup-and-Restore).
 
-**Made for kids** — [Routine Mode](https://github.com/tempus2016/taskmate/wiki/Routine-Mode) for guided morning and bedtime flows, [Pre-Reader Mode](https://github.com/tempus2016/taskmate/wiki/Pre-Reader-Mode) for children who can't read yet, [Kiosk Mode](https://github.com/tempus2016/taskmate/wiki/Kiosk-Mode) for a shared wall tablet, a [child undo window](https://github.com/tempus2016/taskmate/wiki/Child-Undo-Window) so they can take back a mistaken tap, [watch complications](https://github.com/tempus2016/taskmate/wiki/Watch-Complications) for Apple Watch and Wear OS, [Read Aloud](https://github.com/tempus2016/taskmate/wiki/Read-Aloud) to a media player, a [printable fridge chart](https://github.com/tempus2016/taskmate/wiki/Printable-Weekly-Chart), [custom completion sounds](https://github.com/tempus2016/taskmate/wiki/Completion-Sounds) you can upload and pick per chore, and six [card design styles](https://github.com/tempus2016/taskmate/wiki/Card-Design-Styles) including a high-contrast accessible theme and a clean corporate one. Cards and the panel are translated into 10 languages and support [right-to-left layouts](https://github.com/tempus2016/taskmate/wiki/Localization).
+**Made for kids** — [Routine Mode](https://github.com/tempus2016/taskmate/wiki/Routine-Mode) for guided morning and bedtime flows, [Pre-Reader Mode](https://github.com/tempus2016/taskmate/wiki/Pre-Reader-Mode) for children who can't read yet, [Kiosk Mode](https://github.com/tempus2016/taskmate/wiki/Kiosk-Mode) for a shared wall tablet (where they can claim bounties too), a [child undo window](https://github.com/tempus2016/taskmate/wiki/Child-Undo-Window) so they can take back a mistaken tap, [watch complications](https://github.com/tempus2016/taskmate/wiki/Watch-Complications) for Apple Watch and Wear OS, [Read Aloud](https://github.com/tempus2016/taskmate/wiki/Read-Aloud) to a media player, a [printable fridge chart](https://github.com/tempus2016/taskmate/wiki/Printable-Weekly-Chart), [custom completion sounds](https://github.com/tempus2016/taskmate/wiki/Completion-Sounds) you can upload and pick per chore, and six [card design styles](https://github.com/tempus2016/taskmate/wiki/Card-Design-Styles) including a high-contrast accessible theme and a clean corporate one. Cards and the panel are translated into 10 languages and support [right-to-left layouts](https://github.com/tempus2016/taskmate/wiki/Localization).
 
 ---
 
 ## Dashboard cards
 
-Lovelace resources register automatically on startup. Edit your dashboard → **Add Card** → search "taskmate".
+Lovelace resources register automatically on startup. Edit your dashboard → **Add Card** → search "taskmate". Or let TaskMate build them for you: **TaskMate panel → Settings → Ready-made dashboards** creates a kids', a parents' and a wall-tablet dashboard filled in with your family.
 
 | For kids | For parents |
 |----------|-------------|
-| Child · Rewards · Reward Progress · Points Display · Routine · Kiosk · Streak · Badges · Bounty Board · Wishlist · Recap · Chore Auction | Approvals · Parent Dashboard · Overview · Chore Board · Activity · Points · Reorder · Penalties · Bonuses · Weekly · Graph · Leaderboard · Calendar · Family Goal · Photo Gallery |
+| Child · Sticker Chart · Rewards · Reward Progress · Points Display · Routine · Kiosk · Streak · Badges · Bounty Board · Wishlist · Recap · Chore Auction | Approvals · Parent Dashboard · Overview · Chore Board · Activity · Points · Reorder · Penalties · Bonuses · Weekly · Graph · Leaderboard · Calendar · Family Goal · Photo Gallery |
 
 Every card takes a `header_color` and a `card_design` option. See [Dashboard Cards](https://github.com/tempus2016/taskmate/wiki/Dashboard-Cards) for each card's full configuration.
 
@@ -108,7 +108,7 @@ Every card takes a `header_color` and a `card_design` option. See [Dashboard Car
 | [Getting Started](https://github.com/tempus2016/taskmate/wiki/Getting-Started) | First-time setup walkthrough |
 | [Admin Panel](https://github.com/tempus2016/taskmate/wiki/Admin-Panel) | The management hub in the HA sidebar |
 | [Settings](https://github.com/tempus2016/taskmate/wiki/Settings) | Every configurable setting in one place |
-| [Dashboard Cards](https://github.com/tempus2016/taskmate/wiki/Dashboard-Cards) | All 27 Lovelace cards and their options |
+| [Dashboard Cards](https://github.com/tempus2016/taskmate/wiki/Dashboard-Cards) | All 28 Lovelace cards and their options |
 | [Services](https://github.com/tempus2016/taskmate/wiki/Services) | Every callable service, with examples |
 | [Sensor Reference](https://github.com/tempus2016/taskmate/wiki/Sensor-Reference) | All entities and their attributes |
 | [Automations](https://github.com/tempus2016/taskmate/wiki/Automations) | Bus events, blueprints, and examples |
@@ -134,4 +134,4 @@ Bug reports and feature requests are welcome in [Issues](https://github.com/temp
 
 MIT — see [LICENSE](LICENSE).
 
-> Originally created by [vinnybad/choremander](https://github.com/vinnybad/choremander). This fork adds 27 Lovelace cards, an admin panel, a bonus points system, streak tracking, reward approval flow, a penalty system, and much more.
+> Originally created by [vinnybad/choremander](https://github.com/vinnybad/choremander). This fork adds 28 Lovelace cards, an admin panel, a bonus points system, streak tracking, reward approval flow, a penalty system, and much more.
