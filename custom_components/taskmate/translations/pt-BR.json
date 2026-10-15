@@ -150,6 +150,10 @@
         "suggested_points": {
           "name": "Pontos sugeridos",
           "description": "Quanto a criança acha que o trabalho valeu. Apenas uma sugestão para quem aprova — não concede pontos por si só."
+        },
+        "quantity": {
+          "name": "Quantidade",
+          "description": "Quantas unidades a criança fez, em uma tarefa por quantidade (\"ler 20 páginas\"). Obrigatório para uma criança nessas tarefas; os pontos são pagos por unidade."
         }
       }
     },

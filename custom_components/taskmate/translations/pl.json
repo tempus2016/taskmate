@@ -150,6 +150,10 @@
         "suggested_points": {
           "name": "Proponowane punkty",
           "description": "Ile według dziecka warta była praca. Wskazówka dla zatwierdzającego rodzica — sama w sobie nie przyznaje punktów."
+        },
+        "quantity": {
+          "name": "Liczba",
+          "description": "Ile jednostek wykonało dziecko w zadaniu ilościowym („przeczytaj 20 stron”). Wymagane od dziecka przy takich zadaniach; punkty są przyznawane za jednostkę."
         }
       }
     },

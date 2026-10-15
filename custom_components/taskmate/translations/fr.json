@@ -150,6 +150,10 @@
         "suggested_points": {
           "name": "Points suggérés",
           "description": "Ce que l'enfant estime que le travail valait. Une simple indication pour le parent qui approuve — cela n'attribue aucun point."
+        },
+        "quantity": {
+          "name": "Quantité",
+          "description": "Combien d’unités l’enfant a faites, pour une tâche à quantité (« lire 20 pages »). Obligatoire de la part d’un enfant sur ces tâches ; les points sont versés par unité."
         }
       }
     },

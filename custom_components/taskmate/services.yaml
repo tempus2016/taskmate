@@ -49,6 +49,15 @@ complete_chore:
           min: 0
           max: 999
           mode: box
+    quantity:
+      name: Quantity
+      description: How many units the child did, for a quantity chore ("read 20 pages"). Required from a child on those chores; the chore's points are paid per unit.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 10000
+          mode: box
 
 complete_bonus_subtask:
   name: Complete Bonus Sub-task

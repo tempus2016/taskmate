@@ -150,6 +150,10 @@
         "suggested_points": {
           "name": "Foreslåtte poeng",
           "description": "Hva barnet mener arbeidet var verdt. Bare et hint til forelderen som godkjenner — det gir ikke poeng i seg selv."
+        },
+        "quantity": {
+          "name": "Antall",
+          "description": "Hvor mange enheter barnet gjorde, på en mengdeoppgave («les 20 sider»). Påkrevd fra et barn på slike oppgaver; poengene betales per enhet."
         }
       }
     },

@@ -150,6 +150,10 @@
         "suggested_points": {
           "name": "Suggested points",
           "description": "What the child reckons the work was worth. A hint for the approving parent — it awards nothing on its own."
+        },
+        "quantity": {
+          "name": "Quantity",
+          "description": "How many units the child did, for a quantity chore (\"read 20 pages\"). Required from a child on those chores; the chore's points are paid per unit."
         }
       }
     },

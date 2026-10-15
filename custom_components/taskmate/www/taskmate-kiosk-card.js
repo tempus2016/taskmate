@@ -339,7 +339,7 @@ class TaskMateKioskCard extends LitElement {
       const team = chore.team;
       const joined = team && Array.isArray(team.joined) ? team.joined.map(String) : [];
       if (!due && !comp) continue;
-      const phone = !!(chore.require_photo || chore.open_ended || chore.task_type === "timed");
+      const phone = !!(chore.require_photo || chore.open_ended || chore.task_type === "timed" || chore.quantity_unit);
       let state;
       if (due && team && joined.includes(id)) state = "team";
       else if (due) state = phone ? "elsewhere" : "todo";

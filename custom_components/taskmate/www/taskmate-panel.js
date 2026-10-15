@@ -660,11 +660,11 @@ class TaskMatePanel extends HTMLElement {
     if (act === "sound-upload")   { this._pickCustomSound(); return; }
     if (act === "sound-rename")   { this._renameCustomSound(t.dataset.file, t.dataset.name); return; }
     if (act === "sound-delete")   { this._deleteCustomSound(t.dataset.file, t.dataset.name); return; }
-    if (act === "chore-image-pick")   { this._pickChoreImage(); return; }
+    if (act === "chore-image-pick")   { this._pickChoreImage(t.dataset.field || "image_url"); return; }
     if (act === "chore-image-remove") {
       // Clears the dialog value only — the file is deleted on save by the
       // coordinator, so cancelling the dialog cannot destroy the picture.
-      this._dialog.data.image_url = "";
+      this._dialog.data[t.dataset.field === "reference_image_url" ? "reference_image_url" : "image_url"] = "";
       this._render();
       return;
     }
@@ -2244,6 +2244,9 @@ class TaskMatePanel extends HTMLElement {
       mandatory: false, mandatory_penalty_points: 0,
       require_photo: false,
       open_ended: false,
+      estimated_minutes: 0,
+      reference_image_url: "",
+      quantity_unit: "", quantity_max: 0,
       team_size: 0, team_points_mode: "each", team_bonus: 0,
       publish_calendar_entities: [],
       depends_on: [],
@@ -2374,13 +2377,13 @@ class TaskMatePanel extends HTMLElement {
     await this._fetchState();
   }
 
-  _pickChoreImage() {
+  _pickChoreImage(field = "image_url") {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/jpeg,image/png,image/webp";
     input.addEventListener("change", () => {
       const file = input.files && input.files[0];
-      if (file) this._uploadChoreImage(file);
+      if (file) this._uploadChoreImage(file, field);
     });
     input.click();
   }
@@ -2411,9 +2414,9 @@ class TaskMatePanel extends HTMLElement {
     });
   }
 
-  async _uploadChoreImage(file) {
+  async _uploadChoreImage(file, field = "image_url") {
     if (this._choreImageBusy) return;
-    this._choreImageBusy = true;
+    this._choreImageBusy = field;
     this._render();
     try {
       const blob = await this._downscaleChoreImage(file);
@@ -2444,7 +2447,9 @@ class TaskMatePanel extends HTMLElement {
       if (resp.status === 400) { this._showToast("err", this._t("panel.chore_image_bad_type")); return; }
       if (!resp.ok) { this._showToast("err", this._t("panel.chore_image_failed")); return; }
       const body = await resp.json();
-      if (this._dialog && body.image_url) this._dialog.data.image_url = body.image_url;
+      if (this._dialog && body.image_url) {
+        this._dialog.data[field === "reference_image_url" ? "reference_image_url" : "image_url"] = body.image_url;
+      }
     } catch (err) {
       this._showToast("err", this._t("panel.chore_image_failed"));
     } finally {
@@ -2483,6 +2488,10 @@ class TaskMatePanel extends HTMLElement {
       description: d.description || "",
       icon: d.icon || "",
       image_url: d.image_url || "",
+      reference_image_url: d.reference_image_url || "",
+      estimated_minutes: Math.min(600, Math.max(0, Math.round(Number(d.estimated_minutes) || 0))),
+      quantity_unit: (d.task_type || "standard") === "timed" || d.open_ended ? "" : String(d.quantity_unit || "").trim().slice(0, 30),
+      quantity_max: Math.min(10000, Math.max(0, Math.round(Number(d.quantity_max) || 0))),
       points: Number(d.points) || 0,
       assigned_to: d.assigned_to || [],
       // The dialog tracks this via toggle-depends, but it was never sent, so a
@@ -3313,6 +3322,14 @@ class TaskMatePanel extends HTMLElement {
       const secs = payload.chore_undo_seconds;
       if (!Number.isInteger(secs) || secs < 0 || secs > 3600) {
         this._showToast("err", this._t("panel.settings_chore_undo_invalid"));
+        return;
+      }
+    }
+    // Auto-approve timeout: whole hours, 0 (off) to a week.
+    if ("auto_approve_hours" in payload) {
+      const hrs = payload.auto_approve_hours;
+      if (!Number.isInteger(hrs) || hrs < 0 || hrs > 168) {
+        this._showToast("err", this._t("panel.settings_auto_approve_invalid"));
         return;
       }
     }
@@ -4369,6 +4386,7 @@ class TaskMatePanel extends HTMLElement {
                   <strong>${c.completions}</strong> ${this._t(c.completions === 1 ? "panel.insights_chore" : "panel.insights_chores")}
                   · ${this._num(c.points)} ${this._esc(this._state.settings?.points_name || this._t("common.points"))}
                   · ${c.share_completions}%
+                  ${report.total_minutes ? ` · ${this._t("panel.insights_minutes", { minutes: this._num(c.minutes), percent: c.share_minutes })}` : ""}
                 </div>
                 <div class="tm-fair-status tm-fair-${c.status}">${this._t("panel.insights_status_" + c.status)}</div>
               </div>
@@ -9033,6 +9051,10 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-setting-label">${this._t("panel.settings_chore_undo_label")}<small>${this._t("panel.settings_chore_undo_hint")}</small></div>
               <input type="number" class="tm-input" min="0" max="3600" step="1" data-setting="chore_undo_seconds" aria-label="${this._esc(this._t("panel.settings_chore_undo_label"))}" value="${this._num(s.chore_undo_seconds, 0)}">
             </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_auto_approve_label")}<small>${this._t("panel.settings_auto_approve_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="168" step="1" data-setting="auto_approve_hours" aria-label="${this._esc(this._t("panel.settings_auto_approve_label"))}" value="${this._num(s.auto_approve_hours, 0)}">
+            </div>
           </div>
         </div>
 
@@ -10207,11 +10229,21 @@ class TaskMatePanel extends HTMLElement {
             ${this._field(this._t("panel.chore_points_label"), "points", d.points, "number")}
             ${d.assignment_mode === "first_come" ? "" : this._field(this._t("panel.chore_daily_limit_label"), "daily_limit", d.daily_limit, "number")}
           </div>`,
-          this._select(this._t("panel.chore_difficulty_label"), "difficulty", d.difficulty || "medium", [
-            { v: "easy", l: this._t("panel.difficulty_easy") },
-            { v: "medium", l: this._t("panel.difficulty_medium") },
-            { v: "hard", l: this._t("panel.difficulty_hard") },
-          ]),
+          `<div class="tm-field-row">
+            ${this._select(this._t("panel.chore_difficulty_label"), "difficulty", d.difficulty || "medium", [
+              { v: "easy", l: this._t("panel.difficulty_easy") },
+              { v: "medium", l: this._t("panel.difficulty_medium") },
+              { v: "hard", l: this._t("panel.difficulty_hard") },
+            ])}
+            ${this._field(this._t("panel.chore_estimated_minutes_label"), "estimated_minutes", d.estimated_minutes || 0, "number",
+              this._t("panel.chore_estimated_minutes_hint"))}
+          </div>`,
+          isTimedTask || d.open_ended ? "" : `<div class="tm-field-row">
+            ${this._field(this._t("panel.chore_quantity_unit_label"), "quantity_unit", d.quantity_unit || "", "text",
+              this._t("panel.chore_quantity_unit_hint"))}
+            ${this._field(this._t("panel.chore_quantity_max_label"), "quantity_max", d.quantity_max || 0, "number",
+              this._t("panel.chore_quantity_max_hint"))}
+          </div>`,
           this._soundField(d.completion_sound),
         ]),
         section("who", [
@@ -10294,6 +10326,7 @@ class TaskMatePanel extends HTMLElement {
           this._switch(this._t("panel.chore_approval_label"), "requires_approval", d.requires_approval),
           this._switch(this._t("panel.chore_require_photo_label"), "require_photo", d.require_photo,
             this._t("panel.chore_require_photo_hint")),
+          this._choreImageField(d.reference_image_url || "", "reference_image_url"),
           this._switch(this._t("panel.chore_open_ended_label"), "open_ended", d.open_ended,
             this._t("panel.chore_open_ended_hint")),
           this._switch(this._t("panel.chore_require_availability"), "require_availability", d.require_availability,
@@ -11108,23 +11141,28 @@ class TaskMatePanel extends HTMLElement {
   }
 
   /** The chore picture well (#750): thumbnail or empty state, Upload, Remove. */
-  _choreImageField(value) {
-    const busy = this._choreImageBusy;
+  _choreImageField(value, field = "image_url") {
+    const busy = !!this._choreImageBusy;
+    const mine = this._choreImageBusy === field;
+    // The reference picture (a job done well) shares the upload, with its own words.
+    const k = field === "reference_image_url"
+      ? { label: "panel.chore_reference_image_label", empty: "panel.chore_reference_image_empty", hint: "panel.chore_reference_image_hint" }
+      : { label: "panel.chore_image_label", empty: "panel.chore_image_empty", hint: "panel.chore_image_hint" };
     return `
       <div class="tm-field">
-        <span class="tm-field-label">${this._t("panel.chore_image_label")}</span>
+        <span class="tm-field-label">${this._t(k.label)}</span>
         <div class="tm-image-well">
           ${value
             ? `<img class="tm-image-thumb" src="${this._esc(value)}" alt="">`
-            : `<div class="tm-image-empty">${this._t("panel.chore_image_empty")}</div>`}
+            : `<div class="tm-image-empty">${this._t(k.empty)}</div>`}
           <div class="tm-image-actions">
-            <button type="button" class="tm-btn tm-btn-sm" data-act="chore-image-pick" ${busy ? "disabled" : ""}>
-              ${busy ? this._t("panel.chore_image_uploading") : this._t("panel.chore_image_upload")}
+            <button type="button" class="tm-btn tm-btn-sm" data-act="chore-image-pick" data-field="${field}" ${busy ? "disabled" : ""}>
+              ${mine ? this._t("panel.chore_image_uploading") : this._t("panel.chore_image_upload")}
             </button>
-            ${value ? `<button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="chore-image-remove">${this._t("panel.chore_image_remove")}</button>` : ""}
+            ${value ? `<button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="chore-image-remove" data-field="${field}">${this._t("panel.chore_image_remove")}</button>` : ""}
           </div>
         </div>
-        <span class="tm-field-hint">${this._t("panel.chore_image_hint")}</span>
+        <span class="tm-field-hint">${this._t(k.hint)}</span>
       </div>`;
   }
 

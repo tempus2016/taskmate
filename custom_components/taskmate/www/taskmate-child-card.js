@@ -42,6 +42,7 @@ class TaskMateChildCard extends LitElement {
       _avatarPickerOpen: { type: Boolean },
       _photoCapture: { type: Object },
       _extraCapture: { type: Object },
+      _quantityCapture: { type: Object },
       _inspCelebration: { type: Object },
     };
   }
@@ -1410,6 +1411,15 @@ class TaskMateChildCard extends LitElement {
         background: var(--card-background-color, #fff);
       }
       .extra-note { resize: vertical; font-size: 0.95rem; }
+      .tm-qty-row { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 8px 0 4px; }
+      .tm-qty-step { width: 52px; height: 52px; border-radius: 50%; border: none; font-size: 1.8rem; font-weight: 800;
+        background: var(--secondary-background-color, #f0f0f0); color: var(--primary-text-color, #33373d); cursor: pointer; }
+      .tm-qty-step:disabled { opacity: .35; cursor: default; }
+      .tm-qty-input { width: 110px; text-align: center; font-size: 2.2rem; font-weight: 800; border: 2px solid var(--divider-color, #ddd);
+        border-radius: 14px; padding: 6px; background: var(--card-background-color, #fff); color: var(--primary-text-color, #33373d); }
+      .tm-qty-unit { text-align: center; font-weight: 700; opacity: .75; }
+      .tm-qty-worth { text-align: center; font-size: 1.05rem; font-weight: 800; color: var(--fun-green, #2e9e5b); margin: 6px 0 2px; }
+      .tm-minutes-left { white-space: nowrap; }
       .extra-points { font-size: 1.05rem; font-weight: 800; }
       .extra-note:focus, .extra-points:focus { outline: none; border-color: var(--fun-purple); }
       .extra-points-label {
@@ -2392,6 +2402,7 @@ class TaskMateChildCard extends LitElement {
                 <div class="section-title">
                   <ha-icon icon="${this._getTimeCategoryIcon(this._effectiveTimeCategory())}"></ha-icon>
                   <span class="section-title-text">${this._getDynamicTitle()}</span>
+                  ${this._renderMinutesLeft(childChores, child, todaysCompletions, 'reset-countdown tm-minutes-left')}
                   ${this.config.show_countdown !== false ? (() => {
                     const countdown = this._getMidnightCountdown();
                     return countdown ? html`
@@ -2426,6 +2437,7 @@ class TaskMateChildCard extends LitElement {
         ${this._confetti.length > 0 ? this._renderConfetti() : ""}
         ${this._renderPhotoCapture()}
         ${this._renderExtraCapture()}
+        ${this._renderQuantityCapture()}
         <input type="file" id="tm-photo-input" accept="image/*" capture="environment"
                style="display:none" @change="${this._onPhotoSelected}">
 
@@ -2790,6 +2802,7 @@ class TaskMateChildCard extends LitElement {
     const sectionLine = rows.length === 0 ? "" : html`
       <div class="tmd-section">
         <span>${this._getDynamicTitle()}</span>
+        ${this._renderMinutesLeft(childChores, child, todaysCompletions, "tmd-countdown tm-minutes-left")}
         ${countdown ? html`<span class="tmd-countdown ${countdown.soon ? "soon" : ""}">
           <ha-icon icon="mdi:clock-outline"></ha-icon>${countdown.label}</span>` : ""}
       </div>`;
@@ -2863,6 +2876,7 @@ class TaskMateChildCard extends LitElement {
       ${this._confetti.length > 0 ? this._renderConfetti() : ""}
       ${this._renderPhotoCapture()}
       ${this._renderExtraCapture()}
+      ${this._renderQuantityCapture()}
       <input type="file" id="tm-photo-input" accept="image/*" capture="environment"
              style="display:none" @change="${this._onPhotoSelected}">
     </ha-card>`;
@@ -2936,8 +2950,10 @@ class TaskMateChildCard extends LitElement {
       ? this._t("child.weekly_target_progress", { done: r.chore._weeklyProgress, target: r.chore._weeklyTarget })
       : "";
     return html`
-      ${r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || weeklyLabel || (r.team && !r.done) ? html`
+      ${r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || weeklyLabel || (r.team && !r.done)
+        || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit)) ? html`
         <div class="tmd-meta">
+          ${this._choreExtraTags(r.chore, r.done, "tmd-tag")}
           ${r.mandatory ? html`<span class="tmd-tag mandatory">⚠ ${this._t("child.mandatory")}</span>` : ""}
           ${r.auction ? html`<span class="tmd-tag auction">🔨 ${this._t("child.won_at_auction")}</span>` : ""}
           ${r.photo ? html`<span class="tmd-tag photo">📷 ${this._t("child.photo_needed")}</span>` : ""}
@@ -4112,6 +4128,9 @@ class TaskMateChildCard extends LitElement {
                 <span class="photo-badge">✍️ ${this._t('child.open_ended_tag')}</span>
               </div>
             ` : ''}
+            ${(chore.estimated_minutes || chore.quantity_unit) && !isCompletedForToday ? html`
+              <div class="recurrence-label">${this._choreExtraTags(chore, false, 'photo-badge')}</div>
+            ` : ''}
             ${team ? html`<div>${this._renderTeamProgress(team, 'team-label')}</div>` : ''}
           </div>
         </div>
@@ -4525,6 +4544,12 @@ class TaskMateChildCard extends LitElement {
       this._openExtraCapture(chore, child);
       return;
     }
+    // Quantity chores ("read 20 pages"): ask how many first. Gated here for
+    // the same reason — every render path goes through this method.
+    if (chore.quantity_unit && !(extra && extra.quantity)) {
+      this._openQuantityCapture(chore, child, extra);
+      return;
+    }
 
     // Teamwork (#928): a child already in the team taps to leave — no photo
     // needed for that. Gated here, like open-ended, so every render path
@@ -4619,6 +4644,7 @@ class TaskMateChildCard extends LitElement {
           ...(photoUrl ? { photo_url: photoUrl } : {}),
           ...(extra && extra.note ? { note: extra.note } : {}),
           ...(extra && extra.suggested_points ? { suggested_points: extra.suggested_points } : {}),
+          ...(extra && extra.quantity ? { quantity: extra.quantity } : {}),
         });
       }
 
@@ -4896,6 +4922,121 @@ class TaskMateChildCard extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  // ── Quantity chores ("read 20 pages") ───────────────────────────────────
+  //
+  // A big number with − / + so a young child can do it without a keyboard;
+  // the input still takes typing. The chore's points are per unit, so the
+  // sheet shows what this many is worth before it is sent.
+
+  _openQuantityCapture(chore, child, extra = null) {
+    const start = Math.max(1, Math.min(Number(chore.quantity_max) || 10000, 1));
+    this._quantityCapture = { chore, child, extra, value: start, error: "" };
+    this.requestUpdate();
+  }
+
+  _closeQuantityCapture() {
+    this._quantityCapture = null;
+    this.requestUpdate();
+  }
+
+  _setQuantity(value) {
+    const cap = this._quantityCapture;
+    if (!cap) return;
+    const max = Number(cap.chore.quantity_max) || 10000;
+    const n = Math.max(0, Math.min(max, Math.round(Number(value) || 0)));
+    this._quantityCapture = { ...cap, value: n, error: "" };
+    this.requestUpdate();
+  }
+
+  async _submitQuantityCapture() {
+    const cap = this._quantityCapture;
+    if (!cap) return;
+    if (!(cap.value >= 1)) {
+      this._quantityCapture = { ...cap, error: this._t("child.quantity_needs_number", { unit: cap.chore.quantity_unit }) };
+      this.requestUpdate();
+      return;
+    }
+    const { chore, child, extra, value } = cap;
+    this._closeQuantityCapture();
+    await this._handleComplete(chore, child, null, { ...(extra || {}), quantity: value });
+  }
+
+  _renderQuantityCapture() {
+    const cap = this._quantityCapture;
+    if (!cap) return "";
+    const chore = cap.chore || {};
+    const unit = chore.quantity_unit || "";
+    const per = Number(chore.effective_points ?? chore.points) || 0;
+    const max = Number(chore.quantity_max) || 0;
+    const stop = (e) => e.stopPropagation();
+    return html`
+      <div class="photo-overlay" @click="${() => this._closeQuantityCapture()}">
+        <div class="photo-sheet tm-qty-sheet" @click="${stop}" role="dialog" aria-modal="true"
+             aria-label="${this._t("child.quantity_title", { unit })}">
+          <div class="photo-title">🔢 ${this._t("child.quantity_title", { unit })}</div>
+          <div class="photo-for">${chore.name || ""}</div>
+          <div class="tm-qty-row">
+            <button class="tm-qty-step" aria-label="−" ?disabled="${cap.value <= 1}"
+                    @click="${() => this._setQuantity(cap.value - 1)}">−</button>
+            <input class="tm-qty-input" type="number" inputmode="numeric" min="1" max="${max || 10000}"
+                   aria-label="${this._t("child.quantity_title", { unit })}"
+                   .value="${String(cap.value)}" @input="${(e) => this._setQuantity(e.target.value)}">
+            <button class="tm-qty-step" aria-label="+" ?disabled="${max && cap.value >= max}"
+                    @click="${() => this._setQuantity(cap.value + 1)}">+</button>
+          </div>
+          <div class="tm-qty-unit">${unit}</div>
+          <div class="tm-qty-worth">${this._t("child.quantity_worth", { points: cap.value * per })}</div>
+          ${max ? html`<div class="photo-dropzone-hint">${this._t("child.quantity_max_hint", { max, unit })}</div>` : ""}
+          ${cap.error ? html`<div class="photo-error">${cap.error}</div>` : ""}
+          <div class="photo-btn-row">
+            <button class="photo-btn ghost" @click="${() => this._closeQuantityCapture()}">
+              ${this._t("child.photo_cancel")}
+            </button>
+            <button class="photo-btn primary" @click="${() => this._submitQuantityCapture()}">
+              ✓ ${this._t("child.quantity_submit")}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Minutes of today's outstanding chores that carry an estimate, or 0.
+   * Feeds the "about N minutes of jobs left" line on every design.
+   */
+  _minutesLeft(chores, child, todaysCompletions) {
+    let total = 0;
+    for (const chore of chores || []) {
+      const mins = Number(chore.estimated_minutes) || 0;
+      if (!mins) continue;
+      if (chore._hasDueDays && !chore._isDueToday) continue;
+      if (chore._isLockedPreview || chore._isRecurrenceLocked || chore._isFirstComeLocked || chore._weeklyTargetMet) continue;
+      const done = (todaysCompletions || []).filter(c => c.chore_id === chore.id && c.child_id === child.id && !c.bonus_subtask_id).length;
+      const left = Math.max(0, (Number(chore.daily_limit) || 1) - done);
+      total += mins * left;
+    }
+    return total;
+  }
+
+  _renderMinutesLeft(chores, child, todaysCompletions, cls) {
+    if (this.config.show_minutes_left === false) return "";
+    const mins = this._minutesLeft(chores, child, todaysCompletions);
+    if (!mins) return "";
+    return html`<span class="${cls}" title="${this._t("child.minutes_left", { minutes: mins })}">
+      <ha-icon icon="mdi:timer-sand"></ha-icon>${this._t("child.minutes_left", { minutes: mins })}</span>`;
+  }
+
+  /** "~10 min" and "2 per page" tags, shared by the classic and designed rows. */
+  _choreExtraTags(chore, done, cls) {
+    const mins = Number(chore.estimated_minutes) || 0;
+    const unit = chore.quantity_unit || "";
+    if (!(mins || unit)) return "";
+    return html`
+      ${unit && !done ? html`<span class="${cls}">🔢 ${this._t("child.quantity_rate", { points: chore.effective_points ?? chore.points, unit })}</span>` : ""}
+      ${mins && !done ? html`<span class="${cls}">⏱ ${this._t("child.minutes_tag", { minutes: mins })}</span>` : ""}`;
   }
 
   _renderPhotoCapture() {
@@ -5575,6 +5716,7 @@ class TaskMateChildCardEditor extends LitElement {
       },
       { name: 'include_anytime_chores', selector: { boolean: {} } },
       { name: 'show_countdown', selector: { boolean: {} } },
+      { name: 'show_minutes_left', selector: { boolean: {} } },
       { name: 'show_description', selector: { boolean: {} } },
       { name: 'pre_reader', selector: { boolean: {} } },
       { name: 'pre_reader_labels', selector: { boolean: {} } },
@@ -5597,6 +5739,7 @@ class TaskMateChildCardEditor extends LitElement {
       elapsed_time_mode: this._t('child.editor.missed_time_chores'),
       include_anytime_chores: this._t('child.editor.include_anytime_chores'),
       show_countdown: this._t('child.editor.show_countdown'),
+      show_minutes_left: this._t('child.editor.show_minutes_left'),
       show_description: this._t('child.editor.show_description'),
       pre_reader: this._t('child.editor.pre_reader'),
       pre_reader_labels: this._t('child.editor.pre_reader_labels'),
@@ -5638,6 +5781,7 @@ class TaskMateChildCardEditor extends LitElement {
       elapsed_time_mode: this.config.elapsed_time_mode || 'dim',
       include_anytime_chores: this.config.include_anytime_chores !== false,
       show_countdown: this.config.show_countdown !== false,
+      show_minutes_left: this.config.show_minutes_left !== false,
       show_description: this.config.show_description === true,
       pre_reader: this.config.pre_reader === true,
       pre_reader_labels: this.config.pre_reader_labels === true,
@@ -5679,7 +5823,7 @@ class TaskMateChildCardEditor extends LitElement {
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
       const defaults = {
-        show_countdown: true, show_description: false, debug: false,
+        show_countdown: true, show_minutes_left: true, show_description: false, debug: false,
         time_category: 'morning', due_days_mode: 'hide',
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',
         first_come_claimed_mode: 'hide',

@@ -1750,13 +1750,15 @@ class TaskMateStorage:
                 chore["assignment_mode"] = "everyone"
             if chore.get("schedule_mode") not in SCHEDULE_MODES:
                 chore["schedule_mode"] = "specific_days"
-            img = chore.get("image_url")
-            if img and not is_taskmate_image_url(img):
-                _LOGGER.warning(
-                    "Import: dropped non-TaskMate image_url on chore %s",
-                    chore.get("id", "?"),
-                )
-                chore["image_url"] = ""
+            for key in ("image_url", "reference_image_url"):
+                img = chore.get(key)
+                if img and not is_taskmate_image_url(img):
+                    _LOGGER.warning(
+                        "Import: dropped non-TaskMate %s on chore %s",
+                        key,
+                        chore.get("id", "?"),
+                    )
+                    chore[key] = ""
 
         # Custom sounds: `file` is concatenated into a path and handed to HA's
         # URL signer, and `name` is rendered in the panel and the chore

@@ -150,6 +150,10 @@
         "suggested_points": {
           "name": "Føreslåtte poeng",
           "description": "Kva barnet meiner arbeidet var verdt. Berre eit hint til forelderen som godkjenner — det gjev ikkje poeng i seg sjølv."
+        },
+        "quantity": {
+          "name": "Tal",
+          "description": "Kor mange einingar barnet gjorde, på ei mengdeoppgåve («les 20 sider»). Påkravd frå eit barn på slike oppgåver; poenga blir betalte per eining."
         }
       }
     },

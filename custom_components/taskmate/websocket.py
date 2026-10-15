@@ -86,11 +86,20 @@ from .const import (
     is_valid_completion_sound,
     recurrence_interval_days,
 )
+from .coord_auto_approve import AUTO_APPROVE_MAX_HOURS
 from .coord_birthdays import normalize_birthday
 from .coord_inspections import INSPECTION_BONUS_MAX, INSPECTION_FAIL_MODES, INSPECTION_WINDOWS
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
-from .models import REJECT_REASON_MAX, BonusSubTask, Reward, normalize_tag_ids
+from .models import (
+    MAX_ESTIMATED_MINUTES,
+    MAX_QUANTITY,
+    QUANTITY_UNIT_MAX_LENGTH,
+    REJECT_REASON_MAX,
+    BonusSubTask,
+    Reward,
+    normalize_tag_ids,
+)
 from .sounds import MAX_NAME_LEN as MAX_SOUND_NAME_LEN
 
 _LOGGER = logging.getLogger(__name__)
@@ -380,6 +389,18 @@ def validate_child_color(value):
 # ---------------------------------------------------------------------------
 
 
+def _sign_chore_images(hass, chore: dict) -> dict:
+    """A chore dict with its pictures signed so the panel's <img> loads.
+
+    Browsers do not send the bearer token on image requests, so a bare URL 401s.
+    """
+    out = chore
+    for key in ("image_url", "reference_image_url"):
+        if chore.get(key):
+            out = {**out, key: images.sign_image_url(hass, chore[key])}
+    return out
+
+
 def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
     data = coordinator.storage.data
     completions = list(data.get("completions", []))
@@ -408,10 +429,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "children": list(data.get("children", [])),
         # Sign picture URLs so the panel's <img> loads — browsers do not
         # send the bearer token on image requests, so a bare URL 401s.
-        "chores": [
-            {**c, "image_url": images.sign_image_url(coordinator.hass, c["image_url"])} if c.get("image_url") else c
-            for c in data.get("chores", [])
-        ],
+        "chores": [_sign_chore_images(coordinator.hass, c) for c in data.get("chores", [])],
         "chore_display_order": list(data.get("chore_display_order", [])),
         "scheduled_changes": list(data.get("scheduled_changes", [])),
         "rewards": list(data.get("rewards", [])),
@@ -749,6 +767,10 @@ _CHORE_EDITABLE_FIELDS = {
     "timed_rate_minutes",
     "timed_max_daily_minutes",
     "tag_ids",
+    "estimated_minutes",
+    "reference_image_url",
+    "quantity_unit",
+    "quantity_max",
 }
 
 
@@ -847,6 +869,10 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("timed_rate_minutes"): vol.All(int, vol.Range(min=1)),
         vol.Optional("timed_max_daily_minutes"): vol.All(int, vol.Range(min=0)),
         vol.Optional("tag_ids"): _tag_id_list,
+        vol.Optional("estimated_minutes"): vol.All(int, vol.Range(min=0, max=MAX_ESTIMATED_MINUTES)),
+        vol.Optional("reference_image_url"): _image_url_or_blank,
+        vol.Optional("quantity_unit"): vol.All(str, vol.Length(max=QUANTITY_UNIT_MAX_LENGTH)),
+        vol.Optional("quantity_max"): vol.All(int, vol.Range(min=0, max=MAX_QUANTITY)),
     }
 
 
@@ -1921,6 +1947,7 @@ _ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro", "accessib
 _SUBKEY_SETTINGS = {
     "require_linked_child",
     "chore_undo_seconds",
+    "auto_approve_hours",
     "history_days",
     # Recaps (#929)
     "recap_frequencies",
@@ -2201,6 +2228,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("unlock_allowlist"): [str],
     vol.Optional("require_linked_child"): bool,
     vol.Optional("chore_undo_seconds"): _validate_chore_undo_seconds,
+    vol.Optional("auto_approve_hours"): vol.All(vol.Coerce(int), vol.Range(min=0, max=AUTO_APPROVE_MAX_HOURS)),
     vol.Optional("recap_frequencies"): _validate_recap_frequencies,
     vol.Optional("recap_child_frequencies"): _validate_recap_child_frequencies,
     vol.Optional("recap_notify_children"): bool,

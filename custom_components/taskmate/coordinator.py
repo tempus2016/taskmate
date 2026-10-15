@@ -20,6 +20,7 @@ from . import notify_strings, photos
 from .const import DOMAIN
 from .coord_assignments import AssignmentsMixin
 from .coord_auctions import AuctionsMixin
+from .coord_auto_approve import AutoApproveMixin
 from .coord_avatars import AvatarsMixin
 from .coord_badges import BadgeCoordinator
 from .coord_birthdays import BirthdaysMixin
@@ -108,6 +109,7 @@ class TaskMateCoordinator(
     SetupWizardMixin,
     InspectionsMixin,
     RepairsMixin,
+    AutoApproveMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -184,11 +186,17 @@ class TaskMateCoordinator(
             out[rating] = max(0.0, value)
         return out
 
-    def effective_chore_points(self, chore) -> int:
-        """Base chore points scaled by its difficulty multiplier (never negative)."""
+    def effective_chore_points(self, chore, quantity: int = 0) -> int:
+        """Base chore points scaled by its difficulty multiplier (never negative).
+
+        A quantity chore's points are per unit, so ``quantity`` units earn
+        that many times the points.
+        """
         from .const import DEFAULT_DIFFICULTY
 
         base = int(getattr(chore, "points", 0) or 0)
+        if quantity and (getattr(chore, "quantity_unit", "") or "").strip():
+            base *= int(quantity)
         tier = getattr(chore, "difficulty", DEFAULT_DIFFICULTY) or DEFAULT_DIFFICULTY
         return max(0, round(base * self.difficulty_multiplier(tier)))
 
@@ -946,6 +954,8 @@ class TaskMateCoordinator(
         await self.async_sweep_bounties(refresh=False)
         # Auction closings (#982) have their own timer; this is the backstop.
         await self.async_sweep_auctions(refresh=False)
+        # Chores nobody reviewed within the parent's timeout approve themselves.
+        await self.async_auto_approve_overdue(refresh=False)
         self._refresh_tracked_availability_entities()
         # Presence-aware reminders (#926): follow child presence-entity edits.
         # A no-op unless the child -> entity map actually changed.

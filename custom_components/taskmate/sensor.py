@@ -443,6 +443,17 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         bonus_subtasks = getattr(c, "bonus_subtasks", [])
         if bonus_subtasks:
             record["bonus_subtasks"] = [{"id": b.id, "name": b.name, "points": b.points} for b in bonus_subtasks]
+        # How long it takes, for the cards' "about N minutes left" line.
+        estimated_minutes = int(getattr(c, "estimated_minutes", 0) or 0)
+        if estimated_minutes:
+            record["estimated_minutes"] = estimated_minutes
+        # Quantity chores: the card asks "how many?" and `points` is per unit.
+        quantity_unit = (getattr(c, "quantity_unit", "") or "").strip()
+        if quantity_unit and not getattr(c, "open_ended", False) and task_type != "timed":
+            record["quantity_unit"] = quantity_unit
+            quantity_max = int(getattr(c, "quantity_max", 0) or 0)
+            if quantity_max:
+                record["quantity_max"] = quantity_max
         chores_list.append(record)
     return chores_list
 
@@ -557,6 +568,8 @@ def _build_todays_completions(common: dict) -> list[dict]:
         }
         if timed_secs > 0:
             rec["timed_duration_seconds"] = timed_secs
+        if getattr(comp, "quantity", 0):
+            rec["quantity"] = comp.quantity
         # Child undo (#918): child_undo_pending / child_undo_until, present only
         # on a completion the child may still take back, so the attribute
         # stays small (and empty whenever the window is 0).
@@ -1997,6 +2010,15 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                 suggested = getattr(comp, "suggested_points", 0) or 0
                 if suggested:
                     detail["suggested_points"] = suggested
+                # Quantity chores: "12 pages", so the parent sees what was paid for.
+                if getattr(comp, "quantity", 0):
+                    detail["quantity"] = comp.quantity
+                    detail["quantity_unit"] = getattr(chore, "quantity_unit", "") or ""
+                # What the job looks like done well, beside the child's photo.
+                # Signed like a chore picture: it is decorative, not personal.
+                reference = getattr(chore, "reference_image_url", "") or ""
+                if reference:
+                    detail["reference_image_url"] = images.sign_image_url(self.coordinator.hass, reference)
                 completion_details.append(detail)
 
         reward_details = []

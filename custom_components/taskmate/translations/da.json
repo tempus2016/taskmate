@@ -150,6 +150,10 @@
         "suggested_points": {
           "name": "Foreslåede point",
           "description": "Hvad barnet mener, arbejdet var værd. Et hint til den forælder, der godkender — det giver ikke point i sig selv."
+        },
+        "quantity": {
+          "name": "Antal",
+          "description": "Hvor mange enheder barnet lavede, på en mængdeopgave (\"læs 20 sider\"). Påkrævet fra et barn på de opgaver; opgavens point udbetales pr. enhed."
         }
       }
     },

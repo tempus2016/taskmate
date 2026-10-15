@@ -150,6 +150,10 @@
         "suggested_points": {
           "name": "Vorgeschlagene Punkte",
           "description": "Was das Kind für die Arbeit für angemessen hält. Nur ein Hinweis für die genehmigenden Eltern — es werden dadurch keine Punkte vergeben."
+        },
+        "quantity": {
+          "name": "Anzahl",
+          "description": "Wie viele Einheiten das Kind geschafft hat, bei einer Mengenaufgabe („20 Seiten lesen“). Bei diesen Aufgaben vom Kind verpflichtend; die Punkte gelten pro Einheit."
         }
       }
     },
