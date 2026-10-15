@@ -204,3 +204,50 @@ test("a card pinned to a child still shows that child's progress", () => {
 
   assert.deepEqual(progress(pinned), { classic: [25], designed: [25] });
 });
+
+// With no child_id pinned, every tab listed every reward, so a child was shown
+// a reward assigned only to a sibling, with a claim button the backend then
+// refused (#1074). The selected tab now filters the list like a pinned card.
+
+function fullCard(selectedChildId, design, rewards) {
+  const card = new RewardsCard();
+  card.config = { entity: "sensor.taskmate_overview", ...(design ? { card_design: design } : {}) };
+  card.hass = {
+    states: {
+      "sensor.taskmate_overview": {
+        state: "2",
+        attributes: {
+          children: [
+            { id: "kid1", name: "Kid 1", points: 30 },
+            { id: "kid2", name: "Kid 2", points: 10 },
+          ],
+          rewards,
+        },
+      },
+    },
+  };
+  card._selectedChildId = selectedChildId;
+  return render(card.render()).markup;
+}
+
+const OPEN = { id: "film", name: "Film night", cost: 40, assigned_to: [] };
+const SIBLING = { id: "bike", name: "Bike ride", cost: 20, assigned_to: ["kid2"] };
+
+for (const design of [null, "playroom"]) {
+  const label = design || "classic";
+
+  test(`${label}: a tab lists only the rewards that child can have`, () => {
+    const kid1 = fullCard("kid1", design, [OPEN, SIBLING]);
+    const kid2 = fullCard("kid2", design, [OPEN, SIBLING]);
+    assert.match(kid1, /Film night/);
+    assert.doesNotMatch(kid1, /Bike ride/);
+    assert.match(kid2, /Film night/);
+    assert.match(kid2, /Bike ride/);
+  });
+
+  test(`${label}: the tabs stay when the selected child has no rewards`, () => {
+    const kid1 = fullCard("kid1", design, [SIBLING]);
+    assert.doesNotMatch(kid1, /Bike ride/);
+    assert.match(kid1, /Kid 2/);
+  });
+}

@@ -1152,6 +1152,18 @@ class TaskMateRewardsCard extends LitElement {
     };
   }
 
+  // The rewards the card lists: those open to everyone plus those assigned to
+  // the pinned child, or to the selected tab when nothing is pinned (#1074).
+  // Without the tab filter a child was offered a sibling's reward to claim.
+  _rewardsFor(allRewards) {
+    const childId = this.config.child_id || this._selectedChildId;
+    if (!childId) return allRewards;
+    return allRewards.filter((reward) => {
+      const assignedTo = reward.assigned_to || [];
+      return assignedTo.length === 0 || assignedTo.includes(childId);
+    });
+  }
+
   _selectChild(id) {
     this._selectedChildId = id;
   }
@@ -1216,15 +1228,7 @@ class TaskMateRewardsCard extends LitElement {
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t("common.stars");
 
-    // Filter rewards based on child_id if configured
-    let rewards = allRewards;
-    if (this.config.child_id) {
-      rewards = allRewards.filter((reward) => {
-        const assignedTo = reward.assigned_to || [];
-        // Show reward if assigned_to is empty (available to all) OR contains the child_id
-        return assignedTo.length === 0 || assignedTo.includes(this.config.child_id);
-      });
-    }
+    const rewards = this._rewardsFor(allRewards);
 
     // Sort rewards: jackpot first, then by calculated cost ascending within each group
     const sortedRewards = [...rewards].sort((a, b) => {
@@ -2009,13 +2013,7 @@ class TaskMateRewardsCard extends LitElement {
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t("common.stars");
 
-    let rewards = allRewards;
-    if (this.config.child_id) {
-      rewards = allRewards.filter((reward) => {
-        const assignedTo = reward.assigned_to || [];
-        return assignedTo.length === 0 || assignedTo.includes(this.config.child_id);
-      });
-    }
+    const rewards = this._rewardsFor(allRewards);
 
     const sortedRewards = [...rewards].sort((a, b) => {
       if (a.is_jackpot && !b.is_jackpot) return -1;
@@ -2030,16 +2028,20 @@ class TaskMateRewardsCard extends LitElement {
 
     const header = this._designHeader(rewards.length);
 
-    const body = sortedRewards.length === 0
-      ? html`<div class="tmd-empty">${this._t('rewards.empty_title')}<br>${this._t('rewards.empty_subtitle')}</div>`
+    const empty = html`<div class="tmd-empty">${this._t('rewards.empty_title')}<br>${this._t('rewards.empty_subtitle')}</div>`;
+    // The tabs stay up when only the selected child has nothing, so the other
+    // children can still be picked (#1074).
+    const body = allRewards.length === 0
+      ? empty
       : html`
         ${this._designChildTabs(this._family(children))}
         ${(anyPoolReward && activeChild) || activeChild
           ? this._designChildSelector(activeChild, pointsIcon, pointsName, design)
           : ''}
+        ${sortedRewards.length === 0 ? empty : html`
         <div class="rw-list ${this.config.expand_to_fit === false ? 'rw-scroll' : ''}">
           ${sortedRewards.map((r) => this._designRewardRow(r, children, pointsIcon, pointsName, design))}
-        </div>`;
+        </div>`}`;
 
     return html`
       <ha-card class="tmd" style="--hd:${hd}">
