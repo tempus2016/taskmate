@@ -1398,11 +1398,9 @@ class TaskMateRewardsCard extends LitElement {
       if (enablePoolMode) {
         // Pool mode: show this child's allocation for this reward
         currentStars = childId ? (poolAllocations[childId] || 0) : 0;
-      } else if (this.config.child_id) {
-        const filteredChild = children.find(c => c.id === this.config.child_id);
-        currentStars = filteredChild ? (filteredChild.points || 0) : 0;
-      } else if (relevantChildren.length > 0) {
-        currentStars = relevantChildren[0].points || 0;
+      } else {
+        // The pinned or selected child, so switching tabs moves the bar (#1068)
+        currentStars = relevantChild ? (relevantChild.points || 0) : 0;
       }
     }
 
@@ -1899,11 +1897,9 @@ class TaskMateRewardsCard extends LitElement {
       });
     } else if (enablePoolMode) {
       currentStars = childId ? (poolAllocations[childId] || 0) : 0;
-    } else if (this.config.child_id) {
-      const fc = children.find(c => c.id === this.config.child_id);
-      currentStars = fc ? (fc.points || 0) : 0;
-    } else if (relevantChildren.length > 0) {
-      currentStars = relevantChildren[0].points || 0;
+    } else {
+      // The pinned or selected child, so switching tabs moves the bar (#1068)
+      currentStars = relevantChild ? (relevantChild.points || 0) : 0;
     }
 
     const percentage = displayCost > 0 ? Math.min((currentStars / displayCost) * 100, 100) : 0;

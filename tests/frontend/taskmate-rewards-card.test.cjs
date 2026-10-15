@@ -165,3 +165,42 @@ test("the classic Redeem button is disabled when the child cannot afford it", ()
   assert.equal(claim.disabled, true);
   assert.match(claim.attrs, /cant-afford/);
 });
+
+// ── Progress follows the selected child ──────────────────────────────────
+// With no child_id pinned, the progress bar measured every child against the
+// first child's points, so switching tabs changed the balance and the claim
+// button but not the bar (#1068).
+
+function progress(rendered) {
+  const classic = rendered.classic.all(/class="progress-fill" style="width: ([\d.]+)%"/g).map(Number);
+  const designed = rendered.designed.all(/<div class="bar"><i style="width:([\d.]+)%;/g).map(Number);
+  return { classic, designed };
+}
+
+test("the progress bar follows the selected child, not the first one", () => {
+  const children = [
+    { id: "kid1", name: "Kid 1", points: 30 },
+    { id: "kid2", name: "Kid 2", points: 10 },
+  ];
+  const reward = { id: "film", name: "Film night", cost: 40, is_jackpot: false, assigned_to: [] };
+
+  const first = renderRow(makeCard({ selectedChildId: "kid1" }), reward, children);
+  const second = renderRow(makeCard({ selectedChildId: "kid2" }), reward, children);
+
+  assert.deepEqual(progress(first), { classic: [75], designed: [75] });
+  assert.deepEqual(progress(second), { classic: [25], designed: [25] });
+  assert.match(first.classic.markup, /30\/40/);
+  assert.match(second.classic.markup, /10\/40/);
+});
+
+test("a card pinned to a child still shows that child's progress", () => {
+  const children = [
+    { id: "kid1", name: "Kid 1", points: 30 },
+    { id: "kid2", name: "Kid 2", points: 10 },
+  ];
+  const reward = { id: "film", name: "Film night", cost: 40, is_jackpot: false, assigned_to: [] };
+
+  const pinned = renderRow(makeCard({ config: { child_id: "kid2" } }), reward, children);
+
+  assert.deepEqual(progress(pinned), { classic: [25], designed: [25] });
+});
