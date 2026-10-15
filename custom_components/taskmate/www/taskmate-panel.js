@@ -181,6 +181,7 @@ const WZ_REVIEW = WZ_STEPS.indexOf("review");
 const WZ_DONE = WZ_STEPS.indexOf("done");
 const WZ_KID_ICONS = ["mdi:star", "mdi:heart", "mdi:paw", "mdi:white-balance-sunny", "mdi:weather-night", "mdi:trophy",
   "mdi:leaf", "mdi:creation", "mdi:fire", "mdi:medal", "mdi:book-open-variant", "mdi:car-sports"];
+const CHILD_AUTO_COLORS = ["#e91e63", "#2196f3", "#009688", "#ff9800", "#9c27b0", "#795548", "#3f51b5", "#8bc34a"];
 const WZ_KID_COLORS = ["#ff6b9d", "#3498db", "#1abc9c", "#9b59b6", "#e67e22", "#f1c40f", "#e74c3c", "#2ecc71"];
 const WZ_POINT_NAMES = [["points", "mdi:star"], ["stars", "mdi:star"], ["coins", "mdi:circle-multiple"], ["gems", "mdi:diamond-stone"]];
 const WZ_DRAFT_KEY = "taskmate-setup-draft";
@@ -795,6 +796,16 @@ class TaskMatePanel extends HTMLElement {
     if (act === "bounty-icon")      { this._bountyDialogSet("icon", t.dataset.id); return; }
     if (act === "bounty-exp")       { this._bountyDialogSet("exp_mode", t.dataset.id); return; }
     if (act === "bounty-el-all")    { this._bountyDialogSet("eligible_child_ids", []); return; }
+    if (act === "child-color" && this._dialog?.data) {
+      this._syncIconPickers();
+      this._dialog.data.color = t.dataset.v || "";
+      const body = this.querySelector(".tm-dialog-body");
+      const scrollY = body ? body.scrollTop : 0;
+      this._render();
+      const b = this.querySelector(".tm-dialog-body");
+      if (b) b.scrollTop = scrollY;
+      return;
+    }
     if (act === "toggle-bounty-el") { this._syncIconPickers(); this._toggleArrayField("eligible_child_ids", t.dataset.id); return; }
 
     // Chore auctions (#982)
@@ -1981,6 +1992,7 @@ class TaskMatePanel extends HTMLElement {
         birthday: c.birthday || "",
         age_group: c.age_group || "",
         is_adult: !!c.is_adult,
+        color: c.color || "",
         presence_entity: c.presence_entity || "",
         // Kiosk PIN (#930): write-only. The panel only knows whether one is set.
         kiosk_pin: "", kiosk_pin_clear: false,
@@ -1992,7 +2004,7 @@ class TaskMatePanel extends HTMLElement {
         availability_inverted: false, unavailability_entity: "",
         pause_streak_when_unavailable: false,
         linked_user_id: "", picture_entity: "", presence_entity: "",
-        birthday: "", age_group: "", is_adult: false,
+        birthday: "", age_group: "", is_adult: false, color: "",
         kiosk_pin: "", kiosk_pin_clear: false, has_kiosk_pin: false,
       } });
     }
@@ -2042,14 +2054,14 @@ class TaskMatePanel extends HTMLElement {
           unavailability_entity: d.unavailability_entity || "",
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
           birthday: (d.birthday || "").trim(), age_group: d.age_group || "", is_adult: !!d.is_adult,
-          presence_entity: d.presence_entity || "",
+          color: d.color || "", presence_entity: d.presence_entity || "",
           picture_entity: d.picture_entity || "" }
       : { type: "taskmate/update_child", child_id: d.id, name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
           birthday: (d.birthday || "").trim(), age_group: d.age_group || "", is_adult: !!d.is_adult,
-          presence_entity: d.presence_entity || "",
+          color: d.color || "", presence_entity: d.presence_entity || "",
           picture_entity: d.picture_entity || "" };
     const { ok, err, res } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
@@ -3864,10 +3876,11 @@ class TaskMatePanel extends HTMLElement {
     return !Array.isArray(who) || who.length === 0 || who.includes(id);
   }
 
+  // The child's own colour (#1078), else one from the palette by position.
   _childColor(childId) {
-    const palette = ["#e91e63", "#2196f3", "#009688", "#ff9800", "#9c27b0", "#795548", "#3f51b5", "#8bc34a"];
-    const idx = (this._state && this._state.children || []).findIndex(c => c.id === childId);
-    return palette[(idx < 0 ? 0 : idx) % palette.length];
+    const child = ((this._state && this._state.children) || []).find(c => c.id === childId);
+    const own = (child && child.color) || "";
+    return /^#[0-9a-f]{6}$/i.test(own) ? own : this._childColorAuto(childId);
   }
 
   _childAvatar(child, cls = "") {
@@ -4500,7 +4513,7 @@ class TaskMatePanel extends HTMLElement {
     return `
       <article class="tm-card tm-child-card">
         <div class="tm-child-head">
-          <div class="tm-avatar">${this._mdi(child.avatar)}</div>
+          <div class="tm-avatar tm-avatar-kid" style="--kc:${this._childColor(child.id)}">${this._mdi(child.avatar)}</div>
           <div class="tm-child-name">
             <h3>${this._esc(child.name || this._t("panel.child_unnamed"))}${child.is_adult ? ` <span class="tm-pill tm-pill-accent">${this._t("panel.child_adult_pill")}</span>` : ""}</h3>
             ${this._idBadge(child.id)}
@@ -5420,7 +5433,7 @@ class TaskMatePanel extends HTMLElement {
   _wizardPlan() {
     const wz = this._wz;
     const children = wz.kids.filter(k => !k.existing).map(k => ({
-      ref: k.key, name: k.name.trim(), avatar: k.icon,
+      ref: k.key, name: k.name.trim(), avatar: k.icon, color: k.color || "",
       birthday: k.mode === "bday" ? k.bday : "",
       age_group: this._wizardBand(k),
     }));
@@ -10072,6 +10085,7 @@ class TaskMatePanel extends HTMLElement {
       [
         this._field(this._t("panel.child_name_label"), "name", d.name, "text", this._t("panel.child_name_placeholder")),
         this._iconPickerField(this._t("panel.child_avatar_label"), "avatar", d.avatar),
+        this._childColorField(d),
         // A grown-up's profile (#1061): auto-approved, hidden from cards by default.
         this._switch(this._t("panel.child_adult_label"), "is_adult", !!d.is_adult,
           this._esc(this._t("panel.child_adult_hint"))),
@@ -10106,6 +10120,30 @@ class TaskMatePanel extends HTMLElement {
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-child">${this._t("panel.btn_save")}</button>`
     );
+  }
+
+  /** The child's colour (#1078): "Automatic" (palette by position) or a swatch. */
+  _childColorField(d) {
+    const cur = d.color || "";
+    const swatch = (v, style, label, inner = "") => `<button type="button" class="${v ? "" : "tm-sw-auto"} ${cur === v ? "tm-on" : ""}" style="${style}"
+      data-act="child-color" data-v="${v}" aria-pressed="${cur === v}" aria-label="${this._esc(label)}" title="${this._esc(label)}">${inner}</button>`;
+    const auto = this._t("panel.child_color_auto");
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._esc(this._t("panel.child_color_label"))}</span>
+        <div class="tm-swatches">
+          ${swatch("", `--sw:${this._childColorAuto(d.id)}`, auto, '<ha-icon icon="mdi:auto-fix"></ha-icon>')}
+          ${WZ_KID_COLORS.map(c => swatch(c, `background:${c}`, c)).join("")}
+        </div>
+        <span class="tm-field-hint">${this._esc(this._t("panel.child_color_hint"))}</span>
+      </div>`;
+  }
+
+  /** The palette colour a child gets by position; with no id, the next child added. */
+  _childColorAuto(childId) {
+    const children = (this._state && this._state.children) || [];
+    const idx = childId ? Math.max(0, children.findIndex(c => c.id === childId)) : children.length;
+    return CHILD_AUTO_COLORS[idx % CHILD_AUTO_COLORS.length];
   }
 
   /** Kiosk PIN (#930): a masked 4-digit input, plus "remove" once one is set. */
@@ -11886,6 +11924,7 @@ class TaskMatePanel extends HTMLElement {
         color: var(--tm-accent);
       }
       .tm-avatar ha-icon { --mdc-icon-size: 24px; }
+      .tm-avatar-kid { background: color-mix(in srgb, var(--kc), transparent 80%); border-color: color-mix(in srgb, var(--kc), transparent 55%); color: var(--kc); }
       .tm-bounty-cell { display: flex; align-items: center; gap: 12px; }
       .tm-bounty-ic { width: 34px; height: 34px; border-radius: 50%; color: var(--tm-gold, #d4ac0d); }
       .tm-bounty-ic ha-icon { --mdc-icon-size: 18px; }
@@ -12921,6 +12960,10 @@ class TaskMatePanel extends HTMLElement {
         border-top: 1px solid var(--tm-border-soft);
       }
       .tm-check-row:first-child { border-top: 0; padding-top: 0; }
+      .tm-swatches { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0; }
+      .tm-swatches button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; display: grid; place-items: center; }
+      .tm-swatches button.tm-sw-auto { background: color-mix(in srgb, var(--sw), transparent 75%); border-color: var(--sw); color: var(--tm-text); --mdc-icon-size: 16px; }
+      .tm-swatches button.tm-on { box-shadow: 0 0 0 2px var(--tm-surface-0), 0 0 0 4px var(--tm-text); }
       .tm-check-row > div { flex: 1; }
       .tm-check-title { font-size: 13px; color: var(--tm-text); font-weight: 500; }
 

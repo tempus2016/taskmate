@@ -15,7 +15,7 @@ from homeassistant.components import websocket_api
 from .const import AGE_GROUPS, SCHEDULE_MODES
 from .coord_birthdays import normalize_birthday, parse_birthday
 from .setup_catalogue import setup_catalogue
-from .websocket import WS_SETUP_APPLY, WS_SETUP_CATALOGUE, _admin_only
+from .websocket import WS_SETUP_APPLY, WS_SETUP_CATALOGUE, _admin_only, validate_child_color
 
 # Generous ceilings: a wizard run is a handful of children and a few dozen
 # chores; these only stop a runaway payload.
@@ -32,6 +32,7 @@ _CHILD_SCHEMA = {
     vol.Optional("avatar", default="mdi:account-circle"): vol.All(str, vol.Length(max=80)),
     vol.Optional("birthday", default=""): vol.All(str, vol.Length(max=10)),
     vol.Optional("age_group", default=""): _AGE_GROUP,
+    vol.Optional("color", default=""): validate_child_color,
 }
 
 _CHILD_UPDATE_SCHEMA = {

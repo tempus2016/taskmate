@@ -100,6 +100,7 @@ class SetupWizardMixin:
                     "avatar": spec.get("avatar") or "mdi:account-circle",
                     "birthday": normalize_birthday(spec.get("birthday", "")),
                     "age_group": _age_group(spec.get("age_group")),
+                    "color": spec.get("color") or "",
                 }
             )
 
@@ -161,6 +162,7 @@ class SetupWizardMixin:
                 avatar=spec["avatar"],
                 birthday=spec["birthday"],
                 age_group=spec["age_group"],
+                color=spec["color"],
                 refresh=False,
             )
             ref_to_id[spec["ref"]] = child.id

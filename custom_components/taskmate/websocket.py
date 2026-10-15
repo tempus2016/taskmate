@@ -361,6 +361,20 @@ def _validate_presence_entity(value):
     return value
 
 
+_HEX_COLOR = re.compile(r"#[0-9a-f]{6}")
+
+
+def validate_child_color(value):
+    """voluptuous validator: '' (palette default) or a "#rrggbb" colour (#1078).
+
+    Strict hex only — the panel drops it straight into a style attribute.
+    """
+    value = _opt_str(value).lower()
+    if value and not _HEX_COLOR.fullmatch(value):
+        raise vol.Invalid("color must be a #rrggbb hex colour")
+    return value
+
+
 # ---------------------------------------------------------------------------
 # State snapshot
 # ---------------------------------------------------------------------------
@@ -496,6 +510,7 @@ async def _ws_get_state(hass, connection, msg, coordinator):
         vol.Optional("presence_entity", default=""): _validate_presence_entity,
         vol.Optional("age_group", default=""): vol.In(("", *AGE_GROUPS)),
         vol.Optional("is_adult", default=False): bool,
+        vol.Optional("color", default=""): validate_child_color,
     }
 )
 @websocket_api.async_response
@@ -519,6 +534,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         presence_entity=msg.get("presence_entity", ""),
         age_group=msg.get("age_group", ""),
         is_adult=bool(msg.get("is_adult", False)),
+        color=msg.get("color", ""),
     )
     connection.send_result(msg["id"], {"id": child.id})
 
@@ -541,6 +557,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         vol.Optional("birthday"): vol.All(str, vol.Length(max=10)),
         vol.Optional("age_group"): vol.In(("", *AGE_GROUPS)),
         vol.Optional("is_adult"): bool,
+        vol.Optional("color"): validate_child_color,
     }
 )
 @websocket_api.async_response
@@ -578,6 +595,8 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.age_group = msg["age_group"]
     if "is_adult" in msg:
         existing.is_adult = bool(msg["is_adult"])
+    if "color" in msg:
+        existing.color = msg["color"]
     if "is_guest" in msg or "guest_expires_on" in msg:
         # Routed through the coordinator so the expiry is validated and an
         # archived guest is un-archived when promoted to a family member.
