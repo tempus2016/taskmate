@@ -7644,18 +7644,19 @@ class TaskMatePanel extends HTMLElement {
           ? `<span class="tm-pill tm-pill-success">${this._t("panel.raffle_status_drawn")}</span><div class="tm-meta">${r.winner_id ? this._t("panel.raffle_winner_meta", { name: this._esc(names[r.winner_id] || "?") }) : this._t("panel.raffle_no_winner")}</div>`
           : `<span class="tm-pill tm-pill-muted">${this._t("panel.raffle_status_cancelled")}</span>`;
       const id = this._esc(r.id);
+      const btn = (act, icon, label) => `<button type="button" class="tm-icon-btn" data-act="${act}" data-id="${id}" title="${this._esc(label)}" aria-label="${this._esc(label)}"><ha-icon icon="${icon}"></ha-icon></button>`;
       const actions = r.status === "open"
-        ? `<button type="button" class="tm-btn tm-btn-sm tm-btn-raised" data-act="draw-raffle" data-id="${id}">${this._t("panel.raffle_draw_now")}</button>
-           <button type="button" class="tm-btn tm-btn-sm" data-act="cancel-raffle" data-id="${id}">${this._t("panel.raffle_cancel")}</button>
-           <button type="button" class="tm-icon-btn" data-act="edit-raffle" data-id="${id}" title="${this._t("panel.btn_edit")}">✏</button>`
-        : `<button type="button" class="tm-icon-btn" data-act="remove-raffle" data-id="${id}" title="${this._t("panel.tooltip_remove")}">🗑</button>`;
+        ? btn("draw-raffle", "mdi:dice-multiple", this._t("panel.raffle_draw_now"))
+          + btn("cancel-raffle", "mdi:cancel", this._t("panel.raffle_cancel"))
+          + btn("edit-raffle", "mdi:pencil", this._t("panel.btn_edit"))
+        : btn("remove-raffle", "mdi:delete-outline", this._t("panel.tooltip_remove"));
       return `<tr class="tm-row">
-        <td class="tm-col-sticky"><strong>${this._esc(r.name)}</strong>${r.prize ? `<div class="tm-meta">🏆 ${this._esc(r.prize)}</div>` : ""}</td>
+        <td class="tm-col-sticky"><strong>${this._esc(r.name)}</strong>${r.prize ? `<div class="tm-meta">🏆 ${this._esc(r.prize)}</div>` : ""}
+          <div class="tm-meta">🗓 ${when(r.drawn_at || r.draw_at)}</div></td>
         <td class="tm-numeric">${this._num(r.ticket_cost)} ${pts}${r.max_tickets ? `<div class="tm-meta">${this._t("panel.raffle_max_meta", { max: r.max_tickets })}</div>` : ""}</td>
         <td>${total ? tickets.map(([cid, n]) => `<span class="tm-pill">${this._esc(names[cid] || "?")} × ${n}</span>`).join(" ") : `<span class="tm-meta">${this._t("panel.raffle_none_yet")}</span>`}</td>
-        <td>${when(r.drawn_at || r.draw_at)}</td>
         <td>${status}</td>
-        <td class="tm-row-actions">${actions}</td>
+        <td class="tm-row-actions" style="white-space:nowrap">${actions}</td>
       </tr>`;
     };
     return `
@@ -7668,7 +7669,7 @@ class TaskMatePanel extends HTMLElement {
           <table class="tm-table">
             <thead><tr>
               <th class="tm-col-sticky">${this._t("panel.raffle_col_raffle")}</th><th>${this._t("panel.raffle_col_ticket")}</th><th>${this._t("panel.raffle_col_tickets")}</th>
-              <th>${this._t("panel.raffle_col_draw")}</th><th>${this._t("panel.raffle_col_status")}</th><th></th>
+              <th>${this._t("panel.raffle_col_status")}</th><th></th>
             </tr></thead>
             <tbody>${all.map(row).join("")}</tbody>
           </table>
