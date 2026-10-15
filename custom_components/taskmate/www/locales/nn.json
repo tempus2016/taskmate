@@ -3136,7 +3136,7 @@
   "panel.chore_quantity_unit_label": "Tel i (eining)",
   "panel.chore_quantity_unit_hint": "For «les 20 sider»: skriv eininga (sider, rundar, minutt). Barnet seier kor mange, og Poeng blir poeng per eining. La stå tomt for ei vanleg oppgåve.",
   "panel.chore_quantity_max_label": "Maks per gong",
-  "panel.chore_quantity_max_hint": "Tak for éi gjennomføring. 0 = ikkje noko tak.",
+  "panel.chore_quantity_max_hint": "Tak for éi gjennomføring. 0 = ikkje noko tak, og ein forelder godkjenner kvar gong.",
   "panel.settings_auto_approve_label": "Godkjenn automatisk etter (timar)",
   "panel.settings_auto_approve_hint": "Oppgåver som har venta så lenge, blir godkjende av seg sjølv med poenga som vart lova. Opne oppgåver og dusørar ventar alltid på deg. 0 = av.",
   "panel.settings_auto_approve_invalid": "Automatisk godkjenning må vera eit heilt tal timar frå 0 til 168.",

@@ -511,6 +511,16 @@ class TaskMateCoordinator(
                 await step()
             except Exception:  # noqa: BLE001
                 _LOGGER.exception("Minutely check %s failed", getattr(step, "__name__", step))
+        # A help request's two hours and a drawn raffle's day on show run out
+        # with no storage write, so the cached sensor attributes need a nudge.
+        shown = (
+            tuple(r.get("id") for r in self.open_help_requests()),
+            tuple(r["id"] for r in self.raffles_state()),
+        )
+        if shown != getattr(self, "_minutely_shown", shown):
+            self.external_state_version += 1
+            self.async_update_listeners()
+        self._minutely_shown = shown
 
     @callback
     def _async_weekly_digest_check(self, now: datetime) -> None:

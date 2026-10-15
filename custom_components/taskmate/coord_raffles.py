@@ -33,6 +33,16 @@ RAFFLE_SHOW_DONE_HOURS = 24
 RAFFLES_KEEP = 50
 
 
+def _trim_finished(records: list, limit: int, keep: tuple[str, ...]) -> None:
+    """Drop the oldest finished records past ``limit``; live ones (``keep``) always stay."""
+    excess = len(records) - limit
+    if excess <= 0:
+        return
+    drop = [r for r in records if r.get("status") not in keep][:excess]
+    for record in drop:
+        records.remove(record)
+
+
 class RafflesMixin:
     """Ticket raffles."""
 
@@ -89,7 +99,7 @@ class RafflesMixin:
         }
         raffles = self._raffles()
         raffles.append(raffle)
-        del raffles[:-RAFFLES_KEEP]
+        _trim_finished(raffles, RAFFLES_KEEP, keep=("open",))
         await self.storage.async_save()
         await self.async_refresh()
         return raffle

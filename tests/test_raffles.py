@@ -166,3 +166,28 @@ class TestCancel:
             run(coord.async_remove_raffle(raffle["id"]))
         assert storage.get_child(a.id).points == 100
         assert coord.get_raffle(raffle["id"]) is None
+
+
+def test_trimming_old_raffles_never_drops_an_open_one():
+    coord, storage, a, _b = _setup()
+    first = _raffle(coord, name="Long-running")
+    with patch(RAFFLES, return_value=_now()):
+        run(coord.async_buy_raffle_tickets(first["id"], a.id, 2))
+    with patch("custom_components.taskmate.coord_raffles.RAFFLES_KEEP", 2):
+        _raffle(coord, name="Second")
+        _raffle(coord, name="Third")
+    assert coord.get_raffle(first["id"]) is not None
+    assert coord.get_raffle(first["id"])["tickets"] == {a.id: 2}
+
+
+def test_trim_finished_drops_only_closed_records_oldest_first():
+    from custom_components.taskmate.coord_raffles import _trim_finished
+
+    records = [
+        {"id": 1, "status": "open"},
+        {"id": 2, "status": "drawn"},
+        {"id": 3, "status": "drawn"},
+        {"id": 4, "status": "open"},
+    ]
+    _trim_finished(records, 3, keep=("open",))
+    assert [r["id"] for r in records] == [1, 3, 4]

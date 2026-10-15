@@ -76,6 +76,19 @@ class TestQuantityChores:
         assert comp.quantity == 10
         assert comp.submitted_points == 20
 
+    def test_uncapped_quantity_always_goes_to_a_parent(self):
+        coord, _storage, mod, kid, chore = _setup(quantity_unit="pages", requires_approval=False)
+        with patch.object(mod.dt_util, "now", return_value=_now()):
+            comp = run(coord.async_complete_chore(chore.id, kid.id, quantity=10000))
+        assert comp.approved is False
+
+    def test_capped_quantity_can_self_approve(self):
+        coord, storage, mod, kid, chore = _setup(quantity_unit="pages", quantity_max=10, requires_approval=False)
+        with patch.object(mod.dt_util, "now", return_value=_now()):
+            comp = run(coord.async_complete_chore(chore.id, kid.id, quantity=4))
+        assert comp.approved is True
+        assert storage.get_child(kid.id).points == 8
+
     def test_parent_ticking_without_a_number_counts_one(self):
         coord, storage, mod, kid, chore = _setup(quantity_unit="laps")
         with patch.object(mod.dt_util, "now", return_value=_now()):

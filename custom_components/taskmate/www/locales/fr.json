@@ -3136,7 +3136,7 @@
   "panel.chore_quantity_unit_label": "Compter en (unité)",
   "panel.chore_quantity_unit_hint": "Pour « lire 20 pages » : saisissez l’unité (pages, tours, minutes). L’enfant indique combien, et les points deviennent des points par unité. Laissez vide pour une tâche ordinaire.",
   "panel.chore_quantity_max_label": "Maximum par fois",
-  "panel.chore_quantity_max_hint": "Plafond pour une réalisation. 0 = sans plafond.",
+  "panel.chore_quantity_max_hint": "Plafond pour une réalisation. 0 = sans plafond, et un parent valide chacune.",
   "panel.settings_auto_approve_label": "Approuver automatiquement après (heures)",
   "panel.settings_auto_approve_hint": "Les tâches qui attendent depuis ce délai s’approuvent seules aux points promis. Les tâches libres et les primes vous attendent toujours. 0 = désactivé.",
   "panel.settings_auto_approve_invalid": "L’approbation automatique doit être un nombre entier d’heures de 0 à 168.",

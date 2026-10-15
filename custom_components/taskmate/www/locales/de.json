@@ -3136,7 +3136,7 @@
   "panel.chore_quantity_unit_label": "Zählen in (Einheit)",
   "panel.chore_quantity_unit_hint": "Für „20 Seiten lesen“: Einheit eingeben (Seiten, Runden, Minuten). Das Kind sagt, wie viele, und Punkte gelten pro Einheit. Leer lassen für eine normale Aufgabe.",
   "panel.chore_quantity_max_label": "Höchstens pro Mal",
-  "panel.chore_quantity_max_hint": "Obergrenze pro Erledigung. 0 = keine Grenze.",
+  "panel.chore_quantity_max_hint": "Obergrenze pro Erledigung. 0 = keine Grenze, dann bestätigt ein Elternteil jede.",
   "panel.settings_auto_approve_label": "Automatisch genehmigen nach (Stunden)",
   "panel.settings_auto_approve_hint": "Aufgaben, die so lange warten, genehmigen sich selbst mit den versprochenen Punkten. Offene Aufgaben und Kopfgelder warten immer auf dich. 0 = aus.",
   "panel.settings_auto_approve_invalid": "Automatisches Genehmigen muss eine ganze Stundenzahl von 0 bis 168 sein.",

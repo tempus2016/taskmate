@@ -941,8 +941,12 @@ class ChoresMixin:
         # Open-ended completions always go to a parent: the child suggested the
         # point value, so self-awarding it would let them set their own pay.
         # A grown-up's own completion never waits for approval (#1061).
+        # An uncapped quantity chore is the same: the child picked the number.
+        uncapped_quantity = bool(quantity) and not int(getattr(chore, "quantity_max", 0) or 0)
         auto_approve = (
-            as_parent or child.is_adult or (not chore.requires_approval and not requires_photo and not is_open_ended)
+            as_parent
+            or child.is_adult
+            or (not chore.requires_approval and not requires_photo and not is_open_ended and not uncapped_quantity)
         )
         # Won at auction (#982): the winner is paid their winning bid for this
         # occurrence instead of the chore's own points — exactly what they bid.
@@ -2002,11 +2006,6 @@ class ChoresMixin:
         if not getattr(chore, "enabled", True):
             return False
 
-        # Make it right: an open offer to earn a penalty back makes its chore
-        # doable now, whatever its schedule says.
-        if self.open_redemption_for(chore.id, child_id) is not None:
-            return True
-
         # Check per-child disabling (one-shot chores completed by this child)
         disabled_for = getattr(chore, "disabled_for", [])
         if child_id in disabled_for:
@@ -2017,6 +2016,12 @@ class ChoresMixin:
         winner = self.auction_winner(chore)
         if winner and winner != child_id:
             return False
+
+        # Make it right: an open offer to earn a penalty back makes its chore
+        # doable now, whatever its schedule or rota says — but a one-shot chore
+        # already done, or one won at auction by someone else, stays shut.
+        if self.open_redemption_for(chore.id, child_id) is not None:
+            return True
 
         # Dynamic assignment — only the active child(ren) see alternating/random chores
         if getattr(chore, "assignment_mode", "everyone") != "everyone":

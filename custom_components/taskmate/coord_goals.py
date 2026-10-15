@@ -77,12 +77,11 @@ class WeeklyGoalsMixin:
         target = int(target)
         if not 0 <= target <= WEEKLY_GOAL_MAX:
             raise ValueError(f"Pick a goal from 0 to {WEEKLY_GOAL_MAX}.")
-        goals = self._weekly_goals()
-        goal = goals.setdefault(child_id, {})
+        # The record outlives a cleared goal: it keeps ``reached_week``, so
+        # clearing and re-setting a goal can't pay the same week's bonus twice.
+        goal = self._weekly_goals().setdefault(child_id, {})
         goal["target"] = target
         goal["set_at"] = dt_util.now().isoformat()
-        if not target:
-            goals.pop(child_id, None)
         await self.storage.async_save()
         # Setting a goal you've already passed counts straight away.
         await self.async_check_weekly_goals(refresh=False)

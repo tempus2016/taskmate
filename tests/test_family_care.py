@@ -109,6 +109,15 @@ class TestSickDay:
         two_days_ago = (_now().date() - dt.timedelta(days=2)).isoformat()
         assert coord._unprotected_missed_days(two_days_ago, _now().date(), storage.get_child(kid.id)) == []
 
+    def test_a_sick_day_beside_a_freeze_still_bridges_the_gap(self):
+        coord, storage, _mod, kid, _chore = _family()
+        today = _now().date()
+        with patch("custom_components.taskmate.coord_sick.dt_util.now", return_value=_now()):
+            run(coord.async_set_sick_day(kid.id, today - dt.timedelta(days=1)))
+        child = storage.get_child(kid.id)
+        child.streak_freeze_dates = [(today - dt.timedelta(days=2)).isoformat()]
+        assert coord._gap_bridged_by_freeze(child, today - dt.timedelta(days=3), today) is True
+
     def test_taken_back(self):
         coord, _storage, _mod, kid, _chore = _family()
         with patch("custom_components.taskmate.coord_sick.dt_util.now", return_value=_now()):
@@ -156,6 +165,19 @@ class TestWeeklyGoal:
             run(coord.async_set_weekly_goal(kid.id, 0))
             assert coord.weekly_goal_state(kid.id)["target"] == 0
 
+    def test_clearing_and_resetting_a_reached_goal_pays_nothing_more(self):
+        coord, storage, mod, kid, chore = _family(requires_approval=False)
+        self._on(storage)
+        goals = "custom_components.taskmate.coord_goals.dt_util"
+        with _at(mod), patch(f"{goals}.now", return_value=_now()), patch(f"{goals}.as_local", side_effect=lambda d: d):
+            run(coord.async_set_weekly_goal(kid.id, 5))
+            run(coord.async_complete_chore(chore.id, kid.id))
+            assert run(coord.async_check_weekly_goals()) == 1
+            run(coord.async_set_weekly_goal(kid.id, 0))
+            run(coord.async_set_weekly_goal(kid.id, 5))
+            assert run(coord.async_check_weekly_goals()) == 0
+        assert storage.get_child(kid.id).points == 5 + 15
+
 
 class TestMakeItRight:
     def _penalised(self, percent=50, **chore_fields):
@@ -179,6 +201,14 @@ class TestMakeItRight:
         coord, storage, mod, kid, chore, red = self._penalised(due_days=["sunday"])
         with _at(mod), patch(f"{red}.now", return_value=_now()), patch(f"{red}.as_local", side_effect=lambda d: d):
             assert coord._is_chore_completable_by_child(chore, kid.id) is True
+
+    def test_offer_does_not_reopen_a_one_shot_chore_already_done(self):
+        coord, storage, mod, kid, chore, red = self._penalised()
+        chore = storage.get_chore(chore.id)
+        chore.disabled_for = [kid.id]
+        storage.update_chore(chore)
+        with _at(mod), patch(f"{red}.now", return_value=_now()), patch(f"{red}.as_local", side_effect=lambda d: d):
+            assert coord.is_chore_available_for_child(chore, kid.id) is False
 
     def test_approval_pays_the_refund_and_undo_takes_it_back(self):
         coord, storage, mod, kid, chore, red = self._penalised(percent=100)

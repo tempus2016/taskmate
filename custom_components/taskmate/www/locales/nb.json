@@ -3136,7 +3136,7 @@
   "panel.chore_quantity_unit_label": "Tell i (enhet)",
   "panel.chore_quantity_unit_hint": "For «les 20 sider»: skriv enheten (sider, runder, minutter). Barnet sier hvor mange, og Poeng blir poeng per enhet. La stå tomt for en vanlig oppgave.",
   "panel.chore_quantity_max_label": "Maks per gang",
-  "panel.chore_quantity_max_hint": "Tak for én gjennomføring. 0 = ingen tak.",
+  "panel.chore_quantity_max_hint": "Tak for én gjennomføring. 0 = ingen tak, og en forelder godkjenner hver gang.",
   "panel.settings_auto_approve_label": "Godkjenn automatisk etter (timer)",
   "panel.settings_auto_approve_hint": "Oppgaver som har ventet så lenge, godkjennes selv med poengene som ble lovet. Åpne oppgaver og dusører venter alltid på deg. 0 = av.",
   "panel.settings_auto_approve_invalid": "Automatisk godkjenning må være et helt antall timer fra 0 til 168.",

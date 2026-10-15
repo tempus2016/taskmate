@@ -5014,7 +5014,7 @@ class TaskMateChildCard extends LitElement {
     if (!cap) return "";
     const chore = cap.chore || {};
     const unit = chore.quantity_unit || "";
-    const per = Number(chore.effective_points ?? chore.points) || 0;
+    const per = Number(chore.unit_points ?? chore.effective_points ?? chore.points) || 0;
     const max = Number(chore.quantity_max) || 0;
     const stop = (e) => e.stopPropagation();
     return html`
@@ -5033,7 +5033,7 @@ class TaskMateChildCard extends LitElement {
                     @click="${() => this._setQuantity(cap.value + 1)}">+</button>
           </div>
           <div class="tm-qty-unit">${unit}</div>
-          <div class="tm-qty-worth">${this._t("child.quantity_worth", { points: cap.value * per })}</div>
+          <div class="tm-qty-worth">${this._t("child.quantity_worth", { points: Math.max(0, Math.round(cap.value * per)) })}</div>
           ${max ? html`<div class="photo-dropzone-hint">${this._t("child.quantity_max_hint", { max, unit })}</div>` : ""}
           ${cap.error ? html`<div class="photo-error">${cap.error}</div>` : ""}
           <div class="photo-btn-row">

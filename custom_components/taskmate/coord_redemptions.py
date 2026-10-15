@@ -20,6 +20,7 @@ from typing import Any
 from homeassistant.util import dt as dt_util
 
 from .const import NOTIF_TYPE_PENALTY_REDEEMED
+from .coord_raffles import _trim_finished
 from .models import PointsTransaction, generate_id, parse_datetime
 
 REDEMPTIONS_KEEP = 200
@@ -73,7 +74,8 @@ class RedemptionsMixin:
         }
         offers = self._redemptions()
         offers.append(offer)
-        del offers[:-REDEMPTIONS_KEEP]
+        # Open offers and redeemed ones (an undo reopens those) are never trimmed.
+        _trim_finished(offers, REDEMPTIONS_KEEP, keep=("open", "redeemed"))
         return offer
 
     async def _async_redeem_penalty(self, chore, child, completion) -> None:

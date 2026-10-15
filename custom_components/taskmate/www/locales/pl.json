@@ -3136,7 +3136,7 @@
   "panel.chore_quantity_unit_label": "Licz w (jednostka)",
   "panel.chore_quantity_unit_hint": "Dla „przeczytaj 20 stron”: wpisz jednostkę (strony, okrążenia, minuty). Dziecko podaje ile, a Punkty stają się punktami za jednostkę. Zostaw puste dla zwykłego zadania.",
   "panel.chore_quantity_max_label": "Najwięcej naraz",
-  "panel.chore_quantity_max_hint": "Limit na jedno wykonanie. 0 = bez limitu.",
+  "panel.chore_quantity_max_hint": "Limit na jedno wykonanie. 0 = bez limitu, a rodzic zatwierdza każde.",
   "panel.settings_auto_approve_label": "Zatwierdź automatycznie po (godzinach)",
   "panel.settings_auto_approve_hint": "Zadania czekające tak długo zatwierdzą się same za obiecane punkty. Zadania otwarte i nagrody zawsze czekają na ciebie. 0 = wyłączone.",
   "panel.settings_auto_approve_invalid": "Automatyczne zatwierdzanie musi być liczbą całkowitą godzin od 0 do 168.",

@@ -291,7 +291,11 @@ class PointsMixin:
         while d < effective_date:
             if d.isoformat() in frozen:
                 used = True
-            elif not self.is_vacation_day(d) and not self.is_birthday_day_off(child, d):
+            elif (
+                not self.is_vacation_day(d)
+                and not self.is_birthday_day_off(child, d)
+                and not self.is_sick_day(child.id, d)
+            ):
                 return False
             d += timedelta(days=1)
         return used

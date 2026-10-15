@@ -474,6 +474,14 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
             quantity_max = int(getattr(c, "quantity_max", 0) or 0)
             if quantity_max:
                 record["quantity_max"] = quantity_max
+            # Unrounded per-unit worth, so the card's "worth N" preview rounds
+            # the total once, the way the payout does, at easy/hard difficulty.
+            unit_points = round(
+                int(c.points or 0) * coordinator.difficulty_multiplier(getattr(c, "difficulty", "medium") or "medium"),
+                4,
+            )
+            if unit_points != record.get("effective_points", c.points):
+                record["unit_points"] = unit_points
         chores_list.append(record)
     return chores_list
 

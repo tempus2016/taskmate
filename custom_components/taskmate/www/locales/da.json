@@ -3136,7 +3136,7 @@
   "panel.chore_quantity_unit_label": "Tæl i (enhed)",
   "panel.chore_quantity_unit_hint": "Til “læs 20 sider”: skriv enheden (sider, omgange, minutter). Barnet siger hvor mange, og Point bliver point pr. enhed. Lad feltet stå tomt for en almindelig opgave.",
   "panel.chore_quantity_max_label": "Højst pr. gang",
-  "panel.chore_quantity_max_hint": "Loft for én udførelse. 0 = intet loft.",
+  "panel.chore_quantity_max_hint": "Loft for én udførelse. 0 = intet loft, og en forælder godkender hver gang.",
   "panel.settings_auto_approve_label": "Godkend automatisk efter (timer)",
   "panel.settings_auto_approve_hint": "Opgaver, der har ventet så længe, godkendes selv med de lovede point. Åbne opgaver og dusører venter altid på dig. 0 = fra.",
   "panel.settings_auto_approve_invalid": "Automatisk godkendelse skal være et helt antal timer fra 0 til 168.",
