@@ -1892,3 +1892,33 @@ draw_raffle:
       required: true
       selector:
         text:
+
+adopt_pet:
+  name: Adopt a pet
+  description: A child adopts (or renames) their virtual pet. It grows with every chore they finish from now on.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child
+      required: true
+      selector:
+        text:
+    species:
+      name: Species
+      description: dragon, cat, dog, bunny, dino or unicorn
+      required: true
+      selector:
+        select:
+          options:
+            - "dragon"
+            - "cat"
+            - "dog"
+            - "bunny"
+            - "dino"
+            - "unicorn"
+    name:
+      name: Name
+      description: The pet's name
+      required: true
+      selector:
+        text:

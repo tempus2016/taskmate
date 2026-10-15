@@ -1,0 +1,42 @@
+language: "de"
+intents:
+  TaskMateChoresLeft:
+    data:
+      - sentences:
+          - "wie viele aufgaben hat {child} noch"
+          - "hat {child} noch aufgaben"
+          - "welche aufgaben hat {child} noch"
+  TaskMatePoints:
+    data:
+      - sentences:
+          - "wie viele {points_word} hat {child}"
+          - "wie ist der kontostand von {child}"
+  TaskMateCompleteChore:
+    data:
+      - sentences:
+          - "hake {chore} für {child} ab"
+          - "markiere {chore} als erledigt für {child}"
+          - "{child} hat {chore} erledigt"
+  TaskMateNextChore:
+    data:
+      - sentences:
+          - "was ist die nächste aufgabe von {child}"
+          - "was soll {child} als nächstes machen"
+  TaskMateRewardProgress:
+    data:
+      - sentences:
+          - "wie nah ist {child} an {reward}"
+          - "wie viele {points_word} fehlen {child} [für {reward}]"
+          - "wie nah ist {child} an einer belohnung"
+lists:
+  child:
+    wildcard: true
+  chore:
+    wildcard: true
+  reward:
+    wildcard: true
+  points_word:
+    values:
+      - "punkte"
+      - "sterne"
+      - "münzen"

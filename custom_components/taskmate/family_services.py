@@ -1,4 +1,4 @@
-"""``taskmate.*`` services for help requests, moods, sick days, weekly goals and raffles.
+"""``taskmate.*`` services for help requests, moods, sick days, weekly goals, raffles and pets.
 
 Kept out of ``__init__.py`` like the wishlist and inspection services. A child
 may ask for help, log a mood, set their own weekly goal and buy raffle
@@ -17,6 +17,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN
 from .coord_goals import WEEKLY_GOAL_MAX
+from .coord_pets import PET_NAME_MAX, PET_SPECIES
 from .coord_wellbeing import HELP_MESSAGE_MAX, MOODS
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ SERVICE_SET_SICK_DAY = "set_sick_day"
 SERVICE_SET_WEEKLY_GOAL = "set_weekly_goal"
 SERVICE_BUY_RAFFLE_TICKETS = "buy_raffle_tickets"
 SERVICE_DRAW_RAFFLE = "draw_raffle"
+SERVICE_ADOPT_PET = "adopt_pet"
 
 FAMILY_SERVICES: tuple[str, ...] = (
     SERVICE_REQUEST_HELP,
@@ -37,6 +39,7 @@ FAMILY_SERVICES: tuple[str, ...] = (
     SERVICE_SET_WEEKLY_GOAL,
     SERVICE_BUY_RAFFLE_TICKETS,
     SERVICE_DRAW_RAFFLE,
+    SERVICE_ADOPT_PET,
 )
 
 Handler = Callable[[ServiceCall], Awaitable[None]]
@@ -82,6 +85,9 @@ def async_register_family_services(
 
     async def buy_raffle_tickets(coordinator, call):
         await coordinator.async_buy_raffle_tickets(call.data["raffle_id"], call.data["child_id"], call.data["tickets"])
+
+    async def adopt_pet(coordinator, call):
+        await coordinator.async_adopt_pet(call.data["child_id"], call.data["species"], call.data["name"])
 
     async def draw_raffle(coordinator, call):
         await coordinator.async_draw_raffle(call.data["raffle_id"])
@@ -134,6 +140,16 @@ def async_register_family_services(
             },
         ),
         (SERVICE_DRAW_RAFFLE, draw_raffle, False, {vol.Required("raffle_id"): cv.string}),
+        (
+            SERVICE_ADOPT_PET,
+            adopt_pet,
+            True,
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Required("species"): vol.In(PET_SPECIES),
+                vol.Required("name"): vol.All(cv.string, vol.Length(min=1, max=PET_NAME_MAX)),
+            },
+        ),
     )
     for name, action, child, schema in registrations:
         hass.services.async_register(DOMAIN, name, _wrap(action, child=child), schema=vol.Schema(schema))

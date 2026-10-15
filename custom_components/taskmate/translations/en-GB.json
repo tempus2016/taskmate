@@ -1426,6 +1426,24 @@
           "description": "The raffle to draw"
         }
       }
+    },
+    "adopt_pet": {
+      "name": "Adopt a pet",
+      "description": "A child adopts (or renames) their virtual pet. It grows with every chore they finish from now on.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child"
+        },
+        "species": {
+          "name": "Species",
+          "description": "dragon, cat, dog, bunny, dino or unicorn"
+        },
+        "name": {
+          "name": "Name",
+          "description": "The pet's name"
+        }
+      }
     }
   },
   "entity": {

@@ -495,6 +495,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "help_requests": coordinator.open_help_requests(),
         "sick_today": [c.id for c in coordinator.storage.get_children() if coordinator.is_sick_day(c.id)],
         "moods_today": {c.id: m for c in coordinator.storage.get_children() if (m := coordinator.mood_on(c.id))},
+        "raffles": coordinator.all_raffles(),
     }
 
 
@@ -1983,6 +1984,7 @@ _SUBKEY_SETTINGS = {
     "auto_approve_hours",
     "weekly_goal_enabled",
     "weekly_goal_bonus",
+    "pets_enabled",
     "history_days",
     # Recaps (#929)
     "recap_frequencies",
@@ -2265,6 +2267,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("chore_undo_seconds"): _validate_chore_undo_seconds,
     vol.Optional("auto_approve_hours"): vol.All(vol.Coerce(int), vol.Range(min=0, max=AUTO_APPROVE_MAX_HOURS)),
     vol.Optional("weekly_goal_enabled"): bool,
+    vol.Optional("pets_enabled"): bool,
     vol.Optional("weekly_goal_bonus"): vol.All(vol.Coerce(int), vol.Range(min=0, max=100000)),
     vol.Optional("recap_frequencies"): _validate_recap_frequencies,
     vol.Optional("recap_child_frequencies"): _validate_recap_child_frequencies,
@@ -3341,10 +3344,18 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     from .kiosk import KIOSK_COMMANDS
     from .websocket_auctions import AUCTION_COMMANDS
     from .websocket_inspections import INSPECTION_COMMANDS
+    from .websocket_raffles import RAFFLE_COMMANDS
     from .websocket_recaps import RECAP_COMMANDS
     from .websocket_setup import SETUP_COMMANDS
 
-    extra = (*KIOSK_COMMANDS, *RECAP_COMMANDS, *INSPECTION_COMMANDS, *SETUP_COMMANDS, *AUCTION_COMMANDS)
+    extra = (
+        *KIOSK_COMMANDS,
+        *RECAP_COMMANDS,
+        *INSPECTION_COMMANDS,
+        *SETUP_COMMANDS,
+        *AUCTION_COMMANDS,
+        *RAFFLE_COMMANDS,
+    )
     for cmd in (*_COMMANDS, *extra):
         websocket_api.async_register_command(hass, cmd)
     hass.data.setdefault(DOMAIN, {})[WS_REGISTERED] = True

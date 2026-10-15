@@ -257,6 +257,8 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 # Today's mood, once the child has said.
                 **({"mood_today": mood} if (mood := coordinator.mood_on(c.id)) else {}),
                 **({"sick_today": True} if coordinator.is_sick_day(c.id) else {}),
+                # Virtual pet, while pets are on.
+                **({"pet": pet} if (pet := coordinator.pet_state(c)) is not None else {}),
                 # Personal weekly goal, while the feature is on.
                 **({"weekly_goal": goal} if (goal := coordinator.weekly_goal_state(c.id)) is not None else {}),
                 # Make it right: open offers to earn a penalty back.
@@ -1317,7 +1319,7 @@ class TaskMateChoreAvailabilitySensor(_CachedAttrsSensor):
 class TaskMateRewardsSensor(_CachedAttrsSensor):
     """Rewards catalog + pending claims + pool allocations."""
 
-    _unrecorded_attributes = frozenset({"rewards", "pending_reward_claims", "pool_allocations"})
+    _unrecorded_attributes = frozenset({"rewards", "pending_reward_claims", "pool_allocations", "raffles"})
 
     def __init__(
         self,
@@ -1342,6 +1344,8 @@ class TaskMateRewardsSensor(_CachedAttrsSensor):
             "rewards": _build_rewards_list(common),
             "pending_reward_claims": _build_pending_reward_claims(common),
             "pool_allocations": [pa.to_dict() for pa in common["pool_alloc_objs"]],
+            # Raffles: open ones and those drawn in the last day, only when any.
+            **({"raffles": raffles} if (raffles := self.coordinator.raffles_state()) else {}),
         }
 
 

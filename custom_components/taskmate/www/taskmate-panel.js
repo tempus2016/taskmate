@@ -857,6 +857,12 @@ class TaskMatePanel extends HTMLElement {
     if (act === "do-apply-bonus") { this._doApplyPenBon("bonus", t.dataset.id, t.dataset.child); return; }
 
     if (act === "toggle-penbon-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
+    if (act === "add-raffle")    { this._openRaffleDialog(null); return; }
+    if (act === "edit-raffle")   { this._openRaffleDialog(t.dataset.id); return; }
+    if (act === "save-raffle")   { this._doSaveRaffle(); return; }
+    if (act === "draw-raffle")   { this._raffleAction("draw", t.dataset.id, "panel.raffle_draw_confirm"); return; }
+    if (act === "cancel-raffle") { this._raffleAction("cancel", t.dataset.id, "panel.raffle_cancel_confirm"); return; }
+    if (act === "remove-raffle") { this._raffleAction("remove", t.dataset.id, "panel.raffle_remove_confirm"); return; }
 
     // Templates
     if (act === "tpl-add-from")     { this._activeTab = "templates"; this._templateView = "picker"; this._render(); return; }
@@ -3741,6 +3747,7 @@ class TaskMatePanel extends HTMLElement {
       templates: (this._state.templates || []).length,
       bounties:  (this._state.bounties || []).filter(b => ["open", "claimed", "pending"].includes(b.status)).length,
       auctions:  (this._state.auctions || []).filter(a => a.status === "open").length,
+      raffles:   (this._state.raffles || []).filter(r => r.status === "open").length,
     } : {};
     // Grouped by what the parent is doing (#966). Group keys use `key`, not
     // `id`: only nav items carry an id.
@@ -3763,6 +3770,7 @@ class TaskMatePanel extends HTMLElement {
       { key: "spend", head: this._t("panel.nav_spend"), items: [
         { id: "rewards",   label: this._t("panel.tab_rewards"),   icon: "mdi:gift-outline" },
         { id: "wishlists", label: this._t("panel.tab_wishlists"), icon: "mdi:heart-outline" },
+        { id: "raffles",   label: this._t("panel.tab_raffles"),   icon: "mdi:ticket-confirmation-outline" },
       ]},
       { key: "adjust", head: this._t("panel.nav_adjust"), items: [
         { id: "bonuses",   label: this._t("panel.tab_bonuses"),   icon: "mdi:flash-outline" },
@@ -4096,6 +4104,7 @@ class TaskMatePanel extends HTMLElement {
       case "quests":    return this._renderQuestsTab();
       case "challenges": return this._renderChallengesTab();
       case "bounties":   return this._renderBountiesTab();
+      case "raffles":    return this._renderRafflesTab();
       case "auctions":   return this._renderAuctionsTab();
       case "badges":    return this._renderBadgesTab();
       case "templates":     return this._renderTemplatesTab();
@@ -7620,6 +7629,139 @@ class TaskMatePanel extends HTMLElement {
     return this._t("bounty.dur_minutes", { m, s: String(s).padStart(2, "0") });
   }
 
+  // ---- Raffles ------------------------------------------------------------
+  _renderRafflesTab() {
+    const all = this._state.raffles || [];
+    const names = Object.fromEntries((this._state.children || []).map(c => [c.id, c.name]));
+    const pts = this._esc(this._pointsName());
+    const when = iso => iso ? this._esc(new Date(iso).toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })) : "—";
+    const row = r => {
+      const tickets = Object.entries(r.tickets || {}).filter(([, n]) => n > 0);
+      const total = tickets.reduce((a, [, n]) => a + n, 0);
+      const status = r.status === "open"
+        ? `<span class="tm-pill tm-pill-accent">${this._t("panel.raffle_status_open")}</span>`
+        : r.status === "drawn"
+          ? `<span class="tm-pill tm-pill-success">${this._t("panel.raffle_status_drawn")}</span><div class="tm-meta">${r.winner_id ? this._t("panel.raffle_winner_meta", { name: this._esc(names[r.winner_id] || "?") }) : this._t("panel.raffle_no_winner")}</div>`
+          : `<span class="tm-pill tm-pill-muted">${this._t("panel.raffle_status_cancelled")}</span>`;
+      const id = this._esc(r.id);
+      const actions = r.status === "open"
+        ? `<button type="button" class="tm-btn tm-btn-sm tm-btn-raised" data-act="draw-raffle" data-id="${id}">${this._t("panel.raffle_draw_now")}</button>
+           <button type="button" class="tm-btn tm-btn-sm" data-act="cancel-raffle" data-id="${id}">${this._t("panel.raffle_cancel")}</button>
+           <button type="button" class="tm-icon-btn" data-act="edit-raffle" data-id="${id}" title="${this._t("panel.btn_edit")}">✏</button>`
+        : `<button type="button" class="tm-icon-btn" data-act="remove-raffle" data-id="${id}" title="${this._t("panel.tooltip_remove")}">🗑</button>`;
+      return `<tr class="tm-row">
+        <td class="tm-col-sticky"><strong>${this._esc(r.name)}</strong>${r.prize ? `<div class="tm-meta">🏆 ${this._esc(r.prize)}</div>` : ""}</td>
+        <td class="tm-numeric">${this._num(r.ticket_cost)} ${pts}${r.max_tickets ? `<div class="tm-meta">${this._t("panel.raffle_max_meta", { max: r.max_tickets })}</div>` : ""}</td>
+        <td>${total ? tickets.map(([cid, n]) => `<span class="tm-pill">${this._esc(names[cid] || "?")} × ${n}</span>`).join(" ") : `<span class="tm-meta">${this._t("panel.raffle_none_yet")}</span>`}</td>
+        <td>${when(r.drawn_at || r.draw_at)}</td>
+        <td>${status}</td>
+        <td class="tm-row-actions">${actions}</td>
+      </tr>`;
+    };
+    return `
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">${this._t("panel.tab_raffles")} <span class="tm-toolbar-count">${all.filter(r => r.status === "open").length}</span></h2>
+        <button type="button" class="tm-btn tm-btn-raised" data-act="add-raffle">${this._t("panel.raffle_new")}</button>
+      </div>
+      ${all.length === 0 ? this._emptyState("🎟️", this._t("panel.raffle_empty_title"), this._t("panel.raffle_empty_copy"), "add-raffle", this._t("panel.raffle_new")) : `
+        <div class="tm-table-wrap">
+          <table class="tm-table">
+            <thead><tr>
+              <th class="tm-col-sticky">${this._t("panel.raffle_col_raffle")}</th><th>${this._t("panel.raffle_col_ticket")}</th><th>${this._t("panel.raffle_col_tickets")}</th>
+              <th>${this._t("panel.raffle_col_draw")}</th><th>${this._t("panel.raffle_col_status")}</th><th></th>
+            </tr></thead>
+            <tbody>${all.map(row).join("")}</tbody>
+          </table>
+        </div>`}
+    `;
+  }
+
+  _openRaffleDialog(id) {
+    const local = d => {
+      const pad = n => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    if (id) {
+      const r = (this._state.raffles || []).find(x => x.id === id);
+      if (!r) return;
+      this._openDialog({ kind: "raffle", mode: "edit", data: { ...r, assigned_to: [...(r.assigned_to || [])], draw_local: local(new Date(r.draw_at)) } });
+    } else {
+      const next = new Date(); next.setDate(next.getDate() + ((6 - next.getDay() + 7) % 7 || 7)); next.setHours(18, 0, 0, 0);
+      this._openDialog({ kind: "raffle", mode: "add", data: { name: "", prize: "", icon: "mdi:ticket-confirmation", ticket_cost: 10, max_tickets: 0, assigned_to: [], draw_local: local(next) } });
+    }
+  }
+
+  _renderRaffleDialog() {
+    const d = this._dialog.data;
+    const children = this._state.children || [];
+    const sold = Object.values(d.tickets || {}).some(n => n > 0);
+    return this._dialogShell(this._dialog.mode === "add" ? this._t("panel.raffle_dialog_add") : this._t("panel.raffle_dialog_edit"), [
+      this._field(this._t("panel.raffle_name"), "name", d.name, "text"),
+      `<div class="tm-field-row">
+        ${this._field(this._t("panel.raffle_prize"), "prize", d.prize, "text", this._t("panel.raffle_prize_hint"))}
+        ${this._iconPickerField(this._t("panel.reward_icon_label"), "icon", d.icon)}
+      </div>`,
+      `<div class="tm-field-row">
+        ${this._field(this._t("panel.raffle_ticket_cost"), "ticket_cost", d.ticket_cost, "number", sold ? this._t("panel.raffle_cost_locked") : this._t("panel.raffle_ticket_cost_hint"))}
+        ${this._field(this._t("panel.raffle_max"), "max_tickets", d.max_tickets || 0, "number", this._t("panel.raffle_max_hint"))}
+      </div>`,
+      `<div class="tm-field">
+        <span class="tm-field-label">${this._esc(this._t("panel.raffle_draw_at"))}</span>
+        <input class="tm-input" type="datetime-local" data-field="draw_local" value="${this._esc(d.draw_local || "")}">
+        <span class="tm-field-hint">${this._t("panel.raffle_draw_at_hint")}</span>
+      </div>`,
+      children.length ? `
+        <div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.penbon_applies_to")}</span>
+          <div class="tm-chip-row">
+            ${children.map(c => `<button type="button" class="tm-chip-btn ${(d.assigned_to || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="toggle-penbon-assigned" data-id="${this._esc(c.id)}">${this._esc(c.name)}</button>`).join("")}
+          </div>
+          <span class="tm-field-hint">${this._t("panel.raffle_who_hint")}</span>
+        </div>` : "",
+    ].join(""),
+    `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+     <button type="button" class="tm-btn tm-btn-raised" data-act="save-raffle">${this._t("panel.btn_save")}</button>`);
+  }
+
+  async _doSaveRaffle() {
+    this._syncIconPickers();
+    const d = this._dialog.data;
+    if (!d.name || !d.name.trim()) { this._showToast("err", this._t("panel.toast_name_required")); return; }
+    const when = new Date(d.draw_local || "");
+    if (isNaN(when)) { this._showToast("err", this._t("panel.raffle_draw_at_invalid")); return; }
+    const base = {
+      name: d.name.trim(),
+      prize: (d.prize || "").trim(),
+      icon: d.icon || "mdi:ticket-confirmation",
+      ticket_cost: Math.max(1, Math.round(Number(d.ticket_cost) || 1)),
+      max_tickets: Math.max(0, Math.min(100, Math.round(Number(d.max_tickets) || 0))),
+      draw_at: when.toISOString(),
+      assigned_to: d.assigned_to || [],
+    };
+    const payload = this._dialog.mode === "add"
+      ? { type: "taskmate/raffles/create", ...base }
+      : { type: "taskmate/raffles/update", raffle_id: d.id, ...base };
+    const { ok, err } = await this._callWS(payload);
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.raffle_saved"));
+  }
+
+  async _raffleAction(action, id, confirmKey) {
+    const r = (this._state.raffles || []).find(x => x.id === id);
+    if (!r || !confirm(this._t(confirmKey, { name: r.name }))) return;
+    const { ok, err, res } = await this._callWS({ type: `taskmate/raffles/${action}`, raffle_id: id });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    if (action === "draw") {
+      const winner = (this._state.children || []).find(c => c.id === (res && res.winner_id));
+      this._showToast("ok", winner ? this._t("panel.raffle_drawn_toast", { name: winner.name }) : this._t("panel.raffle_no_winner"));
+    } else {
+      this._showToast("ok", this._t(action === "cancel" ? "panel.raffle_cancelled_toast" : "panel.raffle_removed_toast"));
+    }
+  }
+
   _renderBountiesTab() {
     const lists = this._bountyLists();
     const all = this._state.bounties || [];
@@ -9453,6 +9595,16 @@ class TaskMatePanel extends HTMLElement {
         </div>
 
         <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.pets_title")}</h3><p class="tm-meta">${this._t("panel.pets_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.pets_enabled")}</div>
+              <ha-switch data-setting="pets_enabled" ${s.pets_enabled ? "checked" : ""}></ha-switch>
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.weekly_goal_title")}</h3><p class="tm-meta">${this._t("panel.weekly_goal_hint")}</p></div></div>
           <div class="tm-section-body">
             <div class="tm-setting-row">
@@ -10152,6 +10304,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "chore")        return this._renderChoreDialog();
     if (this._dialog.kind === "reward")       return this._renderRewardDialog();
     if (this._dialog.kind === "penalty")      return this._renderPenBonDialog("penalty");
+    if (this._dialog.kind === "raffle")       return this._renderRaffleDialog();
     if (this._dialog.kind === "bonus")        return this._renderPenBonDialog("bonus");
     if (this._dialog.kind === "group")        return this._renderGroupDialog();
     if (this._dialog.kind === "quest")        return this._renderQuestDialog();

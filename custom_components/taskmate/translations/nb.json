@@ -1426,6 +1426,24 @@
           "description": "Loddtrekningen som skal trekkes"
         }
       }
+    },
+    "adopt_pet": {
+      "name": "Adopter et kjæledyr",
+      "description": "Et barn adopterer (eller gir nytt navn til) det virtuelle kjæledyret sitt. Det vokser med hver oppgave barnet gjør fra nå.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet"
+        },
+        "species": {
+          "name": "Art",
+          "description": "dragon, cat, dog, bunny, dino eller unicorn"
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Kjæledyrets navn"
+        }
+      }
     }
   },
   "entity": {

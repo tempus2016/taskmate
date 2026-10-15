@@ -56,6 +56,8 @@ CARDS: Final = [
     "taskmate-auction-card.js",
     "taskmate-recap-card.js",
     "taskmate-chore-board-card.js",
+    "taskmate-raffle-card.js",
+    "taskmate-pet-card.js",
 ]
 
 # Cards that USED to ship but were removed. Their files no longer exist, so any

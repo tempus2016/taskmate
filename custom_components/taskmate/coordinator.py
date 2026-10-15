@@ -33,8 +33,10 @@ from .coord_guests import GuestsMixin
 from .coord_inspections import InspectionsMixin
 from .coord_mandatory import MandatoryMixin
 from .coord_notifications import NotificationCoordinator
+from .coord_pets import PetsMixin
 from .coord_points import PointsMixin
 from .coord_quests import QuestsMixin
+from .coord_raffles import RafflesMixin
 from .coord_recaps import RecapsMixin
 from .coord_redemptions import RedemptionsMixin
 from .coord_rejections import RejectionsMixin
@@ -118,6 +120,8 @@ class TaskMateCoordinator(
     SickDaysMixin,
     WeeklyGoalsMixin,
     RedemptionsMixin,
+    RafflesMixin,
+    PetsMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -501,10 +505,8 @@ class TaskMateCoordinator(
         for step in (
             self.async_auto_approve_overdue,
             self.async_check_weekly_goals,
-            getattr(self, "async_draw_due_raffles", None),
+            self.async_draw_due_raffles,
         ):
-            if step is None:
-                continue
             try:
                 await step()
             except Exception:  # noqa: BLE001

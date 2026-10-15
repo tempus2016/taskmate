@@ -1426,6 +1426,24 @@
           "description": "Losowanie do rozstrzygnięcia"
         }
       }
+    },
+    "adopt_pet": {
+      "name": "Adoptuj zwierzaka",
+      "description": "Dziecko adoptuje (lub zmienia imię) swojego wirtualnego zwierzaka. Rośnie z każdym wykonanym od teraz zadaniem.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko"
+        },
+        "species": {
+          "name": "Gatunek",
+          "description": "dragon, cat, dog, bunny, dino lub unicorn"
+        },
+        "name": {
+          "name": "Imię",
+          "description": "Imię zwierzaka"
+        }
+      }
     }
   },
   "entity": {

@@ -75,6 +75,23 @@ DEFAULTS: dict[str, str] = {
     "weekly_goal_reached": "🎯 {child_name} reached their weekly goal of {target} {points_name} — +{bonus} bonus!",
     "penalty_redeemed": "🤝 {child_name} made it right with '{chore_name}' and earned back {points} {points_name}.",
     "raffle_drawn": "🎟️ {raffle_name}: {winner_name} won! ({tickets} tickets in the draw)",
+    # Voice assistant replies (intents.py).
+    "voice_not_found": "I couldn't find anyone called {name}.",
+    "voice_chores_left_none": "{child_name} has finished all their chores. Nice work!",
+    "voice_chores_left_one": "{child_name} has 1 chore left today.",
+    "voice_chores_left_many": "{child_name} has {count} chores left today.",
+    "voice_points": "{child_name} has {points} {points_name}.",
+    "voice_next": "{child_name}'s next job is {chore_name}.",
+    "voice_reward_progress": "{child_name} needs {missing} more {points_name} for {reward_name}.",
+    "voice_reward_ready": "{child_name} has enough for {reward_name}!",
+    "voice_reward_not_found": "I couldn't find a reward called {reward_name}.",
+    "voice_no_rewards": "There are no rewards for {child_name} yet.",
+    "voice_not_allowed": "Sorry, you can't mark chores done for {child_name}.",
+    "voice_chore_not_found": "I couldn't find a chore called {chore_name} that's due today.",
+    "voice_already_done": "{chore_name} is already done for today, {child_name}.",
+    "voice_needs_card": "{chore_name} needs a photo, a number or a few words, so do that one on your card.",
+    "voice_done": "Done! {chore_name} is ticked off for {child_name}: +{points} {points_name}.",
+    "voice_done_pending": "Done! {chore_name} is waiting for a grown-up to check it.",
     # Pieces that callers assemble into the messages above.
     "auction_won": "{child_name} won '{chore_name}' on {date} for {points} {points_name}.",
     "auction_no_bids": "no bids for '{chore_name}', so it goes back to the normal rota.",
@@ -188,9 +205,9 @@ def _read_locale(lang: str) -> dict[str, str]:
     return strings
 
 
-async def async_load(hass: Any) -> None:
-    """Cache the notification strings for HA's current language."""
-    lang = _language(hass)
+async def async_load(hass: Any, language: str | None = None) -> None:
+    """Cache the strings for ``language`` (default HA's current language)."""
+    lang = language or _language(hass)
     if lang in _cache:
         return
     run: Any = getattr(hass, "async_add_executor_job", None)
@@ -202,14 +219,14 @@ async def async_load(hass: Any) -> None:
         _LOGGER.debug("Could not load TaskMate notification strings for %s", lang, exc_info=True)
 
 
-def text(hass: Any, key: str) -> str:
-    """The raw template for ``key`` in HA's language (English if not loaded)."""
-    return _cache.get(_language(hass), DEFAULTS).get(key) or DEFAULTS.get(key, "")
+def text(hass: Any, key: str, language: str | None = None) -> str:
+    """The raw template for ``key`` in ``language`` or HA's (English if not loaded)."""
+    return _cache.get(language or _language(hass), DEFAULTS).get(key) or DEFAULTS.get(key, "")
 
 
-def render(hass: Any, key: str, params: Mapping[str, Any]) -> str:
+def render(hass: Any, key: str, params: Mapping[str, Any], language: str | None = None) -> str:
     """Format ``key`` with ``params``; a broken translation falls back to English."""
-    tpl = text(hass, key)
+    tpl = text(hass, key, language)
     try:
         return tpl.format_map(SafeDict(params))
     except (ValueError, IndexError, KeyError, AttributeError):

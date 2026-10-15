@@ -1426,6 +1426,24 @@
           "description": "O sorteio a realizar"
         }
       }
+    },
+    "adopt_pet": {
+      "name": "Adotar um animal",
+      "description": "Uma criança adota (ou dá novo nome a) o seu animal virtual. Cresce com cada tarefa feita a partir de agora.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança"
+        },
+        "species": {
+          "name": "Espécie",
+          "description": "dragon, cat, dog, bunny, dino ou unicorn"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "O nome do animal"
+        }
+      }
     }
   },
   "entity": {

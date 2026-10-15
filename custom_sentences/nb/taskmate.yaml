@@ -1,0 +1,42 @@
+language: "nb"
+intents:
+  TaskMateChoresLeft:
+    data:
+      - sentences:
+          - "hvor mange oppgaver har {child} igjen"
+          - "har {child} noen oppgaver igjen"
+          - "hvilke oppgaver har {child} igjen"
+  TaskMatePoints:
+    data:
+      - sentences:
+          - "hvor mange {points_word} har {child}"
+          - "hva er saldoen til {child}"
+  TaskMateCompleteChore:
+    data:
+      - sentences:
+          - "kryss av {chore} for {child}"
+          - "marker {chore} som gjort for {child}"
+          - "{child} har gjort {chore}"
+  TaskMateNextChore:
+    data:
+      - sentences:
+          - "hva er neste oppgave for {child}"
+          - "hva skal {child} gjøre nå"
+  TaskMateRewardProgress:
+    data:
+      - sentences:
+          - "hvor nær er {child} {reward}"
+          - "hvor mange {points_word} mangler {child} [til {reward}]"
+          - "hvor nær er {child} en belønning"
+lists:
+  child:
+    wildcard: true
+  chore:
+    wildcard: true
+  reward:
+    wildcard: true
+  points_word:
+    values:
+      - "poeng"
+      - "stjerner"
+      - "mynter"

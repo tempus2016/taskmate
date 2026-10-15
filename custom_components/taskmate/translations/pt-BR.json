@@ -1426,6 +1426,24 @@
           "description": "O sorteio a realizar"
         }
       }
+    },
+    "adopt_pet": {
+      "name": "Adotar um bichinho",
+      "description": "Uma criança adota (ou renomeia) seu bichinho virtual. Ele cresce com cada tarefa feita a partir de agora.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança"
+        },
+        "species": {
+          "name": "Espécie",
+          "description": "dragon, cat, dog, bunny, dino ou unicorn"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "O nome do bichinho"
+        }
+      }
     }
   },
   "entity": {

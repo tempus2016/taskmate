@@ -1426,6 +1426,24 @@
           "description": "La tombola à tirer"
         }
       }
+    },
+    "adopt_pet": {
+      "name": "Adopter un animal",
+      "description": "Un enfant adopte (ou renomme) son animal virtuel. Il grandit à chaque tâche terminée à partir de maintenant.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l’enfant",
+          "description": "L’enfant"
+        },
+        "species": {
+          "name": "Espèce",
+          "description": "dragon, cat, dog, bunny, dino ou unicorn"
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Le nom de l’animal"
+        }
+      }
     }
   },
   "entity": {

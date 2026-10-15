@@ -1426,6 +1426,24 @@
           "description": "Die Verlosung, die gezogen wird"
         }
       }
+    },
+    "adopt_pet": {
+      "name": "Haustier adoptieren",
+      "description": "Ein Kind adoptiert (oder benennt) sein virtuelles Haustier. Es wächst mit jeder ab jetzt erledigten Aufgabe.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das Kind"
+        },
+        "species": {
+          "name": "Art",
+          "description": "dragon, cat, dog, bunny, dino oder unicorn"
+        },
+        "name": {
+          "name": "Name",
+          "description": "Der Name des Haustiers"
+        }
+      }
     }
   },
   "entity": {

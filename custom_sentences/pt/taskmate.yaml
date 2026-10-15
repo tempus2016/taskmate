@@ -1,0 +1,41 @@
+language: "pt"
+intents:
+  TaskMateChoresLeft:
+    data:
+      - sentences:
+          - "quantas tarefas faltam (a|ao|à) {child}"
+          - "(o|a) {child} ainda tem tarefas"
+          - "que tarefas faltam (a|ao|à) {child}"
+  TaskMatePoints:
+    data:
+      - sentences:
+          - "quantos {points_word} tem (o|a) {child}"
+          - "qual é o saldo d(o|a) {child}"
+  TaskMateCompleteChore:
+    data:
+      - sentences:
+          - "marca {chore} como feita para (o|a) {child}"
+          - "(o|a) {child} fez {chore}"
+          - "risca {chore} para (o|a) {child}"
+  TaskMateNextChore:
+    data:
+      - sentences:
+          - "qual é a próxima tarefa d(o|a) {child}"
+          - "o que (o|a) {child} deve fazer a seguir"
+  TaskMateRewardProgress:
+    data:
+      - sentences:
+          - "quão perto está (o|a) {child} d[e|o|a] {reward}"
+          - "quantos {points_word} faltam (a|ao|à) {child} [para {reward}]"
+lists:
+  child:
+    wildcard: true
+  chore:
+    wildcard: true
+  reward:
+    wildcard: true
+  points_word:
+    values:
+      - "pontos"
+      - "estrelas"
+      - "moedas"
