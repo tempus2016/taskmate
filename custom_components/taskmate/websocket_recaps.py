@@ -52,9 +52,9 @@ def _reader(check_child: bool):
                     return
             try:
                 await handler(hass, connection, msg, coordinator)
-            except Exception as err:  # noqa: BLE001
+            except Exception:  # noqa: BLE001
                 _LOGGER.exception("WS handler %s failed", msg.get("type"))
-                connection.send_error(msg["id"], "handler_failed", str(err))
+                connection.send_error(msg["id"], "handler_failed", "Something went wrong; see the Home Assistant log")
 
         return wrapper
 

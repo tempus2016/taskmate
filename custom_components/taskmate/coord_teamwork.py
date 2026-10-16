@@ -172,6 +172,8 @@ class TeamworkMixin:
                 as_parent=as_parent,
                 photo_url=j.get("photo_url", ""),
             )
+            if hasattr(self, "_roulette_mark_used"):
+                self._roulette_mark_used(chore, member.id, completion.id)
             recorded.append((member, completion, points))
             if member.id == child.id:
                 own = completion

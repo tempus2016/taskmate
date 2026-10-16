@@ -14,6 +14,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from . import notify_strings
+
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_TEMPLATE = "{name}, you have {count} things left: {chores}."
@@ -55,12 +57,12 @@ class ReadAloudMixin:
             template = self._tts_setting("read_aloud_template", DEFAULT_TEMPLATE)
 
         try:
-            return template.format(
-                name=child.name,
-                count=len(names),
-                chores=self._join_chore_names(names),
+            return notify_strings.safe_format(
+                template,
+                {"name": child.name, "count": len(names), "chores": self._join_chore_names(names)},
+                strict=True,
             )
-        except (KeyError, IndexError, ValueError):
+        except (KeyError, IndexError, ValueError, AttributeError):
             # A parent-edited template with a bad placeholder must not silence
             # the feature — fall back to the built-in wording.
             _LOGGER.warning(

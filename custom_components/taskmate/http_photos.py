@@ -80,6 +80,12 @@ class TaskMatePhotoUploadView(HomeAssistantView):
     MAX_UPLOADS_PER_WINDOW = 20
     RATE_WINDOW_SECONDS = 60
     MAX_CONCURRENT_UPLOADS = 4
+    # A body that hasn't arrived in full by then is dropped, so a trickled
+    # upload can't hold one of the slots open for everyone else.
+    BODY_READ_SECONDS = 60
+    # Uploads never attached to anything are swept this soon when the disk
+    # budget is hit, so a run of junk uploads can't block evidence for a day.
+    FULL_BUDGET_SWEEP_HOURS = 1
 
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
@@ -105,34 +111,17 @@ class TaskMatePhotoUploadView(HomeAssistantView):
         # is no point buffering megabytes we are about to refuse.
         used = await self.hass.async_add_executor_job(photos.total_photos_bytes, self.hass)
         if used >= photos.MAX_TOTAL_BYTES:
+            used = await self._async_sweep_when_full()
+        if used >= photos.MAX_TOTAL_BYTES:
             return self.json_message("Photo storage full", HTTPStatus.INSUFFICIENT_STORAGE)
 
         try:
-            reader = await request.multipart()
-        except (ValueError, AssertionError):
-            return self.json_message("Expected multipart form", HTTPStatus.BAD_REQUEST)
-
-        # Find the "file" part. Bound the scan so a stream of endlessly-named
-        # non-"file" parts can't hold a handler open indefinitely.
-        field = await reader.next()
-        parts_scanned = 0
-        while field is not None and field.name != "file":
-            parts_scanned += 1
-            if parts_scanned > 16:
-                return self.json_message("Too many form parts", HTTPStatus.BAD_REQUEST)
-            field = await reader.next()
-        if field is None:
-            return self.json_message("No file provided", HTTPStatus.BAD_REQUEST)
-
-        # Stream the part, enforcing the size cap as we go.
-        data = bytearray()
-        while True:
-            chunk = await field.read_chunk()
-            if not chunk:
-                break
-            data.extend(chunk)
-            if len(data) > photos.MAX_UPLOAD_BYTES:
-                return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+            async with asyncio.timeout(self.BODY_READ_SECONDS):
+                data = await self._read_file_part(request)
+        except TimeoutError:
+            return self.json_message("Upload took too long", HTTPStatus.REQUEST_TIMEOUT)
+        if isinstance(data, web.Response):
+            return data
 
         ext = photos.detect_image_ext(bytes(data))
         if ext is None:
@@ -159,6 +148,48 @@ class TaskMatePhotoUploadView(HomeAssistantView):
             return self.json_message("Could not store photo", HTTPStatus.INTERNAL_SERVER_ERROR)
 
         return self.json({"photo_url": f"{photos.URL_PREFIX}/{name}"})
+
+    async def _read_file_part(self, request: web.Request) -> bytearray | web.Response:
+        """Read the "file" part of the multipart body, or a response to send instead."""
+        try:
+            reader = await request.multipart()
+        except (ValueError, AssertionError):
+            return self.json_message("Expected multipart form", HTTPStatus.BAD_REQUEST)
+
+        # Find the "file" part. Bound the scan so a stream of endlessly-named
+        # non-"file" parts can't hold a handler open indefinitely.
+        field = await reader.next()
+        parts_scanned = 0
+        while field is not None and field.name != "file":
+            parts_scanned += 1
+            if parts_scanned > 16:
+                return self.json_message("Too many form parts", HTTPStatus.BAD_REQUEST)
+            field = await reader.next()
+        if field is None:
+            return self.json_message("No file provided", HTTPStatus.BAD_REQUEST)
+
+        # Stream the part, enforcing the size cap as we go.
+        data = bytearray()
+        while True:
+            chunk = await field.read_chunk()
+            if not chunk:
+                break
+            data.extend(chunk)
+            if len(data) > photos.MAX_UPLOAD_BYTES:
+                return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+        return data
+
+    async def _async_sweep_when_full(self) -> int:
+        """Drop unattached uploads older than an hour and return the new usage."""
+        coordinator = _get_coordinator(self.hass)
+        if coordinator is not None:
+            referenced = photos.referenced_photo_urls(coordinator.storage)
+            removed = await photos.async_sweep_orphan_photos(
+                self.hass, referenced, max_age_hours=self.FULL_BUDGET_SWEEP_HOURS
+            )
+            if removed:
+                _LOGGER.info("Photo storage was full: swept %d unattached upload(s)", removed)
+        return await self.hass.async_add_executor_job(photos.total_photos_bytes, self.hass)
 
 
 class TaskMatePhotoServeView(HomeAssistantView):

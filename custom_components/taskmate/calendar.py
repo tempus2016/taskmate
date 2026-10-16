@@ -268,14 +268,17 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
             parent(context)
         self._edit_context = context
 
-    def _acting_user_ids(self) -> set[str]:
+    def _acting_user_ids(self) -> set[str] | None:
         """Every HA user behind the current edit.
 
         The calendar panel edits over the calendar/event/* websocket commands,
         which call the entity directly without setting a context — so the
         user there comes from the websocket connection itself. A calendar.*
         service call sets a context. Both are checked when both are present;
-        neither (an automation or script) is a trusted caller, as elsewhere.
+        a context with no user (an automation or script) is a trusted caller,
+        as elsewhere. ``None`` means neither a connection nor a context was
+        there at all: a door this code doesn't know, which is refused rather
+        than trusted.
         """
         ids: set[str] = set()
         conn = current_connection.get() if current_connection is not None else None
@@ -285,6 +288,8 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
         ctx, self._edit_context = self._edit_context, None
         if ctx is not None and getattr(ctx, "user_id", None):
             ids.add(ctx.user_id)
+        if conn is None and ctx is None:
+            return None
         return ids
 
     async def _async_require_parent(self) -> str:
@@ -293,6 +298,8 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
         Returns the acting user id for the audit log ("" when trusted).
         """
         ids = self._acting_user_ids()
+        if ids is None:
+            raise Unauthorized()
         for user_id in ids:
             if not await authz.async_user_is_parent(self.hass, self.coordinator, user_id):
                 raise Unauthorized(user_id=user_id)
