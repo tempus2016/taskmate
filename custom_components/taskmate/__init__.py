@@ -384,12 +384,14 @@ _AUDIT_TARGET_KEYS = (
 )
 
 
-async def _async_record_service_audit(hass: HomeAssistant, call: ServiceCall) -> None:
+async def _async_record_service_audit(hass: HomeAssistant, call: ServiceCall, *, denied: bool = False) -> None:
     """Record a mutating service call in the admin audit log (SEC-3).
 
     The panel's WebSocket path audits every config change; the equivalent
     ``taskmate.*`` services did not, so point/penalty/chore mutations made via
     Dev Tools or automations left no trail. Best-effort: never block the action.
+    ``denied`` records a call the authorisation gate refused — a child's
+    account trying a parent action is exactly what the log is for.
     """
     coordinator = _get_coordinator(hass)
     if not coordinator:
@@ -412,8 +414,9 @@ async def _async_record_service_audit(hass: HomeAssistant, call: ServiceCall) ->
             if call.data.get(key):
                 target = f"{key}={call.data[key]}"
                 break
+    action = f"service.{call.service}" + (" (denied)" if denied else "")
     try:
-        await coordinator.async_record_audit(user_id, user_name, f"service.{call.service}", target)
+        await coordinator.async_record_audit(user_id, user_name, action, target)
     except Exception:  # noqa: BLE001 - audit must never break the action
         _LOGGER.debug("Failed to record service audit for %s", call.service, exc_info=True)
 
@@ -497,8 +500,12 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
         @wraps(handler)
         async def wrapped(call: ServiceCall) -> None:
-            await _async_require_admin(hass, call)
-            await handler(call)
+            try:
+                await _async_require_admin(hass, call)
+                await handler(call)
+            except Unauthorized:
+                await _async_record_service_audit(hass, call, denied=True)
+                raise
             await _async_record_service_audit(hass, call)
 
         # Compose with _safe so admin handlers also convert coordinator
@@ -518,7 +525,11 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
         @wraps(handler)
         async def wrapped(call: ServiceCall) -> None:
-            await handler(call)
+            try:
+                await handler(call)
+            except Unauthorized:
+                await _async_record_service_audit(hass, call, denied=True)
+                raise
             await _async_record_service_audit(hass, call)
 
         return _safe(wrapped)
@@ -531,8 +542,12 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
         @wraps(handler)
         async def wrapped(call: ServiceCall) -> None:
-            await _async_require_parent(hass, call)
-            await handler(call)
+            try:
+                await _async_require_parent(hass, call)
+                await handler(call)
+            except Unauthorized:
+                await _async_record_service_audit(hass, call, denied=True)
+                raise
             await _async_record_service_audit(hass, call)
 
         return _safe(wrapped)

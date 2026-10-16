@@ -67,13 +67,19 @@ class ChallengesMixin:
             return start, f"w:{start.isoformat()}"
         return today, f"d:{today.isoformat()}"
 
-    def _metric_value(self, child_id: str, scope: str, metric: str) -> int:
-        """Child's current metric value within the active period."""
+    def _metric_value(self, child_id: str, scope: str, metric: str, exclude_ids: set | None = None) -> int:
+        """Child's current metric value within the active period.
+
+        ``exclude_ids`` leaves out completions about to be reversed, so a
+        caller can ask what the value would be once they are gone.
+        """
         start, _ = self._period_start_key(scope)
         count = 0
         points = 0
         for comp in self.storage.get_completions():
             if comp.child_id != child_id or not comp.approved or comp.bonus_subtask_id:
+                continue
+            if exclude_ids and comp.id in exclude_ids:
                 continue
             if dt_util.as_local(comp.completed_at).date() < start:
                 continue
@@ -135,6 +141,67 @@ class ChallengesMixin:
             self.storage.set_challenge_child_progress(ch.id, child_id, prog)
             await self._award_challenge(ch, child)
             changed = True
+
+        if changed:
+            await self.storage.async_save()
+            await self.async_refresh()
+
+    def _challenge_refund_owed(self, child_id: str, exclude_ids: set | None = None) -> int:
+        """Challenge bonus a reversal of ``exclude_ids`` would take back, without doing it."""
+        owed = 0
+        for ch in self.storage.get_challenges():
+            if not ch.active or ch.target <= 0 or not self._challenge_applies_to(ch, child_id):
+                continue
+            _, period_key = self._period_start_key(ch.scope)
+            prog = self.storage.get_challenge_child_progress(ch.id, child_id)
+            if not prog.get("awarded") or prog.get("period") != period_key:
+                continue
+            if self._metric_value(child_id, ch.scope, ch.metric, exclude_ids) < ch.target:
+                owed += int(ch.bonus_points or 0)
+        return owed
+
+    async def _async_reverse_challenges(self, child_id: str) -> None:
+        """Take back any challenge bonus the child no longer qualifies for.
+
+        Called after a completion has been reversed (rejected, undone or
+        un-approved) and removed from the metric. A challenge paid this period
+        whose target is no longer met gives its bonus back and can be earned
+        again once the target is reached a second time.
+        """
+        child = self.get_child(child_id)
+        if not child:
+            return
+        changed = False
+        for ch in self.storage.get_challenges():
+            if not ch.active or ch.target <= 0 or not self._challenge_applies_to(ch, child_id):
+                continue
+            _, period_key = self._period_start_key(ch.scope)
+            prog = dict(self.storage.get_challenge_child_progress(ch.id, child_id))
+            if not prog.get("awarded") or prog.get("period") != period_key:
+                continue
+            if self._metric_value(child_id, ch.scope, ch.metric) >= ch.target:
+                continue
+            prog["awarded"] = False
+            self.storage.set_challenge_child_progress(ch.id, child_id, prog)
+            bonus = int(ch.bonus_points or 0)
+            if bonus > 0:
+                child.points = max(0, child.points - bonus)
+                child.total_points_earned = max(0, child.total_points_earned - bonus)
+                child.career_score = child.total_points_earned - child.total_penalties_received
+                self.storage.add_points_transaction(
+                    PointsTransaction(
+                        child_id=child.id,
+                        points=-bonus,
+                        reason=f"Challenge reversed: {ch.name}",
+                        created_at=dt_util.now(),
+                    ),
+                    reverses_season=True,
+                )
+                if hasattr(self, "_maybe_level_up"):
+                    await self._maybe_level_up(child)
+            self.storage.update_child(child)
+            changed = True
+            _LOGGER.info("Challenge '%s' reversed for %s (-%d)", ch.name, child.name, bonus)
 
         if changed:
             await self.storage.async_save()

@@ -173,6 +173,50 @@ def sign_photo_url(hass, photo_url: str, expiration_hours: int = 24) -> str:
         return photo_url
 
 
+def referenced_photo_urls(storage, completions=None) -> set[str]:
+    """Every evidence-photo URL some stored record still points at.
+
+    Completions own most of them; a half-formed team (joined but not yet
+    full, #928) holds its members' photos too until the team completes or
+    the day rolls over. ``completions`` overrides the stored list for a
+    caller that has just replaced it.
+    """
+    if completions is None:
+        completions = storage.get_completions()
+    urls = {getattr(c, "photo_url", "") for c in completions}
+    joins = getattr(storage, "_data", None)
+    joins = (joins.get("team_joins", {}) or {}) if isinstance(joins, dict) else {}
+    for entry in joins.values():
+        if not isinstance(entry, dict):
+            continue
+        for join in entry.get("joined", []) or []:
+            if isinstance(join, dict) and join.get("photo_url"):
+                urls.add(join["photo_url"])
+    urls.discard("")
+    urls.discard(None)
+    return urls
+
+
+def is_photo_in_use(storage, photo_url: str) -> bool:
+    """True when another record already claims ``photo_url`` as its evidence.
+
+    A photo is one submission's proof. The upload names are unguessable, so
+    the only way to hand in a URL that is already attached is to have read
+    it off another record — a sibling's completion, say — and that must not
+    make it this child's evidence (nor open it to them, nor let their undo
+    delete it).
+    """
+    return bool(photo_url) and photo_url in referenced_photo_urls(storage)
+
+
+async def async_delete_photo_if_unreferenced(hass, storage, photo_url: str, completions=None) -> bool:
+    """Delete the file behind ``photo_url`` unless a record still points at it."""
+    if not photo_url or photo_url in referenced_photo_urls(storage, completions):
+        return False
+    await async_delete_photo(hass, photo_url)
+    return True
+
+
 async def async_delete_photo(hass, photo_url: str) -> None:
     """Best-effort delete of the file backing a photo URL.
 

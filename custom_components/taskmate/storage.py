@@ -42,6 +42,18 @@ from .models import (
 _LOGGER = logging.getLogger(__name__)
 
 
+def _within_seconds(earlier, later, seconds: int) -> bool:
+    """True when two ISO timestamps are at most ``seconds`` apart (False if unparseable)."""
+    a = parse_datetime(str(earlier or ""))
+    b = parse_datetime(str(later or ""))
+    if a is None or b is None:
+        return False
+    try:
+        return 0 <= (b - a).total_seconds() <= seconds
+    except TypeError:
+        return False
+
+
 def _finite_number(value: Any, default: int | float) -> int | float:
     """Coerce an imported value to a real, finite number.
 
@@ -1104,12 +1116,19 @@ class TaskMateStorage:
         """Get all points transactions."""
         return [PointsTransaction.from_dict(t) for t in self._data.get("points_transactions", [])]
 
-    def add_points_transaction(self, transaction: PointsTransaction, *, count_for_season: bool = True) -> None:
+    def add_points_transaction(
+        self, transaction: PointsTransaction, *, count_for_season: bool = True, reverses_season: bool = False
+    ) -> None:
         """Add a points transaction record.
 
         ``count_for_season=False`` records a positive row that returns the
         child's own points rather than awarding new ones (e.g. taking savings
         back out of a wish, #932), so it must not count towards the leaderboard.
+        ``reverses_season=True`` records a negative row that takes back a bonus
+        the leaderboard already counted (a milestone, quest, challenge or
+        weekly-target reversal), so the tally comes down with it — otherwise an
+        undo-and-redo would farm season points. Penalties and spending stay
+        off the tally either way.
         """
         if "points_transactions" not in self._data:
             self._data["points_transactions"] = []
@@ -1120,6 +1139,8 @@ class TaskMateStorage:
         # transactions makes them unreliable for a monthly total (FEAT-2).
         if transaction.points > 0 and count_for_season:
             self.record_season_points(transaction.child_id, transaction.points, transaction.created_at)
+        elif transaction.points < 0 and reverses_season:
+            self.reverse_season_points(transaction.child_id, -transaction.points, transaction.created_at)
 
         # Keep only the last 200 transactions to avoid unbounded storage growth
         if len(self._data["points_transactions"]) > 200:
@@ -1138,6 +1159,16 @@ class TaskMateStorage:
         if len(seasons) > 13:
             for stale in sorted(seasons)[:-13]:
                 del seasons[stale]
+
+    def reverse_season_points(self, child_id: str, points: int, when) -> None:
+        """Take ``points`` back off ``child_id``'s tally for ``when``'s month (floored at 0)."""
+        if points <= 0 or not child_id:
+            return
+        key = when.strftime("%Y-%m")
+        month = (self._data.get("season_points", {}) or {}).get(key)
+        if not isinstance(month, dict) or child_id not in month:
+            return
+        month[child_id] = max(0, int(month.get(child_id, 0) or 0) - int(points))
 
     def get_season_points(self, ym: str) -> dict[str, int]:
         """Per-child points earned in calendar month ``ym`` ("YYYY-MM")."""
@@ -1190,6 +1221,17 @@ class TaskMateStorage:
         reader has no way to tell that anything is missing.
         """
         log = self._data.setdefault("audit_log", [])
+        last = log[-1] if log else None
+        if (
+            isinstance(last, dict)
+            and all(last.get(k) == entry.get(k) for k in ("user_id", "action", "target"))
+            and _within_seconds(last.get("ts"), entry.get("ts"), 60)
+        ):
+            # The same actor repeating the same thing inside a minute is one
+            # line with a count, not a run that scrolls everything else out.
+            last["count"] = int(last.get("count", 1) or 1) + 1
+            last["ts"] = entry.get("ts", last.get("ts"))
+            return
         log.append(entry)
         if len(log) > 500:
             dropped = len(log) - 500
@@ -1555,22 +1597,99 @@ class TaskMateStorage:
             child_map.pop(child_id, None)
 
     # ── Backup / restore ─────────────────────────────────────────────────
+    # Credentials that never leave the instance in a backup: the kiosk PIN
+    # hashes (a 4-digit space walks in minutes offline) and the calendar feed
+    # token (a live key to an unauthenticated view). Both are re-created on
+    # the instance that needs them.
+    _EXPORT_SECRET_KEYS = ("kiosk_pins",)
+    _EXPORT_SECRET_SETTINGS = ("ics_token", "active_unlocks")
+
     def export_data(self) -> dict:
-        """Return a deep copy of the full stored data (for backup/export)."""
+        """Return a deep copy of the full stored data (for backup/export).
+
+        Secrets are left out — see ``_EXPORT_SECRET_KEYS`` — so a backup
+        attached to a support thread can't open the calendar feed or be
+        brute-forced for a child's PIN.
+        """
         import copy
 
-        return copy.deepcopy(self._data)
+        snap = copy.deepcopy(self._data)
+        for key in self._EXPORT_SECRET_KEYS:
+            snap.pop(key, None)
+        settings = snap.get("settings")
+        if isinstance(settings, dict):
+            for key in self._EXPORT_SECRET_SETTINGS:
+                settings.pop(key, None)
+        return snap
+
+    def _authorisation_state(self) -> dict:
+        """The parts of the store that say *who may do what* on this instance."""
+        data = getattr(self, "_data", None)
+        data = data if isinstance(data, dict) else {}
+        settings = data.get("settings", {}) or {}
+        parent_ids = settings.get("parent_user_ids", [])
+        pins = data.get("kiosk_pins")
+        return {
+            "parent_user_ids": [str(x) for x in parent_ids if x] if isinstance(parent_ids, list) else [],
+            "require_linked_child": settings.get("require_linked_child"),
+            "unlock_allowlist": settings.get("unlock_allowlist"),
+            "kiosk_pins": dict(pins) if isinstance(pins, dict) else {},
+            "linked_user_ids": {
+                c.get("id"): c.get("linked_user_id", "")
+                for c in (data.get("children", []) or [])
+                if isinstance(c, dict) and c.get("id")
+            },
+            "audit_log": list(data.get("audit_log", []) or []),
+            "audit_log_dropped": int(data.get("audit_log_dropped", 0) or 0),
+        }
+
+    def _restore_authorisation_state(self, kept: dict) -> None:
+        """Put this instance's own authorisation state back after an import.
+
+        A backup is content — children, chores, rewards, history — not a grant
+        of access. Whatever the file says about which HA users are parents,
+        which account each child is linked to, strict linked-child mode, the
+        unlock allowlist and the kiosk PINs, the running instance's own
+        settings stand, so restoring a file somebody else prepared can't hand
+        them the parent role, a sibling's account or a device. The calendar
+        feed token is dropped (regenerate it), any in-flight unlock is
+        forgotten, and the audit trail is this instance's, not the file's.
+        """
+        settings = self._data.setdefault("settings", {})
+        settings["parent_user_ids"] = list(kept["parent_user_ids"])
+        for key in ("require_linked_child", "unlock_allowlist"):
+            if kept.get(key) is None:
+                settings.pop(key, None)
+            else:
+                settings[key] = kept[key]
+        for key in self._EXPORT_SECRET_SETTINGS:
+            settings.pop(key, None)
+        if kept["kiosk_pins"]:
+            self._data["kiosk_pins"] = dict(kept["kiosk_pins"])
+        else:
+            self._data.pop("kiosk_pins", None)
+        links = kept["linked_user_ids"]
+        for child in self._data.get("children", []) or []:
+            if isinstance(child, dict):
+                child["linked_user_id"] = links.get(child.get("id"), "") or ""
+        self._data["audit_log"] = list(kept["audit_log"])
+        if kept["audit_log_dropped"]:
+            self._data["audit_log_dropped"] = kept["audit_log_dropped"]
+        else:
+            self._data.pop("audit_log_dropped", None)
 
     def import_data(self, data: dict) -> None:
         """Replace all stored data with ``data`` (restore from a backup).
 
         Core collection keys are ensured so downstream readers never KeyError on
-        a partial import.
+        a partial import. Authorisation state is this instance's own — see
+        ``_restore_authorisation_state``.
         """
         import copy
 
         if not isinstance(data, dict):
             raise ValueError("import data must be an object")
+        kept = self._authorisation_state()
         self._data = copy.deepcopy(data)
         list_keys = (
             "children",
@@ -1606,6 +1725,7 @@ class TaskMateStorage:
             self._data["challenge_progress"] = {}
         if not isinstance(self._data.get("weekly_target_bonuses"), dict):
             self._data["weekly_target_bonuses"] = {}
+        self._restore_authorisation_state(kept)
         self._sanitize_imported_records()
 
     def _sanitize_imported_records(self) -> None:
@@ -1802,6 +1922,86 @@ class TaskMateStorage:
         for badge in self._data.get("badges", []):
             if isinstance(badge, dict) and badge.get("tier") not in BADGE_TIERS:
                 badge["tier"] = "bronze"
+
+        # The points name and icon sit at the top level and are rendered by the
+        # panel and every card; the WebSocket path bounds them, import did not.
+        name = self._data.get("points_name")
+        name = name.strip() if isinstance(name, str) else ""
+        self._data["points_name"] = name[:120] if name else "Stars"
+        icon = self._data.get("points_icon")
+        icon = icon.strip() if isinstance(icon, str) else ""
+        self._data["points_icon"] = icon[:64] if icon else "mdi:star"
+
+        # Every record must load through its model, as the running code will
+        # load it on the next read. One malformed value (a word where a number
+        # belongs, a number where a list belongs) would otherwise raise inside
+        # get_chores() on every refresh and take the integration down with no
+        # way to re-import a good file. A record that can't load is dropped.
+        from . import models as _models
+
+        _RECORD_MODELS = {
+            "children": _models.Child,
+            "chores": _models.Chore,
+            "rewards": _models.Reward,
+            "penalties": _models.Penalty,
+            "bonuses": _models.Bonus,
+            "task_groups": _models.TaskGroup,
+            "completions": _models.ChoreCompletion,
+            "mandatory_misses": _models.MandatoryMiss,
+            "reward_claims": _models.RewardClaim,
+            "points_transactions": _models.PointsTransaction,
+            "pool_allocations": _models.PoolAllocation,
+            "badges": _models.Badge,
+            "awarded_badges": _models.AwardedBadge,
+            "parent_recipients": _models.ParentRecipient,
+            "timed_sessions": _models.TimedSession,
+            "quests": _models.Quest,
+            "challenges": _models.Challenge,
+            "bounties": _models.Bounty,
+            "auctions": _models.Auction,
+        }
+        for bucket, model in _RECORD_MODELS.items():
+            kept_records = []
+            for record in self._data.get(bucket, []) or []:
+                if not isinstance(record, dict):
+                    continue
+                try:
+                    model.from_dict(record)
+                except Exception:  # noqa: BLE001 - any load failure means the record can't be used
+                    _LOGGER.warning("Import: dropped a %s record that could not be loaded", bucket)
+                    continue
+                kept_records.append(record)
+            self._data[bucket] = kept_records
+
+        # Notification tap targets open on the recipient's phone: the same
+        # vetting the settings path applies (no deep-link schemes).
+        from .coord_notifications import _validate_group, _validate_nav_url
+
+        settings = self._data.get("settings")
+        if isinstance(settings, dict) and settings.get("notification_nav_url"):
+            try:
+                settings["notification_nav_url"] = _validate_nav_url(str(settings["notification_nav_url"]))
+            except ValueError:
+                _LOGGER.warning("Import: dropped an invalid notification_nav_url")
+                settings.pop("notification_nav_url", None)
+        configs = self._data.get("notification_config")
+        if isinstance(configs, dict):
+            for cfg in configs.values():
+                if not isinstance(cfg, dict):
+                    continue
+                for key, check in (("nav_url", _validate_nav_url), ("group", _validate_group)):
+                    if cfg.get(key):
+                        try:
+                            cfg[key] = check(str(cfg[key]))
+                        except ValueError:
+                            _LOGGER.warning("Import: dropped an invalid notification %s", key)
+                            cfg[key] = ""
+        for n in self._data.get("custom_notifications", []) or []:
+            if isinstance(n, dict) and n.get("nav_url"):
+                try:
+                    n["nav_url"] = _validate_nav_url(str(n["nav_url"]))
+                except ValueError:
+                    n["nav_url"] = ""
 
         settings = self._data.get("settings")
         if isinstance(settings, dict):

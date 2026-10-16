@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import logging
+import string
 from collections.abc import Mapping
 from datetime import date
 from pathlib import Path
@@ -184,6 +185,33 @@ class SafeDict(dict):
 
     def __missing__(self, key: str) -> str:
         return "{" + key + "}"
+
+
+class _PlainFormatter(string.Formatter):
+    """``str.format`` without attribute or index access inside a placeholder.
+
+    A parent-edited template is substituted with plain names only; a field
+    such as ``{name.__class__}`` or ``{name[0]}`` is a ``ValueError``, which
+    the callers already treat as "bad template, use the default".
+    """
+
+    def get_field(self, field_name: str, args, kwargs):
+        if "." in field_name or "[" in field_name:
+            raise ValueError(f"placeholder {{{field_name}}} may not use attributes or indexes")
+        return super().get_field(field_name, args, kwargs)
+
+
+_PLAIN = _PlainFormatter()
+
+
+def safe_format(template: str, values: Mapping[str, Any], *, strict: bool = False) -> str:
+    """Substitute ``{name}`` placeholders in a user-written template.
+
+    Unknown names stay as ``{name}`` (``SafeDict``), or raise ``KeyError``
+    when ``strict``; a placeholder that tries to reach into a value raises
+    ``ValueError`` either way.
+    """
+    return _PLAIN.vformat(template, (), dict(values) if strict else SafeDict(values))
 
 
 def _language(hass: Any) -> str:

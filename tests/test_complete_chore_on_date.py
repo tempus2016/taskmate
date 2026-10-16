@@ -165,7 +165,8 @@ def test_runs_the_same_after_approval_hooks_as_any_approval():
     coord, _ = _setup(_bed())
     _run(coord)
     coord.badges.evaluate_for_child.assert_awaited_once_with("millie", "manual")
-    coord._async_advance_quests.assert_awaited_once_with("millie", "bed")
+    args = coord._async_advance_quests.await_args.args
+    assert args[:2] == ("millie", "bed") and args[2] == coord.storage.add_completion.call_args.args[0].id
     coord._async_evaluate_challenges.assert_awaited_once_with("millie")
     coord.storage.async_save.assert_awaited()
     coord.async_refresh.assert_awaited()

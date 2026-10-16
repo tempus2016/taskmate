@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import re
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -28,6 +29,8 @@ from homeassistant.helpers.event import async_track_point_in_time
 from homeassistant.util import dt as dt_util
 
 _LOGGER = logging.getLogger(__name__)
+
+_ENTITY_ID_RE = re.compile(r"[a-z0-9_]+\.[a-z0-9_]+")
 
 MAX_UNLOCK_MINUTES = 1440  # a day; longer belongs in an automation, not a reward
 
@@ -152,9 +155,24 @@ class UnlocksMixin:
 
         self._unlock_timers.append(async_track_point_in_time(self.hass, _revert, when))
 
+    def _revertable_entity(self, record: dict[str, Any]) -> str:
+        """The entity a stored unlock record may turn off, or "".
+
+        Records come back from storage, so the value is checked to be one
+        plain entity id before it reaches a service call; a list or anything
+        else shaped oddly is forgotten rather than acted on. Re-locking is
+        the safe direction, so an entity that has since left the allowlist is
+        still turned back off.
+        """
+        entity_id = record.get("entity_id", "")
+        if not isinstance(entity_id, str):
+            return ""
+        entity_id = entity_id.strip().lower()
+        return entity_id if _ENTITY_ID_RE.fullmatch(entity_id) else ""
+
     async def async_revert_unlock(self, record: dict[str, Any]) -> None:
         """Turn the entity back off and drop the record."""
-        entity_id = record.get("entity_id", "")
+        entity_id = self._revertable_entity(record)
         if entity_id:
             await self.hass.services.async_call(
                 "homeassistant",
@@ -202,7 +220,7 @@ class UnlocksMixin:
                 self._schedule_revert(record, revert_at)
 
         for record in expired:
-            entity_id = record.get("entity_id", "")
+            entity_id = self._revertable_entity(record)
             if entity_id:
                 await self.hass.services.async_call(
                     "homeassistant",

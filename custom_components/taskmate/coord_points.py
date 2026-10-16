@@ -1200,6 +1200,10 @@ class PointsMixin:
                 self.storage.add_points_transaction(transaction)
 
         self.storage.append_career_score_snapshot(child.id, effective_date.isoformat(), child.career_score)
+        # Persist the balance before the level-up check, which can suspend on a
+        # notification; a write that lands during that await would otherwise
+        # be overwritten by this stale copy.
+        self.storage.update_child(child)
         await self._maybe_level_up(child)
         self.storage.update_child(child)
 
@@ -1249,7 +1253,9 @@ class PointsMixin:
             # are ignored by async_delete_photo).
             for c in all_completions:
                 if c.id not in kept_ids and getattr(c, "photo_url", ""):
-                    await photos.async_delete_photo(self.hass, c.photo_url)
+                    await photos.async_delete_photo_if_unreferenced(
+                        self.hass, self.storage, c.photo_url, completions=to_keep
+                    )
             await self.async_refresh()
             _LOGGER.info("Pruned %d completions older than %d days", before - len(to_keep), days)
 

@@ -969,9 +969,7 @@ class TaskMateCoordinator(
 
     async def _async_sweep_orphan_photos(self) -> None:
         """Delete evidence photos not referenced by any completion (SEC-2)."""
-        referenced = [
-            getattr(c, "photo_url", "") for c in self.storage.get_completions() if getattr(c, "photo_url", "")
-        ]
+        referenced = photos.referenced_photo_urls(self.storage)
         removed = await photos.async_sweep_orphan_photos(self.hass, referenced)
         if removed:
             _LOGGER.info("Swept %d orphan evidence photo(s)", removed)

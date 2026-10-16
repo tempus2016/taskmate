@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.util import dt as dt_util
 
 from . import images, notify_strings, photos
-from .chore_undo import child_can_undo, undo_window_seconds
+from .chore_undo import affected_completions, child_can_undo, undo_window_seconds
 from .const import (
     CHORE_NOTE_MAX_LENGTH,
     CHORE_SUGGESTED_POINTS_MAX,
@@ -787,6 +787,9 @@ class ChoresMixin:
                 chore_id,
             )
             photo_url = ""
+        if photo_url and photos.is_photo_in_use(self.storage, photo_url):
+            _LOGGER.warning("Ignoring photo_url for chore %s: that photo is already another submission's", chore_id)
+            photo_url = ""
 
         # The note and the suggested points are typed by a child, so bound both
         # before they reach storage: an unbounded note bloats the store and the
@@ -983,6 +986,8 @@ class ChoresMixin:
         )
         if redo is not None:
             self._inspection_on_redo_recorded(redo, completion.id)
+        if auction_price is None and hasattr(self, "_roulette_mark_used"):
+            self._roulette_mark_used(chore, child_id, completion.id)
         await self._async_after_completions(
             chore,
             # An open-ended chore has no points of its own, so quote the
@@ -1166,7 +1171,7 @@ class ChoresMixin:
             # run the same post-approval progression hooks here — otherwise quest
             # steps and challenges only advance for approval-required chores (#558).
             if hasattr(self, "_async_advance_quests"):
-                await self._async_advance_quests(child.id, chore.id)
+                await self._async_advance_quests(child.id, chore.id, _completion.id)
             if hasattr(self, "_async_evaluate_challenges"):
                 await self._async_evaluate_challenges(child.id)
 
@@ -1455,8 +1460,13 @@ class ChoresMixin:
         if already_done:
             raise ValueError(f"Bonus sub-task '{subtask.name}' already completed today.")
 
-        # A grown-up's own sub-task never waits for approval (#1061).
-        needs_approval = chore.requires_approval and not child.is_adult
+        # A grown-up's own sub-task never waits for approval (#1061). A chore
+        # whose main completion must be reviewed (approval, a photo, or an
+        # open-ended value) holds its sub-tasks for the same review.
+        main_reviewed = bool(
+            chore.requires_approval or getattr(chore, "require_photo", False) or getattr(chore, "open_ended", False)
+        )
+        needs_approval = main_reviewed and not child.is_adult
         completion = ChoreCompletion(
             chore_id=chore_id,
             child_id=child_id,
@@ -1649,7 +1659,7 @@ class ChoresMixin:
 
                     # Advance any chore-chain quests (parent completions only)
                     if not is_bonus and hasattr(self, "_async_advance_quests"):
-                        await self._async_advance_quests(completion.child_id, completion.chore_id)
+                        await self._async_advance_quests(completion.child_id, completion.chore_id, completion.id)
 
                     # Evaluate daily/weekly challenges (parent completions only)
                     if not is_bonus and hasattr(self, "_async_evaluate_challenges"):
@@ -1755,7 +1765,8 @@ class ChoresMixin:
                                         points=-refund,
                                         reason="Streak milestone reversed",
                                         created_at=dt_util.now(),
-                                    )
+                                    ),
+                                    reverses_season=True,
                                 )
                             child.streak_milestones_achieved = sorted(d for d in achieved if d <= child.current_streak)
                 # The weekly target bonus this completion helped earn (#1044).
@@ -1798,6 +1809,10 @@ class ChoresMixin:
             if not target_completion.backdated or lc_current == target_completion.completed_at:
                 self.storage.undo_last_completed(target_completion.chore_id, target_completion.child_id)
 
+            # The roulette multiplier this completion used is free again.
+            if hasattr(self, "_roulette_release"):
+                self._roulette_release(target_completion.child_id, target_completion.id)
+
             # One-shot: re-enable for this child
             chore = self.get_chore(target_completion.chore_id)
             if chore and getattr(chore, "schedule_mode", "specific_days") == "one_shot":
@@ -1832,7 +1847,36 @@ class ChoresMixin:
             raise ValueError("This chore has already been undone. Refresh the card.")
         if not child_can_undo(completion, completions, undo_window_seconds(self.storage)):
             raise ValueError("This chore can't be undone any more. Ask a parent to undo it.")
+        # The reversal floors the balance at zero, so points already moved on
+        # (into a wish, a pool, a claim) would never come back. An undo is only
+        # the child's to take while every point it would reverse is still there.
+        owed = self._undo_points_owed(completion, completions)
+        child = self.get_child(completion.child_id)
+        if child and owed > 0 and child.points < owed:
+            raise ValueError("This chore can't be undone now: its points have already been spent. Ask a parent.")
         await self.async_reject_chore(completion_id, event="taskmate_chore_undone")
+
+    def _undo_points_owed(self, completion, completions) -> int:
+        """Every point a child's undo of ``completion`` would take back.
+
+        The completion's own award, that day's cascaded bonus sub-tasks, and
+        any derived bonus the reversal would also claw back: a weekly-target
+        bonus, a quest completion bonus, or a challenge bonus the completion
+        helped earn. A pending submission owes nothing yet.
+        """
+        affected = affected_completions(completion, completions)
+        owed = sum(int(getattr(c, "points_awarded", 0) or 0) for c in affected if c.approved)
+        if not completion.approved or completion.bonus_subtask_id:
+            return owed
+        child = self.get_child(completion.child_id)
+        if child is None:
+            return owed
+        owed += self._weekly_target_refund_owed(completion, child)
+        if hasattr(self, "_quest_refund_owed"):
+            owed += self._quest_refund_owed(child.id, completion.chore_id, completion.id)
+        if hasattr(self, "_challenge_refund_owed"):
+            owed += self._challenge_refund_owed(child.id, exclude_ids={c.id for c in affected})
+        return owed
 
     async def async_reject_chore(
         self, completion_id: str, event: str = "taskmate_chore_rejected", reason: str = ""
@@ -1863,11 +1907,18 @@ class ChoresMixin:
             # Same as undo: a rejected completion must not leave the quest
             # chain standing on the step it unlocked.
             if hasattr(self, "_async_rewind_quests"):
-                await self._async_rewind_quests(target_completion.child_id, target_completion.chore_id)
+                await self._async_rewind_quests(
+                    target_completion.child_id, target_completion.chore_id, target_completion.id
+                )
+        if target_completion and target_completion.approved and hasattr(self, "_async_reverse_challenges"):
+            # The metric no longer counts this completion; a challenge bonus it
+            # helped earn goes back with it.
+            await self._async_reverse_challenges(target_completion.child_id)
         # The completion record is gone, so its evidence photo is now orphaned —
-        # delete it (best-effort; foreign/blank URLs are ignored).
+        # delete it (best-effort; foreign/blank URLs are ignored), unless some
+        # other record still points at the same file.
         if target_completion and getattr(target_completion, "photo_url", ""):
-            await photos.async_delete_photo(self.hass, target_completion.photo_url)
+            await photos.async_delete_photo_if_unreferenced(self.hass, self.storage, target_completion.photo_url)
         chore_name = ""
         if target_completion:
             chore = self.get_chore(target_completion.chore_id)
@@ -1954,7 +2005,9 @@ class ChoresMixin:
         # otherwise re-approving the same completion advances the chain a
         # second time and pays a repeatable quest's bonus twice.
         if not target.bonus_subtask_id and hasattr(self, "_async_rewind_quests"):
-            await self._async_rewind_quests(target.child_id, target.chore_id)
+            await self._async_rewind_quests(target.child_id, target.chore_id, target.id)
+        if hasattr(self, "_async_reverse_challenges"):
+            await self._async_reverse_challenges(target.child_id)
 
         await self.storage.async_save()
         await self.async_refresh()
@@ -2320,8 +2373,25 @@ class ChoresMixin:
                 points=-refund,
                 reason=f"Weekly target bonus reversed: {getattr(chore, 'name', '')}".rstrip(": "),
                 created_at=dt_util.now(),
-            )
+            ),
+            reverses_season=True,
         )
+
+    def _weekly_target_refund_owed(self, completion, child) -> int:
+        """What ``_reverse_weekly_target_bonus`` would take back, without doing it."""
+        if completion.bonus_subtask_id or not child:
+            return 0
+        week = self._week_key(completion.completed_at)
+        paid = dict(self.storage.get_weekly_target_bonus(completion.chore_id, child.id))
+        if week not in paid:
+            return 0
+        chore = self.get_chore(completion.chore_id)
+        target = int(getattr(chore, "weekly_target", 0) or 0)
+        if target > 0 and (
+            self._weekly_approved_count(completion.chore_id, child.id, week, exclude_id=completion.id) >= target
+        ):
+            return 0
+        return max(0, int(paid.get(week) or 0))
 
     def _is_chore_completable_by_child(self, chore, child_id: str) -> bool:
         """Whether ``child_id`` may complete ``chore`` right now (card parity).

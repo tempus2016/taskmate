@@ -7193,7 +7193,7 @@ class TaskMatePanel extends HTMLElement {
           </div>
         </div>
         <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr ${r.expires_at ? "1fr" : ""};">
-          <div class="tm-stat"><div class="tm-stat-value tm-numeric tm-cost">${this._fmtNum(r.cost)}</div><div class="tm-stat-label">${this._t("panel.reward_stat_cost", {points_name: pointsName})}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value tm-numeric tm-cost">${this._fmtNum(r.cost)}</div><div class="tm-stat-label">${this._t("panel.reward_stat_cost", {points_name: this._esc(pointsName)})}</div></div>
           ${r.quantity != null ? `<div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._num(r.quantity)}</div><div class="tm-stat-label">${this._t("panel.reward_stat_remaining")}</div></div>` : `<div class="tm-stat"><div class="tm-stat-value">∞</div><div class="tm-stat-label">${this._t("panel.reward_stat_unlimited")}</div></div>`}
           ${r.expires_at ? `<div class="tm-stat"><div class="tm-stat-value" style="font-size: 14px;">${this._esc(r.expires_at)}</div><div class="tm-stat-label">${this._t("panel.reward_stat_expires")}</div></div>` : ""}
         </div>
@@ -7213,6 +7213,11 @@ class TaskMatePanel extends HTMLElement {
   // Children add wishes from the wishlist card; parents approve them here
   // (confirming or changing the target), pledge on behalf of relatives, and
   // hand a funded wish over by approving its reward claim.
+  _safeChoreImage(u) {
+    // Only a picture uploaded through TaskMate's own image endpoint is shown.
+    return typeof u === "string" && u.startsWith("/api/taskmate/image/") ? u : "";
+  }
+
   _safeWishImage(u) {
     return typeof u === "string" && u.startsWith("/api/taskmate/image/") ? u : "";
   }
@@ -7557,7 +7562,7 @@ class TaskMatePanel extends HTMLElement {
         </div>
         <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr;">
           <div class="tm-stat"><div class="tm-stat-value tm-numeric">${steps.length}</div><div class="tm-stat-label">${this._t("panel.quest_stat_steps")}</div></div>
-          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(q.bonus_points || 0)}</div><div class="tm-stat-label">${this._t("panel.quest_stat_bonus", {points_name: pointsName})}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(q.bonus_points || 0)}</div><div class="tm-stat-label">${this._t("panel.quest_stat_bonus", {points_name: this._esc(pointsName)})}</div></div>
         </div>
         <ol class="tm-quest-steps">${stepNames}</ol>
         <div class="tm-meta">${this._t("panel.quest_assigned_to")}: ${this._esc(assigned.join(", "))}</div>
@@ -7614,7 +7619,7 @@ class TaskMatePanel extends HTMLElement {
         </div>
         <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr;">
           <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._num(c.target)}</div><div class="tm-stat-label">${this._esc(metricLabel)}</div></div>
-          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(c.bonus_points || 0)}</div><div class="tm-stat-label">${this._t("panel.quest_stat_bonus", {points_name: pointsName})}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(c.bonus_points || 0)}</div><div class="tm-stat-label">${this._t("panel.quest_stat_bonus", {points_name: this._esc(pointsName)})}</div></div>
         </div>
         <div class="tm-meta">${this._t("panel.quest_assigned_to")}: ${this._esc(assigned.join(", "))}</div>
         <div class="tm-card-foot">
@@ -9201,7 +9206,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-audit-row">
               <div class="tm-audit-when">${this._esc(when)}</div>
               <div class="tm-audit-user">${this._esc(a.user_name || a.user_id || "—")}</div>
-              <div class="tm-audit-action">${this._esc(a.action || "")}</div>
+              <div class="tm-audit-action">${this._esc(a.action || "")}${a.count > 1 ? ` <span class="tm-meta">×${this._num(a.count)}</span>` : ""}</div>
               <div class="tm-audit-target">${this._esc(a.target || "")}</div>
             </div>`;
     }).join("");
@@ -11472,8 +11477,8 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-field">
         <span class="tm-field-label">${this._t(k.label)}</span>
         <div class="tm-image-well">
-          ${value
-            ? `<img class="tm-image-thumb" src="${this._esc(value)}" alt="">`
+          ${this._safeChoreImage(value)
+            ? `<img class="tm-image-thumb" src="${this._esc(this._safeChoreImage(value))}" alt="">`
             : `<div class="tm-image-empty">${this._t(k.empty)}</div>`}
           <div class="tm-image-actions">
             <button type="button" class="tm-btn tm-btn-sm" data-act="chore-image-pick" data-field="${field}" ${busy ? "disabled" : ""}>

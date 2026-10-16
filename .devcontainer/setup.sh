@@ -6,7 +6,7 @@ set -euo pipefail
 echo "==> Installing Python tooling"
 python -m pip install --upgrade pip
 pip install -r requirements_test.txt
-pip install ruff==0.15.12 pre-commit homeassistant
+pip install ruff==0.16.10 pre-commit==4.7.0
 
 echo "==> Installing Node tooling"
 npm ci
