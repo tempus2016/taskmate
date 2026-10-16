@@ -506,6 +506,7 @@ class TaskMateCoordinator(
             self.async_auto_approve_overdue,
             self.async_check_weekly_goals,
             self.async_draw_due_raffles,
+            self.async_check_pet_growth,
         ):
             try:
                 await step()

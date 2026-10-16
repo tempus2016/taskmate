@@ -1442,6 +1442,10 @@
         "name": {
           "name": "Nom",
           "description": "Le nom de l’animal"
+        },
+        "hatch_egg": {
+          "name": "Faire éclore l’œuf",
+          "description": "Faire éclore l’œuf pondu par l’animal adulte pour obtenir un nouvel animal. L’ancien rejoint la famille des animaux."
         }
       }
     }
@@ -1511,7 +1515,8 @@
               "sick_day": "Jour de maladie",
               "chore_auto_approved": "Tâche approuvée automatiquement",
               "penalty_redeemed": "Pénalité regagnée",
-              "raffle_won": "Tombola gagnée"
+              "raffle_won": "Tombola gagnée",
+              "pet_evolved": "L’animal a grandi"
             }
           }
         }

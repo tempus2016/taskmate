@@ -21,6 +21,7 @@ from .const import (
     DOMAIN,
     NOTIF_TYPE_HELP_REQUESTED,
     NOTIF_TYPE_PENALTY_REDEEMED,
+    NOTIF_TYPE_PET_EVOLVED,
     NOTIF_TYPE_RAFFLE_DRAWN,
     NOTIF_TYPE_WEEKLY_GOAL_REACHED,
 )
@@ -60,6 +61,7 @@ CHILD_EVENTS: dict[str, str] = {
     "chore_auto_approved": "taskmate_chore_auto_approved",
     "penalty_redeemed": notification_event_name(NOTIF_TYPE_PENALTY_REDEEMED),
     "raffle_won": "taskmate_raffle_won",
+    "pet_evolved": notification_event_name(NOTIF_TYPE_PET_EVOLVED),
 }
 
 # Bus events about the whole family.

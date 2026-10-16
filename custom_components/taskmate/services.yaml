@@ -1922,3 +1922,10 @@ adopt_pet:
       required: true
       selector:
         text:
+    hatch_egg:
+      name: Hatch the egg
+      description: Hatch the egg the grown-up pet laid into a new pet. The old pet joins the pet family.
+      required: false
+      default: false
+      selector:
+        boolean:

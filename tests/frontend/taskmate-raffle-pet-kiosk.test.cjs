@@ -20,6 +20,13 @@ const sandbox = {
   clearTimeout: () => {},
   setInterval: () => 0,
   clearInterval: () => {},
+  // The pet card turns its SVG markup into a node; here the node prints as that markup.
+  DOMParser: class {
+    parseFromString(markup) {
+      const node = { cloneNode: () => node, toString: () => markup };
+      return { documentElement: node };
+    }
+  },
 };
 const runTimers = (n = 200) => { for (let i = 0; i < n && timers.length; i++) timers.shift().fn(); };
 
@@ -149,23 +156,82 @@ test("pet: the adoption form adopts the picked creature", async () => {
 });
 
 for (const design of DESIGNS) {
-  test(`pet: ${design} draws the pet, its mood and what it needs to grow`, () => {
-    const pet = { adopted: true, name: "Sparkle", species: "unicorn", stage: "baby", chores: 5, stage_at: 3, next_at: 15, mood: "sleepy", accessories: ["bow"] };
+  test(`pet: ${design} draws the pet, its mood and how close the next stage is`, () => {
+    const pet = { adopted: true, name: "Sparkle", species: "unicorn", stage: "baby", chores: 5, xp: 115, goal: { kind: "stage", from: 30, at: 200 }, mood: "sleepy", accessories: ["bow"] };
     const { markup } = render(petCard(pet, design).card.render());
-    assert.match(markup, /🦄/);
+    assert.match(markup, /<svg[^>]*tm-pet-scene/);
     assert.ok(markup.includes(localize("pet.mood_sleepy", { name: "Sparkle" })));
-    assert.ok(markup.includes(localize("pet.grow_many", { count: 10 })));
+    const stage = localize("pet.stage_kid", { species: localize("pet.species_unicorn") });
+    assert.ok(markup.includes(localize("pet.goal_stage", { percent: 50, stage })));
+    assert.match(markup, /aria-valuenow="50"/);
     assert.match(markup, /💤/);
     assert.match(markup, /🎀/);
   });
 }
 
-test("pet: an egg is an egg, a grown pet says so", () => {
-  const egg = render(petCard({ adopted: true, name: "E", species: "cat", stage: "egg", chores: 0, stage_at: 0, next_at: 3, mood: "happy", accessories: [] }).card.render()).markup;
-  assert.match(egg, /🥚/);
-  const grown = render(petCard({ adopted: true, name: "G", species: "dog", stage: "grown", chores: 120, stage_at: 100, mood: "proud", accessories: ["bow", "top_hat", "scarf", "crown"] }).card.render()).markup;
+test("pet: an egg is an egg, a grown pet with nothing switched on says so", () => {
+  const egg = render(petCard({ adopted: true, name: "E", species: "cat", stage: "egg", chores: 0, xp: 0, goal: { kind: "stage", from: 0, at: 30 }, mood: "happy", accessories: [] }).card.render()).markup;
+  assert.match(egg, /tm-egg-cat/);
+  const grown = render(petCard({ adopted: true, name: "G", species: "dog", stage: "grown", chores: 120, xp: 1700, mood: "proud", accessories: ["bow", "top_hat", "scarf", "crown"] }).card.render()).markup;
   assert.ok(grown.includes(localize("pet.fully_grown", { name: "G" })));
   assert.match(grown, /👑/);
+  assert.doesNotMatch(grown, /role="progressbar"/);
+});
+
+test("pet: each stage looks different, and legendary turns it gold", () => {
+  const art = petMod.window ? petMod.window.__taskmate_pet_art : sandbox.window?.__taskmate_pet_art;
+  const { petArt } = art || {};
+  assert.ok(petArt, "art helpers exposed");
+  const looks = ["baby", "kid", "teen", "grown"].map(st => petArt("dragon", st));
+  assert.equal(new Set(looks).size, 4);
+  assert.match(petArt("dragon", "grown", true), /#f6c445/);
+  assert.doesNotMatch(petArt("dragon", "grown"), /#f6c445/);
+});
+
+test("pet: after fully grown — home items, legendary, level and the goal", () => {
+  const pet = { adopted: true, name: "Rex", species: "dino", stage: "grown", chores: 150, xp: 2200, legendary: true, home: 3, pet_level: 4,
+    goal: { kind: "home", from: 2100, at: 2400 }, mood: "happy", accessories: [] };
+  const { markup } = render(petCard(pet).card.render());
+  assert.ok(markup.includes(localize("pet.stage_legendary", { species: localize("pet.species_dino") })));
+  assert.ok(markup.includes(localize("pet.level", { level: 4 })));
+  assert.ok(markup.includes(localize("pet.goal_home", { percent: 33, name: "Rex" })));
+  assert.match(markup, /class="pt-stage has-home/);
+  assert.match(markup, /#8fd16a/, "grass, the first home item, is drawn");
+  assert.doesNotMatch(markup, /#e86f5a/, "the house (item 10) is not yet");
+});
+
+test("pet: an egg to hatch — the child picks the next pet and the old one joins the family", async () => {
+  const pet = { adopted: true, name: "Sparky", species: "dragon", stage: "grown", chores: 200, xp: 3100, legendary: true, egg_ready: true,
+    mood: "happy", accessories: [], family: [{ species: "cat", name: "Mimi", legendary: true }] };
+  const { card, calls } = petCard(pet);
+  let markup = render(card.render()).markup;
+  assert.ok(markup.includes(localize("pet.egg_ready", { name: "Sparky" })));
+  assert.match(markup, /tm-new-egg/);
+  assert.ok(markup.includes(localize("pet.family_title")));
+  assert.match(markup, /Mimi/);
+  card._hatching = true;
+  markup = render(card.render()).markup;
+  assert.ok(markup.includes(localize("pet.hatch_question", { name: "Vaiha" })));
+  card._species = "bunny";
+  card.renderRoot = { querySelector: () => ({ value: "Hop" }) };
+  await card._adopt(card._child(), true);
+  assert.equal(JSON.stringify(calls[0].data), JSON.stringify({ child_id: "vaiha", species: "bunny", name: "Hop", hatch_egg: true }));
+});
+
+test("pet: growing up plays once on this device; the first look is quiet", () => {
+  store.clear();
+  const base = { adopted: true, name: "Sparky", species: "dragon", chores: 2, xp: 20, mood: "happy", accessories: [] };
+  const { card } = petCard({ ...base, stage: "egg" });
+  card._checkEvolve({ ...base, stage: "egg" });
+  assert.equal(card._evolving, "");
+  card._checkEvolve({ ...base, stage: "baby" });
+  assert.equal(card._evolving, "stage");
+  assert.ok(render(card.render()).markup.includes(localize("pet.evolve_stage", { name: "Sparky" })));
+  card._evolving = "";
+  card._checkEvolve({ ...base, stage: "baby" });
+  assert.equal(card._evolving, "", "already seen");
+  card._checkEvolve({ ...base, stage: "grown", legendary: true });
+  assert.equal(card._evolving, "stage");
 });
 
 // ── Kiosk ─────────────────────────────────────────────────────────────────

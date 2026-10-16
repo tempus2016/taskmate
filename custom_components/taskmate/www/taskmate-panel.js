@@ -1007,6 +1007,16 @@ class TaskMatePanel extends HTMLElement {
     }
     // Surprise inspections (#981): flag / pass / fail / cancel + their dialogs.
     if (act && act.startsWith("insp-") && this._onInspectionAction(act, t)) return;
+    // Pets: put the growth numbers back to their defaults (saved with the page).
+    if (act === "pet-defaults") {
+      const defaults = { pet_xp_per_chore: 10, pet_stage_baby: 30, pet_stage_kid: 200, pet_stage_teen: 600, pet_stage_grown: 1500,
+        pet_home_every: 300, pet_legendary_at: 3000, pet_egg_at: 3000, pet_family_max: 6, pet_level_every: 300 };
+      for (const [key, value] of Object.entries(defaults)) {
+        const el = this.querySelector(`input[data-setting="${key}"]`);
+        if (el) el.value = String(value);
+      }
+      return;
+    }
     // Reject asks why first (#976); an empty reason is a plain reject.
     if (act === "reject-chore")   { this._openRejectDialog("chore", t.dataset.id); return; }
     if (act === "approve-reward") { this._doApprove("reward", t.dataset.id); return; }
@@ -3354,6 +3364,17 @@ class TaskMatePanel extends HTMLElement {
       const hrs = payload.auto_approve_hours;
       if (!Number.isInteger(hrs) || hrs < 0 || hrs > 168) {
         this._showToast("err", this._t("panel.settings_auto_approve_invalid"));
+        return;
+      }
+    }
+    // Pets: the stages must rise, and the legendary/egg numbers come after fully grown.
+    if ("pet_stage_grown" in payload) {
+      const keys = ["pet_stage_baby", "pet_stage_kid", "pet_stage_teen", "pet_stage_grown"];
+      const vals = keys.map(k => payload[k]);
+      const rising = vals.every((v, i) => Number.isInteger(v) && v >= 1 && (i === 0 || v > vals[i - 1]));
+      const after = ["pet_legendary_at", "pet_egg_at"].every(k => !(k in payload) || payload[k] > vals[3]);
+      if (!rising || !after) {
+        this._showToast("err", this._t("panel.pet_settings_invalid"));
         return;
       }
     }
@@ -9602,6 +9623,7 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-setting-label">${this._t("panel.pets_enabled")}</div>
               <ha-switch data-setting="pets_enabled" ${s.pets_enabled ? "checked" : ""}></ha-switch>
             </div>
+            ${this._renderPetSettings(s)}
           </div>
         </div>
 
@@ -11773,6 +11795,50 @@ class TaskMatePanel extends HTMLElement {
   // HTML as strings, so anything stored in a field we *assume* is numeric has
   // to be proven numeric before it is echoed back. Non-numbers, inf and NaN
   // fall back rather than reaching the DOM.
+  // Pets (growth and what happens after fully grown): every number is growth,
+  // shown with roughly how many 5-point chores it takes.
+  _renderPetSettings(s) {
+    const int = (key, def) => this._num(s[key], def);
+    const perChore = int("pet_xp_per_chore", 10);
+    const pointsCount = s.pet_points_count !== false;
+    const perTypical = perChore + (pointsCount ? 5 : 0);
+    const chores = (n) => {
+      if (perTypical <= 0) return this._t("panel.pet_never");
+      const count = Math.max(1, Math.round(n / perTypical));
+      return count === 1 ? this._t("panel.pet_about_one_chore") : this._t("panel.pet_about_chores", { count });
+    };
+    const num = (key, def, min, max) => `<input type="number" class="tm-input" min="${min}" max="${max}" step="1" data-setting="${key}"
+      aria-label="${this._esc(this._t("panel." + key))}" value="${int(key, def)}" style="max-width:120px">`;
+    const row = (key, def, min, max, hint = "") => `
+      <div class="tm-setting-row">
+        <div class="tm-setting-label">${this._t("panel." + key)}<small>${hint}</small></div>
+        ${num(key, def, min, max)}
+      </div>`;
+    const sw = (key, def) => `
+      <div class="tm-setting-row">
+        <div class="tm-setting-label">${this._t("panel." + key)}<small>${this._t("panel." + key + "_hint")}</small></div>
+        <ha-switch data-setting="${key}" ${(s[key] === undefined ? def : s[key] === true) ? "checked" : ""}></ha-switch>
+      </div>`;
+    const stages = [["pet_stage_baby", 30], ["pet_stage_kid", 200], ["pet_stage_teen", 600], ["pet_stage_grown", 1500]];
+    return `
+      ${row("pet_xp_per_chore", 10, 0, 1000, this._t("panel.pet_xp_per_chore_hint"))}
+      ${sw("pet_points_count", true)}
+      <div class="tm-setting-row"><div class="tm-setting-label">${this._t("panel.pet_stages_title")}<small>${this._t("panel.pet_stages_hint")}</small></div></div>
+      ${stages.map(([key, def]) => row(key, def, 1, 1000000, chores(int(key, def)))).join("")}
+      <div class="tm-setting-row"><div class="tm-setting-label">${this._t("panel.pet_after_title")}<small>${this._t("panel.pet_after_hint")}</small></div></div>
+      ${sw("pet_home_enabled", true)}
+      ${row("pet_home_every", 300, 1, 1000000, chores(int("pet_home_every", 300)))}
+      ${sw("pet_legendary_enabled", true)}
+      ${row("pet_legendary_at", 3000, 1, 1000000, chores(int("pet_legendary_at", 3000)))}
+      ${sw("pet_eggs_enabled", true)}
+      ${row("pet_egg_at", 3000, 1, 1000000, this._t("panel.pet_egg_at_hint"))}
+      ${row("pet_family_max", 6, 2, 12, this._t("panel.pet_family_max_hint"))}
+      ${sw("pet_levels_enabled", false)}
+      ${row("pet_level_every", 300, 1, 1000000, chores(int("pet_level_every", 300)))}
+      <div class="tm-setting-row"><div class="tm-setting-label"></div>
+        <button type="button" class="tm-btn tm-btn-ghost" data-act="pet-defaults">${this._t("panel.pet_reset_defaults")}</button></div>`;
+  }
+
   _num(v, fallback = 0) {
     const n = Number(v);
     return Number.isFinite(n) ? n : fallback;

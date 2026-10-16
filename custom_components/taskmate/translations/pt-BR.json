@@ -1442,6 +1442,10 @@
         "name": {
           "name": "Nome",
           "description": "O nome do bichinho"
+        },
+        "hatch_egg": {
+          "name": "Chocar o ovo",
+          "description": "Chocar o ovo que o bichinho adulto botou para ter um bichinho novo. O antigo entra para a família de bichinhos."
         }
       }
     }
@@ -1511,7 +1515,8 @@
               "sick_day": "Dia de doença",
               "chore_auto_approved": "Tarefa aprovada automaticamente",
               "penalty_redeemed": "Penalidade recuperada",
-              "raffle_won": "Sorteio ganho"
+              "raffle_won": "Sorteio ganho",
+              "pet_evolved": "O bichinho cresceu"
             }
           }
         }

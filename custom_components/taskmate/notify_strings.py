@@ -73,6 +73,11 @@ DEFAULTS: dict[str, str] = {
     "help_requested": "🙋 {child_name} needs help with '{chore_name}'{message_text}",
     "mood_low": "{emoji} {child_name} had a tough day today. Maybe check in?",
     "weekly_goal_reached": "🎯 {child_name} reached their weekly goal of {target} {points_name} — +{bonus} bonus!",
+    "pet_evolved": "{news}",
+    "pet_news_stage": "🐣 {pet_name} just grew up! Have a look at {child_name}'s pet.",
+    "pet_news_legendary": "✨ {pet_name} turned legendary! {child_name}'s pet is shining gold.",
+    "pet_news_egg": "🥚 {pet_name} laid an egg! {child_name} can hatch a new pet.",
+    "pet_news_level": "💖 {pet_name} reached pet level {pet_level}!",
     "penalty_redeemed": "🤝 {child_name} made it right with '{chore_name}' and earned back {points} {points_name}.",
     "raffle_drawn": "🎟️ {raffle_name}: {winner_name} won! ({tickets} tickets in the draw)",
     # Voice assistant replies (intents.py).
@@ -160,6 +165,7 @@ DEFAULTS: dict[str, str] = {
     "sample_note": "Brilliant job!",
     "sample_penalty": "Slammed the door",
     "sample_raffle": "Saturday raffle",
+    "sample_pet": "Sparky",
     # Approval push buttons and the hint for backends that can't show them.
     "action_approve": "Approve",
     "action_reject": "Reject",

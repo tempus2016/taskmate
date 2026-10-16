@@ -89,6 +89,7 @@ from .const import (
 from .coord_auto_approve import AUTO_APPROVE_MAX_HOURS
 from .coord_birthdays import normalize_birthday
 from .coord_inspections import INSPECTION_BONUS_MAX, INSPECTION_FAIL_MODES, INSPECTION_WINDOWS
+from .coord_pets import PET_BOOL_SETTINGS, PET_INT_SETTINGS
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
 from .models import (
@@ -1985,6 +1986,8 @@ _SUBKEY_SETTINGS = {
     "weekly_goal_enabled",
     "weekly_goal_bonus",
     "pets_enabled",
+    *PET_INT_SETTINGS,
+    *PET_BOOL_SETTINGS,
     "history_days",
     # Recaps (#929)
     "recap_frequencies",
@@ -2268,6 +2271,11 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("auto_approve_hours"): vol.All(vol.Coerce(int), vol.Range(min=0, max=AUTO_APPROVE_MAX_HOURS)),
     vol.Optional("weekly_goal_enabled"): bool,
     vol.Optional("pets_enabled"): bool,
+    **{
+        vol.Optional(key): vol.All(vol.Coerce(int), vol.Range(min=low, max=high))
+        for key, (_d, low, high) in PET_INT_SETTINGS.items()
+    },
+    **{vol.Optional(key): bool for key in PET_BOOL_SETTINGS},
     vol.Optional("weekly_goal_bonus"): vol.All(vol.Coerce(int), vol.Range(min=0, max=100000)),
     vol.Optional("recap_frequencies"): _validate_recap_frequencies,
     vol.Optional("recap_child_frequencies"): _validate_recap_child_frequencies,

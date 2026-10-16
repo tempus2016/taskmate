@@ -1442,6 +1442,10 @@
         "name": {
           "name": "Nome",
           "description": "O nome do animal"
+        },
+        "hatch_egg": {
+          "name": "Chocar o ovo",
+          "description": "Chocar o ovo posto pelo animal adulto para ter um animal novo. O antigo junta-se à família de animais."
         }
       }
     }
@@ -1511,7 +1515,8 @@
               "sick_day": "Dia de doença",
               "chore_auto_approved": "Tarefa aprovada automaticamente",
               "penalty_redeemed": "Penalização recuperada",
-              "raffle_won": "Sorteio ganho"
+              "raffle_won": "Sorteio ganho",
+              "pet_evolved": "O animal cresceu"
             }
           }
         }

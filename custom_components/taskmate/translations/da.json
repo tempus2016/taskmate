@@ -1442,6 +1442,10 @@
         "name": {
           "name": "Navn",
           "description": "Kæledyrets navn"
+        },
+        "hatch_egg": {
+          "name": "Udklæk ægget",
+          "description": "Udklæk ægget, som det voksne kæledyr lagde, til et nyt kæledyr. Det gamle kæledyr kommer med i kæledyrsfamilien."
         }
       }
     }
@@ -1511,7 +1515,8 @@
               "sick_day": "Sygedag",
               "chore_auto_approved": "Opgave godkendt automatisk",
               "penalty_redeemed": "Straf tjent tilbage",
-              "raffle_won": "Lodtrækning vundet"
+              "raffle_won": "Lodtrækning vundet",
+              "pet_evolved": "Kæledyr voksede"
             }
           }
         }

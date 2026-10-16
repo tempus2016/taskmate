@@ -87,7 +87,9 @@ def async_register_family_services(
         await coordinator.async_buy_raffle_tickets(call.data["raffle_id"], call.data["child_id"], call.data["tickets"])
 
     async def adopt_pet(coordinator, call):
-        await coordinator.async_adopt_pet(call.data["child_id"], call.data["species"], call.data["name"])
+        await coordinator.async_adopt_pet(
+            call.data["child_id"], call.data["species"], call.data["name"], hatch_egg=call.data.get("hatch_egg", False)
+        )
 
     async def draw_raffle(coordinator, call):
         await coordinator.async_draw_raffle(call.data["raffle_id"])
@@ -148,6 +150,7 @@ def async_register_family_services(
                 vol.Required("child_id"): cv.string,
                 vol.Required("species"): vol.In(PET_SPECIES),
                 vol.Required("name"): vol.All(cv.string, vol.Length(min=1, max=PET_NAME_MAX)),
+                vol.Optional("hatch_egg", default=False): cv.boolean,
             },
         ),
     )

@@ -1442,6 +1442,10 @@
         "name": {
           "name": "Name",
           "description": "The pet's name"
+        },
+        "hatch_egg": {
+          "name": "Hatch the egg",
+          "description": "Hatch the egg the grown-up pet laid into a new pet. The old pet joins the pet family."
         }
       }
     }
@@ -1511,7 +1515,8 @@
               "sick_day": "Sick day",
               "chore_auto_approved": "Chore auto-approved",
               "penalty_redeemed": "Penalty earned back",
-              "raffle_won": "Raffle won"
+              "raffle_won": "Raffle won",
+              "pet_evolved": "Pet grew up"
             }
           }
         }

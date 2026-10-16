@@ -49,6 +49,7 @@ from .const import (
     NOTIF_TYPE_PENALTY_REDEEMED,
     NOTIF_TYPE_PENDING_CHORE_APPROVAL,
     NOTIF_TYPE_PENDING_REWARD_CLAIM,
+    NOTIF_TYPE_PET_EVOLVED,
     NOTIF_TYPE_PRESENCE_ARRIVAL,
     NOTIF_TYPE_RAFFLE_DRAWN,
     NOTIF_TYPE_RECAP_READY,
@@ -88,6 +89,7 @@ _SAMPLE_KEYS = (
     "note",
     "penalty",
     "raffle",
+    "pet",
 )
 
 
@@ -183,6 +185,7 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_WEEKLY_GOAL_REACHED, "both", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_PENALTY_REDEEMED, "both", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_RAFFLE_DRAWN, "both", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_PET_EVOLVED, "both", False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
@@ -467,6 +470,11 @@ class NotificationCoordinator:
             "count": 3,
             "freezes_left": 2,
             "wish_name": sample["wish"],
+            "pet_name": sample["pet"],
+            "pet_level": 4,
+            "news": notify_strings.render(
+                self.hass, "pet_news_stage", {"pet_name": sample["pet"], "child_name": "Alex"}
+            ),
             "target": 600,
             "pledger": sample["pledger"],
             "bounty_name": sample["bounty"],

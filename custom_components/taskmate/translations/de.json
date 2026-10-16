@@ -1442,6 +1442,10 @@
         "name": {
           "name": "Name",
           "description": "Der Name des Haustiers"
+        },
+        "hatch_egg": {
+          "name": "Ei ausbrüten",
+          "description": "Das Ei des ausgewachsenen Haustiers zu einem neuen Haustier ausbrüten. Das alte Haustier kommt in die Haustierfamilie."
         }
       }
     }
@@ -1511,7 +1515,8 @@
               "sick_day": "Krankheitstag",
               "chore_auto_approved": "Aufgabe automatisch genehmigt",
               "penalty_redeemed": "Strafe wieder verdient",
-              "raffle_won": "Verlosung gewonnen"
+              "raffle_won": "Verlosung gewonnen",
+              "pet_evolved": "Haustier gewachsen"
             }
           }
         }
