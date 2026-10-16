@@ -873,7 +873,11 @@ class ChoresMixin:
         for comp in all_completions:
             if comp.id in redo_ids:
                 continue
-            if comp.chore_id == chore_id and comp.child_id == child_id and not comp.bonus_subtask_id:
+            if (
+                comp.chore_id == chore_id
+                and self._counts_toward_child_quota(chore, comp.child_id, child_id)
+                and not comp.bonus_subtask_id
+            ):
                 comp_dt = comp.completed_at
                 if isinstance(comp_dt, str):
                     try:
@@ -2315,6 +2319,19 @@ class ChoresMixin:
             reverses_season=True,
         )
 
+    @staticmethod
+    def _counts_toward_child_quota(chore, completion_child_id: str, child_id: str) -> bool:
+        """Whether a completion counts toward ``child_id``'s daily limit for ``chore``.
+
+        A parent completion (``__parent__``) closes the chore for the whole pool,
+        so it counts for every child — the same rule the child card applies (#1082).
+        first_come is the exception: there the parent completion fills the shared
+        race quota instead (``_is_rotation_done_today``), and nobody won it.
+        """
+        if completion_child_id == child_id:
+            return True
+        return completion_child_id == "__parent__" and getattr(chore, "assignment_mode", "everyone") != "first_come"
+
     def _weekly_target_refund_owed(self, completion, child) -> int:
         """What ``_reverse_weekly_target_bonus`` would take back, without doing it."""
         if completion.bonus_subtask_id or not child:
@@ -2379,7 +2396,7 @@ class ChoresMixin:
                 limit = getattr(chore, "daily_limit", 1) or 1
                 done = 0
                 for c in completions:
-                    if c.chore_id != chore.id or c.child_id != child_id:
+                    if c.chore_id != chore.id or not self._counts_toward_child_quota(chore, c.child_id, child_id):
                         continue
                     if getattr(c, "bonus_subtask_id", ""):
                         continue
@@ -2433,6 +2450,8 @@ class ChoresMixin:
                 items = []
                 for chore in chores:
                     flags = done_today.get((child.id, chore.id), [])
+                    if self._counts_toward_child_quota(chore, "__parent__", child.id):
+                        flags = flags + done_today.get(("__parent__", chore.id), [])
                     limit = max(int(getattr(chore, "daily_limit", 1) or 1), 1)
                     open_today = (
                         len(flags) < limit
