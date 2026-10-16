@@ -195,6 +195,9 @@ const DASH_COLORS = { kids: "#ff6b9d", parents: "#9b59b6", wall: "#e67e22" };
 const DASH_PATH_RE = /^[a-z0-9]+(-[a-z0-9]+)+$/;
 
 
+// Mood check-in faces, by the mood id the backend stores.
+const MOOD_FACES = { great: "😄", good: "🙂", ok: "😐", sad: "😢", upset: "😠" };
+
 class TaskMatePanel extends HTMLElement {
   constructor() {
     super();
@@ -648,6 +651,8 @@ class TaskMatePanel extends HTMLElement {
     if (act === "save-gift")    { this._doGiftPoints(); return; }
     if (act === "adjust-points") { this._doAdjustPoints(t.dataset.id, Number(t.dataset.delta)); return; }
     if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
+    if (act === "answer-help") { this._answerHelp(t.dataset.id); return; }
+    if (act === "toggle-sick") { this._toggleSickDay(t.dataset.id); return; }
     if (act === "backdate-open") { this._openBackdateDialog(t.dataset.id); return; }
     if (act === "save-backdate") { this._saveBackdateDialog(); return; }
     if (act === "close-backdate") { this._closeDialog(true); this._fetchState(); return; }
@@ -660,11 +665,11 @@ class TaskMatePanel extends HTMLElement {
     if (act === "sound-upload")   { this._pickCustomSound(); return; }
     if (act === "sound-rename")   { this._renameCustomSound(t.dataset.file, t.dataset.name); return; }
     if (act === "sound-delete")   { this._deleteCustomSound(t.dataset.file, t.dataset.name); return; }
-    if (act === "chore-image-pick")   { this._pickChoreImage(); return; }
+    if (act === "chore-image-pick")   { this._pickChoreImage(t.dataset.field || "image_url"); return; }
     if (act === "chore-image-remove") {
       // Clears the dialog value only — the file is deleted on save by the
       // coordinator, so cancelling the dialog cannot destroy the picture.
-      this._dialog.data.image_url = "";
+      this._dialog.data[t.dataset.field === "reference_image_url" ? "reference_image_url" : "image_url"] = "";
       this._render();
       return;
     }
@@ -738,6 +743,12 @@ class TaskMatePanel extends HTMLElement {
       this._frictionDays = Number(t.dataset.id);
       this._friction = null;
       this._loadFriction(this._frictionDays);
+      return;
+    }
+    if (act === "moods-window") {
+      this._moodDays = Number(t.dataset.id);
+      this._moods = null;
+      this._loadMoods(this._moodDays);
       return;
     }
     if (act === "quality-window") {
@@ -846,6 +857,12 @@ class TaskMatePanel extends HTMLElement {
     if (act === "do-apply-bonus") { this._doApplyPenBon("bonus", t.dataset.id, t.dataset.child); return; }
 
     if (act === "toggle-penbon-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
+    if (act === "add-raffle")    { this._openRaffleDialog(null); return; }
+    if (act === "edit-raffle")   { this._openRaffleDialog(t.dataset.id); return; }
+    if (act === "save-raffle")   { this._doSaveRaffle(); return; }
+    if (act === "draw-raffle")   { this._raffleAction("draw", t.dataset.id, "panel.raffle_draw_confirm"); return; }
+    if (act === "cancel-raffle") { this._raffleAction("cancel", t.dataset.id, "panel.raffle_cancel_confirm"); return; }
+    if (act === "remove-raffle") { this._raffleAction("remove", t.dataset.id, "panel.raffle_remove_confirm"); return; }
 
     // Templates
     if (act === "tpl-add-from")     { this._activeTab = "templates"; this._templateView = "picker"; this._render(); return; }
@@ -990,6 +1007,16 @@ class TaskMatePanel extends HTMLElement {
     }
     // Surprise inspections (#981): flag / pass / fail / cancel + their dialogs.
     if (act && act.startsWith("insp-") && this._onInspectionAction(act, t)) return;
+    // Pets: put the growth numbers back to their defaults (saved with the page).
+    if (act === "pet-defaults") {
+      const defaults = { pet_xp_per_chore: 10, pet_stage_baby: 30, pet_stage_kid: 200, pet_stage_teen: 600, pet_stage_grown: 1500,
+        pet_home_every: 300, pet_legendary_at: 3000, pet_egg_at: 3000, pet_family_max: 6, pet_level_every: 300 };
+      for (const [key, value] of Object.entries(defaults)) {
+        const el = this.querySelector(`input[data-setting="${key}"]`);
+        if (el) el.value = String(value);
+      }
+      return;
+    }
     // Reject asks why first (#976); an empty reason is a plain reject.
     if (act === "reject-chore")   { this._openRejectDialog("chore", t.dataset.id); return; }
     if (act === "approve-reward") { this._doApprove("reward", t.dataset.id); return; }
@@ -2244,6 +2271,9 @@ class TaskMatePanel extends HTMLElement {
       mandatory: false, mandatory_penalty_points: 0,
       require_photo: false,
       open_ended: false,
+      estimated_minutes: 0,
+      reference_image_url: "",
+      quantity_unit: "", quantity_max: 0,
       team_size: 0, team_points_mode: "each", team_bonus: 0,
       publish_calendar_entities: [],
       depends_on: [],
@@ -2374,13 +2404,13 @@ class TaskMatePanel extends HTMLElement {
     await this._fetchState();
   }
 
-  _pickChoreImage() {
+  _pickChoreImage(field = "image_url") {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/jpeg,image/png,image/webp";
     input.addEventListener("change", () => {
       const file = input.files && input.files[0];
-      if (file) this._uploadChoreImage(file);
+      if (file) this._uploadChoreImage(file, field);
     });
     input.click();
   }
@@ -2411,9 +2441,9 @@ class TaskMatePanel extends HTMLElement {
     });
   }
 
-  async _uploadChoreImage(file) {
+  async _uploadChoreImage(file, field = "image_url") {
     if (this._choreImageBusy) return;
-    this._choreImageBusy = true;
+    this._choreImageBusy = field;
     this._render();
     try {
       const blob = await this._downscaleChoreImage(file);
@@ -2444,7 +2474,9 @@ class TaskMatePanel extends HTMLElement {
       if (resp.status === 400) { this._showToast("err", this._t("panel.chore_image_bad_type")); return; }
       if (!resp.ok) { this._showToast("err", this._t("panel.chore_image_failed")); return; }
       const body = await resp.json();
-      if (this._dialog && body.image_url) this._dialog.data.image_url = body.image_url;
+      if (this._dialog && body.image_url) {
+        this._dialog.data[field === "reference_image_url" ? "reference_image_url" : "image_url"] = body.image_url;
+      }
     } catch (err) {
       this._showToast("err", this._t("panel.chore_image_failed"));
     } finally {
@@ -2483,6 +2515,10 @@ class TaskMatePanel extends HTMLElement {
       description: d.description || "",
       icon: d.icon || "",
       image_url: d.image_url || "",
+      reference_image_url: d.reference_image_url || "",
+      estimated_minutes: Math.min(600, Math.max(0, Math.round(Number(d.estimated_minutes) || 0))),
+      quantity_unit: (d.task_type || "standard") === "timed" || d.open_ended ? "" : String(d.quantity_unit || "").trim().slice(0, 30),
+      quantity_max: Math.min(10000, Math.max(0, Math.round(Number(d.quantity_max) || 0))),
       points: Number(d.points) || 0,
       assigned_to: d.assigned_to || [],
       // The dialog tracks this via toggle-depends, but it was never sent, so a
@@ -2809,7 +2845,8 @@ class TaskMatePanel extends HTMLElement {
   _openPenBonDialog(kind, id) {
     const blank = { name: "", description: "", points: 10,
       icon: kind === "penalty" ? "mdi:alert-circle-outline" : "mdi:star-circle-outline",
-      assigned_to: [] };
+      assigned_to: [],
+      ...(kind === "penalty" ? { redemption_chore_id: "", redemption_percent: 100, redemption_days: 1 } : {}) };
     if (id) {
       const item = ((kind === "penalty" ? this._state.penalties : this._state.bonuses) || []).find(x => x.id === id);
       if (!item) return;
@@ -2834,6 +2871,12 @@ class TaskMatePanel extends HTMLElement {
       description: d.description || "",
       icon: d.icon || (kind === "penalty" ? "mdi:alert-circle-outline" : "mdi:star-circle-outline"),
       assigned_to: d.assigned_to || [],
+      // Penalty amends: the chore that earns the penalty back.
+      ...(kind === "penalty" ? {
+        redemption_chore_id: d.redemption_chore_id || "",
+        redemption_percent: Math.min(100, Math.max(1, Math.round(Number(d.redemption_percent) || 100))),
+        redemption_days: Math.min(7, Math.max(1, Math.round(Number(d.redemption_days) || 1))),
+      } : {}),
     };
     const payload = wasAdd ? { type: wsType, ...base } : { type: wsType, [idField]: d.id, ...base };
     const { ok, err } = await this._callWS(payload);
@@ -3316,6 +3359,25 @@ class TaskMatePanel extends HTMLElement {
         return;
       }
     }
+    // Auto-approve timeout: whole hours, 0 (off) to a week.
+    if ("auto_approve_hours" in payload) {
+      const hrs = payload.auto_approve_hours;
+      if (!Number.isInteger(hrs) || hrs < 0 || hrs > 168) {
+        this._showToast("err", this._t("panel.settings_auto_approve_invalid"));
+        return;
+      }
+    }
+    // Pets: the stages must rise, and the legendary/egg numbers come after fully grown.
+    if ("pet_stage_grown" in payload) {
+      const keys = ["pet_stage_baby", "pet_stage_kid", "pet_stage_teen", "pet_stage_grown"];
+      const vals = keys.map(k => payload[k]);
+      const rising = vals.every((v, i) => Number.isInteger(v) && v >= 1 && (i === 0 || v > vals[i - 1]));
+      const after = ["pet_legendary_at", "pet_egg_at"].every(k => !(k in payload) || payload[k] > vals[3]);
+      if (!rising || !after) {
+        this._showToast("err", this._t("panel.pet_settings_invalid"));
+        return;
+      }
+    }
     // Surprise inspections (#981): the children the random pick may choose.
     const inspKids = root.querySelectorAll("[data-insp-kid]");
     if (inspKids.length) {
@@ -3706,6 +3768,7 @@ class TaskMatePanel extends HTMLElement {
       templates: (this._state.templates || []).length,
       bounties:  (this._state.bounties || []).filter(b => ["open", "claimed", "pending"].includes(b.status)).length,
       auctions:  (this._state.auctions || []).filter(a => a.status === "open").length,
+      raffles:   (this._state.raffles || []).filter(r => r.status === "open").length,
     } : {};
     // Grouped by what the parent is doing (#966). Group keys use `key`, not
     // `id`: only nav items carry an id.
@@ -3728,6 +3791,7 @@ class TaskMatePanel extends HTMLElement {
       { key: "spend", head: this._t("panel.nav_spend"), items: [
         { id: "rewards",   label: this._t("panel.tab_rewards"),   icon: "mdi:gift-outline" },
         { id: "wishlists", label: this._t("panel.tab_wishlists"), icon: "mdi:heart-outline" },
+        { id: "raffles",   label: this._t("panel.tab_raffles"),   icon: "mdi:ticket-confirmation-outline" },
       ]},
       { key: "adjust", head: this._t("panel.nav_adjust"), items: [
         { id: "bonuses",   label: this._t("panel.tab_bonuses"),   icon: "mdi:flash-outline" },
@@ -4061,6 +4125,7 @@ class TaskMatePanel extends HTMLElement {
       case "quests":    return this._renderQuestsTab();
       case "challenges": return this._renderChallengesTab();
       case "bounties":   return this._renderBountiesTab();
+      case "raffles":    return this._renderRafflesTab();
       case "auctions":   return this._renderAuctionsTab();
       case "badges":    return this._renderBadgesTab();
       case "templates":     return this._renderTemplatesTab();
@@ -4081,7 +4146,7 @@ class TaskMatePanel extends HTMLElement {
     const view = this._insightView || "fairness";
     const switcher = `
       <div class="tm-chip-row" style="margin-bottom:14px">
-        ${["fairness", "friction", "projection", ...(this._ratingOn() || view === "quality" ? ["quality"] : []), "health"].map(v => `
+        ${["fairness", "friction", "projection", ...(this._ratingOn() || view === "quality" ? ["quality"] : []), "moods", "health"].map(v => `
           <button type="button" class="tm-chip-btn ${v === view ? "tm-chip-on" : ""}"
                   data-act="insights-view" data-id="${v}">
             ${this._t("panel.insights_view_" + v)}
@@ -4092,7 +4157,56 @@ class TaskMatePanel extends HTMLElement {
     if (view === "projection") return switcher + this._renderProjectionReport();
     if (view === "health") return switcher + this._renderHealthReport();
     if (view === "quality") return switcher + this._renderQualityReport();
+    if (view === "moods") return switcher + this._renderMoodReport();
     return switcher + this._renderFairnessReport();
+  }
+
+  /** Mood check-ins: one face per child per day, so a run of tough days stands out. */
+  _renderMoodReport() {
+    const days = this._moodDays || 14;
+    const report = this._moods;
+    if (!report) {
+      this._loadMoods(days);
+      return `<div class="tm-card"><div class="tm-empty">${this._t("panel.insights_loading")}</div></div>`;
+    }
+    const anyLogged = report.children.some(c => c.logged > 0);
+    const dayLabel = iso => new Date(`${iso}T12:00:00`).toLocaleDateString([], { weekday: "narrow" });
+    return `
+      <div class="tm-card">
+        <div class="tm-card-head">
+          <h2>${this._t("panel.insights_moods_title")}</h2>
+          <div class="tm-chip-row">
+            ${[7, 14, 30].map(d => `
+              <button type="button" class="tm-chip-btn ${d === days ? "tm-chip-on" : ""}" data-act="moods-window" data-id="${d}">
+                ${this._t("panel.insights_last_days", { days: d })}
+              </button>`).join("")}
+          </div>
+        </div>
+        <span class="tm-field-hint">${this._t("panel.insights_moods_intro")}</span>
+        ${!anyLogged ? `<div class="tm-empty">${this._t("panel.insights_moods_none")}</div>` : `
+          <div class="tm-mood-grid" style="--days:${report.days}">
+            ${report.children.map(c => `
+              <div class="tm-mood-name">${this._esc(c.name)}</div>
+              <div class="tm-mood-row">
+                ${c.series.map(d => `<span class="tm-mood-cell ${d.mood ? `tm-mood-${d.mood}` : ""}" title="${this._esc(d.date)}">${d.mood ? MOOD_FACES[d.mood] : `<small>${this._esc(dayLabel(d.date))}</small>`}</span>`).join("")}
+              </div>
+              <div class="tm-mood-sum">
+                ${c.low_days >= 3 ? `<span class="tm-pill tm-pill-warn">${this._t("panel.insights_moods_low", { count: c.low_days })}</span>` : ""}
+                <span class="tm-meta">${this._ltrNums(this._t("panel.insights_moods_logged", { count: c.logged, days: report.days }))}</span>
+              </div>
+            `).join("")}
+          </div>`}
+      </div>`;
+  }
+
+  async _loadMoods(days) {
+    if (this._moodsLoading) return;
+    this._moodsLoading = true;
+    const { ok, res, err } = await this._callWS({ type: "taskmate/reports/moods", days });
+    this._moodsLoading = false;
+    if (!ok) { this._showToast("err", err); return; }
+    this._moods = res;
+    this._render();
   }
 
   /**
@@ -4369,6 +4483,7 @@ class TaskMatePanel extends HTMLElement {
                   <strong>${c.completions}</strong> ${this._t(c.completions === 1 ? "panel.insights_chore" : "panel.insights_chores")}
                   · ${this._num(c.points)} ${this._esc(this._state.settings?.points_name || this._t("common.points"))}
                   · ${c.share_completions}%
+                  ${report.total_minutes ? ` · ${this._t("panel.insights_minutes", { minutes: this._num(c.minutes), percent: c.share_minutes })}` : ""}
                 </div>
                 <div class="tm-fair-status tm-fair-${c.status}">${this._t("panel.insights_status_" + c.status)}</div>
               </div>
@@ -4858,6 +4973,7 @@ class TaskMatePanel extends HTMLElement {
 
       <div class="tm-today-cols">
         <div class="tm-today-col">
+          ${this._renderHelpCard(kids)}
           <div class="tm-card">
             <h3 class="tm-section-title"><ha-icon icon="mdi:inbox-outline"></ha-icon>${this._t("panel.today_needs_title")}
               ${queue.count > 0 ? `<span class="tm-pill tm-pill-warn">${queue.count}</span>` : ""}
@@ -4901,6 +5017,45 @@ class TaskMatePanel extends HTMLElement {
     `;
   }
 
+  /** "I'm stuck" requests still open, with an "On my way" button each. */
+  _renderHelpCard(kids) {
+    const ids = new Set(kids.map(k => k.id));
+    const reqs = (this._state.help_requests || []).filter(r => ids.has(r.child_id));
+    if (!reqs.length) return "";
+    const names = Object.fromEntries((this._state.children || []).map(c => [c.id, c.name]));
+    return `
+      <div class="tm-card tm-help-card">
+        <h3 class="tm-section-title"><span aria-hidden="true">🙋</span>${this._t("panel.today_help_title")}
+          <span class="tm-pill tm-pill-warn">${reqs.length}</span></h3>
+        <div class="tm-help-list">
+          ${reqs.map(r => `
+            <div class="tm-help-row">
+              <div class="tm-help-text">
+                <strong>${this._esc(names[r.child_id] || "?")}</strong> — ${this._esc(r.chore_name || "")}
+                ${r.message ? `<div class="tm-meta">“${this._esc(r.message)}”</div>` : ""}
+                <div class="tm-meta">${this._esc(this._timeAgo ? this._timeAgo(r.at) : new Date(r.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</div>
+              </div>
+              <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="answer-help" data-id="${this._esc(r.id)}">${this._t("panel.today_help_answer")}</button>
+            </div>`).join("")}
+        </div>
+      </div>`;
+  }
+
+  async _answerHelp(id) {
+    const { ok, err } = await this._callService("answer_help", { request_id: id });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.today_help_answered"));
+  }
+
+  async _toggleSickDay(childId) {
+    const sick = !(this._state.sick_today || []).includes(childId);
+    const { ok, err } = await this._callService("set_sick_day", { child_id: childId, sick });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t(sick ? "panel.today_sick_set" : "panel.today_sick_cleared"));
+  }
+
   _renderTodayKid(child, pointsName) {
     const entry = this._todayEntry(child.id);
     const due = entry ? entry.due : 0;
@@ -4914,6 +5069,8 @@ class TaskMatePanel extends HTMLElement {
       else dayPill = `<span class="tm-pill">${this._t("panel.today_left", { count: due - done })}</span>`;
     }
     const scopeLabel = this._t("panel.scope_only", { name: child.name });
+    const sick = (this._state.sick_today || []).includes(child.id);
+    const mood = (this._state.moods_today || {})[child.id] || "";
     return `
       <div class="tm-card tm-kid" style="--kc:${this._childColor(child.id)}">
         <button type="button" class="tm-kid-main" data-act="scope" data-child="${this._esc(child.id)}" title="${this._esc(scopeLabel)}" aria-label="${this._esc(scopeLabel)}">
@@ -4923,10 +5080,19 @@ class TaskMatePanel extends HTMLElement {
             <span class="tm-kid-pts"><strong class="tm-numeric">${this._fmtNum(child.points)}</strong> ${this._esc(pointsName)}</span>
           </span>
         </button>
+        <div class="tm-kid-btns">
         <button type="button" class="tm-icon-btn tm-kid-adj" data-act="adjust-points-custom" data-id="${this._esc(child.id)}" title="${this._esc(this._t("panel.today_adjust_points"))}" aria-label="${this._esc(this._t("panel.today_adjust_points"))}">
           <ha-icon icon="mdi:plus-minus-variant"></ha-icon>
         </button>
+        <button type="button" class="tm-icon-btn tm-kid-sick ${sick ? "tm-kid-sick-on" : ""}" data-act="toggle-sick" data-id="${this._esc(child.id)}"
+                aria-pressed="${sick ? "true" : "false"}"
+                title="${this._esc(this._t(sick ? "panel.today_sick_off" : "panel.today_sick_on"))}" aria-label="${this._esc(this._t(sick ? "panel.today_sick_off" : "panel.today_sick_on"))}">
+          <ha-icon icon="mdi:emoticon-sick-outline"></ha-icon>
+        </button>
+        </div>
         <div class="tm-kid-pills">
+          ${sick ? `<span class="tm-pill tm-pill-info">🤒 ${this._t("panel.today_sick_pill")}</span>` : ""}
+          ${mood ? `<span class="tm-pill" title="${this._esc(this._t("panel.today_mood_pill"))}">${MOOD_FACES[mood] || ""} ${this._t("panel.today_mood_pill")}</span>` : ""}
           ${streak > 0 ? `<span class="tm-pill"><ha-icon icon="mdi:fire"></ha-icon>${this._ltrNums(this._t("panel.today_streak", { count: streak }))}</span>` : ""}
           ${dayPill}
         </div>
@@ -7489,6 +7655,140 @@ class TaskMatePanel extends HTMLElement {
     return this._t("bounty.dur_minutes", { m, s: String(s).padStart(2, "0") });
   }
 
+  // ---- Raffles ------------------------------------------------------------
+  _renderRafflesTab() {
+    const all = this._state.raffles || [];
+    const names = Object.fromEntries((this._state.children || []).map(c => [c.id, c.name]));
+    const pts = this._esc(this._pointsName());
+    const when = iso => iso ? this._esc(new Date(iso).toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })) : "—";
+    const row = r => {
+      const tickets = Object.entries(r.tickets || {}).filter(([, n]) => n > 0);
+      const total = tickets.reduce((a, [, n]) => a + n, 0);
+      const status = r.status === "open"
+        ? `<span class="tm-pill tm-pill-accent">${this._t("panel.raffle_status_open")}</span>`
+        : r.status === "drawn"
+          ? `<span class="tm-pill tm-pill-success">${this._t("panel.raffle_status_drawn")}</span><div class="tm-meta">${r.winner_id ? this._t("panel.raffle_winner_meta", { name: this._esc(names[r.winner_id] || "?") }) : this._t("panel.raffle_no_winner")}</div>`
+          : `<span class="tm-pill tm-pill-muted">${this._t("panel.raffle_status_cancelled")}</span>`;
+      const id = this._esc(r.id);
+      const btn = (act, icon, label) => `<button type="button" class="tm-icon-btn" data-act="${act}" data-id="${id}" title="${this._esc(label)}" aria-label="${this._esc(label)}"><ha-icon icon="${icon}"></ha-icon></button>`;
+      const actions = r.status === "open"
+        ? btn("draw-raffle", "mdi:dice-multiple", this._t("panel.raffle_draw_now"))
+          + btn("cancel-raffle", "mdi:cancel", this._t("panel.raffle_cancel"))
+          + btn("edit-raffle", "mdi:pencil", this._t("panel.btn_edit"))
+        : btn("remove-raffle", "mdi:delete-outline", this._t("panel.tooltip_remove"));
+      return `<tr class="tm-row">
+        <td class="tm-col-sticky"><strong>${this._esc(r.name)}</strong>${r.prize ? `<div class="tm-meta">🏆 ${this._esc(r.prize)}</div>` : ""}
+          <div class="tm-meta">🗓 ${when(r.drawn_at || r.draw_at)}</div></td>
+        <td class="tm-numeric">${this._num(r.ticket_cost)} ${pts}${r.max_tickets ? `<div class="tm-meta">${this._t("panel.raffle_max_meta", { max: r.max_tickets })}</div>` : ""}</td>
+        <td>${total ? tickets.map(([cid, n]) => `<span class="tm-pill">${this._esc(names[cid] || "?")} × ${n}</span>`).join(" ") : `<span class="tm-meta">${this._t("panel.raffle_none_yet")}</span>`}</td>
+        <td>${status}</td>
+        <td class="tm-row-actions" style="white-space:nowrap">${actions}</td>
+      </tr>`;
+    };
+    return `
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">${this._t("panel.tab_raffles")} <span class="tm-toolbar-count">${all.filter(r => r.status === "open").length}</span></h2>
+        <button type="button" class="tm-btn tm-btn-raised" data-act="add-raffle">${this._t("panel.raffle_new")}</button>
+      </div>
+      ${all.length === 0 ? this._emptyState("🎟️", this._t("panel.raffle_empty_title"), this._t("panel.raffle_empty_copy"), "add-raffle", this._t("panel.raffle_new")) : `
+        <div class="tm-table-wrap">
+          <table class="tm-table">
+            <thead><tr>
+              <th class="tm-col-sticky">${this._t("panel.raffle_col_raffle")}</th><th>${this._t("panel.raffle_col_ticket")}</th><th>${this._t("panel.raffle_col_tickets")}</th>
+              <th>${this._t("panel.raffle_col_status")}</th><th></th>
+            </tr></thead>
+            <tbody>${all.map(row).join("")}</tbody>
+          </table>
+        </div>`}
+    `;
+  }
+
+  _openRaffleDialog(id) {
+    const local = d => {
+      const pad = n => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    if (id) {
+      const r = (this._state.raffles || []).find(x => x.id === id);
+      if (!r) return;
+      this._openDialog({ kind: "raffle", mode: "edit", data: { ...r, assigned_to: [...(r.assigned_to || [])], draw_local: local(new Date(r.draw_at)) } });
+    } else {
+      const next = new Date(); next.setDate(next.getDate() + ((6 - next.getDay() + 7) % 7 || 7)); next.setHours(18, 0, 0, 0);
+      this._openDialog({ kind: "raffle", mode: "add", data: { name: "", prize: "", icon: "mdi:ticket-confirmation", ticket_cost: 10, max_tickets: 0, assigned_to: [], draw_local: local(next) } });
+    }
+  }
+
+  _renderRaffleDialog() {
+    const d = this._dialog.data;
+    const children = this._state.children || [];
+    const sold = Object.values(d.tickets || {}).some(n => n > 0);
+    return this._dialogShell(this._dialog.mode === "add" ? this._t("panel.raffle_dialog_add") : this._t("panel.raffle_dialog_edit"), [
+      this._field(this._t("panel.raffle_name"), "name", d.name, "text"),
+      `<div class="tm-field-row">
+        ${this._field(this._t("panel.raffle_prize"), "prize", d.prize, "text", this._t("panel.raffle_prize_hint"))}
+        ${this._iconPickerField(this._t("panel.reward_icon_label"), "icon", d.icon)}
+      </div>`,
+      `<div class="tm-field-row">
+        ${this._field(this._t("panel.raffle_ticket_cost"), "ticket_cost", d.ticket_cost, "number", sold ? this._t("panel.raffle_cost_locked") : this._t("panel.raffle_ticket_cost_hint"))}
+        ${this._field(this._t("panel.raffle_max"), "max_tickets", d.max_tickets || 0, "number", this._t("panel.raffle_max_hint"))}
+      </div>`,
+      `<div class="tm-field">
+        <span class="tm-field-label">${this._esc(this._t("panel.raffle_draw_at"))}</span>
+        <input class="tm-input" type="datetime-local" data-field="draw_local" value="${this._esc(d.draw_local || "")}">
+        <span class="tm-field-hint">${this._t("panel.raffle_draw_at_hint")}</span>
+      </div>`,
+      children.length ? `
+        <div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.penbon_applies_to")}</span>
+          <div class="tm-chip-row">
+            ${children.map(c => `<button type="button" class="tm-chip-btn ${(d.assigned_to || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="toggle-penbon-assigned" data-id="${this._esc(c.id)}">${this._esc(c.name)}</button>`).join("")}
+          </div>
+          <span class="tm-field-hint">${this._t("panel.raffle_who_hint")}</span>
+        </div>` : "",
+    ].join(""),
+    `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+     <button type="button" class="tm-btn tm-btn-raised" data-act="save-raffle">${this._t("panel.btn_save")}</button>`);
+  }
+
+  async _doSaveRaffle() {
+    this._syncIconPickers();
+    const d = this._dialog.data;
+    if (!d.name || !d.name.trim()) { this._showToast("err", this._t("panel.toast_name_required")); return; }
+    const when = new Date(d.draw_local || "");
+    if (isNaN(when)) { this._showToast("err", this._t("panel.raffle_draw_at_invalid")); return; }
+    const base = {
+      name: d.name.trim(),
+      prize: (d.prize || "").trim(),
+      icon: d.icon || "mdi:ticket-confirmation",
+      ticket_cost: Math.max(1, Math.round(Number(d.ticket_cost) || 1)),
+      max_tickets: Math.max(0, Math.min(100, Math.round(Number(d.max_tickets) || 0))),
+      draw_at: when.toISOString(),
+      assigned_to: d.assigned_to || [],
+    };
+    const payload = this._dialog.mode === "add"
+      ? { type: "taskmate/raffles/create", ...base }
+      : { type: "taskmate/raffles/update", raffle_id: d.id, ...base };
+    const { ok, err } = await this._callWS(payload);
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.raffle_saved"));
+  }
+
+  async _raffleAction(action, id, confirmKey) {
+    const r = (this._state.raffles || []).find(x => x.id === id);
+    if (!r || !confirm(this._t(confirmKey, { name: r.name }))) return;
+    const { ok, err, res } = await this._callWS({ type: `taskmate/raffles/${action}`, raffle_id: id });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    if (action === "draw") {
+      const winner = (this._state.children || []).find(c => c.id === (res && res.winner_id));
+      this._showToast("ok", winner ? this._t("panel.raffle_drawn_toast", { name: winner.name }) : this._t("panel.raffle_no_winner"));
+    } else {
+      this._showToast("ok", this._t(action === "cancel" ? "panel.raffle_cancelled_toast" : "panel.raffle_removed_toast"));
+    }
+  }
+
   _renderBountiesTab() {
     const lists = this._bountyLists();
     const all = this._state.bounties || [];
@@ -9038,6 +9338,10 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-setting-label">${this._t("panel.settings_chore_undo_label")}<small>${this._t("panel.settings_chore_undo_hint")}</small></div>
               <input type="number" class="tm-input" min="0" max="3600" step="1" data-setting="chore_undo_seconds" aria-label="${this._esc(this._t("panel.settings_chore_undo_label"))}" value="${this._num(s.chore_undo_seconds, 0)}">
             </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_auto_approve_label")}<small>${this._t("panel.settings_auto_approve_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="168" step="1" data-setting="auto_approve_hours" aria-label="${this._esc(this._t("panel.settings_auto_approve_label"))}" value="${this._num(s.auto_approve_hours, 0)}">
+            </div>
           </div>
         </div>
 
@@ -9313,6 +9617,31 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.family_goal_reward")}</div>
               <input type="text" class="tm-input" maxlength="200" data-setting="family_goal_reward" value="${this._esc(s.family_goal_reward || "")}" placeholder="${this._esc(this._t("panel.family_goal_reward_ph"))}">
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.pets_title")}</h3><p class="tm-meta">${this._t("panel.pets_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.pets_enabled")}</div>
+              <ha-switch data-setting="pets_enabled" ${s.pets_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            ${this._renderPetSettings(s)}
+          </div>
+        </div>
+
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.weekly_goal_title")}</h3><p class="tm-meta">${this._t("panel.weekly_goal_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.weekly_goal_enabled")}</div>
+              <ha-switch data-setting="weekly_goal_enabled" ${s.weekly_goal_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.weekly_goal_bonus")}<small>${this._t("panel.weekly_goal_bonus_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="100000" step="1" data-setting="weekly_goal_bonus" value="${this._num(s.weekly_goal_bonus, 10)}">
             </div>
           </div>
         </div>
@@ -10003,6 +10332,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "chore")        return this._renderChoreDialog();
     if (this._dialog.kind === "reward")       return this._renderRewardDialog();
     if (this._dialog.kind === "penalty")      return this._renderPenBonDialog("penalty");
+    if (this._dialog.kind === "raffle")       return this._renderRaffleDialog();
     if (this._dialog.kind === "bonus")        return this._renderPenBonDialog("bonus");
     if (this._dialog.kind === "group")        return this._renderGroupDialog();
     if (this._dialog.kind === "quest")        return this._renderQuestDialog();
@@ -10212,11 +10542,21 @@ class TaskMatePanel extends HTMLElement {
             ${this._field(this._t("panel.chore_points_label"), "points", d.points, "number")}
             ${d.assignment_mode === "first_come" ? "" : this._field(this._t("panel.chore_daily_limit_label"), "daily_limit", d.daily_limit, "number")}
           </div>`,
-          this._select(this._t("panel.chore_difficulty_label"), "difficulty", d.difficulty || "medium", [
-            { v: "easy", l: this._t("panel.difficulty_easy") },
-            { v: "medium", l: this._t("panel.difficulty_medium") },
-            { v: "hard", l: this._t("panel.difficulty_hard") },
-          ]),
+          `<div class="tm-field-row">
+            ${this._select(this._t("panel.chore_difficulty_label"), "difficulty", d.difficulty || "medium", [
+              { v: "easy", l: this._t("panel.difficulty_easy") },
+              { v: "medium", l: this._t("panel.difficulty_medium") },
+              { v: "hard", l: this._t("panel.difficulty_hard") },
+            ])}
+            ${this._field(this._t("panel.chore_estimated_minutes_label"), "estimated_minutes", d.estimated_minutes || 0, "number",
+              this._t("panel.chore_estimated_minutes_hint"))}
+          </div>`,
+          isTimedTask || d.open_ended ? "" : `<div class="tm-field-row">
+            ${this._field(this._t("panel.chore_quantity_unit_label"), "quantity_unit", d.quantity_unit || "", "text",
+              this._t("panel.chore_quantity_unit_hint"))}
+            ${this._field(this._t("panel.chore_quantity_max_label"), "quantity_max", d.quantity_max || 0, "number",
+              this._t("panel.chore_quantity_max_hint"))}
+          </div>`,
           this._soundField(d.completion_sound),
         ]),
         section("who", [
@@ -10299,6 +10639,7 @@ class TaskMatePanel extends HTMLElement {
           this._switch(this._t("panel.chore_approval_label"), "requires_approval", d.requires_approval),
           this._switch(this._t("panel.chore_require_photo_label"), "require_photo", d.require_photo,
             this._t("panel.chore_require_photo_hint")),
+          this._choreImageField(d.reference_image_url || "", "reference_image_url"),
           this._switch(this._t("panel.chore_open_ended_label"), "open_ended", d.open_ended,
             this._t("panel.chore_open_ended_hint")),
           this._switch(this._t("panel.chore_require_availability"), "require_availability", d.require_availability,
@@ -10880,6 +11221,18 @@ class TaskMatePanel extends HTMLElement {
             <span class="tm-field-hint">${this._t("panel.penbon_applies_to_hint")}</span>
           </div>
         ` : "",
+        isPenalty ? `
+          <section class="tm-drawer-sec">
+            <h3 class="tm-drawer-sec-h">🤝 ${this._t("panel.penalty_redeem_title")}</h3>
+            ${this._select(this._t("panel.penalty_redeem_chore"), "redemption_chore_id", d.redemption_chore_id || "", [
+              { v: "", l: this._t("panel.penalty_redeem_none") },
+              ...(this._state.chores || []).filter(c => c.enabled !== false).map(c => ({ v: c.id, l: c.name })),
+            ], this._t("panel.penalty_redeem_hint"), true)}
+            ${d.redemption_chore_id ? `<div class="tm-field-row">
+              ${this._field(this._t("panel.penalty_redeem_percent"), "redemption_percent", d.redemption_percent || 100, "number", this._t("panel.penalty_redeem_percent_hint"))}
+              ${this._field(this._t("panel.penalty_redeem_days"), "redemption_days", d.redemption_days || 1, "number", this._t("panel.penalty_redeem_days_hint"))}
+            </div>` : ""}
+          </section>` : "",
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-${kind}">${this._t("panel.btn_save")}</button>`
@@ -11113,23 +11466,28 @@ class TaskMatePanel extends HTMLElement {
   }
 
   /** The chore picture well (#750): thumbnail or empty state, Upload, Remove. */
-  _choreImageField(value) {
-    const busy = this._choreImageBusy;
+  _choreImageField(value, field = "image_url") {
+    const busy = !!this._choreImageBusy;
+    const mine = this._choreImageBusy === field;
+    // The reference picture (a job done well) shares the upload, with its own words.
+    const k = field === "reference_image_url"
+      ? { label: "panel.chore_reference_image_label", empty: "panel.chore_reference_image_empty", hint: "panel.chore_reference_image_hint" }
+      : { label: "panel.chore_image_label", empty: "panel.chore_image_empty", hint: "panel.chore_image_hint" };
     return `
       <div class="tm-field">
-        <span class="tm-field-label">${this._t("panel.chore_image_label")}</span>
+        <span class="tm-field-label">${this._t(k.label)}</span>
         <div class="tm-image-well">
           ${this._safeChoreImage(value)
             ? `<img class="tm-image-thumb" src="${this._esc(this._safeChoreImage(value))}" alt="">`
-            : `<div class="tm-image-empty">${this._t("panel.chore_image_empty")}</div>`}
+            : `<div class="tm-image-empty">${this._t(k.empty)}</div>`}
           <div class="tm-image-actions">
-            <button type="button" class="tm-btn tm-btn-sm" data-act="chore-image-pick" ${busy ? "disabled" : ""}>
-              ${busy ? this._t("panel.chore_image_uploading") : this._t("panel.chore_image_upload")}
+            <button type="button" class="tm-btn tm-btn-sm" data-act="chore-image-pick" data-field="${field}" ${busy ? "disabled" : ""}>
+              ${mine ? this._t("panel.chore_image_uploading") : this._t("panel.chore_image_upload")}
             </button>
-            ${value ? `<button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="chore-image-remove">${this._t("panel.chore_image_remove")}</button>` : ""}
+            ${value ? `<button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="chore-image-remove" data-field="${field}">${this._t("panel.chore_image_remove")}</button>` : ""}
           </div>
         </div>
-        <span class="tm-field-hint">${this._t("panel.chore_image_hint")}</span>
+        <span class="tm-field-hint">${this._t(k.hint)}</span>
       </div>`;
   }
 
@@ -11442,6 +11800,50 @@ class TaskMatePanel extends HTMLElement {
   // HTML as strings, so anything stored in a field we *assume* is numeric has
   // to be proven numeric before it is echoed back. Non-numbers, inf and NaN
   // fall back rather than reaching the DOM.
+  // Pets (growth and what happens after fully grown): every number is growth,
+  // shown with roughly how many 5-point chores it takes.
+  _renderPetSettings(s) {
+    const int = (key, def) => this._num(s[key], def);
+    const perChore = int("pet_xp_per_chore", 10);
+    const pointsCount = s.pet_points_count !== false;
+    const perTypical = perChore + (pointsCount ? 5 : 0);
+    const chores = (n) => {
+      if (perTypical <= 0) return this._t("panel.pet_never");
+      const count = Math.max(1, Math.round(n / perTypical));
+      return count === 1 ? this._t("panel.pet_about_one_chore") : this._t("panel.pet_about_chores", { count });
+    };
+    const num = (key, def, min, max) => `<input type="number" class="tm-input" min="${min}" max="${max}" step="1" data-setting="${key}"
+      aria-label="${this._esc(this._t("panel." + key))}" value="${int(key, def)}" style="max-width:120px">`;
+    const row = (key, def, min, max, hint = "") => `
+      <div class="tm-setting-row">
+        <div class="tm-setting-label">${this._t("panel." + key)}<small>${hint}</small></div>
+        ${num(key, def, min, max)}
+      </div>`;
+    const sw = (key, def) => `
+      <div class="tm-setting-row">
+        <div class="tm-setting-label">${this._t("panel." + key)}<small>${this._t("panel." + key + "_hint")}</small></div>
+        <ha-switch data-setting="${key}" ${(s[key] === undefined ? def : s[key] === true) ? "checked" : ""}></ha-switch>
+      </div>`;
+    const stages = [["pet_stage_baby", 30], ["pet_stage_kid", 200], ["pet_stage_teen", 600], ["pet_stage_grown", 1500]];
+    return `
+      ${row("pet_xp_per_chore", 10, 0, 1000, this._t("panel.pet_xp_per_chore_hint"))}
+      ${sw("pet_points_count", true)}
+      <div class="tm-setting-row"><div class="tm-setting-label">${this._t("panel.pet_stages_title")}<small>${this._t("panel.pet_stages_hint")}</small></div></div>
+      ${stages.map(([key, def]) => row(key, def, 1, 1000000, chores(int(key, def)))).join("")}
+      <div class="tm-setting-row"><div class="tm-setting-label">${this._t("panel.pet_after_title")}<small>${this._t("panel.pet_after_hint")}</small></div></div>
+      ${sw("pet_home_enabled", true)}
+      ${row("pet_home_every", 300, 1, 1000000, chores(int("pet_home_every", 300)))}
+      ${sw("pet_legendary_enabled", true)}
+      ${row("pet_legendary_at", 3000, 1, 1000000, chores(int("pet_legendary_at", 3000)))}
+      ${sw("pet_eggs_enabled", true)}
+      ${row("pet_egg_at", 3000, 1, 1000000, this._t("panel.pet_egg_at_hint"))}
+      ${row("pet_family_max", 6, 2, 12, this._t("panel.pet_family_max_hint"))}
+      ${sw("pet_levels_enabled", false)}
+      ${row("pet_level_every", 300, 1, 1000000, chores(int("pet_level_every", 300)))}
+      <div class="tm-setting-row"><div class="tm-setting-label"></div>
+        <button type="button" class="tm-btn tm-btn-ghost" data-act="pet-defaults">${this._t("panel.pet_reset_defaults")}</button></div>`;
+  }
+
   _num(v, fallback = 0) {
     const n = Number(v);
     return Number.isFinite(n) ? n : fallback;
@@ -12784,6 +13186,15 @@ class TaskMatePanel extends HTMLElement {
       .tm-verdict-ok { background: rgba(46, 125, 50, 0.12); color: #2e7d32; }
       .tm-verdict-warn { background: rgba(239, 108, 0, 0.14); color: #ef6c00; }
       .tm-fairness { display: flex; flex-direction: column; gap: 14px; }
+      .tm-mood-grid { display: grid; grid-template-columns: minmax(70px, max-content) 1fr; gap: 6px 12px; align-items: center; margin-top: 12px; }
+      .tm-mood-row { display: grid; grid-template-columns: repeat(var(--days), minmax(18px, 1fr)); gap: 3px; }
+      .tm-mood-cell { display: grid; place-items: center; aspect-ratio: 1; border-radius: 6px; font-size: 15px;
+        background: var(--secondary-background-color); color: var(--tm-text-muted); }
+      .tm-mood-cell small { font-size: 10px; }
+      .tm-mood-sad, .tm-mood-upset { background: color-mix(in srgb, var(--warning-color, #ffa600) 22%, transparent); }
+      .tm-mood-great, .tm-mood-good { background: color-mix(in srgb, var(--success-color, #43a047) 16%, transparent); }
+      .tm-mood-name { font-weight: 600; }
+      .tm-mood-sum { grid-column: 2; display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
       .tm-fair-row { display: grid; grid-template-columns: 120px 1fr auto; gap: 10px 12px; align-items: center; }
       .tm-fair-name { font-weight: 700; font-size: 14px; }
       .tm-fair-bar {
@@ -13628,10 +14039,18 @@ class TaskMatePanel extends HTMLElement {
         font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
       }
       .tm-kid-text { display: flex; flex-direction: column; min-width: 0; }
+      .tm-kid-sick-on { color: var(--info-color, #039be5); background: color-mix(in srgb, var(--info-color, #039be5) 14%, transparent); }
+      .tm-pill-info { background: color-mix(in srgb, var(--info-color, #039be5) 14%, transparent); color: var(--info-color, #039be5); }
+      .tm-help-card { border-inline-start: 4px solid var(--warning-color, #ffa600); }
+      .tm-help-list { display: flex; flex-direction: column; gap: 8px; }
+      .tm-help-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--divider-color); }
+      .tm-help-row:first-child { border-top: 0; }
+      .tm-help-text { min-width: 0; }
       .tm-kid-name { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .tm-kid-pts { font-size: 13px; color: var(--tm-text-muted); }
       .tm-kid-pts strong { font-size: 18px; color: var(--tm-gold); margin-inline-end: 2px; }
       .tm-kid-adj { align-self: start; }
+      .tm-kid-btns { display: flex; flex-direction: column; gap: 2px; align-self: start; }
       .tm-kid-pills { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
       .tm-kid-pills ha-icon { --mdc-icon-size: 13px; margin-inline-end: 2px; }
       .tm-today-cols {

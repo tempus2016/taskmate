@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from calendar import monthrange
 from datetime import date, datetime, time, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.util import dt as dt_util
 
@@ -20,7 +20,7 @@ from .const import (
 )
 from .coord_rejections import clean_reject_reason
 from .coord_teamwork import teamwork_config_error
-from .models import Chore, ChoreCompletion, PointsTransaction, parse_datetime
+from .models import MAX_QUANTITY, Chore, ChoreCompletion, PointsTransaction, parse_datetime
 
 if TYPE_CHECKING:
     pass
@@ -528,7 +528,9 @@ class ChoresMixin:
         existing = self.storage.get_chore(chore.id)
         prev_entities = list(getattr(existing, "publish_calendar_entities", []) or []) if existing else []
         prev_name = (existing.name if existing else "") or ""
-        prev_image = (getattr(existing, "image_url", "") or "") if existing else ""
+        prev_images = {
+            (getattr(existing, key, "") or "") for key in ("image_url", "reference_image_url") if existing
+        } - {""}
         # Persist the incoming chore so _compute_daily_assignments sees the
         # latest pool / mode / etc. when applying group policies.
         self.storage.update_chore(chore)
@@ -561,7 +563,8 @@ class ChoresMixin:
         self.storage.update_chore(chore)
         # Replacing or clearing the picture orphans the old file; delete it —
         # unless a clone still shows it (#768).
-        if prev_image and prev_image != (chore.image_url or ""):
+        # The same goes for the reference picture of a job done well.
+        for prev_image in prev_images - {chore.image_url or "", getattr(chore, "reference_image_url", "") or ""}:
             await self._async_release_image(prev_image, excluding_chore_id=chore.id)
         await self._publish_chore_to_calendars(chore, today)
         await self.storage.async_save()
@@ -582,7 +585,7 @@ class ChoresMixin:
         for other in self.storage.get_chores():
             if other.id == excluding_chore_id:
                 continue
-            if (getattr(other, "image_url", "") or "") == image_url:
+            if image_url in (getattr(other, "image_url", "") or "", getattr(other, "reference_image_url", "") or ""):
                 return
         await images.async_delete_image(self.hass, image_url)
 
@@ -593,8 +596,10 @@ class ChoresMixin:
             await self._cleanup_chore_from_calendars(existing)
         # Nothing sweeps taskmate_images, so the file has to go with the chore —
         # unless a clone still shows it (#768).
-        if existing is not None and getattr(existing, "image_url", ""):
-            await self._async_release_image(existing.image_url, excluding_chore_id=chore_id)
+        if existing is not None:
+            for key in ("image_url", "reference_image_url"):
+                if getattr(existing, key, ""):
+                    await self._async_release_image(getattr(existing, key), excluding_chore_id=chore_id)
         self.storage.remove_chore(chore_id)
         self.storage.remove_completions_for_chore(chore_id)
         self.storage.remove_last_completed_for_chore(chore_id)
@@ -748,6 +753,7 @@ class ChoresMixin:
         photo_url: str = "",
         note: str = "",
         suggested_points: int = 0,
+        quantity: int = 0,
     ) -> ChoreCompletion | None:
         """Mark a chore as completed by a child.
 
@@ -805,7 +811,8 @@ class ChoresMixin:
         # time, not just in the card UI — otherwise a caller can award every pool
         # member by completing the chore once per child_id (one call each).
         assignment_mode = getattr(chore, "assignment_mode", "everyone")
-        if assignment_mode != "everyone":
+        # A make-it-right offer is this child's own job, outside any rotation.
+        if assignment_mode != "everyone" and self.open_redemption_for(chore.id, child_id) is None:
             if self._is_rotation_done_today(chore):
                 _LOGGER.debug(
                     "complete_chore no-op: '%s' already completed today (rotation quota filled)",
@@ -928,6 +935,10 @@ class ChoresMixin:
         is_open_ended = bool(getattr(chore, "open_ended", False))
         if is_open_ended and not as_parent and not note:
             raise ValueError("Say what you did to submit this one.")
+        # Quantity chores ("read 20 pages"): the child says how many, and the
+        # chore's points are per unit. A parent ticking it without a number
+        # counts one; a child has to say.
+        quantity = self.chore_quantity(chore, quantity, as_parent=as_parent)
         # Teamwork chores (#928): this tap joins the day's occurrence. Only the
         # join that fills the team records anything — a completion for every
         # participant at once — so a lone join returns None like the other
@@ -937,8 +948,12 @@ class ChoresMixin:
         # Open-ended completions always go to a parent: the child suggested the
         # point value, so self-awarding it would let them set their own pay.
         # A grown-up's own completion never waits for approval (#1061).
+        # An uncapped quantity chore is the same: the child picked the number.
+        uncapped_quantity = bool(quantity) and not int(getattr(chore, "quantity_max", 0) or 0)
         auto_approve = (
-            as_parent or child.is_adult or (not chore.requires_approval and not requires_photo and not is_open_ended)
+            as_parent
+            or child.is_adult
+            or (not chore.requires_approval and not requires_photo and not is_open_ended and not uncapped_quantity)
         )
         # Won at auction (#982): the winner is paid their winning bid for this
         # occurrence instead of the chore's own points — exactly what they bid.
@@ -951,7 +966,7 @@ class ChoresMixin:
                 child_id,
                 self._apply_speed_bonus(
                     chore,
-                    self._apply_time_adjustment(chore, self.effective_chore_points(chore), now),
+                    self._apply_time_adjustment(chore, self.effective_chore_points(chore, quantity), now),
                     now,
                 ),
             )
@@ -971,6 +986,7 @@ class ChoresMixin:
             photo_url=photo_url,
             note=note,
             suggested_points=suggested_points,
+            quantity=quantity,
         )
         if redo is not None:
             self._inspection_on_redo_recorded(redo, completion.id)
@@ -989,12 +1005,42 @@ class ChoresMixin:
                     if redo is not None
                     else auction_price
                     if auction_price is not None
-                    else (completion.suggested_points if is_open_ended else chore.points),
+                    else (
+                        completion.suggested_points
+                        if is_open_ended
+                        else completion.submitted_points
+                        if quantity
+                        else chore.points
+                    ),
                 )
             ],
             auto_approve=auto_approve,
         )
         return completion
+
+    def chore_quantity(self, chore, quantity: Any, *, as_parent: bool = False) -> int:
+        """The units counted for a quantity chore, capped; 0 for any other chore.
+
+        Raises ValueError when a child submits a quantity chore without saying
+        how many — like the photo and note gates, enforced here so the button
+        entity, automations and Dev Tools can't skip it.
+        """
+        if not (getattr(chore, "quantity_unit", "") or "").strip():
+            return 0
+        if getattr(chore, "open_ended", False) or getattr(chore, "task_type", "standard") == "timed":
+            return 0
+        try:
+            units = int(quantity or 0)
+        except (TypeError, ValueError):
+            units = 0
+        if units < 1:
+            if not as_parent:
+                raise ValueError(f"Say how many {chore.quantity_unit} you did.")
+            units = 1
+        cap = int(getattr(chore, "quantity_max", 0) or 0)
+        if cap:
+            units = min(units, cap)
+        return min(units, MAX_QUANTITY)
 
     async def _async_record_completion(
         self,
@@ -1009,6 +1055,7 @@ class ChoresMixin:
         note: str = "",
         suggested_points: int = 0,
         backdated: bool = False,
+        quantity: int = 0,
     ) -> ChoreCompletion:
         """Store one completion and, when auto-approved, pay it.
 
@@ -1036,6 +1083,7 @@ class ChoresMixin:
             # nothing made while the window is 0 (off) ever can.
             child_undo_allowed=not as_parent and undo_window_seconds(self.storage) > 0,
             backdated=backdated,
+            quantity=quantity,
         )
 
         # Record the completion before awarding anything. Awarding can suspend
@@ -1061,6 +1109,7 @@ class ChoresMixin:
             completion.points_awarded = total_awarded
             self.storage.update_completion(completion)
             await self._async_pay_weekly_target_bonus(chore, child, completion)
+            await self._async_redeem_penalty(chore, child, completion)
 
         self.hass.bus.async_fire(
             "taskmate_chore_completed",
@@ -1230,6 +1279,8 @@ class ChoresMixin:
             return f"'{chore.name}' is open-ended, so it needs the child's note and a price. Use the child's card."
         if self.is_vacation_day(day):
             return f"{day.strftime('%A')} was a holiday, so no jobs were due."
+        if self.is_sick_day(child.id, day):
+            return f"{day.strftime('%A')} was {child.name}'s sick day, so no jobs were due."
         # A birthday with "chores off" is a day off for everything but mandatory
         # chores, the same rule today's chore list follows.
         if not getattr(chore, "mandatory", False) and self.is_birthday_day_off(child, day):
@@ -1519,7 +1570,9 @@ class ChoresMixin:
                         )
                     else:
                         pts = self._apply_time_adjustment(
-                            chore, self.effective_chore_points(chore), completion.completed_at
+                            chore,
+                            self.effective_chore_points(chore, getattr(completion, "quantity", 0)),
+                            completion.completed_at,
                         )
                     stars = 0
                     if rating is not None and self.quality_rating_enabled():
@@ -1574,6 +1627,7 @@ class ChoresMixin:
                     if getattr(completion, "bounty_id", ""):
                         self._bounty_on_approved(completion)
                     await self._async_pay_weekly_target_bonus(chore, child, completion)
+                    await self._async_redeem_penalty(chore, child, completion)
 
                     # Dismiss the mobile approval push now this completion is
                     # reviewed (covers single approve AND "approve all", which
@@ -1723,6 +1777,8 @@ class ChoresMixin:
                 # Outside the streak block: a backdated job never moved the
                 # streak, but it can complete a week's target like any other.
                 self._reverse_weekly_target_bonus(completion, child)
+                # And a penalty it earned back (make it right).
+                self._reverse_penalty_redemption(completion, child)
 
         bonus_completions: list = []
         is_parent = not target_completion.bonus_subtask_id
@@ -1824,6 +1880,10 @@ class ChoresMixin:
             owed += self._quest_refund_owed(child.id, completion.chore_id, completion.id)
         if hasattr(self, "_challenge_refund_owed"):
             owed += self._challenge_refund_owed(child.id, exclude_ids={c.id for c in affected})
+        if hasattr(self, "_weekly_goal_refund_owed"):
+            owed += self._weekly_goal_refund_owed(child.id, exclude_ids={c.id for c in affected})
+        if hasattr(self, "_penalty_redemption_owed"):
+            owed += self._penalty_redemption_owed(completion)
         return owed
 
     async def async_reject_chore(
@@ -1862,6 +1922,8 @@ class ChoresMixin:
             # The metric no longer counts this completion; a challenge bonus it
             # helped earn goes back with it.
             await self._async_reverse_challenges(target_completion.child_id)
+        if target_completion and target_completion.approved and hasattr(self, "async_reverse_weekly_goals"):
+            await self.async_reverse_weekly_goals(target_completion.child_id)
         # The completion record is gone, so its evidence photo is now orphaned —
         # delete it (best-effort; foreign/blank URLs are ignored), unless some
         # other record still points at the same file.
@@ -1956,6 +2018,8 @@ class ChoresMixin:
             await self._async_rewind_quests(target.child_id, target.chore_id, target.id)
         if hasattr(self, "_async_reverse_challenges"):
             await self._async_reverse_challenges(target.child_id)
+        if hasattr(self, "async_reverse_weekly_goals"):
+            await self.async_reverse_weekly_goals(target.child_id)
 
         await self.storage.async_save()
         await self.async_refresh()
@@ -2017,6 +2081,12 @@ class ChoresMixin:
         winner = self.auction_winner(chore)
         if winner and winner != child_id:
             return False
+
+        # Make it right: an open offer to earn a penalty back makes its chore
+        # doable now, whatever its schedule or rota says — but a one-shot chore
+        # already done, or one won at auction by someone else, stays shut.
+        if self.open_redemption_for(chore.id, child_id) is not None:
+            return True
 
         # Dynamic assignment — only the active child(ren) see alternating/random chores
         if getattr(chore, "assignment_mode", "everyone") != "everyone":
@@ -2360,6 +2430,9 @@ class ChoresMixin:
         """
         if not self.is_chore_available_for_child(chore, child_id):
             return False
+        # An open make-it-right offer is for this child, today, whatever the chore's rota.
+        if self.open_redemption_for(chore.id, child_id) is not None:
+            return True
         assigned = getattr(chore, "assigned_to", []) or []
         if assigned and child_id not in assigned:
             return False

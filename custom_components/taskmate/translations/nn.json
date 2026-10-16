@@ -150,6 +150,10 @@
         "suggested_points": {
           "name": "Føreslåtte poeng",
           "description": "Kva barnet meiner arbeidet var verdt. Berre eit hint til forelderen som godkjenner — det gjev ikkje poeng i seg sjølv."
+        },
+        "quantity": {
+          "name": "Tal",
+          "description": "Kor mange einingar barnet gjorde, på ei mengdeoppgåve («les 20 sider»). Påkravd frå eit barn på slike oppgåver; poenga blir betalte per eining."
         }
       }
     },
@@ -1320,6 +1324,130 @@
           "description": "ID-en til den opne inspeksjonen"
         }
       }
+    },
+    "request_help": {
+      "name": "Be om hjelp",
+      "description": "Eit barn seier at det står fast på ei oppgåve. Sender foreldra eit varsel; ingenting blir fullført eller hoppa over.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som bed om hjelp"
+        },
+        "chore_id": {
+          "name": "Oppgåve-ID",
+          "description": "Oppgåva barnet står fast på"
+        },
+        "message": {
+          "name": "Melding",
+          "description": "Valfrie ord frå barnet, t.d. «Eg når ikkje hylla»."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Svar på ein hjelpeførespurnad",
+      "description": "Merk ein hjelpeførespurnad frå eit barn som svara, så kortet sluttar å seie at hjelpa er på veg.",
+      "fields": {
+        "request_id": {
+          "name": "Førespurnads-ID",
+          "description": "Førespurnaden som skal lukkast"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Registrer humør",
+      "description": "Eit barn fortel korleis dagen var. Éin per dag; ein ny erstattar den gamle.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet"
+        },
+        "mood": {
+          "name": "Humør",
+          "description": "great, good, ok, sad eller upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Set sjukedag",
+      "description": "Gje eit barn ein sjukedag. Oppgåvene blir gøymde, rekkja blir fryst og inga obligatorisk oppgåve blir rekna som gløymd.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som er sjukt"
+        },
+        "date": {
+          "name": "Dato",
+          "description": "Dagen (standard i dag). Frå ei veke tilbake til ein månad fram."
+        },
+        "sick": {
+          "name": "Sjuk",
+          "description": "Slå av for å ta sjukedagen tilbake."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Set vekesmål",
+      "description": "Set eit barn sitt eige poengmål for veka. Når det blir nådd, blir familien sin vekesmålbonus betalt éin gong per veke. 0 fjernar det.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet"
+        },
+        "target": {
+          "name": "Mål",
+          "description": "Poeng å tene denne veka"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Kjøp lodd",
+      "description": "Eit barn brukar poeng på lodd i ei loddtrekning. Kvart lodd er éin sjanse i trekkinga.",
+      "fields": {
+        "raffle_id": {
+          "name": "Loddtreknings-ID",
+          "description": "Loddtrekninga"
+        },
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som kjøper"
+        },
+        "tickets": {
+          "name": "Lodd",
+          "description": "Kor mange lodd som skal kjøpast"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Trekk vinnar",
+      "description": "Trekk vinnaren av ei loddtrekning no i staden for å vente på trekketidspunktet.",
+      "fields": {
+        "raffle_id": {
+          "name": "Loddtreknings-ID",
+          "description": "Loddtrekninga som skal trekkjast"
+        }
+      }
+    },
+    "adopt_pet": {
+      "name": "Adopter eit kjæledyr",
+      "description": "Eit barn adopterer (eller gjev nytt namn til) det virtuelle kjæledyret sitt. Det veks med kvar oppgåve barnet gjer frå no.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet"
+        },
+        "species": {
+          "name": "Art",
+          "description": "dragon, cat, dog, bunny, dino eller unicorn"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Namnet på kjæledyret"
+        },
+        "hatch_egg": {
+          "name": "Klekk egget",
+          "description": "Klekk egget det vaksne kjæledyret la, til eit nytt kjæledyr. Det gamle kjæledyret blir med i kjæledyrfamilien."
+        }
+      }
     }
   },
   "entity": {
@@ -1353,6 +1481,60 @@
       "card_design": {
         "name": "Kortdesign"
       }
+    },
+    "event": {
+      "child_activity": {
+        "name": "TaskMate-aktivitet",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Oppgåve fullført",
+              "chore_approved": "Oppgåve godkjend",
+              "chore_rejected": "Oppgåve avvist",
+              "chore_approval_undone": "Godkjenning angra",
+              "reward_claimed": "Løn løyst inn",
+              "reward_approved": "Løn godkjend",
+              "reward_rejected": "Løn avvist",
+              "badge_earned": "Merke opptent",
+              "level_up": "Nytt nivå",
+              "streak_updated": "Rekkje oppdatert",
+              "streak_freeze_used": "Rekkjefrys brukt",
+              "perfect_week": "Perfekt veke",
+              "weekly_target_reached": "Vekemål nådd",
+              "quest_completed": "Oppdrag fullført",
+              "challenge_completed": "Utfordring fullført",
+              "bonus_applied": "Bonus gjeven",
+              "penalty_applied": "Straff gjeven",
+              "surprise_bonus": "Overraskingsbonus",
+              "mandatory_missed": "Obligatorisk oppgåve gløymd",
+              "team_chore_completed": "Lagoppgåve fullført",
+              "points_gifted": "Poeng gjevne bort",
+              "help_requested": "Bad om hjelp",
+              "mood_logged": "Humør registrert",
+              "weekly_goal_reached": "Vekesmål nådd",
+              "sick_day": "Sjukedag",
+              "chore_auto_approved": "Oppgåve godkjend automatisk",
+              "penalty_redeemed": "Straff tent inn att",
+              "raffle_won": "Loddtrekning vunnen",
+              "pet_evolved": "Kjæledyret voks"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "TaskMate-familieaktivitet",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Familiemål nådd",
+              "season_champion": "Sesongmeister",
+              "bounty_posted": "Dusør lagd ut",
+              "scheduled_change_applied": "Planlagd endring utført",
+              "raffle_drawn": "Loddtrekning trekt"
+            }
+          }
+        }
+      }
     }
   },
   "exceptions": {
@@ -1382,6 +1564,36 @@
     },
     "calendar_own_event": {
       "message": "Denne hendinga er publisert av TaskMate sjølv, så ho blir ikkje lagd til som ei ny oppgåve."
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate kan ikkje senda varsel til {who}",
+      "description": "TaskMate er sett opp til å varsla {who} via `{service}`, men den tenesta finst ikkje lenger – som regel fordi telefonen er fjerna eller har fått nytt namn i Mobile App-integrasjonen.\n\nOpna TaskMate-adminpanelet → Varsel og vel gjeldande teneste for {who}. Reparasjonen forsvinn av seg sjølv når tenesta finst."
+    },
+    "child_entity_missing": {
+      "title": "Profilen til {child} brukar ei manglande eining",
+      "description": "Profilen til {child} brukar `{entity}`, som ikkje finst lenger. Tilgjenge, varsel etter nærvær eller profilbiletet som er avhengig av den, vil ikkje verka.\n\nOpna TaskMate-adminpanelet → Born, rediger {child} og vel ei eining som finst (eller tøm feltet)."
+    },
+    "chore_entity_missing": {
+      "title": "«{chore}» brukar ei manglande eining",
+      "description": "«{chore}» sjekkar `{entity}` for å avgjera når ho blir vist, men den eininga finst ikkje lenger, så sjekken blir hoppa over.\n\nOpna TaskMate-adminpanelet → Oppgåver, rediger «{chore}» og vel ei eining som finst (eller tøm feltet)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "Oppgåva «{chore}» er ikkje tildelt nokon",
+      "description": "Alle borna «{chore}» var tildelt, er fjerna, så ingen vil nokon gong sjå ho.\n\nOpna TaskMate-adminpanelet → Oppgåver og tildel «{chore}» til eit barn, eller slett ho."
+    },
+    "chore_dependency_missing": {
+      "title": "Oppgåva «{chore}» kan aldri låsast opp",
+      "description": "«{chore}» ventar på at ei anna oppgåve skal gjerast først, men den oppgåva er sletta, så «{chore}» blir verande låst for alltid.\n\nOpna TaskMate-adminpanelet → Oppgåver, rediger «{chore}» og fjern avhengnaden som manglar."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "Ingen born kan løysa inn løna «{reward}»",
+      "description": "Alle borna «{reward}» var meint for, er fjerna, så ingen kan løysa ho inn.\n\nOpna TaskMate-adminpanelet → Løner og vel kven «{reward}» er for, eller slett ho."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "Løna «{reward}» låser ikkje opp noko",
+      "description": "«{reward}» skal slå på `{entity}`, men den eininga står ikkje lenger på TaskMate si liste over tillatne opplåsingar, så ingenting skjer når løna blir godkjend.\n\nOpna TaskMate-adminpanelet → Innstillingar og legg `{entity}` til lista, eller rediger «{reward}»."
     }
   }
 }

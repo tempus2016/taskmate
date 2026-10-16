@@ -241,17 +241,20 @@ class TaskMateRoutineCard extends LitElement {
       // Prefer the per-chore button entity so HA state-trigger automations
       // fire, exactly as the child card does. Fall back to the service when
       // the entity isn't registered yet (e.g. right after a restart).
-      const buttonEntityId = window.__taskmate_find_button
+      // A quantity chore carries how many on the service call, which a
+      // button press can't.
+      const quantity = chore.quantity_unit ? this._qtyFor(chore) : 0;
+      const buttonEntityId = !quantity && window.__taskmate_find_button
         && window.__taskmate_find_button(this.hass, child.id, "complete", chore.id);
       if (buttonEntityId) {
         await this.hass.callService("button", "press", { entity_id: buttonEntityId });
       } else {
         await this.hass.callService("taskmate", "complete_chore", {
-          chore_id: chore.id, child_id: child.id,
+          chore_id: chore.id, child_id: child.id, ...(quantity ? { quantity } : {}),
         });
       }
       this._runCompleted.set(String(chore.id), {
-        points: this._pointsFor(chore),
+        points: this._pointsFor(chore) * (quantity || 1),
         pending: chore.requires_approval !== false,
       });
       // Skipped then done later is not "left for later" — otherwise the finish
@@ -267,6 +270,19 @@ class TaskMateRoutineCard extends LitElement {
       this._busy = false;
       this.requestUpdate();
     }
+  }
+
+  /** How many units the child has dialled in for a quantity chore (default 1). */
+  _qtyFor(chore) {
+    const n = Number((this._qty || {})[chore.id]) || 1;
+    const max = Number(chore.quantity_max) || 10000;
+    return Math.max(1, Math.min(max, Math.round(n)));
+  }
+
+  _setQty(chore, n) {
+    const max = Number(chore.quantity_max) || 10000;
+    this._qty = { ...(this._qty || {}), [chore.id]: Math.max(1, Math.min(max, Math.round(Number(n) || 1))) };
+    this.requestUpdate();
   }
 
   _advance() {
@@ -350,8 +366,20 @@ class TaskMateRoutineCard extends LitElement {
           <div class="task">${chore.name}</div>
           ${chore.description ? html`<div class="desc">${chore.description}</div>` : ""}
           <div class="points">
-            <ha-icon icon="${pointsIcon}"></ha-icon> +${this._pointsFor(chore)}
+            <ha-icon icon="${pointsIcon}"></ha-icon> +${chore.quantity_unit && !done
+              ? this._pointsFor(chore) * this._qtyFor(chore)
+              : (done ? done.points : this._pointsFor(chore))}
           </div>
+          ${chore.quantity_unit && !done ? html`
+            <div class="rt-qty" role="group" aria-label="${chore.quantity_unit}">
+              <button class="rt-qty-step" aria-label="−" ?disabled=${this._qtyFor(chore) <= 1}
+                      @click=${() => this._setQty(chore, this._qtyFor(chore) - 1)}>−</button>
+              <span class="rt-qty-n">${this._qtyFor(chore)}</span>
+              <button class="rt-qty-step" aria-label="+"
+                      ?disabled=${chore.quantity_max && this._qtyFor(chore) >= chore.quantity_max}
+                      @click=${() => this._setQty(chore, this._qtyFor(chore) + 1)}>+</button>
+              <span class="rt-qty-unit">${chore.quantity_unit}</span>
+            </div>` : ""}
           ${done?.pending ? html`<div class="pending">${this._t("routine.waiting_for_parent")}</div>` : ""}
           ${chore.require_photo ? html`<div class="note">${this._t("routine.photo_note")}</div>` : ""}
         </div>
@@ -563,6 +591,12 @@ class TaskMateRoutineCard extends LitElement {
         font-weight: 700; font-size: 12.5px;
       }
       .note { font-size: 12.5px; color: var(--tmd-dim, var(--secondary-text-color)); }
+      .rt-qty { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 4px; }
+      .rt-qty-step { width: 44px; height: 44px; border-radius: 50%; border: none; font-size: 1.5rem; font-weight: 800; cursor: pointer;
+        background: var(--secondary-background-color, #f0f0f0); color: var(--primary-text-color); }
+      .rt-qty-step:disabled { opacity: .35; cursor: default; }
+      .rt-qty-n { min-width: 2.5ch; text-align: center; font-size: 1.8rem; font-weight: 800; }
+      .rt-qty-unit { font-weight: 700; opacity: .75; }
 
       .foot { padding: 14px 20px 20px; display: flex; flex-direction: column; gap: 10px; }
       .rt-btn {

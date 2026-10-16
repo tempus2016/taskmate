@@ -150,6 +150,10 @@
         "suggested_points": {
           "name": "Suggested points",
           "description": "What the child reckons the work was worth. A hint for the approving parent — it awards nothing on its own."
+        },
+        "quantity": {
+          "name": "Quantity",
+          "description": "How many units the child did, for a quantity chore (\"read 20 pages\"). Required from a child on those chores; the chore's points are paid per unit."
         }
       }
     },
@@ -1320,6 +1324,130 @@
           "description": "The ID of the open inspection"
         }
       }
+    },
+    "request_help": {
+      "name": "Ask for help",
+      "description": "A child says they are stuck on a chore. Sends the parents a push; nothing is completed or skipped.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child asking for help"
+        },
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The chore they are stuck on"
+        },
+        "message": {
+          "name": "Message",
+          "description": "Optional words from the child, e.g. \"I can't reach the shelf\"."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Answer a help request",
+      "description": "Mark a child's help request as answered, so their card stops saying help is on its way.",
+      "fields": {
+        "request_id": {
+          "name": "Request ID",
+          "description": "The help request to close"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Log mood",
+      "description": "A child says how their day went. One per day; logging again replaces it.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child"
+        },
+        "mood": {
+          "name": "Mood",
+          "description": "great, good, ok, sad or upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Set sick day",
+      "description": "Give a child a sick day. Their chores are hidden, their streak is frozen and no mandatory chore is missed.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child who is unwell"
+        },
+        "date": {
+          "name": "Date",
+          "description": "The day (default today). From a week ago to a month ahead."
+        },
+        "sick": {
+          "name": "Sick",
+          "description": "Turn off to take the sick day back."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Set weekly goal",
+      "description": "Set a child's own weekly points goal. Reaching it pays the family's weekly goal bonus once a week. 0 clears it.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child"
+        },
+        "target": {
+          "name": "Target",
+          "description": "Points to earn this week"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Buy raffle tickets",
+      "description": "A child spends points on tickets for a raffle. Each ticket is one chance in the draw.",
+      "fields": {
+        "raffle_id": {
+          "name": "Raffle ID",
+          "description": "The raffle"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child buying"
+        },
+        "tickets": {
+          "name": "Tickets",
+          "description": "How many tickets to buy"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Draw raffle",
+      "description": "Draw a raffle's winner now instead of waiting for its draw time.",
+      "fields": {
+        "raffle_id": {
+          "name": "Raffle ID",
+          "description": "The raffle to draw"
+        }
+      }
+    },
+    "adopt_pet": {
+      "name": "Adopt a pet",
+      "description": "A child adopts (or renames) their virtual pet. It grows with every chore they finish from now on.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child"
+        },
+        "species": {
+          "name": "Species",
+          "description": "dragon, cat, dog, bunny, dino or unicorn"
+        },
+        "name": {
+          "name": "Name",
+          "description": "The pet's name"
+        },
+        "hatch_egg": {
+          "name": "Hatch the egg",
+          "description": "Hatch the egg the grown-up pet laid into a new pet. The old pet joins the pet family."
+        }
+      }
     }
   },
   "entity": {
@@ -1353,6 +1481,60 @@
       "card_design": {
         "name": "Card design"
       }
+    },
+    "event": {
+      "child_activity": {
+        "name": "TaskMate activity",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Chore completed",
+              "chore_approved": "Chore approved",
+              "chore_rejected": "Chore rejected",
+              "chore_approval_undone": "Chore approval undone",
+              "reward_claimed": "Reward claimed",
+              "reward_approved": "Reward approved",
+              "reward_rejected": "Reward rejected",
+              "badge_earned": "Badge earned",
+              "level_up": "Level up",
+              "streak_updated": "Streak updated",
+              "streak_freeze_used": "Streak freeze used",
+              "perfect_week": "Perfect week",
+              "weekly_target_reached": "Weekly target reached",
+              "quest_completed": "Quest completed",
+              "challenge_completed": "Challenge completed",
+              "bonus_applied": "Bonus applied",
+              "penalty_applied": "Penalty applied",
+              "surprise_bonus": "Surprise bonus",
+              "mandatory_missed": "Mandatory chore missed",
+              "team_chore_completed": "Team chore completed",
+              "points_gifted": "Points gifted",
+              "help_requested": "Help requested",
+              "mood_logged": "Mood logged",
+              "weekly_goal_reached": "Weekly goal reached",
+              "sick_day": "Sick day",
+              "chore_auto_approved": "Chore auto-approved",
+              "penalty_redeemed": "Penalty earned back",
+              "raffle_won": "Raffle won",
+              "pet_evolved": "Pet grew up"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "TaskMate family activity",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Family goal reached",
+              "season_champion": "Season champion",
+              "bounty_posted": "Bounty posted",
+              "scheduled_change_applied": "Scheduled change applied",
+              "raffle_drawn": "Raffle drawn"
+            }
+          }
+        }
+      }
     }
   },
   "exceptions": {
@@ -1382,6 +1564,36 @@
     },
     "calendar_own_event": {
       "message": "This event was published by TaskMate itself, so it isn't added as a new chore."
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate can't send notifications to {who}",
+      "description": "TaskMate is set to notify {who} through `{service}`, but that service doesn't exist any more — usually because the phone was removed or renamed in the Mobile App integration.\n\nOpen the TaskMate admin panel → Notifications and pick the current service for {who}. This repair clears itself once the service exists."
+    },
+    "child_entity_missing": {
+      "title": "{child}'s profile uses a missing entity",
+      "description": "{child}'s profile uses `{entity}`, which no longer exists. Availability, presence-aware reminders or the profile picture that rely on it won't work.\n\nOpen the TaskMate admin panel → Children, edit {child} and pick an entity that exists (or clear the field)."
+    },
+    "chore_entity_missing": {
+      "title": "“{chore}” uses a missing entity",
+      "description": "“{chore}” checks `{entity}` to decide when it shows, but that entity no longer exists, so the check is skipped.\n\nOpen the TaskMate admin panel → Chores, edit “{chore}” and pick an entity that exists (or clear it)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "The chore “{chore}” is assigned to nobody",
+      "description": "Every child “{chore}” was assigned to has been removed, so no one will ever see it.\n\nOpen the TaskMate admin panel → Chores and assign “{chore}” to a child, or delete it."
+    },
+    "chore_dependency_missing": {
+      "title": "The chore “{chore}” can never unlock",
+      "description": "“{chore}” waits for another chore to be done first, but that chore has been deleted, so “{chore}” stays locked for ever.\n\nOpen the TaskMate admin panel → Chores, edit “{chore}” and remove the missing dependency."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "No child can claim the reward “{reward}”",
+      "description": "Every child “{reward}” was meant for has been removed, so no one can claim it.\n\nOpen the TaskMate admin panel → Rewards and choose who “{reward}” is for, or delete it."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "The reward “{reward}” unlocks nothing",
+      "description": "“{reward}” is set to switch on `{entity}`, but that entity is no longer on TaskMate's unlock allowlist, so nothing happens when the reward is approved.\n\nOpen the TaskMate admin panel → Settings and add `{entity}` to the unlock allowlist, or edit “{reward}”."
     }
   }
 }

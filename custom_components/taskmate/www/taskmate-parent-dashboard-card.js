@@ -553,6 +553,10 @@ class TaskMateParentDashboardCard extends LitElement {
         background: var(--tmd-surface); border: 1px solid var(--tmd-border); display: grid;
         place-items: center; font-size: 15px; flex: none; }
       .pd-photo img { width: 100%; height: 100%; object-fit: cover; }
+      .pd-ref { position: relative; overflow: visible; }
+      .pd-ref img { border-radius: 8px; }
+      .pd-ref-badge { position: absolute; inset-inline-end: -4px; top: -4px; width: 15px; height: 15px; border-radius: 50%;
+        background: #f5b301; color: #3a2e26; font-size: 9px; line-height: 15px; text-align: center; font-weight: 800; }
       .pd-photo-link { line-height: 0; text-decoration: none; }
       .pd-gold-soft { color: var(--tmd-gold); }
     `;
@@ -908,6 +912,15 @@ class TaskMateParentDashboardCard extends LitElement {
             @click="${(e) => this._openPhoto(e, photoUrl, photoCap)}"
             title="${this._t('approvals.view_photo') || 'View photo'}"><div class="pd-photo"><img src="${photoUrl}" alt=""></div></a>`
         : "";
+      // The chore's "what done looks like" picture, beside the evidence.
+      const refUrl = typeof comp.reference_image_url === "string" && comp.reference_image_url.startsWith("/api/taskmate/image/")
+        ? comp.reference_image_url : "";
+      const ref = refUrl
+        ? html`<a class="pd-photo-link" href="${refUrl}" target="_blank" rel="noopener"
+            @click="${(e) => this._openPhoto(e, refUrl, `★ ${this._t('approvals.reference_label')} · ${comp.chore_name || ''}`)}"
+            title="${this._t('approvals.reference_title')}"><div class="pd-photo pd-ref"><img src="${refUrl}" alt=""><span class="pd-ref-badge">★</span></div></a>`
+        : "";
+      const qty = comp.quantity ? ` · 🔢 ${comp.quantity} ${comp.quantity_unit || ""}` : "";
       const acts = html`
         <button class="btn good sm round" ?disabled="${isLoading}" title="${this._t('common.approve')}"
           @click="${() => this._handleApprove(comp.completion_id)}">✓</button>
@@ -918,8 +931,9 @@ class TaskMateParentDashboardCard extends LitElement {
           ${this._av(child?.name || '?', child, tone, 36)}
           <div style="flex:1;min-width:0">
             <div class="pd-item-title">${comp.chore_name || choreMap[comp.chore_id]?.name || this._t('common.unknown')}</div>
-            <div class="muted pd-item-sub">${child?.name || this._t('common.unknown')}${time ? ` · ${time}` : ""} · +${pts}</div>
+            <div class="muted pd-item-sub">${child?.name || this._t('common.unknown')}${time ? ` · ${time}` : ""} · +${pts}${qty}</div>
           </div>
+          ${ref}
           ${photo}
           <div class="pd-acts">${acts}</div>
         </div>`;

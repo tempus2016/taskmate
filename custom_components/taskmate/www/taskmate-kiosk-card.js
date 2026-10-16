@@ -19,6 +19,18 @@
  * Each completion gets the child card's feedback (#1039): the chore's
  * completion sound, confetti and a short popup — each can be switched off.
  *
+ * Ambient mode (`ambient_mode: progress | photos`): after the picker has sat
+ * untouched for `ambient_after` seconds the tablet shows the family's day —
+ * everyone's progress, open raffles — or a slideshow of chore photos. The
+ * first tap only wakes it.
+ *
+ * Offline taps: a Done pressed while Home Assistant is unreachable (a wobbly
+ * mesh link) is kept on the tablet, shown as "waiting to send", and sent as
+ * soon as the connection is back.
+ *
+ * Raffles: when a raffle is drawn the tablet spins the names and lands on the
+ * winner, once per draw (`show_raffle_draws: false` turns it off).
+ *
  * Less clutter (#1079): `completed_mode: hide` drops done and waiting rows
  * (they still count towards the done/total ring), and `elapsed_time_mode`
  * dims or hides chores whose part of the day has passed, as on the child
@@ -72,6 +84,11 @@ const POPUP_MS = 2500;
 const CONFETTI_MS = 3500;
 const CONFETTI_COLOURS = ["#ff6b9d", "#9b59b6", "#3498db", "#2ecc71", "#f1c40f", "#e67e22"];
 const PIN_LENGTH = 4;
+const DEFAULT_AMBIENT_AFTER = 120;
+const AMBIENT_SLIDE_MS = 8000;
+const QUEUE_KEY = "__taskmate_kiosk_queue";
+const RAFFLE_SEEN_KEY = "__taskmate_kiosk_raffle_seen";
+const RAFFLE_REVEAL_WINDOW_MS = 15 * 60 * 1000;
 // The idle clock waits this long for a bounty photo: the camera covers the
 // card, so no tap reaches it while the child lines up the shot.
 const PHOTO_GRACE_MS = 120000;
@@ -102,6 +119,10 @@ class TaskMateKioskCard extends LitElement {
       _confetti: { type: Array },
       _fullscreen: { type: Boolean },
       _bountyDlg: { type: Object },
+      _ambient: { type: Boolean },
+      _queue: { type: Array },
+      _rafReveal: { type: Object },
+      _slide: { type: Number },
     };
   }
 
@@ -129,12 +150,37 @@ class TaskMateKioskCard extends LitElement {
     this._photoSince = 0;
     this._uploading = false;
     this._now = new Date();
+    this._ambient = false;
+    this._pickerIdle = 0;
+    this._slide = 0;
+    this._signedPhotos = {};
+    this._rafReveal = null;
+    this._queue = this._loadQueue();
     // Any touch or key press counts as activity and restarts the idle timer.
-    this._onActivity = () => { this._idle = 0; };
+    // On the ambient screen the first tap only wakes the tablet (capture
+    // phase, so the face under the finger isn't opened by accident).
+    this._onActivity = (e) => {
+      this._idle = 0;
+      this._pickerIdle = 0;
+      if (this._ambient) {
+        this._ambient = false;
+        this._swallowClick = true;
+        e?.stopPropagation?.();
+        e?.preventDefault?.();
+      }
+    };
+    // The click that follows a waking tap is swallowed too.
+    this._onClickCapture = (e) => {
+      if (!this._swallowClick) return;
+      this._swallowClick = false;
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    this.addEventListener?.("click", this._onClickCapture, true);
     this._onFullscreen = () => {
       this._fullscreen = typeof document !== "undefined" && document.fullscreenElement === this;
     };
-    this.addEventListener?.("pointerdown", this._onActivity);
+    this.addEventListener?.("pointerdown", this._onActivity, true);
     this.addEventListener?.("keydown", this._onActivity);
   }
 
@@ -162,6 +208,8 @@ class TaskMateKioskCard extends LitElement {
     this._ticker = setInterval(() => this._tick(), 1000);
     if (typeof document !== "undefined") document.addEventListener?.("fullscreenchange", this._onFullscreen);
     this._scheduleStatus(0);
+    // A layout re-attach mid-draw would otherwise leave the names frozen.
+    if (this._rafReveal && !this._rafReveal.done) this._rafSpin();
   }
 
   disconnectedCallback() {
@@ -173,6 +221,7 @@ class TaskMateKioskCard extends LitElement {
     clearTimeout(this._popupTimer);
     clearTimeout(this._confettiTimer);
     clearTimeout(this._undoExpiryTimer);
+    clearTimeout(this._rafTimer);
     if (typeof document !== "undefined") document.removeEventListener?.("fullscreenchange", this._onFullscreen);
     // Leaving the dashboard locks the kiosk again.
     this._resetToPicker();
@@ -198,6 +247,7 @@ class TaskMateKioskCard extends LitElement {
     }
     this._scheduleUndoExpiry();
     this._maybeCelebrate();
+    if (changedProps.has("hass")) this._maybeRaffleReveal(this._attrs());
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -346,7 +396,7 @@ class TaskMateKioskCard extends LitElement {
       const team = chore.team;
       const joined = team && Array.isArray(team.joined) ? team.joined.map(String) : [];
       if (!due && !comp) continue;
-      const phone = !!(chore.require_photo || chore.open_ended || chore.task_type === "timed");
+      const phone = !!(chore.require_photo || chore.open_ended || chore.task_type === "timed" || chore.quantity_unit);
       let state;
       if (due && team && joined.includes(id)) state = "team";
       else if (due) state = phone ? "elsewhere" : "todo";
@@ -511,6 +561,7 @@ class TaskMateKioskCard extends LitElement {
     this._idle = 0;
     this._celebrating = false;
     this._armCelebrate = false;
+    this._pickerIdle = 0;
   }
 
   _toPicker() {
@@ -563,6 +614,12 @@ class TaskMateKioskCard extends LitElement {
 
   async _complete(child, chore) {
     if (this._busy) return;
+    if (!this._online()) {
+      // Home Assistant is out of reach: keep the tap, cheer anyway, send later.
+      this._enqueue(child, chore);
+      this._cheer(chore);
+      return;
+    }
     this._busy = String(chore.id);
     this._armCelebrate = true;
     try {
@@ -578,11 +635,191 @@ class TaskMateKioskCard extends LitElement {
       }
       this._cheer(chore);
     } catch (err) {
-      this._notify(String(err?.message || err));
+      if (this._isConnectionError(err)) {
+        this._enqueue(child, chore);
+        this._cheer(chore);
+      } else {
+        this._notify(String(err?.message || err));
+      }
     } finally {
       this._busy = "";
       this._scheduleStatus(0);
     }
+  }
+
+  // ── Offline taps ─────────────────────────────────────────────────────────
+
+  _online() {
+    const conn = this.hass?.connection;
+    return !(conn && conn.connected === false);
+  }
+
+  _isConnectionError(err) {
+    // home-assistant-js-websocket rejects with code 3 (connection lost) when
+    // the socket drops mid-call; a fetch-style failure says "Failed to fetch".
+    return err?.code === 3 || /connection lost|failed to fetch|network/i.test(String(err?.message || err));
+  }
+
+  // The queue lives on the page, not in browser storage: this card stores
+  // nothing on the tablet (see the PIN note above). It outlives HA re-creating
+  // the card, which is what a dropped connection does; a full page reload
+  // while offline loses it.
+  _loadQueue() {
+    const q = typeof window !== "undefined" ? window[QUEUE_KEY] : null;
+    return Array.isArray(q) ? q : [];
+  }
+
+  _saveQueue() {
+    if (typeof window !== "undefined") window[QUEUE_KEY] = this._queue;
+  }
+
+  _enqueue(child, chore) {
+    this._queue = [...this._queue, { child_id: String(child.id), chore_id: String(chore.id), name: chore.name, at: Date.now() }];
+    this._saveQueue();
+  }
+
+  _queued(childId, choreId) {
+    return this._queue.some(q => q.child_id === String(childId) && q.chore_id === String(choreId));
+  }
+
+  async _flushQueue() {
+    if (this._flushing || !this._queue.length) return;
+    this._flushing = true;
+    try {
+      while (this._queue.length && this._online()) {
+        const [next] = this._queue;
+        try {
+          await this.hass.callService("taskmate", "complete_chore", { chore_id: next.chore_id, child_id: next.child_id });
+        } catch (err) {
+          if (this._isConnectionError(err)) break;
+          // Refused on arrival (already done, no longer due): drop it and say so.
+          this._notify(this._t("kiosk.queue_refused", { chore: next.name || "" }));
+        }
+        this._queue = this._queue.slice(1);
+        this._saveQueue();
+      }
+    } finally {
+      this._flushing = false;
+      this._scheduleStatus(0);
+    }
+  }
+
+  // ── Ambient mode ─────────────────────────────────────────────────────────
+
+  _ambientMode() {
+    const m = this.config.ambient_mode;
+    return m === "progress" || m === "photos" ? m : "off";
+  }
+
+  _ambientAfter() {
+    const n = Number(this.config.ambient_after);
+    return Number.isFinite(n) ? Math.min(1800, Math.max(30, Math.round(n))) : DEFAULT_AMBIENT_AFTER;
+  }
+
+  /** Our own evidence photos, signed once per viewer (an <img> can't carry a token). */
+  _ambientPhotos() {
+    const list = (this._attrs().photo_gallery || []).filter(p => typeof p.photo_url === "string" && p.photo_url.startsWith("/api/taskmate/photo/"));
+    for (const p of list) {
+      if (this._signedPhotos[p.photo_url] === undefined && this.hass?.callWS) {
+        this._signedPhotos[p.photo_url] = null;
+        this.hass.callWS({ type: "auth/sign_path", path: p.photo_url, expires: 3600 })
+          .then(res => { this._signedPhotos = { ...this._signedPhotos, [p.photo_url]: res.path }; this.requestUpdate(); })
+          .catch(() => {});
+      }
+    }
+    return list.filter(p => this._signedPhotos[p.photo_url]);
+  }
+
+  _renderAmbient(attrs) {
+    const lang = this.hass.locale?.language || undefined;
+    const time = this._now.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
+    const date = this._now.toLocaleDateString(lang, { weekday: "long", day: "numeric", month: "long" });
+    const photos = this._ambientMode() === "photos" ? this._ambientPhotos() : [];
+    if (photos.length) {
+      const p = photos[this._slide % photos.length];
+      return html`
+        <div class="km-amb km-amb-photo" role="button" aria-label="${this._t("kiosk.ambient_wake")}">
+          <img src="${this._signedPhotos[p.photo_url]}" alt="">
+          <div class="km-amb-cap"><b>${time}</b> · ${p.child_name || ""} — ${p.chore_name || ""}</div>
+        </div>`;
+    }
+    const icon = attrs.points_icon || "mdi:star";
+    const raffles = (attrs.raffles || []).filter(r => r.status === "open");
+    return html`
+      <div class="km-amb" role="button" aria-label="${this._t("kiosk.ambient_wake")}">
+        <div class="km-amb-clock"><b>${time}</b><span>${date}</span></div>
+        <div class="km-amb-kids">
+          ${this._children().map(({ child, tone }) => {
+            const { done, total } = this._progress(child);
+            const pct = total ? Math.round((done / total) * 100) : 0;
+            return html`
+              <div class="km-amb-kid" style="--kc:${tone};--p:${pct}">
+                <div class="km-amb-ring">${this._face(child, tone)}</div>
+                <div class="km-name">${child.name}</div>
+                <div class="km-amb-sub">${!total ? this._t("kiosk.nothing_today") : done === total ? this._t("kiosk.all_done_short") : _ltrNums(this._t("kiosk.progress", { done, total }))}</div>
+                <div class="km-pts"><ha-icon icon="${icon}"></ha-icon> ${child.points ?? 0}</div>
+              </div>`;
+          })}
+        </div>
+        ${raffles.length ? html`
+          <div class="km-amb-raffles">
+            ${raffles.map(r => html`<div class="km-amb-raffle">🎟️ <b>${r.name}</b> · ${r.prize || ""} · ${this._t("kiosk.raffle_tickets", { count: r.total || 0 })}</div>`)}
+          </div>` : ""}
+        <div class="km-amb-hint">${this._t("kiosk.ambient_wake")}</div>
+      </div>`;
+  }
+
+  // ── Raffle draws ─────────────────────────────────────────────────────────
+
+  _maybeRaffleReveal(attrs) {
+    if (this._rafReveal || this.config.show_raffle_draws === false) return;
+    const seen = (typeof window !== "undefined" && Array.isArray(window[RAFFLE_SEEN_KEY])) ? window[RAFFLE_SEEN_KEY] : [];
+    const r = (attrs.raffles || []).find(x => x.status === "drawn" && x.winner_id && !seen.includes(x.id)
+      && Date.now() - Date.parse(x.drawn_at || "") < RAFFLE_REVEAL_WINDOW_MS);
+    if (!r) return;
+    if (typeof window !== "undefined") window[RAFFLE_SEEN_KEY] = [...seen, r.id].slice(-40);
+    const pool = [];
+    for (const [cid, n] of Object.entries(r.tickets || {})) for (let i = 0; i < Math.min(n, 12); i++) pool.push(cid);
+    this._ambient = false;
+    this._rafReveal = { raffle: r, pool: pool.length ? pool : [r.winner_id], shown: pool[0] || r.winner_id, step: 0, done: false };
+    this._rafSpin();
+  }
+
+  _rafSpin() {
+    const rv = this._rafReveal;
+    if (!rv || rv.done) return;
+    const steps = 30;
+    if (rv.step >= steps) {
+      this._rafReveal = { ...rv, shown: rv.raffle.winner_id, done: true };
+      return;
+    }
+    const next = rv.step === steps - 1 ? rv.raffle.winner_id : rv.pool[(rv.step * 7 + 3) % rv.pool.length];
+    this._rafReveal = { ...rv, shown: next, step: rv.step + 1 };
+    clearTimeout(this._rafTimer);
+    this._rafTimer = setTimeout(() => this._rafSpin(), 60 + rv.step * rv.step * 0.8);
+  }
+
+  _renderRaffleReveal() {
+    const rv = this._rafReveal;
+    if (!rv) return "";
+    const all = this._attrs().children || [];
+    const kid = all.find(c => String(c.id) === String(rv.shown));
+    const i = Math.max(0, all.findIndex(c => String(c.id) === String(rv.shown)));
+    const tone = `var(--tmd-c${(i % 6) + 1}, ${CHILD_FALLBACK[i % 6]})`;
+    const winner = all.find(c => String(c.id) === String(rv.raffle.winner_id));
+    return html`
+      <div class="km-raffle" role="dialog" aria-modal="true" aria-live="polite"
+           @click=${() => { if (rv.done) this._rafReveal = null; }}>
+        <div class="km-raffle-box ${rv.done ? "done" : ""}">
+          <div class="km-raffle-title">🎟️ ${rv.raffle.name}</div>
+          ${rv.raffle.prize ? html`<div class="km-raffle-prize">🏆 ${rv.raffle.prize}</div>` : ""}
+          <div class="km-raffle-wheel">${kid ? this._face(kid, tone, "big") : ""}<div class="km-raffle-name">${kid ? kid.name : "?"}</div></div>
+          ${rv.done
+            ? html`<div class="km-raffle-win">${this._t("kiosk.raffle_winner", { name: winner ? winner.name : "?" })}</div>
+                   <div class="km-sub">${this._t("kiosk.raffle_tap")}</div>`
+            : html`<div class="km-sub">${this._t("kiosk.raffle_drawing")}</div>`}
+        </div>
+      </div>`;
   }
 
   async _undo(completion) {
@@ -845,6 +1082,19 @@ class TaskMateKioskCard extends LitElement {
       if (this._lockSeconds() === 0) this._lockedUntil = 0;
       dirty = true;
     }
+    if (this._screen === "picker" && this._ambientMode() !== "off" && !this._ambient) {
+      this._pickerIdle += 1;
+      if (this._pickerIdle >= this._ambientAfter()) {
+        this._ambient = true;
+        this._slide = 0;
+        dirty = true;
+      }
+    }
+    if (this._ambient && this._now.getSeconds() % (AMBIENT_SLIDE_MS / 1000) === 0) {
+      this._slide += 1;
+      dirty = true;
+    }
+    if (this._queue.length && this._online()) this._flushQueue();
     if (this._screen !== "picker") {
       const photo = this._uploading || (this._photoSince && Date.now() - this._photoSince < PHOTO_GRACE_MS);
       if (!photo) this._idle += 1;
@@ -892,7 +1142,8 @@ class TaskMateKioskCard extends LitElement {
     // A child removed from the config mid-session falls back to the picker
     // (updated() then resets the state to match).
     const entry = this._kid ? this._entry(this._kid) : null;
-    if (this._screen === "pin" && entry) body = this._renderPin(entry);
+    if (this._ambient && this._screen === "picker") body = this._renderAmbient(attrs);
+    else if (this._screen === "pin" && entry) body = this._renderPin(entry);
     else if (this._screen === "child" && entry) body = this._renderChild(entry, attrs);
     else if (this._screen === "blocked" && entry) body = this._renderBlocked(entry);
     else body = this._renderPicker(attrs);
@@ -902,6 +1153,9 @@ class TaskMateKioskCard extends LitElement {
         <div class="km-top">
           <ha-icon class="km-top-icon" icon="mdi:tablet-dashboard"></ha-icon>
           <span class="km-title">${title}</span>
+          ${this._queue.length ? html`<span class="km-queue" role="status" title="${this._t("kiosk.queue_hint")}">
+            <span aria-hidden="true">⏳</span>${this._t("kiosk.queue_waiting", { count: this._queue.length })}</span>` : ""}
+          ${!this._online() ? html`<span class="km-queue offline" role="status"><span aria-hidden="true">📵</span>${this._t("kiosk.offline")}</span>` : ""}
           <span class="km-clock"><b>${time}</b>${date}</span>
           ${canFullscreen ? html`
             <button class="km-icon-btn" title="${this._fullscreen ? this._t("kiosk.exit_fullscreen") : this._t("kiosk.fullscreen")}"
@@ -911,6 +1165,7 @@ class TaskMateKioskCard extends LitElement {
             </button>` : ""}
         </div>
         <div class="km-main">${body}</div>
+        ${this._renderRaffleReveal()}
         ${this._showBounties() ? html`
           <input id="km-photo" type="file" accept="image/*" hidden
                  @change=${e => this._bountyPhotoPicked(e)} @cancel=${() => this._photoCancelled()}>` : ""}
@@ -1122,6 +1377,10 @@ class TaskMateKioskCard extends LitElement {
     let action;
     if (dimMissed) {
       action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:clock-alert-outline"></ha-icon><span>${this._t("kiosk.missed")}</span></div>`;
+    } else if (state === "todo" && this._queued(child.id, chore.id)) {
+      // Tapped while offline: kept on the tablet until the connection is back.
+      // Emoji, not ha-icon: icons load from the server, which is out of reach.
+      action = html`<div class="km-done is-wait"><span aria-hidden="true">⏳</span><span>${this._t("kiosk.queued_row")}</span></div>`;
     } else if (state === "todo") {
       action = html`<button class="km-done" ?disabled=${!!this._busy} @click=${() => this._complete(child, chore)}>
         <ha-icon icon="mdi:check-bold"></ha-icon> ${this._t("child.done")}</button>`;
@@ -1284,6 +1543,35 @@ class TaskMateKioskCard extends LitElement {
       :host(:fullscreen) { background: var(--tmd-bg, var(--primary-background-color, #111)); }
       :host(:fullscreen) ha-card { height: 100vh; min-height: 100vh; border-radius: 0; }
       :host(:fullscreen) .km-main { overflow: hidden; }
+      .km-queue { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: .9rem;
+        background: rgba(255,255,255,.22); white-space: nowrap; }
+      .km-queue.offline { background: rgba(0,0,0,.25); }
+      .km-queue ha-icon { --mdc-icon-size: 18px; }
+      .km-amb { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; min-height: 60vh; padding: 24px; cursor: pointer; }
+      .km-amb-clock { display: flex; flex-direction: column; align-items: center; }
+      .km-amb-clock b { font-size: clamp(3rem, 9vw, 6.5rem); font-weight: 800; line-height: 1; letter-spacing: -.02em; }
+      .km-amb-clock span { font-size: 1.3rem; color: var(--tmd-dim, var(--secondary-text-color)); }
+      .km-amb-kids { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
+      .km-amb-kid { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 150px; }
+      .km-amb-ring { padding: 8px; border-radius: 50%; background: conic-gradient(var(--kc) calc(var(--p) * 1%), var(--tmd-surface-2, rgba(127,127,127,.18)) 0); }
+      .km-amb-ring .km-face { border: 6px solid var(--tmd-surface, var(--card-background-color, #fff)); }
+      .km-amb-sub { color: var(--tmd-dim, var(--secondary-text-color)); }
+      .km-amb-raffles { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+      .km-amb-raffle { padding: 10px 18px; border-radius: 16px; background: color-mix(in srgb, #8e44ad 12%, transparent); font-size: 1.05rem; }
+      .km-amb-hint { color: var(--tmd-dim, var(--secondary-text-color)); font-size: .95rem; opacity: .8; }
+      .km-amb-photo { position: relative; padding: 0; min-height: 70vh; background: #000; border-radius: var(--tmd-radius, 16px); overflow: hidden; }
+      .km-amb-photo img { width: 100%; height: 70vh; object-fit: contain; }
+      .km-amb-cap { position: absolute; inset-inline: 0; bottom: 0; padding: 14px 18px; color: #fff; font-size: 1.2rem;
+        background: linear-gradient(transparent, rgba(0,0,0,.65)); }
+      .km-raffle { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(20,14,40,.78); }
+      .km-raffle-box { width: min(460px, 90vw); padding: 28px; border-radius: 26px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center;
+        background: var(--tmd-surface, var(--card-background-color, #fff)); color: var(--tmd-text, var(--primary-text-color)); }
+      .km-raffle-title { font-size: 1.5rem; font-weight: 800; }
+      .km-raffle-prize { font-size: 1.1rem; color: var(--tmd-dim, var(--secondary-text-color)); }
+      .km-raffle-wheel { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 30px; border-radius: 22px; background: color-mix(in srgb, #8e44ad 12%, transparent); }
+      .km-raffle-box.done .km-raffle-wheel { background: color-mix(in srgb, #f5b301 24%, transparent); }
+      .km-raffle-name { font-size: 2rem; font-weight: 800; }
+      .km-raffle-win { font-size: 1.6rem; font-weight: 800; }
       ha-card.km {
         container-type: inline-size;
         container-name: km;
@@ -1787,6 +2075,21 @@ class TaskMateKioskCardEditor extends LitElement {
       { name: "play_sounds", selector: { boolean: {} } },
       { name: "show_confetti", selector: { boolean: {} } },
       { name: "show_completion_popup", selector: { boolean: {} } },
+      {
+        name: "ambient_mode",
+        selector: {
+          select: {
+            options: [
+              { value: "off", label: this._t("kiosk.editor.ambient_off") },
+              { value: "progress", label: this._t("kiosk.editor.ambient_progress") },
+              { value: "photos", label: this._t("kiosk.editor.ambient_photos") },
+            ],
+            mode: "dropdown",
+          },
+        },
+      },
+      { name: "ambient_after", selector: { number: { min: 30, max: 1800, step: 30, mode: "box", unit_of_measurement: "s" } } },
+      { name: "show_raffle_draws", selector: { boolean: {} } },
     ];
   }
 
@@ -1806,6 +2109,9 @@ class TaskMateKioskCardEditor extends LitElement {
     play_sounds: this._t("kiosk.editor.play_sounds"),
     show_confetti: this._t("kiosk.editor.show_confetti"),
     show_completion_popup: this._t("kiosk.editor.show_completion_popup"),
+    ambient_mode: this._t("kiosk.editor.ambient_mode"),
+    ambient_after: this._t("kiosk.editor.ambient_after"),
+    show_raffle_draws: this._t("kiosk.editor.show_raffle_draws"),
   })[entry.name] ?? entry.name;
 
   _computeHelper = (entry) => ({
@@ -1882,6 +2188,9 @@ class TaskMateKioskCardEditor extends LitElement {
       play_sounds: this.config.play_sounds !== false,
       show_confetti: this.config.show_confetti !== false,
       show_completion_popup: this.config.show_completion_popup !== false,
+      ambient_mode: this.config.ambient_mode || "off",
+      ambient_after: this.config.ambient_after ?? DEFAULT_AMBIENT_AFTER,
+      show_raffle_draws: this.config.show_raffle_draws !== false,
     };
     const rows = this._childRows();
     const pins = this._pins || {};
@@ -1946,6 +2255,8 @@ class TaskMateKioskCardEditor extends LitElement {
     for (const [key, value] of Object.entries(values)) {
       if (value === "" || value === null || value === undefined) delete next[key];
       else if (key === "card_design" && value === "global") delete next[key];
+      else if (key === "ambient_mode" && value === "off") delete next[key];
+      else if (key === "ambient_after" && Number(value) === DEFAULT_AMBIENT_AFTER) delete next[key];
       // Both list filters default to "show": store only a change from it.
       else if ((key === "completed_mode" || key === "elapsed_time_mode") && value === "show") delete next[key];
       else if (key === "timeout") {

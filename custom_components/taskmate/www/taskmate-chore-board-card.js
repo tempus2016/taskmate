@@ -164,7 +164,7 @@ class TaskMateChoreBoardCard extends LitElement {
 
   /** A chore whose completion needs the child card: a photo, timer, note or team. */
   _needsChildCard(chore) {
-    return !!(chore.require_photo || chore.task_type === "timed" || chore.open_ended || chore.team);
+    return !!(chore.require_photo || chore.task_type === "timed" || chore.open_ended || chore.team || chore.quantity_unit);
   }
 
   _applyDesign() {

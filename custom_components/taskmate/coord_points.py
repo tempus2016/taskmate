@@ -265,7 +265,12 @@ class PointsMixin:
         missed = []
         d = last_date + timedelta(days=1)
         while d < today:
-            if not self.is_vacation_day(d) and d.isoformat() not in frozen and not self.is_birthday_day_off(child, d):
+            if (
+                not self.is_vacation_day(d)
+                and d.isoformat() not in frozen
+                and not self.is_birthday_day_off(child, d)
+                and not (child is not None and self.is_sick_day(child.id, d))
+            ):
                 missed.append(d)
             d += timedelta(days=1)
         return missed
@@ -286,7 +291,11 @@ class PointsMixin:
         while d < effective_date:
             if d.isoformat() in frozen:
                 used = True
-            elif not self.is_vacation_day(d) and not self.is_birthday_day_off(child, d):
+            elif (
+                not self.is_vacation_day(d)
+                and not self.is_birthday_day_off(child, d)
+                and not self.is_sick_day(child.id, d)
+            ):
                 return False
             d += timedelta(days=1)
         return used
@@ -1292,7 +1301,15 @@ class PointsMixin:
         child = self.get_child(child_id)
         if not child:
             raise ValueError(f"Child {child_id} not found")
+        before = child.points
         await self.async_remove_points(child_id, penalty.points, reason=f"Penalty: {penalty.name}")
+        # Make it right: offer the penalty's chore to earn back what was taken.
+        after = self.get_child(child_id)
+        deducted = max(0, before - (after.points if after else before))
+        offer = self._create_redemption_offer(penalty, after or child, deducted)
+        if offer is not None:
+            await self.storage.async_save()
+            await self.async_refresh()
         self.hass.bus.async_fire(
             "taskmate_penalty_applied",
             {

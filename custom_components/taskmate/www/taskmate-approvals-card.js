@@ -16,6 +16,10 @@ const css = LitElement.prototype.css;
 // javascript:/external link in a parent's browser.
 const tmSafePhotoUrl = (u) =>
   typeof u === "string" && u.startsWith("/api/taskmate/photo/") ? u : "";
+// A chore's reference picture ("what done looks like") is a chore image,
+// already signed by the sensor; only our own image endpoint is accepted.
+const safeReferenceUrl = (u) =>
+  typeof u === "string" && u.startsWith("/api/taskmate/image/") ? u : "";
 
 // A pending-claims attribute is only ever usable as a list. The resolver used
 // to hand back the pending-approvals sensor's scalar COUNT under this name,
@@ -34,6 +38,7 @@ class TaskMateApprovalsCard extends LitElement {
       _loading: { type: Object },
       _signed: { state: true },
       _review: { state: true },
+      _compare: { state: true },
       _ratings: { state: true },
       _rejecting: { state: true },
     };
@@ -275,6 +280,26 @@ class TaskMateApprovalsCard extends LitElement {
         margin-top: 4px;
         line-height: 0;
       }
+      .approval-photos { display: flex; gap: 6px; align-items: flex-end; }
+      .ap-ref { position: relative; }
+      .ap-ref-badge { position: absolute; inset-inline-end: -4px; top: -4px; width: 18px; height: 18px; border-radius: 50%;
+        background: #f5b301; color: #3a2e26; font-size: 11px; line-height: 18px; text-align: center; font-weight: 800;
+        box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+      .ap-cmp-overlay { z-index: 10; }
+      .ap-cmp { background: var(--card-background-color, #fff); color: var(--primary-text-color); border-radius: 16px;
+        padding: 14px; width: min(760px, 94vw); max-height: 92vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+      .ap-cmp-head { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 10px; }
+      .ap-cmp-head span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .ap-cmp-close { border: 0; background: none; font-size: 18px; cursor: pointer; color: inherit; }
+      .ap-cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .ap-cmp-grid.single { grid-template-columns: 1fr; }
+      .ap-cmp-grid figure { margin: 0; }
+      .ap-cmp-grid img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; display: block;
+        background: var(--secondary-background-color, #eee); }
+      .ap-cmp-grid figcaption { text-align: center; font-size: 0.85rem; font-weight: 700; margin-top: 4px; opacity: .8; }
+      .tm-rv-cmp { margin: 8px 0; }
+      .tm-rv-cmp img { aspect-ratio: 1 / 1; max-height: 28vh; }
+      .ap-cmp-note { font-size: 0.85rem; opacity: .75; margin-top: 8px; text-align: center; }
       .approval-photo img {
         width: 48px;
         height: 48px;
@@ -641,6 +666,7 @@ class TaskMateApprovalsCard extends LitElement {
       .ap-gold-soft { color: var(--tmd-gold); }
 
       .ap-d-photo-link { line-height: 0; text-decoration: none; }
+      .ap-ref-link + .ap-d-photo-link { margin-inline-start: -4px; }
 
       /* Quality rating star picker (#927) — shared by every design. */
       .ap-stars { display: inline-flex; align-items: center; gap: 1px; flex: none; }
@@ -777,6 +803,7 @@ class TaskMateApprovalsCard extends LitElement {
         </div>
         ${this._renderReview()}
         ${this._renderRejectSheet()}
+        ${this._renderCompare()}
       </ha-card>
     `;
   }
@@ -880,6 +907,8 @@ class TaskMateApprovalsCard extends LitElement {
         childId: c.child_id,
         points: c.points,
         photo: c.photo_url || "",
+        reference: safeReferenceUrl(c.reference_image_url),
+        quantity: c.quantity ? `${c.quantity} ${c.quantity_unit || ""}`.trim() : "",
         completedAt: c.completed_at,
         timeCategory: c.time_category || "anytime",
         sortTime: c.completed_at ? new Date(c.completed_at).getTime() : 2,
@@ -956,6 +985,7 @@ class TaskMateApprovalsCard extends LitElement {
       <div class="tmd-bd">${body}</div>
       ${this._renderReview()}
       ${this._renderRejectSheet()}
+      ${this._renderCompare()}
     </ha-card>`;
   }
 
@@ -1040,15 +1070,54 @@ class TaskMateApprovalsCard extends LitElement {
 
   _apPhotoDesigned(it, cls) {
     const photoUrl = this._photoHref(it.photo);
-    if (it.kind !== "completion" || !photoUrl) {
+    const ref = it.kind === "completion" ? it.reference : "";
+    if (it.kind !== "completion" || !(photoUrl || ref)) {
       return it.kind === "claim" && it.icon
         ? html`<div class="${cls}"><ha-icon icon="${it.icon}"></ha-icon></div>`
         : "";
     }
     const cap = this._photoCaption(it.title, it.childName, it.completedAt);
-    return html`<a class="ap-d-photo-link" href="${photoUrl}" target="_blank" rel="noopener"
-      @click="${(e) => this._openPhoto(e, photoUrl, cap)}"
-      title="${this._t('approvals.view_photo') || 'View photo'}"><div class="${cls}"><img src="${photoUrl}" alt=""></div></a>`;
+    const open = (e) => ref ? this._openCompare(e, ref, photoUrl, cap) : this._openPhoto(e, photoUrl, cap);
+    return html`
+      ${ref ? html`<a class="ap-d-photo-link ap-ref-link" href="${ref}" target="_blank" rel="noopener" @click="${open}"
+        title="${this._t('approvals.reference_title')}"><div class="${cls} ap-ref"><img src="${ref}" alt=""><span class="ap-ref-badge">★</span></div></a>` : ""}
+      ${photoUrl ? html`<a class="ap-d-photo-link" href="${photoUrl}" target="_blank" rel="noopener"
+        @click="${open}"
+        title="${this._t('approvals.view_photo') || 'View photo'}"><div class="${cls}"><img src="${photoUrl}" alt=""></div></a>` : ""}`;
+  }
+
+  /* ── Reference photo: "what done looks like" beside the child's photo ── */
+
+  _openCompare(e, reference, photo, caption) {
+    if (e) e.preventDefault();
+    this._compare = { reference, photo, caption };
+    this.requestUpdate();
+  }
+
+  _renderCompare() {
+    const cmp = this._compare;
+    if (!cmp) return "";
+    const close = () => { this._compare = null; this.requestUpdate(); };
+    return html`
+      <div class="tm-rv-overlay ap-cmp-overlay" @click="${close}">
+        <div class="ap-cmp" role="dialog" aria-modal="true" aria-label="${cmp.caption}" @click="${(e) => e.stopPropagation()}">
+          <div class="ap-cmp-head">
+            <span>${cmp.caption}</span>
+            <button class="ap-cmp-close" aria-label="${this._t('common.close')}" @click="${close}">✕</button>
+          </div>
+          <div class="ap-cmp-grid ${cmp.photo ? "" : "single"}">
+            <figure>
+              <img src="${cmp.reference}" alt="">
+              <figcaption>★ ${this._t('approvals.reference_label')}</figcaption>
+            </figure>
+            ${cmp.photo ? html`<figure>
+              <img src="${cmp.photo}" alt="">
+              <figcaption>📷 ${this._t('approvals.evidence_label')}</figcaption>
+            </figure>` : ""}
+          </div>
+          ${cmp.photo ? "" : html`<div class="ap-cmp-note">${this._t('approvals.reference_no_photo')}</div>`}
+        </div>
+      </div>`;
   }
 
   // Build "Chore · Child · date" for the lightbox caption from whatever row
@@ -1079,7 +1148,7 @@ class TaskMateApprovalsCard extends LitElement {
           ${this._av(it.childName, this._childAvatar(it.childId), tone, 40)}
           <div style="flex:1;min-width:0">
             <div class="ap-pl-title">${it.title}</div>
-            <div class="muted ap-pl-sub">${it.childName}</div>
+            <div class="muted ap-pl-sub">${it.childName}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}</div>
           </div>
           ${this._apPhotoDesigned(it, "ap-pl-photo")}
           <div class="chip ap-gold">+${it.points} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>
@@ -1097,7 +1166,7 @@ class TaskMateApprovalsCard extends LitElement {
         ${this._av(it.childName, this._childAvatar(it.childId), tone, 34)}
         <div style="flex:1;min-width:0">
           <div class="ap-cn-title">${it.title}</div>
-          <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()} · +${it.points} XP</div>
+          <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()} · +${it.points} XP${it.quantity ? html` · ${it.quantity}` : ""}</div>
           ${it.kind === "completion" ? this._renderStars(it.completion, "ap-cn-stars") : ""}
         </div>
         ${this._apPhotoDesigned(it, "ap-cn-photo")}
@@ -1115,7 +1184,7 @@ class TaskMateApprovalsCard extends LitElement {
         ${this._av(it.childName, this._childAvatar(it.childId), tone, 38)}
         <div class="ap-cp-mid">
           <div class="ap-cp-title">${it.title}</div>
-          <div class="muted ap-cp-sub">${it.childName}${time ? html` · ${time}` : ""}</div>
+          <div class="muted ap-cp-sub">${it.childName}${time ? html` · ${time}` : ""}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}</div>
         </div>
         ${this._apPhotoDesigned(it, "ap-cp-photo")}
         <span class="chip soft ap-gold-soft">+${it.points}</span>
@@ -1562,19 +1631,35 @@ class TaskMateApprovalsCard extends LitElement {
                 ${this._t('approvals.timed_duration', {count: Math.floor(completion.timed_duration_seconds / 60)})}
               </span>
             ` : ''}
+            ${completion.quantity ? html`
+              <span class="duration-badge">
+                <ha-icon icon="mdi:counter"></ha-icon>
+                ${completion.quantity} ${completion.quantity_unit || ''}
+              </span>
+            ` : ''}
             <span class="points-badge">
               <ha-icon icon="${this._pointsIcon()}"></ha-icon>
               ${completion.points}
             </span>
             ${this._renderStars(completion)}
           </div>
-          ${this._photoHref(completion.photo_url) ? html`
-            <a class="approval-photo" href="${this._photoHref(completion.photo_url)}" target="_blank" rel="noopener"
-               @click="${(e) => this._openPhoto(e, this._photoHref(completion.photo_url), this._photoCaption(completion.chore_name, completion.child_name, completion.completed_at))}"
-               title="${this._t('approvals.view_photo') || 'View photo'}">
-              <img src="${this._photoHref(completion.photo_url)}" alt="" loading="lazy">
-            </a>
-          ` : ''}
+          ${(() => {
+            const photo = this._photoHref(completion.photo_url);
+            const ref = safeReferenceUrl(completion.reference_image_url);
+            if (!photo && !ref) return '';
+            const cap = this._photoCaption(completion.chore_name, completion.child_name, completion.completed_at);
+            const open = (e) => ref ? this._openCompare(e, ref, photo, cap) : this._openPhoto(e, photo, cap);
+            return html`<div class="approval-photos">
+              ${ref ? html`<a class="approval-photo ap-ref" href="${ref}" target="_blank" rel="noopener" @click="${open}"
+                   title="${this._t('approvals.reference_title')}">
+                  <img src="${ref}" alt="" loading="lazy"><span class="ap-ref-badge">★</span>
+                </a>` : ''}
+              ${photo ? html`<a class="approval-photo" href="${photo}" target="_blank" rel="noopener" @click="${open}"
+                   title="${this._t('approvals.view_photo') || 'View photo'}">
+                  <img src="${photo}" alt="" loading="lazy">
+                </a>` : ''}
+            </div>`;
+          })()}
         </div>
         <div class="action-buttons right">
           <button
@@ -1839,7 +1924,17 @@ class TaskMateApprovalsCard extends LitElement {
             <div class="tm-rv-quote">${completion.note}</div>
           ` : ""}
 
-          ${photoUrl ? html`<div class="tm-rv-photo"><img src="${photoUrl}" alt="" loading="lazy"></div>` : ""}
+          ${(() => {
+            const ref = safeReferenceUrl(completion.reference_image_url);
+            if (ref) {
+              return html`<div class="ap-cmp-grid ${photoUrl ? "" : "single"} tm-rv-cmp">
+                <figure><img src="${ref}" alt=""><figcaption>★ ${this._t('approvals.reference_label')}</figcaption></figure>
+                ${photoUrl ? html`<figure><img src="${photoUrl}" alt=""><figcaption>📷 ${this._t('approvals.evidence_label')}</figcaption></figure>` : ""}
+              </div>`;
+            }
+            return photoUrl ? html`<div class="tm-rv-photo"><img src="${photoUrl}" alt="" loading="lazy"></div>` : "";
+          })()}
+          ${completion.quantity ? html`<div class="tm-rv-sub">🔢 ${completion.quantity} ${completion.quantity_unit || ""}</div>` : ""}
 
           ${this._ratingMultipliers() ? html`
             <div class="tm-rv-label">${this._t('approvals.rating_label')}</div>

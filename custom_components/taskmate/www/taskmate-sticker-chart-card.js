@@ -563,6 +563,8 @@ class TaskMateStickerChartCard extends LitElement {
       // is the job, and a tile has nowhere to take it, so it stays on the child
       // card. (A completion made there still counts in the totals.)
       if (chore.open_ended) continue;
+      // A quantity chore needs "how many", which a tile can't ask.
+      if (chore.quantity_unit) continue;
 
       const mode = chore.assignment_mode || "everyone";
       // Whose turn a rotation chore was, or who made up a team, can't be

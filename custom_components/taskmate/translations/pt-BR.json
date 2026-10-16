@@ -150,6 +150,10 @@
         "suggested_points": {
           "name": "Pontos sugeridos",
           "description": "Quanto a criança acha que o trabalho valeu. Apenas uma sugestão para quem aprova — não concede pontos por si só."
+        },
+        "quantity": {
+          "name": "Quantidade",
+          "description": "Quantas unidades a criança fez, em uma tarefa por quantidade (\"ler 20 páginas\"). Obrigatório para uma criança nessas tarefas; os pontos são pagos por unidade."
         }
       }
     },
@@ -1320,6 +1324,130 @@
           "description": "O ID da inspeção em andamento"
         }
       }
+    },
+    "request_help": {
+      "name": "Pedir ajuda",
+      "description": "Uma criança diz que está travada em uma tarefa. Envia uma notificação aos pais; nada é concluído nem pulado.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança que pede ajuda"
+        },
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "A tarefa em que está travada"
+        },
+        "message": {
+          "name": "Mensagem",
+          "description": "Palavras opcionais da criança, ex.: \"Não alcanço a prateleira\"."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Responder pedido de ajuda",
+      "description": "Marca o pedido de ajuda de uma criança como respondido, para o cartão parar de dizer que a ajuda está a caminho.",
+      "fields": {
+        "request_id": {
+          "name": "ID do pedido",
+          "description": "O pedido a fechar"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Registrar humor",
+      "description": "Uma criança conta como foi o dia. Um por dia; um novo substitui o anterior.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança"
+        },
+        "mood": {
+          "name": "Humor",
+          "description": "great, good, ok, sad ou upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Marcar dia de doença",
+      "description": "Dá a uma criança um dia de doença. As tarefas ficam ocultas, a sequência congela e nenhuma tarefa obrigatória é perdida.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança doente"
+        },
+        "date": {
+          "name": "Data",
+          "description": "O dia (padrão: hoje). De uma semana atrás a um mês à frente."
+        },
+        "sick": {
+          "name": "Doente",
+          "description": "Desligue para desfazer o dia de doença."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Definir meta semanal",
+      "description": "Define a meta de pontos pessoal de uma criança para a semana. Atingir paga o bônus uma vez por semana. 0 apaga.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança"
+        },
+        "target": {
+          "name": "Meta",
+          "description": "Pontos a ganhar nesta semana"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Comprar bilhetes",
+      "description": "Uma criança gasta pontos em bilhetes de um sorteio. Cada bilhete é uma chance.",
+      "fields": {
+        "raffle_id": {
+          "name": "ID do sorteio",
+          "description": "O sorteio"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança que compra"
+        },
+        "tickets": {
+          "name": "Bilhetes",
+          "description": "Quantos bilhetes comprar"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Realizar sorteio",
+      "description": "Sorteia o vencedor agora em vez de esperar o horário do sorteio.",
+      "fields": {
+        "raffle_id": {
+          "name": "ID do sorteio",
+          "description": "O sorteio a realizar"
+        }
+      }
+    },
+    "adopt_pet": {
+      "name": "Adotar um bichinho",
+      "description": "Uma criança adota (ou renomeia) seu bichinho virtual. Ele cresce com cada tarefa feita a partir de agora.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança"
+        },
+        "species": {
+          "name": "Espécie",
+          "description": "dragon, cat, dog, bunny, dino ou unicorn"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "O nome do bichinho"
+        },
+        "hatch_egg": {
+          "name": "Chocar o ovo",
+          "description": "Chocar o ovo que o bichinho adulto botou para ter um bichinho novo. O antigo entra para a família de bichinhos."
+        }
+      }
     }
   },
   "entity": {
@@ -1353,6 +1481,60 @@
       "card_design": {
         "name": "Design do cartão"
       }
+    },
+    "event": {
+      "child_activity": {
+        "name": "Atividade TaskMate",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Tarefa concluída",
+              "chore_approved": "Tarefa aprovada",
+              "chore_rejected": "Tarefa rejeitada",
+              "chore_approval_undone": "Aprovação desfeita",
+              "reward_claimed": "Recompensa resgatada",
+              "reward_approved": "Recompensa aprovada",
+              "reward_rejected": "Recompensa rejeitada",
+              "badge_earned": "Medalha conquistada",
+              "level_up": "Subiu de nível",
+              "streak_updated": "Sequência atualizada",
+              "streak_freeze_used": "Congelamento de sequência usado",
+              "perfect_week": "Semana perfeita",
+              "weekly_target_reached": "Meta semanal atingida",
+              "quest_completed": "Missão concluída",
+              "challenge_completed": "Desafio concluído",
+              "bonus_applied": "Bônus aplicado",
+              "penalty_applied": "Penalidade aplicada",
+              "surprise_bonus": "Bônus surpresa",
+              "mandatory_missed": "Tarefa obrigatória perdida",
+              "team_chore_completed": "Tarefa em equipe concluída",
+              "points_gifted": "Pontos doados",
+              "help_requested": "Pediu ajuda",
+              "mood_logged": "Humor registrado",
+              "weekly_goal_reached": "Meta da semana alcançada",
+              "sick_day": "Dia de doença",
+              "chore_auto_approved": "Tarefa aprovada automaticamente",
+              "penalty_redeemed": "Penalidade recuperada",
+              "raffle_won": "Sorteio ganho",
+              "pet_evolved": "O bichinho cresceu"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "Atividade da família TaskMate",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Meta da família atingida",
+              "season_champion": "Campeão da temporada",
+              "bounty_posted": "Recompensa publicada",
+              "scheduled_change_applied": "Alteração agendada aplicada",
+              "raffle_drawn": "Sorteio realizado"
+            }
+          }
+        }
+      }
     }
   },
   "exceptions": {
@@ -1382,6 +1564,36 @@
     },
     "calendar_own_event": {
       "message": "Este evento foi publicado pelo próprio TaskMate, então não é adicionado como uma nova tarefa."
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "O TaskMate não consegue enviar notificações para {who}",
+      "description": "O TaskMate está configurado para notificar {who} por `{service}`, mas esse serviço não existe mais — geralmente porque o celular foi removido ou renomeado na integração Mobile App.\n\nAbra o painel de administração do TaskMate → Notificações e escolha o serviço atual para {who}. Este reparo some sozinho quando o serviço existir."
+    },
+    "child_entity_missing": {
+      "title": "O perfil de {child} usa uma entidade ausente",
+      "description": "O perfil de {child} usa `{entity}`, que não existe mais. A disponibilidade, os lembretes por presença ou a foto do perfil que dependem dela não vão funcionar.\n\nAbra o painel de administração do TaskMate → Crianças, edite {child} e escolha uma entidade que exista (ou limpe o campo)."
+    },
+    "chore_entity_missing": {
+      "title": "“{chore}” usa uma entidade ausente",
+      "description": "“{chore}” consulta `{entity}` para decidir quando aparece, mas essa entidade não existe mais, então a verificação é ignorada.\n\nAbra o painel de administração do TaskMate → Tarefas, edite “{chore}” e escolha uma entidade que exista (ou limpe-a)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "A tarefa “{chore}” não está atribuída a ninguém",
+      "description": "Todas as crianças a quem “{chore}” estava atribuída foram removidas, então ninguém vai vê-la.\n\nAbra o painel de administração do TaskMate → Tarefas e atribua “{chore}” a uma criança, ou exclua-a."
+    },
+    "chore_dependency_missing": {
+      "title": "A tarefa “{chore}” nunca pode ser desbloqueada",
+      "description": "“{chore}” espera que outra tarefa seja feita primeiro, mas essa tarefa foi excluída, então “{chore}” fica bloqueada para sempre.\n\nAbra o painel de administração do TaskMate → Tarefas, edite “{chore}” e remova a dependência ausente."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "Nenhuma criança pode resgatar a recompensa “{reward}”",
+      "description": "Todas as crianças a quem “{reward}” se destinava foram removidas, então ninguém pode resgatá-la.\n\nAbra o painel de administração do TaskMate → Recompensas e escolha para quem é “{reward}”, ou exclua-a."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "A recompensa “{reward}” não desbloqueia nada",
+      "description": "“{reward}” está configurada para ligar `{entity}`, mas essa entidade não está mais na lista de desbloqueios permitidos do TaskMate, então nada acontece quando a recompensa é aprovada.\n\nAbra o painel de administração do TaskMate → Configurações e adicione `{entity}` à lista, ou edite “{reward}”."
     }
   }
 }

@@ -86,11 +86,21 @@ from .const import (
     is_valid_completion_sound,
     recurrence_interval_days,
 )
+from .coord_auto_approve import AUTO_APPROVE_MAX_HOURS
 from .coord_birthdays import normalize_birthday
 from .coord_inspections import INSPECTION_BONUS_MAX, INSPECTION_FAIL_MODES, INSPECTION_WINDOWS
+from .coord_pets import PET_BOOL_SETTINGS, PET_INT_SETTINGS
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
-from .models import REJECT_REASON_MAX, BonusSubTask, Reward, normalize_tag_ids
+from .models import (
+    MAX_ESTIMATED_MINUTES,
+    MAX_QUANTITY,
+    QUANTITY_UNIT_MAX_LENGTH,
+    REJECT_REASON_MAX,
+    BonusSubTask,
+    Reward,
+    normalize_tag_ids,
+)
 from .sounds import MAX_NAME_LEN as MAX_SOUND_NAME_LEN
 
 _LOGGER = logging.getLogger(__name__)
@@ -114,6 +124,7 @@ WS_REPORT_FRICTION: Final = "taskmate/reports/friction"
 WS_REPORT_PROJECTION: Final = "taskmate/reports/projection"
 WS_REPORT_HEALTH: Final = "taskmate/reports/health"
 WS_REPORT_QUALITY: Final = "taskmate/reports/quality"
+WS_REPORT_MOODS: Final = "taskmate/reports/moods"
 WS_SCHEDULED_LIST: Final = "taskmate/scheduled/list"
 WS_SCHEDULED_ADD: Final = "taskmate/scheduled/add"
 WS_SCHEDULED_REMOVE: Final = "taskmate/scheduled/remove"
@@ -255,6 +266,7 @@ _AUDIT_EXCLUDE: Final = {
     WS_REPORT_PROJECTION,
     WS_REPORT_HEALTH,
     WS_REPORT_QUALITY,
+    WS_REPORT_MOODS,
     WS_SETUP_CATALOGUE,
 }
 
@@ -380,6 +392,18 @@ def validate_child_color(value):
 # ---------------------------------------------------------------------------
 
 
+def _sign_chore_images(hass, chore: dict) -> dict:
+    """A chore dict with its pictures signed so the panel's <img> loads.
+
+    Browsers do not send the bearer token on image requests, so a bare URL 401s.
+    """
+    out = chore
+    for key in ("image_url", "reference_image_url"):
+        if chore.get(key):
+            out = {**out, key: images.sign_image_url(hass, chore[key])}
+    return out
+
+
 def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
     data = coordinator.storage.data
     completions = list(data.get("completions", []))
@@ -408,10 +432,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "children": list(data.get("children", [])),
         # Sign picture URLs so the panel's <img> loads — browsers do not
         # send the bearer token on image requests, so a bare URL 401s.
-        "chores": [
-            {**c, "image_url": images.sign_image_url(coordinator.hass, c["image_url"])} if c.get("image_url") else c
-            for c in data.get("chores", [])
-        ],
+        "chores": [_sign_chore_images(coordinator.hass, c) for c in data.get("chores", [])],
         "chore_display_order": list(data.get("chore_display_order", [])),
         "scheduled_changes": list(data.get("scheduled_changes", [])),
         "rewards": list(data.get("rewards", [])),
@@ -471,6 +492,11 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "inspections": coordinator.inspections_state(),
         "inspectable_completions": coordinator.inspectable_completion_ids(),
         "inspection_bed_rule": coordinator.inspection_bed_rule(),
+        # Today page: open help requests, who is off sick and today's moods.
+        "help_requests": coordinator.open_help_requests(),
+        "sick_today": [c.id for c in coordinator.storage.get_children() if coordinator.is_sick_day(c.id)],
+        "moods_today": {c.id: m for c in coordinator.storage.get_children() if (m := coordinator.mood_on(c.id))},
+        "raffles": coordinator.all_raffles(),
     }
 
 
@@ -749,6 +775,10 @@ _CHORE_EDITABLE_FIELDS = {
     "timed_rate_minutes",
     "timed_max_daily_minutes",
     "tag_ids",
+    "estimated_minutes",
+    "reference_image_url",
+    "quantity_unit",
+    "quantity_max",
 }
 
 
@@ -847,6 +877,10 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("timed_rate_minutes"): vol.All(int, vol.Range(min=1)),
         vol.Optional("timed_max_daily_minutes"): vol.All(int, vol.Range(min=0)),
         vol.Optional("tag_ids"): _tag_id_list,
+        vol.Optional("estimated_minutes"): vol.All(int, vol.Range(min=0, max=MAX_ESTIMATED_MINUTES)),
+        vol.Optional("reference_image_url"): _image_url_or_blank,
+        vol.Optional("quantity_unit"): vol.All(str, vol.Length(max=QUANTITY_UNIT_MAX_LENGTH)),
+        vol.Optional("quantity_max"): vol.All(int, vol.Range(min=0, max=MAX_QUANTITY)),
     }
 
 
@@ -1084,6 +1118,18 @@ async def _ws_print_chart(hass, connection, msg, coordinator):
 @_admin_only
 async def _ws_report_quality(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], coordinator.quality_report(msg.get("days")))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_REPORT_MOODS,
+        vol.Optional("days"): vol.All(vol.Coerce(int), vol.Range(min=1, max=90)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_report_moods(hass, connection, msg, coordinator):
+    connection.send_result(msg["id"], coordinator.mood_report(msg.get("days", 14)))
 
 
 @websocket_api.websocket_command({vol.Required("type"): WS_REPORT_HEALTH})
@@ -1613,6 +1659,14 @@ async def _ws_delete_challenge(hass, connection, msg, coordinator):
 # Penalties
 # ---------------------------------------------------------------------------
 
+# Make it right: the chore that earns a penalty back, how much, and how long for.
+_REDEMPTION_FIELDS = ("redemption_chore_id", "redemption_percent", "redemption_days")
+_REDEMPTION_SCHEMA = {
+    vol.Optional("redemption_chore_id"): str,
+    vol.Optional("redemption_percent"): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
+    vol.Optional("redemption_days"): vol.All(vol.Coerce(int), vol.Range(min=1, max=7)),
+}
+
 
 @websocket_api.websocket_command(
     {
@@ -1622,6 +1676,7 @@ async def _ws_delete_challenge(hass, connection, msg, coordinator):
         vol.Optional("description", default=""): str,
         vol.Optional("icon", default="mdi:alert-circle-outline"): str,
         vol.Optional("assigned_to", default=[]): [str],
+        **_REDEMPTION_SCHEMA,
     }
 )
 @websocket_api.async_response
@@ -1634,6 +1689,11 @@ async def _ws_add_penalty(hass, connection, msg, coordinator):
         icon=msg.get("icon", "mdi:alert-circle-outline"),
         assigned_to=list(msg.get("assigned_to", []) or []),
     )
+    if any(k in msg for k in _REDEMPTION_FIELDS):
+        for k in _REDEMPTION_FIELDS:
+            if k in msg:
+                setattr(pen, k, msg[k])
+        await coordinator.async_update_penalty(pen)
     connection.send_result(msg["id"], {"id": pen.id})
 
 
@@ -1646,6 +1706,7 @@ async def _ws_add_penalty(hass, connection, msg, coordinator):
         vol.Optional("description"): str,
         vol.Optional("icon"): str,
         vol.Optional("assigned_to"): [str],
+        **_REDEMPTION_SCHEMA,
     }
 )
 @websocket_api.async_response
@@ -1655,7 +1716,7 @@ async def _ws_update_penalty(hass, connection, msg, coordinator):
     if not existing:
         connection.send_error(msg["id"], "not_found", f"Penalty {msg['penalty_id']} not found")
         return
-    for k in ("name", "points", "description", "icon", "assigned_to"):
+    for k in ("name", "points", "description", "icon", "assigned_to", *_REDEMPTION_FIELDS):
         if k in msg:
             val = msg[k]
             if k == "name" and val:
@@ -1921,6 +1982,12 @@ _ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro", "accessib
 _SUBKEY_SETTINGS = {
     "require_linked_child",
     "chore_undo_seconds",
+    "auto_approve_hours",
+    "weekly_goal_enabled",
+    "weekly_goal_bonus",
+    "pets_enabled",
+    *PET_INT_SETTINGS,
+    *PET_BOOL_SETTINGS,
     "history_days",
     # Recaps (#929)
     "recap_frequencies",
@@ -2201,6 +2268,15 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("unlock_allowlist"): [str],
     vol.Optional("require_linked_child"): bool,
     vol.Optional("chore_undo_seconds"): _validate_chore_undo_seconds,
+    vol.Optional("auto_approve_hours"): vol.All(vol.Coerce(int), vol.Range(min=0, max=AUTO_APPROVE_MAX_HOURS)),
+    vol.Optional("weekly_goal_enabled"): bool,
+    vol.Optional("pets_enabled"): bool,
+    **{
+        vol.Optional(key): vol.All(vol.Coerce(int), vol.Range(min=low, max=high))
+        for key, (_d, low, high) in PET_INT_SETTINGS.items()
+    },
+    **{vol.Optional(key): bool for key in PET_BOOL_SETTINGS},
+    vol.Optional("weekly_goal_bonus"): vol.All(vol.Coerce(int), vol.Range(min=0, max=100000)),
     vol.Optional("recap_frequencies"): _validate_recap_frequencies,
     vol.Optional("recap_child_frequencies"): _validate_recap_child_frequencies,
     vol.Optional("recap_notify_children"): bool,
@@ -3186,6 +3262,7 @@ _COMMANDS = (
     _ws_report_projection,
     _ws_report_health,
     _ws_report_quality,
+    _ws_report_moods,
     _ws_templates_export,
     _ws_templates_import,
     _ws_print_chart,
@@ -3275,10 +3352,18 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     from .kiosk import KIOSK_COMMANDS
     from .websocket_auctions import AUCTION_COMMANDS
     from .websocket_inspections import INSPECTION_COMMANDS
+    from .websocket_raffles import RAFFLE_COMMANDS
     from .websocket_recaps import RECAP_COMMANDS
     from .websocket_setup import SETUP_COMMANDS
 
-    extra = (*KIOSK_COMMANDS, *RECAP_COMMANDS, *INSPECTION_COMMANDS, *SETUP_COMMANDS, *AUCTION_COMMANDS)
+    extra = (
+        *KIOSK_COMMANDS,
+        *RECAP_COMMANDS,
+        *INSPECTION_COMMANDS,
+        *SETUP_COMMANDS,
+        *AUCTION_COMMANDS,
+        *RAFFLE_COMMANDS,
+    )
     for cmd in (*_COMMANDS, *extra):
         websocket_api.async_register_command(hass, cmd)
     hass.data.setdefault(DOMAIN, {})[WS_REGISTERED] = True
