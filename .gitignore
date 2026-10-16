@@ -33,9 +33,6 @@ dev/config/.cloud/
 docs/
 .DS_Store
 
-# Local-only dev screenshot tooling (browserless/ha-dev specific; not for the published repo)
-scripts/screenshots/
-
 # Node / JS tooling (CI-3)
 node_modules/
 

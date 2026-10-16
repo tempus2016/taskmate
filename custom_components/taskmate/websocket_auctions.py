@@ -59,9 +59,9 @@ def _signed_in(handler):
             await handler(hass, connection, msg, coordinator)
         except ValueError as err:
             connection.send_error(msg["id"], "invalid", str(err))
-        except Exception as err:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             _LOGGER.exception("WS handler %s failed", msg.get("type"))
-            connection.send_error(msg["id"], "handler_failed", str(err))
+            connection.send_error(msg["id"], "handler_failed", "Something went wrong; see the Home Assistant log")
 
     return wrapper
 

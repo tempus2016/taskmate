@@ -525,8 +525,8 @@ class NotificationCoordinator:
         if not custom:
             return notify_strings.render(self.hass, meta.id, context)
         try:
-            return custom.format_map(_SafeDict(context))
-        except (ValueError, IndexError, KeyError):
+            return notify_strings.safe_format(custom, context)
+        except (ValueError, IndexError, KeyError, AttributeError):
             # Malformed user template (e.g. stray '{') — fall back to raw text
             _LOGGER.warning("Malformed notification template %r, sending raw", custom)
             return custom
@@ -982,10 +982,8 @@ class NotificationCoordinator:
                     child = self.storage.get_child(recipient_id.split(":", 1)[1])
                     child_name = child.name if child else ""
                 try:
-                    message = n.message_template.format_map(
-                        _SafeDict({"child_name": child_name, "time": n.time}),
-                    )
-                except (ValueError, IndexError, KeyError):
+                    message = notify_strings.safe_format(n.message_template, {"child_name": child_name, "time": n.time})
+                except (ValueError, IndexError, KeyError, AttributeError):
                     # Malformed user template — send the raw text rather
                     # than silently dropping the notification
                     _LOGGER.warning(

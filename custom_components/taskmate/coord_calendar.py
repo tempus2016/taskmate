@@ -403,6 +403,11 @@ class CalendarMixin:
         def _matches(event: dict) -> bool:
             if marker in (event.get("description") or ""):
                 return True
+            if event.get("rrule") or event.get("recurrence_id"):
+                # TaskMate never publishes a series, so a repeating event that
+                # merely shares a chore's name is someone else's (#name-prefix
+                # fallback only, where the marker was stripped).
+                return False
             summary = event.get("summary") or ""
             return any(summary.startswith(p) for p in prefixes if p)
 
@@ -438,14 +443,18 @@ class CalendarMixin:
             for event in events:
                 if not _matches(event):
                     continue
-                uid = event.get("uid") or event.get("recurrence_id") or event.get("id")
+                uid = event.get("uid") or event.get("id")
                 if not uid:
                     continue
+                payload = {"entity_id": entity_id, "uid": uid}
+                if event.get("recurrence_id"):
+                    # One occurrence of a series, never the whole series.
+                    payload["recurrence_id"] = event["recurrence_id"]
                 try:
                     await self.hass.services.async_call(
                         "calendar",
                         "delete_event",
-                        {"entity_id": entity_id, "uid": uid},
+                        payload,
                         blocking=True,
                     )
                 except Exception as err:  # noqa: BLE001

@@ -333,6 +333,9 @@ class BountiesMixin:
         if photo_url and not photos.is_taskmate_photo_url(photo_url):
             _LOGGER.warning("Ignoring invalid photo_url for bounty %s (not a TaskMate photo URL)", bounty_id)
             photo_url = ""
+        if photo_url and photos.is_photo_in_use(self.storage, photo_url):
+            _LOGGER.warning("Ignoring photo_url for bounty %s: that photo is already another submission's", bounty_id)
+            photo_url = ""
         if bounty.require_photo and not photo_url:
             raise ValueError("This bounty needs a photo of the finished job.")
 
