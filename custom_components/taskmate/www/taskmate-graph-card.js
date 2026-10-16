@@ -504,6 +504,9 @@ class TaskMateGraphCard extends LitElement {
   // namespace (zero-size/invisible), and var(--tmd-*) only resolves via `style`
   // (not as an SVG presentation attribute). Returning the parsed node sidesteps
   // both: LitElement.prototype.svg isn't exposed by HA's Lit build.
+  // SECURITY: this string is parsed as markup. Only numbers (via toFixed/Math)
+  // and the constant tokens/colours below may ever be interpolated into it —
+  // never a child's name, colour, label or anything else from state/config.
   _svgChart(series, dataKey, { area, glow, stroke, dash, gridStroke }) {
     const VW = 280, VH = 115;
     const allValues = series.flatMap(s => s[dataKey]);
