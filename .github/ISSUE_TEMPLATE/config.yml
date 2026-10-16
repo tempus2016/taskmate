@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 📖 Troubleshooting Wiki
-    url: https://github.com/tempus2016/taskmate/wiki/Troubleshooting
+  - name: 📖 Troubleshooting guide
+    url: https://tempus2016.github.io/taskmate/Troubleshooting/
     about: Check here first — most common issues are covered
   - name: 💬 Discussions
     url: https://github.com/tempus2016/taskmate/discussions
