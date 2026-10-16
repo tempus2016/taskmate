@@ -57,10 +57,13 @@ _SCHEME: Final = "pbkdf2_sha256"
 
 # Rate limit: this many wrong tries in a row lock the child's pad. The first
 # lock lasts BASE seconds and each further one doubles, up to MAX, so a 4-digit
-# PIN takes days rather than minutes to walk. A right PIN clears it all.
+# PIN takes days rather than minutes to walk. A right PIN clears it all, and a
+# quiet spell of LOCKOUT_DECAY_SECONDS forgets the escalation, so a run of
+# typos last week doesn't still cost fifteen minutes today.
 MAX_FAILURES: Final = 5
 BASE_LOCK_SECONDS: Final = 30
 MAX_LOCK_SECONDS: Final = 900
+LOCKOUT_DECAY_SECONDS: Final = 3600
 
 _LIMITER_KEY: Final = "kiosk_pin_limiter"
 
@@ -112,11 +115,13 @@ def verify_pin_hash(pin: Any, stored: Any) -> bool:
 
 
 class PinRateLimiter:
-    """Per-child wrong-PIN counter, kept in memory (a restart clears it).
+    """Wrong-PIN counter per child *and caller*, kept in memory (a restart clears it).
 
     An attempt is counted *before* the hash is checked, so a burst of
     concurrent guesses can't all slip in while the first is still hashing; a
-    right PIN then wipes the child's record.
+    right PIN then wipes the record. The key carries the HA user making the
+    guesses (``limiter_key``) so an account elsewhere in the house can't keep
+    a child's pad locked on the family tablet by feeding it wrong PINs.
     """
 
     def __init__(self, clock=time.monotonic) -> None:
@@ -136,7 +141,12 @@ class PinRateLimiter:
         locked = self.locked_for(key)
         if locked:
             return locked
-        entry = self._state.setdefault(key, {"failures": 0, "lockouts": 0, "lock_until": 0.0})
+        now = self._clock()
+        entry = self._state.setdefault(key, {"failures": 0, "lockouts": 0, "lock_until": 0.0, "last": now})
+        if now - entry.get("last", now) > LOCKOUT_DECAY_SECONDS:
+            entry["lockouts"] = 0
+            entry["failures"] = 0
+        entry["last"] = now
         entry["failures"] += 1
         if entry["failures"] >= MAX_FAILURES:
             entry["lockouts"] += 1
@@ -151,6 +161,17 @@ class PinRateLimiter:
 
     def reset(self, key: str) -> None:
         self._state.pop(key, None)
+
+    def reset_child(self, child_id: str) -> None:
+        """Forget every caller's record for ``child_id`` (a new PIN starts clean)."""
+        prefix = f"{child_id}:"
+        for key in [k for k in self._state if k == child_id or k.startswith(prefix)]:
+            self._state.pop(key, None)
+
+
+def limiter_key(child_id: str, user_id: str) -> str:
+    """The rate-limit bucket for one caller guessing one child's PIN."""
+    return f"{child_id}:{user_id or ''}"
 
 
 def _limiter(hass: HomeAssistant) -> PinRateLimiter:
@@ -183,9 +204,9 @@ def _signed_in(handler):
             await handler(hass, connection, msg, coordinator)
         except ValueError as err:
             connection.send_error(msg["id"], "invalid", str(err))
-        except Exception as err:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             _LOGGER.exception("WS handler %s failed", msg.get("type"))
-            connection.send_error(msg["id"], "handler_failed", str(err))
+            connection.send_error(msg["id"], "handler_failed", "Something went wrong; see the Home Assistant log")
 
     wrapper.__name__ = handler.__name__
     wrapper.__doc__ = handler.__doc__
@@ -233,19 +254,20 @@ async def ws_kiosk_verify_pin(hass, connection, msg, coordinator):
         connection.send_result(msg["id"], {"ok": True})
         return
     limiter = _limiter(hass)
-    locked = limiter.begin_attempt(child_id)
+    key = limiter_key(child_id, getattr(connection.user, "id", "") or "")
+    locked = limiter.begin_attempt(key)
     if locked:
         connection.send_result(msg["id"], {"ok": False, "locked_for": locked, "attempts_left": 0})
         return
     ok = await hass.async_add_executor_job(verify_pin_hash, msg["pin"], stored)
     if ok:
-        limiter.reset(child_id)
+        limiter.reset(key)
         connection.send_result(msg["id"], {"ok": True})
         return
-    locked = limiter.locked_for(child_id)
+    locked = limiter.locked_for(key)
     connection.send_result(
         msg["id"],
-        {"ok": False, "locked_for": locked, "attempts_left": 0 if locked else limiter.attempts_left(child_id)},
+        {"ok": False, "locked_for": locked, "attempts_left": 0 if locked else limiter.attempts_left(key)},
     )
 
 
@@ -273,7 +295,7 @@ async def ws_kiosk_set_pin(hass, connection, msg, coordinator):
     coordinator.storage.set_kiosk_pin_hash(child_id, stored)
     await coordinator.storage.async_save()
     # A new PIN starts with a clean slate.
-    _limiter(hass).reset(child_id)
+    _limiter(hass).reset_child(child_id)
     connection.send_result(msg["id"], {"id": child_id, "has_pin": bool(stored)})
 
 

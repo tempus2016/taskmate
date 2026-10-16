@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from .const import ASSIGNMENT_MODES, SCHEDULE_MODES, TIME_CATEGORIES
 from .models import Chore, generate_id, optional_float
 from .templates import BUILT_IN_IDS, BUILT_IN_TEMPLATES, TEMPLATE_CHORE_FIELDS
 
@@ -24,6 +25,18 @@ _NUMERIC_TEMPLATE_FIELDS = {
 }
 # These are "unset" when None, so they can't take a numeric default.
 _OPTIONAL_NUMERIC_TEMPLATE_FIELDS = ("weather_temp_min", "weather_temp_max", "weather_wind_max")
+
+# Fields the rest of the app treats as one of a fixed set of words. A shared
+# pack can hold anything; an unknown value falls back to the default rather
+# than being carried into a Chore.
+_ENUM_TEMPLATE_FIELDS = {
+    "time_category": (tuple(TIME_CATEGORIES), "anytime"),
+    "schedule_mode": (tuple(SCHEDULE_MODES), "specific_days"),
+    "assignment_mode": (tuple(ASSIGNMENT_MODES), "everyone"),
+    "first_occurrence_mode": (("available_immediately", "wait_for_first_occurrence"), "available_immediately"),
+    "visibility_operator": (("equals", "not_equals", "gte", "lte", "gt", "lt"), "equals"),
+    "task_type": (("standard", "timed"), "standard"),
+}
 
 
 def _pack_number(value, default):
@@ -269,6 +282,9 @@ class TemplatesMixin:
                 for key in _OPTIONAL_NUMERIC_TEMPLATE_FIELDS:
                     if cleaned.get(key) is not None:
                         cleaned[key] = _pack_number(cleaned[key], None)
+                for key, (options, default) in _ENUM_TEMPLATE_FIELDS.items():
+                    if key in cleaned and cleaned[key] not in options:
+                        cleaned[key] = default
                 chores.append(cleaned)
 
             clean.append(

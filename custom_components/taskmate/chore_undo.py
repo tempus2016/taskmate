@@ -32,7 +32,7 @@ def undo_window_seconds(storage: Any) -> int:
     return value if isinstance(value, int) and not isinstance(value, bool) else 0
 
 
-def _affected(completion: Any, completions: list) -> list:
+def affected_completions(completion: Any, completions: list) -> list:
     """The records an undo of ``completion`` would reverse.
 
     Undoing a main chore also removes that day's bonus sub-tasks (see
@@ -66,7 +66,7 @@ def child_undo_metadata(completion: Any, completions: list, window_seconds: int)
         return {}
     if getattr(completion, "child_undo_allowed", False) is not True:
         return {}
-    affected = _affected(completion, completions)
+    affected = affected_completions(completion, completions)
     if any(getattr(c, "child_undo_allowed", False) is not True for c in affected):
         return {}
     approved = [c for c in affected if c.approved]

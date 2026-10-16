@@ -142,15 +142,42 @@ class RouletteMixin:
         return dict(state[str(child_id)])
 
     def _apply_roulette_multiplier(self, chore, child_id: str, base: int) -> int:
-        """Scale the award when this is the child's roulette chore for today."""
+        """Scale the award when this is the child's roulette chore for today.
+
+        The multiplier pays once: after ``_roulette_mark_used`` has tied it to
+        a completion, further completions of the same chore that day (a chore
+        with a daily limit above one) earn their plain points.
+        """
         selection = self.roulette_selection(child_id)
-        if not selection or selection.get("chore_id") != chore.id:
+        if not selection or selection.get("chore_id") != chore.id or selection.get("used_by"):
             return base
         try:
             multiplier = float(selection.get("multiplier", DEFAULT_MULTIPLIER))
         except (TypeError, ValueError):
             multiplier = DEFAULT_MULTIPLIER
         return max(0, round(base * max(1.0, multiplier)))
+
+    def _roulette_mark_used(self, chore, child_id: str, completion_id: str) -> None:
+        """Tie today's multiplier to the completion that just used it."""
+        selection = self.roulette_selection(child_id)
+        if not selection or selection.get("chore_id") != chore.id or selection.get("used_by"):
+            return
+        state = self._roulette_state()
+        entry = dict(state.get(str(child_id)) or {})
+        entry["used_by"] = completion_id
+        state[str(child_id)] = entry
+        self.storage.set_setting("roulette_state", state)
+
+    def _roulette_release(self, child_id: str, completion_id: str) -> None:
+        """A reversed completion gives the multiplier back for a redo."""
+        selection = self.roulette_selection(child_id)
+        if not selection or selection.get("used_by") != completion_id:
+            return
+        state = self._roulette_state()
+        entry = dict(state.get(str(child_id)) or {})
+        entry.pop("used_by", None)
+        state[str(child_id)] = entry
+        self.storage.set_setting("roulette_state", state)
 
     async def async_prune_roulette_state(self, refresh: bool = True) -> int:
         """Drop selections from previous days. Returns how many were cleared."""

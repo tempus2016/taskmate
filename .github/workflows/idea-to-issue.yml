@@ -49,13 +49,17 @@ jobs:
             const base = stripped || discussion.title.trim();
             const title = `[Feature]: ${base}`.slice(0, 250);
 
+            // The discussion body is whatever its author typed. It is quoted,
+            // and @mentions are neutralised, so a drive-by discussion can't
+            // make the bot ping people or pass off its text as the project's.
+            const quiet = (text) => text.replace(/@(?=[A-Za-z0-9-])/g, '@\u200b');
+            const quoted = (discussion.body?.trim() || '_The discussion had no body._')
+              .split('\n').map((line) => `> ${quiet(line)}`).join('\n');
             const body = [
               `_Filed automatically from [discussion #${discussion.number}](${discussion.html_url})`,
-              `in **Ideas**, opened by @${author}._`,
+              `in **Ideas**, opened by [${quiet(author)}](https://github.com/${encodeURIComponent(author)})._`,
               ``,
-              `---`,
-              ``,
-              discussion.body?.trim() || '_The discussion had no body._',
+              quoted,
               ``,
               `---`,
               ``,

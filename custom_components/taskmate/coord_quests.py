@@ -90,11 +90,14 @@ class QuestsMixin:
         return out
 
     # ── Progression ──────────────────────────────────────────────────────
-    async def _async_advance_quests(self, child_id: str, chore_id: str) -> None:
+    async def _async_advance_quests(self, child_id: str, chore_id: str, completion_id: str = "") -> None:
         """Advance any active quest whose current step is ``chore_id``.
 
         Called after a (non-bonus) chore completion is approved. Persists and
-        refreshes only if a quest actually advanced.
+        refreshes only if a quest actually advanced. ``completion_id`` is
+        remembered against the step it moved, so only that completion's
+        reversal can move the quest back (a second occurrence of the same
+        chore, or a sibling occurrence, never rewinds a step it didn't earn).
         """
         child = self.get_child(child_id)
         if not child:
@@ -113,6 +116,9 @@ class QuestsMixin:
                 continue  # this completion isn't the next step
             step += 1
             prog["step"] = step
+            advanced_by = [str(x) for x in (prog.get("advanced_by") or [])]
+            advanced_by.append(completion_id or "")
+            prog["advanced_by"] = advanced_by
             self.storage.set_quest_child_progress(quest.id, child_id, prog)
             changed = True
 
@@ -123,7 +129,71 @@ class QuestsMixin:
             await self.storage.async_save()
             await self.async_refresh()
 
-    async def _async_rewind_quests(self, child_id: str, chore_id: str) -> None:
+    def _quest_rewind_plan(self, child_id: str, chore_id: str, completion_id: str = "") -> list[tuple]:
+        """Which quests a reversal of ``chore_id`` would move back, and how.
+
+        Returns ``(quest, new_progress, was_finished)`` per affected quest.
+        When the step remembers which completion advanced it, only that
+        completion's reversal counts; a legacy record (no ``advanced_by``)
+        keeps the chore-keyed behaviour.
+        """
+        plan: list[tuple] = []
+        for quest in self.storage.get_quests():
+            if not quest.active or not quest.steps:
+                continue
+            if not self._quest_applies_to(quest, child_id):
+                continue
+            prog = dict(self.storage.get_quest_child_progress(quest.id, child_id))
+            step = int(prog.get("step", 0))
+            completed = int(prog.get("completed_count", 0))
+            advanced_by = [str(x) for x in (prog.get("advanced_by") or [])]
+            prev_advanced_by = [str(x) for x in (prog.get("prev_advanced_by") or [])]
+            was_finished = False
+
+            if step > 0 and quest.steps[step - 1] == chore_id:
+                # Ordinary mid-quest step, or the final step of a one-shot
+                # quest (whose step stays at len(steps) once finished).
+                if not self._completion_owns_step(advanced_by, completion_id):
+                    continue
+                was_finished = step >= len(quest.steps)
+                prog["step"] = step - 1
+                prog["advanced_by"] = advanced_by[:-1]
+            elif step == 0 and completed > 0 and quest.steps[-1] == chore_id:
+                # A repeatable quest wrapped back to the start on this very
+                # completion: step back into its final step.
+                if not self._completion_owns_step(prev_advanced_by, completion_id):
+                    continue
+                was_finished = True
+                prog["step"] = len(quest.steps) - 1
+                prog["advanced_by"] = prev_advanced_by[:-1]
+                prog.pop("prev_advanced_by", None)
+            else:
+                continue
+
+            if was_finished:
+                prog["completed_count"] = max(0, completed - 1)
+            plan.append((quest, prog, was_finished))
+        return plan
+
+    @staticmethod
+    def _completion_owns_step(advanced_by: list[str], completion_id: str) -> bool:
+        """Whether the completion being reversed is the one that earned the last step."""
+        if not advanced_by:
+            return True  # legacy progress: nothing recorded, keep chore-keyed behaviour
+        owner = advanced_by[-1]
+        if not owner or not completion_id:
+            return True
+        return owner == completion_id
+
+    def _quest_refund_owed(self, child_id: str, chore_id: str, completion_id: str = "") -> int:
+        """Quest bonus a reversal of ``chore_id`` would take back, without doing it."""
+        return sum(
+            int(quest.bonus_points or 0)
+            for quest, _prog, was_finished in self._quest_rewind_plan(child_id, chore_id, completion_id)
+            if was_finished
+        )
+
+    async def _async_rewind_quests(self, child_id: str, chore_id: str, completion_id: str = "") -> None:
         """Undo a quest step that a now-reversed completion had advanced.
 
         Progress used to be one-way: rejecting or un-approving a completion left
@@ -135,33 +205,9 @@ class QuestsMixin:
         if not child:
             return
         changed = False
-        for quest in self.storage.get_quests():
-            if not quest.active or not quest.steps:
-                continue
-            if not self._quest_applies_to(quest, child_id):
-                continue
-            prog = dict(self.storage.get_quest_child_progress(quest.id, child_id))
-            step = int(prog.get("step", 0))
-            completed = int(prog.get("completed_count", 0))
-            was_finished = False
-
-            if step > 0 and quest.steps[step - 1] == chore_id:
-                # Ordinary mid-quest step, or the final step of a one-shot
-                # quest (whose step stays at len(steps) once finished).
-                was_finished = step >= len(quest.steps)
-                prog["step"] = step - 1
-            elif step == 0 and completed > 0 and quest.steps[-1] == chore_id:
-                # A repeatable quest wrapped back to the start on this very
-                # completion: step back into its final step.
-                was_finished = True
-                prog["step"] = len(quest.steps) - 1
-            else:
-                continue
-
+        for quest, prog, was_finished in self._quest_rewind_plan(child_id, chore_id, completion_id):
             if was_finished:
-                prog["completed_count"] = max(0, completed - 1)
                 self._refund_quest_bonus(quest, child)
-
             self.storage.set_quest_child_progress(quest.id, child_id, prog)
             changed = True
 
@@ -184,7 +230,8 @@ class QuestsMixin:
                 points=-bonus,
                 reason=f"Quest reversed: {quest.name}",
                 created_at=dt_util.now(),
-            )
+            ),
+            reverses_season=True,
         )
 
     async def _complete_quest(self, quest: Quest, child, prog: dict) -> None:
@@ -233,8 +280,12 @@ class QuestsMixin:
                 extra={"quest_id": quest.id, "bonus": bonus},
             )
 
-        # Repeatable quests start over; one-shot quests stay complete.
+        # Repeatable quests start over; one-shot quests stay complete. The
+        # finished cycle's completion ids are kept so reversing the one that
+        # closed it can step back into the final step.
         if quest.repeatable:
             prog["step"] = 0
+            prog["prev_advanced_by"] = list(prog.get("advanced_by") or [])
+            prog["advanced_by"] = []
         self.storage.set_quest_child_progress(quest.id, child.id, prog)
         _LOGGER.info("Quest '%s' completed by %s (+%d)", quest.name, child.name, bonus)
