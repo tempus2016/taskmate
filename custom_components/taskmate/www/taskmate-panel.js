@@ -3828,7 +3828,7 @@ class TaskMatePanel extends HTMLElement {
             TaskMate
             <small>v${PANEL_VERSION}</small>
           </div>
-          <a class="tm-brand-wiki" href="https://github.com/tempus2016/taskmate/wiki" target="_blank" rel="noopener noreferrer" title="${this._esc(this._t("panel.wiki_tooltip"))}" aria-label="${this._esc(this._t("panel.wiki_tooltip"))}">
+          <a class="tm-brand-wiki" href="https://tempus2016.github.io/taskmate/" target="_blank" rel="noopener noreferrer" title="${this._esc(this._t("panel.wiki_tooltip"))}" aria-label="${this._esc(this._t("panel.wiki_tooltip"))}">
             <ha-icon icon="mdi:book-open-variant"></ha-icon>
           </a>
           <button type="button" class="tm-rail-btn" data-act="nav-rail" title="${this._esc(railLabel)}" aria-label="${this._esc(railLabel)}" aria-pressed="${rail ? "true" : "false"}">

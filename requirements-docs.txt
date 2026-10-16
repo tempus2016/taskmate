@@ -1,0 +1,4 @@
+# Builds the documentation site (wiki/ -> GitHub Pages). See .github/workflows/docs.yml.
+# MkDocs 2.0 drops the plugin and theme system Material depends on, so stay on 1.x.
+mkdocs>=1.6,<2
+mkdocs-material>=9.6,<10

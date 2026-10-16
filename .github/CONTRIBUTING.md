@@ -13,7 +13,7 @@ welcome — bug reports, feature ideas, translations, docs, and code.
 - **Questions and ideas:** use
   [Discussions](https://github.com/tempus2016/taskmate/discussions) rather than
   an issue.
-- **Check the [Troubleshooting wiki](https://github.com/tempus2016/taskmate/wiki/Troubleshooting)**
+- **Check the [Troubleshooting guide](https://tempus2016.github.io/taskmate/Troubleshooting/)**
   first for common problems.
 
 ## Project layout

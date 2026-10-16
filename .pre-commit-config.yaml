@@ -25,8 +25,9 @@ repos:
       - id: end-of-file-fixer
       - id: check-json
       - id: check-yaml
-        # Blueprints use HA's !input tag, which plain YAML can't resolve.
-        exclude: ^blueprints/
+        # Blueprints use HA's !input tag and mkdocs.yml a !!python tag for its
+        # heading slugs; plain YAML can resolve neither.
+        exclude: ^(blueprints/|mkdocs\.yml$)
       - id: check-merge-conflict
       - id: check-case-conflict
       - id: check-added-large-files
