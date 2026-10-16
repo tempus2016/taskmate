@@ -361,3 +361,76 @@ class TestParentCompleteIntegration:
             # Re-fetch since parent_complete may have mutated the chore.
             chore = storage.get_chore(chore.id)
             assert coord._is_rotation_done_today(chore) is True
+
+
+class TestParentCompleteClosesChoreForChildren:
+    """A parent completion closes the day for the pool on the service path too (#1082).
+
+    The child card already treats a `__parent__` completion as the child's own
+    for every mode except first_come; the backend has to agree, or an
+    automation, NFC tag or `complete_next_chore` still credits the child.
+    """
+
+    def _weekday_chore(self, coord, _mod, now, daily_limit=1):
+        days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            child = run(coord.async_add_child("Alice"))
+            chore = run(
+                coord.async_add_chore(
+                    "Feed the cat",
+                    points=5,
+                    requires_approval=False,
+                    schedule_mode="specific_days",
+                    due_days=days,
+                    daily_limit=daily_limit,
+                    assigned_to=[child.id],
+                )
+            )
+        return child, chore
+
+    def test_child_cannot_complete_after_parent_complete(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        child, chore = self._weekday_chore(coord, _mod, now)
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_parent_complete_chore(chore.id))
+            result = run(coord.async_complete_chore(chore.id, child.id))
+
+        assert result is None
+        assert [c.child_id for c in storage.get_completions()] == ["__parent__"]
+        assert storage.get_child(child.id).points == 0
+
+    def test_parent_complete_counts_as_one_toward_a_higher_daily_limit(self):
+        """Card parity: the card counts the parent completion as one of the
+        child's, so with a limit of 2 one more completion is still allowed."""
+        coord, storage, _mod = _make_system()
+        now = _now()
+        child, chore = self._weekday_chore(coord, _mod, now, daily_limit=2)
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_parent_complete_chore(chore.id))
+            assert run(coord.async_complete_chore(chore.id, child.id)) is not None
+            assert run(coord.async_complete_chore(chore.id, child.id)) is None
+
+    def test_parent_completed_chore_is_not_due_for_child(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        child, chore = self._weekday_chore(coord, _mod, now)
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            assert [c.id for c in coord.get_due_chores_for_child(child.id)] == [chore.id]
+            run(coord.async_parent_complete_chore(chore.id))
+            assert coord.get_due_chores_for_child(child.id) == []
+
+    def test_today_board_shows_parent_completed_chore_as_done(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        child, chore = self._weekday_chore(coord, _mod, now)
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_parent_complete_chore(chore.id))
+            board = coord.get_today_board()
+
+        items = board["children"][0]["chores"]
+        assert items == [{"chore_id": chore.id, "status": "done", "count": 1, "limit": 1}]
