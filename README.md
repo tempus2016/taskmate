@@ -40,7 +40,7 @@
 3. **Parents approve** — chores marked "requires approval" land in a pending queue
 4. **Kids claim rewards** — points are only deducted once a parent approves the claim
 
-Everything is managed from the **TaskMate panel** in the Home Assistant sidebar, and surfaced on your dashboards through 28 Lovelace cards.
+Everything is managed from the **TaskMate panel** in the Home Assistant sidebar, and surfaced on your dashboards through 30 Lovelace cards.
 
 All data stays inside your Home Assistant instance. Nothing is sent to any external service.
 
