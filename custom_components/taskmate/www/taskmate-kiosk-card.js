@@ -31,6 +31,13 @@
  * Raffles: when a raffle is drawn the tablet spins the names and lands on the
  * winner, once per draw (`show_raffle_draws: false` turns it off).
  *
+ * Less clutter (#1079): `completed_mode: hide` drops done and waiting rows
+ * (they still count towards the done/total ring), and `elapsed_time_mode`
+ * dims or hides chores whose part of the day has passed, as on the child
+ * card. Both default to "show". A dimmed missed chore can't be ticked off
+ * here (the child card refuses the tap too), so dimmed or hidden it leaves
+ * the count — or a child could never reach all done.
+ *
  * PINs are set by a parent in the admin panel and checked on the server
  * (taskmate/kiosk/verify_pin, rate-limited); the card never sees a PIN or its
  * hash, and only remembers which child is unlocked until it returns to the
@@ -394,7 +401,8 @@ class TaskMateKioskCard extends LitElement {
       if (due && team && joined.includes(id)) state = "team";
       else if (due) state = phone ? "elsewhere" : "todo";
       else state = comp.approved ? "done" : "wait";
-      rows.push({ chore, state, phone, completion: comp || null, team: team ? { size: Number(team.size) || 0, joined: joined.length } : null });
+      const missed = !comp && this._isMissed(chore);
+      rows.push({ chore, state, phone, missed, completion: comp || null, team: team ? { size: Number(team.size) || 0, joined: joined.length } : null });
     }
     return rows;
   }
@@ -405,11 +413,70 @@ class TaskMateKioskCard extends LitElement {
    * card.
    */
   _progress(child) {
-    const all = this._rows(child);
-    const rows = all.filter(r => !r.phone);
-    const phoneRows = all.filter(r => r.phone);
-    const done = rows.filter(r => r.state === "done" || r.state === "wait").length;
-    return { done, total: rows.length, rows, phoneRows };
+    const isDone = r => r.state === "done" || r.state === "wait";
+    const missedMode = this._missedMode();
+    const hideDone = this.config.completed_mode === "hide";
+    const all = this._rows(child).filter(r => !(missedMode === "hide" && r.missed));
+    const counted = all.filter(r => !r.phone && !(missedMode === "dim" && r.missed));
+    const shown = r => !(hideDone && isDone(r));
+    return {
+      done: counted.filter(isDone).length,
+      total: counted.length,
+      rows: all.filter(r => !r.phone && shown(r)),
+      phoneRows: all.filter(r => r.phone && shown(r)),
+    };
+  }
+
+  _missedMode() { return this.config.elapsed_time_mode || "show"; }
+
+  // ── Missed chores (#1079) ────────────────────────────────────────────────
+  // The child card's rule (_isTimePeriodElapsed): a chore is missed once the
+  // current part of the day is later than its own, except "anytime" chores
+  // and while its claim allowance after the period end still runs.
+
+  /** The family's parts of the day, in minutes since midnight, earliest first. */
+  _timePeriods() {
+    const attrs = this._attrs();
+    const mins = (str, fallback) => {
+      if (!str) return fallback;
+      const [h, m] = String(str).split(":").map(Number);
+      return isNaN(h) ? fallback : h * 60 + (m || 0);
+    };
+    if (Array.isArray(attrs.time_periods) && attrs.time_periods.length) {
+      return attrs.time_periods
+        .filter(p => p && p.id)
+        .map(p => ({ id: p.id, start: mins(p.start, 0), end: mins(p.end, 1439) }))
+        .sort((a, b) => a.start - b.start);
+    }
+    const tb = attrs.time_boundaries || {};
+    return [["morning", 360, 720], ["afternoon", 720, 1020], ["evening", 1020, 1260], ["night", 1260, 1439]]
+      .map(([id, start, end]) => ({ id, start: mins(tb[`${id}_start`], start), end: mins(tb[`${id}_end`], end) }));
+  }
+
+  /** Minutes since midnight in HA's time zone. */
+  _nowMinutes() {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: this.hass?.config?.time_zone || undefined, hour: "numeric", minute: "numeric", hour12: false,
+    }).formatToParts(new Date());
+    const hour = (parseInt(parts.find(p => p.type === "hour")?.value, 10) || 0) % 24;
+    const minute = parseInt(parts.find(p => p.type === "minute")?.value, 10) || 0;
+    return hour * 60 + minute;
+  }
+
+  _isMissed(chore) {
+    const cat = chore.time_category;
+    if (!cat || cat === "anytime") return false;
+    const periods = this._timePeriods();
+    const own = periods.findIndex(p => p.id === cat);
+    if (own < 0) return false;
+    const now = this._nowMinutes();
+    // Before the first period starts, it's still the first one (as on the child card).
+    let current = 0;
+    periods.forEach((p, i) => { if (now >= p.start) current = i; });
+    if (current <= own) return false;
+    const allowance = Math.max(0, parseInt(chore.claim_allowance_minutes, 10) || 0);
+    const { start, end } = periods[own];
+    return !(now >= start && now < Math.min(1440, end + allowance));
   }
 
   _pointsFor(chore) { return chore.effective_points ?? chore.points ?? 0; }
@@ -1239,7 +1306,7 @@ class TaskMateKioskCard extends LitElement {
           <div class="km-list">
             <h3><ha-icon icon="mdi:calendar-check"></ha-icon> ${this._t("kiosk.todays_chores")}</h3>
             ${all ? html`<div class="km-celebrate"><ha-icon icon="mdi:trophy"></ha-icon> ${this._t("kiosk.all_done", { name: child.name })}</div>` : ""}
-            ${!total ? html`<div class="km-none">${phoneRows.length ? this._t("kiosk.nothing_here") : this._t("kiosk.nothing_today")}</div>` : ""}
+            ${!total ? html`<div class="km-none">${phoneRows.length || rows.length ? this._t("kiosk.nothing_here") : this._t("kiosk.nothing_today")}</div>` : ""}
             ${rows.map(row => this._renderRow(child, row, icon))}
             ${phoneRows.length ? html`
               <div class="km-phone-group">
@@ -1305,9 +1372,12 @@ class TaskMateKioskCard extends LitElement {
     const { chore, state, completion, team } = row;
     const visual = window.__taskmate_chore_visual ? window.__taskmate_chore_visual(chore) : { kind: "none" };
     const undoable = (state === "done" || state === "wait") ? this._undoable(completion) : null;
-    const needsCheck = state === "todo" && chore.requires_approval !== false;
+    const dimMissed = row.missed && this._missedMode() === "dim";
+    const needsCheck = state === "todo" && !dimMissed && chore.requires_approval !== false;
     let action;
-    if (state === "todo" && this._queued(child.id, chore.id)) {
+    if (dimMissed) {
+      action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:clock-alert-outline"></ha-icon><span>${this._t("kiosk.missed")}</span></div>`;
+    } else if (state === "todo" && this._queued(child.id, chore.id)) {
       // Tapped while offline: kept on the tablet until the connection is back.
       // Emoji, not ha-icon: icons load from the server, which is out of reach.
       action = html`<div class="km-done is-wait"><span aria-hidden="true">⏳</span><span>${this._t("kiosk.queued_row")}</span></div>`;
@@ -1324,7 +1394,7 @@ class TaskMateKioskCard extends LitElement {
       action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:cellphone"></ha-icon><span>${this._t("kiosk.do_on_phone")}</span></div>`;
     }
     return html`
-      <div class="km-row ${state}">
+      <div class="km-row ${dimMissed ? "missed" : state}">
         <div class="km-row-icon">
           ${visual.kind === "image"
             ? html`<img src="${visual.url}" alt="" loading="lazy">`
@@ -1730,6 +1800,7 @@ class TaskMateKioskCard extends LitElement {
       .km-row.done { opacity: 0.72; }
       .km-row.done .km-row-name { text-decoration: line-through; text-decoration-thickness: 2px; }
       .km-row.elsewhere { opacity: 0.55; }
+      .km-row.missed { opacity: 0.5; }
       .km-row-icon {
         width: 50px; height: 50px; min-width: 50px; border-radius: 50%;
         display: grid; place-items: center; overflow: hidden;
@@ -1986,6 +2057,21 @@ class TaskMateKioskCardEditor extends LitElement {
       { name: "show_reward_progress", selector: { boolean: {} } },
       { name: "show_bounties", selector: { boolean: {} } },
       { name: "show_picker_progress", selector: { boolean: {} } },
+      {
+        name: "completed_mode",
+        selector: { select: { mode: "dropdown", options: [
+          { value: "show", label: this._t("kiosk.editor.completed_show") },
+          { value: "hide", label: this._t("kiosk.editor.completed_hide") },
+        ] } },
+      },
+      {
+        name: "elapsed_time_mode",
+        selector: { select: { mode: "dropdown", options: [
+          { value: "show", label: this._t("kiosk.editor.missed_show") },
+          { value: "dim", label: this._t("kiosk.editor.missed_dim") },
+          { value: "hide", label: this._t("kiosk.editor.missed_hide") },
+        ] } },
+      },
       { name: "play_sounds", selector: { boolean: {} } },
       { name: "show_confetti", selector: { boolean: {} } },
       { name: "show_completion_popup", selector: { boolean: {} } },
@@ -2018,6 +2104,8 @@ class TaskMateKioskCardEditor extends LitElement {
     show_reward_progress: this._t("kiosk.editor.show_reward_progress"),
     show_bounties: this._t("kiosk.editor.show_bounties"),
     show_picker_progress: this._t("kiosk.editor.show_picker_progress"),
+    completed_mode: this._t("kiosk.editor.completed_mode"),
+    elapsed_time_mode: this._t("kiosk.editor.missed_mode"),
     play_sounds: this._t("kiosk.editor.play_sounds"),
     show_confetti: this._t("kiosk.editor.show_confetti"),
     show_completion_popup: this._t("kiosk.editor.show_completion_popup"),
@@ -2032,6 +2120,8 @@ class TaskMateKioskCardEditor extends LitElement {
     warn_before_return: this._t("kiosk.editor.warn_before_return_helper"),
     show_bounties: this._t("kiosk.editor.show_bounties_helper"),
     show_picker_progress: this._t("kiosk.editor.show_picker_progress_helper"),
+    completed_mode: this._t("kiosk.editor.completed_mode_helper"),
+    elapsed_time_mode: this._t("kiosk.editor.missed_mode_helper"),
     play_sounds: this._t("kiosk.editor.play_sounds_helper"),
     show_completion_popup: this._t("kiosk.editor.show_completion_popup_helper"),
   })[entry.name] ?? "";
@@ -2093,6 +2183,8 @@ class TaskMateKioskCardEditor extends LitElement {
       show_reward_progress: this.config.show_reward_progress !== false,
       show_bounties: this.config.show_bounties === true,
       show_picker_progress: this.config.show_picker_progress !== false,
+      completed_mode: this.config.completed_mode || "show",
+      elapsed_time_mode: this.config.elapsed_time_mode || "show",
       play_sounds: this.config.play_sounds !== false,
       show_confetti: this.config.show_confetti !== false,
       show_completion_popup: this.config.show_completion_popup !== false,
@@ -2165,6 +2257,8 @@ class TaskMateKioskCardEditor extends LitElement {
       else if (key === "card_design" && value === "global") delete next[key];
       else if (key === "ambient_mode" && value === "off") delete next[key];
       else if (key === "ambient_after" && Number(value) === DEFAULT_AMBIENT_AFTER) delete next[key];
+      // Both list filters default to "show": store only a change from it.
+      else if ((key === "completed_mode" || key === "elapsed_time_mode") && value === "show") delete next[key];
       else if (key === "timeout") {
         if (clampTimeout(value) === DEFAULT_TIMEOUT) delete next[key];
         else next[key] = clampTimeout(value);

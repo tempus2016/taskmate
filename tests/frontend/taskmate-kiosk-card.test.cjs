@@ -667,3 +667,127 @@ test("the editor's show_bounties switch is off by default and stores only 'on'",
   editor._formChanged({ detail: { value: { show_bounties: false } } });
   assert.equal("show_bounties" in editor.dispatched.at(-1).detail.config, false);
 });
+
+// ── less clutter: completed and missed chores (#1079) ──────────────────────
+
+const AT_3PM = 15 * 60;
+const TIMED_CHORES = [
+  chore("bed", { time_category: "morning" }),
+  chore("dishes", { time_category: "evening" }),
+  chore("bins", { time_category: "anytime" }),
+];
+const timedStatus = (due) => ({ children: [{ id: "vaiha", has_pin: false, can_act: true, due }] });
+
+async function timedView({ config = {}, chores = TIMED_CHORES, due = ["bed", "dishes", "bins"], completions = [], now = AT_3PM } = {}) {
+  const card = await childView({ config, chores, status: timedStatus(due), completions });
+  card._nowMinutes = () => now;
+  return card;
+}
+const doneButtons = (card) => view(card).controls.filter((c) => c.attrs.includes('class="km-done"')).length;
+const counts = (card) => { const { done, total } = card._progress(card._entry("vaiha").child); return [done, total]; };
+
+test("by default a missed morning chore still shows with its Done button and counts", async () => {
+  const card = await timedView();
+  assert.equal(doneButtons(card), 3);
+  assert.deepEqual(counts(card), [0, 3]);
+  assert.doesNotMatch(view(card).markup, /km-row missed/);
+});
+
+test("elapsed_time_mode: dim greys a missed chore out, refuses the tap and leaves the count", async () => {
+  const card = await timedView({ config: { elapsed_time_mode: "dim" } });
+  const { markup } = view(card);
+  assert.equal((markup.match(/km-row missed/g) || []).length, 1);
+  assert.match(markup, new RegExp(localize("kiosk.missed")));
+  assert.equal(doneButtons(card), 2, "only the evening and anytime chores can be ticked off");
+  assert.deepEqual(counts(card), [0, 2]);
+});
+
+test("elapsed_time_mode: hide drops a missed chore and leaves the count", async () => {
+  const card = await timedView({ config: { elapsed_time_mode: "hide" } });
+  assert.doesNotMatch(view(card).markup, />Bed</);
+  assert.deepEqual(counts(card), [0, 2]);
+});
+
+test("the rest of today's chores done reaches all done with a missed one hidden", async () => {
+  const now = new Date().toISOString();
+  const card = await timedView({
+    config: { elapsed_time_mode: "hide" },
+    due: ["bed"],
+    completions: ["dishes", "bins"].map((id) => ({ completion_id: `c-${id}`, chore_id: id, child_id: "vaiha", approved: true, completed_at: now })),
+  });
+  assert.match(view(card).markup, new RegExp(localize("kiosk.all_done", { name: "Vaiha" })));
+});
+
+test("a chore isn't missed in its own period, a later one, anytime, or inside its claim allowance", async () => {
+  const card = await timedView({ now: 8 * 60 });
+  for (const c of TIMED_CHORES) assert.equal(card._isMissed(c), false, `${c.id} at 08:00`);
+  card._nowMinutes = () => AT_3PM;
+  assert.equal(card._isMissed(chore("bed", { time_category: "morning" })), true);
+  assert.equal(card._isMissed(chore("bed", { time_category: "morning", claim_allowance_minutes: 240 })), false, "12:00 + 4h runs to 16:00");
+  assert.equal(card._isMissed(chore("bed", { time_category: "morning", claim_allowance_minutes: 120 })), true, "12:00 + 2h ran out at 14:00");
+  assert.equal(card._isMissed(chore("bed")), false, "no time of day");
+});
+
+test("missed follows the family's own time periods when the sensor has them", async () => {
+  const card = await timedView({ now: 10 * 60 });
+  card.hass.states[ENTITY].attributes.time_periods = [
+    { id: "morning", start: "05:00", end: "09:00" },
+    { id: "school", start: "09:00", end: "15:00" },
+  ];
+  assert.equal(card._isMissed(chore("bed", { time_category: "morning" })), true, "school started at 09:00");
+  assert.equal(card._isMissed(chore("homework", { time_category: "school" })), false);
+});
+
+test("a completed chore is never missed: it keeps its done state", async () => {
+  const card = await timedView({
+    config: { elapsed_time_mode: "hide" },
+    due: ["dishes", "bins"],
+    completions: [{ completion_id: "c1", chore_id: "bed", child_id: "vaiha", approved: true, completed_at: new Date().toISOString() }],
+  });
+  assert.match(view(card).markup, /km-row done/);
+  assert.deepEqual(counts(card), [1, 3]);
+});
+
+test("completed_mode: hide drops done and waiting rows but still counts them", async () => {
+  const now = new Date().toISOString();
+  const card = await timedView({
+    config: { completed_mode: "hide" },
+    due: ["dishes"],
+    completions: [
+      { completion_id: "c1", chore_id: "bed", child_id: "vaiha", approved: true, completed_at: now },
+      { completion_id: "c2", chore_id: "bins", child_id: "vaiha", approved: false, completed_at: now },
+    ],
+  });
+  const { markup } = view(card);
+  assert.doesNotMatch(markup, /km-row done|km-row wait/);
+  assert.match(markup, />Dishes</);
+  assert.deepEqual(counts(card), [2, 3]);
+  assert.match(markup, /<b>2\/3<\/b>/);
+});
+
+test("completed_mode: hide also tidies the phone group", async () => {
+  const card = await childView({
+    config: { completed_mode: "hide" },
+    chores: PHONE_CHORES,
+    status: phoneStatus(["dishes", "timer", "open"]),
+    completions: [waiting("photo")],
+  });
+  assert.doesNotMatch(view(card).markup, />Photo</);
+  assert.equal((view(card).markup.match(/km-row elsewhere/g) || []).length, 2);
+});
+
+test("the editor offers both list filters, 'show' by default, and stores only a change", () => {
+  const editor = new KioskEditor();
+  editor.hass = makeCard().hass;
+  editor.setConfig({ entity: ENTITY });
+  const schema = editor._schema();
+  const opts = (name) => schema.find((f) => f.name === name).selector.select.options.map((o) => o.value);
+  assert.deepEqual(plain(opts("completed_mode")), ["show", "hide"]);
+  assert.deepEqual(plain(opts("elapsed_time_mode")), ["show", "dim", "hide"]);
+  editor._formChanged({ detail: { value: { completed_mode: "hide", elapsed_time_mode: "dim" } } });
+  const cfg = editor.dispatched.at(-1).detail.config;
+  assert.deepEqual([cfg.completed_mode, cfg.elapsed_time_mode], ["hide", "dim"]);
+  editor._formChanged({ detail: { value: { completed_mode: "show", elapsed_time_mode: "show" } } });
+  const back = editor.dispatched.at(-1).detail.config;
+  assert.equal("completed_mode" in back || "elapsed_time_mode" in back, false);
+});
