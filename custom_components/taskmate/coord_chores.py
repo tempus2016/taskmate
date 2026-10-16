@@ -1876,6 +1876,10 @@ class ChoresMixin:
             owed += self._quest_refund_owed(child.id, completion.chore_id, completion.id)
         if hasattr(self, "_challenge_refund_owed"):
             owed += self._challenge_refund_owed(child.id, exclude_ids={c.id for c in affected})
+        if hasattr(self, "_weekly_goal_refund_owed"):
+            owed += self._weekly_goal_refund_owed(child.id, exclude_ids={c.id for c in affected})
+        if hasattr(self, "_penalty_redemption_owed"):
+            owed += self._penalty_redemption_owed(completion)
         return owed
 
     async def async_reject_chore(
@@ -1914,6 +1918,8 @@ class ChoresMixin:
             # The metric no longer counts this completion; a challenge bonus it
             # helped earn goes back with it.
             await self._async_reverse_challenges(target_completion.child_id)
+        if target_completion and target_completion.approved and hasattr(self, "async_reverse_weekly_goals"):
+            await self.async_reverse_weekly_goals(target_completion.child_id)
         # The completion record is gone, so its evidence photo is now orphaned —
         # delete it (best-effort; foreign/blank URLs are ignored), unless some
         # other record still points at the same file.
@@ -2008,6 +2014,8 @@ class ChoresMixin:
             await self._async_rewind_quests(target.child_id, target.chore_id, target.id)
         if hasattr(self, "_async_reverse_challenges"):
             await self._async_reverse_challenges(target.child_id)
+        if hasattr(self, "async_reverse_weekly_goals"):
+            await self.async_reverse_weekly_goals(target.child_id)
 
         await self.storage.async_save()
         await self.async_refresh()

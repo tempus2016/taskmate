@@ -121,6 +121,13 @@ class RedemptionsMixin:
             },
         )
 
+    def _penalty_redemption_owed(self, completion) -> int:
+        """The refund a reversal of ``completion`` would take back, without doing it."""
+        for offer in self._redemptions():
+            if offer.get("status") == "redeemed" and offer.get("completion_id") == completion.id:
+                return max(0, int(offer.get("points", 0) or 0))
+        return 0
+
     def _reverse_penalty_redemption(self, completion, child) -> None:
         """Undoing or rejecting the completion that earned a penalty back takes the refund back."""
         if not child:

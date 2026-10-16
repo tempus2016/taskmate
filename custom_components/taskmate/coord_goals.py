@@ -18,6 +18,7 @@ from typing import Any
 from homeassistant.util import dt as dt_util
 
 from .const import NOTIF_TYPE_WEEKLY_GOAL_REACHED
+from .models import PointsTransaction
 
 WEEKLY_GOAL_MAX = 100000
 
@@ -43,13 +44,18 @@ class WeeklyGoalsMixin:
     def _weekly_goals(self) -> dict[str, dict[str, Any]]:
         return self.storage.get_section("weekly_goals", dict)
 
-    def week_points_earned(self, child_id: str) -> int:
-        """Approved chore points since Monday — the same figure the cards show."""
+    def week_points_earned(self, child_id: str, exclude_ids: set | None = None) -> int:
+        """Approved chore points since Monday — the same figure the cards show.
+
+        ``exclude_ids`` leaves out completions about to be reversed.
+        """
         today = dt_util.as_local(dt_util.now()).date()
         week_start = today - timedelta(days=today.weekday())
         total = 0
         for comp in self.storage.get_completions():
             if comp.child_id != child_id or not comp.approved or comp.bonus_subtask_id:
+                continue
+            if exclude_ids and comp.id in exclude_ids:
                 continue
             if dt_util.as_local(comp.completed_at).date() >= week_start:
                 total += comp.points_awarded or 0
@@ -106,6 +112,7 @@ class WeeklyGoalsMixin:
             if earned < target:
                 continue
             goal["reached_week"] = week
+            goal["bonus_paid"] = bonus
             await self.storage.async_save()
             if bonus:
                 await self.async_add_points(child_id, bonus, reason=f"Weekly goal reached 🎯 ({target})")
@@ -124,3 +131,53 @@ class WeeklyGoalsMixin:
         if paid and refresh:
             await self.async_refresh()
         return paid
+
+    def _weekly_goal_refund_owed(self, child_id: str, exclude_ids: set | None = None) -> int:
+        """The goal bonus a reversal of ``exclude_ids`` would take back, without doing it."""
+        if not self.weekly_goals_enabled():
+            return 0
+        goal = self._weekly_goals().get(child_id) or {}
+        target = int(goal.get("target", 0) or 0)
+        week = _week_key(dt_util.as_local(dt_util.now()).date())
+        if not target or goal.get("reached_week") != week:
+            return 0
+        if self.week_points_earned(child_id, exclude_ids) >= target:
+            return 0
+        return max(0, int(goal.get("bonus_paid", self.weekly_goal_bonus()) or 0))
+
+    async def async_reverse_weekly_goals(self, child_id: str) -> None:
+        """Take the goal bonus back when this week's points no longer reach the target.
+
+        Called after a completion has been reversed and left the week's
+        total. The goal can be reached, and paid, again later in the week.
+        """
+        if not self.weekly_goals_enabled():
+            return
+        goal = self._weekly_goals().get(child_id) or {}
+        target = int(goal.get("target", 0) or 0)
+        week = _week_key(dt_util.as_local(dt_util.now()).date())
+        if not target or goal.get("reached_week") != week:
+            return
+        if self.week_points_earned(child_id) >= target:
+            return
+        child = self.get_child(child_id)
+        if child is None:
+            return
+        bonus = max(0, int(goal.pop("bonus_paid", self.weekly_goal_bonus()) or 0))
+        goal.pop("reached_week", None)
+        if bonus:
+            child.points = max(0, child.points - bonus)
+            child.total_points_earned = max(0, child.total_points_earned - bonus)
+            child.career_score = child.total_points_earned - child.total_penalties_received
+            self.storage.update_child(child)
+            self.storage.add_points_transaction(
+                PointsTransaction(
+                    child_id=child.id,
+                    points=-bonus,
+                    reason=f"Weekly goal reversed ({target})",
+                    created_at=dt_util.now(),
+                ),
+                reverses_season=True,
+            )
+        await self.storage.async_save()
+        await self.async_refresh()
