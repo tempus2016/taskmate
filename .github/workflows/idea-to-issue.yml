@@ -5,7 +5,7 @@ name: Create issue from Idea
 # through .github/ISSUE_TEMPLATE/feature_request.yml:
 #
 #   Ideas discussion -> [Feature] issue (enhancement + needs-triage)
-#     -> triage -> `planned` label -> auto-branch.yml cuts the branch
+#     -> triage -> `planned` -> `in progress` -> `implemented`
 #
 # Deliberately fires on `created` only. Adding `category_changed` would also
 # catch ideas moved in after the fact, but moving a discussion out of Ideas

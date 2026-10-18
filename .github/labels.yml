@@ -23,10 +23,11 @@
   description: Awaiting maintainer triage
 - name: planned
   color: 1d76db
-  description: Accepted and scheduled — triggers an auto-created branch
-- name: in-progress
+  description: Agreed and coming in a future update
+- name: in progress
+  from_name: in-progress
   color: fbca04
-  description: Actively being worked on
+  description: Being worked on now
 - name: blocked
   color: b60205
   description: Blocked by another issue or external dependency
@@ -55,9 +56,10 @@
 - name: invalid
   color: e4e669
   description: This doesn't seem right
-- name: released
+- name: implemented
+  from_name: released
   color: 8250df
-  description: Fix or feature is in a published release
+  description: Out in a published release
 
 # ── Areas (also applied automatically by the path labeler) ───────────────────
 - name: cards
