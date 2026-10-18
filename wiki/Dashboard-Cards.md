@@ -776,6 +776,7 @@ ambient_mode: "off"               # (v7.0.0) off | progress | photos — what th
 ambient_after: 120                # (v7.0.0) seconds untouched before ambient mode starts (30–1800)
 show_raffle_draws: true           # (v7.0.0) spin the names and land on the winner when a raffle is drawn
 show_boost_alert: true            # (v7.1.0) fill the screen when a boost starts
+show_pet: true                    # (v7.1.0) the child's virtual pet beside their chores
 children:                         # optional — order and PINs; omit to show every child
   - child_id: a8c8376a
     require_pin: true

@@ -3569,5 +3569,6 @@
   "panel.boost_days": "Dias",
   "panel.boost_from": "Das",
   "panel.boost_to": "Às",
-  "panel.boost_everyone_lc": "todos"
+  "panel.boost_everyone_lc": "todos",
+  "kiosk.editor.show_pet": "Mostrar o animal da criança"
 }

@@ -3569,5 +3569,6 @@
   "panel.boost_days": "Days",
   "panel.boost_from": "From",
   "panel.boost_to": "To",
-  "panel.boost_everyone_lc": "everyone"
+  "panel.boost_everyone_lc": "everyone",
+  "kiosk.editor.show_pet": "Show the child's pet"
 }

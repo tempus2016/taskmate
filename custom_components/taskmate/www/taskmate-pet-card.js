@@ -692,6 +692,14 @@ class TaskMatePetCard extends LitElement {
     if (!child) return html`<ha-card>${this._header(title)}<div class="pt-empty">${this._t("pet.no_child")}</div></ha-card>`;
     const pet = child.pet;
     if (!pet) return html`<ha-card>${this._header(title)}<div class="pt-empty">${this._t("pet.off")}</div></ha-card>`;
+    // Compact (#1094): the kiosk card shows the pet in a side tile — no
+    // banner, no accessories or family row, just the pet, its mood and growth.
+    if (this.config.compact) {
+      return html`<ha-card class="pt-compact">
+        ${pet.adopted ? html`<div class="pt-compact-name">🐾 ${pet.name}${pet.pet_level ? html` <small>💖 ${this._t("pet.level", { level: pet.pet_level })}</small>` : ""}</div>` : ""}
+        ${pet.adopted ? this._renderPet(child, pet) : this._renderAdopt(child)}
+      </ha-card>`;
+    }
     return html`<ha-card>${this._header(title, pet)}${pet.adopted ? this._renderPet(child, pet) : this._renderAdopt(child)}</ha-card>`;
   }
 
@@ -755,14 +763,14 @@ class TaskMatePetCard extends LitElement {
           ${g ? html`<span class="pt-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></span>` : ""}
         </div>
         ${pet.egg_ready ? this._renderEggReady(child, pet) : ""}
-        <div class="pt-acc">
+        ${this.config.compact ? "" : html`<div class="pt-acc">
           ${["bow", "top_hat", "scarf", "crown"].map(a => html`
             <span class="pt-acc-item ${acc.includes(a) ? "on" : ""}" title="${this._t(`pet.acc_${a}`)}">
               <span>${ACC_ICON[a]}</span>
               <small>${acc.includes(a) ? this._t(`pet.acc_${a}`) : this._t("pet.acc_locked", { level: { bow: 3, top_hat: 8, scarf: 15, crown: 25 }[a] })}</small>
             </span>`)}
-        </div>
-        ${pet.family && pet.family.length ? this._renderFamily(pet.family) : ""}
+        </div>`}
+        ${pet.family && pet.family.length && !this.config.compact ? this._renderFamily(pet.family) : ""}
       </div>`;
   }
 
@@ -816,6 +824,12 @@ class TaskMatePetCard extends LitElement {
       :host { display: block; --pt-accent: var(--tmd-accent, #16a085); }
       ha-card { overflow: hidden; background: var(--tmd-surface, var(--ha-card-background, var(--card-background-color, #fff)));
         color: var(--tmd-text, var(--primary-text-color)); border-radius: var(--tmd-radius, var(--ha-card-border-radius, 12px)); font-family: var(--tmd-font-body, inherit); }
+      /* Compact (#1094): inside the kiosk card's side column */
+      ha-card.pt-compact { box-shadow: none; border: 0; background: transparent; }
+      .pt-compact-name { font-weight: 800; font-size: 1.05rem; padding: 4px 4px 0; }
+      .pt-compact-name small { font-weight: 600; opacity: .8; margin-inline-start: 6px; }
+      .pt-compact .pt-body { padding: 6px 4px 4px; gap: 8px; }
+      .pt-compact .pt-stage { max-width: 220px; margin: 0 auto; }
       .pt-hd { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: var(--pt-accent); color: var(--tmd-hd-text, #fff); }
       :host([data-tm-design="playroom"]) .pt-hd { background: linear-gradient(135deg, var(--pt-accent), color-mix(in srgb, var(--pt-accent) 72%, #fff)); }
       .pt-hd-icon { --mdc-icon-size: 28px; }

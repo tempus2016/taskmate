@@ -3569,5 +3569,6 @@
   "panel.boost_days": "Dni",
   "panel.boost_from": "Od",
   "panel.boost_to": "Do",
-  "panel.boost_everyone_lc": "wszystkich"
+  "panel.boost_everyone_lc": "wszystkich",
+  "kiosk.editor.show_pet": "Pokaż zwierzaka dziecka"
 }

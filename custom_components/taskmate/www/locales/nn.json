@@ -3569,5 +3569,6 @@
   "panel.boost_days": "Dagar",
   "panel.boost_from": "Frå",
   "panel.boost_to": "Til",
-  "panel.boost_everyone_lc": "alle"
+  "panel.boost_everyone_lc": "alle",
+  "kiosk.editor.show_pet": "Vis kjæledyret til barnet"
 }

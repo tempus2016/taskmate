@@ -3569,5 +3569,6 @@
   "panel.boost_days": "Tage",
   "panel.boost_from": "Von",
   "panel.boost_to": "Bis",
-  "panel.boost_everyone_lc": "alle"
+  "panel.boost_everyone_lc": "alle",
+  "kiosk.editor.show_pet": "Haustier des Kindes anzeigen"
 }

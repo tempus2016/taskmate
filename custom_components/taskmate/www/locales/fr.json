@@ -3569,5 +3569,6 @@
   "panel.boost_days": "Jours",
   "panel.boost_from": "De",
   "panel.boost_to": "À",
-  "panel.boost_everyone_lc": "tout le monde"
+  "panel.boost_everyone_lc": "tout le monde",
+  "kiosk.editor.show_pet": "Afficher l’animal de l’enfant"
 }

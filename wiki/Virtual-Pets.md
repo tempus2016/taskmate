@@ -163,6 +163,10 @@ Before adoption the card is the adoption form. After that it shows the pet in it
 
 The first time a device sees the pet reach something new (a stage, legendary, an egg, a home item or a level) the card plays a short "evolving" moment, once per device.
 
+### On the kiosk tablet
+
+*(v7.1.0)* The [kiosk card](Kiosk-Mode.md) shows each child's pet beside their chores, so a family that lives on the wall tablet sees it without another dashboard. It is the same pet card in a compact form: the pet, its mood and the growth bar, without the banner, accessories or pet family. Turn it off with `show_pet: false` on the kiosk card.
+
 ---
 
 ## Notification and Event
