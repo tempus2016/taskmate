@@ -1,7 +1,7 @@
 name: Label released issues
 
 # When a stable release is published, marks every issue closed as completed
-# in any milestone at or below the tag's version with `released`, so "fixed
+# in any milestone at or below the tag's version with `implemented`, so "fixed
 # in main" and "installable now" are told apart. Comparing versions rather
 # than matching the title means a skipped milestone (v5.9.0 shipped as
 # v6.0.0) is still picked up. Matched milestones with no open issues left
@@ -51,9 +51,9 @@ jobs:
               });
               for (const issue of issues) {
                 if (issue.pull_request || issue.state_reason === 'not_planned') continue;
-                if (issue.labels.some(l => l.name === 'released')) continue;
+                if (issue.labels.some(l => l.name === 'implemented')) continue;
                 await github.rest.issues.addLabels({
-                  owner, repo, issue_number: issue.number, labels: ['released'],
+                  owner, repo, issue_number: issue.number, labels: ['implemented'],
                 });
                 count++;
               }
@@ -67,4 +67,4 @@ jobs:
                 console.log(`Left ${milestone.title} open — ${milestone.open_issues} open issue(s)`);
               }
             }
-            console.log(`Labelled ${count} issue(s) as released in ${tag}`);
+            console.log(`Labelled ${count} issue(s) as implemented in ${tag}`);
