@@ -88,6 +88,8 @@ This is the main sensor. Its `extra_state_attributes` contain everything most ca
 | `pet` | object | (v7.0.0) The child's [virtual pet](Virtual-Pets.md) (`adopted`, `name`, `species`, `stage`, `mood`, `xp`, `accessories`, …). Present only while pets are on |
 | `weekly_goal` | object | (v7.0.0) The child's [weekly goal](Weekly-Goals.md) (`target`, `bonus`, `earned`, `reached`). Present only while weekly goals are on |
 | `redemptions` | list | (v7.0.0) Open [make-it-right](Make-It-Right-Penalties.md) offers (`id`, `chore_id`, `chore_name`, `penalty_name`, `points`, `expires`). Present only when there is one |
+| `owed_rewards` | list | (v7.1.0) Redeemed rewards still to hand over (`claim_id`, `reward_name`, `reward_icon`, `days_owed`). Present only while [reward fulfilment](Reward-Fulfilment.md) is on and something is owed |
+| `personal_bests` | object | (v7.1.0) The child's [records](Personal-Bests.md): one object per record key (`value`, `date`, plus `previous` on a record beaten today) and `new_today`, the keys beaten today. Present once there is a record |
 
 > Full field-by-field tables for `quests`, `challenges`, and `avatar_options` are in the [Sensor Reference](Sensor-Reference.md#children-array).
 

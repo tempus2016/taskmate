@@ -1448,6 +1448,20 @@
           "description": "Klekk egget det vaksne kjæledyret la, til eit nytt kjæledyr. Det gamle kjæledyret blir med i kjæledyrfamilien."
         }
       }
+    },
+    "mark_reward_delivered": {
+      "name": "Merk løning som gjeven",
+      "description": "Ei innløyst løning er gjeven og forlèt lista over uteståande. Oppgje child_id når barnet sjølv stadfestar.",
+      "fields": {
+        "claim_id": {
+          "name": "Krav-ID",
+          "description": "Det godkjende løningskravet"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet som stadfestar å ha fått henne (la stå tom når ein forelder merkjer)"
+        }
+      }
     }
   },
   "entity": {
@@ -1516,7 +1530,9 @@
               "chore_auto_approved": "Oppgåve godkjend automatisk",
               "penalty_redeemed": "Straff tent inn att",
               "raffle_won": "Loddtrekning vunnen",
-              "pet_evolved": "Kjæledyret voks"
+              "pet_evolved": "Kjæledyret voks",
+              "reward_delivered": "Løning gjeven",
+              "personal_best": "Personleg rekord"
             }
           }
         }

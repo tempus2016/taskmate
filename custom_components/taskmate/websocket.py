@@ -78,6 +78,7 @@ from .const import (
     MAX_RECURRENCE_INTERVAL_DAYS,
     MAX_TIME_PERIODS,
     MIN_RECURRENCE_INTERVAL_DAYS,
+    REWARD_FULFILMENT_REMINDER_MAX_DAYS,
     SCHEDULE_MODES,
     TAG_ID_MAX_LENGTH,
     TEAM_POINTS_MODES,
@@ -494,6 +495,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "inspection_bed_rule": coordinator.inspection_bed_rule(),
         # Today page: open help requests, who is off sick and today's moods.
         "help_requests": coordinator.open_help_requests(),
+        # Reward fulfilment (#1098): redeemed rewards still to be handed over.
+        "owed_rewards": coordinator.owed_rewards(),
         "sick_today": [c.id for c in coordinator.storage.get_children() if coordinator.is_sick_day(c.id)],
         "moods_today": {c.id: m for c in coordinator.storage.get_children() if (m := coordinator.mood_on(c.id))},
         "raffles": coordinator.all_raffles(),
@@ -1985,6 +1988,8 @@ _SUBKEY_SETTINGS = {
     "auto_approve_hours",
     "weekly_goal_enabled",
     "weekly_goal_bonus",
+    "reward_fulfilment_enabled",
+    "reward_fulfilment_reminder_days",
     "pets_enabled",
     *PET_INT_SETTINGS,
     *PET_BOOL_SETTINGS,
@@ -2277,6 +2282,10 @@ _UPDATE_SETTINGS_SCHEMA = {
     },
     **{vol.Optional(key): bool for key in PET_BOOL_SETTINGS},
     vol.Optional("weekly_goal_bonus"): vol.All(vol.Coerce(int), vol.Range(min=0, max=100000)),
+    vol.Optional("reward_fulfilment_enabled"): bool,
+    vol.Optional("reward_fulfilment_reminder_days"): vol.All(
+        vol.Coerce(int), vol.Range(min=0, max=REWARD_FULFILMENT_REMINDER_MAX_DAYS)
+    ),
     vol.Optional("recap_frequencies"): _validate_recap_frequencies,
     vol.Optional("recap_child_frequencies"): _validate_recap_child_frequencies,
     vol.Optional("recap_notify_children"): bool,

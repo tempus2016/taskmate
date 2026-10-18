@@ -261,6 +261,18 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 **({"pet": pet} if (pet := coordinator.pet_state(c)) is not None else {}),
                 # Personal weekly goal, while the feature is on.
                 **({"weekly_goal": goal} if (goal := coordinator.weekly_goal_state(c.id)) is not None else {}),
+                # Reward fulfilment (#1098): what this child is still owed.
+                **(
+                    {
+                        "owed_rewards": [
+                            {k: o[k] for k in ("claim_id", "reward_name", "reward_icon", "days_owed")} for o in owed
+                        ]
+                    }
+                    if (owed := coordinator.owed_rewards(c.id))
+                    else {}
+                ),
+                # Personal bests (#1099): the records board, once there is one.
+                **({"personal_bests": bests} if (bests := coordinator.personal_bests_state(c)) else {}),
                 # Make it right: open offers to earn a penalty back.
                 **(
                     {
@@ -1960,7 +1972,7 @@ class ChildBadgesSensor(TaskMateBaseSensor):
 class PendingApprovalsSensor(TaskMateBaseSensor):
     """Sensor for pending approvals."""
 
-    _unrecorded_attributes = frozenset({"chore_completions", "reward_claims", "mandatory_misses"})
+    _unrecorded_attributes = frozenset({"chore_completions", "reward_claims", "mandatory_misses", "owed_rewards"})
 
     def __init__(
         self,
@@ -2084,6 +2096,10 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
             "reward_claims": reward_details,
             "mandatory_misses": mandatory_misses,
         }
+        # Reward fulfilment (#1098): redeemed rewards still to hand over, only
+        # while the tracker is on and something is owed.
+        if owed := self.coordinator.owed_rewards():
+            attrs["owed_rewards"] = owed
         # Quality rating (#927): tells approval cards to draw the star picker,
         # and what each star pays. Absent entirely while the feature is off.
         if self.coordinator.quality_rating_enabled():

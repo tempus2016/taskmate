@@ -43,7 +43,8 @@ The entity's state is the time of the latest event. Its `event_type` attribute s
 | `streak_freeze_used` | Streak freeze used | `penalty_redeemed` | Penalty earned back |
 | `perfect_week` | Perfect week | `raffle_won` | Raffle won |
 | `weekly_target_reached` | Weekly target reached | `pet_evolved` | Pet grew up |
-| `quest_completed` | Quest completed | | |
+| `quest_completed` | Quest completed | `reward_delivered` | Reward handed over |
+| `personal_best` | Personal best | | |
 
 An event about more than one child lands on each of their entities: a [gift of points](Gifting-Points.md) on both the giver's and the receiver's, a [teamwork chore](Teamwork-Chores.md) on everyone in the team.
 

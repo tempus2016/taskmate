@@ -18,6 +18,7 @@ The following moments fire a celebration, each with a tier set by how big a deal
 | **Quest completed** | 3 (epic) | See [Quests](Quests.md) |
 | **Challenge completed** | 2 (medium) | See [Challenges](Challenges.md) |
 | **Weekly target reached** | 2 (medium) | v6.2.0. Only on chores with a weekly target bonus. See [Weekly Targets](Weekly-Targets.md#weekly-target-bonus) |
+| **Personal best** | 2 (medium) | v7.1.0. A child beat one of their own records. See [Personal Bests](Personal-Bests.md) |
 
 ---
 
@@ -43,12 +44,12 @@ Every celebration fires a single `taskmate_celebration` bus event. This is the i
 |-------|-------------|
 | `child_id` | The child the celebration is for |
 | `child_name` | The child's name |
-| `kind` | The moment type: `level_up`, `streak_milestone`, `perfect_week`, `quest_completed`, `challenge_completed`, `weekly_target_reached` |
+| `kind` | The moment type: `level_up`, `streak_milestone`, `perfect_week`, `quest_completed`, `challenge_completed`, `weekly_target_reached`, `personal_best` |
 | `tier` | `1` (small), `2` (medium), or `3` (epic) |
 | `message` | A ready-made human-readable message |
 | `timestamp` | ISO timestamp |
 
-Some kinds add extras, e.g. `level`, `days`, `bonus`, or `quest_id` / `challenge_id` / `chore_id`, depending on the moment.
+Some kinds add extras, e.g. `level`, `days`, `bonus`, `quest_id` / `challenge_id` / `chore_id`, or `record` / `value` / `previous` for a personal best, depending on the moment.
 
 Since v6.2.0 the `message` is written in Home Assistant's language (**Settings → System → General**), so a TTS automation that speaks it talks in your language too. See [Localization](Localization.md#push-notifications).
 

@@ -1308,6 +1308,16 @@ class RewardClaim:
     # Set when the claim redeems a wishlist wish (#932) rather than a reward.
     # reward_id then holds the wish id too, and no Reward record exists.
     wish_id: str = ""
+    # Reward fulfilment (#1098): True on a claim approved while the tracker
+    # was on, for a reward somebody has to hand over. It stays "owed" until
+    # delivered_at is set — by a parent, or by the child saying "got it".
+    # Claims from before the feature, or approved while it was off, keep
+    # False and never show up as owed.
+    needs_delivery: bool = False
+    delivered_at: datetime | None = None
+    delivered_by: str = ""  # "parent" | "child" | ""
+    # When the parents were last reminded this is still owed.
+    owed_reminded_at: datetime | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> RewardClaim:
@@ -1324,6 +1334,10 @@ class RewardClaim:
             id=data.get("id") or generate_id(),
             approved_cost=parse_optional_points(data.get("approved_cost")),
             wish_id=str(data.get("wish_id", "") or ""),
+            needs_delivery=bool(data.get("needs_delivery", False)),
+            delivered_at=parse_datetime(data.get("delivered_at")),
+            delivered_by=str(data.get("delivered_by", "") or ""),
+            owed_reminded_at=parse_datetime(data.get("owed_reminded_at")),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1340,6 +1354,15 @@ class RewardClaim:
         # Only a wishlist redemption carries it, so ordinary claims keep their shape.
         if self.wish_id:
             out["wish_id"] = self.wish_id
+        # Fulfilment (#1098) fields likewise only appear on tracked claims.
+        if self.needs_delivery:
+            out["needs_delivery"] = True
+        if self.delivered_at is not None:
+            out["delivered_at"] = format_datetime(self.delivered_at)
+        if self.delivered_by:
+            out["delivered_by"] = self.delivered_by
+        if self.owed_reminded_at is not None:
+            out["owed_reminded_at"] = format_datetime(self.owed_reminded_at)
         return out
 
 

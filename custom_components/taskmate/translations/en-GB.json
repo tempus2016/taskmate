@@ -1448,6 +1448,20 @@
           "description": "Hatch the egg the grown-up pet laid into a new pet. The old pet joins the pet family."
         }
       }
+    },
+    "mark_reward_delivered": {
+      "name": "Mark reward delivered",
+      "description": "A redeemed reward has been handed over, so it leaves the owed list. Give child_id when the child is confirming their own.",
+      "fields": {
+        "claim_id": {
+          "name": "Claim ID",
+          "description": "The approved reward claim"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child confirming they received it (leave empty when a parent marks it)"
+        }
+      }
     }
   },
   "entity": {
@@ -1516,7 +1530,9 @@
               "chore_auto_approved": "Chore auto-approved",
               "penalty_redeemed": "Penalty earned back",
               "raffle_won": "Raffle won",
-              "pet_evolved": "Pet grew up"
+              "pet_evolved": "Pet grew up",
+              "reward_delivered": "Reward handed over",
+              "personal_best": "Personal best"
             }
           }
         }

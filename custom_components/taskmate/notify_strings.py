@@ -74,6 +74,14 @@ DEFAULTS: dict[str, str] = {
     "help_requested": "🙋 {child_name} needs help with '{chore_name}'{message_text}",
     "mood_low": "{emoji} {child_name} had a tough day today. Maybe check in?",
     "weekly_goal_reached": "🎯 {child_name} reached their weekly goal of {target} {points_name} — +{bonus} bonus!",
+    "reward_owed": "🎁 {child_name} is still waiting for '{reward_name}' — redeemed {days} days ago.",
+    "personal_best": "🏆 New personal best! {child_name}: {record_label} — {value}.",
+    # Personal best record names, used inside the personal_best message.
+    "record_longest_streak": "longest streak (days)",
+    "record_best_day_points": "most {points_name} in a day",
+    "record_best_day_chores": "most chores in a day",
+    "record_best_week_points": "most {points_name} in a week",
+    "record_best_single_award": "biggest single award",
     "pet_evolved": "{news}",
     "pet_news_stage": "🐣 {pet_name} just grew up! Have a look at {child_name}'s pet.",
     "pet_news_legendary": "✨ {pet_name} turned legendary! {child_name}'s pet is shining gold.",
@@ -115,6 +123,7 @@ DEFAULTS: dict[str, str] = {
     "celebrate_weekly_target": "{child_name} reached the weekly target for '{chore_name}' — +{bonus}!",
     "celebrate_quest_completed": "{child_name} completed the quest '{quest_name}'!",
     "celebrate_streak_milestone": "{child_name} hit a {days}-day streak!",
+    "celebrate_personal_best": "{child_name} set a new personal best: {record_label} — {value}!",
     # Recap announcements: the single-recap child push is recap_ready above.
     "recap_ready_many": "✨ {count} new recaps are ready, {child_name}! Tap to watch them.",
     "recap_parent_one": "✨ New {period} recaps are ready for {names}. Tap to see them.",

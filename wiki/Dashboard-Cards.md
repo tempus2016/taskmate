@@ -1,6 +1,6 @@
 # Dashboard Cards
 
-TaskMate includes 30 Lovelace cards. They are automatically registered as resources when the integration loads.
+TaskMate includes 31 Lovelace cards. They are automatically registered as resources when the integration loads.
 
 All cards support a `header_color` config option — a hex colour for the card header background. Each card has its own vibrant default.
 
@@ -54,6 +54,7 @@ Everything else is optional and can be added later as you explore:
 | Sticker Chart Card | A young child's whole day as stickers to tap, with stars filling towards a reward |
 | Pet Card | A virtual pet that hatches and grows as the child does chores |
 | Raffle Card | Children buy raffle tickets with points, and watch the draw |
+| Personal Bests Card | A child's own records — longest streak, best day, best week, biggest award — with today's new ones marked |
 
 ---
 
@@ -1007,6 +1008,27 @@ header_color: "#8e44ad"
 - A drawn raffle stays on the card for a day with its winner; a called-off one says the tickets were refunded
 - The draw animation plays once per browser, when a raffle is drawn while the card is on screen or within the last ten minutes
 - Raffles are set up by parents on the admin panel's **Raffles** tab. A raffle limited to some children is only shown on their cards
+
+---
+
+## Personal Bests Card
+
+**(v7.1.0)** **Purpose:** A child's [personal bests](Personal-Bests.md): longest streak, most points in a day and in a week, most chores in a day and the biggest single award, each with the day it was set. A record beaten today is marked **New** and shows what it beat. Without a `child_id` every child gets a block.
+
+**Default header colour:** Burnt orange `#d35400`
+
+```yaml
+type: custom:taskmate-personal-bests-card
+entity: sensor.taskmate_overview
+child_id: a8c8376a            # optional — leave out to show every child
+title: My records             # optional — default: Personal Bests
+header_color: "#d35400"
+```
+
+**Behaviour:**
+- One tile per record; a child with none yet reads *No records yet — the first chores set the bar*
+- The header counts how many records were beaten today
+- Available in every [design style](Card-Design-Styles.md)
 
 ---
 

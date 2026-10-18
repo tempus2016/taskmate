@@ -23,11 +23,13 @@ from .coord_auctions import AuctionsMixin
 from .coord_auto_approve import AutoApproveMixin
 from .coord_avatars import AvatarsMixin
 from .coord_badges import BadgeCoordinator
+from .coord_bests import PersonalBestsMixin
 from .coord_birthdays import BirthdaysMixin
 from .coord_bounties import BountiesMixin
 from .coord_calendar import CalendarMixin
 from .coord_challenges import ChallengesMixin
 from .coord_chores import ChoresMixin
+from .coord_fulfilment import FulfilmentMixin
 from .coord_goals import WeeklyGoalsMixin
 from .coord_guests import GuestsMixin
 from .coord_inspections import InspectionsMixin
@@ -108,6 +110,8 @@ class TaskMateCoordinator(
     TagsMixin,
     TeamworkMixin,
     WishlistMixin,
+    FulfilmentMixin,
+    PersonalBestsMixin,
     BountiesMixin,
     AuctionsMixin,
     RecapsMixin,
@@ -507,6 +511,7 @@ class TaskMateCoordinator(
             self.async_check_weekly_goals,
             self.async_draw_due_raffles,
             self.async_check_pet_growth,
+            self.async_check_owed_rewards,
         ):
             try:
                 await step()

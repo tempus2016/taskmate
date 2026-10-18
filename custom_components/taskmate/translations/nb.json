@@ -1448,6 +1448,20 @@
           "description": "Klekk egget det voksne kjæledyret la, til et nytt kjæledyr. Det gamle kjæledyret blir med i kjæledyrfamilien."
         }
       }
+    },
+    "mark_reward_delivered": {
+      "name": "Merk belønning som gitt",
+      "description": "En innløst belønning er gitt og forlater listen over utestående. Oppgi child_id når barnet selv bekrefter.",
+      "fields": {
+        "claim_id": {
+          "name": "Krav-ID",
+          "description": "Det godkjente belønningskravet"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet som bekrefter å ha fått den (la stå tom når en forelder merker)"
+        }
+      }
     }
   },
   "entity": {
@@ -1516,7 +1530,9 @@
               "chore_auto_approved": "Oppgave godkjent automatisk",
               "penalty_redeemed": "Straff tjent inn igjen",
               "raffle_won": "Loddtrekning vunnet",
-              "pet_evolved": "Kjæledyret vokste"
+              "pet_evolved": "Kjæledyret vokste",
+              "reward_delivered": "Belønning gitt",
+              "personal_best": "Personlig rekord"
             }
           }
         }

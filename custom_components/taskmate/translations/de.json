@@ -1448,6 +1448,20 @@
           "description": "Das Ei des ausgewachsenen Haustiers zu einem neuen Haustier ausbrüten. Das alte Haustier kommt in die Haustierfamilie."
         }
       }
+    },
+    "mark_reward_delivered": {
+      "name": "Belohnung als übergeben markieren",
+      "description": "Eine eingelöste Belohnung wurde übergeben und verlässt die Liste der ausstehenden. child_id angeben, wenn das Kind selbst bestätigt.",
+      "fields": {
+        "claim_id": {
+          "name": "Anspruchs-ID",
+          "description": "Der genehmigte Belohnungsanspruch"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das Kind, das den Erhalt bestätigt (leer lassen, wenn ein Elternteil markiert)"
+        }
+      }
     }
   },
   "entity": {
@@ -1516,7 +1530,9 @@
               "chore_auto_approved": "Aufgabe automatisch genehmigt",
               "penalty_redeemed": "Strafe wieder verdient",
               "raffle_won": "Verlosung gewonnen",
-              "pet_evolved": "Haustier gewachsen"
+              "pet_evolved": "Haustier gewachsen",
+              "reward_delivered": "Belohnung übergeben",
+              "personal_best": "Persönliche Bestleistung"
             }
           }
         }

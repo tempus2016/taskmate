@@ -2030,6 +2030,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         parent_action=_parent,
         get_coordinator=lambda: _get_coordinator(hass),
         require_linked_child=lambda *args: _async_require_linked_child(*args),
+        require_parent=lambda *args: _async_require_parent(*args),
     )
 
 

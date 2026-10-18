@@ -109,6 +109,7 @@ nav:
       - "Bounty Board": "Bounty-Board.md"
       - "Wishlist": "Wishlist.md"
       - "Raffles": "Raffles.md"
+      - "Reward Fulfilment": "Reward-Fulfilment.md"
   - "Gamification":
       - "Levels & XP": "Levels-and-XP.md"
       - "Achievement Badges": "Achievement-Badges.md"
@@ -122,6 +123,7 @@ nav:
       - "Recaps": "Recaps.md"
       - "Virtual Pets": "Virtual-Pets.md"
       - "Weekly Goals": "Weekly-Goals.md"
+      - "Personal Bests": "Personal-Bests.md"
   - "Notifications & Admin":
       - "Notifications": "Notifications.md"
       - "Quiet Hours": "Quiet-Hours.md"

@@ -1448,6 +1448,20 @@
           "description": "Chocar o ovo posto pelo animal adulto para ter um animal novo. O antigo junta-se à família de animais."
         }
       }
+    },
+    "mark_reward_delivered": {
+      "name": "Marcar recompensa como entregue",
+      "description": "Uma recompensa resgatada foi entregue e sai da lista de pendentes. Indica child_id quando é a criança a confirmar.",
+      "fields": {
+        "claim_id": {
+          "name": "ID do pedido",
+          "description": "O pedido de recompensa aprovado"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança que confirma ter recebido (deixar vazio quando é um dos pais a marcar)"
+        }
+      }
     }
   },
   "entity": {
@@ -1516,7 +1530,9 @@
               "chore_auto_approved": "Tarefa aprovada automaticamente",
               "penalty_redeemed": "Penalização recuperada",
               "raffle_won": "Sorteio ganho",
-              "pet_evolved": "O animal cresceu"
+              "pet_evolved": "O animal cresceu",
+              "reward_delivered": "Recompensa entregue",
+              "personal_best": "Recorde pessoal"
             }
           }
         }
