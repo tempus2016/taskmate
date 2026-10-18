@@ -598,6 +598,9 @@ def _build_todays_completions(common: dict) -> list[dict]:
             rec["timed_duration_seconds"] = timed_secs
         if getattr(comp, "quantity", 0):
             rec["quantity"] = comp.quantity
+        # Parent did it for one child only (#1096); absent = the whole pool.
+        if getattr(comp, "for_child_id", ""):
+            rec["for_child_id"] = comp.for_child_id
         # Child undo (#918): child_undo_pending / child_undo_until, present only
         # on a completion the child may still take back, so the attribute
         # stays small (and empty whenever the window is 0).
@@ -800,6 +803,7 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
                 else str(comp.completed_at),
                 # Star rating the parent gave at approval (#927) — only when rated.
                 **({"rating": comp.quality_rating} if getattr(comp, "quality_rating", 0) else {}),
+                **({"for_child_id": comp.for_child_id} if getattr(comp, "for_child_id", "") else {}),
             }
         )
     return out

@@ -434,3 +434,119 @@ class TestParentCompleteClosesChoreForChildren:
 
         items = board["children"][0]["chores"]
         assert items == [{"chore_id": chore.id, "status": "done", "count": 1, "limit": 1}]
+
+
+class TestParentCompleteForOneChild:
+    """ "Parent did it" for one child of a shared chore (#1096)."""
+
+    def _shared_chore(self, coord, _mod, now, **kwargs):
+        days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        opts = {"schedule_mode": "specific_days", "due_days": days}
+        opts.update(kwargs)
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            alice = run(coord.async_add_child("Alice"))
+            bob = run(coord.async_add_child("Bob"))
+            chore = run(
+                coord.async_add_chore(
+                    "Tidy room", points=5, requires_approval=False, assigned_to=[alice.id, bob.id], **opts
+                )
+            )
+        return alice, bob, chore
+
+    def test_records_a_parent_completion_for_that_child(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        alice, bob, chore = self._shared_chore(coord, _mod, now)
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_parent_complete_chore(chore.id, alice.id))
+
+        [comp] = storage.get_completions()
+        assert comp.child_id == "__parent__"
+        assert comp.for_child_id == alice.id
+        assert comp.points_awarded == 0
+        assert storage.get_child(alice.id).points == 0
+
+    def test_closes_the_chore_for_that_child_only(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        alice, bob, chore = self._shared_chore(coord, _mod, now)
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_parent_complete_chore(chore.id, alice.id))
+            assert coord.get_due_chores_for_child(alice.id) == []
+            assert [c.id for c in coord.get_due_chores_for_child(bob.id)] == [chore.id]
+            assert run(coord.async_complete_chore(chore.id, alice.id)) is None
+            assert run(coord.async_complete_chore(chore.id, bob.id)) is not None
+
+        assert storage.get_child(bob.id).points == 5
+
+    def test_today_board_marks_only_that_child_done(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        alice, bob, chore = self._shared_chore(coord, _mod, now)
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_parent_complete_chore(chore.id, alice.id))
+            board = coord.get_today_board()
+
+        status = {c["child_id"]: c["chores"][0]["status"] for c in board["children"]}
+        assert status == {alice.id: "done", bob.id: "todo"}
+
+    def test_recurring_chore_advances_only_that_childs_window(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        alice, bob, chore = self._shared_chore(coord, _mod, now, schedule_mode="recurring", recurrence="weekly")
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_parent_complete_chore(chore.id, alice.id))
+            assert coord.is_chore_available_for_child(chore, alice.id) is False
+            assert coord.is_chore_available_for_child(chore, bob.id) is True
+
+        assert storage.get_last_completed(chore.id, alice.id).get("current") == now.isoformat()
+        assert not storage.get_last_completed(chore.id, bob.id).get("current")
+
+    def test_rejects_a_child_the_chore_is_not_assigned_to(self):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        alice, bob, chore = self._shared_chore(coord, _mod, now)
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            carol = run(coord.async_add_child("Carol"))
+            with pytest.raises(ValueError, match="not assigned"):
+                run(coord.async_parent_complete_chore(chore.id, carol.id))
+        assert storage.get_completions() == []
+
+    @pytest.mark.parametrize("mode", ["alternating", "first_come"])
+    def test_rejects_rotation_and_race_chores(self, mode):
+        coord, storage, _mod = _make_system()
+        now = _now()
+        alice, bob, chore = self._shared_chore(coord, _mod, now, assignment_mode=mode)
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            with pytest.raises(ValueError, match="rotation"):
+                run(coord.async_parent_complete_chore(chore.id, alice.id))
+        assert storage.get_completions() == []
+
+    def test_round_trips_through_storage_and_the_sensor(self):
+        from custom_components.taskmate.models import ChoreCompletion
+        from custom_components.taskmate.sensor import _build_todays_completions
+
+        coord, storage, _mod = _make_system()
+        now = _now()
+        alice, bob, chore = self._shared_chore(coord, _mod, now)
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            run(coord.async_parent_complete_chore(chore.id, alice.id))
+            run(coord.async_parent_complete_chore(chore.id))
+
+        per_child, whole_pool = storage.get_completions()
+        assert ChoreCompletion.from_dict(per_child.to_dict()).for_child_id == alice.id
+        assert "for_child_id" not in whole_pool.to_dict()
+
+        common = {
+            "child_lookup": {c.id: c for c in storage.get_children()},
+            "chore_lookup": {c.id: c for c in storage.get_chores()},
+            "all_completions": storage.get_completions(),
+        }
+        with patch("custom_components.taskmate.sensor.dt_util.now", return_value=now):
+            recs = {r["completion_id"]: r for r in _build_todays_completions(common)}
+        assert recs[per_child.id]["for_child_id"] == alice.id
+        assert "for_child_id" not in recs[whole_pool.id]

@@ -1175,6 +1175,9 @@ class ChoreCompletion:
     # True when nobody reviewed it in time and the auto-approve timeout
     # approved it instead.
     auto_approved: bool = False
+    # Set on a parent completion (child_id "__parent__") that dismisses the
+    # chore for this one child only (#1096). Empty = the whole pool.
+    for_child_id: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ChoreCompletion:
@@ -1202,6 +1205,7 @@ class ChoreCompletion:
             backdated=data.get("backdated") is True,
             quantity=_clamp_int(data.get("quantity"), 0, MAX_QUANTITY),
             auto_approved=data.get("auto_approved") is True,
+            for_child_id=str(data.get("for_child_id", "") or ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1234,6 +1238,8 @@ class ChoreCompletion:
             data["quantity"] = self.quantity
         if self.auto_approved:
             data["auto_approved"] = True
+        if self.for_child_id:
+            data["for_child_id"] = self.for_child_id
         return data
 
 

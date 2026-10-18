@@ -703,7 +703,7 @@ class TaskMatePanel extends HTMLElement {
       this._doBulk("reassign", v === "__all__" ? [] : [v]); return;
     }
     if (act === "delete-chore") { this._confirmDelete("chore", t.dataset.id); return; }
-    if (act === "parent-complete-chore") { this._doParentComplete(t.dataset.id); return; }
+    if (act === "parent-complete-chore") { this._doParentComplete(t.dataset.id, t.dataset.child || ""); return; }
     if (act === "skip-chore") { this._doSkipChore(t.dataset.id); return; }
     if (act === "toggle-chore-active") { this._doToggleChoreActive(t.dataset.id); return; }
     if (act === "save-chore")   { this._doSaveChore(); return; }
@@ -1452,9 +1452,16 @@ class TaskMatePanel extends HTMLElement {
   }
 
   // ---- Parent complete --------------------------------------------------
-  async _doParentComplete(choreId) {
-    if (!confirm(this._t("panel.parent_complete_confirm"))) return;
-    const { ok, err } = await this._callWS({ type: "taskmate/parent_complete_chore", chore_id: choreId });
+  // childId set = done for that one child only (#1096).
+  async _doParentComplete(choreId, childId = "") {
+    const child = childId ? (this._state.children || []).find(c => c.id === childId) : null;
+    const question = child
+      ? this._t("panel.parent_complete_for_child_confirm", {name: child.name})
+      : this._t("panel.parent_complete_confirm");
+    if (!confirm(question)) return;
+    const msg = { type: "taskmate/parent_complete_chore", chore_id: choreId };
+    if (childId) msg.child_id = childId;
+    const { ok, err } = await this._callWS(msg);
     if (!ok) { this._showToast("err", this._t("panel.parent_complete_failed", {error: err})); return; }
     await this._fetchState();
     this._showToast("ok", this._t("panel.parent_complete_success"));
@@ -11669,8 +11676,18 @@ class TaskMatePanel extends HTMLElement {
     if (!c) return;
     const esc = this._esc.bind(this);
     const items = [];
-    if (this._state.parent_completable && this._state.parent_completable[id])
-      items.push({ act: "parent-complete-chore", icon: "👤✓", label: this._t("panel.parent_complete_tooltip") });
+    if (this._state.parent_completable && this._state.parent_completable[id]) {
+      // An everyone-mode chore shared by several children can be done for
+      // just one of them (#1096); rotations have a single shared slot.
+      const kids = this._state.children || [];
+      const assigned = c.assigned_to || [];
+      const pool = assigned.length ? kids.filter(k => assigned.includes(k.id)) : kids;
+      const perChild = (c.assignment_mode || "everyone") === "everyone" && pool.length > 1;
+      items.push({ act: "parent-complete-chore", icon: "👤✓",
+        label: this._t(perChild ? "panel.parent_complete_everyone" : "panel.parent_complete_tooltip") });
+      if (perChild) pool.forEach(k => items.push({ act: "parent-complete-chore", icon: "👤✓", child: k.id,
+        label: this._t("panel.parent_complete_for_child", {name: k.name}) }));
+    }
     if (["alternating", "random", "balanced"].includes(c.assignment_mode))
       items.push({ act: "skip-chore", icon: "⏭", label: this._t("panel.btn_skip_chore") });
     if (["alternating", "random", "balanced", "first_come"].includes(c.assignment_mode))
@@ -11686,7 +11703,7 @@ class TaskMatePanel extends HTMLElement {
     menu.setAttribute("role", "menu");
     menu.style.visibility = "hidden";
     menu.innerHTML = items.map(it =>
-      `<button type="button" role="menuitem" class="tm-row-menu-item${it.danger ? " tm-row-menu-danger" : ""}" data-act="${it.act}" data-id="${esc(id)}">
+      `<button type="button" role="menuitem" class="tm-row-menu-item${it.danger ? " tm-row-menu-danger" : ""}" data-act="${it.act}" data-id="${esc(id)}"${it.child ? ` data-child="${esc(it.child)}"` : ""}>
          <span class="tm-row-menu-icon">${it.icon}</span><span>${esc(it.label)}</span>
        </button>`).join("");
     this.appendChild(menu);

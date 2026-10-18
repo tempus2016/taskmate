@@ -882,7 +882,7 @@ class ChoresMixin:
                 continue
             if (
                 comp.chore_id == chore_id
-                and self._counts_toward_child_quota(chore, comp.child_id, child_id)
+                and self._counts_toward_child_quota(chore, comp.child_id, child_id, getattr(comp, "for_child_id", ""))
                 and not comp.bonus_subtask_id
             ):
                 comp_dt = comp.completed_at
@@ -1350,8 +1350,12 @@ class ChoresMixin:
                     progress.setdefault(child.id, {})[chore.id] = count
         return progress
 
-    async def async_parent_complete_chore(self, chore_id: str) -> ChoreCompletion:
-        """Mark a chore as completed by the parent — zero points, advances recurrence."""
+    async def async_parent_complete_chore(self, chore_id: str, child_id: str | None = None) -> ChoreCompletion:
+        """Mark a chore as completed by the parent — zero points, advances recurrence.
+
+        ``child_id`` dismisses it for that one child only (#1096); without it
+        the chore is dismissed for every child it's assigned to.
+        """
         chore = self.get_chore(chore_id)
         if not chore:
             raise ValueError(f"Chore {chore_id} not found")
@@ -1372,6 +1376,16 @@ class ChoresMixin:
         if not child_ids:
             raise ValueError(f"Chore '{chore.name}' has no children to suppress")
 
+        if child_id:
+            # Only an everyone-mode chore gives each child their own copy; a
+            # rotation or race has one shared slot, so "done for one child"
+            # means nothing there.
+            if getattr(chore, "assignment_mode", "everyone") != "everyone":
+                raise ValueError(f"Chore '{chore.name}' is shared by a rotation and can only be done for everyone")
+            if child_id not in child_ids:
+                raise ValueError(f"Chore '{chore.name}' is not assigned to that child")
+            child_ids = [child_id]
+
         completion = ChoreCompletion(
             chore_id=chore_id,
             child_id="__parent__",
@@ -1380,6 +1394,7 @@ class ChoresMixin:
             approved_at=now,
             points_awarded=0,
             submitted_points=0,
+            for_child_id=child_id or "",
         )
 
         self.storage.add_completion(completion)
@@ -2390,17 +2405,21 @@ class ChoresMixin:
         )
 
     @staticmethod
-    def _counts_toward_child_quota(chore, completion_child_id: str, child_id: str) -> bool:
+    def _counts_toward_child_quota(chore, completion_child_id: str, child_id: str, for_child_id: str = "") -> bool:
         """Whether a completion counts toward ``child_id``'s daily limit for ``chore``.
 
         A parent completion (``__parent__``) closes the chore for the whole pool,
         so it counts for every child — the same rule the child card applies (#1082).
         first_come is the exception: there the parent completion fills the shared
         race quota instead (``_is_rotation_done_today``), and nobody won it.
+        A parent completion with ``for_child_id`` set closes it for that one
+        child only (#1096).
         """
         if completion_child_id == child_id:
             return True
-        return completion_child_id == "__parent__" and getattr(chore, "assignment_mode", "everyone") != "first_come"
+        if completion_child_id != "__parent__" or getattr(chore, "assignment_mode", "everyone") == "first_come":
+            return False
+        return not for_child_id or for_child_id == child_id
 
     def _weekly_target_refund_owed(self, completion, child) -> int:
         """What ``_reverse_weekly_target_bonus`` would take back, without doing it."""
@@ -2469,7 +2488,9 @@ class ChoresMixin:
                 limit = getattr(chore, "daily_limit", 1) or 1
                 done = 0
                 for c in completions:
-                    if c.chore_id != chore.id or not self._counts_toward_child_quota(chore, c.child_id, child_id):
+                    if c.chore_id != chore.id or not self._counts_toward_child_quota(
+                        chore, c.child_id, child_id, getattr(c, "for_child_id", "")
+                    ):
                         continue
                     if getattr(c, "bonus_subtask_id", ""):
                         continue
@@ -2517,7 +2538,9 @@ class ChoresMixin:
                         continue
                 except (AttributeError, TypeError, ValueError):
                     continue
-                done_today.setdefault((c.child_id, c.chore_id), []).append(bool(c.approved))
+                # A parent completion for one child (#1096) is that child's alone.
+                owner = getattr(c, "for_child_id", "") or c.child_id
+                done_today.setdefault((owner, c.chore_id), []).append(bool(c.approved))
             chores = self.storage.get_chores()
             for child in self.storage.get_children():
                 items = []

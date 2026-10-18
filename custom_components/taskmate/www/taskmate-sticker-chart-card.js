@@ -184,12 +184,15 @@ class TaskMateStickerChartCard extends LitElement {
   /**
    * This child's completions of a chore today. "__parent__" is a parent
    * dismissing it for the whole pool, so it counts for whoever is looking —
-   * except first-come, which is a race the child didn't win.
+   * except first-come, which is a race the child didn't win — or for one
+   * child only when for_child_id is set (#1096).
    */
   _mine(childId, chore, completions) {
     const firstCome = (chore.assignment_mode || "everyone") === "first_come";
     return completions.filter(c => c.chore_id === chore.id
-      && (String(c.child_id) === String(childId) || (c.child_id === "__parent__" && !firstCome)));
+      && (String(c.child_id) === String(childId)
+        || (c.child_id === "__parent__" && !firstCome
+          && (!c.for_child_id || String(c.for_child_id) === String(childId)))));
   }
 
   _t(key, params) {
