@@ -1028,8 +1028,12 @@ class PointsMixin:
         completion_date: date | None = None,
         skip_streak: bool = False,
         chore_id: str | None = None,
+        special_bonuses: bool = True,
     ) -> int:
         """Award points to a child, update streak, and apply bonus systems.
+
+        ``special_bonuses=False`` leaves out the weekend and birthday bonuses:
+        a boost already replaced them ("highest wins", see coord_boosts).
 
         Returns the total points awarded (base + weekend + birthday bonus),
         excluding milestone bonuses (which are logged as separate transactions).
@@ -1051,7 +1055,7 @@ class PointsMixin:
             multiplier = 2.0
 
         weekend_bonus = 0
-        if effective_date.weekday() in (5, 6) and multiplier > 1.0:
+        if special_bonuses and effective_date.weekday() in (5, 6) and multiplier > 1.0:
             weekend_bonus = round(points * (multiplier - 1.0))
 
         # ── Birthday multiplier (#924) ──────────────────────────────────────
@@ -1060,7 +1064,7 @@ class PointsMixin:
         # (Named "celebration_*" rather than after the birthday so CodeQL's
         # personal-data heuristics don't read a points multiplier as PII.)
         celebration_bonus = 0
-        if self.is_birthday(child, effective_date):
+        if special_bonuses and self.is_birthday(child, effective_date):
             celebration_multiplier = self.birthday_multiplier()
             if celebration_multiplier > 1.0:
                 celebration_bonus = round((points + weekend_bonus) * (celebration_multiplier - 1.0))

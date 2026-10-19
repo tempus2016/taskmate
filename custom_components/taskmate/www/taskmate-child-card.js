@@ -104,6 +104,7 @@ class TaskMateChildCard extends LitElement {
     this._maybeBirthdayConfetti(attrs);
     this._maybeInspectionCelebration(attrs);
     this._maybeRecordConfetti(attrs);
+    this._maybeBoostTakeover(attrs);
     this._scheduleUndoExpiry(attrs);
     const sessions = attrs.active_timed_sessions || [];
     const hasRunning = sessions.some(s => s.state === 'running' && s.child_id === this.config?.child_id);
@@ -115,7 +116,9 @@ class TaskMateChildCard extends LitElement {
       const at = new Date(c.deadline_at).getTime();
       return !Number.isNaN(at) && at > now;
     }) || this._inspectionsOf((attrs.children || []).find(c => c.id === this.config?.child_id))
-      .some(i => i.status === "open");
+      .some(i => i.status === "open")
+      // Boost windows: the countdown and the moment a scheduled one begins.
+      || (window.__taskmate_boosts ? window.__taskmate_boosts(attrs, this.config?.child_id).length > 0 : false);
     if ((hasRunning || hasDeadline) && !this._timerInterval) {
       this._timerInterval = setInterval(() => { this._timerTick++; this.requestUpdate(); }, 1000);
     } else if (!hasRunning && !hasDeadline && this._timerInterval) {
@@ -1439,6 +1442,34 @@ class TaskMateChildCard extends LitElement {
       .tm-care-owed .ic ha-icon { --mdc-icon-size: 26px; color: #8e44ad; }
       .tm-care-owed .tm-owed-body { flex: 1; min-width: 0; }
       .tm-care-record { background: #fff6d6; color: #6b4e00; }
+      /* Boost windows */
+      ha-card { position: relative; }
+      ha-card:has(.tm-boost-take) { min-height: 460px; }
+      .tm-care-boost { position: relative; overflow: hidden; background: linear-gradient(120deg, #ffe2bf, #fff1c2); color: #4a2600; border: 1px solid #ffc778; }
+      .tm-care-boost .tm-boost-body { flex: 1; min-width: 0; }
+      .tm-boost-bolt { animation: tm-boost-pulse 1.6s ease-in-out infinite; }
+      .tm-boost-clock { font: 700 1.2rem/1 ui-monospace, Menlo, monospace; color: #b34f00; text-align: end; flex: none; }
+      .tm-boost-clock small { display: block; font: 600 .62rem sans-serif; color: #8a5a2a; text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
+      .tm-boost-bar { position: absolute; inset-inline-start: 0; bottom: 0; height: 4px; background: #ff7a00; transition: width 1s linear; }
+      .tm-care-boost-next { background: #f4f6fa; color: #4b5468; }
+      .tm-boost-old { text-decoration: line-through; opacity: .6; }
+      .tm-boost-new { color: #b34f00; }
+      .tm-boost-x, .tm-boost-tag { background: #ff7a00 !important; color: #fff !important; border-radius: 999px; padding: 1px 7px; font-weight: 800; font-size: .75em; }
+      @keyframes tm-boost-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+      .tm-boost-take { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 20px; cursor: pointer;
+        background: radial-gradient(circle at 50% 35%, #ffb300 0%, #ff7a00 55%, #d84b00 100%); color: #fff; text-align: center; border-radius: inherit; animation: tm-boost-in .4s ease-out; }
+      .tm-boost-take-in { cursor: default; display: flex; flex-direction: column; align-items: center; gap: 4px; max-width: 360px; }
+      .tm-boost-take-bolt { font-size: 4rem; line-height: 1; animation: tm-boost-pulse 1.2s ease-in-out infinite; filter: drop-shadow(0 6px 12px rgba(0,0,0,.25)); }
+      .tm-boost-take-title { font-size: 2rem; font-weight: 800; letter-spacing: .02em; }
+      .tm-boost-take-mult { font: 900 3.6rem/1 sans-serif; text-shadow: 0 4px 0 rgba(0,0,0,.15); }
+      .tm-boost-take-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 4px; }
+      .tm-boost-take-chips span { background: rgba(255,255,255,.22); border-radius: 999px; padding: 4px 11px; font-weight: 700; font-size: .9rem; }
+      .tm-boost-take-sub { font-size: 1.05rem; }
+      .tm-boost-take-clock { font: 800 2rem/1 ui-monospace, Menlo, monospace; background: rgba(0,0,0,.18); padding: 8px 16px; border-radius: 14px; margin: 8px 0 2px; }
+      .tm-boost-take-name { opacity: .85; font-size: .9rem; }
+      .tm-boost-take-go { margin-top: 12px; background: #fff; color: #c24a00; border: 0; border-radius: 999px; padding: 12px 28px; font: 800 1.05rem sans-serif; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,.2); }
+      @keyframes tm-boost-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+      @media (prefers-reduced-motion: reduce) { .tm-boost-bolt, .tm-boost-take-bolt, .tm-boost-take { animation: none; } }
       .tm-care-goal.reached { background: #d9f5df; }
       .tm-goal-set { cursor: pointer; width: 100%; }
       .tm-goal-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -2472,7 +2503,7 @@ class TaskMateChildCard extends LitElement {
         ${this._renderSwappable(allChores, child, pointsIcon)}
 
         ${this._celebrating ? this._renderCelebration() : ""}
-        ${this._renderInspectionCelebration(pointsIcon)}
+        ${this._renderInspectionCelebration(pointsIcon)}${this._renderBoostTakeover()}
         ${this._confetti.length > 0 ? this._renderConfetti() : ""}
         ${this._renderPhotoCapture()}
         ${this._renderExtraCapture()}
@@ -2822,7 +2853,8 @@ class TaskMateChildCard extends LitElement {
         chore, child, done, loading, onAct, index: i, dimmed, blocked, recLocked, firstComeLocked, weeklyDone,
         tone: this._designTone(i),
         glyph: this._choreGlyph(chore),
-        points: chore.effective_points ?? chore.points,
+        points: this._boostPoints(chore, child),
+        boost: this._boostMult(chore, child),
         timed: chore.task_type === "timed",
         mandatory: chore.mandatory === true,
         photo: chore.require_photo === true,
@@ -2920,7 +2952,7 @@ class TaskMateChildCard extends LitElement {
         ${this._renderSwappable(allChores, child, pointsIcon)}
       </div>
       ${this._celebrating ? this._renderCelebration() : ""}
-      ${this._renderInspectionCelebration(pointsIcon)}
+      ${this._renderInspectionCelebration(pointsIcon)}${this._renderBoostTakeover()}
       ${this._confetti.length > 0 ? this._renderConfetti() : ""}
       ${this._renderPhotoCapture()}
       ${this._renderExtraCapture()}
@@ -2998,9 +3030,10 @@ class TaskMateChildCard extends LitElement {
       ? this._t("child.weekly_target_progress", { done: r.chore._weeklyProgress, target: r.chore._weeklyTarget })
       : "";
     return html`
-      ${r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || weeklyLabel || (r.team && !r.done)
+      ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || weeklyLabel || (r.team && !r.done)
         || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit || this._helpEnabled())) ? html`
         <div class="tmd-meta">
+          ${r.boost && !r.done ? html`<span class="tmd-tag tm-boost-tag">⚡ ×${this._fmtMult(r.boost)}</span>` : ""}
           ${this._choreExtraTags(r.chore, r.done, "tmd-tag")}
           ${r.done ? "" : this._renderHelp(r.chore, r.child, "tmd-tag")}
           ${r.mandatory ? html`<span class="tmd-tag mandatory">⚠ ${this._t("child.mandatory")}</span>` : ""}
@@ -4172,7 +4205,7 @@ class TaskMateChildCard extends LitElement {
             ` : ''}
             <div class="chore-points">
               <ha-icon icon="${pointsIcon}"></ha-icon>
-              +${chore.effective_points ?? chore.points}
+              ${isCompletedForToday ? html`+${chore.effective_points ?? chore.points}` : this._boostedPoints(chore, child)}
               ${dailyLimit > 1 ? html`<span style="font-size: 0.8em; opacity: 0.7;">(${completionsToday}/${dailyLimit})</span>` : ''}
               ${chore._weeklyTarget > 0 ? html`<span style="font-size: 0.8em; opacity: 0.7;">${this._t('child.weekly_target_progress', { done: chore._weeklyProgress, target: chore._weeklyTarget })}</span>` : ''}
             </div>
@@ -5137,6 +5170,23 @@ class TaskMateChildCard extends LitElement {
   /** Sick-day banner, make-it-right offers and the weekly goal, above the chores. */
   _renderCareBlocks(child, mode) {
     const parts = [];
+    // Boost windows: a live boost's countdown banner, else the next one coming.
+    const boosts = this._boosts(child);
+    const live = boosts.find(b => b.status === "active");
+    if (live) {
+      const total = Math.max(1, live.endsMs - live.startsMs);
+      const left = Math.max(0, live.endsMs - Date.now());
+      parts.push(html`<div class="tm-care tm-care-boost" role="status">
+        <span class="ic tm-boost-bolt">⚡</span>
+        <span class="tm-boost-body"><b>${live.name ? this._t("child.boost_title_named", { multiplier: this._fmtMult(live.multiplier), name: live.name }) : this._t("child.boost_title", { multiplier: this._fmtMult(live.multiplier) })}</b><br>${this._boostWhat(live)}</span>
+        <span class="tm-boost-clock">${this._clock(left)}<small>${this._t("child.boost_left")}</small></span>
+        <i class="tm-boost-bar" style="width:${Math.round((left / total) * 100)}%"></i>
+      </div>`);
+    } else if (boosts.length) {
+      const next = boosts[0];
+      parts.push(html`<div class="tm-care tm-care-boost-next" role="note">
+        <span class="ic">🕘</span><span>${this._t("child.boost_next", { time: this._boostStart(next), multiplier: this._fmtMult(next.multiplier), what: this._boostWhat(next) })}</span></div>`);
+    }
     if (child.sick_today) {
       parts.push(html`<div class="tm-care tm-care-sick" role="status">
         <span class="ic">🤒</span><span><b>${this._t("child.sick_title")}</b><br>${this._t("child.sick_body")}</span></div>`);
@@ -5188,6 +5238,99 @@ class TaskMateChildCard extends LitElement {
     }
     if (!parts.length) return "";
     return html`<div class="tm-care-wrap ${mode}">${parts}</div>${this._renderGoalSheet()}`;
+  }
+
+  /* ── Boost windows ──────────────────────────────────────────────────── */
+
+  _attrsNow() {
+    return (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
+      || this.hass?.states?.[this.config?.entity]?.attributes || {};
+  }
+
+  _boosts(child) {
+    return window.__taskmate_boosts && child ? window.__taskmate_boosts(this._attrsNow(), child.id) : [];
+  }
+
+  _boostMult(chore, child) {
+    if (!chore || chore.task_type === "timed" || (chore.auction && chore.auction.child_id)) return 0;
+    // Nothing to multiply on an open-ended (0-point) chore.
+    if (!(Number(chore.effective_points ?? chore.points) > 0)) return 0;
+    const m = window.__taskmate_boost_for ? window.__taskmate_boost_for(this._boosts(child), chore.id) : 0;
+    return m > 1 ? m : 0;
+  }
+
+  _boostPoints(chore, child) {
+    const base = chore.effective_points ?? chore.points;
+    const m = this._boostMult(chore, child);
+    return m && Number(base) > 0 ? Math.round(Number(base) * m) : base;
+  }
+
+  /** Classic row: "+5" or, while boosted, "~~+5~~ +10 ×2". */
+  _boostedPoints(chore, child) {
+    const base = chore.effective_points ?? chore.points;
+    const m = this._boostMult(chore, child);
+    if (!m || !(Number(base) > 0)) return html`+${base}`;
+    return html`<span class="tm-boost-old">+${base}</span> <b class="tm-boost-new">+${Math.round(Number(base) * m)}</b> <span class="tm-boost-x">×${this._fmtMult(m)}</span>`;
+  }
+
+  _fmtMult(m) {
+    return String(Math.round(Number(m) * 10) / 10);
+  }
+
+  _clock(ms) {
+    return window.__taskmate_clock ? window.__taskmate_clock(ms) : `${Math.ceil(ms / 60000)}m`;
+  }
+
+  _boostWhat(boost) {
+    const names = boost.chore_names || [];
+    if (!names.length) return this._t("child.boost_all_chores");
+    return names.length > 2
+      ? this._t("child.boost_some_chores", { first: names.slice(0, 2).join(", "), count: names.length - 2 })
+      : names.join(", ");
+  }
+
+  _boostStart(boost) {
+    const d = new Date(boost.startsMs);
+    const time = d.toLocaleTimeString(this.hass?.locale?.language || undefined, { hour: "2-digit", minute: "2-digit" });
+    if (d.toDateString() === new Date().toDateString()) return time;
+    return `${d.toLocaleDateString(this.hass?.locale?.language || undefined, { weekday: "long" })} ${time}`;
+  }
+
+  /* The takeover plays once per device per boost, then the banner carries on. */
+  _maybeBoostTakeover(attrs) {
+    if (this.config?.show_boost_alert === false || !window.__taskmate_boosts) return;
+    const child = (attrs.children || []).find(c => c.id === this.config?.child_id);
+    if (!child) return;
+    const live = window.__taskmate_boosts(attrs, child.id).find(b => b.status === "active");
+    if (this._boostTake && (!live || live.id !== this._boostTake.id)) { this._boostTake = null; this.requestUpdate(); }
+    if (!live || this._boostTake || (window.__taskmate_boost_seen && window.__taskmate_boost_seen(live.id))) return;
+    this._boostTake = live;
+    this.requestUpdate();
+  }
+
+  _dismissBoostTakeover() {
+    if (this._boostTake && window.__taskmate_boost_mark) window.__taskmate_boost_mark(this._boostTake.id);
+    this._boostTake = null;
+    this.requestUpdate();
+  }
+
+  _renderBoostTakeover() {
+    const b = this._boostTake;
+    if (!b) return "";
+    const names = b.chore_names || [];
+    return html`
+      <div class="tm-boost-take" role="dialog" aria-modal="true" aria-label="${this._t("child.boost_takeover_title")}" @click=${() => this._dismissBoostTakeover()}>
+        <div class="tm-boost-take-in" @click=${(e) => e.stopPropagation()}>
+          <div class="tm-boost-take-bolt">⚡</div>
+          <div class="tm-boost-take-title">${this._t("child.boost_takeover_title")}</div>
+          <div class="tm-boost-take-mult">×${this._fmtMult(b.multiplier)}</div>
+          ${names.length ? html`<div class="tm-boost-take-chips">${names.slice(0, 4).map(n => html`<span>${n}</span>`)}${names.length > 4 ? html`<span>+${names.length - 4}</span>` : ""}</div>` : ""}
+          <div class="tm-boost-take-sub">${names.length ? this._t("child.boost_takeover_some", { multiplier: this._fmtMult(b.multiplier) }) : this._t("child.boost_takeover_all", { multiplier: this._fmtMult(b.multiplier) })}</div>
+          <div class="tm-boost-take-clock">${this._clock(b.endsMs - Date.now())}</div>
+          ${b.name ? html`<div class="tm-boost-take-name">${b.name}</div>` : ""}
+          <button type="button" class="tm-boost-take-go" @click=${() => this._dismissBoostTakeover()}>${this._t("child.boost_takeover_go")}</button>
+        </div>
+      </div>`;
   }
 
   _pointsNameFor() {
@@ -6003,6 +6146,7 @@ class TaskMateChildCardEditor extends LitElement {
       { name: 'show_mood', selector: { boolean: {} } },
       { name: 'show_weekly_goal', selector: { boolean: {} } },
       { name: 'show_personal_bests', selector: { boolean: {} } },
+      { name: 'show_boost_alert', selector: { boolean: {} } },
       { name: 'show_description', selector: { boolean: {} } },
       { name: 'pre_reader', selector: { boolean: {} } },
       { name: 'pre_reader_labels', selector: { boolean: {} } },
@@ -6030,6 +6174,7 @@ class TaskMateChildCardEditor extends LitElement {
       show_mood: this._t('child.editor.show_mood'),
       show_weekly_goal: this._t('child.editor.show_weekly_goal'),
       show_personal_bests: this._t('child.editor.show_personal_bests'),
+      show_boost_alert: this._t('child.editor.show_boost_alert'),
       show_description: this._t('child.editor.show_description'),
       pre_reader: this._t('child.editor.pre_reader'),
       pre_reader_labels: this._t('child.editor.pre_reader_labels'),
@@ -6076,6 +6221,7 @@ class TaskMateChildCardEditor extends LitElement {
       show_mood: this.config.show_mood !== false,
       show_weekly_goal: this.config.show_weekly_goal !== false,
       show_personal_bests: this.config.show_personal_bests !== false,
+      show_boost_alert: this.config.show_boost_alert !== false,
       show_description: this.config.show_description === true,
       pre_reader: this.config.pre_reader === true,
       pre_reader_labels: this.config.pre_reader_labels === true,
@@ -6118,7 +6264,7 @@ class TaskMateChildCardEditor extends LitElement {
     for (const [key, value] of Object.entries(newValues)) {
       const defaults = {
         show_countdown: true, show_minutes_left: true, show_help_button: true, show_mood: true, show_weekly_goal: true,
-        show_personal_bests: true,
+        show_personal_bests: true, show_boost_alert: true,
         show_description: false, debug: false,
         time_category: 'morning', due_days_mode: 'hide',
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',

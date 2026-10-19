@@ -987,6 +987,8 @@ class ChoresMixin:
             note=note,
             suggested_points=suggested_points,
             quantity=quantity,
+            # A won auction pays exactly the bid.
+            boostable=auction_price is None,
         )
         if redo is not None:
             self._inspection_on_redo_recorded(redo, completion.id)
@@ -1056,8 +1058,12 @@ class ChoresMixin:
         suggested_points: int = 0,
         backdated: bool = False,
         quantity: int = 0,
+        boostable: bool = True,
     ) -> ChoreCompletion:
         """Store one completion and, when auto-approved, pay it.
+
+        ``boostable`` lets an active boost window multiply ``points``. Off for
+        a job logged for an earlier day and for a won auction's fixed price.
 
         The part of completing a chore that is per child. The caller has already
         run every eligibility gate and then calls _async_after_completions once
@@ -1068,6 +1074,9 @@ class ChoresMixin:
         bonuses follow the day) but leaves the streak alone, and only moves the
         recurrence window forward, never back.
         """
+        boost_mult, boost_stacked = 0.0, False
+        if boostable and not backdated and hasattr(self, "apply_boost"):
+            points, boost_mult, boost_stacked = self.apply_boost(chore, child, points, now)
         completion = ChoreCompletion(
             chore_id=chore.id,
             child_id=child.id,
@@ -1084,6 +1093,8 @@ class ChoresMixin:
             child_undo_allowed=not as_parent and undo_window_seconds(self.storage) > 0,
             backdated=backdated,
             quantity=quantity,
+            boost_multiplier=boost_mult,
+            boost_stacked=boost_stacked,
         )
 
         # Record the completion before awarding anything. Awarding can suspend
@@ -1103,7 +1114,13 @@ class ChoresMixin:
                     chore_id=chore.id,
                 )
             else:
-                total_awarded = await self._award_points(child, points, chore_id=chore.id)
+                total_awarded = await self._award_points(
+                    child,
+                    points,
+                    chore_id=chore.id,
+                    # A boost that replaced the weekend/birthday bonuses.
+                    **({"special_bonuses": False} if boost_mult and not boost_stacked else {}),
+                )
             completion.approved = True
             completion.approved_at = dt_util.now()
             completion.points_awarded = total_awarded
@@ -1642,6 +1659,14 @@ class ChoresMixin:
                         completion_date=comp_date,
                         skip_streak=is_bonus,
                         chore_id=completion.chore_id,
+                        # A boost that replaced the weekend/birthday bonuses
+                        # at submission keeps them out here too.
+                        **(
+                            {"special_bonuses": False}
+                            if getattr(completion, "boost_multiplier", 0)
+                            and not getattr(completion, "boost_stacked", False)
+                            else {}
+                        ),
                     )
                     completion.points_awarded = total_awarded
                     self.storage.update_completion(completion)

@@ -1462,6 +1462,50 @@
           "description": "Dziecko potwierdzające odbiór (zostaw puste, gdy oznacza rodzic)"
         }
       }
+    },
+    "start_boost": {
+      "name": "Rozpocznij boost",
+      "description": "Otwiera okno boostu. Obowiązki wykonane w tym czasie są warte mnożnik. Zostaw chore_ids lub child_ids puste dla wszystkich.",
+      "fields": {
+        "multiplier": {
+          "name": "Mnożnik",
+          "description": "Ile są warte obowiązki, np. 2 to podwójnie (1,1 do 5)"
+        },
+        "minutes": {
+          "name": "Minuty",
+          "description": "Jak długo trwa boost"
+        },
+        "chore_ids": {
+          "name": "ID obowiązków",
+          "description": "Obowiązki objęte boostem (puste = wszystkie)"
+        },
+        "child_ids": {
+          "name": "ID dzieci",
+          "description": "Dzieci objęte boostem (puste = wszystkie)"
+        },
+        "starts_at": {
+          "name": "Początek",
+          "description": "Zacznij później zamiast teraz (do tygodnia naprzód)"
+        },
+        "name": {
+          "name": "Nazwa",
+          "description": "Opcjonalna etykieta na kartach, np. „Goście o 18”"
+        },
+        "notify": {
+          "name": "Powiadom",
+          "description": "Wyślij powiadomienie o boostcie dzieciom (gdy jest włączone)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "Zakończ boost",
+      "description": "Zakończ boost wcześniej albo odwołaj taki, który jeszcze się nie zaczął.",
+      "fields": {
+        "boost_id": {
+          "name": "ID boostu",
+          "description": "Boost z atrybutu boosts w sensor.taskmate_overview"
+        }
+      }
     }
   },
   "entity": {
@@ -1546,7 +1590,9 @@
               "season_champion": "Mistrz sezonu",
               "bounty_posted": "Ogłoszono nagrodę",
               "scheduled_change_applied": "Zastosowano zaplanowaną zmianę",
-              "raffle_drawn": "Rozlosowano"
+              "raffle_drawn": "Rozlosowano",
+              "boost_started": "Boost rozpoczęty",
+              "boost_ended": "Boost zakończony"
             }
           }
         }

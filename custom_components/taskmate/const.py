@@ -373,6 +373,8 @@ NOTIF_TYPE_RAFFLE_DRAWN: Final = "raffle_drawn"
 NOTIF_TYPE_REWARD_OWED: Final = "reward_owed"
 # Personal bests (#1099): a child beat one of their own records.
 NOTIF_TYPE_PERSONAL_BEST: Final = "personal_best"
+# Boost windows: a boost covering the child just began.
+NOTIF_TYPE_BOOST_STARTED: Final = "boost_started"
 
 # Reward fulfilment (#1098): default days before parents are reminded a
 # redeemed reward is still owed (0 = never remind), and the most allowed.

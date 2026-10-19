@@ -1107,7 +1107,7 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
     # The per-child summary grows with the family; the scalars stay recorded
     # so history/statistics on them keep working (#817).
     _unrecorded_attributes = frozenset(
-        {"children", "vacation_periods", "season_champions", "companion_entities", "badge_entities"}
+        {"children", "vacation_periods", "season_champions", "companion_entities", "badge_entities", "boosts"}
     )
 
     def __init__(
@@ -1195,7 +1195,10 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             time_boundaries[f"{cat}_start"] = period["start"] if period else def_start
             time_boundaries[f"{cat}_end"] = period["end"] if period else def_end
 
+        boosts = self.coordinator.boosts_state()
         return {
+            # Boost windows: live and upcoming boosts, only when there is one.
+            **({"boosts": boosts} if boosts else {}),
             "today_day_of_week": today_dow,
             "streak_reset_mode": settings.get("streak_reset_mode", "reset"),
             "weekend_multiplier": _safe_float(settings.get("weekend_multiplier"), 2.0),

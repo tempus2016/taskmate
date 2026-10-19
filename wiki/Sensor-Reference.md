@@ -46,6 +46,7 @@ The main overview sensor. Carries scalar stats and the compact per-child summary
 | `vacation_name` | string | Name of the active vacation period (empty when none) |
 | `vacation_end` | string | ISO end date of the active vacation period (empty when none) |
 | `vacation_periods` | list | All configured vacation periods — each has `id`, `name`, `start`, `end`. See [Vacation Mode](Vacation-Mode.md) |
+| `boosts` | list | (v7.1.0) Live and upcoming [boosts](Boost-Windows.md): `id`, `name`, `multiplier`, `chore_ids`, `chore_names`, `child_ids`, `starts_at`, `ends_at`, `minutes`, `status` (`active` / `upcoming`), plus `rule_id` for a recurring one. Present only while there is one |
 | `family_goal` | object | (v4.4.0) Shared co-op [family goal](Family-Goals.md) state — `enabled` (bool), `name` (string), `target` (int), `reward` (string), `progress` (int — combined current points), `achieved` (bool). See [Family Goals](Family-Goals.md) |
 | `season_month` | string | (v4.4.0) Current leaderboard season month, `YYYY-MM` |
 | `season_champions` | list | (v4.4.0) Past monthly leaderboard champions (newest first, up to 12). See [Leaderboard Seasons](Leaderboard-Seasons.md) |

@@ -57,6 +57,8 @@ An event about more than one child lands on each of their entities: a [gift of p
 | `bounty_posted` | Bounty posted |
 | `scheduled_change_applied` | Scheduled change applied |
 | `raffle_drawn` | Raffle drawn |
+| `boost_started` | Boost started |
+| `boost_ended` | Boost ended |
 
 Events tied to a notification (help requested, weekly goal reached, penalty earned back, pet grew up, raffle drawn) reach the entities whether or not that notification is switched on.
 

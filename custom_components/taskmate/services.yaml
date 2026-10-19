@@ -1873,6 +1873,72 @@ mark_reward_delivered:
       selector:
         text:
 
+start_boost:
+  name: Start a boost
+  description: Open a boost window. Chores done inside it pay the multiplier. Leave chore_ids or child_ids empty for all of them.
+  fields:
+    multiplier:
+      name: Multiplier
+      description: What the covered chores pay, e.g. 2 for double (1.1 to 5)
+      required: true
+      selector:
+        number:
+          min: 1.1
+          max: 5
+          step: 0.1
+          mode: box
+    minutes:
+      name: Minutes
+      description: How long the boost lasts
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 1440
+          mode: box
+    chore_ids:
+      name: Chore IDs
+      description: The chores it covers (empty = all chores)
+      required: false
+      selector:
+        object:
+    child_ids:
+      name: Child IDs
+      description: The children it covers (empty = everyone)
+      required: false
+      selector:
+        object:
+    starts_at:
+      name: Starts at
+      description: Start later instead of now (up to a week ahead)
+      required: false
+      selector:
+        datetime:
+    name:
+      name: Name
+      description: Optional label shown on the cards, e.g. "Guests at six"
+      required: false
+      selector:
+        text:
+    notify:
+      name: Notify
+      description: Send the boost push to the children it covers (when that notification is switched on)
+      required: false
+      default: true
+      selector:
+        boolean:
+
+end_boost:
+  name: End a boost
+  description: Stop a boost early, or call off one that hasn't started yet.
+  fields:
+    boost_id:
+      name: Boost ID
+      description: The boost, from the boosts attribute of sensor.taskmate_overview
+      required: true
+      selector:
+        text:
+
 buy_raffle_tickets:
   name: Buy raffle tickets
   description: A child spends points on tickets for a raffle. Each ticket is one chance in the draw.

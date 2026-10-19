@@ -1462,6 +1462,50 @@
           "description": "L’enfant qui confirme l’avoir reçue (laisser vide quand un parent la marque)"
         }
       }
+    },
+    "start_boost": {
+      "name": "Lancer un boost",
+      "description": "Ouvre une fenêtre de boost. Les tâches faites pendant ce temps rapportent le multiplicateur. Laissez chore_ids ou child_ids vides pour tout le monde.",
+      "fields": {
+        "multiplier": {
+          "name": "Multiplicateur",
+          "description": "Ce que rapportent les tâches, p. ex. 2 pour le double (1,1 à 5)"
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Durée du boost"
+        },
+        "chore_ids": {
+          "name": "ID des tâches",
+          "description": "Les tâches concernées (vide = toutes)"
+        },
+        "child_ids": {
+          "name": "ID des enfants",
+          "description": "Les enfants concernés (vide = tous)"
+        },
+        "starts_at": {
+          "name": "Début",
+          "description": "Commencer plus tard plutôt que maintenant (jusqu’à une semaine à l’avance)"
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Libellé facultatif affiché sur les cartes, p. ex. « Invités à 18 h »"
+        },
+        "notify": {
+          "name": "Notifier",
+          "description": "Envoyer la notification du boost aux enfants concernés (si elle est activée)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "Terminer un boost",
+      "description": "Arrêter un boost plus tôt, ou annuler un boost qui n’a pas encore commencé.",
+      "fields": {
+        "boost_id": {
+          "name": "ID du boost",
+          "description": "Le boost, depuis l’attribut boosts de sensor.taskmate_overview"
+        }
+      }
     }
   },
   "entity": {
@@ -1546,7 +1590,9 @@
               "season_champion": "Champion de la saison",
               "bounty_posted": "Prime publiée",
               "scheduled_change_applied": "Modification planifiée appliquée",
-              "raffle_drawn": "Tombola tirée"
+              "raffle_drawn": "Tombola tirée",
+              "boost_started": "Boost lancé",
+              "boost_ended": "Boost terminé"
             }
           }
         }

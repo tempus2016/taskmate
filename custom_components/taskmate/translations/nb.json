@@ -1462,6 +1462,50 @@
           "description": "Barnet som bekrefter å ha fått den (la stå tom når en forelder merker)"
         }
       }
+    },
+    "start_boost": {
+      "name": "Start et boost",
+      "description": "Åpner et boost-vindu. Oppgaver gjort i det gir multiplikatoren. La chore_ids eller child_ids stå tomme for alle.",
+      "fields": {
+        "multiplier": {
+          "name": "Multiplikator",
+          "description": "Hva oppgavene gir, f.eks. 2 for dobbelt (1,1 til 5)"
+        },
+        "minutes": {
+          "name": "Minutter",
+          "description": "Hvor lenge boostet varer"
+        },
+        "chore_ids": {
+          "name": "Oppgave-ID-er",
+          "description": "Oppgavene det gjelder (tom = alle)"
+        },
+        "child_ids": {
+          "name": "Barn-ID-er",
+          "description": "Barna det gjelder (tom = alle)"
+        },
+        "starts_at": {
+          "name": "Starter",
+          "description": "Start senere i stedet for nå (opptil en uke frem)"
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Valgfri tekst på kortene, f.eks. «Gjester kl. 18»"
+        },
+        "notify": {
+          "name": "Varsle",
+          "description": "Send boost-varselet til barna (når det varselet er på)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "Avslutt et boost",
+      "description": "Stopp et boost tidlig, eller avlys et som ikke har begynt.",
+      "fields": {
+        "boost_id": {
+          "name": "Boost-ID",
+          "description": "Boostet, fra attributtet boosts på sensor.taskmate_overview"
+        }
+      }
     }
   },
   "entity": {
@@ -1546,7 +1590,9 @@
               "season_champion": "Sesongmester",
               "bounty_posted": "Dusør lagt ut",
               "scheduled_change_applied": "Planlagt endring utført",
-              "raffle_drawn": "Loddtrekning trukket"
+              "raffle_drawn": "Loddtrekning trukket",
+              "boost_started": "Boost startet",
+              "boost_ended": "Boost avsluttet"
             }
           }
         }
