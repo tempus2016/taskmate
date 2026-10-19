@@ -101,6 +101,8 @@ Each entry in the `children` array:
 | `pet` | object | (v7.0.0) The child's [virtual pet](Virtual-Pets.md), present only while pets are switched on. `{adopted: false}` before adoption; afterwards `adopted`, `name`, `species`, `stage` (`egg` / `baby` / `kid` / `teen` / `grown`), `chores` (since adoption), `xp` (growth), `mood` (`happy` / `proud` / `content` / `sleepy`), `accessories`, plus, when reached or switched on, `goal`, `legendary`, `home`, `pet_level`, `egg_ready` and `family` (earlier pets: `species`, `name`, `legendary`) |
 | `weekly_goal` | object | (v7.0.0) The child's own [weekly goal](Weekly-Goals.md), present only while weekly goals are switched on: `target` (0 = not set), `bonus`, and once a target is set `earned` (points since Monday) and `reached` |
 | `redemptions` | list | (v7.0.0) Open [make-it-right](Make-It-Right-Penalties.md) offers — each has `id`, `chore_id`, `chore_name`, `penalty_name`, `points` (what doing the chore gives back) and `expires` (ISO date, the last day it can be done). Present only when there is one |
+| `owed_rewards` | list | (v7.1.0) Redeemed rewards still to hand over, oldest first — each has `claim_id`, `reward_name`, `reward_icon` and `days_owed`. Present only while [reward fulfilment](Reward-Fulfilment.md) is switched on and something is owed |
+| `personal_bests` | object | (v7.1.0) The child's [personal bests](Personal-Bests.md), present once there is a record: for each of `longest_streak`, `best_day_points`, `best_day_chores`, `best_week_points`, `best_single_award` an object with `value` and `date` (ISO; empty for the seeded streak), plus `previous` when it was beaten today; and `new_today`, the list of record keys beaten today |
 
 **`quests` entry fields:**
 
@@ -328,6 +330,7 @@ Numeric count of total pending items.
 | `reward_claims` | list | Full details of pending reward claims |
 | `mandatory_misses` | list | Unresolved mandatory-miss review items (see below). See [Mandatory Chores](Mandatory-Chores.md) |
 | `quality_rating` | object | (v6.0.0) Present only while [quality ratings](Quality-Ratings.md) are on: `multipliers`, a list of the three star multipliers (★, ★★, ★★★). Approval cards use it to draw the star picker |
+| `owed_rewards` | list | (v7.1.0) Redeemed rewards still to hand over, oldest first: `claim_id`, `child_id`, `child_name`, `reward_id`, `reward_name`, `reward_icon`, `cost`, `approved_at`, `days_owed`. Present only while [reward fulfilment](Reward-Fulfilment.md) is on and something is owed |
 
 **`chore_completions` entries:**
 
@@ -720,7 +723,7 @@ TaskMate's [bus events](Automations.md#bus-events-reference) are also published 
 
 | Entity | Description |
 |--------|-------------|
-| `event.taskmate_<child>_activity` | One per child (friendly name `<child> activity`). Fires for that child's moments: `chore_completed`, `chore_approved`, `chore_rejected`, `chore_approval_undone`, `chore_auto_approved`, `reward_claimed`, `reward_approved`, `reward_rejected`, `badge_earned`, `level_up`, `streak_updated`, `streak_freeze_used`, `perfect_week`, `weekly_target_reached`, `weekly_goal_reached`, `quest_completed`, `challenge_completed`, `bonus_applied`, `penalty_applied`, `penalty_redeemed`, `surprise_bonus`, `mandatory_missed`, `team_chore_completed`, `points_gifted`, `help_requested`, `mood_logged`, `sick_day`, `raffle_won`, `pet_evolved` |
+| `event.taskmate_<child>_activity` | One per child (friendly name `<child> activity`). Fires for that child's moments: `chore_completed`, `chore_approved`, `chore_rejected`, `chore_approval_undone`, `chore_auto_approved`, `reward_claimed`, `reward_approved`, `reward_rejected`, `badge_earned`, `level_up`, `streak_updated`, `streak_freeze_used`, `perfect_week`, `weekly_target_reached`, `weekly_goal_reached`, `quest_completed`, `challenge_completed`, `bonus_applied`, `penalty_applied`, `penalty_redeemed`, `surprise_bonus`, `mandatory_missed`, `team_chore_completed`, `points_gifted`, `help_requested`, `mood_logged`, `sick_day`, `raffle_won`, `pet_evolved`, `reward_delivered`, `personal_best` |
 | `event.taskmate_family_activity` | One for the family (friendly name `Family activity`). Fires for `family_goal_reached`, `season_champion`, `bounty_posted`, `scheduled_change_applied`, `raffle_drawn` |
 
 The state is the time of the latest event; the `event_type` attribute says which one, and the event's own data (child, chore, points and so on) is copied onto the entity as attributes. A gift shows on both children's entities, and a teamwork chore on every team member's.

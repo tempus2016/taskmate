@@ -652,6 +652,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "adjust-points") { this._doAdjustPoints(t.dataset.id, Number(t.dataset.delta)); return; }
     if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
     if (act === "answer-help") { this._answerHelp(t.dataset.id); return; }
+    if (act === "reward-delivered") { this._markRewardDelivered(t.dataset.id); return; }
     if (act === "toggle-sick") { this._toggleSickDay(t.dataset.id); return; }
     if (act === "backdate-open") { this._openBackdateDialog(t.dataset.id); return; }
     if (act === "save-backdate") { this._saveBackdateDialog(); return; }
@@ -4981,6 +4982,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-today-cols">
         <div class="tm-today-col">
           ${this._renderHelpCard(kids)}
+          ${this._renderOwedCard(kids)}
           <div class="tm-card">
             <h3 class="tm-section-title"><ha-icon icon="mdi:inbox-outline"></ha-icon>${this._t("panel.today_needs_title")}
               ${queue.count > 0 ? `<span class="tm-pill tm-pill-warn">${queue.count}</span>` : ""}
@@ -5046,6 +5048,41 @@ class TaskMatePanel extends HTMLElement {
             </div>`).join("")}
         </div>
       </div>`;
+  }
+
+  /** Reward fulfilment (#1098): redeemed rewards still to hand over, with a "Handed over" button each. */
+  _renderOwedCard(kids) {
+    const ids = new Set(kids.map(k => k.id));
+    const owed = (this._state.owed_rewards || []).filter(o => ids.has(o.child_id));
+    if (!owed.length) return "";
+    const names = Object.fromEntries((this._state.children || []).map(c => [c.id, c.name]));
+    const since = (o) => {
+      const n = Number(o.days_owed) || 0;
+      if (n <= 0) return this._t("panel.today_owed_today");
+      return this._t(n === 1 ? "panel.today_owed_days_one" : "panel.today_owed_days", { count: n });
+    };
+    return `
+      <div class="tm-card tm-owed-card">
+        <h3 class="tm-section-title"><span aria-hidden="true">🎁</span>${this._t("panel.today_owed_title")}
+          <span class="tm-pill tm-pill-warn">${owed.length}</span></h3>
+        <div class="tm-help-list">
+          ${owed.map(o => `
+            <div class="tm-help-row">
+              <div class="tm-help-text">
+                <strong>${this._esc(names[o.child_id] || o.child_name || "?")}</strong> — ${this._esc(o.reward_name || "")}
+                <div class="tm-meta">${this._esc(since(o))}</div>
+              </div>
+              <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="reward-delivered" data-id="${this._esc(o.claim_id)}">${this._t("panel.today_owed_delivered")}</button>
+            </div>`).join("")}
+        </div>
+      </div>`;
+  }
+
+  async _markRewardDelivered(id) {
+    const { ok, err } = await this._callService("mark_reward_delivered", { claim_id: id });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.today_owed_marked"));
   }
 
   async _answerHelp(id) {
@@ -9654,6 +9691,20 @@ class TaskMatePanel extends HTMLElement {
         </div>
 
         <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.fulfilment_title")}</h3><p class="tm-meta">${this._t("panel.fulfilment_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.fulfilment_enabled")}</div>
+              <ha-switch data-setting="reward_fulfilment_enabled" ${s.reward_fulfilment_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.fulfilment_reminder_days")}<small>${this._t("panel.fulfilment_reminder_days_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="60" step="1" data-setting="reward_fulfilment_reminder_days" value="${this._num(s.reward_fulfilment_reminder_days, 3)}">
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.allowance_title")}</h3><p class="tm-meta">${this._t("panel.allowance_hint")}</p></div></div>
           <div class="tm-section-body">
             <div class="tm-setting-row">
@@ -14059,6 +14110,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-kid-sick-on { color: var(--info-color, #039be5); background: color-mix(in srgb, var(--info-color, #039be5) 14%, transparent); }
       .tm-pill-info { background: color-mix(in srgb, var(--info-color, #039be5) 14%, transparent); color: var(--info-color, #039be5); }
       .tm-help-card { border-inline-start: 4px solid var(--warning-color, #ffa600); }
+      .tm-owed-card { border-inline-start: 4px solid #8e44ad; }
       .tm-help-list { display: flex; flex-direction: column; gap: 8px; }
       .tm-help-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--divider-color); }
       .tm-help-row:first-child { border-top: 0; }

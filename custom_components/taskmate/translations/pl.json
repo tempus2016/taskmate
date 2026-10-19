@@ -1448,6 +1448,20 @@
           "description": "Wykluj z jajka dorosłego zwierzaka nowego zwierzaka. Stary dołącza do rodziny zwierzaków."
         }
       }
+    },
+    "mark_reward_delivered": {
+      "name": "Oznacz nagrodę jako wręczoną",
+      "description": "Odebrana nagroda została wręczona i znika z listy należnych. Podaj child_id, gdy potwierdza samo dziecko.",
+      "fields": {
+        "claim_id": {
+          "name": "ID zgłoszenia",
+          "description": "Zatwierdzone zgłoszenie nagrody"
+        },
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko potwierdzające odbiór (zostaw puste, gdy oznacza rodzic)"
+        }
+      }
     }
   },
   "entity": {
@@ -1516,7 +1530,9 @@
               "chore_auto_approved": "Zadanie zatwierdzone automatycznie",
               "penalty_redeemed": "Odrobiono karę",
               "raffle_won": "Wygrano losowanie",
-              "pet_evolved": "Zwierzak urósł"
+              "pet_evolved": "Zwierzak urósł",
+              "reward_delivered": "Nagroda wręczona",
+              "personal_best": "Rekord życiowy"
             }
           }
         }

@@ -49,10 +49,12 @@ from .const import (
     NOTIF_TYPE_PENALTY_REDEEMED,
     NOTIF_TYPE_PENDING_CHORE_APPROVAL,
     NOTIF_TYPE_PENDING_REWARD_CLAIM,
+    NOTIF_TYPE_PERSONAL_BEST,
     NOTIF_TYPE_PET_EVOLVED,
     NOTIF_TYPE_PRESENCE_ARRIVAL,
     NOTIF_TYPE_RAFFLE_DRAWN,
     NOTIF_TYPE_RECAP_READY,
+    NOTIF_TYPE_REWARD_OWED,
     NOTIF_TYPE_SEASON_CHAMPION,
     NOTIF_TYPE_STREAK_AT_RISK,
     NOTIF_TYPE_STREAK_FREEZE_USED,
@@ -186,6 +188,12 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_PENALTY_REDEEMED, "both", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_RAFFLE_DRAWN, "both", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_PET_EVOLVED, "both", False, False, False, False),
+    # Reward fulfilment (#1098): on by default like inspection_reminder — it
+    # only ever fires once a parent has switched the tracker on, and a
+    # tracker that nags nobody is just a list.
+    NotificationTypeMeta(NOTIF_TYPE_REWARD_OWED, "parent", False, False, False, True),
+    # Personal bests (#1099): opt-in, like every celebration added after release.
+    NotificationTypeMeta(NOTIF_TYPE_PERSONAL_BEST, "both", False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
@@ -196,6 +204,7 @@ NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NO
 _OWN_EVENT_TYPES: frozenset[str] = frozenset(
     {
         NOTIF_TYPE_AUCTION_OPENED,
+        NOTIF_TYPE_PERSONAL_BEST,
         NOTIF_TYPE_BADGE_EARNED,
         NOTIF_TYPE_BOUNTY_POSTED,
         NOTIF_TYPE_CELEBRATION,
@@ -496,6 +505,8 @@ class NotificationCoordinator:
             "raffle_name": sample["raffle"],
             "winner_name": "Alex",
             "tickets": 12,
+            "record_label": notify_strings.text(self.hass, "record_longest_streak"),
+            "value": 12,
         }
         ctx["result_text"] = notify_strings.render(
             self.hass,

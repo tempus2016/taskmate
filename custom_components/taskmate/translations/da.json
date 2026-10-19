@@ -1448,6 +1448,20 @@
           "description": "Udklæk ægget, som det voksne kæledyr lagde, til et nyt kæledyr. Det gamle kæledyr kommer med i kæledyrsfamilien."
         }
       }
+    },
+    "mark_reward_delivered": {
+      "name": "Markér belønning som givet",
+      "description": "En indløst belønning er givet og forlader listen over udeståender. Angiv child_id, når barnet selv bekræfter.",
+      "fields": {
+        "claim_id": {
+          "name": "Krav-ID",
+          "description": "Det godkendte belønningskrav"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet, der bekræfter at have fået den (lad stå tomt, når en forælder markerer)"
+        }
+      }
     }
   },
   "entity": {
@@ -1516,7 +1530,9 @@
               "chore_auto_approved": "Opgave godkendt automatisk",
               "penalty_redeemed": "Straf tjent tilbage",
               "raffle_won": "Lodtrækning vundet",
-              "pet_evolved": "Kæledyr voksede"
+              "pet_evolved": "Kæledyr voksede",
+              "reward_delivered": "Belønning givet",
+              "personal_best": "Personlig rekord"
             }
           }
         }

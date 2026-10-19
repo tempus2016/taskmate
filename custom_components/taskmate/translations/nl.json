@@ -1448,6 +1448,20 @@
           "description": "Broed het ei dat het volgroeide huisdier legde uit tot een nieuw huisdier. Het oude huisdier komt bij de huisdierenfamilie."
         }
       }
+    },
+    "mark_reward_delivered": {
+      "name": "Beloning als gegeven markeren",
+      "description": "Een ingewisselde beloning is overhandigd en verdwijnt van de lijst met nog te geven beloningen. Geef child_id op als het kind het zelf bevestigt.",
+      "fields": {
+        "claim_id": {
+          "name": "Aanvraag-ID",
+          "description": "De goedgekeurde beloningsaanvraag"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind dat bevestigt dat het de beloning heeft gekregen (leeg laten als een ouder het markeert)"
+        }
+      }
     }
   },
   "entity": {
@@ -1516,7 +1530,9 @@
               "chore_auto_approved": "Taak automatisch goedgekeurd",
               "penalty_redeemed": "Puntenaftrek goedgemaakt",
               "raffle_won": "Loterij gewonnen",
-              "pet_evolved": "Huisdier gegroeid"
+              "pet_evolved": "Huisdier gegroeid",
+              "reward_delivered": "Beloning overhandigd",
+              "personal_best": "Persoonlijk record"
             }
           }
         }

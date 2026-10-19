@@ -536,6 +536,10 @@ class TaskMateApprovalsCard extends LitElement {
         color: white;
       }
 
+      .approval-item.owed { border-inline-start: 3px solid #8e44ad; }
+      .approval-item.owed .owed-since { font-size: 0.8rem; color: var(--secondary-text-color); }
+      .action-button.delivered { width: auto; border-radius: 999px; padding: 0 12px; gap: 6px; }
+      .action-button.delivered .delivered-label { font-size: 0.8rem; font-weight: 600; }
       .approval-item.mandatory {
         border-inline-start: 5px solid var(--fun-red, #e74c3c);
       }
@@ -770,6 +774,9 @@ class TaskMateApprovalsCard extends LitElement {
 
     // Missed mandatory chores awaiting parent review (#532)
     const misses = this._filterMissesByChild(attrs.mandatory_misses || []);
+    // Reward fulfilment (#1098): redeemed rewards still to hand over. Not an
+    // approval, so it never counts in the header badge.
+    const owed = this._owedRewards(entity, attrs);
 
     const totalPending = filteredCompletions.length + filteredClaims.length + misses.length;
 
@@ -793,12 +800,13 @@ class TaskMateApprovalsCard extends LitElement {
         </div>
 
         <div class="card-content">
-          ${totalPending === 0
+          ${totalPending === 0 && owed.length === 0
             ? this._renderEmptyState()
             : html`
                 ${misses.length > 0 ? this._renderMandatoryMisses(misses) : ''}
                 ${filteredClaims.length > 0 ? this._renderRewardClaims(filteredClaims) : ''}
                 ${filteredCompletions.length > 0 ? this._renderApprovals(groupedByDay) : ''}
+                ${owed.length > 0 ? this._renderOwedRewards(owed) : ''}
               `}
         </div>
         ${this._renderReview()}
@@ -897,6 +905,20 @@ class TaskMateApprovalsCard extends LitElement {
       });
     });
 
+    this._owedRewards(entity, attrs).forEach((o) => {
+      items.push({
+        kind: "owed",
+        id: o.claim_id,
+        title: o.reward_name || "",
+        childName: o.child_name || "",
+        childId: o.child_id,
+        points: o.cost ?? 0,
+        icon: o.reward_icon || "mdi:gift",
+        daysOwed: o.days_owed || 0,
+        sortTime: 3,
+      });
+    });
+
     filteredCompletions.forEach((c) => {
       items.push({
         kind: "completion",
@@ -930,6 +952,9 @@ class TaskMateApprovalsCard extends LitElement {
       if (it.kind === "completion" && it.completedAt) {
         dayLabel = this._getDayLabel(new Date(it.completedAt));
         cat = it.timeCategory || "anytime";
+      } else if (it.kind === "owed") {
+        // Owed rewards sit in their own group after the approvals.
+        dayLabel = this._t('approvals.owed_section');
       }
       if (!groups.has(dayLabel)) groups.set(dayLabel, new Map());
       const cats = groups.get(dayLabel);
@@ -938,7 +963,10 @@ class TaskMateApprovalsCard extends LitElement {
     });
     // Build ordered list of { dayLabel, sub, items[] } sections.
     const sections = [];
-    for (const [dayLabel, cats] of groups) {
+    const owedLabel = this._t('approvals.owed_section');
+    const ordered_days = [...groups.keys()].sort((a, b) => (a === owedLabel) - (b === owedLabel));
+    for (const dayLabel of ordered_days) {
+      const cats = groups.get(dayLabel);
       const ordered = [...cats.entries()].sort(
         ([a], [b]) => this._getTimeCategoryOrder(a) - this._getTimeCategoryOrder(b)
       );
@@ -980,8 +1008,9 @@ class TaskMateApprovalsCard extends LitElement {
     }
 
     const completions = items.filter((it) => it.kind === "completion").map((it) => it.completion);
+    const pendingCount = items.filter((it) => it.kind !== "owed").length;
     return html`<ha-card class="tmd" style="--hd:${hd}">
-      ${this._designHeader(hd, items.length, completions)}
+      ${this._designHeader(hd, pendingCount, completions)}
       <div class="tmd-bd">${body}</div>
       ${this._renderReview()}
       ${this._renderRejectSheet()}
@@ -1018,6 +1047,15 @@ class TaskMateApprovalsCard extends LitElement {
       const approve = () => this._handleApproveReward(it.id);
       const reject = () => this._handleRejectReward(it.id, it.title, it.childName);
       return this._apActionPair(approve, reject, isLoading, shape);
+    }
+    if (it.kind === "owed") {
+      const done = () => this._handleRewardDelivered(it.id);
+      if (shape === "round") {
+        return html`<button class="btn good sm round" ?disabled="${isLoading}"
+          title="${this._t('approvals.owed_delivered')}" @click="${done}">🎁</button>`;
+      }
+      return html`<button class="btn good ${shape === "ghost" ? "sm" : ""}" style="${shape === "full" ? "flex:1" : ""}"
+        ?disabled="${isLoading}" @click="${done}">🎁 ${this._t('approvals.owed_delivered')}</button>`;
     }
     // mandatory miss: apply penalty (if any) / postpone / dismiss
     if (shape === "round") {
@@ -1072,7 +1110,7 @@ class TaskMateApprovalsCard extends LitElement {
     const photoUrl = this._photoHref(it.photo);
     const ref = it.kind === "completion" ? it.reference : "";
     if (it.kind !== "completion" || !(photoUrl || ref)) {
-      return it.kind === "claim" && it.icon
+      return (it.kind === "claim" || it.kind === "owed") && it.icon
         ? html`<div class="${cls}"><ha-icon icon="${it.icon}"></ha-icon></div>`
         : "";
     }
@@ -1148,10 +1186,10 @@ class TaskMateApprovalsCard extends LitElement {
           ${this._av(it.childName, this._childAvatar(it.childId), tone, 40)}
           <div style="flex:1;min-width:0">
             <div class="ap-pl-title">${it.title}</div>
-            <div class="muted ap-pl-sub">${it.childName}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}</div>
+            <div class="muted ap-pl-sub">${it.childName}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}${it.kind === "owed" ? html` · ${this._owedFor(it.daysOwed)}` : ""}</div>
           </div>
           ${this._apPhotoDesigned(it, "ap-pl-photo")}
-          <div class="chip ap-gold">+${it.points} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>
+          <div class="chip ap-gold">${it.kind === "owed" ? "" : "+"}${it.points} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>
         </div>
         <div class="row" style="margin-top:11px;gap:8px">
           ${this._designActions(it, "full")}
@@ -1166,7 +1204,7 @@ class TaskMateApprovalsCard extends LitElement {
         ${this._av(it.childName, this._childAvatar(it.childId), tone, 34)}
         <div style="flex:1;min-width:0">
           <div class="ap-cn-title">${it.title}</div>
-          <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()} · +${it.points} XP${it.quantity ? html` · ${it.quantity}` : ""}</div>
+          <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()} · ${it.kind === "owed" ? this._owedFor(it.daysOwed) : html`+${it.points} XP`}${it.quantity ? html` · ${it.quantity}` : ""}</div>
           ${it.kind === "completion" ? this._renderStars(it.completion, "ap-cn-stars") : ""}
         </div>
         ${this._apPhotoDesigned(it, "ap-cn-photo")}
@@ -1184,10 +1222,10 @@ class TaskMateApprovalsCard extends LitElement {
         ${this._av(it.childName, this._childAvatar(it.childId), tone, 38)}
         <div class="ap-cp-mid">
           <div class="ap-cp-title">${it.title}</div>
-          <div class="muted ap-cp-sub">${it.childName}${time ? html` · ${time}` : ""}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}</div>
+          <div class="muted ap-cp-sub">${it.childName}${time ? html` · ${time}` : ""}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}${it.kind === "owed" ? html` · ${this._owedFor(it.daysOwed)}` : ""}</div>
         </div>
         ${this._apPhotoDesigned(it, "ap-cp-photo")}
-        <span class="chip soft ap-gold-soft">+${it.points}</span>
+        <span class="chip soft ap-gold-soft">${it.kind === "owed" ? "" : "+"}${it.points}</span>
         <div class="ap-cp-actions">${this._designActions(it, "ghost")}</div>
       </div>`;
   }
@@ -1297,6 +1335,67 @@ class TaskMateApprovalsCard extends LitElement {
       this._loading = { ...this._loading, [claimId]: false };
       this.requestUpdate();
     }
+  }
+
+  // ---- reward fulfilment (#1098) ----------------------------------------
+  /** Redeemed rewards still to hand over, from either sensor, filtered like the claims. */
+  _owedRewards(entity, attrs) {
+    const list = (entity && entity.attributes && entity.attributes.owed_rewards) || attrs.owed_rewards || [];
+    return this._filterClaimsByChild(Array.isArray(list) ? list : []);
+  }
+
+  _owedFor(days) {
+    const n = Number(days) || 0;
+    if (n <= 0) return this._t('approvals.owed_today');
+    return this._t(n === 1 ? 'approvals.owed_days_one' : 'approvals.owed_days', { count: n });
+  }
+
+  _renderOwedRewards(owed) {
+    return html`
+      <div class="day-group ap-owed">
+        <div class="day-header">
+          <ha-icon icon="mdi:gift-open-outline" style="--mdc-icon-size: 18px; vertical-align: -3px; margin-inline-end: 6px;"></ha-icon>
+          ${this._t('approvals.owed_section')}
+        </div>
+        ${owed.map((o) => this._renderOwedItem(o))}
+      </div>
+    `;
+  }
+
+  _renderOwedItem(o) {
+    const isLoading = this._loading[o.claim_id];
+    return html`
+      <div class="approval-item owed ${isLoading ? 'loading' : ''}">
+        <div class="item-info">
+          <span class="chore-name">
+            <ha-icon icon="${o.reward_icon || 'mdi:gift'}" style="--mdc-icon-size: 16px; vertical-align: -3px; margin-inline-end: 4px;"></ha-icon>
+            ${o.reward_name || ''}
+          </span>
+          <div class="item-details">
+            <span class="child-name">
+              <ha-icon icon="mdi:account"></ha-icon>
+              ${o.child_name || ''}
+            </span>
+            <span class="owed-since">${this._owedFor(o.days_owed)}</span>
+          </div>
+        </div>
+        <div class="action-buttons right">
+          <button
+            class="action-button approve delivered ${isLoading ? 'loading' : ''}"
+            @click="${() => this._handleRewardDelivered(o.claim_id)}"
+            title="${this._t('approvals.owed_delivered')}"
+            ?disabled="${isLoading}"
+          >
+            <ha-icon icon="mdi:gift-open"></ha-icon>
+            <span class="delivered-label">${this._t('approvals.owed_delivered')}</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  async _handleRewardDelivered(claimId) {
+    await this._callClaimService('mark_reward_delivered', claimId);
   }
 
   // ---- mandatory-miss review (#532) ------------------------------------

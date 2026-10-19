@@ -103,6 +103,7 @@ class TaskMateChildCard extends LitElement {
       || this.hass?.states?.[this.config?.entity]?.attributes || {};
     this._maybeBirthdayConfetti(attrs);
     this._maybeInspectionCelebration(attrs);
+    this._maybeRecordConfetti(attrs);
     this._scheduleUndoExpiry(attrs);
     const sessions = attrs.active_timed_sessions || [];
     const hasRunning = sessions.some(s => s.state === 'running' && s.child_id === this.config?.child_id);
@@ -1434,6 +1435,10 @@ class TaskMateChildCard extends LitElement {
       .tm-care-sick { background: #e8f1ff; color: #1e3a6e; }
       .tm-care-redeem { background: #fff4e0; color: #6b4200; }
       .tm-care-goal { background: #ecf8ef; color: #1d5b2c; }
+      .tm-care-owed { background: #f3e9fb; color: #4a2070; }
+      .tm-care-owed .ic ha-icon { --mdc-icon-size: 26px; color: #8e44ad; }
+      .tm-care-owed .tm-owed-body { flex: 1; min-width: 0; }
+      .tm-care-record { background: #fff6d6; color: #6b4e00; }
       .tm-care-goal.reached { background: #d9f5df; }
       .tm-goal-set { cursor: pointer; width: 100%; }
       .tm-goal-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -5141,6 +5146,28 @@ class TaskMateChildCard extends LitElement {
         <span class="ic">🤝</span><span><b>${this._t("child.redeem_title")}</b><br>${this._t("child.redeem_body", {
           chore: offer.chore_name, points: offer.points, date: this._shortDate(offer.expires) })}</span></div>`);
     }
+    // Reward fulfilment (#1098): what this child is still owed, with "Got it!".
+    for (const o of child.owed_rewards || []) {
+      const n = Number(o.days_owed) || 0;
+      const since = n <= 0 ? this._t("child.owed_today") : this._t(n === 1 ? "child.owed_days_one" : "child.owed_days", { count: n });
+      parts.push(html`<div class="tm-care tm-care-owed" role="note">
+        <span class="ic"><ha-icon icon="${o.reward_icon || "mdi:gift"}"></ha-icon></span>
+        <span class="tm-owed-body"><b>${this._t("child.owed_title")}</b><br>${o.reward_name} · ${since}</span>
+        <button type="button" class="tm-goal-change tm-owed-got" ?disabled=${this._loading[`owed_${o.claim_id}`]}
+          @click=${() => this._gotReward(child, o)}>${this._t("child.owed_got_it")}</button>
+      </div>`);
+    }
+    // Personal bests (#1099): records beaten today, for the rest of the day.
+    const bests = child.personal_bests;
+    if (bests && this.config.show_personal_bests !== false && Array.isArray(bests.new_today) && bests.new_today.length) {
+      const pointsName = this._pointsNameFor(child);
+      const lines = bests.new_today.map((key) => {
+        const rec = bests[key] || {};
+        return `${this._t(`child.record_${key}`, { points_name: pointsName })}: ${rec.value}`;
+      });
+      parts.push(html`<div class="tm-care tm-care-record" role="status">
+        <span class="ic">🏆</span><span><b>${this._t("child.record_title")}</b><br>${lines.join(" · ")}</span></div>`);
+    }
     const goal = child.weekly_goal;
     if (goal && this.config.show_weekly_goal !== false) {
       if (!goal.target) {
@@ -5161,6 +5188,44 @@ class TaskMateChildCard extends LitElement {
     }
     if (!parts.length) return "";
     return html`<div class="tm-care-wrap ${mode}">${parts}</div>${this._renderGoalSheet()}`;
+  }
+
+  _pointsNameFor() {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
+      || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    return attrs.points_name || this._t("common.points");
+  }
+
+  async _gotReward(child, owed) {
+    const key = `owed_${owed.claim_id}`;
+    if (this._loading[key]) return;
+    this._loading = { ...this._loading, [key]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "mark_reward_delivered", { claim_id: owed.claim_id, child_id: child.id });
+    } catch (err) {
+      console.error("mark_reward_delivered failed", err);
+    } finally {
+      this._loading = { ...this._loading, [key]: false };
+      this.requestUpdate();
+    }
+  }
+
+  /* Personal bests (#1099): confetti the first time this device sees a record
+     beaten today — once per child, record and day, shared across cards. */
+  _maybeRecordConfetti(attrs) {
+    const child = (attrs.children || []).find(c => c.id === this.config?.child_id);
+    const fresh = child && child.personal_bests && child.personal_bests.new_today;
+    if (!Array.isArray(fresh) || !fresh.length || this.config?.show_personal_bests === false) return;
+    const KEY = "taskmate_records_celebrated";
+    let seen;
+    try { seen = JSON.parse(window.localStorage.getItem(KEY) || "[]") || []; } catch (e) { seen = []; }
+    if (!Array.isArray(seen)) seen = [];
+    const ids = fresh.map((k) => `${child.id}:${k}:${(child.personal_bests[k] || {}).date || ""}`).filter((id) => !seen.includes(id));
+    if (!ids.length) return;
+    seen.push(...ids);
+    try { window.localStorage.setItem(KEY, JSON.stringify(seen.slice(-60))); } catch (e) { /* private mode: plays each load */ }
+    this._spawnConfetti();
   }
 
   _shortDate(iso) {
@@ -5937,6 +6002,7 @@ class TaskMateChildCardEditor extends LitElement {
       { name: 'show_help_button', selector: { boolean: {} } },
       { name: 'show_mood', selector: { boolean: {} } },
       { name: 'show_weekly_goal', selector: { boolean: {} } },
+      { name: 'show_personal_bests', selector: { boolean: {} } },
       { name: 'show_description', selector: { boolean: {} } },
       { name: 'pre_reader', selector: { boolean: {} } },
       { name: 'pre_reader_labels', selector: { boolean: {} } },
@@ -5963,6 +6029,7 @@ class TaskMateChildCardEditor extends LitElement {
       show_help_button: this._t('child.editor.show_help_button'),
       show_mood: this._t('child.editor.show_mood'),
       show_weekly_goal: this._t('child.editor.show_weekly_goal'),
+      show_personal_bests: this._t('child.editor.show_personal_bests'),
       show_description: this._t('child.editor.show_description'),
       pre_reader: this._t('child.editor.pre_reader'),
       pre_reader_labels: this._t('child.editor.pre_reader_labels'),
@@ -6008,6 +6075,7 @@ class TaskMateChildCardEditor extends LitElement {
       show_help_button: this.config.show_help_button !== false,
       show_mood: this.config.show_mood !== false,
       show_weekly_goal: this.config.show_weekly_goal !== false,
+      show_personal_bests: this.config.show_personal_bests !== false,
       show_description: this.config.show_description === true,
       pre_reader: this.config.pre_reader === true,
       pre_reader_labels: this.config.pre_reader_labels === true,
@@ -6050,6 +6118,7 @@ class TaskMateChildCardEditor extends LitElement {
     for (const [key, value] of Object.entries(newValues)) {
       const defaults = {
         show_countdown: true, show_minutes_left: true, show_help_button: true, show_mood: true, show_weekly_goal: true,
+        show_personal_bests: true,
         show_description: false, debug: false,
         time_category: 'morning', due_days_mode: 'hide',
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',

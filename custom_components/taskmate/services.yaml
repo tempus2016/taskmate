@@ -1856,6 +1856,23 @@ set_weekly_goal:
           max: 100000
           mode: box
 
+mark_reward_delivered:
+  name: Mark reward delivered
+  description: A redeemed reward has been handed over, so it leaves the owed list. Give child_id when the child is confirming their own.
+  fields:
+    claim_id:
+      name: Claim ID
+      description: The approved reward claim
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The child confirming they received it (leave empty when a parent marks it)
+      required: false
+      selector:
+        text:
+
 buy_raffle_tickets:
   name: Buy raffle tickets
   description: A child spends points on tickets for a raffle. Each ticket is one chance in the draw.

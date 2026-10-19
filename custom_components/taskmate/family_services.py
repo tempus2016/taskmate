@@ -30,8 +30,10 @@ SERVICE_SET_WEEKLY_GOAL = "set_weekly_goal"
 SERVICE_BUY_RAFFLE_TICKETS = "buy_raffle_tickets"
 SERVICE_DRAW_RAFFLE = "draw_raffle"
 SERVICE_ADOPT_PET = "adopt_pet"
+SERVICE_MARK_REWARD_DELIVERED = "mark_reward_delivered"
 
 FAMILY_SERVICES: tuple[str, ...] = (
+    SERVICE_MARK_REWARD_DELIVERED,
     SERVICE_REQUEST_HELP,
     SERVICE_ANSWER_HELP,
     SERVICE_LOG_MOOD,
@@ -53,6 +55,7 @@ def async_register_family_services(
     parent_action: Wrapper,
     get_coordinator: Callable[[], object],
     require_linked_child: Callable[..., Awaitable[None]],
+    require_parent: Callable[..., Awaitable[None]] | None = None,
 ) -> None:
     """Register the services behind the caller's child and parent gates."""
 
@@ -93,6 +96,30 @@ def async_register_family_services(
 
     async def draw_raffle(coordinator, call):
         await coordinator.async_draw_raffle(call.data["raffle_id"])
+
+    # Reward fulfilment (#1098): a parent marks a reward handed over, or the
+    # child confirms their own with ``child_id`` — so the one service has two
+    # gates and picks by who is calling.
+    async def mark_reward_delivered(call: ServiceCall) -> None:
+        coordinator = get_coordinator()
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        child_id = call.data.get("child_id")
+        if child_id:
+            await require_linked_child(hass, call, coordinator, child_id)
+            await coordinator.async_mark_reward_delivered(call.data["claim_id"], by="child", child_id=child_id)
+            return
+        if require_parent is not None:
+            await require_parent(hass, call)
+        await coordinator.async_mark_reward_delivered(call.data["claim_id"])
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_MARK_REWARD_DELIVERED,
+        child_action(mark_reward_delivered),
+        schema=vol.Schema({vol.Required("claim_id"): cv.string, vol.Optional("child_id"): cv.string}),
+    )
 
     registrations = (
         (

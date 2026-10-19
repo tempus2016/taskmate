@@ -62,6 +62,8 @@ CHILD_EVENTS: dict[str, str] = {
     "penalty_redeemed": notification_event_name(NOTIF_TYPE_PENALTY_REDEEMED),
     "raffle_won": "taskmate_raffle_won",
     "pet_evolved": notification_event_name(NOTIF_TYPE_PET_EVOLVED),
+    "reward_delivered": "taskmate_reward_delivered",
+    "personal_best": "taskmate_personal_best",
 }
 
 # Bus events about the whole family.

@@ -369,6 +369,15 @@ NOTIF_TYPE_PET_EVOLVED: Final = "pet_evolved"
 NOTIF_TYPE_PENALTY_REDEEMED: Final = "penalty_redeemed"
 # Raffles: the winner was drawn.
 NOTIF_TYPE_RAFFLE_DRAWN: Final = "raffle_drawn"
+# Reward fulfilment (#1098): a redeemed reward is still waiting to be handed over.
+NOTIF_TYPE_REWARD_OWED: Final = "reward_owed"
+# Personal bests (#1099): a child beat one of their own records.
+NOTIF_TYPE_PERSONAL_BEST: Final = "personal_best"
+
+# Reward fulfilment (#1098): default days before parents are reminded a
+# redeemed reward is still owed (0 = never remind), and the most allowed.
+DEFAULT_REWARD_FULFILMENT_REMINDER_DAYS: Final = 3
+REWARD_FULFILMENT_REMINDER_MAX_DAYS: Final = 60
 
 # Presence-aware reminders (#926): the default for how long a child must have
 # been away before arriving home earns a "you're home" nudge.

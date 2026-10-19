@@ -1448,6 +1448,20 @@
           "description": "Chocar o ovo que o bichinho adulto botou para ter um bichinho novo. O antigo entra para a família de bichinhos."
         }
       }
+    },
+    "mark_reward_delivered": {
+      "name": "Marcar recompensa como entregue",
+      "description": "Uma recompensa resgatada foi entregue e sai da lista de pendentes. Informe child_id quando for a criança confirmando.",
+      "fields": {
+        "claim_id": {
+          "name": "ID do pedido",
+          "description": "O pedido de recompensa aprovado"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança que confirma ter recebido (deixe vazio quando um dos pais marca)"
+        }
+      }
     }
   },
   "entity": {
@@ -1516,7 +1530,9 @@
               "chore_auto_approved": "Tarefa aprovada automaticamente",
               "penalty_redeemed": "Penalidade recuperada",
               "raffle_won": "Sorteio ganho",
-              "pet_evolved": "O bichinho cresceu"
+              "pet_evolved": "O bichinho cresceu",
+              "reward_delivered": "Recompensa entregue",
+              "personal_best": "Recorde pessoal"
             }
           }
         }

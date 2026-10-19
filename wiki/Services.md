@@ -312,6 +312,16 @@ Approve a pending reward claim. For wallet rewards, deducts cost from the child'
 | --- | --- | --- |
 | `claim_id` | ✅ | ID of the pending reward claim |
 
+### `taskmate.mark_reward_delivered`
+(v7.1.0) An approved reward has been handed over, so it leaves the owed list. See [Reward Fulfilment](Reward-Fulfilment.md).
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `claim_id` | ✅ | The approved reward claim (from `owed_rewards` on `sensor.taskmate_pending_approvals`) |
+| `child_id` | ❌ | Give it when the child is confirming their own reward: the call then goes through the linked-child check and the claim must be theirs. Leave it out for a parent action |
+
+Refused for a claim that is not owed, or already marked delivered.
+
 ### `taskmate.reject_reward`
 Reject a pending reward claim. For wallet rewards, no action (points were never deducted). For pool rewards, allocation stays in place — child can Redeem again.
 

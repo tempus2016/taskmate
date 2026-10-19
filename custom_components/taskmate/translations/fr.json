@@ -1448,6 +1448,20 @@
           "description": "Faire éclore l’œuf pondu par l’animal adulte pour obtenir un nouvel animal. L’ancien rejoint la famille des animaux."
         }
       }
+    },
+    "mark_reward_delivered": {
+      "name": "Marquer la récompense comme remise",
+      "description": "Une récompense échangée a été remise : elle quitte la liste des récompenses dues. Indiquez child_id quand c’est l’enfant qui confirme.",
+      "fields": {
+        "claim_id": {
+          "name": "ID de la demande",
+          "description": "La demande de récompense approuvée"
+        },
+        "child_id": {
+          "name": "ID de l’enfant",
+          "description": "L’enfant qui confirme l’avoir reçue (laisser vide quand un parent la marque)"
+        }
+      }
     }
   },
   "entity": {
@@ -1516,7 +1530,9 @@
               "chore_auto_approved": "Tâche approuvée automatiquement",
               "penalty_redeemed": "Pénalité regagnée",
               "raffle_won": "Tombola gagnée",
-              "pet_evolved": "L’animal a grandi"
+              "pet_evolved": "L’animal a grandi",
+              "reward_delivered": "Récompense remise",
+              "personal_best": "Record personnel"
             }
           }
         }

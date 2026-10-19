@@ -1162,6 +1162,12 @@ class ChoresMixin:
                     photo_url=completion.photo_url,
                 )
 
+        # Personal bests (#1099) before the batch's one refresh, so a new
+        # record reaches the cards with it rather than costing a second one.
+        if auto_approve and hasattr(self, "async_check_personal_bests"):
+            for child, _completion, _points in recorded:
+                await self.async_check_personal_bests(child.id, refresh=False)
+
         await self.async_refresh()
 
         if not auto_approve:
@@ -1668,6 +1674,11 @@ class ChoresMixin:
                         self._check_one_shot_fully_disabled(chore)
                         self.storage.update_chore(chore)
 
+                    # Personal bests (#1099): did this approval beat a record?
+                    # Checked before the refresh below so a new record rides it.
+                    if hasattr(self, "async_check_personal_bests"):
+                        await self.async_check_personal_bests(completion.child_id, refresh=False)
+
                     await self.storage.async_save()
                     if refresh:
                         await self.async_refresh()
@@ -1939,6 +1950,8 @@ class ChoresMixin:
             await self._async_reverse_challenges(target_completion.child_id)
         if target_completion and target_completion.approved and hasattr(self, "async_reverse_weekly_goals"):
             await self.async_reverse_weekly_goals(target_completion.child_id)
+        if target_completion and target_completion.approved and hasattr(self, "async_recompute_personal_bests"):
+            await self.async_recompute_personal_bests(target_completion.child_id)
         # The completion record is gone, so its evidence photo is now orphaned —
         # delete it (best-effort; foreign/blank URLs are ignored), unless some
         # other record still points at the same file.
@@ -2035,6 +2048,8 @@ class ChoresMixin:
             await self._async_reverse_challenges(target.child_id)
         if hasattr(self, "async_reverse_weekly_goals"):
             await self.async_reverse_weekly_goals(target.child_id)
+        if hasattr(self, "async_recompute_personal_bests"):
+            await self.async_recompute_personal_bests(target.child_id)
 
         await self.storage.async_save()
         await self.async_refresh()

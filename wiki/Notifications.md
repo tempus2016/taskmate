@@ -66,6 +66,8 @@ TaskMate ships with these built-in notification types:
 | **Penalty earned back** | `penalty_redeemed` | Both | No | No | Off |
 | **Raffle drawn** | `raffle_drawn` | Both | No | No | Off |
 | **Pet grew up** | `pet_evolved` | Both | No | No | Off |
+| **Reward still owed** | `reward_owed` | Parents | No | No | **On** |
+| **Personal best** | `personal_best` | Both | No | No | Off |
 
 The 15 rows from **Birthday** to **Auction Result** were added in v6.0.0. All of them start **switched off**, apart from the parent **Inspection Reminder**, which only ever fires for an inspection a parent started. Turn on the ones you want on the Notifications tab.
 
@@ -463,7 +465,7 @@ Each notification type fires a matching `taskmate_<type_id>` event, except the 1
 | `taskmate_family_goal_reached_notification` † | Combined family points reached the goal |
 | `taskmate_birthday`, `taskmate_presence_arrival`, `taskmate_item_rejected`, `taskmate_recap_ready`, `taskmate_bounty_claim_lapsing`, `taskmate_wish_requested`, `taskmate_inspection_reminder`, `taskmate_auction_closing`, `taskmate_auction_result` | (v6.0.0) The matching notification was dispatched |
 | `taskmate_streak_freeze_used_notification` †, `taskmate_bounty_posted_notification` †, `taskmate_wish_pledged_notification` †, `taskmate_inspection_started_notification` †, `taskmate_inspection_passed_notification` †, `taskmate_auction_opened_notification` † | (v6.0.0) The matching notification was dispatched |
-| `taskmate_help_requested`, `taskmate_mood_low`, `taskmate_weekly_goal_reached`, `taskmate_penalty_redeemed`, `taskmate_raffle_drawn`, `taskmate_pet_evolved` | (v7.0.0) The matching notification was dispatched. These features have no separate event of their own, so automate on these. The per-child and family [event entities](Event-Entities.md) re-publish them too |
+| `taskmate_help_requested`, `taskmate_mood_low`, `taskmate_weekly_goal_reached`, `taskmate_penalty_redeemed`, `taskmate_raffle_drawn`, `taskmate_pet_evolved`, `taskmate_reward_owed` | (v7.0.0) The matching notification was dispatched. These features have no separate event of their own, so automate on these. The per-child and family [event entities](Event-Entities.md) re-publish them too |
 | `taskmate_custom_notification` | Custom notification dispatched |
 
 > **† Renamed in v6.1.0.** Before v6.1.0 these 11 notification events used the same name as the feature's own event, so an automation on, say, `taskmate_level_up` ran twice whenever the notification was sent. Now the feature event (no `recipients`, see [Automations](Automations.md)) fires once, and the notification event has the `_notification` suffix. If an automation reads `recipients` from one of these, trigger it on the `_notification` event. A `recipients is not defined` condition added to filter out the duplicate can be removed.

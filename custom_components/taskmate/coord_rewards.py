@@ -645,6 +645,8 @@ class RewardsMixin:
                 claim.approved = True
                 claim.approved_at = dt_util.now()
                 claim.approved_cost = effective_cost
+                # Fulfilment tracker (#1098): owed until somebody hands it over.
+                self._track_fulfilment(claim, reward)
                 self.storage.update_reward_claim(claim)
 
                 # One pool, one redemption. Claims stored before a jackpot was
