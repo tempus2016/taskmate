@@ -673,8 +673,9 @@ class AssignmentsMixin:
                     completed_bonus_ids_today.add(bonus_id)
                 continue
             # Parent completions count toward the quota. A `__parent__`
-            # sentinel covers the whole rotation for today.
-            if comp.child_id in pool or comp.child_id == "__parent__":
+            # sentinel covers the whole rotation for today — unless it was
+            # for one child only (#1096), which a rotation never carries.
+            if comp.child_id in pool or (comp.child_id == "__parent__" and not getattr(comp, "for_child_id", "")):
                 completions_today += 1
         # first_come is a single-winner race: clamp any mis-configured quota to 1.
         if getattr(chore, "assignment_mode", "everyone") == "first_come":

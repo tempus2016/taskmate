@@ -101,7 +101,7 @@ Its fields are grouped under five headings: **Basics**, **Who does it**, **When*
 
 The **Chores** table collapses each row's per-row actions into a **⋮ kebab menu**. **Edit** stays inline; everything else lives in the menu:
 
-- *Parent did it (no points)*
+- *Parent did it (no points)*: marks the chore done with no points awarded. On a chore shared by several children (everyone mode), the menu shows *Parent did it for everyone* and a *Parent did it for <child>* entry for each child, so you can clear it for one child and leave it open for the others.
 - *Auction an occurrence* (v6.0.0+, see [Chore Auctions](Chore-Auctions.md))
 - *Deactivate / Activate chore*
 - *Skip* (rotation modes)

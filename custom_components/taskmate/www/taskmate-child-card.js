@@ -2698,6 +2698,13 @@ class TaskMateChildCard extends LitElement {
     return Math.min(limit, countToday + Math.max(0, target - doneThisWeek));
   }
 
+  // A "Parent did it" completion covers this child: either the whole pool,
+  // or this child alone when for_child_id is set (#1096).
+  _parentDidItFor(comp, childId) {
+    return comp.child_id === "__parent__"
+      && (!comp.for_child_id || String(comp.for_child_id) === String(childId));
+  }
+
   _isChoreDone(chore, child, todaysCompletions) {
     // async_parent_complete_chore writes child_id="__parent__" to dismiss a
     // chore for the WHOLE pool with zero points — it never credits a specific
@@ -2710,7 +2717,7 @@ class TaskMateChildCard extends LitElement {
     const isFirstCome = chore.assignment_mode === "first_come";
     const childCompletionsToday = (todaysCompletions || []).filter(
       (comp) => comp.chore_id === chore.id
-        && (comp.child_id === child.id || (!isFirstCome && comp.child_id === "__parent__"))
+        && (comp.child_id === child.id || (!isFirstCome && this._parentDidItFor(comp, child.id)))
         && !comp.bonus_subtask_id
     );
     let count = childCompletionsToday.length;
@@ -3455,7 +3462,7 @@ class TaskMateChildCard extends LitElement {
       // state, no way to undo. The mode is about the days *after* that.
       const completedToday = allCompletionsToday.some(
         (comp) => comp.chore_id === chore.id
-          && (String(comp.child_id) === childId || comp.child_id === '__parent__')
+          && (String(comp.child_id) === childId || this._parentDidItFor(comp, childId))
           && !comp.bonus_subtask_id
       );
       chore._isRecurrenceLocked = chore._isRecurring && !availableNow && !completedToday;
@@ -3904,7 +3911,7 @@ class TaskMateChildCard extends LitElement {
     // place too, and a parent completing on behalf lands under "__parent__".
     const childCompletionsToday = todaysCompletions.filter(
       (comp) => comp.chore_id === chore.id
-        && (comp.child_id === child.id || comp.child_id === "__parent__")
+        && (comp.child_id === child.id || this._parentDidItFor(comp, child.id))
         && !comp.bonus_subtask_id
     );
     const isDone = childCompletionsToday.length >= dailyLimit;
@@ -3992,7 +3999,7 @@ class TaskMateChildCard extends LitElement {
     // everyone behavior, which is intentional there.
     const isFirstCome = chore.assignment_mode === "first_come";
     const childCompletionsToday = todaysCompletions.filter(
-      (comp) => comp.chore_id === chore.id && (comp.child_id === child.id || (!isFirstCome && comp.child_id === "__parent__")) && !comp.bonus_subtask_id
+      (comp) => comp.chore_id === chore.id && (comp.child_id === child.id || (!isFirstCome && this._parentDidItFor(comp, child.id))) && !comp.bonus_subtask_id
     );
     let completionsToday = childCompletionsToday.length;
     // Clamped for first_come the same way the filter and the backend clamp it: a
@@ -4355,7 +4362,7 @@ class TaskMateChildCard extends LitElement {
 
     // Check if parent chore is completed today (including optimistic)
     const parentCompletions = todaysCompletions.filter(
-      c => c.chore_id === chore.id && (c.child_id === child.id || c.child_id === "__parent__") && !c.bonus_subtask_id
+      c => c.chore_id === chore.id && (c.child_id === child.id || this._parentDidItFor(c, child.id)) && !c.bonus_subtask_id
     );
     const optimisticKey = `${chore.id}_${child.id}`;
     const hasOptimistic = this._optimisticCompletions && this._optimisticCompletions[optimisticKey];

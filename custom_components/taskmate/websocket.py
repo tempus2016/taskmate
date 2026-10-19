@@ -2507,12 +2507,14 @@ async def _ws_reject_reward(hass, connection, msg, coordinator):
     {
         vol.Required("type"): WS_PARENT_COMPLETE_CHORE,
         vol.Required("chore_id"): str,
+        # Done for this one child only (#1096); omitted = everyone assigned.
+        vol.Optional("child_id"): str,
     }
 )
 @websocket_api.async_response
 @_admin_only
 async def _ws_parent_complete_chore(hass, connection, msg, coordinator):
-    await coordinator.async_parent_complete_chore(msg["chore_id"])
+    await coordinator.async_parent_complete_chore(msg["chore_id"], msg.get("child_id") or None)
     connection.send_result(msg["id"], {"ok": True})
 
 
