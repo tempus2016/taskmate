@@ -443,7 +443,7 @@ class WishlistMixin:
             wish.status = "active"
             wish.claim_id = ""
             self.storage.upsert_wish(wish)
-        self._record_rejection("reward", claim.child_id, claim.reward_id, getattr(wish, "name", ""), reason)
+        self._record_rejection("reward", claim.child_id, claim.reward_id, getattr(wish, "name", ""), reason, wish=True)
         await self.storage.async_save()
         await self.async_refresh()
         child = self.get_child(claim.child_id)

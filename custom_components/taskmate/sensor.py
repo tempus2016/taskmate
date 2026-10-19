@@ -271,6 +271,13 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                     if (owed := coordinator.owed_rewards(c.id))
                     else {}
                 ),
+                # Appeals: what the child may appeal, and their recent appeals.
+                **(
+                    {"appealable": [{k: i[k] for k in ("kind", "target_id", "name", "points")} for i in can]}
+                    if (can := coordinator.appealable_for_child(c.id))
+                    else {}
+                ),
+                **({"appeals": mine} if (mine := coordinator.appeals_for_child(c.id)) else {}),
                 # Personal bests (#1099): the records board, once there is one.
                 **({"personal_bests": bests} if (bests := coordinator.personal_bests_state(c)) else {}),
                 # Make it right: open offers to earn a penalty back.

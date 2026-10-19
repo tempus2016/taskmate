@@ -78,6 +78,10 @@ DEFAULTS: dict[str, str] = {
     "personal_best": "🏆 New personal best! {child_name}: {record_label} — {value}.",
     "boost_started": "⚡ Boost! {chores_text} pay ×{multiplier} for the next {minutes} minutes.",
     "boost_all_chores": "All chores",
+    "appeal_submitted": "⚖️ {child_name} is appealing '{item_name}'{message_text}",
+    "appeal_decided": "⚖️ Your appeal about '{item_name}' was {outcome}{note_text}",
+    "appeal_outcome_overturned": "accepted",
+    "appeal_outcome_upheld": "turned down",
     # Personal best record names, used inside the personal_best message.
     "record_longest_streak": "longest streak (days)",
     "record_best_day_points": "most {points_name} in a day",

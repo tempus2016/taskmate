@@ -256,6 +256,8 @@ All auction events carry `auction_id`, `chore_id`, `chore_name`, `occurrence` (t
 | `taskmate_raffle_drawn` | `raffle_id`, `raffle_name`, `prize`, `winner_id`, `winner_name`, `tickets`, `recipients` (no `timestamp`) — a raffle was drawn; `tickets` is the total in the draw. Fires even when nobody entered (`winner_id` empty) |
 | `taskmate_reward_delivered` | `child_id`, `child_name`, `reward_id`, `reward_name`, `claim_id`, `delivered_by` (`parent` / `child`), `timestamp` — (v7.1.0) a redeemed reward was handed over. See [Reward Fulfilment](Reward-Fulfilment.md) |
 | `taskmate_reward_owed` | `child_id`, `child_name`, `reward_id`, `reward_name`, `claim_id`, `days`, `points_name`, `recipients` (no `timestamp`) — (v7.1.0) the reminder that a reward is still owed went out |
+| `taskmate_appeal_submitted` | `appeal_id`, `child_id`, `child_name`, `kind`, `item_name`, `points`, `message`, `timestamp` — (v7.1.0) a child [appealed](Appeals.md) a rejection or penalty |
+| `taskmate_appeal_decided` | The same plus `overturned` and `note` — (v7.1.0) a parent decided an appeal |
 | `taskmate_boost_started` | `id`, `name`, `multiplier`, `chore_ids`, `child_ids`, `starts_at`, `ends_at`, `minutes`, `rule_id` (recurring only), `timestamp` — (v7.1.0) a [boost](Boost-Windows.md) went live |
 | `taskmate_boost_ended` | The same plus `ended_early` — (v7.1.0) a boost ran out or was ended |
 | `taskmate_personal_best` | `child_id`, `child_name`, `record`, `value`, `previous`, `date`, `timestamp` — (v7.1.0) a child beat one of their own records. `record` is `longest_streak`, `best_day_points`, `best_day_chores`, `best_week_points` or `best_single_award`. See [Personal Bests](Personal-Bests.md). The notification's own event is `taskmate_personal_best_notification` |

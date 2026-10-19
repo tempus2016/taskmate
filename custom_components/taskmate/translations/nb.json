@@ -1506,6 +1506,46 @@
           "description": "Boostet, fra attributtet boosts på sensor.taskmate_overview"
         }
       }
+    },
+    "appeal": {
+      "name": "Klag",
+      "description": "Et barn ber om at en avvist oppgave, et avvist belønningskrav eller en straff fra de siste 48 timene blir sett på igjen. Klager må være slått på.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet som klager"
+        },
+        "kind": {
+          "name": "Type",
+          "description": "Hva det klages på"
+        },
+        "target_id": {
+          "name": "Mål-ID",
+          "description": "Elementet fra attributtet appealable for barnet i sensor.taskmate_overview"
+        },
+        "message": {
+          "name": "Melding",
+          "description": "Valgfrie ord fra barnet, opptil 200 tegn"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "Avgjør en klage",
+      "description": "Gi medhold (betal oppgaven, godkjenn belønningen eller fjern straffen) eller la avgjørelsen stå.",
+      "fields": {
+        "appeal_id": {
+          "name": "Klage-ID",
+          "description": "Klagen"
+        },
+        "overturn": {
+          "name": "Gi medhold",
+          "description": "true for medhold, false for å la den stå"
+        },
+        "note": {
+          "name": "Notat",
+          "description": "Valgfrie ord til barnet, opptil 200 tegn"
+        }
+      }
     }
   },
   "entity": {
@@ -1576,7 +1616,9 @@
               "raffle_won": "Loddtrekning vunnet",
               "pet_evolved": "Kjæledyret vokste",
               "reward_delivered": "Belønning gitt",
-              "personal_best": "Personlig rekord"
+              "personal_best": "Personlig rekord",
+              "appeal_submitted": "Klage sendt",
+              "appeal_decided": "Klage avgjort"
             }
           }
         }

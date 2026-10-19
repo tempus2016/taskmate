@@ -1506,6 +1506,46 @@
           "description": "Le boost, depuis l’attribut boosts de sensor.taskmate_overview"
         }
       }
+    },
+    "appeal": {
+      "name": "Faire appel",
+      "description": "Un enfant demande de revoir une tâche refusée, une demande de récompense refusée ou une pénalité des 48 dernières heures. Les appels doivent être activés.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l’enfant",
+          "description": "L’enfant qui fait appel"
+        },
+        "kind": {
+          "name": "Type",
+          "description": "Ce qui est contesté"
+        },
+        "target_id": {
+          "name": "ID de l’élément",
+          "description": "L’élément, depuis l’attribut appealable de l’enfant dans sensor.taskmate_overview"
+        },
+        "message": {
+          "name": "Message",
+          "description": "Mots facultatifs de l’enfant, jusqu’à 200 caractères"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "Décider d’un appel",
+      "description": "Accepter un appel (payer la tâche, approuver la récompense ou annuler la pénalité) ou maintenir la décision.",
+      "fields": {
+        "appeal_id": {
+          "name": "ID de l’appel",
+          "description": "L’appel"
+        },
+        "overturn": {
+          "name": "Accepter",
+          "description": "true pour accepter, false pour maintenir"
+        },
+        "note": {
+          "name": "Note",
+          "description": "Mots facultatifs pour l’enfant, jusqu’à 200 caractères"
+        }
+      }
     }
   },
   "entity": {
@@ -1576,7 +1616,9 @@
               "raffle_won": "Tombola gagnée",
               "pet_evolved": "L’animal a grandi",
               "reward_delivered": "Récompense remise",
-              "personal_best": "Record personnel"
+              "personal_best": "Record personnel",
+              "appeal_submitted": "Appel envoyé",
+              "appeal_decided": "Appel décidé"
             }
           }
         }

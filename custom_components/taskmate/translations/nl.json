@@ -1506,6 +1506,46 @@
           "description": "De boost, uit het attribuut boosts van sensor.taskmate_overview"
         }
       }
+    },
+    "appeal": {
+      "name": "Bezwaar maken",
+      "description": "Een kind vraagt om nog eens te kijken naar een afgekeurde taak, een afgekeurde beloningsaanvraag of een puntenaftrek van de afgelopen 48 uur. Bezwaar maken moet aanstaan.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind dat bezwaar maakt"
+        },
+        "kind": {
+          "name": "Soort",
+          "description": "Waartegen bezwaar wordt gemaakt"
+        },
+        "target_id": {
+          "name": "Doel-ID",
+          "description": "Het item, uit het attribuut appealable van het kind in sensor.taskmate_overview"
+        },
+        "message": {
+          "name": "Bericht",
+          "description": "Optionele woorden van het kind, tot 200 tekens"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "Over een bezwaar beslissen",
+      "description": "Een bezwaar toekennen (de taak uitbetalen, de beloning goedkeuren of de puntenaftrek terugdraaien) of het oorspronkelijke besluit handhaven.",
+      "fields": {
+        "appeal_id": {
+          "name": "Bezwaar-ID",
+          "description": "Het bezwaar"
+        },
+        "overturn": {
+          "name": "Toekennen",
+          "description": "true om toe te kennen, false om te handhaven"
+        },
+        "note": {
+          "name": "Notitie",
+          "description": "Optionele woorden voor het kind, tot 200 tekens"
+        }
+      }
     }
   },
   "entity": {
@@ -1576,7 +1616,9 @@
               "raffle_won": "Loterij gewonnen",
               "pet_evolved": "Huisdier gegroeid",
               "reward_delivered": "Beloning overhandigd",
-              "personal_best": "Persoonlijk record"
+              "personal_best": "Persoonlijk record",
+              "appeal_submitted": "Bezwaar ingediend",
+              "appeal_decided": "Over bezwaar beslist"
             }
           }
         }

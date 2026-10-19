@@ -1506,6 +1506,46 @@
           "description": "Der Boost, aus dem Attribut boosts von sensor.taskmate_overview"
         }
       }
+    },
+    "appeal": {
+      "name": "Einspruch",
+      "description": "Ein Kind bittet um eine zweite Prüfung einer abgelehnten Aufgabe, eines abgelehnten Belohnungsanspruchs oder einer Strafe der letzten 48 Stunden. Einsprüche müssen eingeschaltet sein.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das Kind, das Einspruch einlegt"
+        },
+        "kind": {
+          "name": "Art",
+          "description": "Worum es geht"
+        },
+        "target_id": {
+          "name": "Ziel-ID",
+          "description": "Der Eintrag aus dem Attribut appealable des Kindes in sensor.taskmate_overview"
+        },
+        "message": {
+          "name": "Nachricht",
+          "description": "Optionale Worte des Kindes, bis zu 200 Zeichen"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "Einspruch entscheiden",
+      "description": "Einem Einspruch stattgeben (Aufgabe auszahlen, Belohnung genehmigen oder Strafe zurücknehmen) oder die Entscheidung bestehen lassen.",
+      "fields": {
+        "appeal_id": {
+          "name": "Einspruchs-ID",
+          "description": "Der Einspruch"
+        },
+        "overturn": {
+          "name": "Stattgeben",
+          "description": "true zum Stattgeben, false zum Ablehnen"
+        },
+        "note": {
+          "name": "Notiz",
+          "description": "Optionale Worte für das Kind, bis zu 200 Zeichen"
+        }
+      }
     }
   },
   "entity": {
@@ -1576,7 +1616,9 @@
               "raffle_won": "Verlosung gewonnen",
               "pet_evolved": "Haustier gewachsen",
               "reward_delivered": "Belohnung übergeben",
-              "personal_best": "Persönliche Bestleistung"
+              "personal_best": "Persönliche Bestleistung",
+              "appeal_submitted": "Einspruch eingelegt",
+              "appeal_decided": "Einspruch entschieden"
             }
           }
         }

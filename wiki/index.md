@@ -49,6 +49,7 @@ Welcome to the TaskMate documentation. TaskMate is a Home Assistant integration 
 | [Chore Auctions](Chore-Auctions.md) | Children bid for an unpopular chore; the lowest bid wins |
 | [Quality Ratings](Quality-Ratings.md) | Rate an approved chore 1–3 stars and scale the points to match |
 | [Reject Reasons](Reject-Reasons.md) | Tell the child why a chore or reward was sent back |
+| [Appeals](Appeals.md) | Children ask for a second look at a rejection or penalty; parents overturn or uphold it |
 | [Surprise Inspections](Surprise-Inspections.md) | Spot-check a recently approved chore and pay a bonus if it passes |
 | [Child Undo Window](Child-Undo-Window.md) | Let children take back their own chore tap within a set time |
 | [Logging Past Jobs](Logging-Past-Jobs.md) | Record a job done on an earlier day that nobody ticked |

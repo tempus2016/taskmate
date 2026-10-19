@@ -375,6 +375,9 @@ NOTIF_TYPE_REWARD_OWED: Final = "reward_owed"
 NOTIF_TYPE_PERSONAL_BEST: Final = "personal_best"
 # Boost windows: a boost covering the child just began.
 NOTIF_TYPE_BOOST_STARTED: Final = "boost_started"
+# Appeals: a child appealed a rejection or penalty; a parent decided it.
+NOTIF_TYPE_APPEAL_SUBMITTED: Final = "appeal_submitted"
+NOTIF_TYPE_APPEAL_DECIDED: Final = "appeal_decided"
 
 # Reward fulfilment (#1098): default days before parents are reminded a
 # redeemed reward is still owed (0 = never remind), and the most allowed.
