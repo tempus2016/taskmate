@@ -652,6 +652,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "adjust-points") { this._doAdjustPoints(t.dataset.id, Number(t.dataset.delta)); return; }
     if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
     if (act === "answer-help") { this._answerHelp(t.dataset.id); return; }
+    if (act && act.startsWith("boost-") && this._boostClick(act, t)) return;
     if (act === "reward-delivered") { this._markRewardDelivered(t.dataset.id); return; }
     if (act === "toggle-sick") { this._toggleSickDay(t.dataset.id); return; }
     if (act === "backdate-open") { this._openBackdateDialog(t.dataset.id); return; }
@@ -3386,6 +3387,13 @@ class TaskMatePanel extends HTMLElement {
         return;
       }
     }
+    // Boost windows: highest-wins / stack, and the tablets to wake.
+    const stacking = root.querySelector('input[name="boost_stacking"]:checked');
+    if (stacking) payload.boost_stacking = stacking.value;
+    if (root.querySelector("[data-boost-screen], [data-boost-device]")) {
+      payload.boost_wake_screens = Array.from(root.querySelectorAll("[data-boost-screen]")).filter(el => el.checked).map(el => el.dataset.boostScreen);
+      payload.boost_wake_devices = Array.from(root.querySelectorAll("[data-boost-device]")).filter(el => el.checked).map(el => el.dataset.boostDevice);
+    }
     // Surprise inspections (#981): the children the random pick may choose.
     const inspKids = root.querySelectorAll("[data-insp-kid]");
     if (inspKids.length) {
@@ -4981,6 +4989,7 @@ class TaskMatePanel extends HTMLElement {
 
       <div class="tm-today-cols">
         <div class="tm-today-col">
+          ${this._renderBoostsCard()}
           ${this._renderHelpCard(kids)}
           ${this._renderOwedCard(kids)}
           <div class="tm-card">
@@ -5010,6 +5019,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-today-quick">
               <button type="button" class="tm-btn" data-act="add-chore"><ha-icon icon="mdi:check-circle-outline"></ha-icon>${this._t("panel.new_chore")}</button>
               <button type="button" class="tm-btn" data-act="add-bounty"><ha-icon icon="mdi:flag-outline"></ha-icon>${this._t("panel.new_bounty")}</button>
+              <button type="button" class="tm-btn tm-boost-btn" data-act="boost-open"><span aria-hidden="true">⚡</span>${this._t("panel.boost_start")}</button>
               <button type="button" class="tm-btn" data-act="tab" data-tab="bonuses"><ha-icon icon="mdi:flash-outline"></ha-icon>${this._t("panel.today_quick_bonus")}</button>
               <button type="button" class="tm-btn" data-act="tab" data-tab="penalties"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._t("panel.today_quick_penalty")}</button>
             </div>
@@ -5024,6 +5034,347 @@ class TaskMatePanel extends HTMLElement {
         </div>
       </div>
     `;
+  }
+
+  // ── Boost windows ─────────────────────────────────────────────────────
+  // A boost is started, ended and skipped through the start_boost /
+  // end_boost services (the same door automations use); the recurring rules
+  // and the test wake are admin websocket commands.
+
+  _boostList() {
+    const fn = window.__taskmate_boosts;
+    const list = this._state.boosts || [];
+    if (fn) return fn({ boosts: list });
+    const now = Date.now();
+    return list.map(b => ({ ...b, startsMs: Date.parse(b.starts_at), endsMs: Date.parse(b.ends_at) }))
+      .filter(b => b.endsMs > now).map(b => ({ ...b, status: b.startsMs > now ? "upcoming" : "active" }));
+  }
+
+  _fmtMult(m) { return String(Math.round(Number(m) * 10) / 10); }
+
+  _boostChoreText(choreIds) {
+    if (!choreIds || !choreIds.length) return this._t("panel.boost_all_chores");
+    const names = Object.fromEntries((this._state.chores || []).map(c => [c.id, c.name]));
+    const list = choreIds.map(id => names[id]).filter(Boolean);
+    return list.length > 3 ? this._t("panel.boost_n_chores", { first: list.slice(0, 2).join(", "), count: list.length - 2 }) : list.join(", ");
+  }
+
+  _boostKidText(childIds) {
+    if (!childIds || !childIds.length) return this._t("panel.boost_everyone");
+    const names = Object.fromEntries((this._state.children || []).map(c => [c.id, c.name]));
+    return childIds.map(id => names[id]).filter(Boolean).join(", ");
+  }
+
+  _hm(ms) {
+    return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  _renderBoostsCard() {
+    const boosts = this._boostList();
+    if (!boosts.length) return "";
+    const live = boosts.filter(b => b.status === "active").length;
+    return `
+      <div class="tm-card tm-boost-card">
+        <h3 class="tm-section-title"><span aria-hidden="true">⚡</span>${this._t("panel.boost_card_title")}
+          ${live ? `<span class="tm-pill tm-boost-pill">${this._t("panel.boost_live", { count: live })}</span>` : ""}
+          <button type="button" class="tm-btn tm-btn-sm tm-boost-btn" data-act="boost-open" style="margin-inline-start:auto">${this._t("panel.boost_start")}</button>
+        </h3>
+        <div class="tm-help-list">
+          ${boosts.map(b => {
+            const active = b.status === "active";
+            const when = active
+              ? this._t("panel.boost_ends", { time: this._hm(b.endsMs), minutes: Math.max(1, Math.ceil((b.endsMs - Date.now()) / 60000)) })
+              : this._t("panel.boost_starts", { start: this._hm(b.startsMs), end: this._hm(b.endsMs) });
+            const btn = active ? "panel.boost_end_now" : (b.rule_id ? "panel.boost_skip" : "panel.boost_call_off");
+            return `
+            <div class="tm-help-row tm-boost-row ${active ? "tm-boost-live" : ""}">
+              <div class="tm-boost-ic" aria-hidden="true">${active ? "⚡" : "🕘"}</div>
+              <div class="tm-help-text">
+                <strong>×${this._esc(this._fmtMult(b.multiplier))}${b.name ? ` · ${this._esc(b.name)}` : ""}</strong>
+                <div class="tm-meta">${this._esc(this._boostChoreText(b.chore_ids))} · ${this._esc(this._boostKidText(b.child_ids))} · ${this._esc(when)}${b.rule_id ? ` · ${this._t("panel.boost_recurring")}` : ""}</div>
+              </div>
+              <button type="button" class="tm-btn tm-btn-sm" data-act="boost-end" data-id="${this._esc(b.id)}">${this._t(btn)}</button>
+            </div>`;
+          }).join("")}
+        </div>
+      </div>`;
+  }
+
+  _boostChips(d, kindAct) {
+    const chip = (act, id, on, label) =>
+      `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}" data-act="${act}" data-id="${this._esc(id)}">${label}</button>`;
+    const chores = (this._state.chores || []).filter(c => c.enabled !== false && c.task_type !== "timed");
+    const kids = (this._state.children || []).filter(c => !c.is_adult);
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.boost_pays")}</span>
+        <div class="tm-chip-row">${[1.5, 2, 3].map(m => chip("boost-mult", m, Number(d.multiplier) === m, `×${m}`)).join("")}</div>
+      </div>
+      ${kindAct === "boost" ? `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.boost_for")}</span>
+        <div class="tm-chip-row">${[15, 30, 45, 60, 120].map(n => chip("boost-len", n, Number(d.minutes) === n,
+          n < 60 ? this._t("panel.boost_minutes", { count: n }) : this._t(n === 60 ? "panel.boost_hour" : "panel.boost_hours", { count: n / 60 }))).join("")}</div>
+      </div>` : ""}
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.boost_which_chores")}</span>
+        <div class="tm-chip-row">
+          ${chip("boost-chore", "__all__", !d.chore_ids.length, this._t("panel.boost_all_chores"))}
+          ${chores.map(c => chip("boost-chore", c.id, d.chore_ids.includes(c.id), this._esc(c.name))).join("")}
+        </div>
+      </div>
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.boost_who")}</span>
+        <div class="tm-chip-row">
+          ${chip("boost-kid", "__all__", !d.child_ids.length, this._t("panel.boost_everyone"))}
+          ${kids.map(c => chip("boost-kid", c.id, d.child_ids.includes(c.id), this._esc(c.name))).join("")}
+        </div>
+      </div>
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.boost_name")}</span>
+        <input class="tm-input" type="text" data-field="name" maxlength="60" value="${this._esc(d.name || "")}" placeholder="${this._esc(this._t("panel.boost_name_ph"))}">
+      </div>
+      ${this._switch(this._t("panel.boost_notify"), "notify", d.notify !== false, this._t("panel.boost_notify_hint"))}`;
+  }
+
+  _renderBoostDialog() {
+    const d = this._dialog.data;
+    const body = `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.boost_when")}</span>
+        <div class="tm-chip-row">
+          <button type="button" class="tm-chip-btn ${d.when === "now" ? "tm-chip-on" : ""}" data-act="boost-when" data-id="now">${this._t("panel.boost_now")}</button>
+          <button type="button" class="tm-chip-btn ${d.when === "later" ? "tm-chip-on" : ""}" data-act="boost-when" data-id="later">${this._t("panel.boost_later")}</button>
+          ${d.when === "later" ? `<input class="tm-input" type="time" data-field="later" value="${this._esc(d.later || "")}" style="max-width:140px">` : ""}
+        </div>
+      </div>
+      ${this._boostChips(d, "boost")}
+      <div class="tm-boost-preview">⚡ ${this._esc(this._boostPreview(d))}</div>`;
+    return this._dialogShell(this._t("panel.boost_dialog_title"), body,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised tm-boost-btn" data-act="boost-save">⚡ ${this._t("panel.boost_start")}</button>`);
+  }
+
+  _boostPreview(d) {
+    const what = this._boostChoreText(d.chore_ids);
+    // Mid-sentence, "everyone" stays lower case.
+    const who = d.child_ids && d.child_ids.length ? this._boostKidText(d.child_ids) : this._t("panel.boost_everyone_lc");
+    const mult = this._fmtMult(d.multiplier);
+    if (this._dialog.kind === "boost-rule") {
+      const dayNames = (d.days || []).map(i => this._weekdayShort(i)).join(", ") || "—";
+      return this._t("panel.boost_preview_rule", { what, who, multiplier: mult, days: dayNames, start: d.start || "", end: d.end || "" });
+    }
+    const minutes = Number(d.minutes) || 0;
+    if (d.when === "later") return this._t("panel.boost_preview_later", { what, who, multiplier: mult, time: d.later || "", minutes });
+    return this._t("panel.boost_preview_now", { what, who, multiplier: mult, minutes, until: this._hm(Date.now() + minutes * 60000) });
+  }
+
+  _weekdayShort(i) {
+    // 2024-01-01 was a Monday, so day i of that week is weekday i.
+    return new Date(2024, 0, 1 + Number(i)).toLocaleDateString([], { weekday: "short" });
+  }
+
+  _renderBoostRuleDialog() {
+    const d = this._dialog.data;
+    const dayChips = [0, 1, 2, 3, 4, 5, 6].map(i =>
+      `<button type="button" class="tm-chip-btn ${d.days.includes(i) ? "tm-chip-on" : ""}" aria-pressed="${d.days.includes(i)}" data-act="boost-day" data-id="${i}">${this._esc(this._weekdayShort(i))}</button>`).join("");
+    const body = `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.boost_days")}</span>
+        <div class="tm-chip-row">${dayChips}</div>
+      </div>
+      <div class="tm-field-row">
+        <div class="tm-field"><span class="tm-field-label">${this._t("panel.boost_from")}</span><input class="tm-input" type="time" data-field="start" value="${this._esc(d.start)}"></div>
+        <div class="tm-field"><span class="tm-field-label">${this._t("panel.boost_to")}</span><input class="tm-input" type="time" data-field="end" value="${this._esc(d.end)}"></div>
+      </div>
+      ${this._boostChips(d, "boost-rule")}
+      <div class="tm-boost-preview">⚡ ${this._esc(this._boostPreview(d))}</div>`;
+    return this._dialogShell(this._t(d.rule_id ? "panel.boost_rule_edit" : "panel.boost_rule_add"), body,
+      `${d.rule_id ? `<button type="button" class="tm-btn tm-btn-danger" data-act="boost-rule-delete" style="margin-inline-end:auto">${this._t("panel.boost_rule_delete")}</button>` : ""}
+       <button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="boost-rule-save">${this._t("panel.btn_save")}</button>`);
+  }
+
+  _renderBoostSettings(s) {
+    const cand = this._state.boost_wake_candidates || { screens: [], devices: [] };
+    const screens = s.boost_wake_screens || [];
+    const devices = s.boost_wake_devices || [];
+    const stacking = s.boost_stacking === "stack" ? "stack" : "highest";
+    const rules = this._state.boost_rules || [];
+    const ck = (attr, id, label, tag, on) => `
+      <label class="tm-boost-ck"><input type="checkbox" ${attr}="${this._esc(id)}" ${on ? "checked" : ""}> ${this._esc(label)} <span class="tm-boost-tag">${tag}</span></label>`;
+    // Picked before but gone from HA since: keep it visible so saving doesn't drop it silently.
+    const screenRows = [...cand.screens, ...screens.filter(id => !cand.screens.some(c => c.entity_id === id)).map(id => ({ entity_id: id, name: id }))];
+    const deviceRows = [...cand.devices, ...devices.filter(id => !cand.devices.some(c => c.service === id)).map(id => ({ service: id, name: id }))];
+    const radio = (value, title, hint) => `
+      <label class="tm-boost-radio ${stacking === value ? "on" : ""}"><input type="radio" name="boost_stacking" value="${value}" ${stacking === value ? "checked" : ""}>
+        <span><b>${title}</b><small>${hint}</small></span></label>`;
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.boost_settings_title")}</h3><p class="tm-meta">${this._t("panel.boost_settings_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row tm-setting-top">
+              <div class="tm-setting-label">${this._t("panel.boost_stacking")}<small>${this._t("panel.boost_stacking_hint")}</small></div>
+              <div class="tm-boost-radios">
+                ${radio("highest", this._t("panel.boost_stacking_highest"), this._t("panel.boost_stacking_highest_hint"))}
+                ${radio("stack", this._t("panel.boost_stacking_stack"), this._t("panel.boost_stacking_stack_hint"))}
+              </div>
+            </div>
+            <div class="tm-setting-row tm-setting-top">
+              <div class="tm-setting-label">${this._t("panel.boost_wake_screens")}<small>${this._t("panel.boost_wake_screens_hint")}</small></div>
+              <div class="tm-boost-cks">${screenRows.length
+                ? screenRows.map(c => ck("data-boost-screen", c.entity_id, c.name, "Fully Kiosk", screens.includes(c.entity_id))).join("")
+                : `<span class="tm-meta">${this._t("panel.boost_wake_screens_none")}</span>`}</div>
+            </div>
+            <div class="tm-setting-row tm-setting-top">
+              <div class="tm-setting-label">${this._t("panel.boost_wake_devices")}<small>${this._t("panel.boost_wake_devices_hint")}</small></div>
+              <div class="tm-boost-cks">${deviceRows.length
+                ? deviceRows.map(c => ck("data-boost-device", c.service, c.name, this._t("panel.boost_companion_tag"), devices.includes(c.service))).join("")
+                : `<span class="tm-meta">${this._t("panel.boost_wake_devices_none")}</span>`}
+                ${screens.length || devices.length ? `<div><button type="button" class="tm-btn tm-btn-sm" data-act="boost-test-wake">${this._t("panel.boost_test_wake")}</button>
+                  <span class="tm-field-hint">${this._t("panel.boost_test_wake_hint")}</span></div>` : ""}
+              </div>
+            </div>
+            <div class="tm-setting-row tm-setting-top">
+              <div class="tm-setting-label">${this._t("panel.boost_rules")}<small>${this._t("panel.boost_rules_hint")}</small></div>
+              <div class="tm-boost-rules">
+                ${rules.map(r => `
+                  <div class="tm-boost-rule ${r.enabled === false ? "off" : ""}">
+                    <div class="tm-boost-days">${[0, 1, 2, 3, 4, 5, 6].map(i => `<span class="${(r.days || []).includes(i) ? "on" : ""}">${this._esc(this._weekdayShort(i).slice(0, 2))}</span>`).join("")}</div>
+                    <div class="tm-help-text"><strong>${this._esc(r.name || this._t("panel.boost_rule_unnamed"))} · ×${this._esc(this._fmtMult(r.multiplier))}</strong>
+                      <div class="tm-meta">${this._esc(r.start)}–${this._esc(r.end)} · ${this._esc(this._boostChoreText(r.chore_ids))} · ${this._esc(this._boostKidText(r.child_ids))}</div></div>
+                    <ha-switch data-act="boost-rule-toggle" data-id="${this._esc(r.id)}" ${r.enabled === false ? "" : "checked"} title="${this._esc(this._t("panel.boost_rule_on"))}"></ha-switch>
+                    <button type="button" class="tm-btn tm-btn-sm" data-act="boost-rule-edit" data-id="${this._esc(r.id)}">${this._t("panel.boost_rule_edit_btn")}</button>
+                  </div>`).join("")}
+                <button type="button" class="tm-btn" data-act="boost-rule-add">+ ${this._t("panel.boost_rule_add")}</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+  }
+
+  _boostClick(act, t) {
+    const d = this._dialog && (this._dialog.kind === "boost" || this._dialog.kind === "boost-rule") ? this._dialog.data : null;
+    const toggleList = (list, id) => {
+      if (id === "__all__") return [];
+      return list.includes(id) ? list.filter(x => x !== id) : [...list, id];
+    };
+    switch (act) {
+      case "boost-open":
+        this._openDialog({ kind: "boost", data: { when: "now", later: "", multiplier: 2, minutes: 45, chore_ids: [], child_ids: [], name: "", notify: true } });
+        return true;
+      case "boost-rule-add":
+        this._openDialog({ kind: "boost-rule", data: { rule_id: "", days: [5], start: "09:00", end: "11:00", multiplier: 2, chore_ids: [], child_ids: [], name: "", notify: true, enabled: true } });
+        return true;
+      case "boost-rule-edit": {
+        const r = (this._state.boost_rules || []).find(x => x.id === t.dataset.id);
+        if (!r) return true;
+        this._openDialog({ kind: "boost-rule", data: { rule_id: r.id, days: [...(r.days || [])], start: r.start, end: r.end, multiplier: r.multiplier,
+          chore_ids: [...(r.chore_ids || [])], child_ids: [...(r.child_ids || [])], name: r.name || "", notify: r.notify !== false, enabled: r.enabled !== false } });
+        return true;
+      }
+      case "boost-rule-toggle": {
+        const r = (this._state.boost_rules || []).find(x => x.id === t.dataset.id);
+        if (r) this._saveBoostRule({ ...r, rule_id: r.id, enabled: !(r.enabled !== false) }, false);
+        return true;
+      }
+      case "boost-end":
+        this._endBoost(t.dataset.id);
+        return true;
+      case "boost-test-wake":
+        this._boostTestWake();
+        return true;
+      case "boost-save":
+        this._startBoostFromDialog();
+        return true;
+      case "boost-rule-save":
+        if (d) this._saveBoostRule(d, true);
+        return true;
+      case "boost-rule-delete":
+        if (d) this._deleteBoostRule(d.rule_id);
+        return true;
+    }
+    if (!d) return false;
+    switch (act) {
+      case "boost-when": d.when = t.dataset.id; break;
+      case "boost-mult": d.multiplier = Number(t.dataset.id); break;
+      case "boost-len": d.minutes = Number(t.dataset.id); break;
+      case "boost-chore": d.chore_ids = toggleList(d.chore_ids, t.dataset.id); break;
+      case "boost-kid": d.child_ids = toggleList(d.child_ids, t.dataset.id); break;
+      case "boost-day": {
+        const i = Number(t.dataset.id);
+        d.days = d.days.includes(i) ? d.days.filter(x => x !== i) : [...d.days, i].sort();
+        break;
+      }
+      default: return false;
+    }
+    this._syncDialogInputs && this._syncDialogInputs();
+    this._render();
+    return true;
+  }
+
+  async _startBoostFromDialog() {
+    const d = this._dialog.data;
+    const data = { multiplier: Number(d.multiplier), minutes: Number(d.minutes), chore_ids: d.chore_ids, child_ids: d.child_ids,
+      name: String(d.name || "").trim(), notify: d.notify !== false };
+    if (d.when === "later") {
+      const m = /^(\d{2}):(\d{2})$/.exec(d.later || "");
+      const at = m ? new Date() : null;
+      if (at) at.setHours(Number(m[1]), Number(m[2]), 0, 0);
+      if (!at || at.getTime() <= Date.now()) { this._showToast("err", this._t("panel.boost_later_invalid")); return; }
+      data.starts_at = at.toISOString();
+    }
+    const { ok, err } = await this._callService("start_boost", data);
+    if (!ok) { this._showToast("err", err); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", this._t(d.when === "later" ? "panel.boost_scheduled" : "panel.boost_started"));
+  }
+
+  async _endBoost(id) {
+    const { ok, err } = await this._callService("end_boost", { boost_id: id });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.boost_ended"));
+  }
+
+  async _saveBoostRule(d, fromDialog) {
+    if (!d.days || !d.days.length) { this._showToast("err", this._t("panel.boost_rule_need_day")); return; }
+    if (!(d.start < d.end)) { this._showToast("err", this._t("panel.boost_rule_bad_times")); return; }
+    const payload = { type: "taskmate/boosts/save_rule", days: d.days, start: d.start, end: d.end, multiplier: Number(d.multiplier),
+      chore_ids: d.chore_ids || [], child_ids: d.child_ids || [], name: String(d.name || "").trim(), notify: d.notify !== false, enabled: d.enabled !== false };
+    if (d.rule_id) payload.rule_id = d.rule_id;
+    try {
+      await this._callWS(payload);
+    } catch (err) {
+      this._showToast("err", (err && err.message) || String(err));
+      return;
+    }
+    if (fromDialog) this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.boost_rule_saved"));
+  }
+
+  async _deleteBoostRule(id) {
+    if (!id || !confirm(this._t("panel.boost_rule_delete_confirm"))) return;
+    try {
+      await this._callWS({ type: "taskmate/boosts/delete_rule", rule_id: id });
+    } catch (err) {
+      this._showToast("err", (err && err.message) || String(err));
+      return;
+    }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.boost_rule_deleted"));
+  }
+
+  async _boostTestWake() {
+    try {
+      const res = await this._callWS({ type: "taskmate/boosts/test_wake" });
+      this._showToast("ok", this._t("panel.boost_test_wake_sent", { count: (res && res.sent) || 0 }));
+    } catch (err) {
+      this._showToast("err", (err && err.message) || String(err));
+    }
   }
 
   /** "I'm stuck" requests still open, with an "On my way" button each. */
@@ -9703,6 +10054,7 @@ class TaskMatePanel extends HTMLElement {
             </div>
           </div>
         </div>
+        ${this._renderBoostSettings(s)}
 
         <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.allowance_title")}</h3><p class="tm-meta">${this._t("panel.allowance_hint")}</p></div></div>
@@ -10397,6 +10749,8 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "avatar-catalog") return this._renderAvatarCatalogDialog();
     if (this._dialog.kind === "challenge")    return this._renderChallengeDialog();
     if (this._dialog.kind === "bounty")       return this._renderBountyDialog();
+    if (this._dialog.kind === "boost")        return this._renderBoostDialog();
+    if (this._dialog.kind === "boost-rule")   return this._renderBoostRuleDialog();
     if (this._dialog.kind === "auction")      return this._renderAuctionDialog();
     if (this._dialog.kind === "apply-penalty") return this._renderApplyDialog("penalty");
     if (this._dialog.kind === "apply-bonus")   return this._renderApplyDialog("bonus");
@@ -14111,6 +14465,29 @@ class TaskMatePanel extends HTMLElement {
       .tm-pill-info { background: color-mix(in srgb, var(--info-color, #039be5) 14%, transparent); color: var(--info-color, #039be5); }
       .tm-help-card { border-inline-start: 4px solid var(--warning-color, #ffa600); }
       .tm-owed-card { border-inline-start: 4px solid #8e44ad; }
+      /* Boost windows */
+      .tm-boost-card { border-inline-start: 4px solid #ff7a00; }
+      .tm-boost-pill { background: #fff1e0; color: #b34f00; }
+      .tm-boost-btn { background: #ff7a00 !important; border-color: #ff7a00 !important; color: #fff !important; }
+      .tm-boost-row { justify-content: flex-start; }
+      .tm-boost-row .tm-help-text { flex: 1; }
+      .tm-boost-ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 1.2rem; background: var(--secondary-background-color); flex: none; }
+      .tm-boost-live .tm-boost-ic { background: #fff1e0; }
+      .tm-boost-preview { background: #fff8ef; border: 1px dashed #ffc778; border-radius: 10px; padding: 10px 12px; color: #6b3a00; font-size: .92rem; }
+      .tm-setting-top { align-items: flex-start; }
+      .tm-boost-radios, .tm-boost-cks, .tm-boost-rules { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+      .tm-boost-radio { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--divider-color); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+      .tm-boost-radio:has(input:checked) { border-color: var(--primary-color); background: color-mix(in srgb, var(--primary-color) 7%, transparent); }
+      .tm-boost-radio small { display: block; color: var(--secondary-text-color); }
+      .tm-boost-ck { display: flex; align-items: center; gap: 8px; }
+      .tm-boost-tag { font-size: .72rem; padding: 2px 7px; border-radius: 999px; background: var(--secondary-background-color); color: var(--secondary-text-color); }
+      .tm-boost-rule { display: flex; align-items: center; gap: 12px; border: 1px solid var(--divider-color); border-radius: 10px; padding: 10px 12px; }
+      .tm-boost-rule.off { opacity: .6; }
+      .tm-boost-rule .tm-help-text { flex: 1; min-width: 0; }
+      .tm-boost-days { display: flex; gap: 3px; flex: none; }
+      .tm-boost-days span { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: .66rem; font-weight: 700;
+        background: var(--secondary-background-color); color: var(--secondary-text-color); }
+      .tm-boost-days span.on { background: #ff7a00; color: #fff; }
       .tm-help-list { display: flex; flex-direction: column; gap: 8px; }
       .tm-help-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--divider-color); }
       .tm-help-row:first-child { border-top: 0; }

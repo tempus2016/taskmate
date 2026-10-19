@@ -630,6 +630,62 @@
   // hass update or page load. Shared by every card that celebrates, so a child
   // card and a points card on the same dashboard don't both go off. Keyed on
   // HA's time zone so the day rolls over with the backend, not the browser.
+  // ── Boost windows ─────────────────────────────────────────────────────────
+  // The overview sensor's `boosts` list holds live and upcoming boosts. The
+  // cards work out live/upcoming/over from the clock themselves, so a boost
+  // starts and ends on screen at the right second even between updates.
+  //   __taskmate_boosts(attrs, childId?, nowMs?) -> boosts for that child
+  //     (or all), each with status "active" | "upcoming", startsMs, endsMs.
+  //   __taskmate_boost_for(boosts, choreId) -> the biggest live multiplier
+  //     covering that chore, or 0.
+  //   __taskmate_boost_seen(id) / __taskmate_boost_mark(id) -> the "show the
+  //     takeover once per device per boost" gate, shared by every card.
+  window.__taskmate_boosts = window.__taskmate_boosts || function (attrs, childId, nowMs) {
+    const now = nowMs == null ? Date.now() : nowMs;
+    const list = (attrs && Array.isArray(attrs.boosts)) ? attrs.boosts : [];
+    const out = [];
+    for (const b of list) {
+      if (!b || !b.id) continue;
+      const startsMs = Date.parse(b.starts_at);
+      const endsMs = Date.parse(b.ends_at);
+      if (isNaN(startsMs) || isNaN(endsMs) || now >= endsMs) continue;
+      const kids = Array.isArray(b.child_ids) ? b.child_ids : [];
+      if (childId && kids.length && kids.indexOf(childId) === -1) continue;
+      out.push(Object.assign({}, b, { status: now < startsMs ? "upcoming" : "active", startsMs: startsMs, endsMs: endsMs }));
+    }
+    out.sort(function (a, b) { return (a.status === "active" ? 0 : 1) - (b.status === "active" ? 0 : 1) || a.startsMs - b.startsMs; });
+    return out;
+  };
+  window.__taskmate_boost_for = window.__taskmate_boost_for || function (boosts, choreId) {
+    let best = 0;
+    for (const b of boosts || []) {
+      if (b.status !== "active") continue;
+      const chores = Array.isArray(b.chore_ids) ? b.chore_ids : [];
+      if (chores.length && chores.indexOf(choreId) === -1) continue;
+      best = Math.max(best, Number(b.multiplier) || 0);
+    }
+    return best;
+  };
+  (function () {
+    const KEY = "taskmate_boosts_seen";
+    const read = function () {
+      try { const v = JSON.parse(window.localStorage.getItem(KEY) || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; }
+    };
+    window.__taskmate_boost_seen = window.__taskmate_boost_seen || function (id) { return read().indexOf(id) !== -1; };
+    window.__taskmate_boost_mark = window.__taskmate_boost_mark || function (id) {
+      const seen = read();
+      if (seen.indexOf(id) === -1) seen.push(id);
+      try { window.localStorage.setItem(KEY, JSON.stringify(seen.slice(-40))); } catch (e) { /* private mode: shows again next load */ }
+    };
+  })();
+  // "45:00" / "1:05:00"
+  window.__taskmate_clock = window.__taskmate_clock || function (ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    const pad = function (n) { return String(n).padStart(2, "0"); };
+    return h ? h + ":" + pad(m) + ":" + pad(sec) : pad(m) + ":" + pad(sec);
+  };
+
   window.__taskmate_birthday_once = window.__taskmate_birthday_once || function (hass, childId) {
     if (!childId) return false;
     let day;

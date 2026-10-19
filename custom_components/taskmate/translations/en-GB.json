@@ -1462,6 +1462,50 @@
           "description": "The child confirming they received it (leave empty when a parent marks it)"
         }
       }
+    },
+    "start_boost": {
+      "name": "Start a boost",
+      "description": "Open a boost window. Chores done inside it pay the multiplier. Leave chore_ids or child_ids empty for all of them.",
+      "fields": {
+        "multiplier": {
+          "name": "Multiplier",
+          "description": "What the covered chores pay, e.g. 2 for double (1.1 to 5)"
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "How long the boost lasts"
+        },
+        "chore_ids": {
+          "name": "Chore IDs",
+          "description": "The chores it covers (empty = all chores)"
+        },
+        "child_ids": {
+          "name": "Child IDs",
+          "description": "The children it covers (empty = everyone)"
+        },
+        "starts_at": {
+          "name": "Starts at",
+          "description": "Start later instead of now (up to a week ahead)"
+        },
+        "name": {
+          "name": "Name",
+          "description": "Optional label shown on the cards, e.g. \"Guests at six\""
+        },
+        "notify": {
+          "name": "Notify",
+          "description": "Send the boost push to the children it covers (when that notification is switched on)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "End a boost",
+      "description": "Stop a boost early, or call off one that hasn't started yet.",
+      "fields": {
+        "boost_id": {
+          "name": "Boost ID",
+          "description": "The boost, from the boosts attribute of sensor.taskmate_overview"
+        }
+      }
     }
   },
   "entity": {
@@ -1546,7 +1590,9 @@
               "season_champion": "Season champion",
               "bounty_posted": "Bounty posted",
               "scheduled_change_applied": "Scheduled change applied",
-              "raffle_drawn": "Raffle drawn"
+              "raffle_drawn": "Raffle drawn",
+              "boost_started": "Boost started",
+              "boost_ended": "Boost ended"
             }
           }
         }

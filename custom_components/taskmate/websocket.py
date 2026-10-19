@@ -89,6 +89,7 @@ from .const import (
 )
 from .coord_auto_approve import AUTO_APPROVE_MAX_HOURS
 from .coord_birthdays import normalize_birthday
+from .coord_boosts import BOOST_STACKING_MODES
 from .coord_inspections import INSPECTION_BONUS_MAX, INSPECTION_FAIL_MODES, INSPECTION_WINDOWS
 from .coord_pets import PET_BOOL_SETTINGS, PET_INT_SETTINGS
 from .coord_teamwork import teamwork_config_error
@@ -497,6 +498,11 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "help_requests": coordinator.open_help_requests(),
         # Reward fulfilment (#1098): redeemed rewards still to be handed over.
         "owed_rewards": coordinator.owed_rewards(),
+        # Boost windows: live and upcoming boosts, the recurring rules, and
+        # the tablets the Settings page can offer to wake.
+        "boosts": coordinator.boosts_state(),
+        "boost_rules": [dict(r) for r in coordinator.boost_rules()],
+        "boost_wake_candidates": coordinator.boost_wake_candidates(),
         "sick_today": [c.id for c in coordinator.storage.get_children() if coordinator.is_sick_day(c.id)],
         "moods_today": {c.id: m for c in coordinator.storage.get_children() if (m := coordinator.mood_on(c.id))},
         "raffles": coordinator.all_raffles(),
@@ -1990,6 +1996,9 @@ _SUBKEY_SETTINGS = {
     "weekly_goal_bonus",
     "reward_fulfilment_enabled",
     "reward_fulfilment_reminder_days",
+    "boost_stacking",
+    "boost_wake_screens",
+    "boost_wake_devices",
     "pets_enabled",
     *PET_INT_SETTINGS,
     *PET_BOOL_SETTINGS,
@@ -2283,6 +2292,11 @@ _UPDATE_SETTINGS_SCHEMA = {
     **{vol.Optional(key): bool for key in PET_BOOL_SETTINGS},
     vol.Optional("weekly_goal_bonus"): vol.All(vol.Coerce(int), vol.Range(min=0, max=100000)),
     vol.Optional("reward_fulfilment_enabled"): bool,
+    vol.Optional("boost_stacking"): vol.In(BOOST_STACKING_MODES),
+    vol.Optional("boost_wake_screens"): vol.All([vol.All(str, vol.Match(r"^switch\.[a-z0-9_]+$"))], vol.Length(max=10)),
+    vol.Optional("boost_wake_devices"): vol.All(
+        [vol.All(str, vol.Match(r"^mobile_app_[a-z0-9_]+$"))], vol.Length(max=10)
+    ),
     vol.Optional("reward_fulfilment_reminder_days"): vol.All(
         vol.Coerce(int), vol.Range(min=0, max=REWARD_FULFILMENT_REMINDER_MAX_DAYS)
     ),
@@ -3362,6 +3376,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     # build on this module's _admin_only / _get_coordinator helpers.
     from .kiosk import KIOSK_COMMANDS
     from .websocket_auctions import AUCTION_COMMANDS
+    from .websocket_boosts import BOOST_COMMANDS
     from .websocket_inspections import INSPECTION_COMMANDS
     from .websocket_raffles import RAFFLE_COMMANDS
     from .websocket_recaps import RECAP_COMMANDS
@@ -3374,6 +3389,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         *SETUP_COMMANDS,
         *AUCTION_COMMANDS,
         *RAFFLE_COMMANDS,
+        *BOOST_COMMANDS,
     )
     for cmd in (*_COMMANDS, *extra):
         websocket_api.async_register_command(hass, cmd)

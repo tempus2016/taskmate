@@ -32,6 +32,7 @@ from .const import (
     NOTIF_TYPE_BADGE_EARNED,
     NOTIF_TYPE_BEDTIME_REMINDER,
     NOTIF_TYPE_BIRTHDAY,
+    NOTIF_TYPE_BOOST_STARTED,
     NOTIF_TYPE_BOUNTY_CLAIM_LAPSING,
     NOTIF_TYPE_BOUNTY_POSTED,
     NOTIF_TYPE_CELEBRATION,
@@ -194,6 +195,8 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_REWARD_OWED, "parent", False, False, False, True),
     # Personal bests (#1099): opt-in, like every celebration added after release.
     NotificationTypeMeta(NOTIF_TYPE_PERSONAL_BEST, "both", False, False, False, False),
+    # Boost windows: the children a boost covers hear it began. Opt-in.
+    NotificationTypeMeta(NOTIF_TYPE_BOOST_STARTED, "child", False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
@@ -204,6 +207,7 @@ NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NO
 _OWN_EVENT_TYPES: frozenset[str] = frozenset(
     {
         NOTIF_TYPE_AUCTION_OPENED,
+        NOTIF_TYPE_BOOST_STARTED,
         NOTIF_TYPE_PERSONAL_BEST,
         NOTIF_TYPE_BADGE_EARNED,
         NOTIF_TYPE_BOUNTY_POSTED,
@@ -506,6 +510,7 @@ class NotificationCoordinator:
             "winner_name": "Alex",
             "tickets": 12,
             "record_label": notify_strings.text(self.hass, "record_longest_streak"),
+            "chores_text": sample["chore"],
             "value": 12,
         }
         ctx["result_text"] = notify_strings.render(

@@ -16,6 +16,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN
+from .coord_boosts import BOOST_MAX_MINUTES, BOOST_MAX_MULTIPLIER, BOOST_MIN_MULTIPLIER, BOOST_NAME_MAX
 from .coord_goals import WEEKLY_GOAL_MAX
 from .coord_pets import PET_NAME_MAX, PET_SPECIES
 from .coord_wellbeing import HELP_MESSAGE_MAX, MOODS
@@ -31,9 +32,13 @@ SERVICE_BUY_RAFFLE_TICKETS = "buy_raffle_tickets"
 SERVICE_DRAW_RAFFLE = "draw_raffle"
 SERVICE_ADOPT_PET = "adopt_pet"
 SERVICE_MARK_REWARD_DELIVERED = "mark_reward_delivered"
+SERVICE_START_BOOST = "start_boost"
+SERVICE_END_BOOST = "end_boost"
 
 FAMILY_SERVICES: tuple[str, ...] = (
     SERVICE_MARK_REWARD_DELIVERED,
+    SERVICE_START_BOOST,
+    SERVICE_END_BOOST,
     SERVICE_REQUEST_HELP,
     SERVICE_ANSWER_HELP,
     SERVICE_LOG_MOOD,
@@ -96,6 +101,20 @@ def async_register_family_services(
 
     async def draw_raffle(coordinator, call):
         await coordinator.async_draw_raffle(call.data["raffle_id"])
+
+    async def start_boost(coordinator, call):
+        await coordinator.async_start_boost(
+            multiplier=call.data["multiplier"],
+            minutes=call.data["minutes"],
+            chore_ids=call.data.get("chore_ids") or [],
+            child_ids=call.data.get("child_ids") or [],
+            starts_at=call.data.get("starts_at"),
+            name=call.data.get("name", ""),
+            notify=call.data.get("notify", True),
+        )
+
+    async def end_boost(coordinator, call):
+        await coordinator.async_end_boost(call.data["boost_id"])
 
     # Reward fulfilment (#1098): a parent marks a reward handed over, or the
     # child confirms their own with ``child_id`` — so the one service has two
@@ -169,6 +188,23 @@ def async_register_family_services(
             },
         ),
         (SERVICE_DRAW_RAFFLE, draw_raffle, False, {vol.Required("raffle_id"): cv.string}),
+        (
+            SERVICE_START_BOOST,
+            start_boost,
+            False,
+            {
+                vol.Required("multiplier"): vol.All(
+                    vol.Coerce(float), vol.Range(min=BOOST_MIN_MULTIPLIER, max=BOOST_MAX_MULTIPLIER)
+                ),
+                vol.Required("minutes"): vol.All(vol.Coerce(int), vol.Range(min=1, max=BOOST_MAX_MINUTES)),
+                vol.Optional("chore_ids", default=[]): vol.All(cv.ensure_list, [cv.string]),
+                vol.Optional("child_ids", default=[]): vol.All(cv.ensure_list, [cv.string]),
+                vol.Optional("starts_at"): cv.datetime,
+                vol.Optional("name", default=""): vol.All(cv.string, vol.Length(max=BOOST_NAME_MAX)),
+                vol.Optional("notify", default=True): cv.boolean,
+            },
+        ),
+        (SERVICE_END_BOOST, end_boost, False, {vol.Required("boost_id"): cv.string}),
         (
             SERVICE_ADOPT_PET,
             adopt_pet,

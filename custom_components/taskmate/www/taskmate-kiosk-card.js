@@ -479,7 +479,87 @@ class TaskMateKioskCard extends LitElement {
     return !(now >= start && now < Math.min(1440, end + allowance));
   }
 
-  _pointsFor(chore) { return chore.effective_points ?? chore.points ?? 0; }
+  _pointsFor(chore, childId) {
+    const base = chore.effective_points ?? chore.points ?? 0;
+    const m = this._boostMult(chore, childId);
+    return m && Number(base) > 0 ? Math.round(Number(base) * m) : base;
+  }
+
+  // ── Boost windows ────────────────────────────────────────────────────────
+  // A live boost wakes the tablet out of ambient mode and fills the screen
+  // until someone taps; after that a countdown strip sits under the top bar.
+
+  _boosts(childId) {
+    return window.__taskmate_boosts ? window.__taskmate_boosts(this._attrs(), childId) : [];
+  }
+
+  _boostMult(chore, childId) {
+    if (!chore || !childId || chore.task_type === "timed" || (chore.auction && chore.auction.child_id)) return 0;
+    const m = window.__taskmate_boost_for ? window.__taskmate_boost_for(this._boosts(childId), chore.id) : 0;
+    return m > 1 ? m : 0;
+  }
+
+  _fmtMult(m) { return String(Math.round(Number(m) * 10) / 10); }
+
+  _boostWhat(b) {
+    const names = b.chore_names || [];
+    if (!names.length) return this._t("child.boost_all_chores");
+    return names.length > 2
+      ? this._t("child.boost_some_chores", { first: names.slice(0, 2).join(", "), count: names.length - 2 })
+      : names.join(", ");
+  }
+
+  /** Called every second from the tick: is there a live boost this tablet hasn't announced? */
+  _checkBoost() {
+    const live = this._boosts().find(b => b.status === "active");
+    if (this._boostTake && (!live || live.id !== this._boostTake.id)) { this._boostTake = null; return true; }
+    if (!live || this._boostTake || this.config.show_boost_alert === false) return false;
+    const key = `kiosk:${live.id}`;
+    if (window.__taskmate_boost_seen && window.__taskmate_boost_seen(key)) return false;
+    this._boostTake = live;
+    // Wake out of the ambient screen (and keep the idle timer from sending a
+    // child's screen back to the picker underneath).
+    this._ambient = false;
+    this._pickerIdle = 0;
+    this._idle = 0;
+    return true;
+  }
+
+  _dismissBoost() {
+    if (this._boostTake && window.__taskmate_boost_mark) window.__taskmate_boost_mark(`kiosk:${this._boostTake.id}`);
+    this._boostTake = null;
+    this._pickerIdle = 0;
+    this.requestUpdate();
+  }
+
+  _renderBoostStrip() {
+    const live = this._boosts().find(b => b.status === "active");
+    if (!live || this._boostTake) return "";
+    const clock = window.__taskmate_clock ? window.__taskmate_clock(live.endsMs - Date.now()) : "";
+    return html`<div class="km-boost-strip" role="status">
+      <span aria-hidden="true">⚡</span>
+      <span class="km-boost-strip-text">${this._t("kiosk.boost_strip", { multiplier: this._fmtMult(live.multiplier), what: this._boostWhat(live) })}</span>
+      <span class="km-boost-strip-clock">${clock}</span>
+    </div>`;
+  }
+
+  _renderBoostTakeover(attrs) {
+    const b = this._boostTake;
+    if (!b) return "";
+    const kids = (attrs.children || []).filter(c => !(b.child_ids || []).length || b.child_ids.includes(c.id));
+    const clock = window.__taskmate_clock ? window.__taskmate_clock(b.endsMs - Date.now()) : "";
+    return html`
+      <div class="km-boost-take" role="dialog" aria-modal="true" aria-label="${this._t("kiosk.boost_title")}" @click=${() => this._dismissBoost()}>
+        <div class="km-boost-bolt" aria-hidden="true">⚡</div>
+        <div class="km-boost-title">${this._t("kiosk.boost_title")}</div>
+        <div class="km-boost-mult">×${this._fmtMult(b.multiplier)}</div>
+        <div class="km-boost-sub">${this._t("kiosk.boost_sub", { multiplier: this._fmtMult(b.multiplier), what: this._boostWhat(b) })}</div>
+        <div class="km-boost-clock">${clock}</div>
+        ${b.name ? html`<div class="km-boost-name">${b.name}</div>` : ""}
+        <div class="km-boost-who">${kids.slice(0, 6).map((c, i) => this._face(c, `var(--tmd-c${(i % 6) + 1}, #fff3)`, "sm"))}</div>
+        <button type="button" class="km-boost-go" @click=${(e) => { e.stopPropagation(); this._dismissBoost(); }}>${this._t("kiosk.boost_go")}</button>
+      </div>`;
+  }
 
   /** The cheapest reward this child can't afford yet — what they're saving for. */
   _nextReward(child) {
@@ -1078,6 +1158,9 @@ class TaskMateKioskCard extends LitElement {
     const prevMinute = this._now.getMinutes();
     this._now = new Date();
     let dirty = this._now.getMinutes() !== prevMinute;
+    if (this._checkBoost()) dirty = true;
+    // A live boost's countdown ticks every second.
+    if (!dirty && this._boosts().some(b => b.status === "active")) dirty = true;
     if (this._screen === "pin" && this._lockedUntil) {
       if (this._lockSeconds() === 0) this._lockedUntil = 0;
       dirty = true;
@@ -1164,8 +1247,10 @@ class TaskMateKioskCard extends LitElement {
               <ha-icon icon="${this._fullscreen ? "mdi:fullscreen-exit" : "mdi:fullscreen"}"></ha-icon>
             </button>` : ""}
         </div>
+        ${this._renderBoostStrip()}
         <div class="km-main">${body}</div>
         ${this._renderRaffleReveal()}
+        ${this._renderBoostTakeover(attrs)}
         ${this._showBounties() ? html`
           <input id="km-photo" type="file" accept="image/*" hidden
                  @change=${e => this._bountyPhotoPicked(e)} @cancel=${() => this._photoCancelled()}>` : ""}
@@ -1403,7 +1488,8 @@ class TaskMateKioskCard extends LitElement {
         <div class="km-row-body">
           <div class="km-row-name">${chore.name}</div>
           <div class="km-row-meta">
-            <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${this._pointsFor(chore)}</span>
+            <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${this._pointsFor(chore, child.id)}</span>
+            ${this._boostMult(chore, child.id) ? html`<span class="km-boost-x">×${this._fmtMult(this._boostMult(chore, child.id))}</span>` : ""}
             ${needsCheck ? html`<span class="km-tag">${this._t("kiosk.needs_check")}</span>` : ""}
             ${undoable ? html`<button class="km-undo" ?disabled=${!!this._busy}
                                       aria-label="${this._t("child.undo_named", { name: chore.name })}"
@@ -1572,6 +1658,26 @@ class TaskMateKioskCard extends LitElement {
       .km-raffle-box.done .km-raffle-wheel { background: color-mix(in srgb, #f5b301 24%, transparent); }
       .km-raffle-name { font-size: 2rem; font-weight: 800; }
       .km-raffle-win { font-size: 1.6rem; font-weight: 800; }
+      /* Boost windows */
+      .km-boost-strip { display: flex; align-items: center; gap: 10px; padding: 9px 18px; font-weight: 700; color: #fff;
+        background: linear-gradient(90deg, #ff7a00, #ffb300); }
+      .km-boost-strip-text { flex: 1; min-width: 0; }
+      .km-boost-strip-clock { font-family: ui-monospace, Menlo, monospace; font-size: 1.1rem; }
+      .km-boost-x { background: #ff7a00; color: #fff; border-radius: 999px; padding: 1px 8px; font-weight: 800; font-size: .8rem; }
+      .km-boost-take { position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 6px; padding: 24px; text-align: center; cursor: pointer; color: #fff;
+        background: radial-gradient(circle at 50% 35%, #ffb300 0%, #ff7a00 55%, #d84b00 100%); animation: km-boost-in .45s ease-out; }
+      .km-boost-bolt { font-size: clamp(3rem, 9cqw, 5rem); line-height: 1; animation: km-boost-pulse 1.2s ease-in-out infinite; filter: drop-shadow(0 6px 12px rgba(0,0,0,.25)); }
+      .km-boost-title { font-size: clamp(2rem, 6cqw, 3rem); font-weight: 800; }
+      .km-boost-mult { font: 900 clamp(3.5rem, 12cqw, 6rem)/1 sans-serif; text-shadow: 0 4px 0 rgba(0,0,0,.15); }
+      .km-boost-sub { font-size: clamp(1.1rem, 2.6cqw, 1.5rem); max-width: 640px; }
+      .km-boost-clock { font: 800 clamp(1.8rem, 5cqw, 2.6rem)/1 ui-monospace, Menlo, monospace; background: rgba(0,0,0,.18); padding: 10px 18px; border-radius: 14px; margin: 6px 0; }
+      .km-boost-name { opacity: .85; }
+      .km-boost-who { display: flex; gap: 12px; margin-top: 6px; }
+      .km-boost-go { margin-top: 12px; background: #fff; color: #c24a00; border: 0; border-radius: 999px; padding: 14px 34px; font: 800 1.2rem sans-serif; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,.2); }
+      @keyframes km-boost-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+      @keyframes km-boost-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+      @media (prefers-reduced-motion: reduce) { .km-boost-bolt, .km-boost-take { animation: none; } }
       ha-card.km {
         container-type: inline-size;
         container-name: km;
@@ -1622,6 +1728,8 @@ class TaskMateKioskCard extends LitElement {
       .km-face img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
       .km-face.big { width: 160px; height: 160px; font-size: 76px; }
       .km-face.big ha-icon { --mdc-icon-size: 90px; }
+      .km-face.sm { width: 64px; height: 64px; font-size: 28px; border: 3px solid rgba(255,255,255,.6); }
+      .km-face.sm ha-icon { --mdc-icon-size: 38px; }
       .km-face.head {
         width: 64px; height: 64px; font-size: 30px;
         background: rgba(255, 255, 255, 0.2);
@@ -2090,6 +2198,7 @@ class TaskMateKioskCardEditor extends LitElement {
       },
       { name: "ambient_after", selector: { number: { min: 30, max: 1800, step: 30, mode: "box", unit_of_measurement: "s" } } },
       { name: "show_raffle_draws", selector: { boolean: {} } },
+      { name: "show_boost_alert", selector: { boolean: {} } },
     ];
   }
 
@@ -2112,6 +2221,7 @@ class TaskMateKioskCardEditor extends LitElement {
     ambient_mode: this._t("kiosk.editor.ambient_mode"),
     ambient_after: this._t("kiosk.editor.ambient_after"),
     show_raffle_draws: this._t("kiosk.editor.show_raffle_draws"),
+    show_boost_alert: this._t("kiosk.editor.show_boost_alert"),
   })[entry.name] ?? entry.name;
 
   _computeHelper = (entry) => ({
@@ -2191,6 +2301,7 @@ class TaskMateKioskCardEditor extends LitElement {
       ambient_mode: this.config.ambient_mode || "off",
       ambient_after: this.config.ambient_after ?? DEFAULT_AMBIENT_AFTER,
       show_raffle_draws: this.config.show_raffle_draws !== false,
+      show_boost_alert: this.config.show_boost_alert !== false,
     };
     const rows = this._childRows();
     const pins = this._pins || {};

@@ -68,6 +68,7 @@ TaskMate ships with these built-in notification types:
 | **Pet grew up** | `pet_evolved` | Both | No | No | Off |
 | **Reward still owed** | `reward_owed` | Parents | No | No | **On** |
 | **Personal best** | `personal_best` | Both | No | No | Off |
+| **Boost started** | `boost_started` | Children | No | No | Off |
 
 The 15 rows from **Birthday** to **Auction Result** were added in v6.0.0. All of them start **switched off**, apart from the parent **Inspection Reminder**, which only ever fires for an inspection a parent started. Turn on the ones you want on the Notifications tab.
 

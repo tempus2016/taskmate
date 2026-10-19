@@ -1462,6 +1462,50 @@
           "description": "A criança que confirma ter recebido (deixe vazio quando um dos pais marca)"
         }
       }
+    },
+    "start_boost": {
+      "name": "Iniciar um boost",
+      "description": "Abre uma janela de boost. As tarefas feitas nela valem o multiplicador. Deixe chore_ids ou child_ids vazios para todos.",
+      "fields": {
+        "multiplier": {
+          "name": "Multiplicador",
+          "description": "Quanto valem as tarefas, ex. 2 para o dobro (1,1 a 5)"
+        },
+        "minutes": {
+          "name": "Minutos",
+          "description": "Quanto tempo dura o boost"
+        },
+        "chore_ids": {
+          "name": "IDs das tarefas",
+          "description": "As tarefas incluídas (vazio = todas)"
+        },
+        "child_ids": {
+          "name": "IDs das crianças",
+          "description": "As crianças incluídas (vazio = todas)"
+        },
+        "starts_at": {
+          "name": "Começa às",
+          "description": "Começar mais tarde em vez de agora (até uma semana antes)"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Rótulo opcional nos cards, ex. \"Visitas às seis\""
+        },
+        "notify": {
+          "name": "Notificar",
+          "description": "Enviar a notificação do boost às crianças (quando estiver ligada)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "Encerrar um boost",
+      "description": "Parar um boost antes ou cancelar um que ainda não começou.",
+      "fields": {
+        "boost_id": {
+          "name": "ID do boost",
+          "description": "O boost, do atributo boosts de sensor.taskmate_overview"
+        }
+      }
     }
   },
   "entity": {
@@ -1546,7 +1590,9 @@
               "season_champion": "Campeão da temporada",
               "bounty_posted": "Recompensa publicada",
               "scheduled_change_applied": "Alteração agendada aplicada",
-              "raffle_drawn": "Sorteio realizado"
+              "raffle_drawn": "Sorteio realizado",
+              "boost_started": "Boost iniciado",
+              "boost_ended": "Boost encerrado"
             }
           }
         }

@@ -1462,6 +1462,50 @@
           "description": "Barnet, der bekræfter at have fået den (lad stå tomt, når en forælder markerer)"
         }
       }
+    },
+    "start_boost": {
+      "name": "Start et boost",
+      "description": "Åbner et boost-vindue. Opgaver udført i det giver multiplikatoren. Lad chore_ids eller child_ids stå tomme for alle.",
+      "fields": {
+        "multiplier": {
+          "name": "Multiplikator",
+          "description": "Hvad opgaverne giver, f.eks. 2 for dobbelt (1,1 til 5)"
+        },
+        "minutes": {
+          "name": "Minutter",
+          "description": "Hvor længe boostet varer"
+        },
+        "chore_ids": {
+          "name": "Opgave-ID'er",
+          "description": "De opgaver, det gælder for (tom = alle)"
+        },
+        "child_ids": {
+          "name": "Barn-ID'er",
+          "description": "De børn, det gælder for (tom = alle)"
+        },
+        "starts_at": {
+          "name": "Starter",
+          "description": "Start senere i stedet for nu (op til en uge frem)"
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Valgfri tekst på kortene, f.eks. \"Gæster kl. 18\""
+        },
+        "notify": {
+          "name": "Giv besked",
+          "description": "Send boost-beskeden til børnene (når den besked er slået til)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "Afslut et boost",
+      "description": "Stop et boost før tid, eller aflys et, der ikke er begyndt endnu.",
+      "fields": {
+        "boost_id": {
+          "name": "Boost-ID",
+          "description": "Boostet, fra attributten boosts på sensor.taskmate_overview"
+        }
+      }
     }
   },
   "entity": {
@@ -1546,7 +1590,9 @@
               "season_champion": "Sæsonmester",
               "bounty_posted": "Dusør slået op",
               "scheduled_change_applied": "Planlagt ændring udført",
-              "raffle_drawn": "Lodtrækning trukket"
+              "raffle_drawn": "Lodtrækning trukket",
+              "boost_started": "Boost startet",
+              "boost_ended": "Boost slut"
             }
           }
         }

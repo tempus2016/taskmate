@@ -1178,6 +1178,12 @@ class ChoreCompletion:
     # Set on a parent completion (child_id "__parent__") that dismisses the
     # chore for this one child only (#1096). Empty = the whole pool.
     for_child_id: str = ""
+    # Boost windows: the multiplier a boost applied to submitted_points, or 0.
+    # ``boost_stacked`` is True when it was stacked on the weekend/birthday
+    # bonuses; otherwise the boost replaced them ("highest wins") and approval
+    # must not add them again.
+    boost_multiplier: float = 0.0
+    boost_stacked: bool = False
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ChoreCompletion:
@@ -1206,6 +1212,8 @@ class ChoreCompletion:
             quantity=_clamp_int(data.get("quantity"), 0, MAX_QUANTITY),
             auto_approved=data.get("auto_approved") is True,
             for_child_id=str(data.get("for_child_id", "") or ""),
+            boost_multiplier=float(data.get("boost_multiplier", 0) or 0),
+            boost_stacked=bool(data.get("boost_stacked", False)),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1240,6 +1248,10 @@ class ChoreCompletion:
             data["auto_approved"] = True
         if self.for_child_id:
             data["for_child_id"] = self.for_child_id
+        if self.boost_multiplier:
+            data["boost_multiplier"] = self.boost_multiplier
+            if self.boost_stacked:
+                data["boost_stacked"] = True
         return data
 
 

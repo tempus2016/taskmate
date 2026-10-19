@@ -97,6 +97,7 @@ Welcome to the TaskMate documentation. TaskMate is a Home Assistant integration 
 | [Recaps](Recaps.md) | A "Wrapped"-style story of each child's week, month or year |
 | [Virtual Pets](Virtual-Pets.md) | A pet that hatches and grows as the child does chores |
 | [Weekly Goals](Weekly-Goals.md) | Children set their own weekly points goal and earn a bonus for reaching it |
+| [Boost Windows](Boost-Windows.md) | Timed multipliers on chosen chores, started on the spot, on a schedule or from an automation |
 | [Personal Bests](Personal-Bests.md) | Each child's own records — longest streak, best day, best week, biggest award — celebrated when beaten |
 
 ## Notifications & Admin

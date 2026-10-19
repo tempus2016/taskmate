@@ -1462,6 +1462,50 @@
           "description": "Das Kind, das den Erhalt bestätigt (leer lassen, wenn ein Elternteil markiert)"
         }
       }
+    },
+    "start_boost": {
+      "name": "Boost starten",
+      "description": "Öffnet ein Boost-Fenster. Aufgaben darin zählen mit dem Multiplikator. chore_ids oder child_ids leer lassen für alle.",
+      "fields": {
+        "multiplier": {
+          "name": "Multiplikator",
+          "description": "Was die Aufgaben zählen, z. B. 2 für doppelt (1,1 bis 5)"
+        },
+        "minutes": {
+          "name": "Minuten",
+          "description": "Wie lange der Boost dauert"
+        },
+        "chore_ids": {
+          "name": "Aufgaben-IDs",
+          "description": "Die Aufgaben, für die er gilt (leer = alle)"
+        },
+        "child_ids": {
+          "name": "Kind-IDs",
+          "description": "Die Kinder, für die er gilt (leer = alle)"
+        },
+        "starts_at": {
+          "name": "Beginnt um",
+          "description": "Später statt jetzt beginnen (bis eine Woche im Voraus)"
+        },
+        "name": {
+          "name": "Name",
+          "description": "Optionale Bezeichnung auf den Karten, z. B. „Besuch um sechs“"
+        },
+        "notify": {
+          "name": "Benachrichtigen",
+          "description": "Die Boost-Nachricht an die Kinder schicken (wenn diese Benachrichtigung eingeschaltet ist)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "Boost beenden",
+      "description": "Einen Boost vorzeitig beenden oder einen noch nicht begonnenen absagen.",
+      "fields": {
+        "boost_id": {
+          "name": "Boost-ID",
+          "description": "Der Boost, aus dem Attribut boosts von sensor.taskmate_overview"
+        }
+      }
     }
   },
   "entity": {
@@ -1546,7 +1590,9 @@
               "season_champion": "Saisonsieger",
               "bounty_posted": "Kopfgeld ausgeschrieben",
               "scheduled_change_applied": "Geplante Änderung angewendet",
-              "raffle_drawn": "Verlosung gezogen"
+              "raffle_drawn": "Verlosung gezogen",
+              "boost_started": "Boost gestartet",
+              "boost_ended": "Boost beendet"
             }
           }
         }

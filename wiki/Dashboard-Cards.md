@@ -128,6 +128,7 @@ show_minutes_left: true       # (v7.0.0) "About 25 min left" from the chores' es
 show_help_button: true        # (v7.0.0) the "I'm stuck" button on each outstanding chore
 show_mood: true               # (v7.0.0) end-of-day mood check-in once the day's chores are done
 show_weekly_goal: true        # (v7.0.0) the child's own weekly goal (needs the global setting)
+show_boost_alert: true        # (v7.1.0) the full-card BOOST! alert when a boost starts
 elapsed_time_mode: dim        # dim | hide | show — time-of-day chores whose window has passed
 show_description: false       # show chore description below name
 show_badges: true             # show earned badge strip below points
@@ -175,6 +176,7 @@ header_color: "#9b59b6"
 - **Minutes left (v7.0.0)** — chores with [estimated minutes](Estimated-Minutes.md) show a `~10 mins` tag, and the card adds up what's still to do into "About 25 min left" beside the countdown. Hide the total with `show_minutes_left: false`
 - **I'm stuck (v7.0.0)** — each outstanding chore has an "I'm stuck" button that asks a parent for help without completing or skipping anything; the chore then shows "Help is on its way". Hidden with `show_help_button: false`, and always hidden in pre-reader mode. See [Help Requests](Help-Requests.md)
 - **Mood check-in (v7.0.0)** — once the day's chores are done, the card asks "How was your day?" with five faces. One answer per day. Hide it with `show_mood: false`. See [Mood Check-In](Mood-Check-In.md)
+- **Boosts (v7.1.0)** — a live [boost](Boost-Windows.md) shows a countdown banner and ×2 chips with the boosted points; when it starts the card is covered by a BOOST! alert once per device. Hide the alert with `show_boost_alert: false`
 - **Weekly goal (v7.0.0)** — while weekly goals are on in Settings, the child sets their own points target for the week and sees a progress bar towards it. Hide it with `show_weekly_goal: false`. See [Weekly Goals](Weekly-Goals.md)
 - **Sick day (v7.0.0)** — on a [sick day](Sick-Days.md) the card says "Rest up and get better" and shows no chores due; anything already ticked stays listed so it can still be undone
 - **Make it right (v7.0.0)** — after a penalty with a [make-it-right](Make-It-Right-Penalties.md) chore, the card says which chore to do and by when to earn points back, and that chore appears on the list even if it isn't normally due
@@ -773,6 +775,7 @@ elapsed_time_mode: show           # (v7.0.0) show | dim | hide — time-of-day c
 ambient_mode: "off"               # (v7.0.0) off | progress | photos — what the picker turns into when nobody's using it
 ambient_after: 120                # (v7.0.0) seconds untouched before ambient mode starts (30–1800)
 show_raffle_draws: true           # (v7.0.0) spin the names and land on the winner when a raffle is drawn
+show_boost_alert: true            # (v7.1.0) fill the screen when a boost starts
 children:                         # optional — order and PINs; omit to show every child
   - child_id: a8c8376a
     require_pin: true

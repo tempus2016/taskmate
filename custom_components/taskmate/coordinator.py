@@ -25,6 +25,7 @@ from .coord_avatars import AvatarsMixin
 from .coord_badges import BadgeCoordinator
 from .coord_bests import PersonalBestsMixin
 from .coord_birthdays import BirthdaysMixin
+from .coord_boosts import BoostsMixin
 from .coord_bounties import BountiesMixin
 from .coord_calendar import CalendarMixin
 from .coord_challenges import ChallengesMixin
@@ -112,6 +113,7 @@ class TaskMateCoordinator(
     WishlistMixin,
     FulfilmentMixin,
     PersonalBestsMixin,
+    BoostsMixin,
     BountiesMixin,
     AuctionsMixin,
     RecapsMixin,
@@ -512,6 +514,7 @@ class TaskMateCoordinator(
             self.async_draw_due_raffles,
             self.async_check_pet_growth,
             self.async_check_owed_rewards,
+            self.async_check_boosts,
         ):
             try:
                 await step()

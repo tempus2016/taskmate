@@ -76,6 +76,8 @@ DEFAULTS: dict[str, str] = {
     "weekly_goal_reached": "🎯 {child_name} reached their weekly goal of {target} {points_name} — +{bonus} bonus!",
     "reward_owed": "🎁 {child_name} is still waiting for '{reward_name}' — redeemed {days} days ago.",
     "personal_best": "🏆 New personal best! {child_name}: {record_label} — {value}.",
+    "boost_started": "⚡ Boost! {chores_text} pay ×{multiplier} for the next {minutes} minutes.",
+    "boost_all_chores": "All chores",
     # Personal best record names, used inside the personal_best message.
     "record_longest_streak": "longest streak (days)",
     "record_best_day_points": "most {points_name} in a day",

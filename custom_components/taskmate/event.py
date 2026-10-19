@@ -73,6 +73,8 @@ FAMILY_EVENTS: dict[str, str] = {
     "bounty_posted": "taskmate_bounty_posted",
     "scheduled_change_applied": "taskmate_scheduled_change_applied",
     "raffle_drawn": notification_event_name(NOTIF_TYPE_RAFFLE_DRAWN),
+    "boost_started": "taskmate_boost_started",
+    "boost_ended": "taskmate_boost_ended",
 }
 
 # Payload keys never copied onto the entity: they are long or internal.

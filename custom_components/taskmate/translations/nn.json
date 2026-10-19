@@ -1462,6 +1462,50 @@
           "description": "Barnet som stadfestar å ha fått henne (la stå tom når ein forelder merkjer)"
         }
       }
+    },
+    "start_boost": {
+      "name": "Start eit boost",
+      "description": "Opnar eit boost-vindauge. Oppgåver gjorde i det gjev multiplikatoren. La chore_ids eller child_ids stå tomme for alle.",
+      "fields": {
+        "multiplier": {
+          "name": "Multiplikator",
+          "description": "Kva oppgåvene gjev, t.d. 2 for dobbelt (1,1 til 5)"
+        },
+        "minutes": {
+          "name": "Minutt",
+          "description": "Kor lenge boostet varer"
+        },
+        "chore_ids": {
+          "name": "Oppgåve-ID-ar",
+          "description": "Oppgåvene det gjeld (tom = alle)"
+        },
+        "child_ids": {
+          "name": "Barn-ID-ar",
+          "description": "Borna det gjeld (tom = alle)"
+        },
+        "starts_at": {
+          "name": "Startar",
+          "description": "Start seinare i staden for no (opptil ei veke fram)"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Valfri tekst på korta, t.d. «Gjester kl. 18»"
+        },
+        "notify": {
+          "name": "Varsle",
+          "description": "Send boost-varselet til borna (når det varselet er på)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "Avslutt eit boost",
+      "description": "Stopp eit boost tidleg, eller avlys eitt som ikkje har byrja.",
+      "fields": {
+        "boost_id": {
+          "name": "Boost-ID",
+          "description": "Boostet, frå attributtet boosts på sensor.taskmate_overview"
+        }
+      }
     }
   },
   "entity": {
@@ -1546,7 +1590,9 @@
               "season_champion": "Sesongmeister",
               "bounty_posted": "Dusør lagd ut",
               "scheduled_change_applied": "Planlagd endring utført",
-              "raffle_drawn": "Loddtrekning trekt"
+              "raffle_drawn": "Loddtrekning trekt",
+              "boost_started": "Boost starta",
+              "boost_ended": "Boost slutt"
             }
           }
         }

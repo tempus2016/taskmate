@@ -1462,6 +1462,50 @@
           "description": "Het kind dat bevestigt dat het de beloning heeft gekregen (leeg laten als een ouder het markeert)"
         }
       }
+    },
+    "start_boost": {
+      "name": "Boost starten",
+      "description": "Open een boostvenster. Taken die je daarin doet, leveren de vermenigvuldiger op. Laat chore_ids of child_ids leeg voor allemaal.",
+      "fields": {
+        "multiplier": {
+          "name": "Vermenigvuldiger",
+          "description": "Wat de gekozen taken opleveren, bijv. 2 voor dubbel (1,1 tot 5)"
+        },
+        "minutes": {
+          "name": "Minuten",
+          "description": "Hoe lang de boost duurt"
+        },
+        "chore_ids": {
+          "name": "Taak-ID's",
+          "description": "De taken die meedoen (leeg = alle taken)"
+        },
+        "child_ids": {
+          "name": "Kind-ID's",
+          "description": "De kinderen die meedoen (leeg = iedereen)"
+        },
+        "starts_at": {
+          "name": "Begint om",
+          "description": "Later beginnen in plaats van nu (tot een week vooruit)"
+        },
+        "name": {
+          "name": "Naam",
+          "description": "Optioneel label op de kaarten, bijv. \"Om zes uur visite\""
+        },
+        "notify": {
+          "name": "Melden",
+          "description": "Stuur de boostmelding naar de kinderen die meedoen (als die melding aanstaat)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "Boost beëindigen",
+      "description": "Stop een boost eerder, of annuleer er een die nog niet begonnen is.",
+      "fields": {
+        "boost_id": {
+          "name": "Boost-ID",
+          "description": "De boost, uit het attribuut boosts van sensor.taskmate_overview"
+        }
+      }
     }
   },
   "entity": {
@@ -1546,7 +1590,9 @@
               "season_champion": "Maandkampioen",
               "bounty_posted": "Klus geplaatst",
               "scheduled_change_applied": "Geplande wijziging toegepast",
-              "raffle_drawn": "Loterij getrokken"
+              "raffle_drawn": "Loterij getrokken",
+              "boost_started": "Boost gestart",
+              "boost_ended": "Boost beëindigd"
             }
           }
         }

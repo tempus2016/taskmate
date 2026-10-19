@@ -322,6 +322,26 @@ Approve a pending reward claim. For wallet rewards, deducts cost from the child'
 
 Refused for a claim that is not owed, or already marked delivered.
 
+### `taskmate.start_boost`
+(v7.1.0) Open a [boost window](Boost-Windows.md): chores done inside it pay the multiplier. Parent action.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `multiplier` | ✅ | 1.1 to 5, e.g. `2` for double |
+| `minutes` | ✅ | 1 to 1440 |
+| `chore_ids` | ❌ | The chores it covers. Empty or left out = all chores |
+| `child_ids` | ❌ | The children it covers. Empty or left out = everyone |
+| `starts_at` | ❌ | Start later instead of now, up to a week ahead |
+| `name` | ❌ | Label shown on the cards, up to 60 characters |
+| `notify` | ❌ | Send the *Boost started* push (default `true`; only when that notification is switched on) |
+
+### `taskmate.end_boost`
+(v7.1.0) End a boost early, call off a scheduled one, or skip today's recurring one. Parent action.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `boost_id` | ✅ | From the `boosts` attribute of `sensor.taskmate_overview` |
+
 ### `taskmate.reject_reward`
 Reject a pending reward claim. For wallet rewards, no action (points were never deducted). For pool rewards, allocation stays in place — child can Redeem again.
 
