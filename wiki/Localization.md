@@ -13,6 +13,7 @@ TaskMate supports multiple languages for both the configuration UI and the Lovel
 | English (GB) | `en-GB` | Full (default fallback) |
 | English (US) | `en` | Full |
 | Danish | `da` | Full (new in v6.0.0, contributed and reviewed by a native speaker) |
+| Dutch | `nl` | Full (new in v7.1.0, community contribution) |
 | French | `fr` | Full |
 | German | `de` | Full |
 | Norwegian Bokmål | `nb` | Full |
