@@ -1989,7 +1989,16 @@ class ChoresMixin:
             chore_name = getattr(chore, "name", "") or getattr(bounty, "title", "") or ""
             if rejected and not target_completion.bonus_subtask_id:
                 self._record_rejection(
-                    "chore", target_completion.child_id, target_completion.chore_id, chore_name, reason
+                    "chore",
+                    target_completion.child_id,
+                    target_completion.chore_id,
+                    chore_name,
+                    reason,
+                    points=(
+                        target_completion.submitted_points
+                        if target_completion.submitted_points is not None
+                        else getattr(chore, "points", 0) or 0
+                    ),
                 )
             # An open inspection of it is void; a redo it was is owed again (#981).
             self._inspection_on_completion_removed(completion_id)

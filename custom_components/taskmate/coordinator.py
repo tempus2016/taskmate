@@ -18,6 +18,7 @@ from homeassistant.util import dt as dt_util
 
 from . import notify_strings, photos
 from .const import DOMAIN
+from .coord_appeals import AppealsMixin
 from .coord_assignments import AssignmentsMixin
 from .coord_auctions import AuctionsMixin
 from .coord_auto_approve import AutoApproveMixin
@@ -114,6 +115,7 @@ class TaskMateCoordinator(
     FulfilmentMixin,
     PersonalBestsMixin,
     BoostsMixin,
+    AppealsMixin,
     BountiesMixin,
     AuctionsMixin,
     RecapsMixin,

@@ -342,6 +342,25 @@ Refused for a claim that is not owed, or already marked delivered.
 | --- | --- | --- |
 | `boost_id` | ✅ | From the `boosts` attribute of `sensor.taskmate_overview` |
 
+### `taskmate.appeal`
+(v7.1.0) A child asks for a second look at a rejection or penalty from the last 48 hours. See [Appeals](Appeals.md). Linked-child check, like `complete_chore`.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `child_id` | ✅ | The child appealing |
+| `kind` | ✅ | `chore`, `reward` or `penalty` |
+| `target_id` | ✅ | From the child's `appealable` list on `sensor.taskmate_overview` |
+| `message` | ❌ | Up to 200 characters |
+
+### `taskmate.decide_appeal`
+(v7.1.0) Overturn or uphold an appeal. Parent action.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `appeal_id` | ✅ | The appeal |
+| `overturn` | ✅ | `true` pays the chore, approves the reward or undoes the penalty; `false` lets the decision stand |
+| `note` | ❌ | For the child, up to 200 characters |
+
 ### `taskmate.reject_reward`
 Reject a pending reward claim. For wallet rewards, no action (points were never deducted). For pool rewards, allocation stays in place — child can Redeem again.
 

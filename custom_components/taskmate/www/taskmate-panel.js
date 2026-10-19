@@ -653,6 +653,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
     if (act === "answer-help") { this._answerHelp(t.dataset.id); return; }
     if (act && act.startsWith("boost-") && this._boostClick(act, t)) return;
+    if (act === "appeal-overturn" || act === "appeal-uphold") { this._decideAppeal(t.dataset.id, act === "appeal-overturn"); return; }
     if (act === "reward-delivered") { this._markRewardDelivered(t.dataset.id); return; }
     if (act === "toggle-sick") { this._toggleSickDay(t.dataset.id); return; }
     if (act === "backdate-open") { this._openBackdateDialog(t.dataset.id); return; }
@@ -4990,6 +4991,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-today-cols">
         <div class="tm-today-col">
           ${this._renderBoostsCard()}
+          ${this._renderAppealsCard(kids)}
           ${this._renderHelpCard(kids)}
           ${this._renderOwedCard(kids)}
           <div class="tm-card">
@@ -5375,6 +5377,42 @@ class TaskMatePanel extends HTMLElement {
     } catch (err) {
       this._showToast("err", (err && err.message) || String(err));
     }
+  }
+
+  /** Appeals waiting for a parent: Overturn (pay / approve / undo) or Uphold. */
+  _renderAppealsCard(kids) {
+    const ids = new Set(kids.map(k => k.id));
+    const appeals = (this._state.appeals || []).filter(a => ids.has(a.child_id));
+    if (!appeals.length) return "";
+    const what = (a) => this._t(`panel.appeal_item_${a.kind}`, { name: a.item_name, points: this._num(a.points) });
+    return `
+      <div class="tm-card tm-appeals-card">
+        <h3 class="tm-section-title"><span aria-hidden="true">⚖️</span>${this._t("panel.appeals_title")}
+          <span class="tm-pill tm-pill-warn">${appeals.length}</span></h3>
+        <div class="tm-help-list">
+          ${appeals.map(a => `
+            <div class="tm-help-row">
+              <div class="tm-help-text">
+                <strong>${this._esc(a.child_name || "?")}</strong> — ${this._esc(what(a))}
+                ${a.message ? `<div class="tm-meta">“${this._esc(a.message)}”</div>` : ""}
+                <div class="tm-meta">${this._esc(this._timeAgo ? this._timeAgo(a.created_at) : "")}</div>
+              </div>
+              <div class="tm-appeal-btns">
+                <button type="button" class="tm-btn tm-btn-sm" data-act="appeal-uphold" data-id="${this._esc(a.id)}">${this._t("panel.appeal_uphold")}</button>
+                <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="appeal-overturn" data-id="${this._esc(a.id)}">${this._t(`panel.appeal_overturn_${a.kind}`)}</button>
+              </div>
+            </div>`).join("")}
+        </div>
+      </div>`;
+  }
+
+  async _decideAppeal(id, overturn) {
+    const note = window.prompt(this._t(overturn ? "panel.appeal_note_overturn" : "panel.appeal_note_uphold"), "");
+    if (note === null) return;
+    const { ok, err } = await this._callService("decide_appeal", { appeal_id: id, overturn, note: String(note).trim().slice(0, 200) });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t(overturn ? "panel.appeal_overturned" : "panel.appeal_upheld"));
   }
 
   /** "I'm stuck" requests still open, with an "On my way" button each. */
@@ -10057,6 +10095,16 @@ class TaskMatePanel extends HTMLElement {
         ${this._renderBoostSettings(s)}
 
         <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.appeals_settings_title")}</h3><p class="tm-meta">${this._t("panel.appeals_settings_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.appeals_enabled")}</div>
+              <ha-switch data-setting="appeals_enabled" ${s.appeals_enabled ? "checked" : ""}></ha-switch>
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.allowance_title")}</h3><p class="tm-meta">${this._t("panel.allowance_hint")}</p></div></div>
           <div class="tm-section-body">
             <div class="tm-setting-row">
@@ -14467,6 +14515,8 @@ class TaskMatePanel extends HTMLElement {
       .tm-owed-card { border-inline-start: 4px solid #8e44ad; }
       /* Boost windows */
       .tm-boost-card { border-inline-start: 4px solid #ff7a00; }
+      .tm-appeals-card { border-inline-start: 4px solid #4f62c9; }
+      .tm-appeal-btns { display: flex; gap: 6px; flex: none; }
       .tm-boost-pill { background: #fff1e0; color: #b34f00; }
       .tm-boost-btn { background: #ff7a00 !important; border-color: #ff7a00 !important; color: #fff !important; }
       .tm-boost-row { justify-content: flex-start; }

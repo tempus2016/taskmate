@@ -66,6 +66,7 @@ The card works best in a **Panel** view, so it fills the screen. The full-screen
 | `ambient_mode` | string | `off` | *(v7.0.0)* What the picker turns into when nobody's using it: `off`, `progress` (the family's day) or `photos` (a slideshow of chore photos). See [Ambient mode](#ambient-mode) |
 | `ambient_after` | number | `120` | *(v7.0.0)* Seconds untouched before ambient mode starts (30–1800) |
 | `show_raffle_draws` | boolean | `true` | *(v7.0.0)* Spin the names and land on the winner when a [raffle](Raffles.md) is drawn. See [Raffle draws](#raffle-draws) |
+| `show_pet` | boolean | `true` | *(v7.1.0)* Show the child's [virtual pet](Virtual-Pets.md) in the side column of their screen, while pets are switched on |
 | `show_boost_alert` | boolean | `true` | *(v7.1.0)* Leave ambient mode and fill the screen when a [boost](Boost-Windows.md) starts, until someone taps. The countdown strip shows either way |
 | `children` | list | all children | Which children appear on the picker, in order. Each entry is `child_id` plus an optional `require_pin` (default `true`) |
 

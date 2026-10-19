@@ -485,6 +485,31 @@ class TaskMateKioskCard extends LitElement {
     return m && Number(base) > 0 ? Math.round(Number(base) * m) : base;
   }
 
+  // ── Pet (#1094) ──────────────────────────────────────────────────────────
+  // The child's virtual pet in the side column, drawn by the real pet card in
+  // its compact mode, so it looks and behaves exactly like the pet card. Only
+  // while pets are on (`child.pet` is present) and the pet card is loaded.
+  _petTile(child) {
+    if (this.config.show_pet === false || !child || !child.pet) return "";
+    const PetCard = customElements.get("taskmate-pet-card");
+    if (!PetCard) return "";
+    this._petEls = this._petEls || {};
+    let el = this._petEls[child.id];
+    if (!el) {
+      el = new PetCard();
+      el.setConfig({
+        entity: this.config.entity,
+        child_id: child.id,
+        compact: true,
+        ...(this.config.card_design ? { card_design: this.config.card_design } : {}),
+      });
+      this._petEls[child.id] = el;
+    }
+    el.hass = this.hass;
+    // Tapping the pet counts as using the screen, like any other tap.
+    return html`<div class="km-tile km-pet" @click=${() => { this._idle = 0; }}>${el}</div>`;
+  }
+
   // ── Boost windows ────────────────────────────────────────────────────────
   // A live boost wakes the tablet out of ambient mode and fills the screen
   // until someone taps; after that a countdown strip sits under the top bar.
@@ -1422,6 +1447,7 @@ class TaskMateKioskCard extends LitElement {
                 <div class="km-bar"><i style="width:${Math.min(100, Math.round(((Number(child.points) || 0) / next.cost) * 100))}%"></i></div>
                 <div class="km-dim km-small">${this._t("kiosk.to_go", { points: next.cost - (Number(child.points) || 0) })}</div>
               </div>` : ""}
+            ${this._petTile(child)}
           </div>
         </div>
 
@@ -1961,6 +1987,7 @@ class TaskMateKioskCard extends LitElement {
       .km-done.is-wait { border: 3px dashed var(--tmd-warn, #f39c12); }
       .km-done.is-elsewhere { border: 3px dashed var(--tmd-dim, #8a939d); }
       .km-side { display: flex; flex-direction: column; gap: 14px; }
+      .km-pet { padding: 6px; }
 
       /* Bounties (#1054) */
       .km-bounty-group { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
@@ -2199,6 +2226,7 @@ class TaskMateKioskCardEditor extends LitElement {
       { name: "ambient_after", selector: { number: { min: 30, max: 1800, step: 30, mode: "box", unit_of_measurement: "s" } } },
       { name: "show_raffle_draws", selector: { boolean: {} } },
       { name: "show_boost_alert", selector: { boolean: {} } },
+      { name: "show_pet", selector: { boolean: {} } },
     ];
   }
 
@@ -2222,6 +2250,7 @@ class TaskMateKioskCardEditor extends LitElement {
     ambient_after: this._t("kiosk.editor.ambient_after"),
     show_raffle_draws: this._t("kiosk.editor.show_raffle_draws"),
     show_boost_alert: this._t("kiosk.editor.show_boost_alert"),
+    show_pet: this._t("kiosk.editor.show_pet"),
   })[entry.name] ?? entry.name;
 
   _computeHelper = (entry) => ({
@@ -2302,6 +2331,7 @@ class TaskMateKioskCardEditor extends LitElement {
       ambient_after: this.config.ambient_after ?? DEFAULT_AMBIENT_AFTER,
       show_raffle_draws: this.config.show_raffle_draws !== false,
       show_boost_alert: this.config.show_boost_alert !== false,
+      show_pet: this.config.show_pet !== false,
     };
     const rows = this._childRows();
     const pins = this._pins || {};

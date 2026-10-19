@@ -41,9 +41,18 @@ def clean_reject_reason(value) -> str:
 class RejectionsMixin:
     """Record why something was rejected, and tell the child."""
 
-    def _record_rejection(self, kind: str, child_id: str, item_id: str, item_name: str, reason: str) -> None:
-        """Log a reasoned rejection. ``kind`` is "chore" or "reward"; no-op without a reason."""
-        if not reason or not child_id:
+    def _record_rejection(
+        self, kind: str, child_id: str, item_id: str, item_name: str, reason: str, points: int = 0, wish: bool = False
+    ) -> None:
+        """Log a rejection. ``kind`` is "chore" or "reward".
+
+        No-op without a reason, unless appeals are on: then every rejection is
+        kept for the appeal window, and the reasonless ones simply never show
+        on the card or in the feed. ``points`` is what the chore would have paid
+        or the reward cost, for an overturned appeal.
+        """
+        appeals_on = bool(getattr(self, "appeals_enabled", None) and self.appeals_enabled())
+        if not child_id or not (reason or appeals_on):
             return
         now = dt_util.now()
         cutoff = now - timedelta(days=REJECTION_KEEP_DAYS)
@@ -56,6 +65,8 @@ class RejectionsMixin:
                 "item_id": item_id,
                 "item_name": item_name,
                 "reason": reason,
+                **({"points": int(points)} if points else {}),
+                **({"wish": True} if wish else {}),
                 # UTC, like every stored timestamp: the activity feed sorts
                 # these ISO strings against transaction times.
                 "rejected_at": format_datetime(now),
@@ -83,7 +94,8 @@ class RejectionsMixin:
     def recent_rejections(self) -> list[dict]:
         """Every logged rejection still inside the keep window, oldest first."""
         cutoff = dt_util.now() - timedelta(days=REJECTION_KEEP_DAYS)
-        return [r for r in self.storage.get_rejections() if (_at(r) or cutoff) > cutoff]
+        # Reasonless rows exist only for appeals; the feed shows reasons.
+        return [r for r in self.storage.get_rejections() if r.get("reason") and (_at(r) or cutoff) > cutoff]
 
     def rejections_for_child(self, child_id: str) -> list[dict]:
         """The reasons still worth showing on this child's card, newest first.
@@ -93,7 +105,7 @@ class RejectionsMixin:
         another go at it since — once they redo the chore or claim the reward
         again, the old reason no longer describes anything on the card.
         """
-        rows = [r for r in self.storage.get_rejections() if r.get("child_id") == child_id]
+        rows = [r for r in self.storage.get_rejections() if r.get("child_id") == child_id and r.get("reason")]
         if not rows:
             return []
         cutoff = dt_util.now() - timedelta(hours=REJECTION_CARD_HOURS)

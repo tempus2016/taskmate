@@ -1442,6 +1442,12 @@ class TaskMateChildCard extends LitElement {
       .tm-care-owed .ic ha-icon { --mdc-icon-size: 26px; color: #8e44ad; }
       .tm-care-owed .tm-owed-body { flex: 1; min-width: 0; }
       .tm-care-record { background: #fff6d6; color: #6b4e00; }
+      .tm-care-appealable { background: #eef2ff; color: #2b3a7a; }
+      .tm-care-appealable .tm-appeal-body { flex: 1; min-width: 0; }
+      .tm-care-appeal { background: #eef2ff; color: #2b3a7a; }
+      .tm-care-appeal.overturned { background: #ecf8ef; color: #1d5b2c; }
+      .tm-care-appeal.upheld { background: #f4f6fa; color: #4b5468; }
+      .tm-appeal-text { width: 100%; box-sizing: border-box; border-radius: 12px; border: 1px solid var(--divider-color, #ddd); padding: 10px; font: inherit; margin: 10px 0; resize: vertical; }
       /* Boost windows */
       ha-card { position: relative; }
       ha-card:has(.tm-boost-take) { min-height: 460px; }
@@ -5207,6 +5213,21 @@ class TaskMateChildCard extends LitElement {
           @click=${() => this._gotReward(child, o)}>${this._t("child.owed_got_it")}</button>
       </div>`);
     }
+    // Appeals: what this child may ask a second look at, and how it went.
+    if (this.config.show_appeals !== false) {
+      for (const a of child.appeals || []) {
+        const key = a.status === "open" ? "child.appeal_waiting" : a.status === "overturned" ? "child.appeal_overturned" : "child.appeal_upheld";
+        parts.push(html`<div class="tm-care tm-care-appeal ${a.status}" role="status">
+          <span class="ic">⚖️</span><span><b>${this._t(key, { name: a.item_name })}</b>${a.note ? html`<br>“${a.note}”` : ""}</span></div>`);
+      }
+      for (const item of child.appealable || []) {
+        parts.push(html`<div class="tm-care tm-care-appealable" role="note">
+          <span class="ic">⚖️</span>
+          <span class="tm-appeal-body"><b>${this._t(`child.appeal_item_${item.kind}`, { name: item.name, points: item.points })}</b><br>${this._t("child.appeal_hint")}</span>
+          <button type="button" class="tm-goal-change" @click=${() => this._openAppealSheet(child, item)}>${this._t("child.appeal_button")}</button>
+        </div>`);
+      }
+    }
     // Personal bests (#1099): records beaten today, for the rest of the day.
     const bests = child.personal_bests;
     if (bests && this.config.show_personal_bests !== false && Array.isArray(bests.new_today) && bests.new_today.length) {
@@ -5237,7 +5258,7 @@ class TaskMateChildCard extends LitElement {
       }
     }
     if (!parts.length) return "";
-    return html`<div class="tm-care-wrap ${mode}">${parts}</div>${this._renderGoalSheet()}`;
+    return html`<div class="tm-care-wrap ${mode}">${parts}</div>${this._renderGoalSheet()}${this._renderAppealSheet()}`;
   }
 
   /* ── Boost windows ──────────────────────────────────────────────────── */
@@ -5331,6 +5352,47 @@ class TaskMateChildCard extends LitElement {
           <button type="button" class="tm-boost-take-go" @click=${() => this._dismissBoostTakeover()}>${this._t("child.boost_takeover_go")}</button>
         </div>
       </div>`;
+  }
+
+  _openAppealSheet(child, item) {
+    this._appealSheet = { child, item, message: "" };
+    this.requestUpdate();
+  }
+
+  _renderAppealSheet() {
+    const sheet = this._appealSheet;
+    if (!sheet) return "";
+    const close = () => { this._appealSheet = null; this.requestUpdate(); };
+    return html`
+      <div class="photo-overlay" @click=${close}>
+        <div class="photo-sheet tm-appeal-sheet" role="dialog" aria-modal="true" aria-label="${this._t("child.appeal_sheet_title")}" @click=${(e) => e.stopPropagation()}>
+          <div class="photo-title">⚖️ ${this._t("child.appeal_sheet_title")}</div>
+          <div class="photo-dropzone-hint">${this._t(`child.appeal_item_${sheet.item.kind}`, { name: sheet.item.name, points: sheet.item.points })}</div>
+          <textarea class="tm-appeal-text" maxlength="200" rows="3" placeholder="${this._t("child.appeal_placeholder")}"
+                    .value=${sheet.message} @input=${(e) => { sheet.message = e.target.value; }}></textarea>
+          <div class="photo-btn-row">
+            <button class="photo-btn ghost" @click=${close}>${this._t("child.photo_cancel")}</button>
+            <button class="photo-btn primary" ?disabled=${sheet.sending} @click=${() => this._sendAppeal()}>⚖️ ${this._t("child.appeal_send")}</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  async _sendAppeal() {
+    const sheet = this._appealSheet;
+    if (!sheet || sheet.sending) return;
+    sheet.sending = true;
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "appeal", {
+        child_id: sheet.child.id, kind: sheet.item.kind, target_id: sheet.item.target_id, message: (sheet.message || "").trim(),
+      });
+      this._appealSheet = null;
+    } catch (err) {
+      console.error("appeal failed", err);
+      sheet.sending = false;
+    }
+    this.requestUpdate();
   }
 
   _pointsNameFor() {
@@ -6147,6 +6209,7 @@ class TaskMateChildCardEditor extends LitElement {
       { name: 'show_weekly_goal', selector: { boolean: {} } },
       { name: 'show_personal_bests', selector: { boolean: {} } },
       { name: 'show_boost_alert', selector: { boolean: {} } },
+      { name: 'show_appeals', selector: { boolean: {} } },
       { name: 'show_description', selector: { boolean: {} } },
       { name: 'pre_reader', selector: { boolean: {} } },
       { name: 'pre_reader_labels', selector: { boolean: {} } },
@@ -6175,6 +6238,7 @@ class TaskMateChildCardEditor extends LitElement {
       show_weekly_goal: this._t('child.editor.show_weekly_goal'),
       show_personal_bests: this._t('child.editor.show_personal_bests'),
       show_boost_alert: this._t('child.editor.show_boost_alert'),
+      show_appeals: this._t('child.editor.show_appeals'),
       show_description: this._t('child.editor.show_description'),
       pre_reader: this._t('child.editor.pre_reader'),
       pre_reader_labels: this._t('child.editor.pre_reader_labels'),
@@ -6222,6 +6286,7 @@ class TaskMateChildCardEditor extends LitElement {
       show_weekly_goal: this.config.show_weekly_goal !== false,
       show_personal_bests: this.config.show_personal_bests !== false,
       show_boost_alert: this.config.show_boost_alert !== false,
+      show_appeals: this.config.show_appeals !== false,
       show_description: this.config.show_description === true,
       pre_reader: this.config.pre_reader === true,
       pre_reader_labels: this.config.pre_reader_labels === true,
@@ -6264,7 +6329,7 @@ class TaskMateChildCardEditor extends LitElement {
     for (const [key, value] of Object.entries(newValues)) {
       const defaults = {
         show_countdown: true, show_minutes_left: true, show_help_button: true, show_mood: true, show_weekly_goal: true,
-        show_personal_bests: true, show_boost_alert: true,
+        show_personal_bests: true, show_boost_alert: true, show_appeals: true,
         show_description: false, debug: false,
         time_category: 'morning', due_days_mode: 'hide',
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',

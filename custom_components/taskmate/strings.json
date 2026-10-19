@@ -1506,6 +1506,46 @@
           "description": "The boost, from the boosts attribute of sensor.taskmate_overview"
         }
       }
+    },
+    "appeal": {
+      "name": "Appeal",
+      "description": "A child asks for a second look at a rejected chore, a rejected reward claim or a penalty from the last 48 hours. Needs appeals switched on.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child appealing"
+        },
+        "kind": {
+          "name": "Kind",
+          "description": "What is being appealed"
+        },
+        "target_id": {
+          "name": "Target ID",
+          "description": "The item, from the appealable attribute of the child's entry in sensor.taskmate_overview"
+        },
+        "message": {
+          "name": "Message",
+          "description": "Optional words from the child, up to 200 characters"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "Decide an appeal",
+      "description": "Overturn an appeal (pay the chore, approve the reward or undo the penalty) or uphold the original decision.",
+      "fields": {
+        "appeal_id": {
+          "name": "Appeal ID",
+          "description": "The appeal"
+        },
+        "overturn": {
+          "name": "Overturn",
+          "description": "true to overturn, false to uphold"
+        },
+        "note": {
+          "name": "Note",
+          "description": "Optional words for the child, up to 200 characters"
+        }
+      }
     }
   },
   "entity": {
@@ -1576,7 +1616,9 @@
               "raffle_won": "Raffle won",
               "pet_evolved": "Pet grew up",
               "reward_delivered": "Reward handed over",
-              "personal_best": "Personal best"
+              "personal_best": "Personal best",
+              "appeal_submitted": "Appeal submitted",
+              "appeal_decided": "Appeal decided"
             }
           }
         }

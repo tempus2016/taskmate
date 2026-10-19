@@ -26,6 +26,8 @@ from .const import (
     DEFAULT_NOTIFICATION_GROUP,
     DEFAULT_NOTIFICATION_NAV_URL,
     NOTIF_TYPE_ALL_CHORES_DONE,
+    NOTIF_TYPE_APPEAL_DECIDED,
+    NOTIF_TYPE_APPEAL_SUBMITTED,
     NOTIF_TYPE_AUCTION_CLOSING,
     NOTIF_TYPE_AUCTION_OPENED,
     NOTIF_TYPE_AUCTION_RESULT,
@@ -197,6 +199,10 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_PERSONAL_BEST, "both", False, False, False, False),
     # Boost windows: the children a boost covers hear it began. Opt-in.
     NotificationTypeMeta(NOTIF_TYPE_BOOST_STARTED, "child", False, False, False, False),
+    # Appeals: on for parents like a help request (only fires once a parent
+    # has switched appeals on); the child's decision push is opt-in.
+    NotificationTypeMeta(NOTIF_TYPE_APPEAL_SUBMITTED, "parent", False, False, False, True),
+    NotificationTypeMeta(NOTIF_TYPE_APPEAL_DECIDED, "child", False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
@@ -206,6 +212,8 @@ NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NO
 # automation on the feature event runs once, not twice.
 _OWN_EVENT_TYPES: frozenset[str] = frozenset(
     {
+        NOTIF_TYPE_APPEAL_DECIDED,
+        NOTIF_TYPE_APPEAL_SUBMITTED,
         NOTIF_TYPE_AUCTION_OPENED,
         NOTIF_TYPE_BOOST_STARTED,
         NOTIF_TYPE_PERSONAL_BEST,
@@ -511,6 +519,7 @@ class NotificationCoordinator:
             "tickets": 12,
             "record_label": notify_strings.text(self.hass, "record_longest_streak"),
             "chores_text": sample["chore"],
+            "outcome": notify_strings.text(self.hass, "appeal_outcome_overturned"),
             "value": 12,
         }
         ctx["result_text"] = notify_strings.render(

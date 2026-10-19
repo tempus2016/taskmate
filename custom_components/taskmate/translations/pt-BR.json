@@ -1506,6 +1506,46 @@
           "description": "O boost, do atributo boosts de sensor.taskmate_overview"
         }
       }
+    },
+    "appeal": {
+      "name": "Recorrer",
+      "description": "Uma criança pede que se reveja uma tarefa recusada, um pedido de recompensa recusado ou uma penalização das últimas 48 horas. Os recursos têm de estar ligados.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança que recorre"
+        },
+        "kind": {
+          "name": "Tipo",
+          "description": "Do que se recorre"
+        },
+        "target_id": {
+          "name": "ID do item",
+          "description": "O item, do atributo appealable da criança em sensor.taskmate_overview"
+        },
+        "message": {
+          "name": "Mensagem",
+          "description": "Palavras opcionais da criança, até 200 caracteres"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "Decidir um recurso",
+      "description": "Dar razão ao recurso (pagar a tarefa, aprovar a recompensa ou anular a penalização) ou manter a decisão.",
+      "fields": {
+        "appeal_id": {
+          "name": "ID do recurso",
+          "description": "O recurso"
+        },
+        "overturn": {
+          "name": "Dar razão",
+          "description": "true para dar razão, false para manter"
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Palavras opcionais para a criança, até 200 caracteres"
+        }
+      }
     }
   },
   "entity": {
@@ -1576,7 +1616,9 @@
               "raffle_won": "Sorteio ganho",
               "pet_evolved": "O bichinho cresceu",
               "reward_delivered": "Recompensa entregue",
-              "personal_best": "Recorde pessoal"
+              "personal_best": "Recorde pessoal",
+              "appeal_submitted": "Recurso enviado",
+              "appeal_decided": "Recurso decidido"
             }
           }
         }

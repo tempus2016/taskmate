@@ -721,7 +721,14 @@ class RewardsMixin:
         self.storage.remove_reward_claim(claim_id)
         reward = self.get_reward(claim.reward_id) if claim else None
         if claim:
-            self._record_rejection("reward", claim.child_id, claim.reward_id, getattr(reward, "name", ""), reason)
+            self._record_rejection(
+                "reward",
+                claim.child_id,
+                claim.reward_id,
+                getattr(reward, "name", ""),
+                reason,
+                points=getattr(reward, "cost", 0),
+            )
         await self.storage.async_save()
         await self.async_refresh()
         if claim:

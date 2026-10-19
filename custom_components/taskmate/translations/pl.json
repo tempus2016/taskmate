@@ -1506,6 +1506,46 @@
           "description": "Boost z atrybutu boosts w sensor.taskmate_overview"
         }
       }
+    },
+    "appeal": {
+      "name": "Odwołanie",
+      "description": "Dziecko prosi o ponowne sprawdzenie odrzuconego obowiązku, odrzuconej prośby o nagrodę lub kary z ostatnich 48 godzin. Odwołania muszą być włączone.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko, które się odwołuje"
+        },
+        "kind": {
+          "name": "Rodzaj",
+          "description": "Czego dotyczy odwołanie"
+        },
+        "target_id": {
+          "name": "ID elementu",
+          "description": "Element z atrybutu appealable dziecka w sensor.taskmate_overview"
+        },
+        "message": {
+          "name": "Wiadomość",
+          "description": "Opcjonalne słowa dziecka, do 200 znaków"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "Rozpatrz odwołanie",
+      "description": "Uwzględnij odwołanie (zapłać za obowiązek, zatwierdź nagrodę lub cofnij karę) albo podtrzymaj decyzję.",
+      "fields": {
+        "appeal_id": {
+          "name": "ID odwołania",
+          "description": "Odwołanie"
+        },
+        "overturn": {
+          "name": "Uwzględnij",
+          "description": "true aby uwzględnić, false aby podtrzymać"
+        },
+        "note": {
+          "name": "Notatka",
+          "description": "Opcjonalne słowa dla dziecka, do 200 znaków"
+        }
+      }
     }
   },
   "entity": {
@@ -1576,7 +1616,9 @@
               "raffle_won": "Wygrano losowanie",
               "pet_evolved": "Zwierzak urósł",
               "reward_delivered": "Nagroda wręczona",
-              "personal_best": "Rekord życiowy"
+              "personal_best": "Rekord życiowy",
+              "appeal_submitted": "Złożono odwołanie",
+              "appeal_decided": "Rozpatrzono odwołanie"
             }
           }
         }

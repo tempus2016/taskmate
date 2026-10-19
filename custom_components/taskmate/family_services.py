@@ -16,6 +16,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN
+from .coord_appeals import APPEAL_KINDS, APPEAL_MESSAGE_MAX, APPEAL_NOTE_MAX
 from .coord_boosts import BOOST_MAX_MINUTES, BOOST_MAX_MULTIPLIER, BOOST_MIN_MULTIPLIER, BOOST_NAME_MAX
 from .coord_goals import WEEKLY_GOAL_MAX
 from .coord_pets import PET_NAME_MAX, PET_SPECIES
@@ -33,12 +34,16 @@ SERVICE_DRAW_RAFFLE = "draw_raffle"
 SERVICE_ADOPT_PET = "adopt_pet"
 SERVICE_MARK_REWARD_DELIVERED = "mark_reward_delivered"
 SERVICE_START_BOOST = "start_boost"
+SERVICE_APPEAL = "appeal"
+SERVICE_DECIDE_APPEAL = "decide_appeal"
 SERVICE_END_BOOST = "end_boost"
 
 FAMILY_SERVICES: tuple[str, ...] = (
     SERVICE_MARK_REWARD_DELIVERED,
     SERVICE_START_BOOST,
     SERVICE_END_BOOST,
+    SERVICE_APPEAL,
+    SERVICE_DECIDE_APPEAL,
     SERVICE_REQUEST_HELP,
     SERVICE_ANSWER_HELP,
     SERVICE_LOG_MOOD,
@@ -115,6 +120,14 @@ def async_register_family_services(
 
     async def end_boost(coordinator, call):
         await coordinator.async_end_boost(call.data["boost_id"])
+
+    async def appeal(coordinator, call):
+        await coordinator.async_appeal(
+            call.data["child_id"], call.data["kind"], call.data["target_id"], call.data.get("message", "")
+        )
+
+    async def decide_appeal(coordinator, call):
+        await coordinator.async_decide_appeal(call.data["appeal_id"], call.data["overturn"], call.data.get("note", ""))
 
     # Reward fulfilment (#1098): a parent marks a reward handed over, or the
     # child confirms their own with ``child_id`` — so the one service has two
@@ -205,6 +218,27 @@ def async_register_family_services(
             },
         ),
         (SERVICE_END_BOOST, end_boost, False, {vol.Required("boost_id"): cv.string}),
+        (
+            SERVICE_APPEAL,
+            appeal,
+            True,
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Required("kind"): vol.In(APPEAL_KINDS),
+                vol.Required("target_id"): cv.string,
+                vol.Optional("message", default=""): vol.All(cv.string, vol.Length(max=APPEAL_MESSAGE_MAX)),
+            },
+        ),
+        (
+            SERVICE_DECIDE_APPEAL,
+            decide_appeal,
+            False,
+            {
+                vol.Required("appeal_id"): cv.string,
+                vol.Required("overturn"): cv.boolean,
+                vol.Optional("note", default=""): vol.All(cv.string, vol.Length(max=APPEAL_NOTE_MAX)),
+            },
+        ),
         (
             SERVICE_ADOPT_PET,
             adopt_pet,

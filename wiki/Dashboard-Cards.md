@@ -129,6 +129,7 @@ show_help_button: true        # (v7.0.0) the "I'm stuck" button on each outstand
 show_mood: true               # (v7.0.0) end-of-day mood check-in once the day's chores are done
 show_weekly_goal: true        # (v7.0.0) the child's own weekly goal (needs the global setting)
 show_boost_alert: true        # (v7.1.0) the full-card BOOST! alert when a boost starts
+show_appeals: true            # (v7.1.0) what the child can appeal, and how it went
 elapsed_time_mode: dim        # dim | hide | show — time-of-day chores whose window has passed
 show_description: false       # show chore description below name
 show_badges: true             # show earned badge strip below points
@@ -776,6 +777,7 @@ ambient_mode: "off"               # (v7.0.0) off | progress | photos — what th
 ambient_after: 120                # (v7.0.0) seconds untouched before ambient mode starts (30–1800)
 show_raffle_draws: true           # (v7.0.0) spin the names and land on the winner when a raffle is drawn
 show_boost_alert: true            # (v7.1.0) fill the screen when a boost starts
+show_pet: true                    # (v7.1.0) the child's virtual pet beside their chores
 children:                         # optional — order and PINs; omit to show every child
   - child_id: a8c8376a
     require_pin: true

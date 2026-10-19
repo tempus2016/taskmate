@@ -501,6 +501,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         # Boost windows: live and upcoming boosts, the recurring rules, and
         # the tablets the Settings page can offer to wake.
         "boosts": coordinator.boosts_state(),
+        # Appeals waiting for a parent.
+        "appeals": coordinator.open_appeals(),
         "boost_rules": [dict(r) for r in coordinator.boost_rules()],
         "boost_wake_candidates": coordinator.boost_wake_candidates(),
         "sick_today": [c.id for c in coordinator.storage.get_children() if coordinator.is_sick_day(c.id)],
@@ -1997,6 +1999,7 @@ _SUBKEY_SETTINGS = {
     "reward_fulfilment_enabled",
     "reward_fulfilment_reminder_days",
     "boost_stacking",
+    "appeals_enabled",
     "boost_wake_screens",
     "boost_wake_devices",
     "pets_enabled",
@@ -2293,6 +2296,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("weekly_goal_bonus"): vol.All(vol.Coerce(int), vol.Range(min=0, max=100000)),
     vol.Optional("reward_fulfilment_enabled"): bool,
     vol.Optional("boost_stacking"): vol.In(BOOST_STACKING_MODES),
+    vol.Optional("appeals_enabled"): bool,
     vol.Optional("boost_wake_screens"): vol.All([vol.All(str, vol.Match(r"^switch\.[a-z0-9_]+$"))], vol.Length(max=10)),
     vol.Optional("boost_wake_devices"): vol.All(
         [vol.All(str, vol.Match(r"^mobile_app_[a-z0-9_]+$"))], vol.Length(max=10)

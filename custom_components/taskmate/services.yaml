@@ -1939,6 +1939,62 @@ end_boost:
       selector:
         text:
 
+appeal:
+  name: Appeal
+  description: A child asks for a second look at a rejected chore, a rejected reward claim or a penalty from the last 48 hours. Needs appeals switched on.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child appealing
+      required: true
+      selector:
+        text:
+    kind:
+      name: Kind
+      description: What is being appealed
+      required: true
+      selector:
+        select:
+          options:
+            - chore
+            - reward
+            - penalty
+    target_id:
+      name: Target ID
+      description: The item, from the appealable attribute of the child's entry in sensor.taskmate_overview
+      required: true
+      selector:
+        text:
+    message:
+      name: Message
+      description: Optional words from the child, up to 200 characters
+      required: false
+      selector:
+        text:
+
+decide_appeal:
+  name: Decide an appeal
+  description: Overturn an appeal (pay the chore, approve the reward or undo the penalty) or uphold the original decision.
+  fields:
+    appeal_id:
+      name: Appeal ID
+      description: The appeal
+      required: true
+      selector:
+        text:
+    overturn:
+      name: Overturn
+      description: true to overturn, false to uphold
+      required: true
+      selector:
+        boolean:
+    note:
+      name: Note
+      description: Optional words for the child, up to 200 characters
+      required: false
+      selector:
+        text:
+
 buy_raffle_tickets:
   name: Buy raffle tickets
   description: A child spends points on tickets for a raffle. Each ticket is one chance in the draw.

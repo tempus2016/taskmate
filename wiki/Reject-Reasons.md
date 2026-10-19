@@ -87,6 +87,8 @@ Rejecting removes the completion or claim, so the reason is stored in a small lo
 
 ## Related
 
+- [Appeals](Appeals.md) — the child can ask for a second look at a rejection
+
 - [Approvals Card](Approvals-Card.md) — reviewing chores from a dashboard
 - [Rewards](Rewards.md) — reward claims and approval
 - [Quality Ratings](Quality-Ratings.md) — rating approved chores
