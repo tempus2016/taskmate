@@ -398,7 +398,9 @@ def test_skipping_todays_recurring_boost_before_it_starts():
 def test_a_rule_saved_part_way_through_its_window_starts_for_the_rest_of_it():
     coord, storage, mod, kid, chore, _other, _leo = _setup()
     with _clock(mod, dt.datetime(2024, 3, 23, 9, 40, tzinfo=dt.UTC)):
-        run(coord.async_save_boost_rule({"name": "Sat", "days": [5], "start": "09:00", "end": "11:00", "multiplier": 2}))
+        run(
+            coord.async_save_boost_rule({"name": "Sat", "days": [5], "start": "09:00", "end": "11:00", "multiplier": 2})
+        )
         assert run(coord.async_check_boosts()) >= 1
         (b,) = coord.boosts_state()
         assert not b["id"].startswith("rule:") and b["status"] == "active"
