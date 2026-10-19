@@ -3,18 +3,41 @@ intents:
   TaskMateChoresLeft:
     data:
       - sentences:
-          - "how many chores (does|has) {name} have left"
-          - "how many chores (are|is) left for {name}"
-          - "(does|has) {name} have any chores left"
-          - "what chores does {name} have left"
+          - "how many chores (does|has) {child} have left"
+          - "how many chores (are|is) left for {child}"
+          - "(does|has) {child} have any chores left"
+          - "what chores does {child} have left"
   TaskMatePoints:
     data:
       - sentences:
-          - "how many {points_word} does {name} have"
-          - "what is {name}'s balance"
-          - "how many points does {name} have"
+          - "how many {points_word} does {child} have"
+          - "what is {child}'s balance"
+          - "how many points does {child} have"
+  TaskMateCompleteChore:
+    data:
+      - sentences:
+          - "mark {chore} [as] done for {child}"
+          - "{child} (has done|did|finished|has finished) [the] {chore}"
+          - "tick off {chore} for {child}"
+  TaskMateNextChore:
+    data:
+      - sentences:
+          - "what('s| is) {child}'s next (job|chore)"
+          - "what should {child} do next"
+          - "what (job|chore) is next for {child}"
+  TaskMateRewardProgress:
+    data:
+      - sentences:
+          - "how close is {child} to [the] {reward}"
+          - "how far is {child} from [the] {reward}"
+          - "how close is {child} to a reward"
+          - "how many more {points_word} does {child} need [for [the] {reward}]"
 lists:
-  name:
+  child:
+    wildcard: true
+  chore:
+    wildcard: true
+  reward:
     wildcard: true
   points_word:
     values:

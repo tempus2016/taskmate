@@ -1870,13 +1870,15 @@ class TaskMateStorage:
                 chore["assignment_mode"] = "everyone"
             if chore.get("schedule_mode") not in SCHEDULE_MODES:
                 chore["schedule_mode"] = "specific_days"
-            img = chore.get("image_url")
-            if img and not is_taskmate_image_url(img):
-                _LOGGER.warning(
-                    "Import: dropped non-TaskMate image_url on chore %s",
-                    chore.get("id", "?"),
-                )
-                chore["image_url"] = ""
+            for key in ("image_url", "reference_image_url"):
+                img = chore.get(key)
+                if img and not is_taskmate_image_url(img):
+                    _LOGGER.warning(
+                        "Import: dropped non-TaskMate %s on chore %s",
+                        key,
+                        chore.get("id", "?"),
+                    )
+                    chore[key] = ""
 
         # Custom sounds: `file` is concatenated into a path and handed to HA's
         # URL signer, and `name` is rendered in the panel and the chore
@@ -2229,6 +2231,35 @@ class TaskMateStorage:
         if "settings" not in self._data:
             self._data["settings"] = {}
         self._data["settings"][key] = value
+
+    # ── Feature sections ───────────────────────────────────────────────────
+    # Small per-feature stores kept at the root of _data (help requests, moods,
+    # sick days, weekly goals, penalty redemptions, raffles, pets). Each is a
+    # dict or list; a missing or wrong-typed one reads as empty. The getter
+    # returns the live object so a caller mutates it and then saves.
+
+    def get_section(self, key: str, kind: type = dict) -> Any:
+        value = self._data.get(key)
+        if not isinstance(value, kind):
+            value = kind()
+            self._data[key] = value
+        return value
+
+    def remove_child_from_sections(self, child_id: str) -> None:
+        """Forget a deleted child in every per-child feature section."""
+        for key in ("moods", "sick_days", "weekly_goals", "pets"):
+            section = self._data.get(key)
+            if isinstance(section, dict):
+                section.pop(child_id, None)
+        for key in ("help_requests", "penalty_redemptions"):
+            section = self._data.get(key)
+            if isinstance(section, list):
+                self._data[key] = [r for r in section if not (isinstance(r, dict) and r.get("child_id") == child_id)]
+        raffles = self._data.get("raffles")
+        if isinstance(raffles, list):
+            for raffle in raffles:
+                if isinstance(raffle, dict) and isinstance(raffle.get("tickets"), dict):
+                    raffle["tickets"].pop(child_id, None)
 
     def get_settings(self) -> dict[str, Any]:
         """The whole settings dict (live reference; callers must not assume a copy)."""

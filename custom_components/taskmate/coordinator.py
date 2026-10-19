@@ -12,7 +12,7 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.event import async_track_time_change
+from homeassistant.helpers.event import async_track_time_change, async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
@@ -20,6 +20,7 @@ from . import notify_strings, photos
 from .const import DOMAIN
 from .coord_assignments import AssignmentsMixin
 from .coord_auctions import AuctionsMixin
+from .coord_auto_approve import AutoApproveMixin
 from .coord_avatars import AvatarsMixin
 from .coord_badges import BadgeCoordinator
 from .coord_birthdays import BirthdaysMixin
@@ -27,19 +28,25 @@ from .coord_bounties import BountiesMixin
 from .coord_calendar import CalendarMixin
 from .coord_challenges import ChallengesMixin
 from .coord_chores import ChoresMixin
+from .coord_goals import WeeklyGoalsMixin
 from .coord_guests import GuestsMixin
 from .coord_inspections import InspectionsMixin
 from .coord_mandatory import MandatoryMixin
 from .coord_notifications import NotificationCoordinator
+from .coord_pets import PetsMixin
 from .coord_points import PointsMixin
 from .coord_quests import QuestsMixin
+from .coord_raffles import RafflesMixin
 from .coord_recaps import RecapsMixin
+from .coord_redemptions import RedemptionsMixin
 from .coord_rejections import RejectionsMixin
+from .coord_repairs import RepairsMixin
 from .coord_reports import ReportsMixin
 from .coord_rewards import RewardsMixin
 from .coord_roulette import RouletteMixin
 from .coord_scheduled import ScheduledChangesMixin
 from .coord_setup import SetupWizardMixin
+from .coord_sick import SickDaysMixin
 from .coord_sounds import SoundsMixin
 from .coord_tags import TagsMixin
 from .coord_teamwork import TeamworkMixin
@@ -47,6 +54,7 @@ from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
 from .coord_tts import ReadAloudMixin
 from .coord_unlocks import UnlocksMixin
+from .coord_wellbeing import WellbeingMixin
 from .coord_wishlist import WishlistMixin
 from .models import Child, Chore
 from .storage import TaskMateStorage
@@ -106,6 +114,14 @@ class TaskMateCoordinator(
     RejectionsMixin,
     SetupWizardMixin,
     InspectionsMixin,
+    RepairsMixin,
+    AutoApproveMixin,
+    WellbeingMixin,
+    SickDaysMixin,
+    WeeklyGoalsMixin,
+    RedemptionsMixin,
+    RafflesMixin,
+    PetsMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -147,6 +163,10 @@ class TaskMateCoordinator(
         self._unlock_timers: list = []
         # Wakes for the next chore-auction closing time or reminder (#982).
         self._unsub_auction_timer: Callable[[], None] | None = None
+        # Once-a-minute checks that may pay points (auto-approve, weekly
+        # goals, raffle draws). Kept out of _async_update_data: paying points
+        # refreshes the coordinator, which must not happen inside a refresh.
+        self._unsub_minutely: Callable[[], None] | None = None
 
     def difficulty_multiplier(self, tier: str) -> float:
         """Return the points multiplier for a difficulty tier.
@@ -182,11 +202,17 @@ class TaskMateCoordinator(
             out[rating] = max(0.0, value)
         return out
 
-    def effective_chore_points(self, chore) -> int:
-        """Base chore points scaled by its difficulty multiplier (never negative)."""
+    def effective_chore_points(self, chore, quantity: int = 0) -> int:
+        """Base chore points scaled by its difficulty multiplier (never negative).
+
+        A quantity chore's points are per unit, so ``quantity`` units earn
+        that many times the points.
+        """
         from .const import DEFAULT_DIFFICULTY
 
         base = int(getattr(chore, "points", 0) or 0)
+        if quantity and (getattr(chore, "quantity_unit", "") or "").strip():
+            base *= int(quantity)
         tier = getattr(chore, "difficulty", DEFAULT_DIFFICULTY) or DEFAULT_DIFFICULTY
         return max(0, round(base * self.difficulty_multiplier(tier)))
 
@@ -348,6 +374,9 @@ class TaskMateCoordinator(
             return True
         if self._vacation_calendar_active():
             return True
+        # A sick day (one tap by a parent) is a one-child, one-day vacation.
+        if child is not None and self.is_sick_day(child.id, on):
+            return True
         return (
             child is not None
             and getattr(child, "pause_streak_when_unavailable", False)
@@ -462,6 +491,37 @@ class TaskMateCoordinator(
         # Surprise inspections (#981): close / remind what came due while HA
         # was off, catch up on a missed daily pick, then arm the timers.
         await self.async_start_inspections()
+        self._unsub_minutely = async_track_time_interval(self.hass, self._async_minutely_tick, timedelta(seconds=60))
+
+    @callback
+    def _async_minutely_tick(self, now: datetime) -> None:
+        self.hass.async_create_task(self.async_run_minutely_checks())
+
+    async def async_run_minutely_checks(self) -> None:
+        """Auto-approve overdue chores, pay weekly goals, draw due raffles.
+
+        Each step is independent; one failing must not stop the others.
+        """
+        for step in (
+            self.async_auto_approve_overdue,
+            self.async_check_weekly_goals,
+            self.async_draw_due_raffles,
+            self.async_check_pet_growth,
+        ):
+            try:
+                await step()
+            except Exception:  # noqa: BLE001
+                _LOGGER.exception("Minutely check %s failed", getattr(step, "__name__", step))
+        # A help request's two hours and a drawn raffle's day on show run out
+        # with no storage write, so the cached sensor attributes need a nudge.
+        shown = (
+            tuple(r.get("id") for r in self.open_help_requests()),
+            tuple(r["id"] for r in self.raffles_state()),
+        )
+        if shown != getattr(self, "_minutely_shown", shown):
+            self.external_state_version += 1
+            self.async_update_listeners()
+        self._minutely_shown = shown
 
     @callback
     def _async_weekly_digest_check(self, now: datetime) -> None:
@@ -835,6 +895,7 @@ class TaskMateCoordinator(
             "_unsub_weekly",
             "_unsub_language",
             "_unsub_auction_timer",
+            "_unsub_minutely",
         ):
             if unsub := getattr(self, attr, None):
                 unsub()
@@ -842,6 +903,7 @@ class TaskMateCoordinator(
         self.disarm_mandatory_schedules()
         self.disarm_recap_schedules()
         self.disarm_inspection_schedules()
+        self.clear_repairs()
         # Flush any pending debounced save so an entry unload/reload can't drop
         # the last mutation (PERF-3).
         await self.storage.async_save_now()
@@ -946,6 +1008,8 @@ class TaskMateCoordinator(
         # A no-op unless the child -> entity map actually changed.
         if notifications := getattr(self, "notifications", None):
             notifications.sync_presence_tracking()
+        # Repairs: raise/clear HA repair issues for setups that can't work.
+        self.async_update_repairs()
         version = self.storage.data_version
         cached = getattr(self, "_data_snapshot_cache", None)
         if cached is not None and cached[0] == version:
@@ -1058,6 +1122,8 @@ class TaskMateCoordinator(
         # routes (#946) — nothing else would ever clear them.
         self.storage.remove_mandatory_misses_for_child(child_id)
         self.storage.remove_timed_sessions_for_child(child_id)
+        # Help requests, moods, sick days, goals, redemptions, raffle tickets, pets.
+        self.storage.remove_child_from_sections(child_id)
         routes_changed = self.storage.remove_notification_recipient(f"child:{child_id}")
         # Remove child from chore assigned_to lists, and clear any approved swap
         # override that pointed at them so the chore isn't left assigned to a

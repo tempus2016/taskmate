@@ -252,6 +252,26 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 **({"rejections": rej} if (rej := coordinator.rejections_for_child(c.id)) else {}),
                 # Surprise inspections (#981): today's banner(s), only when any.
                 **({"inspections": insp} if (insp := coordinator.inspections_for_child(c.id)) else {}),
+                # "I'm stuck": chores with an open help request, newest first.
+                **({"help": [r["chore_id"] for r in helps]} if (helps := coordinator.open_help_requests(c.id)) else {}),
+                # Today's mood, once the child has said.
+                **({"mood_today": mood} if (mood := coordinator.mood_on(c.id)) else {}),
+                **({"sick_today": True} if coordinator.is_sick_day(c.id) else {}),
+                # Virtual pet, while pets are on.
+                **({"pet": pet} if (pet := coordinator.pet_state(c)) is not None else {}),
+                # Personal weekly goal, while the feature is on.
+                **({"weekly_goal": goal} if (goal := coordinator.weekly_goal_state(c.id)) is not None else {}),
+                # Make it right: open offers to earn a penalty back.
+                **(
+                    {
+                        "redemptions": [
+                            {k: o[k] for k in ("id", "chore_id", "chore_name", "penalty_name", "points", "expires")}
+                            for o in offers
+                        ]
+                    }
+                    if (offers := coordinator.open_redemptions(c.id))
+                    else {}
+                ),
             }
         )
     return summary
@@ -443,6 +463,25 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         bonus_subtasks = getattr(c, "bonus_subtasks", [])
         if bonus_subtasks:
             record["bonus_subtasks"] = [{"id": b.id, "name": b.name, "points": b.points} for b in bonus_subtasks]
+        # How long it takes, for the cards' "about N minutes left" line.
+        estimated_minutes = int(getattr(c, "estimated_minutes", 0) or 0)
+        if estimated_minutes:
+            record["estimated_minutes"] = estimated_minutes
+        # Quantity chores: the card asks "how many?" and `points` is per unit.
+        quantity_unit = (getattr(c, "quantity_unit", "") or "").strip()
+        if quantity_unit and not getattr(c, "open_ended", False) and task_type != "timed":
+            record["quantity_unit"] = quantity_unit
+            quantity_max = int(getattr(c, "quantity_max", 0) or 0)
+            if quantity_max:
+                record["quantity_max"] = quantity_max
+            # Unrounded per-unit worth, so the card's "worth N" preview rounds
+            # the total once, the way the payout does, at easy/hard difficulty.
+            unit_points = round(
+                int(c.points or 0) * coordinator.difficulty_multiplier(getattr(c, "difficulty", "medium") or "medium"),
+                4,
+            )
+            if unit_points != record.get("effective_points", c.points):
+                record["unit_points"] = unit_points
         chores_list.append(record)
     return chores_list
 
@@ -557,6 +596,8 @@ def _build_todays_completions(common: dict) -> list[dict]:
         }
         if timed_secs > 0:
             rec["timed_duration_seconds"] = timed_secs
+        if getattr(comp, "quantity", 0):
+            rec["quantity"] = comp.quantity
         # Child undo (#918): child_undo_pending / child_undo_until, present only
         # on a completion the child may still take back, so the attribute
         # stays small (and empty whenever the window is 0).
@@ -1286,7 +1327,7 @@ class TaskMateChoreAvailabilitySensor(_CachedAttrsSensor):
 class TaskMateRewardsSensor(_CachedAttrsSensor):
     """Rewards catalog + pending claims + pool allocations."""
 
-    _unrecorded_attributes = frozenset({"rewards", "pending_reward_claims", "pool_allocations"})
+    _unrecorded_attributes = frozenset({"rewards", "pending_reward_claims", "pool_allocations", "raffles"})
 
     def __init__(
         self,
@@ -1311,6 +1352,8 @@ class TaskMateRewardsSensor(_CachedAttrsSensor):
             "rewards": _build_rewards_list(common),
             "pending_reward_claims": _build_pending_reward_claims(common),
             "pool_allocations": [pa.to_dict() for pa in common["pool_alloc_objs"]],
+            # Raffles: open ones and those drawn in the last day, only when any.
+            **({"raffles": raffles} if (raffles := self.coordinator.raffles_state()) else {}),
         }
 
 
@@ -1997,6 +2040,15 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                 suggested = getattr(comp, "suggested_points", 0) or 0
                 if suggested:
                     detail["suggested_points"] = suggested
+                # Quantity chores: "12 pages", so the parent sees what was paid for.
+                if getattr(comp, "quantity", 0):
+                    detail["quantity"] = comp.quantity
+                    detail["quantity_unit"] = getattr(chore, "quantity_unit", "") or ""
+                # What the job looks like done well, beside the child's photo.
+                # Signed like a chore picture: it is decorative, not personal.
+                reference = getattr(chore, "reference_image_url", "") or ""
+                if reference:
+                    detail["reference_image_url"] = images.sign_image_url(self.coordinator.hass, reference)
                 completion_details.append(detail)
 
         reward_details = []

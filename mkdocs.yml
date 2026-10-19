@@ -1,0 +1,163 @@
+site_name: TaskMate
+site_url: https://tempus2016.github.io/taskmate/
+docs_dir: wiki
+edit_uri: edit/main/wiki/
+validation:
+  anchors: warn
+site_description: Chores, points and rewards for Home Assistant
+repo_url: https://github.com/tempus2016/taskmate
+repo_name: tempus2016/taskmate
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: light blue
+      accent: amber
+      toggle: {icon: material/weather-night, name: Dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: light blue
+      accent: amber
+      toggle: {icon: material/weather-sunny, name: Light mode}
+  icon:
+    logo: material/broom
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.instant
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.details
+plugins:
+  - search
+nav:
+  - Home: index.md
+  - "Getting Started":
+      - "Installation": "Installation.md"
+      - "Getting Started": "Getting-Started.md"
+      - "Setup Wizard": "Setup-Wizard.md"
+      - "Ready-Made Dashboards": "Ready-Made-Dashboards.md"
+      - "Admin Panel": "Admin-Panel.md"
+      - "Children": "Children.md"
+      - "Adult Profiles": "Adult-Profiles.md"
+      - "Settings": "Settings.md"
+  - "Chores":
+      - "Chores": "Chores.md"
+      - "Chore Scheduling": "Chore-Scheduling.md"
+      - "Mandatory Chores": "Mandatory-Chores.md"
+      - "Difficulty Tiers": "Difficulty-Tiers.md"
+      - "Timed Tasks": "Timed-Tasks.md"
+      - "Weekly Targets": "Weekly-Targets.md"
+      - "Task Groups": "Task-Groups.md"
+      - "Bonus Subtasks": "Bonus-Subtasks.md"
+      - "Photo Proof": "Photo-Proof.md"
+      - "Open-Ended Chores": "Open-Ended-Chores.md"
+      - "Chore Swaps": "Chore-Swaps.md"
+      - "Chore Dependencies": "Chore-Dependencies.md"
+      - "To-Do Lists": "To-Do-Lists.md"
+      - "Vacation Mode": "Vacation-Mode.md"
+      - "Calendar": "Calendar.md"
+      - "Dynamic Chore Visibility": "Dynamic-Chore-Visibility.md"
+      - "Weather-Aware Chores": "Weather-Aware-Chores.md"
+      - "Reactive Chores": "Reactive-Chores.md"
+      - "Scheduled Config Changes": "Scheduled-Config-Changes.md"
+      - "Chore Roulette": "Chore-Roulette.md"
+      - "Teamwork Chores": "Teamwork-Chores.md"
+      - "NFC Tag Completion": "NFC-Tag-Completion.md"
+      - "Two-Way Calendar": "Two-Way-Calendar.md"
+      - "Chore Auctions": "Chore-Auctions.md"
+      - "Quality Ratings": "Quality-Ratings.md"
+      - "Reject Reasons": "Reject-Reasons.md"
+      - "Surprise Inspections": "Surprise-Inspections.md"
+      - "Child Undo Window": "Child-Undo-Window.md"
+      - "Logging Past Jobs": "Logging-Past-Jobs.md"
+      - "Estimated Minutes": "Estimated-Minutes.md"
+      - "Reference Photos": "Reference-Photos.md"
+      - "Quantity Chores": "Quantity-Chores.md"
+      - "Auto-Approve": "Auto-Approve.md"
+      - "Help Requests": "Help-Requests.md"
+      - "Sick Days": "Sick-Days.md"
+  - "Points, Rewards & Economy":
+      - "Rewards": "Rewards.md"
+      - "Managing Rewards": "Managing-Rewards.md"
+      - "Pool Mode (Savings Jars)": "Pool-Mode-(Savings-Jars).md"
+      - "Bonus Points": "Bonus-Points.md"
+      - "Bonuses": "Bonuses.md"
+      - "Penalties": "Penalties.md"
+      - "Make-It-Right Penalties": "Make-It-Right-Penalties.md"
+      - "Points Economy": "Points-Economy.md"
+      - "Gifting Points": "Gifting-Points.md"
+      - "Allowance": "Allowance.md"
+      - "Family Goals": "Family-Goals.md"
+      - "Timed Unlock Rewards": "Timed-Unlock-Rewards.md"
+      - "Time-Locked Rewards": "Time-Locked-Rewards.md"
+      - "External Lock-Screen Shops": "External-Lock-Screen-Shops.md"
+      - "Bounty Board": "Bounty-Board.md"
+      - "Wishlist": "Wishlist.md"
+      - "Raffles": "Raffles.md"
+  - "Gamification":
+      - "Levels & XP": "Levels-and-XP.md"
+      - "Achievement Badges": "Achievement-Badges.md"
+      - "Quests": "Quests.md"
+      - "Challenges": "Challenges.md"
+      - "Avatars": "Avatars.md"
+      - "Celebrations": "Celebrations.md"
+      - "Leaderboard Seasons": "Leaderboard-Seasons.md"
+      - "Streak Freezes": "Streak-Freezes.md"
+      - "Birthday Mode": "Birthday-Mode.md"
+      - "Recaps": "Recaps.md"
+      - "Virtual Pets": "Virtual-Pets.md"
+      - "Weekly Goals": "Weekly-Goals.md"
+  - "Notifications & Admin":
+      - "Notifications": "Notifications.md"
+      - "Quiet Hours": "Quiet-Hours.md"
+      - "Presence-Aware Reminders": "Presence-Aware-Reminders.md"
+      - "Reminder Escalation": "Reminder-Escalation.md"
+      - "Weekly Digest": "Weekly-Digest.md"
+      - "Admin Audit Log": "Admin-Audit-Log.md"
+      - "Multi-Parent Approval Routing": "Multi-Parent-Approval-Routing.md"
+      - "Insights": "Insights.md"
+      - "Mood Check-In": "Mood-Check-In.md"
+      - "Parent Access": "Parent-Access.md"
+      - "Backup & Restore": "Backup-and-Restore.md"
+      - "Repairs & Diagnostics": "Repairs-and-Diagnostics.md"
+  - "Reference":
+      - "Dashboard Cards": "Dashboard-Cards.md"
+      - "Routine Mode": "Routine-Mode.md"
+      - "Kiosk Mode": "Kiosk-Mode.md"
+      - "Sticker Chart Card": "Sticker-Chart-Card.md"
+      - "Watch Complications": "Watch-Complications.md"
+      - "Pre-Reader Mode": "Pre-Reader-Mode.md"
+      - "Card Design Styles": "Card-Design-Styles.md"
+      - "Read Aloud": "Read-Aloud.md"
+      - "Template Packs": "Template-Packs.md"
+      - "Printable Weekly Chart": "Printable-Weekly-Chart.md"
+      - "Completion Sounds": "Completion-Sounds.md"
+      - "Guest Child Profiles": "Guest-Child-Profiles.md"
+      - "Configuration Entities": "Configuration-Entities.md"
+      - "Voice Assistants": "Voice-Assistants.md"
+      - "Services": "Services.md"
+      - "Sensor Reference": "Sensor-Reference.md"
+      - "Sensor Attributes": "Sensor-Attributes.md"
+      - "Event Entities": "Event-Entities.md"
+      - "Approvals Card": "Approvals-Card.md"
+      - "Visibility Configuration Guide": "Visibility-Configuration-Guide.md"
+      - "Visibility Operators Reference": "Visibility-Operators-Reference.md"
+      - "Automations": "Automations.md"
+      - "Localization": "Localization.md"
+      - "Troubleshooting": "Troubleshooting.md"
+      - "FAQ": "FAQ.md"

@@ -92,24 +92,31 @@ class ReportsMixin:
         completions = self._completions_in_window(start, end)
 
         by_child: dict[str, dict[str, Any]] = {
-            c.id: {"id": c.id, "name": c.name, "completions": 0, "points": 0, "active_days": set()} for c in children
+            c.id: {"id": c.id, "name": c.name, "completions": 0, "points": 0, "minutes": 0, "active_days": set()}
+            for c in children
         }
+        # Time is a third view of effort: a 30-minute job and a 2-minute one
+        # are each "one chore". Only chores with an estimate count towards it.
+        minutes_by_chore = {ch.id: int(getattr(ch, "estimated_minutes", 0) or 0) for ch in self.storage.get_chores()}
         for comp in completions:
             entry = by_child.get(comp.child_id)
             if entry is None:
                 continue  # a since-deleted child's history
             entry["completions"] += 1
             entry["points"] += int(getattr(comp, "points_awarded", 0) or 0)
+            entry["minutes"] += minutes_by_chore.get(comp.chore_id, 0)
             entry["active_days"].add(dt_util.as_local(comp.completed_at).date().isoformat())
 
         total_completions = sum(e["completions"] for e in by_child.values())
         total_points = sum(e["points"] for e in by_child.values())
+        total_minutes = sum(e["minutes"] for e in by_child.values())
         fair_share = 100.0 / len(children) if children else 0.0
 
         rows = []
         for entry in by_child.values():
             share_completions = entry["completions"] / total_completions * 100 if total_completions else 0.0
             share_points = entry["points"] / total_points * 100 if total_points else 0.0
+            share_minutes = entry["minutes"] / total_minutes * 100 if total_minutes else 0.0
             # Judge on chore count: it's the closest proxy for "how much did
             # they actually have to do", independent of how a chore is priced.
             delta = share_completions - fair_share
@@ -129,6 +136,8 @@ class ReportsMixin:
                     "points": entry["points"],
                     "share_completions": round(share_completions, 1),
                     "share_points": round(share_points, 1),
+                    "minutes": entry["minutes"],
+                    "share_minutes": round(share_minutes, 1),
                     "delta": round(delta, 1),
                     "active_days": len(entry["active_days"]),
                     "status": status,
@@ -145,6 +154,7 @@ class ReportsMixin:
             "tolerance": FAIR_SHARE_TOLERANCE,
             "total_completions": total_completions,
             "total_points": total_points,
+            "total_minutes": total_minutes,
             "children": rows,
             "balanced": all(r["status"] in ("balanced", "idle") for r in rows),
         }

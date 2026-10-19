@@ -480,6 +480,17 @@ class Chore:
     # NFC / QR tag completion (#923): HA tag ids that complete this chore when
     # scanned in the companion app. Empty = no tag linked.
     tag_ids: list[str] = field(default_factory=list)
+    # Roughly how long the chore takes, in minutes; 0 = not set. Cards add
+    # these up into "about 25 minutes of jobs left today".
+    estimated_minutes: int = 0
+    # A picture of the job done well, shown beside the child's evidence photo
+    # when a parent approves. Stored like image_url (/api/taskmate/image/...).
+    reference_image_url: str = ""
+    # Quantity chores ("read 20 pages"): when quantity_unit is set the child
+    # says how many they did and earns ``points`` per unit. quantity_max caps
+    # one completion (0 = no cap).
+    quantity_unit: str = ""
+    quantity_max: int = 0
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -561,6 +572,10 @@ class Chore:
             timed_rate_minutes=max(1, int(data.get("timed_rate_minutes", 5) or 5)),
             timed_max_daily_minutes=max(0, int(data.get("timed_max_daily_minutes", 0) or 0)),
             tag_ids=normalize_tag_ids(data.get("tag_ids", [])),
+            estimated_minutes=_clamp_int(data.get("estimated_minutes"), 0, MAX_ESTIMATED_MINUTES),
+            reference_image_url=str(data.get("reference_image_url", "") or ""),
+            quantity_unit=str(data.get("quantity_unit", "") or "").strip()[:QUANTITY_UNIT_MAX_LENGTH],
+            quantity_max=_clamp_int(data.get("quantity_max"), 0, MAX_QUANTITY),
             id=data.get("id") or generate_id(),
         )
 
@@ -629,8 +644,27 @@ class Chore:
             "timed_rate_minutes": self.timed_rate_minutes,
             "timed_max_daily_minutes": self.timed_max_daily_minutes,
             "tag_ids": self.tag_ids,
+            "estimated_minutes": self.estimated_minutes,
+            "reference_image_url": self.reference_image_url,
+            "quantity_unit": self.quantity_unit,
+            "quantity_max": self.quantity_max,
             "id": self.id,
         }
+
+
+# Bounds for the per-chore estimate and quantity fields.
+MAX_ESTIMATED_MINUTES = 600
+MAX_QUANTITY = 10000
+QUANTITY_UNIT_MAX_LENGTH = 30
+
+
+def _clamp_int(value: Any, lo: int, hi: int) -> int:
+    """A stored number coerced into [lo, hi]; anything unparseable is lo."""
+    try:
+        number = int(value or 0)
+    except (TypeError, ValueError):
+        return lo
+    return max(lo, min(hi, number))
 
 
 def clean_moved_occurrences(raw: Any) -> dict[str, str]:
@@ -1135,6 +1169,12 @@ class ChoreCompletion:
     # to a past day would break a streak they are on today), so undoing it must
     # not take a day off the streak either.
     backdated: bool = False
+    # How many units the child did on a quantity chore ("12" pages); 0 on
+    # every other completion.
+    quantity: int = 0
+    # True when nobody reviewed it in time and the auto-approve timeout
+    # approved it instead.
+    auto_approved: bool = False
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ChoreCompletion:
@@ -1160,6 +1200,8 @@ class ChoreCompletion:
             child_undo_allowed=data.get("child_undo_allowed") is True,
             bounty_id=str(data.get("bounty_id", "") or ""),
             backdated=data.get("backdated") is True,
+            quantity=_clamp_int(data.get("quantity"), 0, MAX_QUANTITY),
+            auto_approved=data.get("auto_approved") is True,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1188,6 +1230,10 @@ class ChoreCompletion:
             data["bounty_id"] = self.bounty_id
         if self.backdated:
             data["backdated"] = True
+        if self.quantity:
+            data["quantity"] = self.quantity
+        if self.auto_approved:
+            data["auto_approved"] = True
         return data
 
 
@@ -1329,6 +1375,12 @@ class Penalty:
     description: str = ""
     icon: str = "mdi:alert-circle-outline"
     assigned_to: list[str] = field(default_factory=list)  # Child IDs who can receive this penalty (empty = all)
+    # Make it right: a chore the child can do afterwards to earn back
+    # redemption_percent of what was taken, within redemption_days days.
+    # "" = no way back (every penalty before this existed).
+    redemption_chore_id: str = ""
+    redemption_percent: int = 100
+    redemption_days: int = 1
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -1342,6 +1394,9 @@ class Penalty:
             description=data.get("description", ""),
             icon=data.get("icon", "mdi:alert-circle-outline"),
             assigned_to=list(data.get("assigned_to", [])),
+            redemption_chore_id=str(data.get("redemption_chore_id", "") or ""),
+            redemption_percent=_clamp_int(data.get("redemption_percent", 100), 1, 100),
+            redemption_days=_clamp_int(data.get("redemption_days", 1), 1, 7),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1353,6 +1408,9 @@ class Penalty:
             "description": self.description,
             "icon": self.icon,
             "assigned_to": self.assigned_to,
+            "redemption_chore_id": self.redemption_chore_id,
+            "redemption_percent": self.redemption_percent,
+            "redemption_days": self.redemption_days,
         }
 
 

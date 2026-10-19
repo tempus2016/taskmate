@@ -49,6 +49,15 @@ complete_chore:
           min: 0
           max: 999
           mode: box
+    quantity:
+      name: Quantity
+      description: How many units the child did, for a quantity chore ("read 20 pages"). Required from a child on those chores; the chore's points are paid per unit.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 10000
+          mode: box
 
 complete_bonus_subtask:
   name: Complete Bonus Sub-task
@@ -1745,3 +1754,178 @@ cancel_inspection:
       required: true
       selector:
         text:
+
+request_help:
+  name: Ask for help
+  description: A child says they are stuck on a chore. Sends the parents a push; nothing is completed or skipped.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child asking for help
+      required: true
+      selector:
+        text:
+    chore_id:
+      name: Chore ID
+      description: The chore they are stuck on
+      required: true
+      selector:
+        text:
+    message:
+      name: Message
+      description: Optional words from the child, e.g. "I can't reach the shelf".
+      required: false
+      selector:
+        text:
+
+answer_help:
+  name: Answer a help request
+  description: Mark a child's help request as answered, so their card stops saying help is on its way.
+  fields:
+    request_id:
+      name: Request ID
+      description: The help request to close
+      required: true
+      selector:
+        text:
+
+log_mood:
+  name: Log mood
+  description: A child says how their day went. One per day; logging again replaces it.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child
+      required: true
+      selector:
+        text:
+    mood:
+      name: Mood
+      description: great, good, ok, sad or upset
+      required: true
+      selector:
+        select:
+          options:
+            - "great"
+            - "good"
+            - "ok"
+            - "sad"
+            - "upset"
+
+set_sick_day:
+  name: Set sick day
+  description: Give a child a sick day. Their chores are hidden, their streak is frozen and no mandatory chore is missed.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child who is unwell
+      required: true
+      selector:
+        text:
+    date:
+      name: Date
+      description: The day (default today). From a week ago to a month ahead.
+      required: false
+      selector:
+        date:
+    sick:
+      name: Sick
+      description: Turn off to take the sick day back.
+      required: false
+      default: true
+      selector:
+        boolean:
+
+set_weekly_goal:
+  name: Set weekly goal
+  description: Set a child's own weekly points goal. Reaching it pays the family's weekly goal bonus once a week. 0 clears it.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child
+      required: true
+      selector:
+        text:
+    target:
+      name: Target
+      description: Points to earn this week
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 100000
+          mode: box
+
+buy_raffle_tickets:
+  name: Buy raffle tickets
+  description: A child spends points on tickets for a raffle. Each ticket is one chance in the draw.
+  fields:
+    raffle_id:
+      name: Raffle ID
+      description: The raffle
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The child buying
+      required: true
+      selector:
+        text:
+    tickets:
+      name: Tickets
+      description: How many tickets to buy
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 100
+          mode: box
+
+draw_raffle:
+  name: Draw raffle
+  description: Draw a raffle's winner now instead of waiting for its draw time.
+  fields:
+    raffle_id:
+      name: Raffle ID
+      description: The raffle to draw
+      required: true
+      selector:
+        text:
+
+adopt_pet:
+  name: Adopt a pet
+  description: A child adopts (or renames) their virtual pet. It grows with every chore they finish from now on.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child
+      required: true
+      selector:
+        text:
+    species:
+      name: Species
+      description: dragon, cat, dog, bunny, dino or unicorn
+      required: true
+      selector:
+        select:
+          options:
+            - "dragon"
+            - "cat"
+            - "dog"
+            - "bunny"
+            - "dino"
+            - "unicorn"
+    name:
+      name: Name
+      description: The pet's name
+      required: true
+      selector:
+        text:
+    hatch_egg:
+      name: Hatch the egg
+      description: Hatch the egg the grown-up pet laid into a new pet. The old pet joins the pet family.
+      required: false
+      default: false
+      selector:
+        boolean:

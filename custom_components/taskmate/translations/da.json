@@ -150,6 +150,10 @@
         "suggested_points": {
           "name": "Foreslåede point",
           "description": "Hvad barnet mener, arbejdet var værd. Et hint til den forælder, der godkender — det giver ikke point i sig selv."
+        },
+        "quantity": {
+          "name": "Antal",
+          "description": "Hvor mange enheder barnet lavede, på en mængdeopgave (\"læs 20 sider\"). Påkrævet fra et barn på de opgaver; opgavens point udbetales pr. enhed."
         }
       }
     },
@@ -1320,6 +1324,130 @@
           "description": "ID'et på den åbne inspektion"
         }
       }
+    },
+    "request_help": {
+      "name": "Bed om hjælp",
+      "description": "Et barn siger, at det sidder fast i en opgave. Sender forældrene en notifikation; intet bliver udført eller sprunget over.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet, der beder om hjælp"
+        },
+        "chore_id": {
+          "name": "Opgave-ID",
+          "description": "Opgaven, barnet sidder fast i"
+        },
+        "message": {
+          "name": "Besked",
+          "description": "Valgfrie ord fra barnet, f.eks. \"Jeg kan ikke nå hylden\"."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Besvar en anmodning om hjælp",
+      "description": "Markér et barns anmodning om hjælp som besvaret, så kortet holder op med at sige, at hjælpen er på vej.",
+      "fields": {
+        "request_id": {
+          "name": "Anmodnings-ID",
+          "description": "Anmodningen, der skal lukkes"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Registrér humør",
+      "description": "Et barn fortæller, hvordan dagen gik. Én pr. dag; en ny erstatter den gamle.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet"
+        },
+        "mood": {
+          "name": "Humør",
+          "description": "great, good, ok, sad eller upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Sæt sygedag",
+      "description": "Giv et barn en sygedag. Opgaverne skjules, stimen fryses, og ingen obligatorisk opgave bliver overset.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet, der er sygt"
+        },
+        "date": {
+          "name": "Dato",
+          "description": "Dagen (standard i dag). Fra en uge tilbage til en måned frem."
+        },
+        "sick": {
+          "name": "Syg",
+          "description": "Slå fra for at tage sygedagen tilbage."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Sæt ugemål",
+      "description": "Sæt et barns eget pointmål for ugen. Når det nås, udbetales familiens ugemålsbonus én gang om ugen. 0 fjerner det.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet"
+        },
+        "target": {
+          "name": "Mål",
+          "description": "Point, der skal tjenes i denne uge"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Køb lodder",
+      "description": "Et barn bruger point på lodder til en lodtrækning. Hvert lod er én chance i trækningen.",
+      "fields": {
+        "raffle_id": {
+          "name": "Lodtræknings-ID",
+          "description": "Lodtrækningen"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet, der køber"
+        },
+        "tickets": {
+          "name": "Lodder",
+          "description": "Hvor mange lodder der skal købes"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Træk lodtrækning",
+      "description": "Træk en lodtræknings vinder nu i stedet for at vente på tidspunktet.",
+      "fields": {
+        "raffle_id": {
+          "name": "Lodtræknings-ID",
+          "description": "Lodtrækningen, der skal trækkes"
+        }
+      }
+    },
+    "adopt_pet": {
+      "name": "Adoptér et kæledyr",
+      "description": "Et barn adopterer (eller omdøber) sit virtuelle kæledyr. Det vokser med hver opgave, barnet klarer fra nu af.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet"
+        },
+        "species": {
+          "name": "Art",
+          "description": "dragon, cat, dog, bunny, dino eller unicorn"
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Kæledyrets navn"
+        },
+        "hatch_egg": {
+          "name": "Udklæk ægget",
+          "description": "Udklæk ægget, som det voksne kæledyr lagde, til et nyt kæledyr. Det gamle kæledyr kommer med i kæledyrsfamilien."
+        }
+      }
     }
   },
   "entity": {
@@ -1353,6 +1481,60 @@
       "card_design": {
         "name": "Kortdesign"
       }
+    },
+    "event": {
+      "child_activity": {
+        "name": "TaskMate-aktivitet",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Opgave udført",
+              "chore_approved": "Opgave godkendt",
+              "chore_rejected": "Opgave afvist",
+              "chore_approval_undone": "Godkendelse fortrudt",
+              "reward_claimed": "Belønning indløst",
+              "reward_approved": "Belønning godkendt",
+              "reward_rejected": "Belønning afvist",
+              "badge_earned": "Mærke optjent",
+              "level_up": "Nyt niveau",
+              "streak_updated": "Stime opdateret",
+              "streak_freeze_used": "Stimefrysning brugt",
+              "perfect_week": "Perfekt uge",
+              "weekly_target_reached": "Ugens mål nået",
+              "quest_completed": "Mission fuldført",
+              "challenge_completed": "Udfordring fuldført",
+              "bonus_applied": "Bonus givet",
+              "penalty_applied": "Straf givet",
+              "surprise_bonus": "Overraskelsesbonus",
+              "mandatory_missed": "Obligatorisk opgave overset",
+              "team_chore_completed": "Holdopgave udført",
+              "points_gifted": "Point givet væk",
+              "help_requested": "Bad om hjælp",
+              "mood_logged": "Humør registreret",
+              "weekly_goal_reached": "Ugemål nået",
+              "sick_day": "Sygedag",
+              "chore_auto_approved": "Opgave godkendt automatisk",
+              "penalty_redeemed": "Straf tjent tilbage",
+              "raffle_won": "Lodtrækning vundet",
+              "pet_evolved": "Kæledyr voksede"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "TaskMate-familieaktivitet",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Familiemål nået",
+              "season_champion": "Sæsonmester",
+              "bounty_posted": "Dusør slået op",
+              "scheduled_change_applied": "Planlagt ændring udført",
+              "raffle_drawn": "Lodtrækning trukket"
+            }
+          }
+        }
+      }
     }
   },
   "exceptions": {
@@ -1382,6 +1564,36 @@
     },
     "calendar_own_event": {
       "message": "Denne begivenhed er udgivet af TaskMate selv, så den tilføjes ikke som en ny opgave."
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate kan ikke sende notifikationer til {who}",
+      "description": "TaskMate er sat op til at give {who} besked via `{service}`, men den tjeneste findes ikke længere — typisk fordi telefonen er fjernet eller omdøbt i Mobile App-integrationen.\n\nÅbn TaskMate-adminpanelet → Notifikationer, og vælg den aktuelle tjeneste for {who}. Reparationen forsvinder af sig selv, når tjenesten findes."
+    },
+    "child_entity_missing": {
+      "title": "{child}s profil bruger en manglende entitet",
+      "description": "{child}s profil bruger `{entity}`, som ikke findes længere. Tilgængelighed, påmindelser efter tilstedeværelse eller profilbilledet, der afhænger af den, virker ikke.\n\nÅbn TaskMate-adminpanelet → Børn, redigér {child}, og vælg en entitet, der findes (eller ryd feltet)."
+    },
+    "chore_entity_missing": {
+      "title": "“{chore}” bruger en manglende entitet",
+      "description": "“{chore}” bruger `{entity}` til at afgøre, hvornår den vises, men entiteten findes ikke længere, så tjekket springes over.\n\nÅbn TaskMate-adminpanelet → Opgaver, redigér “{chore}”, og vælg en entitet, der findes (eller ryd den)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "Opgaven “{chore}” er ikke tildelt nogen",
+      "description": "Alle de børn, “{chore}” var tildelt, er fjernet, så ingen vil nogensinde se den.\n\nÅbn TaskMate-adminpanelet → Opgaver, og tildel “{chore}” til et barn, eller slet den."
+    },
+    "chore_dependency_missing": {
+      "title": "Opgaven “{chore}” kan aldrig låses op",
+      "description": "“{chore}” venter på, at en anden opgave bliver udført først, men den opgave er slettet, så “{chore}” forbliver låst for altid.\n\nÅbn TaskMate-adminpanelet → Opgaver, redigér “{chore}”, og fjern den manglende afhængighed."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "Intet barn kan indløse belønningen “{reward}”",
+      "description": "Alle de børn, “{reward}” var tiltænkt, er fjernet, så ingen kan indløse den.\n\nÅbn TaskMate-adminpanelet → Belønninger, og vælg, hvem “{reward}” er til, eller slet den."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "Belønningen “{reward}” låser intet op",
+      "description": "“{reward}” er sat til at tænde `{entity}`, men den entitet er ikke længere på TaskMates liste over tilladte oplåsninger, så der sker intet, når belønningen godkendes.\n\nÅbn TaskMate-adminpanelet → Indstillinger, og tilføj `{entity}` til listen, eller redigér “{reward}”."
     }
   }
 }

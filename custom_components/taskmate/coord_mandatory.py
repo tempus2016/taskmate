@@ -121,6 +121,9 @@ class MandatoryMixin:
                     continue
                 if child_id in (getattr(chore, "disabled_for", []) or []):
                     continue
+                # A sick day owes nothing.
+                if self.is_sick_day(child_id, day):
+                    continue
                 if self._child_completed_today(chore.id, child_id, day):
                     continue
                 # Weekly target (#883): the week's quota is already filled, so

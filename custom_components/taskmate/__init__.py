@@ -149,6 +149,7 @@ PLATFORMS: list[Platform] = [
     Platform.NUMBER,
     Platform.SELECT,
     Platform.TODO,
+    Platform.EVENT,
 ]
 
 # Track if services are registered
@@ -587,6 +588,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 photo_url=call.data.get("photo_url", ""),
                 note=call.data.get("note", ""),
                 suggested_points=call.data.get("suggested_points", 0),
+                quantity=call.data.get("quantity", 0),
             )
         except ValueError as err:
             # Only genuinely bad input (unknown chore/child) raises now — expected
@@ -1332,6 +1334,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Optional("suggested_points"): vol.All(
                     vol.Coerce(int), vol.Range(min=0, max=CHORE_SUGGESTED_POINTS_MAX)
                 ),
+                # Quantity chores: how many units the child did.
+                vol.Optional("quantity"): vol.All(vol.Coerce(int), vol.Range(min=0, max=10000)),
             }
         ),
     )
@@ -2017,6 +2021,17 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         get_coordinator=lambda: _get_coordinator(hass),
     )
 
+    # Help requests, moods, sick days, weekly goals and raffles.
+    from .family_services import async_register_family_services
+
+    async_register_family_services(
+        hass,
+        child_action=_audited,
+        parent_action=_parent,
+        get_coordinator=lambda: _get_coordinator(hass),
+        require_linked_child=lambda *args: _async_require_linked_child(*args),
+    )
+
 
 def _async_unregister_services(hass: HomeAssistant) -> None:
     """Unregister TaskMate services."""
@@ -2074,10 +2089,12 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         "revoke_badge",
         "rebuild_badges",
     ]
+    from .family_services import FAMILY_SERVICES
     from .inspection_services import INSPECTION_SERVICES
     from .wishlist_services import WISHLIST_SERVICES
 
     services.extend(WISHLIST_SERVICES)
     services.extend(INSPECTION_SERVICES)
+    services.extend(FAMILY_SERVICES)
     for service in services:
         hass.services.async_remove(DOMAIN, service)
