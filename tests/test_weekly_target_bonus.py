@@ -341,7 +341,7 @@ def test_panel_seeds_and_sends_the_bonus():
     assert "panel.chore_weekly_target_bonus_label" in panel
 
 
-@pytest.mark.parametrize("locale", ["en", "en-GB", "da", "de", "fr", "nb", "nn", "pl", "pt", "pt-BR"])
+@pytest.mark.parametrize("locale", ["en", "en-GB", "da", "de", "fr", "nb", "nl", "nn", "pl", "pt", "pt-BR"])
 @pytest.mark.parametrize(
     "key",
     [

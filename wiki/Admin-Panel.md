@@ -278,6 +278,7 @@ The admin panel is fully translated in all supported languages:
 | Language | Code |
 |----------|------|
 | Danish | `da` |
+| Dutch | `nl` |
 | English | `en` |
 | English (GB) | `en-GB` |
 | French | `fr` |

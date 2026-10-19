@@ -1,0 +1,1599 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Welkom bij TaskMate!",
+        "description": "Zet het taken-systeem voor je gezin op. Je mag zelf bedenken hoe de punten heten die de kinderen verdienen.",
+        "data": {
+          "points_name": "Naam van de punten (bijv. Sterren, Munten, Diamanten)",
+          "points_icon": "Pictogram voor de punten"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Vul een naam in"
+    },
+    "abort": {
+      "already_configured": "TaskMate is al ingesteld"
+    },
+    "create_entry": {
+      "default": "TaskMate is klaar. [Open het TaskMate-paneel](/taskmate-admin) en voeg met de wizard je kinderen toe; die bedenkt taken die bij hun leeftijd passen."
+    }
+  },
+  "selector": {
+    "chore_action": {
+      "options": {
+        "save": "Wijzigingen opslaan",
+        "re_enable": "Taak weer inschakelen",
+        "disable": "Taak uitschakelen",
+        "delete": "Deze taak verwijderen"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "Wijzigingen opslaan",
+        "delete": "Beloning verwijderen"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "Ochtend",
+        "afternoon": "Middag",
+        "evening": "Avond",
+        "night": "Nacht",
+        "anytime": "Altijd"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "Vaste weekdagen",
+        "recurring": "Herhalend (elke N dagen/weken/maanden)",
+        "one_shot": "Eenmalige taak (één dag)"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "Maandag",
+        "tuesday": "Dinsdag",
+        "wednesday": "Woensdag",
+        "thursday": "Donderdag",
+        "friday": "Vrijdag",
+        "saturday": "Zaterdag",
+        "sunday": "Zondag"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "Elke 2 dagen",
+        "weekly": "Wekelijks",
+        "every_2_weeks": "Elke 2 weken",
+        "monthly": "Maandelijks",
+        "every_3_months": "Elk kwartaal",
+        "every_6_months": "Elk half jaar"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "Maandag",
+        "tuesday": "Dinsdag",
+        "wednesday": "Woensdag",
+        "thursday": "Donderdag",
+        "friday": "Vrijdag",
+        "saturday": "Zaterdag",
+        "sunday": "Zondag",
+        "any_day": "Elke dag"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "Meteen beschikbaar",
+        "wait_for_first_occurrence": "Wachten tot de eerstvolgende geplande dag"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "Opnieuw beginnen — bij een gemiste dag gaat je reeks terug naar 0",
+        "pause": "Pauzeren — je reeks blijft staan tot de volgende keer"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "none": "Geen filter — taak altijd tonen",
+        "equals": "Gelijk aan — tonen als de status er precies mee overeenkomt",
+        "not_equals": "Niet gelijk aan — tonen als de status er niet mee overeenkomt",
+        "gte": "Groter dan of gelijk (≥) — tonen als het getal groter is dan of gelijk aan het doel",
+        "lte": "Kleiner dan of gelijk (≤) — tonen als het getal kleiner is dan of gelijk aan het doel",
+        "gt": "Groter dan (>) — tonen als het getal groter is dan het doel",
+        "lt": "Kleiner dan (<) — tonen als het getal kleiner is dan het doel"
+      }
+    },
+    "assignment_mode": {
+      "options": {
+        "everyone": "Iedereen — elk gekozen kind ziet de taak",
+        "alternating": "Om de beurt — elke dag is een ander kind aan de beurt",
+        "random": "Willekeurig — elke dag wordt er een kind geloot",
+        "balanced": "Eerlijk verdeeld — de taken van vandaag worden eerlijk verdeeld over de kinderen",
+        "first_come": "Wie het eerst komt — wie hem het eerst afrondt wint; daarna is hij weg voor de rest",
+        "unassigned": "Niemand — geen enkel kind ziet deze taak"
+      }
+    },
+    "task_group_policy": {
+      "options": {
+        "sticky": "Vast — alle taken in de groep zijn voor hetzelfde kind",
+        "spread": "Verdeeld — de groep gaat vandaag naar verschillende kinderen"
+      }
+    },
+    "task_group_action": {
+      "options": {
+        "save": "Wijzigingen opslaan",
+        "delete": "Groep verwijderen"
+      }
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "Taak afronden",
+      "description": "Markeer een taak als afgerond door een kind",
+      "fields": {
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "Het ID van de taak om af te ronden"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat de taak afrondt"
+        },
+        "note": {
+          "name": "Notitie",
+          "description": "Wat het kind gedaan heeft, in eigen woorden. Verplicht bij een open taak, en de ouder leest het bij het goedkeuren."
+        },
+        "suggested_points": {
+          "name": "Voorgestelde punten",
+          "description": "Wat het kind zelf vindt dat het werk waard was. Een hint voor de ouder die goedkeurt — er worden hiermee nog geen punten gegeven."
+        },
+        "quantity": {
+          "name": "Aantal",
+          "description": "Hoeveel stuks het kind deed, bij een taak met aantal (“lees 20 bladzijden”). Voor het kind verplicht bij zulke taken; de punten van de taak gelden per stuk."
+        }
+      }
+    },
+    "complete_bonus_subtask": {
+      "name": "Bonusonderdeel afronden",
+      "description": "Rond een bonusonderdeel af nadat de taak zelf klaar is",
+      "fields": {
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "Het ID van de hoofdtaak"
+        },
+        "bonus_subtask_id": {
+          "name": "Bonusonderdeel-ID",
+          "description": "Het ID van het bonusonderdeel om af te ronden"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat het bonusonderdeel afrondt"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Taak goedkeuren",
+      "description": "Keur een afgeronde taak goed en geef de punten",
+      "fields": {
+        "completion_id": {
+          "name": "Uitvoerings-ID",
+          "description": "Het ID van de uitvoering om goed te keuren"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Geef dit aantal punten in plaats van de punten van de taak. Laat leeg om de punten van de taak te gebruiken."
+        },
+        "rating": {
+          "name": "Sterrenbeoordeling",
+          "description": "Optionele beoordeling van 1-3 sterren voor hoe goed de taak is gedaan. Als sterrenbeoordeling aan staat, worden de punten vermenigvuldigd met die ster; laat leeg voor 100%."
+        }
+      }
+    },
+    "approve_all_chores": {
+      "name": "Alle taken goedkeuren",
+      "description": "Keur alle wachtende taken goed (of alleen de gekozen) en geef de punten",
+      "fields": {
+        "completion_ids": {
+          "name": "Uitvoerings-ID's",
+          "description": "Kies welke uitvoeringen je goedkeurt; laat leeg om alle wachtenden goed te keuren"
+        },
+        "rating": {
+          "name": "Sterrenbeoordeling",
+          "description": "Optionele beoordeling van 1-3 sterren voor elke taak die hiermee wordt goedgekeurd (sterrenbeoordeling moet aan staan)."
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Taak afkeuren",
+      "description": "Keur een afgeronde taak af",
+      "fields": {
+        "completion_id": {
+          "name": "Uitvoerings-ID",
+          "description": "Het ID van de uitvoering om af te keuren"
+        },
+        "reason": {
+          "name": "Reden",
+          "description": "Optionele reden voor het kind"
+        }
+      }
+    },
+    "undo_chore": {
+      "name": "Taak terugnemen",
+      "description": "Laat een kind zijn eigen taak terugnemen — een inzending die nog wacht op een ouder, of een automatisch goedgekeurde binnen de bedenktijd. Uit tenzij de bedenktijd in de TaskMate-instellingen boven 0 staat; alles wat een ouder al beoordeelde kan alleen een ouder terugdraaien.",
+      "fields": {
+        "completion_id": {
+          "name": "Uitvoerings-ID",
+          "description": "Het ID van de uitvoering die het kind terugneemt"
+        }
+      }
+    },
+    "undo_chore_approval": {
+      "name": "Goedkeuring terugdraaien",
+      "description": "Draai een per ongeluk gegeven goedkeuring terug — de punten gaan eraf en de taak komt weer bij de wachtenden te staan.",
+      "fields": {
+        "completion_id": {
+          "name": "Uitvoerings-ID",
+          "description": "Het ID van de goedgekeurde uitvoering die weer wachtend wordt"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "Transactie terugdraaien",
+      "description": "Draai een puntentransactie terug via het ID — puntenaftrekken, bonussen, handmatige aanpassingen en cadeaus (beide kanten). Automatische transacties (weekend-, reeks- en perfecte-weekbonussen, spaarpotverplaatsingen, slijtage, rente) kunnen niet terug.",
+      "fields": {
+        "transaction_id": {
+          "name": "Transactie-ID",
+          "description": "Het ID van de puntentransactie om terug te draaien"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "Beloning inwisselen",
+      "description": "Een kind wisselt punten in voor een beloning",
+      "fields": {
+        "reward_id": {
+          "name": "Belonings-ID",
+          "description": "Het ID van de beloning om in te wisselen"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat de beloning inwisselt"
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Beloning goedkeuren",
+      "description": "Keur een aangevraagde beloning goed",
+      "fields": {
+        "claim_id": {
+          "name": "Aanvraag-ID",
+          "description": "Het ID van de beloningsaanvraag om goed te keuren"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "Punten reserveren voor beloning",
+      "description": "Verplaats punten van het besteedbare saldo van een kind naar de spaarpot van een beloning (vast).",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat reserveert"
+        },
+        "reward_id": {
+          "name": "Belonings-ID",
+          "description": "Het ID van de spaarpot om in te stoppen"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Aantal punten om te reserveren (niet meer dan de spaarpot aankan en het besteedbare saldo)"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Punten geven",
+      "description": "Geef extra punten aan een kind",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat punten krijgt"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Het aantal punten om te geven"
+        },
+        "reason": {
+          "name": "Reden",
+          "description": "Optionele reden voor de bonus"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Punten afnemen",
+      "description": "Haal punten af bij een kind (puntenaftrek)",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind waarvan punten afgaan"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Het aantal punten om af te halen"
+        },
+        "reason": {
+          "name": "Reden",
+          "description": "Optionele reden voor de puntenaftrek"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "Beloning afkeuren",
+      "description": "Keur een aangevraagde beloning af",
+      "fields": {
+        "claim_id": {
+          "name": "Aanvraag-ID",
+          "description": "Het ID van de beloningsaanvraag om af te keuren"
+        },
+        "reason": {
+          "name": "Reden",
+          "description": "Optionele reden voor het kind"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "Geluidje testen",
+      "description": "Luister in de browser naar een geluidje voor afgeronde taken",
+      "fields": {
+        "sound": {
+          "name": "Geluidje",
+          "description": "Het geluidje om te testen"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "Volgorde van taken instellen",
+      "description": "Stel de volgorde van de taken in voor een kind",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind voor wie de volgorde geldt"
+        },
+        "chore_order": {
+          "name": "Volgorde van taken",
+          "description": "Gesorteerde lijst met taak-ID's"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "Puntenaftrek toevoegen",
+      "description": "Maak een nieuwe puntenaftrek",
+      "fields": {
+        "name": {
+          "name": "Naam",
+          "description": "De naam van de puntenaftrek"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Het aantal punten om af te halen"
+        },
+        "description": {
+          "name": "Beschrijving",
+          "description": "Optionele beschrijving van de puntenaftrek"
+        },
+        "icon": {
+          "name": "Pictogram",
+          "description": "MDI-pictogram voor de puntenaftrek"
+        },
+        "assigned_to": {
+          "name": "Voor wie",
+          "description": "Lijst met kind-ID's voor wie deze puntenaftrek geldt"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "Puntenaftrek wijzigen",
+      "description": "Wijzig een bestaande puntenaftrek",
+      "fields": {
+        "penalty_id": {
+          "name": "Puntenaftrek-ID",
+          "description": "Het ID van de puntenaftrek om te wijzigen"
+        },
+        "name": {
+          "name": "Naam",
+          "description": "Nieuwe naam voor de puntenaftrek"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Nieuw aantal punten"
+        },
+        "description": {
+          "name": "Beschrijving",
+          "description": "Nieuwe beschrijving"
+        },
+        "icon": {
+          "name": "Pictogram",
+          "description": "Nieuw pictogram"
+        },
+        "assigned_to": {
+          "name": "Voor wie",
+          "description": "Nieuwe lijst met kind-ID's"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "Puntenaftrek verwijderen",
+      "description": "Verwijder een puntenaftrek",
+      "fields": {
+        "penalty_id": {
+          "name": "Puntenaftrek-ID",
+          "description": "Het ID van de puntenaftrek om te verwijderen"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "Puntenaftrek geven",
+      "description": "Geef een puntenaftrek aan een kind; de punten gaan eraf",
+      "fields": {
+        "penalty_id": {
+          "name": "Puntenaftrek-ID",
+          "description": "Het ID van de puntenaftrek om te geven"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat de puntenaftrek krijgt"
+        }
+      }
+    },
+    "add_bonus": {
+      "name": "Bonus toevoegen",
+      "description": "Maak een nieuwe bonus",
+      "fields": {
+        "name": {
+          "name": "Naam",
+          "description": "De naam van de bonus"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Het aantal punten om te geven"
+        },
+        "description": {
+          "name": "Beschrijving",
+          "description": "Optionele beschrijving van de bonus"
+        },
+        "icon": {
+          "name": "Pictogram",
+          "description": "MDI-pictogram voor de bonus"
+        },
+        "assigned_to": {
+          "name": "Voor wie",
+          "description": "Lijst met kind-ID's voor wie deze bonus geldt"
+        }
+      }
+    },
+    "update_bonus": {
+      "name": "Bonus wijzigen",
+      "description": "Wijzig een bestaande bonus",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "Het ID van de bonus om te wijzigen"
+        },
+        "name": {
+          "name": "Naam",
+          "description": "Nieuwe naam voor de bonus"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Nieuw aantal punten"
+        },
+        "description": {
+          "name": "Beschrijving",
+          "description": "Nieuwe beschrijving"
+        },
+        "icon": {
+          "name": "Pictogram",
+          "description": "Nieuw pictogram"
+        },
+        "assigned_to": {
+          "name": "Voor wie",
+          "description": "Nieuwe lijst met kind-ID's"
+        }
+      }
+    },
+    "remove_bonus": {
+      "name": "Bonus verwijderen",
+      "description": "Verwijder een bonus",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "Het ID van de bonus om te verwijderen"
+        }
+      }
+    },
+    "apply_bonus": {
+      "name": "Bonus geven",
+      "description": "Geef een bonus aan een kind; de punten worden erbij geteld",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "Het ID van de bonus om te geven"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat de bonus krijgt"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "Taak toevoegen",
+      "description": "Maak een nieuwe taak, meestal vanuit een automatisering of script",
+      "fields": {
+        "name": {
+          "name": "Naam",
+          "description": "De naam van de taak"
+        },
+        "description": {
+          "name": "Beschrijving",
+          "description": "Optionele beschrijving van de taak"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Punten die je krijgt als deze taak klaar is"
+        },
+        "assigned_to": {
+          "name": "Voor wie",
+          "description": "Lijst met kind-ID's voor wie deze taak is. Laat leeg voor alle kinderen"
+        },
+        "time_category": {
+          "name": "Dagdeel",
+          "description": "Wanneer deze taak gedaan moet worden: ochtend, middag, avond, nacht of altijd"
+        },
+        "one_shot": {
+          "name": "Eenmalig",
+          "description": "Als dit aan staat, is dit een eenmalige taak die vervalt na afronden of aan het eind van de dag"
+        },
+        "requires_approval": {
+          "name": "Goedkeuring nodig",
+          "description": "Als dit aan staat, moet een ouder het eerst goedkeuren voordat er punten komen"
+        },
+        "team_size": {
+          "name": "Teamgrootte",
+          "description": "Maak dit een teamtaak die pas telt als zoveel verschillende kinderen hebben meegedaan. Als het team vol is, telt hij voor iedereen mee. 0 = een gewone taak."
+        },
+        "team_points_mode": {
+          "name": "Teampunten",
+          "description": "Zo betaalt een teamtaak uit: “ieder” geeft elke deelnemer alle punten, “delen” verdeelt ze eerlijk (naar beneden afgerond)."
+        },
+        "team_bonus": {
+          "name": "Teambonus",
+          "description": "Extra punten die elke deelnemer krijgt als de teamtaak klaar is."
+        }
+      }
+    },
+    "skip_chore": {
+      "name": "Taak overslaan",
+      "description": "Sla de beurt van vandaag over. Dit geldt alleen voor vandaag — morgen loopt de beurtvolgorde weer gewoon door.",
+      "fields": {
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "Het ID van de taak om over te slaan"
+        }
+      }
+    },
+    "set_chore_manual_start": {
+      "name": "Startkind instellen",
+      "description": "Kies welk kind begint bij een roulerende taak. Bij om de beurt verandert dit de hele volgorde; bij willekeurig/verdeeld geldt het alleen voor vandaag.",
+      "fields": {
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "Het ID van de taak om te wijzigen"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat moet beginnen"
+        }
+      }
+    },
+    "add_task_group": {
+      "name": "Taakgroep toevoegen",
+      "description": "Maak een taakgroep (vast = hetzelfde kind, verdeeld = verschillende kinderen).",
+      "fields": {
+        "name": {
+          "name": "Naam",
+          "description": "Naam van de groep"
+        },
+        "policy": {
+          "name": "Regel",
+          "description": "vast (hetzelfde kind) of verdeeld (verschillende kinderen)"
+        },
+        "chore_ids": {
+          "name": "Taak-ID's",
+          "description": "Lijst met taak-ID's in de groep. Bij “vast” is de eerste taak de leider."
+        }
+      }
+    },
+    "update_task_group": {
+      "name": "Taakgroep wijzigen",
+      "description": "Wijzig de naam, regel of taken van een taakgroep.",
+      "fields": {
+        "group_id": {
+          "name": "Groeps-ID",
+          "description": "Het ID van de groep om te wijzigen"
+        },
+        "name": {
+          "name": "Naam",
+          "description": "Nieuwe naam"
+        },
+        "policy": {
+          "name": "Regel",
+          "description": "Nieuwe regel (vast of verdeeld)"
+        },
+        "chore_ids": {
+          "name": "Taak-ID's",
+          "description": "Nieuwe lijst met taak-ID's. Bij “vast” is de eerste taak de leider."
+        }
+      }
+    },
+    "remove_task_group": {
+      "name": "Taakgroep verwijderen",
+      "description": "Verwijder een taakgroep. De taken zelf blijven bestaan.",
+      "fields": {
+        "group_id": {
+          "name": "Groeps-ID",
+          "description": "Het ID van de groep om te verwijderen"
+        }
+      }
+    },
+    "start_timed_task": {
+      "name": "Timer starten",
+      "description": "Start de timer van een taak met timer, of ga verder",
+      "fields": {
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "Het ID van de taak met timer"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat de timer start"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "Teamtaak verlaten",
+      "description": "Haal een kind terug uit een teamtaak waar het vandaag bij is gekomen, zolang het team nog niet vol is",
+      "fields": {
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "Het ID van de teamtaak"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat het team verlaat"
+        }
+      }
+    },
+    "complete_next_chore": {
+      "name": "Volgende taak afronden",
+      "description": "Rond de eerstvolgende open taak van het kind af, in de volgorde van de kinderkaart. Taken met een foto, notitie, timer of team worden overgeslagen. Bedoeld voor horlogeknoppen en snelkoppelingen; de gewone regels voor goedkeuren gelden.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind van wie de volgende taak afgerond wordt"
+        }
+      }
+    },
+    "post_bounty": {
+      "name": "Klus plaatsen",
+      "description": "Zet een eenmalige klus op het klussenbord voor een vast aantal punten. Elk kind dat mag meedoen kan de klus reserveren; het resultaat gaat via de gewone goedkeuringen.",
+      "fields": {
+        "title": {
+          "name": "Titel",
+          "description": "Wat het klusje is, bijv. “Auto wassen”"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Vaste punten die je krijgt als een ouder de klaring goedkeurt"
+        },
+        "description": {
+          "name": "Beschrijving",
+          "description": "Optionele extra uitleg voor de kinderen"
+        },
+        "icon": {
+          "name": "Pictogram",
+          "description": "MDI-pictogram op het bord"
+        },
+        "expires_at": {
+          "name": "Verloopt op",
+          "description": "Optionele datum en tijd waarop de klus van het bord verdwijnt als niemand de klus reserveert. Laat leeg voor geen verloopdatum."
+        },
+        "eligible_child_ids": {
+          "name": "Wie mag meedoen",
+          "description": "ID's van de kinderen die de klus mogen reserveren. Leeg = alle kinderen."
+        },
+        "claim_hours": {
+          "name": "Reserveringstijd (uren)",
+          "description": "Hoe lang een reservering duurt voordat de klus weer op het bord komt"
+        },
+        "require_photo": {
+          "name": "Foto verplicht",
+          "description": "Het kind moet een foto toevoegen als het de klus als klaar markeert"
+        },
+        "notify_children": {
+          "name": "Kinderen waarschuwen",
+          "description": "Stuur de melding “Nieuwe klus” naar de kinderen die mogen meedoen"
+        }
+      }
+    },
+    "update_bounty": {
+      "name": "Klus wijzigen",
+      "description": "Pas een klus aan. Als de klus al gereserveerd is, kun je alleen nog de punten en de verloopdatum veranderen.",
+      "fields": {
+        "bounty_id": {
+          "name": "Klus-ID",
+          "description": "Het ID van de klus om te wijzigen"
+        },
+        "title": {
+          "name": "Titel",
+          "description": "Wat het klusje is, bijv. “Auto wassen”"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Vaste punten die je krijgt als een ouder de klaring goedkeurt"
+        },
+        "description": {
+          "name": "Beschrijving",
+          "description": "Optionele extra uitleg voor de kinderen"
+        },
+        "icon": {
+          "name": "Pictogram",
+          "description": "MDI-pictogram op het bord"
+        },
+        "expires_at": {
+          "name": "Verloopt op",
+          "description": "Optionele datum en tijd waarop de klus van het bord verdwijnt als niemand de klus reserveert. Laat leeg voor geen verloopdatum."
+        },
+        "eligible_child_ids": {
+          "name": "Wie mag meedoen",
+          "description": "ID's van de kinderen die de klus mogen reserveren. Leeg = alle kinderen."
+        },
+        "claim_hours": {
+          "name": "Reserveringstijd (uren)",
+          "description": "Hoe lang een reservering duurt voordat de klus weer op het bord komt"
+        },
+        "require_photo": {
+          "name": "Foto verplicht",
+          "description": "Het kind moet een foto toevoegen als het de klus als klaar markeert"
+        },
+        "notify_children": {
+          "name": "Kinderen waarschuwen",
+          "description": "Stuur de melding “Nieuwe klus” naar de kinderen die mogen meedoen"
+        }
+      }
+    },
+    "remove_bounty": {
+      "name": "Klus verwijderen",
+      "description": "Haal een klus van het bord. Niet toegestaan zolang er een klaring op goedkeuring wacht.",
+      "fields": {
+        "bounty_id": {
+          "name": "Klus-ID",
+          "description": "Het ID van de klus om te verwijderen"
+        }
+      }
+    },
+    "claim_bounty": {
+      "name": "Klus reserveren",
+      "description": "Reserveer een klus voor een kind; zolang de reservering loopt is de klus voor dit kind. Een kind kan één reservering tegelijk hebben.",
+      "fields": {
+        "bounty_id": {
+          "name": "Klus-ID",
+          "description": "Het ID van de klus om te reserveren"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat de klus reserveert"
+        }
+      }
+    },
+    "give_back_bounty": {
+      "name": "Klus teruggeven",
+      "description": "Geef een gereserveerde klus terug op het bord, zodat een ander kind de klus kan pakken",
+      "fields": {
+        "bounty_id": {
+          "name": "Klus-ID",
+          "description": "Het ID van de gereserveerde klus"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat de klus reserveerde"
+        }
+      }
+    },
+    "complete_bounty": {
+      "name": "Klus afronden",
+      "description": "Markeer een gereserveerde klus als klaar. De klus gaat net als een taak naar de goedkeuringen.",
+      "fields": {
+        "bounty_id": {
+          "name": "Klus-ID",
+          "description": "Het ID van de gereserveerde klus"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat de klus reserveerde"
+        },
+        "photo_url": {
+          "name": "Foto-URL",
+          "description": "Foto van het klusje (verplicht als de klus erom vraagt)"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "Timer pauzeren",
+      "description": "Pauzeer een lopende timer",
+      "fields": {
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "Het ID van de taak met timer"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat de timer pauzeert"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "Timer stoppen",
+      "description": "Stop de timer en stuur de taak naar de goedkeuringen",
+      "fields": {
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "Het ID van de taak met timer"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat de timer stopt"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "Badge toevoegen",
+      "description": "Maak een eigen badge.",
+      "fields": {
+        "name": {
+          "name": "Naam",
+          "description": "De naam van de badge op het scherm"
+        },
+        "description": {
+          "name": "Beschrijving",
+          "description": "Waarmee je de badge verdient"
+        },
+        "icon": {
+          "name": "Pictogram",
+          "description": "Pictogram voor de badge (bijv. mdi:strand)"
+        },
+        "tier": {
+          "name": "Niveau",
+          "description": "Niveau van de badge: brons, zilver, goud of platina"
+        },
+        "point_bonus": {
+          "name": "Puntenbonus",
+          "description": "Punten die het kind erbij krijgt als de badge verdiend is"
+        },
+        "criteria": {
+          "name": "Voorwaarden",
+          "description": "Lijst met meetwaarde-regels. Leeg = alleen handmatig uitreiken."
+        },
+        "assigned_to": {
+          "name": "Voor wie",
+          "description": "Lijst met kind-ID's (leeg = alle kinderen)"
+        },
+        "notify_on_earn": {
+          "name": "Melding bij behalen",
+          "description": "Stuur een melding als de badge verdiend is"
+        }
+      }
+    },
+    "update_badge": {
+      "name": "Badge wijzigen",
+      "description": "Wijzig een bestaande badge. Bij vaste badges kun je alleen puntenbonus, niveau, voor wie, aan/uit en melding bij behalen aanpassen.",
+      "fields": {
+        "badge_id": {
+          "name": "Badge-ID",
+          "description": "Het ID van de badge om te wijzigen"
+        },
+        "name": {
+          "name": "Naam",
+          "description": "Nieuwe naam van de badge"
+        },
+        "description": {
+          "name": "Beschrijving",
+          "description": "Nieuwe beschrijving van de badge"
+        },
+        "icon": {
+          "name": "Pictogram",
+          "description": "Nieuw pictogram voor de badge"
+        },
+        "tier": {
+          "name": "Niveau",
+          "description": "Niveau van de badge: brons, zilver, goud of platina"
+        },
+        "point_bonus": {
+          "name": "Puntenbonus",
+          "description": "Punten die het kind erbij krijgt als de badge verdiend is"
+        },
+        "criteria": {
+          "name": "Voorwaarden",
+          "description": "Lijst met meetwaarde-regels. Leeg = alleen handmatig uitreiken."
+        },
+        "assigned_to": {
+          "name": "Voor wie",
+          "description": "Lijst met kind-ID's (leeg = alle kinderen)"
+        },
+        "enabled": {
+          "name": "Ingeschakeld",
+          "description": "Of de badge aan staat"
+        },
+        "notify_on_earn": {
+          "name": "Melding bij behalen",
+          "description": "Stuur een melding als de badge verdiend is"
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "Badge verwijderen",
+      "description": "Verwijder een eigen badge. Vaste badges kunnen niet weg.",
+      "fields": {
+        "badge_id": {
+          "name": "Badge-ID",
+          "description": "Het ID van de badge om te verwijderen"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "Badge uitreiken",
+      "description": "Reik handmatig een badge uit aan een kind.",
+      "fields": {
+        "badge_id": {
+          "name": "Badge-ID",
+          "description": "Het ID van de badge om uit te reiken"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat de badge krijgt"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "Badge intrekken",
+      "description": "Trek een uitgereikte badge in. Als er een puntenbonus bij zat, gaat die er weer af.",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "Badge-ID (uitgereikt)",
+          "description": "Het ID van de uitgereikte badge om in te trekken"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "Badges opnieuw beoordelen",
+      "description": "Beoordeel alle badges van alle kinderen opnieuw, stilletjes (geen meldingen, geen puntenbonussen)."
+    },
+    "apply_mandatory_penalty": {
+      "name": "Puntenaftrek geven voor gemiste verplichte taak",
+      "description": "Haal de ingestelde puntenaftrek af voor een gemiste verplichte taak en ruim de melding op.",
+      "fields": {
+        "miss_id": {
+          "name": "Misser-ID",
+          "description": "Het ID van de gemiste verplichte taak"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "Avatar kiezen",
+      "description": "Een kind kiest een avatar die het heeft vrijgespeeld.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind"
+        },
+        "icon": {
+          "name": "Avatar-pictogram",
+          "description": "Het mdi-pictogram van een vrijgespeelde avatar uit de lijst (bijv. mdi:rocket-launch)."
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "Gemiste taak wegstrepen",
+      "description": "Streep een gemiste verplichte taak weg zonder puntenaftrek.",
+      "fields": {
+        "miss_id": {
+          "name": "Misser-ID",
+          "description": "Het ID van de gemiste verplichte taak"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "Punten cadeau geven",
+      "description": "Verplaats besteedbare punten van het ene kind naar het andere (alleen voor ouders).",
+      "fields": {
+        "from_child_id": {
+          "name": "Van kind-ID",
+          "description": "Het ID van het kind dat de punten geeft"
+        },
+        "to_child_id": {
+          "name": "Voor kind-ID",
+          "description": "Het ID van het kind dat de punten krijgt"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Het aantal punten om over te dragen"
+        }
+      }
+    },
+    "adjust_streak_freezes": {
+      "name": "Reeksjokers aanpassen",
+      "description": "Geef een kind reeksjokers (positief aantal) of neem er juist af (negatief). Je kunt nooit meer geven dan het maximum.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind van wie de jokers veranderen"
+        },
+        "amount": {
+          "name": "Aantal",
+          "description": "Jokers om te geven (positief) of af te nemen (negatief)"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "Verplichte taak uitstellen",
+      "description": "Geef een gemiste verplichte taak nog een periode (of morgen) zonder puntenaftrek, en ruim de melding op.",
+      "fields": {
+        "miss_id": {
+          "name": "Misser-ID",
+          "description": "Het ID van de gemiste verplichte taak"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "Taakruil aanvragen",
+      "description": "Een kind vraagt om de taak van vandaag over te nemen van het kind dat aan de beurt is (een ouder moet dit nog goedkeuren).",
+      "fields": {
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "Het ID van de taak om over te nemen"
+        },
+        "requester_id": {
+          "name": "Kind-ID van aanvrager",
+          "description": "Het ID van het kind dat wil ruilen"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Testmelding sturen",
+      "description": "Stuur een voorbeeldmelding van dit soort naar iedereen die hem aan heeft staan (negeert de hoofdschakelaar, zodat je kunt testen of hij aankomt).",
+      "fields": {
+        "type_id": {
+          "name": "Soort melding",
+          "description": "Soort melding, bijv. pending_chore_approval, badge_earned, streak_milestone"
+        }
+      }
+    },
+    "record_allowance_payout": {
+      "name": "Zakgeld uitbetalen",
+      "description": "Haal punten af en noteer een echte zakgelduitbetaling in het overzicht (vaste wisselkoers; alleen voor ouders).",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat het zakgeld krijgt"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Punten om om te zetten in geld en af te halen"
+        }
+      }
+    },
+    "add_wish": {
+      "name": "Wens toevoegen",
+      "description": "Een kind voegt iets toe waarvoor het wil sparen. Een ouder moet de wens eerst goedkeuren.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat de wens doet"
+        },
+        "name": {
+          "name": "Naam",
+          "description": "Wat het kind wil hebben"
+        },
+        "target": {
+          "name": "Spaardoel",
+          "description": "Voorgesteld aantal punten dat het kost. De ouder kan dit bij het goedkeuren nog veranderen."
+        },
+        "link": {
+          "name": "Link",
+          "description": "Optioneel webadres (http of https) van het ding"
+        },
+        "photo_url": {
+          "name": "Foto",
+          "description": "Optionele foto die net is geüpload via de TaskMate-foto"
+        }
+      }
+    },
+    "withdraw_wish": {
+      "name": "Wens intrekken",
+      "description": "Een kind trekt een wens in waar nog geen antwoord op is, of ruimt een afgewezen wens op.",
+      "fields": {
+        "wish_id": {
+          "name": "Wens-ID",
+          "description": "Het ID van de wens"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind van wie de wens is"
+        }
+      }
+    },
+    "move_points_to_wish": {
+      "name": "Punten op wens zetten",
+      "description": "Verplaats punten van het besteedbare saldo van een kind naar een van zijn goedgekeurde wensen.",
+      "fields": {
+        "wish_id": {
+          "name": "Wens-ID",
+          "description": "Het ID van de wens"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind van wie de wens is"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Hoeveel punten je verplaatst (niet meer dan je saldo en dan wat de wens nog nodig heeft)"
+        }
+      }
+    },
+    "take_points_from_wish": {
+      "name": "Punten van wens terughalen",
+      "description": "Geef een deel van de eigen gespaarde punten van een wens terug. Toegezegde punten blijven staan.",
+      "fields": {
+        "wish_id": {
+          "name": "Wens-ID",
+          "description": "Het ID van de wens"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind van wie de wens is"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Hoeveel gespaarde punten je terugneemt (niet meer dan wat het kind spaarde)"
+        }
+      }
+    },
+    "request_wish_redeem": {
+      "name": "Wens inwisselen",
+      "description": "Een volle spaarpot wordt een beloning die een ouder nog moet goedkeuren.",
+      "fields": {
+        "wish_id": {
+          "name": "Wens-ID",
+          "description": "Het ID van de wens"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind van wie de wens is"
+        }
+      }
+    },
+    "approve_wish": {
+      "name": "Wens goedkeuren",
+      "description": "Maak van een wachtende wens een spaardoel, eventueel met een ander doelbedrag.",
+      "fields": {
+        "wish_id": {
+          "name": "Wens-ID",
+          "description": "Het ID van de wens"
+        },
+        "target": {
+          "name": "Spaardoel",
+          "description": "Punten die de wens kost. Laat leeg om het voorstel van het kind te houden."
+        }
+      }
+    },
+    "decline_wish": {
+      "name": "Wens afwijzen",
+      "description": "Wijs een wens af. Gespaarde punten gaan terug naar het kind en toezeggingen vervallen.",
+      "fields": {
+        "wish_id": {
+          "name": "Wens-ID",
+          "description": "Het ID van de wens"
+        },
+        "reason": {
+          "name": "Reden",
+          "description": "Optionele reden voor het kind"
+        }
+      }
+    },
+    "pledge_to_wish": {
+      "name": "Bijdrage toezeggen",
+      "description": "Noteer punten die een familielid bijdraagt aan de wens van een kind. Ze komen nooit van een saldo af.",
+      "fields": {
+        "wish_id": {
+          "name": "Wens-ID",
+          "description": "Het ID van de wens"
+        },
+        "name": {
+          "name": "Van wie",
+          "description": "Van wie de toezegging is, bijv. Oma"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Hoeveel punten je toezegt (niet meer dan wat de wens nog nodig heeft)"
+        },
+        "message": {
+          "name": "Berichtje",
+          "description": "Optioneel berichtje voor het kind"
+        }
+      }
+    },
+    "remove_wish_pledge": {
+      "name": "Toezegging verwijderen",
+      "description": "Draai een toezegging terug. Mag totdat de wens is ingewisseld.",
+      "fields": {
+        "wish_id": {
+          "name": "Wens-ID",
+          "description": "Het ID van de wens"
+        },
+        "pledge_id": {
+          "name": "Toezeggings-ID",
+          "description": "Het ID van de toezegging om te verwijderen"
+        }
+      }
+    },
+    "remove_wish": {
+      "name": "Wens verwijderen",
+      "description": "Verwijder een wens. Gespaarde punten gaan terug naar het kind en toezeggingen vervallen.",
+      "fields": {
+        "wish_id": {
+          "name": "Wens-ID",
+          "description": "Het ID van de wens"
+        }
+      }
+    },
+    "start_inspection": {
+      "name": "Controle starten",
+      "description": "Zet een taak die in de laatste 24 uur is goedgekeurd op de lijst voor een verrassingscontrole. Keur hem goed of af voor de tijd om is; zonder oordeel loopt de controle stilletjes af.",
+      "fields": {
+        "completion_id": {
+          "name": "Uitvoerings-ID",
+          "description": "Het ID van de goedgekeurde uitvoering om te controleren"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Punten bij een geslaagde controle. Standaard de waarde uit de instellingen."
+        },
+        "window": {
+          "name": "Controleperiode",
+          "description": "Hoe lang je hebt om te controleren: 1u, 2u, 4u of bedtijd. Standaard de waarde uit de instellingen."
+        },
+        "tell_child": {
+          "name": "Kind waarschuwen",
+          "description": "Toon nu “Controle op komst” op de kaart van het kind. Zet uit voor een geheime controle."
+        }
+      }
+    },
+    "pass_inspection": {
+      "name": "Controle geslaagd",
+      "description": "De gecontroleerde taak is geslaagd. De bonus wordt als gewone punten uitbetaald en op de kaart van het kind gevierd.",
+      "fields": {
+        "inspection_id": {
+          "name": "Controle-ID",
+          "description": "Het ID van de open controle"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Te betalen punten. Standaard de bonus van toen de controle begon."
+        },
+        "note": {
+          "name": "Notitie",
+          "description": "Optionele notitie voor het kind"
+        }
+      }
+    },
+    "fail_inspection": {
+      "name": "Controle afgekeurd",
+      "description": "De gecontroleerde taak is niet geslaagd. Er gaan geen punten af. Hij kan terug voor een herkansing; die levert niets extra op.",
+      "fields": {
+        "inspection_id": {
+          "name": "Controle-ID",
+          "description": "Het ID van de open controle"
+        },
+        "redo": {
+          "name": "Opnieuw laten doen",
+          "description": "Zet de taak terug op de lijst van het kind als niet gedaan voor vandaag. Standaard de waarde uit de instellingen."
+        },
+        "note": {
+          "name": "Notitie",
+          "description": "Optionele notitie voor het kind (wat er beter moet)"
+        }
+      }
+    },
+    "cancel_inspection": {
+      "name": "Controle annuleren",
+      "description": "Stop een open controle, alsof hij nooit is begonnen.",
+      "fields": {
+        "inspection_id": {
+          "name": "Controle-ID",
+          "description": "Het ID van de open controle"
+        }
+      }
+    },
+    "request_help": {
+      "name": "Om hulp vragen",
+      "description": "Een kind zegt dat het vastzit bij een taak. Ouders krijgen een melding; er wordt niets afgerond of overgeslagen.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind dat om hulp vraagt"
+        },
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "De taak waarbij het kind vastzit"
+        },
+        "message": {
+          "name": "Berichtje",
+          "description": "Wat het kind er eventueel bij zegt, bijv. “Ik kan niet bij de plank.”"
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Hulpvraag beantwoorden",
+      "description": "Markeer de hulpvraag van een kind als beantwoord, zodat op de kaart niet meer staat dat er hulp onderweg is.",
+      "fields": {
+        "request_id": {
+          "name": "Hulpvraag-ID",
+          "description": "De hulpvraag die je afsluit"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Stemming noteren",
+      "description": "Een kind zegt hoe de dag was. Eén keer per dag; opnieuw noteren vervangt de vorige.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind"
+        },
+        "mood": {
+          "name": "Stemming",
+          "description": "great (super), good (goed), ok (oké), sad (verdrietig) of upset (boos)"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Ziektedag instellen",
+      "description": "Geef een kind een ziektedag. De taken zijn verborgen, de reeks blijft staan en geen verplichte taak telt als gemist.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind dat ziek is"
+        },
+        "date": {
+          "name": "Datum",
+          "description": "De dag (standaard vandaag). Van een week geleden tot een maand vooruit."
+        },
+        "sick": {
+          "name": "Ziek",
+          "description": "Zet uit om de ziektedag terug te nemen."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Weekdoel instellen",
+      "description": "Stel het eigen wekelijkse puntendoel van een kind in. Wie het haalt, krijgt één keer per week de bonus voor persoonlijke weekdoelen uit de instellingen. 0 wist het doel.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind"
+        },
+        "target": {
+          "name": "Doel",
+          "description": "Punten om deze week te verdienen"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Loten kopen",
+      "description": "Een kind besteedt punten aan loten voor een loterij. Elk lot is één kans bij de trekking.",
+      "fields": {
+        "raffle_id": {
+          "name": "Loterij-ID",
+          "description": "De loterij"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind dat koopt"
+        },
+        "tickets": {
+          "name": "Loten",
+          "description": "Hoeveel loten je koopt"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Loterij trekken",
+      "description": "Trek nu de winnaar van een loterij, zonder op het trekmoment te wachten.",
+      "fields": {
+        "raffle_id": {
+          "name": "Loterij-ID",
+          "description": "De te trekken loterij"
+        }
+      }
+    },
+    "adopt_pet": {
+      "name": "Huisdier adopteren",
+      "description": "Een kind adopteert zijn virtuele huisdier (of geeft het een nieuwe naam). Het huisdier groeit mee met elke taak die het kind vanaf nu afrondt.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind"
+        },
+        "species": {
+          "name": "Soort",
+          "description": "dragon (draak), cat (kat), dog (hond), bunny (konijn), dino of unicorn (eenhoorn)"
+        },
+        "name": {
+          "name": "Naam",
+          "description": "De naam van het huisdier"
+        },
+        "hatch_egg": {
+          "name": "Het ei uitbroeden",
+          "description": "Broed het ei dat het volgroeide huisdier legde uit tot een nieuw huisdier. Het oude huisdier komt bij de huisdierenfamilie."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "child_stats": {
+        "unit_of_measurement": "taken"
+      },
+      "child_badges": {
+        "unit_of_measurement": "badges"
+      },
+      "child_watch": {
+        "state": {
+          "left": "# over",
+          "all_done": "Klaar",
+          "no_chores": "Geen taken"
+        }
+      }
+    },
+    "number": {
+      "weekend_multiplier": {
+        "name": "Weekendvermenigvuldiger"
+      },
+      "perfect_week_bonus": {
+        "name": "Bonus voor perfecte week"
+      }
+    },
+    "select": {
+      "streak_reset_mode": {
+        "name": "Reeks na gemiste dag"
+      },
+      "card_design": {
+        "name": "Kaartstijl"
+      }
+    },
+    "event": {
+      "child_activity": {
+        "name": "TaskMate-activiteit",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Taak afgerond",
+              "chore_approved": "Taak goedgekeurd",
+              "chore_rejected": "Taak afgekeurd",
+              "chore_approval_undone": "Goedkeuring teruggedraaid",
+              "reward_claimed": "Beloning ingewisseld",
+              "reward_approved": "Beloning goedgekeurd",
+              "reward_rejected": "Beloning afgekeurd",
+              "badge_earned": "Badge verdiend",
+              "level_up": "Nieuw level",
+              "streak_updated": "Reeks bijgewerkt",
+              "streak_freeze_used": "Reeksjoker gebruikt",
+              "perfect_week": "Perfecte week",
+              "weekly_target_reached": "Weekdoel gehaald",
+              "quest_completed": "Zoektocht gehaald",
+              "challenge_completed": "Uitdaging gehaald",
+              "bonus_applied": "Bonus gegeven",
+              "penalty_applied": "Puntenaftrek gegeven",
+              "surprise_bonus": "Verrassingsbonus",
+              "mandatory_missed": "Verplichte taak gemist",
+              "team_chore_completed": "Teamtaak afgerond",
+              "points_gifted": "Punten cadeau gegeven",
+              "help_requested": "Om hulp gevraagd",
+              "mood_logged": "Stemming genoteerd",
+              "weekly_goal_reached": "Persoonlijk weekdoel gehaald",
+              "sick_day": "Ziektedag",
+              "chore_auto_approved": "Taak automatisch goedgekeurd",
+              "penalty_redeemed": "Puntenaftrek goedgemaakt",
+              "raffle_won": "Loterij gewonnen",
+              "pet_evolved": "Huisdier gegroeid"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "TaskMate-gezinsactiviteit",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Gezinsdoel gehaald",
+              "season_champion": "Maandkampioen",
+              "bounty_posted": "Klus geplaatst",
+              "scheduled_change_applied": "Geplande wijziging toegepast",
+              "raffle_drawn": "Loterij getrokken"
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "calendar_unknown_event": {
+      "message": "Dit is geen TaskMate-taak op de kalender van dit kind."
+    },
+    "calendar_series_not_supported": {
+      "message": "Een herhalende taak kun je in de kalender maar één dag tegelijk verplaatsen of verwijderen. Wil je de hele reeks veranderen, pas de taak dan aan in TaskMate."
+    },
+    "calendar_repeating_create": {
+      "message": "Vanuit de kalender kun je geen herhalende taken toevoegen. Maak daarvoor een herhalende taak in TaskMate."
+    },
+    "calendar_rename_series": {
+      "message": "Geef een herhalende taak een nieuwe naam in TaskMate. Vanuit de kalender kun je alleen één dag verplaatsen of verwijderen."
+    },
+    "calendar_time_follows_chore": {
+      "message": "Een herhalende taak houdt zijn tijd. Vanuit de kalender kun je van één keer alleen de datum veranderen."
+    },
+    "calendar_past_date": {
+      "message": "Taken kunnen niet op een dag in het verleden staan: niet toevoegen, ernaartoe of ervandaan verplaatsen."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} staat al op {date}."
+    },
+    "calendar_empty_title": {
+      "message": "Geef de taak een titel."
+    },
+    "calendar_own_event": {
+      "message": "Dit komt al uit TaskMate zelf en wordt daarom niet als nieuwe taak toegevoegd."
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate kan {who} geen meldingen sturen",
+      "description": "TaskMate stuurt meldingen voor {who} via `{service}`, maar die dienst bestaat niet meer — meestal omdat de telefoon is verwijderd of hernoemd in de integratie Mobile App.\n\nOpen het TaskMate-beheerpaneel → Meldingen en kies de huidige dienst voor {who}. Dit probleem verdwijnt vanzelf zodra de dienst weer bestaat."
+    },
+    "child_entity_missing": {
+      "title": "Het profiel van {child} gebruikt een entiteit die ontbreekt",
+      "description": "Het profiel van {child} gebruikt `{entity}`, maar die bestaat niet meer. Beschikbaarheid, herinneringen op basis van aanwezigheid of de profielfoto die ervan afhangen, werken niet.\n\nOpen het TaskMate-beheerpaneel → Kinderen, bewerk {child} en kies een entiteit die bestaat (of maak het veld leeg)."
+    },
+    "chore_entity_missing": {
+      "title": "“{chore}” gebruikt een entiteit die ontbreekt",
+      "description": "“{chore}” kijkt naar `{entity}` om te bepalen wanneer hij te zien is, maar die entiteit bestaat niet meer, dus de controle wordt overgeslagen.\n\nOpen het TaskMate-beheerpaneel → Taken, bewerk “{chore}” en kies een entiteit die bestaat (of leeg het veld)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "De taak “{chore}” is aan niemand toegewezen",
+      "description": "Elk kind waaraan “{chore}” was toegewezen is verwijderd, dus niemand ziet hem ooit.\n\nOpen het TaskMate-beheerpaneel → Taken en wijs “{chore}” toe aan een kind, of verwijder hem."
+    },
+    "chore_dependency_missing": {
+      "title": "De taak “{chore}” kan nooit vrijkomen",
+      "description": "“{chore}” wacht eerst op een andere taak, maar die taak is verwijderd, dus “{chore}” blijft voor altijd op slot.\n\nOpen het TaskMate-beheerpaneel → Taken, bewerk “{chore}” en haal de ontbrekende afhankelijkheid weg."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "Niemand kan de beloning “{reward}” inwisselen",
+      "description": "Elk kind waarvoor “{reward}” bedoeld was is verwijderd, dus niemand kan hem inwisselen.\n\nOpen het TaskMate-beheerpaneel → Beloningen en kies voor wie “{reward}” is, of verwijder hem."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "De beloning “{reward}” geeft niets vrij",
+      "description": "“{reward}” zou `{entity}` aanzetten, maar die staat niet meer op de vrijgavelijst van TaskMate, dus er gebeurt niets als de beloning wordt goedgekeurd.\n\nOpen het TaskMate-beheerpaneel → Instellingen en zet `{entity}` op de vrijgavelijst, of bewerk “{reward}”."
+    }
+  }
+}
