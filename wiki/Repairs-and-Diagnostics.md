@@ -44,7 +44,7 @@ The panel's **Insights → Health** page still gives the full picture of your se
 
 ![Download diagnostics in the TaskMate integration's menu](images/diagnostics-download.png)
 
-This downloads a JSON file to attach to a bug report on GitHub. It describes how TaskMate is set up, which is what's needed to reproduce most problems, and leaves out anything that says who your family are.
+This downloads a JSON file to attach to a bug report on GitHub. The panel's [Help & feedback](Help-and-Feedback.md) page has the same **Download** button next to the bug report form. It describes how TaskMate is set up, which is what's needed to reproduce most problems, and leaves out anything that says who your family are.
 
 ![An excerpt of a diagnostics file, with personal details redacted](images/diagnostics-redacted.png)
 

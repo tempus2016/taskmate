@@ -90,7 +90,7 @@ body:
         - New card (not listed above)
         - Other / not sure
     validations:
-      required: true
+      required: false
 
   # ── Alternatives ─────────────────────────────────────────────────────────────
 
@@ -114,7 +114,7 @@ body:
         - Important — a gap that affects my daily use
         - Critical — a blocker for me using TaskMate properly
     validations:
-      required: true
+      required: false
 
   # ── Use Case ──────────────────────────────────────────────────────────────────
 

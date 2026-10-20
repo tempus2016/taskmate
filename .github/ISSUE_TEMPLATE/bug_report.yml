@@ -33,38 +33,33 @@ body:
     validations:
       required: true
 
-  - type: dropdown
+  # Text boxes rather than drop-downs: GitHub only pre-fills text fields from
+  # a link, and the panel's Help & feedback page fills these in for you.
+
+  - type: input
     id: ha_install_type
     attributes:
       label: Home Assistant Installation Type
-      options:
-        - Home Assistant OS (HAOS)
-        - Home Assistant Supervised
-        - Home Assistant Container (Docker)
-        - Home Assistant Core
-        - Not sure
+      description: "One of: Home Assistant OS (HAOS), Home Assistant Supervised, Home Assistant Container (Docker), Home Assistant Core, Not sure. Found in Settings → System → About"
+      placeholder: e.g. Home Assistant OS (HAOS)
     validations:
       required: true
 
-  - type: dropdown
+  - type: input
     id: install_method
     attributes:
       label: TaskMate Installation Method
-      options:
-        - HACS (custom repository)
-        - Manual (copied files)
+      description: "One of: HACS (default), HACS (custom repository), Manual (copied files)"
+      placeholder: e.g. HACS (default)
     validations:
       required: true
 
-  - type: dropdown
+  - type: input
     id: lovelace_mode
     attributes:
       label: Lovelace Mode
-      description: Found in Settings → Dashboards → ⋮ menu → Edit → Manage Resources
-      options:
-        - Storage (default — managed via UI)
-        - YAML (configuration.yaml)
-        - Not sure
+      description: "One of: Storage (default — managed via UI), YAML (configuration.yaml), Not sure. Found in Settings → Dashboards → ⋮ menu → Edit → Manage Resources"
+      placeholder: e.g. Storage (default — managed via UI)
     validations:
       required: true
 
@@ -111,7 +106,9 @@ body:
         - Sometimes — happens intermittently
         - Once — only happened one time
     validations:
-      required: true
+      # Optional so a report from the panel (which can't pre-select a
+      # drop-down) isn't asked twice; the panel puts its answer in the text.
+      required: false
 
   # ── Affected Area ─────────────────────────────────────────────────────────────
 
@@ -149,7 +146,7 @@ body:
         - Bonus points (weekend / streak / perfect week)
         - Other
     validations:
-      required: true
+      required: false
 
   # ── Sensor & Entity State ─────────────────────────────────────────────────────
 
