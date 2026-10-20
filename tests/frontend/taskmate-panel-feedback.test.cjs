@@ -155,7 +155,9 @@ test("a bug link fills every text field the template has, with its own option te
   assert.equal(q.get("logs"), "2026-10-20 ERROR [custom_components.taskmate] boom");
   const additional = q.get("additional");
   assert.ok(additional.includes("**Sent from the TaskMate panel**"));
-  assert.ok(additional.includes("TaskMate installed via: HACS (default)"));
+  assert.ok(additional.includes("- Affected area: Child Card"));
+  assert.ok(additional.includes("- Reproducible: Sometimes — happens intermittently"));
+  assert.ok(!additional.includes("TaskMate installed via"), "install answers have their own fields now");
   assert.ok(additional.includes("Family: 2 children, 1 adults · 42 chores · 9 rewards"));
   assert.ok(additional.includes("Chrome 141 on Windows"));
 });
@@ -165,9 +167,13 @@ test("unticking 'include these details' leaves the environment out", () => {
   fill(p, BUG);
   p._fbDraft().env.include = false;
   const q = params(p._fbBuild().url);
-  for (const k of ["taskmate_version", "ha_version", "ha_install_type", "install_method", "lovelace_mode", "additional"]) {
+  for (const k of ["taskmate_version", "ha_version", "ha_install_type", "install_method", "lovelace_mode"]) {
     assert.equal(q.has(k), false, k);
   }
+  // The parent's own drop-down answers still travel; the setup details don't.
+  const additional = q.get("additional");
+  assert.ok(additional.includes("- Affected area:") && additional.includes("- Reproducible:"));
+  assert.ok(!/Family:|Panel build:|Health check:/.test(additional), additional);
 });
 
 test("a parent's corrections to the detected answers win", () => {
@@ -239,7 +245,13 @@ test("a feature link uses the feature template and its field ids", () => {
   assert.equal(q.get("area"), "Settings / configuration");
   assert.equal(q.get("priority"), "Critical — a blocker for me using TaskMate properly");
   assert.equal(q.get("children_count"), "2");
-  assert.ok(q.get("use_case").includes("TaskMate test · Home Assistant 2026.10.2"));
+  const useCase = q.get("use_case");
+  assert.ok(useCase.includes("- Area: Settings / configuration"));
+  assert.ok(useCase.includes("- Importance: Critical — a blocker for me using TaskMate properly"));
+  assert.ok(useCase.includes("TaskMate test · Home Assistant 2026.10.2"));
+  p._fbDraft().env.include = false;
+  const bare = params(p._fbBuild().url).get("use_case");
+  assert.ok(bare.includes("- Area:") && !bare.includes("Home Assistant 2026"));
   assert.equal(q.has("description"), false);
 });
 
@@ -369,6 +381,7 @@ test("Copy as Markdown carries the whole report, logs fenced", () => {
   assert.ok(md.includes("### What happened?\n\nMalia's points went to 0"));
   assert.ok(md.includes("### Home Assistant Logs\n\n```text\na\nb\n```"));
   assert.ok(md.includes("- TaskMate: test"));
+  assert.ok(md.includes("- TaskMate installed via: HACS (default)"), "markdown has no separate fields, so it keeps the install answers");
 });
 
 test("Help & feedback sits in the System group", () => {

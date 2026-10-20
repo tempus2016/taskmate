@@ -21,7 +21,7 @@ Like the rest of the panel, it's for Home Assistant admins.
 1. Pick **Report a bug** or **Suggest a feature**.
 2. Fill in the boxes marked **\***. As you type the title, TaskMate searches GitHub for **similar issues**. If one of them is your problem, add a comment or a 👍 there instead of opening a new one.
 3. Check the **Included automatically** details (see below).
-4. Press **Open on GitHub**. GitHub opens in a new tab with everything filled in. Read it over, add any screenshots, and press **Submit new issue**.
+4. Press **Open on GitHub**. GitHub opens in a new tab with every required box filled in. Tick the **Before Submitting** checkboxes, read it over, add any screenshots, and press **Create**.
 
 **Nothing is sent from Home Assistant.** The page only builds a link; the issue is created only if you submit it on GitHub. You'll need a free GitHub account.
 
@@ -70,7 +70,7 @@ The number of children you use TaskMate with is filled in for you.
 | Browser | A summary like "Chrome 141 on Windows", never the full browser string |
 | Health check | The issue codes from **Insights → Health**, if it found anything |
 
-The three drop-downs are **detected for you**; change any that are wrong. GitHub can't pre-select the drop-down lists on its form, so pick the same answers there. They're also written into the issue's **Additional context**, so nothing is lost if you don't.
+The three installation answers are **detected for you**; change any that are wrong. They fill in their own boxes on the GitHub form. The other choices you make (which part of TaskMate, whether it happens every time, how important a feature is) go into the issue's **Additional context**, because GitHub can't pre-select the drop-down lists on its form. Those lists are optional there, so there's nothing to pick again.
 
 Untick **Include these details** to leave all of this out.
 

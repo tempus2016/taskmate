@@ -200,9 +200,10 @@ const MOOD_FACES = { great: "😄", good: "🙂", ok: "😐", sad: "😢", upset
 
 // Help & feedback page: builds a pre-filled GitHub "new issue" link. Nothing is
 // sent from Home Assistant — the parent reviews the text on GitHub and submits
-// it there. Option values are the issue templates' own English option text
-// (.github/ISSUE_TEMPLATE), which is what GitHub matches; `lk` is the label the
-// panel shows. Field ids in the URL are the templates' field ids.
+// it there. Values are the issue templates' own English wording
+// (.github/ISSUE_TEMPLATE) — the option text of a drop-down, or the answers a
+// text field's description lists; `lk` is the label the panel shows. Field ids
+// in the URL are the templates' field ids.
 const FEEDBACK_REPO = "https://github.com/tempus2016/taskmate";
 const FEEDBACK_API = "https://api.github.com/search/issues";
 // GitHub answers 414 somewhere past 8 KB; stay clear of it.
@@ -9829,8 +9830,9 @@ class TaskMatePanel extends HTMLElement {
    * Report a bug or suggest a feature without leaving Home Assistant. The page
    * builds GitHub's pre-filled "new issue" link from the repo's own issue
    * templates; nothing is sent from here. GitHub only pre-fills text fields,
-   * so the template's drop-down answers also travel as text in "Additional
-   * context", and the page tells the parent which ones to pick.
+   * so every required field on the templates is a text field, and the few
+   * optional drop-downs (area, reproducible, priority) travel as text in
+   * "Additional context" instead.
    *
    * Typing never re-renders the page: the draft lives in this._fb and
    * localStorage, and _fbPaint() refreshes just the link, the counters and the
@@ -9923,16 +9925,22 @@ class TaskMatePanel extends HTMLElement {
     return feedbackBrowser(typeof navigator !== "undefined" ? navigator.userAgent : "");
   }
 
-  /** The "Sent from the TaskMate panel" block — the template's drop-down answers as text. */
-  _fbEnvLines() {
+  /**
+   * The setup lines of the "Sent from the TaskMate panel" block. The install
+   * answers have their own fields on the GitHub form, so the link leaves them
+   * out (`install: false`); Copy as Markdown has no fields and keeps them.
+   */
+  _fbEnvLines({ install = true } = {}) {
     const info = this._fbInfoOrFallback();
     const env = this._fbEnv();
     const c = info.counts || {};
     const method = env.install_method ? feedbackOption(FEEDBACK_INSTALL_METHODS, env.install_method).v : "Not sure";
     const lines = [
-      `- Installation type: ${feedbackOption(FEEDBACK_INSTALL_TYPES, env.install_type).v}${info.installation_type_raw ? ` (HA reports "${info.installation_type_raw}")` : ""}`,
-      `- TaskMate installed via: ${method}`,
-      `- Lovelace mode: ${feedbackOption(FEEDBACK_LOVELACE_MODES, env.lovelace_mode).v}`,
+      ...(install ? [
+        `- Installation type: ${feedbackOption(FEEDBACK_INSTALL_TYPES, env.install_type).v}${info.installation_type_raw ? ` (HA reports "${info.installation_type_raw}")` : ""}`,
+        `- TaskMate installed via: ${method}`,
+        `- Lovelace mode: ${feedbackOption(FEEDBACK_LOVELACE_MODES, env.lovelace_mode).v}`,
+      ] : []),
       info.counts ? `- Family: ${c.children || 0} children, ${c.adults || 0} adults · ${c.chores || 0} chores · ${c.rewards || 0} rewards`
         : `- Setup details: unavailable (${this._fbInfo && this._fbInfo.error})`,
       `- Language: ${info.language || "?"} · Card design: ${info.card_design || "?"}`,
@@ -9954,8 +9962,11 @@ class TaskMatePanel extends HTMLElement {
     const includeEnv = d.env.include !== false;
     if (d.type === "feature") {
       const f = d.feature;
-      const extra = [f.additional.trim(), includeEnv && info.integration_version
-        ? `_Sent from the TaskMate panel · TaskMate ${info.integration_version} · Home Assistant ${info.ha_version}_` : ""]
+      // GitHub can't pre-select its drop-downs (optional on the form), so the
+      // parent's answers travel as text.
+      const answers = [`- Area: ${f.area}`, `- Importance: ${feedbackOption(FEEDBACK_PRIORITY, f.priority).v}`];
+      if (includeEnv && info.integration_version) answers.push(`- TaskMate ${info.integration_version} · Home Assistant ${info.ha_version}`);
+      const extra = [f.additional.trim(), ["**Sent from the TaskMate panel**", ...answers].join("\n")]
         .filter(Boolean).join("\n\n");
       const fields = {
         summary: f.summary, problem: f.problem, solution: f.solution, area: f.area, alternatives: f.alternatives,
@@ -9967,7 +9978,10 @@ class TaskMatePanel extends HTMLElement {
       return { url, over: Math.max(0, url.length - FEEDBACK_URL_MAX), logsUsed: 0, logsDropped: 0 };
     }
     const b = d.bug;
-    const additional = [b.additional.trim(), includeEnv ? ["**Sent from the TaskMate panel**", ...this._fbEnvLines()].join("\n") : ""]
+    // The drop-downs GitHub can't pre-select (optional on the form) travel as text.
+    const answers = [`- Affected area: ${b.area}`, `- Reproducible: ${feedbackOption(FEEDBACK_REPRO, b.repro).v}`];
+    const additional = [b.additional.trim(),
+      ["**Sent from the TaskMate panel**", ...answers, ...(includeEnv ? this._fbEnvLines({ install: false }) : [])].join("\n")]
       .filter(Boolean).join("\n\n");
     const fields = {
       taskmate_version: includeEnv ? info.integration_version : "",
