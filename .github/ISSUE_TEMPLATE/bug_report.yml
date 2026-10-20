@@ -51,6 +51,7 @@ body:
     attributes:
       label: TaskMate Installation Method
       options:
+        - HACS (default)
         - HACS (custom repository)
         - Manual (copied files)
     validations:

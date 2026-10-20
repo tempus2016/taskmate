@@ -198,6 +198,160 @@ const DASH_PATH_RE = /^[a-z0-9]+(-[a-z0-9]+)+$/;
 // Mood check-in faces, by the mood id the backend stores.
 const MOOD_FACES = { great: "😄", good: "🙂", ok: "😐", sad: "😢", upset: "😠" };
 
+// Help & feedback page: builds a pre-filled GitHub "new issue" link. Nothing is
+// sent from Home Assistant — the parent reviews the text on GitHub and submits
+// it there. Option values are the issue templates' own English option text
+// (.github/ISSUE_TEMPLATE), which is what GitHub matches; `lk` is the label the
+// panel shows. Field ids in the URL are the templates' field ids.
+const FEEDBACK_REPO = "https://github.com/tempus2016/taskmate";
+const FEEDBACK_API = "https://api.github.com/search/issues";
+// GitHub answers 414 somewhere past 8 KB; stay clear of it.
+const FEEDBACK_URL_MAX = 7800;
+const FEEDBACK_DRAFT_KEY = "taskmate-feedback-draft";
+const FEEDBACK_LOG_MAX = 20;
+const FEEDBACK_TEXT_MAX = 6000;
+
+const FEEDBACK_BUG_AREAS = [
+  ["child_card", "Child Card"], ["rewards_card", "Rewards Card"], ["approvals_card", "Approvals Card"],
+  ["points_card", "Points Card"], ["reorder_card", "Reorder Card"], ["parent_card", "Parent Dashboard Card"],
+  ["overview_card", "Overview Card"], ["activity_card", "Activity Card"], ["streak_card", "Streak Card"],
+  ["weekly_card", "Weekly Card"], ["graph_card", "Points Graph Card"], ["progress_card", "Reward Progress Card"],
+  ["leaderboard_card", "Leaderboard Card"], ["setup", "Integration setup / config flow"],
+  ["chores", "Chore management"], ["rewards", "Reward management"], ["children", "Children management"],
+  ["points", "Points / scoring"], ["streaks", "Streaks / milestones"], ["reward_approval", "Reward approval flow"],
+  ["chore_approval", "Chore approval flow"], ["services", "Services (complete_chore, add_points, etc.)"],
+  ["sensors", "Sensors / entity attributes"], ["resources", "Lovelace resources (cards not loading)"],
+  ["bonus", "Bonus points (weekend / streak / perfect week)"], ["other", "Other"],
+].map(([k, v]) => ({ v, lk: `panel.fb_area_${k}` }));
+
+const FEEDBACK_FEATURE_AREAS = [
+  ["child_card", "Child Card"], ["rewards_card", "Rewards Card"], ["approvals_card", "Approvals Card"],
+  ["points_card", "Points Card"], ["reorder_card", "Reorder Card"], ["parent_card", "Parent Dashboard Card"],
+  ["overview_card", "Overview Card"], ["activity_card", "Activity Card"], ["streak_card", "Streak Card"],
+  ["weekly_card", "Weekly Card"], ["graph_card", "Points Graph Card"], ["progress_card", "Reward Progress Card"],
+  ["leaderboard_card", "Leaderboard Card"], ["chores", "Chore management (config flow)"],
+  ["rewards", "Reward management (config flow)"], ["children", "Children management (config flow)"],
+  ["settings", "Settings / configuration"], ["bonus", "Bonus points system"], ["streaks", "Streaks / milestones"],
+  ["notifications", "Notifications / alerts"], ["services", "Services / automations"],
+  ["sensors", "Sensors / entity attributes"], ["install", "Installation / HACS"],
+  ["new_card", "New card (not listed above)"], ["other", "Other / not sure"],
+].map(([k, v]) => ({ v, lk: `panel.fb_area_${k}` }));
+
+const FEEDBACK_REPRO = [
+  { id: "always", v: "Always — happens every time", lk: "panel.fb_repro_always" },
+  { id: "sometimes", v: "Sometimes — happens intermittently", lk: "panel.fb_repro_sometimes" },
+  { id: "once", v: "Once — only happened one time", lk: "panel.fb_repro_once" },
+];
+const FEEDBACK_PRIORITY = [
+  { id: "nice", v: "Nice to have — would improve the experience", lk: "panel.fb_priority_nice" },
+  { id: "important", v: "Important — a gap that affects my daily use", lk: "panel.fb_priority_important" },
+  { id: "critical", v: "Critical — a blocker for me using TaskMate properly", lk: "panel.fb_priority_critical" },
+];
+// Keys match feedback.py's installation_type / install_method / lovelace_mode.
+const FEEDBACK_INSTALL_TYPES = [
+  { id: "haos", v: "Home Assistant OS (HAOS)", lk: "panel.fb_install_haos" },
+  { id: "supervised", v: "Home Assistant Supervised", lk: "panel.fb_install_supervised" },
+  { id: "container", v: "Home Assistant Container (Docker)", lk: "panel.fb_install_container" },
+  { id: "core", v: "Home Assistant Core", lk: "panel.fb_install_core" },
+  { id: "unknown", v: "Not sure", lk: "panel.fb_not_sure" },
+];
+const FEEDBACK_INSTALL_METHODS = [
+  { id: "hacs_default", v: "HACS (default)", lk: "panel.fb_method_hacs_default" },
+  { id: "hacs_custom", v: "HACS (custom repository)", lk: "panel.fb_method_hacs_custom" },
+  { id: "manual", v: "Manual (copied files)", lk: "panel.fb_method_manual" },
+];
+const FEEDBACK_LOVELACE_MODES = [
+  { id: "storage", v: "Storage (default — managed via UI)", lk: "panel.fb_lovelace_storage" },
+  { id: "yaml", v: "YAML (configuration.yaml)", lk: "panel.fb_lovelace_yaml" },
+  { id: "unknown", v: "Not sure", lk: "panel.fb_not_sure" },
+];
+
+function feedbackOption(list, id) {
+  return list.find(o => o.id === id) || list[list.length - 1];
+}
+
+/** "Chrome 141 on Windows", "Home Assistant app on iOS 18.1" — never the raw user agent. */
+function feedbackBrowser(ua) {
+  ua = String(ua || "");
+  let m;
+  let os = "";
+  if ((m = /(?:iPhone|iPad|CPU) OS (\d+)[_.](\d+)/.exec(ua)) || (m = /\biOS (\d+)\.(\d+)/.exec(ua))) os = `iOS ${m[1]}.${m[2]}`;
+  else if ((m = /Android (\d+(?:\.\d+)?)/.exec(ua))) os = `Android ${m[1]}`;
+  else if (/Mac OS X|Macintosh/.test(ua)) os = "macOS";
+  else if (/Windows/.test(ua)) os = "Windows";
+  else if (/CrOS/.test(ua)) os = "ChromeOS";
+  else if (/Linux/.test(ua)) os = "Linux";
+  let name;
+  if (/Home ?Assistant\//.test(ua) || /io\.robbie\.HomeAssistant/.test(ua)) name = "Home Assistant app";
+  else if ((m = /Edg\/(\d+)/.exec(ua))) name = `Edge ${m[1]}`;
+  else if ((m = /(?:Firefox|FxiOS)\/(\d+)/.exec(ua))) name = `Firefox ${m[1]}`;
+  else if ((m = /(?:Chrome|CriOS)\/(\d+)/.exec(ua))) name = `Chrome ${m[1]}`;
+  else if ((m = /Version\/(\d+(?:\.\d+)?).*Safari/.exec(ua))) name = `Safari ${m[1]}`;
+  else name = "Unknown browser";
+  return os ? `${name} on ${os}` : name;
+}
+
+/**
+ * Take people's names and secrets out of log text before it can leave the
+ * house. `names` are swapped for stable placeholders ("[name 1]"); signed-URL
+ * signatures, bearer tokens and e-mail addresses are masked.
+ */
+function feedbackRedact(text, names) {
+  // Secrets and addresses first: a name inside an address ("john@…") would
+  // otherwise be swapped out and leave the rest of the address unmatched.
+  let out = String(text || "")
+    .replace(/(authSig|token|access_token|api_key|password)=([^&\s"']+)/gi, "$1=[hidden]")
+    .replace(/\bBearer\s+[\w.-]+/g, "Bearer [hidden]")
+    .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, "[email]")
+    // Phone and person ids are usually named after someone ("mobile_app_johns_iphone").
+    .replace(/\b(mobile_app|person|device_tracker)([._])[\w-]+/gi, "$1$2[device]");
+  const uniq = [...new Set((names || []).map(n => String(n || "").trim()).filter(n => n.length >= 2))]
+    .sort((a, b) => b.length - a.length);
+  uniq.forEach((name, i) => {
+    const esc = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // No lookbehind: iOS 15 WebKit still runs this panel and has none.
+    out = out.replace(new RegExp(`(^|[^\\p{L}\\p{N}])${esc}(?![\\p{L}\\p{N}])`, "giu"), `$1[name ${i + 1}]`);
+  });
+  return out;
+}
+
+/**
+ * HA's system_log records → TaskMate's own entries as text lines, oldest
+ * first, at most `max` of them. A traceback keeps its last lines — the ones
+ * that say what broke.
+ */
+function feedbackLogEntries(records, names, max = FEEDBACK_LOG_MAX) {
+  const ours = (records || []).filter(r => {
+    const name = String(r && r.name || "");
+    const src = Array.isArray(r && r.source) ? String(r.source[0] || "") : "";
+    return name.startsWith("custom_components.taskmate") || src.includes("custom_components/taskmate");
+  });
+  ours.sort((a, b) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
+  return ours.slice(0, max).reverse().map(r => {
+    let when = "";
+    try { when = new Date(Number(r.timestamp) * 1000).toISOString().replace("T", " ").slice(0, 19); } catch (_) {}
+    const msg = (Array.isArray(r.message) ? r.message : [r.message]).filter(Boolean).join(" | ");
+    const count = Number(r.count) > 1 ? ` (×${Number(r.count)})` : "";
+    let line = `${when} ${String(r.level || "").toUpperCase()} [${r.name || ""}] ${msg}${count}`.trim();
+    if (r.exception) {
+      const tb = String(r.exception).trim().split("\n");
+      line += "\n" + (tb.length > 12 ? ["  …", ...tb.slice(-12)] : tb).join("\n");
+    }
+    return feedbackRedact(line, names);
+  });
+}
+
+/** The issues/new link for the given template and field values (empty fields left out). */
+function feedbackIssueUrl(template, title, fields) {
+  const p = new URLSearchParams();
+  p.set("template", template);
+  p.set("title", title);
+  for (const [k, v] of Object.entries(fields || {})) {
+    if (v != null && String(v).trim() !== "") p.set(k, String(v));
+  }
+  return `${FEEDBACK_REPO}/issues/new?${p}`;
+}
+
 class TaskMatePanel extends HTMLElement {
   constructor() {
     super();
@@ -582,6 +736,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._palette && t && t.closest(".tm-pal-item")) this._palette = null;
     if (!t) { if (closedNewMenu) this._render(); return; }
     const act = t.dataset.act;
+    if (act.startsWith("fb-")) { this._fbClick(t, e); return; }
     // Setup wizard (#980) actions all start "wz-".
     if (act.startsWith("wz-")) { this._wizardAct(t, e); return; }
     // Ready-made dashboards (#1053) actions all start "dash-".
@@ -1056,6 +1211,7 @@ class TaskMatePanel extends HTMLElement {
   _onInput(e) {
     const t = e.target;
     if (!t.dataset) return;
+    if (t.dataset.fbField) { this._fbInput(t); return; }
     if (t.dataset.wzIn) { this._wizardInput(t); return; }
     if (t.dataset.palette === "q" && this._palette) {
       this._palette.q = t.value || "";
@@ -1172,6 +1328,7 @@ class TaskMatePanel extends HTMLElement {
   _onChange(e) {
     const t = e.target;
     if (!t.dataset) return;
+    if (t.dataset.fbField) { this._fbInput(t); return; }
     if (t.dataset.act === "bulk-toggle-row") {
       const id = t.dataset.id;
       if (t.checked) this._bulkSel.add(id); else this._bulkSel.delete(id);
@@ -3706,6 +3863,9 @@ class TaskMatePanel extends HTMLElement {
       this._dialog._openAdvanced = openSet;
     }
 
+    // A state push can redraw the Help & feedback page mid-sentence; put the
+    // caret back where it was.
+    const fbFocus = this._fbFocusSnapshot();
     let anyChanged = false;
     let paletteChanged = false;
     for (const [name, html] of Object.entries(zones)) {
@@ -3721,6 +3881,7 @@ class TaskMatePanel extends HTMLElement {
     }
     // A rebuilt command search has a fresh input: give it the focus back.
     if (paletteChanged && this._palette) this._focusPalette();
+    if (fbFocus) this._fbFocusRestore(fbFocus);
 
     if (anyChanged) {
       this._bindHaPickers();
@@ -3826,6 +3987,7 @@ class TaskMatePanel extends HTMLElement {
       { key: "system", head: this._t("panel.nav_system"), items: [
         { id: "notifications", label: this._t("panel.tab_notifications"), icon: "mdi:bell-outline" },
         { id: "settings", label: this._t("panel.tab_settings"), icon: "mdi:cog-outline" },
+        { id: "help", label: this._t("panel.tab_help"), icon: "mdi:lifebuoy" },
       ]},
     ].map(g => ({
       ...g,
@@ -4149,6 +4311,7 @@ class TaskMatePanel extends HTMLElement {
       case "notifications": return this._renderNotificationsTab();
       case "audit":         return this._renderAuditTab();
       case "settings":      return this._renderSettingsTab();
+      case "help":          return this._renderHelpTab();
       case "setup":         return this._wizardBody();
       default:          return `<div class="tm-card">${this._t("panel.tab_unknown")}</div>`;
     }
@@ -9661,6 +9824,629 @@ class TaskMatePanel extends HTMLElement {
         </div>`;
   }
 
+  // -- Help & feedback ---------------------------------------------------
+  /**
+   * Report a bug or suggest a feature without leaving Home Assistant. The page
+   * builds GitHub's pre-filled "new issue" link from the repo's own issue
+   * templates; nothing is sent from here. GitHub only pre-fills text fields,
+   * so the template's drop-down answers also travel as text in "Additional
+   * context", and the page tells the parent which ones to pick.
+   *
+   * Typing never re-renders the page: the draft lives in this._fb and
+   * localStorage, and _fbPaint() refreshes just the link, the counters and the
+   * similar-issue list.
+   */
+  _fbDraft() {
+    if (this._fb) return this._fb;
+    const blank = {
+      type: "bug",
+      bug: { title: "", description: "", expected: "", steps: "", area: FEEDBACK_BUG_AREAS[0].v,
+             repro: "always", config: "", console: "", additional: "" },
+      feature: { title: "", summary: "", problem: "", solution: "", alternatives: "",
+                 area: FEEDBACK_FEATURE_AREAS[0].v, priority: "nice", additional: "" },
+      env: { include: true, logs: true, install_type: "", install_method: "", lovelace_mode: "" },
+    };
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(FEEDBACK_DRAFT_KEY) || "null"); } catch (_) {}
+    this._fb = saved && typeof saved === "object" ? {
+      type: saved.type === "feature" ? "feature" : "bug",
+      bug: { ...blank.bug, ...(saved.bug || {}) },
+      feature: { ...blank.feature, ...(saved.feature || {}) },
+      env: { ...blank.env, ...(saved.env || {}) },
+    } : blank;
+    return this._fb;
+  }
+
+  _fbSave() {
+    clearTimeout(this._fbSaveTimer);
+    this._fbSaveTimer = setTimeout(() => {
+      try { localStorage.setItem(FEEDBACK_DRAFT_KEY, JSON.stringify(this._fb)); } catch (_) {}
+    }, 300);
+  }
+
+  _fbHasText() {
+    const d = this._fbDraft();
+    const free = { bug: ["title", "description", "expected", "steps", "console", "config", "additional"],
+                   feature: ["title", "summary", "problem", "solution", "alternatives", "additional"] };
+    return Object.entries(free).some(([type, keys]) => keys.some(k => String(d[type][k] || "").trim()));
+  }
+
+  async _fbLoad() {
+    if (this._fbLoading) return;
+    this._fbLoading = true;
+    const [info, logs] = await Promise.all([
+      this._callWS({ type: "taskmate/feedback/info" }),
+      this._callWS({ type: "system_log/list" }),
+    ]);
+    this._fbLoading = false;
+    this._fbInfo = info.ok ? info.res : { error: info.err };
+    this._fbLogs = logs.ok ? feedbackLogEntries(logs.res, this._fbNames()) : null;
+    this._render();
+  }
+
+  /** Every name we know in the household — the log redaction list. */
+  _fbNames() {
+    const s = this._state || {};
+    const parents = (this._notifState && this._notifState.recipients && this._notifState.recipients.parents) || [];
+    const full = [...(s.children || []).map(c => c.name), ...parents.map(p => p.name),
+      this._hass && this._hass.user && this._hass.user.name].filter(Boolean);
+    // "John Mackinnon" also hides "John" and "Mackinnon" on their own.
+    const parts = full.flatMap(n => String(n).split(/[\s_.-]+/)).filter(w => w.length >= 3);
+    return [...full, ...parts];
+  }
+
+  /**
+   * The setup details. If the integration couldn't answer (TaskMate failing
+   * to load is exactly when a bug report matters most) the versions the
+   * browser already knows stand in.
+   */
+  _fbInfoOrFallback() {
+    const info = this._fbInfo || {};
+    if (!info.error) return info;
+    const ha = this._hass && this._hass.config && this._hass.config.version;
+    return { integration_version: PANEL_VERSION !== "?" ? PANEL_VERSION : "", ha_version: ha || "", counts: null, health_codes: [] };
+  }
+
+  /** The install answers, detected by the integration unless the parent changed them. */
+  _fbEnv() {
+    const d = this._fbDraft();
+    const info = this._fbInfo || {};
+    return {
+      install_type: d.env.install_type || info.installation_type || "unknown",
+      // "unknown" means HACS couldn't be read: leave it for the parent to pick.
+      install_method: d.env.install_method || (info.install_method !== "unknown" && info.install_method) || "",
+      lovelace_mode: d.env.lovelace_mode || info.lovelace_mode || "unknown",
+    };
+  }
+
+  _fbBrowser() {
+    return feedbackBrowser(typeof navigator !== "undefined" ? navigator.userAgent : "");
+  }
+
+  /** The "Sent from the TaskMate panel" block — the template's drop-down answers as text. */
+  _fbEnvLines() {
+    const info = this._fbInfoOrFallback();
+    const env = this._fbEnv();
+    const c = info.counts || {};
+    const method = env.install_method ? feedbackOption(FEEDBACK_INSTALL_METHODS, env.install_method).v : "Not sure";
+    const lines = [
+      `- Installation type: ${feedbackOption(FEEDBACK_INSTALL_TYPES, env.install_type).v}${info.installation_type_raw ? ` (HA reports "${info.installation_type_raw}")` : ""}`,
+      `- TaskMate installed via: ${method}`,
+      `- Lovelace mode: ${feedbackOption(FEEDBACK_LOVELACE_MODES, env.lovelace_mode).v}`,
+      info.counts ? `- Family: ${c.children || 0} children, ${c.adults || 0} adults · ${c.chores || 0} chores · ${c.rewards || 0} rewards`
+        : `- Setup details: unavailable (${this._fbInfo && this._fbInfo.error})`,
+      `- Language: ${info.language || "?"} · Card design: ${info.card_design || "?"}`,
+      `- Health check: ${(info.health_codes || []).length ? info.health_codes.join(", ") : "no issues"}`,
+      `- Panel build: ${PANEL_VERSION} · ${this._fbBrowser()}`,
+    ];
+    return lines;
+  }
+
+  /**
+   * The link, plus what had to give to keep it under GitHub's length limit:
+   * the oldest log lines go first; if the parent's own text is still too
+   * long, the link is withheld and `over` says by how much.
+   */
+  _fbBuild() {
+    const d = this._fbDraft();
+    const info = this._fbInfoOrFallback();
+    const env = this._fbEnv();
+    const includeEnv = d.env.include !== false;
+    if (d.type === "feature") {
+      const f = d.feature;
+      const extra = [f.additional.trim(), includeEnv && info.integration_version
+        ? `_Sent from the TaskMate panel · TaskMate ${info.integration_version} · Home Assistant ${info.ha_version}_` : ""]
+        .filter(Boolean).join("\n\n");
+      const fields = {
+        summary: f.summary, problem: f.problem, solution: f.solution, area: f.area, alternatives: f.alternatives,
+        priority: feedbackOption(FEEDBACK_PRIORITY, f.priority).v,
+        children_count: includeEnv && info.counts ? String(info.counts.children) : "",
+        use_case: extra,
+      };
+      const url = feedbackIssueUrl("feature_request.yml", `[Feature]: ${f.title.trim()}`, fields);
+      return { url, over: Math.max(0, url.length - FEEDBACK_URL_MAX), logsUsed: 0, logsDropped: 0 };
+    }
+    const b = d.bug;
+    const additional = [b.additional.trim(), includeEnv ? ["**Sent from the TaskMate panel**", ...this._fbEnvLines()].join("\n") : ""]
+      .filter(Boolean).join("\n\n");
+    const fields = {
+      taskmate_version: includeEnv ? info.integration_version : "",
+      ha_version: includeEnv ? info.ha_version : "",
+      ha_install_type: includeEnv ? feedbackOption(FEEDBACK_INSTALL_TYPES, env.install_type).v : "",
+      install_method: includeEnv && env.install_method ? feedbackOption(FEEDBACK_INSTALL_METHODS, env.install_method).v : "",
+      lovelace_mode: includeEnv ? feedbackOption(FEEDBACK_LOVELACE_MODES, env.lovelace_mode).v : "",
+      description: b.description, expected: b.expected, steps: b.steps,
+      reproducible: feedbackOption(FEEDBACK_REPRO, b.repro).v, affected_area: b.area,
+      config: b.config, console_errors: b.console, additional,
+    };
+    const title = `[Bug]: ${b.title.trim()}`;
+    const logs = d.env.logs !== false && this._fbLogs ? this._fbLogs : [];
+    // Drop the oldest log entries until the link fits.
+    for (let keep = logs.length; keep >= 0; keep--) {
+      const url = feedbackIssueUrl("bug_report.yml", title, { ...fields, logs: logs.slice(logs.length - keep).join("\n") });
+      if (url.length <= FEEDBACK_URL_MAX || keep === 0) {
+        return { url, over: Math.max(0, url.length - FEEDBACK_URL_MAX), logsUsed: keep, logsDropped: logs.length - keep };
+      }
+    }
+    return { url: "", over: 0, logsUsed: 0, logsDropped: 0 };
+  }
+
+  /** Required fields still empty, as their labels. */
+  _fbMissing() {
+    const d = this._fbDraft();
+    const need = d.type === "feature"
+      ? [["title", "panel.fb_title"], ["summary", "panel.fb_feat_summary"], ["problem", "panel.fb_feat_problem"], ["solution", "panel.fb_feat_solution"]]
+      : [["title", "panel.fb_title"], ["description", "panel.fb_bug_description"], ["expected", "panel.fb_bug_expected"], ["steps", "panel.fb_bug_steps"]];
+    const form = d[d.type];
+    return need.filter(([k]) => !String(form[k] || "").trim()).map(([, lk]) => this._t(lk));
+  }
+
+  /** Markdown of the whole report, for pasting when the link can't carry it. */
+  _fbMarkdown() {
+    const d = this._fbDraft();
+    const info = this._fbInfoOrFallback();
+    const sec = (h, v, fence = "") => (String(v || "").trim() ? `### ${h}\n\n${fence ? "```" + fence + "\n" : ""}${String(v).trim()}${fence ? "\n```" : ""}\n` : "");
+    if (d.type === "feature") {
+      const f = d.feature;
+      return [`## [Feature]: ${f.title.trim()}\n`, sec("Feature Summary", f.summary), sec("What problem does this solve?", f.problem),
+        sec("Proposed Solution", f.solution), sec("Which area does this relate to?", f.area), sec("Alternatives Considered", f.alternatives),
+        sec("How important is this to you?", feedbackOption(FEEDBACK_PRIORITY, f.priority).v), sec("Additional Context", f.additional),
+        d.env.include !== false && info.integration_version ? `_TaskMate ${info.integration_version} · Home Assistant ${info.ha_version}_\n` : "",
+      ].filter(Boolean).join("\n");
+    }
+    const b = d.bug;
+    const env = d.env.include !== false
+      ? sec("Environment", [`- TaskMate: ${info.integration_version || "?"}`, `- Home Assistant: ${info.ha_version || "?"}`, ...this._fbEnvLines()].join("\n"))
+      : "";
+    const logs = d.env.logs !== false && this._fbLogs && this._fbLogs.length ? sec("Home Assistant Logs", this._fbLogs.join("\n"), "text") : "";
+    return [`## [Bug]: ${b.title.trim()}\n`, env, sec("What happened?", b.description), sec("What did you expect to happen?", b.expected),
+      sec("Steps to Reproduce", b.steps), sec("Is this reproducible?", feedbackOption(FEEDBACK_REPRO, b.repro).v),
+      sec("Affected Area", b.area), logs, sec("Browser Console Errors", b.console, "text"),
+      sec("Card YAML Configuration", b.config, "yaml"), sec("Additional Context", b.additional),
+    ].filter(Boolean).join("\n");
+  }
+
+  /** Clipboard with a fallback: navigator.clipboard needs https, and plenty of HA installs are plain http. */
+  async _fbCopy(text, okMsg) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        this._showToast("ok", okMsg);
+        return;
+      }
+    } catch (_) { /* fall through to the legacy path */ }
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;top:0;inset-inline-start:0;width:1px;height:1px;opacity:0";
+    this.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (_) {}
+    ta.remove();
+    this._showToast(ok ? "ok" : "err", ok ? okMsg : this._t("panel.fb_copy_failed"));
+  }
+
+  async _fbDownloadDiagnostics() {
+    const id = this._fbInfo && this._fbInfo.entry_id;
+    if (!id) { this._showToast("err", this._t("panel.fb_diag_failed")); return; }
+    const { ok, res, err } = await this._callWS({ type: "auth/sign_path", path: `/api/diagnostics/config_entry/${id}` });
+    if (!ok || !res || !res.path) { this._showToast("err", this._t("panel.fb_diag_failed") + (err ? ` (${err})` : "")); return; }
+    const a = document.createElement("a");
+    a.href = res.path;
+    a.download = "taskmate-diagnostics.json";
+    this.appendChild(a);
+    a.click();
+    a.remove();
+    this._showToast("ok", this._t("panel.fb_diag_started"));
+  }
+
+  /** Similar issues on GitHub, searched as the title is typed (debounced; quiet on failure). */
+  /** The search the current title calls for, or "" when it is too short to search. */
+  _fbSearchQuery() {
+    const d = this._fbDraft();
+    const words = d[d.type].title.trim().split(/\s+/).filter(w => w.length >= 3);
+    return words.length < 2 ? "" : words.slice(0, 8).join(" ");
+  }
+
+  _fbQueueSearch() {
+    clearTimeout(this._fbSearchTimer);
+    const q = this._fbSearchQuery();
+    if (!q) { this._fbDupes = null; this._fbPaint(); return; }
+    if (this._fbDupes && this._fbDupes.q === q) return;
+    this._fbSearchTimer = setTimeout(() => this._fbSearch(q), 700);
+  }
+
+  async _fbSearch(q) {
+    const url = `${FEEDBACK_API}?per_page=5&q=${encodeURIComponent(`${q} repo:tempus2016/taskmate is:issue`)}`;
+    try {
+      const resp = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
+      if (!resp.ok) throw new Error(String(resp.status));
+      const data = await resp.json();
+      const items = (data.items || []).slice(0, 5).map(i => ({
+        number: Number(i.number), title: String(i.title || ""), state: i.state === "closed" ? "closed" : "open",
+        url: /^https:\/\/github\.com\//.test(i.html_url || "") ? i.html_url : "",
+      })).filter(i => i.url);
+      if (this._fbSearchQuery() !== q) return;  // the title changed while GitHub answered
+      this._fbDupes = { q, items };
+    } catch (_) {
+      if (this._fbSearchQuery() !== q) return;
+      this._fbDupes = { q, items: [], failed: true };
+    }
+    this._fbPaint();
+  }
+
+  _fbSearchUrl() {
+    const d = this._fbDraft();
+    const q = d[d.type].title.trim();
+    return `${FEEDBACK_REPO}/issues?q=${encodeURIComponent(`is:issue ${q}`.trim())}`;
+  }
+
+  _fbDupesHtml() {
+    const dupes = this._fbDupes;
+    if (!dupes || dupes.failed || !dupes.items.length) return "";
+    return `
+      <div class="tm-fb-dupes">
+        <div class="tm-fb-dupes-head"><ha-icon icon="mdi:magnify"></ha-icon> ${this._t("panel.fb_similar_title")}</div>
+        ${dupes.items.map(i => `
+          <a class="tm-fb-dupe" href="${this._esc(i.url)}" target="_blank" rel="noopener noreferrer">
+            <span class="tm-pill ${i.state === "open" ? "tm-pill-success" : ""}">${this._t(i.state === "open" ? "panel.fb_issue_open" : "panel.fb_issue_closed")}</span>
+            <span class="tm-fb-dupe-title">#${i.number} ${this._esc(i.title)}</span>
+          </a>`).join("")}
+        <span class="tm-field-hint">${this._t("panel.fb_similar_hint")}</span>
+      </div>`;
+  }
+
+  _fbLinkHtml() {
+    const d = this._fbDraft();
+    const missing = this._fbMissing();
+    const built = this._fbBuild();
+    const ready = !missing.length && !built.over && this._fbInfo;
+    const status = missing.length
+      ? `<span class="tm-fb-status">${this._t("panel.fb_still_needed", { fields: missing.map(m => this._esc(m)).join(", ") })}</span>`
+      : built.over
+        ? `<span class="tm-fb-status tm-fb-status-warn">${this._t("panel.fb_too_long", { count: built.over })}</span>`
+        : `<span class="tm-fb-status tm-fb-status-ok">${this._t("panel.fb_ready")}</span>`;
+    const logNote = d.type === "bug" && built.logsDropped
+      ? `<span class="tm-field-hint">${this._t("panel.fb_logs_trimmed", { used: built.logsUsed, dropped: built.logsDropped })}</span>` : "";
+    return `
+      <div class="tm-fb-actions">
+        <a class="tm-btn tm-btn-raised tm-fb-open ${ready ? "" : "tm-fb-disabled"}" data-act="fb-open"
+           href="${ready ? this._esc(built.url) : "#"}" target="_blank" rel="noopener noreferrer"
+           aria-disabled="${ready ? "false" : "true"}">
+          <ha-icon icon="mdi:open-in-new"></ha-icon> ${this._t("panel.fb_open_github")}
+        </a>
+        <button type="button" class="tm-btn" data-act="fb-copy-md"><ha-icon icon="mdi:content-copy"></ha-icon> ${this._t("panel.fb_copy_markdown")}</button>
+        <a class="tm-btn" href="${this._esc(this._fbSearchUrl())}" target="_blank" rel="noopener noreferrer"><ha-icon icon="mdi:magnify"></ha-icon> ${this._t("panel.fb_search_github")}</a>
+      </div>
+      ${status}
+      ${logNote}
+      ${built.over ? `<span class="tm-field-hint">${this._t("panel.fb_too_long_hint")}</span>` : ""}
+      <span class="tm-field-hint">${this._t("panel.fb_account_hint")}</span>`;
+  }
+
+  /** Refresh the bits that depend on what's typed, without rebuilding the form. */
+  _fbPaint() {
+    const link = this.querySelector('[data-fb-region="link"]');
+    if (link) link.innerHTML = this._fbLinkHtml();
+    const dupes = this.querySelector('[data-fb-region="dupes"]');
+    if (dupes) dupes.innerHTML = this._fbDupesHtml();
+    const d = this._fbDraft();
+    this.querySelectorAll("[data-fb-count]").forEach(el => {
+      const v = String(d[d.type][el.dataset.fbCount] || "");
+      el.textContent = this._ltrNums(`${v.length} / ${FEEDBACK_TEXT_MAX}`);
+    });
+  }
+
+  _fbFocusSnapshot() {
+    const root = this.getRootNode && this.getRootNode();
+    const el = root && root.activeElement;
+    if (!el || !el.dataset || !el.dataset.fbField || !this.contains(el)) return null;
+    return { field: el.dataset.fbField, start: el.selectionStart, end: el.selectionEnd };
+  }
+
+  _fbFocusRestore(snap) {
+    const el = this.querySelector(`[data-fb-field="${snap.field}"]`);
+    if (!el || el === (this.getRootNode() || {}).activeElement) return;
+    el.focus();
+    try { if (snap.start != null) el.setSelectionRange(snap.start, snap.end); } catch (_) {}
+  }
+
+  _fbInput(t) {
+    const d = this._fbDraft();
+    const key = t.dataset.fbField;
+    if (key.startsWith("env.")) {
+      const k = key.slice(4);
+      d.env[k] = t.type === "checkbox" ? t.checked : t.value;
+    } else {
+      d[d.type][key] = t.value;
+      if (key === "title") this._fbQueueSearch();
+    }
+    this._fbSave();
+    this._fbPaint();
+  }
+
+  _fbClick(t, e) {
+    const act = t.dataset.act;
+    const d = this._fbDraft();
+    if (act === "fb-type") {
+      d.type = t.dataset.id === "feature" ? "feature" : "bug";
+      this._fbDupes = null;
+      this._fbSave();
+      this._render();
+      this._fbQueueSearch();
+      return;
+    }
+    if (act === "fb-open") {
+      if (t.getAttribute("aria-disabled") === "true") {
+        e.preventDefault();
+        const missing = this._fbMissing();
+        this._showToast("err", missing.length ? this._t("panel.fb_still_needed", { fields: missing.join(", ") })
+          : !this._fbInfo ? this._t("panel.fb_loading") : this._t("panel.fb_too_long_plain"));
+        const first = [...this.querySelectorAll(".tm-fb-form [data-fb-required]")].find(el => !el.value.trim());
+        if (first) first.focus();
+        return;
+      }
+      // The browser follows the link itself (target=_blank); offer to clear afterwards.
+      this._fbOpened = true;
+      setTimeout(() => this._render(), 0);
+      return;
+    }
+    if (act === "fb-copy-md") { this._fbCopy(this._fbMarkdown(), this._t("panel.fb_copied_markdown")); return; }
+    if (act === "fb-copy-logs") { this._fbCopy((this._fbLogs || []).join("\n"), this._t("panel.fb_copied_logs")); return; }
+    if (act === "fb-diagnostics") { this._fbDownloadDiagnostics(); return; }
+    if (act === "fb-reload") { this._fbInfo = null; this._fbLogs = null; this._fbLoad(); this._render(); return; }
+    if (act === "fb-hard-refresh") { location.reload(); return; }
+    if (act === "fb-health") { this._activeTab = "insights"; this._insightView = "health"; this._render(); return; }
+    if (act === "fb-clear") {
+      if (this._fbHasText() && !this._fbOpened && !confirm(this._t("panel.fb_clear_confirm"))) return;
+      this._fb = null;
+      this._fbOpened = false;
+      this._fbDupes = null;
+      try { localStorage.removeItem(FEEDBACK_DRAFT_KEY); } catch (_) {}
+      this._fbDraft();
+      this._render();
+    }
+  }
+
+  _fbText(key, labelKey, { required = false, rows = 4, placeholderKey = "", hintKey = "" } = {}) {
+    const d = this._fbDraft();
+    const v = d[d.type][key] || "";
+    return `
+      <label class="tm-field">
+        <span class="tm-field-label">${this._t(labelKey)}${required ? ` <span class="tm-fb-req" aria-hidden="true">*</span>` : ""}</span>
+        <textarea class="tm-input tm-textarea" rows="${rows}" maxlength="${FEEDBACK_TEXT_MAX}" data-fb-field="${key}"
+          ${required ? 'required data-fb-required aria-required="true"' : ""}
+          placeholder="${placeholderKey ? this._esc(this._t(placeholderKey)) : " "}">${this._esc(v)}</textarea>
+        <span class="tm-fb-field-foot">
+          ${hintKey ? `<span class="tm-field-hint">${this._t(hintKey)}</span>` : "<span></span>"}
+          <span class="tm-fb-count" data-fb-count="${key}">${this._ltrNums(`${v.length} / ${FEEDBACK_TEXT_MAX}`)}</span>
+        </span>
+      </label>`;
+  }
+
+  _fbSelect(key, labelKey, options, current, { scope = "" } = {}) {
+    const field = scope ? `${scope}.${key}` : key;
+    return `
+      <label class="tm-field">
+        <span class="tm-field-label">${this._t(labelKey)}</span>
+        <select class="tm-select" data-fb-field="${field}">
+          ${options.map(o => {
+            const val = o.id || o.v;
+            return `<option value="${this._esc(val)}" ${val === current ? "selected" : ""}>${this._esc(this._t(o.lk))}</option>`;
+          }).join("")}
+        </select>
+      </label>`;
+  }
+
+  _fbBugForm() {
+    const b = this._fbDraft().bug;
+    return `
+      <div class="tm-card tm-fb-form">
+        <h2>${this._t("panel.fb_bug_heading")}</h2>
+        <label class="tm-field">
+          <span class="tm-field-label">${this._t("panel.fb_title")} <span class="tm-fb-req" aria-hidden="true">*</span></span>
+          <input class="tm-input" type="text" maxlength="200" data-fb-field="title" required data-fb-required aria-required="true"
+            placeholder="${this._esc(this._t("panel.fb_bug_title_placeholder"))}" value="${this._esc(b.title)}">
+        </label>
+        <div data-fb-region="dupes">${this._fbDupesHtml()}</div>
+        ${this._fbText("description", "panel.fb_bug_description", { required: true, rows: 5, placeholderKey: "panel.fb_bug_description_placeholder" })}
+        <div class="tm-field-row">
+          ${this._fbText("expected", "panel.fb_bug_expected", { required: true, rows: 3 })}
+          ${this._fbText("steps", "panel.fb_bug_steps", { required: true, rows: 3, placeholderKey: "panel.fb_bug_steps_placeholder" })}
+        </div>
+        <div class="tm-field-row">
+          ${this._fbSelect("area", "panel.fb_bug_area", FEEDBACK_BUG_AREAS, b.area)}
+          ${this._fbSelect("repro", "panel.fb_bug_repro", FEEDBACK_REPRO, b.repro)}
+        </div>
+        <details class="tm-fb-more" ${b.config || b.console || b.additional ? "open" : ""}>
+          <summary>${this._t("panel.fb_more_details")}</summary>
+          ${this._fbText("console", "panel.fb_bug_console", { rows: 3, hintKey: "panel.fb_bug_console_hint" })}
+          ${this._fbText("config", "panel.fb_bug_config", { rows: 3, hintKey: "panel.fb_bug_config_hint" })}
+          ${this._fbText("additional", "panel.fb_additional", { rows: 3, hintKey: "panel.fb_additional_hint" })}
+        </details>
+      </div>`;
+  }
+
+  _fbFeatureForm() {
+    const f = this._fbDraft().feature;
+    return `
+      <div class="tm-card tm-fb-form">
+        <h2>${this._t("panel.fb_feat_heading")}</h2>
+        <label class="tm-field">
+          <span class="tm-field-label">${this._t("panel.fb_title")} <span class="tm-fb-req" aria-hidden="true">*</span></span>
+          <input class="tm-input" type="text" maxlength="200" data-fb-field="title" required data-fb-required aria-required="true"
+            placeholder="${this._esc(this._t("panel.fb_feat_title_placeholder"))}" value="${this._esc(f.title)}">
+        </label>
+        <div data-fb-region="dupes">${this._fbDupesHtml()}</div>
+        ${this._fbText("summary", "panel.fb_feat_summary", { required: true, rows: 3, placeholderKey: "panel.fb_feat_summary_placeholder" })}
+        ${this._fbText("problem", "panel.fb_feat_problem", { required: true, rows: 3, hintKey: "panel.fb_feat_problem_hint" })}
+        ${this._fbText("solution", "panel.fb_feat_solution", { required: true, rows: 4 })}
+        <div class="tm-field-row">
+          ${this._fbSelect("area", "panel.fb_feat_area", FEEDBACK_FEATURE_AREAS, f.area)}
+          ${this._fbSelect("priority", "panel.fb_feat_priority", FEEDBACK_PRIORITY, f.priority)}
+        </div>
+        <details class="tm-fb-more" ${f.alternatives || f.additional ? "open" : ""}>
+          <summary>${this._t("panel.fb_more_details")}</summary>
+          ${this._fbText("alternatives", "panel.fb_feat_alternatives", { rows: 3 })}
+          ${this._fbText("additional", "panel.fb_additional", { rows: 3, hintKey: "panel.fb_additional_hint" })}
+        </details>
+      </div>`;
+  }
+
+  _fbDetailsCard() {
+    const d = this._fbDraft();
+    const info = this._fbInfo;
+    if (!info) return `<div class="tm-card"><div class="tm-empty">${this._t("panel.fb_loading")}</div></div>`;
+    if (info.error) return `
+      <div class="tm-card">
+        <p class="tm-meta">${this._t("panel.fb_info_failed", { error: this._esc(info.error) })}</p>
+        <button type="button" class="tm-btn" data-act="fb-reload">${this._t("panel.btn_retry")}</button>
+      </div>`;
+    const env = this._fbEnv();
+    const c = info.counts || {};
+    const row = (label, value) => `<dt>${label}</dt><dd>${value}</dd>`;
+    const auto = `<span class="tm-fb-auto">${this._t("panel.fb_auto")}</span>`;
+    const logs = this._fbLogs;
+    return `
+      <div class="tm-card">
+        <div class="tm-card-head">
+          <h2>${this._t("panel.fb_details_heading")}</h2>
+          <button type="button" class="tm-btn tm-btn-sm" data-act="fb-reload"><ha-icon icon="mdi:refresh"></ha-icon> ${this._t("panel.fb_reload")}</button>
+        </div>
+        <p class="tm-meta">${this._t("panel.fb_details_intro")}</p>
+        <dl class="tm-fb-diag">
+          ${row(this._t("panel.fb_taskmate_version"), `<code>${this._esc(info.integration_version)}</code>${auto}`)}
+          ${row(this._t("panel.fb_ha_version"), `<code>${this._esc(info.ha_version)}</code>${auto}`)}
+          ${d.type === "bug" ? `
+            ${row(this._t("panel.fb_family"), `${this._ltrNums(this._t("panel.fb_family_value", { children: c.children || 0, adults: c.adults || 0, chores: c.chores || 0, rewards: c.rewards || 0 }))}${auto}`)}
+            ${row(this._t("panel.fb_browser"), `${this._esc(this._fbBrowser())}${auto}`)}
+            ${row(this._t("panel.fb_health"), `${(info.health_codes || []).length ? this._esc(info.health_codes.join(", ")) : this._t("panel.fb_health_ok")}${auto}`)}
+          ` : row(this._t("panel.fb_children_count"), `${this._num(c.children)}${auto}`)}
+        </dl>
+        ${d.type === "bug" ? `
+          <div class="tm-field-row tm-fb-env">
+            ${this._fbSelect("install_type", "panel.fb_install_type", FEEDBACK_INSTALL_TYPES, env.install_type, { scope: "env" })}
+            ${this._fbSelect("install_method", "panel.fb_install_method",
+              env.install_method ? FEEDBACK_INSTALL_METHODS : [{ id: "", lk: "panel.fb_pick_one" }, ...FEEDBACK_INSTALL_METHODS],
+              env.install_method, { scope: "env" })}
+            ${this._fbSelect("lovelace_mode", "panel.fb_lovelace_mode", FEEDBACK_LOVELACE_MODES, env.lovelace_mode, { scope: "env" })}
+          </div>
+          <span class="tm-field-hint">${this._t("panel.fb_dropdowns_hint")}</span>` : ""}
+        <label class="tm-fb-check">
+          <input type="checkbox" data-fb-field="env.include" ${d.env.include !== false ? "checked" : ""}>
+          <span>${this._t("panel.fb_include_details")}</span>
+        </label>
+        ${d.type === "bug" ? `
+          <div class="tm-fb-logs">
+            <div class="tm-fb-logs-head">
+              <ha-icon icon="mdi:text-box-search-outline"></ha-icon>
+              <div>
+                <strong>${this._t("panel.fb_logs_heading")}</strong>
+                <span class="tm-field-hint">${logs == null ? this._t("panel.fb_logs_unavailable")
+                  : logs.length ? this._t("panel.fb_logs_found", { count: logs.length }) : this._t("panel.fb_logs_none")}</span>
+              </div>
+            </div>
+            ${logs && logs.length ? `
+              <label class="tm-fb-check">
+                <input type="checkbox" data-fb-field="env.logs" ${d.env.logs !== false ? "checked" : ""}>
+                <span>${this._t("panel.fb_logs_include")}</span>
+              </label>
+              <details class="tm-fb-more">
+                <summary>${this._t("panel.fb_logs_preview")}</summary>
+                <pre class="tm-fb-pre">${this._esc(logs.join("\n"))}</pre>
+                <button type="button" class="tm-btn tm-btn-sm" data-act="fb-copy-logs"><ha-icon icon="mdi:content-copy"></ha-icon> ${this._t("panel.fb_copy_logs")}</button>
+              </details>` : ""}
+            <span class="tm-field-hint">${this._t("panel.fb_logs_debug_hint")}</span>
+          </div>
+          <div class="tm-fb-diagfile">
+            <div>
+              <strong>${this._t("panel.fb_diag_heading")}</strong>
+              <span class="tm-field-hint">${this._t("panel.fb_diag_hint")}</span>
+            </div>
+            <button type="button" class="tm-btn" data-act="fb-diagnostics" ${info.entry_id ? "" : "disabled"}>
+              <ha-icon icon="mdi:download"></ha-icon> ${this._t("panel.fb_diag_download")}
+            </button>
+          </div>` : ""}
+      </div>`;
+  }
+
+  _renderHelpTab() {
+    const d = this._fbDraft();
+    if (!this._fbInfo && !this._fbLoading) this._fbLoad();
+    const info = this._fbInfo || {};
+    const stale = info.integration_version && PANEL_VERSION !== "?" && PANEL_VERSION !== info.integration_version;
+    const typeBtn = (id, icon, titleKey, subKey) => `
+      <button type="button" class="tm-fb-type tm-fb-type-${id} ${d.type === id ? "tm-fb-type-on" : ""}"
+              data-act="fb-type" data-id="${id}" role="radio" aria-checked="${d.type === id}">
+        <span class="tm-fb-type-ico"><ha-icon icon="${icon}"></ha-icon></span>
+        <span><strong>${this._t(titleKey)}</strong><small>${this._t(subKey)}</small></span>
+      </button>`;
+    return `
+      <div class="tm-fb">
+        <div class="tm-fb-intro">
+          <h2>${this._t("panel.tab_help")}</h2>
+          <p class="tm-meta">${this._t("panel.fb_intro")}</p>
+        </div>
+        ${stale ? `
+          <div class="tm-fb-banner tm-fb-banner-warn" role="status">
+            <ha-icon icon="mdi:alert-outline"></ha-icon>
+            <span>${this._t("panel.fb_stale", { panel: this._esc(PANEL_VERSION), installed: this._esc(info.integration_version) })}</span>
+            <button type="button" class="tm-btn tm-btn-sm" data-act="fb-hard-refresh">${this._t("panel.fb_refresh_now")}</button>
+          </div>` : ""}
+        ${d.type === "bug" && (info.health_codes || []).length ? `
+          <div class="tm-fb-banner" role="status">
+            <ha-icon icon="mdi:stethoscope"></ha-icon>
+            <span>${this._t("panel.fb_health_found", { count: info.health_codes.length })}</span>
+            <button type="button" class="tm-btn tm-btn-sm" data-act="fb-health">${this._t("panel.fb_health_open")}</button>
+          </div>` : ""}
+        ${this._fbOpened ? `
+          <div class="tm-fb-banner tm-fb-banner-ok" role="status">
+            <ha-icon icon="mdi:check-circle-outline"></ha-icon>
+            <span>${this._t("panel.fb_opened")}</span>
+            <button type="button" class="tm-btn tm-btn-sm" data-act="fb-clear">${this._t("panel.fb_clear")}</button>
+          </div>` : ""}
+        <div class="tm-fb-types" role="radiogroup" aria-label="${this._esc(this._t("panel.fb_type_label"))}">
+          ${typeBtn("bug", "mdi:bug-outline", "panel.fb_type_bug", "panel.fb_type_bug_hint")}
+          ${typeBtn("feature", "mdi:lightbulb-on-outline", "panel.fb_type_feature", "panel.fb_type_feature_hint")}
+        </div>
+        ${d.type === "feature" ? this._fbFeatureForm() : this._fbBugForm()}
+        ${this._fbDetailsCard()}
+        <div class="tm-card tm-fb-send">
+          <div data-fb-region="link">${this._fbLinkHtml()}</div>
+          ${this._fbHasText() && !this._fbOpened ? `<button type="button" class="tm-btn tm-btn-sm tm-fb-clear" data-act="fb-clear">${this._t("panel.fb_clear")}</button>` : ""}
+        </div>
+        <div class="tm-card">
+          <h2>${this._t("panel.fb_other_help")}</h2>
+          <div class="tm-fb-links">
+            <a href="https://tempus2016.github.io/taskmate/Troubleshooting/" target="_blank" rel="noopener noreferrer"><ha-icon icon="mdi:book-open-variant"></ha-icon> ${this._t("panel.fb_link_troubleshooting")}</a>
+            <a href="https://tempus2016.github.io/taskmate/FAQ/" target="_blank" rel="noopener noreferrer"><ha-icon icon="mdi:frequently-asked-questions"></ha-icon> ${this._t("panel.fb_link_faq")}</a>
+            <a href="${FEEDBACK_REPO}/discussions" target="_blank" rel="noopener noreferrer"><ha-icon icon="mdi:forum-outline"></ha-icon> ${this._t("panel.fb_link_discussions")}</a>
+          </div>
+        </div>
+      </div>`;
+  }
+
   // -- Settings tab ------------------------------------------------------
   /**
    * Custom completion sounds (#856).
@@ -14714,6 +15500,103 @@ class TaskMatePanel extends HTMLElement {
           background: var(--tm-warning); color: #fff;
           font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
         }
+      }
+      /* Help & feedback */
+      .tm-fb { max-width: 920px; }
+      .tm-fb .tm-card { margin-bottom: 16px; }
+      .tm-fb .tm-card h2 { margin-top: 0; }
+      .tm-fb-intro h2 { margin: 0 0 4px; }
+      .tm-fb-intro { margin-bottom: 16px; }
+      .tm-fb-types { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+      .tm-fb-type {
+        display: flex; gap: 12px; align-items: flex-start; text-align: start;
+        background: var(--tm-surface-1); color: var(--tm-text);
+        border: 2px solid var(--tm-border); border-radius: var(--tm-radius);
+        padding: 14px 16px; cursor: pointer; font: inherit;
+      }
+      .tm-fb-type:hover { border-color: var(--tm-border-strong); background: var(--tm-surface-hover); }
+      .tm-fb-type:focus-visible { outline: none; box-shadow: var(--tm-shadow-focus); }
+      .tm-fb-type strong { display: block; font-size: 15px; margin-bottom: 2px; }
+      .tm-fb-type small { color: var(--tm-text-muted); font-size: 12.5px; }
+      .tm-fb-type-ico {
+        flex: none; width: 40px; height: 40px; border-radius: 10px;
+        display: grid; place-items: center;
+      }
+      .tm-fb-type-bug .tm-fb-type-ico { background: var(--tm-danger-soft); color: var(--tm-danger); }
+      .tm-fb-type-feature .tm-fb-type-ico { background: var(--tm-positive-soft); color: var(--tm-positive); }
+      .tm-fb-type-bug.tm-fb-type-on { border-color: var(--tm-danger); }
+      .tm-fb-type-feature.tm-fb-type-on { border-color: var(--tm-positive); }
+      .tm-fb-req { color: var(--tm-danger); }
+      .tm-fb-field-foot { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+      .tm-fb-count { color: var(--tm-text-faint); font-size: 11px; font-variant-numeric: tabular-nums; flex: none; margin-top: 4px; }
+      .tm-fb-more { margin: 4px 0 0; }
+      .tm-fb-more > summary { cursor: pointer; color: var(--tm-text-muted); font-size: 13px; margin-bottom: 10px; }
+      .tm-fb-dupes {
+        border: 1px solid var(--tm-warning-border); background: var(--tm-warning-soft);
+        border-radius: var(--tm-radius-sm); padding: 10px 12px; margin: -6px 0 14px;
+      }
+      .tm-fb-dupes-head { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+      .tm-fb-dupes-head ha-icon { --mdc-icon-size: 18px; }
+      .tm-fb-dupe { display: flex; align-items: center; gap: 8px; padding: 4px 0; color: var(--tm-text); text-decoration: none; font-size: 13px; }
+      .tm-fb-dupe:hover .tm-fb-dupe-title { text-decoration: underline; }
+      .tm-fb-dupe-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+      .tm-fb-diag { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 12px 0 14px; font-size: 13px; }
+      .tm-fb-diag dt { color: var(--tm-text-muted); }
+      .tm-fb-diag dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+      .tm-fb-diag code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+      .tm-fb-auto {
+        margin-inline-start: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
+        color: var(--tm-accent-text); border: 1px solid var(--tm-accent-border);
+        border-radius: 999px; padding: 0 6px; vertical-align: 1px;
+      }
+      .tm-fb-env { grid-template-columns: repeat(3, 1fr); }
+      .tm-fb-env .tm-field { margin-bottom: 4px; }
+      .tm-fb-check { display: flex; gap: 8px; align-items: flex-start; margin: 12px 0 0; font-size: 13px; cursor: pointer; }
+      .tm-fb-check input { margin-top: 2px; }
+      .tm-fb-logs, .tm-fb-diagfile {
+        background: var(--tm-surface-2); border-radius: var(--tm-radius-sm);
+        padding: 12px 14px; margin-top: 14px;
+      }
+      .tm-fb-logs-head { display: flex; gap: 10px; align-items: flex-start; }
+      .tm-fb-logs-head ha-icon { color: var(--tm-text-muted); flex: none; }
+      .tm-fb-logs .tm-fb-more { margin-top: 10px; }
+      .tm-fb-pre {
+        white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto;
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border); border-radius: var(--tm-radius-sm);
+        padding: 10px; font: 11.5px/1.5 ui-monospace, "SF Mono", Menlo, monospace; color: var(--tm-text-muted);
+        margin: 0 0 8px;
+      }
+      .tm-fb-diagfile { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+      .tm-fb-diagfile .tm-btn { flex: none; }
+      .tm-fb-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+      .tm-fb-actions a.tm-btn { text-decoration: none; }
+      .tm-fb-disabled { opacity: .45; cursor: not-allowed; }
+      .tm-fb-status { display: block; font-size: 13px; color: var(--tm-text-muted); margin-bottom: 4px; }
+      .tm-fb-status-ok { color: var(--tm-positive); }
+      .tm-fb-status-warn { color: var(--tm-warning); font-weight: 500; }
+      .tm-fb-send { position: relative; }
+      .tm-fb-clear { margin-top: 10px; }
+      .tm-fb-banner {
+        display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+        padding: 10px 14px; margin-bottom: 14px; border-radius: var(--tm-radius-sm);
+        background: var(--tm-accent-soft); border: 1px solid var(--tm-accent-border); font-size: 13px;
+      }
+      .tm-fb-banner > span { flex: 1; min-width: 200px; }
+      .tm-fb-banner-warn { background: var(--tm-warning-soft); border-color: var(--tm-warning-border); }
+      .tm-fb-banner-warn ha-icon { color: var(--tm-warning); }
+      .tm-fb-banner-ok { background: var(--tm-positive-soft); border-color: var(--tm-positive-border); }
+      .tm-fb-banner-ok ha-icon { color: var(--tm-positive); }
+      .tm-fb-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .tm-fb-links a {
+        display: flex; gap: 8px; align-items: center; padding: 12px;
+        background: var(--tm-surface-2); border-radius: var(--tm-radius-sm);
+        color: var(--tm-text); text-decoration: none; font-size: 13px;
+      }
+      .tm-fb-links a:hover { background: var(--tm-surface-3); }
+      @media (max-width: 760px) {
+        .tm-fb-types, .tm-fb-env, .tm-fb-links, .tm-fb .tm-field-row { grid-template-columns: 1fr; }
+        .tm-fb-diagfile { flex-direction: column; align-items: stretch; }
+        .tm-fb-actions > * { flex: 1 1 100%; justify-content: center; }
       }
       @media (max-width: 480px) {
         .tm-scope { max-width: 46vw; overflow-x: auto; }

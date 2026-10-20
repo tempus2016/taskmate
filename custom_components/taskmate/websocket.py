@@ -127,6 +127,8 @@ WS_REPORT_PROJECTION: Final = "taskmate/reports/projection"
 WS_REPORT_HEALTH: Final = "taskmate/reports/health"
 WS_REPORT_QUALITY: Final = "taskmate/reports/quality"
 WS_REPORT_MOODS: Final = "taskmate/reports/moods"
+# Help & feedback page: the environment half of a GitHub issue.
+WS_FEEDBACK_INFO: Final = "taskmate/feedback/info"
 WS_SCHEDULED_LIST: Final = "taskmate/scheduled/list"
 WS_SCHEDULED_ADD: Final = "taskmate/scheduled/add"
 WS_SCHEDULED_REMOVE: Final = "taskmate/scheduled/remove"
@@ -269,6 +271,7 @@ _AUDIT_EXCLUDE: Final = {
     WS_REPORT_HEALTH,
     WS_REPORT_QUALITY,
     WS_REPORT_MOODS,
+    WS_FEEDBACK_INFO,
     WS_SETUP_CATALOGUE,
 }
 
@@ -1148,6 +1151,17 @@ async def _ws_report_moods(hass, connection, msg, coordinator):
 @_admin_only
 async def _ws_report_health(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], coordinator.health_report())
+
+
+@websocket_api.websocket_command({vol.Required("type"): WS_FEEDBACK_INFO})
+@websocket_api.async_response
+@_admin_only
+async def _ws_feedback_info(hass, connection, msg, coordinator):
+    # Imported here: feedback.py needs homeassistant.loader, which nothing
+    # else on this module's import path does.
+    from .feedback import async_feedback_info
+
+    connection.send_result(msg["id"], await async_feedback_info(hass, coordinator))
 
 
 # ---------------------------------------------------------------------------
@@ -3290,6 +3304,7 @@ _COMMANDS = (
     _ws_report_friction,
     _ws_report_projection,
     _ws_report_health,
+    _ws_feedback_info,
     _ws_report_quality,
     _ws_report_moods,
     _ws_templates_export,

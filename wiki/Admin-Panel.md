@@ -42,7 +42,7 @@ On the **desktop**, the sidebar groups sections by what you're doing, each with 
 | **Spend** | Rewards, Wishlists, Raffles (v7.0.0) |
 | **Adjust** | Bonuses, Penalties, Badges |
 | **Review** | Activity, Insights, Audit |
-| **System** | Notifications, Settings |
+| **System** | Notifications, Settings, [Help & feedback](Help-and-Feedback.md) (v7.2.0) |
 
 Click a group heading to collapse it, and use **«** at the top to shrink the sidebar to icons. Both are remembered in your browser.
 

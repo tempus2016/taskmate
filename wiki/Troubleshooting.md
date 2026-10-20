@@ -319,7 +319,9 @@ templates and automations.
 
 ## Reporting a Bug
 
-If you've confirmed it's a TaskMate bug, open an issue at:
+The easiest way is the panel's **System → [Help & feedback](Help-and-Feedback.md)** page (v7.2.0): it fills in a GitHub issue with your versions, setup and recent TaskMate errors (names removed) and opens it for you to check and submit.
+
+Or open an issue yourself at:
 **https://github.com/tempus2016/taskmate/issues**
 
 Include:
