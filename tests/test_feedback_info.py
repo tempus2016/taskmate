@@ -52,7 +52,7 @@ def _coord(health=None):
     storage.get_children.return_value = [
         Child(name="Malia", id="k1"),
         Child(name="Vaiha", id="k2"),
-        Child(name="John", id="a1", is_adult=True),
+        Child(name="Sam", id="a1", is_adult=True),
     ]
     storage.get_chores.return_value = [Chore(name="Bins", id="c1"), Chore(name="Dishes", id="c2")]
     storage.get_rewards.return_value = [Reward(name="Film night", id="r1")]
@@ -93,7 +93,7 @@ def test_summary_carries_versions_counts_and_codes(monkeypatch):
 def test_summary_never_names_anyone(monkeypatch):
     _system_info(monkeypatch, {"installation_type": "Home Assistant OS"})
     text = repr(run_async(feedback.async_feedback_info(_hass(), _coord())))
-    for name in ("Malia", "Vaiha", "John", "Bins", "Dishes", "Film night", "assigned to nobody"):
+    for name in ("Malia", "Vaiha", "Sam", "Bins", "Dishes", "Film night", "assigned to nobody"):
         assert name not in text
 
 
@@ -166,7 +166,7 @@ def test_entry_id_falls_back_to_the_hass_data_key(monkeypatch):
 
 def _connection(admin):
     conn = MagicMock()
-    conn.user = SimpleNamespace(id="u1", name="John", is_admin=admin)
+    conn.user = SimpleNamespace(id="u1", name="Sam", is_admin=admin)
     return conn
 
 

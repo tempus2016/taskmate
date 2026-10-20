@@ -298,13 +298,13 @@ function feedbackBrowser(ua) {
  * signatures, bearer tokens and e-mail addresses are masked.
  */
 function feedbackRedact(text, names) {
-  // Secrets and addresses first: a name inside an address ("john@…") would
+  // Secrets and addresses first: a name inside an address ("sam@…") would
   // otherwise be swapped out and leave the rest of the address unmatched.
   let out = String(text || "")
     .replace(/(authSig|token|access_token|api_key|password)=([^&\s"']+)/gi, "$1=[hidden]")
     .replace(/\bBearer\s+[\w.-]+/g, "Bearer [hidden]")
     .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, "[email]")
-    // Phone and person ids are usually named after someone ("mobile_app_johns_iphone").
+    // Phone and person ids are usually named after someone ("mobile_app_sams_iphone").
     .replace(/\b(mobile_app|person|device_tracker)([._])[\w-]+/gi, "$1$2[device]");
   const uniq = [...new Set((names || []).map(n => String(n || "").trim()).filter(n => n.length >= 2))]
     .sort((a, b) => b.length - a.length);
@@ -9892,7 +9892,7 @@ class TaskMatePanel extends HTMLElement {
     const parents = (this._notifState && this._notifState.recipients && this._notifState.recipients.parents) || [];
     const full = [...(s.children || []).map(c => c.name), ...parents.map(p => p.name),
       this._hass && this._hass.user && this._hass.user.name].filter(Boolean);
-    // "John Mackinnon" also hides "John" and "Mackinnon" on their own.
+    // "Sam Taylor" also hides "Sam" and "Taylor" on their own.
     const parts = full.flatMap(n => String(n).split(/[\s_.-]+/)).filter(w => w.length >= 3);
     return [...full, ...parts];
   }

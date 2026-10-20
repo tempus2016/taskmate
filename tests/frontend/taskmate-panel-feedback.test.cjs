@@ -82,10 +82,10 @@ test("non-Latin names are matched as whole words too", () => {
 
 test("signed URLs, bearer tokens and e-mail addresses are masked", () => {
   const { fb } = load();
-  const out = fb.feedbackRedact("GET /api/taskmate/photo/a.jpg?authSig=abc.def&x=1 Bearer eyJ.abc-d mail john@example.co.uk password=hunter2", []);
+  const out = fb.feedbackRedact("GET /api/taskmate/photo/a.jpg?authSig=abc.def&x=1 Bearer eyJ.abc-d mail sam@example.co.uk password=hunter2", []);
   assert.ok(!out.includes("abc.def") && out.includes("authSig=[hidden]&x=1"));
   assert.ok(out.includes("Bearer [hidden]") && !out.includes("eyJ"));
-  assert.ok(out.includes("[email]") && !out.includes("john@"));
+  assert.ok(out.includes("[email]") && !out.includes("sam@"));
   assert.ok(!out.includes("hunter2"));
 });
 
@@ -93,7 +93,7 @@ test("an address holding a family name is still masked whole", () => {
   // Found on ha-dev: the signed-in user's name was swapped out of their own
   // e-mail first, which left "@example.com" behind.
   const { fb } = load();
-  const out = fb.feedbackRedact("contact john@example.com or John", ["John"]);
+  const out = fb.feedbackRedact("contact sam@example.com or Sam", ["Sam"]);
   assert.equal(out, "contact [email] or [name 1]");
 });
 
@@ -406,19 +406,19 @@ test("clearing the form forgets the saved draft", () => {
 
 test("phone and person ids are masked whole, whoever they're named after", () => {
   const { fb } = load();
-  const out = fb.feedbackRedact("notify.mobile_app_johns_iphone failed; person.john_smith, device_tracker.malias_ipad", []);
+  const out = fb.feedbackRedact("notify.mobile_app_sams_iphone failed; person.sam_jones, device_tracker.malias_ipad", []);
   assert.equal(out, "notify.mobile_app_[device] failed; person.[device], device_tracker.[device]");
 });
 
 test("each part of a full name is hidden on its own too", () => {
   const { p } = panel();
-  p._hass = { user: { name: "John Mackinnon" } };
-  p._notifState = { recipients: { parents: [{ name: "Louise" }] } };
+  p._hass = { user: { name: "Sam Taylor" } };
+  p._notifState = { recipients: { parents: [{ name: "Alex" }] } };
   const names = [...p._fbNames()];
-  for (const n of ["Malia", "Vaiha", "Louise", "John Mackinnon", "John", "Mackinnon"]) assert.ok(names.includes(n), n);
+  for (const n of ["Malia", "Vaiha", "Alex", "Sam Taylor", "Sam", "Taylor"]) assert.ok(names.includes(n), n);
   const { fb } = load();
-  const out = fb.feedbackRedact("John here, Mackinnon there, John Mackinnon too", names);
-  assert.ok(!/John|Mackinnon/.test(out), out);
+  const out = fb.feedbackRedact("Sam here, Taylor there, Sam Taylor too", names);
+  assert.ok(!/Sam|Taylor/.test(out), out);
 });
 
 test("a GitHub answer for an older title is thrown away", async () => {
