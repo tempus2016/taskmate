@@ -73,6 +73,8 @@ The award replaces the chore's *base* points, so streaks and level multipliers s
 
 This is how an [open-ended chore](Open-Ended-Chores.md) gets priced, but it works on any pending completion.
 
+The sheet also has a **Praise note** box with quick chips (*👏 Well done!*, *🌟 Super effort*, …). Whatever is in it when you approve goes to the child's card. See [Praise Notes](Praise-Notes.md).
+
 ### Approve All (v4.4.3+)
 When two or more chore completions are pending, an **Approve All** button appears in the chore-approvals section so you can clear the whole queue in one tap instead of approving each row. It calls the `taskmate/approve_all_chores` WebSocket command, which approves every currently-pending completion and runs the full award/badge/quest/streak/celebration side-effects on each — identical to approving them one by one. The same button is also available on the TaskMate panel's pending-approvals view. Reward claims and mandatory-review items are unaffected; you still action those individually.
 

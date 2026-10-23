@@ -16,9 +16,29 @@
  * - Clickable chore rows with checkbox visual indicator
  */
 
-const LitElement = customElements.get("hui-masonry-view")
-  ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
-  : Object.getPrototypeOf(customElements.get("hui-view"));
+// HA's Lit base class, found through an element built on it. Dashboards
+// always define hui-masonry-view; the admin panel also shows this card (View
+// as child) and has no dashboard views, so fall back to elements every HA
+// page defines (the sticker chart card's lookup, without its wait).
+const LIT_HOST_TAGS = ["hui-masonry-view", "hui-view", "home-assistant-main", "ha-card"];
+
+const findLitBase = () => {
+  for (const tag of LIT_HOST_TAGS) {
+    let C = customElements.get(tag);
+    while (C && C.prototype && !Object.prototype.hasOwnProperty.call(C.prototype, "html")) {
+      C = Object.getPrototypeOf(C);
+    }
+    if (C && C.prototype) return C;
+  }
+  return null;
+};
+
+const LitElement = findLitBase();
+// The attr resolver defines window.__taskmate_badge_id, but on a cold load a
+// card can render before that module has run; read the id directly then.
+const _badgeId = (b) => (typeof window.__taskmate_badge_id === "function"
+  ? window.__taskmate_badge_id(b) : String(b?.badge_id ?? b?.id ?? ""));
+if (!LitElement) throw new Error("TaskMate Child Card: Home Assistant's Lit base class was not found");
 
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
@@ -151,7 +171,7 @@ class TaskMateChildCard extends LitElement {
       || (!this.config?.child_id && (attrs.children || [])[0]);
     const earned = this._resolveBadgesEntity(child)?.attributes?.earned;
     if (!Array.isArray(earned)) return false;
-    const ids = new Set(earned.map(b => window.__taskmate_badge_id(b)).filter(Boolean));
+    const ids = new Set(earned.map(b => _badgeId(b)).filter(Boolean));
 
     // First observation is the baseline — never flash a badge earned earlier.
     if (this._seenBadgeIds === null) {
@@ -1469,6 +1489,27 @@ class TaskMateChildCard extends LitElement {
       .tm-care-owed .ic ha-icon { --mdc-icon-size: 26px; color: #8e44ad; }
       .tm-care-owed .tm-owed-body { flex: 1; min-width: 0; }
       .tm-care-record { background: #fff6d6; color: #6b4e00; }
+      .tm-care-screen { background: #e9f6fb; color: #0f4a60; }
+      .tm-care-screen .tm-screen-body { flex: 1; min-width: 0; }
+      .tm-care-screen.low { background: #fff4e0; color: #6b4200; }
+      .tm-care-screen.out { background: #fdecec; color: #7a1f1f; }
+      .tm-screen-allow { opacity: .85; }
+      .tm-screen-save-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+      .tm-screen-save-chips .tm-goal-chip { padding: 4px 12px; font-size: .85rem; }
+      .tm-screen-jar { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; font-size: .85rem; }
+      .tm-screen-jar .tm-goal-bar i { background: #2a8fb5; }
+      /* Reward extras: expiry warning, gifts, star rating, savings forecast */
+      .tm-care-expiry { background: #fff4e0; color: #6b4200; }
+      .tm-care-gift { background: #fde9f1; color: #6e1f45; }
+      .tm-care-rate { background: #fff6d6; color: #6b4e00; }
+      .tm-care-rate .tm-rate-body, .tm-care-forecast .tm-forecast-body { flex: 1; min-width: 0; }
+      .tm-rate-stars { display: flex; gap: 2px; flex: none; }
+      .tm-rate-star { border: 0; background: none; font-size: 1.6rem; line-height: 1; cursor: pointer; padding: 2px; color: #c9a200; }
+      .tm-rate-star:disabled { opacity: .5; cursor: default; }
+      .tm-care-forecast { background: #ecf3ff; color: #1e3a6e; }
+      .tm-care-forecast .ic ha-icon { --mdc-icon-size: 26px; }
+      .tm-reward-pic { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; flex: none; display: block; }
+      .tm-screen-live { width: 10px; height: 10px; border-radius: 50%; background: #e53935; flex: none; animation: tm-boost-pulse 1.6s ease-in-out infinite; }
       .tm-care-appealable { background: #eef2ff; color: #2b3a7a; }
       .tm-care-appealable .tm-appeal-body { flex: 1; min-width: 0; }
       .tm-care-appeal { background: #eef2ff; color: #2b3a7a; }
@@ -1502,12 +1543,40 @@ class TaskMateChildCard extends LitElement {
       .tm-boost-take-name { opacity: .85; font-size: .9rem; }
       .tm-boost-take-go { margin-top: 12px; background: #fff; color: #c24a00; border: 0; border-radius: 999px; padding: 12px 28px; font: 800 1.05rem sans-serif; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,.2); }
       @keyframes tm-boost-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
-      @media (prefers-reduced-motion: reduce) { .tm-boost-bolt, .tm-boost-take-bolt, .tm-boost-take { animation: none; } }
+      @media (prefers-reduced-motion: reduce) { .tm-boost-bolt, .tm-boost-take-bolt, .tm-boost-take, .tm-screen-live { animation: none; } }
       .tm-care-goal.reached { background: #d9f5df; }
+      .tm-care-praise { background: #eaf7ff; color: #0f4060; }
+      .tm-care-praise .tm-praise-body { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+      .tm-care-warning { background: #fff6cc; color: #5c4600; border: 1px solid #f2d24b; }
+      .tm-care-check { background: #f1f0ff; color: #31296b; flex-wrap: wrap; }
+      .tm-care-check .tm-check-body { flex: 1; min-width: 140px; }
+      .tm-check-btns { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+      .tm-check-ok { background: #2e9e5b !important; color: #fff !important; font-weight: 700; }
+      .tm-remind-btn { cursor: pointer; }
+      .tm-remind-custom { display: flex; justify-content: center; margin: 8px 0; }
+      .tm-remind-custom label { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+      .tm-remind-time { font: inherit; font-size: 1.1rem; padding: 6px 8px; border-radius: 10px; border: 2px solid var(--divider-color, #ddd);
+        background: var(--card-background-color, #fff); color: var(--primary-text-color, #33373d); }
+      .tm-day-tabs { display: flex; gap: 6px; margin: 4px 0 10px; padding: 4px; border-radius: 999px; background: var(--secondary-background-color, #f3f3f3); }
+      .tm-day-tab { flex: 1; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 700; padding: 7px 10px; border-radius: 999px; cursor: pointer; opacity: .7; }
+      .tm-day-tab.on { background: var(--card-background-color, #fff); opacity: 1; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tm-day-tabs { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tm-day-tab.on { background: var(--tmd-surface); color: var(--tmd-text); box-shadow: inset 0 0 0 2px var(--tmd-accent); }
+      .tm-tomorrow { display: flex; flex-direction: column; gap: 8px; }
+      .tm-tomorrow-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; opacity: .72;
+        background: var(--secondary-background-color, #f3f3f3); border: 1px dashed var(--divider-color, #ccc); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tm-tomorrow-row { background: var(--tmd-surface-2); border-color: var(--tmd-border); color: var(--tmd-text); border-radius: var(--tmd-radius-sm, 12px); }
+      .tm-tomorrow-glyph { font-size: 1.4rem; line-height: 1; width: 28px; text-align: center; }
+      .tm-tomorrow-glyph img { width: 28px; height: 28px; object-fit: cover; border-radius: 8px; }
+      .tm-tomorrow-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+      .tm-tomorrow-name { font-weight: 700; }
+      .tm-tomorrow-mid small { opacity: .8; }
+      .tm-tomorrow-lock { --mdc-icon-size: 20px; opacity: .7; }
+      .tm-tomorrow-hint { text-align: center; font-size: .82rem; opacity: .75; padding: 2px 0 4px; }
       .tm-goal-set { cursor: pointer; width: 100%; }
       .tm-goal-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
       .tm-goal-bar { display: block; height: 8px; border-radius: 6px; background: rgba(0,0,0,.08); overflow: hidden; }
-      .tm-goal-bar i { display: block; height: 100%; background: #2e9e5b; border-radius: 6px; }
+      .tm-goal-bar i { display: block; height: 100%; background: var(--tm-child, #2e9e5b); border-radius: 6px; }
       .tm-goal-change { border: 0; background: rgba(0,0,0,.06); color: inherit; border-radius: 10px; padding: 6px 10px; font: inherit; font-size: .8rem; cursor: pointer; }
       .tm-goal-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 6px 0; }
       .tm-goal-chip { border: 2px solid var(--divider-color, #ddd); background: var(--card-background-color, #fff); color: var(--primary-text-color);
@@ -1612,23 +1681,6 @@ class TaskMateChildCard extends LitElement {
         overflow: hidden;
       }
 
-      .confetti {
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        animation: confetti-fall 3s linear forwards;
-      }
-
-      @keyframes confetti-fall {
-        0% {
-          transform: translateY(-100px) rotate(0deg);
-          opacity: 1;
-        }
-        100% {
-          transform: translateY(100vh) rotate(720deg);
-          opacity: 0;
-        }
-      }
 
       /* Error state */
       .error-state {
@@ -2256,6 +2308,91 @@ class TaskMateChildCard extends LitElement {
       .tmd-birthday .bday-title { font-weight: 800; font-size: 14px; }
       .tmd-birthday .bday-sub { font-size: 12px; font-weight: 600; color: var(--tmd-dim); }
       .tmd-swaps { margin-top: 12px; }
+      .tmd .bar > i { background: var(--tm-child, var(--tmd-accent)); }
+      .avatar-container, .tmd-av-wrap { position: relative; }
+
+      /* ── Care strips in dark mode ──
+         Same meaning per strip, dark ground, light text (all past 4.5:1).
+         The first rule catches a strip with no dark variant of its own. */
+      .tm-care-wrap.dark .tm-care { background: #232831; color: #e6eaf1; border: 1px solid #3a414d; }
+      .tm-care-wrap.dark .tm-care-sick { background: #1d2b44; color: #bcd3ff; border-color: #2f4570; }
+      .tm-care-wrap.dark .tm-care-redeem,
+      .tm-care-wrap.dark .tm-care-screen.low { background: #3a2a12; color: #ffd699; border-color: #5c4220; }
+      .tm-care-wrap.dark .tm-care-goal,
+      .tm-care-wrap.dark .tm-care-appeal.overturned { background: #173323; color: #b6e8c4; border-color: #285a3c; }
+      .tm-care-wrap.dark .tm-care-goal.reached { background: #1d4029; }
+      .tm-care-wrap.dark .tm-care-owed { background: #2c2038; color: #e2c9f7; border-color: #4a3260; }
+      .tm-care-wrap.dark .tm-care-owed .ic ha-icon { color: #c99be8; }
+      .tm-care-wrap.dark .tm-care-record { background: #3a3110; color: #ffe08a; border-color: #5c4c1a; }
+      .tm-care-wrap.dark .tm-care-expiry { background: #3a2a12; color: #ffd699; border-color: #5c4220; }
+      .tm-care-wrap.dark .tm-care-gift { background: #3a1a2b; color: #ffc6df; border-color: #5e2a45; }
+      .tm-care-wrap.dark .tm-care-rate { background: #3a3110; color: #ffe08a; border-color: #5c4c1a; }
+      .tm-care-wrap.dark .tm-care-forecast { background: #1d2b44; color: #bcd3ff; border-color: #2f4570; }
+      .tm-care-wrap.dark .tm-care-check { background: #24214a; color: #d3ceff; border-color: #3b3672; }
+      .tm-care-wrap.dark .tm-care-praise { background: #12313d; color: #b3e3f2; border-color: #1f4f60; }
+      .tm-care-wrap.dark .tm-care-warning { background: #3a3510; color: #fff0a0; border-color: #5c541a; }
+      .tm-care-wrap.dark .tm-care-screen { background: #12313d; color: #b3e3f2; border-color: #1f4f60; }
+      .tm-care-wrap.dark .tm-care-screen.out { background: #3d1a1a; color: #ffc4c4; border-color: #632a2a; }
+      .tm-care-wrap.dark .tm-care-appeal,
+      .tm-care-wrap.dark .tm-care-appealable { background: #1f2547; color: #c7d0ff; border-color: #343d70; }
+      .tm-care-wrap.dark .tm-care-appeal.upheld,
+      .tm-care-wrap.dark .tm-care-boost-next { background: #232831; color: #c9d0dc; border-color: #3a414d; }
+      .tm-care-wrap.dark .tm-care-boost { background: linear-gradient(120deg, #3d2610, #3a3010); color: #ffd9a8; border-color: #7a4a12; }
+      .tm-care-wrap.dark .tm-boost-clock,
+      .tm-care-wrap.dark .tm-boost-new { color: #ffb35c; }
+      .tm-care-wrap.dark .tm-boost-clock small { color: #e0b080; }
+      .tm-care-wrap.dark .tm-goal-bar { background: rgba(255,255,255,.14); }
+      .tm-care-wrap.dark .tm-goal-bar i { background: var(--tm-child, #4cc77a); }
+      .tm-care-wrap.dark .tm-goal-change { background: rgba(255,255,255,.12); }
+
+      /* ── Compact density (density: compact) ──
+         Smaller header, one line per chore, smaller tick boxes. Classic rules
+         first, then each designed row type. */
+      .compact .card-header { padding: 10px 14px; gap: 10px; }
+      .compact .avatar-container { width: 30px; height: 30px; min-width: 30px; }
+      .compact .avatar-container ha-icon { --mdc-icon-size: 19px; }
+      .compact .avatar-edit-dot { width: 14px; height: 14px; bottom: -3px; inset-inline-end: -3px; }
+      .compact .avatar-edit-dot ha-icon { --mdc-icon-size: 9px; }
+      .compact .child-name { font-size: 15px; }
+      .compact .child-level { margin-top: 2px; }
+      .compact .points-display { padding: 4px 10px; }
+      .compact .stars-value { font-size: 0.95rem; }
+      .compact .chores-container { padding: 8px 10px; gap: 5px; }
+      .compact .section-title { font-size: 1rem; margin-bottom: 2px; padding: 0; gap: 6px; }
+      .compact .section-title ha-icon { --mdc-icon-size: 18px; }
+      .compact .chore-card { padding: 6px 10px; min-height: 0; gap: 8px; border-width: 2px; border-radius: 12px; box-shadow: none; }
+      .compact .chore-info { gap: 8px; }
+      .compact .chore-number-badge { width: 24px; height: 24px; min-width: 24px; font-size: 0.8rem; transform: none; box-shadow: none; }
+      .compact .chore-number-badge ha-icon { --mdc-icon-size: 15px; }
+      .compact .chore-details { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
+      .compact .chore-name { flex: 1 1 auto; min-width: 0; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .compact .chore-points { font-size: 0.8rem; }
+      .compact .chore-description { display: none; }
+      .compact .chore-checkbox { width: 22px; height: 22px; min-width: 22px; border-width: 2px; border-radius: 6px; box-shadow: none; }
+      .compact .chore-checkbox ha-icon { --mdc-icon-size: 15px; }
+      .compact .tmd-hd { padding: 9px 12px; gap: 9px; }
+      .compact .tmd-hd .tt { font-size: 14px; }
+      .compact .tmd-bd { padding: 10px; }
+      .compact .tmd-section { margin-bottom: 6px; font-size: 13px; }
+      .compact .tmd-chores, .compact .tmd-quests { gap: 5px; }
+      .compact .tmd-chore, .compact .tmd-quest { padding: 5px 9px; border-radius: 10px; gap: 8px; }
+      .compact .tmd-check { padding: 5px 2px; gap: 8px; }
+      .compact .tmd-chore .num-badge, .compact .tmd-check .c-num { width: 22px; height: 22px; border-radius: 7px; font-size: 11px; }
+      .compact .tmd-chore .ch-emoji, .compact .tmd-quest .q-emoji, .compact .tmd-check .c-emoji { font-size: 15px; }
+      .compact .tmd-chore .ch-name, .compact .tmd-check .c-name, .compact .tmd-quest .q-name { font-size: 14px; }
+      .compact .ch-mid, .compact .q-mid, .compact .c-mid { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; }
+      .compact .ch-mid .ch-name, .compact .q-mid .q-name, .compact .c-mid .c-name { flex: 0 1 auto; min-width: 0; }
+      .compact .ch-mid .chip { margin-top: 0 !important; padding: 2px 7px; }
+      .compact .tmd-meta { margin-top: 0; }
+      .compact .tmd-desc { display: none; }
+      .compact .tmd .btn, .compact .tmd-chore .btn, .compact .tmd-quest .btn, .compact .tmd-check .btn { padding: 5px 9px; font-size: 12px; }
+      .compact .tmd-undochip { padding: 3px 8px; font-size: 12px; }
+      .compact .tmd-chore.mandatory, .compact .tmd-quest.mandatory, .compact .tmd-check.mandatory { padding-inline-start: 12px; }
+      /* Graphite restates its row sizes at a higher specificity. */
+      :host([data-tm-design="graphite"]) .compact .tmd-check { min-height: 0; padding: 5px 10px; }
+      :host([data-tm-design="graphite"]) .compact .tmd-check .c-name { font-size: 14px; }
+      :host([data-tm-design="graphite"]) .compact .tmd-check + .tmd-check::before { inset-inline-start: 40px; }
+      :host([data-tm-design="accessible"]) .compact .tmd-check .c-name { font-size: 15px; }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
       ? window.__taskmate_design.styles() : null;
@@ -2269,6 +2406,9 @@ class TaskMateChildCard extends LitElement {
     if (!config.child_id) {
       throw new Error("Please define a child_id");
     }
+    // An explicit header_color beats the child's own colour; the default
+    // merged in below must not count as one.
+    this._explicitHeader = typeof config.header_color === "string" && config.header_color !== "";
     this.config = {
       time_category: "anytime",
       include_anytime_chores: true,  // false hides the Anytime bucket from every filter
@@ -2389,10 +2529,11 @@ class TaskMateChildCard extends LitElement {
     // to ensure timezone correctness matches the HA frontend timezone
     const allCompletions = attrs.todays_completions || attrs.completions || [];
     const todaysCompletions = this._filterCompletionsForToday(allCompletions);
+    const look = this._look(child, attrs, "classic", "#9b59b6");
 
     return html`
-      <ha-card>
-        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#9b59b6')}; }</style>
+      <ha-card class="${this._compact() ? "compact" : ""}" style="${look.tint ? `--tm-child:${look.tint}` : ""}">
+        <style>:host { --taskmate-header-bg: ${look.season ? look.season.grad : look.hd}; }</style>
         <div class="card-header">
           <div class="header-left">
             ${(() => {
@@ -2405,6 +2546,7 @@ class TaskMateChildCard extends LitElement {
                      title="${canChange ? this._t('child.avatar_change') : ''}">
                   ${this._avatarGlyph(child)}
                   ${canChange ? html`<span class="avatar-edit-dot"><ha-icon icon="mdi:pencil"></ha-icon></span>` : ''}
+                  ${look.season ? html`<span class="tm-season-badge" aria-hidden="true">${look.season.emoji}</span>` : ''}
                 </div>
                 ${canChange && this._avatarPickerOpen ? this._renderAvatarPicker(child, opts) : ''}
               `;
@@ -2428,7 +2570,7 @@ class TaskMateChildCard extends LitElement {
             <div class="stars-row">
               <div class="stars-section">
                 <div class="stars-value my-stars">
-                  <ha-icon icon="${pointsIcon}"></ha-icon>
+                  ${look.season ? html`<span aria-hidden="true">${look.season.emoji}</span>` : html`<ha-icon icon="${pointsIcon}"></ha-icon>`}
                   ${child.points}
                 </div>
                 <div class="stars-label my-stars">${pointsName}</div>
@@ -2462,7 +2604,7 @@ class TaskMateChildCard extends LitElement {
           <div class="badge-strip" @click=${() => this._openBadgesView()} title="${this._t('badges.label')}">
             <span class="badge-strip-label">${this._t('badges.label')}</span>
             ${earnedBadges.slice(0, 5).map(b => html`
-              <div class="badge-mini tier-${b.tier} ${this._justEarnedBadge === window.__taskmate_badge_id(b) ? 'just-earned' : ''}"
+              <div class="badge-mini tier-${b.tier} ${this._justEarnedBadge === _badgeId(b) ? 'just-earned' : ''}"
                 style="--t: ${this._tierColor(b.tier)}">
                 <ha-icon icon="${b.icon || 'mdi:medal'}"></ha-icon>
               </div>
@@ -2498,7 +2640,10 @@ class TaskMateChildCard extends LitElement {
 
         ${this._renderCareBlocks(child, "classic")}
         <div class="chores-container">
-          ${childChores.length === 0
+          ${this._renderDayTabs(child, allChores, "classic")}
+          ${this._showingTomorrow(child, allChores)
+            ? this._renderTomorrow(child, allChores, "classic")
+            : childChores.length === 0
             ? this._renderEmptyState()
             : html`
                 <div class="section-title">
@@ -2841,6 +2986,7 @@ class TaskMateChildCard extends LitElement {
     const allCompletions = attrs.todays_completions || attrs.completions || [];
     const todaysCompletions = this._filterCompletionsForToday(allCompletions);
     const pointsIcon = attrs.points_icon || "mdi:star";
+    const look = this._look(child, attrs, this.getAttribute?.("data-tm-design") || design, hd);
 
     const dueDaysMode = this.config.due_days_mode || "hide";
     const elapsedTimeMode = this.config.elapsed_time_mode || "dim";
@@ -2936,8 +3082,8 @@ class TaskMateChildCard extends LitElement {
         design === "console"  ? this._designConsole(child, rows, remaining, tone) :
                                 this._designCleanpro(child, rows, remaining, tone);
 
-    return html`<ha-card class="tmd" style="--hd:${hd}">
-      ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints)}
+    return html`<ha-card class="tmd ${this._compact() ? "compact" : ""}" style="--hd:${look.hd}${look.tint ? `;--tm-child:${look.tint}` : ""}">
+      ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints, look.season)}
       <div class="tmd-bd">
         ${this._renderBirthdayBanner(child, true)}
         ${this._renderInspectionBanners(child, true, attrs.points_name || this._t("common.stars"))}
@@ -2951,7 +3097,7 @@ class TaskMateChildCard extends LitElement {
           <div class="tmd-badges" @click=${() => this._openBadgesView()} title="${this._t("badges.label")}">
             <span class="lbl">${this._t("badges.label")}</span>
             ${earnedBadges.slice(0, 5).map(b => html`
-              <div class="tmd-badge-mini ${this._justEarnedBadge === window.__taskmate_badge_id(b) ? "just-earned" : ""}"
+              <div class="tmd-badge-mini ${this._justEarnedBadge === _badgeId(b) ? "just-earned" : ""}"
                 style="--t:${this._tierColor(b.tier)}">
                 <ha-icon icon="${b.icon || "mdi:medal"}"></ha-icon>
               </div>`)}
@@ -2981,9 +3127,12 @@ class TaskMateChildCard extends LitElement {
             </div>
           </div>` : ""}
         ${this._renderCareBlocks(child, "tmd")}
-        ${sectionLine}
+        ${this._renderDayTabs(child, allChores, "tmd")}
+        ${this._showingTomorrow(child, allChores)
+          ? this._renderTomorrow(child, allChores, "tmd")
+          : html`${sectionLine}
         ${this._renderRoulette(child, childChores, pointsIcon)}
-        ${body}
+        ${body}`}
         ${this._renderMoodStrip(child, ...this._moodCounts(childChores, child, todaysCompletions), "tmd")}
         ${this._renderSwappable(allChores, child, pointsIcon)}
       </div>
@@ -3011,7 +3160,7 @@ class TaskMateChildCard extends LitElement {
   }
 
   /** Designed header: avatar/title, remaining pill, pending-points chip. */
-  _designHeaderFull(child, design, remaining, total, tone, pendingPoints) {
+  _designHeaderFull(child, design, remaining, total, tone, pendingPoints, season = null) {
     const title = design === "console"
       ? `${(child.name || "").toUpperCase()} · ${this._t("child.todays_chores").toUpperCase()}`
       : this._t("points_display.single_title", { name: child.name });
@@ -3025,13 +3174,16 @@ class TaskMateChildCard extends LitElement {
     const opts = child.avatar_options || [];
     const canChange = this.config.allow_avatar_change !== false
       && opts.filter(o => o.unlocked).length > 1;
+    // A season dresses the band as a gradient — inline, so it wins over each
+    // design's own header background without touching the --hd colour.
     return html`
-      <div class="tmd-hd">
+      <div class="tmd-hd" style="${season ? `background:${season.grad}` : ""}">
         <div class="tmd-av-wrap ${canChange ? "avatar-clickable" : ""}"
              @click=${canChange ? () => this._toggleAvatarPicker() : null}
              title="${canChange ? this._t("child.avatar_change") : ""}">
-          ${this._av(child, tone, 34)}
+          ${this._av(child, tone, this._compact() ? 28 : 34)}
           ${canChange ? html`<span class="tmd-av-edit"><ha-icon icon="mdi:pencil"></ha-icon></span>` : ""}
+          ${season ? html`<span class="tm-season-badge" aria-hidden="true">${season.emoji}</span>` : ""}
         </div>
         <span class="tt">${title}<small>${sub}</small></span>
         ${remaining === 0 && total > 0 ? html`<span class="pill">🎉</span>` : ""}
@@ -3067,9 +3219,11 @@ class TaskMateChildCard extends LitElement {
       : "";
     return html`
       ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || weeklyLabel || (r.team && !r.done)
+        || this._hasStreakOrReminder(r.chore, r.child, r.done)
         || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit || this._helpEnabled())) ? html`
         <div class="tmd-meta">
           ${r.boost && !r.done ? html`<span class="tmd-tag tm-boost-tag">⚡ ×${this._fmtMult(r.boost)}</span>` : ""}
+          ${this._choreStreakReminderTags(r.chore, r.child, r.done, "tmd-tag")}
           ${this._choreExtraTags(r.chore, r.done, "tmd-tag")}
           ${r.done ? "" : this._renderHelp(r.chore, r.child, "tmd-tag")}
           ${r.mandatory ? html`<span class="tmd-tag mandatory">⚠ ${this._t("child.mandatory")}</span>` : ""}
@@ -4412,6 +4566,9 @@ class TaskMateChildCard extends LitElement {
                 <span class="photo-badge">✍️ ${this._t('child.open_ended_tag')}</span>
               </div>
             ` : ''}
+            ${this._hasStreakOrReminder(chore, child, isCompletedForToday) ? html`
+              <div class="tm-tag-wrap">${this._choreStreakReminderTags(chore, child, isCompletedForToday, 'photo-badge')}</div>
+            ` : ''}
             ${(chore.estimated_minutes || chore.quantity_unit || this._helpEnabled()) && !isCompletedForToday ? html`
               <div class="tm-tag-wrap">${this._choreExtraTags(chore, false, 'photo-badge')}${this._renderHelp(chore, child, 'photo-badge')}</div>
             ` : ''}
@@ -4786,24 +4943,14 @@ class TaskMateChildCard extends LitElement {
     `;
   }
 
+  // The pieces come from the shared engine in taskmate-design.js, so the
+  // kiosk card plays exactly the same effects.
   _renderConfetti() {
-    const colors = ["#ff6b9d", "#9b59b6", "#3498db", "#2ecc71", "#f1c40f", "#e67e22"];
-
+    const fx = window.__taskmate_fx;
+    const effect = this._fxEffect || "confetti";
     return html`
-      <div class="confetti-container">
-        ${this._confetti.map((piece, index) => html`
-          <div
-            class="confetti"
-            style="
-              inset-inline-start: ${piece.x}%;
-              animation-delay: ${piece.delay}s;
-              background: ${colors[index % colors.length]};
-              border-radius: ${piece.round ? '50%' : '0'};
-              width: ${piece.size}px;
-              height: ${piece.size}px;
-            "
-          ></div>
-        `)}
+      <div class="confetti-container tm-fx tm-fx-${effect}" aria-hidden="true">
+        ${fx ? fx.render(html, { effect, pieces: this._confetti }, { tint: this._fxTint, label: this._t("child.fx_stamp") }) : ""}
       </div>
     `;
   }
@@ -4934,9 +5081,9 @@ class TaskMateChildCard extends LitElement {
         });
       }
 
-      // Trigger celebration!
+      // Trigger celebration! The child's own tick-off animation.
       this._celebrating = chore.id;
-      this._spawnConfetti();
+      this._spawnConfetti(child.celebration_style);
 
       // Play completion sound!
       // Use the chore's completion_sound, fall back to config default, then to 'coin'
@@ -5363,8 +5510,63 @@ class TaskMateChildCard extends LitElement {
   }
 
   /** Sick-day banner, make-it-right offers and the weekly goal, above the chores. */
+  _screenTime(mins) {
+    if (mins < 60) return this._t("child.screen_time_minutes", { m: mins });
+    return this._t("child.screen_time_hours", { h: Math.floor(mins / 60), m: mins % 60 });
+  }
+
+  /** "Saturday 08:00" for the jar's opening; Monday is day 0, as in Python. */
+  _jarOpens(jar) {
+    const day = Math.max(0, Math.min(6, Number(jar.day) || 0));
+    const d = new Date(2024, 0, 1 + day);
+    const name = d.toLocaleDateString(this.hass?.locale?.language || undefined, { weekday: "long" });
+    return `${name} ${jar.at || ""}`.trim();
+  }
+
+  async _saveScreenTime(child, minutes) {
+    const key = `screen_save_${child.id}`;
+    if (this._loading[key]) return;
+    this._loading = { ...this._loading, [key]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "save_screen_time", { child_id: child.id, minutes });
+      this._screenSave = null;
+    } catch (err) {
+      console.error("save_screen_time failed", err);
+    } finally {
+      this._loading = { ...this._loading, [key]: false };
+      this.requestUpdate();
+    }
+  }
+
   _renderCareBlocks(child, mode) {
     const parts = [];
+    // Praise notes sent with today's approvals ("Dad: Great job!").
+    if (this.config.show_praise !== false) {
+      for (const p of child.praise || []) {
+        parts.push(html`<div class="tm-care tm-care-praise" role="note">
+          <span class="ic">💬</span><span class="tm-praise-body"><b>${p.by || this._t("child.praise_grown_up")}:</b> ${p.note}<br><small>${p.chore_name}</small></span></div>`);
+      }
+    }
+    // Warning first: the yellow card before a penalty's points go.
+    for (const w of child.penalty_warnings || []) {
+      parts.push(html`<div class="tm-care tm-care-warning" role="status">
+        <span class="ic">🟨</span><span><b>${this._t("child.penalty_warning_title", { name: w.name })}</b><br>${this._t("child.penalty_warning_body", { points: w.points, points_name: this._pointsNameFor() })}</span></div>`);
+    }
+    // Sibling checks: a brother or sister's chore this child may check.
+    const bonus = Number(this._attrsNow().sibling_check_bonus) || 0;
+    for (const c of child.sibling_checks || []) {
+      const busy = !!this._loading[`check_${c.completion_id}`];
+      parts.push(html`<div class="tm-care tm-care-check" role="group" aria-label="${this._t("child.sibling_check_title", { name: c.child_name })}">
+        <span class="ic">👀</span>
+        <span class="tm-check-body"><b>${this._t("child.sibling_check_title", { name: c.child_name })}</b><br>${c.chore_name} · ${this._clockTime(c.completed_at)}${c.photo ? " · 📷" : ""}</span>
+        <span class="tm-check-btns">
+          <button type="button" class="tm-goal-change tm-check-ok" ?disabled=${busy} @click=${() => this._siblingCheck(child, c, "done")}>${bonus
+            ? this._t("child.sibling_check_done_bonus", { bonus }) : this._t("child.sibling_check_done")}</button>
+          <button type="button" class="tm-goal-change" ?disabled=${busy} @click=${() => this._siblingCheck(child, c, "not_yet")}>${this._t("child.sibling_check_not_yet")}</button>
+        </span>
+      </div>`);
+    }
     // Boost windows: a live boost's countdown banner, else the next one coming.
     const boosts = this._boosts(child);
     const live = boosts.find(b => b.status === "active");
@@ -5382,6 +5584,44 @@ class TaskMateChildCard extends LitElement {
       parts.push(html`<div class="tm-care tm-care-boost-next" role="note">
         <span class="ic">🕘</span><span>${this._t("child.boost_next", { time: this._boostStart(next), multiplier: this._fmtMult(next.multiplier), what: this._boostWhat(next) })}</span></div>`);
     }
+    // Screen-time bank: the balance, ticking down while a device is on.
+    const st = child.screen_time;
+    if (st && this.config.show_screen_time !== false) {
+      const mins = Math.max(0, Number(st.minutes) || 0);
+      const cls = mins <= 0 ? "out" : st.low ? "low" : "";
+      const title = mins <= 0 ? this._t("child.screen_time_out") : this._t("child.screen_time_left", { time: this._screenTime(mins) });
+      // Weekend jar: unused minutes can be put away until it opens.
+      const jar = st.jar && typeof st.jar === "object" ? st.jar : null;
+      const saved = jar ? Math.max(0, Number(jar.minutes) || 0) : 0;
+      const cap = jar ? Math.max(1, Number(jar.cap) || 1) : 1;
+      const saveable = jar ? Math.min(mins, cap - saved) : 0;
+      const sub = st.active && mins > 0 ? this._t("child.screen_time_watching")
+        : mins <= 0 ? this._t("child.screen_time_earn")
+        : saveable > 0 ? this._t("child.screen_time_save_hint") : this._t("child.screen_time_hint");
+      const allowance = Math.min(mins, Math.max(0, Number(st.allowance) || 0));
+      const pct = Math.min(100, Math.round((saved / cap) * 100));
+      const choosing = this._screenSave === child.id && saveable > 0;
+      parts.push(html`<div class="tm-care tm-care-screen ${cls}" role="status">
+        <span class="ic">📺</span>
+        <span class="tm-screen-body"><b>${title}</b><br>${sub}${allowance > 0
+          ? html`<span class="tm-screen-allow"> · ${this._t("child.screen_time_allowance_part", { time: this._screenTime(allowance) })}</span>` : ""}
+          ${choosing ? html`<span class="tm-screen-save-chips">
+            ${[10, 30].filter(m => m < saveable).map(m => html`<button type="button" class="tm-goal-chip"
+              @click=${() => this._saveScreenTime(child, m)}>${this._screenTime(m)}</button>`)}
+            <button type="button" class="tm-goal-chip on" @click=${() => this._saveScreenTime(child, saveable)}>${this._t("child.screen_time_save_all", { time: this._screenTime(saveable) })}</button>
+          </span>` : ""}
+          ${jar ? html`<span class="tm-screen-jar">
+            <span>🫙 ${_ltrNums(this._t("child.screen_time_jar", { saved, cap }))} · ${this._t("child.screen_time_jar_opens", { when: this._jarOpens(jar) })}</span>
+            <span class="tm-goal-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></span>
+          </span>` : ""}
+        </span>
+        ${st.active && mins > 0 ? html`<span class="tm-screen-live" aria-hidden="true"></span>` : ""}
+        ${saveable > 0 ? html`<button type="button" class="tm-goal-change tm-screen-save" aria-expanded="${choosing}"
+          ?disabled=${this._loading[`screen_save_${child.id}`]}
+          @click=${() => { this._screenSave = choosing ? null : child.id; this.requestUpdate(); }}>${this._t("child.screen_time_save")}</button>` : ""}
+      </div>`);
+    }
+    parts.push(...this._rewardExtraBlocks(child));
     if (child.sick_today) {
       parts.push(html`<div class="tm-care tm-care-sick" role="status">
         <span class="ic">🤒</span><span><b>${this._t("child.sick_title")}</b><br>${this._t("child.sick_body")}</span></div>`);
@@ -5397,7 +5637,7 @@ class TaskMateChildCard extends LitElement {
       const since = n <= 0 ? this._t("child.owed_today") : this._t(n === 1 ? "child.owed_days_one" : "child.owed_days", { count: n });
       parts.push(html`<div class="tm-care tm-care-owed" role="note">
         <span class="ic"><ha-icon icon="${o.reward_icon || "mdi:gift"}"></ha-icon></span>
-        <span class="tm-owed-body"><b>${this._t("child.owed_title")}</b><br>${o.reward_name} · ${since}</span>
+        <span class="tm-owed-body"><b>${o.from_name ? this._t("child.gift_title", { name: o.from_name, reward: o.reward_name }) : this._t("child.owed_title")}</b><br>${o.from_name ? since : html`${o.reward_name} · ${since}`}</span>
         <button type="button" class="tm-goal-change tm-owed-got" ?disabled=${this._loading[`owed_${o.claim_id}`]}
           @click=${() => this._gotReward(child, o)}>${this._t("child.owed_got_it")}</button>
       </div>`);
@@ -5446,8 +5686,164 @@ class TaskMateChildCard extends LitElement {
         </div>`);
       }
     }
-    if (!parts.length) return "";
-    return html`<div class="tm-care-wrap ${mode}">${parts}</div>${this._renderGoalSheet()}${this._renderAppealSheet()}`;
+    // The reminder sheet opens from a chore row, so it renders even with no strips.
+    if (!parts.length) return this._renderReminderSheet();
+    // The strips carry fixed light colours, so dark mode swaps in a dark set.
+    // Checked here rather than through data-tm-dark, which classic never gets.
+    const dark = !!(window.__taskmate_design && window.__taskmate_design.isDark && window.__taskmate_design.isDark(this.hass, this));
+    return html`<div class="tm-care-wrap ${mode} ${dark ? "dark" : ""}">${parts}</div>${this._renderGoalSheet()}${this._renderAppealSheet()}${this._renderReminderSheet()}`;
+  }
+
+  _clockTime(iso) {
+    const d = iso ? new Date(iso) : null;
+    if (!d || isNaN(d)) return "";
+    return d.toLocaleTimeString(this.hass?.locale?.language || undefined, { hour: "2-digit", minute: "2-digit" });
+  }
+
+  async _siblingCheck(child, check, verdict) {
+    const key = `check_${check.completion_id}`;
+    if (this._loading[key]) return;
+    this._loading = { ...this._loading, [key]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "sibling_check", { child_id: child.id, completion_id: check.completion_id, verdict });
+    } catch (err) {
+      console.error("sibling_check failed", err);
+      this._loading = { ...this._loading, [key]: false };
+    }
+    this.requestUpdate();
+  }
+
+  /* ── Per-chore streaks and child-chosen reminders ───────────────────── */
+
+  _remindersOn() {
+    return !!this._attrsNow().chore_reminders && this.config.show_reminders !== false && this.config.pre_reader !== true;
+  }
+
+  _hasStreakOrReminder(chore, child, done) {
+    if ((Number((child.chore_streaks || {})[chore.id]) || 0) >= 2) return true;
+    return !done && this._remindersOn();
+  }
+
+  /** "🔥 4 days" and "🔔 17:30" on a chore row — shared by the classic and designed rows. */
+  _choreStreakReminderTags(chore, child, done, cls) {
+    const streak = Number((child.chore_streaks || {})[chore.id]) || 0;
+    const time = (child.reminders || {})[chore.id] || "";
+    return html`
+      ${streak >= 2 ? html`<span class="${cls} tm-streak-tag" title="${this._t("child.chore_streak_title", { count: streak })}">🔥 ${this._t("child.chore_streak_days", { count: streak })}</span>` : ""}
+      ${!done && this._remindersOn() ? html`<button type="button" class="${cls} tm-help-btn tm-remind-btn"
+        aria-label="${this._t("child.reminder_title", { chore: chore.name })}"
+        @click=${(e) => { e.stopPropagation(); this._openReminderSheet(chore, child); }}>🔔${time ? ` ${time}` : ""}</button>` : ""}`;
+  }
+
+  _toMinutes(hhmm) {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || "");
+    return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+  }
+
+  _fromMinutes(mins) {
+    return `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
+  }
+
+  /** On-the-hour times between the parent's bounds (every two hours on a long span). */
+  _reminderPresets(bounds) {
+    const lo = this._toMinutes(bounds.earliest) ?? 900;
+    const hi = this._toMinutes(bounds.latest) ?? 1200;
+    const step = hi - lo > 360 ? 120 : 60;
+    const out = [];
+    for (let m = Math.ceil(lo / 60) * 60; m <= hi && out.length < 6; m += step) out.push(this._fromMinutes(m));
+    return out.length ? out : [this._fromMinutes(lo)];
+  }
+
+  _openReminderSheet(chore, child) {
+    const bounds = this._attrsNow().chore_reminders || {};
+    const current = (child.reminders || {})[chore.id] || "";
+    this._reminderSheet = { chore, child, current, custom: current || bounds.earliest || "17:00" };
+    this.requestUpdate();
+  }
+
+  _renderReminderSheet() {
+    const sheet = this._reminderSheet;
+    if (!sheet) return "";
+    const bounds = this._attrsNow().chore_reminders || {};
+    const close = () => { this._reminderSheet = null; this.requestUpdate(); };
+    return html`
+      <div class="photo-overlay" @click=${close}>
+        <div class="photo-sheet tm-remind-sheet" role="dialog" aria-modal="true" aria-label="${this._t("child.reminder_title", { chore: sheet.chore.name })}" @click=${(e) => e.stopPropagation()}>
+          <div class="photo-title">🔔 ${this._t("child.reminder_title", { chore: sheet.chore.name })}</div>
+          <div class="photo-dropzone-hint">${this._t("child.reminder_hint", { earliest: bounds.earliest || "", latest: bounds.latest || "" })}</div>
+          <div class="tm-goal-chips">
+            ${this._reminderPresets(bounds).map(t => html`<button type="button" class="tm-goal-chip ${t === sheet.current ? "on" : ""}"
+              ?disabled=${sheet.saving} @click=${() => this._saveReminder(t)}>${t}</button>`)}
+          </div>
+          <div class="tm-remind-custom">
+            <label>${this._t("child.reminder_pick")}
+              <input type="time" class="tm-remind-time" .value=${sheet.custom} min="${bounds.earliest || ""}" max="${bounds.latest || ""}"
+                     @input=${(e) => { sheet.custom = e.target.value; }}>
+            </label>
+          </div>
+          <div class="photo-btn-row">
+            ${sheet.current ? html`<button class="photo-btn ghost" ?disabled=${sheet.saving} @click=${() => this._saveReminder("")}>${this._t("child.reminder_clear")}</button>`
+              : html`<button class="photo-btn ghost" @click=${close}>${this._t("child.photo_cancel")}</button>`}
+            <button class="photo-btn primary" ?disabled=${sheet.saving} @click=${() => this._saveReminder(sheet.custom)}>🔔 ${this._t("child.reminder_save")}</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  async _saveReminder(time) {
+    const sheet = this._reminderSheet;
+    if (!sheet || sheet.saving) return;
+    sheet.saving = true;
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "set_chore_reminder", { child_id: sheet.child.id, chore_id: sheet.chore.id, time: time || "" });
+      this._reminderSheet = null;
+    } catch (err) {
+      console.error("set_chore_reminder failed", err);
+      sheet.saving = false;
+      sheet.error = String(err?.message || err);
+    }
+    this.requestUpdate();
+  }
+
+  /* ── Tomorrow preview ────────────────────────────────────────────────── */
+
+  /** Tomorrow's chores, from the backend's own schedule maths. */
+  _tomorrowChores(child, allChores) {
+    if (this.config.show_tomorrow === false || this.config.pre_reader === true) return [];
+    const byId = new Map((allChores || []).map(c => [c.id, c]));
+    return (child.tomorrow || []).map(id => byId.get(id)).filter(Boolean);
+  }
+
+  _showingTomorrow(child, allChores) {
+    return this._dayTab === "tomorrow" && this._tomorrowChores(child, allChores).length > 0;
+  }
+
+  _renderDayTabs(child, allChores, mode) {
+    if (!this._tomorrowChores(child, allChores).length) return "";
+    const on = this._showingTomorrow(child, allChores);
+    const day = new Date(Date.now() + 86400000).toLocaleDateString(this.hass?.locale?.language || undefined, { weekday: "short" });
+    const pick = (tab) => { this._dayTab = tab; this.requestUpdate(); };
+    return html`<div class="tm-day-tabs ${mode}" role="tablist">
+      <button type="button" role="tab" class="tm-day-tab ${on ? "" : "on"}" aria-selected="${on ? "false" : "true"}" @click=${() => pick("today")}>${this._t("child.tab_today")}</button>
+      <button type="button" role="tab" class="tm-day-tab ${on ? "on" : ""}" aria-selected="${on ? "true" : "false"}" @click=${() => pick("tomorrow")}>${this._t("child.tab_tomorrow", { day })}</button>
+    </div>`;
+  }
+
+  /** Tomorrow's chores, read-only: nothing here can be ticked until the day. */
+  _renderTomorrow(child, allChores, mode) {
+    const chores = this._tomorrowChores(child, allChores);
+    return html`<div class="tm-tomorrow ${mode}" role="tabpanel">
+      ${chores.map(c => html`
+        <div class="tm-tomorrow-row" aria-disabled="true" title="${this._t("child.tomorrow_locked")}">
+          <span class="tm-tomorrow-glyph">${this._choreGlyph(c)}</span>
+          <span class="tm-tomorrow-mid"><span class="tm-tomorrow-name">${c.name}</span>
+            <small>+${c.effective_points ?? c.points}${(child.reminders || {})[c.id] ? ` · 🔔 ${child.reminders[c.id]}` : ""}</small></span>
+          <ha-icon class="tm-tomorrow-lock" icon="mdi:lock-outline"></ha-icon>
+        </div>`)}
+      <div class="tm-tomorrow-hint">🔒 ${this._t("child.tomorrow_locked")}</div>
+    </div>`;
   }
 
   /* ── Boost windows ──────────────────────────────────────────────────── */
@@ -5590,6 +5986,96 @@ class TaskMateChildCard extends LitElement {
     return attrs.points_name || this._t("common.points");
   }
 
+  /* ── Reward extras ──────────────────────────────────────────────────── */
+
+  /** Points about to expire, gifts from a sibling, a reward to rate and the savings forecast. */
+  _rewardExtraBlocks(child) {
+    const out = [];
+    const exp = child.points_expiry;
+    if (exp && exp.points > 0) {
+      out.push(html`<div class="tm-care tm-care-expiry" role="status">
+        <span class="ic">⏳</span><span><b>${_ltrNums(this._t("child.expiry_title", { points: exp.points, points_name: this._pointsNameFor(child), day: this._dayLabel(exp.date) }))}</b><br>${this._t("child.expiry_body")}</span></div>`);
+    }
+    for (const g of child.gifts || []) {
+      out.push(html`<div class="tm-care tm-care-gift" role="note">
+        <span class="ic">🎁</span><span><b>${this._t("child.gift_title", { name: g.from_name, reward: g.reward_name })}</b><br>${this._t("child.gift_body")}</span></div>`);
+    }
+    const rate = (child.rate_rewards || [])[0];
+    if (rate) {
+      const busy = !!this._loading[`rate_${rate.claim_id}`];
+      out.push(html`<div class="tm-care tm-care-rate" role="group" aria-label="${this._t("child.rate_title", { reward: rate.reward_name })}">
+        <span class="ic"><ha-icon icon="${rate.reward_icon || "mdi:gift"}"></ha-icon></span>
+        <span class="tm-rate-body"><b>${this._t("child.rate_title", { reward: rate.reward_name })}</b></span>
+        <span class="tm-rate-stars">${[1, 2, 3].map((n) => html`<button type="button" class="tm-rate-star" ?disabled=${busy}
+          aria-label="${this._t("child.rate_stars", { count: n })}" @click=${() => this._rateReward(child, rate, n)}>☆</button>`)}</span>
+      </div>`);
+    }
+    const next = this._savingsForecast(child);
+    if (next) {
+      const r = next.reward;
+      // Only a picture uploaded through TaskMate's own image endpoint is shown.
+      const pic = typeof r.image_url === "string" && r.image_url.startsWith("/api/taskmate/image/") ? r.image_url : "";
+      out.push(html`<div class="tm-care tm-care-forecast" role="note">
+        <span class="ic">${pic ? html`<img class="tm-reward-pic" src="${pic}" alt="">` : html`<ha-icon icon="${r.icon || "mdi:gift"}"></ha-icon>`}</span>
+        <span class="tm-forecast-body"><b>${r.name} · ${_ltrNums(`${next.have}/${next.cost}`)}</b><br>📈 ${_ltrNums(this._t("child.forecast_body", { rate: next.rate, day: this._dayLabel(next.date) }))}</span>
+      </div>`);
+    }
+    return out;
+  }
+
+  /** "Thursday" within the week, else "12 Nov". Accepts an ISO date or a Date. */
+  _dayLabel(when) {
+    const d = when instanceof Date ? when : new Date(`${when}T12:00:00`);
+    if (isNaN(d)) return String(when || "");
+    const lang = this.hass?.locale?.language || undefined;
+    const days = Math.round((new Date(d).setHours(12, 0, 0, 0) - new Date().setHours(12, 0, 0, 0)) / 86400000);
+    return days >= 0 && days <= 6
+      ? d.toLocaleDateString(lang, { weekday: "long" })
+      : d.toLocaleDateString(lang, { day: "numeric", month: "short" });
+  }
+
+  /**
+   * "At your pace you'll have it on …": the cheapest reward this child can
+   * claim but can't afford yet, and when their last fortnight's average
+   * earning gets them there. Nothing when they earn ~0 or it's over 60 days off.
+   */
+  _savingsForecast(child) {
+    const rate = Number(child.earn_rate) || 0;
+    if (rate < 0.5) return null;
+    const have = Math.max(0, Number(child.spendable_balance ?? child.points) || 0);
+    const id = String(child.id);
+    let best = null;
+    for (const r of this._attrsNow().rewards || []) {
+      if (r.is_jackpot || r.pool_enabled || r.streak_freeze || r.is_available === false) continue;
+      const assigned = Array.isArray(r.assigned_to) ? r.assigned_to.map(String) : [];
+      if (assigned.length && !assigned.includes(id)) continue;
+      const cost = Number(r.calculated_costs?.[id] ?? r.cost) || 0;
+      if (cost <= have) continue;
+      if (!best || cost < best.cost) best = { reward: r, cost };
+    }
+    if (!best) return null;
+    const days = Math.ceil((best.cost - have) / rate);
+    if (days > 60) return null;
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return { ...best, have, rate: Math.max(1, Math.round(rate)), date };
+  }
+
+  async _rateReward(child, item, stars) {
+    const key = `rate_${item.claim_id}`;
+    if (this._loading[key]) return;
+    this._loading = { ...this._loading, [key]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", "rate_reward", { child_id: child.id, claim_id: item.claim_id, stars });
+    } catch (err) {
+      console.error("rate_reward failed", err);
+    } finally {
+      this._loading = { ...this._loading, [key]: false };
+      this.requestUpdate();
+    }
+  }
+
   async _gotReward(child, owed) {
     const key = `owed_${owed.claim_id}`;
     if (this._loading[key]) return;
@@ -5615,10 +6101,15 @@ class TaskMateChildCard extends LitElement {
     let seen;
     try { seen = JSON.parse(window.localStorage.getItem(KEY) || "[]") || []; } catch (e) { seen = []; }
     if (!Array.isArray(seen)) seen = [];
-    const ids = fresh.map((k) => `${child.id}:${k}:${(child.personal_bests[k] || {}).date || ""}`).filter((id) => !seen.includes(id));
+    // Also remembered in memory: where storage is blocked (some private modes)
+    // the write below fails, and without this every update replayed it.
+    const mem = (window.__taskmate_records_seen ||= new Set());
+    const ids = fresh.map((k) => `${child.id}:${k}:${(child.personal_bests[k] || {}).date || ""}`)
+      .filter((id) => !seen.includes(id) && !mem.has(id));
     if (!ids.length) return;
+    ids.forEach((id) => mem.add(id));
     seen.push(...ids);
-    try { window.localStorage.setItem(KEY, JSON.stringify(seen.slice(-60))); } catch (e) { /* private mode: plays each load */ }
+    try { window.localStorage.setItem(KEY, JSON.stringify(seen.slice(-60))); } catch (e) { /* private mode: once per page load */ }
     this._spawnConfetti();
   }
 
@@ -6136,17 +6627,47 @@ class TaskMateChildCard extends LitElement {
       </div>`;
   }
 
-  _spawnConfetti() {
-    const confetti = [];
-    for (let i = 0; i < 50; i++) {
-      confetti.push({
+  /**
+   * How this child's card is dressed. Header: an explicit header_color wins,
+   * else the child's own colour (#1078), else `fallback`; the colour is made
+   * legible under white text for the design. `tint` is the child's colour when
+   * it applies (progress bars, confetti). A season (on in Settings, not opted
+   * out with `seasonal: false`) lays its gradient over the header.
+   */
+  _look(child, attrs, design, fallback) {
+    const d = window.__taskmate_design;
+    const own = !this._explicitHeader && child && child.color && d && d.childColour
+      ? d.childColour(child.color, design) : "";
+    const season = window.__taskmate_season ? window.__taskmate_season(attrs, this.config) : null;
+    return { hd: own || _safeColor(this.config?.header_color, fallback), tint: own, season };
+  }
+
+  /** `density: compact` slims the rows so more fit on a phone. */
+  _compact() {
+    return this.config?.density === "compact";
+  }
+
+  /* `style` is the child's own tick-off animation (celebration_style); every
+     other celebration passes none and gets the season's effect or confetti. */
+  _spawnConfetti(style) {
+    const fx = window.__taskmate_fx;
+    const attrs = this._attrsNow ? this._attrsNow() : {};
+    const child = (attrs.children || []).find(c => c.id === this.config?.child_id);
+    const look = this._look(child, attrs, this.getAttribute?.("data-tm-design") || "classic", "");
+    this._fxTint = look.tint;
+    if (fx) {
+      const burst = fx.spawn(fx.pick(style, look.season));
+      this._fxEffect = burst ? burst.effect : "confetti";
+      this._confetti = burst ? burst.pieces : [];
+    } else {
+      this._fxEffect = "confetti";
+      this._confetti = Array.from({ length: 50 }, () => ({
         x: Math.random() * 100,
         delay: Math.random() * 0.5,
         size: Math.random() * 8 + 6,
         round: Math.random() > 0.5,
-      });
+      }));
     }
-    this._confetti = confetti;
 
     // Clear confetti after animation
     setTimeout(() => {
@@ -6326,6 +6847,19 @@ class TaskMateChildCardEditor extends LitElement {
         },
       },
       {
+        name: 'density',
+        selector: {
+          select: {
+            options: [
+              { value: 'normal', label: this._t('child.editor.density_normal') },
+              { value: 'compact', label: this._t('child.editor.density_compact') },
+            ],
+            mode: 'dropdown',
+          },
+        },
+      },
+      { name: 'seasonal', selector: { boolean: {} } },
+      {
         name: 'due_days_mode',
         selector: {
           select: {
@@ -6412,6 +6946,7 @@ class TaskMateChildCardEditor extends LitElement {
       { name: 'show_personal_bests', selector: { boolean: {} } },
       { name: 'show_boost_alert', selector: { boolean: {} } },
       { name: 'show_appeals', selector: { boolean: {} } },
+      { name: 'show_screen_time', selector: { boolean: {} } },
       { name: 'show_description', selector: { boolean: {} } },
       { name: 'pre_reader', selector: { boolean: {} } },
       { name: 'pre_reader_labels', selector: { boolean: {} } },
@@ -6427,6 +6962,8 @@ class TaskMateChildCardEditor extends LitElement {
       child_id: this._t('child.editor.child'),
       time_category: this._t('child.editor.time_category'),
       card_design: this._t('common.design.field_label'),
+      density: this._t('child.editor.density'),
+      seasonal: this._t('child.editor.seasonal'),
       due_days_mode: this._t('child.editor.chores_not_due_today'),
       recurrence_done_mode: this._t('child.editor.recurring_when_completed'),
       first_come_claimed_mode: this._t('child.editor.first_come_when_completed'),
@@ -6442,6 +6979,7 @@ class TaskMateChildCardEditor extends LitElement {
       show_personal_bests: this._t('child.editor.show_personal_bests'),
       show_boost_alert: this._t('child.editor.show_boost_alert'),
       show_appeals: this._t('child.editor.show_appeals'),
+      show_screen_time: this._t('child.editor.show_screen_time'),
       show_description: this._t('child.editor.show_description'),
       pre_reader: this._t('child.editor.pre_reader'),
       pre_reader_labels: this._t('child.editor.pre_reader_labels'),
@@ -6457,6 +6995,8 @@ class TaskMateChildCardEditor extends LitElement {
       entity: this._t('common.editor.overview_entity_helper'),
       child_id: this._t('child.editor.child_helper'),
       time_category: this._t('child.editor.time_category_helper'),
+      density: this._t('child.editor.density_helper'),
+      seasonal: this._t('child.editor.seasonal_helper'),
       due_days_mode: this._t('child.editor.due_days_helper'),
       recurrence_done_mode: this._t('child.editor.recurrence_helper'),
       first_come_claimed_mode: this._t('child.editor.first_come_helper'),
@@ -6477,6 +7017,8 @@ class TaskMateChildCardEditor extends LitElement {
       child_id: this.config.child_id || '',
       time_category: this.config.time_category || 'morning',
       card_design: this.config.card_design || 'global',
+      density: this.config.density || 'normal',
+      seasonal: this.config.seasonal !== false,
       due_days_mode: this.config.due_days_mode || 'hide',
       recurrence_done_mode: this.config.recurrence_done_mode || 'dim',
       first_come_claimed_mode: this.config.first_come_claimed_mode || 'hide',
@@ -6492,6 +7034,7 @@ class TaskMateChildCardEditor extends LitElement {
       show_personal_bests: this.config.show_personal_bests !== false,
       show_boost_alert: this.config.show_boost_alert !== false,
       show_appeals: this.config.show_appeals !== false,
+      show_screen_time: this.config.show_screen_time !== false,
       show_description: this.config.show_description === true,
       pre_reader: this.config.pre_reader === true,
       pre_reader_labels: this.config.pre_reader_labels === true,
@@ -6524,7 +7067,8 @@ class TaskMateChildCardEditor extends LitElement {
       resetLabel: this._t('common.reset'),
       onInput: (v) => this._updateConfig(key, v),
       onPreset: (v) => this._updateConfig(key, v),
-      onReset: () => this._updateConfig(key, defaultValue),
+      // Reset drops the key, so the child's own colour (#1078) applies again.
+      onReset: () => this._updateConfig(key, undefined),
     });
   }
 
@@ -6534,8 +7078,8 @@ class TaskMateChildCardEditor extends LitElement {
     for (const [key, value] of Object.entries(newValues)) {
       const defaults = {
         show_countdown: true, show_minutes_left: true, show_help_button: true, show_mood: true, show_weekly_goal: true,
-        show_personal_bests: true, show_boost_alert: true, show_appeals: true,
-        show_description: false, debug: false,
+        show_personal_bests: true, show_boost_alert: true, show_appeals: true, show_screen_time: true,
+        show_description: false, debug: false, density: 'normal', seasonal: true,
         time_category: 'morning', due_days_mode: 'hide',
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',
         first_come_claimed_mode: 'hide', set_times_layout: 'family',

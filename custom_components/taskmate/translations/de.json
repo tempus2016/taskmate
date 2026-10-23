@@ -194,6 +194,10 @@
         "rating": {
           "name": "Qualitätsbewertung",
           "description": "Optionale Bewertung mit 1-3 Sternen, wie gut die Aufgabe erledigt wurde. Bei aktivierten Qualitätsbewertungen werden die Punkte mit dem Multiplikator dieses Sterns skaliert; leer lassen, um 100 % zu vergeben."
+        },
+        "note": {
+          "name": "Lob",
+          "description": "Optionale kurze Nachricht für das Kind, die heute auf seiner Karte erscheint (bis zu 120 Zeichen)."
         }
       }
     },
@@ -266,6 +270,10 @@
         "child_id": {
           "name": "Kinder-ID",
           "description": "Die ID des Kindes, das die Belohnung beansprucht"
+        },
+        "recipient_id": {
+          "name": "Empfänger-ID",
+          "description": "Stattdessen für einen Bruder oder eine Schwester kaufen. Das einlösende Kind zahlt; „Kinder können sich gegenseitig Belohnungen kaufen“ muss eingeschaltet sein."
         }
       }
     },
@@ -1558,6 +1566,96 @@
           "description": "Optionale Worte für das Kind, bis zu 200 Zeichen"
         }
       }
+    },
+    "adjust_screen_time": {
+      "name": "Bildschirmzeit anpassen",
+      "description": "Minuten zum Bildschirmzeit-Guthaben eines Kindes hinzufügen oder mit einer negativen Zahl abziehen.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das Kind, dessen Guthaben sich ändert"
+        },
+        "minutes": {
+          "name": "Minuten",
+          "description": "Hinzuzufügende Minuten; negativ zum Abziehen. Das Guthaben fällt nie unter null."
+        },
+        "reason": {
+          "name": "Grund",
+          "description": "Eine kurze Notiz für den Verlauf"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "Bildschirmzeit sparen",
+      "description": "Ungenutzte Bildschirmzeit-Minuten eines Kindes ins Wochenend-Glas legen. Zuerst das Tageskontingent, dann angesparte Minuten, bis das Glas voll ist.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das Kind, das die Minuten spart"
+        },
+        "minutes": {
+          "name": "Minuten",
+          "description": "Wie viele Minuten gespart werden. Leer lassen, um alles zu sparen, was hineinpasst."
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "Belohnung bewerten",
+      "description": "Das Kind gibt einer Belohnung, die es bekommen hat, 1 bis 3 Sterne. Sobald sie übergeben (oder bei ausgeschalteter Übergabe-Verfolgung genehmigt) ist, 3 Tage lang.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das Kind, das die Belohnung bekommen hat"
+        },
+        "claim_id": {
+          "name": "Einlösungs-ID",
+          "description": "Die bewertete Einlösung"
+        },
+        "stars": {
+          "name": "Sterne",
+          "description": "1 bis 3 Sterne"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "Geschwister-Check",
+      "description": "Ein Kind prüft die Aufgabe eines Geschwisters, die auf Freigabe wartet. done gibt sie frei und zahlt dem prüfenden Kind den Bonus; not_yet lässt sie mit einer Notiz für die Eltern warten.",
+      "fields": {
+        "child_id": {
+          "name": "ID des prüfenden Kindes",
+          "description": "Das Kind, das prüft (nicht das, das die Aufgabe erledigt hat)"
+        },
+        "completion_id": {
+          "name": "Erledigungs-ID",
+          "description": "Die wartende Erledigung, aus dem Attribut sibling_checks des prüfenden Kindes in sensor.taskmate_overview"
+        },
+        "verdict": {
+          "name": "Urteil",
+          "description": "done (sieht fertig aus) oder not_yet"
+        },
+        "note": {
+          "name": "Notiz",
+          "description": "Optionale Worte für die Eltern bei not_yet, bis zu 120 Zeichen"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "Aufgaben-Erinnerung setzen",
+      "description": "Ein Kind wählt, wann es an eine seiner Aufgaben erinnert werden möchte – innerhalb der frühesten und spätesten Zeit aus den TaskMate-Einstellungen. Leere Zeit löscht die Erinnerung.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das Kind, das erinnert werden möchte"
+        },
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die Aufgabe, an die erinnert werden soll"
+        },
+        "time": {
+          "name": "Uhrzeit",
+          "description": "HH:MM, z. B. 17:30. Leer löscht die Erinnerung."
+        }
+      }
     }
   },
   "entity": {
@@ -1630,7 +1728,17 @@
               "reward_delivered": "Belohnung übergeben",
               "personal_best": "Persönliche Bestleistung",
               "appeal_submitted": "Einspruch eingelegt",
-              "appeal_decided": "Einspruch entschieden"
+              "appeal_decided": "Einspruch entschieden",
+              "screen_time_low": "Bildschirmzeit fast aufgebraucht",
+              "screen_time_out": "Bildschirmzeit aufgebraucht",
+              "screen_time_changed": "Bildschirmzeit geändert",
+              "screen_time_saved": "Bildschirmzeit gespart",
+              "screen_time_jar_opened": "Bildschirmzeit-Glas geöffnet",
+              "points_expired": "Punkte verfallen",
+              "points_expiring": "Punkte verfallen bald",
+              "reward_rated": "Belohnung bewertet",
+              "penalty_warning": "Verwarnung vor Strafe",
+              "sibling_check": "Geschwister-Check"
             }
           }
         }
@@ -1646,7 +1754,9 @@
               "scheduled_change_applied": "Geplante Änderung angewendet",
               "raffle_drawn": "Verlosung gezogen",
               "boost_started": "Boost gestartet",
-              "boost_ended": "Boost beendet"
+              "boost_ended": "Boost beendet",
+              "bin_day": "Mülltag-Aufgabe",
+              "shopping_job": "Aufgabe von der Einkaufsliste"
             }
           }
         }

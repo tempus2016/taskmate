@@ -249,6 +249,17 @@ def _stress_coordinator():
     # No linked-account pictures in the fixture; the feature has its own tests.
     coord.child_avatar_image = MagicMock(return_value="")
     coord.week_progress = MagicMock(return_value={})
+    # Per-chore streaks, tomorrow, reminders, warnings and sibling checks
+    # have their own tests (test_chore_streaks_heatmap_tomorrow.py and friends).
+    coord.chore_streaks = MagicMock(return_value={})
+    coord.tomorrow_chore_ids = MagicMock(return_value=[])
+    coord.chore_reminders_for_child = MagicMock(return_value={})
+    coord.penalty_warnings_for_child = MagicMock(return_value=[])
+    coord.sibling_checks_for_child = MagicMock(return_value=[])
+    coord.chore_reminder_settings = MagicMock(return_value=None)
+    coord.sibling_checks_enabled = MagicMock(return_value=False)
+    coord.completion_heatmap = MagicMock(return_value={c.id: [3] * 42 for c in children})
+    coord.recent_sibling_checks = MagicMock(return_value=[])
     coord.storage = MagicMock()
     coord.storage.get_last_completed = MagicMock(return_value={"current": "2026-04-20T08:00:00Z"})
     return coord
@@ -289,6 +300,20 @@ def test_overview_slice_under_limit():
         "children": sensor_module._build_children_summary(coord, common),
     }
     _assert_slice_under_limit("taskmate_overview", scalars)
+
+
+def test_overview_slice_under_limit_with_every_chore_extra():
+    """Worst case for the per-chore extras: all 30 chores on a streak, all due
+    tomorrow, and reminders on a third of them, for every child."""
+    coord = _stress_coordinator()
+    common = sensor_module._compute_common(coord)
+    ids = [ch.id for ch in common["chores"]]
+    coord.chore_streaks = MagicMock(return_value={c.id: dict.fromkeys(ids, 12) for c in common["children"]})
+    coord.tomorrow_chore_ids = MagicMock(return_value=ids)
+    coord.chore_reminders_for_child = MagicMock(return_value=dict.fromkeys(ids[:10], "17:30"))
+    children = sensor_module._build_children_summary(coord, common)
+    assert children[0]["chore_streaks"] and children[0]["tomorrow"]
+    _assert_slice_under_limit("taskmate_overview", {"children": children})
 
 
 def test_chores_slice_under_limit():

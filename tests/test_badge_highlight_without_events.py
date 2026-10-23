@@ -79,7 +79,8 @@ def test_both_child_card_render_paths_highlight_the_new_badge():
     hits = [
         line
         for line in _src("taskmate-child-card.js").splitlines()
-        if "just-earned" in line and "__taskmate_badge_id" in line
+        # _badgeId wraps window.__taskmate_badge_id (with a cold-load fallback).
+        if "just-earned" in line and ("__taskmate_badge_id" in line or "_badgeId(" in line)
     ]
     assert len(hits) >= 2, (
         "expected the just-earned highlight on BOTH the classic and designed "

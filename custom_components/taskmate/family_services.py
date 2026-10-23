@@ -1,7 +1,7 @@
 """``taskmate.*`` services for help requests, moods, sick days, weekly goals, raffles and pets.
 
 Kept out of ``__init__.py`` like the wishlist and inspection services. A child
-may ask for help, log a mood, set their own weekly goal and buy raffle
+may ask for help, save screen time in their jar, log a mood, set their own weekly goal and buy raffle
 tickets for themselves (through the same linked-child gate as completing a
 chore); answering help, sick days and running raffles are parent actions.
 """
@@ -20,7 +20,10 @@ from .coord_appeals import APPEAL_KINDS, APPEAL_MESSAGE_MAX, APPEAL_NOTE_MAX
 from .coord_boosts import BOOST_MAX_MINUTES, BOOST_MAX_MULTIPLIER, BOOST_MIN_MULTIPLIER, BOOST_NAME_MAX
 from .coord_goals import WEEKLY_GOAL_MAX
 from .coord_pets import PET_NAME_MAX, PET_SPECIES
+from .coord_screen_time import SCREEN_TIME_MAX_MINUTES
+from .coord_sibling_checks import SIBLING_CHECK_VERDICTS
 from .coord_wellbeing import HELP_MESSAGE_MAX, MOODS
+from .models import PRAISE_NOTE_MAX
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,11 +40,21 @@ SERVICE_START_BOOST = "start_boost"
 SERVICE_APPEAL = "appeal"
 SERVICE_DECIDE_APPEAL = "decide_appeal"
 SERVICE_END_BOOST = "end_boost"
+SERVICE_ADJUST_SCREEN_TIME = "adjust_screen_time"
+SERVICE_SAVE_SCREEN_TIME = "save_screen_time"
+SERVICE_RATE_REWARD = "rate_reward"
+SERVICE_SIBLING_CHECK = "sibling_check"
+SERVICE_SET_CHORE_REMINDER = "set_chore_reminder"
 
 FAMILY_SERVICES: tuple[str, ...] = (
     SERVICE_MARK_REWARD_DELIVERED,
     SERVICE_START_BOOST,
     SERVICE_END_BOOST,
+    SERVICE_ADJUST_SCREEN_TIME,
+    SERVICE_SAVE_SCREEN_TIME,
+    SERVICE_RATE_REWARD,
+    SERVICE_SIBLING_CHECK,
+    SERVICE_SET_CHORE_REMINDER,
     SERVICE_APPEAL,
     SERVICE_DECIDE_APPEAL,
     SERVICE_REQUEST_HELP,
@@ -120,6 +133,29 @@ def async_register_family_services(
 
     async def end_boost(coordinator, call):
         await coordinator.async_end_boost(call.data["boost_id"])
+
+    async def adjust_screen_time(coordinator, call):
+        await coordinator.async_adjust_screen_time(
+            call.data["child_id"], call.data["minutes"], call.data.get("reason", "") or "automation"
+        )
+
+    async def save_screen_time(coordinator, call):
+        await coordinator.async_save_screen_time(call.data["child_id"], call.data.get("minutes"))
+
+    async def rate_reward(coordinator, call):
+        await coordinator.async_rate_reward(call.data["claim_id"], call.data["child_id"], call.data["stars"])
+
+    # Sibling check: ``child_id`` is the CHECKER, so the linked-child gate is
+    # theirs; the coordinator checks they may check that completion's child.
+    async def sibling_check(coordinator, call):
+        await coordinator.async_sibling_check(
+            call.data["child_id"], call.data["completion_id"], call.data["verdict"], call.data.get("note", "")
+        )
+
+    async def set_chore_reminder(coordinator, call):
+        await coordinator.async_set_chore_reminder(
+            call.data["child_id"], call.data["chore_id"], call.data.get("time", "")
+        )
 
     async def appeal(coordinator, call):
         await coordinator.async_appeal(
@@ -218,6 +254,58 @@ def async_register_family_services(
             },
         ),
         (SERVICE_END_BOOST, end_boost, False, {vol.Required("boost_id"): cv.string}),
+        (
+            SERVICE_ADJUST_SCREEN_TIME,
+            adjust_screen_time,
+            False,
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Required("minutes"): vol.All(
+                    vol.Coerce(int), vol.Range(min=-SCREEN_TIME_MAX_MINUTES, max=SCREEN_TIME_MAX_MINUTES)
+                ),
+                vol.Optional("reason", default=""): vol.All(cv.string, vol.Length(max=60)),
+            },
+        ),
+        (
+            SERVICE_SAVE_SCREEN_TIME,
+            save_screen_time,
+            True,
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Optional("minutes"): vol.All(vol.Coerce(int), vol.Range(min=1, max=SCREEN_TIME_MAX_MINUTES)),
+            },
+        ),
+        (
+            SERVICE_RATE_REWARD,
+            rate_reward,
+            True,
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Required("claim_id"): cv.string,
+                vol.Required("stars"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
+            },
+        ),
+        (
+            SERVICE_SIBLING_CHECK,
+            sibling_check,
+            True,
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Required("completion_id"): cv.string,
+                vol.Required("verdict"): vol.In(SIBLING_CHECK_VERDICTS),
+                vol.Optional("note", default=""): vol.All(cv.string, vol.Length(max=PRAISE_NOTE_MAX)),
+            },
+        ),
+        (
+            SERVICE_SET_CHORE_REMINDER,
+            set_chore_reminder,
+            True,
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Required("chore_id"): cv.string,
+                vol.Optional("time", default=""): vol.Any("", vol.Match(r"^([01]\d|2[0-3]):[0-5]\d$")),
+            },
+        ),
         (
             SERVICE_APPEAL,
             appeal,

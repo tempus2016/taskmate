@@ -45,7 +45,12 @@ The entity's state is the time of the latest event. Its `event_type` attribute s
 | `weekly_target_reached` | Weekly target reached | `pet_evolved` | Pet grew up |
 | `quest_completed` | Quest completed | `reward_delivered` | Reward handed over |
 | `personal_best` | Personal best | `appeal_submitted` | Appeal submitted |
-| `appeal_decided` | Appeal decided | | |
+| `appeal_decided` | Appeal decided | `screen_time_low` | Screen time running low |
+| `screen_time_out` | Screen time ran out | `screen_time_changed` | Screen time changed |
+| `screen_time_saved` | Screen time saved | `screen_time_jar_opened` | Screen-time jar opened |
+| `points_expired` | Points expired | `points_expiring` | Points about to expire |
+| `reward_rated` | Reward rated | | |
+| `penalty_warning` | Penalty warning | `sibling_check` | Sibling check |
 
 An event about more than one child lands on each of their entities: a [gift of points](Gifting-Points.md) on both the giver's and the receiver's, a [teamwork chore](Teamwork-Chores.md) on everyone in the team.
 
@@ -60,6 +65,8 @@ An event about more than one child lands on each of their entities: a [gift of p
 | `raffle_drawn` | Raffle drawn |
 | `boost_started` | Boost started |
 | `boost_ended` | Boost ended |
+| `bin_day` | Bin-day chore |
+| `shopping_job` | Shopping-list job |
 
 Events tied to a notification (help requested, weekly goal reached, penalty earned back, pet grew up, raffle drawn) reach the entities whether or not that notification is switched on.
 

@@ -109,8 +109,8 @@ TaskMate fires Home Assistant bus events for most state changes. Trigger your ow
 
 | Event | Data fields |
 |-------|-------------|
-| `taskmate_reward_claimed` | `child_id`, `reward_id`, `claim_id`, `cost`, `timestamp` |
-| `taskmate_reward_approved` | `child_id`, `child_name`, `reward_id`, `reward_name`, `claim_id`, `cost`, `timestamp` |
+| `taskmate_reward_claimed` | `child_id`, `reward_id`, `claim_id`, `cost`, `recipient_id` (a gift only), `timestamp` — `child_id` is the buyer |
+| `taskmate_reward_approved` | `child_id`, `child_name`, `reward_id`, `reward_name`, `claim_id`, `cost`, `recipient_id` (a gift only), `timestamp` |
 | `taskmate_reward_rejected` | `child_id`, `child_name`, `reward_id`, `reward_name`, `claim_id`, `reason` (v6.0.0), `timestamp` |
 
 `claim_id` is the same across all three reward events, so a claim can be followed from request to outcome — see [External Lock-Screen Shops](External-Lock-Screen-Shops.md). Since v6.0.0, redeeming a [wish](Wishlist.md) runs through these same events, with an extra `wish_id`.
@@ -260,6 +260,18 @@ All auction events carry `auction_id`, `chore_id`, `chore_name`, `occurrence` (t
 | `taskmate_appeal_decided` | The same plus `overturned` and `note` — (v7.1.0) a parent decided an appeal |
 | `taskmate_boost_started` | `id`, `name`, `multiplier`, `chore_ids`, `child_ids`, `starts_at`, `ends_at`, `minutes`, `rule_id` (recurring only), `timestamp` — (v7.1.0) a [boost](Boost-Windows.md) went live |
 | `taskmate_boost_ended` | The same plus `ended_early` — (v7.1.0) a boost ran out or was ended |
+| `taskmate_screen_time_changed` | `child_id`, `child_name`, `delta`, `minutes`, `reward_id` (from a reward only), `timestamp` — a child's [screen-time](Screen-Time-Bank.md) balance went up or down |
+| `taskmate_screen_time_low` | `child_id`, `child_name`, `minutes`, `timestamp` — the balance reached the warning level. The notification's own event is `taskmate_screen_time_low_notification` |
+| `taskmate_screen_time_out` | `child_id`, `child_name`, `minutes`, `timestamp` — the balance ran out. The notification's own event is `taskmate_screen_time_out_notification` |
+| `taskmate_points_expiring` | `child_id`, `child_name`, `points`, `date`, `timestamp` — some of a child's points enter the warning window before [expiring](Points-Expiry.md) on `date`. The notification's own event is `taskmate_points_expiring_notification` |
+| `taskmate_points_expired` | `child_id`, `child_name`, `points`, `timestamp` — unspent points [expired](Points-Expiry.md) |
+| `taskmate_reward_rated` | `child_id`, `child_name`, `reward_id`, `reward_name`, `claim_id`, `rating` (1–3), `timestamp` — a child [rated a reward](Reward-Extras.md#rate-the-reward) they had |
+| `taskmate_penalty_warning` | `child_id`, `child_name`, `penalty_id`, `penalty_name`, `points`, `resets` (`daily` / `weekly`), `timestamp` — a [warn-first penalty](Penalty-Warnings.md) gave its warning instead of taking points |
+| `taskmate_sibling_check` | `child_id` and `child_name` (the checker), `checked_child_id`, `checked_child_name`, `chore_id`, `chore_name`, `completion_id`, `verdict` (`done` / `not_yet`), `bonus`, `note` (not yet only, when given), `timestamp` — a [sibling check](Sibling-Checks.md). A `done` also fires `taskmate_chore_approved` with `checked_by` |
+| `taskmate_bin_day` | `chore_id`, `chore_name`, `bin`, `kind` (`put_out` / `bring_in`), `child_ids`, `timestamp` — a [bin-day chore](Bin-Day-Chores.md) was added |
+| `taskmate_screen_time_saved` | `child_id`, `child_name`, `minutes`, `jar`, `balance`, `timestamp` — a child put minutes in their [screen-time jar](Screen-Time-Bank.md#weekend-jar) |
+| `taskmate_screen_time_jar_opened` | `child_id`, `child_name`, `minutes`, `balance`, `timestamp` — the jar opened and its minutes joined the balance. The notification's own event is `taskmate_screen_time_jar_opened_notification` |
+| `taskmate_shopping_job` | `kind` (`added` / `done` / `removed`), `chore_id`, `chore_name`, `item_uid`, `child_ids`, `timestamp` — a [shopping-list job](Shopping-List-Jobs.md) was raised, ticked off, or dropped because its item left the list |
 | `taskmate_personal_best` | `child_id`, `child_name`, `record`, `value`, `previous`, `date`, `timestamp` — (v7.1.0) a child beat one of their own records. `record` is `longest_streak`, `best_day_points`, `best_day_chores`, `best_week_points` or `best_single_award`. See [Personal Bests](Personal-Bests.md). The notification's own event is `taskmate_personal_best_notification` |
 | `taskmate_pet_evolved` | `child_id`, `child_name`, `pet_name`, `species`, `kind`, `news`, `recipients` (no `timestamp`), plus `pet_level` when `kind` is `level` — a [virtual pet](Virtual-Pets.md) reached something new. `kind` is `stage`, `legendary`, `egg` or `level`; `news` is the ready-made sentence |
 

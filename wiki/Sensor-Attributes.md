@@ -89,6 +89,12 @@ This is the main sensor. Its `extra_state_attributes` contain everything most ca
 | `weekly_goal` | object | (v7.0.0) The child's [weekly goal](Weekly-Goals.md) (`target`, `bonus`, `earned`, `reached`). Present only while weekly goals are on |
 | `redemptions` | list | (v7.0.0) Open [make-it-right](Make-It-Right-Penalties.md) offers (`id`, `chore_id`, `chore_name`, `penalty_name`, `points`, `expires`). Present only when there is one |
 | `owed_rewards` | list | (v7.1.0) Redeemed rewards still to hand over (`claim_id`, `reward_name`, `reward_icon`, `days_owed`). Present only while [reward fulfilment](Reward-Fulfilment.md) is on and something is owed |
+| `chore_streaks` | dict | `{chore_id: days}` — [per-chore streaks](Per-Chore-Streaks.md) of two days or more. Present only when there is one |
+| `tomorrow` | list | Chore ids due tomorrow, for the [tomorrow preview](Tomorrow-Preview.md). Present only when something is due |
+| `reminders` | dict | `{chore_id: "HH:MM"}` — the child's own [reminder times](Child-Chosen-Reminders.md), while the feature is on |
+| `praise` | list | Today's [praise notes](Praise-Notes.md), newest first, up to 3 (`chore_name`, `note`, `by`) |
+| `penalty_warnings` | list | [Penalty warnings](Penalty-Warnings.md) given this period and not yet spent (`penalty_id`, `name`, `points`) |
+| `sibling_checks` | list | Siblings' chores this child may [check](Sibling-Checks.md), up to 5 (`completion_id`, `child_id`, `child_name`, `chore_name`, `completed_at`, `photo`) |
 | `personal_bests` | object | (v7.1.0) The child's [records](Personal-Bests.md): one object per record key (`value`, `date`, plus `previous` on a record beaten today) and `new_today`, the keys beaten today. Present once there is a record |
 
 > Full field-by-field tables for `quests`, `challenges`, and `avatar_options` are in the [Sensor Reference](Sensor-Reference.md#children-array).

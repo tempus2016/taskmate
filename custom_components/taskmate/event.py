@@ -66,6 +66,16 @@ CHILD_EVENTS: dict[str, str] = {
     "personal_best": "taskmate_personal_best",
     "appeal_submitted": "taskmate_appeal_submitted",
     "appeal_decided": "taskmate_appeal_decided",
+    "screen_time_low": "taskmate_screen_time_low",
+    "screen_time_out": "taskmate_screen_time_out",
+    "screen_time_changed": "taskmate_screen_time_changed",
+    "screen_time_saved": "taskmate_screen_time_saved",
+    "screen_time_jar_opened": "taskmate_screen_time_jar_opened",
+    "points_expired": "taskmate_points_expired",
+    "points_expiring": "taskmate_points_expiring",
+    "reward_rated": "taskmate_reward_rated",
+    "penalty_warning": "taskmate_penalty_warning",
+    "sibling_check": "taskmate_sibling_check",
 }
 
 # Bus events about the whole family.
@@ -77,6 +87,8 @@ FAMILY_EVENTS: dict[str, str] = {
     "raffle_drawn": notification_event_name(NOTIF_TYPE_RAFFLE_DRAWN),
     "boost_started": "taskmate_boost_started",
     "boost_ended": "taskmate_boost_ended",
+    "bin_day": "taskmate_bin_day",
+    "shopping_job": "taskmate_shopping_job",
 }
 
 # Payload keys never copied onto the entity: they are long or internal.

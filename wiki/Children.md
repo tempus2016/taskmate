@@ -15,6 +15,8 @@ Access via the **TaskMate** panel → **Children**.
 | **Name** | Display name shown on all cards |
 | **Avatar** | MDI icon shown in the card header |
 | **Photo from** | *(v6.4.0)* Optional entity whose picture is shown instead of the avatar icon, usually the child's `person` entity. See [Child Photos](#child-photos) below. |
+| **Colour** | The child's colour in the admin panel, and the header, progress bars and confetti of their cards unless a card sets its own `header_color`. See [Card Looks](Card-Looks.md#the-childs-colour-on-their-cards). |
+| **Done animation** | What plays when this child ticks a chore off: confetti (default), stamp, fireworks or sticker peel. See [Card Looks](Card-Looks.md#done-animation-per-child). |
 | **Adult profile** | *(v6.4.0)* Marks the profile as a grown-up's: their chores are approved straight away, and family-wide cards leave them out unless asked. See [Adult Profiles](Adult-Profiles.md). |
 | **Availability Entity** | Optional HA entity (e.g. a `binary_sensor` or `input_boolean`). When the entity's state is not in the recognised "available" set, the child is treated as unavailable — chores with **Require Availability** enabled will skip them in rotation. |
 | **Availability Inverted** | Flips the availability logic — when enabled, recognised "available" states (`on`, `home`, `available`, `present`, `true`) mean the child is **unavailable** instead. Useful for entities like `binary_sensor.child_at_school` where `on` means the child is away. |

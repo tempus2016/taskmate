@@ -51,7 +51,7 @@ class FulfilmentMixin:
         """True for a reward a person has to hand over (not one TaskMate grants itself)."""
         if reward is None:
             return False
-        if getattr(reward, "streak_freeze", False):
+        if getattr(reward, "streak_freeze", False) or getattr(reward, "screen_minutes", 0):
             return False
         return not getattr(reward, "unlock_entity", "")
 
@@ -74,13 +74,14 @@ class FulfilmentMixin:
 
         Each entry is what a card needs to draw the row and mark it done; the
         child's face comes from the overview's children list, not from here.
+        A gift is owed to its recipient, and carries the buyer's name.
         """
         now = dt_util.now()
         out: list[dict[str, Any]] = []
         for claim in self._owed_claims():
-            if child_id and claim.child_id != child_id:
+            if child_id and claim.holder_id != child_id:
                 continue
-            child = self.get_child(claim.child_id)
+            child = self.get_child(claim.holder_id)
             reward = self.get_reward(claim.reward_id)
             if child is None or reward is None:
                 continue
@@ -99,6 +100,8 @@ class FulfilmentMixin:
                     "days_owed": days,
                 }
             )
+            if claim.recipient_id and (buyer := self.get_child(claim.child_id)):
+                out[-1]["from_name"] = buyer.name
         out.sort(key=lambda o: o["approved_at"])
         return out
 
@@ -109,8 +112,8 @@ class FulfilmentMixin:
             raise ValueError("That reward is not waiting to be handed over.")
         if claim.delivered_at is not None:
             raise ValueError("That reward has already been marked as delivered.")
-        if by == "child" and child_id != claim.child_id:
-            child = self.get_child(claim.child_id)
+        if by == "child" and child_id != claim.holder_id:
+            child = self.get_child(claim.holder_id)
             name = child.name if child else "someone else"
             raise ValueError(f"That reward belongs to {name}.")
         now = dt_util.now()
@@ -120,12 +123,12 @@ class FulfilmentMixin:
         await self.storage.async_save()
         if getattr(self, "notifications", None):
             await self.notifications.clear_approval(NOTIF_TYPE_REWARD_OWED, claim.id)
-        child = self.get_child(claim.child_id)
+        child = self.get_child(claim.holder_id)
         reward = self.get_reward(claim.reward_id)
         self.hass.bus.async_fire(
             "taskmate_reward_delivered",
             {
-                "child_id": claim.child_id,
+                "child_id": claim.holder_id,
                 "child_name": getattr(child, "name", ""),
                 "reward_id": claim.reward_id,
                 "reward_name": getattr(reward, "name", ""),
@@ -154,7 +157,7 @@ class FulfilmentMixin:
             last = claim.owed_reminded_at
             if last is not None and now - last < gap:
                 continue
-            child = self.get_child(claim.child_id)
+            child = self.get_child(claim.holder_id)
             reward = self.get_reward(claim.reward_id)
             if child is None or reward is None:
                 continue

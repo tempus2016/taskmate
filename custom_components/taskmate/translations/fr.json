@@ -194,6 +194,10 @@
         "rating": {
           "name": "Note de qualité",
           "description": "Note facultative de 1 à 3 étoiles sur la qualité du travail. Quand les notes de qualité sont activées, les points sont multipliés par le coefficient de cette note ; laissez vide pour verser 100 %."
+        },
+        "note": {
+          "name": "Mot de félicitations",
+          "description": "Court message facultatif pour l'enfant, affiché sur sa carte aujourd'hui (120 caractères maximum)."
         }
       }
     },
@@ -266,6 +270,10 @@
         "child_id": {
           "name": "ID de l'enfant",
           "description": "L'identifiant de l'enfant réclamant la récompense"
+        },
+        "recipient_id": {
+          "name": "ID du destinataire",
+          "description": "L'acheter plutôt pour un frère ou une sœur. L'enfant qui réclame paie ; nécessite d'activer « Les enfants peuvent s'offrir des récompenses »."
         }
       }
     },
@@ -1558,6 +1566,96 @@
           "description": "Mots facultatifs pour l’enfant, jusqu’à 200 caractères"
         }
       }
+    },
+    "adjust_screen_time": {
+      "name": "Ajuster le temps d’écran",
+      "description": "Ajoute des minutes au temps d’écran d’un enfant, ou en retire avec un nombre négatif.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l’enfant",
+          "description": "L’enfant dont le solde change"
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Minutes à ajouter ; négatif pour en retirer. Le solde ne descend jamais sous zéro."
+        },
+        "reason": {
+          "name": "Raison",
+          "description": "Une courte note pour l’historique"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "Garder du temps d'écran",
+      "description": "Met les minutes de temps d'écran non utilisées d'un enfant dans son bocal du week-end. L'allocation du jour passe d'abord, puis les minutes en réserve, jusqu'à la limite du bocal.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'enfant qui garde les minutes"
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Combien de minutes garder. Laisser vide pour garder tout ce qui rentre."
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "Noter une récompense",
+      "description": "L'enfant donne 1 à 3 étoiles à une récompense reçue. Une fois remise (ou approuvée si le suivi des remises est désactivé), pendant 3 jours.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'enfant qui a reçu la récompense"
+        },
+        "claim_id": {
+          "name": "ID de la demande",
+          "description": "La demande de récompense notée"
+        },
+        "stars": {
+          "name": "Étoiles",
+          "description": "1 à 3 étoiles"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "Vérification entre frères et sœurs",
+      "description": "Un enfant vérifie une tâche d'un frère ou d'une sœur en attente de validation. done la valide et verse le bonus à celui qui vérifie ; not_yet la laisse en attente d'un parent, avec une note.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant qui vérifie",
+          "description": "L'enfant qui vérifie (pas celui qui a fait la tâche)"
+        },
+        "completion_id": {
+          "name": "ID de réalisation",
+          "description": "La réalisation en attente, depuis l'attribut sibling_checks de l'enfant dans sensor.taskmate_overview"
+        },
+        "verdict": {
+          "name": "Verdict",
+          "description": "done (c'est fait) ou not_yet"
+        },
+        "note": {
+          "name": "Note",
+          "description": "Mots facultatifs pour le parent avec un not_yet, 120 caractères maximum"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "Programmer un rappel de tâche",
+      "description": "Un enfant choisit quand on lui rappelle une de ses tâches, entre l'heure la plus tôt et la plus tard fixées dans les réglages de TaskMate. Une heure vide supprime le rappel.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'enfant qui veut un rappel"
+        },
+        "chore_id": {
+          "name": "ID de la tâche",
+          "description": "La tâche à rappeler"
+        },
+        "time": {
+          "name": "Heure",
+          "description": "HH:MM, par ex. 17:30. Vide supprime le rappel."
+        }
+      }
     }
   },
   "entity": {
@@ -1630,7 +1728,17 @@
               "reward_delivered": "Récompense remise",
               "personal_best": "Record personnel",
               "appeal_submitted": "Appel envoyé",
-              "appeal_decided": "Appel décidé"
+              "appeal_decided": "Appel décidé",
+              "screen_time_low": "Temps d’écran bientôt épuisé",
+              "screen_time_out": "Temps d’écran épuisé",
+              "screen_time_changed": "Temps d’écran modifié",
+              "screen_time_saved": "Temps d'écran gardé",
+              "screen_time_jar_opened": "Bocal de temps d'écran ouvert",
+              "points_expired": "Points expirés",
+              "points_expiring": "Points bientôt expirés",
+              "reward_rated": "Récompense notée",
+              "penalty_warning": "Avertissement avant pénalité",
+              "sibling_check": "Vérification fraternelle"
             }
           }
         }
@@ -1646,7 +1754,9 @@
               "scheduled_change_applied": "Modification planifiée appliquée",
               "raffle_drawn": "Tombola tirée",
               "boost_started": "Boost lancé",
-              "boost_ended": "Boost terminé"
+              "boost_ended": "Boost terminé",
+              "bin_day": "Corvée des poubelles",
+              "shopping_job": "Tâche de la liste de courses"
             }
           }
         }

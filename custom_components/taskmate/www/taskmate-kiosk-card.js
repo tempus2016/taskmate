@@ -82,7 +82,6 @@ const CELEBRATE_MS = 4000;
 // How long the per-chore popup and its confetti stay up (#1039), as on the child card.
 const POPUP_MS = 2500;
 const CONFETTI_MS = 3500;
-const CONFETTI_COLOURS = ["#ff6b9d", "#9b59b6", "#3498db", "#2ecc71", "#f1c40f", "#e67e22"];
 const PIN_LENGTH = 4;
 const DEFAULT_AMBIENT_AFTER = 120;
 const AMBIENT_SLIDE_MS = 8000;
@@ -284,10 +283,20 @@ class TaskMateKioskCard extends LitElement {
     return design;
   }
 
+  /** Today's seasonal theme, unless this card opts out (`seasonal: false`). */
+  _season() {
+    return window.__taskmate_season ? window.__taskmate_season(this._attrs(), this.config) : null;
+  }
+
   /** The children on the picker, in the configured order. */
   _children() {
     const all = (this._attrs().children || []);
+    // The child's own colour (#1078) when they have one, else the palette.
+    const d = window.__taskmate_design;
+    const design = this.getAttribute?.("data-tm-design") || "classic";
     const tone = (c) => {
+      const own = c.color && d && d.childColour ? d.childColour(c.color, design) : "";
+      if (own) return own;
       const i = Math.max(0, all.findIndex(k => String(k.id) === String(c.id)));
       return `var(--tmd-c${(i % 6) + 1}, ${CHILD_FALLBACK[i % 6]})`;
     };
@@ -881,7 +890,7 @@ class TaskMateKioskCard extends LitElement {
     if (!this._online()) {
       // Home Assistant is out of reach: keep the tap, cheer anyway, send later.
       this._enqueue(child, chore);
-      this._cheer(chore);
+      this._cheer(chore, child);
       return;
     }
     this._busy = String(chore.id);
@@ -902,11 +911,11 @@ class TaskMateKioskCard extends LitElement {
           ...(chore._setTime ? { time_id: chore._setTime.id } : {}),
         });
       }
-      this._cheer(chore);
+      this._cheer(chore, child);
     } catch (err) {
       if (this._isConnectionError(err)) {
         this._enqueue(child, chore);
-        this._cheer(chore);
+        this._cheer(chore, child);
       } else {
         this._notify(String(err?.message || err));
       }
@@ -1300,12 +1309,13 @@ class TaskMateKioskCard extends LitElement {
 
   // ── Completion feedback (#1039) ──────────────────────────────────────────
 
-  /** The child card's reward for a tap: the chore's sound, confetti, a popup. */
-  _cheer(chore) {
+  /** The child card's reward for a tap: the chore's sound, the child's own
+   *  celebration (confetti unless they picked another), a popup. */
+  _cheer(chore, child) {
     if (this.config.play_sounds !== false) {
       this._playSound(chore.completion_sound || this.config.default_sound || "coin");
     }
-    if (this.config.show_confetti !== false) this._spawnConfetti();
+    if (this.config.show_confetti !== false) this._spawnConfetti(child);
     if (this.config.show_completion_popup !== false) {
       this._popup = { points: this._pointsFor(chore) };
       clearTimeout(this._popupTimer);
@@ -1321,13 +1331,25 @@ class TaskMateKioskCard extends LitElement {
     engine.play(name, this._attrs().custom_sounds || []);
   }
 
-  _spawnConfetti() {
-    this._confetti = Array.from({ length: 50 }, () => ({
-      x: Math.random() * 100,
-      delay: Math.random() * 0.5,
-      size: Math.random() * 8 + 6,
-      round: Math.random() > 0.5,
-    }));
+  /** The shared effect engine (taskmate-design.js), as on the child card:
+   *  the child's own style, else the season's, else confetti. */
+  _spawnConfetti(child = null) {
+    const fx = window.__taskmate_fx;
+    const own = child ? this._children().find(e => String(e.child.id) === String(child.id)) : null;
+    this._fxTint = own && own.child.color ? own.tone : "";
+    if (fx) {
+      const burst = fx.spawn(fx.pick(child && child.celebration_style, this._season()));
+      this._fxEffect = burst ? burst.effect : "confetti";
+      this._confetti = burst ? burst.pieces : [];
+    } else {
+      this._fxEffect = "confetti";
+      this._confetti = Array.from({ length: 50 }, () => ({
+        x: Math.random() * 100,
+        delay: Math.random() * 0.5,
+        size: Math.random() * 8 + 6,
+        round: Math.random() > 0.5,
+      }));
+    }
     clearTimeout(this._confettiTimer);
     this._confettiTimer = setTimeout(() => { this._confetti = []; }, CONFETTI_MS);
   }
@@ -1449,8 +1471,9 @@ class TaskMateKioskCard extends LitElement {
           <input id="km-photo" type="file" accept="image/*" hidden
                  @change=${e => this._bountyPhotoPicked(e)} @cancel=${() => this._photoCancelled()}>` : ""}
         ${this._confetti.length ? html`
-          <div class="km-confetti" aria-hidden="true">
-            ${this._confetti.map((p, i) => html`<i style="inset-inline-start:${p.x}%;animation-delay:${p.delay}s;background:${CONFETTI_COLOURS[i % CONFETTI_COLOURS.length]};border-radius:${p.round ? "50%" : "0"};width:${p.size}px;height:${p.size}px"></i>`)}
+          <div class="km-confetti tm-fx tm-fx-${this._fxEffect || "confetti"}" aria-hidden="true">
+            ${window.__taskmate_fx ? window.__taskmate_fx.render(html, { effect: this._fxEffect || "confetti", pieces: this._confetti },
+              { tint: this._fxTint, label: this._t("child.fx_stamp") }) : ""}
           </div>` : ""}
       </ha-card>
     `;
@@ -1562,10 +1585,14 @@ class TaskMateKioskCard extends LitElement {
     const next = showReward ? this._nextReward(child) : null;
     const levelPct = child.level_target ? Math.min(100, Math.round(((child.level_progress || 0) / child.level_target) * 100)) : 0;
 
+    const season = this._season();
     return html`
       <div class="km-child" style="--kc:${tone}">
-        <div class="km-head">
-          ${this._headAvatar(child, tone)}
+        <div class="km-head" style="${season ? `background:${season.grad}` : ""}">
+          <div class="km-face-wrap">
+            ${this._headAvatar(child, tone)}
+            ${season ? html`<span class="tm-season-badge" aria-hidden="true">${season.emoji}</span>` : ""}
+          </div>
           <div class="km-grow">
             <div class="km-head-name">${child.name}</div>
             ${showPoints && child.level ? html`
@@ -1574,7 +1601,7 @@ class TaskMateKioskCard extends LitElement {
                 <span class="km-level-track"><i style="width:${levelPct}%"></i></span>
               </div>` : ""}
           </div>
-          ${showPoints ? html`<div class="km-pts-pill"><ha-icon icon="${icon}"></ha-icon> ${child.points ?? 0}</div>` : ""}
+          ${showPoints ? html`<div class="km-pts-pill">${season ? html`<span aria-hidden="true">${season.emoji}</span>` : html`<ha-icon icon="${icon}"></ha-icon>`} ${child.points ?? 0}</div>` : ""}
           <button class="km-switch" @click=${() => this._toPicker()}>
             <span>${this._t("kiosk.switch", { name: child.name })}</span>
             <span class="km-ring" style="--p:${left / timeout}"><span>${left}</span></span>
@@ -2016,6 +2043,7 @@ class TaskMateKioskCard extends LitElement {
       .km-kid.blocked { opacity: 0.6; }
       .km-kid:disabled { cursor: progress; }
       .km-face-wrap { position: relative; }
+      .km-head .tm-season-badge { width: 28px; height: 28px; font-size: 18px; }
       .km-lock {
         position: absolute; inset-inline-end: 0; bottom: 4px;
         width: 40px; height: 40px; border-radius: 50%;
@@ -2366,14 +2394,9 @@ class TaskMateKioskCard extends LitElement {
       }
       .km-pop-pts ha-icon { --mdc-icon-size: 28px; }
       .km-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 4; }
-      .km-confetti i { position: absolute; top: 0; animation: km-confetti 3s linear forwards; }
       @keyframes km-fade { from { opacity: 0; } to { opacity: 1; } }
       @keyframes km-pop-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
       @keyframes km-star { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.2) rotate(10deg); } }
-      @keyframes km-confetti {
-        0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
-        100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-      }
       @media (prefers-reduced-motion: reduce) {
         .km-confetti { display: none; }
         .km-pop, .km-pop-card, .km-pop-stars { animation: none; }
@@ -2475,6 +2498,7 @@ class TaskMateKioskCardEditor extends LitElement {
       { name: "play_sounds", selector: { boolean: {} } },
       { name: "show_confetti", selector: { boolean: {} } },
       { name: "show_completion_popup", selector: { boolean: {} } },
+      { name: "seasonal", selector: { boolean: {} } },
       {
         name: "ambient_mode",
         selector: {
@@ -2514,6 +2538,7 @@ class TaskMateKioskCardEditor extends LitElement {
     play_sounds: this._t("kiosk.editor.play_sounds"),
     show_confetti: this._t("kiosk.editor.show_confetti"),
     show_completion_popup: this._t("kiosk.editor.show_completion_popup"),
+    seasonal: this._t("child.editor.seasonal"),
     ambient_mode: this._t("kiosk.editor.ambient_mode"),
     ambient_after: this._t("kiosk.editor.ambient_after"),
     show_raffle_draws: this._t("kiosk.editor.show_raffle_draws"),
@@ -2534,6 +2559,7 @@ class TaskMateKioskCardEditor extends LitElement {
     set_times_layout: this._t("common.set_times.layout_helper"),
     play_sounds: this._t("kiosk.editor.play_sounds_helper"),
     show_completion_popup: this._t("kiosk.editor.show_completion_popup_helper"),
+    seasonal: this._t("child.editor.seasonal_helper"),
   })[entry.name] ?? "";
 
   /** Every child, configured ones first in their order, each with shown/require_pin. */
@@ -2599,6 +2625,7 @@ class TaskMateKioskCardEditor extends LitElement {
       play_sounds: this.config.play_sounds !== false,
       show_confetti: this.config.show_confetti !== false,
       show_completion_popup: this.config.show_completion_popup !== false,
+      seasonal: this.config.seasonal !== false,
       ambient_mode: this.config.ambient_mode || "off",
       ambient_after: this.config.ambient_after ?? DEFAULT_AMBIENT_AFTER,
       show_raffle_draws: this.config.show_raffle_draws !== false,

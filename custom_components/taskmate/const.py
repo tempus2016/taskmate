@@ -313,6 +313,18 @@ DEFAULT_DIFFICULTY_MULTIPLIERS: Final = {"easy": 0.5, "medium": 1.0, "hard": 2.0
 # birthday (which would set off birthday mode on the wrong day).
 AGE_GROUPS: Final = ("3_5", "6_8", "9_12", "13_plus")
 
+# What the child card plays when this child ticks a chore off. "confetti" is the
+# default and is never stored on the overview sensor (16 KB cap).
+CELEBRATION_STYLES: Final = ("confetti", "stamp", "fireworks", "sticker")
+
+# Seasonal themes: the settings key that switches each on, and its window as
+# ((start month, day), (end month, day)), both ends inclusive. Off by default.
+SEASONS: Final = {
+    "halloween": ("seasonal_halloween", (10, 24), (10, 31)),
+    "christmas": ("seasonal_christmas", (12, 1), (12, 26)),
+    "summer": ("seasonal_summer", (6, 21), (8, 31)),
+}
+
 # --- Chore quality rating (#927) ---
 # When the "quality_rating_enabled" setting is on, a parent may rate an approval
 # 1-3 stars and the chore's base points are scaled by that star's multiplier
@@ -378,6 +390,15 @@ NOTIF_TYPE_BOOST_STARTED: Final = "boost_started"
 # Appeals: a child appealed a rejection or penalty; a parent decided it.
 NOTIF_TYPE_APPEAL_SUBMITTED: Final = "appeal_submitted"
 NOTIF_TYPE_APPEAL_DECIDED: Final = "appeal_decided"
+# Screen-time bank: a child's balance is running low / has run out.
+NOTIF_TYPE_SCREEN_TIME_LOW: Final = "screen_time_low"
+NOTIF_TYPE_SCREEN_TIME_OUT: Final = "screen_time_out"
+# Screen-time jar: a child's saved minutes were released into their balance.
+NOTIF_TYPE_SCREEN_TIME_JAR_OPENED: Final = "screen_time_jar_opened"
+# Points expiry: some of a child's points are about to expire.
+NOTIF_TYPE_POINTS_EXPIRING: Final = "points_expiring"
+# Child-chosen reminder: "remind me about homework at 17:30".
+NOTIF_TYPE_CHORE_SELF_REMINDER: Final = "chore_self_reminder"
 
 # Reward fulfilment (#1098): default days before parents are reminded a
 # redeemed reward is still owed (0 = never remind), and the most allowed.

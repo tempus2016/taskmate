@@ -51,6 +51,8 @@ class QuestsMixin:
     async def async_delete_quest(self, quest_id: str) -> None:
         if not self.storage.get_quest(quest_id):
             raise ValueError(f"Quest {quest_id} not found")
+        # Kept for 7 days so it can be restored with everyone's progress.
+        self._snapshot_quest(quest_id)
         self.storage.remove_quest(quest_id)
         await self.storage.async_save()
         await self.async_refresh()

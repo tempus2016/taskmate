@@ -896,7 +896,8 @@ class TaskMateApprovalsCard extends LitElement {
       items.push({
         kind: "claim",
         id: claimId,
-        title: claim.reward_name || "",
+        // A gift for a sibling: who it is for.
+        title: `${claim.reward_name || ""}${claim.recipient_name ? ` · 🎁 ${claim.recipient_name}` : ""}`,
         childName: claim.child_name || "",
         childId: claim.child_id,
         points: claim.cost ?? 0,
@@ -1278,7 +1279,7 @@ class TaskMateApprovalsCard extends LitElement {
         <div class="item-info">
           <span class="chore-name">
             <ha-icon icon="${claim.reward_icon || 'mdi:gift'}" style="--mdc-icon-size: 16px; vertical-align: -3px; margin-inline-end: 4px;"></ha-icon>
-            ${rewardName}
+            ${rewardName}${claim.recipient_name ? ` · 🎁 ${claim.recipient_name}` : ''}
           </span>
           <div class="item-details">
             <span class="child-name">
@@ -1983,6 +1984,16 @@ class TaskMateApprovalsCard extends LitElement {
     });
   }
 
+  // Praise note: an optional "well done" the child sees on their card.
+  _praiseChips() {
+    return ["praise.chip_well_done", "praise.chip_super_effort", "praise.chip_proud", "praise.chip_thank_you"].map(k => this._t(k));
+  }
+
+  _pickPraiseChip(text) {
+    const input = this.renderRoot && this.renderRoot.querySelector("#tm-review-praise");
+    if (input) input.value = text;
+  }
+
   _closeReview() {
     this._review = null;
     this.requestUpdate();
@@ -1995,10 +2006,14 @@ class TaskMateApprovalsCard extends LitElement {
     const points = Math.max(0, Math.round(Number(input && input.value) || 0));
     const completionId = review.completion.completion_id;
     const rating = this._ratingMultipliers() ? this._ratings[completionId] || 0 : 0;
+    const praiseInput = this.renderRoot && this.renderRoot.querySelector("#tm-review-praise");
+    const note = String((praiseInput && praiseInput.value) || "").trim().slice(0, 120);
     this._closeReview();
     // The typed award is paid as-is; a picked rating is recorded with it
     // (the stars above already rescaled the number the parent confirmed).
-    await this._callService("approve_chore", completionId, rating ? { points, rating } : { points });
+    await this._callService("approve_chore", completionId, {
+      points, ...(rating ? { rating } : {}), ...(note ? { note } : {}),
+    });
     if (rating) this._clearRating(completionId);
   }
 
@@ -2043,6 +2058,14 @@ class TaskMateApprovalsCard extends LitElement {
           <label class="tm-rv-label" for="tm-review-points">${this._t('approvals.award_label')}</label>
           <input id="tm-review-points" class="tm-rv-points" type="number"
                  min="0" max="9999" inputmode="numeric">
+
+          <label class="tm-rv-label" for="tm-review-praise">${this._t('praise.label')}</label>
+          <div class="tm-rj-chips">
+            ${this._praiseChips().map(c => html`
+              <button type="button" class="tm-rj-chip" @click="${() => this._pickPraiseChip(c)}">${c}</button>`)}
+          </div>
+          <input id="tm-review-praise" class="tm-rv-points tm-rj-input" type="text" maxlength="120"
+                 placeholder="${this._t('praise.placeholder')}">
 
           <div class="tm-rv-row">
             <button class="tm-rv-btn ghost" @click="${() => this._closeReview()}">

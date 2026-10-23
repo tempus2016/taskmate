@@ -131,6 +131,8 @@ Restock only makes sense for rewards with a limited **Quantity**. See [Managing 
 ## Related
 
 - [Reward Fulfilment](Reward-Fulfilment.md) — keep an approved reward on an owed list until it is handed over
+- [Limits, Gifts, Ratings & Vouchers](Reward-Extras.md) — once-a-week limits, reward pictures, buying for a sibling, star ratings, the savings forecast and printable vouchers
+- [Points Expiry](Points-Expiry.md) — optionally let unspent points fade away after a while
 - [Managing Rewards](Managing-Rewards.md) — create and edit rewards
 - [Pool Mode (Savings Jars)](Pool-Mode-(Savings-Jars).md) — the savings-jar feature
 - [Wishlist](Wishlist.md) — children save towards things they want, and the family can chip in

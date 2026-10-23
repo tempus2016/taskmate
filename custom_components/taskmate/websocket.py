@@ -69,6 +69,7 @@ from .const import (
     BOUNTY_DESCRIPTION_MAX_LENGTH,
     BOUNTY_POINTS_MAX,
     BOUNTY_TITLE_MAX_LENGTH,
+    CELEBRATION_STYLES,
     DEFAULT_NOTIFICATION_GROUP,
     DEFAULT_NOTIFICATION_NAV_URL,
     DEFAULT_TIME_PERIODS,
@@ -88,10 +89,22 @@ from .const import (
     recurrence_interval_days,
 )
 from .coord_auto_approve import AUTO_APPROVE_MAX_HOURS
+from .coord_bin_days import BIN_DAY_MAX_CALENDARS, BIN_DAY_MAX_POINTS, BIN_DAY_MODES
 from .coord_birthdays import normalize_birthday
 from .coord_boosts import BOOST_STACKING_MODES
 from .coord_inspections import INSPECTION_BONUS_MAX, INSPECTION_FAIL_MODES, INSPECTION_WINDOWS
 from .coord_pets import PET_BOOL_SETTINGS, PET_INT_SETTINGS
+from .coord_points_expiry import POINTS_EXPIRY_MAX_DAYS, POINTS_EXPIRY_MAX_WARN
+from .coord_screen_time import (
+    SCREEN_TIME_DOMAINS,
+    SCREEN_TIME_MAX_ALLOWANCE,
+    SCREEN_TIME_MAX_DEVICES,
+    SCREEN_TIME_MAX_MINUTES,
+    SCREEN_TIME_MAX_REWARD,
+    SCREEN_TIME_UNUSED_MODES,
+)
+from .coord_shopping_jobs import SHOPPING_JOB_MAX_POINTS, SHOPPING_JOB_MODES
+from .coord_sibling_checks import SIBLING_CHECK_MAX_BONUS
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
 from .models import (
@@ -99,8 +112,11 @@ from .models import (
     MAX_CHORE_TIME_POINTS,
     MAX_ESTIMATED_MINUTES,
     MAX_QUANTITY,
+    PRAISE_NOTE_MAX,
     QUANTITY_UNIT_MAX_LENGTH,
     REJECT_REASON_MAX,
+    REWARD_LIMIT_MAX,
+    REWARD_LIMIT_PERIODS,
     BonusSubTask,
     Reward,
     normalize_tag_ids,
@@ -266,6 +282,7 @@ _AUDIT_EXCLUDE: Final = {
     WS_TEMPLATES_GET,
     WS_TEMPLATES_EXPORT,
     WS_PRINT_CHART,
+    "taskmate/print/reward_voucher",
     WS_AUDIT_LIST,
     WS_AUDIT_CLEAR,
     WS_CONFIG_EXPORT,
@@ -278,6 +295,9 @@ _AUDIT_EXCLUDE: Final = {
     WS_REPORT_MOODS,
     WS_FEEDBACK_INFO,
     WS_SETUP_CATALOGUE,
+    # Panel tools: the read-only ones.
+    "taskmate/recently_deleted/list",
+    "taskmate/reports/economy",
 }
 
 
@@ -445,7 +465,10 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "chores": [_sign_chore_images(coordinator.hass, c) for c in data.get("chores", [])],
         "chore_display_order": list(data.get("chore_display_order", [])),
         "scheduled_changes": list(data.get("scheduled_changes", [])),
-        "rewards": list(data.get("rewards", [])),
+        "rewards": [
+            {**r, "image_url": images.sign_image_url(coordinator.hass, r["image_url"])} if r.get("image_url") else r
+            for r in data.get("rewards", [])
+        ],
         "penalties": list(data.get("penalties", [])),
         "bonuses": list(data.get("bonuses", [])),
         "task_groups": list(data.get("task_groups", [])),
@@ -507,6 +530,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "help_requests": coordinator.open_help_requests(),
         # Reward fulfilment (#1098): redeemed rewards still to be handed over.
         "owed_rewards": coordinator.owed_rewards(),
+        # Recently deleted chores, rewards and quests (no payloads).
+        "recently_deleted": coordinator.recently_deleted(),
         # Boost windows: live and upcoming boosts, the recurring rules, and
         # the tablets the Settings page can offer to wake.
         "boosts": coordinator.boosts_state(),
@@ -514,6 +539,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "appeals": coordinator.open_appeals(),
         "boost_rules": [dict(r) for r in coordinator.boost_rules()],
         "boost_wake_candidates": coordinator.boost_wake_candidates(),
+        # Screen-time bank: each child's balance, devices and recent changes.
+        "screen_time": coordinator.screen_time_state(),
         "sick_today": [c.id for c in coordinator.storage.get_children() if coordinator.is_sick_day(c.id)],
         "moods_today": {c.id: m for c in coordinator.storage.get_children() if (m := coordinator.mood_on(c.id))},
         "raffles": coordinator.all_raffles(),
@@ -557,6 +584,7 @@ async def _ws_get_state(hass, connection, msg, coordinator):
         vol.Optional("age_group", default=""): vol.In(("", *AGE_GROUPS)),
         vol.Optional("is_adult", default=False): bool,
         vol.Optional("color", default=""): validate_child_color,
+        vol.Optional("celebration_style", default="confetti"): vol.In(CELEBRATION_STYLES),
     }
 )
 @websocket_api.async_response
@@ -581,6 +609,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         age_group=msg.get("age_group", ""),
         is_adult=bool(msg.get("is_adult", False)),
         color=msg.get("color", ""),
+        celebration_style=msg.get("celebration_style", "confetti"),
     )
     connection.send_result(msg["id"], {"id": child.id})
 
@@ -604,6 +633,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         vol.Optional("age_group"): vol.In(("", *AGE_GROUPS)),
         vol.Optional("is_adult"): bool,
         vol.Optional("color"): validate_child_color,
+        vol.Optional("celebration_style"): vol.In(CELEBRATION_STYLES),
     }
 )
 @websocket_api.async_response
@@ -643,6 +673,8 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.is_adult = bool(msg["is_adult"])
     if "color" in msg:
         existing.color = msg["color"]
+    if "celebration_style" in msg:
+        existing.celebration_style = msg["celebration_style"]
     if "is_guest" in msg or "guest_expires_on" in msg:
         # Routed through the coordinator so the expiry is validated and an
         # archived guest is un-archived when promoted to a family member.
@@ -1315,6 +1347,10 @@ _REWARD_FIELDS = {
     "available_from",
     "available_until",
     "streak_freeze",
+    "screen_minutes",
+    "limit_count",
+    "limit_period",
+    "image_url",
 }
 
 
@@ -1341,6 +1377,10 @@ def _reward_payload_schema(*, require_name: bool):
         vol.Optional("available_from"): _validate_hhmm_or_empty,
         vol.Optional("available_until"): _validate_hhmm_or_empty,
         vol.Optional("streak_freeze"): bool,
+        vol.Optional("screen_minutes"): vol.All(vol.Coerce(int), vol.Range(min=0, max=SCREEN_TIME_MAX_REWARD)),
+        vol.Optional("limit_count"): vol.All(vol.Coerce(int), vol.Range(min=0, max=REWARD_LIMIT_MAX)),
+        vol.Optional("limit_period"): vol.In(REWARD_LIMIT_PERIODS),
+        vol.Optional("image_url"): _image_url_or_blank,
     }
 
 
@@ -1386,6 +1426,10 @@ async def _ws_add_reward(hass, connection, msg, coordinator):
         available_from=msg.get("available_from", "") or "",
         available_until=msg.get("available_until", "") or "",
         streak_freeze=msg.get("streak_freeze", False),
+        screen_minutes=msg.get("screen_minutes", 0),
+        limit_count=msg.get("limit_count", 0),
+        limit_period=msg.get("limit_period", "week"),
+        image_url=msg.get("image_url", "") or "",
     )
     coordinator.storage.add_reward(reward)
     await coordinator.storage.async_save()
@@ -1736,11 +1780,14 @@ async def _ws_delete_challenge(hass, connection, msg, coordinator):
 # ---------------------------------------------------------------------------
 
 # Make it right: the chore that earns a penalty back, how much, and how long for.
-_REDEMPTION_FIELDS = ("redemption_chore_id", "redemption_percent", "redemption_days")
+# Warning first: a warning before the points go, reset daily or weekly.
+_REDEMPTION_FIELDS = ("redemption_chore_id", "redemption_percent", "redemption_days", "warn_first", "warning_reset")
 _REDEMPTION_SCHEMA = {
     vol.Optional("redemption_chore_id"): str,
     vol.Optional("redemption_percent"): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
     vol.Optional("redemption_days"): vol.All(vol.Coerce(int), vol.Range(min=1, max=7)),
+    vol.Optional("warn_first"): bool,
+    vol.Optional("warning_reset"): vol.In(("daily", "weekly")),
 }
 
 
@@ -1830,8 +1877,11 @@ async def _ws_remove_penalty(hass, connection, msg, coordinator):
 @websocket_api.async_response
 @_admin_only
 async def _ws_apply_penalty(hass, connection, msg, coordinator):
-    await coordinator.async_apply_penalty(penalty_id=msg["penalty_id"], child_id=msg["child_id"])
-    connection.send_result(msg["id"], {"penalty_id": msg["penalty_id"], "child_id": msg["child_id"]})
+    warned = await coordinator.async_apply_penalty(penalty_id=msg["penalty_id"], child_id=msg["child_id"])
+    connection.send_result(
+        msg["id"],
+        {"penalty_id": msg["penalty_id"], "child_id": msg["child_id"], **({"warning": True} if warned else {})},
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -2082,6 +2132,10 @@ _SUBKEY_SETTINGS = {
     "streak_reset_mode",
     "card_design",
     "set_times_layout",
+    # Seasonal themes on the child and kiosk cards, each off by default.
+    "seasonal_halloween",
+    "seasonal_christmas",
+    "seasonal_summer",
     "weekend_multiplier",
     "birthday_points_multiplier",
     "birthday_chores_off",
@@ -2102,6 +2156,41 @@ _SUBKEY_SETTINGS = {
     "quality_rating_multiplier_2",
     "quality_rating_multiplier_3",
     "unlock_allowlist",
+    "screen_time_enabled",
+    "points_expiry_enabled",
+    "points_expiry_days",
+    "points_expiry_warn_days",
+    "reward_gifting_enabled",
+    "screen_time_warn_minutes",
+    "screen_time_stop_at_zero",
+    "screen_time_devices",
+    "screen_time_allowance_school",
+    "screen_time_allowance_weekend",
+    "screen_time_allowance_unused",
+    "screen_time_jar_enabled",
+    "screen_time_jar_cap",
+    "screen_time_jar_open_day",
+    "screen_time_jar_open_time",
+    "shopping_jobs_enabled",
+    "shopping_jobs_entity",
+    "shopping_jobs_tag",
+    "shopping_jobs_points",
+    "shopping_jobs_children",
+    "shopping_jobs_mode",
+    "bin_day_enabled",
+    "bin_day_calendars",
+    "bin_day_put_out_time",
+    "bin_day_children",
+    "bin_day_mode",
+    "bin_day_points",
+    "bin_day_bring_in",
+    "bin_day_bring_in_time",
+    "sibling_check_enabled",
+    "sibling_check_pairs",
+    "sibling_check_bonus",
+    "chore_reminders_enabled",
+    "chore_reminders_earliest",
+    "chore_reminders_latest",
     "parent_routing",
     "read_aloud_media_player",
     "read_aloud_tts_entity",
@@ -2321,6 +2410,45 @@ def _validate_chore_undo_seconds(value: Any) -> int:
     return value
 
 
+_SCREEN_TIME_ENTITY_RE = re.compile(rf"^({'|'.join(SCREEN_TIME_DOMAINS)})\.[a-z0-9_]+$")
+
+
+def _validate_screen_time_devices(value):
+    """``{child_id: [entity_id, ...]}`` — a few devices per child, known domains only."""
+    if not isinstance(value, dict) or len(value) > 50:
+        raise vol.Invalid("expected a map of child id to devices")
+    out = {}
+    for child_id, devices in value.items():
+        if not isinstance(child_id, str) or not isinstance(devices, list):
+            raise vol.Invalid("expected a map of child id to devices")
+        if len(devices) > SCREEN_TIME_MAX_DEVICES:
+            raise vol.Invalid(f"at most {SCREEN_TIME_MAX_DEVICES} devices per child")
+        cleaned = []
+        for entity_id in devices:
+            if not isinstance(entity_id, str) or not _SCREEN_TIME_ENTITY_RE.match(entity_id):
+                raise vol.Invalid(f"'{entity_id}' can't be a screen-time device")
+            if entity_id not in cleaned:
+                cleaned.append(entity_id)
+        out[child_id] = cleaned
+    return out
+
+
+def _validate_sibling_check_pairs(value):
+    """``{checker_id: [child_id, ...]}`` — who may check whom; never themselves."""
+    if not isinstance(value, dict) or len(value) > 50:
+        raise vol.Invalid("expected a map of child id to children")
+    out = {}
+    for checker, checkees in value.items():
+        if not isinstance(checker, str) or not isinstance(checkees, list) or len(checkees) > 50:
+            raise vol.Invalid("expected a map of child id to children")
+        if not all(isinstance(c, str) for c in checkees):
+            raise vol.Invalid("expected a map of child id to children")
+        cleaned = [c for c in dict.fromkeys(checkees) if c != checker]
+        if cleaned:
+            out[checker] = cleaned
+    return out
+
+
 # Extracted to a module constant so the accepted settings keys can be unit-tested
 # (the websocket_command decorator does not expose the compiled schema). Every key
 # accepted here must also be routed in _ws_update_settings below.
@@ -2330,6 +2458,9 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("points_icon"): str,
     vol.Optional("card_design"): vol.In(_ALLOWED_CARD_DESIGNS),
     vol.Optional("set_times_layout"): vol.In(["rows", "pills"]),
+    vol.Optional("seasonal_halloween"): bool,
+    vol.Optional("seasonal_christmas"): bool,
+    vol.Optional("seasonal_summer"): bool,
     vol.Optional("history_days"): vol.All(int, vol.Range(min=30, max=365)),
     vol.Optional("streak_reset_mode"): vol.In(["reset", "pause"]),
     vol.Optional("weekend_multiplier"): vol.All(vol.Coerce(float), vol.Range(min=1.0, max=5.0)),
@@ -2364,6 +2495,47 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("reward_fulfilment_enabled"): bool,
     vol.Optional("boost_stacking"): vol.In(BOOST_STACKING_MODES),
     vol.Optional("appeals_enabled"): bool,
+    vol.Optional("screen_time_enabled"): bool,
+    vol.Optional("points_expiry_enabled"): bool,
+    vol.Optional("points_expiry_days"): vol.All(vol.Coerce(int), vol.Range(min=1, max=POINTS_EXPIRY_MAX_DAYS)),
+    vol.Optional("points_expiry_warn_days"): vol.All(vol.Coerce(int), vol.Range(min=0, max=POINTS_EXPIRY_MAX_WARN)),
+    vol.Optional("reward_gifting_enabled"): bool,
+    vol.Optional("screen_time_warn_minutes"): vol.All(vol.Coerce(int), vol.Range(min=0, max=120)),
+    vol.Optional("screen_time_stop_at_zero"): bool,
+    vol.Optional("screen_time_devices"): _validate_screen_time_devices,
+    vol.Optional("screen_time_allowance_school"): vol.All(
+        vol.Coerce(int), vol.Range(min=0, max=SCREEN_TIME_MAX_ALLOWANCE)
+    ),
+    vol.Optional("screen_time_allowance_weekend"): vol.All(
+        vol.Coerce(int), vol.Range(min=0, max=SCREEN_TIME_MAX_ALLOWANCE)
+    ),
+    vol.Optional("screen_time_allowance_unused"): vol.In(SCREEN_TIME_UNUSED_MODES),
+    vol.Optional("screen_time_jar_enabled"): bool,
+    vol.Optional("screen_time_jar_cap"): vol.All(vol.Coerce(int), vol.Range(min=1, max=SCREEN_TIME_MAX_MINUTES)),
+    vol.Optional("screen_time_jar_open_day"): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)),
+    vol.Optional("screen_time_jar_open_time"): vol.Match(r"^([01]\d|2[0-3]):[0-5]\d$"),
+    vol.Optional("shopping_jobs_enabled"): bool,
+    vol.Optional("shopping_jobs_entity"): vol.Any("", vol.Match(r"^todo\.[a-z0-9_]+$")),
+    vol.Optional("shopping_jobs_tag"): vol.All(str, vol.Strip, vol.Length(max=20), vol.Match(r"^\S*$")),
+    vol.Optional("shopping_jobs_points"): vol.All(vol.Coerce(int), vol.Range(min=0, max=SHOPPING_JOB_MAX_POINTS)),
+    vol.Optional("shopping_jobs_children"): vol.All([str], vol.Length(max=50)),
+    vol.Optional("shopping_jobs_mode"): vol.In(SHOPPING_JOB_MODES),
+    vol.Optional("bin_day_enabled"): bool,
+    vol.Optional("bin_day_calendars"): vol.All(
+        [vol.All(str, vol.Match(r"^calendar\.[a-z0-9_]+$"))], vol.Length(max=BIN_DAY_MAX_CALENDARS)
+    ),
+    vol.Optional("bin_day_put_out_time"): vol.Match(r"^([01]\d|2[0-3]):[0-5]\d$"),
+    vol.Optional("bin_day_children"): vol.All([str], vol.Length(max=50)),
+    vol.Optional("bin_day_mode"): vol.In(BIN_DAY_MODES),
+    vol.Optional("bin_day_points"): vol.All(vol.Coerce(int), vol.Range(min=0, max=BIN_DAY_MAX_POINTS)),
+    vol.Optional("bin_day_bring_in"): bool,
+    vol.Optional("bin_day_bring_in_time"): vol.Match(r"^([01]\d|2[0-3]):[0-5]\d$"),
+    vol.Optional("sibling_check_enabled"): bool,
+    vol.Optional("sibling_check_pairs"): _validate_sibling_check_pairs,
+    vol.Optional("sibling_check_bonus"): vol.All(vol.Coerce(int), vol.Range(min=0, max=SIBLING_CHECK_MAX_BONUS)),
+    vol.Optional("chore_reminders_enabled"): bool,
+    vol.Optional("chore_reminders_earliest"): vol.Match(r"^([01]\d|2[0-3]):[0-5]\d$"),
+    vol.Optional("chore_reminders_latest"): vol.Match(r"^([01]\d|2[0-3]):[0-5]\d$"),
     vol.Optional("boost_wake_screens"): vol.All([vol.All(str, vol.Match(r"^switch\.[a-z0-9_]+$"))], vol.Length(max=10)),
     vol.Optional("boost_wake_devices"): vol.All(
         [vol.All(str, vol.Match(r"^mobile_app_[a-z0-9_]+$"))], vol.Length(max=10)
@@ -2533,12 +2705,19 @@ async def _ws_complete_bonus_subtask(hass, connection, msg, coordinator):
         vol.Optional("points"): vol.All(vol.Coerce(int), vol.Range(min=0)),
         # Optional 1-3 star quality rating (#927).
         vol.Optional("rating"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
+        # Optional praise note the child sees on their card.
+        vol.Optional("note", default=""): vol.All(str, vol.Length(max=PRAISE_NOTE_MAX)),
     }
 )
 @websocket_api.async_response
 @_admin_only
 async def _ws_approve_chore(hass, connection, msg, coordinator):
-    await coordinator.async_approve_chore(msg["completion_id"], points=msg.get("points"), rating=msg.get("rating"))
+    # The praise note is signed with the approving grown-up's HA name.
+    note = msg.get("note", "")
+    praise = {"note": note, "note_by": getattr(connection.user, "name", "") or ""} if note else {}
+    await coordinator.async_approve_chore(
+        msg["completion_id"], points=msg.get("points"), rating=msg.get("rating"), **praise
+    )
     connection.send_result(msg["id"], {"completion_id": msg["completion_id"]})
 
 
@@ -3449,9 +3628,13 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     from .kiosk import KIOSK_COMMANDS
     from .websocket_auctions import AUCTION_COMMANDS
     from .websocket_boosts import BOOST_COMMANDS
+    from .websocket_chore_extras import CHORE_EXTRA_COMMANDS
+    from .websocket_household import HOUSEHOLD_COMMANDS
     from .websocket_inspections import INSPECTION_COMMANDS
+    from .websocket_panel_tools import PANEL_TOOL_COMMANDS
     from .websocket_raffles import RAFFLE_COMMANDS
     from .websocket_recaps import RECAP_COMMANDS
+    from .websocket_rewards_extra import REWARD_EXTRA_COMMANDS
     from .websocket_setup import SETUP_COMMANDS
 
     extra = (
@@ -3462,6 +3645,10 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         *AUCTION_COMMANDS,
         *RAFFLE_COMMANDS,
         *BOOST_COMMANDS,
+        *HOUSEHOLD_COMMANDS,
+        *PANEL_TOOL_COMMANDS,
+        *REWARD_EXTRA_COMMANDS,
+        *CHORE_EXTRA_COMMANDS,
     )
     for cmd in (*_COMMANDS, *extra):
         websocket_api.async_register_command(hass, cmd)

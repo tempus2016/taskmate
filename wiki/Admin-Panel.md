@@ -52,11 +52,21 @@ On a **phone**, a bottom bar gives one-tap access to **Today**, **Chores**, **Re
 
 Press **Ctrl K** (**⌘ K** on a Mac), or **/**, or click **Search or jump to…** in the top bar. Start typing to jump straight to any section, chore, reward, quest, challenge or child, or to run an action such as *Approve all*, *Give points*, *New chore* or *Run setup wizard*. Use the arrow keys and **Enter** to pick, **Esc** to close.
 
+It finds each part of **Settings** too, by its heading or its description: type *allow* and **Allowance** comes up; pick it and Settings opens scrolled to that part.
+
 ![Command search](images/panel-command-search.png)
+
+### Child quick view
+
+Clicking a child's face in the top bar opens a side panel about them right now: points, level and streak, their [screen-time](Screen-Time-Bank.md) balance (when the bank is on), how many approvals are waiting, how many redeemed rewards they are still owed, and today's chores ticked off or pending. From there you can give or take points, filter the panel to them (**Show only …**), see their card (**View as**) or edit them. **Esc** or a click outside closes it.
+
+### View as child
+
+**View as** (in the quick view, or on a child's card on the Children page) shows that child's real child card inside the panel, exactly as their dashboard draws it. Pick another child, or try any [card design](Card-Design-Styles.md) from the drop-down. It is a preview: taps on it do nothing.
 
 ### Child filter
 
-The row of faces in the top bar filters the panel to one child. With a child picked, Today, Children, Chores, Rewards, Quests, Challenges, Bonuses, Penalties, Activity and Wishlists show only what concerns them. A banner reminds you the filter is on; **Show everyone** (or **All**) clears it.
+The row of faces in the top bar filters the panel to one child: open a child's quick view and choose **Show only …**. With a child picked, Today, Children, Chores, Rewards, Quests, Challenges, Bonuses, Penalties, Activity and Wishlists show only what concerns them. A banner reminds you the filter is on; **Show everyone** (or **All**) clears it.
 
 ![The Chores page filtered to one child](images/panel-child-filter.png)
 
@@ -120,7 +130,8 @@ This also fixed the wide-screen horizontal scrolling the old inline button row c
 - Toggle pool mode (savings jar) per reward
 - Configure jackpot rewards
 - Set quantity limits and expiration dates
-- Delete rewards
+- Put rewards in your own order: drag a reward card by its ⠿ handle, or use **Reorder** (arrows, for touchscreens). The rewards card then shows them in that order instead of by price
+- Delete rewards (kept for 7 days in [Recently Deleted](Recently-Deleted.md))
 
 ### Bounties, Wishlists and Auctions (v6.0.0+)
 - **Bounties** — post one-off jobs any eligible child can claim, and follow them through Active, Waiting approval and History. See [Bounty Board](Bounty-Board.md)
@@ -145,6 +156,9 @@ The **Raffles** tab, under **Spend**, lists every raffle with its ticket price, 
 - Edit and delete groups
 
 ### Settings
+- A row of section names at the top jumps straight to each part of the page
+- Change anything and a bar appears: "2 unsaved changes", with **Discard** and **Save**. Leaving Settings with unsaved changes asks first
+- **Recently deleted** lists deleted chores, rewards and quests for 7 days, with **Restore**. See [Recently Deleted](Recently-Deleted.md)
 - Configure all global settings:
   - Points currency name and icon
   - Weekend multiplier
@@ -177,6 +191,7 @@ The **Raffles** tab, under **Spend**, lists every raffle with its ticket price, 
 - **Week ahead** — chores and points projected across the next 7 / 14 / 28 days, including rotation
 - **Health** — configuration problems (broken dependencies, deleted children, missing entities) with a **Show me** jump to each
 - **Moods** (v7.0.0) — each child's end-of-day mood check-ins, with a count of tough days. The fairness view also shows [estimated minutes](Estimated-Minutes.md) when chores have them
+- **Economy** — points earned against points spent over 8 weeks, with a warning when rewards have got too cheap
 - See [Insights](Insights.md)
 
 ### Templates (v4.0.0+)

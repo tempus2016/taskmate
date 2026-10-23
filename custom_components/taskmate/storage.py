@@ -497,6 +497,17 @@ class TaskMateStorage:
                 return
         self.add_reward(reward)
 
+    def set_reward_order(self, order: list[str]) -> None:
+        """Put the rewards in the parent's order; any not listed keep theirs, last."""
+        position = {rid: i for i, rid in enumerate(order)}
+        # sort() is stable, so unlisted rewards stay in their existing order.
+        self._data.setdefault("rewards", []).sort(key=lambda r: position.get(r.get("id"), len(position)))
+        self._data["reward_order_custom"] = True
+
+    def has_reward_order(self) -> bool:
+        """Whether a parent has put the rewards in an order of their own."""
+        return bool(self._data.get("reward_order_custom"))
+
     def remove_reward(self, reward_id: str) -> None:
         """Remove a reward."""
         self._data["rewards"] = [r for r in self._data.get("rewards", []) if r.get("id") != reward_id]
@@ -1881,6 +1892,11 @@ class TaskMateStorage:
                     )
                     chore[key] = ""
 
+        for reward in self._data.get("rewards", []):
+            if isinstance(reward, dict) and reward.get("image_url") and not is_taskmate_image_url(reward["image_url"]):
+                _LOGGER.warning("Import: dropped non-TaskMate image_url on reward %s", reward.get("id", "?"))
+                reward["image_url"] = ""
+
         # Custom sounds: `file` is concatenated into a path and handed to HA's
         # URL signer, and `name` is rendered in the panel and the chore
         # dropdown. Neither goes through the upload validation on an import.
@@ -2052,8 +2068,12 @@ class TaskMateStorage:
         self._data["completions"] = [c for c in self._data.get("completions", []) if c.get("chore_id") != chore_id]
 
     def remove_reward_claims_for_child(self, child_id: str) -> None:
-        """Remove all reward claims for a given child."""
-        self._data["reward_claims"] = [c for c in self._data.get("reward_claims", []) if c.get("child_id") != child_id]
+        """Remove all reward claims for a given child, and gifts still waiting to go to them."""
+        self._data["reward_claims"] = [
+            c
+            for c in self._data.get("reward_claims", [])
+            if c.get("child_id") != child_id and not (c.get("recipient_id") == child_id and not c.get("approved"))
+        ]
 
     def remove_reward_claims_for_reward(self, reward_id: str) -> None:
         """Remove all reward claims for a given reward."""
@@ -2250,14 +2270,32 @@ class TaskMateStorage:
 
     def remove_child_from_sections(self, child_id: str) -> None:
         """Forget a deleted child in every per-child feature section."""
-        for key in ("moods", "sick_days", "weekly_goals", "pets"):
+        for key in (
+            "moods",
+            "sick_days",
+            "weekly_goals",
+            "pets",
+            "screen_time",
+            "points_expiry",
+            "penalty_warnings",
+            "chore_reminders",
+        ):
             section = self._data.get(key)
             if isinstance(section, dict):
                 section.pop(child_id, None)
-        for key in ("help_requests", "penalty_redemptions"):
+        devices = self._data.get("settings", {}).get("screen_time_devices")
+        if isinstance(devices, dict):
+            devices.pop(child_id, None)
+        for key in ("help_requests", "penalty_redemptions", "sibling_checks"):
             section = self._data.get(key)
             if isinstance(section, list):
                 self._data[key] = [r for r in section if not (isinstance(r, dict) and r.get("child_id") == child_id)]
+        pairs = self._data.get("settings", {}).get("sibling_check_pairs")
+        if isinstance(pairs, dict):
+            pairs.pop(child_id, None)
+            for checker, checkees in pairs.items():
+                if isinstance(checkees, list):
+                    pairs[checker] = [c for c in checkees if c != child_id]
         raffles = self._data.get("raffles")
         if isinstance(raffles, list):
             for raffle in raffles:

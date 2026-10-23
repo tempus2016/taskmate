@@ -194,6 +194,10 @@
         "rating": {
           "name": "Kvalitetsvurdering",
           "description": "Valgfri vurdering på 1-3 stjerner af, hvor godt opgaven blev udført. Når kvalitetsvurderinger er slået til, skaleres pointene med stjernens multiplikator; lad feltet stå tomt for at give 100 %."
+        },
+        "note": {
+          "name": "Ros",
+          "description": "Valgfri kort besked til barnet, vist på dets kort i dag (op til 120 tegn)."
         }
       }
     },
@@ -266,6 +270,10 @@
         "child_id": {
           "name": "Barn-ID",
           "description": "ID'et på det barn, der indløser belønningen"
+        },
+        "recipient_id": {
+          "name": "Modtager-ID",
+          "description": "Køb den til en bror eller søster i stedet. Barnet, der indløser, betaler; kræver at \"Børn kan købe belønninger til hinanden\" er slået til."
         }
       }
     },
@@ -1558,6 +1566,96 @@
           "description": "Valgfri ord til barnet, op til 200 tegn"
         }
       }
+    },
+    "adjust_screen_time": {
+      "name": "Justér skærmtid",
+      "description": "Læg minutter til et barns skærmtid, eller træk nogle fra med et negativt tal.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet, hvis saldo ændres"
+        },
+        "minutes": {
+          "name": "Minutter",
+          "description": "Minutter, der lægges til; negativt for at trække fra. Saldoen bliver aldrig under nul."
+        },
+        "reason": {
+          "name": "Årsag",
+          "description": "En kort note til saldohistorikken"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "Gem skærmtid",
+      "description": "Flyt et barns ubrugte skærmtidsminutter over i weekendkrukken. Dagens tilskud kommer først, derefter opsparede minutter, op til krukkens loft.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet, der gemmer minutterne"
+        },
+        "minutes": {
+          "name": "Minutter",
+          "description": "Hvor mange minutter der skal gemmes. Lad feltet stå tomt for at gemme alt, der kan være der."
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "Bedøm en belønning",
+      "description": "Barnet giver en belønning, det har fået, 1 til 3 stjerner. Når belønningen er givet (eller godkendt, hvis udleveringssporing er slået fra), i 3 dage.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet, der fik belønningen"
+        },
+        "claim_id": {
+          "name": "Indløsnings-ID",
+          "description": "Den indløsning, der bedømmes"
+        },
+        "stars": {
+          "name": "Stjerner",
+          "description": "1 til 3 stjerner"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "Søskendetjek",
+      "description": "Et barn tjekker en søskendes opgave, der venter på godkendelse. done godkender den og giver den, der tjekker, bonussen; not_yet lader den vente på en forælder med en note.",
+      "fields": {
+        "child_id": {
+          "name": "ID på barnet, der tjekker",
+          "description": "Barnet, der tjekker (ikke det, der lavede opgaven)"
+        },
+        "completion_id": {
+          "name": "Fuldførelses-ID",
+          "description": "Den ventende fuldførelse, fra attributten sibling_checks for barnet i sensor.taskmate_overview"
+        },
+        "verdict": {
+          "name": "Vurdering",
+          "description": "done (ser færdig ud) eller not_yet"
+        },
+        "note": {
+          "name": "Note",
+          "description": "Valgfrie ord til forælderen ved not_yet, op til 120 tegn"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "Sæt påmindelse for opgave",
+      "description": "Et barn vælger, hvornår det vil mindes om en af sine opgaver, inden for det tidligste og seneste tidspunkt i TaskMates indstillinger. Tomt tidspunkt fjerner påmindelsen.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet, der vil mindes om det"
+        },
+        "chore_id": {
+          "name": "Opgave-ID",
+          "description": "Opgaven, der skal mindes om"
+        },
+        "time": {
+          "name": "Tidspunkt",
+          "description": "TT:MM, f.eks. 17:30. Tomt fjerner påmindelsen."
+        }
+      }
     }
   },
   "entity": {
@@ -1630,7 +1728,17 @@
               "reward_delivered": "Belønning givet",
               "personal_best": "Personlig rekord",
               "appeal_submitted": "Klage indsendt",
-              "appeal_decided": "Klage afgjort"
+              "appeal_decided": "Klage afgjort",
+              "screen_time_low": "Skærmtid er ved at slippe op",
+              "screen_time_out": "Skærmtiden er brugt op",
+              "screen_time_changed": "Skærmtid ændret",
+              "screen_time_saved": "Skærmtid gemt",
+              "screen_time_jar_opened": "Skærmtidskrukke åbnet",
+              "points_expired": "Point udløbet",
+              "points_expiring": "Point udløber snart",
+              "reward_rated": "Belønning bedømt",
+              "penalty_warning": "Advarsel før straf",
+              "sibling_check": "Søskendetjek"
             }
           }
         }
@@ -1646,7 +1754,9 @@
               "scheduled_change_applied": "Planlagt ændring udført",
               "raffle_drawn": "Lodtrækning trukket",
               "boost_started": "Boost startet",
-              "boost_ended": "Boost slut"
+              "boost_ended": "Boost slut",
+              "bin_day": "Skraldedagsopgave",
+              "shopping_job": "Opgave fra indkøbslisten"
             }
           }
         }

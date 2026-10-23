@@ -135,7 +135,7 @@ from .const import (
 )
 from .coordinator import TaskMateCoordinator
 from .frontend import async_register_cards, async_register_frontend
-from .models import REJECT_REASON_MAX, Badge, BadgeCriterion, validate_chore_times
+from .models import PRAISE_NOTE_MAX, REJECT_REASON_MAX, Badge, BadgeCriterion, validate_chore_times
 from .panel import async_register_panel
 from .websocket import async_register_websocket_commands
 
@@ -752,8 +752,13 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             _LOGGER.error("No TaskMate coordinator available")
             return
         completion_id = call.data["completion_id"]
+        praise = {}
+        if note := call.data.get("note", ""):
+            # The praise is signed with the approving grown-up's HA name.
+            user = await hass.auth.async_get_user(call.context.user_id) if call.context.user_id else None
+            praise = {"note": note, "note_by": getattr(user, "name", "") or ""}
         await coordinator.async_approve_chore(
-            completion_id, points=call.data.get("points"), rating=call.data.get("rating")
+            completion_id, points=call.data.get("points"), rating=call.data.get("rating"), **praise
         )
 
     async def handle_approve_all_chores(call: ServiceCall) -> None:
@@ -949,7 +954,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         reward_id = call.data[ATTR_REWARD_ID]
         child_id = call.data[ATTR_CHILD_ID]
         await _async_require_linked_child(hass, call, coordinator, child_id)
-        await coordinator.async_claim_reward(reward_id, child_id)
+        # A gift for a sibling: the caller acts as the buyer, who pays.
+        await coordinator.async_claim_reward(reward_id, child_id, call.data.get("recipient_id", "") or "")
 
     async def handle_approve_reward(call: ServiceCall) -> None:
         """Handle the approve_reward service call."""
@@ -1492,6 +1498,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Optional("points"): vol.All(vol.Coerce(int), vol.Range(min=0)),
                 # 1-3 star quality rating (#927); ignored while the feature is off.
                 vol.Optional("rating"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
+                # A short praise note the child sees on their card.
+                vol.Optional("note", default=""): vol.All(cv.string, vol.Length(max=PRAISE_NOTE_MAX)),
             }
         ),
     )
@@ -1673,6 +1681,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             {
                 vol.Required(ATTR_REWARD_ID): cv.string,
                 vol.Required(ATTR_CHILD_ID): cv.string,
+                vol.Optional("recipient_id"): cv.string,
             }
         ),
     )

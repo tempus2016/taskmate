@@ -23,6 +23,10 @@ const DESIGN_HEADER = "#6c5ce7";
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
 // Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
 // identity until the design layer has loaded (it is also what stamps dir).
+// The attr resolver defines window.__taskmate_badge_id, but on a cold load a
+// card can render before that module has run; read the id directly then.
+const _badgeId = (b) => (typeof window.__taskmate_badge_id === "function"
+  ? window.__taskmate_badge_id(b) : String(b?.badge_id ?? b?.id ?? ""));
 const _ltrNums = (s) => (window.__taskmate_design && window.__taskmate_design.ltrNums ? window.__taskmate_design.ltrNums(s) : s);
 
 class TaskMateBadgesCard extends LitElement {
@@ -60,7 +64,7 @@ class TaskMateBadgesCard extends LitElement {
   _trackEarnedBadges() {
     const earned = this.hass?.states?.[this.config?.entity]?.attributes?.earned;
     if (!Array.isArray(earned)) return false;
-    const ids = new Set(earned.map(b => window.__taskmate_badge_id(b)).filter(Boolean));
+    const ids = new Set(earned.map(b => _badgeId(b)).filter(Boolean));
 
     // First observation is the baseline — never flash a badge earned earlier.
     if (this._seenBadgeIds === null) {
@@ -567,7 +571,7 @@ class TaskMateBadgesCard extends LitElement {
   }
 
   _renderEarned(b) {
-    const justEarned = !!this._justEarned && this._justEarned === window.__taskmate_badge_id(b);
+    const justEarned = !!this._justEarned && this._justEarned === _badgeId(b);
     return html`
       <div class="badge earned tier-${b.tier} ${justEarned ? 'just-earned' : ''}">
         ${b.point_bonus > 0 ? html`<div class="badge-bonus">+${b.point_bonus}</div>` : ''}

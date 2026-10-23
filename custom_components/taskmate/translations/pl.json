@@ -194,6 +194,10 @@
         "rating": {
           "name": "Ocena jakości",
           "description": "Opcjonalna ocena 1–3 gwiazdki, jak dobrze wykonano obowiązek. Gdy oceny jakości są włączone, punkty są mnożone przez mnożnik danej gwiazdki; pozostaw puste, aby wypłacić 100%."
+        },
+        "note": {
+          "name": "Pochwała",
+          "description": "Opcjonalna krótka wiadomość dla dziecka, widoczna dziś na jego karcie (do 120 znaków)."
         }
       }
     },
@@ -266,6 +270,10 @@
         "child_id": {
           "name": "ID dziecka",
           "description": "ID dziecka odbierającego nagrodę"
+        },
+        "recipient_id": {
+          "name": "ID odbiorcy",
+          "description": "Kup ją zamiast tego dla brata lub siostry. Płaci dziecko, które odbiera; wymaga włączenia „Dzieci mogą kupować sobie nawzajem nagrody”."
         }
       }
     },
@@ -1558,6 +1566,96 @@
           "description": "Opcjonalne słowa dla dziecka, do 200 znaków"
         }
       }
+    },
+    "adjust_screen_time": {
+      "name": "Zmień czas ekranowy",
+      "description": "Dodaj minuty do salda czasu ekranowego dziecka albo odejmij je liczbą ujemną.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko, którego saldo się zmienia"
+        },
+        "minutes": {
+          "name": "Minuty",
+          "description": "Minuty do dodania; ujemne, aby odjąć. Saldo nigdy nie spada poniżej zera."
+        },
+        "reason": {
+          "name": "Powód",
+          "description": "Krótka notatka do historii salda"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "Odłóż czas ekranowy",
+      "description": "Przenosi niewykorzystane minuty czasu ekranowego dziecka do słoika na weekend. Najpierw dzisiejszy przydział, potem zaoszczędzone minuty, aż do limitu słoika.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko, które odkłada minuty"
+        },
+        "minutes": {
+          "name": "Minuty",
+          "description": "Ile minut odłożyć. Zostaw puste, aby odłożyć wszystko, co się zmieści."
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "Oceń nagrodę",
+      "description": "Dziecko daje otrzymanej nagrodzie od 1 do 3 gwiazdek. Po wręczeniu nagrody (lub zatwierdzeniu, gdy śledzenie wręczania jest wyłączone), przez 3 dni.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko, które dostało nagrodę"
+        },
+        "claim_id": {
+          "name": "ID odbioru",
+          "description": "Oceniany odbiór nagrody"
+        },
+        "stars": {
+          "name": "Gwiazdki",
+          "description": "Od 1 do 3 gwiazdek"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "Sprawdzenie przez rodzeństwo",
+      "description": "Dziecko sprawdza zadanie rodzeństwa czekające na zatwierdzenie. done zatwierdza je i wypłaca sprawdzającemu bonus; not_yet zostawia je dla rodzica z notatką.",
+      "fields": {
+        "child_id": {
+          "name": "ID sprawdzającego dziecka",
+          "description": "Dziecko, które sprawdza (nie to, które wykonało zadanie)"
+        },
+        "completion_id": {
+          "name": "ID wykonania",
+          "description": "Czekające wykonanie, z atrybutu sibling_checks dziecka w sensor.taskmate_overview"
+        },
+        "verdict": {
+          "name": "Ocena",
+          "description": "done (wygląda na zrobione) lub not_yet"
+        },
+        "note": {
+          "name": "Notatka",
+          "description": "Opcjonalne słowa dla rodzica przy not_yet, do 120 znaków"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "Ustaw przypomnienie o zadaniu",
+      "description": "Dziecko wybiera, kiedy przypomnieć mu o jednym z jego zadań, w granicach najwcześniejszej i najpóźniejszej godziny z ustawień TaskMate. Pusta godzina usuwa przypomnienie.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko, które chce przypomnienia"
+        },
+        "chore_id": {
+          "name": "ID zadania",
+          "description": "Zadanie, o którym przypomnieć"
+        },
+        "time": {
+          "name": "Godzina",
+          "description": "GG:MM, np. 17:30. Puste usuwa przypomnienie."
+        }
+      }
     }
   },
   "entity": {
@@ -1630,7 +1728,17 @@
               "reward_delivered": "Nagroda wręczona",
               "personal_best": "Rekord życiowy",
               "appeal_submitted": "Złożono odwołanie",
-              "appeal_decided": "Rozpatrzono odwołanie"
+              "appeal_decided": "Rozpatrzono odwołanie",
+              "screen_time_low": "Czas ekranowy się kończy",
+              "screen_time_out": "Czas ekranowy się skończył",
+              "screen_time_changed": "Zmiana czasu ekranowego",
+              "screen_time_saved": "Czas ekranowy odłożony",
+              "screen_time_jar_opened": "Słoik z czasem ekranowym otwarty",
+              "points_expired": "Punkty wygasły",
+              "points_expiring": "Punkty wkrótce wygasną",
+              "reward_rated": "Nagroda oceniona",
+              "penalty_warning": "Ostrzeżenie przed karą",
+              "sibling_check": "Sprawdzenie przez rodzeństwo"
             }
           }
         }
@@ -1646,7 +1754,9 @@
               "scheduled_change_applied": "Zastosowano zaplanowaną zmianę",
               "raffle_drawn": "Rozlosowano",
               "boost_started": "Boost rozpoczęty",
-              "boost_ended": "Boost zakończony"
+              "boost_ended": "Boost zakończony",
+              "bin_day": "Zadanie na dzień wywozu śmieci",
+              "shopping_job": "Zadanie z listy zakupów"
             }
           }
         }

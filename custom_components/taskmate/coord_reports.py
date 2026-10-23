@@ -37,6 +37,16 @@ FAIR_SHARE_TOLERANCE = 15.0
 FRICTION_STRUGGLING_RATE = 0.6
 FRICTION_DEAD_RATE = 0.2
 
+# Economy (points inflation): eight 7-day weeks, the latest ending today. The
+# warning compares the last four weeks: earning at least ECONOMY_RATIO times
+# what was spent on rewards means balances are piling up, so rewards have got
+# cheap. ECONOMY_MIN_EARNED keeps a quiet month or a new install from tripping it.
+ECONOMY_WEEKS = 8
+ECONOMY_RECENT_WEEKS = 4
+ECONOMY_RATIO = 1.5
+ECONOMY_MIN_EARNED = 50
+ECONOMY_CANDIDATES = 3
+
 
 class ReportsMixin:
     """Mixin providing on-demand parent insight reports."""
@@ -696,3 +706,88 @@ class ReportsMixin:
             if not assigned or child_id in assigned:
                 return True
         return False
+
+    def economy_report(self) -> dict[str, Any]:
+        """Points earned vs spent per week, and whether rewards have got cheap.
+
+        Earned is approved chore points plus bonus awards from the points log
+        (gifts and refunds move points around, so they don't count). Spent is
+        what approved reward claims cost. Adults are left out: they are not
+        part of the children's economy. Bonus awards come from the points log,
+        which keeps the latest 200 rows, so on a busy install the oldest weeks
+        can under-count them.
+        """
+        today = dt_util.as_local(dt_util.now()).date()
+        start = today - timedelta(days=7 * ECONOMY_WEEKS - 1)
+        kids = {c.id for c in self.storage.get_children() if not getattr(c, "is_adult", False)}
+        earned = [0] * ECONOMY_WEEKS
+        spent = [0] * ECONOMY_WEEKS
+
+        def week_of(when) -> int | None:
+            try:
+                day = dt_util.as_local(when).date()
+            except (AttributeError, TypeError, ValueError):
+                return None
+            return (day - start).days // 7 if start <= day <= today else None
+
+        for comp in self.storage.get_completions():
+            if not getattr(comp, "approved", False) or comp.child_id not in kids:
+                continue
+            week = week_of(comp.completed_at)
+            if week is not None:
+                earned[week] += int(getattr(comp, "points_awarded", 0) or 0)
+
+        for txn in self.storage.get_points_transactions():
+            points = int(getattr(txn, "points", 0) or 0)
+            reason = str(getattr(txn, "reason", "") or "")
+            if points <= 0 or txn.child_id not in kids or reason.startswith("Gift from") or "refund" in reason.lower():
+                continue
+            week = week_of(txn.created_at)
+            if week is not None:
+                earned[week] += points
+
+        rewards = {r.id: r for r in self.storage.get_rewards()}
+        claimed: dict[str, int] = {}
+        for claim in self.storage.get_reward_claims():
+            if not claim.approved or claim.child_id not in kids:
+                continue
+            week = week_of(claim.approved_at or claim.claimed_at)
+            if week is None:
+                continue
+            reward = rewards.get(claim.reward_id)
+            cost = claim.approved_cost if claim.approved_cost is not None else (reward.cost if reward else 0)
+            spent[week] += int(cost or 0)
+            if reward and not claim.wish_id:
+                claimed[reward.id] = claimed.get(reward.id, 0) + 1
+
+        recent = ECONOMY_WEEKS - ECONOMY_RECENT_WEEKS
+        recent_earned = sum(earned[recent:])
+        recent_spent = sum(spent[recent:])
+        prior_earned = sum(earned[:recent])
+        inflating = recent_earned >= ECONOMY_MIN_EARNED and recent_earned >= ECONOMY_RATIO * recent_spent
+        ranked = sorted(claimed.items(), key=lambda kv: (-kv[1], rewards[kv[0]].name.lower()))
+        return {
+            "weeks": [
+                {
+                    "start": (start + timedelta(days=7 * i)).isoformat(),
+                    "end": (start + timedelta(days=7 * i + 6)).isoformat(),
+                    "earned": earned[i],
+                    "spent": spent[i],
+                }
+                for i in range(ECONOMY_WEEKS)
+            ],
+            "recent_earned": recent_earned,
+            "recent_spent": recent_spent,
+            "prior_earned": prior_earned,
+            # How much more is being earned than four weeks before (None with nothing to compare).
+            "earned_growth_pct": round((recent_earned - prior_earned) * 100 / prior_earned) if prior_earned else None,
+            "ratio": ECONOMY_RATIO,
+            "min_earned": ECONOMY_MIN_EARNED,
+            "inflating": inflating,
+            "candidates": [
+                {"id": rid, "name": rewards[rid].name, "cost": rewards[rid].cost, "claims": count}
+                for rid, count in ranked[:ECONOMY_CANDIDATES]
+            ]
+            if inflating
+            else [],
+        }
