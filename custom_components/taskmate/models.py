@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from typing import Any
 
-from .const import AGE_GROUPS, AUCTION_STATUSES, BOUNTY_STATUSES, MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
+from .const import AGE_GROUPS, AUCTION_STATUSES, BOUNTY_STATUSES, CELEBRATION_STYLES, MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -366,6 +366,11 @@ def normalize_age_group(value: Any) -> str:
     return value if isinstance(value, str) and value in AGE_GROUPS else ""
 
 
+def normalize_celebration_style(value: Any) -> str:
+    """A stored celebration style: one of CELEBRATION_STYLES, else confetti."""
+    return value if isinstance(value, str) and value in CELEBRATION_STYLES else "confetti"
+
+
 @dataclass
 class Child:
     """Represents a child."""
@@ -424,6 +429,8 @@ class Child:
     # The child's colour (#1078): "#rrggbb", or "" to fall back to the
     # panel's palette by position (every child that predates it).
     color: str = ""
+    # What the child card plays on a tick-off: one of CELEBRATION_STYLES.
+    celebration_style: str = "confetti"
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -452,6 +459,7 @@ class Child:
             age_group=normalize_age_group(data.get("age_group")),
             is_adult=bool(data.get("is_adult", False)),
             color=str(data.get("color", "") or ""),
+            celebration_style=normalize_celebration_style(data.get("celebration_style")),
             availability_entity=data.get("availability_entity", ""),
             availability_inverted=data.get("availability_inverted", False),
             unavailability_entity=data.get("unavailability_entity", ""),
@@ -493,6 +501,7 @@ class Child:
             "age_group": self.age_group,
             "is_adult": self.is_adult,
             "color": self.color,
+            "celebration_style": self.celebration_style,
             "availability_entity": self.availability_entity,
             "availability_inverted": self.availability_inverted,
             "unavailability_entity": self.unavailability_entity,
@@ -886,6 +895,14 @@ def _clean_weekdays(raw: Any) -> list[int]:
     return sorted(out)
 
 
+REWARD_LIMIT_PERIODS = ("day", "week", "month")
+REWARD_LIMIT_MAX = 99
+
+
+def _reward_limit_period(value: Any) -> str:
+    return value if value in REWARD_LIMIT_PERIODS else "week"
+
+
 @dataclass
 class Reward:
     """Represents a reward."""
@@ -925,12 +942,22 @@ class Reward:
     # ``sleepover``); "" for rewards made by hand. Only used to show "already
     # added".
     template_id: str = ""
+    # Screen-time bank: approving the claim adds this many minutes to the
+    # child's screen-time balance. 0 means an ordinary reward.
+    screen_minutes: int = 0
+    # Per-child limit: each child may have at most `limit_count` claims of
+    # this reward (pending or approved) per `limit_period` — "day", "week"
+    # (from Monday) or "month". 0 means no limit.
+    limit_count: int = 0
+    limit_period: str = "week"
+    # An uploaded picture shown instead of the icon (/api/taskmate/image/...).
+    image_url: str = ""
     id: str = field(default_factory=generate_id)
 
     def __post_init__(self) -> None:
-        # A streak freeze belongs to the one child who bought it, so it can
-        # never be a shared jackpot.
-        if self.streak_freeze:
+        # A streak freeze or screen time belongs to the one child who bought
+        # it, so it can never be a shared jackpot.
+        if self.streak_freeze or self.screen_minutes:
             self.is_jackpot = False
         # Jackpots are inherently pooled (#552): everyone deposits into the shared
         # jar, so pool mode is always on. Enforced here so every construction path
@@ -968,6 +995,10 @@ class Reward:
             available_until=str(data.get("available_until", "") or ""),
             streak_freeze=bool(data.get("streak_freeze", False)),
             template_id=clean_template_id(data.get("template_id")),
+            screen_minutes=max(0, int(data.get("screen_minutes", 0) or 0)),
+            limit_count=_clamp_int(data.get("limit_count", 0), 0, REWARD_LIMIT_MAX),
+            limit_period=_reward_limit_period(data.get("limit_period")),
+            image_url=_clean_wish_image(data.get("image_url")),
             id=data.get("id") or generate_id(),
         )
 
@@ -995,6 +1026,10 @@ class Reward:
             "available_until": self.available_until,
             "streak_freeze": self.streak_freeze,
             "template_id": self.template_id,
+            "screen_minutes": self.screen_minutes,
+            "limit_count": self.limit_count,
+            "limit_period": self.limit_period,
+            "image_url": self.image_url,
             "id": self.id,
         }
 
@@ -1373,6 +1408,14 @@ class ChoreCompletion:
     # Which of the chore's set times this completion ticks off; "" on every
     # completion of an ordinary chore.
     time_id: str = ""
+    # A grown-up's short "well done" sent with the approval, and the name of
+    # the HA user who sent it ("" = unknown, the card says "Grown-up").
+    praise_note: str = ""
+    praise_by: str = ""
+    # Sibling check: the child who checked this completion. Approved = they
+    # said "Looks done"; still pending = "Not yet", with their note.
+    checked_by: str = ""
+    check_note: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ChoreCompletion:
@@ -1404,6 +1447,10 @@ class ChoreCompletion:
             boost_multiplier=float(data.get("boost_multiplier", 0) or 0),
             boost_stacked=bool(data.get("boost_stacked", False)),
             time_id=str(data.get("time_id", "") or ""),
+            praise_note=clean_label(data.get("praise_note", ""), PRAISE_NOTE_MAX),
+            praise_by=clean_label(data.get("praise_by", ""), 60),
+            checked_by=str(data.get("checked_by", "") or ""),
+            check_note=clean_label(data.get("check_note", ""), PRAISE_NOTE_MAX),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1444,6 +1491,14 @@ class ChoreCompletion:
                 data["boost_stacked"] = True
         if self.time_id:
             data["time_id"] = self.time_id
+        if self.praise_note:
+            data["praise_note"] = self.praise_note
+            if self.praise_by:
+                data["praise_by"] = self.praise_by
+        if self.checked_by:
+            data["checked_by"] = self.checked_by
+            if self.check_note:
+                data["check_note"] = self.check_note
         return data
 
 
@@ -1529,6 +1584,16 @@ class RewardClaim:
     delivered_by: str = ""  # "parent" | "child" | ""
     # When the parents were last reminded this is still owed.
     owed_reminded_at: datetime | None = None
+    # A gift: child_id bought (and pays for) it, recipient_id gets it. ""
+    # on an ordinary claim, which goes to the child who made it.
+    recipient_id: str = ""
+    # The child's 1-3 star verdict once they've had it; 0 = not rated.
+    rating: int = 0
+
+    @property
+    def holder_id(self) -> str:
+        """The child the reward is for: the recipient of a gift, else the claimer."""
+        return self.recipient_id or self.child_id
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> RewardClaim:
@@ -1549,6 +1614,8 @@ class RewardClaim:
             delivered_at=parse_datetime(data.get("delivered_at")),
             delivered_by=str(data.get("delivered_by", "") or ""),
             owed_reminded_at=parse_datetime(data.get("owed_reminded_at")),
+            recipient_id=str(data.get("recipient_id", "") or ""),
+            rating=parse_quality_rating(data.get("rating")),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1574,6 +1641,10 @@ class RewardClaim:
             out["delivered_by"] = self.delivered_by
         if self.owed_reminded_at is not None:
             out["owed_reminded_at"] = format_datetime(self.owed_reminded_at)
+        if self.recipient_id:
+            out["recipient_id"] = self.recipient_id
+        if self.rating:
+            out["rating"] = self.rating
         return out
 
 
@@ -1621,6 +1692,10 @@ class Penalty:
     redemption_chore_id: str = ""
     redemption_percent: int = 100
     redemption_days: int = 1
+    # Warning first: the first time in a period is a warning (no points),
+    # the next one deducts. The period resets "daily" or "weekly".
+    warn_first: bool = False
+    warning_reset: str = "daily"
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -1637,6 +1712,8 @@ class Penalty:
             redemption_chore_id=str(data.get("redemption_chore_id", "") or ""),
             redemption_percent=_clamp_int(data.get("redemption_percent", 100), 1, 100),
             redemption_days=_clamp_int(data.get("redemption_days", 1), 1, 7),
+            warn_first=data.get("warn_first") is True,
+            warning_reset="weekly" if data.get("warning_reset") == "weekly" else "daily",
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1651,6 +1728,8 @@ class Penalty:
             "redemption_chore_id": self.redemption_chore_id,
             "redemption_percent": self.redemption_percent,
             "redemption_days": self.redemption_days,
+            "warn_first": self.warn_first,
+            "warning_reset": self.warning_reset,
         }
 
 
@@ -2109,6 +2188,8 @@ WISH_DECLINE_REASON_MAX = 200
 # Why a parent rejected a chore or reward claim (#976) — same cap as a wish's
 # decline reason, which it mirrors.
 REJECT_REASON_MAX = WISH_DECLINE_REASON_MAX
+# A praise note sent with an approval, and a sibling's "not yet" note.
+PRAISE_NOTE_MAX = 120
 PLEDGE_NAME_MAX = 40
 PLEDGE_MESSAGE_MAX = 140
 WISH_STATUSES = ("pending", "active", "redeem_requested", "redeemed", "declined")

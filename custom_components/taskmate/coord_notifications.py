@@ -38,6 +38,7 @@ from .const import (
     NOTIF_TYPE_BOUNTY_CLAIM_LAPSING,
     NOTIF_TYPE_BOUNTY_POSTED,
     NOTIF_TYPE_CELEBRATION,
+    NOTIF_TYPE_CHORE_SELF_REMINDER,
     NOTIF_TYPE_FAMILY_GOAL_REACHED,
     NOTIF_TYPE_HELP_REQUESTED,
     NOTIF_TYPE_INSPECTION_PASSED,
@@ -54,10 +55,14 @@ from .const import (
     NOTIF_TYPE_PENDING_REWARD_CLAIM,
     NOTIF_TYPE_PERSONAL_BEST,
     NOTIF_TYPE_PET_EVOLVED,
+    NOTIF_TYPE_POINTS_EXPIRING,
     NOTIF_TYPE_PRESENCE_ARRIVAL,
     NOTIF_TYPE_RAFFLE_DRAWN,
     NOTIF_TYPE_RECAP_READY,
     NOTIF_TYPE_REWARD_OWED,
+    NOTIF_TYPE_SCREEN_TIME_JAR_OPENED,
+    NOTIF_TYPE_SCREEN_TIME_LOW,
+    NOTIF_TYPE_SCREEN_TIME_OUT,
     NOTIF_TYPE_SEASON_CHAMPION,
     NOTIF_TYPE_STREAK_AT_RISK,
     NOTIF_TYPE_STREAK_FREEZE_USED,
@@ -203,6 +208,14 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     # has switched appeals on); the child's decision push is opt-in.
     NotificationTypeMeta(NOTIF_TYPE_APPEAL_SUBMITTED, "parent", False, False, False, True),
     NotificationTypeMeta(NOTIF_TYPE_APPEAL_DECIDED, "child", False, False, False, False),
+    # Screen-time bank: opt-in; the card shows the balance either way.
+    NotificationTypeMeta(NOTIF_TYPE_SCREEN_TIME_LOW, "both", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_SCREEN_TIME_OUT, "both", False, False, False, False),
+    NotificationTypeMeta(NOTIF_TYPE_SCREEN_TIME_JAR_OPENED, "both", False, False, False, False),
+    # Points expiry: opt-in; the card shows the warning either way.
+    NotificationTypeMeta(NOTIF_TYPE_POINTS_EXPIRING, "child", False, False, False, False),
+    # Child-chosen reminder times: only ever sent to the child who set one.
+    NotificationTypeMeta(NOTIF_TYPE_CHORE_SELF_REMINDER, "child", False, False, False, False),
 ]
 
 NOTIFICATION_TYPES_BY_ID: dict[str, NotificationTypeMeta] = {t.id: t for t in NOTIFICATION_TYPES}
@@ -217,6 +230,10 @@ _OWN_EVENT_TYPES: frozenset[str] = frozenset(
         NOTIF_TYPE_AUCTION_OPENED,
         NOTIF_TYPE_BOOST_STARTED,
         NOTIF_TYPE_PERSONAL_BEST,
+        NOTIF_TYPE_SCREEN_TIME_LOW,
+        NOTIF_TYPE_SCREEN_TIME_OUT,
+        NOTIF_TYPE_SCREEN_TIME_JAR_OPENED,
+        NOTIF_TYPE_POINTS_EXPIRING,
         NOTIF_TYPE_BADGE_EARNED,
         NOTIF_TYPE_BOUNTY_POSTED,
         NOTIF_TYPE_CELEBRATION,

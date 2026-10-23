@@ -194,6 +194,10 @@
         "rating": {
           "name": "Quality rating",
           "description": "Optional 1-3 star rating of how well the chore was done. When quality ratings are enabled it scales the points by that star's multiplier; leave empty to pay 100%."
+        },
+        "note": {
+          "name": "Praise note",
+          "description": "Optional short message for the child, shown on their card today (up to 120 characters)."
         }
       }
     },
@@ -266,6 +270,10 @@
         "child_id": {
           "name": "Child ID",
           "description": "The ID of the child claiming the reward"
+        },
+        "recipient_id": {
+          "name": "Recipient ID",
+          "description": "Buy it for a brother or sister instead. The claiming child pays; needs \"Children can buy rewards for each other\" switched on."
         }
       }
     },
@@ -1558,6 +1566,96 @@
           "description": "Optional words for the child, up to 200 characters"
         }
       }
+    },
+    "adjust_screen_time": {
+      "name": "Adjust screen time",
+      "description": "Add minutes to a child's screen-time balance, or take some away with a negative number.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child whose balance changes"
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Minutes to add; negative to take away. The balance never goes below zero."
+        },
+        "reason": {
+          "name": "Reason",
+          "description": "A short note for the balance history"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "Save screen time",
+      "description": "Move a child's unused screen-time minutes into their weekend jar. Today's allowance goes in first, then banked minutes, up to the jar's cap.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child saving the minutes"
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "How many minutes to save. Leave empty to save everything that fits."
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "Rate a reward",
+      "description": "The child gives a reward they have had 1 to 3 stars. Once the reward is handed over (or approved, when fulfilment tracking is off), for 3 days.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child who had the reward"
+        },
+        "claim_id": {
+          "name": "Claim ID",
+          "description": "The reward claim being rated"
+        },
+        "stars": {
+          "name": "Stars",
+          "description": "1 to 3 stars"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "Sibling check",
+      "description": "A child checks a sibling's chore that is waiting for approval. done approves it and pays the checker the sibling-check bonus; not_yet leaves it waiting for a parent, with a note.",
+      "fields": {
+        "child_id": {
+          "name": "Checker child ID",
+          "description": "The child doing the checking (not the one who did the chore)"
+        },
+        "completion_id": {
+          "name": "Completion ID",
+          "description": "The waiting completion, from the sibling_checks attribute of the checker's entry in sensor.taskmate_overview"
+        },
+        "verdict": {
+          "name": "Verdict",
+          "description": "done (looks done) or not_yet"
+        },
+        "note": {
+          "name": "Note",
+          "description": "Optional words for the parent with a not_yet, up to 120 characters"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "Set chore reminder",
+      "description": "A child picks when to be reminded about one of their chores, inside the earliest and latest times set in TaskMate's settings. Leave the time empty to clear it.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child who wants reminding"
+        },
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The chore to be reminded about"
+        },
+        "time": {
+          "name": "Time",
+          "description": "HH:MM, e.g. 17:30. Empty clears the reminder."
+        }
+      }
     }
   },
   "entity": {
@@ -1630,7 +1728,17 @@
               "reward_delivered": "Reward handed over",
               "personal_best": "Personal best",
               "appeal_submitted": "Appeal submitted",
-              "appeal_decided": "Appeal decided"
+              "appeal_decided": "Appeal decided",
+              "screen_time_low": "Screen time running low",
+              "screen_time_out": "Screen time ran out",
+              "screen_time_changed": "Screen time changed",
+              "screen_time_saved": "Screen time saved",
+              "screen_time_jar_opened": "Screen-time jar opened",
+              "points_expired": "Points expired",
+              "points_expiring": "Points about to expire",
+              "reward_rated": "Reward rated",
+              "penalty_warning": "Penalty warning",
+              "sibling_check": "Sibling check"
             }
           }
         }
@@ -1646,7 +1754,9 @@
               "scheduled_change_applied": "Scheduled change applied",
               "raffle_drawn": "Raffle drawn",
               "boost_started": "Boost started",
-              "boost_ended": "Boost ended"
+              "boost_ended": "Boost ended",
+              "bin_day": "Bin-day chore",
+              "shopping_job": "Shopping-list job"
             }
           }
         }

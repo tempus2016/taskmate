@@ -69,6 +69,7 @@ The card works best in a **Panel** view, so it fills the screen. The full-screen
 | `show_pet` | boolean | `true` | *(v7.1.0)* Show the child's [virtual pet](Virtual-Pets.md) in the side column of their screen, while pets are switched on |
 | `show_badges` | boolean | `true` | *(v7.3.0)* Show the child's earned badges and their next badge's progress in the side column |
 | `allow_avatar_change` | boolean | `true` | *(v7.3.0)* Let a child tap their face to switch between the avatars they've unlocked |
+| `seasonal` | boolean | `true` | *(v7.3.0)* Dress the child screen for a [seasonal theme](Card-Looks.md#seasonal-themes) while one is on; `false` keeps it plain |
 | `show_boost_alert` | boolean | `true` | *(v7.1.0)* Leave ambient mode and fill the screen when a [boost](Boost-Windows.md) starts, until someone taps. The countdown strip shows either way |
 | `children` | list | all children | Which children appear on the picker, in order. Each entry is `child_id` plus an optional `require_pin` (default `true`) |
 

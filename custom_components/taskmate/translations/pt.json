@@ -194,6 +194,10 @@
         "rating": {
           "name": "Avaliação de qualidade",
           "description": "Avaliação opcional de 1 a 3 estrelas sobre a qualidade da tarefa. Com as avaliações de qualidade ativadas, os pontos são multiplicados pelo multiplicador dessa estrela; deixe vazio para pagar 100%."
+        },
+        "note": {
+          "name": "Elogio",
+          "description": "Mensagem curta opcional para a criança, mostrada no cartão dela hoje (até 120 caracteres)."
         }
       }
     },
@@ -266,6 +270,10 @@
         "child_id": {
           "name": "ID da criança",
           "description": "O ID da criança que reclama a recompensa"
+        },
+        "recipient_id": {
+          "name": "ID do destinatário",
+          "description": "Comprar antes para um irmão ou irmã. Paga a criança que reclama; requer \"As crianças podem comprar recompensas umas às outras\" ligado."
         }
       }
     },
@@ -1558,6 +1566,96 @@
           "description": "Palavras opcionais para a criança, até 200 caracteres"
         }
       }
+    },
+    "adjust_screen_time": {
+      "name": "Ajustar tempo de ecrã",
+      "description": "Adiciona minutos ao saldo de tempo de ecrã de uma criança, ou retira com um número negativo.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança cujo saldo muda"
+        },
+        "minutes": {
+          "name": "Minutos",
+          "description": "Minutos a adicionar; negativo para retirar. O saldo nunca fica abaixo de zero."
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Uma nota curta para o histórico"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "Guardar tempo de ecrã",
+      "description": "Move os minutos de tempo de ecrã não usados de uma criança para o frasco do fim de semana. Primeiro a quota de hoje, depois os minutos poupados, até ao limite do frasco.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança que guarda os minutos"
+        },
+        "minutes": {
+          "name": "Minutos",
+          "description": "Quantos minutos guardar. Deixe vazio para guardar tudo o que couber."
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "Avaliar uma recompensa",
+      "description": "A criança dá 1 a 3 estrelas a uma recompensa que recebeu. Depois de entregue (ou aprovada, se o registo de entregas estiver desligado), durante 3 dias.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança que recebeu a recompensa"
+        },
+        "claim_id": {
+          "name": "ID do pedido",
+          "description": "O pedido de recompensa avaliado"
+        },
+        "stars": {
+          "name": "Estrelas",
+          "description": "1 a 3 estrelas"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "Verificação entre irmãos",
+      "description": "Uma criança verifica a tarefa de um irmão que aguarda aprovação. done aprova-a e paga o bónus a quem verifica; not_yet deixa-a à espera de um adulto, com uma nota.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança que verifica",
+          "description": "A criança que verifica (não a que fez a tarefa)"
+        },
+        "completion_id": {
+          "name": "ID da conclusão",
+          "description": "A conclusão pendente, do atributo sibling_checks da criança em sensor.taskmate_overview"
+        },
+        "verdict": {
+          "name": "Veredicto",
+          "description": "done (parece feito) ou not_yet"
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Palavras opcionais para o adulto com not_yet, até 120 caracteres"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "Definir lembrete de tarefa",
+      "description": "Uma criança escolhe quando quer ser lembrada de uma tarefa, entre a hora mais cedo e a mais tarde definidas nas definições do TaskMate. Hora vazia remove o lembrete.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança que quer ser lembrada"
+        },
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "A tarefa a lembrar"
+        },
+        "time": {
+          "name": "Hora",
+          "description": "HH:MM, p. ex. 17:30. Vazio remove o lembrete."
+        }
+      }
     }
   },
   "entity": {
@@ -1630,7 +1728,17 @@
               "reward_delivered": "Recompensa entregue",
               "personal_best": "Recorde pessoal",
               "appeal_submitted": "Recurso enviado",
-              "appeal_decided": "Recurso decidido"
+              "appeal_decided": "Recurso decidido",
+              "screen_time_low": "Tempo de ecrã a acabar",
+              "screen_time_out": "O tempo de ecrã acabou",
+              "screen_time_changed": "Tempo de ecrã alterado",
+              "screen_time_saved": "Tempo de ecrã guardado",
+              "screen_time_jar_opened": "Frasco de tempo de ecrã aberto",
+              "points_expired": "Pontos expirados",
+              "points_expiring": "Pontos prestes a expirar",
+              "reward_rated": "Recompensa avaliada",
+              "penalty_warning": "Aviso antes da penalização",
+              "sibling_check": "Verificação entre irmãos"
             }
           }
         }
@@ -1646,7 +1754,9 @@
               "scheduled_change_applied": "Alteração agendada aplicada",
               "raffle_drawn": "Sorteio realizado",
               "boost_started": "Boost iniciado",
-              "boost_ended": "Boost terminado"
+              "boost_ended": "Boost terminado",
+              "bin_day": "Tarefa do dia do lixo",
+              "shopping_job": "Tarefa da lista de compras"
             }
           }
         }

@@ -41,11 +41,15 @@ Click a reward's **✏** button to edit it. The dialog is identical to the add f
 
 ### What happens when you delete a reward
 
-- All pending claims for that reward are removed
-- All pool allocations for that reward are cleared (points are **not** refunded to children)
+- Its claims are removed
+- Points the children had saved towards it are refunded to them
 - The reward disappears from every rewards card
 
-If a reward has active pool allocations and you want to cancel it gracefully, this is currently the escape hatch — delete and recreate.
+For 7 days it can be brought back, claims and savings included: use **Undo** on the message straight after deleting, or **Settings → Recently deleted**. See [Recently Deleted](Recently-Deleted.md).
+
+## Putting rewards in order
+
+On the panel's Rewards page, drag a reward card by its ⠿ handle onto another to move it there; the order is saved straight away. On a touchscreen, use **Reorder** and the arrows. The [rewards card](Rewards.md) then lists rewards in your order instead of jackpots first and cheapest first. New rewards go to the end.
 
 ## Auto-restock (v4.0.0)
 

@@ -132,6 +132,17 @@ class TestReferenceImage:
             run(coord.async_update_chore(chore))
             assert deleted == ["/api/taskmate/image/old.jpg"]
             run(coord.async_remove_chore(chore.id))
+            # Kept while the chore can still be restored from Recently deleted...
+            assert deleted == ["/api/taskmate/image/old.jpg"]
+        # ...and deleted with the snapshot after 7 days.
+        with (
+            patch("custom_components.taskmate.coord_trash.dt_util.now", return_value=_now() + dt.timedelta(days=8)),
+            patch(
+                "custom_components.taskmate.coord_chores.images.async_delete_image",
+                AsyncMock(side_effect=lambda h, u: deleted.append(u)),
+            ),
+        ):
+            run(coord.async_purge_recently_deleted())
         assert deleted == ["/api/taskmate/image/old.jpg", "/api/taskmate/image/new.jpg"]
 
     def test_a_picture_another_chore_uses_is_kept(self):

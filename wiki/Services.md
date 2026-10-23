@@ -64,6 +64,7 @@ Approve a completed chore and award points.
 | `completion_id` | ✅ | ID of the pending chore completion |
 | `points` | ❌ | Award this many points instead of the chore's own value (v5.7.0, #832). Replaces the **base** points, so the multipliers below still apply on top. Omit to use the chore's value. |
 | `rating` | ❌ | (v6.0.0) A 1–3 star [quality rating](Quality-Ratings.md). When quality ratings are switched on in Settings, the points are scaled by that star's multiplier (by default ★ 75%, ★★ 100%, ★★★ 125%). Leave it out to pay 100%. Ignored while quality ratings are off. |
+| `note` | ❌ | A [praise note](Praise-Notes.md) for the child, up to 120 characters, shown on their card today and signed with the approving user's name |
 
 ```yaml
 service: taskmate.approve_chore
@@ -304,6 +305,7 @@ For **pool-mode** rewards: the child's pool allocation must equal or exceed the 
 | --- | --- | --- |
 | `reward_id` | ✅ | ID of the reward |
 | `child_id` | ✅ | ID of the claiming child |
+| `recipient_id` | ❌ | Buy it for a brother or sister instead: `child_id` pays, the recipient gets it. Needs **Children can buy rewards for each other**. See [Reward extras](Reward-Extras.md#buying-a-reward-for-a-sibling) |
 
 ### `taskmate.approve_reward`
 Approve a pending reward claim. For wallet rewards, deducts cost from the child's balance. For pool rewards, clears the allocation (points were already deducted at deposit time).
@@ -341,6 +343,46 @@ Refused for a claim that is not owed, or already marked delivered.
 | Field | Required | Description |
 | --- | --- | --- |
 | `boost_id` | ✅ | From the `boosts` attribute of `sensor.taskmate_overview` |
+
+### `taskmate.adjust_screen_time`
+Add minutes to a child's [screen-time](Screen-Time-Bank.md) balance, or take some away. Parent action.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `child_id` | ✅ | The child |
+| `minutes` | ✅ | −10080 to 10080; negative takes minutes away. The balance never goes below zero |
+| `reason` | ❌ | A short note for the balance history, up to 60 characters |
+
+### `taskmate.save_screen_time`
+A child moves unused minutes into their [screen-time jar](Screen-Time-Bank.md#weekend-jar). Today's allowance goes in first, then banked minutes, up to the jar's cap. Linked-child check, like `complete_chore`. Needs the jar switched on.
+### `taskmate.sibling_check`
+A child checks a sibling's chore that is waiting for approval. See [Sibling Checks](Sibling-Checks.md). Linked-child check on the **checker**, like `complete_chore`; TaskMate also checks the checker may check that child and isn't checking their own chore.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `child_id` | ✅ | The child doing the checking |
+| `completion_id` | ✅ | From the checker's `sibling_checks` list on `sensor.taskmate_overview` |
+| `verdict` | ✅ | `done` approves it and pays the checker the bonus; `not_yet` leaves it waiting for a parent |
+| `note` | ❌ | With `not_yet`, up to 120 characters for the parent |
+
+### `taskmate.set_chore_reminder`
+A child picks when to be reminded about one of their chores. See [Child-Chosen Reminders](Child-Chosen-Reminders.md). Linked-child check, like `complete_chore`.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `child_id` | ✅ | The child |
+| `minutes` | ❌ | How many to save; leave out to save everything that fits |
+
+### `taskmate.rate_reward`
+The child gives a reward they've had 1 to 3 stars, once it's been handed over (or approved, when [reward fulfilment](Reward-Fulfilment.md) is off), for three days. Once only. See [Rate the reward](Reward-Extras.md#rate-the-reward). Linked-child check, like `complete_chore`.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `child_id` | ✅ | The child who had the reward (for a gift, the recipient) |
+| `claim_id` | ✅ | From the child's `rate_rewards` list on `sensor.taskmate_overview` |
+| `stars` | ✅ | 1 to 3 |
+| `chore_id` | ✅ | One of the child's chores |
+| `time` | ❌ | `HH:MM` inside the earliest/latest times in Settings. Empty or left out clears the reminder |
 
 ### `taskmate.appeal`
 (v7.1.0) A child asks for a second look at a rejection or penalty from the last 48 hours. See [Appeals](Appeals.md). Linked-child check, like `complete_chore`.

@@ -194,6 +194,10 @@
         "rating": {
           "name": "Sterrenbeoordeling",
           "description": "Optionele beoordeling van 1-3 sterren voor hoe goed de taak is gedaan. Als sterrenbeoordeling aan staat, worden de punten vermenigvuldigd met die ster; laat leeg voor 100%."
+        },
+        "note": {
+          "name": "Compliment",
+          "description": "Optioneel kort bericht voor het kind, vandaag zichtbaar op zijn kaart (maximaal 120 tekens)."
         }
       }
     },
@@ -266,6 +270,10 @@
         "child_id": {
           "name": "Kind-ID",
           "description": "Het ID van het kind dat de beloning inwisselt"
+        },
+        "recipient_id": {
+          "name": "Ontvanger-ID",
+          "description": "Koop hem in plaats daarvan voor een broer of zus. Het kind dat inwisselt betaalt; vereist dat 'Kinderen kunnen beloningen voor elkaar kopen' aan staat."
         }
       }
     },
@@ -1558,6 +1566,96 @@
           "description": "Optionele woorden voor het kind, tot 200 tekens"
         }
       }
+    },
+    "adjust_screen_time": {
+      "name": "Schermtijd aanpassen",
+      "description": "Voeg minuten toe aan het schermtijdsaldo van een kind, of haal er af met een negatief getal.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind van wie het saldo verandert"
+        },
+        "minutes": {
+          "name": "Minuten",
+          "description": "Minuten om toe te voegen; negatief om af te halen. Het saldo zakt nooit onder nul."
+        },
+        "reason": {
+          "name": "Reden",
+          "description": "Een korte notitie voor de geschiedenis"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "Schermtijd sparen",
+      "description": "Zet de ongebruikte schermtijdminuten van een kind in de weekendpot. Eerst het tegoed van vandaag, dan gespaarde minuten, tot de pot vol is.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind dat de minuten spaart"
+        },
+        "minutes": {
+          "name": "Minuten",
+          "description": "Hoeveel minuten er gespaard worden. Leeg laten om alles te sparen wat past."
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "Beloning beoordelen",
+      "description": "Het kind geeft een beloning die het heeft gehad 1 tot 3 sterren. Zodra de beloning is gegeven (of goedgekeurd als het bijhouden van uitreiken uit staat), 3 dagen lang.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind dat de beloning kreeg"
+        },
+        "claim_id": {
+          "name": "Claim-ID",
+          "description": "De beloningsclaim die wordt beoordeeld"
+        },
+        "stars": {
+          "name": "Sterren",
+          "description": "1 tot 3 sterren"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "Broer- en zuscontrole",
+      "description": "Een kind controleert een taak van een broer of zus die op goedkeuring wacht. done keurt hem goed en geeft de controleur de bonus; not_yet laat hem met een notitie op een ouder wachten.",
+      "fields": {
+        "child_id": {
+          "name": "ID van het controlerende kind",
+          "description": "Het kind dat controleert (niet het kind dat de taak deed)"
+        },
+        "completion_id": {
+          "name": "Voltooiings-ID",
+          "description": "De wachtende voltooiing, uit het attribuut sibling_checks van het kind in sensor.taskmate_overview"
+        },
+        "verdict": {
+          "name": "Oordeel",
+          "description": "done (lijkt klaar) of not_yet"
+        },
+        "note": {
+          "name": "Notitie",
+          "description": "Optionele woorden voor de ouder bij not_yet, maximaal 120 tekens"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "Taakherinnering instellen",
+      "description": "Een kind kiest wanneer het aan een van zijn taken herinnerd wil worden, binnen de vroegste en laatste tijd uit de TaskMate-instellingen. Een lege tijd wist de herinnering.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind dat herinnerd wil worden"
+        },
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "De taak waaraan herinnerd moet worden"
+        },
+        "time": {
+          "name": "Tijd",
+          "description": "UU:MM, bijv. 17:30. Leeg wist de herinnering."
+        }
+      }
     }
   },
   "entity": {
@@ -1630,7 +1728,17 @@
               "reward_delivered": "Beloning overhandigd",
               "personal_best": "Persoonlijk record",
               "appeal_submitted": "Bezwaar ingediend",
-              "appeal_decided": "Over bezwaar beslist"
+              "appeal_decided": "Over bezwaar beslist",
+              "screen_time_low": "Schermtijd bijna op",
+              "screen_time_out": "Schermtijd is op",
+              "screen_time_changed": "Schermtijd gewijzigd",
+              "screen_time_saved": "Schermtijd gespaard",
+              "screen_time_jar_opened": "Schermtijdpot geopend",
+              "points_expired": "Punten verlopen",
+              "points_expiring": "Punten verlopen binnenkort",
+              "reward_rated": "Beloning beoordeeld",
+              "penalty_warning": "Waarschuwing voor straf",
+              "sibling_check": "Broer- en zuscontrole"
             }
           }
         }
@@ -1646,7 +1754,9 @@
               "scheduled_change_applied": "Geplande wijziging toegepast",
               "raffle_drawn": "Loterij getrokken",
               "boost_started": "Boost gestart",
-              "boost_ended": "Boost beëindigd"
+              "boost_ended": "Boost beëindigd",
+              "bin_day": "Kliko-klusje",
+              "shopping_job": "Klusje van het boodschappenlijstje"
             }
           }
         }

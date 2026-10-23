@@ -185,7 +185,7 @@ test("panel: settings offer stacking, the wake lists and the rules", () => {
 test("panel: a recurring boost is saved over the websocket", async () => {
   const p = panel();
   const sent = [];
-  p._callWS = async (msg) => { sent.push(msg); return {}; };
+  p._callWS = async (msg) => { sent.push(msg); return { ok: true, res: {} }; };
   p._render = () => {};
   p._fetchState = async () => {};
   p._showToast = () => {};
@@ -198,4 +198,29 @@ test("panel: a recurring boost is saved over the websocket", async () => {
   assert.equal(sent[0].type, "taskmate/boosts/save_rule");
   assert.deepEqual(plain(sent[0].days), [5, 6]);
   assert.equal(sent[0].name, "Weekend");
+});
+
+test("panel: a failed rule save shows the error and keeps the dialog open", async () => {
+  const p = panel();
+  const toasts = [];
+  let closed = false;
+  p._callWS = async () => ({ ok: false, err: "Pick at least one day." });
+  p._render = () => {};
+  p._fetchState = async () => {};
+  p._showToast = (kind, text) => toasts.push([kind, text]);
+  p._closeDialog = () => { closed = true; };
+  p._openDialog = (d) => { p._dialog = d; };
+  p._boostClick("boost-rule-add", { dataset: {} });
+  await p._saveBoostRule(p._dialog.data, true);
+  assert.deepEqual(toasts, [["err", "Pick at least one day."]]);
+  assert.equal(closed, false);
+});
+
+test("panel: test wake reports how many screens were woken", async () => {
+  const p = panel();
+  const toasts = [];
+  p._callWS = async () => ({ ok: true, res: { sent: 3 } });
+  p._showToast = (kind, text) => toasts.push([kind, text]);
+  await p._boostTestWake();
+  assert.deepEqual(toasts, [["ok", 'panel.boost_test_wake_sent:{"count":3}']]);
 });

@@ -217,3 +217,9 @@ automation:
 - **Use descriptions** — add context like "After three warnings" so there's no ambiguity about when the penalty applies
 - **Offer a way back** — a [make-it-right](Make-It-Right-Penalties.md) chore turns a penalty into something the child can fix
 - **Use `assigned_to`** — if you have children of different ages, assign age-appropriate penalties to specific children rather than showing all penalties for all children
+
+---
+
+## Related
+
+- [Penalty Warnings](Penalty-Warnings.md) — a warning the first time, points the next

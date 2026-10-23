@@ -402,6 +402,7 @@ class TaskMatePanel extends HTMLElement {
     this._onDragStart = this._onDragStart.bind(this);
     this._onDragOver = this._onDragOver.bind(this);
     this._onDrop = this._onDrop.bind(this);
+    this._onDragEnd = this._onDragEnd.bind(this);
     this._onVisibilityChange = this._onVisibilityChange.bind(this);
     this._lastConnected = null;
     this._showIds = localStorage.getItem("taskmate-show-ids") === "true";
@@ -477,6 +478,7 @@ class TaskMatePanel extends HTMLElement {
     this.addEventListener("dragstart", this._onDragStart);
     this.addEventListener("dragover", this._onDragOver);
     this.addEventListener("drop", this._onDrop);
+    this.addEventListener("dragend", this._onDragEnd);
     document.addEventListener("visibilitychange", this._onVisibilityChange);
     document.addEventListener("keydown", this._onDocKeyDown);
     if (!this.classList.contains("dark") && !this.classList.contains("light")) {
@@ -500,6 +502,7 @@ class TaskMatePanel extends HTMLElement {
     this.removeEventListener("dragstart", this._onDragStart);
     this.removeEventListener("dragover", this._onDragOver);
     this.removeEventListener("drop", this._onDrop);
+    this.removeEventListener("dragend", this._onDragEnd);
     document.removeEventListener("visibilitychange", this._onVisibilityChange);
     document.removeEventListener("keydown", this._onDocKeyDown);
     this._closeRowMenu();
@@ -553,7 +556,7 @@ class TaskMatePanel extends HTMLElement {
   static get _UNDO_DENY_PREFIXES() {
     return [
       "Weekend bonus", "Streak milestone bonus", "Perfect week bonus", "Weekly target bonus",
-      "Allocated to pool:", "Pool refund", "Points decay",
+      "Allocated to pool:", "Pool refund", "Points decay", "Points expired",
       "Savings interest", "Badge", "Streak freeze",
       "Wish savings", "Wish refund", "Wish pledge", "Wish redeemed",
     ];
@@ -592,6 +595,10 @@ class TaskMatePanel extends HTMLElement {
     }
     // Manual adjustment from the admin panel (#746). An exact match rather than a
     // prefix: unlike "Bonus: <name>" there is no trailing detail to extract.
+    // Points expiry: unspent points that faded away.
+    if (reason === 'Points expired') {
+      return this._t('activity.reason_points_expired');
+    }
     if (reason === 'Admin panel adjustment') {
       return this._t('activity.reason_admin_adjustment');
     }
@@ -685,14 +692,23 @@ class TaskMatePanel extends HTMLElement {
     }
   }
 
-  _showToast(kind, text) {
+  // `action` ({label, run}) adds a button, e.g. Undo after a delete.
+  _showToast(kind, text, action = null) {
     const existing = this.querySelector(".tm-toast");
     if (existing) existing.remove();
     const node = document.createElement("div");
     node.className = `tm-toast tm-toast-${kind}`;
     node.textContent = text;
+    if (action) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "tm-toast-act";
+      btn.textContent = action.label;
+      btn.addEventListener("click", () => { node.remove(); action.run(); });
+      node.appendChild(btn);
+    }
     this.appendChild(node);
-    setTimeout(() => { if (node.isConnected) node.remove(); }, 3500);
+    setTimeout(() => { if (node.isConnected) node.remove(); }, action ? 8000 : 3500);
   }
 
   _hashDialog() {
@@ -757,7 +773,23 @@ class TaskMatePanel extends HTMLElement {
     if (act === "new-menu")      { this._newMenuOpen = !this._newMenuOpen; this._render(); return; }
     if (act === "palette-open")  { this._openPalette(); return; }
     if (act === "palette-scrim") { if (e.target === t) this._closePalette(); return; }
-    if (act === "scope") {
+    if (act === "kid-drawer") { this._openDialog({ kind: "kid-drawer", data: { child_id: t.dataset.child || "" } }); return; }
+    if (act === "view-as")       { this._openViewAs(t.dataset.id); return; }
+    if (act === "view-as-child") { this._setViewAs("child_id", t.dataset.id); return; }
+    if (act === "settings-jump") { this._settingsJump(t.dataset.sec); return; }
+    if (act === "settings-discard") { this._discardSettings(); return; }
+    if (act === "leave-settings-stay") { this._closeDialog(true); return; }
+    if (act === "leave-settings-go") { this._leaveSettings(); return; }
+    if (act === "trash-restore") { this._restoreDeleted(t.dataset.kind, t.dataset.id); return; }
+    if (act === "reorder-rewards") { this._openRewardReorderDialog(); return; }
+    if (act === "save-reward-order") {
+      const order = (this._dialog && this._dialog.data && this._dialog.data.order) || [];
+      this._closeDialog(true);
+      this._saveRewardOrder(order);
+      return;
+    }
+    if (act === "scope" || act === "kid-drawer-scope") {
+      if (act === "kid-drawer-scope") { this._dialog = null; this._dialogInitialHash = null; }
       this._scope = t.dataset.child || "";
       if (this._scope) localStorage.setItem("taskmate-scope", this._scope);
       else localStorage.removeItem("taskmate-scope");
@@ -797,6 +829,12 @@ class TaskMatePanel extends HTMLElement {
         this._addToAllowlist(t.dataset.value);
         return;
       }
+      // Screen-time devices and bin-day calendars: saved lists, like the allowlist.
+      if (t.dataset.field.startsWith("_list:")) {
+        this._closeEntityDropdown();
+        this._editListSetting(t.dataset.field, t.dataset.value, true);
+        return;
+      }
       this._setEntityField(t.dataset.field, t.dataset.value); this._closeEntityDropdown(); this._render(); return;
     }
     if (act === "scrim") {
@@ -820,8 +858,10 @@ class TaskMatePanel extends HTMLElement {
     if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
     if (act === "answer-help") { this._answerHelp(t.dataset.id); return; }
     if (act && act.startsWith("boost-") && this._boostClick(act, t)) return;
+    if (act && (act.startsWith("st-") || act.startsWith("bin-") || act.startsWith("shop-")) && this._householdClick(act, t)) return;
     if (act === "appeal-overturn" || act === "appeal-uphold") { this._decideAppeal(t.dataset.id, act === "appeal-overturn"); return; }
     if (act === "reward-delivered") { this._markRewardDelivered(t.dataset.id); return; }
+    if (act === "print-voucher") { this._printVoucher(t.dataset.id); return; }
     if (act === "toggle-sick") { this._toggleSickDay(t.dataset.id); return; }
     if (act === "backdate-open") { this._openBackdateDialog(t.dataset.id); return; }
     if (act === "save-backdate") { this._saveBackdateDialog(); return; }
@@ -928,6 +968,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "add-tag")           { this._addTypedTag(); return; }
     if (act === "insights-view") {
       this._insightView = t.dataset.id;
+      if (this._insightView === "economy") this._economy = null;  // always fresh
       this._render();
       return;
     }
@@ -1013,9 +1054,10 @@ class TaskMatePanel extends HTMLElement {
     if (act === "bounty-icon")      { this._bountyDialogSet("icon", t.dataset.id); return; }
     if (act === "bounty-exp")       { this._bountyDialogSet("exp_mode", t.dataset.id); return; }
     if (act === "bounty-el-all")    { this._bountyDialogSet("eligible_child_ids", []); return; }
-    if (act === "child-color" && this._dialog?.data) {
+    if ((act === "child-color" || act === "child-celebration") && this._dialog?.data) {
       this._syncIconPickers();
-      this._dialog.data.color = t.dataset.v || "";
+      if (act === "child-color") this._dialog.data.color = t.dataset.v || "";
+      else this._dialog.data.celebration_style = t.dataset.v || "confetti";
       const body = this.querySelector(".tm-dialog-body");
       const scrollY = body ? body.scrollTop : 0;
       this._render();
@@ -1201,6 +1243,30 @@ class TaskMatePanel extends HTMLElement {
 
     if (act === "approve-all-chores") { this._doApproveAll(); return; }
     if (act === "approve-chore")  { this._doApprove("chore", t.dataset.id); return; }
+    if (act === "praise-toggle") {
+      const open = this._praiseOpen || (this._praiseOpen = new Set());
+      if (open.has(t.dataset.id)) open.delete(t.dataset.id); else open.add(t.dataset.id);
+      this._render();
+      return;
+    }
+    if (act === "praise-chip") {
+      (this._praiseText || (this._praiseText = {}))[t.dataset.id] = t.dataset.text || "";
+      const input = this.querySelector(`[data-praise-for="${CSS.escape(t.dataset.id)}"]`);
+      if (input) input.value = t.dataset.text || "";
+      return;
+    }
+    if (act === "check-pair") {
+      const on = !t.classList.contains("tm-chip-on");
+      t.classList.toggle("tm-chip-on", on);
+      t.setAttribute("aria-pressed", String(on));
+      return;
+    }
+    if (act === "heatmap-window") {
+      this._heatmapDays = Number(t.dataset.id);
+      this._heatmap = null;
+      this._loadHeatmap(this._heatmapDays);
+      return;
+    }
     if (act === "rate-chore") {
       // Quality rating (#927): pick a star, tap it again to clear. Approve
       // then pays the chosen rating; no pick pays 100%.
@@ -1259,6 +1325,7 @@ class TaskMatePanel extends HTMLElement {
   _onInput(e) {
     const t = e.target;
     if (!t.dataset) return;
+    if (this._activeTab === "settings") setTimeout(() => this._paintUnsavedBar(), 0);
     if (t.dataset.fbField) { this._fbInput(t); return; }
     if (t.dataset.wzIn) { this._wizardInput(t); return; }
     if (t.dataset.libIn) { this._libInput(t, false); return; }
@@ -1280,6 +1347,11 @@ class TaskMatePanel extends HTMLElement {
       // Restore focus to the filter input
       const f = this.querySelector("[data-filter='true']");
       if (f) { f.focus(); f.setSelectionRange(this._filter.length, this._filter.length); }
+      return;
+    }
+    // Praise note with an approval: keep what was typed across re-renders.
+    if (t.dataset.praiseFor) {
+      (this._praiseText || (this._praiseText = {}))[t.dataset.praiseFor] = t.value;
       return;
     }
     // Wishlist approval target (#932): keep what was typed across re-renders.
@@ -1378,6 +1450,8 @@ class TaskMatePanel extends HTMLElement {
   _onChange(e) {
     const t = e.target;
     if (!t.dataset) return;
+    if (this._activeTab === "settings") setTimeout(() => this._paintUnsavedBar(), 0);
+    if ("viewAsDesign" in t.dataset) { this._setViewAs("design", t.value); return; }
     if (t.dataset.fbField) { this._fbInput(t); return; }
     if (t.dataset.libIn) { this._libInput(t, true); return; }
     if (t.dataset.act === "bulk-toggle-row") {
@@ -1511,6 +1585,7 @@ class TaskMatePanel extends HTMLElement {
 
   _onValueChanged(e) {
     const t = e.target;
+    if (this._activeTab === "settings") setTimeout(() => this._paintUnsavedBar(), 0);
     // Period editor icon pickers live outside any dialog
     if (t.dataset?.tpField && t.dataset.tpIdx != null && this._timePeriodsDraft?.[Number(t.dataset.tpIdx)]) {
       const val = e.detail && "value" in e.detail ? e.detail.value : t.value;
@@ -1562,7 +1637,7 @@ class TaskMatePanel extends HTMLElement {
   _onDragStart(e) {
     const t = e.target.closest("[data-drag-id]");
     if (!t) return;
-    this._reorderDrag = { id: t.dataset.dragId };
+    this._reorderDrag = { id: t.dataset.dragId, kind: t.dataset.dragKind || "" };
     t.classList.add("tm-dragging");
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", t.dataset.dragId);
@@ -1573,10 +1648,29 @@ class TaskMatePanel extends HTMLElement {
     if (!t || !this._reorderDrag) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    if (this._reorderDrag.kind) {
+      this.querySelectorAll(".tm-drag-over").forEach(el => { if (el !== t) el.classList.remove("tm-drag-over"); });
+      t.classList.add("tm-drag-over");
+    }
+  }
+
+  // However a drag ends (dropped, or let go elsewhere), clear its marks; a
+  // drop that changes nothing leaves the page's markup, so no redraw does it.
+  _onDragEnd() {
+    this._reorderDrag = null;
+    this.querySelectorAll(".tm-dragging, .tm-drag-over").forEach(el => el.classList.remove("tm-dragging", "tm-drag-over"));
   }
 
   _onDrop(e) {
     const t = e.target.closest("[data-drag-id]");
+    // A reward card dropped on another (Rewards page): save the new order.
+    if (t && this._reorderDrag && this._reorderDrag.kind === "reward" && t.dataset.dragKind === "reward") {
+      e.preventDefault();
+      const fromId = this._reorderDrag.id;
+      this._reorderDrag = null;
+      this._moveReward(fromId, t.dataset.dragId);
+      return;
+    }
     if (!t || !this._reorderDrag || !this._dialog || this._dialog.kind !== "reorder") return;
     e.preventDefault();
     const fromId = this._reorderDrag.id;
@@ -1633,7 +1727,9 @@ class TaskMatePanel extends HTMLElement {
       : kind === "chore"
       ? `\n\n${this._t("panel.confirm_delete_chore_extra")}`
       : "";
-    if (!confirm(`${this._t("panel.confirm_delete_prompt", {kind: labels[kind].toLowerCase(), name: item.name})}${extraWarn}\n\n${this._t("panel.confirm_delete_suffix")}`)) return;
+    // Chores, rewards and quests wait in Recently deleted, so they can come back.
+    const suffix = ["chore", "reward", "quest"].includes(kind) ? "panel.confirm_delete_suffix_restorable" : "panel.confirm_delete_suffix";
+    if (!confirm(`${this._t("panel.confirm_delete_prompt", {kind: labels[kind].toLowerCase(), name: item.name})}${extraWarn}\n\n${this._t(suffix)}`)) return;
     this._doRemove(kind, id);
   }
 
@@ -1653,6 +1749,8 @@ class TaskMatePanel extends HTMLElement {
       penalty: "penalty_id", bonus: "bonus_id", group: "group_id",
       quest: "quest_id", challenge: "challenge_id",
     }[kind];
+    const collection = { chore: "chores", reward: "rewards", quest: "quests" }[kind];
+    const name = collection ? ((this._state[collection] || []).find(x => x.id === id) || {}).name || "" : "";
     const { ok, err } = await this._callWS({ type: wsType, [idField]: id });
     if (!ok) { this._showToast("err", this._t("panel.toast_delete_failed", {error: err})); return; }
     // Deleted from inside its own editor (#968): the editor has nothing left to edit.
@@ -1661,6 +1759,12 @@ class TaskMatePanel extends HTMLElement {
       this._dialogInitialHash = null;
     }
     await this._fetchState();
+    // Chores, rewards and quests wait in Recently deleted: offer Undo.
+    if (collection) {
+      this._showToast("ok", this._t("panel.trash_deleted", { name }),
+        { label: this._t("panel.trash_undo"), run: () => this._restoreDeleted(kind, id) });
+      return;
+    }
     this._showToast("ok", this._t("panel.toast_deleted"));
   }
 
@@ -1707,9 +1811,13 @@ class TaskMatePanel extends HTMLElement {
     const msg = { type: wsType, [idField]: id };
     const rating = kind === "chore" && this._ratingOn() ? (this._ratings || {})[id] : 0;
     if (rating) msg.rating = rating;
+    const note = kind === "chore" ? String((this._praiseText || {})[id] || "").trim().slice(0, 120) : "";
+    if (note) msg.note = note;
     const { ok, err } = await this._callWS(msg);
     if (!ok) { this._showToast("err", this._t("panel.toast_approve_failed", {error: err})); return; }
     if (this._ratings) delete this._ratings[id];
+    if (this._praiseText) delete this._praiseText[id];
+    if (this._praiseOpen) this._praiseOpen.delete(id);
     await this._fetchState();
     this._showToast("ok", this._t("panel.toast_approved"));
   }
@@ -1737,6 +1845,32 @@ class TaskMatePanel extends HTMLElement {
                     title="${this._esc(label)}" aria-label="${this._esc(label)}">${n <= sel ? "★" : "☆"}</button>`;
         }).join("")}
       </div>`;
+  }
+
+  // Praise note: a short message the child sees on their card with the approval.
+  _praiseChips() {
+    return ["praise.chip_well_done", "praise.chip_super_effort", "praise.chip_proud", "praise.chip_thank_you"]
+      .map(k => this._t(k));
+  }
+
+  _praiseRow(completionId) {
+    if (!(this._praiseOpen || new Set()).has(completionId)) return "";
+    const id = this._esc(completionId);
+    return `
+      <div class="tm-praise-row">
+        <input type="text" class="tm-input" maxlength="120" data-praise-for="${id}"
+               placeholder="${this._esc(this._t("praise.placeholder"))}" value="${this._esc((this._praiseText || {})[completionId] || "")}">
+        <div class="tm-chip-row">
+          ${this._praiseChips().map(text => `<button type="button" class="tm-chip-btn" data-act="praise-chip" data-id="${id}" data-text="${this._esc(text)}">${this._esc(text)}</button>`).join("")}
+        </div>
+      </div>`;
+  }
+
+  // Sibling check: a brother or sister said "not yet" (approvals only show waiting ones).
+  _siblingNoteLine(c, childById) {
+    if (!c.checked_by) return "";
+    const who = (childById[c.checked_by] && childById[c.checked_by].name) || "?";
+    return `<div class="tm-meta tm-sibling-note">👀 ${this._esc(this._t("panel.sibling_check_not_yet_note", { name: who }))}${c.check_note ? ` — “${this._esc(c.check_note)}”` : ""}</div>`;
   }
 
   async _doApproveAll() {
@@ -2240,6 +2374,7 @@ class TaskMatePanel extends HTMLElement {
         age_group: c.age_group || "",
         is_adult: !!c.is_adult,
         color: c.color || "",
+        celebration_style: c.celebration_style || "confetti",
         presence_entity: c.presence_entity || "",
         // Kiosk PIN (#930): write-only. The panel only knows whether one is set.
         kiosk_pin: "", kiosk_pin_clear: false,
@@ -2251,7 +2386,7 @@ class TaskMatePanel extends HTMLElement {
         availability_inverted: false, unavailability_entity: "",
         pause_streak_when_unavailable: false,
         linked_user_id: "", picture_entity: "", presence_entity: "",
-        birthday: "", age_group: "", is_adult: false, color: "",
+        birthday: "", age_group: "", is_adult: false, color: "", celebration_style: "confetti",
         kiosk_pin: "", kiosk_pin_clear: false, has_kiosk_pin: false,
       } });
     }
@@ -2301,14 +2436,16 @@ class TaskMatePanel extends HTMLElement {
           unavailability_entity: d.unavailability_entity || "",
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
           birthday: (d.birthday || "").trim(), age_group: d.age_group || "", is_adult: !!d.is_adult,
-          color: d.color || "", presence_entity: d.presence_entity || "",
+          color: d.color || "", celebration_style: d.celebration_style || "confetti",
+          presence_entity: d.presence_entity || "",
           picture_entity: d.picture_entity || "" }
       : { type: "taskmate/update_child", child_id: d.id, name: d.name.trim(), avatar: d.avatar || "mdi:account-circle",
           availability_entity: d.availability_entity || "", availability_inverted: !!d.availability_inverted,
           unavailability_entity: d.unavailability_entity || "",
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
           birthday: (d.birthday || "").trim(), age_group: d.age_group || "", is_adult: !!d.is_adult,
-          color: d.color || "", presence_entity: d.presence_entity || "",
+          color: d.color || "", celebration_style: d.celebration_style || "confetti",
+          presence_entity: d.presence_entity || "",
           picture_entity: d.picture_entity || "" };
     const { ok, err, res } = await this._callWS(payload);
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", {error: err})); return; }
@@ -2445,7 +2582,7 @@ class TaskMatePanel extends HTMLElement {
   async _doBulk(action, assigned_to) {
     const ids = [...this._bulkSel];
     if (!ids.length) return;
-    if (action === "delete" && !confirm(this._t("panel.bulk_delete_confirm", { count: ids.length }))) return;
+    if (action === "delete" && !confirm(this._t("panel.bulk_delete_confirm_restorable", { count: ids.length }))) return;
     const payload = { type: "taskmate/bulk_chore_action", action, chore_ids: ids };
     if (action === "reassign") payload.assigned_to = assigned_to || [];
     const { ok, err, res } = await this._callWS(payload);
@@ -2851,7 +2988,7 @@ class TaskMatePanel extends HTMLElement {
       restock_enabled: false, restock_amount: 0, restock_period: "weekly",
       unlock_entity: "", unlock_minutes: 30,
       time_lock_enabled: false, available_days: [], available_from: "", available_until: "",
-      streak_freeze: false };
+      streak_freeze: false, screen_minutes: 0, limit_count: 0, limit_period: "week", image_url: "" };
     if (id) {
       const r = (this._state.rewards || []).find(x => x.id === id);
       if (!r) return;
@@ -2879,8 +3016,9 @@ class TaskMatePanel extends HTMLElement {
       description: d.description || "",
       icon: d.icon || "mdi:gift",
       assigned_to: d.assigned_to || [],
-      // A streak freeze is one child's own token, never a shared jackpot (#925).
-      is_jackpot: !d.streak_freeze && !!d.is_jackpot,
+      // A streak freeze (#925) or screen time is one child's own, never a shared jackpot.
+      is_jackpot: !d.streak_freeze && !(Number(d.screen_minutes) > 0) && !!d.is_jackpot,
+      screen_minutes: Math.max(0, Math.min(1440, Math.round(Number(d.screen_minutes) || 0))),
       pool_enabled: !!d.pool_enabled,
       streak_freeze: !!d.streak_freeze,
       quantity: qty,
@@ -2894,6 +3032,10 @@ class TaskMatePanel extends HTMLElement {
       available_days: (d.available_days || []).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6),
       available_from: d.available_from || "",
       available_until: d.available_until || "",
+      // Per-child limit (0 = none) and the uploaded picture ("" = icon only).
+      limit_count: Math.max(0, Math.min(99, Math.round(Number(d.limit_count) || 0))),
+      limit_period: ["day", "week", "month"].includes(d.limit_period) ? d.limit_period : "week",
+      image_url: this._safeChoreImage(d.image_url),
     };
     const payload = wasAdd ? { type: "taskmate/add_reward", ...base } : { type: "taskmate/update_reward", reward_id: d.id, ...base };
     const { ok, err } = await this._callWS(payload);
@@ -3088,7 +3230,7 @@ class TaskMatePanel extends HTMLElement {
     const blank = { name: "", description: "", points: 10,
       icon: kind === "penalty" ? "mdi:alert-circle-outline" : "mdi:star-circle-outline",
       assigned_to: [],
-      ...(kind === "penalty" ? { redemption_chore_id: "", redemption_percent: 100, redemption_days: 1 } : {}) };
+      ...(kind === "penalty" ? { redemption_chore_id: "", redemption_percent: 100, redemption_days: 1, warn_first: false, warning_reset: "daily" } : {}) };
     if (id) {
       const item = ((kind === "penalty" ? this._state.penalties : this._state.bonuses) || []).find(x => x.id === id);
       if (!item) return;
@@ -3118,6 +3260,8 @@ class TaskMatePanel extends HTMLElement {
         redemption_chore_id: d.redemption_chore_id || "",
         redemption_percent: Math.min(100, Math.max(1, Math.round(Number(d.redemption_percent) || 100))),
         redemption_days: Math.min(7, Math.max(1, Math.round(Number(d.redemption_days) || 1))),
+        warn_first: !!d.warn_first,
+        warning_reset: d.warning_reset === "weekly" ? "weekly" : "daily",
       } : {}),
     };
     const payload = wasAdd ? { type: wsType, ...base } : { type: wsType, [idField]: d.id, ...base };
@@ -3137,10 +3281,12 @@ class TaskMatePanel extends HTMLElement {
   async _doApplyPenBon(kind, id, child_id) {
     const wsType = kind === "penalty" ? "taskmate/apply_penalty" : "taskmate/apply_bonus";
     const idField = `${kind}_id`;
-    const { ok, err } = await this._callWS({ type: wsType, [idField]: id, child_id });
+    const { ok, err, res } = await this._callWS({ type: wsType, [idField]: id, child_id });
     if (!ok) { this._showToast("err", this._t("panel.toast_apply_failed", {error: err})); return; }
     this._closeDialog(true);
     await this._fetchState();
+    // Warning first: the first time in the period is only the warning.
+    if (res && res.warning) { this._showToast("ok", this._t("panel.toast_penalty_warning")); return; }
     this._showToast("ok", this._t(kind === "penalty" ? "panel.toast_penalty_applied" : "panel.toast_bonus_applied"));
   }
 
@@ -3627,6 +3773,27 @@ class TaskMatePanel extends HTMLElement {
       payload.boost_wake_screens = Array.from(root.querySelectorAll("[data-boost-screen]")).filter(el => el.checked).map(el => el.dataset.boostScreen);
       payload.boost_wake_devices = Array.from(root.querySelectorAll("[data-boost-device]")).filter(el => el.checked).map(el => el.dataset.boostDevice);
     }
+    // Sibling checks: who may check whom.
+    const pairEls = root.querySelectorAll("[data-check-pair]");
+    if (pairEls.length) {
+      const pairs = {};
+      for (const el of pairEls) {
+        if (!el.classList.contains("tm-chip-on")) continue;
+        const [checker, checkee] = el.dataset.checkPair.split(":");
+        (pairs[checker] || (pairs[checker] = [])).push(checkee);
+      }
+      payload.sibling_check_pairs = pairs;
+    }
+    // Bin-day chores: who can be given the job.
+    const binKids = root.querySelectorAll("[data-bin-kid]");
+    if (binKids.length) {
+      payload.bin_day_children = Array.from(binKids).filter(el => el.classList.contains("tm-chip-on")).map(el => el.dataset.binKid);
+    }
+    // Shopping-list jobs: the same choice of children.
+    const shopKids = root.querySelectorAll("[data-shop-kid]");
+    if (shopKids.length) {
+      payload.shopping_jobs_children = Array.from(shopKids).filter(el => el.classList.contains("tm-chip-on")).map(el => el.dataset.shopKid);
+    }
     // Surprise inspections (#981): the children the random pick may choose.
     const inspKids = root.querySelectorAll("[data-insp-kid]");
     if (inspKids.length) {
@@ -3677,6 +3844,7 @@ class TaskMatePanel extends HTMLElement {
     this._vacationDraft = null;
     this._settingsEntityDraft = null;
     await this._fetchState();
+    this._captureSettingsBaseline();
     this._showToast("ok", this._t("panel.toast_settings_saved", {count: (res && res.updated || []).length}));
   }
 
@@ -3860,6 +4028,7 @@ class TaskMatePanel extends HTMLElement {
   // ---- rendering -------------------------------------------------------
   _render() {
     this._rendered = true;
+    this._guardSettingsLeave();
     // A re-render rebuilds the rows the floating row menu is anchored to, so
     // drop any open menu rather than leave it orphaned/mispositioned.
     if (this._rowMenuEl) this._closeRowMenu();
@@ -3904,6 +4073,8 @@ class TaskMatePanel extends HTMLElement {
       this._applyDesign();
       this._bindHaPickers();
       this._mountBackdateCard();
+      this._mountViewAsCard();
+      this._afterSettingsRender(true);
       if (this._palette) this._focusPalette();
       return;
     }
@@ -3943,6 +4114,7 @@ class TaskMatePanel extends HTMLElement {
     const fbFocus = this._fbFocusSnapshot();
     let anyChanged = false;
     let paletteChanged = false;
+    let bodyChanged = false;
     for (const [name, html] of Object.entries(zones)) {
       if (this._zoneCache[name] === html) continue;
       this._zoneCache[name] = html;
@@ -3953,6 +4125,7 @@ class TaskMatePanel extends HTMLElement {
       this._markDialogEntry(el, hadDialog);
       anyChanged = true;
       if (name === "palette") paletteChanged = true;
+      if (name === "body") bodyChanged = true;
     }
     // A rebuilt command search has a fresh input: give it the focus back.
     if (paletteChanged && this._palette) this._focusPalette();
@@ -3969,6 +4142,15 @@ class TaskMatePanel extends HTMLElement {
 
     this._applyDesign();
     this._mountBackdateCard();
+    this._mountViewAsCard();
+    this._afterSettingsRender(bodyChanged);
+  }
+
+  // A rebuilt Settings page starts clean: what it shows is what is saved.
+  _afterSettingsRender(bodyChanged) {
+    if (!bodyChanged || this._activeTab !== "settings") return;
+    if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => this._captureSettingsBaseline());
+    else this._captureSettingsBaseline();
   }
 
   // A dialog plays its opening animation only when it first appears (#974).
@@ -4213,8 +4395,8 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-scope" role="group" aria-label="${this._esc(this._t("panel.scope_label"))}">
         <button type="button" class="tm-scope-btn tm-scope-all ${current ? "" : "tm-scope-on"}" data-act="scope" data-child="" aria-pressed="${current ? "false" : "true"}">${this._t("panel.scope_all")}</button>
         ${children.map(c => `
-          <button type="button" class="tm-scope-btn ${current === c.id ? "tm-scope-on" : ""}" data-act="scope" data-child="${this._esc(c.id)}"
-                  aria-pressed="${current === c.id ? "true" : "false"}" title="${this._esc(this._t("panel.scope_only", { name: c.name }))}">
+          <button type="button" class="tm-scope-btn ${current === c.id ? "tm-scope-on" : ""}" data-act="kid-drawer" data-child="${this._esc(c.id)}"
+                  aria-haspopup="dialog" title="${this._esc(this._t("panel.kid_drawer_open", { name: c.name }))}">
             ${this._childAvatar(c)}<span class="tm-scope-name">${this._esc(c.name)}</span>
           </button>`).join("")}
       </div>
@@ -4385,7 +4567,7 @@ class TaskMatePanel extends HTMLElement {
       case "templates":     return this._renderTemplatesTab();
       case "notifications": return this._renderNotificationsTab();
       case "audit":         return this._renderAuditTab();
-      case "settings":      return this._renderSettingsTab();
+      case "settings":      return this._renderSettingsPage();
       case "help":          return this._renderHelpTab();
       case "setup":         return this._wizardBody();
       default:          return `<div class="tm-card">${this._t("panel.tab_unknown")}</div>`;
@@ -4401,7 +4583,7 @@ class TaskMatePanel extends HTMLElement {
     const view = this._insightView || "fairness";
     const switcher = `
       <div class="tm-chip-row" style="margin-bottom:14px">
-        ${["fairness", "friction", "projection", ...(this._ratingOn() || view === "quality" ? ["quality"] : []), "moods", "health"].map(v => `
+        ${["fairness", "friction", "projection", ...(this._ratingOn() || view === "quality" ? ["quality"] : []), "moods", "economy", "calendar", "health"].map(v => `
           <button type="button" class="tm-chip-btn ${v === view ? "tm-chip-on" : ""}"
                   data-act="insights-view" data-id="${v}">
             ${this._t("panel.insights_view_" + v)}
@@ -4413,6 +4595,8 @@ class TaskMatePanel extends HTMLElement {
     if (view === "health") return switcher + this._renderHealthReport();
     if (view === "quality") return switcher + this._renderQualityReport();
     if (view === "moods") return switcher + this._renderMoodReport();
+    if (view === "economy") return switcher + this._renderEconomyReport();
+    if (view === "calendar") return switcher + this._renderHeatmapReport();
     return switcher + this._renderFairnessReport();
   }
 
@@ -4452,6 +4636,69 @@ class TaskMatePanel extends HTMLElement {
             `).join("")}
           </div>`}
       </div>`;
+  }
+
+  /** Calendar: chores done per child per day, darker for busier days. */
+  _renderHeatmapReport() {
+    const days = this._heatmapDays || 42;
+    const report = this._heatmap;
+    if (!report) {
+      this._loadHeatmap(days);
+      return `<div class="tm-card"><div class="tm-empty">${this._t("panel.insights_loading")}</div></div>`;
+    }
+    const start = new Date(`${report.start}T12:00:00`);
+    const lang = this._hass?.locale?.language || [];
+    // Monday-first weeks: pad the first row so each column is one weekday.
+    const lead = (start.getDay() + 6) % 7;
+    const weekdays = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i).toLocaleDateString(lang, { weekday: "narrow" }));
+    const level = (n, best) => !n ? 0 : Math.min(4, Math.max(1, Math.ceil((n / Math.max(best, 1)) * 4)));
+    const any = report.children.some(c => c.total > 0);
+    return `
+      <div class="tm-card">
+        <div class="tm-card-head">
+          <h2>${this._t("panel.insights_calendar_title")}</h2>
+          <div class="tm-chip-row">
+            ${[28, 42, 84].map(d => `
+              <button type="button" class="tm-chip-btn ${d === days ? "tm-chip-on" : ""}" data-act="heatmap-window" data-id="${d}">
+                ${this._t("panel.insights_last_days", { days: d })}
+              </button>`).join("")}
+          </div>
+        </div>
+        <span class="tm-field-hint">${this._t("panel.insights_calendar_intro")}</span>
+        ${!any ? `<div class="tm-empty">${this._t("panel.insights_no_data")}</div>` : `
+          <div class="tm-heat-wrap">
+            ${report.children.map(c => {
+              const best = Math.max(...c.counts, 1);
+              return `
+              <div class="tm-heat-child">
+                <div class="tm-heat-name">${this._esc(c.name)}
+                  <span class="tm-meta">${this._ltrNums(this._t("panel.insights_calendar_summary", { total: c.total, active: c.active_days, days: report.days }))}</span></div>
+                <div class="tm-heat-grid" role="img" aria-label="${this._esc(c.name)}">
+                  ${weekdays.map(w => `<span class="tm-heat-wd">${this._esc(w)}</span>`).join("")}
+                  ${"<i class=\"tm-heat-pad\"></i>".repeat(lead)}
+                  ${c.counts.map((n, i) => {
+                    const d = new Date(start.getTime() + i * 86400000);
+                    const label = `${d.toLocaleDateString(lang, { weekday: "short", day: "numeric", month: "short" })}: ${this._t(n === 1 ? "panel.insights_calendar_cell_one" : "panel.insights_calendar_cell", { count: n })}`;
+                    return `<i class="tm-heat-l${level(n, best)}" title="${this._esc(label)}"></i>`;
+                  }).join("")}
+                </div>
+              </div>`;
+            }).join("")}
+            <div class="tm-heat-legend">${this._t("panel.insights_calendar_less")}
+              ${[0, 1, 2, 3, 4].map(l => `<i class="tm-heat-l${l}"></i>`).join("")}
+              ${this._t("panel.insights_calendar_more")}</div>
+          </div>`}
+      </div>`;
+  }
+
+  async _loadHeatmap(days) {
+    if (this._heatmapLoading) return;
+    this._heatmapLoading = true;
+    const { ok, res, err } = await this._callWS({ type: "taskmate/reports/heatmap", days });
+    this._heatmapLoading = false;
+    if (!ok) { this._showToast("err", err); return; }
+    this._heatmap = res;
+    this._render();
   }
 
   async _loadMoods(days) {
@@ -4901,6 +5148,7 @@ class TaskMatePanel extends HTMLElement {
           <button type="button" class="tm-btn tm-btn-sm" data-act="edit-child" data-id="${this._esc(child.id)}">${this._t("panel.btn_edit")}</button>
           <button type="button" class="tm-btn tm-btn-sm" data-act="reorder-chores-for-child" data-id="${this._esc(child.id)}" title="${this._t("panel.chore_order_title")}">⇅ ${this._t("panel.chore_order_title")}</button>
           <button type="button" class="tm-btn tm-btn-sm" data-act="backdate-open" data-id="${this._esc(child.id)}" title="${this._esc(this._t("panel.backdate_hint"))}">📅 ${this._t("panel.backdate_button")}</button>
+          ${child.is_adult ? "" : `<button type="button" class="tm-btn tm-btn-sm" data-act="view-as" data-id="${this._esc(child.id)}">👁 ${this._t("panel.view_as_button")}</button>`}
           <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-child" data-id="${this._esc(child.id)}">${this._t("panel.btn_delete")}</button>
         </div>
       </article>
@@ -4969,7 +5217,7 @@ class TaskMatePanel extends HTMLElement {
       points: c.points_awarded,
     }));
     claims.filter(c => c.approved && this._childInScope(c.child_id)).forEach(c => events.push({
-      ts: c.approved_at || c.claimed_at, kind: "claim", child_id: c.child_id,
+      ts: c.approved_at || c.claimed_at, kind: "claim", child_id: c.child_id, claim_id: c.wish_id ? "" : c.id,
       child: (childById[c.child_id] || {}).name || "?",
       label: `${this._t("panel.activity_claimed_reward", {name: (rewardById[c.reward_id] || {}).name || this._t("panel.activity_deleted_reward")})}`,
       points: -(c.approved_cost ?? (rewardById[c.reward_id] || {}).cost ?? 0),
@@ -4996,7 +5244,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-timeline-time">${this._esc(this._timeAgo(ev.ts))}</div>
             <div class="tm-timeline-icon tm-timeline-${ev.kind}"><ha-icon icon="${ev.kind === 'completion' ? 'mdi:check-circle' : ev.kind === 'claim' ? 'mdi:gift' : ev.kind === 'inspection' ? 'mdi:magnify-scan' : ev.points >= 0 ? 'mdi:plus-circle' : 'mdi:minus-circle'}"></ha-icon></div>
             <div class="tm-timeline-body">
-              <div><strong>${this._esc(ev.child)}</strong> · ${this._esc(ev.label)}${ev.kind === "completion" && ev.completion_id ? ` ${this._inspSlot(ev.completion_id)}` : ""}</div>
+              <div><strong>${this._esc(ev.child)}</strong> · ${this._esc(ev.label)}${ev.kind === "completion" && ev.completion_id ? ` ${this._inspSlot(ev.completion_id)}` : ""}${ev.kind === "claim" && ev.claim_id ? ` <button type="button" class="tm-btn tm-btn-sm tm-voucher-btn" data-act="print-voucher" data-id="${this._esc(ev.claim_id)}" title="${this._t("panel.voucher_print")}" aria-label="${this._t("panel.voucher_print")}">🖨️</button>` : ""}</div>
               ${ev.note ? `<div class="tm-meta tm-insp-note">“${this._esc(ev.note)}”</div>` : ""}
             </div>
             <div class="tm-timeline-points ${ev.points >= 0 ? 'tm-pos' : 'tm-neg'} tm-numeric">${ev.points == null ? "" : `${ev.points >= 0 ? '+' : ''}${this._num(ev.points)}`}</div>
@@ -5048,9 +5296,13 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-approval-body">
             <div class="tm-approval-line">${this._t("panel.activity_completed_text", {child: this._esc((child && child.name) || "?"), chore: this._esc(choreName)})}</div>
             <div class="tm-meta">${this._timeAgo(c.completed_at)} · ${chorePoints} ${this._t("panel.activity_points")}${redoIds.has(c.id) ? ` · ${this._esc(this._t("panel.insp_redo_queue"))}` : ""}</div>
+            ${this._siblingNoteLine(c, childById)}
+            ${this._praiseRow(c.id)}
           </div>
           <div class="tm-approval-actions">
             ${this._ratingOn() ? this._ratingPicker(c.id) : ""}
+            <button type="button" class="tm-icon-btn tm-praise-btn ${(this._praiseOpen || new Set()).has(c.id) ? "tm-praise-on" : ""}" data-act="praise-toggle" data-id="${this._esc(c.id)}"
+                    title="${this._esc(this._t("panel.praise_add"))}" aria-label="${this._esc(this._t("panel.praise_add"))}">💬</button>
             <button type="button" class="tm-btn tm-btn-sm" data-act="reject-chore" data-id="${this._esc(c.id)}">${this._t("panel.activity_reject")}</button>
             <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="approve-chore" data-id="${this._esc(c.id)}">${this._t("panel.activity_approve")}</button>
           </div>
@@ -5065,7 +5317,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-approval-icon"><ha-icon icon="mdi:gift-outline"></ha-icon></div>
           <div class="tm-approval-body">
             <div class="tm-approval-line">${this._t("panel.activity_claimed_text", {child: this._esc((child && child.name) || "?"), reward: this._esc((reward && reward.name) || this._t("panel.activity_deleted_reward"))})}</div>
-            <div class="tm-meta">${this._timeAgo(c.claimed_at)}${reward ? ` · ${this._num(reward.cost)} ${this._t("panel.activity_points")}` : ""}</div>
+            <div class="tm-meta">${this._timeAgo(c.claimed_at)}${reward ? ` · ${this._num(reward.cost)} ${this._t("panel.activity_points")}` : ""}${c.recipient_id && childById[c.recipient_id] ? ` · 🎁 ${this._esc(this._t("panel.reward_gift_for", { name: childById[c.recipient_id].name }))}` : ""}</div>
           </div>
           <div class="tm-approval-actions">
             <button type="button" class="tm-btn tm-btn-sm" data-act="reject-reward" data-id="${this._esc(c.id)}">${this._t("panel.activity_reject")}</button>
@@ -5493,6 +5745,338 @@ class TaskMatePanel extends HTMLElement {
         </div>`;
   }
 
+  // ── Screen-time bank and bin-day chores ─────────────────────────────
+  _listChips(field, items, emptyKey) {
+    return items.map(e => {
+      const name = this._hass?.states?.[e]?.attributes?.friendly_name || e;
+      return `<span class="tm-allow-chip" title="${this._esc(e)}">${this._esc(name)}
+        <button type="button" data-act="st-list-remove" data-field="${this._esc(field)}" data-id="${this._esc(e)}" title="${this._t("panel.tooltip_remove")}">✕</button></span>`;
+    }).join("") || `<span class="tm-field-hint">${this._t(emptyKey)}</span>`;
+  }
+
+  _screenMinutes(mins) {
+    const m = Math.max(0, Number(mins) || 0);
+    return m < 60 ? this._t("panel.screen_time_minutes", { m }) : this._t("panel.screen_time_hours", { h: Math.floor(m / 60), m: m % 60 });
+  }
+
+  _renderScreenTimeSettings(s) {
+    const state = this._state.screen_time || {};
+    const kids = (this._state.children || []).filter(c => !c.is_adult);
+    const carry = s.screen_time_allowance_unused === "carry";
+    const openDay = Number(s.screen_time_jar_open_day ?? 5);
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.screen_time_title")}</h3><p class="tm-meta">${this._t("panel.screen_time_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.screen_time_enabled")}</div>
+              <ha-switch data-setting="screen_time_enabled" ${s.screen_time_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.screen_time_warn")}<small>${this._t("panel.screen_time_warn_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="120" step="1" data-setting="screen_time_warn_minutes" value="${this._num(s.screen_time_warn_minutes, 10)}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.screen_time_stop")}<small>${this._t("panel.screen_time_stop_hint")}</small></div>
+              <ha-switch data-setting="screen_time_stop_at_zero" ${s.screen_time_stop_at_zero ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.screen_time_allowance_school")}<small>${this._t("panel.screen_time_allowance_school_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="1440" step="5" data-setting="screen_time_allowance_school" value="${this._num(s.screen_time_allowance_school, 0)}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.screen_time_allowance_weekend")}<small>${this._t("panel.screen_time_allowance_weekend_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="1440" step="5" data-setting="screen_time_allowance_weekend" value="${this._num(s.screen_time_allowance_weekend, 0)}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.screen_time_allowance_unused")}<small>${this._t("panel.screen_time_allowance_unused_hint")}</small></div>
+              <select class="tm-select" data-setting="screen_time_allowance_unused">
+                <option value="expire" ${carry ? "" : "selected"}>${this._t("panel.screen_time_unused_expire")}</option>
+                <option value="carry" ${carry ? "selected" : ""}>${this._t("panel.screen_time_unused_carry")}</option>
+              </select>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.screen_time_jar_enabled")}<small>${this._t("panel.screen_time_jar_enabled_hint")}</small></div>
+              <ha-switch data-setting="screen_time_jar_enabled" ${s.screen_time_jar_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.screen_time_jar_cap")}</div>
+              <input type="number" class="tm-input" min="1" max="10080" step="5" data-setting="screen_time_jar_cap" value="${this._num(s.screen_time_jar_cap, 120)}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.screen_time_jar_opens")}<small>${this._t("panel.screen_time_jar_opens_hint")}</small></div>
+              <div class="tm-st-opens">
+                <select class="tm-select" data-setting="screen_time_jar_open_day">
+                  ${[0, 1, 2, 3, 4, 5, 6].map(d => `<option value="${d}" ${d === openDay ? "selected" : ""}>${this._esc(this._weekdayName(d))}</option>`).join("")}
+                </select>
+                <input type="time" class="tm-input" data-setting="screen_time_jar_open_time" value="${this._esc(s.screen_time_jar_open_time || "08:00")}">
+              </div>
+            </div>
+            ${kids.map(c => {
+              const row = state[c.id] || { minutes: 0, devices: [] };
+              const field = `_list:screen_time_devices:${c.id}`;
+              const jar = Number(row.jar) || 0;
+              return `
+            <div class="tm-setting-row tm-setting-top tm-st-kid">
+              <div class="tm-setting-label"><span class="tm-st-name">${this._childAvatar(c)} ${this._esc(c.name)}</span></div>
+              <div class="tm-list-body">
+                <div class="tm-st-head">
+                  <span class="tm-st-balance ${row.active ? "live" : ""}">📺 ${this._esc(this._screenMinutes(row.minutes))}${row.active ? ` · ${this._t("panel.screen_time_watching")}` : ""}${Number(row.allowance) > 0 ? ` · ${this._t("panel.screen_time_allowance_today", { time: this._esc(this._screenMinutes(row.allowance)) })}` : ""}</span>
+                  ${s.screen_time_jar_enabled || jar ? `<span class="tm-st-jar">🫙 ${this._esc(this._screenMinutes(jar))}${jar ? ` <button type="button" class="tm-btn tm-btn-sm" data-act="st-jar-open" data-child="${this._esc(c.id)}">${this._t("panel.screen_time_jar_open_now")}</button>` : ""}</span>` : ""}
+                  <span class="tm-st-adjust">
+                    ${[-15, 15, 30].map(m => `<button type="button" class="tm-btn tm-btn-sm" data-act="st-adjust" data-child="${this._esc(c.id)}" data-minutes="${m}">${m > 0 ? "+" : "−"}${Math.abs(m)}</button>`).join("")}
+                  </span>
+                </div>
+                <div class="tm-allowlist">${this._listChips(field, row.devices || [], "panel.screen_time_no_devices")}</div>
+                ${this._entityPickerField("", field, "", ["switch", "media_player", "input_boolean", "binary_sensor", "remote", "light"], this._t("panel.screen_time_add_device"))}
+              </div>
+            </div>`;
+            }).join("")}
+          </div>
+        </div>`;
+  }
+
+  _renderBinDaySettings(s) {
+    const kids = (this._state.children || []).filter(c => !c.is_adult);
+    const picked = Array.isArray(s.bin_day_children) ? s.bin_day_children : [];
+    const mode = s.bin_day_mode === "rotate" ? "rotate" : "first_come";
+    const preview = this._binPreview;
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.bin_day_title")}</h3><p class="tm-meta">${this._t("panel.bin_day_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.bin_day_enabled")}</div>
+              <ha-switch data-setting="bin_day_enabled" ${s.bin_day_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row tm-setting-top">
+              <div class="tm-setting-label">${this._t("panel.bin_day_calendars")}<small>${this._t("panel.bin_day_calendars_hint")}</small></div>
+              <div class="tm-list-body">
+              <div class="tm-allowlist">${this._listChips("_list:bin_day_calendars", s.bin_day_calendars || [], "panel.bin_day_no_calendars")}</div>
+              ${this._entityPickerField("", "_list:bin_day_calendars", "", ["calendar"], this._t("panel.bin_day_add_calendar"))}
+              <div class="tm-bin-preview">
+                <button type="button" class="tm-btn tm-btn-sm" data-act="bin-preview">${this._t("panel.bin_day_preview")}</button>
+                ${preview ? (preview.length
+                  ? `<ul>${preview.map(p => `<li>${p.emoji} <b>${this._esc(this._shortDateLabel(p.date))}</b> · ${this._esc(p.summary)}</li>`).join("")}</ul>`
+                  : `<span class="tm-field-hint">${this._t("panel.bin_day_preview_none")}</span>`) : ""}
+              </div>
+              </div>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.bin_day_put_out_time")}<small>${this._t("panel.bin_day_put_out_time_hint")}</small></div>
+              <input type="time" class="tm-input" data-setting="bin_day_put_out_time" value="${this._esc(s.bin_day_put_out_time || "18:00")}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.bin_day_points", { points_name: this._esc(this._pointsName()) })}</div>
+              <input type="number" class="tm-input" min="0" max="1000" step="1" data-setting="bin_day_points" value="${this._num(s.bin_day_points, 5)}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.bin_day_mode")}<small>${this._t(mode === "rotate" ? "panel.bin_day_mode_rotate_hint" : "panel.bin_day_mode_first_hint")}</small></div>
+              <select class="tm-select" data-setting="bin_day_mode">
+                <option value="first_come" ${mode === "first_come" ? "selected" : ""}>${this._t("panel.bin_day_mode_first")}</option>
+                <option value="rotate" ${mode === "rotate" ? "selected" : ""}>${this._t("panel.bin_day_mode_rotate")}</option>
+              </select>
+            </div>
+            <div class="tm-setting-row tm-setting-top">
+              <div class="tm-setting-label">${this._t("panel.bin_day_children")}<small>${this._t("panel.bin_day_children_hint")}</small></div>
+              <div class="tm-chip-row">
+                ${kids.map(c => {
+                  const on = picked.includes(c.id);
+                  return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}" data-act="bin-kid" data-bin-kid="${this._esc(c.id)}">${this._childAvatar(c)} ${this._esc(c.name)}</button>`;
+                }).join("")}
+              </div>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.bin_day_bring_in")}<small>${this._t("panel.bin_day_bring_in_hint")}</small></div>
+              <ha-switch data-setting="bin_day_bring_in" ${s.bin_day_bring_in ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.bin_day_bring_in_time")}</div>
+              <input type="time" class="tm-input" data-setting="bin_day_bring_in_time" value="${this._esc(s.bin_day_bring_in_time || "16:00")}">
+            </div>
+          </div>
+        </div>`;
+  }
+
+  // ── Sibling checks and child-chosen reminders ────────────────────────
+  _renderSiblingCheckSettings(s) {
+    const kids = (this._state.children || []).filter(c => !c.is_adult);
+    const pairs = (s.sibling_check_pairs && typeof s.sibling_check_pairs === "object") ? s.sibling_check_pairs : {};
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.sibling_check_title")}</h3><p class="tm-meta">${this._t("panel.sibling_check_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.sibling_check_enabled")}</div>
+              <ha-switch data-setting="sibling_check_enabled" ${s.sibling_check_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.sibling_check_bonus", { points_name: this._esc(this._pointsName()) })}<small>${this._t("panel.sibling_check_bonus_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="50" step="1" data-setting="sibling_check_bonus" value="${this._num(s.sibling_check_bonus, 1)}">
+            </div>
+            ${kids.length < 2 ? `<span class="tm-field-hint">${this._t("panel.sibling_check_need_two")}</span>` : kids.map(checker => `
+            <div class="tm-setting-row tm-setting-top">
+              <div class="tm-setting-label"><span class="tm-st-name">${this._childAvatar(checker)} ${this._t("panel.sibling_check_can_check", { name: this._esc(checker.name) })}</span></div>
+              <div class="tm-chip-row">
+                ${kids.filter(c => c.id !== checker.id).map(c => {
+                  const on = Array.isArray(pairs[checker.id]) && pairs[checker.id].includes(c.id);
+                  return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}" data-act="check-pair" data-check-pair="${this._esc(checker.id)}:${this._esc(c.id)}">${this._childAvatar(c)} ${this._esc(c.name)}</button>`;
+                }).join("")}
+              </div>
+            </div>`).join("")}
+          </div>
+        </div>`;
+  }
+
+  _renderChoreReminderSettings(s) {
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.chore_reminders_title")}</h3><p class="tm-meta">${this._t("panel.chore_reminders_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.chore_reminders_enabled")}<small>${this._t("panel.chore_reminders_enabled_hint")}</small></div>
+              <ha-switch data-setting="chore_reminders_enabled" ${s.chore_reminders_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.chore_reminders_earliest")}</div>
+              <input type="time" class="tm-input" data-setting="chore_reminders_earliest" value="${this._esc(s.chore_reminders_earliest || "15:00")}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.chore_reminders_latest")}</div>
+              <input type="time" class="tm-input" data-setting="chore_reminders_latest" value="${this._esc(s.chore_reminders_latest || "20:00")}">
+            </div>
+          </div>
+        </div>`;
+  }
+
+  _shortDateLabel(iso) {
+    const d = new Date(`${iso}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString(this._hass?.locale?.language || [], { weekday: "short", day: "numeric", month: "short" });
+  }
+
+  async _editListSetting(field, value, add) {
+    const parts = field.split(":");
+    const settings = this._state.settings || {};
+    let payload;
+    if (parts[1] === "bin_day_calendars") {
+      const list = [...(settings.bin_day_calendars || [])];
+      if (add && !list.includes(value)) list.push(value);
+      payload = { bin_day_calendars: add ? list : list.filter(e => e !== value) };
+    } else if (parts[1] === "screen_time_devices" && parts[2]) {
+      const map = { ...(settings.screen_time_devices || {}) };
+      const list = [...(map[parts[2]] || [])];
+      if (add && !list.includes(value)) list.push(value);
+      map[parts[2]] = add ? list : list.filter(e => e !== value);
+      payload = { screen_time_devices: map };
+    } else return;
+    const { ok, err } = await this._callWS({ type: "taskmate/update_settings", ...payload });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    this._render();
+  }
+
+  _householdClick(act, t) {
+    switch (act) {
+      case "st-list-remove":
+        this._editListSetting(t.dataset.field, t.dataset.id, false);
+        return true;
+      case "st-adjust":
+        this._adjustScreenTime(t.dataset.child, Number(t.dataset.minutes));
+        return true;
+      case "bin-kid": {
+        const on = !t.classList.contains("tm-chip-on");
+        t.classList.toggle("tm-chip-on", on);
+        t.setAttribute("aria-pressed", String(on));
+        return true;
+      }
+      case "bin-preview":
+        this._loadBinPreview();
+        return true;
+      case "st-jar-open":
+        this._openScreenJar(t.dataset.child);
+        return true;
+      case "shop-kid": {
+        const on = !t.classList.contains("tm-chip-on");
+        t.classList.toggle("tm-chip-on", on);
+        t.setAttribute("aria-pressed", String(on));
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async _adjustScreenTime(childId, minutes) {
+    const { ok, err } = await this._callWS({ type: "taskmate/screen_time/adjust", child_id: childId, minutes });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    this._render();
+  }
+
+  async _openScreenJar(childId) {
+    const { ok, err } = await this._callWS({ type: "taskmate/screen_time/jar", child_id: childId, action: "open" });
+    if (!ok) { this._showToast("err", err); return; }
+    await this._fetchState();
+    this._render();
+  }
+
+  /** Weekday name for 0 = Monday … 6 = Sunday (Python's numbering). */
+  _weekdayName(day) {
+    return new Date(2024, 0, 1 + day).toLocaleDateString(this._hass?.locale?.language || [], { weekday: "long" });
+  }
+
+  _renderShoppingJobsSettings(s) {
+    const kids = (this._state.children || []).filter(c => !c.is_adult);
+    const picked = Array.isArray(s.shopping_jobs_children) ? s.shopping_jobs_children : [];
+    const mode = s.shopping_jobs_mode === "rotate" ? "rotate" : "first_come";
+    const entity = this._settingsEntityDraft?.shopping_jobs_entity ?? (s.shopping_jobs_entity || "todo.shopping_list");
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.shopping_jobs_title")}</h3><p class="tm-meta">${this._t("panel.shopping_jobs_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.shopping_jobs_enabled")}</div>
+              <ha-switch data-setting="shopping_jobs_enabled" ${s.shopping_jobs_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row tm-setting-top">
+              <div class="tm-setting-label">${this._t("panel.shopping_jobs_entity")}<small>${this._t("panel.shopping_jobs_entity_hint")}</small></div>
+              <div class="tm-list-body">${this._entityPickerField("", "shopping_jobs_entity", entity, ["todo"])}</div>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.shopping_jobs_tag")}<small>${this._t("panel.shopping_jobs_tag_hint")}</small></div>
+              <input type="text" class="tm-input" maxlength="20" data-setting="shopping_jobs_tag" value="${this._esc(s.shopping_jobs_tag || "#tm")}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.shopping_jobs_points", { points_name: this._esc(this._pointsName()) })}</div>
+              <input type="number" class="tm-input" min="0" max="1000" step="1" data-setting="shopping_jobs_points" value="${this._num(s.shopping_jobs_points, 5)}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.bin_day_mode")}<small>${this._t(mode === "rotate" ? "panel.shopping_jobs_mode_rotate_hint" : "panel.bin_day_mode_first_hint")}</small></div>
+              <select class="tm-select" data-setting="shopping_jobs_mode">
+                <option value="first_come" ${mode === "first_come" ? "selected" : ""}>${this._t("panel.bin_day_mode_first")}</option>
+                <option value="rotate" ${mode === "rotate" ? "selected" : ""}>${this._t("panel.bin_day_mode_rotate")}</option>
+              </select>
+            </div>
+            <div class="tm-setting-row tm-setting-top">
+              <div class="tm-setting-label">${this._t("panel.bin_day_children")}<small>${this._t("panel.bin_day_children_hint")}</small></div>
+              <div class="tm-chip-row">
+                ${kids.map(c => {
+                  const on = picked.includes(c.id);
+                  return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}" data-act="shop-kid" data-shop-kid="${this._esc(c.id)}">${this._childAvatar(c)} ${this._esc(c.name)}</button>`;
+                }).join("")}
+              </div>
+            </div>
+          </div>
+        </div>`;
+  }
+
+  async _loadBinPreview() {
+    const { ok, err, res } = await this._callWS({ type: "taskmate/bin_days/preview" });
+    if (!ok) { this._showToast("err", err); return; }
+    this._binPreview = (res && res.collections) || [];
+    this._render();
+  }
+
   _boostClick(act, t) {
     const d = this._dialog && (this._dialog.kind === "boost" || this._dialog.kind === "boost-rule") ? this._dialog.data : null;
     const toggleList = (list, id) => {
@@ -5584,12 +6168,9 @@ class TaskMatePanel extends HTMLElement {
     const payload = { type: "taskmate/boosts/save_rule", days: d.days, start: d.start, end: d.end, multiplier: Number(d.multiplier),
       chore_ids: d.chore_ids || [], child_ids: d.child_ids || [], name: String(d.name || "").trim(), notify: d.notify !== false, enabled: d.enabled !== false };
     if (d.rule_id) payload.rule_id = d.rule_id;
-    try {
-      await this._callWS(payload);
-    } catch (err) {
-      this._showToast("err", (err && err.message) || String(err));
-      return;
-    }
+    // _callWS reports failure in its result rather than throwing.
+    const { ok, err } = await this._callWS(payload);
+    if (!ok) { this._showToast("err", err); return; }
     if (fromDialog) this._closeDialog(true);
     await this._fetchState();
     this._showToast("ok", this._t("panel.boost_rule_saved"));
@@ -5597,24 +6178,17 @@ class TaskMatePanel extends HTMLElement {
 
   async _deleteBoostRule(id) {
     if (!id || !confirm(this._t("panel.boost_rule_delete_confirm"))) return;
-    try {
-      await this._callWS({ type: "taskmate/boosts/delete_rule", rule_id: id });
-    } catch (err) {
-      this._showToast("err", (err && err.message) || String(err));
-      return;
-    }
+    const { ok, err } = await this._callWS({ type: "taskmate/boosts/delete_rule", rule_id: id });
+    if (!ok) { this._showToast("err", err); return; }
     this._closeDialog(true);
     await this._fetchState();
     this._showToast("ok", this._t("panel.boost_rule_deleted"));
   }
 
   async _boostTestWake() {
-    try {
-      const res = await this._callWS({ type: "taskmate/boosts/test_wake" });
-      this._showToast("ok", this._t("panel.boost_test_wake_sent", { count: (res && res.sent) || 0 }));
-    } catch (err) {
-      this._showToast("err", (err && err.message) || String(err));
-    }
+    const { ok, err, res } = await this._callWS({ type: "taskmate/boosts/test_wake" });
+    if (!ok) { this._showToast("err", err); return; }
+    this._showToast("ok", this._t("panel.boost_test_wake_sent", { count: (res && res.sent) || 0 }));
   }
 
   /** Appeals waiting for a parent: Overturn (pay / approve / undo) or Uphold. */
@@ -5697,12 +6271,108 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-help-row">
               <div class="tm-help-text">
                 <strong>${this._esc(names[o.child_id] || o.child_name || "?")}</strong> — ${this._esc(o.reward_name || "")}
-                <div class="tm-meta">${this._esc(since(o))}</div>
+                <div class="tm-meta">${this._esc(since(o))}${o.from_name ? ` · ${this._esc(this._t("panel.reward_gift_from", { name: o.from_name }))}` : ""}</div>
               </div>
+              <button type="button" class="tm-btn tm-btn-sm" data-act="print-voucher" data-id="${this._esc(o.claim_id)}">🖨️ ${this._t("panel.voucher_print")}</button>
               <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="reward-delivered" data-id="${this._esc(o.claim_id)}">${this._t("panel.today_owed_delivered")}</button>
             </div>`).join("")}
         </div>
       </div>`;
+  }
+
+  /**
+   * Printable voucher for an approved reward: opens a tab first (so a popup
+   * blocker allows it), then fills it with the page the server builds.
+   */
+  async _printVoucher(claimId) {
+    const win = window.open("", "_blank");
+    if (!win) { this._showToast("err", this._t("panel.voucher_popup_blocked")); return; }
+    const claim = (this._state.reward_claims || []).find(c => c.id === claimId);
+    const when = claim && (claim.approved_at || claim.claimed_at);
+    const lang = (this._hass && this._hass.locale && this._hass.locale.language) || undefined;
+    const msg = {
+      type: "taskmate/print/reward_voucher",
+      claim_id: claimId,
+      labels: {
+        title: this._t("panel.voucher_title"),
+        for: this._t("panel.voucher_for"),
+        from: this._t("panel.voucher_from"),
+        earned: this._t("panel.voucher_earned"),
+        signed: this._t("panel.voucher_signed"),
+      },
+    };
+    if (when) msg.date_text = new Date(when).toLocaleDateString(lang, { day: "numeric", month: "short", year: "numeric" });
+    const { ok, res, err } = await this._callWS(msg);
+    if (!ok || !res || !res.html) {
+      win.close();
+      this._showToast("err", this._t("panel.voucher_failed", { error: err || "" }));
+      return;
+    }
+    win.document.open();
+    win.document.write(res.html);
+    win.document.close();
+  }
+
+  /** Reward ratings: average stars, how often claimed, and the never-claimed ones. */
+  _renderRewardRatings(rewards) {
+    const claims = (this._state.reward_claims || []).filter(c => c.approved && !c.wish_id);
+    if (!rewards.length || !claims.length) return "";
+    const rows = rewards.map(r => {
+      const mine = claims.filter(c => c.reward_id === r.id);
+      const rated = mine.map(c => Number(c.rating) || 0).filter(n => n >= 1 && n <= 3);
+      const avg = rated.length ? rated.reduce((a, b) => a + b, 0) / rated.length : 0;
+      return { r, count: mine.length, avg };
+    }).sort((a, b) => b.avg - a.avg || b.count - a.count);
+    const stars = (avg) => {
+      const n = Math.round(avg);
+      return `<span class="tm-rating-stars" aria-label="${this._esc(this._t("panel.ratings_stars", { stars: avg.toFixed(1) }))}">${"★".repeat(n)}${"☆".repeat(3 - n)}</span>`;
+    };
+    return `
+      <div class="tm-card tm-ratings-card">
+        <h3 class="tm-section-title"><span aria-hidden="true">⭐</span>${this._t("panel.ratings_title")}</h3>
+        <p class="tm-meta">${this._t("panel.ratings_hint")}</p>
+        <table class="tm-table tm-ratings-table">
+          <thead><tr><th>${this._t("panel.ratings_col_reward")}</th><th>${this._t("panel.ratings_col_rating")}</th><th>${this._t("panel.ratings_col_claimed")}</th></tr></thead>
+          <tbody>
+            ${rows.map(({ r, count, avg }) => `<tr>
+              <td>${this._esc(r.name)}</td>
+              <td>${avg ? stars(avg) : "—"}</td>
+              <td class="tm-numeric">${count ? this._esc(this._t("panel.ratings_claimed", { count })) : `${this._esc(this._t("panel.ratings_claimed", { count: 0 }))} · <span class="tm-pill tm-pill-warn">${this._t("panel.ratings_retire")}</span>`}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  /** Settings: points expiry and gifts between children. */
+  _renderRewardExtrasSettings(s) {
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.expiry_title")}</h3><p class="tm-meta">${this._t("panel.expiry_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.expiry_enabled")}<small>${this._t("panel.expiry_enabled_hint")}</small></div>
+              <ha-switch data-setting="points_expiry_enabled" ${s.points_expiry_enabled ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.expiry_days")}<small>${this._t("panel.expiry_days_hint")}</small></div>
+              <input type="number" class="tm-input" min="1" max="730" step="1" data-setting="points_expiry_days" value="${this._num(s.points_expiry_days, 90)}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.expiry_warn")}<small>${this._t("panel.expiry_warn_hint")}</small></div>
+              <input type="number" class="tm-input" min="0" max="60" step="1" data-setting="points_expiry_warn_days" value="${this._num(s.points_expiry_warn_days, 7)}">
+            </div>
+          </div>
+        </div>
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.gifting_title")}</h3><p class="tm-meta">${this._t("panel.gifting_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.gifting_enabled")}</div>
+              <ha-switch data-setting="reward_gifting_enabled" ${s.reward_gifting_enabled ? "checked" : ""}></ha-switch>
+            </div>
+          </div>
+        </div>`;
   }
 
   async _markRewardDelivered(id) {
@@ -5947,6 +6617,11 @@ class TaskMatePanel extends HTMLElement {
     for (const [group, items, act, icon] of lists) {
       for (const it of items || []) cmds.push({ group, icon: icon(it), label: it.name || "", data: { act, id: it.id }, searchOnly: true });
     }
+    // Settings sections by heading: picking one jumps there.
+    const settings = this._t("panel.tab_settings");
+    for (const sec of this._settingsSections()) {
+      cmds.push({ group: settings, icon: "mdi:cog-outline", label: sec.title, hint: sec.hint, data: { act: "settings-jump", sec: sec.i }, searchOnly: true });
+    }
     return cmds;
   }
 
@@ -5956,7 +6631,7 @@ class TaskMatePanel extends HTMLElement {
     if (!q) return cmds.filter(c => !c.searchOnly);
     const words = q.split(/\s+/);
     return cmds.filter(c => {
-      const hay = `${c.label} ${c.group}`.toLowerCase();
+      const hay = `${c.label} ${c.group} ${c.hint || ""}`.toLowerCase();
       return words.every(w => hay.includes(w));
     }).slice(0, 60);
   }
@@ -5973,7 +6648,7 @@ class TaskMatePanel extends HTMLElement {
         .map(([k, v]) => `data-${k}="${this._esc(v)}"`)
         .join(" ");
       return `${head}<button type="button" class="tm-pal-item ${i === hi ? "tm-pal-hi" : ""}" role="option" aria-selected="${i === hi ? "true" : "false"}" data-idx="${i}" ${attrs}>
-        <ha-icon icon="${this._esc(c.icon)}"></ha-icon><span>${this._esc(c.label)}</span>
+        <ha-icon icon="${this._esc(c.icon)}"></ha-icon><span>${this._esc(c.label)}${c.hint ? ` <small class="tm-pal-hint">— ${this._esc(c.hint)}</small>` : ""}</span>
       </button>`;
     }).join("");
   }
@@ -8547,10 +9222,12 @@ class TaskMatePanel extends HTMLElement {
         <h2 class="tm-toolbar-title">${this._t("panel.reward_title")} <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox(this._t("panel.search_rewards")) : ""}
         <button type="button" class="tm-btn" data-act="lib-open" data-v="rewards"><ha-icon icon="mdi:bookshelf"></ha-icon>${this._t("library.btn")}</button>
+        ${all.length > 1 ? `<button type="button" class="tm-btn" data-act="reorder-rewards">${this._t("panel.reward_reorder_button")}</button>` : ""}
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-reward">${this._t("panel.btn_add_reward")}</button>
       </div>
       ${all.length === 0 ? this._emptyState("🎁", this._t("panel.empty_rewards_title"), this._t("panel.empty_rewards_copy", {points_name: pointsName.toLowerCase()}), "add-reward", this._t("panel.btn_add_reward")) :
         rewards.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_rewards").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
+        ${this._renderRewardRatings(all)}
         <div class="tm-grid">
           ${rewards.map(r => this._renderRewardCard(r, pointsName)).join("")}
           <button type="button" class="tm-add-tile" data-act="add-reward"><span class="tm-add-plus">＋</span>${this._t("panel.reward_add_tile")}</button>
@@ -8576,11 +9253,12 @@ class TaskMatePanel extends HTMLElement {
     const showProgress = (r.pool_enabled || r.is_jackpot) && r.cost > 0;
     const pct = showProgress ? Math.min(100, Math.round(totalPooled / r.cost * 100)) : 0;
     return `
-      <article class="tm-card tm-reward-card">
+      <article class="tm-card tm-reward-card" draggable="true" data-drag-id="${this._esc(r.id)}" data-drag-kind="reward">
         <div class="tm-child-head">
-          <div class="tm-avatar tm-avatar-reward">${this._mdi(r.icon || "mdi:gift")}</div>
+          <span class="tm-reorder-handle" title="${this._esc(this._t("panel.reward_drag_hint"))}" aria-hidden="true"><ha-icon icon="mdi:drag"></ha-icon></span>
+          <div class="tm-avatar tm-avatar-reward">${this._safeChoreImage(r.image_url) ? `<img class="tm-reward-thumb" src="${this._esc(this._safeChoreImage(r.image_url))}" alt="">` : this._mdi(r.icon || "mdi:gift")}</div>
           <div class="tm-child-name">
-            <h3>${this._esc(r.name)} ${r.is_jackpot ? `<span class="tm-pill tm-pill-jackpot">🏆 ${this._t("panel.reward_badge_jackpot")}</span>` : ""} ${r.pool_enabled ? `<span class="tm-pill tm-pill-pool">${this._t("panel.reward_badge_pool")}</span>` : ""} ${r.streak_freeze ? `<span class="tm-pill tm-pill-pool">❄️ ${this._t("panel.reward_badge_streak_freeze")}</span>` : ""} ${this._rewardTimeLockPill(r)}</h3>
+            <h3>${this._esc(r.name)} ${r.is_jackpot ? `<span class="tm-pill tm-pill-jackpot">🏆 ${this._t("panel.reward_badge_jackpot")}</span>` : ""} ${r.pool_enabled ? `<span class="tm-pill tm-pill-pool">${this._t("panel.reward_badge_pool")}</span>` : ""} ${r.streak_freeze ? `<span class="tm-pill tm-pill-pool">❄️ ${this._t("panel.reward_badge_streak_freeze")}</span>` : ""} ${this._rewardTimeLockPill(r)} ${Number(r.limit_count) > 0 ? `<span class="tm-pill tm-pill-timelock">${this._esc(this._t(`panel.reward_limit_pill_${["day", "month"].includes(r.limit_period) ? r.limit_period : "week"}`, { count: Number(r.limit_count) }))}</span>` : ""}</h3>
             ${this._idBadge(r.id)}
             <div class="tm-meta">${this._esc(r.description || "")}</div>
           </div>
@@ -11302,6 +11980,447 @@ class TaskMatePanel extends HTMLElement {
       </div>`;
   }
 
+  // ---- Recently deleted -------------------------------------------------
+  // A deleted chore, reward or quest is kept for 7 days. Straight after the
+  // delete the toast offers Undo; after that, Settings lists them to restore.
+
+  async _restoreDeleted(kind, id) {
+    const { ok, res, err } = await this._callWS({ type: "taskmate/recently_deleted/restore", kind, item_id: id });
+    if (!ok) { this._showToast("err", this._t("panel.trash_restore_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.trash_restored", { name: (res && res.name) || "" }));
+  }
+
+  _renderRecentlyDeletedSection() {
+    const items = this._state.recently_deleted || [];
+    const kinds = { chore: "panel.trash_kind_chore", reward: "panel.trash_kind_reward", quest: "panel.trash_kind_quest" };
+    const when = (iso) => {
+      const d = new Date(iso);
+      return isNaN(d) ? "" : d.toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    };
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.trash_title")}</h3><p class="tm-meta">${this._t("panel.trash_hint")}</p></div></div>
+          <div class="tm-section-body tm-section-pad">
+            ${items.length ? `
+              <div class="tm-table-wrap"><table class="tm-table tm-trash">
+                <thead><tr>
+                  <th>${this._t("panel.trash_col_item")}</th><th>${this._t("panel.trash_col_type")}</th><th>${this._t("panel.trash_col_deleted")}</th><th></th>
+                </tr></thead>
+                <tbody>
+                  ${items.map(it => `
+                    <tr>
+                      <td><strong>${this._esc(it.name || "?")}</strong></td>
+                      <td>${this._t(kinds[it.kind] || "panel.trash_kind_chore")}</td>
+                      <td>${this._esc(when(it.deleted_at))}</td>
+                      <td style="text-align:end"><button type="button" class="tm-btn tm-btn-sm" data-act="trash-restore" data-kind="${this._esc(it.kind)}" data-id="${this._esc(it.id)}">${this._t("panel.trash_restore")}</button></td>
+                    </tr>`).join("")}
+                </tbody>
+              </table></div>` : `<p class="tm-meta">${this._t("panel.trash_empty")}</p>`}
+          </div>
+        </div>`;
+  }
+
+  // ---- Settings page: jump list, search, unsaved changes ----------------
+  // Each .tm-section on Settings gets a data-sec index; its heading feeds the
+  // jump list at the top and the command search.
+
+  _settingsSectionsFrom(html) {
+    let i = 0;
+    const tagged = html.replace(/<div class="tm-section(?=[ "])/g, () => `<div data-sec="${i++}" class="tm-section`);
+    const decode = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+    const text = (s) => decode(String(s || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim());
+    const sections = [];
+    for (const part of tagged.split('<div data-sec="').slice(1)) {
+      const n = parseInt(part, 10);
+      const head = part.match(/<h3[^>]*>([\s\S]*?)<\/h3>/) || part.match(/class="tm-wz-settings-t">([\s\S]*?)<\/span>/);
+      if (!head) continue;
+      const title = text(head[1]);
+      if (!title) continue;
+      const hint = part.match(/<h3[^>]*>[\s\S]*?<\/h3>\s*<p class="tm-meta">([\s\S]*?)<\/p>/);
+      sections.push({ i: n, title, hint: hint ? text(hint[1]) : "" });
+    }
+    return { html: tagged, sections };
+  }
+
+  // The section list without visiting Settings (the command search), once per state.
+  _settingsSections() {
+    if (!this._state) return [];
+    if (!this._setSecCache || this._setSecCache.state !== this._state) {
+      // A dry render: it must not start the recap fetch or seed the drafts
+      // the Settings page builds when it is really shown.
+      const kept = [this._recapScheduleLoading, this._timePeriodsDraft, this._vacationDraft];
+      this._recapScheduleLoading = true;
+      let sections = [];
+      try {
+        sections = this._settingsSectionsFrom(this._renderSettingsTab()).sections;
+      } catch (err) {
+        console.warn("TaskMate: settings sections unavailable for search", err);
+      } finally {
+        [this._recapScheduleLoading, this._timePeriodsDraft, this._vacationDraft] = kept;
+      }
+      this._setSecCache = { state: this._state, sections };
+    }
+    return this._setSecCache.sections;
+  }
+
+  _renderSettingsPage() {
+    const { html, sections } = this._settingsSectionsFrom(this._renderSettingsTab());
+    this._setSecCache = { state: this._state, sections };
+    const jump = sections.length ? `
+      <nav class="tm-chip-row tm-set-jump" aria-label="${this._esc(this._t("panel.settings_jump_label"))}">
+        ${sections.map(s => `<button type="button" class="tm-chip-btn" data-act="settings-jump" data-sec="${s.i}">${this._esc(s.title)}</button>`).join("")}
+      </nav>` : "";
+    const bar = `
+      <div class="tm-unsaved-bar" role="status" hidden>
+        <ha-icon icon="mdi:alert-outline"></ha-icon>
+        <strong class="tm-unsaved-count"></strong>
+        <span class="tm-unsaved-gap"></span>
+        <button type="button" class="tm-btn tm-btn-sm" data-act="settings-discard">${this._t("panel.unsaved_discard")}</button>
+        <button type="button" class="tm-btn tm-btn-sm tm-btn-raised" data-act="save-settings">${this._t("panel.btn_save_settings")}</button>
+      </div>`;
+    return html.replace('<div class="tm-settings">', `${jump}<div class="tm-settings">`) + bar;
+  }
+
+  _settingsJump(i) {
+    if (this._activeTab !== "settings") {
+      this._activeTab = "settings";
+      this._filter = "";
+      this._mobileNavOpen = false;
+      this._render();
+    }
+    const go = () => {
+      const el = this.querySelector(`.tm-settings [data-sec="${Number(i)}"]`);
+      if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    if (typeof requestAnimationFrame === "function") requestAnimationFrame(go); else go();
+  }
+
+  // A [data-setting] field's value, read the way _doSaveSettings reads it.
+  _settingValue(el) {
+    const type = el.getAttribute("type") || el.type;
+    if (type === "checkbox" || el.tagName === "HA-SWITCH") return !!el.checked;
+    if (el.tagName === "HA-ICON-PICKER") return el.value || "";
+    if (type === "number") return el.value === "" ? "" : Number(el.value);
+    return el.value == null ? "" : String(el.value);
+  }
+
+  _captureSettingsBaseline() {
+    const root = this.querySelector(".tm-settings");
+    if (!root) { this._settingsBaseline = null; return; }
+    const base = new Map();
+    root.querySelectorAll("[data-setting]").forEach(el => {
+      if (!base.has(el.dataset.setting)) base.set(el.dataset.setting, this._settingValue(el));
+    });
+    this._settingsBaseline = base;
+    this._paintUnsavedBar();
+  }
+
+  _settingsDirtyCount() {
+    const root = this.querySelector(".tm-settings");
+    if (!root || !this._settingsBaseline) return 0;
+    const seen = new Set();
+    let n = 0;
+    root.querySelectorAll("[data-setting]").forEach(el => {
+      const key = el.dataset.setting;
+      if (seen.has(key) || !this._settingsBaseline.has(key)) return;
+      seen.add(key);
+      const changed = !Object.is(this._settingValue(el), this._settingsBaseline.get(key));
+      if (changed) n++;
+      // Mark the row so the parent can see what changed.
+      const row = el.closest && el.closest(".tm-setting-row");
+      if (row) row.classList.toggle("tm-setting-changed", changed);
+    });
+    return n;
+  }
+
+  _paintUnsavedBar() {
+    const bar = this.querySelector(".tm-unsaved-bar");
+    if (!bar) return;
+    const n = this._settingsDirtyCount();
+    bar.hidden = n === 0;
+    const label = bar.querySelector(".tm-unsaved-count");
+    if (label) label.textContent = this._t(n === 1 ? "panel.unsaved_one" : "panel.unsaved_many", { count: n });
+  }
+
+  // Called at the top of _render: leaving Settings with unsaved edits asks
+  // first. The tab switch is held back and a confirmation shown instead.
+  _guardSettingsLeave() {
+    if (this._renderedTab === "settings" && this._activeTab !== "settings" && !this._dialog) {
+      const count = this._settingsDirtyCount();
+      if (count > 0) {
+        const to = this._activeTab;
+        this._activeTab = "settings";
+        this._dialog = { kind: "leave-settings", data: { to, count } };
+        this._dialogInitialHash = this._hashDialog();
+      }
+    }
+    this._renderedTab = this._activeTab;
+  }
+
+  _renderLeaveSettingsDialog() {
+    const d = this._dialog.data;
+    return this._dialogShell(this._t("panel.unsaved_leave_title"),
+      `<p>${this._t(d.count === 1 ? "panel.unsaved_leave_one" : "panel.unsaved_leave_many", { count: d.count })}</p>`,
+      `<button type="button" class="tm-btn" data-act="leave-settings-stay">${this._t("panel.unsaved_stay")}</button>
+       <button type="button" class="tm-btn tm-btn-danger" data-act="leave-settings-go">${this._t("panel.unsaved_leave")}</button>`);
+  }
+
+  _leaveSettings() {
+    const to = this._dialog && this._dialog.data && this._dialog.data.to;
+    this._settingsBaseline = null;
+    this._dialog = null;
+    this._dialogInitialHash = null;
+    if (to) this._activeTab = to;
+    this._render();
+  }
+
+  _discardSettings() {
+    this._timePeriodsDraft = null;
+    this._vacationDraft = null;
+    this._recapDraft = null;
+    this._settingsEntityDraft = null;
+    if (this._zoneCache) this._zoneCache.body = null;
+    this._render();
+  }
+
+  // ---- Reward order (drag on the Rewards page) ---------------------------
+
+  async _moveReward(fromId, toId) {
+    const order = (this._state.rewards || []).map(r => r.id);
+    const from = order.indexOf(fromId);
+    const to = order.indexOf(toId);
+    if (from < 0 || to < 0 || from === to) { this._render(); return; }
+    order.splice(from, 1);
+    order.splice(to, 0, fromId);
+    await this._saveRewardOrder(order);
+  }
+
+  async _saveRewardOrder(order) {
+    const byId = Object.fromEntries((this._state.rewards || []).map(r => [r.id, r]));
+    this._state.rewards = order.map(id => byId[id]).filter(Boolean);
+    this._render();
+    const { ok, err } = await this._callWS({ type: "taskmate/rewards/set_order", reward_order: order });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); await this._fetchState(); return; }
+    this._showToast("ok", this._t("panel.reward_order_saved"));
+  }
+
+  _openRewardReorderDialog() {
+    this._openDialog({ kind: "reorder", data: { rewards: true, order: (this._state.rewards || []).map(r => r.id) } });
+  }
+
+  // ---- Child quick view (top-bar chip) ------------------------------------
+
+  _renderKidDrawer() {
+    const id = this._dialog.data.child_id;
+    const s = this._state;
+    const child = (s.children || []).find(c => c.id === id);
+    if (!child) return "";
+    const pointsName = (s.settings && s.settings.points_name) || this._t("common.points");
+    const waiting = (s.pending_completions || []).filter(c => c.child_id === id).length
+      + (s.pending_reward_claims || []).filter(c => c.child_id === id).length;
+    const owed = (s.owed_rewards || []).filter(o => o.child_id === id).length;
+    const screenOn = !!(s.settings || {}).screen_time_enabled && !child.is_adult;
+    const minutes = ((s.screen_time || {})[id] || {}).minutes || 0;
+    const entry = this._todayEntry(id);
+    const choreById = Object.fromEntries((s.chores || []).map(c => [c.id, c]));
+    const marks = { done: "✅", pending: "⏳", todo: "○", missed: "✕" };
+    const today = ((entry && entry.chores) || []).filter(it => choreById[it.chore_id]);
+    const stat = (label, value) => `<div class="tm-kd-stat"><div class="tm-meta">${label}</div><strong class="tm-numeric">${value}</strong></div>`;
+    const streak = this._num(child.current_streak);
+    const scoped = this._scopeId() === id;
+    return this._dialogShell(child.name || this._t("panel.child_unnamed"), `
+      <div class="tm-kd">
+        <div class="tm-kd-head">
+          ${this._childAvatar(child)}
+          <div>
+            <div class="tm-meta">${this._t("panel.kid_drawer_level", { level: this._fmtNum(child.level || 1) })}${streak > 0 ? ` · 🔥 ${this._ltrNums(this._t("panel.today_streak", { count: streak }))}` : ""}</div>
+          </div>
+        </div>
+        <div class="tm-kd-stats">
+          ${stat(this._esc(pointsName), this._fmtNum(child.points || 0))}
+          ${screenOn ? stat(this._t("panel.screen_time_title"), this._esc(this._screenMinutes(minutes))) : ""}
+          ${stat(this._t("panel.kid_drawer_waiting"), this._fmtNum(waiting))}
+          ${stat(this._t("panel.kid_drawer_owed"), this._fmtNum(owed))}
+        </div>
+        <div class="tm-drawer-sec-h">${this._t("panel.kid_drawer_today")}</div>
+        ${today.length ? `<ul class="tm-kd-today">
+          ${today.map(it => `<li class="tm-kd-${this._esc(it.status)}"><span aria-hidden="true">${marks[it.status] || "○"}</span> ${this._esc(choreById[it.chore_id].name)}<span class="tm-sr"> · ${this._esc(this._t(`panel.today_status_${it.status}`))}</span></li>`).join("")}
+        </ul>` : `<p class="tm-meta">${this._t("panel.today_nothing_due")}</p>`}
+        <div class="tm-kd-actions">
+          <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="adjust-points-custom" data-id="${this._esc(id)}">± ${this._t("panel.kid_drawer_points")}</button>
+          <button type="button" class="tm-btn tm-btn-sm" data-act="kid-drawer-scope" data-child="${scoped ? "" : this._esc(id)}">${scoped ? this._t("panel.scope_clear") : this._esc(this._t("panel.scope_only", { name: child.name }))}</button>
+          <button type="button" class="tm-btn tm-btn-sm" data-act="view-as" data-id="${this._esc(id)}">👁 ${this._t("panel.view_as_button")}</button>
+          <button type="button" class="tm-btn tm-btn-sm" data-act="edit-child" data-id="${this._esc(id)}">${this._t("panel.btn_edit")}</button>
+        </div>
+      </div>`,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.tooltip_close")}</button>`,
+      { drawer: true });
+  }
+
+  // ---- View as child: the child's real card, inert, inside the panel ------
+
+  async _openViewAs(childId) {
+    const kids = (this._state.children || []).filter(c => !c.is_adult);
+    const id = kids.some(c => c.id === childId) ? childId : (kids[0] || {}).id;
+    if (!id) return;
+    this._viewAsReady = undefined;
+    this._openDialog({ kind: "view-as", data: { child_id: id, design: "global" } });
+    this._viewAsReady = await this._loadViewAsCard();
+    if (this._dialog && this._dialog.kind === "view-as") this._render();
+  }
+
+  // The panel isn't a dashboard and never loads dashboard resources, so the
+  // child card (and the attribute helper it reads sensors through) are
+  // imported at the same versioned URLs a dashboard uses (frontend.py).
+  async _loadViewAsCard() {
+    if (customElements.get("taskmate-child-card")) return true;
+    try {
+      await import(`/taskmate/taskmate-attr-resolver.js?v=${PANEL_VERSION}`);
+      await import(`/taskmate/taskmate-child-card.js?v=${PANEL_VERSION}`);
+      return !!customElements.get("taskmate-child-card");
+    } catch (err) {
+      console.warn("TaskMate: child card unavailable in the panel", err);
+      return false;
+    }
+  }
+
+  _viewAsDesigns() {
+    const opts = window.__taskmate_design && window.__taskmate_design.editorOptions
+      ? window.__taskmate_design.editorOptions(this._t.bind(this))
+      : [];
+    return opts && opts.length ? opts : [{ value: "global", label: this._t("common.design.use_global") }];
+  }
+
+  _renderViewAsDialog() {
+    const d = this._dialog.data;
+    const kids = (this._state.children || []).filter(c => !c.is_adult);
+    const child = kids.find(c => c.id === d.child_id);
+    const body = `
+      <div class="tm-viewas-bar">
+        <div class="tm-chip-row">
+          ${kids.map(c => `<button type="button" class="tm-chip-btn ${c.id === d.child_id ? "tm-chip-on" : ""}" data-act="view-as-child" data-id="${this._esc(c.id)}">${this._esc(c.name)}</button>`).join("")}
+        </div>
+        <label class="tm-viewas-design">${this._t("common.design.field_label")}
+          <select class="tm-select" data-view-as-design aria-label="${this._esc(this._t("common.design.field_label"))}">
+            ${this._viewAsDesigns().map(o => `<option value="${this._esc(o.value)}" ${o.value === d.design ? "selected" : ""}>${this._esc(o.label)}</option>`).join("")}
+          </select>
+        </label>
+      </div>
+      <div class="tm-viewas-stage">
+        ${this._viewAsReady === false || !child
+          ? `<p class="tm-meta">${this._t("panel.view_as_unavailable")}</p>`
+          : this._viewAsReady === undefined
+            ? `<p class="tm-meta">${this._t("panel.insights_loading")}</p>`
+            : `<div class="tm-viewas-frame"><div class="tm-viewas-host" inert></div><div class="tm-viewas-shield" aria-hidden="true"></div></div>`}
+        <p class="tm-meta tm-viewas-note">${this._t("panel.view_as_note")}</p>
+      </div>`;
+    return this._dialogShell(this._t("panel.view_as_title", { name: child ? child.name : "" }), body,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.tooltip_close")}</button>`,
+      { wide: true });
+  }
+
+  _setViewAs(field, value) {
+    if (!this._dialog || this._dialog.kind !== "view-as") return;
+    this._dialog.data[field] = value;
+    // Picking another child or style isn't an edit to save.
+    this._dialogInitialHash = this._hashDialog();
+    this._render();
+  }
+
+  // Called after every render, like _mountBackdateCard. Nothing here may throw.
+  _mountViewAsCard() {
+    const host = this.querySelector(".tm-viewas-host");
+    if (!host || !this._dialog || this._dialog.kind !== "view-as") return;
+    if (!customElements.get("taskmate-child-card")) return;
+    try {
+      const entity = this._overviewEntity();
+      if (!entity) throw new Error("no TaskMate overview sensor");
+      const d = this._dialog.data;
+      if (!this._viewAsCard) this._viewAsCard = document.createElement("taskmate-child-card");
+      const card = this._viewAsCard;
+      const key = `${d.child_id}|${d.design}`;
+      if (this._viewAsKey !== key) {
+        const config = { entity, child_id: d.child_id };
+        if (d.design && d.design !== "global") config.card_design = d.design;
+        card.setConfig(config);
+        this._viewAsKey = key;
+      }
+      card.hass = this._hass;
+      if (card.parentNode !== host) host.appendChild(card);
+    } catch (err) {
+      console.warn("TaskMate: the child card couldn't be shown in the panel", err);
+    }
+  }
+
+  // ---- Insights: Economy (points earned vs spent) -------------------------
+
+  async _loadEconomy() {
+    if (this._economyLoading) return;
+    this._economyLoading = true;
+    const { ok, res, err } = await this._callWS({ type: "taskmate/reports/economy" });
+    this._economyLoading = false;
+    if (!ok) { this._showToast("err", err); return; }
+    this._economy = res;
+    this._render();
+  }
+
+  _economyChart(weeks) {
+    // Stretched to the card's width (non-scaling strokes keep the lines
+    // even); the week labels are HTML so they stay a readable size. Time
+    // runs left to right in either direction, like the SVG it labels.
+    const W = 100, H = 40;
+    const max = Math.max(1, ...weeks.map(w => Math.max(w.earned, w.spent)));
+    const last = Math.max(1, weeks.length - 1);
+    const x = (i) => +(i * W / last).toFixed(2);
+    const y = (v) => +(2 + (H - 4) * (1 - v / max)).toFixed(2);
+    const line = (key) => weeks.map((w, i) => `${x(i)},${y(w[key])}`).join(" ");
+    const label = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString(this._hass?.locale?.language || [], { day: "numeric", month: "short" });
+    return `
+      <div class="tm-econ">
+        <svg class="tm-econ-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${this._esc(this._t("panel.economy_chart_label"))}">
+          <line x1="0" y1="${H - 2}" x2="${W}" y2="${H - 2}" class="tm-econ-axis"/>
+          <polyline class="tm-econ-earned" fill="none" points="${line("earned")}"/>
+          <polyline class="tm-econ-spent" fill="none" points="${line("spent")}"/>
+        </svg>
+        <div class="tm-econ-weeks tm-meta" dir="ltr">
+          ${weeks.map((w, i) => `<span style="inset-inline-start:${(i * 100 / last).toFixed(2)}%" title="${this._esc(`${label(w.start)} – ${label(w.end)}: ${this._t("panel.economy_earned")} ${w.earned} · ${this._t("panel.economy_spent")} ${w.spent}`)}">${this._esc(label(w.start))}</span>`).join("")}
+        </div>
+      </div>`;
+  }
+
+  _renderEconomyReport() {
+    const report = this._economy;
+    if (!report) {
+      this._loadEconomy();
+      return `<div class="tm-card"><div class="tm-empty">${this._t("panel.insights_loading")}</div></div>`;
+    }
+    const weeks = report.weeks || [];
+    const any = weeks.some(w => w.earned || w.spent);
+    const names = (report.candidates || []).map(c => `<strong>${this._esc(c.name)}</strong>`).join(", ");
+    const growth = report.earned_growth_pct > 0 ? this._t("panel.economy_growth", { pct: report.earned_growth_pct }) + " " : "";
+    const warn = report.inflating
+      ? growth + (names
+        ? this._t("panel.economy_warn", { earned: report.recent_earned, spent: report.recent_spent, rewards: names })
+        : this._t("panel.economy_warn_no_rewards", { earned: report.recent_earned, spent: report.recent_spent }))
+      : "";
+    return `
+      <div class="tm-card">
+        <div class="tm-card-head"><h2>${this._t("panel.economy_title")}</h2></div>
+        <span class="tm-field-hint">${this._t("panel.economy_intro")}</span>
+        ${!any ? `<div class="tm-empty">${this._t("panel.economy_none")}</div>` : `
+          ${this._economyChart(weeks)}
+          <div class="tm-econ-legend tm-meta">
+            <span class="tm-econ-key tm-econ-key-earned">${this._t("panel.economy_earned")}</span>
+            <span class="tm-econ-key tm-econ-key-spent">${this._t("panel.economy_spent")}</span>
+          </div>
+          <div class="tm-verdict tm-verdict-${report.inflating ? "warn" : "ok"}">
+            ${report.inflating ? `⚠️ ${warn}` : this._t("panel.economy_ok")}
+          </div>`}
+        <span class="tm-field-hint">${this._t("panel.economy_rule", { ratio: report.ratio, min: report.min_earned })}</span>
+      </div>`;
+  }
+
   _renderSettingsTab() {
     const s = this._state.settings || {};
     const notifyServices = Object.keys((this._hass && this._hass.services && this._hass.services.notify) || {});
@@ -11350,6 +12469,7 @@ class TaskMatePanel extends HTMLElement {
             </div>
           </div>
         </div>
+        ${this._renderSeasonalSettings(s)}
 
         ${this._renderSoundsSection()}
 
@@ -11694,7 +12814,13 @@ class TaskMatePanel extends HTMLElement {
             </div>
           </div>
         </div>
+        ${this._renderRewardExtrasSettings(s)}
         ${this._renderBoostSettings(s)}
+        ${this._renderScreenTimeSettings(s)}
+        ${this._renderBinDaySettings(s)}
+        ${this._renderShoppingJobsSettings(s)}
+        ${this._renderSiblingCheckSettings(s)}
+        ${this._renderChoreReminderSettings(s)}
 
         <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.appeals_settings_title")}</h3><p class="tm-meta">${this._t("panel.appeals_settings_hint")}</p></div></div>
@@ -11754,6 +12880,8 @@ class TaskMatePanel extends HTMLElement {
             `}
           </div>
         </div>
+
+        ${this._renderRecentlyDeletedSection()}
 
         <div class="tm-settings-foot">
           <button type="button" class="tm-btn tm-btn-raised" data-act="save-settings">${this._t("panel.btn_save_settings")}</button>
@@ -12406,6 +13534,9 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "apply-bonus")   return this._renderApplyDialog("bonus");
     if (this._dialog.kind === "bulk-chore")    return this._renderBulkChoreDialog();
     if (this._dialog.kind === "reorder")       return this._renderReorderDialog();
+    if (this._dialog.kind === "kid-drawer")    return this._renderKidDrawer();
+    if (this._dialog.kind === "view-as")       return this._renderViewAsDialog();
+    if (this._dialog.kind === "leave-settings") return this._renderLeaveSettingsDialog();
     if (this._dialog.kind === "create-template" || this._dialog.kind === "edit-template") return this._renderCreateEditTemplateDialog();
     if (this._dialog.kind === "badge")       return this._renderBadgeDialog();
     if (this._dialog.kind === "award-badge") return this._renderAwardDialog();
@@ -12484,6 +13615,7 @@ class TaskMatePanel extends HTMLElement {
         this._field(this._t("panel.child_name_label"), "name", d.name, "text", this._t("panel.child_name_placeholder")),
         this._iconPickerField(this._t("panel.child_avatar_label"), "avatar", d.avatar),
         this._childColorField(d),
+        this._childCelebrationField(d),
         // A grown-up's profile (#1061): auto-approved, hidden from cards by default.
         this._switch(this._t("panel.child_adult_label"), "is_adult", !!d.is_adult,
           this._esc(this._t("panel.child_adult_hint"))),
@@ -12535,6 +13667,43 @@ class TaskMatePanel extends HTMLElement {
         </div>
         <span class="tm-field-hint">${this._esc(this._t("panel.child_color_hint"))}</span>
       </div>`;
+  }
+
+  /** What plays when this child ticks a chore off: a tile per style. */
+  _childCelebrationField(d) {
+    const cur = d.celebration_style || "confetti";
+    const tiles = [["confetti", "🎉"], ["stamp", "✅"], ["fireworks", "🎆"], ["sticker", "⭐"]];
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._esc(this._t("panel.child_celebration_label"))}</span>
+        <div class="tm-fx-picks" role="radiogroup" aria-label="${this._esc(this._t("panel.child_celebration_label"))}">
+          ${tiles.map(([v, emoji]) => `<button type="button" role="radio" class="tm-fx-pick ${cur === v ? "tm-on" : ""}"
+            data-act="child-celebration" data-v="${v}" aria-checked="${cur === v}">
+            <span class="tm-fx-pick-ic" aria-hidden="true">${emoji}</span>
+            <b>${this._esc(this._t(`panel.celebration_${v}`))}</b>
+            <small>${this._esc(this._t(`panel.celebration_${v}_hint`))}</small>
+          </button>`).join("")}
+        </div>
+        <span class="tm-field-hint">${this._esc(this._t("panel.child_celebration_hint"))}</span>
+      </div>`;
+  }
+
+  /** Seasonal themes for the child and kiosk cards, each off by default. */
+  _renderSeasonalSettings(s) {
+    const row = (key, emoji) => `
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${emoji} ${this._t(`panel.seasonal_${key}`)}<small>${this._t(`panel.seasonal_${key}_dates`)}</small></div>
+              <ha-switch data-setting="seasonal_${key}" ${s[`seasonal_${key}`] ? "checked" : ""}></ha-switch>
+            </div>`;
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.seasonal_title")}</h3><p class="tm-meta">${this._t("panel.seasonal_hint")}</p></div></div>
+          <div class="tm-section-body">
+            ${row("halloween", "🎃")}
+            ${row("christmas", "🎄")}
+            ${row("summer", "☀️")}
+          </div>
+        </div>`;
   }
 
   /** The palette colour a child gets by position; with no id, the next child added. */
@@ -13141,6 +14310,8 @@ class TaskMatePanel extends HTMLElement {
           ${this._field(this._t("panel.reward_cost_label", {points_name: pointsName}), "cost", d.cost, "number")}
           ${this._iconPickerField(this._t("panel.reward_icon_label"), "icon", d.icon)}
         </div>`,
+        // Reward picture: shown on the cards instead of the icon.
+        this._choreImageField(d.image_url, "image_url"),
         children.length > 0 ? `
           <div class="tm-field">
             <span class="tm-field-label">${this._t("panel.reward_assigned_label")}</span>
@@ -13161,9 +14332,9 @@ class TaskMatePanel extends HTMLElement {
         // Jackpot first; toggling it re-renders so the Pool switch below can be
         // hidden — jackpots are always pool-mode (#552), so the separate Pool
         // toggle would be redundant and confusing.
-        d.streak_freeze ? "" : this._switch(this._t("panel.reward_is_jackpot_label"), "is_jackpot", d.is_jackpot,
+        (d.streak_freeze || Number(d.screen_minutes) > 0) ? "" : this._switch(this._t("panel.reward_is_jackpot_label"), "is_jackpot", d.is_jackpot,
           this._t("panel.reward_is_jackpot_hint"), true),
-        (d.is_jackpot && !d.streak_freeze) ? "" : this._switch(this._t("panel.reward_pool_label"), "pool_enabled", d.pool_enabled,
+        (d.is_jackpot && !d.streak_freeze && !(Number(d.screen_minutes) > 0)) ? "" : this._switch(this._t("panel.reward_pool_label"), "pool_enabled", d.pool_enabled,
           this._t("panel.reward_pool_hint")),
         `<div class="tm-field-row">
           ${this._field(this._t("panel.reward_quantity_label"), "quantity_str", d.quantity_str, "text", this._t("panel.reward_quantity_hint"))}
@@ -13181,6 +14352,8 @@ class TaskMatePanel extends HTMLElement {
         </div>`,
         this._renderRewardTimeLock(d),
         this._renderRewardUnlock(d),
+        this._renderRewardScreenTime(d),
+        this._renderRewardLimit(d),
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-reward">${this._t("panel.btn_save")}</button>`
@@ -13271,6 +14444,33 @@ class TaskMatePanel extends HTMLElement {
           d.unlock_minutes ?? 30, "number", this._t("panel.reward_unlock_minutes_hint")) : ""}
       </div>
     </details>`;
+  }
+
+  /** Per-child limit: "1 per week" each, so one child can't claim every movie pick. */
+  _renderRewardLimit(d) {
+    const open = this._dialog._openAdvanced?.has("limit") || Number(d.limit_count) > 0;
+    return `<details class="tm-advanced" data-section="limit"${open ? " open" : ""}>
+      <summary>${this._t("panel.reward_limit_section")}</summary>
+      <div>
+        <div class="tm-field-row">
+          ${this._field(this._t("panel.reward_limit_count"), "limit_count", d.limit_count || 0, "number")}
+          ${this._select(this._t("panel.reward_limit_period"), "limit_period", d.limit_period || "week", [
+            { v: "day", l: this._t("panel.reward_limit_day") },
+            { v: "week", l: this._t("panel.reward_limit_week") },
+            { v: "month", l: this._t("panel.reward_limit_month") },
+          ])}
+        </div>
+        <span class="tm-field-hint">${this._t("panel.reward_limit_hint")}</span>
+      </div>
+    </details>`;
+  }
+
+  // Screen-time bank: minutes this reward adds to the child's balance. Shown
+  // once the bank is on, or while a reward still carries some.
+  _renderRewardScreenTime(d) {
+    if (!(this._state.settings || {}).screen_time_enabled && !(Number(d.screen_minutes) > 0)) return "";
+    return `<div class="tm-reward-screen">${this._field(this._t("panel.reward_screen_minutes"), "screen_minutes", d.screen_minutes || 0, "number",
+      this._t("panel.reward_screen_minutes_hint"))}</div>`;
   }
 
   _renderAvatarCatalogDialog() {
@@ -13404,6 +14604,14 @@ class TaskMatePanel extends HTMLElement {
               ${this._field(this._t("panel.penalty_redeem_percent"), "redemption_percent", d.redemption_percent || 100, "number", this._t("panel.penalty_redeem_percent_hint"))}
               ${this._field(this._t("panel.penalty_redeem_days"), "redemption_days", d.redemption_days || 1, "number", this._t("panel.penalty_redeem_days_hint"))}
             </div>` : ""}
+          </section>
+          <section class="tm-drawer-sec">
+            <h3 class="tm-drawer-sec-h">🟨 ${this._t("panel.penalty_warn_title")}</h3>
+            ${this._switch(this._t("panel.penalty_warn_first"), "warn_first", !!d.warn_first, this._t("panel.penalty_warn_first_hint"), true)}
+            ${d.warn_first ? this._select(this._t("panel.penalty_warn_reset"), "warning_reset", d.warning_reset === "weekly" ? "weekly" : "daily", [
+              { v: "daily", l: this._t("panel.penalty_warn_reset_daily") },
+              { v: "weekly", l: this._t("panel.penalty_warn_reset_weekly") },
+            ]) : ""}
           </section>` : "",
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
@@ -13526,9 +14734,11 @@ class TaskMatePanel extends HTMLElement {
 
   _renderReorderDialog() {
     const d = this._dialog.data;
-    const choreById = Object.fromEntries((this._state.chores || []).map(c => [c.id, c]));
-    const title = d.global ? this._t("panel.reorder_global_title") : this._t("panel.reorder_title", {name: d.name});
-    const hint = d.global ? this._t("panel.reorder_global_hint") : this._t("panel.reorder_hint");
+    // The same list reorders rewards (d.rewards) — the touch path for the
+    // Rewards page, where native drag doesn't fire.
+    const choreById = Object.fromEntries((d.rewards ? this._state.rewards || [] : this._state.chores || []).map(c => [c.id, d.rewards ? { ...c, points: c.cost } : c]));
+    const title = d.rewards ? this._t("panel.reward_reorder_title") : d.global ? this._t("panel.reorder_global_title") : this._t("panel.reorder_title", {name: d.name});
+    const hint = d.rewards ? this._t("panel.reward_reorder_hint") : d.global ? this._t("panel.reorder_global_hint") : this._t("panel.reorder_hint");
     return this._dialogShell(title,
       `<p class="tm-meta">${hint}</p>
        <div class="tm-reorder-list">
@@ -13549,7 +14759,7 @@ class TaskMatePanel extends HTMLElement {
          }).join("")}
        </div>`,
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
-       <button type="button" class="tm-btn tm-btn-raised" data-act="save-chore-order">${this._t("panel.btn_save_order")}</button>`
+       <button type="button" class="tm-btn tm-btn-raised" data-act="${d.rewards ? "save-reward-order" : "save-chore-order"}">${this._t("panel.btn_save_order")}</button>`
     );
   }
 
@@ -15368,6 +16578,21 @@ class TaskMatePanel extends HTMLElement {
       .tm-verdict-ok { background: rgba(46, 125, 50, 0.12); color: #2e7d32; }
       .tm-verdict-warn { background: rgba(239, 108, 0, 0.14); color: #ef6c00; }
       .tm-fairness { display: flex; flex-direction: column; gap: 14px; }
+      .tm-praise-row { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+      .tm-praise-row .tm-input { width: 100%; box-sizing: border-box; }
+      .tm-praise-btn.tm-praise-on { background: var(--tm-accent-soft, rgba(3,169,244,.15)); }
+      .tm-sibling-note { color: #5b4bb7; }
+      .tm-heat-wrap { display: flex; flex-wrap: wrap; gap: 18px 28px; margin-top: 12px; align-items: flex-start; }
+      .tm-heat-name { font-weight: 600; margin-bottom: 6px; display: flex; flex-direction: column; gap: 2px; }
+      .tm-heat-grid { display: grid; grid-template-columns: repeat(7, 16px); gap: 3px; }
+      .tm-heat-grid i, .tm-heat-legend i { width: 16px; height: 16px; border-radius: 4px; background: var(--tm-surface-2, #eef0f3); display: inline-block; }
+      .tm-heat-grid i.tm-heat-pad { background: transparent; }
+      .tm-heat-wd { font-size: .65rem; text-align: center; color: var(--secondary-text-color); }
+      .tm-heat-grid i.tm-heat-l1, .tm-heat-legend i.tm-heat-l1 { background: #c6e9c9; }
+      .tm-heat-grid i.tm-heat-l2, .tm-heat-legend i.tm-heat-l2 { background: #8dd295; }
+      .tm-heat-grid i.tm-heat-l3, .tm-heat-legend i.tm-heat-l3 { background: #4caf5c; }
+      .tm-heat-grid i.tm-heat-l4, .tm-heat-legend i.tm-heat-l4 { background: #2b7a37; }
+      .tm-heat-legend { flex-basis: 100%; display: flex; align-items: center; gap: 4px; font-size: .75rem; color: var(--secondary-text-color); }
       .tm-mood-grid { display: grid; grid-template-columns: minmax(70px, max-content) 1fr; gap: 6px 12px; align-items: center; margin-top: 12px; }
       .tm-mood-row { display: grid; grid-template-columns: repeat(var(--days), minmax(18px, 1fr)); gap: 3px; }
       .tm-mood-cell { display: grid; place-items: center; aspect-ratio: 1; border-radius: 6px; font-size: 15px;
@@ -15462,6 +16687,20 @@ class TaskMatePanel extends HTMLElement {
       /* Timed unlock allowlist (#678) */
       .tm-setting-stack { flex-direction: column; align-items: stretch; }
       .tm-allowlist { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+      .tm-list-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+      .tm-list-body .tm-allowlist { margin-top: 0; }
+      .tm-list-body .tm-allow-chip { font-family: inherit; }
+      .tm-list-body .tm-field { margin: 0; }
+      .tm-st-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .tm-st-name { font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+      .tm-st-balance { background: #e9f6fb; color: #0f4a60; border-radius: 999px; padding: 3px 10px; font-weight: 600; font-size: .85rem; }
+      .tm-st-balance.live { background: #fdecec; color: #7a1f1f; }
+      .tm-st-adjust { margin-inline-start: auto; display: inline-flex; gap: 4px; }
+      .tm-st-jar { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: .85rem; }
+      .tm-st-opens { display: flex; gap: 8px; flex-wrap: wrap; }
+      .tm-reward-screen { margin-top: 14px; }
+      .tm-bin-preview { display: flex; flex-direction: column; align-items: flex-start; }
+      .tm-bin-preview ul { margin: 8px 0 0; padding-inline-start: 18px; line-height: 1.6; }
       .tm-allow-chip {
         display: inline-flex; align-items: center; gap: 6px;
         background: var(--tm-surface-0); border: 1px solid var(--tm-border);
@@ -15595,6 +16834,12 @@ class TaskMatePanel extends HTMLElement {
       .tm-swatches button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; display: grid; place-items: center; }
       .tm-swatches button.tm-sw-auto { background: color-mix(in srgb, var(--sw), transparent 75%); border-color: var(--sw); color: var(--tm-text); --mdc-icon-size: 16px; }
       .tm-swatches button.tm-on { box-shadow: 0 0 0 2px var(--tm-surface-0), 0 0 0 4px var(--tm-text); }
+      .tm-fx-picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 4px 0; }
+      .tm-fx-pick { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border-radius: 12px; cursor: pointer;
+        border: 2px solid var(--tm-border); background: var(--tm-surface-1, transparent); color: var(--tm-text); font: inherit; text-align: center; }
+      .tm-fx-pick.tm-on { border-color: var(--tm-accent); background: var(--tm-accent-soft); }
+      .tm-fx-pick-ic { font-size: 28px; line-height: 1.1; }
+      .tm-fx-pick small { color: var(--tm-text-muted); font-size: 11.5px; }
       .tm-check-row > div { flex: 1; }
       .tm-check-title { font-size: 13px; color: var(--tm-text); font-weight: 500; }
 
@@ -15668,6 +16913,69 @@ class TaskMatePanel extends HTMLElement {
       @keyframes tm-toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translateX(-50%); } }
       .tm-toast-ok  { background: var(--tm-positive); color: var(--text-primary-color, #fff); }
       .tm-toast-err { background: var(--tm-danger); color: var(--text-primary-color, #fff); }
+      .tm-toast-act {
+        margin-inline-start: 12px; padding: 2px 10px; border-radius: 999px;
+        border: 1px solid currentColor; background: transparent; color: inherit;
+        font: inherit; font-weight: 700; cursor: pointer;
+      }
+
+      /* Settings: jump list, unsaved-changes bar */
+      .tm-set-jump { margin: 0 0 14px; flex-wrap: wrap; }
+      .tm-settings [data-sec] { scroll-margin-top: 12px; }
+      .tm-unsaved-bar {
+        position: sticky; bottom: 12px; z-index: 5; margin-top: 14px;
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        padding: 10px 14px; border-radius: var(--tm-radius);
+        background: #fff3e0; border: 1px solid #ffd59a; color: #6b4200;
+        box-shadow: var(--tm-shadow);
+      }
+      .tm-unsaved-bar[hidden] { display: none; }
+      .tm-setting-row.tm-setting-changed { box-shadow: inset 3px 0 0 #f0a020; }
+      [dir="rtl"] .tm-setting-row.tm-setting-changed { box-shadow: inset -3px 0 0 #f0a020; }
+      .tm-unsaved-bar ha-icon { --mdc-icon-size: 20px; }
+      .tm-unsaved-gap { flex: 1; }
+      .tm-pal-hint { color: var(--tm-text-muted); font-weight: 400; }
+
+      /* Rewards page: drag to reorder */
+      .tm-reward-card[draggable="true"] .tm-reorder-handle { cursor: grab; align-self: center; }
+      .tm-reward-card .tm-reorder-handle ha-icon { --mdc-icon-size: 20px; display: block; }
+      .tm-reward-card.tm-dragging { opacity: 0.4; }
+      .tm-reward-card.tm-drag-over { box-shadow: 0 0 0 2px var(--tm-accent); }
+
+      /* Child quick view */
+      .tm-kd-head { display: flex; align-items: center; gap: 10px; }
+      .tm-kd-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; }
+      .tm-kd-stat { border: 1px solid var(--tm-border-soft); border-radius: var(--tm-radius); padding: 10px; }
+      .tm-kd-stat strong { font-size: 18px; }
+      .tm-kd-today { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+      .tm-kd-today li { font-size: 13px; }
+      .tm-kd-todo, .tm-kd-missed { color: var(--tm-text-muted); }
+      .tm-kd-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 18px; }
+
+      /* View as child */
+      .tm-viewas-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; margin-bottom: 12px; }
+      .tm-viewas-design { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+      .tm-viewas-stage { background: var(--tm-surface-2); border-radius: var(--tm-radius); padding: 16px; display: flex; flex-direction: column; align-items: center; }
+      .tm-viewas-frame { position: relative; width: min(420px, 100%); }
+      .tm-viewas-shield { position: absolute; inset: 0; cursor: not-allowed; }
+      .tm-viewas-note { text-align: center; margin: 10px 0 0; }
+
+      /* Insights: Economy */
+      .tm-econ { margin: 14px 8px 4px; }
+      .tm-econ-chart { display: block; width: 100%; height: 140px; overflow: visible; }
+      .tm-econ-chart * { vector-effect: non-scaling-stroke; }
+      .tm-econ-axis { stroke: var(--tm-border-soft); stroke-width: 1; }
+      .tm-econ-earned { stroke: #0b9bd6; stroke-width: 3; stroke-linejoin: round; }
+      .tm-econ-spent { stroke: #f0a020; stroke-width: 3; stroke-linejoin: round; }
+      .tm-econ-weeks { position: relative; height: 18px; margin-top: 4px; font-size: 11px; }
+      .tm-econ-weeks span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; } /* rtl-ok: a centring nudge, symmetric */
+      .tm-econ-weeks span:nth-child(even) { visibility: hidden; }
+      .tm-econ-weeks span:first-child { transform: none; }
+      .tm-econ-weeks span:last-child { visibility: visible; transform: translateX(-100%); } /* rtl-ok: keeps the last label inside the card */
+      .tm-econ-legend { display: flex; gap: 14px; margin-bottom: 10px; }
+      .tm-econ-key::before { content: ""; display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-inline-end: 6px; vertical-align: middle; }
+      .tm-econ-key-earned::before { background: #0b9bd6; }
+      .tm-econ-key-spent::before { background: #f0a020; }
 
       /* Templates */
       .tm-section-divider {
@@ -16258,6 +17566,14 @@ class TaskMatePanel extends HTMLElement {
       .tm-pill-info { background: color-mix(in srgb, var(--info-color, #039be5) 14%, transparent); color: var(--info-color, #039be5); }
       .tm-help-card { border-inline-start: 4px solid var(--warning-color, #ffa600); }
       .tm-owed-card { border-inline-start: 4px solid #8e44ad; }
+      /* Reward extras: pictures, ratings, vouchers */
+      .tm-owed-card .tm-help-text { flex: 1; }
+      .tm-reward-thumb { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
+      .tm-avatar-reward:has(.tm-reward-thumb) { overflow: hidden; padding: 0; }
+      .tm-ratings-card { margin-bottom: 16px; }
+      .tm-ratings-table td, .tm-ratings-table th { padding: 6px 8px; text-align: start; }
+      .tm-rating-stars { color: var(--tm-gold, #c9a200); letter-spacing: 1px; }
+      .tm-voucher-btn { padding: 0 6px; margin-inline-start: 4px; font-size: 12px; vertical-align: middle; }
       /* Boost windows */
       .tm-boost-card { border-inline-start: 4px solid #ff7a00; }
       .tm-appeals-card { border-inline-start: 4px solid #4f62c9; }

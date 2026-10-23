@@ -141,8 +141,8 @@ class RewardsMixin:
         has invalidated is cancelled with it.
         """
         old = self.get_reward(reward.id)
-        # A streak freeze is bought by one child for themselves (#925).
-        if getattr(reward, "streak_freeze", False):
+        # A streak freeze (#925) or screen time is bought by one child for themselves.
+        if getattr(reward, "streak_freeze", False) or getattr(reward, "screen_minutes", 0):
             reward.is_jackpot = False
         # Jackpots are always pool-mode (#552); keep stored data consistent.
         if reward.is_jackpot:
@@ -162,6 +162,9 @@ class RewardsMixin:
             )
             self._refund_all_pool_allocations(reward, reason)
         await self.storage.async_save()
+        # A replaced or removed picture leaves its file behind; delete it.
+        if old and old.image_url and old.image_url != reward.image_url:
+            await self._async_release_reward_image(old.image_url, reward.id)
         await self.async_refresh()
 
         # Dismiss the approval pushes for claims this edit just cancelled.
@@ -223,6 +226,8 @@ class RewardsMixin:
 
     async def async_remove_reward(self, reward_id: str) -> None:
         """Remove a reward and clean up any pending claims and pool allocations referencing it."""
+        # Kept for 7 days so it can be restored (claims and savings included).
+        self._snapshot_reward(reward_id)
         self.storage.remove_reward_claims_for_reward(reward_id)
         # Refund any earmarked pool points back to their contributors before the
         # allocations are dropped — otherwise the points deducted at allocation
@@ -233,7 +238,31 @@ class RewardsMixin:
         self.storage.remove_pool_allocations_for_reward(reward_id)
         self.storage.remove_reward(reward_id)
         await self.storage.async_save()
+        if reward and reward.image_url:
+            await self._async_release_reward_image(reward.image_url, reward_id)
         await self.async_refresh()
+
+    async def async_set_reward_order(self, order: list[str]) -> None:
+        """Save the parent's reward order; the rewards card follows it."""
+        self.storage.set_reward_order(list(dict.fromkeys(order)))
+        await self.storage.async_save()
+        await self.async_refresh()
+
+    async def _async_release_reward_image(self, image_url: str, excluding_reward_id: str) -> None:
+        """Delete a reward picture's file unless another reward or a chore still shows it."""
+        from . import images
+
+        for other in self.storage.get_rewards():
+            if other.id != excluding_reward_id and other.image_url == image_url:
+                return
+        for chore in self.storage.get_chores():
+            if image_url in (chore.image_url or "", getattr(chore, "reference_image_url", "") or ""):
+                return
+        # A recently deleted reward (or chore) can still be restored with its
+        # picture; the trash purge releases it after 7 days.
+        if image_url in self._trash_images():
+            return
+        await images.async_delete_image(self.hass, image_url)
 
     @staticmethod
     def _reward_is_sold_out(reward: Reward) -> bool:
@@ -375,12 +404,15 @@ class RewardsMixin:
         allocation = self.storage.get_pool_allocation(child_id, reward.id)
         return max(wallet, allocation.allocated_points) if allocation else wallet
 
-    def validate_reward_claim(self, reward_id: str, child_id: str) -> tuple[Reward, Child]:
+    def validate_reward_claim(self, reward_id: str, child_id: str, recipient_id: str = "") -> tuple[Reward, Child]:
         """Check a claim is allowed, raising ValueError with the reason if not.
 
         Every rule that decides whether a child may claim right now lives here,
         so the claim itself and anything that offers it — the per-reward button
         entity, for one — cannot drift apart. Mutates nothing.
+
+        ``recipient_id`` makes it a gift: ``child_id`` pays, the recipient gets
+        it, so the reward must be one the recipient may have.
         """
         reward = self.get_reward(reward_id)
         if not reward:
@@ -390,7 +422,10 @@ class RewardsMixin:
         if not child:
             raise ValueError(f"Child {child_id} not found")
 
-        if not self._reward_is_for_child(reward, child_id):
+        holder = child
+        if recipient_id and recipient_id != child_id:
+            holder = self.validate_reward_gift(reward, child, recipient_id)
+        elif not self._reward_is_for_child(reward, child_id):
             raise ValueError(f"Reward '{reward.name}' is not available to {child.name}")
         if self._reward_is_sold_out(reward):
             raise ValueError(f"Reward '{reward.name}' is sold out")
@@ -398,6 +433,8 @@ class RewardsMixin:
             raise ValueError(f"Reward '{reward.name}' has expired")
         if self._reward_is_time_locked(reward):
             raise ValueError(f"Reward '{reward.name}' is not available right now")
+        # Per-child limit: counted against the child who gets the reward.
+        self.require_reward_limit(reward, holder)
 
         # A pool-filled claim skips the wallet check below, and a zero-cost
         # reward can never fail it, so without these two guards a child can
@@ -413,7 +450,9 @@ class RewardsMixin:
         if reward.is_jackpot:
             blocking = [c for c in pending if c.reward_id == reward_id]
         else:
-            blocking = [c for c in own_pending if c.reward_id == reward_id]
+            # One waiting claim per reward per child it is for — a sibling's
+            # gift waiting for approval counts as theirs.
+            blocking = [c for c in pending if c.reward_id == reward_id and c.holder_id == holder.id]
         if blocking:
             raise ValueError(f"A claim for '{reward.name}' is already waiting for approval")
         if getattr(reward, "streak_freeze", False):
@@ -476,7 +515,7 @@ class RewardsMixin:
         if (child.streak_freezes or 0) + queued >= cap:
             raise ValueError(f"{child.name} already has the maximum of {cap} streak freezes")
 
-    async def async_claim_reward(self, reward_id: str, child_id: str) -> RewardClaim:
+    async def async_claim_reward(self, reward_id: str, child_id: str, recipient_id: str = "") -> RewardClaim:
         """Child claims a reward — creates a pending claim awaiting parent approval.
 
         Two modes are supported:
@@ -484,13 +523,19 @@ class RewardsMixin:
           * Pool mode: if pool allocations exist for this (child, reward) and they fill the
             reward's cost, the claim is a "redeem" — no wallet check needed. For jackpot
             rewards the pool total across all contributing children must reach the cost.
+
+        Passing ``recipient_id`` (another child) makes it a gift: this child
+        pays, the recipient gets it.
         """
-        reward, child = self.validate_reward_claim(reward_id, child_id)
+        if recipient_id == child_id:
+            recipient_id = ""
+        reward, child = self.validate_reward_claim(reward_id, child_id, recipient_id)
 
         claim = RewardClaim(
             reward_id=reward_id,
             child_id=child_id,
             claimed_at=dt_util.now(),
+            recipient_id=recipient_id,
         )
 
         self.storage.add_reward_claim(claim)
@@ -502,6 +547,7 @@ class RewardsMixin:
                 "reward_id": reward.id,
                 "claim_id": claim.id,
                 "cost": reward.cost,
+                **({"recipient_id": recipient_id} if recipient_id else {}),
                 "timestamp": dt_util.now().isoformat(),
             },
         )
@@ -646,6 +692,10 @@ class RewardsMixin:
                 if getattr(reward, "streak_freeze", False):
                     child.streak_freezes = (child.streak_freezes or 0) + 1
                     self.storage.update_child(child)
+                # Screen-time bank: the minutes go straight onto the balance
+                # of the child it's for — the recipient, when it was a gift.
+                holder = self.get_child(claim.holder_id) or child
+                self._grant_screen_time(holder, reward)
 
                 claim.approved = True
                 claim.approved_at = dt_util.now()
@@ -681,7 +731,7 @@ class RewardsMixin:
                         await self.notifications.clear_approval("pending_reward_claim", other.id)
 
                 # Timed unlock (#678): allowlisted entity on, auto-off later.
-                await self.async_start_unlock(reward, child)
+                await self.async_start_unlock(reward, holder)
 
                 self.hass.bus.async_fire(
                     "taskmate_reward_approved",
@@ -692,6 +742,7 @@ class RewardsMixin:
                         "reward_name": reward.name,
                         "claim_id": claim.id,
                         "cost": effective_cost,
+                        **({"recipient_id": claim.recipient_id} if claim.recipient_id else {}),
                         "timestamp": dt_util.now().isoformat(),
                     },
                 )

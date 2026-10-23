@@ -116,6 +116,12 @@ approve_chore:
           min: 1
           max: 3
           mode: slider
+    note:
+      name: Praise note
+      description: Optional short message for the child, shown on their card today (up to 120 characters).
+      required: false
+      selector:
+        text:
 
 approve_all_chores:
   name: Approve All Chores
@@ -338,6 +344,12 @@ claim_reward:
       name: Child ID
       description: The ID of the child claiming the reward
       required: true
+      selector:
+        text:
+    recipient_id:
+      name: Recipient ID
+      description: Buy it for a brother or sister instead. The claiming child pays; needs "Children can buy rewards for each other" switched on.
+      required: false
       selector:
         text:
 
@@ -1964,6 +1976,52 @@ end_boost:
       selector:
         text:
 
+adjust_screen_time:
+  name: Adjust screen time
+  description: Add minutes to a child's screen-time balance, or take some away with a negative number.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child whose balance changes
+      required: true
+      selector:
+        text:
+    minutes:
+      name: Minutes
+      description: Minutes to add; negative to take away. The balance never goes below zero.
+      required: true
+      selector:
+        number:
+          min: -10080
+          max: 10080
+          mode: box
+    reason:
+      name: Reason
+      description: A short note for the balance history
+      required: false
+      selector:
+        text:
+
+save_screen_time:
+  name: Save screen time
+  description: Move a child's unused screen-time minutes into their weekend jar. Today's allowance goes in first, then banked minutes, up to the jar's cap.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child saving the minutes
+      required: true
+      selector:
+        text:
+    minutes:
+      name: Minutes
+      description: How many minutes to save. Leave empty to save everything that fits.
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 10080
+          mode: box
+
 appeal:
   name: Appeal
   description: A child asks for a second look at a rejected chore, a rejected reward claim or a penalty from the last 48 hours. Needs appeals switched on.
@@ -2093,3 +2151,84 @@ adopt_pet:
       default: false
       selector:
         boolean:
+
+rate_reward:
+  name: Rate a reward
+  description: The child gives a reward they have had 1 to 3 stars. Once the reward is handed over (or approved, when fulfilment tracking is off), for 3 days.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child who had the reward
+      required: true
+      selector:
+        text:
+    claim_id:
+      name: Claim ID
+      description: The reward claim being rated
+      required: true
+      selector:
+        text:
+    stars:
+      name: Stars
+      description: 1 to 3 stars
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 3
+          mode: slider
+
+sibling_check:
+  name: Sibling check
+  description: A child checks a sibling's chore that is waiting for approval. "done" approves it and pays the checker the sibling-check bonus; "not_yet" leaves it waiting for a parent, with a note. Needs sibling checks switched on, and the checker must be allowed to check that sibling.
+  fields:
+    child_id:
+      name: Checker child ID
+      description: The child doing the checking (not the one who did the chore)
+      required: true
+      selector:
+        text:
+    completion_id:
+      name: Completion ID
+      description: The waiting completion, from the sibling_checks attribute of the checker's entry in sensor.taskmate_overview
+      required: true
+      selector:
+        text:
+    verdict:
+      name: Verdict
+      description: done (looks done) or not_yet
+      required: true
+      selector:
+        select:
+          options:
+            - done
+            - not_yet
+    note:
+      name: Note
+      description: Optional words for the parent with a "not yet", up to 120 characters
+      required: false
+      selector:
+        text:
+
+set_chore_reminder:
+  name: Set chore reminder
+  description: A child picks when to be reminded about one of their chores. The time must be inside the earliest/latest times set in TaskMate's settings. Leave the time empty to clear the reminder.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child who wants reminding
+      required: true
+      selector:
+        text:
+    chore_id:
+      name: Chore ID
+      description: The chore to be reminded about
+      required: true
+      selector:
+        text:
+    time:
+      name: Time
+      description: HH:MM, e.g. 17:30. Empty clears the reminder.
+      required: false
+      selector:
+        text:

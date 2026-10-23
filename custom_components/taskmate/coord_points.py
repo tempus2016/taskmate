@@ -585,6 +585,7 @@ class PointsMixin:
         "Allocated to pool:",
         "Pool refund",
         "Points decay",
+        "Points expired",
         "Savings interest",
         "Badge",
         # Zero-point token movements (#925): nothing to reverse in points.
@@ -1297,14 +1298,66 @@ class PointsMixin:
         await self.storage.async_save()
         await self.async_refresh()
 
-    async def async_apply_penalty(self, penalty_id: str, child_id: str) -> None:
-        """Apply a penalty — deducts the penalty's points from the child."""
+    def _penalty_warning_period(self, penalty, now=None) -> str:
+        """The period a penalty warning lasts: today, or this week's Monday."""
+        today = dt_util.as_local(now or dt_util.now()).date()
+        if getattr(penalty, "warning_reset", "daily") == "weekly":
+            return f"w{(today - timedelta(days=today.weekday())).isoformat()}"
+        return today.isoformat()
+
+    def penalty_warnings_for_child(self, child_id: str) -> list[dict]:
+        """Warnings given this period that haven't turned into a deduction yet."""
+        section = self.storage.get_section("penalty_warnings", dict).get(child_id)
+        if not isinstance(section, dict):
+            return []
+        out = []
+        for penalty in self.storage.get_penalties():
+            entry = section.get(penalty.id)
+            if not (getattr(penalty, "warn_first", False) and isinstance(entry, dict)):
+                continue
+            if entry.get("period") == self._penalty_warning_period(penalty) and not entry.get("used"):
+                out.append({"penalty_id": penalty.id, "name": penalty.name, "points": penalty.points})
+        return out
+
+    async def async_apply_penalty(self, penalty_id: str, child_id: str) -> bool:
+        """Apply a penalty — deducts the penalty's points from the child.
+
+        A ``warn_first`` penalty is a warning the first time in its period
+        (today, or this week): nothing is taken, ``taskmate_penalty_warning``
+        fires and the child's card says what next time costs. From then on
+        until the period resets it deducts as normal. Returns True when this
+        application was only the warning.
+        """
         penalty = self.storage.get_penalty(penalty_id)
         if not penalty:
             raise ValueError(f"Penalty {penalty_id} not found")
         child = self.get_child(child_id)
         if not child:
             raise ValueError(f"Child {child_id} not found")
+        if getattr(penalty, "warn_first", False):
+            warnings = self.storage.get_section("penalty_warnings", dict)
+            mine = warnings.setdefault(child_id, {})
+            period = self._penalty_warning_period(penalty)
+            entry = mine.get(penalty.id)
+            if not (isinstance(entry, dict) and entry.get("period") == period):
+                mine[penalty.id] = {"period": period, "at": dt_util.now().isoformat(), "used": False}
+                await self.storage.async_save()
+                await self.async_refresh()
+                self.hass.bus.async_fire(
+                    "taskmate_penalty_warning",
+                    {
+                        "child_id": child.id,
+                        "child_name": child.name,
+                        "penalty_id": penalty.id,
+                        "penalty_name": penalty.name,
+                        "points": penalty.points,
+                        "resets": getattr(penalty, "warning_reset", "daily"),
+                        "timestamp": dt_util.now().isoformat(),
+                    },
+                )
+                return True
+            # The warning has been spent; the card strip goes.
+            entry["used"] = True
         before = child.points
         await self.async_remove_points(child_id, penalty.points, reason=f"Penalty: {penalty.name}")
         # Make it right: offer the penalty's chore to earn back what was taken.
@@ -1325,6 +1378,7 @@ class PointsMixin:
                 "timestamp": dt_util.now().isoformat(),
             },
         )
+        return False
 
     # Bonus operations
     async def async_add_bonus(

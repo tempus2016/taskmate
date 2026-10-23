@@ -63,7 +63,9 @@ def test_removing_one_of_two_chores_sharing_an_image_keeps_the_file():
     delete.assert_not_awaited()
 
 
-def test_removing_the_last_chore_using_an_image_deletes_the_file():
+def test_removing_the_last_chore_using_an_image_keeps_the_file_for_restore():
+    # Recently deleted keeps the chore for 7 days; its purge deletes the file
+    # (tests/test_recently_deleted.py).
     a = _chore("a", IMAGE)
     coord = _coord([a])
     with patch(
@@ -71,7 +73,7 @@ def test_removing_the_last_chore_using_an_image_deletes_the_file():
         new=AsyncMock(),
     ) as delete:
         run(coord.async_remove_chore("a"))
-    delete.assert_awaited_once_with(coord.hass, IMAGE)
+    delete.assert_not_awaited()
 
 
 def test_replacing_an_image_still_used_elsewhere_keeps_the_file():

@@ -1,6 +1,6 @@
 # Insights
 
-**TaskMate panel → Insights.** Five reports that answer the questions the raw numbers don't.
+**TaskMate panel → Insights.** Reports that answer the questions the raw numbers don't.
 
 | Report | Question it answers |
 |--------|--------------------|
@@ -9,6 +9,8 @@
 | [Week ahead](#week-ahead--whats-coming-up) | What points are actually available in the next seven days? |
 | [Health](#health--is-anything-broken) | Is anything misconfigured? |
 | [Moods](#moods--how-the-days-felt) | *(v7.0.0)* How have the children's days felt lately? |
+| [Economy](#economy--are-rewards-too-cheap) | Are points piling up because rewards have got too cheap? |
+| [Calendar](#calendar--which-days-got-done) | Which days did each child actually get chores done? |
 
 All of them are computed **on demand and never cached**. A stale report is worse than a slow one.
 
@@ -88,6 +90,27 @@ Every issue carries a plain sentence and a **Show me** button that jumps to wher
 Once a child's chores are done for the day, the child card asks "How was your day?" with five faces: great, good, OK, sad and cross. **Insights → Moods** lays out each child's answers day by day, with how many days they logged and how many were tough (sad or cross). A run of tough days is worth a chat.
 
 Moods are kept for 90 days. A sad or cross day can also send you a gentle push (the **Tough day** notification, off by default). See [Mood Check-In](Mood-Check-In.md).
+
+---
+
+## Economy — are rewards too cheap?
+
+**Insights → Economy** draws two lines over the last 8 weeks (each week is 7 days, the latest ending today):
+
+- **Earned** — points from approved chores, plus bonus awards from the points log (gifts between children and refunds are left out: they move points around rather than earn them).
+- **Spent** — what approved reward claims cost (the price at the time, where it was recorded).
+
+Adult profiles aren't counted.
+
+**The warning.** When, over the last 4 weeks, the children earned **at least 1.5 times** what they spent on rewards, and at least 50 points in all, balances are piling up faster than they come down. The view then says so, says how much earning has grown on the 4 weeks before, and names the **most-claimed rewards** (up to three) as the first candidates for a price review. Below 50 points it never warns, so a quiet month or a new install stays quiet.
+
+Bonus awards come from the points log, which keeps the latest 200 entries, so on a busy family's install the oldest weeks can under-count them.
+
+---
+
+## Calendar — which days got done
+
+One grid per child, a square a day in Monday-first weeks, darker green for busier days, over the last 4, 6 or 12 weeks. Hover a square for the date and count. The same grid is available as a dashboard card. See [Completion Heatmap](Completion-Heatmap.md).
 
 ---
 

@@ -1,6 +1,6 @@
 # Dashboard Cards
 
-TaskMate includes 31 Lovelace cards. They are automatically registered as resources when the integration loads.
+TaskMate includes 32 Lovelace cards. They are automatically registered as resources when the integration loads.
 
 All cards support a `header_color` config option — a hex colour for the card header background. Each card has its own vibrant default.
 
@@ -55,6 +55,7 @@ Everything else is optional and can be added later as you explore:
 | Pet Card | A virtual pet that hatches and grows as the child does chores |
 | Raffle Card | Children buy raffle tickets with points, and watch the draw |
 | Personal Bests Card | A child's own records — longest streak, best day, best week, biggest award — with today's new ones marked |
+| Heatmap Card | A calendar of the last six weeks for each child — darker green for busier days |
 
 ---
 
@@ -130,6 +131,9 @@ show_mood: true               # (v7.0.0) end-of-day mood check-in once the day's
 show_weekly_goal: true        # (v7.0.0) the child's own weekly goal (needs the global setting)
 show_boost_alert: true        # (v7.1.0) the full-card BOOST! alert when a boost starts
 show_appeals: true            # (v7.1.0) what the child can appeal, and how it went
+show_tomorrow: true           # the Today / Tomorrow switch, when something is due tomorrow
+show_reminders: true          # the 🔔 Remind me tag (needs the global setting)
+show_praise: true             # praise notes sent with today's approvals
 elapsed_time_mode: dim        # dim | hide | show — time-of-day chores whose window has passed
 show_description: false       # show chore description below name
 show_badges: true             # show earned badge strip below points
@@ -143,7 +147,9 @@ pre_reader_points: false      # in pre-reader mode, show the point value instead
 default_sound: coin           # default completion sound
 undo_sound: undo              # sound when undoing
 show_parent_actions: true     # (v6.2.0) false = act as the child even when a parent is signed in
-header_color: "#9b59b6"
+density: normal               # normal | compact — one line per chore, see Card Looks
+seasonal: true                # false = ignore the seasonal themes on this card
+header_color: "#9b59b6"       # leave unset to use the child's own colour
 ```
 
 **Behaviour:**
@@ -152,7 +158,8 @@ header_color: "#9b59b6"
 - Chores requiring approval show as ticked but pending until approved
 - If `daily_limit > 1`, a counter `(0/3)` appears beside the points
 - When all chores are done, an animated "All Done!" state is shown
-- A confetti and celebration popup appears on completion
+- A confetti and celebration popup appears on completion — or the child's own [done animation](Card-Looks.md#done-animation-per-child) (stamp, fireworks or sticker)
+- **Card looks** — a [compact layout](Card-Looks.md#compact-child-card), [seasonal themes](Card-Looks.md#seasonal-themes), dark care strips in dark mode, and the [child's own colour](Card-Looks.md#the-childs-colour-on-their-cards) for the header when the card sets no `header_color`
 - **Timed tasks** show Start/Pause/Stop buttons with a live elapsed timer instead of a checkbox — see [Timed Tasks](Timed-Tasks.md)
 - **Bonus subtasks** appear as completable items below the parent chore after it's ticked off — see [Bonus Subtasks](Bonus-Subtasks.md)
 - **Badge strip** shows up to 5 most-recently-earned badges below the points readout — tap to open the admin panel's badges section. Disable with `show_badges: false`. See [Achievement Badges](Achievement-Badges.md)
@@ -181,6 +188,12 @@ header_color: "#9b59b6"
 - **Weekly goal (v7.0.0)** — while weekly goals are on in Settings, the child sets their own points target for the week and sees a progress bar towards it. Hide it with `show_weekly_goal: false`. See [Weekly Goals](Weekly-Goals.md)
 - **Sick day (v7.0.0)** — on a [sick day](Sick-Days.md) the card says "Rest up and get better" and shows no chores due; anything already ticked stays listed so it can still be undone
 - **Make it right (v7.0.0)** — after a penalty with a [make-it-right](Make-It-Right-Penalties.md) chore, the card says which chore to do and by when to earn points back, and that chore appears on the list even if it isn't normally due
+- **Per-chore streaks** — a chore done on two or more of its due days in a row shows **🔥 N days**. See [Per-Chore Streaks](Per-Chore-Streaks.md)
+- **Tomorrow** — a **Today / Tomorrow** switch lists tomorrow's chores, read-only with a 🔒. Only shown when something is due tomorrow; hide it with `show_tomorrow: false`. See [Tomorrow Preview](Tomorrow-Preview.md)
+- **Reminders** — while [child-chosen reminders](Child-Chosen-Reminders.md) are on, each chore still to do has a **🔔 Remind me** tag that becomes **🔔 17:30** once set. Hide it with `show_reminders: false`
+- **Praise notes** — today's [praise notes](Praise-Notes.md) show as strips: *"💬 Dad: Great job!"*. Hide them with `show_praise: false`
+- **Penalty warnings** — a [warn-first penalty](Penalty-Warnings.md) shows *"🟨 Warning: … — next time it's −10"* until it's spent or resets
+- **Sibling checks** — a child allowed to [check a sibling](Sibling-Checks.md) sees their waiting chores with **Looks done (+1)** and **Not yet**
 - **Quantity chores (v7.0.0)** — tapping a [quantity chore](Quantity-Chores.md) asks "How many pages?" with − / + buttons and shows what it's worth before it is sent
 - **`first_come_claimed_mode` (v5.4.0+)** controls what the rest of the pool sees once a [first-come](Chore-Scheduling.md#first-come-first-served) chore has been claimed: `hide` (default — the row disappears for everyone, matching pre-5.4.0 behaviour), `dim` (greyed out) or `show` (full opacity). Under `dim` and `show` the winner keeps their normal completed row with undo, and every other child gets a locked row reading *"Already done by {name}"*. Not tappable in either case
 
@@ -1033,6 +1046,27 @@ header_color: "#d35400"
 **Behaviour:**
 - One tile per record; a child with none yet reads *No records yet — the first chores set the bar*
 - The header counts how many records were beaten today
+- Available in every [design style](Card-Design-Styles.md)
+
+---
+
+## Heatmap Card
+
+**Purpose:** A calendar grid of the last six weeks for each child: one square a day, darker green for busier days, today outlined. Without a `child_id` every child gets a grid. See [Completion Heatmap](Completion-Heatmap.md).
+
+**Default header colour:** Green `#2e7d32`
+
+```yaml
+type: custom:taskmate-heatmap-card
+entity: sensor.taskmate_overview
+child_id: a8c8376a            # optional — leave out to show every child
+title: My chore calendar      # optional — default: Chore calendar
+header_color: "#2e7d32"
+```
+
+**Behaviour:**
+- Hover a square for the date and how many chores were done
+- Each grid says how many chores and on how many of the 42 days
 - Available in every [design style](Card-Design-Styles.md)
 
 ---

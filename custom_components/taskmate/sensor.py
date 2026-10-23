@@ -26,6 +26,7 @@ from .coord_set_times import set_time_label, set_time_of
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
 from .models import Child
+from .seasons import active_season
 from .watch import DEFAULT_STATE_STRINGS, today_board, watch_state, watch_summary
 
 _LOGGER = logging.getLogger(__name__)
@@ -175,6 +176,12 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
     allocated = common["total_allocated_by_child"]
     season = common["season_points"]
     freezes_on = _safe_int(((common.get("data") or {}).get("settings") or {}).get("streak_freeze_max"), 2) > 0
+    # Savings forecast: points a day over the last fortnight, one pass for everyone.
+    earn_rates = coordinator.earn_rates()
+    # Per-chore streaks (two days or more) and today's praise notes, each in
+    # one pass over the completions for the whole family.
+    chore_streaks = coordinator.chore_streaks(children, common.get("chores", []), common.get("all_completions", []))
+    praise = _todays_praise(common)
     summary = []
     for c in children:
         committed_amount = committed.get(c.id, 0)
@@ -204,6 +211,13 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 ),
                 # Grown-ups (#1061): cards leave these out unless show_adults is set.
                 **({"is_adult": True} if getattr(c, "is_adult", False) else {}),
+                # The child's own colour (#1078) and tick-off animation, only when set.
+                **({"color": color} if (color := getattr(c, "color", "")) else {}),
+                **(
+                    {"celebration_style": style}
+                    if (style := getattr(c, "celebration_style", "confetti")) != "confetti"
+                    else {}
+                ),
                 # Chore roulette (#677): today's pick + spins left, so the card can
                 # show the result and disable the button once the allowance is used.
                 **(
@@ -266,7 +280,12 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 **(
                     {
                         "owed_rewards": [
-                            {k: o[k] for k in ("claim_id", "reward_name", "reward_icon", "days_owed")} for o in owed
+                            {
+                                k: o[k]
+                                for k in ("claim_id", "reward_name", "reward_icon", "days_owed", "from_name")
+                                if k in o
+                            }
+                            for o in owed
                         ]
                     }
                     if (owed := coordinator.owed_rewards(c.id))
@@ -279,8 +298,38 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                     else {}
                 ),
                 **({"appeals": mine} if (mine := coordinator.appeals_for_child(c.id)) else {}),
+                # Points expiry: the next points to fade, inside the warning window.
+                **({"points_expiry": exp} if (exp := coordinator.points_expiry_summary(c.id)) else {}),
+                # Savings forecast: average points earned a day, when there are any.
+                **({"earn_rate": earn_rates[c.id]} if c.id in earn_rates else {}),
+                # Gifts from a sibling still waiting for approval.
+                **({"gifts": gifts} if (gifts := coordinator.incoming_gifts(c.id)) else {}),
+                # Rewards just had and not yet given stars.
+                **({"rate_rewards": rate} if (rate := coordinator.rewards_to_rate(c.id)) else {}),
+                # Screen-time bank: the balance, while the feature is on.
+                **({"screen_time": st} if (st := coordinator.screen_time_summary(c.id)) is not None else {}),
                 # Personal bests (#1099): the records board, once there is one.
                 **({"personal_bests": bests} if (bests := coordinator.personal_bests_state(c)) else {}),
+                # Per-chore streaks: {chore_id: days}, only streaks of 2+.
+                **({"chore_streaks": cs} if (cs := chore_streaks.get(c.id)) else {}),
+                # Tomorrow preview: the chores due tomorrow, when there are any.
+                **({"tomorrow": tm} if (tm := coordinator.tomorrow_chore_ids(c.id)) else {}),
+                # Child-chosen reminder times: {chore_id: "HH:MM"}.
+                **({"reminders": rem} if (rem := coordinator.chore_reminders_for_child(c.id)) else {}),
+                # Praise notes sent with today's approvals.
+                **({"praise": pr} if (pr := praise.get(c.id)) else {}),
+                # Warning first: penalties this child has had their warning for.
+                **({"penalty_warnings": pw} if (pw := coordinator.penalty_warnings_for_child(c.id)) else {}),
+                # Sibling checks: siblings' chores this child is asked to check.
+                **(
+                    {"sibling_checks": sc}
+                    if (
+                        sc := coordinator.sibling_checks_for_child(
+                            c.id, common.get("pending_completions"), common.get("chore_lookup")
+                        )
+                    )
+                    else {}
+                ),
                 # Make it right: open offers to earn a penalty back.
                 **(
                     {
@@ -295,6 +344,34 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
             }
         )
     return summary
+
+
+# At most this many praise notes per child on the overview (16 KB cap).
+_PRAISE_CARD_MAX = 3
+
+
+def _todays_praise(common: dict) -> dict[str, list[dict]]:
+    """``{child_id: [{chore_name, note, by}]}`` for today's approvals with a note, newest first."""
+    today = dt_util.now().date()
+    out: dict[str, list[dict]] = {}
+    for comp in common.get("all_completions", []):
+        if not comp.approved or not getattr(comp, "praise_note", ""):
+            continue
+        if dt_util.as_local(comp.approved_at or comp.completed_at).date() != today:
+            continue
+        chore = common.get("chore_lookup", {}).get(comp.chore_id)
+        out.setdefault(comp.child_id, []).append(
+            {
+                "chore_name": chore.name if chore else _bounty_title(common, comp),
+                "note": comp.praise_note,
+                **({"by": comp.praise_by} if getattr(comp, "praise_by", "") else {}),
+                "_at": comp.approved_at.isoformat() if comp.approved_at else "",
+            }
+        )
+    for child_id, rows in out.items():
+        rows.sort(key=lambda r: r["_at"], reverse=True)
+        out[child_id] = [{k: v for k, v in r.items() if k != "_at"} for r in rows[:_PRAISE_CARD_MAX]]
+    return out
 
 
 def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[dict]:
@@ -707,9 +784,15 @@ def _build_active_timed_sessions(coordinator: TaskMateCoordinator) -> list[dict]
     return out
 
 
-def _build_rewards_list(common: dict) -> list[dict]:
+def _build_rewards_list(common: dict, coordinator: TaskMateCoordinator | None = None) -> list[dict]:
     """Build the rewards list with calculated_costs and pool allocations."""
     rewards = common["rewards"]
+    # Per-child limits need every claim, not just the pending ones.
+    all_claims = (
+        coordinator.storage.get_reward_claims()
+        if coordinator is not None and any(getattr(r, "limit_count", 0) for r in rewards)
+        else []
+    )
     children = common["children"]
     pool_by_child_reward = common["pool_by_child_reward"]
     pool_total_by_reward = common["pool_total_by_reward"]
@@ -761,6 +844,17 @@ def _build_rewards_list(common: dict) -> list[dict]:
         # Streak freeze (#925): flag only the rewards that are one.
         if getattr(r, "streak_freeze", False):
             out[-1]["streak_freeze"] = True
+        # Screen-time bank: only on rewards that buy minutes.
+        if getattr(r, "screen_minutes", 0):
+            out[-1]["screen_minutes"] = r.screen_minutes
+        # Per-child limit, and who has hit it (the day it opens again).
+        if getattr(r, "limit_count", 0) and coordinator is not None:
+            out[-1]["limit"] = {"count": r.limit_count, "period": r.limit_period}
+            if blocked := coordinator.reward_limit_blocks(r, all_claims):
+                out[-1]["limit_reached"] = blocked
+        # Reward picture, signed so a card's <img> loads.
+        if getattr(r, "image_url", ""):
+            out[-1]["image_url"] = images.sign_image_url(common["hass"], r.image_url)
         if getattr(r, "time_lock_enabled", False):
             out[-1]["time_lock"] = {
                 "days": list(getattr(r, "available_days", []) or []),
@@ -810,6 +904,10 @@ def _build_pending_reward_claims(common: dict) -> list[dict]:
                 "claimed_at": rc.claimed_at.isoformat() if hasattr(rc.claimed_at, "isoformat") else str(rc.claimed_at),
             }
         )
+        # A gift: who it is for.
+        if rc.recipient_id and (recipient := child_lookup.get(rc.recipient_id)):
+            out[-1]["recipient_id"] = recipient.id
+            out[-1]["recipient_name"] = recipient.name
     return out
 
 
@@ -899,6 +997,7 @@ def _build_recent_transactions(
     limit: int = 20,
     rejections: list[dict] | None = None,
     inspections: list[dict] | None = None,
+    sibling_checks: list[dict] | None = None,
 ) -> list[dict]:
     """Unified activity feed of manual point adjustments and reward claims.
 
@@ -984,6 +1083,17 @@ def _build_recent_transactions(
         row = {k: v for k, v in e.items() if k != "id"}
         events.append({**row, "transaction_id": e.get("id", ""), "child_name": child.name})
 
+    # Sibling checks: who checked whose chore, and what they said.
+    for e in (sibling_checks or [])[-_FEED_INSPECTIONS_MAX:]:
+        child = child_lookup.get(e.get("child_id"))
+        checked = child_lookup.get(e.get("checked_child_id"))
+        if not child or not checked:
+            continue
+        row = {k: v for k, v in e.items() if k != "id"}
+        events.append(
+            {**row, "transaction_id": e.get("id", ""), "child_name": child.name, "checked_child_name": checked.name}
+        )
+
     events.sort(key=lambda e: e["created_at"], reverse=True)
     return events[:limit]
 
@@ -997,6 +1107,8 @@ def _build_penalties_list(common: dict) -> list[dict]:
             "description": p.description,
             "icon": p.icon,
             "assigned_to": p.assigned_to or [],
+            # Warning first: only on penalties that give one.
+            **({"warn_first": True} if getattr(p, "warn_first", False) else {}),
         }
         for p in common["data"].get("penalties", [])
     ]
@@ -1236,9 +1348,20 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             time_boundaries[f"{cat}_end"] = period["end"] if period else def_end
 
         boosts = self.coordinator.boosts_state()
+        reminders = self.coordinator.chore_reminder_settings()
         return {
             # Boost windows: live and upcoming boosts, only when there is one.
             **({"boosts": boosts} if boosts else {}),
+            # Gifts between children: the rewards card offers "Who is it for?".
+            **({"reward_gifting": True} if self.coordinator.reward_gifting_enabled() else {}),
+            # Child-chosen reminders: the times a child may pick, while on.
+            **({"chore_reminders": reminders} if reminders else {}),
+            # Sibling checks: the bonus a "Looks done" pays, while on.
+            **(
+                {"sibling_check_bonus": self.coordinator.sibling_check_bonus()}
+                if self.coordinator.sibling_checks_enabled()
+                else {}
+            ),
             "today_day_of_week": today_dow,
             "streak_reset_mode": settings.get("streak_reset_mode", "reset"),
             "weekend_multiplier": _safe_float(settings.get("weekend_multiplier"), 2.0),
@@ -1265,6 +1388,8 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             # How chores with set times show on the child and kiosk cards:
             # one row per time, or one row with a pill per time.
             "set_times_layout": "pills" if settings.get("set_times_layout") == "pills" else "rows",
+            # Seasonal themes: the season the cards dress for today, only while one is.
+            **({"season": today_season} if (today_season := active_season(settings, dt_util.now().date())) else {}),
             # Non-admin parent role (#661): cards unlock parent controls for
             # these HA users. Deliberately still published in the clear, and
             # deliberately never trusted: every privileged path re-resolves the
@@ -1411,11 +1536,14 @@ class TaskMateRewardsSensor(_CachedAttrsSensor):
     def _build_attributes(self) -> dict:
         common = _compute_common(self.coordinator)
         return {
-            "rewards": _build_rewards_list(common),
+            "rewards": _build_rewards_list(common, self.coordinator),
             "pending_reward_claims": _build_pending_reward_claims(common),
             "pool_allocations": [pa.to_dict() for pa in common["pool_alloc_objs"]],
             # Raffles: open ones and those drawn in the last day, only when any.
             **({"raffles": raffles} if (raffles := self.coordinator.raffles_state()) else {}),
+            # A parent's own order (panel drag): the rewards card keeps the list
+            # as it comes instead of sorting by price. Only sent once one is set.
+            **({"rewards_ordered": True} if self.coordinator.storage.has_reward_order() else {}),
         }
 
 
@@ -1423,7 +1551,7 @@ class TaskMateActivitySensor(_CachedAttrsSensor):
     """Recent completions + recent points/reward transactions."""
 
     _unrecorded_attributes = frozenset(
-        {"recent_completions", "recent_transactions", "career_score_history", "photo_gallery"}
+        {"recent_completions", "recent_transactions", "career_score_history", "photo_gallery", "completion_heatmap"}
     )
 
     def __init__(
@@ -1449,15 +1577,24 @@ class TaskMateActivitySensor(_CachedAttrsSensor):
         career_history = {}
         for c in children:
             career_history[c.id] = self.coordinator.storage.get_career_score_history(c.id)
+        heatmap = self.coordinator.completion_heatmap(common["all_completions"])
         return {
             "recent_completions": _build_recent_completions(common),
             "recent_transactions": _build_recent_transactions(
                 common,
                 rejections=self.coordinator.recent_rejections(),
                 inspections=self.coordinator.recent_inspection_events(),
+                sibling_checks=self.coordinator.recent_sibling_checks(),
             ),
             "career_score_history": career_history,
             "photo_gallery": _build_photo_gallery(common),
+            # Chores done per child per day, oldest first, ending today — for
+            # the heatmap card. Children with none in the window are left out.
+            **(
+                {"completion_heatmap": {"end": dt_util.as_local(dt_util.now()).date().isoformat(), "children": heatmap}}
+                if heatmap
+                else {}
+            ),
         }
 
 

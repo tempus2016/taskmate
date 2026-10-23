@@ -39,7 +39,7 @@ class TaskMateActivityCard extends LitElement {
   static get _UNDO_DENY_PREFIXES() {
     return [
       "Weekend bonus", "Streak milestone bonus", "Perfect week bonus", "Weekly target bonus",
-      "Allocated to pool:", "Pool refund", "Points decay",
+      "Allocated to pool:", "Pool refund", "Points decay", "Points expired",
       "Savings interest", "Badge", "Streak freeze",
       "Wish savings", "Wish refund", "Wish pledge", "Wish redeemed",
     ];
@@ -94,6 +94,7 @@ class TaskMateActivityCard extends LitElement {
       ['Bonus:', 'activity.reason_bonus'],
       // Surprise inspections (#981): the pass bonus.
       ['Inspection passed:', 'activity.reason_inspection_passed'],
+      ['Sibling check:', 'activity.reason_sibling_check'],
     ];
     for (const [prefix, key] of prefixMap) {
       if (reason.startsWith(prefix)) {
@@ -106,6 +107,10 @@ class TaskMateActivityCard extends LitElement {
     }
     // Manual adjustment from the admin panel (#746). Deliberately NOT in
     // _UNDO_DENY_PREFIXES — a manual adjustment must stay reversible.
+    // Points expiry: unspent points that faded away.
+    if (reason === 'Points expired') {
+      return this._t('activity.reason_points_expired');
+    }
     if (reason === 'Admin panel adjustment') {
       return this._t('activity.reason_admin_adjustment');
     }
@@ -591,6 +596,7 @@ class TaskMateActivityCard extends LitElement {
     const t = item.type || "chore";
     if (t === "chore_rejected" || t === "reward_rejected") return "rejected";
     if (t.startsWith("inspection_")) return "inspection";
+    if (t === "sibling_check") return item.verdict === "done" ? "approved" : "pending";
     if (t === "points_added") {
       const reason = item.reason || "";
       if (reason.startsWith("Bonus:") || reason.startsWith("Inspection passed:") || reason.startsWith("Perfect week bonus") ||
@@ -832,15 +838,15 @@ class TaskMateActivityCard extends LitElement {
       `;
     }
 
-    // ── Surprise inspections (#981) ───────────────────────
-    if (type.startsWith("inspection_")) {
+    // ── Surprise inspections (#981) and sibling checks ────
+    if (type.startsWith("inspection_") || type === "sibling_check") {
       const d = this._inspectionText(item);
       return html`
         <div class="activity-item t-inspection">
           ${this.config.accent_stripes !== false ? html`<div class="event-stripe"></div>` : ''}
           <div class="activity-row">
             <div class="activity-icon t-inspection">
-              <ha-icon icon="${type === "inspection_redo" ? "mdi:restore" : "mdi:magnify-scan"}"></ha-icon>
+              <ha-icon icon="${type === "sibling_check" ? "mdi:eye-check-outline" : type === "inspection_redo" ? "mdi:restore" : "mdi:magnify-scan"}"></ha-icon>
             </div>
             <div class="activity-body">
               <div class="activity-title">
@@ -1055,6 +1061,14 @@ class TaskMateActivityCard extends LitElement {
 
   // Surprise inspections (#981): label + chore for an inspection_* event.
   _inspectionText(item) {
+    // Sibling check: "checked Malia's chore — looks done" / "— not yet".
+    if (item.type === "sibling_check") {
+      return {
+        label: this._t(item.verdict === "done" ? 'activity.sibling_check_done' : 'activity.sibling_check_not_yet',
+          { name: item.checked_child_name || this._t('activity.unknown_child') }),
+        name: item.chore_name || this._t('activity.a_chore'),
+      };
+    }
     const keys = {
       inspection_started: 'activity.inspection_started',
       inspection_passed: 'activity.inspection_passed',
@@ -1114,11 +1128,11 @@ class TaskMateActivityCard extends LitElement {
       };
     }
 
-    if (type.startsWith("inspection_")) {
+    if (type.startsWith("inspection_") || type === "sibling_check") {
       const d = this._inspectionText(item);
       return {
-        childName, tone: type === "inspection_failed" ? 'accent' : 'good',
-        emoji: type === "inspection_redo" ? '🔁' : '🔍', sign: '', pts: '',
+        childName, tone: type === "inspection_failed" || (type === "sibling_check" && item.verdict !== "done") ? 'accent' : 'good',
+        emoji: type === "sibling_check" ? '👀' : type === "inspection_redo" ? '🔁' : '🔍', sign: '', pts: '',
         text: html`<strong>${childName}</strong> · ${d.label} <span class="reason">— ${d.name}</span>${item.note ? html`<div class="act-insp-note">“${item.note}”</div>` : ''}`,
         plain: `${childName} · ${d.label} — ${d.name}`,
         ago, time,

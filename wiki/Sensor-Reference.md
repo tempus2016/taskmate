@@ -31,6 +31,7 @@ The main overview sensor. Carries scalar stats and the compact per-child summary
 | `points_name` | string | Currency name (e.g. "Stars") |
 | `points_icon` | string | Currency MDI icon (e.g. "mdi:star") |
 | `card_design` | string | Global default [card design style](Card-Design-Styles.md) — `classic` / `playroom` / `console` / `cleanpro` / `accessible` (default `classic`). Cards apply this when they have no per-card override. See [Card Design Styles](Card-Design-Styles.md) |
+| `season` | string | The [seasonal theme](Card-Looks.md#seasonal-themes) the cards dress for today: `halloween`, `christmas` or `summer`. Present only while one is switched on and in its window |
 | `today_day_of_week` | string | Current day in HA timezone (e.g. "monday") |
 | `weekend_multiplier` | float | Current weekend multiplier setting |
 | `streak_reset_mode` | string | "reset" or "pause" |
@@ -91,6 +92,8 @@ Each entry in the `children` array:
 | `is_guest` | bool | (v5.0.0) Present only for [guest profiles](Guest-Child-Profiles.md) |
 | `guest_expires_on` | string | (v5.0.0) ISO date the guest profile is archived; present only for guests |
 | `is_adult` | bool | (v6.4.0) `true` for an [adult profile](Adult-Profiles.md); present only for adults |
+| `color` | string | The child's colour (`#rrggbb`), used by their cards. Present only when one is set |
+| `celebration_style` | string | The child's [done animation](Card-Looks.md#done-animation-per-child): `stamp`, `fireworks` or `sticker`. Absent for the default, confetti |
 | `roulette` | object | (v5.0.0) Today's [roulette](Chore-Roulette.md) pick and `spins_left`; present only while roulette is enabled |
 | `birthday` | object | (v6.0.0) Present only on the child's [birthday](Birthday-Mode.md): `multiplier` (float), `age` (int, when the birth year is known) and `chores_off: true` when the birthday day off is on |
 | `streak_freezes` | int | (v6.0.0) [Streak freeze](Streak-Freezes.md) tokens the child holds. Present only while streak freezes are switched on, so `0` means "none left" rather than "not in use" |
@@ -103,6 +106,12 @@ Each entry in the `children` array:
 | `weekly_goal` | object | (v7.0.0) The child's own [weekly goal](Weekly-Goals.md), present only while weekly goals are switched on: `target` (0 = not set), `bonus`, and once a target is set `earned` (points since Monday) and `reached` |
 | `redemptions` | list | (v7.0.0) Open [make-it-right](Make-It-Right-Penalties.md) offers — each has `id`, `chore_id`, `chore_name`, `penalty_name`, `points` (what doing the chore gives back) and `expires` (ISO date, the last day it can be done). Present only when there is one |
 | `owed_rewards` | list | (v7.1.0) Redeemed rewards still to hand over, oldest first — each has `claim_id`, `reward_name`, `reward_icon` and `days_owed`. Present only while [reward fulfilment](Reward-Fulfilment.md) is switched on and something is owed |
+| `chore_streaks` | dict | `{chore_id: days}` — [per-chore streaks](Per-Chore-Streaks.md) of two days or more. Present only when there is one |
+| `tomorrow` | list | Chore ids due tomorrow, for the [tomorrow preview](Tomorrow-Preview.md). Present only when something is due |
+| `reminders` | dict | `{chore_id: "HH:MM"}` — the child's own [reminder times](Child-Chosen-Reminders.md), while the feature is on |
+| `praise` | list | Today's [praise notes](Praise-Notes.md), newest first, up to 3 (`chore_name`, `note`, `by`) |
+| `penalty_warnings` | list | [Penalty warnings](Penalty-Warnings.md) given this period and not yet spent (`penalty_id`, `name`, `points`) |
+| `sibling_checks` | list | Siblings' chores this child may [check](Sibling-Checks.md), up to 5 (`completion_id`, `child_id`, `child_name`, `chore_name`, `completed_at`, `photo`) |
 | `appealable` | list | (v7.1.0) What the child may [appeal](Appeals.md): `kind`, `target_id`, `name`, `points`. Present only while appeals are on and there is something |
 | `appeals` | list | (v7.1.0) The child's open appeals and those decided in the last day: `id`, `kind`, `item_name`, `points`, `status`, `note` |
 | `personal_bests` | object | (v7.1.0) The child's [personal bests](Personal-Bests.md), present once there is a record: for each of `longest_streak`, `best_day_points`, `best_day_chores`, `best_week_points`, `best_single_award` an object with `value` and `date` (ISO; empty for the seeded streak), plus `previous` when it was beaten today; and `new_today`, the list of record keys beaten today |
@@ -461,6 +470,7 @@ Recent completion and transaction history.
 | `recent_transactions` | list | Up to 20 most recent point adjustments and reward events (see `recent_transactions` array above) |
 | `career_score_history` | dict | `{child_id: [...]}` — recorded career-score snapshots per child, for trend charts |
 | `photo_gallery` | list | (v4.4.0) Recent completions carrying a [photo proof](Photo-Proof.md) (newest first, up to 40) — each has `completion_id`, `child_name`, `chore_name`, `approved`, `completed_at`, `photo_url` (raw unsigned `/api/taskmate/photo/<file>` path) |
+| `completion_heatmap` | dict | `{"end": date, "children": {child_id: [count, ...]}}` — chores done per child per day for 42 days, oldest first, for the [heatmap](Completion-Heatmap.md). Present only when anyone did something |
 
 ---
 

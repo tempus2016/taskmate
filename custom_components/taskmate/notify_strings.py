@@ -82,6 +82,14 @@ DEFAULTS: dict[str, str] = {
     "appeal_decided": "⚖️ Your appeal about '{item_name}' was {outcome}{note_text}",
     "appeal_outcome_overturned": "accepted",
     "appeal_outcome_upheld": "turned down",
+    "screen_time_low": "📺 {child_name} has {minutes} minutes of screen time left.",
+    "screen_time_out": "📺 {child_name}'s screen time has run out.",
+    "screen_time_jar_opened": "🫙 {child_name}'s screen-time jar is open: {minutes} minutes added.",
+    "points_expiring": "⏳ {points} {points_name} expire on {date}. Spend them before they fade away!",
+    "chore_self_reminder": "⏰ Time for {chore_name}, {child_name} — you asked me to remind you!",
+    # Bin-day chore names (coord_bin_days.py); {bin} is the calendar event.
+    "bin_day_put_out": "Put the {bin} out",
+    "bin_day_bring_in": "Bring the {bin} in",
     # Personal best record names, used inside the personal_best message.
     "record_longest_streak": "longest streak (days)",
     "record_best_day_points": "most {points_name} in a day",

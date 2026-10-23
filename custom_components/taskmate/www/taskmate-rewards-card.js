@@ -630,6 +630,16 @@ class TaskMateRewardsCard extends LitElement {
         color: #d35400;
       }
       .reward-row.unavailable { opacity: 0.55; }
+      /* Reward extras: picture, per-child limit, gift picker */
+      .reward-pic { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; display: block; margin-bottom: 6px; }
+      .limit-label { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 600; color: var(--secondary-text-color, #727272); margin-top: 6px; }
+      .limit-label ha-icon { --mdc-icon-size: 14px; }
+      .gift-picker { margin: 12px 0 4px; text-align: start; }
+      .gift-picker-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; }
+      .gift-picker-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+      .gift-opt { border: 2px solid var(--divider-color, #ddd); background: var(--card-background-color, #fff); color: var(--primary-text-color);
+        border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+      .gift-opt.on { border-color: #9b59b6; background: #f3e9fb; color: #4a2070; }
 
       /* Claim button */
       .claim-btn {
@@ -1024,6 +1034,7 @@ class TaskMateRewardsCard extends LitElement {
                     background: color-mix(in srgb, var(--tmd-accent) 9%, var(--tmd-surface-2)); }
       .rw-top { align-items: flex-start; }
       .rw-emoji { font-size: 28px; line-height: 1; flex: none; }
+      .rw-pic { width: 48px; height: 48px; border-radius: var(--tmd-radius-sm, 10px); object-fit: cover; flex: none; display: block; }
       .rw-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
       .rw-name { font-weight: 800; font-size: 15px; }
       .rw-desc { font-size: 12px; }
@@ -1230,8 +1241,10 @@ class TaskMateRewardsCard extends LitElement {
 
     const rewards = this._rewardsFor(allRewards);
 
-    // Sort rewards: jackpot first, then by calculated cost ascending within each group
-    const sortedRewards = [...rewards].sort((a, b) => {
+    // Sort rewards: jackpot first, then by calculated cost ascending within each
+    // group — unless a parent has set an order in the panel (rewards_ordered),
+    // which the list already comes in.
+    const sortedRewards = attrs.rewards_ordered ? [...rewards] : [...rewards].sort((a, b) => {
       // Jackpot rewards come first
       if (a.is_jackpot && !b.is_jackpot) return -1;
       if (!a.is_jackpot && b.is_jackpot) return 1;
@@ -1341,6 +1354,7 @@ class TaskMateRewardsCard extends LitElement {
                 `;
               })()}
             </div>
+            ${this._renderGiftPicker()}
             <div class="dialog-buttons">
               <button class="btn-cancel" @click="${this._cancelClaim}">${this._t('common.cancel')}</button>
               <button class="btn-confirm" @click="${this._confirmClaim}">${this._t('rewards.confirm_claim_btn')}</button>
@@ -1467,6 +1481,9 @@ class TaskMateRewardsCard extends LitElement {
     const canAfford = relevantChild && availablePoints >= displayCost;
     const isLoading = this._loading[reward.id];
     const isAllocLoading = this._loading[`${reward.id}_alloc`];
+    // Per-child limit: the day this child may have it again, when they've hit it.
+    const limitNext = this._limitNext(reward, childId);
+    const pic = this._rewardPic(reward);
 
     // Availability (quantity / expiration / time lock)
     const isSoldOut = reward.is_sold_out === true;
@@ -1492,6 +1509,7 @@ class TaskMateRewardsCard extends LitElement {
         </div>
         <div class="reward-details">
           ${isJackpot ? html`<div class="jackpot-label"><span>&#127920;</span> ${this._t('rewards.jackpot')}</div>` : ''}
+          ${pic ? html`<img class="reward-pic" src="${pic}" alt="">` : ''}
           <div class="reward-name">${reward.name}</div>
           ${availabilityBadge}
           ${hasDescription
@@ -1511,6 +1529,11 @@ class TaskMateRewardsCard extends LitElement {
               <ha-icon icon="mdi:clock-outline"></ha-icon>
               ${this._t('rewards.awaiting_approval')}
             </div>
+          ` : limitNext ? html`
+            <div class="limit-label">
+              <ha-icon icon="mdi:calendar-clock"></ha-icon>
+              ${this._t('rewards.limit_again', { day: this._dayLabel(limitNext) })}
+            </div>
           ` : this._renderRejectNote(reward, childId ? relevantChild : null, 'reject-note')}
 
           ${showChildBadges && !isJackpot
@@ -1529,10 +1552,10 @@ class TaskMateRewardsCard extends LitElement {
         <div class="reward-right-col">
           ${!enablePoolMode && !hasPendingClaim && childId && canClaimNow ? html`
             <button
-              class="claim-btn ${!canAfford ? 'cant-afford' : ''}"
-              ?disabled="${!canAfford || isLoading}"
+              class="claim-btn ${!canAfford || limitNext ? 'cant-afford' : ''}"
+              ?disabled="${!canAfford || isLoading || !!limitNext}"
               @click="${(e) => { e.stopPropagation(); this._promptClaim(reward, relevantChild); }}"
-              title="${canAfford ? this._t('rewards.claim_reward') : this._t('rewards.not_enough_points')}"
+              title="${limitNext ? this._t('rewards.limit_again', { day: this._dayLabel(limitNext) }) : canAfford ? this._t('rewards.claim_reward') : this._t('rewards.not_enough_points')}"
             >
               <ha-icon icon="${isLoading ? 'mdi:loading' : rewardIcon}"></ha-icon>
             </button>
@@ -1707,6 +1730,7 @@ class TaskMateRewardsCard extends LitElement {
 
   _promptClaim(reward, child) {
     if (!child || !reward) return;
+    this._giftTo = "";
     this._pendingClaim = { ...reward, _child: child };
   }
 
@@ -1718,11 +1742,65 @@ class TaskMateRewardsCard extends LitElement {
     const pending = this._pendingClaim;
     if (!pending) return;
     const child = pending._child;
+    const recipient = this._giftTo || "";
     this._pendingClaim = null;
-    return this._handleClaim(pending, child);
+    return this._handleClaim(pending, child, recipient);
   }
 
-  async _handleClaim(reward, child) {
+  // ── Reward extras ───────────────────────────────────────────────────────
+
+  /** A picture uploaded through TaskMate's own image endpoint, else "". */
+  _rewardPic(reward) {
+    const u = reward && reward.image_url;
+    return typeof u === "string" && u.startsWith("/api/taskmate/image/") ? u : "";
+  }
+
+  /** Per-child limit: the ISO day this child may claim again, or null. */
+  _limitNext(reward, childId) {
+    return (childId && reward && reward.limit_reached && reward.limit_reached[childId]) || null;
+  }
+
+  /** "Monday" within the week, else "12 Nov". */
+  _dayLabel(iso) {
+    const d = new Date(`${iso}T12:00:00`);
+    if (isNaN(d)) return String(iso || "");
+    const lang = this.hass?.locale?.language || undefined;
+    const days = Math.round((d - new Date().setHours(12, 0, 0, 0)) / 86400000);
+    return days >= 0 && days <= 6
+      ? d.toLocaleDateString(lang, { weekday: "long" })
+      : d.toLocaleDateString(lang, { day: "numeric", month: "short" });
+  }
+
+  /** Brothers and sisters this reward may be bought for, when gifting is on. */
+  _giftTargets(reward, buyer) {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
+      || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    if (attrs.reward_gifting !== true || !reward || !buyer) return [];
+    if (reward.is_jackpot || reward.pool_enabled || reward.streak_freeze || this.config.enable_pool_mode === true) return [];
+    const assigned = reward.assigned_to || [];
+    return this._family(attrs.children || []).filter((c) =>
+      c.id !== buyer.id && !c.is_adult && (assigned.length === 0 || assigned.includes(c.id)) && !this._limitNext(reward, c.id));
+  }
+
+  /** "Who is it for?" — Me, or a sibling (the buyer still pays). */
+  _renderGiftPicker() {
+    const r = this._pendingClaim;
+    const targets = r ? this._giftTargets(r, r._child) : [];
+    if (!targets.length) return '';
+    const pick = (id) => { this._giftTo = id; this.requestUpdate(); };
+    return html`
+      <div class="gift-picker" role="radiogroup" aria-label="${this._t('rewards.gift_who')}">
+        <div class="gift-picker-title">${this._t('rewards.gift_who')}</div>
+        <div class="gift-picker-opts">
+          <button type="button" class="gift-opt ${!this._giftTo ? 'on' : ''}" role="radio" aria-checked="${!this._giftTo}"
+            @click="${() => pick('')}">${this._t('rewards.gift_me')}</button>
+          ${targets.map((c) => html`<button type="button" class="gift-opt ${this._giftTo === c.id ? 'on' : ''}" role="radio"
+            aria-checked="${this._giftTo === c.id}" @click="${() => pick(c.id)}">🎁 ${c.name}</button>`)}
+        </div>
+      </div>`;
+  }
+
+  async _handleClaim(reward, child, recipientId = "") {
     if (!child || !reward) return;
     if (this._loading[reward.id]) return;
     this._loading = { ...this._loading, [reward.id]: true };
@@ -1731,14 +1809,16 @@ class TaskMateRewardsCard extends LitElement {
       // Prefer pressing the per-child/per-reward button entity so HA
       // state-trigger automations on button.taskmate_<child>_claim_<reward>
       // fire. Falls back to the service call if the entity isn't registered.
-      const buttonEntityId = window.__taskmate_find_button
+      const buttonEntityId = !recipientId && window.__taskmate_find_button
         && window.__taskmate_find_button(this.hass, child.id, "claim", reward.id);
       if (buttonEntityId) {
         await this.hass.callService("button", "press", { entity_id: buttonEntityId });
       } else {
+        // A gift for a sibling goes through the service: the button is the child's own claim.
         await this.hass.callService("taskmate", "claim_reward", {
           reward_id: reward.id,
           child_id: child.id,
+          ...(recipientId ? { recipient_id: recipientId } : {}),
         });
       }
     } catch (e) {
@@ -1969,6 +2049,7 @@ class TaskMateRewardsCard extends LitElement {
       ? reward.days_until_expiry : null;
 
     return {
+      limitNext: this._limitNext(reward, childId),
       reward, isJackpot, enablePoolMode, displayCost, relevantChildren, relevantChild,
       childId, currentStars, childContributions, percentage, hasPendingClaim,
       spendable, poolFull, canAfford, isSoldOut, isExpired, isUnavailable, isTimeLocked, daysUntilExpiry,
@@ -2015,7 +2096,7 @@ class TaskMateRewardsCard extends LitElement {
 
     const rewards = this._rewardsFor(allRewards);
 
-    const sortedRewards = [...rewards].sort((a, b) => {
+    const sortedRewards = attrs.rewards_ordered ? [...rewards] : [...rewards].sort((a, b) => {
       if (a.is_jackpot && !b.is_jackpot) return -1;
       if (!a.is_jackpot && b.is_jackpot) return 1;
       return this._getDisplayCost(a) - this._getDisplayCost(b);
@@ -2108,8 +2189,8 @@ class TaskMateRewardsCard extends LitElement {
       : html`<div class="bar"><i style="width:${d.percentage}%;${d.canAfford ? 'background:var(--tmd-good)' : ''}"></i></div>`;
 
     const claimBtn = d.showClaim
-      ? html`<button class="btn sm ${d.canAfford ? 'good' : ''}"
-          ?disabled="${!d.canAfford || isLoading}"
+      ? html`<button class="btn sm ${d.canAfford && !d.limitNext ? 'good' : ''}"
+          ?disabled="${!d.canAfford || isLoading || !!d.limitNext}"
           @click="${(e) => { e.stopPropagation(); this._promptClaim(reward, d.relevantChild); }}"
           title="${d.canAfford ? this._t('rewards.claim_reward') : this._t('rewards.not_enough_points')}"
         >${this._t('rewards.claim_reward')}</button>`
@@ -2136,6 +2217,8 @@ class TaskMateRewardsCard extends LitElement {
 
     const statusLine = d.hasPendingClaim
       ? html`<span class="muted rw-status">⏳ ${this._t('rewards.awaiting_approval')}</span>`
+      : d.limitNext
+        ? html`<span class="muted rw-status">📅 ${this._t('rewards.limit_again', { day: this._dayLabel(d.limitNext) })}</span>`
       : d.canAfford && d.showClaim
         ? html`<span class="rw-status rw-status-good">${this._t('reward_progress.ready_to_claim')}</span>`
         : html`<span class="muted rw-status">${_ltrRatio(d.currentStars, d.displayCost)}</span>`;
@@ -2144,7 +2227,7 @@ class TaskMateRewardsCard extends LitElement {
       <div class="rw-card ${d.isJackpot ? 'rw-jackpot' : ''} ${d.isUnavailable || d.isTimeLocked ? 'rw-unavail' : ''}"
            style="--ac:${tone}">
         <div class="row rw-top">
-          <span class="rw-emoji">${emoji}</span>
+          ${this._rewardPic(reward) ? html`<img class="rw-pic" src="${this._rewardPic(reward)}" alt="">` : html`<span class="rw-emoji">${emoji}</span>`}
           <div class="rw-info">
             ${d.isJackpot ? html`<span class="chip rw-jackpot-label">🎰 ${this._t('rewards.jackpot')}</span>` : ''}
             <div class="rw-name">${reward.name}</div>
@@ -2214,6 +2297,7 @@ class TaskMateRewardsCard extends LitElement {
               `;
             })()}
           </div>
+          ${this._renderGiftPicker()}
           <div class="dialog-buttons">
             <button class="btn-cancel" @click="${this._cancelClaim}">${this._t('common.cancel')}</button>
             <button class="btn-confirm" @click="${this._confirmClaim}">${this._t('rewards.confirm_claim_btn')}</button>

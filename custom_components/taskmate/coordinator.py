@@ -25,11 +25,14 @@ from .coord_auto_approve import AutoApproveMixin
 from .coord_avatars import AvatarsMixin
 from .coord_badges import BadgeCoordinator
 from .coord_bests import PersonalBestsMixin
+from .coord_bin_days import BinDaysMixin
 from .coord_birthdays import BirthdaysMixin
 from .coord_boosts import BoostsMixin
 from .coord_bounties import BountiesMixin
 from .coord_calendar import CalendarMixin
 from .coord_challenges import ChallengesMixin
+from .coord_chore_insights import ChoreInsightsMixin
+from .coord_chore_reminders import ChoreRemindersMixin
 from .coord_chores import ChoresMixin
 from .coord_fulfilment import FulfilmentMixin
 from .coord_goals import WeeklyGoalsMixin
@@ -39,6 +42,7 @@ from .coord_mandatory import MandatoryMixin
 from .coord_notifications import NotificationCoordinator
 from .coord_pets import PetsMixin
 from .coord_points import PointsMixin
+from .coord_points_expiry import PointsExpiryMixin
 from .coord_quests import QuestsMixin
 from .coord_raffles import RafflesMixin
 from .coord_recaps import RecapsMixin
@@ -46,17 +50,22 @@ from .coord_redemptions import RedemptionsMixin
 from .coord_rejections import RejectionsMixin
 from .coord_repairs import RepairsMixin
 from .coord_reports import ReportsMixin
+from .coord_reward_extras import RewardExtrasMixin
 from .coord_rewards import RewardsMixin
 from .coord_roulette import RouletteMixin
 from .coord_scheduled import ScheduledChangesMixin
+from .coord_screen_time import ScreenTimeMixin
 from .coord_set_times import SetTimesMixin
 from .coord_setup import SetupWizardMixin
+from .coord_shopping_jobs import ShoppingJobsMixin
+from .coord_sibling_checks import SiblingChecksMixin
 from .coord_sick import SickDaysMixin
 from .coord_sounds import SoundsMixin
 from .coord_tags import TagsMixin
 from .coord_teamwork import TeamworkMixin
 from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
+from .coord_trash import RecentlyDeletedMixin
 from .coord_tts import ReadAloudMixin
 from .coord_unlocks import UnlocksMixin
 from .coord_wellbeing import WellbeingMixin
@@ -132,6 +141,15 @@ class TaskMateCoordinator(
     RedemptionsMixin,
     RafflesMixin,
     PetsMixin,
+    ScreenTimeMixin,
+    BinDaysMixin,
+    RecentlyDeletedMixin,
+    ShoppingJobsMixin,
+    PointsExpiryMixin,
+    RewardExtrasMixin,
+    ChoreInsightsMixin,
+    SiblingChecksMixin,
+    ChoreRemindersMixin,
     DataUpdateCoordinator,
 ):
     """Coordinator to manage TaskMate data."""
@@ -522,6 +540,12 @@ class TaskMateCoordinator(
             self.async_check_pet_growth,
             self.async_check_owed_rewards,
             self.async_check_boosts,
+            self.async_check_screen_time,
+            self.async_check_bin_days,
+            self.async_purge_recently_deleted,
+            self.async_check_shopping_jobs,
+            self.async_check_points_expiry,
+            self.async_check_chore_reminders,
         ):
             try:
                 await step()
@@ -1019,6 +1043,8 @@ class TaskMateCoordinator(
         # Auction closings (#982) have their own timer; this is the backstop.
         await self.async_sweep_auctions(refresh=False)
         self._refresh_tracked_availability_entities()
+        # Points expiry: keep the dated lots in step with every balance change.
+        self.reconcile_points_lots()
         # Presence-aware reminders (#926): follow child presence-entity edits.
         # A no-op unless the child -> entity map actually changed.
         if notifications := getattr(self, "notifications", None):
@@ -1069,6 +1095,7 @@ class TaskMateCoordinator(
         age_group: str = "",
         is_adult: bool = False,
         color: str = "",
+        celebration_style: str = "confetti",
         refresh: bool = True,
     ) -> Child:
         """Add a new child.
@@ -1090,6 +1117,7 @@ class TaskMateCoordinator(
             age_group=age_group,
             is_adult=is_adult,
             color=color,
+            celebration_style=celebration_style,
         )
         self.storage.add_child(child)
         await self.storage.async_save()

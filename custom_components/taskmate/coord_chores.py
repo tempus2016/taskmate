@@ -23,10 +23,12 @@ from .coord_set_times import chore_has_times, set_time_label
 from .coord_teamwork import teamwork_config_error
 from .models import (
     MAX_QUANTITY,
+    PRAISE_NOTE_MAX,
     Chore,
     ChoreCompletion,
     ChoreTime,
     PointsTransaction,
+    clean_label,
     parse_datetime,
     validate_chore_times,
 )
@@ -416,6 +418,7 @@ class ChoresMixin:
             if not chore:
                 continue
             if action == "delete":
+                self._snapshot_chore(cid)
                 self.storage.remove_chore(cid)
                 # Its auctions go with it, live ones called off (#999).
                 called_off += self.remove_chore_from_auctions(cid)
@@ -608,19 +611,26 @@ class ChoresMixin:
                 continue
             if image_url in (getattr(other, "image_url", "") or "", getattr(other, "reference_image_url", "") or ""):
                 return
+        # A recently deleted chore can still be restored with its picture, and
+        # a reward picture can share the file too.
+        if image_url in self._trash_images() or any(r.image_url == image_url for r in self.storage.get_rewards()):
+            return
         await images.async_delete_image(self.hass, image_url)
 
-    async def async_remove_chore(self, chore_id: str) -> None:
-        """Remove a chore and all associated data."""
+    async def async_remove_chore(self, chore_id: str, *, keep_deleted: bool = True) -> None:
+        """Remove a chore and all associated data.
+
+        ``keep_deleted=False`` is for chores TaskMate raised and retires itself
+        (a shopping-list job whose item left the list): nobody deleted them, so
+        they don't belong in Recently deleted.
+        """
         existing = self.storage.get_chore(chore_id)
         if existing is not None and getattr(existing, "publish_calendar_entities", []):
             await self._cleanup_chore_from_calendars(existing)
-        # Nothing sweeps taskmate_images, so the file has to go with the chore —
-        # unless a clone still shows it (#768).
-        if existing is not None:
-            for key in ("image_url", "reference_image_url"):
-                if getattr(existing, key, ""):
-                    await self._async_release_image(getattr(existing, key), excluding_chore_id=chore_id)
+        # Kept for 7 days so it can be restored. Its picture stays on disk
+        # with the snapshot and goes when the snapshot is purged.
+        if keep_deleted:
+            self._snapshot_chore(chore_id)
         self.storage.remove_chore(chore_id)
         self.storage.remove_completions_for_chore(chore_id)
         self.storage.remove_last_completed_for_chore(chore_id)
@@ -1598,6 +1608,8 @@ class ChoresMixin:
         refresh: bool = True,
         points: int | None = None,
         rating: int | None = None,
+        note: str = "",
+        note_by: str = "",
     ) -> None:
         """Approve a chore completion.
 
@@ -1621,6 +1633,10 @@ class ChoresMixin:
         own valuation, so it is paid as-is and the rating is only recorded.
         Because the scaled total lands in ``points_awarded``, undo and reject
         reverse exactly what the rating paid.
+
+        ``note`` is an optional short praise note for the child ("Well done!"),
+        stored on the completion with ``note_by``, the approving grown-up's
+        name, and shown on the child's card for the rest of the day.
         """
         completions = self.storage.get_completions()
         for completion in completions:
@@ -1707,6 +1723,10 @@ class ChoresMixin:
                     completion.approved_at = dt_util.now()
                     completion.points_awarded = 0
                     completion.quality_rating = stars
+                    praise = clean_label(note, PRAISE_NOTE_MAX)
+                    if praise:
+                        completion.praise_note = praise
+                        completion.praise_by = clean_label(note_by, 60)
                     # A parent has reviewed it: the child can no longer undo
                     # it, whatever the window says (#918).
                     completion.child_undo_allowed = False
@@ -1750,6 +1770,8 @@ class ChoresMixin:
                             "completion_id": completion.id,
                             "timestamp": dt_util.now().isoformat(),
                             **({"quality_rating": stars} if stars else {}),
+                            **({"praise_note": completion.praise_note} if completion.praise_note else {}),
+                            **({"checked_by": completion.checked_by} if completion.checked_by else {}),
                         },
                     )
 

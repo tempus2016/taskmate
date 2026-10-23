@@ -328,7 +328,32 @@
    along the reading direction (chevron, undo, backspace) carries .tm-rtl-flip
    so it turns round with the layout. Text arrows (→ ↩) swap to their mirrored
    character instead, which leaves LTR markup untouched. Not design-scoped. */
-:host([dir="rtl"]) .tm-rtl-flip,[dir="rtl"] .tm-rtl-flip{transform:scaleX(-1)}`;
+:host([dir="rtl"]) .tm-rtl-flip,[dir="rtl"] .tm-rtl-flip{transform:scaleX(-1)}
+
+/* Celebrations (__taskmate_fx). The card supplies the container and its
+   positioning; these style what goes inside it. Not design-scoped. */
+.tm-fx-p{position:absolute;top:0;display:block;animation:tm-fx-fall 3s linear forwards}
+.tm-fx-emoji{line-height:1;background:none!important}
+.tm-fx-snow .tm-fx-p{animation:tm-fx-snow 3.4s ease-in forwards}
+.tm-fx-bats .tm-fx-p{animation:tm-fx-bats 2.8s ease-in-out forwards}
+.tm-fx-sun .tm-fx-p{animation:tm-fx-snow 3s ease-in forwards}
+.tm-fx-fireworks .tm-fx-p{width:9px;height:9px;border-radius:50%;opacity:0;animation:tm-fx-burst 1.3s ease-out forwards}
+.tm-fx-stamp-mark,.tm-fx-sticker-mark{position:absolute;inset:0;margin:auto;width:fit-content;height:fit-content;transform:rotate(var(--tilt,-8deg))}
+.tm-fx-stamp-mark{padding:10px 26px;border:6px solid #2e9e5b;border-radius:14px;color:#2e9e5b;background:rgba(255,255,255,.88);
+  font:900 clamp(2rem,9vw,3.4rem)/1 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;animation:tm-fx-stamp 1.8s cubic-bezier(.2,1.6,.4,1) forwards}
+.tm-fx-sticker-mark{width:min(150px,40vw);height:min(150px,40vw);border-radius:50%;display:grid;place-items:center;font-size:min(88px,24vw);line-height:1;
+  background:radial-gradient(circle at 35% 30%,#fff7c2,#ffd23c 60%,#f5a300);border:6px solid #fff;box-shadow:0 10px 28px rgba(0,0,0,.28);animation:tm-fx-peel 2s ease-out forwards}
+@keyframes tm-fx-fall{0%{transform:translateY(-100px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+@keyframes tm-fx-snow{0%{transform:translate(0,-60px) rotate(0deg);opacity:0}10%{opacity:1}100%{transform:translate(40px,100vh) rotate(200deg);opacity:0}}
+@keyframes tm-fx-bats{0%{transform:translate(0,60vh) scale(.6);opacity:0}15%{opacity:1}50%{transform:translate(-30px,30vh) scale(1) rotate(-10deg)}100%{transform:translate(30px,-20vh) scale(.8) rotate(10deg);opacity:0}}
+@keyframes tm-fx-burst{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(.3);opacity:0}}
+@keyframes tm-fx-stamp{0%{transform:scale(2.6) rotate(var(--tilt,-8deg));opacity:0}18%{transform:scale(1) rotate(var(--tilt,-8deg));opacity:1}80%{opacity:1}100%{transform:scale(1) rotate(var(--tilt,-8deg));opacity:0}}
+@keyframes tm-fx-peel{0%{transform:rotate(-40deg) scale(.2);opacity:0}25%{transform:rotate(var(--tilt,-8deg)) scale(1.08);opacity:1}35%{transform:rotate(var(--tilt,-8deg)) scale(1)}80%{opacity:1}100%{transform:rotate(var(--tilt,-8deg)) scale(1);opacity:0}}
+@media (prefers-reduced-motion:reduce){.tm-fx{display:none}}
+
+/* Seasonal themes: the season's emoji pinned to the child's avatar. */
+.tm-season-badge{position:absolute;bottom:-4px;inset-inline-start:-4px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;
+  font-size:13px;line-height:1;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:none}`;
 
   if (!document.getElementById("taskmate-design-fonts")) {
     const styleEl = document.createElement("style");
@@ -548,7 +573,108 @@
     `;
   }
 
-  window.__taskmate_design = { IDS, resolve, isDark, direction, ltrNums, apply, active, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker };
+  /**
+   * A child's own colour (#1078) made safe for a header with white text.
+   * The panel's swatches include light ones (yellow), so the colour is
+   * darkened in small steps until white text clears 3:1 (large bold header
+   * text), or 4.5:1 under the accessible design. "" when unset or not a hex.
+   */
+  function _wcagLum(r, g, b) {
+    const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  }
+  function childColour(color, design) {
+    const m = typeof color === "string" && color.match(/^#([0-9a-f]{6})$/i);
+    if (!m) return "";
+    let [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+    const need = design === "accessible" ? 4.5 : 3;
+    let changed = false;
+    for (let i = 0; i < 20 && 1.05 / (_wcagLum(r, g, b) + 0.05) < need; i++) {
+      [r, g, b] = [r, g, b].map((c) => Math.round(c * 0.9));
+      changed = true;
+    }
+    if (!changed) return color.toLowerCase();
+    return "#" + [r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("");
+  }
+
+  window.__taskmate_design = { IDS, resolve, isDark, direction, ltrNums, apply, active, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker, childColour };
+
+  // ── Seasonal themes ───────────────────────────────────────────────────────
+  // The overview sensor names the season (only while a parent has it on and
+  // today is in its window); this is how each one dresses a card. The header
+  // stays full colour, just as a gradient. A card opts out with
+  // `seasonal: false`.
+  const SEASONS = {
+    halloween: { emoji: "🎃", grad: "linear-gradient(135deg,#e8590c,#6a1b9a)", effect: "bats" },
+    christmas: { emoji: "🎄", grad: "linear-gradient(135deg,#c62828,#2e7d32)", effect: "snow" },
+    summer: { emoji: "☀️", grad: "linear-gradient(135deg,#e65100,#0277bd)", effect: "sun" },
+  };
+  window.__taskmate_season = window.__taskmate_season || function (attrs, config) {
+    if (!attrs || (config && config.seasonal === false)) return null;
+    const s = SEASONS[attrs.season];
+    return s ? Object.assign({ id: attrs.season }, s) : null;
+  };
+
+  // ── Celebrations ──────────────────────────────────────────────────────────
+  // One engine for the child and kiosk cards' tick-off effect.
+  //   pick(style, season) -> the effect: the child's own style when they
+  //     chose one, else the season's (bats / snow / sun), else confetti.
+  //   spawn(effect) -> { effect, pieces }, or null under reduced motion.
+  //   render(html, burst, { tint, label }) -> the pieces, for the card to put
+  //     inside its own container (which carries "tm-fx tm-fx-<effect>").
+  const FX_STYLES = ["confetti", "stamp", "fireworks", "sticker"];
+  const FX_GLYPHS = { bats: ["🦇", "🦇", "🎃"], snow: ["❄️", "❄️", "⛄"], sun: ["☀️", "🌴", "🍦"] };
+  const FX_COLOURS = ["#ff6b9d", "#9b59b6", "#3498db", "#2ecc71", "#f1c40f", "#e67e22"];
+  function fxReduced() {
+    try { return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { return false; }
+  }
+  function fxPick(style, season) {
+    if (style && style !== "confetti" && FX_STYLES.indexOf(style) !== -1) return style;
+    return (season && season.effect) || "confetti";
+  }
+  function fxSpawn(effect) {
+    if (fxReduced()) return null;
+    const r = Math.random;
+    let pieces;
+    if (effect === "stamp" || effect === "sticker") {
+      pieces = [{ tilt: Math.round(r() * 16 - 12) }];
+    } else if (effect === "fireworks") {
+      pieces = [];
+      for (let b = 0; b < 3; b++) {
+        const x = 20 + r() * 60, y = 18 + r() * 40, delay = b * 0.35;
+        for (let i = 0; i < 18; i++) {
+          const a = (i / 18) * Math.PI * 2, d = 70 + r() * 50;
+          pieces.push({ x, y, delay, dx: Math.round(Math.cos(a) * d), dy: Math.round(Math.sin(a) * d) });
+        }
+      }
+    } else {
+      pieces = Array.from({ length: FX_GLYPHS[effect] ? 24 : 50 }, () => ({
+        x: r() * 100, delay: r() * 0.5, size: r() * 8 + 6, round: r() > 0.5,
+      }));
+    }
+    return { effect, pieces };
+  }
+  function fxRender(html, burst, opts) {
+    if (!burst || !html) return "";
+    const o = opts || {};
+    // A child's colour tints every other piece.
+    const colours = o.tint ? FX_COLOURS.map((c, i) => (i % 2 ? c : o.tint)) : FX_COLOURS;
+    const glyphs = FX_GLYPHS[burst.effect];
+    if (burst.effect === "stamp") {
+      return html`<div class="tm-fx-stamp-mark" style="--tilt:${burst.pieces[0].tilt}deg">${o.label || "✓"}</div>`;
+    }
+    if (burst.effect === "sticker") {
+      return html`<div class="tm-fx-sticker-mark" style="--tilt:${burst.pieces[0].tilt}deg">⭐</div>`;
+    }
+    if (burst.effect === "fireworks") {
+      return burst.pieces.map((p, i) => html`<i class="tm-fx-p" style="inset-inline-start:${p.x}%;top:${p.y}%;--dx:${p.dx}px;--dy:${p.dy}px;animation-delay:${p.delay}s;background:${colours[i % colours.length]}"></i>`);
+    }
+    if (glyphs) {
+      return burst.pieces.map((p, i) => html`<i class="tm-fx-p tm-fx-emoji" style="inset-inline-start:${p.x}%;animation-delay:${p.delay}s;font-size:${Math.round(p.size * 2.4)}px">${glyphs[i % glyphs.length]}</i>`);
+    }
+    return burst.pieces.map((p, i) => html`<i class="tm-fx-p" style="inset-inline-start:${p.x}%;animation-delay:${p.delay}s;background:${colours[i % colours.length]};border-radius:${p.round ? "50%" : "0"};width:${p.size}px;height:${p.size}px"></i>`);
+  }
+  window.__taskmate_fx = window.__taskmate_fx || { STYLES: FX_STYLES, pick: fxPick, spawn: fxSpawn, render: fxRender, reduced: fxReduced };
 
   /**
    * The single place that decides what a chore looks like (#750).

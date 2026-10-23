@@ -194,6 +194,10 @@
         "rating": {
           "name": "Kvalitetsvurdering",
           "description": "Valfri vurdering på 1-3 stjerner av kor godt oppgåva vart gjord. Når kvalitetsvurdering er slått på, vert poenga skalerte med multiplikatoren til stjerna; la feltet stå tomt for å gje 100 %."
+        },
+        "note": {
+          "name": "Ros",
+          "description": "Valfri kort melding til barnet, vist på kortet i dag (opptil 120 teikn)."
         }
       }
     },
@@ -266,6 +270,10 @@
         "child_id": {
           "name": "Born-ID",
           "description": "ID-en til bornet som hentar løninga"
+        },
+        "recipient_id": {
+          "name": "Mottakar-ID",
+          "description": "Kjøp han til ein bror eller ei syster i staden. Bornet som hentar betaler; krev at «Born kan kjøpe løningar til kvarandre» er slått på."
         }
       }
     },
@@ -1558,6 +1566,96 @@
           "description": "Valfrie ord til barnet, opptil 200 teikn"
         }
       }
+    },
+    "adjust_screen_time": {
+      "name": "Juster skjermtid",
+      "description": "Legg minutt til skjermtida til eit barn, eller trekk frå med eit negativt tal.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som får saldoen endra"
+        },
+        "minutes": {
+          "name": "Minutt",
+          "description": "Minutt som skal leggjast til; negativt for å trekkje frå. Saldoen går aldri under null."
+        },
+        "reason": {
+          "name": "Årsak",
+          "description": "Eit kort notat til saldohistorikken"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "Spar skjermtid",
+      "description": "Flytt ubrukte skjermtidsminutt for eit barn til helgekrukka. Dagens kvote går først, deretter oppspara minutt, opp til grensa for krukka.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som sparar minutta"
+        },
+        "minutes": {
+          "name": "Minutt",
+          "description": "Kor mange minutt som skal sparast. La stå tomt for å spare alt som får plass."
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "Gje stjerner til ei løning",
+      "description": "Bornet gjev ei løning det har fått 1 til 3 stjerner. Når løninga er gjeven (eller godkjend, når utleveringssporing er av), i 3 dagar.",
+      "fields": {
+        "child_id": {
+          "name": "Born-ID",
+          "description": "Bornet som fekk løninga"
+        },
+        "claim_id": {
+          "name": "Krav-ID",
+          "description": "Løningskravet som vert vurdert"
+        },
+        "stars": {
+          "name": "Stjerner",
+          "description": "1 til 3 stjerner"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "Søskensjekk",
+      "description": "Eit barn sjekkar oppgåva til eit søsken som ventar på godkjenning. done godkjenner ho og gir den som sjekkar bonusen; not_yet lèt ho vente på ein forelder, med eit notat.",
+      "fields": {
+        "child_id": {
+          "name": "ID til barnet som sjekkar",
+          "description": "Barnet som sjekkar (ikkje det som gjorde oppgåva)"
+        },
+        "completion_id": {
+          "name": "Fullførings-ID",
+          "description": "Den ventande fullføringa, frå attributtet sibling_checks for barnet i sensor.taskmate_overview"
+        },
+        "verdict": {
+          "name": "Vurdering",
+          "description": "done (ser ferdig ut) eller not_yet"
+        },
+        "note": {
+          "name": "Notat",
+          "description": "Valfrie ord til forelderen ved not_yet, opptil 120 teikn"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "Set påminning for oppgåve",
+      "description": "Eit barn vel når det vil bli mint på ei av oppgåvene sine, innanfor tidlegaste og seinaste tidspunkt i TaskMate-innstillingane. Tomt tidspunkt fjernar påminninga.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som vil bli mint på det"
+        },
+        "chore_id": {
+          "name": "Oppgåve-ID",
+          "description": "Oppgåva det skal minnast om"
+        },
+        "time": {
+          "name": "Tidspunkt",
+          "description": "TT:MM, t.d. 17:30. Tomt fjernar påminninga."
+        }
+      }
     }
   },
   "entity": {
@@ -1630,7 +1728,17 @@
               "reward_delivered": "Løning gjeven",
               "personal_best": "Personleg rekord",
               "appeal_submitted": "Klage send",
-              "appeal_decided": "Klage avgjord"
+              "appeal_decided": "Klage avgjord",
+              "screen_time_low": "Skjermtida er snart brukt opp",
+              "screen_time_out": "Skjermtida er brukt opp",
+              "screen_time_changed": "Skjermtid endra",
+              "screen_time_saved": "Skjermtid spart",
+              "screen_time_jar_opened": "Skjermtidskrukke opna",
+              "points_expired": "Poeng gått ut",
+              "points_expiring": "Poeng går snart ut",
+              "reward_rated": "Løning vurdert",
+              "penalty_warning": "Åtvaring før straff",
+              "sibling_check": "Søskensjekk"
             }
           }
         }
@@ -1646,7 +1754,9 @@
               "scheduled_change_applied": "Planlagd endring utført",
               "raffle_drawn": "Loddtrekning trekt",
               "boost_started": "Boost starta",
-              "boost_ended": "Boost slutt"
+              "boost_ended": "Boost slutt",
+              "bin_day": "Bosdagsoppgåve",
+              "shopping_job": "Oppgåve frå handlelista"
             }
           }
         }

@@ -59,6 +59,10 @@ Welcome to the TaskMate documentation. TaskMate is a Home Assistant integration 
 | [Auto-Approve](Auto-Approve.md) | Approve chores nobody reviewed within a set number of hours |
 | [Help Requests](Help-Requests.md) | An "I'm stuck" button that asks a parent for help without skipping the chore |
 | [Sick Days](Sick-Days.md) | One tap gives a child the day off: chores hidden, streak frozen |
+| [Tomorrow Preview](Tomorrow-Preview.md) | A Today / Tomorrow switch on the child card to see what's coming |
+| [Sibling Checks](Sibling-Checks.md) | An older child checks a younger one's chore, for a small bonus |
+| [Praise Notes](Praise-Notes.md) | Approve with a short message the child sees on their card |
+| [Child-Chosen Reminders](Child-Chosen-Reminders.md) | A child picks when to be reminded about a chore |
 
 ## Points, Rewards & Economy
 
@@ -70,6 +74,7 @@ Welcome to the TaskMate documentation. TaskMate is a Home Assistant integration 
 | [Bonus Points](Bonus-Points.md) | Weekend multiplier, streaks, perfect week |
 | [Bonuses](Bonuses.md) | Reusable point awards for positive behaviour |
 | [Penalties](Penalties.md) | Named point deductions for unwanted behaviour |
+| [Penalty Warnings](Penalty-Warnings.md) | A warning the first time, the points the next |
 | [Make-It-Right Penalties](Make-It-Right-Penalties.md) | Let a child earn a penalty back by doing a chore that puts things right |
 | [Points Economy](Points-Economy.md) | Savings interest, points decay, surprise bonus, negative-balance policy, and undo |
 | [Gifting Points](Gifting-Points.md) | Parent-controlled child-to-child point transfers |
@@ -100,6 +105,7 @@ Welcome to the TaskMate documentation. TaskMate is a Home Assistant integration 
 | [Weekly Goals](Weekly-Goals.md) | Children set their own weekly points goal and earn a bonus for reaching it |
 | [Boost Windows](Boost-Windows.md) | Timed multipliers on chosen chores, started on the spot, on a schedule or from an automation |
 | [Personal Bests](Personal-Bests.md) | Each child's own records — longest streak, best day, best week, biggest award — celebrated when beaten |
+| [Per-Chore Streaks](Per-Chore-Streaks.md) | "🔥 12 days" on a chore done every due day in a row |
 
 ## Notifications & Admin
 
@@ -112,7 +118,7 @@ Welcome to the TaskMate documentation. TaskMate is a Home Assistant integration 
 | [Weekly Digest](Weekly-Digest.md) | A weekly summary sent to parents, plus a monthly report |
 | [Admin Audit Log](Admin-Audit-Log.md) | Who changed what, and when |
 | [Multi-Parent Approval Routing](Multi-Parent-Approval-Routing.md) | Route approvals to whoever is home, or round-robin |
-| [Insights](Insights.md) | Fairness, friction, week-ahead, health, quality and mood reports |
+| [Insights](Insights.md) | Fairness, friction, week-ahead, health, quality, mood and calendar reports |
 | [Mood Check-In](Mood-Check-In.md) | Children say how their day went; parents see the trend |
 | [Parent Access](Parent-Access.md) | Give a second parent day-to-day control without HA admin rights |
 | [Backup & Restore](Backup-and-Restore.md) | Export and import your TaskMate configuration |
@@ -122,10 +128,11 @@ Welcome to the TaskMate documentation. TaskMate is a Home Assistant integration 
 
 | Topic | Description |
 |-------|-------------|
-| [Dashboard Cards](Dashboard-Cards.md) | All 30 Lovelace cards |
+| [Dashboard Cards](Dashboard-Cards.md) | All 32 Lovelace cards |
 | [Routine Mode](Routine-Mode.md) | Guided one-task-at-a-time flow for morning and bedtime |
 | [Kiosk Mode](Kiosk-Mode.md) | A full-screen card for a shared wall tablet, with optional PINs and bounties |
 | [Sticker Chart Card](Sticker-Chart-Card.md) | Today's jobs as stickers to tap, with stars filling towards a reward |
+| [Completion Heatmap](Completion-Heatmap.md) | A calendar grid per child, darker green for busier days, in Insights and as a card |
 | [Watch Complications](Watch-Complications.md) | Chores left, points and streak on an Apple Watch or Wear OS watch |
 | [Pre-Reader Mode](Pre-Reader-Mode.md) | Picture-only child card for children who can't read yet |
 | [Card Design Styles](Card-Design-Styles.md) | Per-card visual themes: Classic, Playroom, Console, Clean Pro, Accessible |

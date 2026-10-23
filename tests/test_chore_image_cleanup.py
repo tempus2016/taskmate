@@ -5,9 +5,8 @@ from __future__ import annotations
 import pathlib
 import re
 
-SRC = (pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "coord_chores.py").read_text(
-    encoding="utf-8"
-)
+SRC_DIR = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate"
+SRC = (SRC_DIR / "coord_chores.py").read_text(encoding="utf-8")
 
 
 def _body(name: str) -> str:
@@ -19,8 +18,11 @@ def _body(name: str) -> str:
     return SRC[start : start + 10 + nxt.start()] if nxt else SRC[start:]
 
 
-def test_removing_a_chore_deletes_its_image():
-    body = _body("async_remove_chore")
+def test_purging_a_deleted_chore_deletes_its_image():
+    # A deleted chore waits 7 days in Recently deleted, picture and all; the
+    # purge is what lets the file go.
+    trash = (SRC_DIR / "coord_trash.py").read_text(encoding="utf-8")
+    body = trash[trash.index("async def async_purge_recently_deleted(") :]
     assert "_async_release_image" in body, "taskmate_images is never orphan-swept, so an undeleted file leaks forever"
 
 

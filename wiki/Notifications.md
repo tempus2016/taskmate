@@ -71,6 +71,11 @@ TaskMate ships with these built-in notification types:
 | **Boost started** | `boost_started` | Children | No | No | Off |
 | **Appeal submitted** | `appeal_submitted` | Parents | No | No | **On** |
 | **Appeal decided** | `appeal_decided` | Children | No | No | Off |
+| **Screen time running low** | `screen_time_low` | Both | No | No | Off |
+| **Screen time ran out** | `screen_time_out` | Both | No | No | Off |
+| **Screen-time jar opened** | `screen_time_jar_opened` | Both | No | No | Off |
+| **Points about to expire** | `points_expiring` | Children | No | No | Off |
+| **Reminder a child chose** | `chore_self_reminder` | Children | No | No | Off |
 
 The 15 rows from **Birthday** to **Auction Result** were added in v6.0.0. All of them start **switched off**, apart from the parent **Inspection Reminder**, which only ever fires for an inspection a parent started. Turn on the ones you want on the Notifications tab.
 
