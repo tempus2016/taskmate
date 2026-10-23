@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from homeassistant.util import dt as dt_util
 
 from .coord_rejections import clean_reject_reason
-from .models import Child, PointsTransaction, PoolAllocation, Reward, RewardClaim
+from .models import Child, PointsTransaction, PoolAllocation, Reward, RewardClaim, clean_template_id
 from .timewindow import has_window, is_within_window
 
 if TYPE_CHECKING:
@@ -100,8 +100,12 @@ class RewardsMixin:
         quantity: int | None = None,
         expires_at: str | None = None,
         refresh: bool = True,
+        template_id: str = "",
     ) -> Reward:
-        """Add a new reward. ``refresh=False`` defers the refresh to a batch."""
+        """Add a new reward. ``refresh=False`` defers the refresh to a batch.
+
+        ``template_id`` names the 📚 library entry it came from, if any.
+        """
         reward = Reward(
             name=name,
             cost=cost,
@@ -112,6 +116,7 @@ class RewardsMixin:
             pool_enabled=pool_enabled,  # Reward.__post_init__ forces this on for jackpots (#552)
             quantity=quantity,
             expires_at=expires_at,
+            template_id=clean_template_id(template_id),
         )
         self.storage.add_reward(reward)
         await self.storage.async_save()

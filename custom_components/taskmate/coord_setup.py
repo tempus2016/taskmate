@@ -8,9 +8,10 @@ the panel for seconds on a 30-chore setup (see #794).
 
 Everything is checked before anything is written, so a bad birthday or an
 unknown child leaves the family exactly as it was. The wizard only ever adds:
-a chore or reward whose name the family already has is skipped, a child whose
-name already exists is reused, and an existing child's birthday or age group is
-only filled in when it is still empty.
+a chore or reward the family already has (same name, or added from the same
+library entry) is skipped, a child whose name already exists is reused, and an
+existing child's birthday or age group is only filled in when it is still
+empty. The 📚 library adds through here too (``taskmate/library/add``).
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from typing import Any
 
 from .const import AGE_GROUPS
 from .coord_birthdays import normalize_birthday
+from .models import clean_template_id
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +39,7 @@ _CHORE_KEYS = (
     "recurrence",
     "recurrence_day",
     "assignment_mode",
+    "template_id",
 )
 
 
@@ -126,7 +129,9 @@ class SetupWizardMixin:
                 return who
             raise ValueError(f"Chore assigned to an unknown child {who!r}")
 
-        have_chores = {_fold(c.name) for c in self.storage.get_chores()}
+        existing_chores = self.storage.get_chores()
+        have_chores = {_fold(c.name) for c in existing_chores}
+        have_chore_tpls = {c.template_id for c in existing_chores if c.template_id}
         chore_defs: list[dict] = []
         skipped_chores = 0
         for spec in chores:
@@ -134,25 +139,35 @@ class SetupWizardMixin:
             if not name:
                 raise ValueError("A chore needs a name")
             assigned = [resolve(str(w)) for w in spec.get("assigned_to") or []]
-            if _fold(name) in have_chores:
+            tpl = clean_template_id(spec.get("template_id"))
+            if _fold(name) in have_chores or (tpl and tpl in have_chore_tpls):
                 skipped_chores += 1
                 continue
+            # Sent twice in one batch: the second is a duplicate too.
+            have_chores.add(_fold(name))
+            if tpl:
+                have_chore_tpls.add(tpl)
             chore_def = {k: spec[k] for k in _CHORE_KEYS if k in spec}
             chore_def["name"] = name
             chore_def["assigned_to"] = assigned
             chore_defs.append(chore_def)
 
-        have_rewards = {_fold(r.name) for r in self.storage.get_rewards()}
+        existing_rewards = self.storage.get_rewards()
+        have_rewards = {_fold(r.name) for r in existing_rewards}
+        have_reward_tpls = {r.template_id for r in existing_rewards if r.template_id}
         reward_specs: list[dict] = []
         skipped_rewards = 0
         for spec in rewards:
             name = (spec.get("name") or "").strip()
             if not name:
                 raise ValueError("A reward needs a name")
-            if _fold(name) in have_rewards:
+            tpl = clean_template_id(spec.get("template_id"))
+            if _fold(name) in have_rewards or (tpl and tpl in have_reward_tpls):
                 skipped_rewards += 1
                 continue
             have_rewards.add(_fold(name))
+            if tpl:
+                have_reward_tpls.add(tpl)
             reward_specs.append(spec)
 
         # --- write, deferring every refresh to the end -----------------------
@@ -184,6 +199,7 @@ class SetupWizardMixin:
                 description=spec.get("description", ""),
                 icon=spec.get("icon") or "mdi:gift",
                 refresh=False,
+                template_id=spec.get("template_id", ""),
             )
 
         await self.async_refresh()

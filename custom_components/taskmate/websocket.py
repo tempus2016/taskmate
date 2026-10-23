@@ -136,6 +136,8 @@ WS_SCHEDULED_REMOVE: Final = "taskmate/scheduled/remove"
 # Setup wizard (#980); the handlers live in websocket_setup.py.
 WS_SETUP_CATALOGUE: Final = "taskmate/setup_wizard/catalogue"
 WS_SETUP_APPLY: Final = "taskmate/setup_wizard/apply"
+# 📚 Library: add the chores and rewards picked there in one call.
+WS_LIBRARY_ADD: Final = "taskmate/library/add"
 
 WS_ADD_REWARD: Final = "taskmate/add_reward"
 WS_UPDATE_REWARD: Final = "taskmate/update_reward"
