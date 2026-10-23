@@ -154,6 +154,10 @@
         "quantity": {
           "name": "Quantity",
           "description": "How many units the child did, for a quantity chore (\"read 20 pages\"). Required from a child on those chores; the chore's points are paid per unit."
+        },
+        "time_id": {
+          "name": "Set time",
+          "description": "For a chore with set times, which time this ticks off. Leave blank for the one open now."
         }
       }
     },
@@ -570,6 +574,14 @@
         "team_bonus": {
           "name": "Team bonus",
           "description": "Extra points each participant earns when a teamwork chore is completed."
+        },
+        "times": {
+          "name": "Set times",
+          "description": "Make this a chore that comes up at set times of day, e.g. wash hands at breakfast, lunch and dinner. A list of up to 5 times, each with name, start and end (\"HH:MM\", same day, no overlaps) and points."
+        },
+        "times_bonus": {
+          "name": "All-times bonus",
+          "description": "Extra points paid once a day when every set time is done."
         }
       }
     },

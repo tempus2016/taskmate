@@ -19,8 +19,17 @@ from .const import (
     recurrence_interval_days,
 )
 from .coord_rejections import clean_reject_reason
+from .coord_set_times import chore_has_times, set_time_label
 from .coord_teamwork import teamwork_config_error
-from .models import MAX_QUANTITY, Chore, ChoreCompletion, PointsTransaction, parse_datetime
+from .models import (
+    MAX_QUANTITY,
+    Chore,
+    ChoreCompletion,
+    ChoreTime,
+    PointsTransaction,
+    parse_datetime,
+    validate_chore_times,
+)
 
 if TYPE_CHECKING:
     pass
@@ -523,6 +532,18 @@ class ChoresMixin:
         )
         if team_error:
             raise ValueError(team_error)
+        # Set times (several times a day): checked here so every way of
+        # editing a chore (panel, services, import) gets the same rules.
+        stored = self.storage.get_chore(chore.id)
+        chore.times = validate_chore_times(
+            [t.to_dict() if isinstance(t, ChoreTime) else t for t in (getattr(chore, "times", None) or [])],
+            existing=list(getattr(stored, "times", None) or []) if stored is not None else None,
+            task_type=getattr(chore, "task_type", "standard") or "standard",
+            open_ended=bool(getattr(chore, "open_ended", False)),
+            quantity_unit=getattr(chore, "quantity_unit", "") or "",
+            team_size=int(getattr(chore, "team_size", 0) or 0),
+        )
+        chore.times_bonus = max(0, int(getattr(chore, "times_bonus", 0) or 0)) if chore.times else 0
         today = dt_util.as_local(dt_util.now()).date()
         # Capture pre-update state before storage is mutated below.
         existing = self.storage.get_chore(chore.id)
@@ -754,8 +775,13 @@ class ChoresMixin:
         note: str = "",
         suggested_points: int = 0,
         quantity: int = 0,
+        time_id: str = "",
     ) -> ChoreCompletion | None:
         """Mark a chore as completed by a child.
+
+        A chore with set times is ticked off one time at a time: ``time_id``
+        names the time, or it's whichever one is open now. A child can only
+        tick a time while it's open; each time once a day.
 
         When ``as_parent`` is True the completion auto-approves (the parent is the
         approver) and points are awarded immediately, even for approval-required
@@ -872,9 +898,23 @@ class ChoresMixin:
             )
             return None
 
+        # Set times: resolve which time this ticks off. Each time is once a
+        # day and only while open (parents may tick any time not yet done),
+        # which replaces the daily limit below.
+        set_time = None
+        if chore_has_times(chore):
+            set_time = self.resolve_set_time(chore, child_id, time_id, now, as_parent=as_parent)
+            if set_time is None:
+                _LOGGER.debug(
+                    "complete_chore no-op: '%s' has no open set time left for %s",
+                    chore.name,
+                    child.name,
+                )
+                return None
+
         # Check daily limit (only count parent completions, not bonus sub-tasks).
         # A completion an inspection sent back to redo (#981) no longer counts.
-        all_completions = self.storage.get_completions()
+        all_completions = self.storage.get_completions() if set_time is None else []
         redo_ids = self.inspection_redo_completion_ids()
         todays_completions_count = 0
         for comp in all_completions:
@@ -897,7 +937,7 @@ class ChoresMixin:
                         todays_completions_count += 1
 
         daily_limit = getattr(chore, "daily_limit", 1)
-        if todays_completions_count >= daily_limit:
+        if set_time is None and todays_completions_count >= daily_limit:
             _LOGGER.debug(
                 "complete_chore no-op: daily limit reached for '%s' (%d/%d today)",
                 chore.name,
@@ -966,7 +1006,9 @@ class ChoresMixin:
                 child_id,
                 self._apply_speed_bonus(
                     chore,
-                    self._apply_time_adjustment(chore, self.effective_chore_points(chore, quantity), now),
+                    self._apply_time_adjustment(
+                        chore, self.effective_chore_points(chore, quantity, set_time=set_time), now
+                    ),
                     now,
                 ),
             )
@@ -989,6 +1031,7 @@ class ChoresMixin:
             quantity=quantity,
             # A won auction pays exactly the bid.
             boostable=auction_price is None,
+            time_id=set_time.id if set_time is not None else "",
         )
         if redo is not None:
             self._inspection_on_redo_recorded(redo, completion.id)
@@ -1011,7 +1054,7 @@ class ChoresMixin:
                         completion.suggested_points
                         if is_open_ended
                         else completion.submitted_points
-                        if quantity
+                        if quantity or set_time is not None
                         else chore.points
                     ),
                 )
@@ -1059,6 +1102,7 @@ class ChoresMixin:
         backdated: bool = False,
         quantity: int = 0,
         boostable: bool = True,
+        time_id: str = "",
     ) -> ChoreCompletion:
         """Store one completion and, when auto-approved, pay it.
 
@@ -1095,6 +1139,7 @@ class ChoresMixin:
             quantity=quantity,
             boost_multiplier=boost_mult,
             boost_stacked=boost_stacked,
+            time_id=time_id,
         )
 
         # Record the completion before awarding anything. Awarding can suspend
@@ -1118,6 +1163,8 @@ class ChoresMixin:
                     child,
                     points,
                     chore_id=chore.id,
+                    # A set time only moves the streak once the day's times are all done.
+                    **({"skip_streak": True} if self.set_time_skips_streak(chore, completion) else {}),
                     # A boost that replaced the weekend/birthday bonuses.
                     **({"special_bonuses": False} if boost_mult and not boost_stacked else {}),
                 )
@@ -1126,6 +1173,7 @@ class ChoresMixin:
             completion.points_awarded = total_awarded
             self.storage.update_completion(completion)
             await self._async_pay_weekly_target_bonus(chore, child, completion)
+            await self._async_pay_set_times_bonus(chore, child, completion)
             await self._async_redeem_penalty(chore, child, completion)
 
         self.hass.bus.async_fire(
@@ -1137,6 +1185,7 @@ class ChoresMixin:
                 "chore_name": chore.name,
                 "points": points,
                 "difficulty": getattr(chore, "difficulty", "medium"),
+                **({"time_id": time_id, "label": set_time_label(chore, time_id)} if time_id else {}),
                 "timestamp": now.isoformat() if backdated else dt_util.now().isoformat(),
                 **({"backdated": True} if backdated else {}),
             },
@@ -1173,7 +1222,7 @@ class ChoresMixin:
             for child, completion, notify_points in recorded:
                 await self._async_notify_pending_approval(
                     child.name,
-                    chore.name,
+                    set_time_label(chore, getattr(completion, "time_id", "")),
                     notify_points,
                     completion_id=completion.id,
                     photo_url=completion.photo_url,
@@ -1300,6 +1349,8 @@ class ChoresMixin:
             return f"'{chore.name}' rotates or needs a team, so it can't be logged for a past day."
         if getattr(chore, "open_ended", False):
             return f"'{chore.name}' is open-ended, so it needs the child's note and a price. Use the child's card."
+        if chore_has_times(chore):
+            return f"'{chore.name}' has set times, so it can't be logged for a past day."
         if self.is_vacation_day(day):
             return f"{day.strftime('%A')} was a holiday, so no jobs were due."
         if self.is_sick_day(child.id, day):
@@ -1607,9 +1658,17 @@ class ChoresMixin:
                             else 0
                         )
                     else:
+                        set_time = next(
+                            (
+                                t
+                                for t in getattr(chore, "times", []) or []
+                                if t.id == getattr(completion, "time_id", "")
+                            ),
+                            None,
+                        )
                         pts = self._apply_time_adjustment(
                             chore,
-                            self.effective_chore_points(chore, getattr(completion, "quantity", 0)),
+                            self.effective_chore_points(chore, getattr(completion, "quantity", 0), set_time=set_time),
                             completion.completed_at,
                         )
                     stars = 0
@@ -1657,7 +1716,8 @@ class ChoresMixin:
                         child,
                         pts,
                         completion_date=comp_date,
-                        skip_streak=is_bonus,
+                        # A set time only moves the streak once the day's times are all done.
+                        skip_streak=is_bonus or self.set_time_skips_streak(chore, completion),
                         chore_id=completion.chore_id,
                         # A boost that replaced the weekend/birthday bonuses
                         # at submission keeps them out here too.
@@ -1673,6 +1733,7 @@ class ChoresMixin:
                     if getattr(completion, "bounty_id", ""):
                         self._bounty_on_approved(completion)
                     await self._async_pay_weekly_target_bonus(chore, child, completion)
+                    await self._async_pay_set_times_bonus(chore, child, completion)
                     await self._async_redeem_penalty(chore, child, completion)
 
                     # Dismiss the mobile approval push now this completion is
@@ -1771,13 +1832,24 @@ class ChoresMixin:
                 # when this was the child's sole completion that day —
                 # streaks are day-based, not per-completion. A backdated one
                 # never advanced the streak, so it has nothing to give back.
-                if not completion.bonus_subtask_id and not completion.backdated:
+                # A set time that didn't finish the day never moved the streak;
+                # one that did leaves it standing only if other work that day
+                # (not this chore's other times) still earns it.
+                set_time_chore = self.get_chore(completion.chore_id) if getattr(completion, "time_id", "") else None
+                set_time_moved_streak = set_time_chore is None or self.set_times_full_day(
+                    set_time_chore,
+                    completion.child_id,
+                    dt_util.as_local(completion.completed_at).date(),
+                    approved_only=True,
+                )
+                if not completion.bonus_subtask_id and not completion.backdated and set_time_moved_streak:
                     reject_date = dt_util.as_local(completion.completed_at).date()
                     other_same_day = any(
                         c.id != completion.id
                         and c.child_id == completion.child_id
                         and c.approved
                         and not c.bonus_subtask_id
+                        and not (set_time_chore is not None and c.chore_id == completion.chore_id)
                         and dt_util.as_local(c.completed_at).date() == reject_date
                         for c in completions
                     )
@@ -1787,6 +1859,9 @@ class ChoresMixin:
                         # A streak freeze this completion earned goes too (#925).
                         self._reverse_streak_freeze_earn(child, streak_before_undo)
                         if getattr(child, "last_completion_date", None) == reject_date.isoformat():
+                            # This chore's other set times don't hold the day
+                            # either: with this one gone it isn't finished, so
+                            # re-ticking it must be able to earn the streak back.
                             remaining = [
                                 dt_util.as_local(c.completed_at).date()
                                 for c in completions
@@ -1794,6 +1869,11 @@ class ChoresMixin:
                                 and c.child_id == completion.child_id
                                 and c.approved
                                 and not c.bonus_subtask_id
+                                and not (
+                                    set_time_chore is not None
+                                    and c.chore_id == completion.chore_id
+                                    and dt_util.as_local(c.completed_at).date() == reject_date
+                                )
                             ]
                             child.last_completion_date = max(remaining).isoformat() if remaining else None
                         # Reverse any streak milestones this completion unlocked.
@@ -1828,6 +1908,8 @@ class ChoresMixin:
                 # Outside the streak block: a backdated job never moved the
                 # streak, but it can complete a week's target like any other.
                 self._reverse_weekly_target_bonus(completion, child)
+                # The all-times bonus it helped finish.
+                self._reverse_set_times_bonus(completion, child)
                 # And a penalty it earned back (make it right).
                 self._reverse_penalty_redemption(completion, child)
 
@@ -1927,6 +2009,7 @@ class ChoresMixin:
         if child is None:
             return owed
         owed += self._weekly_target_refund_owed(completion, child)
+        owed += self._set_times_bonus_refund_owed(completion, child)
         if hasattr(self, "_quest_refund_owed"):
             owed += self._quest_refund_owed(child.id, completion.chore_id, completion.id)
         if hasattr(self, "_challenge_refund_owed"):
@@ -1987,6 +2070,8 @@ class ChoresMixin:
             chore = self.get_chore(target_completion.chore_id)
             bounty = None if chore else self.storage.get_bounty(getattr(target_completion, "bounty_id", "") or "")
             chore_name = getattr(chore, "name", "") or getattr(bounty, "title", "") or ""
+            if chore is not None and getattr(target_completion, "time_id", ""):
+                chore_name = set_time_label(chore, target_completion.time_id)
             if rejected and not target_completion.bonus_subtask_id:
                 self._record_rejection(
                     "chore",
@@ -2312,6 +2397,10 @@ class ChoresMixin:
         anchor = on or dt_util.as_local(dt_util.now()).date()
         week_start = anchor - timedelta(days=anchor.weekday())
         week_end = week_start + timedelta(days=6)
+        # A chore with set times counts once per day, when all its times are done.
+        chore = self.get_chore(chore_id) if hasattr(self, "get_chore") else None
+        if chore is not None and chore_has_times(chore):
+            return self.set_times_full_days(chore, child_id, [week_start + timedelta(days=i) for i in range(7)])
         count = 0
         for comp in self._cached_completions_for_chore(chore_id):
             if comp.child_id != child_id or getattr(comp, "bonus_subtask_id", ""):
@@ -2345,6 +2434,16 @@ class ChoresMixin:
         Unlike ``weekly_completion_count`` this ignores pending work: the target
         bonus (#1044) is points, and points are only paid on approval.
         """
+        chore = self.get_chore(chore_id) if hasattr(self, "get_chore") else None
+        if chore is not None and chore_has_times(chore):
+            start = date.fromisoformat(week)
+            return self.set_times_full_days(
+                chore,
+                child_id,
+                [start + timedelta(days=i) for i in range(7)],
+                approved_only=True,
+                exclude_id=exclude_id,
+            )
         count = 0
         for comp in self.storage.get_completions():
             if (
@@ -2534,6 +2633,12 @@ class ChoresMixin:
             for chore in self.storage.get_chores():
                 if not self._is_chore_completable_by_child(chore, child_id):
                     continue
+                # Set times: owed while a time is still to come or open; a
+                # missed one is gone for the day.
+                if chore_has_times(chore):
+                    if self.set_times_outstanding(chore, child_id) and not self.weekly_target_met(chore, child_id):
+                        out.append(chore)
+                    continue
                 limit = getattr(chore, "daily_limit", 1) or 1
                 done = 0
                 for c in completions:
@@ -2594,6 +2699,32 @@ class ChoresMixin:
             for child in self.storage.get_children():
                 items = []
                 for chore in chores:
+                    # Set times: one entry per chore, with each time's state;
+                    # it counts once, as done when every time is ticked.
+                    if chore_has_times(chore):
+                        states = self.set_time_states(chore, child.id)
+                        ticked = [s for s in states.values() if s in ("done", "pending")]
+                        if not ticked and not self._is_chore_completable_by_child(chore, child.id):
+                            continue
+                        values = list(states.values())
+                        if len(ticked) == len(values):
+                            status = "done" if all(s == "done" for s in values) else "pending"
+                        elif any(s in ("now", "later") for s in values):
+                            status = "todo"
+                        else:
+                            status = "missed"
+                        items.append(
+                            {
+                                "chore_id": chore.id,
+                                "status": status,
+                                "count": len(ticked),
+                                "limit": len(values),
+                                "times": [
+                                    {"id": t.id, "name": t.name or t.start, "state": states[t.id]} for t in chore.times
+                                ],
+                            }
+                        )
+                        continue
                     flags = done_today.get((child.id, chore.id), [])
                     if self._counts_toward_child_quota(chore, "__parent__", child.id):
                         flags = flags + done_today.get(("__parent__", chore.id), [])

@@ -327,6 +327,31 @@ class TaskMateWeeklyCard extends LitElement {
     return { entity: "sensor.taskmate_overview", title: "This Week" };
   }
 
+  /* Set times (several times a day): the ticks of one chore's times on one
+     day count as one chore — and only once every time is done — so a
+     three-times-a-day chore doesn't triple the week's total. */
+  _collapseSetTimes(completions, chores, tz) {
+    const times = {};
+    for (const ch of chores || []) if (Array.isArray(ch.times) && ch.times.length) times[ch.id] = ch.times.length;
+    if (!Object.keys(times).length) return completions;
+    const out = [];
+    const groups = {};
+    for (const c of completions) {
+      if (!c.time_id || !times[c.chore_id]) { out.push(c); continue; }
+      const day = new Date(c.completed_at).toLocaleDateString("en-CA", { timeZone: tz });
+      const key = `${c.chore_id}|${c.child_id}|${day}`;
+      (groups[key] = groups[key] || []).push(c);
+    }
+    for (const list of Object.values(groups)) {
+      if (new Set(list.map(c => c.time_id)).size >= times[list[0].chore_id]) out.push(list[list.length - 1]);
+    }
+    return out;
+  }
+
+  _countChores(completions, chores, tz) {
+    return this._collapseSetTimes(completions, chores, tz).length;
+  }
+
   render() {
     if (!this.hass || !this.config) return html``;
 
@@ -393,7 +418,7 @@ class TaskMateWeeklyCard extends LitElement {
 
     const weekPoints = approvedWeekCompletions
       .reduce((sum, c) => sum + (c.points !== undefined ? c.points : (chorePointsMap[c.chore_id] || 0)), 0);
-    const weekChores = approvedWeekCompletions.length;
+    const weekChores = this._countChores(approvedWeekCompletions, chores, tz);
     const daysActive = new Set(approvedWeekCompletions.map(c =>
       new Date(c.completed_at).toLocaleDateString("en-CA", { timeZone: tz })
     )).size;
@@ -406,6 +431,11 @@ class TaskMateWeeklyCard extends LitElement {
       if (!approvedCompletionsByDay[day]) approvedCompletionsByDay[day] = [];
       approvedCompletionsByDay[day].push(c);
     });
+
+    // A chore with set times counts once a day, when all its times are done.
+    for (const key of Object.keys(approvedCompletionsByDay)) {
+      approvedCompletionsByDay[key] = this._collapseSetTimes(approvedCompletionsByDay[key], chores, tz);
+    }
 
     // Max completions in a day for chart scale
     const maxPerDay = Math.max(1, ...weekDays.map(d => (approvedCompletionsByDay[d.key] || []).length));
@@ -469,7 +499,7 @@ class TaskMateWeeklyCard extends LitElement {
                 const childApprovedCompletions = approvedWeekCompletions.filter(c => c.child_id === child.id);
                 const childPoints = childApprovedCompletions
                   .reduce((s, comp) => s + (comp.points !== undefined ? comp.points : (chorePointsMap[comp.chore_id] || 0)), 0);
-                const childChoreCount = childApprovedCompletions.length;
+                const childChoreCount = this._countChores(childApprovedCompletions, chores, tz);
                 const childDaysActive = new Set(childApprovedCompletions.map(c =>
                   new Date(c.completed_at).toLocaleDateString("en-CA", { timeZone: tz })
                 )).size;
@@ -551,7 +581,7 @@ class TaskMateWeeklyCard extends LitElement {
     const ptsOf = (c) => (c.points !== undefined ? c.points : (chorePointsMap[c.chore_id] || 0));
 
     const weekPoints = approved.reduce((s, c) => s + ptsOf(c), 0);
-    const weekChores = approved.length;
+    const weekChores = this._countChores(approved, chores, tz);
     const daysActive = new Set(approved.map(c =>
       new Date(c.completed_at).toLocaleDateString("en-CA", { timeZone: tz })
     )).size;

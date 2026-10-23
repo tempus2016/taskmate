@@ -1773,6 +1773,7 @@ class TaskMateStorage:
                 "timed_rate_points",
                 "timed_rate_minutes",
                 "timed_max_daily_minutes",
+                "times_bonus",
             ),
             "rewards": ("cost", "restock_amount", "unlock_minutes"),
             "penalties": ("points",),
@@ -2009,6 +2010,8 @@ class TaskMateStorage:
                 settings.pop("streak_reset_mode", None)
             if settings.get("card_design") not in _CARD_DESIGNS:
                 settings.pop("card_design", None)
+            if "set_times_layout" in settings and settings.get("set_times_layout") not in ("rows", "pills"):
+                settings.pop("set_times_layout", None)
             # Numeric settings are rendered into the panel's number inputs; the
             # WebSocket update path coerces them, but import does not, so coerce
             # here too. A value that isn't a number (e.g. a crafted string) is

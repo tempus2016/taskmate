@@ -288,6 +288,33 @@ class TaskMateChildCard extends LitElement {
 
       ha-card { overflow: hidden; }
 
+      /* ── Set times (several times a day) — shared by every design. The
+         tokens fall back to classic colours; designed styles supply --tmd-*. ── */
+      .tm-st-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 3px; font-size: 0.82em; }
+      .tm-st-name { font-weight: 600; }
+      .tm-st-of { opacity: 0.75; }
+      .tm-st-state { font-weight: 700; border-radius: 999px; padding: 1px 8px; font-size: 0.92em; }
+      .tm-st-state.st-now { background: color-mix(in srgb, var(--tmd-accent, var(--primary-color, #0a76a6)) 16%, transparent); color: var(--tmd-accent, var(--primary-color, #0a76a6)); }
+      .tm-st-state.st-later { background: color-mix(in srgb, currentColor 10%, transparent); }
+      .tm-st-state.st-missed { background: color-mix(in srgb, var(--tmd-bad, #c4282e) 15%, transparent); color: var(--tmd-bad, #c4282e); }
+      .tm-st-state.st-done, .tm-st-state.st-pending { background: color-mix(in srgb, var(--tmd-good, #157a47) 15%, transparent); color: var(--tmd-good, #157a47); }
+      .tm-st-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+      .tm-st-count { font-size: 0.8em; opacity: 0.8; margin-inline-end: 2px; }
+      .tm-st-pill {
+        display: inline-flex; align-items: center; gap: 5px; min-height: 32px;
+        border: 2px solid var(--tmd-border, var(--divider-color, rgba(0,0,0,0.15)));
+        border-radius: 999px; padding-block: 3px; padding-inline: 5px 10px; background: var(--tmd-surface, var(--card-background-color, #fff));
+        color: inherit; font: inherit; font-size: 0.8em; font-weight: 600; cursor: pointer;
+      }
+      .tm-st-pill small { font-weight: 400; opacity: 0.75; }
+      .tm-st-pill:disabled { cursor: not-allowed; }
+      .tm-st-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid currentColor; display: grid; place-items: center; font-size: 11px; line-height: 1; opacity: 0.8; }
+      .tm-st-pill.st-now { border-color: var(--tmd-accent, var(--primary-color, #0a76a6)); color: var(--tmd-accent, var(--primary-color, #0a76a6)); }
+      .tm-st-pill.st-later { opacity: 0.65; border-style: dashed; }
+      .tm-st-pill.st-missed { border-color: color-mix(in srgb, var(--tmd-bad, #c4282e) 45%, transparent); color: var(--tmd-bad, #c4282e); }
+      .tm-st-pill.st-done, .tm-st-pill.st-pending { border-color: color-mix(in srgb, var(--tmd-good, #157a47) 50%, transparent); color: var(--tmd-good, #157a47); }
+      .tm-st-pill.st-done .tm-st-dot { background: var(--tmd-good, #157a47); border-color: var(--tmd-good, #157a47); color: #fff; opacity: 1; }
+
       /* ── Header — matches overview/weekly/streak card style ── */
       .card-header {
         display: flex;
@@ -2499,7 +2526,7 @@ class TaskMateChildCard extends LitElement {
                     ? this._renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, index)
                     : html`
                       ${this._renderChoreCard(chore, child, pointsIcon, todaysCompletions, index)}
-                      ${this._renderBonusSubtasks(chore, child, pointsIcon, todaysCompletions)}
+                      ${chore._setTime ? '' : this._renderBonusSubtasks(chore, child, pointsIcon, todaysCompletions)}
                     `}
                 `)}
               `}
@@ -2838,8 +2865,10 @@ class TaskMateChildCard extends LitElement {
       // Weekly quota filled — nothing owed until Monday, so the tap is refused
       // the same way a recurrence window refuses one.
       const weeklyDone = !!chore._weeklyTargetMet && !done;
+      // Set times: not open yet, or closed undone — the tap is refused.
+      const stLocked = !!chore._setTimeLocked && !done;
       const onAct = () => {
-        if (loading || blocked || recLocked || firstComeLocked || weeklyDone) return;
+        if (loading || blocked || recLocked || firstComeLocked || weeklyDone || stLocked) return;
         if (done) this._handleUndo(chore, child, completions);
         else this._handleComplete(chore, child);
       };
@@ -2853,10 +2882,11 @@ class TaskMateChildCard extends LitElement {
         (chore._isRecurrenceLocked && recurrenceDoneMode === "dim") ||
         (chore._isFirstComeLocked && firstComeClaimedMode === "dim") ||
         weeklyDone ||
-        chore._isLockedPreview === true
+        chore._isLockedPreview === true ||
+        stLocked
       );
       return {
-        chore, child, done, loading, onAct, index: i, dimmed, blocked, recLocked, firstComeLocked, weeklyDone,
+        chore, child, done, loading, onAct, index: i, dimmed, blocked, recLocked, firstComeLocked, weeklyDone, stLocked,
         tone: this._designTone(i),
         glyph: this._choreGlyph(chore),
         points: this._boostPoints(chore, child),
@@ -3052,6 +3082,7 @@ class TaskMateChildCard extends LitElement {
           ${weeklyLabel ? html`<span class="tmd-tag">📅 ${weeklyLabel}</span>` : ""}
           ${r.team && !r.done ? this._renderTeamProgress(r.team, "tmd-tag") : ""}
         </div>` : ""}
+      ${this._renderSetTimeInfo(r.chore, r.child, "designed")}
       ${showDesc ? html`<div class="tmd-desc">${r.chore.description}</div>` : ""}
       ${r.done ? "" : this._renderRejectNote(r.chore, r.child, "tmd-reject")}
       ${this._renderInspectionTag(r.chore, r.child)}
@@ -3086,7 +3117,7 @@ class TaskMateChildCard extends LitElement {
       cls = `${cls || ""} ${r.team.mine ? "tm-team-leave" : ""}`;
     }
     return html`<button class="btn ${cls || ""}"
-      ?disabled=${r.loading || r.blocked || r.recLocked || r.firstComeLocked || r.weeklyDone}
+      ?disabled=${r.loading || r.blocked || r.recLocked || r.firstComeLocked || r.weeklyDone || r.stLocked}
       @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
   }
 
@@ -3108,6 +3139,7 @@ class TaskMateChildCard extends LitElement {
 
   /** Bonus subtasks for a designed chore (reuses classic renderer + handlers). */
   _designBonus(r) {
+    if (r.chore._setTime) return "";
     return this._renderBonusSubtasks(r.chore, r.child, r.pointsIcon, r.todaysCompletions);
   }
 
@@ -3242,6 +3274,14 @@ class TaskMateChildCard extends LitElement {
   }
 
   _filterAndSortChores(chores, child) {
+    const base = this._filterAndSortChoresBase(chores, child);
+    // Kept so a pill can rebuild the row for any of the chore's times.
+    this._setTimeBase = {};
+    for (const c of base) if (Array.isArray(c.times) && c.times.length) this._setTimeBase[c.id] = c;
+    return this._expandSetTimeChores(base, child);
+  }
+
+  _filterAndSortChoresBase(chores, child) {
     const childId = String(child.id || "");
     const choreOrder = child.chore_order || [];
 
@@ -3790,11 +3830,149 @@ class TaskMateChildCard extends LitElement {
 
   _filterCompletionsForToday(completions) {
     // Filter completions to only include those completed today (in HA timezone)
-    return completions.filter(comp => {
+    const today = completions.filter(comp => {
       if (!comp.completed_at) return false;
       const completedDate = new Date(comp.completed_at);
       return this._isToday(completedDate);
     });
+    return this._remapSetTimeCompletions(today);
+  }
+
+  /* Set times (several times a day). Each time of a chore with `times` is
+     drawn as its own row whose id is "<chore id>@<time id>", so every per-row
+     lookup (done state, loading, optimistic ticks, undo) works unchanged.
+     A completion that ticked a time is re-keyed to that row; a parent's
+     "done for today" (no time) covers every time of the chore. */
+  _remapSetTimeCompletions(completions) {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
+      || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    const timed = {};
+    for (const c of attrs.chores || []) {
+      if (Array.isArray(c.times) && c.times.length) timed[c.id] = c.times;
+    }
+    if (!Object.keys(timed).length) return completions;
+    const out = [];
+    for (const comp of completions) {
+      const times = timed[comp.chore_id];
+      if (!times || comp.bonus_subtask_id) { out.push(comp); continue; }
+      if (comp.time_id) out.push({ ...comp, chore_id: `${comp.chore_id}@${comp.time_id}`, base_chore_id: comp.chore_id });
+      else for (const t of times) out.push({ ...comp, chore_id: `${comp.chore_id}@${t.id}`, base_chore_id: comp.chore_id });
+    }
+    return out;
+  }
+
+  /** The decimal-hour period a set time starts in, for the card's time filter. */
+  _setTimePeriodId(t) {
+    const [h, m] = String(t.start || "0:0").split(":").map(Number);
+    const at = (h || 0) + (m || 0) / 60;
+    const periods = this._getTimePeriods() || [];
+    const hit = periods.find(p => at >= p.start && at < p.end);
+    return hit ? hit.id : "anytime";
+  }
+
+  _setTimeLayout() {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config?.entity))
+      || this.hass?.states?.[this.config?.entity]?.attributes || {};
+    return window.__taskmate_set_times ? window.__taskmate_set_times.layout(attrs, this.config) : "rows";
+  }
+
+  /** One row for one set time: a copy of the chore keyed "<chore>@<time>". */
+  _setTimeVirtual(chore, entry, all) {
+    const t = entry.time;
+    const doneish = entry.state === "done" || entry.state === "pending";
+    return Object.assign({}, chore, {
+      id: `${chore.id}@${t.id}`,
+      _baseId: chore.id,
+      _setTime: t,
+      _setTimeState: entry.state,
+      _setTimeEntry: entry,
+      _setTimeAll: all,
+      _setTimeIndex: all.indexOf(entry),
+      name: chore.name,
+      points: Number(t.points) || 0,
+      effective_points: undefined,
+      daily_limit: 1,
+      time_category: this._setTimePeriodId(t),
+      _isLockedPreview: entry.state === "later" && !doneish,
+      _isTimeElapsed: entry.state === "missed",
+      _setTimeLocked: entry.state === "later" || entry.state === "missed",
+      // The mandatory warning is for a time still owed or already missed;
+      // a done or pending time looks done, one to come looks like any other.
+      mandatory: !!chore.mandatory && (entry.state === "now" || entry.state === "missed"),
+    });
+  }
+
+  _expandSetTimeChores(chores, child) {
+    const helper = window.__taskmate_set_times;
+    if (!helper || !chores.some(c => Array.isArray(c.times) && c.times.length)) return chores;
+    const layout = this._setTimeLayout();
+    const category = this._effectiveTimeCategory();
+    const elapsedHide = (this.config.elapsed_time_mode || "dim") === "hide";
+    const out = [];
+    for (const chore of chores) {
+      if (!(Array.isArray(chore.times) && chore.times.length)) { out.push(chore); continue; }
+      const entries = helper.states(chore, child.id, this.hass);
+      if (layout === "pills") {
+        const focus = helper.focus(entries);
+        if (focus) out.push(this._setTimeVirtual(chore, focus, entries));
+        continue;
+      }
+      for (const entry of entries) {
+        const v = this._setTimeVirtual(chore, entry, entries);
+        if (elapsedHide && entry.state === "missed") continue;
+        if (category && category !== "all" && v.time_category !== category && v.time_category !== "anytime"
+            && entry.state !== "now") continue;
+        out.push(v);
+      }
+    }
+    return out;
+  }
+
+  /** "Lunch · open until 13:30" (rows) or the pill strip (pills). Called from
+   *  the classic row AND _designChoreMeta, so every design shows it. */
+  _renderSetTimeInfo(chore, child, cls) {
+    if (!chore || !chore._setTime) return "";
+    const entry = chore._setTimeEntry;
+    const all = chore._setTimeAll || [entry];
+    const stateText = (e) => e.state === "now"
+      ? this._t("child.set_time_open_until", { time: e.closes })
+      : e.state === "later" ? this._t("child.set_time_opens", { time: e.opens })
+      : e.state === "missed" ? this._t("child.set_time_missed")
+      : e.state === "pending" ? this._t("child.set_time_waiting")
+      : this._t("child.set_time_done");
+    if (this._setTimeLayout() === "pills") {
+      const doneCount = all.filter(e => e.state === "done" || e.state === "pending").length;
+      return html`<div class="tm-st-pills ${cls || ""}" role="group" aria-label="${chore.name}">
+        <span class="tm-st-count">${_ltrNums(this._t("child.set_time_count", { done: doneCount, total: all.length }))}</span>
+        ${all.map(e => html`<button type="button"
+            class="tm-st-pill st-${e.state}"
+            title="${e.time.name || e.opens} · ${stateText(e)}"
+            ?disabled=${e.state === "later" || e.state === "missed"}
+            @click=${(ev) => { ev.stopPropagation(); this._handleSetTimePill(chore, child, e); }}>
+          <span class="tm-st-dot">${e.state === "done" ? "✓" : e.state === "pending" ? "…" : e.state === "missed" ? "✕" : ""}</span>
+          ${e.time.name || e.opens}
+          ${e.state === "later" ? html`<small>${e.opens}</small>` : e.state === "now" ? html`<small>${this._t("child.set_time_now")}</small>` : ""}
+        </button>`)}
+      </div>`;
+    }
+    return html`<div class="tm-st-line ${cls || ""}">
+      <span class="tm-st-name">🕑 ${entry.time.name || entry.opens}</span>
+      <span class="tm-st-of">${_ltrNums(this._t("child.set_time_of", { n: chore._setTimeIndex + 1, total: all.length }))}</span>
+      <span class="tm-st-state st-${entry.state}">${stateText(entry)}</span>
+    </div>`;
+  }
+
+  /** A pill acts on its own time: tick it while open, undo it once ticked. */
+  _handleSetTimePill(chore, child, entry) {
+    if (entry.state === "later" || entry.state === "missed") return;
+    const base = (this._setTimeBase && this._setTimeBase[chore._baseId]) || chore;
+    const v = this._setTimeVirtual(base, entry, chore._setTimeAll || [entry]);
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+      || this.hass?.states?.[this.config.entity]?.attributes || {};
+    const comps = this._filterCompletionsForToday(attrs.todays_completions || []);
+    const { done, completions } = this._isChoreDone(v, child, comps);
+    if (done) this._handleUndo(v, child, completions);
+    else this._handleComplete(v, child);
   }
 
   /** Wall-clock parts of `date` in `tz`, as a UTC timestamp (ms). */
@@ -4117,11 +4295,17 @@ class TaskMateChildCard extends LitElement {
     const periodStartHour = isLockedPreview
       ? (this._getPeriodHours(chore.time_category)?.[0] ?? null)
       : null;
-    const lockedUntilLabel = isLockedPreview && periodStartHour !== null
+    const lockedUntilLabel = chore._setTime && isLockedPreview
+      ? this._t('child.chore_locked_until', { time: chore._setTime.start })
+      : isLockedPreview && periodStartHour !== null
       ? this._t('child.chore_locked_until', { time: `${String(Math.floor(periodStartHour)).padStart(2, '0')}:${String(Math.round((periodStartHour % 1) * 60)).padStart(2, '0')}` })
       : '';
+    // Set times: a time that hasn't opened or has closed can't be ticked,
+    // whatever the elapsed/preview modes say (the backend refuses it).
+    const setTimeLocked = !!chore._setTimeLocked && !isCompletedForToday;
     const handleRowClick = () => {
       if (isLoading) return;
+      if (setTimeLocked) return;
       if (notDueToday) return;  // Dim mode — not interactive
       if (recurrenceLocked) return;  // Recurrence window not open — not interactive
       if (isLockedPreview) return;  // Next-period preview — not yet claimable
@@ -4135,7 +4319,7 @@ class TaskMateChildCard extends LitElement {
         this._handleComplete(chore, child);
       }
     };
-    const isInteractive = !(isLoading || notDueToday || recurrenceLocked || isLockedPreview || depBlocked || timeElapsed || firstComeLocked || weeklyDone);
+    const isInteractive = !(isLoading || notDueToday || recurrenceLocked || isLockedPreview || depBlocked || timeElapsed || firstComeLocked || weeklyDone || setTimeLocked);
     const handleRowKeyDown = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -4150,6 +4334,8 @@ class TaskMateChildCard extends LitElement {
         ? this._t('child.blocked_by_dependency', { chores: (chore._dependencyNames || []).join(', ') })
       : notDueToday
         ? this._t('child.not_scheduled_for_today')
+        : setTimeLocked && chore._setTimeState === 'missed'
+          ? this._t('child.set_time_missed')
         : timeElapsed
           ? this._t('child.time_has_passed')
           : firstComeLocked
@@ -4166,7 +4352,7 @@ class TaskMateChildCard extends LitElement {
 
     return html`
       <div
-        class="chore-card ${chore.mandatory ? "mandatory" : ""} ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence || weeklyDone ? "recurrence-unavailable" : ""} ${notAvailableFirstCome ? "first-come-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""} ${depDimmed ? "dependency-blocked" : ""} ${this._inspectionRowClass(chore, child)}"
+        class="chore-card ${chore._setTime ? `tm-set-time st-row-${chore._setTimeState}` : ""} ${setTimeLocked && chore._setTimeState === 'missed' ? "time-elapsed" : ""} ${chore.mandatory ? "mandatory" : ""} ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence || weeklyDone ? "recurrence-unavailable" : ""} ${notAvailableFirstCome ? "first-come-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""} ${depDimmed ? "dependency-blocked" : ""} ${this._inspectionRowClass(chore, child)}"
         role="button"
         tabindex="${isInteractive ? '0' : '-1'}"
         aria-disabled="${isInteractive ? 'false' : 'true'}"
@@ -4182,6 +4368,7 @@ class TaskMateChildCard extends LitElement {
           <div class="chore-details">
             <div class="chore-name">${chore.name}${chore.mandatory ? html`<span class="mandatory-badge">⚠ ${this._t('child.mandatory')}</span>` : ''}${chore.auction && chore.auction.child_id ? html`<span class="auction-badge">🔨 ${this._t('child.won_at_auction')}</span>` : ''}</div>
             ${this._renderDeadlineBadge(chore, isCompletedForToday)}
+            ${this._renderSetTimeInfo(chore, child, 'classic')}
             ${isCompletedForToday ? '' : this._renderRejectNote(chore, child, 'tm-reject-note')}
             ${this._renderInspectionTag(chore, child)}
             ${isCompletedForToday ? '' : this._renderInspectionNote(chore, child, 'tm-insp-note')}
@@ -4730,14 +4917,16 @@ class TaskMateChildCard extends LitElement {
       // entity so HA state-trigger automations fire.
       // A photo or an open-ended note can only travel on the service call, so
       // either one rules out the button-entity shortcut.
-      const buttonEntityId = (photoUrl || extra) ? null : (window.__taskmate_find_button
+      // A set time names its time on the call, which a button press can't.
+      const buttonEntityId = (photoUrl || extra || chore._setTime) ? null : (window.__taskmate_find_button
         && window.__taskmate_find_button(this.hass, child.id, "complete", chore.id));
       if (buttonEntityId) {
         await this.hass.callService("button", "press", { entity_id: buttonEntityId });
       } else {
         await this.hass.callService("taskmate", "complete_chore", {
-          chore_id: chore.id,
+          chore_id: chore._baseId || chore.id,
           child_id: child.id,
+          ...(chore._setTime ? { time_id: chore._setTime.id } : {}),
           ...(photoUrl ? { photo_url: photoUrl } : {}),
           ...(extra && extra.note ? { note: extra.note } : {}),
           ...(extra && extra.suggested_points ? { suggested_points: extra.suggested_points } : {}),
@@ -6201,6 +6390,19 @@ class TaskMateChildCardEditor extends LitElement {
           },
         },
       },
+      {
+        name: 'set_times_layout',
+        selector: {
+          select: {
+            options: [
+              { value: 'family', label: this._t('common.set_times.layout_family') },
+              { value: 'rows', label: this._t('common.set_times.layout_rows') },
+              { value: 'pills', label: this._t('common.set_times.layout_pills') },
+            ],
+            mode: 'dropdown',
+          },
+        },
+      },
       { name: 'include_anytime_chores', selector: { boolean: {} } },
       { name: 'show_countdown', selector: { boolean: {} } },
       { name: 'show_minutes_left', selector: { boolean: {} } },
@@ -6230,6 +6432,7 @@ class TaskMateChildCardEditor extends LitElement {
       first_come_claimed_mode: this._t('child.editor.first_come_when_completed'),
       dependency_mode: this._t('child.editor.dependency_mode'),
       elapsed_time_mode: this._t('child.editor.missed_time_chores'),
+      set_times_layout: this._t('common.set_times.layout_label'),
       include_anytime_chores: this._t('child.editor.include_anytime_chores'),
       show_countdown: this._t('child.editor.show_countdown'),
       show_minutes_left: this._t('child.editor.show_minutes_left'),
@@ -6259,6 +6462,7 @@ class TaskMateChildCardEditor extends LitElement {
       first_come_claimed_mode: this._t('child.editor.first_come_helper'),
       dependency_mode: this._t('child.editor.dependency_helper'),
       elapsed_time_mode: this._t('child.editor.elapsed_helper'),
+      set_times_layout: this._t('common.set_times.layout_helper'),
       include_anytime_chores: this._t('child.editor.include_anytime_chores_helper'),
       show_parent_actions: this._t('common.editor.show_parent_actions_helper'),
     };
@@ -6278,6 +6482,7 @@ class TaskMateChildCardEditor extends LitElement {
       first_come_claimed_mode: this.config.first_come_claimed_mode || 'hide',
       dependency_mode: this.config.dependency_mode || 'hide',
       elapsed_time_mode: this.config.elapsed_time_mode || 'dim',
+      set_times_layout: this.config.set_times_layout || 'family',
       include_anytime_chores: this.config.include_anytime_chores !== false,
       show_countdown: this.config.show_countdown !== false,
       show_minutes_left: this.config.show_minutes_left !== false,
@@ -6333,7 +6538,7 @@ class TaskMateChildCardEditor extends LitElement {
         show_description: false, debug: false,
         time_category: 'morning', due_days_mode: 'hide',
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',
-        first_come_claimed_mode: 'hide',
+        first_come_claimed_mode: 'hide', set_times_layout: 'family',
       };
       if (value === '' || value === null || value === undefined) {
         delete newConfig[key];

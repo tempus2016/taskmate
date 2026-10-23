@@ -154,6 +154,10 @@
         "quantity": {
           "name": "Tal",
           "description": "Kor mange einingar barnet gjorde, på ei mengdeoppgåve («les 20 sider»). Påkravd frå eit barn på slike oppgåver; poenga blir betalte per eining."
+        },
+        "time_id": {
+          "name": "Fast tidspunkt",
+          "description": "For ei oppgåve med faste tider: kva tidspunkt som blir haka av. La stå tomt for det som er ope no."
         }
       }
     },
@@ -570,6 +574,14 @@
         "team_bonus": {
           "name": "Lagbonus",
           "description": "Ekstra poeng kvar deltakar får når ei lagoppgåve er fullført."
+        },
+        "times": {
+          "name": "Faste tider",
+          "description": "Ei oppgåve på faste tider, t.d. vaske hender til frukost, lunsj og middag. Ei liste med opptil 5 tidspunkt, kvart med namn, start og slutt («TT:MM», same dag, utan overlapp) og poeng."
+        },
+        "times_bonus": {
+          "name": "Bonus for alle tidspunkt",
+          "description": "Ekstra poeng éin gong om dagen når alle faste tider er gjorde."
         }
       }
     },

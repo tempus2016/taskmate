@@ -154,6 +154,10 @@
         "quantity": {
           "name": "Liczba",
           "description": "Ile jednostek wykonało dziecko w zadaniu ilościowym („przeczytaj 20 stron”). Wymagane od dziecka przy takich zadaniach; punkty są przyznawane za jednostkę."
+        },
+        "time_id": {
+          "name": "Stała pora",
+          "description": "Przy obowiązku o stałych porach: którą porę odhaczyć. Zostaw puste dla otwartej teraz."
         }
       }
     },
@@ -570,6 +574,14 @@
         "team_bonus": {
           "name": "Premia zespołowa",
           "description": "Dodatkowe punkty, które każdy uczestnik zdobywa po wykonaniu obowiązku zespołowego."
+        },
+        "times": {
+          "name": "Stałe pory",
+          "description": "Obowiązek o stałych porach dnia, np. mycie rąk przy śniadaniu, obiedzie i kolacji. Lista do 5 pór, każda z nazwą, początkiem i końcem („GG:MM”, ten sam dzień, bez nakładania) oraz punktami."
+        },
+        "times_bonus": {
+          "name": "Premia za wszystkie pory",
+          "description": "Dodatkowe punkty raz dziennie, gdy zrobiono wszystkie stałe pory."
         }
       }
     },

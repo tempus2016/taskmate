@@ -395,6 +395,17 @@ class TaskMateKioskCard extends LitElement {
     const rows = [];
     for (const chore of chores) {
       const due = isDue(chore);
+      // Set times (several times a day): one row per time, or one row with a
+      // pill per time — the same parent choice the child card follows.
+      if (Array.isArray(chore.times) && chore.times.length && window.__taskmate_set_times) {
+        const assigned = Array.isArray(chore.assigned_to) ? chore.assigned_to.map(String) : [];
+        if (assigned.length && !assigned.includes(id)) continue;
+        const ticked = (attrs.todays_completions || []).filter(c => String(c.chore_id) === String(chore.id)
+          && (String(c.child_id) === id || c.child_id === "__parent__") && !c.bonus_subtask_id);
+        if (!due && !ticked.length) continue;
+        rows.push(...this._setTimeRows(chore, id, ticked));
+        continue;
+      }
       const comp = latest.get(String(chore.id));
       const team = chore.team;
       const joined = team && Array.isArray(team.joined) ? team.joined.map(String) : [];
@@ -408,6 +419,33 @@ class TaskMateKioskCard extends LitElement {
       rows.push({ chore, state, phone, missed, completion: comp || null, team: team ? { size: Number(team.size) || 0, joined: joined.length } : null });
     }
     return rows;
+  }
+
+  /** Rows for a chore with set times. Each carries its time, so a tap ticks
+   *  that time and an undo takes back that time's completion. */
+  _setTimeRows(chore, childId, ticked) {
+    const helper = window.__taskmate_set_times;
+    const entries = helper.states(chore, childId, this.hass);
+    const phone = !!chore.require_photo;
+    const toRow = (entry, all) => {
+      const t = entry.time;
+      const comp = ticked.find(c => c.time_id === t.id) || ticked.find(c => !c.time_id) || null;
+      const state = entry.state === "done" ? "done" : entry.state === "pending" ? "wait"
+        : entry.state === "later" ? "later" : phone ? "elsewhere" : "todo";
+      const virtual = Object.assign({}, chore, {
+        id: `${chore.id}@${t.id}`, _baseId: chore.id, _setTime: t,
+        points: Number(t.points) || 0, effective_points: undefined,
+      });
+      return {
+        chore: virtual, state, phone, missed: entry.state === "missed", completion: comp, team: null,
+        setTime: { entry, all },
+      };
+    };
+    if (helper.layout(this._attrs(), this.config) === "pills") {
+      const focus = helper.focus(entries);
+      return focus ? [toRow(focus, entries)] : [];
+    }
+    return entries.map(e => toRow(e, entries));
   }
 
   /**
@@ -852,12 +890,17 @@ class TaskMateKioskCard extends LitElement {
       // The per-chore button first, like the child card, so HA automations on
       // it fire; the service when the entity isn't registered yet. Both run
       // the backend's linked-child check against this tablet's user.
-      const buttonEntityId = window.__taskmate_find_button
+      // A set time names its time on the call, which a button press can't.
+      const buttonEntityId = !chore._setTime && window.__taskmate_find_button
         && window.__taskmate_find_button(this.hass, child.id, "complete", chore.id);
       if (buttonEntityId) {
         await this.hass.callService("button", "press", { entity_id: buttonEntityId });
       } else {
-        await this.hass.callService("taskmate", "complete_chore", { chore_id: chore.id, child_id: child.id });
+        await this.hass.callService("taskmate", "complete_chore", {
+          chore_id: chore._baseId || chore.id,
+          child_id: child.id,
+          ...(chore._setTime ? { time_id: chore._setTime.id } : {}),
+        });
       }
       this._cheer(chore);
     } catch (err) {
@@ -900,12 +943,15 @@ class TaskMateKioskCard extends LitElement {
   }
 
   _enqueue(child, chore) {
-    this._queue = [...this._queue, { child_id: String(child.id), chore_id: String(chore.id), name: chore.name, at: Date.now() }];
+    this._queue = [...this._queue, {
+      child_id: String(child.id), chore_id: String(chore._baseId || chore.id), name: chore.name, at: Date.now(),
+      ...(chore._setTime ? { time_id: chore._setTime.id, key: String(chore.id) } : {}),
+    }];
     this._saveQueue();
   }
 
   _queued(childId, choreId) {
-    return this._queue.some(q => q.child_id === String(childId) && q.chore_id === String(choreId));
+    return this._queue.some(q => q.child_id === String(childId) && (q.key || q.chore_id) === String(choreId));
   }
 
   async _flushQueue() {
@@ -915,7 +961,9 @@ class TaskMateKioskCard extends LitElement {
       while (this._queue.length && this._online()) {
         const [next] = this._queue;
         try {
-          await this.hass.callService("taskmate", "complete_chore", { chore_id: next.chore_id, child_id: next.child_id });
+          await this.hass.callService("taskmate", "complete_chore", {
+            chore_id: next.chore_id, child_id: next.child_id, ...(next.time_id ? { time_id: next.time_id } : {}),
+          });
         } catch (err) {
           if (this._isConnectionError(err)) break;
           // Refused on arrival (already done, no longer due): drop it and say so.
@@ -1605,7 +1653,9 @@ class TaskMateKioskCard extends LitElement {
     const { chore, state, completion, team } = row;
     const visual = window.__taskmate_chore_visual ? window.__taskmate_chore_visual(chore) : { kind: "none" };
     const undoable = (state === "done" || state === "wait") ? this._undoable(completion) : null;
-    const dimMissed = row.missed && this._missedMode() === "dim";
+    // A set time that closed undone can't be ticked any more, whatever the
+    // missed-chore mode says, so it never offers a Done button.
+    const dimMissed = row.missed && (this._missedMode() === "dim" || (!!row.setTime && state === "todo"));
     const needsCheck = state === "todo" && !dimMissed && chore.requires_approval !== false;
     let action;
     if (dimMissed) {
@@ -1617,6 +1667,8 @@ class TaskMateKioskCard extends LitElement {
     } else if (state === "todo") {
       action = html`<button class="km-done" ?disabled=${!!this._busy} @click=${() => this._complete(child, chore)}>
         <ha-icon icon="mdi:check-bold"></ha-icon> ${this._t("child.done")}</button>`;
+    } else if (state === "later") {
+      action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:lock-clock"></ha-icon><span>${this._t("child.set_time_opens", { time: row.setTime.entry.opens })}</span></div>`;
     } else if (state === "done") {
       action = html`<div class="km-done is-done"><ha-icon icon="mdi:check-bold"></ha-icon> ${this._t("child.done")}</div>`;
     } else if (state === "wait") {
@@ -1635,6 +1687,9 @@ class TaskMateKioskCard extends LitElement {
         </div>
         <div class="km-row-body">
           <div class="km-row-name">${chore.name}</div>
+          ${row.setTime && this._setTimeLayout() === "rows" ? html`<div class="km-st-sub">🕑 <b>${row.setTime.entry.time.name || row.setTime.entry.opens}</b>
+            <span>${_ltrNums(this._t("child.set_time_of", { n: row.setTime.all.indexOf(row.setTime.entry) + 1, total: row.setTime.all.length }))}</span></div>` : ""}
+          ${row.setTime && this._setTimeLayout() === "pills" ? this._renderSetTimePills(child, row) : ""}
           <div class="km-row-meta">
             <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${this._pointsFor(chore, child.id)}</span>
             ${this._boostMult(chore, child.id) ? html`<span class="km-boost-x">×${this._fmtMult(this._boostMult(chore, child.id))}</span>` : ""}
@@ -1648,6 +1703,25 @@ class TaskMateKioskCard extends LitElement {
         ${action}
       </div>
     `;
+  }
+
+  _setTimeLayout() {
+    return window.__taskmate_set_times ? window.__taskmate_set_times.layout(this._attrs(), this.config) : "rows";
+  }
+
+  /** One pill per set time; an open one can be tapped from here too. */
+  _renderSetTimePills(child, row) {
+    const { all } = row.setTime;
+    const base = row.chore;
+    return html`<div class="km-st-pills">${all.map(e => {
+      const open = e.state === "now" && !row.phone;
+      const v = Object.assign({}, base, { id: `${base._baseId}@${e.time.id}`, _setTime: e.time, points: Number(e.time.points) || 0 });
+      return html`<button type="button" class="km-st-pill st-${e.state}" ?disabled=${!open || !!this._busy}
+          @click=${() => open && this._complete(child, v)}>
+        <span class="km-st-dot">${e.state === "done" ? "✓" : e.state === "pending" ? "…" : e.state === "missed" ? "✕" : ""}</span>
+        ${e.time.name || e.opens}${e.state === "later" ? html` <small>${e.opens}</small>` : ""}
+      </button>`;
+    })}</div>`;
   }
 
   _renderBounties(child, icon) {
@@ -2100,6 +2174,25 @@ class TaskMateKioskCard extends LitElement {
         font-family: var(--tmd-font-display, inherit);
       }
       .km-row-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+      /* Set times (several times a day). */
+      .km-st-sub { display: flex; gap: 6px; align-items: baseline; font-size: 0.95rem; color: var(--tmd-dim, var(--secondary-text-color)); margin-top: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .km-st-sub b { color: var(--tmd-text, var(--primary-text-color)); font-weight: 700; }
+      .km-st-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+      .km-st-pill {
+        display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding-block: 4px; padding-inline: 6px 12px;
+        border-radius: 99px; border: 2px solid var(--tmd-border, var(--divider-color, #ddd));
+        background: var(--tmd-surface, var(--card-background-color, #fff)); color: var(--tmd-text, var(--primary-text-color));
+        font: inherit; font-weight: 700; font-size: 0.95rem; cursor: pointer;
+      }
+      .km-st-pill small { font-weight: 500; opacity: 0.75; }
+      .km-st-pill:disabled { cursor: default; }
+      .km-st-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid currentColor; display: grid; place-items: center; font-size: 12px; }
+      .km-st-pill.st-now { border-color: var(--tmd-accent, var(--primary-color)); color: var(--tmd-accent, var(--primary-color)); }
+      .km-st-pill.st-later { opacity: 0.6; border-style: dashed; }
+      .km-st-pill.st-missed { color: var(--tmd-bad, #c4282e); border-color: color-mix(in srgb, var(--tmd-bad, #c4282e) 45%, transparent); }
+      .km-st-pill.st-done, .km-st-pill.st-pending { color: var(--tmd-good, #157a47); border-color: color-mix(in srgb, var(--tmd-good, #157a47) 50%, transparent); }
+      .km-st-pill.st-done .km-st-dot { background: var(--tmd-good, #157a47); border-color: var(--tmd-good, #157a47); color: #fff; }
+      .km-row.later { opacity: 0.7; }
       .km-row-pts { display: inline-flex; align-items: center; gap: 4px; color: var(--tmd-gold, #e67e22); font-weight: 700; }
       .km-row-pts ha-icon { --mdc-icon-size: 16px; }
       .km-tag {
@@ -2371,6 +2464,14 @@ class TaskMateKioskCardEditor extends LitElement {
           { value: "hide", label: this._t("kiosk.editor.missed_hide") },
         ] } },
       },
+      {
+        name: "set_times_layout",
+        selector: { select: { mode: "dropdown", options: [
+          { value: "family", label: this._t("common.set_times.layout_family") },
+          { value: "rows", label: this._t("common.set_times.layout_rows") },
+          { value: "pills", label: this._t("common.set_times.layout_pills") },
+        ] } },
+      },
       { name: "play_sounds", selector: { boolean: {} } },
       { name: "show_confetti", selector: { boolean: {} } },
       { name: "show_completion_popup", selector: { boolean: {} } },
@@ -2409,6 +2510,7 @@ class TaskMateKioskCardEditor extends LitElement {
     show_picker_progress: this._t("kiosk.editor.show_picker_progress"),
     completed_mode: this._t("kiosk.editor.completed_mode"),
     elapsed_time_mode: this._t("kiosk.editor.missed_mode"),
+    set_times_layout: this._t("common.set_times.layout_label"),
     play_sounds: this._t("kiosk.editor.play_sounds"),
     show_confetti: this._t("kiosk.editor.show_confetti"),
     show_completion_popup: this._t("kiosk.editor.show_completion_popup"),
@@ -2429,6 +2531,7 @@ class TaskMateKioskCardEditor extends LitElement {
     show_picker_progress: this._t("kiosk.editor.show_picker_progress_helper"),
     completed_mode: this._t("kiosk.editor.completed_mode_helper"),
     elapsed_time_mode: this._t("kiosk.editor.missed_mode_helper"),
+    set_times_layout: this._t("common.set_times.layout_helper"),
     play_sounds: this._t("kiosk.editor.play_sounds_helper"),
     show_completion_popup: this._t("kiosk.editor.show_completion_popup_helper"),
   })[entry.name] ?? "";
@@ -2492,6 +2595,7 @@ class TaskMateKioskCardEditor extends LitElement {
       show_picker_progress: this.config.show_picker_progress !== false,
       completed_mode: this.config.completed_mode || "show",
       elapsed_time_mode: this.config.elapsed_time_mode || "show",
+      set_times_layout: this.config.set_times_layout || "family",
       play_sounds: this.config.play_sounds !== false,
       show_confetti: this.config.show_confetti !== false,
       show_completion_popup: this.config.show_completion_popup !== false,
@@ -2570,6 +2674,7 @@ class TaskMateKioskCardEditor extends LitElement {
       else if (key === "ambient_after" && Number(value) === DEFAULT_AMBIENT_AFTER) delete next[key];
       // Both list filters default to "show": store only a change from it.
       else if ((key === "completed_mode" || key === "elapsed_time_mode") && value === "show") delete next[key];
+      else if (key === "set_times_layout" && value === "family") delete next[key];
       else if (key === "timeout") {
         if (clampTimeout(value) === DEFAULT_TIMEOUT) delete next[key];
         else next[key] = clampTimeout(value);

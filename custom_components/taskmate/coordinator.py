@@ -49,6 +49,7 @@ from .coord_reports import ReportsMixin
 from .coord_rewards import RewardsMixin
 from .coord_roulette import RouletteMixin
 from .coord_scheduled import ScheduledChangesMixin
+from .coord_set_times import SetTimesMixin
 from .coord_setup import SetupWizardMixin
 from .coord_sick import SickDaysMixin
 from .coord_sounds import SoundsMixin
@@ -91,6 +92,7 @@ def button_keys(children: list, chores: list, rewards: list) -> set[str]:
 
 class TaskMateCoordinator(
     ChoresMixin,
+    SetTimesMixin,
     MandatoryMixin,
     AssignmentsMixin,
     RewardsMixin,
@@ -210,15 +212,18 @@ class TaskMateCoordinator(
             out[rating] = max(0.0, value)
         return out
 
-    def effective_chore_points(self, chore, quantity: int = 0) -> int:
+    def effective_chore_points(self, chore, quantity: int = 0, *, set_time=None) -> int:
         """Base chore points scaled by its difficulty multiplier (never negative).
 
         A quantity chore's points are per unit, so ``quantity`` units earn
-        that many times the points.
+        that many times the points. A set time (several times a day) pays
+        its own points instead of the chore's.
         """
         from .const import DEFAULT_DIFFICULTY
 
-        base = int(getattr(chore, "points", 0) or 0)
+        base = (
+            int(getattr(set_time, "points", 0) or 0) if set_time is not None else int(getattr(chore, "points", 0) or 0)
+        )
         if quantity and (getattr(chore, "quantity_unit", "") or "").strip():
             base *= int(quantity)
         tier = getattr(chore, "difficulty", DEFAULT_DIFFICULTY) or DEFAULT_DIFFICULTY

@@ -316,6 +316,88 @@
 
   window.__taskmate_find_button = findButtonEntity;
 
+  /**
+   * Set times (several times a day). A chore with `times` comes up at set
+   * times of day and is ticked off once per time. The chores sensor carries
+   * the times and, per child, which ones are done or pending
+   * (`time_done`); the clock decides the rest:
+   *   now     open, can be ticked
+   *   later   not open yet
+   *   missed  closed without a tick
+   *   done / pending  ticked (pending = waiting for approval)
+   * The window closes at `end` plus the chore's claim allowance, capped at
+   * midnight, matching the backend. Shared by every card so the states never
+   * disagree between the child card, the kiosk and the weekly card.
+   */
+  function _hhmm(value) {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(value || ""));
+    if (!m) return null;
+    const h = Number(m[1]);
+    const mm = Number(m[2]);
+    return h > 23 || mm > 59 ? null : h * 60 + mm;
+  }
+
+  function nowMinutes(hass, now) {
+    const tz = (hass && hass.config && hass.config.time_zone) || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    try {
+      const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "numeric", hourCycle: "h23" })
+        .formatToParts(now || new Date());
+      const get = (t) => Number((parts.find((p) => p.type === t) || {}).value || 0);
+      return (get("hour") % 24) * 60 + get("minute");
+    } catch (_e) {
+      const d = now || new Date();
+      return d.getHours() * 60 + d.getMinutes();
+    }
+  }
+
+  function setTimeStates(chore, childId, hass, now) {
+    const times = (chore && Array.isArray(chore.times)) ? chore.times : [];
+    if (!times.length) return [];
+    const done = ((chore.time_done || {})[String(childId)]) || {};
+    const minutes = nowMinutes(hass, now);
+    const grace = Math.max(0, Number(chore.claim_allowance_minutes) || 0);
+    return times.map((t) => {
+      const opens = _hhmm(t.start);
+      const ends = _hhmm(t.end);
+      const closes = Math.min((ends == null ? 0 : ends) + grace, 24 * 60);
+      let state;
+      if (done[t.id] === "done") state = "done";
+      else if (done[t.id] === "pending") state = "pending";
+      else if (opens != null && minutes < opens) state = "later";
+      else if (minutes >= closes) state = "missed";
+      else state = "now";
+      return { time: t, state, opens: t.start, closes: `${String(Math.floor(closes / 60) % 24).padStart(2, "0")}:${String(closes % 60).padStart(2, "0")}` };
+    });
+  }
+
+  /** The time a single-row (pills) view acts on: the open one, else the next
+   *  to come, else a missed one (the day finished with a miss, so the row
+   *  must not read as done), else the last of the day (every time done). */
+  function setTimeFocus(entries) {
+    if (!entries || !entries.length) return null;
+    return entries.find((e) => e.state === "now")
+      || entries.find((e) => e.state === "later")
+      || entries.find((e) => e.state === "missed")
+      || entries[entries.length - 1];
+  }
+
+  /** "rows" or "pills": a card's own `set_times_layout` wins, else the
+   *  family setting on the overview sensor. */
+  function setTimesLayout(attrs, config) {
+    const own = config && config.set_times_layout;
+    if (own === "rows" || own === "pills") return own;
+    const fam = attrs && attrs.settings && attrs.settings.set_times_layout;
+    const top = attrs && attrs.set_times_layout;
+    return (fam || top) === "pills" ? "pills" : "rows";
+  }
+
+  window.__taskmate_set_times = {
+    states: setTimeStates,
+    focus: setTimeFocus,
+    layout: setTimesLayout,
+    nowMinutes,
+  };
+
   // Cold-cache fix: if any TaskMate cards already mounted before this module
   // finished loading, they fell back to entity.attributes (overview-only) and
   // rendered empty chore lists. Walk the DOM (crossing shadow roots, since HA
