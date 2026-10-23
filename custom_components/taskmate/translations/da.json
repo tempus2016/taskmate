@@ -154,6 +154,10 @@
         "quantity": {
           "name": "Antal",
           "description": "Hvor mange enheder barnet lavede, på en mængdeopgave (\"læs 20 sider\"). Påkrævet fra et barn på de opgaver; opgavens point udbetales pr. enhed."
+        },
+        "time_id": {
+          "name": "Fast tidspunkt",
+          "description": "For en opgave med faste tidspunkter: hvilket tidspunkt der krydses af. Lad stå tomt for det, der er åbent nu."
         }
       }
     },
@@ -570,6 +574,14 @@
         "team_bonus": {
           "name": "Holdbonus",
           "description": "Ekstra point, hver deltager får, når en holdpligt er fuldført."
+        },
+        "times": {
+          "name": "Faste tidspunkter",
+          "description": "Gør det til en opgave på faste tidspunkter, fx vaske hænder til morgenmad, frokost og aftensmad. En liste med op til 5 tidspunkter, hver med navn, start og slut (\"TT:MM\", samme dag, uden overlap) og point."
+        },
+        "times_bonus": {
+          "name": "Bonus for alle tidspunkter",
+          "description": "Ekstra point én gang om dagen, når alle faste tidspunkter er klaret."
         }
       }
     },

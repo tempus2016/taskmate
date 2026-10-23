@@ -154,6 +154,10 @@
         "quantity": {
           "name": "Quantité",
           "description": "Combien d’unités l’enfant a faites, pour une tâche à quantité (« lire 20 pages »). Obligatoire de la part d’un enfant sur ces tâches ; les points sont versés par unité."
+        },
+        "time_id": {
+          "name": "Horaire fixe",
+          "description": "Pour une tâche à heures fixes, l'horaire à cocher. Laissez vide pour celui qui est ouvert."
         }
       }
     },
@@ -570,6 +574,14 @@
         "team_bonus": {
           "name": "Bonus d'équipe",
           "description": "Points supplémentaires gagnés par chaque participant quand une tâche d'équipe est terminée."
+        },
+        "times": {
+          "name": "Horaires fixes",
+          "description": "Une tâche à heures fixes, par ex. se laver les mains au petit-déjeuner, au déjeuner et au dîner. Une liste de 5 horaires au plus, chacun avec nom, début et fin (« HH:MM », même jour, sans chevauchement) et points."
+        },
+        "times_bonus": {
+          "name": "Bonus tous horaires",
+          "description": "Points en plus, une fois par jour, quand tous les horaires fixes sont faits."
         }
       }
     },

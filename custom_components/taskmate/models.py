@@ -214,6 +214,153 @@ class BonusSubTask:
         }
 
 
+@dataclass
+class ChoreTime:
+    """One set time of day a chore comes up ("Wash hands · Lunch").
+
+    A chore with ``times`` is ticked off once per time instead of up to
+    ``daily_limit`` times whenever. Each time is only open between ``start``
+    and ``end`` (local "HH:MM", same day), plus the chore's claim allowance.
+    """
+
+    name: str = ""
+    start: str = "08:00"
+    end: str = "09:00"
+    points: int = 1
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ChoreTime:
+        return cls(
+            name=str(data.get("name", "") or "").strip()[:CHORE_TIME_NAME_MAX_LENGTH],
+            start=str(data.get("start", "") or ""),
+            end=str(data.get("end", "") or ""),
+            points=_clamp_int(data.get("points"), 0, MAX_CHORE_TIME_POINTS),
+            id=str(data.get("id") or "") or generate_id(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"id": self.id, "name": self.name, "start": self.start, "end": self.end, "points": self.points}
+
+
+# Set times per chore (several times a day).
+MAX_CHORE_TIMES = 5
+CHORE_TIME_NAME_MAX_LENGTH = 30
+MAX_CHORE_TIME_POINTS = 1000
+
+
+def _hhmm_minutes(value: str) -> int | None:
+    """Minutes past midnight for "HH:MM", or None when it isn't one."""
+    try:
+        hours, minutes = str(value).split(":")
+        h, m = int(hours), int(minutes)
+    except (ValueError, TypeError):
+        return None
+    if not (0 <= h <= 23 and 0 <= m <= 59):
+        return None
+    return h * 60 + m
+
+
+def clean_chore_times(raw: Any) -> list[ChoreTime]:
+    """Stored set times coerced to a valid list; anything broken is dropped.
+
+    Loading never raises (a hand-edited store or an old backup must not stop
+    the integration), so this keeps the times that make sense on their own,
+    in start order, without overlaps, and at most ``MAX_CHORE_TIMES``.
+    Creating or editing a chore goes through ``validate_chore_times``, which
+    refuses the same problems with a message instead.
+    """
+    if not isinstance(raw, list):
+        return []
+    times: list[ChoreTime] = []
+    seen: set[str] = set()
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        t = ChoreTime.from_dict(item)
+        start, end = _hhmm_minutes(t.start), _hhmm_minutes(t.end)
+        if start is None or end is None or end <= start or t.id in seen:
+            continue
+        seen.add(t.id)
+        times.append(t)
+    times.sort(key=lambda t: _hhmm_minutes(t.start) or 0)
+    out: list[ChoreTime] = []
+    for t in times:
+        if out and (_hhmm_minutes(t.start) or 0) < (_hhmm_minutes(out[-1].end) or 0):
+            continue
+        out.append(t)
+    return out[:MAX_CHORE_TIMES]
+
+
+def validate_chore_times(
+    raw: Any,
+    *,
+    task_type: str = "standard",
+    open_ended: bool = False,
+    quantity_unit: str = "",
+    team_size: int = 0,
+    existing: list[ChoreTime] | None = None,
+) -> list[ChoreTime]:
+    """Parse set times sent by a parent, raising ValueError on any problem.
+
+    The rules: at most five, each closes after it opens on the same day (no
+    crossing midnight), none overlap, and a chore with set times can't also
+    be timed, open-ended, a quantity chore or a teamwork chore.
+    """
+    if raw in (None, ""):
+        return []
+    if not isinstance(raw, list):
+        raise ValueError("Set times must be a list.")
+    if not raw:
+        return []
+    if len(raw) > MAX_CHORE_TIMES:
+        raise ValueError(f"A chore can have at most {MAX_CHORE_TIMES} set times.")
+    if task_type == "timed":
+        raise ValueError("A timed chore can't have set times.")
+    if open_ended:
+        raise ValueError("An open-ended chore can't have set times.")
+    if (quantity_unit or "").strip():
+        raise ValueError("A quantity chore can't have set times.")
+    if int(team_size or 0) > 0:
+        raise ValueError("A teamwork chore can't have set times.")
+    times: list[ChoreTime] = []
+    seen: set[str] = set()
+    # A time sent without an id keeps the id of the stored time it replaces
+    # (same name, else same start), so today's ticks stay attached to it.
+    previous = [t for t in (existing or []) if isinstance(t, ChoreTime)]
+    sent_ids = {str(item.get("id")) for item in raw if isinstance(item, dict) and item.get("id")}
+    free = [t for t in previous if t.id not in sent_ids]
+    for item in raw:
+        if not isinstance(item, dict):
+            raise ValueError("Each set time needs a start and an end.")
+        t = ChoreTime.from_dict(item)
+        if not item.get("id") and free:
+            name = t.name.strip().casefold()
+            match = next((p for p in free if name and p.name.strip().casefold() == name), None)
+            if match is None:
+                start = _hhmm_minutes(t.start)
+                match = next((p for p in free if start is not None and _hhmm_minutes(p.start) == start), None)
+            if match is not None:
+                t.id = match.id
+                free.remove(match)
+        start, end = _hhmm_minutes(t.start), _hhmm_minutes(t.end)
+        if start is None or end is None:
+            raise ValueError("Set times need a start and an end like 07:30.")
+        if end <= start:
+            raise ValueError("A set time must close after it opens, on the same day.")
+        if t.id in seen:
+            t.id = generate_id()
+        seen.add(t.id)
+        t.start = f"{start // 60:02d}:{start % 60:02d}"
+        t.end = f"{end // 60:02d}:{end % 60:02d}"
+        times.append(t)
+    times.sort(key=lambda t: _hhmm_minutes(t.start) or 0)
+    for prev, nxt in zip(times, times[1:], strict=False):
+        if (_hhmm_minutes(nxt.start) or 0) < (_hhmm_minutes(prev.end) or 0):
+            raise ValueError("Two set times overlap. Move one so they don't.")
+    return times
+
+
 def normalize_age_group(value: Any) -> str:
     """A stored age group (#980): one of AGE_GROUPS, anything else is none ("")."""
     return value if isinstance(value, str) and value in AGE_GROUPS else ""
@@ -512,6 +659,12 @@ class Chore:
     # ``make_bed``, or ``pack.<pack>.<n>``), so the 📚 library can show it as
     # already added. "" for chores made by hand.
     template_id: str = ""
+    # Set times (several times a day): each ChoreTime is ticked off on its own
+    # inside its window. Empty = an ordinary chore (once, or up to
+    # daily_limit times whenever). times_bonus is paid once a day when every
+    # time has been done.
+    times: list[ChoreTime] = field(default_factory=list)
+    times_bonus: int = 0
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -598,6 +751,8 @@ class Chore:
             quantity_unit=str(data.get("quantity_unit", "") or "").strip()[:QUANTITY_UNIT_MAX_LENGTH],
             quantity_max=_clamp_int(data.get("quantity_max"), 0, MAX_QUANTITY),
             template_id=clean_template_id(data.get("template_id")),
+            times=clean_chore_times(data.get("times")),
+            times_bonus=_clamp_int(data.get("times_bonus"), 0, MAX_CHORE_TIME_POINTS),
             id=data.get("id") or generate_id(),
         )
 
@@ -671,6 +826,8 @@ class Chore:
             "quantity_unit": self.quantity_unit,
             "quantity_max": self.quantity_max,
             "template_id": self.template_id,
+            "times": [t.to_dict() for t in self.times],
+            "times_bonus": self.times_bonus,
             "id": self.id,
         }
 
@@ -1213,6 +1370,9 @@ class ChoreCompletion:
     # must not add them again.
     boost_multiplier: float = 0.0
     boost_stacked: bool = False
+    # Which of the chore's set times this completion ticks off; "" on every
+    # completion of an ordinary chore.
+    time_id: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ChoreCompletion:
@@ -1243,6 +1403,7 @@ class ChoreCompletion:
             for_child_id=str(data.get("for_child_id", "") or ""),
             boost_multiplier=float(data.get("boost_multiplier", 0) or 0),
             boost_stacked=bool(data.get("boost_stacked", False)),
+            time_id=str(data.get("time_id", "") or ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1281,6 +1442,8 @@ class ChoreCompletion:
             data["boost_multiplier"] = self.boost_multiplier
             if self.boost_stacked:
                 data["boost_stacked"] = True
+        if self.time_id:
+            data["time_id"] = self.time_id
         return data
 
 
@@ -1302,6 +1465,9 @@ class MandatoryMiss:
     escalation_stage: int = 0  # 0=none 1=nudged 2=reminded 3=parent-alerted (FEAT-6)
     created_at: str = field(default_factory=dt_util_now_iso)
     id: str = field(default_factory=generate_id)
+    # Set when the miss is for one of the chore's set times: there is one
+    # miss per (chore, child, day, time) then, and period_id is "set_time".
+    time_id: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "MandatoryMiss":
@@ -1316,11 +1482,12 @@ class MandatoryMiss:
             escalation_stage=max(0, int(data.get("escalation_stage", 0) or 0)),
             created_at=data.get("created_at", "") or dt_util_now_iso(),
             id=data.get("id") or generate_id(),
+            time_id=str(data.get("time_id", "") or ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
-        return {
+        data = {
             "chore_id": self.chore_id,
             "child_id": self.child_id,
             "due_date": self.due_date,
@@ -1331,6 +1498,9 @@ class MandatoryMiss:
             "created_at": self.created_at,
             "id": self.id,
         }
+        if self.time_id:
+            data["time_id"] = self.time_id
+        return data
 
 
 @dataclass

@@ -58,6 +58,12 @@ complete_chore:
           min: 0
           max: 10000
           mode: box
+    time_id:
+      name: Set time
+      description: For a chore with set times, which time this ticks off. Leave blank for the one open now.
+      required: false
+      selector:
+        text:
 
 complete_bonus_subtask:
   name: Complete Bonus Sub-task
@@ -838,6 +844,25 @@ add_chore:
           max: 10000
           mode: box
 
+    times:
+      name: Set times
+      description: >-
+        Make this a chore that comes up at set times of day, e.g. wash hands at breakfast, lunch and
+        dinner. A list of up to 5 times, each with name, start and end ("HH:MM", same day, no
+        overlaps) and points.
+      required: false
+      selector:
+        object:
+    times_bonus:
+      name: All-times bonus
+      description: Extra points paid once a day when every set time is done.
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 1000
+          mode: box
 read_aloud:
   name: Read Chores Aloud
   description: >-

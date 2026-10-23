@@ -17,6 +17,7 @@ from .const import (
     NOTIF_TYPE_MANDATORY_PARENT_ALERT,
     NOTIF_TYPE_MANDATORY_REMINDER,
 )
+from .coord_set_times import set_time_label
 from .models import MandatoryMiss, parse_datetime
 
 # How often the escalation ladder is re-evaluated (FEAT-6).
@@ -100,6 +101,8 @@ class MandatoryMixin:
         chore = self.get_chore(chore_id)
         if not chore or not getattr(chore, "mandatory", False):
             return 0
+        if isinstance(getattr(chore, "times", None), list) and chore.times:
+            return await self.async_detect_set_time_misses(day=day)
         period_id = self._effective_period_for(chore, child_id, day)
         if not self._period_has_ended(period_id, day):
             return 0
@@ -113,6 +116,9 @@ class MandatoryMixin:
             if not getattr(chore, "mandatory", False):
                 continue
             if not getattr(chore, "enabled", True):
+                continue
+            # Set times have a miss per time (async_detect_set_time_misses).
+            if isinstance(getattr(chore, "times", None), list) and chore.times:
                 continue
             if not self._is_chore_scheduled_for_date(chore, day):
                 continue
@@ -183,7 +189,7 @@ class MandatoryMixin:
         if miss is None:
             return
         chore = next((c for c in self.storage.get_chores() if c.id == miss.chore_id), None)
-        name = getattr(chore, "name", "chore")
+        name = set_time_label(chore, getattr(miss, "time_id", "")) if chore else "chore"
         if miss.penalty_points > 0:
             await self.async_remove_points(
                 miss.child_id,
@@ -275,7 +281,10 @@ class MandatoryMixin:
         for miss in self.storage.get_mandatory_misses():
             if miss.due_date != today_iso:
                 continue  # only escalate same-day misses (skips midnight backfill)
-            if self._child_completed_today(miss.chore_id, miss.child_id, now.date()):
+            if getattr(miss, "time_id", ""):
+                if self.set_time_miss_done(miss, now.date()):
+                    continue
+            elif self._child_completed_today(miss.chore_id, miss.child_id, now.date()):
                 continue
             created = parse_datetime(miss.created_at)
             if created is None:
@@ -298,7 +307,7 @@ class MandatoryMixin:
             ctx = {
                 "child_id": miss.child_id,
                 "child_name": getattr(child, "name", ""),
-                "chore_name": getattr(chore, "name", "chore"),
+                "chore_name": set_time_label(chore, getattr(miss, "time_id", "")) if chore else "chore",
             }
             for stage in range(miss.escalation_stage + 1, target + 1):
                 if stage in (1, 2):
@@ -357,7 +366,13 @@ class MandatoryMixin:
 
     @callback
     def _escalation_tick(self, now: datetime) -> None:
-        self.hass.async_create_task(self.async_escalate_mandatory_misses(now))
+        # Set times close all through the day, so their misses are checked
+        # on the same tick rather than at fixed period ends.
+        self.hass.async_create_task(self._async_set_time_then_escalate(now))
+
+    async def _async_set_time_then_escalate(self, now: datetime) -> None:
+        await self.async_detect_set_time_misses(now)
+        await self.async_escalate_mandatory_misses(now)
 
     def _make_mandatory_period_cb(self, period_id: str):
         @callback
@@ -389,6 +404,7 @@ class MandatoryMixin:
         for hour, minute, period_id in self._mandatory_period_end_times():
             if dt_time(hour, minute) <= cur:
                 await self.async_detect_mandatory_misses(period_id, today)
+        await self.async_detect_set_time_misses(now)
 
     async def async_detect_anytime_mandatory_misses(self) -> None:
         """Midnight: raise misses for incomplete mandatory 'anytime' chores for the
@@ -396,6 +412,8 @@ class MandatoryMixin:
         self._ensure_mandatory_state()
         yesterday = (dt_util.now() - timedelta(days=1)).date()
         await self.async_detect_mandatory_misses("anytime", yesterday)
+        # A set time that closed in the last minutes of yesterday.
+        await self.async_detect_set_time_misses(day=yesterday)
         self.mandatory_postpone = {}
 
     # ---- maintenance -------------------------------------------------------
@@ -421,7 +439,8 @@ class MandatoryMixin:
         out = []
         for m in self.storage.get_mandatory_misses():
             d = m.to_dict()
-            d["chore_name"] = getattr(chores.get(m.chore_id), "name", "")
+            chore = chores.get(m.chore_id)
+            d["chore_name"] = set_time_label(chore, getattr(m, "time_id", "")) if chore else ""
             d["child_name"] = getattr(children.get(m.child_id), "name", "")
             out.append(d)
         return out

@@ -135,7 +135,7 @@ from .const import (
 )
 from .coordinator import TaskMateCoordinator
 from .frontend import async_register_cards, async_register_frontend
-from .models import REJECT_REASON_MAX, Badge, BadgeCriterion
+from .models import REJECT_REASON_MAX, Badge, BadgeCriterion, validate_chore_times
 from .panel import async_register_panel
 from .websocket import async_register_websocket_commands
 
@@ -589,6 +589,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 note=call.data.get("note", ""),
                 suggested_points=call.data.get("suggested_points", 0),
                 quantity=call.data.get("quantity", 0),
+                time_id=call.data.get("time_id", ""),
             )
         except ValueError as err:
             # Only genuinely bad input (unknown chore/child) raises now — expected
@@ -1189,7 +1190,13 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         deadline_at = ""
         if expires_in:
             deadline_at = (dt_util.now() + timedelta(minutes=expires_in)).isoformat()
-        await coordinator.async_add_chore(
+        # Set times are checked before the chore exists, so a bad set refuses
+        # the whole call rather than leaving an ordinary chore behind.
+        try:
+            times = validate_chore_times(call.data.get("times"), team_size=call.data.get("team_size", 0))
+        except ValueError as err:
+            raise ServiceValidationError(str(err)) from err
+        chore = await coordinator.async_add_chore(
             name=call.data[ATTR_CHORE_NAME],
             description=call.data.get(ATTR_CHORE_DESCRIPTION, ""),
             points=call.data.get(ATTR_CHORE_POINTS, 10),
@@ -1204,6 +1211,10 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             team_points_mode=call.data.get("team_points_mode", "each"),
             team_bonus=call.data.get("team_bonus", 0),
         )
+        if times:
+            chore.times = times
+            chore.times_bonus = call.data.get("times_bonus", 0)
+            await coordinator.async_update_chore(chore)
 
     async def handle_add_badge(call: ServiceCall) -> None:
         """Handle the add_badge service call (custom only)."""
@@ -1336,6 +1347,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 ),
                 # Quantity chores: how many units the child did.
                 vol.Optional("quantity"): vol.All(vol.Coerce(int), vol.Range(min=0, max=10000)),
+                # Which set time this ticks off; blank = the one open now.
+                vol.Optional("time_id"): cv.string,
             }
         ),
     )
@@ -1871,6 +1884,10 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Optional("team_size", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=TEAM_SIZE_MAX)),
                 vol.Optional("team_points_mode", default="each"): vol.In(TEAM_POINTS_MODES),
                 vol.Optional("team_bonus", default=0): cv.positive_int,
+                # Set times (several times a day): a list of
+                # {name, start "HH:MM", end "HH:MM", points}.
+                vol.Optional("times"): vol.All(cv.ensure_list, [dict]),
+                vol.Optional("times_bonus", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=1000)),
             }
         ),
     )

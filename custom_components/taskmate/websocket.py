@@ -95,6 +95,8 @@ from .coord_pets import PET_BOOL_SETTINGS, PET_INT_SETTINGS
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
 from .models import (
+    CHORE_TIME_NAME_MAX_LENGTH,
+    MAX_CHORE_TIME_POINTS,
     MAX_ESTIMATED_MINUTES,
     MAX_QUANTITY,
     QUANTITY_UNIT_MAX_LENGTH,
@@ -102,6 +104,7 @@ from .models import (
     BonusSubTask,
     Reward,
     normalize_tag_ids,
+    validate_chore_times,
 )
 from .sounds import MAX_NAME_LEN as MAX_SOUND_NAME_LEN
 
@@ -477,6 +480,7 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
             "points_name": data.get("points_name", "Stars"),
             "points_icon": data.get("points_icon", "mdi:star"),
             "card_design": "classic",
+            "set_times_layout": "rows",
             # Child undo window (#918): off unless a parent opts in.
             "chore_undo_seconds": 0,
             # Difficulty multiplier defaults; overridden by stored values below.
@@ -795,6 +799,8 @@ _CHORE_EDITABLE_FIELDS = {
     "reference_image_url",
     "quantity_unit",
     "quantity_max",
+    "times",
+    "times_bonus",
 }
 
 
@@ -897,6 +903,19 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("reference_image_url"): _image_url_or_blank,
         vol.Optional("quantity_unit"): vol.All(str, vol.Length(max=QUANTITY_UNIT_MAX_LENGTH)),
         vol.Optional("quantity_max"): vol.All(int, vol.Range(min=0, max=MAX_QUANTITY)),
+        # Set times (several times a day). The cross-field rules (at most
+        # five, no overlaps, not with timed / open-ended / quantity / team)
+        # are checked by validate_chore_times once the whole chore is known.
+        vol.Optional("times"): [
+            {
+                vol.Optional("id"): str,
+                vol.Optional("name"): vol.All(str, vol.Length(max=CHORE_TIME_NAME_MAX_LENGTH)),
+                vol.Required("start"): str,
+                vol.Required("end"): str,
+                vol.Optional("points"): vol.All(int, vol.Range(min=0, max=MAX_CHORE_TIME_POINTS)),
+            }
+        ],
+        vol.Optional("times_bonus"): vol.All(int, vol.Range(min=0, max=MAX_CHORE_TIME_POINTS)),
     }
 
 
@@ -937,6 +956,14 @@ async def _ws_add_chore(hass, connection, msg, coordinator):
     )
     if team_error:
         raise ValueError(team_error)
+    # Same for set times: refuse a bad set before an ordinary chore exists.
+    validate_chore_times(
+        msg.get("times"),
+        task_type=msg.get("task_type", "standard"),
+        open_ended=bool(msg.get("open_ended", False)),
+        quantity_unit=msg.get("quantity_unit", ""),
+        team_size=msg.get("team_size", 0),
+    )
     chore = await coordinator.async_add_chore(
         name=msg["name"].strip(),
         points=msg.get("points", 10),
@@ -987,10 +1014,32 @@ async def _ws_update_chore(hass, connection, msg, coordinator):
     if not existing:
         connection.send_error(msg["id"], "not_found", f"Chore {msg['chore_id']} not found")
         return
+    # Set times are checked against the chore as it will be, before anything
+    # is written onto the stored record, so a refused edit changes nothing.
+    new_times = None
+    if "times" in msg:
+        new_times = validate_chore_times(
+            msg["times"],
+            existing=list(getattr(existing, "times", None) or []),
+            task_type=msg.get("task_type", getattr(existing, "task_type", "standard")),
+            open_ended=bool(msg.get("open_ended", getattr(existing, "open_ended", False))),
+            quantity_unit=msg.get("quantity_unit", getattr(existing, "quantity_unit", "")),
+            team_size=msg.get("team_size", getattr(existing, "team_size", 0)),
+        )
+    elif getattr(existing, "times", None):
+        validate_chore_times(
+            [t.to_dict() for t in existing.times],
+            task_type=msg.get("task_type", getattr(existing, "task_type", "standard")),
+            open_ended=bool(msg.get("open_ended", getattr(existing, "open_ended", False))),
+            quantity_unit=msg.get("quantity_unit", getattr(existing, "quantity_unit", "")),
+            team_size=msg.get("team_size", getattr(existing, "team_size", 0)),
+        )
     for field in _CHORE_EDITABLE_FIELDS:
         if field in msg:
             value = msg[field]
-            if field == "bonus_subtasks":
+            if field == "times":
+                value = new_times or []
+            elif field == "bonus_subtasks":
                 value = [BonusSubTask.from_dict(b) for b in (value or [])]
             elif isinstance(value, list):
                 value = list(value)
@@ -2032,6 +2081,7 @@ _SUBKEY_SETTINGS = {
     "recap_compare",
     "streak_reset_mode",
     "card_design",
+    "set_times_layout",
     "weekend_multiplier",
     "birthday_points_multiplier",
     "birthday_chores_off",
@@ -2279,6 +2329,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("points_name"): vol.All(str, vol.Length(min=1, max=120)),
     vol.Optional("points_icon"): str,
     vol.Optional("card_design"): vol.In(_ALLOWED_CARD_DESIGNS),
+    vol.Optional("set_times_layout"): vol.In(["rows", "pills"]),
     vol.Optional("history_days"): vol.All(int, vol.Range(min=30, max=365)),
     vol.Optional("streak_reset_mode"): vol.In(["reset", "pause"]),
     vol.Optional("weekend_multiplier"): vol.All(vol.Coerce(float), vol.Range(min=1.0, max=5.0)),

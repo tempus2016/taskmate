@@ -22,6 +22,7 @@ from . import images
 from .chore_undo import child_undo_metadata, undo_window_seconds
 from .const import BOUNTY_RECENT_HOURS, DOMAIN, WISH_MAX_OPEN_PER_CHILD
 from .coord_rewards import reward_is_time_locked
+from .coord_set_times import set_time_label, set_time_of
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
 from .models import Child
@@ -366,6 +367,23 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
         claim_allowance_minutes = getattr(c, "claim_allowance_minutes", 0) or 0
         if claim_allowance_minutes:
             record["claim_allowance_minutes"] = claim_allowance_minutes
+        # Set times (several times a day): only chores that use them carry
+        # the times and today's ticks, {child_id: {time_id: "done"|"pending"}}.
+        # The cards work out now / later / missed from the clock themselves.
+        times = getattr(c, "times", None)
+        if isinstance(times, list) and times:
+            record["times"] = [t.to_dict() for t in times]
+            times_bonus = int(getattr(c, "times_bonus", 0) or 0)
+            if times_bonus:
+                record["times_bonus"] = times_bonus
+            kids = assigned_to or list((common.get("child_lookup") or {}).keys())
+            time_done: dict = {}
+            for kid in kids:
+                done = coordinator.set_time_completions(c, kid, today)
+                if done:
+                    time_done[kid] = {tid: ("done" if comp.approved else "pending") for tid, comp in done.items()}
+            if time_done:
+                record["time_done"] = time_done
         due_days = getattr(c, "due_days", []) or []
         if due_days:
             record["due_days"] = due_days
@@ -593,6 +611,11 @@ def _build_todays_completions(common: dict) -> list[dict]:
         else:
             display_name = matched_chore.name if matched_chore else _bounty_title(common, comp)
             display_points = matched_chore.points if matched_chore else 0
+        time_id = getattr(comp, "time_id", "") or ""
+        if time_id and matched_chore:
+            display_name = set_time_label(matched_chore, time_id)
+            set_time = set_time_of(matched_chore, time_id)
+            display_points = set_time.points if set_time else display_points
         timed_secs = getattr(comp, "timed_duration_seconds", 0) or 0
         if timed_secs > 0 and matched_chore and getattr(matched_chore, "task_type", "") == "timed":
             rate_seconds = matched_chore.timed_rate_minutes * 60
@@ -617,6 +640,8 @@ def _build_todays_completions(common: dict) -> list[dict]:
             rec["timed_duration_seconds"] = timed_secs
         if getattr(comp, "quantity", 0):
             rec["quantity"] = comp.quantity
+        if time_id:
+            rec["time_id"] = time_id
         # Parent did it for one child only (#1096); absent = the whole pool.
         if getattr(comp, "for_child_id", ""):
             rec["for_child_id"] = comp.for_child_id
@@ -801,6 +826,9 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
     for comp in recent:
         matched_chore = chore_lookup.get(comp.chore_id)
         display_points = matched_chore.points if matched_chore else 0
+        set_time = set_time_of(matched_chore, getattr(comp, "time_id", "")) if matched_chore else None
+        if set_time is not None:
+            display_points = set_time.points
         timed_secs = getattr(comp, "timed_duration_seconds", 0) or 0
         if timed_secs > 0 and matched_chore and getattr(matched_chore, "task_type", "") == "timed":
             rate_seconds = matched_chore.timed_rate_minutes * 60
@@ -814,7 +842,11 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
                 "child_name": "Parent"
                 if comp.child_id == "__parent__"
                 else (child_lookup[comp.child_id].name if comp.child_id in child_lookup else ""),
-                "chore_name": matched_chore.name if matched_chore else _bounty_title(common, comp),
+                "chore_name": (
+                    set_time_label(matched_chore, comp.time_id) if set_time is not None else matched_chore.name
+                )
+                if matched_chore
+                else _bounty_title(common, comp),
                 "points": _completion_award(comp, display_points),
                 "approved": comp.approved,
                 "completed_at": comp.completed_at.isoformat()
@@ -823,6 +855,7 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
                 # Star rating the parent gave at approval (#927) — only when rated.
                 **({"rating": comp.quality_rating} if getattr(comp, "quality_rating", 0) else {}),
                 **({"for_child_id": comp.for_child_id} if getattr(comp, "for_child_id", "") else {}),
+                **({"time_id": comp.time_id} if set_time is not None else {}),
             }
         )
     return out
@@ -1229,6 +1262,9 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "points_icon": data.get("points_icon", "mdi:star"),
             # Global default card-design style; cards read this when no per-card override (#design).
             "card_design": settings.get("card_design", "classic"),
+            # How chores with set times show on the child and kiosk cards:
+            # one row per time, or one row with a pill per time.
+            "set_times_layout": "pills" if settings.get("set_times_layout") == "pills" else "rows",
             # Non-admin parent role (#661): cards unlock parent controls for
             # these HA users. Deliberately still published in the clear, and
             # deliberately never trusted: every privileged path re-resolves the
@@ -2030,6 +2066,11 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                 else:
                     chore_name = chore.name
                     pts = chore.points
+                time_id = getattr(comp, "time_id", "") or ""
+                if time_id:
+                    chore_name = set_time_label(chore, time_id)
+                    set_time = set_time_of(chore, time_id)
+                    pts = set_time.points if set_time else pts
                 timed_secs = getattr(comp, "timed_duration_seconds", 0) or 0
                 if timed_secs > 0 and getattr(chore, "task_type", "") == "timed":
                     rate_seconds = chore.timed_rate_minutes * 60
@@ -2049,6 +2090,8 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                 }
                 if timed_secs > 0:
                     detail["timed_duration_seconds"] = timed_secs
+                if time_id:
+                    detail["time_id"] = time_id
                 if getattr(comp, "bounty_id", ""):
                     detail["bounty_id"] = comp.bounty_id
                 # Bare (unsigned) path; the card signs per-viewer via

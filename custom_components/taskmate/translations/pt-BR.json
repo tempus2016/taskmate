@@ -154,6 +154,10 @@
         "quantity": {
           "name": "Quantidade",
           "description": "Quantas unidades a criança fez, em uma tarefa por quantidade (\"ler 20 páginas\"). Obrigatório para uma criança nessas tarefas; os pontos são pagos por unidade."
+        },
+        "time_id": {
+          "name": "Horário definido",
+          "description": "Em uma tarefa com horários definidos, qual horário marcar. Deixe em branco para o que está aberto agora."
         }
       }
     },
@@ -570,6 +574,14 @@
         "team_bonus": {
           "name": "Bônus de equipe",
           "description": "Pontos extras que cada participante ganha quando uma tarefa em equipe é concluída."
+        },
+        "times": {
+          "name": "Horários definidos",
+          "description": "Uma tarefa em horários definidos, por ex. lavar as mãos no café da manhã, almoço e jantar. Uma lista de até 5 horários, cada um com nome, início e fim (\"HH:MM\", mesmo dia, sem sobreposição) e pontos."
+        },
+        "times_bonus": {
+          "name": "Bônus de todos os horários",
+          "description": "Pontos extras uma vez por dia, quando todos os horários definidos estão feitos."
         }
       }
     },

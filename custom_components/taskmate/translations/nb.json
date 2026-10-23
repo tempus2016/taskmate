@@ -154,6 +154,10 @@
         "quantity": {
           "name": "Antall",
           "description": "Hvor mange enheter barnet gjorde, på en mengdeoppgave («les 20 sider»). Påkrevd fra et barn på slike oppgaver; poengene betales per enhet."
+        },
+        "time_id": {
+          "name": "Fast tidspunkt",
+          "description": "For en oppgave med faste tider: hvilket tidspunkt som hakes av. La stå tomt for det som er åpent nå."
         }
       }
     },
@@ -570,6 +574,14 @@
         "team_bonus": {
           "name": "Lagbonus",
           "description": "Ekstra poeng hver deltaker får når en lagoppgave er fullført."
+        },
+        "times": {
+          "name": "Faste tider",
+          "description": "En oppgave på faste tider, f.eks. vaske hender til frokost, lunsj og middag. En liste med opptil 5 tidspunkter, hver med navn, start og slutt («TT:MM», samme dag, uten overlapp) og poeng."
+        },
+        "times_bonus": {
+          "name": "Bonus for alle tidspunkter",
+          "description": "Ekstra poeng én gang om dagen når alle faste tider er gjort."
         }
       }
     },

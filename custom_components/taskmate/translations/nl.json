@@ -154,6 +154,10 @@
         "quantity": {
           "name": "Aantal",
           "description": "Hoeveel stuks het kind deed, bij een taak met aantal (“lees 20 bladzijden”). Voor het kind verplicht bij zulke taken; de punten van de taak gelden per stuk."
+        },
+        "time_id": {
+          "name": "Vaste tijd",
+          "description": "Bij een taak met vaste tijden: welke tijd wordt afgevinkt. Leeg laten voor de tijd die nu open is."
         }
       }
     },
@@ -570,6 +574,14 @@
         "team_bonus": {
           "name": "Teambonus",
           "description": "Extra punten die elke deelnemer krijgt als de teamtaak klaar is."
+        },
+        "times": {
+          "name": "Vaste tijden",
+          "description": "Een taak op vaste tijden, bijv. handen wassen bij ontbijt, lunch en avondeten. Een lijst van maximaal 5 tijden, elk met naam, begin en einde (\"UU:MM\", zelfde dag, zonder overlap) en punten."
+        },
+        "times_bonus": {
+          "name": "Bonus voor alle tijden",
+          "description": "Extra punten, één keer per dag, als alle vaste tijden klaar zijn."
         }
       }
     },

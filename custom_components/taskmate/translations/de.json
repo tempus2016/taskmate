@@ -154,6 +154,10 @@
         "quantity": {
           "name": "Anzahl",
           "description": "Wie viele Einheiten das Kind geschafft hat, bei einer Mengenaufgabe („20 Seiten lesen“). Bei diesen Aufgaben vom Kind verpflichtend; die Punkte gelten pro Einheit."
+        },
+        "time_id": {
+          "name": "Feste Zeit",
+          "description": "Bei einer Aufgabe mit festen Zeiten: welche Zeit abgehakt wird. Leer lassen für die gerade offene."
         }
       }
     },
@@ -570,6 +574,14 @@
         "team_bonus": {
           "name": "Teambonus",
           "description": "Zusätzliche Punkte für jedes beteiligte Kind, wenn eine Teamaufgabe erledigt ist."
+        },
+        "times": {
+          "name": "Feste Zeiten",
+          "description": "Eine Aufgabe zu festen Tageszeiten, z. B. Händewaschen zu Frühstück, Mittag und Abendessen. Eine Liste mit bis zu 5 Zeiten, jeweils mit Name, Beginn und Ende (\"HH:MM\", gleicher Tag, ohne Überschneidung) und Punkten."
+        },
+        "times_bonus": {
+          "name": "Bonus für alle Zeiten",
+          "description": "Extrapunkte einmal am Tag, wenn alle festen Zeiten erledigt sind."
         }
       }
     },

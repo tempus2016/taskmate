@@ -883,6 +883,42 @@ class TaskMatePanel extends HTMLElement {
     if (act === "rename-chore-commit") { this._commitInlineRename(); return; }
     if (act === "rename-chore-cancel") { this._inlineRename = null; this._render(); return; }
     if (act === "toggle-day")        { this._toggleArrayField("due_days", t.dataset.day); return; }
+    if (act === "chore-freq" && this._dialog) {
+      const d = this._dialog.data;
+      d._freq = t.dataset.v;
+      if (d._freq !== "limit") d.daily_limit = 1;
+      else if ((Number(d.daily_limit) || 1) < 2) d.daily_limit = 2;
+      if (d._freq === "set" && !(d.times || []).length) {
+        d.times = this._choreTimesPresets().meals.map(([name, start, end, points]) => ({ name, start, end, points }));
+      }
+      this._render();
+      return;
+    }
+    if (act === "chore-times-preset" && this._dialog) {
+      const preset = this._choreTimesPresets()[t.dataset.v] || [];
+      this._dialog.data.times = preset.map(([name, start, end, points]) => ({ name, start, end, points }));
+      this._render();
+      return;
+    }
+    if (act === "chore-time-add" && this._dialog) {
+      const d = this._dialog.data;
+      d.times = d.times || [];
+      if (d.times.length < 5) {
+        const last = d.times[d.times.length - 1];
+        const after = last ? this._choreTimesMinutes(last.end) : null;
+        const s = after != null ? Math.min(after + 60, 22 * 60) : 18 * 60;
+        const hh = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+        d.times.push({ name: "", start: hh(s), end: hh(Math.min(s + 60, 23 * 60 + 59)), points: 1 });
+      }
+      this._render();
+      return;
+    }
+    if (act === "chore-time-remove" && this._dialog) {
+      const d = this._dialog.data;
+      (d.times || []).splice(Number(t.dataset.idx), 1);
+      this._render();
+      return;
+    }
     if (act === "toggle-bulk-day")   { this._toggleArrayField("due_days", t.dataset.day); return; }
     if (act === "toggle-assigned")   { this._toggleArrayField("assigned_to", t.dataset.id); return; }
     if (act === "toggle-depends")    { this._toggleArrayField("depends_on", t.dataset.id); return; }
@@ -1325,6 +1361,7 @@ class TaskMatePanel extends HTMLElement {
         if (this._dialog.data[arr] && this._dialog.data[arr][Number(idx)] !== undefined) {
           this._dialog.data[arr][Number(idx)][prop] = value;
         }
+        if (arr === "times") this._choreTimesRefresh();
       } else {
         this._dialog.data[field] = value;
       }
@@ -2462,6 +2499,8 @@ class TaskMatePanel extends HTMLElement {
       depends_on: [],
       bonus_subtasks: [],
       tag_ids: [],
+      // Set times (several times a day): "once" | "limit" (daily_limit) | "set".
+      times: [], times_bonus: 0, _freq: "once",
     };
     // NFC / QR tags (#923): the picker lists HA's tag registry. Load it once in
     // the background — the dialog opens straight away and repaints when it lands.
@@ -2486,6 +2525,9 @@ class TaskMatePanel extends HTMLElement {
         weather_temp_max: c.weather_temp_max ?? "",
         weather_wind_max: c.weather_wind_max ?? "",
         manual_start_child_id: "",
+        times: (c.times || []).map(t => ({ ...t })),
+        times_bonus: Number(c.times_bonus) || 0,
+        _freq: (c.times || []).length ? "set" : ((Number(c.daily_limit) || 1) > 1 ? "limit" : "once"),
         ...this._recurrenceDraft(c.recurrence),
       } });
     } else {
@@ -2693,12 +2735,29 @@ class TaskMatePanel extends HTMLElement {
       }
       recurrence = `every_${n}_days`;
     }
+    // Set times: checked here too so the parent gets the reason, not a raw error.
+    const setTimes = d._freq === "set" && (d.task_type || "standard") !== "timed";
+    if (setTimes) {
+      const timesErr = this._choreTimesError(d.times);
+      if (timesErr) { this._showToast("err", timesErr); return; }
+      if (d.open_ended || teamSize >= 2 || String(d.quantity_unit || "").trim()) {
+        this._showToast("err", this._t("panel.st_err_conflict"));
+        return;
+      }
+    }
     const base = {
       name: d.name.trim(),
       description: d.description || "",
       icon: d.icon || "",
       image_url: d.image_url || "",
       reference_image_url: d.reference_image_url || "",
+      times: setTimes ? (d.times || []).map(t => ({
+        ...(t.id ? { id: t.id } : {}),
+        name: String(t.name || "").trim().slice(0, 30),
+        start: t.start, end: t.end,
+        points: Math.max(0, Math.round(Number(t.points) || 0)),
+      })) : [],
+      times_bonus: setTimes ? Math.max(0, Math.round(Number(d.times_bonus) || 0)) : 0,
       estimated_minutes: Math.min(600, Math.max(0, Math.round(Number(d.estimated_minutes) || 0))),
       quantity_unit: (d.task_type || "standard") === "timed" || d.open_ended ? "" : String(d.quantity_unit || "").trim().slice(0, 30),
       quantity_max: Math.min(10000, Math.max(0, Math.round(Number(d.quantity_max) || 0))),
@@ -2709,11 +2768,11 @@ class TaskMatePanel extends HTMLElement {
       // applies fields present in the message (#793).
       depends_on: d.depends_on || [],
       requires_approval: !!d.requires_approval,
-      time_category: d.time_category || "anytime",
+      time_category: setTimes ? "anytime" : (d.time_category || "anytime"),
       claim_allowance_minutes: Math.max(0, Number(d.claim_allowance_minutes) || 0),
       completion_sound: d.completion_sound || "coin",
       difficulty: d.difficulty || "medium",
-      daily_limit: Number(d.daily_limit) || 1,
+      daily_limit: d._freq === "limit" || (d.task_type || "standard") === "timed" ? (Number(d.daily_limit) || 1) : 1,
       weekly_target: Math.max(0, Number(d.weekly_target) || 0),
       weekly_target_bonus: Math.max(0, Number(d.weekly_target_bonus) || 0),
       schedule_mode: d.schedule_mode || "specific_days",
@@ -5748,7 +5807,8 @@ class TaskMatePanel extends HTMLElement {
               return `<div class="tm-board-cell">${items.length ? items.map(it => `
                 <button type="button" class="tm-bchip tm-bchip-${it.status}" data-act="edit-chore" data-id="${this._esc(it.chore.id)}" title="${this._esc(`${it.chore.name} · ${statusLabel(it.status)}`)}">
                   <i class="tm-bdot" aria-hidden="true"></i><span>${this._esc(it.chore.name)}${it.limit > 1 ? ` <small>${it.count}/${it.limit}</small>` : ""}</span>
-                  <span class="tm-sr">${this._esc(statusLabel(it.status))}</span>
+                  ${Array.isArray(it.times) ? `<span class="tm-st-dots">${it.times.map(tm => `<i class="tm-st-d st-${this._esc(tm.state)}" title="${this._esc(`${tm.name} · ${this._t(`panel.st_state_${tm.state}`)}`)}"></i>`).join("")}</span>` : ""}
+                  <span class="tm-sr">${this._esc(statusLabel(it.status))}${Array.isArray(it.times) ? ` — ${this._esc(it.times.map(tm => `${tm.name}: ${this._t(`panel.st_state_${tm.state}`)}`).join(", "))}` : ""}</span>
                 </button>`).join("") : `<span class="tm-board-none">–</span>`}</div>`;
             }).join("")}
           `).join("")}
@@ -8468,7 +8528,7 @@ class TaskMatePanel extends HTMLElement {
           </span>`}
         </div></td>
         <td><strong class="tm-numeric">${c.task_type === "timed" ? `${this._num(c.timed_rate_points)}/${this._num(c.timed_rate_minutes, 1)} min` : this._num(c.points)}</strong></td>
-        <td><span class="tm-pill">${this._esc(this._timeCategoryLabel(c.time_category))}</span></td>
+        <td><span class="tm-pill" ${(c.times || []).length ? `title="${this._esc((c.times || []).map(t => `${t.name || t.start} ${t.start}–${t.end}`).join(" · "))}"` : ""}>${this._esc((c.times || []).length ? this._t("panel.st_list_pill", { count: c.times.length }) : this._timeCategoryLabel(c.time_category))}</span></td>
         <td>${assignedNames} ${modeBadge}${teamPill}</td>
         <td>${currentName}</td>
         <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span>${weeklyPill}</td>
@@ -11279,6 +11339,12 @@ class TaskMatePanel extends HTMLElement {
               </select>
             </div>
             <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.st_settings_layout_label")}<small>${this._t("panel.st_settings_layout_hint")}</small></div>
+              <select class="tm-select" data-setting="set_times_layout">
+                ${["rows", "pills"].map(v => `<option value="${v}" ${v === (s.set_times_layout || "rows") ? "selected" : ""}>${this._esc(this._t("common.set_times.layout_" + v))}</option>`).join("")}
+              </select>
+            </div>
+            <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_quick_points_label")}<small>${this._t("panel.settings_quick_points_hint")}</small></div>
               <input type="text" class="tm-input" data-setting="quick_point_amounts" value="${this._esc(s.quick_point_amounts == null ? "" : s.quick_point_amounts)}" placeholder="5, 10, 20">
             </div>
@@ -12493,6 +12559,114 @@ class TaskMatePanel extends HTMLElement {
       ${d.has_kiosk_pin ? this._switch(this._t("panel.child_kiosk_pin_remove"), "kiosk_pin_clear", d.kiosk_pin_clear, "", true) : ""}`;
   }
 
+  /* ── Set times (several times a day) ─────────────────────────────────
+     "How often in a day": once (one tick), up to N times (the daily limit,
+     any time of day) or at set times (each time is its own tick, inside its
+     own window). Up to five times; they can't overlap or cross midnight. */
+  _choreFreqField(d) {
+    const opt = (v, lk, hk) => `
+      <button type="button" class="tm-st-seg-btn ${d._freq === v ? "on" : ""}" data-act="chore-freq" data-v="${v}">
+        ${this._esc(this._t(lk))}<small>${this._esc(this._t(hk))}</small>
+      </button>`;
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._esc(this._t("panel.st_freq_label"))}</span>
+        <div class="tm-st-seg" role="group">
+          ${opt("once", "panel.st_freq_once", "panel.st_freq_once_hint")}
+          ${opt("limit", "panel.st_freq_limit", "panel.st_freq_limit_hint")}
+          ${opt("set", "panel.st_freq_set", "panel.st_freq_set_hint")}
+        </div>
+      </div>`;
+  }
+
+  _choreTimesPresets() {
+    const t = (k) => this._t(k);
+    return {
+      meals: [[t("panel.st_name_breakfast"), "07:00", "09:00", 1], [t("panel.st_name_lunch"), "12:00", "13:30", 1], [t("panel.st_name_dinner"), "17:30", "19:00", 1]],
+      me: [[t("panel.st_name_morning"), "06:30", "09:00", 1], [t("panel.st_name_evening"), "19:00", "21:00", 1]],
+      meds: [["08:00", "07:30", "09:00", 2], ["14:00", "13:30", "15:00", 2], ["20:00", "19:30", "21:00", 2]],
+      pet: [[t("panel.st_name_breakfast"), "06:30", "08:30", 1], [t("panel.st_name_tea"), "16:30", "18:00", 1]],
+    };
+  }
+
+  _choreTimesMinutes(v) {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(v || ""));
+    return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+  }
+
+  /** The problem with the drafted times, or "" when they would save. */
+  _choreTimesError(times) {
+    const list = (times || []).map(t => ({ s: this._choreTimesMinutes(t.start), e: this._choreTimesMinutes(t.end) }));
+    if (!list.length) return this._t("panel.st_err_none");
+    if (list.length > 5) return this._t("panel.st_err_max");
+    if (list.some(x => x.s == null || x.e == null)) return this._t("panel.st_err_format");
+    if (list.some(x => x.e <= x.s)) return this._t("panel.st_err_order");
+    const sorted = [...list].sort((a, b) => a.s - b.s);
+    for (let i = 1; i < sorted.length; i++) if (sorted[i].s < sorted[i - 1].e) return this._t("panel.st_err_overlap");
+    return "";
+  }
+
+  _choreTimesStrip(times) {
+    const blocks = (times || []).map(t => {
+      const s = this._choreTimesMinutes(t.start);
+      const e = this._choreTimesMinutes(t.end);
+      if (s == null || e == null || e <= s) return "";
+      return `<div class="tm-st-blk" style="inset-inline-start:${(s / 14.4).toFixed(2)}%;width:${Math.max(1, (e - s) / 14.4).toFixed(2)}%" title="${this._esc(t.name || t.start)} ${this._esc(t.start)}–${this._esc(t.end)}">${this._esc(t.name || t.start)}</div>`;
+    }).join("");
+    return `<div class="tm-st-strip">${blocks}</div>
+      <div class="tm-st-axis"><span>00</span><span>04</span><span>08</span><span>12</span><span>16</span><span>20</span><span>24</span></div>`;
+  }
+
+  _choreTimesEditor(d) {
+    const times = d.times || [];
+    const err = this._choreTimesError(times);
+    const preset = (k, lk) => `<button type="button" class="tm-chip-btn" data-act="chore-times-preset" data-v="${k}">${this._esc(this._t(lk))}</button>`;
+    return `
+      <div class="tm-field tm-st-box">
+        <div class="tm-st-presets">
+          <span class="tm-field-hint">${this._esc(this._t("panel.st_quick_start"))}</span>
+          ${preset("meals", "panel.st_preset_meals")}
+          ${preset("me", "panel.st_preset_me")}
+          ${preset("meds", "panel.st_preset_meds")}
+          ${preset("pet", "panel.st_preset_pet")}
+        </div>
+        ${times.length ? `<div class="tm-st-row tm-st-head">
+          <span>${this._esc(this._t("panel.st_col_name"))}</span><span>${this._esc(this._t("panel.st_col_from"))}</span>
+          <span>${this._esc(this._t("panel.st_col_until"))}</span><span>${this._esc(this._t("panel.st_col_points"))}</span><span></span>
+        </div>` : ""}
+        ${times.map((t, i) => `
+          <div class="tm-st-row">
+            <input class="tm-input" data-field="times[${i}].name" maxlength="30" value="${this._esc(t.name || "")}" aria-label="${this._esc(this._t("panel.st_col_name"))}">
+            <input class="tm-input" type="time" data-field="times[${i}].start" value="${this._esc(t.start || "")}" aria-label="${this._esc(this._t("panel.st_col_from"))}">
+            <input class="tm-input" type="time" data-field="times[${i}].end" value="${this._esc(t.end || "")}" aria-label="${this._esc(this._t("panel.st_col_until"))}">
+            <input class="tm-input" type="number" min="0" data-field="times[${i}].points" value="${this._esc(t.points == null ? 1 : t.points)}" aria-label="${this._esc(this._t("panel.st_col_points"))}">
+            <button type="button" class="tm-icon-btn tm-st-rm" data-act="chore-time-remove" data-idx="${i}" title="${this._esc(this._t("panel.st_remove"))}" aria-label="${this._esc(this._t("panel.st_remove"))}"><ha-icon icon="mdi:close"></ha-icon></button>
+          </div>`).join("")}
+        <button type="button" class="tm-st-add" data-act="chore-time-add" ${times.length >= 5 ? "disabled" : ""}>
+          ${this._esc(times.length >= 5 ? this._t("panel.st_max_reached") : this._t("panel.st_add_time"))}
+        </button>
+        <div data-role="st-strip">${this._choreTimesStrip(times)}</div>
+        <span class="tm-field-hint tm-st-err" data-role="st-err" ${err ? "" : "hidden"}>${this._esc(err)}</span>
+        ${this._field(this._t("panel.st_bonus_label"), "times_bonus", d.times_bonus || 0, "number", this._t("panel.st_bonus_hint"))}
+        <span class="tm-field-hint">${this._esc(this._t("panel.st_rules_hint"))}</span>
+      </div>`;
+  }
+
+  /** Repaint the strip and the error line in place while times are typed,
+   *  so the input being edited keeps its focus. */
+  _choreTimesRefresh() {
+    const d = this._dialog && this._dialog.data;
+    if (!d) return;
+    const strip = this.querySelector('[data-role="st-strip"]');
+    if (strip) strip.innerHTML = this._choreTimesStrip(d.times);
+    const errEl = this.querySelector('[data-role="st-err"]');
+    if (errEl) {
+      const err = this._choreTimesError(d.times);
+      errEl.textContent = err;
+      errEl.hidden = !err;
+    }
+  }
+
   _renderChoreDialog() {
     const d = this._dialog.data;
     const children = this._state.children || [];
@@ -12536,8 +12710,8 @@ class TaskMatePanel extends HTMLElement {
             ${this._field(this._t("panel.chore_daily_cap_label"), "timed_max_daily_minutes", d.timed_max_daily_minutes || 0, "number")}
             ${this._field(this._t("panel.chore_daily_limit_label"), "daily_limit", d.daily_limit, "number")}
           </div>` : `<div class="tm-field-row">
-            ${this._field(this._t("panel.chore_points_label"), "points", d.points, "number")}
-            ${d.assignment_mode === "first_come" ? "" : this._field(this._t("panel.chore_daily_limit_label"), "daily_limit", d.daily_limit, "number")}
+            ${d._freq === "set" ? "" : this._field(this._t("panel.chore_points_label"), "points", d.points, "number")}
+            ${d.assignment_mode === "first_come" || d._freq !== "limit" ? "" : this._field(this._t("panel.chore_daily_limit_label"), "daily_limit", d.daily_limit, "number")}
           </div>`,
           `<div class="tm-field-row">
             ${this._select(this._t("panel.chore_difficulty_label"), "difficulty", d.difficulty || "medium", [
@@ -12579,9 +12753,10 @@ class TaskMatePanel extends HTMLElement {
           ) : "",
         ]),
         section("when", [
-          this._select(this._t("panel.chore_time_category_label"), "time_category", d.time_category, this._timeCategoryOptions()),
+          isTimedTask ? "" : this._choreFreqField(d),
+          d._freq === "set" && !isTimedTask ? this._choreTimesEditor(d) : this._select(this._t("panel.chore_time_category_label"), "time_category", d.time_category, this._timeCategoryOptions()),
           this._field(this._t("panel.chore_claim_allowance_label"), "claim_allowance_minutes", d.claim_allowance_minutes, "number",
-            this._t("panel.chore_claim_allowance_hint")),
+            d._freq === "set" ? this._t("panel.st_claim_allowance_hint") : this._t("panel.chore_claim_allowance_hint")),
           this._select(this._t("panel.chore_schedule_mode_label"), "schedule_mode", d.schedule_mode, SCHEDULE_MODES, "", true),
           showSpecificDays ? `
             <div class="tm-field">
@@ -15376,6 +15551,39 @@ class TaskMatePanel extends HTMLElement {
         background: var(--tm-accent); color: var(--text-primary-color, #fff);
         border-color: var(--tm-accent);
       }
+
+      /* Set times (several times a day) */
+      .tm-st-seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--tm-border); border-radius: var(--tm-radius-sm); overflow: hidden; }
+      .tm-st-seg-btn {
+        background: var(--tm-surface-0); color: var(--tm-text); border: 0; border-inline-end: 1px solid var(--tm-border);
+        padding: 9px 6px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center;
+      }
+      .tm-st-seg-btn:last-child { border-inline-end: 0; }
+      .tm-st-seg-btn small { display: block; font-size: 11px; font-weight: 400; color: var(--tm-text-muted); margin-top: 2px; }
+      .tm-st-seg-btn.on { background: var(--tm-accent); color: var(--text-primary-color, #fff); }
+      .tm-st-seg-btn.on small { color: inherit; opacity: 0.9; }
+      .tm-st-box { border: 1px solid var(--tm-border); border-radius: var(--tm-radius-sm); padding: 12px; background: var(--tm-surface-1, var(--tm-surface-0)); gap: 8px; }
+      .tm-st-presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+      .tm-st-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(118px, 1fr) minmax(118px, 1fr) 60px 32px; gap: 6px; align-items: center; }
+      .tm-st-head { font-size: 11px; font-weight: 600; color: var(--tm-text-muted); margin-top: 6px; }
+      .tm-st-row .tm-input { min-width: 0; }
+      .tm-st-rm { color: var(--tm-danger, #c4282e); }
+      .tm-st-add { border: 1px dashed var(--tm-border-strong); background: transparent; border-radius: var(--tm-radius-sm); padding: 8px; font: inherit; font-size: 13px; color: var(--tm-accent-text); cursor: pointer; }
+      .tm-st-add[disabled] { color: var(--tm-text-muted); cursor: default; }
+      .tm-st-strip {
+        position: relative; height: 30px; border-radius: 6px; margin-top: 4px;
+        background: repeating-linear-gradient(90deg, var(--tm-surface-0) 0 calc(100% / 24 - 1px), var(--tm-border-soft, var(--tm-border)) calc(100% / 24 - 1px) calc(100% / 24));
+      }
+      .tm-st-blk { position: absolute; top: 4px; bottom: 4px; border-radius: 5px; background: var(--tm-accent); color: var(--text-primary-color, #fff); font-size: 11px; font-weight: 700; line-height: 22px; text-align: center; padding: 0 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .tm-st-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--tm-text-muted); }
+      .tm-st-err { color: var(--tm-danger, #c4282e); }
+      .tm-st-dots { display: inline-flex; gap: 3px; margin-inline-start: 4px; vertical-align: middle; }
+      .tm-st-d { width: 9px; height: 9px; border-radius: 3px; border: 1.5px solid var(--tm-border-strong); display: inline-block; }
+      .tm-st-d.st-done { background: var(--tm-positive); border-color: var(--tm-positive); }
+      .tm-st-d.st-pending { background: var(--tm-warning); border-color: var(--tm-warning); }
+      .tm-st-d.st-missed { background: var(--tm-danger-soft, #fde3e3); border-color: var(--tm-danger, #c4282e); }
+      .tm-st-d.st-now { border-color: var(--tm-accent); }
+      @media (max-width: 560px) { .tm-st-row { grid-template-columns: minmax(0, 1fr) minmax(104px, 1fr) minmax(104px, 1fr) 52px 28px; } }
 
       .tm-check-row {
         display: flex; align-items: flex-start; gap: 14px;
