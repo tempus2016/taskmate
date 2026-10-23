@@ -384,10 +384,10 @@ test("Copy as Markdown carries the whole report, logs fenced", () => {
   assert.ok(md.includes("- TaskMate installed via: HACS (default)"), "markdown has no separate fields, so it keeps the install answers");
 });
 
-test("Help & feedback sits in the System group", () => {
+test("Help & feedback sits in the Settings section, which opens on Settings", () => {
   const { p } = panel();
-  const system = p._sidebarGroups().find(g => g.key === "system");
-  assert.deepEqual([...system.items.map(i => i.id)], ["notifications", "settings", "help"]);
+  const system = p._sidebarGroups().find(g => g.key === "settings");
+  assert.deepEqual([...system.items.map(i => i.id)], ["settings", "notifications", "help"]);
   assert.equal(system.items[2].icon, "mdi:lifebuoy");
 });
 

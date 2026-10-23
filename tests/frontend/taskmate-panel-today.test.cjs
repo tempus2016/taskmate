@@ -60,11 +60,10 @@ function panel(extra = {}) {
   return p;
 }
 
-test("Today is the first sidebar entry and every group has a heading but home", () => {
+test("Today is the first section, and every section has a label and an icon", () => {
   const groups = panel()._sidebarGroups();
   assert.equal(groups[0].items[0].id, "today");
-  assert.equal(groups[0].head, "");
-  assert.ok(groups.slice(1).every(g => g.head && g.key));
+  assert.ok(groups.every(g => g.head && g.key && g.icon));
 });
 
 test("the Today count covers approvals and new wishes", () => {
@@ -140,11 +139,82 @@ test("an empty search lists sections and actions but not every item", () => {
   assert.doesNotMatch(html, /data-act="edit-chore"/);
 });
 
-test("a collapsed group hides its items unless it holds the open section", () => {
+test("the rail lists sections, not pages, and marks the open one", () => {
   const p = panel();
-  p._navClosed = new Set(["earn", "spend"]);
   p._activeTab = "rewards";
   const html = p._sidebar();
-  assert.doesNotMatch(html, /data-tab="chores"/);
+  assert.doesNotMatch(html, /data-tab=/);
+  for (const hub of ["today", "family", "earn", "spend", "points", "review", "settings"]) {
+    assert.match(html, new RegExp(`data-act="hub" data-hub="${hub}"`));
+  }
+  assert.match(html, /tm-hub-on" data-act="hub" data-hub="spend"/);
+});
+
+test("the open section's pages are the tabs along the top", () => {
+  const p = panel();
+  p._hubTabs = {};
+  p._activeTab = "rewards";
+  const html = p._subTabs();
   assert.match(html, /data-tab="rewards"/);
+  assert.match(html, /data-tab="wishlists"/);
+  assert.match(html, /data-tab="raffles"/);
+  assert.doesNotMatch(html, /data-tab="chores"/);
+  assert.match(html, /tm-subtab-on" data-act="tab" data-tab="rewards"/);
+});
+
+test("Today has no tabs row, and its rail button shows what is waiting", () => {
+  const p = panel();
+  p._hubTabs = {};
+  assert.equal(p._subTabs(), "");
+  // One pending chore + one new wish.
+  assert.match(p._sidebar(), /data-hub="today"[^]*?tm-hub-dot">2</);
+});
+
+test("a section reopens on the page last used in it", () => {
+  const p = panel();
+  p._hubTabs = {};
+  p._activeTab = "raffles";
+  p._subTabs();
+  assert.equal(p._hubTabs.spend, "raffles");
+});
+
+test("Needs you offers filter chips once more than one kind is waiting", () => {
+  const p = panel();
+  const q = p._approvalQueue({ wishes: true });
+  assert.deepEqual({ ...q.kinds }, { chore: 1, reward: 0, swap: 0, wish: 1 });
+  const chips = p._needsFilterChips(q.kinds);
+  assert.match(chips, /data-kind="all"/);
+  assert.match(chips, /data-kind="chore"/);
+  assert.match(chips, /data-kind="wish"/);
+  assert.doesNotMatch(chips, /data-kind="reward"/, "no chip for a kind with nothing waiting");
+  assert.match(q.html, /data-kind="chore"/);
+  assert.match(q.html, /data-kind="wish"/);
+});
+
+test("one kind waiting needs no chips, and a stale filter falls back to all", () => {
+  const p = panel({ wishes: [] });
+  const q = p._approvalQueue({ wishes: true });
+  assert.equal(p._needsFilterChips(q.kinds), "");
+  p._needsFilter = "wish";
+  assert.equal(p._needsFilterOn(q.kinds), "all");
+});
+
+test("an ordinary reward shows each child's progress towards it, and who can get it now", () => {
+  const p = panel();
+  p._childColor = () => "#f48fb1";
+  const tv = p._rewardKidBars({ id: "tv", cost: 100, assigned_to: [] });
+  assert.match(tv, /Malia: 142 \/ 100/);
+  assert.match(tv, /Vaiha: 87 \/ 100/);
+  assert.equal((tv.match(/panel\.reward_affordable/g) || []).length, 2, "one tick (title + screen-reader text), for Malia only");
+  const lego = p._rewardKidBars({ id: "lego", cost: 100, assigned_to: ["kid2"] });
+  assert.doesNotMatch(lego, /Malia/);
+  assert.match(lego, /width:87%/);
+});
+
+test("reward progress leaves adult profiles out of 'everyone'", () => {
+  const p = panel();
+  p._childColor = () => "#000";
+  p._state.children.push({ id: "mum", name: "Mum", points: 500, is_adult: true });
+  assert.doesNotMatch(p._rewardKidBars({ id: "tv", cost: 100, assigned_to: [] }), /Mum/);
+  assert.match(p._rewardKidBars({ id: "tv", cost: 100, assigned_to: ["mum"] }), /Mum/);
 });
