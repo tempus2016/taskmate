@@ -39,6 +39,7 @@ Because an unrated approval pays 100%, turning the feature on changes nothing un
 ## Where You Can Rate
 
 - **[Approvals card](Approvals-Card.md)**: a star picker on every pending chore, in every card design, and in the review sheet.
+- **[Parent Dashboard card](Dashboard-Cards.md)**: the same picker under each chore on the Approvals tab, in every card design. Pick the stars, then tap ✓.
 - **TaskMate panel**: the same picker in the approval queue.
 - **Phone approval notification**: with ratings on, a chore approval push offers **★**, **★★**, **★★★** and **Reject** instead of Approve and Reject. Android shows three actions at most, so the ratings come first there.
 

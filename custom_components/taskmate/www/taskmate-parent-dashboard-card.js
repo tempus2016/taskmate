@@ -40,6 +40,7 @@ class TaskMateParentDashboardCard extends LitElement {
       _activeSection: { type: String },
       _expanded: { type: Object },
       _signed: { state: true },
+      _ratings: { state: true },
     };
   }
 
@@ -89,6 +90,7 @@ class TaskMateParentDashboardCard extends LitElement {
     this._activeSection = "overview";
     this._expanded = {};
     this._signed = {};        // safe photo path -> per-viewer signed path
+    this._ratings = {};       // completion_id -> picked 1-3 star rating (#1114)
     this._inflight = new Set();
   }
 
@@ -559,6 +561,17 @@ class TaskMateParentDashboardCard extends LitElement {
         background: #f5b301; color: #3a2e26; font-size: 9px; line-height: 15px; text-align: center; font-weight: 800; }
       .pd-photo-link { line-height: 0; text-decoration: none; }
       .pd-gold-soft { color: var(--tmd-gold); }
+
+      /* Quality rating star picker (#1114) — both render paths, under the subtitle. */
+      .pd-stars { display: inline-flex; align-items: center; gap: 1px; margin-top: 2px; }
+      .pd-star {
+        background: none; border: 0; margin: 0; padding: 1px 3px; cursor: pointer;
+        font: inherit; font-size: 18px; line-height: 1; border-radius: 6px;
+        color: var(--tmd-dim, var(--secondary-text-color, #9e9e9e));
+      }
+      .pd-star:hover, .pd-star.on { color: var(--tmd-gold, #f5b301); }
+      .pd-star:focus-visible { outline: 2px solid var(--tmd-accent, var(--primary-color)); outline-offset: 1px; }
+      .pd-star:disabled { cursor: default; opacity: .5; }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
       ? window.__taskmate_design.styles() : null;
@@ -932,6 +945,7 @@ class TaskMateParentDashboardCard extends LitElement {
           <div style="flex:1;min-width:0">
             <div class="pd-item-title">${comp.chore_name || choreMap[comp.chore_id]?.name || this._t('common.unknown')}</div>
             <div class="muted pd-item-sub">${child?.name || this._t('common.unknown')}${time ? ` · ${time}` : ""} · +${pts}${qty}</div>
+            ${this._renderStars(comp)}
           </div>
           ${ref}
           ${photo}
@@ -1254,6 +1268,7 @@ class TaskMateParentDashboardCard extends LitElement {
                   +${comp.points || chore?.points || 0}
                 </span>
               </div>
+              ${this._renderStars(comp)}
               ${this._photoHref(comp.photo_url) ? html`
                 <a class="approval-photo" href="${this._photoHref(comp.photo_url)}" target="_blank" rel="noopener"
                    @click="${(e) => this._openPhoto(e, this._photoHref(comp.photo_url), this._photoCaption(comp.chore_name || chore?.name, child && child.name, comp.completed_at))}"
@@ -1363,7 +1378,12 @@ class TaskMateParentDashboardCard extends LitElement {
     this._loading = { ...this._loading, [completionId]: true };
     this.requestUpdate();
     try {
-      await this.hass.callService("taskmate", "approve_chore", { completion_id: completionId });
+      const rating = this._ratingMultipliers() ? this._ratings[completionId] || 0 : 0;
+      await this.hass.callService("taskmate", "approve_chore", {
+        completion_id: completionId,
+        ...(rating ? { rating } : {}),
+      });
+      if (rating) this._clearRating(completionId);
     } catch (e) {
       this._notifyServiceError("approve_chore", e, `taskmate_dashboard_approve_${completionId}`);
     } finally {
@@ -1372,12 +1392,54 @@ class TaskMateParentDashboardCard extends LitElement {
     }
   }
 
+  /* ── Quality rating (#1114) ───────────────────────────────────────────
+     Same picker as the approvals card (#927). The pending-approvals sensor
+     publishes `quality_rating` only while the feature is on, so its absence
+     hides the stars. Picking a star is a selection, not an approval — the ✓
+     still approves, and tapping the picked star again clears it (100%). */
+
+  _ratingMultipliers() {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+      || this.hass?.states?.[this.config.entity]?.attributes || {};
+    const m = attrs.quality_rating && attrs.quality_rating.multipliers;
+    return Array.isArray(m) && m.length === 3 ? m : null;
+  }
+
+  _pickRating(completionId, n) {
+    this._ratings = { ...this._ratings, [completionId]: this._ratings[completionId] === n ? 0 : n };
+  }
+
+  _clearRating(completionId) {
+    if (!(completionId in this._ratings)) return;
+    const next = { ...this._ratings };
+    delete next[completionId];
+    this._ratings = next;
+  }
+
+  _renderStars(comp) {
+    const mults = this._ratingMultipliers();
+    if (!mults || !comp) return "";
+    const id = comp.completion_id;
+    const sel = this._ratings[id] || 0;
+    const busy = !!this._loading[id];
+    return html`<span class="pd-stars" role="group" aria-label="${this._t('approvals.rating_label')}">
+      ${[1, 2, 3].map((n) => {
+        const label = this._t('approvals.rating_star_title', { count: n, percent: Math.round(Number(mults[n - 1]) * 100) });
+        // Filled vs outlined, not just gold vs grey, so the pick reads without colour.
+        return html`<button type="button" class="pd-star ${n <= sel ? "on" : ""}" ?disabled="${busy}"
+          aria-pressed="${n === sel ? "true" : "false"}" title="${label}" aria-label="${label}"
+          @click="${(e) => { e.stopPropagation(); this._pickRating(id, n); }}">${n <= sel ? "★" : "☆"}</button>`;
+      })}
+    </span>`;
+  }
+
   async _handleReject(completionId) {
     if (this._loading[completionId]) return;
     this._loading = { ...this._loading, [completionId]: true };
     this.requestUpdate();
     try {
       await this.hass.callService("taskmate", "reject_chore", { completion_id: completionId });
+      this._clearRating(completionId);
     } catch (e) {
       this._notifyServiceError("reject_chore", e, `taskmate_dashboard_reject_${completionId}`);
     } finally {

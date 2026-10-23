@@ -371,7 +371,7 @@ header_color: "#c0392b"
 | Tab | Content |
 |-----|---------|
 | **Overview** | All children's today progress bars and points |
-| **Approvals** | Pending chore completions with approve/reject — evidence-photo thumbnails render inline (see [Photo Proof](Photo-Proof.md)) |
+| **Approvals** | Pending chore completions with approve/reject — evidence-photo thumbnails render inline (see [Photo Proof](Photo-Proof.md)); with [quality ratings](Quality-Ratings.md) on, a ★ / ★★ / ★★★ picker under each chore rates it as you approve |
 | **Claims** | Pending reward claims with approve/reject |
 | **Points** | Quick +/- buttons per child |
 
