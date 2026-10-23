@@ -1929,6 +1929,8 @@ class TaskMatePanel extends HTMLElement {
       const chore = c && choreById[c.chore_id];
       const bounty = c && c.bounty_id && (this._state.bounties || []).find(b => b.id === c.bounty_id);
       name = (chore && chore.name) || (bounty && bounty.title) || this._t("panel.activity_deleted_chore");
+      const t = chore && c.time_id && (chore.times || []).find(x => x.id === c.time_id);
+      if (t) name = `${chore.name} (${t.name || t.start})`;
     } else {
       const c = (this._state.pending_reward_claims || []).find(x => x.id === id);
       const reward = c && rewardById[c.reward_id];
@@ -5303,6 +5305,10 @@ class TaskMatePanel extends HTMLElement {
       if (c.bonus_subtask_id && chore) {
         const sub = (chore.bonus_subtasks || []).find(b => b.id === c.bonus_subtask_id);
         if (sub) { choreName = `${chore.name} › ${sub.name}`; chorePoints = sub.points; }
+      } else if (c.time_id && chore) {
+        // Set times: name the time, as notifications and the sensor do.
+        const t = (chore.times || []).find(x => x.id === c.time_id);
+        if (t) { choreName = `${chore.name} (${t.name || t.start})`; chorePoints = Number(t.points) || 0; }
       } else if (chore && chore.task_type === "timed" && (c.timed_duration_seconds || 0) > 0) {
         // Timed chores accrue points by elapsed-time rate, so the actual
         // earned points can be lower than chore.points. Mirror sensor.py.
@@ -5854,7 +5860,7 @@ class TaskMatePanel extends HTMLElement {
             </div>
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.screen_time_jar_opens")}<small>${this._t("panel.screen_time_jar_opens_hint")}</small></div>
-              <div class="tm-st-opens">
+              <div class="tm-scr-opens">
                 <select class="tm-select" data-setting="screen_time_jar_open_day">
                   ${[0, 1, 2, 3, 4, 5, 6].map(d => `<option value="${d}" ${d === openDay ? "selected" : ""}>${this._esc(this._weekdayName(d))}</option>`).join("")}
                 </select>
@@ -5866,13 +5872,13 @@ class TaskMatePanel extends HTMLElement {
               const field = `_list:screen_time_devices:${c.id}`;
               const jar = Number(row.jar) || 0;
               return `
-            <div class="tm-setting-row tm-setting-top tm-st-kid">
-              <div class="tm-setting-label"><span class="tm-st-name">${this._childAvatar(c)} ${this._esc(c.name)}</span></div>
+            <div class="tm-setting-row tm-setting-top tm-scr-kid">
+              <div class="tm-setting-label"><span class="tm-scr-name">${this._childAvatar(c)} ${this._esc(c.name)}</span></div>
               <div class="tm-list-body">
-                <div class="tm-st-head">
-                  <span class="tm-st-balance ${row.active ? "live" : ""}">📺 ${this._esc(this._screenMinutes(row.minutes))}${row.active ? ` · ${this._t("panel.screen_time_watching")}` : ""}${Number(row.allowance) > 0 ? ` · ${this._t("panel.screen_time_allowance_today", { time: this._esc(this._screenMinutes(row.allowance)) })}` : ""}</span>
-                  ${s.screen_time_jar_enabled || jar ? `<span class="tm-st-jar">🫙 ${this._esc(this._screenMinutes(jar))}${jar ? ` <button type="button" class="tm-btn tm-btn-sm" data-act="st-jar-open" data-child="${this._esc(c.id)}">${this._t("panel.screen_time_jar_open_now")}</button>` : ""}</span>` : ""}
-                  <span class="tm-st-adjust">
+                <div class="tm-scr-head">
+                  <span class="tm-scr-balance ${row.active ? "live" : ""}">📺 ${this._esc(this._screenMinutes(row.minutes))}${row.active ? ` · ${this._t("panel.screen_time_watching")}` : ""}${Number(row.allowance) > 0 ? ` · ${this._t("panel.screen_time_allowance_today", { time: this._esc(this._screenMinutes(row.allowance)) })}` : ""}</span>
+                  ${s.screen_time_jar_enabled || jar ? `<span class="tm-scr-jar">🫙 ${this._esc(this._screenMinutes(jar))}${jar ? ` <button type="button" class="tm-btn tm-btn-sm" data-act="st-jar-open" data-child="${this._esc(c.id)}">${this._t("panel.screen_time_jar_open_now")}</button>` : ""}</span>` : ""}
+                  <span class="tm-scr-adjust">
                     ${[-15, 15, 30].map(m => `<button type="button" class="tm-btn tm-btn-sm" data-act="st-adjust" data-child="${this._esc(c.id)}" data-minutes="${m}">${m > 0 ? "+" : "−"}${Math.abs(m)}</button>`).join("")}
                   </span>
                 </div>
@@ -5965,7 +5971,7 @@ class TaskMatePanel extends HTMLElement {
             </div>
             ${kids.length < 2 ? `<span class="tm-field-hint">${this._t("panel.sibling_check_need_two")}</span>` : kids.map(checker => `
             <div class="tm-setting-row tm-setting-top">
-              <div class="tm-setting-label"><span class="tm-st-name">${this._childAvatar(checker)} ${this._t("panel.sibling_check_can_check", { name: this._esc(checker.name) })}</span></div>
+              <div class="tm-setting-label"><span class="tm-scr-name">${this._childAvatar(checker)} ${this._t("panel.sibling_check_can_check", { name: this._esc(checker.name) })}</span></div>
               <div class="tm-chip-row">
                 ${kids.filter(c => c.id !== checker.id).map(c => {
                   const on = Array.isArray(pairs[checker.id]) && pairs[checker.id].includes(c.id);
@@ -8924,8 +8930,12 @@ class TaskMatePanel extends HTMLElement {
       .tm-lib-more small { display: block; color: var(--tm-text-muted); margin-top: 2px; }
       .tm-lib-more .tm-btn ha-icon { --mdc-icon-size: 16px; }
       .tm-toolbar .tm-btn ha-icon { --mdc-icon-size: 16px; vertical-align: -3px; margin-inline-end: 4px; }
+      /* Full screen like every other dialog at this width, so it covers the
+         phone's bottom bar instead of leaving it dimmed underneath. */
+      @media (max-width: 900px) {
+        .tm-dialog.tm-lib { height: 100vh; }
+      }
       @media (max-width: 760px) {
-        .tm-dialog.tm-lib { height: calc(100vh - 40px); }
         .tm-lib-main { flex-direction: column; }
         .tm-lib-rail { width: auto; display: flex; gap: 4px; overflow-x: auto; border-inline-end: 0; border-bottom: 1px solid var(--tm-border-soft); flex: none; }
         .tm-lib-cat { width: auto; white-space: nowrap; }
@@ -16786,13 +16796,13 @@ class TaskMatePanel extends HTMLElement {
       .tm-list-body .tm-allowlist { margin-top: 0; }
       .tm-list-body .tm-allow-chip { font-family: inherit; }
       .tm-list-body .tm-field { margin: 0; }
-      .tm-st-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-      .tm-st-name { font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
-      .tm-st-balance { background: #e9f6fb; color: #0f4a60; border-radius: 999px; padding: 3px 10px; font-weight: 600; font-size: .85rem; }
-      .tm-st-balance.live { background: #fdecec; color: #7a1f1f; }
-      .tm-st-adjust { margin-inline-start: auto; display: inline-flex; gap: 4px; }
-      .tm-st-jar { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: .85rem; }
-      .tm-st-opens { display: flex; gap: 8px; flex-wrap: wrap; }
+      .tm-scr-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .tm-scr-name { font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+      .tm-scr-balance { background: #e9f6fb; color: #0f4a60; border-radius: 999px; padding: 3px 10px; font-weight: 600; font-size: .85rem; }
+      .tm-scr-balance.live { background: #fdecec; color: #7a1f1f; }
+      .tm-scr-adjust { margin-inline-start: auto; display: inline-flex; gap: 4px; }
+      .tm-scr-jar { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: .85rem; }
+      .tm-scr-opens { display: flex; gap: 8px; flex-wrap: wrap; }
       .tm-reward-screen { margin-top: 14px; }
       .tm-bin-preview { display: flex; flex-direction: column; align-items: flex-start; }
       .tm-bin-preview ul { margin: 8px 0 0; padding-inline-start: 18px; line-height: 1.6; }
@@ -16923,7 +16933,17 @@ class TaskMatePanel extends HTMLElement {
       .tm-st-d.st-pending { background: var(--tm-warning); border-color: var(--tm-warning); }
       .tm-st-d.st-missed { background: var(--tm-danger-soft, #fde3e3); border-color: var(--tm-danger, #c4282e); }
       .tm-st-d.st-now { border-color: var(--tm-accent); }
-      @media (max-width: 560px) { .tm-st-row { grid-template-columns: minmax(0, 1fr) minmax(104px, 1fr) minmax(104px, 1fr) 52px 28px; } }
+      /* Phone: name, points and remove on the first line; From and Until
+         share the second line, half each, wide enough for a 12-hour "07:00 AM".
+         Every cell has a fixed place, so the layout can't reflow wrongly. */
+      @media (max-width: 560px) {
+        .tm-st-row { grid-template-columns: calc(50% - 3px) minmax(0, 1fr) 56px 32px; }
+        .tm-st-row > :nth-child(1) { grid-area: 1 / 1 / 2 / 3; }
+        .tm-st-row > :nth-child(4) { grid-area: 1 / 3 / 2 / 4; }
+        .tm-st-row > :nth-child(5) { grid-area: 1 / 4 / 2 / 5; }
+        .tm-st-row > :nth-child(2) { grid-area: 2 / 1 / 3 / 2; }
+        .tm-st-row > :nth-child(3) { grid-area: 2 / 2 / 3 / 5; }
+      }
 
       .tm-check-row {
         display: flex; align-items: flex-start; gap: 14px;

@@ -101,10 +101,12 @@ class RewardsMixin:
         expires_at: str | None = None,
         refresh: bool = True,
         template_id: str = "",
+        screen_minutes: int = 0,
     ) -> Reward:
         """Add a new reward. ``refresh=False`` defers the refresh to a batch.
 
-        ``template_id`` names the 📚 library entry it came from, if any.
+        ``template_id`` names the 📚 library entry it came from, if any;
+        ``screen_minutes`` makes it a screen-time reward.
         """
         reward = Reward(
             name=name,
@@ -117,6 +119,7 @@ class RewardsMixin:
             quantity=quantity,
             expires_at=expires_at,
             template_id=clean_template_id(template_id),
+            screen_minutes=max(0, int(screen_minutes or 0)),
         )
         self.storage.add_reward(reward)
         await self.storage.async_save()

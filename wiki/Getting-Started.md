@@ -27,13 +27,19 @@ This guide walks you through setting up TaskMate for the first time after instal
 After setup, **TaskMate** appears in the Home Assistant sidebar. Everything is
 managed from there.
 
-The panel is organised into three groups:
+A rail down the left picks a section, and each section's pages are tabs along the top:
 
-| Group | Contains |
-|-------|----------|
-| **Today** | Activity (approvals and recent events) and [Insights](Insights.md) |
-| **Manage** | Children, Chores, Rewards, Penalties, Bonuses, Groups, Quests, Challenges, Badges, Templates |
-| **System** | Notifications, Audit, Settings |
+| Section | Contains |
+|---------|----------|
+| **Today** | How the day is going, and everything that needs you |
+| **Family** | Children, Groups |
+| **Earn** | Chores, Bounties, Auctions, Quests, Challenges, Templates |
+| **Spend** | Rewards, Wishlists, Raffles |
+| **Points** | Bonuses, Penalties, Badges |
+| **Review** | Activity, [Insights](Insights.md), Audit |
+| **Settings** | Settings, Notifications, Help & feedback |
+
+See [Admin Panel](Admin-Panel.md#navigation) for the full tour.
 
 > Older versions of TaskMate were configured through
 > **Settings → Devices & Services → TaskMate → Configure**. That menu is gone;

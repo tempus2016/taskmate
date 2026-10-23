@@ -10,7 +10,7 @@ Report a bug or suggest a feature from inside Home Assistant. The **Help & feedb
 
 ## Opening it
 
-**TaskMate panel → System → Help & feedback.** On a phone, it's under **More** (or the section picker at the top). It's also in the command search (**Ctrl K** or **/**).
+**TaskMate panel → Settings (the gear) → Help & feedback.** On a phone, it's under **More**. It's also in the command search (**Ctrl K** or **/**).
 
 Like the rest of the panel, it's for Home Assistant admins.
 

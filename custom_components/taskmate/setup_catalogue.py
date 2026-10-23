@@ -376,7 +376,16 @@ LIBRARY_CHORES: list[dict] = [_top_pick(s) for s in SUGGESTED_CHORES] + [
 # Starter rewards in three tiers. ``picked`` ones are ticked when the wizard opens.
 REWARD_TIERS: tuple[str, ...] = ("small", "saving", "big")
 STARTER_REWARDS: list[dict] = [
-    {"id": "screen_time", "tier": "small", "cost": 15, "icon": "mdi:television-play", "picked": True},
+    # ``screen_minutes``: what the reward adds to the screen-time bank, when the
+    # bank is on.
+    {
+        "id": "screen_time",
+        "tier": "small",
+        "cost": 15,
+        "icon": "mdi:television-play",
+        "picked": True,
+        "screen_minutes": 15,
+    },
     {"id": "pick_pudding", "tier": "small", "cost": 10, "icon": "mdi:cupcake", "picked": False},
     {"id": "car_music", "tier": "small", "cost": 10, "icon": "mdi:music", "picked": False},
     {"id": "choose_dinner", "tier": "saving", "cost": 40, "icon": "mdi:pizza", "picked": True},
@@ -481,3 +490,11 @@ def library_catalogue() -> dict[str, Any]:
             for t in BUILT_IN_TEMPLATES
         ],
     }
+
+
+def library_screen_minutes(template_id: str) -> int:
+    """Minutes a library reward adds to the screen-time bank; 0 for most."""
+    for r in (*STARTER_REWARDS, *LIBRARY_EXTRA_REWARDS):
+        if r["id"] == template_id:
+            return int(r.get("screen_minutes", 0) or 0)
+    return 0

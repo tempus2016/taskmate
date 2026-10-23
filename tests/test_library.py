@@ -273,6 +273,22 @@ def test_library_add_keeps_the_template_ids_with_one_refresh(coord):
     coord.async_refresh.assert_awaited_once()
 
 
+@pytest.mark.parametrize(("bank_on", "minutes"), [(True, 15), (False, 0)])
+def test_library_screen_time_reward_fills_the_bank_only_while_it_is_on(coord, bank_on, minutes):
+    coord.storage.set_setting("screen_time_enabled", bank_on)
+    run(
+        coord.async_apply_setup_wizard(
+            rewards=[
+                {"name": "15 min extra screen time", "cost": 15, "template_id": "screen_time"},
+                {"name": "Sleepover", "cost": 250, "template_id": "sleepover"},
+            ],
+        )
+    )
+    rewards = {r.template_id: r for r in coord.storage.get_rewards()}
+    assert rewards["screen_time"].screen_minutes == minutes
+    assert rewards["sleepover"].screen_minutes == 0
+
+
 def test_already_added_by_template_even_after_a_rename(coord):
     coord.storage.add_chore(Chore(name="Bed!", template_id="make_bed"))
     coord.storage.add_reward(Reward(name="Big sleepover", cost=300, template_id="sleepover"))
