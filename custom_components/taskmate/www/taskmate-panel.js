@@ -37,6 +37,8 @@ const BOUNTY_ICONS = ["mdi:car-wash", "mdi:leaf", "mdi:recycle", "mdi:home-outli
 const RECAP_FREQUENCIES = ["weekly", "monthly", "every_3_months", "every_6_months", "every_9_months", "yearly"];
 const BADGE_OPERATORS = ["≥", "=", "≤", ">", "<", "≠"];
 const BADGE_OP_VALUES = { "≥": ">=", "=": "==", "≤": "<=", ">": ">", "<": "<", "≠": "!=" };
+// Dialogs that edit one thing open as a side panel, not a centred dialog.
+const EDITOR_KINDS = new Set(["child", "chore", "reward", "penalty", "bonus", "raffle", "group", "quest", "challenge", "bounty", "auction", "badge"]);
 const BADGE_TIERS = [
   { v: "bronze",   lk: "badge.tier_bronze" },
   { v: "silver",   lk: "badge.tier_silver" },
@@ -406,11 +408,10 @@ class TaskMatePanel extends HTMLElement {
     this._onVisibilityChange = this._onVisibilityChange.bind(this);
     this._lastConnected = null;
     this._showIds = localStorage.getItem("taskmate-show-ids") === "true";
-    // Admin panel layout (#966). The child filter, collapsed nav groups and
-    // the icon-only sidebar are remembered per browser.
+    // Admin panel layout (#966). The child filter and the page last open in
+    // each section are remembered per browser.
     this._scope = localStorage.getItem("taskmate-scope") || "";
-    this._navClosed = new Set(this._readStoredList("taskmate-nav-closed"));
-    this._navRail = localStorage.getItem("taskmate-nav-rail") === "true";
+    this._hubTabs = this._readStoredMap("taskmate-hub-tabs");
     this._newMenuOpen = false;
     this._palette = null;            // { q, hi } while the command search is open
     this._boardView = "today";       // Today page chore board: "today" | "week"
@@ -715,16 +716,33 @@ class TaskMatePanel extends HTMLElement {
     return this._dialog ? JSON.stringify(this._dialog.data) : "";
   }
 
+  // True when the open dialog (if any) may be dropped: nothing changed, or
+  // the parent agreed to lose the changes.
+  _mayLeaveDialog() {
+    if (!this._dialog || this._dialogInitialHash == null || this._hashDialog() === this._dialogInitialHash) return true;
+    return confirm(this._t("panel.confirm_unsaved"));
+  }
+
   _closeDialog(force = false) {
-    if (!force && this._dialog && this._dialogInitialHash != null && this._hashDialog() !== this._dialogInitialHash) {
-      if (!confirm(this._t("panel.confirm_unsaved"))) return;
-    }
+    if (!force && !this._mayLeaveDialog()) return;
     this._dialog = null;
     this._dialogInitialHash = null;
     this._render();
   }
 
+  // Going to another page takes the editor with it.
+  _leaveDialogForNav() {
+    if (!this._dialog) return true;
+    if (!this._mayLeaveDialog()) return false;
+    this._dialog = null;
+    this._dialogInitialHash = null;
+    return true;
+  }
+
+  // The side panel leaves the page usable on a wide screen, so a parent can
+  // open another item, or another page, with an editor still open.
   _openDialog(d) {
+    if (!this._mayLeaveDialog()) return;
     this._dialog = d;
     this._dialogInitialHash = this._hashDialog();
     this._render();
@@ -796,22 +814,21 @@ class TaskMatePanel extends HTMLElement {
       this._render();
       return;
     }
-    if (act === "nav-group") {
-      const key = t.dataset.grp;
-      if (this._navClosed.has(key)) this._navClosed.delete(key); else this._navClosed.add(key);
-      localStorage.setItem("taskmate-nav-closed", JSON.stringify([...this._navClosed]));
-      this._render();
+    // A section opens on the page last used in it, else its first page.
+    if (act === "hub") {
+      const hub = this._sidebarGroups().find(g => g.key === t.dataset.hub);
+      if (!hub || !this._leaveDialogForNav()) return;
+      const last = this._hubTabs[hub.key];
+      const tab = hub.items.some(it => it.id === last) ? last : hub.items[0].id;
+      this._activeTab = tab; this._filter = ""; this._mobileNavOpen = false; this._render();
+      if (tab === "settings") this._ensureHaUsers().then(() => this._render());
       return;
     }
-    if (act === "nav-rail") {
-      this._navRail = !this._navRail;
-      localStorage.setItem("taskmate-nav-rail", String(this._navRail));
-      this._render();
-      return;
-    }
+    if (act === "needs-filter") { this._needsFilter = t.dataset.kind || "all"; this._render(); return; }
     if (act === "board-view") { this._boardView = t.dataset.view === "week" ? "week" : "today"; this._render(); return; }
 
     if (act === "tab")          {
+      if (!this._leaveDialogForNav()) return;
       this._activeTab = t.dataset.tab; this._filter = ""; this._mobileNavOpen = false; this._render();
       // Settings tab lists HA users for the parent-role picker (#661); load then repaint.
       if (this._activeTab === "settings") this._ensureHaUsers().then(() => this._render());
@@ -842,7 +859,7 @@ class TaskMatePanel extends HTMLElement {
       return;
     }
     if (act === "retry")        { this._fetchState(); return; }
-    if (act === "switch-to-activity") { this._activeTab = "activity"; this._render(); return; }
+    if (act === "switch-to-activity") { if (!this._leaveDialogForNav()) return; this._activeTab = "activity"; this._render(); return; }
     if (act === "toggle-ha-menu") { this.dispatchEvent(new CustomEvent("hass-toggle-menu", { bubbles: true, composed: true })); return; }
     if (act === "copy-id") { navigator.clipboard.writeText(t.dataset.id).then(() => this._showToast("ok", this._t("panel.toast_copied"))); return; }
     if (act === "view-photo") {
@@ -2060,7 +2077,7 @@ class TaskMatePanel extends HTMLElement {
         i.tell_child ? this._t("panel.insp_told", { name }) : this._t("panel.insp_secret"),
       ].join(" · ");
       return `
-        <div class="tm-approval-item tm-insp-item">
+        <div class="tm-approval-item tm-insp-item" data-kind="chore">
           <div class="tm-approval-icon tm-insp-icon"><ha-icon icon="mdi:magnify-scan"></ha-icon></div>
           <div class="tm-approval-body">
             <div class="tm-approval-line">${this._t("panel.insp_needs_line", { child: this._esc(name), chore: this._esc(i.chore_name || this._t("panel.activity_deleted_chore")) })}</div>
@@ -4054,6 +4071,7 @@ class TaskMatePanel extends HTMLElement {
           <div data-zone="sidebar">${this._sidebar()}</div>
           <div class="tm-main">
             <div data-zone="topbar">${this._topbar()}</div>
+            <div data-zone="subtabs">${this._subTabs()}</div>
             <div data-zone="mtabs">${this._mobileTabs()}</div>
             <div data-zone="scope">${this._scopeBanner()}</div>
             <div data-zone="approval">${this._approvalBanner()}</div>
@@ -4082,6 +4100,7 @@ class TaskMatePanel extends HTMLElement {
     const zones = {
       sidebar:  this._sidebar(),
       topbar:   this._topbar(),
+      subtabs:  this._subTabs(),
       mtabs:    this._mobileTabs(),
       scope:    this._scopeBanner(),
       approval: this._approvalBanner(),
@@ -4126,6 +4145,13 @@ class TaskMatePanel extends HTMLElement {
       anyChanged = true;
       if (name === "palette") paletteChanged = true;
       if (name === "body") bodyChanged = true;
+      // On a phone the tabs row scrolls; keep the open tab in view.
+      if (name === "subtabs") {
+        const on = el.querySelector(".tm-subtab-on");
+        if (on && el.firstElementChild && el.firstElementChild.scrollWidth > el.firstElementChild.clientWidth) {
+          on.scrollIntoView({ block: "nearest", inline: "nearest" });
+        }
+      }
     }
     // A rebuilt command search has a fresh input: give it the focus back.
     if (paletteChanged && this._palette) this._focusPalette();
@@ -4171,8 +4197,16 @@ class TaskMatePanel extends HTMLElement {
     const shell = this.querySelector(".tm-shell");
     if (shell) {
       shell.removeAttribute("data-tm-design");
-      // Icon-only sidebar (#966) lives on the shell, which is never rebuilt.
-      shell.classList.toggle("tm-shell-rail", !!this._navRail);
+      const drawer = !!this.querySelector(".tm-scrim-drawer");
+      shell.classList.toggle("tm-shell-drawer", drawer);
+      // Mark the row being edited so it is easy to find beside the panel.
+      this.querySelectorAll(".tm-row-editing").forEach(el => el.classList.remove("tm-row-editing"));
+      const id = drawer && this._dialog && this._dialog.data && this._dialog.data.id;
+      if (id) {
+        const btn = [...this.querySelectorAll('[data-zone="body"] [data-act^="edit-"][data-id]')].find(b => b.dataset.id === id);
+        const row = btn && btn.closest("tr, .tm-card");
+        if (row) row.classList.add("tm-row-editing");
+      }
     }
   }
 
@@ -4205,17 +4239,18 @@ class TaskMatePanel extends HTMLElement {
       auctions:  (this._state.auctions || []).filter(a => a.status === "open").length,
       raffles:   (this._state.raffles || []).filter(r => r.status === "open").length,
     } : {};
-    // Grouped by what the parent is doing (#966). Group keys use `key`, not
-    // `id`: only nav items carry an id.
+    // Each group is a section of the nav rail; its items are the tabs along
+    // the top of that section. Group keys use `key`, not `id`: only nav items
+    // carry an id.
     return [
-      { key: "home", head: "", items: [
+      { key: "today", head: this._t("panel.tab_today"), icon: "mdi:home-outline", items: [
         { id: "today", label: this._t("panel.tab_today"), icon: "mdi:home-outline" },
       ]},
-      { key: "family", head: this._t("panel.nav_family"), items: [
+      { key: "family", head: this._t("panel.nav_family"), icon: "mdi:account-multiple-outline", items: [
         { id: "children",  label: this._t("panel.tab_children"),  icon: "mdi:account-multiple" },
         { id: "groups",    label: this._t("panel.tab_groups"),    icon: "mdi:layers-outline" },
       ]},
-      { key: "earn", head: this._t("panel.nav_earn"), items: [
+      { key: "earn", head: this._t("panel.nav_earn"), icon: "mdi:check-circle-outline", items: [
         { id: "chores",    label: this._t("panel.tab_chores"),    icon: "mdi:check-circle-outline" },
         { id: "bounties",  label: this._t("panel.tab_bounties"),  icon: "mdi:flag-outline" },
         { id: "auctions",  label: this._t("panel.tab_auctions"),  icon: "mdi:gavel" },
@@ -4223,17 +4258,17 @@ class TaskMatePanel extends HTMLElement {
         { id: "challenges", label: this._t("panel.tab_challenges"), icon: "mdi:trophy-outline" },
         { id: "templates", label: this._t("panel.tab_templates"), icon: "mdi:clipboard-list-outline" },
       ]},
-      { key: "spend", head: this._t("panel.nav_spend"), items: [
+      { key: "spend", head: this._t("panel.nav_spend"), icon: "mdi:gift-outline", items: [
         { id: "rewards",   label: this._t("panel.tab_rewards"),   icon: "mdi:gift-outline" },
         { id: "wishlists", label: this._t("panel.tab_wishlists"), icon: "mdi:heart-outline" },
         { id: "raffles",   label: this._t("panel.tab_raffles"),   icon: "mdi:ticket-confirmation-outline" },
       ]},
-      { key: "adjust", head: this._t("panel.nav_adjust"), items: [
+      { key: "points", head: this._t("panel.nav_points"), icon: "mdi:plus-minus-variant", items: [
         { id: "bonuses",   label: this._t("panel.tab_bonuses"),   icon: "mdi:flash-outline" },
         { id: "penalties", label: this._t("panel.tab_penalties"), icon: "mdi:alert-circle-outline" },
         { id: "badges",    label: this._t("panel.tab_badges"),     icon: "mdi:medal-outline" },
       ]},
-      { key: "review", head: this._t("panel.nav_review"), items: [
+      { key: "review", head: this._t("panel.nav_review"), icon: "mdi:chart-box-outline", items: [
         { id: "activity", label: this._t("panel.tab_activity"), icon: "mdi:pulse" },
         { id: "insights", label: this._t("panel.tab_insights"), icon: "mdi:chart-box-outline" },
         // The audit view has always been implemented (and documented in the
@@ -4241,9 +4276,9 @@ class TaskMatePanel extends HTMLElement {
         // from this list, so there was no way to open it.
         { id: "audit", label: this._t("panel.tab_audit"), icon: "mdi:history" },
       ]},
-      { key: "system", head: this._t("panel.nav_system"), items: [
-        { id: "notifications", label: this._t("panel.tab_notifications"), icon: "mdi:bell-outline" },
+      { key: "settings", head: this._t("panel.tab_settings"), icon: "mdi:cog-outline", items: [
         { id: "settings", label: this._t("panel.tab_settings"), icon: "mdi:cog-outline" },
+        { id: "notifications", label: this._t("panel.tab_notifications"), icon: "mdi:bell-outline" },
         { id: "help", label: this._t("panel.tab_help"), icon: "mdi:lifebuoy" },
       ]},
     ].map(g => ({
@@ -4252,55 +4287,72 @@ class TaskMatePanel extends HTMLElement {
     }));
   }
 
+  // The section a tab lives in.
+  _hubOf(tab) {
+    return this._sidebarGroups().find(g => g.items.some(it => it.id === tab)) || null;
+  }
+
+  // Only Today's button carries a count: everything waiting on a parent is
+  // gathered there, so a second badge elsewhere would count it twice.
+  _hubCount(g) {
+    const today = g.items.find(it => it.id === "today");
+    return (today && today.count) || 0;
+  }
+
+  _hubBtn(g, cls) {
+    const on = !!this._hubOf(this._activeTab) && this._hubOf(this._activeTab).key === g.key;
+    const n = this._hubCount(g);
+    return `
+      <button type="button" class="${cls} ${on ? `${cls}-on` : ""}" data-act="hub" data-hub="${g.key}" aria-current="${on ? "page" : "false"}" title="${this._esc(g.head)}">
+        <span class="${cls}-ic"><ha-icon icon="${g.icon}"></ha-icon></span>
+        <span class="${cls}-label">${this._esc(g.head)}</span>
+        ${n > 0 ? `<span class="${cls}-dot">${n}</span>` : ""}
+      </button>`;
+  }
+
   _sidebar() {
     const groups = this._sidebarGroups();
-    const rail = !!this._navRail;
-    const railLabel = this._t(rail ? "panel.nav_expand" : "panel.nav_collapse");
+    const main = groups.filter(g => g.key !== "settings");
+    const settings = groups.find(g => g.key === "settings");
+    const wiki = this._esc(this._t("panel.wiki_tooltip"));
     return `
       <aside class="tm-sidebar">
-        <div class="tm-brand">
-          <div class="tm-brand-mark"><ha-icon icon="mdi:checkbox-marked-circle-plus-outline"></ha-icon></div>
-          <div class="tm-brand-text">
-            TaskMate
-            <small>v${PANEL_VERSION}</small>
-          </div>
-          <a class="tm-brand-wiki" href="https://tempus2016.github.io/taskmate/" target="_blank" rel="noopener noreferrer" title="${this._esc(this._t("panel.wiki_tooltip"))}" aria-label="${this._esc(this._t("panel.wiki_tooltip"))}">
+        <div class="tm-brand-mark" title="TaskMate v${PANEL_VERSION}"><ha-icon icon="mdi:checkbox-marked-circle-plus-outline"></ha-icon></div>
+        <nav class="tm-rail" aria-label="${this._esc(this._t("panel.nav_sections"))}">
+          ${main.map(g => this._hubBtn(g, "tm-hub")).join("")}
+        </nav>
+        <div class="tm-rail-foot">
+          <a class="tm-brand-wiki" href="https://tempus2016.github.io/taskmate/" target="_blank" rel="noopener noreferrer" title="${wiki}" aria-label="${wiki}">
             <ha-icon icon="mdi:book-open-variant"></ha-icon>
           </a>
-          <button type="button" class="tm-rail-btn" data-act="nav-rail" title="${this._esc(railLabel)}" aria-label="${this._esc(railLabel)}" aria-pressed="${rail ? "true" : "false"}">
-            <ha-icon class="tm-rtl-flip" icon="${rail ? "mdi:chevron-double-right" : "mdi:chevron-double-left"}"></ha-icon>
-          </button>
+          ${settings ? this._hubBtn(settings, "tm-hub") : ""}
         </div>
-        <nav class="tm-nav">
-          ${groups.map(g => {
-            // A group holding the open section never folds away; the icon-only
-            // sidebar has no headings to unfold it with, so it shows them all.
-            const closed = !rail && !!g.head && this._navClosed && this._navClosed.has(g.key)
-              && !g.items.some(it => it.id === this._activeTab);
-            return `
-            <div class="tm-nav-group">
-              ${g.head ? `
-                <button type="button" class="tm-nav-head" data-act="nav-group" data-grp="${g.key}" aria-expanded="${closed ? "false" : "true"}">
-                  <ha-icon class="tm-nav-chev" icon="mdi:chevron-down"></ha-icon>
-                  <span>${this._esc(g.head)}</span>
-                </button>` : ""}
-              ${closed ? "" : g.items.map(it => {
-                const active = it.id === this._activeTab;
-                const urgent = (it.id === "activity" || it.id === "today") && it.count > 0;
-                const showCount = it.count != null && it.count > 0;
-                return `
-                  <button type="button" class="tm-nav-item ${active ? "tm-nav-active" : ""}" data-act="tab" data-tab="${it.id}" title="${this._esc(it.label)}">
-                    <span class="tm-nav-icon"><ha-icon icon="${it.icon}"></ha-icon></span>
-                    <span class="tm-nav-label">${this._esc(it.label)}</span>
-                    ${showCount ? `<span class="tm-nav-badge ${urgent ? "tm-nav-badge-urgent" : ""}">${it.count}</span>` : ""}
-                  </button>
-                `;
-              }).join("")}
-            </div>
-          `;
-          }).join("")}
-        </nav>
       </aside>
+    `;
+  }
+
+  // The open section's pages, as tabs along the top. A one-page section
+  // (Today) has none.
+  _subTabs() {
+    const hub = this._hubOf(this._activeTab);
+    if (!hub) return "";
+    if (this._hubTabs[hub.key] !== this._activeTab) {
+      this._hubTabs[hub.key] = this._activeTab;
+      try { localStorage.setItem("taskmate-hub-tabs", JSON.stringify(this._hubTabs)); } catch (_) { /* storage blocked */ }
+    }
+    if (hub.items.length < 2) return "";
+    return `
+      <nav class="tm-subtabs" aria-label="${this._esc(hub.head)}">
+        ${hub.items.map(it => {
+          const on = it.id === this._activeTab;
+          const urgent = it.id === "wishlists" && it.count > 0;
+          return `
+          <button type="button" class="tm-subtab ${on ? "tm-subtab-on" : ""}" data-act="tab" data-tab="${it.id}" aria-current="${on ? "page" : "false"}">
+            <ha-icon icon="${it.icon}"></ha-icon><span>${this._esc(it.label)}</span>
+            ${it.count != null && it.count > 0 ? `<span class="tm-nav-badge ${urgent ? "tm-nav-badge-urgent" : ""}">${it.count}</span>` : ""}
+          </button>`;
+        }).join("")}
+      </nav>
     `;
   }
 
@@ -4309,6 +4361,8 @@ class TaskMatePanel extends HTMLElement {
       .flatMap(g => g.items)
       .find(i => i.id === this._activeTab);
     const crumbLabel = crumb ? crumb.label : (this._activeTab === "setup" ? this._t("wizard.title") : "");
+    const hub = this._hubOf(this._activeTab);
+    const hubLabel = hub ? hub.head : "";
     const pendingCount = this._state
       ? (this._state.pending_completions || []).length + (this._state.pending_reward_claims || []).length + (this._state.swap_requests || []).length
       : 0;
@@ -4320,9 +4374,7 @@ class TaskMatePanel extends HTMLElement {
           <ha-icon icon="mdi:menu"></ha-icon>
         </button>
         <div class="tm-crumbs">
-          <span class="tm-crumbs-root">TaskMate</span>
-          <span class="tm-crumbs-sep">/</span>
-          <strong>${this._esc(crumbLabel)}</strong>
+          <strong>${this._esc(hubLabel || crumbLabel)}</strong>
         </div>
         ${this._state ? `
           <button type="button" class="tm-search-btn" data-act="palette-open" aria-label="${this._esc(searchLabel)}" title="${this._esc(searchLabel)}">
@@ -4347,12 +4399,12 @@ class TaskMatePanel extends HTMLElement {
   // One child picked here narrows Today, Children, Chores, Rewards, Quests,
   // Challenges, Bonuses, Penalties, Activity and Wishlists to that child.
 
-  _readStoredList(key) {
+  _readStoredMap(key) {
     try {
-      const v = JSON.parse(localStorage.getItem(key) || "[]");
-      return Array.isArray(v) ? v : [];
+      const v = JSON.parse(localStorage.getItem(key) || "{}");
+      return v && typeof v === "object" && !Array.isArray(v) ? v : {};
     } catch (_) {
-      return [];
+      return {};
     }
   }
 
@@ -4450,67 +4502,42 @@ class TaskMatePanel extends HTMLElement {
   // ---- Phone bottom bar (#966) ----------------------------------------
   _bottomNav() {
     if (!this._state) return "";
-    const today = this._needsYouCount();
-    const items = [
-      { id: "today",    icon: "mdi:home-outline",          label: this._t("panel.tab_today") },
-      { id: "chores",   icon: "mdi:check-circle-outline",  label: this._t("panel.tab_chores") },
-      { id: "rewards",  icon: "mdi:gift-outline",          label: this._t("panel.tab_rewards") },
-      { id: "children", icon: "mdi:account-multiple",      label: this._t("panel.tab_children") },
-    ];
-    const inBar = items.some(it => it.id === this._activeTab);
+    const groups = this._sidebarGroups();
+    const bar = groups.filter(g => ["today", "family", "earn", "spend"].includes(g.key));
+    const cur = this._hubOf(this._activeTab);
+    const inBar = !!cur && bar.some(g => g.key === cur.key);
     return `
       <nav class="tm-bnav" aria-label="${this._esc(this._t("panel.nav_sections"))}">
-        ${items.map(it => `
-          <button type="button" class="tm-bnav-item ${it.id === this._activeTab ? "tm-bnav-on" : ""}" data-act="tab" data-tab="${it.id}">
-            <ha-icon icon="${it.icon}"></ha-icon><span>${this._esc(it.label)}</span>
-            ${it.id === "today" && today > 0 ? `<span class="tm-bnav-dot">${today}</span>` : ""}
-          </button>`).join("")}
-        <button type="button" class="tm-bnav-item ${inBar ? "" : "tm-bnav-on"}" data-act="toggle-mobile-nav">
-          <ha-icon icon="mdi:dots-grid"></ha-icon><span>${this._t("panel.nav_more")}</span>
+        ${bar.map(g => this._hubBtn(g, "tm-bnav-item")).join("")}
+        <button type="button" class="tm-bnav-item ${inBar || this._activeTab === "setup" ? "" : "tm-bnav-item-on"}" data-act="toggle-mobile-nav" aria-expanded="${this._mobileNavOpen ? "true" : "false"}">
+          <span class="tm-bnav-item-ic"><ha-icon icon="mdi:dots-grid"></ha-icon></span><span class="tm-bnav-item-label">${this._t("panel.nav_more")}</span>
         </button>
       </nav>
     `;
   }
 
+  // "More" on a phone: every section and page, as a sheet over the bar.
   _mobileTabs() {
+    if (!this._mobileNavOpen) return "";
     const groups = this._sidebarGroups();
-    const open = !!this._mobileNavOpen;
-    const current = groups.flatMap(g => g.items).find(it => it.id === this._activeTab)
-      || { id: this._activeTab, label: this._activeTab === "setup" ? this._t("wizard.title") : "", icon: this._activeTab === "setup" ? "mdi:auto-fix" : "mdi:cog-outline" };
-    const curUrgent = (current.id === "activity" || current.id === "today") && current.count > 0;
-    const curShowCount = current.count != null && current.count > 0;
     return `
-      <div class="tm-mobilenav ${open ? "tm-mobilenav-open" : ""}">
-        <button type="button" class="tm-mnav-trigger" data-act="toggle-mobile-nav"
-                aria-haspopup="true" aria-expanded="${open ? "true" : "false"}">
-          <span class="tm-mnav-ico"><ha-icon icon="${this._esc(current.icon)}"></ha-icon></span>
-          <span class="tm-mnav-main">
-            <span class="tm-mnav-crumb">TaskMate</span>
-            <span class="tm-mnav-title">${this._esc(current.label)}</span>
-          </span>
-          ${curShowCount ? `<span class="tm-mnav-count ${curUrgent ? "tm-mnav-count-urgent" : ""}">${current.count}</span>` : ""}
-          <span class="tm-mnav-chev"><ha-icon icon="mdi:chevron-down"></ha-icon></span>
-        </button>
-        ${open ? `
-          <div class="tm-mnav-scrim" data-act="close-mobile-nav"></div>
-          <nav class="tm-mnav-sheet">
-            ${groups.map(g => `
-              ${g.head ? `<div class="tm-mnav-grp-head">${this._esc(g.head)}</div>` : ""}
-              ${g.items.map(it => {
-                const active = it.id === this._activeTab;
-                const urgent = (it.id === "activity" || it.id === "today") && it.count > 0;
-                const showCount = it.count != null && it.count > 0;
-                return `
-                  <button type="button" class="tm-mnav-item ${active ? "tm-mnav-item-active" : ""}" data-act="tab" data-tab="${it.id}">
-                    <ha-icon class="tm-mnav-item-ico" icon="${this._esc(it.icon)}"></ha-icon>
-                    <span class="tm-mnav-item-label">${this._esc(it.label)}</span>
-                    ${showCount ? `<span class="tm-mnav-count ${urgent ? "tm-mnav-count-urgent" : ""}">${it.count}</span>` : ""}
-                  </button>`;
-              }).join("")}
-            `).join("")}
-          </nav>
-        ` : ""}
-      </div>
+      <div class="tm-mnav-scrim" data-act="close-mobile-nav"></div>
+      <nav class="tm-mnav-sheet" aria-label="${this._esc(this._t("panel.nav_sections"))}">
+        ${groups.map(g => `
+          <div class="tm-mnav-grp-head">${this._esc(g.head)}</div>
+          ${g.items.map(it => {
+            const active = it.id === this._activeTab;
+            const urgent = (it.id === "activity" || it.id === "today") && it.count > 0;
+            const showCount = it.count != null && it.count > 0;
+            return `
+              <button type="button" class="tm-mnav-item ${active ? "tm-mnav-item-active" : ""}" data-act="tab" data-tab="${it.id}">
+                <ha-icon class="tm-mnav-item-ico" icon="${this._esc(it.icon)}"></ha-icon>
+                <span class="tm-mnav-item-label">${this._esc(it.label)}</span>
+                ${showCount ? `<span class="tm-mnav-count ${urgent ? "tm-mnav-count-urgent" : ""}">${it.count}</span>` : ""}
+              </button>`;
+          }).join("")}
+        `).join("")}
+      </nav>
     `;
   }
 
@@ -5132,7 +5159,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-child-head">
           <div class="tm-avatar tm-avatar-kid" style="--kc:${this._childColor(child.id)}">${this._mdi(child.avatar)}</div>
           <div class="tm-child-name">
-            <h3>${this._esc(child.name || this._t("panel.child_unnamed"))}${child.is_adult ? ` <span class="tm-pill tm-pill-accent">${this._t("panel.child_adult_pill")}</span>` : ""}</h3>
+            <h3>${this._esc(child.name || this._t("panel.child_unnamed"))}${child.is_adult ? ` <span class="tm-pill tm-pill-accent">${this._t("panel.child_adult_pill")}</span>` : ""}${this._num(child.current_streak) > 0 ? ` <span class="tm-pill"><ha-icon icon="mdi:fire"></ha-icon>${this._ltrNums(this._t("panel.today_streak", { count: this._num(child.current_streak) }))}</span>` : ""}</h3>
             ${this._idBadge(child.id)}
             <div class="tm-meta">${child.availability_entity ? `<code title="${this._esc(child.availability_entity)}">${this._esc(child.availability_entity)}</code>${child.availability_inverted ? ` <em>${this._t("panel.child_inverted")}</em>` : ""}` : `${this._t("panel.child_no_availability")}`}${child.unavailability_entity ? ` · ${this._t("panel.child_busy_label")} <code title="${this._esc(child.unavailability_entity)}">${this._esc(child.unavailability_entity)}</code>` : ""}</div>
           </div>
@@ -5290,7 +5317,7 @@ class TaskMatePanel extends HTMLElement {
       chorePoints = c.submitted_points ?? chorePoints;
       const photoCap = [choreName, (child && child.name) || "", c.completed_at ? new Date(c.completed_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""].filter(Boolean).join(" · ");
       return `
-        <div class="tm-approval-item">
+        <div class="tm-approval-item" data-kind="chore">
           <div class="tm-approval-icon"><ha-icon icon="${c.bonus_subtask_id ? 'mdi:star-plus' : c.bounty_id ? 'mdi:flag-outline' : 'mdi:checkbox-marked-circle-outline'}"></ha-icon></div>
           ${this._safePhotoUrl(c.photo_url) ? `<a class="tm-approval-photo" href="${this._esc(this._safePhotoUrl(c.photo_url))}" target="_blank" rel="noopener" data-act="view-photo" data-photo="${this._esc(this._safePhotoUrl(c.photo_url))}" data-cap="${this._esc(photoCap)}" title="${this._t("panel.activity_view_photo")}"><img src="${this._esc(this._safePhotoUrl(c.photo_url))}" alt="" loading="lazy"></a>` : ""}
           <div class="tm-approval-body">
@@ -5313,7 +5340,7 @@ class TaskMatePanel extends HTMLElement {
       const reward = rewardById[c.reward_id];
       const child = childById[c.child_id];
       return `
-        <div class="tm-approval-item">
+        <div class="tm-approval-item" data-kind="reward">
           <div class="tm-approval-icon"><ha-icon icon="mdi:gift-outline"></ha-icon></div>
           <div class="tm-approval-body">
             <div class="tm-approval-line">${this._t("panel.activity_claimed_text", {child: this._esc((child && child.name) || "?"), reward: this._esc((reward && reward.name) || this._t("panel.activity_deleted_reward"))})}</div>
@@ -5331,7 +5358,7 @@ class TaskMatePanel extends HTMLElement {
       const req = childById[sw.requester_id];
       const from = childById[sw.from_child_id];
       return `
-        <div class="tm-approval-item">
+        <div class="tm-approval-item" data-kind="swap">
           <div class="tm-approval-icon"><ha-icon icon="mdi:swap-horizontal"></ha-icon></div>
           <div class="tm-approval-body">
             <div class="tm-approval-line">${this._t("panel.swap_request_text", {child: this._esc((req && req.name) || "?"), chore: this._esc((chore && chore.name) || "?")})}</div>
@@ -5347,7 +5374,7 @@ class TaskMatePanel extends HTMLElement {
     ${pendingWishes.map(w => {
       const child = childById[w.child_id];
       return `
-        <div class="tm-approval-item">
+        <div class="tm-approval-item" data-kind="wish">
           <div class="tm-approval-icon"><ha-icon icon="mdi:heart-outline"></ha-icon></div>
           <div class="tm-approval-body">
             <div class="tm-approval-line">${this._t("panel.today_wish_text", {child: this._esc((child && child.name) || "?"), wish: this._esc(w.name)})}</div>
@@ -5364,8 +5391,30 @@ class TaskMatePanel extends HTMLElement {
     return {
       count: pendingCompletions.length + pendingClaims.length + pendingSwaps.length + pendingWishes.length + inspections.length,
       chores: pendingCompletions.length,
+      kinds: { chore: pendingCompletions.length + inspections.length, reward: pendingClaims.length, swap: pendingSwaps.length, wish: pendingWishes.length },
       html,
     };
+  }
+
+  // "Needs you" can be narrowed to one kind of request, once more than one
+  // kind is waiting.
+  _needsFilterOn(kinds) {
+    const f = this._needsFilter || "all";
+    return f !== "all" && kinds[f] > 0 ? f : "all";
+  }
+
+  _needsFilterChips(kinds) {
+    const present = Object.keys(kinds).filter(k => kinds[k] > 0);
+    if (present.length < 2) return "";
+    const on = this._needsFilterOn(kinds);
+    const label = { chore: "panel.tab_chores", reward: "panel.tab_rewards", swap: "panel.needs_filter_swaps", wish: "panel.needs_filter_wishes" };
+    const chip = (key, text, n) => `
+      <button type="button" class="tm-chip-btn ${on === key ? "tm-chip-on" : ""}" data-act="needs-filter" data-kind="${key}" aria-pressed="${on === key ? "true" : "false"}">${this._esc(text)}${n != null ? ` <span class="tm-chip-n">${n}</span>` : ""}</button>`;
+    return `
+      <div class="tm-chip-row tm-needs-filter" role="group" aria-label="${this._esc(this._t("panel.needs_filter_label"))}">
+        ${chip("all", this._t("panel.scope_all"))}
+        ${present.map(k => chip(k, this._t(label[k]), kinds[k])).join("")}
+      </div>`;
   }
 
   _approveAllButton(chores) {
@@ -5491,7 +5540,7 @@ class TaskMatePanel extends HTMLElement {
             </h3>
             ${queue.count === 0
               ? `<p class="tm-meta tm-today-clear"><ha-icon icon="mdi:check-circle-outline"></ha-icon>${this._t("panel.today_needs_empty")}</p>`
-              : `<div class="tm-approval-list">${queue.html}</div>`}
+              : `${this._needsFilterChips(queue.kinds)}<div class="tm-approval-list" data-filter="${this._needsFilterOn(queue.kinds)}">${queue.html}</div>`}
           </div>
 
           <div class="tm-card">
@@ -9248,6 +9297,30 @@ class TaskMatePanel extends HTMLElement {
     return `<span class="tm-pill tm-pill-timelock">${this._mdi("mdi:clock-outline")} ${this._esc(label)}</span>`;
   }
 
+  // How close each child is to an ordinary reward. "Everyone" means the
+  // children, not adult profiles.
+  _rewardKidBars(r) {
+    const cost = this._num(r.cost);
+    if (cost <= 0) return "";
+    const who = Array.isArray(r.assigned_to) && r.assigned_to.length ? r.assigned_to : null;
+    const kids = (this._state.children || []).filter(c => (who ? who.includes(c.id) : !c.is_adult) && this._childInScope(c.id));
+    if (!kids.length) return "";
+    const can = this._esc(this._t("panel.reward_affordable"));
+    return `
+      <div class="tm-reward-kids">
+        ${kids.map(c => {
+          const pts = this._num(c.points);
+          const pct = Math.min(100, Math.round(pts / cost * 100));
+          return `
+          <div class="tm-reward-kid" title="${this._esc(c.name)}: ${this._ltrNums(`${this._fmtNum(pts)} / ${this._fmtNum(cost)}`)}">
+            <span class="tm-reward-kid-name">${this._esc(c.name)}</span>
+            <span class="tm-reward-kid-bar"><span style="width:${pct}%;background:${this._childColor(c.id)}"></span></span>
+            <span class="tm-reward-kid-ok">${pts >= cost ? `<ha-icon icon="mdi:check" title="${can}"></ha-icon><span class="tm-sr">${can}</span>` : ""}</span>
+          </div>`;
+        }).join("")}
+      </div>`;
+  }
+
   _renderRewardCard(r, pointsName) {
     const totalPooled = (this._state.pool_allocations || []).filter(a => a.reward_id === r.id).reduce((s, a) => s + (a.allocated_points || 0), 0);
     const showProgress = (r.pool_enabled || r.is_jackpot) && r.cost > 0;
@@ -9271,7 +9344,7 @@ class TaskMatePanel extends HTMLElement {
         ${showProgress ? `
           <div class="tm-progress"><span style="width:${pct}%"></span></div>
           <div class="tm-progress-text"><span${this.getAttribute("dir") === "rtl" ? ' dir="ltr"' : ""}><strong>${this._fmtNum(totalPooled)}</strong> / ${this._fmtNum(r.cost)}</span><span>${pct}%</span></div>
-        ` : ""}
+        ` : this._rewardKidBars(r)}
         <div class="tm-card-foot">
           <button type="button" class="tm-btn tm-btn-sm" data-act="edit-reward" data-id="${this._esc(r.id)}">${this._t("panel.btn_edit")}</button>
           <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-reward" data-id="${this._esc(r.id)}">${this._t("panel.btn_delete")}</button>
@@ -14765,10 +14838,14 @@ class TaskMatePanel extends HTMLElement {
 
   // ---- form helpers ----------------------------------------------------
   // `drawer: true` opens it as a full-height panel on the right (#968).
+  // Editing a thing (a chore, a reward, a child…) always does; confirmations
+  // and quick actions stay centred. On a wide screen the side panel leaves
+  // the page usable beside it, so it is not modal there.
   _dialogShell(title, body, footer, { drawer = false, wide = false } = {}) {
+    if (EDITOR_KINDS.has(this._dialog && this._dialog.kind)) drawer = true;
     return `
       <div class="tm-scrim ${drawer ? "tm-scrim-drawer" : ""}" data-act="scrim">
-        <div class="${["tm-dialog", drawer && "tm-drawer", wide && "tm-dialog-wide"].filter(Boolean).join(" ")}" role="dialog" aria-modal="true" aria-label="${this._esc(title)}">
+        <div class="${["tm-dialog", drawer && "tm-drawer", wide && "tm-dialog-wide"].filter(Boolean).join(" ")}" role="dialog" aria-modal="${drawer ? "false" : "true"}" aria-label="${this._esc(title)}">
           <header class="tm-dialog-head">
             <h2>${this._esc(title)}</h2>
             <button type="button" class="tm-icon-btn" data-act="close-dialog" title="${this._t("panel.tooltip_close")}">&times;</button>
@@ -15337,7 +15414,7 @@ class TaskMatePanel extends HTMLElement {
         --tm-shadow-focus:  0 0 0 2px var(--tm-accent-glow);
         --tm-easing:        ease;
 
-        --tm-sidebar-w:     240px;
+        --tm-sidebar-w:     92px;
 
         background: var(--tm-bg);
         color: var(--tm-text);
@@ -15362,106 +15439,92 @@ class TaskMatePanel extends HTMLElement {
       .tm-main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
       .tm-shell > [data-zone], .tm-main > [data-zone] { display: contents; }
 
-      /* ===== Sidebar ===== */
+      /* ===== Section rail ===== */
       .tm-sidebar {
         background: var(--tm-surface-0);
         border-inline-end: 1px solid var(--tm-border);
-        display: flex; flex-direction: column;
-        overflow: hidden;
-      }
-      .tm-brand {
-        display: flex; align-items: center; gap: 10px;
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--tm-border-soft);
+        display: flex; flex-direction: column; align-items: center;
+        padding: 12px 0;
+        overflow: hidden auto;
       }
       .tm-brand-mark {
-        width: 28px; height: 28px;
-        border-radius: 7px;
+        width: 36px; height: 36px;
+        border-radius: 10px;
         background: var(--tm-accent);
         color: var(--text-primary-color, #fff);
         display: grid; place-items: center;
         flex-shrink: 0;
+        margin-bottom: 14px;
       }
-      .tm-brand-mark ha-icon { --mdc-icon-size: 16px; }
-      .tm-brand-text {
-        flex: 1; min-width: 0;
-        font-weight: 600; font-size: 14px;
-        letter-spacing: -0.01em;
-        line-height: 1.15;
-      }
-      .tm-brand-text small {
-        display: block;
-        font-weight: 400;
-        color: var(--tm-text-faint);
-        font-size: 11px;
-        font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
-        margin-top: 1px;
-      }
+      .tm-brand-mark ha-icon { --mdc-icon-size: 20px; }
+      .tm-rail { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+      .tm-rail-foot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 12px; }
       .tm-brand-wiki {
-        flex-shrink: 0;
-        width: 28px; height: 28px;
-        border-radius: 7px;
+        width: 36px; height: 36px;
+        border-radius: 10px;
         display: grid; place-items: center;
         color: var(--tm-text-faint);
         text-decoration: none;
         transition: color 0.15s ease, background 0.15s ease;
       }
-      .tm-brand-wiki ha-icon { --mdc-icon-size: 18px; }
+      .tm-brand-wiki ha-icon { --mdc-icon-size: 20px; }
       .tm-brand-wiki:hover, .tm-brand-wiki:focus-visible {
         color: var(--tm-accent);
-        background: var(--tm-border-soft);
+        background: var(--tm-surface-2);
         outline: none;
       }
-      .tm-nav {
-        padding: 10px 8px;
-        flex: 1;
-        overflow-y: auto;
-      }
-      .tm-nav-group { margin-bottom: 16px; }
-      .tm-nav-group:last-child { margin-bottom: 0; }
-      .tm-nav-head {
-        font-size: 10.5px;
-        font-weight: 600;
-        color: var(--tm-text-faint);
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        padding: 4px 10px 6px;
-      }
-      .tm-nav-item {
-        display: flex; align-items: center; gap: 10px;
-        padding: 7px 10px;
-        border-radius: var(--tm-radius-sm);
-        color: var(--tm-text-muted);
-        cursor: pointer;
-        font-size: 13px;
-        font-weight: 500;
-        font-family: inherit;
-        background: transparent; border: 0;
-        width: 100%; text-align: start;
+      .tm-hub {
         position: relative;
-        transition: all 0.1s var(--tm-easing);
+        width: 86px;
+        display: flex; flex-direction: column; align-items: center; gap: 3px;
+        padding: 6px 0;
+        background: none; border: 0; border-radius: var(--tm-radius-sm);
+        color: var(--tm-text-muted);
+        font-family: inherit; font-size: 11.5px; font-weight: 500;
+        cursor: pointer;
       }
-      .tm-nav-item:hover { background: var(--tm-surface-2); color: var(--tm-text); }
-      .tm-nav-active {
-        background: var(--tm-surface-2);
-        color: var(--tm-text);
-        font-weight: 600;
-      }
-      .tm-nav-active::before {
-        content: ""; position: absolute;
-        inset-inline-start: -8px; top: 6px; bottom: 6px; width: 2px;
-        background: var(--tm-accent);
-        border-start-start-radius: 0; border-start-end-radius: 2px; border-end-end-radius: 2px; border-end-start-radius: 0;
-      }
-      .tm-nav-icon {
-        width: 16px; height: 16px;
+      .tm-hub-ic {
+        width: 48px; height: 30px; border-radius: 15px;
         display: grid; place-items: center;
-        color: var(--tm-text-faint);
+        transition: background 0.12s var(--tm-easing), color 0.12s var(--tm-easing);
+      }
+      .tm-hub-ic ha-icon { --mdc-icon-size: 21px; }
+      .tm-hub:hover .tm-hub-ic { background: var(--tm-surface-2); color: var(--tm-text); }
+      .tm-hub:focus-visible { outline: 2px solid var(--tm-accent); outline-offset: 2px; }
+      .tm-hub-on { color: var(--tm-text); font-weight: 600; }
+      .tm-hub-on .tm-hub-ic, .tm-hub-on:hover .tm-hub-ic { background: var(--tm-accent-soft); color: var(--tm-accent-text); }
+      .tm-hub-label { max-width: 82px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .tm-hub-dot, .tm-bnav-item-dot {
+        position: absolute; top: 2px; inset-inline-start: calc(50% + 8px);
+        min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box;
+        border-radius: 999px;
+        background: var(--tm-warning); color: #fff;
+        font-size: 10.5px; font-weight: 700; line-height: 18px; text-align: center;
+      }
+
+      /* ===== Section tabs ===== */
+      .tm-subtabs {
+        display: flex; gap: 2px;
+        padding: 0 24px;
+        background: var(--tm-surface-0);
+        border-bottom: 1px solid var(--tm-border);
+        overflow-x: auto; scrollbar-width: none;
         flex-shrink: 0;
       }
-      .tm-nav-icon ha-icon { --mdc-icon-size: 16px; }
-      .tm-nav-active .tm-nav-icon { color: var(--tm-accent); }
-      .tm-nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+      .tm-subtabs::-webkit-scrollbar { display: none; }
+      .tm-subtab {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 11px 12px 9px;
+        background: none; border: 0; border-bottom: 2px solid transparent;
+        color: var(--tm-text-muted);
+        font-family: inherit; font-size: 13.5px; font-weight: 500;
+        white-space: nowrap; cursor: pointer;
+      }
+      .tm-subtab ha-icon { --mdc-icon-size: 17px; color: var(--tm-text-faint); }
+      .tm-subtab:hover { color: var(--tm-text); }
+      .tm-subtab:focus-visible { outline: 2px solid var(--tm-accent); outline-offset: -2px; border-radius: 6px; }
+      .tm-subtab-on { color: var(--tm-text); font-weight: 600; border-bottom-color: var(--tm-accent); }
+      .tm-subtab-on ha-icon { color: var(--tm-accent); }
       .tm-nav-badge {
         font-size: 11px;
         color: var(--tm-text-faint);
@@ -15471,7 +15534,7 @@ class TaskMatePanel extends HTMLElement {
         font-variant-numeric: tabular-nums;
         line-height: 1.4;
       }
-      .tm-nav-active .tm-nav-badge {
+      .tm-subtab-on .tm-nav-badge {
         background: var(--tm-accent-soft);
         color: var(--tm-accent-text);
       }
@@ -15510,10 +15573,10 @@ class TaskMatePanel extends HTMLElement {
       }
       .tm-crumbs strong {
         color: var(--tm-text);
+        font-size: 15px;
         font-weight: 600;
         letter-spacing: -0.005em;
       }
-      .tm-crumbs-sep { color: var(--tm-text-vfaint); }
       .tm-approval-pill {
         background: var(--tm-warning-soft);
         color: var(--tm-warning);
@@ -15538,8 +15601,8 @@ class TaskMatePanel extends HTMLElement {
       }
       @keyframes tm-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
 
-      /* ===== Mobile section picker (hidden by default, shown on narrow) ===== */
-      .tm-mobilenav { display: none; }
+      /* The phone "More" sheet only exists on narrow screens. */
+      .tm-mnav-scrim, .tm-mnav-sheet { display: none; }
 
       /* Approval banner */
       .tm-approval-banner {
@@ -16060,6 +16123,13 @@ class TaskMatePanel extends HTMLElement {
 
       /* Reward extras */
       .tm-reward-card { display: flex; flex-direction: column; gap: 12px; margin-bottom: 0; }
+      .tm-reward-kids { display: flex; flex-direction: column; gap: 6px; }
+      .tm-reward-kid { display: grid; grid-template-columns: minmax(48px, 30%) 1fr 18px; align-items: center; gap: 8px; font-size: 12px; color: var(--tm-text-muted); }
+      .tm-reward-kid-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .tm-reward-kid-bar { height: 6px; border-radius: 3px; background: var(--tm-surface-3); overflow: hidden; }
+      .tm-reward-kid-bar > span { display: block; height: 100%; border-radius: 3px; }
+      .tm-reward-kid-ok { color: var(--tm-success, #2e7d32); display: grid; place-items: center; }
+      .tm-reward-kid-ok ha-icon { --mdc-icon-size: 16px; }
       .tm-progress {
         height: 8px;
         background: var(--tm-surface-2);
@@ -16385,6 +16455,31 @@ class TaskMatePanel extends HTMLElement {
       .tm-drawer-delete { margin-inline-end: auto; color: var(--tm-danger); display: inline-flex; align-items: center; gap: 4px; }
       .tm-drawer-delete ha-icon { --mdc-icon-size: 18px; }
       @media (prefers-reduced-motion: reduce) { .tm-scrim.tm-enter > .tm-dialog.tm-drawer { animation: none; } }
+      /* Wide screens: the side panel sits beside the page instead of over
+         it. The page moves over to make room and stays clickable, so the
+         parent can go from one item to the next. */
+      @media (min-width: 1100px) {
+        .tm-scrim.tm-scrim-drawer { background: transparent; pointer-events: none; }
+        .tm-scrim.tm-scrim-drawer.tm-enter { animation: none; }
+        .tm-scrim-drawer > .tm-drawer { pointer-events: auto; box-shadow: none; }
+        .tm-main { transition: padding-inline-end 0.22s var(--tm-easing); }
+        .tm-shell-drawer .tm-main { padding-inline-end: min(520px, 100vw); }
+        /* Less room beside the panel: the top bar keeps to its icons. The
+           approval banner below still says what is waiting. */
+        .tm-shell-drawer .tm-topbar .tm-scope-name,
+        .tm-shell-drawer .tm-approval-pill,
+        .tm-shell-drawer .tm-search-btn-text, .tm-shell-drawer .tm-search-btn kbd,
+        .tm-shell-drawer .tm-new-text { display: none; }
+        .tm-shell-drawer .tm-crumbs { flex-shrink: 0; }
+        .tm-shell-drawer .tm-search-btn { flex: 0 0 auto; width: 38px; padding: 0; justify-content: center; margin-inline: auto 0; }
+        .tm-shell-drawer .tm-new-btn { width: 38px; height: 38px; padding: 0; justify-content: center; border-radius: 10px; }
+      }
+      @media (min-width: 1100px) and (prefers-reduced-motion: reduce) { .tm-main { transition: none; } }
+      /* An image layer, so cells with their own background (the sticky
+         name column) are tinted too and stay opaque. */
+      tr.tm-row-editing > td,
+      .tm-table tr.tm-row-editing > td.tm-col-sticky { background-image: linear-gradient(var(--tm-accent-soft), var(--tm-accent-soft)); }
+      .tm-row-editing:not(tr) { box-shadow: 0 0 0 2px var(--tm-accent); }
 
       .tm-dialog-head {
         padding: 18px 22px;
@@ -16740,6 +16835,12 @@ class TaskMatePanel extends HTMLElement {
       .tm-sched-tick { color: var(--tm-success, #2e7d32); font-weight: 800; }
 
       .tm-chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+      .tm-needs-filter { margin-bottom: 12px; }
+      .tm-chip-n { font-variant-numeric: tabular-nums; opacity: 0.75; }
+      .tm-approval-list[data-filter="chore"] .tm-approval-item:not([data-kind="chore"]),
+      .tm-approval-list[data-filter="reward"] .tm-approval-item:not([data-kind="reward"]),
+      .tm-approval-list[data-filter="swap"] .tm-approval-item:not([data-kind="swap"]),
+      .tm-approval-list[data-filter="wish"] .tm-approval-item:not([data-kind="wish"]) { display: none; }
       /* Recaps (#929) */
       .tm-recap-cell { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
       .tm-recap-next { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--tm-text-muted); }
@@ -17269,56 +17370,29 @@ class TaskMatePanel extends HTMLElement {
         .tm-sidebar { display: none; }
         .tm-menu-btn { display: inline-flex; }
         .tm-topbar { padding: 0 12px; }
-        /* Redundant with the section picker below — hide on mobile. */
-        .tm-crumbs { display: none; }
         .tm-approval-pill { margin-inline-start: auto; }
 
-        /* Section picker replaces the old horizontal tab strip. */
-        .tm-main { position: relative; }
-        .tm-mobilenav {
-          display: block;
-          position: relative;
-          z-index: 5;
-          flex-shrink: 0;
+        .tm-subtabs { padding: 0 8px; }
+        /* "More": every section and page, in a sheet above the bottom bar. */
+        .tm-mnav-scrim {
+          position: fixed; inset: 0;
+          background: rgba(10, 15, 22, 0.32);
+          z-index: 30;
+          animation: tm-mnav-fade 0.18s var(--tm-easing);
+        }
+        .tm-mnav-sheet {
+          position: fixed;
+          bottom: calc(64px + env(safe-area-inset-bottom, 0px)); inset-inline-start: 8px; inset-inline-end: 8px;
+          z-index: 31;
           background: var(--tm-surface-0);
-          border-bottom: 1px solid var(--tm-border);
-          padding: 8px 12px;
-        }
-        .tm-mnav-trigger {
-          width: 100%;
-          display: flex; align-items: center; gap: 10px;
-          background: var(--tm-surface-2);
           border: 1px solid var(--tm-border);
-          border-radius: var(--tm-radius-md, 12px);
-          padding: 8px 12px;
-          cursor: pointer;
-          font-family: inherit;
-          color: var(--tm-text);
-          text-align: start;
-          transition: background 0.12s var(--tm-easing), border-color 0.12s var(--tm-easing);
+          border-radius: var(--tm-radius-md, 14px);
+          box-shadow: 0 20px 48px rgba(0, 0, 0, 0.24);
+          max-height: calc(100vh - 140px);
+          overflow-y: auto;
+          padding: 4px 0 8px;
+          animation: tm-mnav-drop 0.18s var(--tm-easing);
         }
-        .tm-mnav-trigger:active { background: var(--tm-surface-3); }
-        .tm-mobilenav-open .tm-mnav-trigger { border-color: var(--tm-accent); }
-        .tm-mnav-ico {
-          width: 30px; height: 30px; flex-shrink: 0;
-          border-radius: var(--tm-radius-sm, 8px);
-          background: var(--tm-accent-soft);
-          color: var(--tm-accent-text);
-          display: grid; place-items: center;
-          --mdc-icon-size: 20px;
-        }
-        .tm-mnav-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-        .tm-mnav-crumb { font-size: 11px; color: var(--tm-text-faint); line-height: 1.2; }
-        .tm-mnav-title {
-          font-size: 15px; font-weight: 600; line-height: 1.25;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .tm-mnav-chev {
-          color: var(--tm-text-muted); flex-shrink: 0;
-          --mdc-icon-size: 22px;
-          transition: transform 0.18s var(--tm-easing);
-        }
-        .tm-mobilenav-open .tm-mnav-chev { transform: rotate(180deg); }
         .tm-mnav-count {
           flex-shrink: 0;
           background: var(--tm-surface-0);
@@ -17331,27 +17405,6 @@ class TaskMatePanel extends HTMLElement {
           background: var(--tm-warning-soft);
           border-color: transparent;
           color: var(--tm-warning);
-        }
-        .tm-mnav-scrim {
-          position: absolute;
-          top: 100%; inset-inline-start: 0; inset-inline-end: 0;
-          height: 100vh;
-          background: rgba(10, 15, 22, 0.32);
-          z-index: 30;
-          animation: tm-mnav-fade 0.18s var(--tm-easing);
-        }
-        .tm-mnav-sheet {
-          position: absolute;
-          top: calc(100% + 6px); inset-inline-start: 8px; inset-inline-end: 8px;
-          z-index: 31;
-          background: var(--tm-surface-0);
-          border: 1px solid var(--tm-border);
-          border-radius: var(--tm-radius-md, 14px);
-          box-shadow: 0 20px 48px rgba(0, 0, 0, 0.24);
-          max-height: calc(100vh - 200px);
-          overflow-y: auto;
-          padding: 4px 0 8px;
-          animation: tm-mnav-drop 0.18s var(--tm-easing);
         }
         .tm-mnav-grp-head {
           font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
@@ -17424,42 +17477,6 @@ class TaskMatePanel extends HTMLElement {
         position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
         overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
       }
-      button.tm-nav-head {
-        display: flex; align-items: center; gap: 4px;
-        width: 100%; background: none; border: 0; cursor: pointer;
-        font-family: inherit; text-align: start;
-        border-radius: 6px;
-      }
-      button.tm-nav-head:hover { color: var(--tm-text); }
-      .tm-nav-chev { --mdc-icon-size: 14px; transition: transform 0.15s var(--tm-easing); }
-      .tm-nav-head[aria-expanded="false"] .tm-nav-chev { transform: rotate(-90deg); }
-      .tm-nav-group:first-child { margin-bottom: 10px; }
-      .tm-rail-btn {
-        flex-shrink: 0; width: 28px; height: 28px; border-radius: 7px;
-        display: grid; place-items: center; cursor: pointer;
-        background: none; border: 0; color: var(--tm-text-faint);
-      }
-      .tm-rail-btn:hover { background: var(--tm-surface-2); color: var(--tm-text); }
-      .tm-rail-btn ha-icon { --mdc-icon-size: 18px; }
-
-      /* Icon-only sidebar */
-      .tm-shell.tm-shell-rail { grid-template-columns: 64px 1fr; }
-      .tm-shell-rail .tm-brand { flex-direction: column; padding: 12px 0; gap: 8px; }
-      .tm-shell-rail .tm-brand-text, .tm-shell-rail .tm-brand-wiki,
-      .tm-shell-rail .tm-nav-label, .tm-shell-rail .tm-nav-chev,
-      .tm-shell-rail .tm-nav-head span { display: none; }
-      .tm-shell-rail .tm-nav-head {
-        height: 1px; padding: 0; margin: 10px 8px; background: var(--tm-border);
-        pointer-events: none;
-      }
-      .tm-shell-rail .tm-nav-item { justify-content: center; padding: 9px 0; }
-      .tm-shell-rail .tm-nav-icon, .tm-shell-rail .tm-nav-icon ha-icon { --mdc-icon-size: 20px; width: 20px; height: 20px; }
-      .tm-shell-rail .tm-nav-badge { display: none; }
-      .tm-shell-rail .tm-nav-badge-urgent {
-        display: block; position: absolute; top: 2px; inset-inline-end: 6px;
-        padding: 0 5px; font-size: 10px; line-height: 16px;
-      }
-
       /* Topbar controls */
       .tm-topbar .tm-crumbs { flex: 0 1 auto; min-width: 0; white-space: nowrap; }
       .tm-search-btn {
@@ -17609,7 +17626,8 @@ class TaskMatePanel extends HTMLElement {
       .tm-kid-adj { align-self: start; }
       .tm-kid-btns { display: flex; flex-direction: column; gap: 2px; align-self: start; }
       .tm-kid-pills { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
-      .tm-kid-pills ha-icon { --mdc-icon-size: 13px; margin-inline-end: 2px; }
+      .tm-kid-pills ha-icon, .tm-child-name h3 .tm-pill ha-icon { --mdc-icon-size: 13px; margin-inline-end: 2px; }
+      .tm-child-name h3 .tm-pill { vertical-align: middle; }
       .tm-today-cols {
         display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
         gap: 18px; align-items: start;
@@ -17740,7 +17758,6 @@ class TaskMatePanel extends HTMLElement {
         .tm-today-cols { grid-template-columns: 1fr; }
       }
       @media (max-width: 900px) {
-        .tm-shell.tm-shell-rail { grid-template-columns: 1fr; }
         .tm-search-btn { flex: 0 0 auto; width: 38px; height: 38px; margin-block: 0; margin-inline: auto 0; padding: 0; justify-content: center; border: 0; background: none; color: var(--tm-text-muted); }
         .tm-search-btn-text, .tm-search-btn kbd, .tm-new-text { display: none; }
         .tm-approval-pill { display: none; }
@@ -17767,14 +17784,12 @@ class TaskMatePanel extends HTMLElement {
           gap: 2px; min-height: 56px; border: 0; background: none; cursor: pointer;
           font-family: inherit; font-size: 11px; color: var(--tm-text-muted);
         }
-        .tm-bnav-item ha-icon { --mdc-icon-size: 22px; }
-        .tm-bnav-on { color: var(--tm-accent-text); }
-        .tm-bnav-dot {
-          position: absolute; top: 6px; inset-inline-start: calc(50% + 6px);
-          min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
-          background: var(--tm-warning); color: #fff;
-          font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
-        }
+        .tm-bnav-item-ic { width: 52px; height: 28px; border-radius: 14px; display: grid; place-items: center; }
+        .tm-bnav-item-ic ha-icon { --mdc-icon-size: 22px; }
+        .tm-bnav-item-on { color: var(--tm-text); font-weight: 600; }
+        .tm-bnav-item-on .tm-bnav-item-ic { background: var(--tm-accent-soft); color: var(--tm-accent-text); }
+        .tm-bnav-item-dot { top: 4px; inset-inline-start: calc(50% + 6px); }
+        .tm-mnav-scrim, .tm-mnav-sheet { display: block; }
       }
       /* Help & feedback */
       .tm-fb { max-width: 920px; }
